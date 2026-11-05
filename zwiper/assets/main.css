@@ -196,14 +196,38 @@ button {
 
 /* A sign-in form's submit: the kit's full-width button under the last
    field, with the field's corners and padding so it reads as the form's
-   last row, then the chips to the other sign-in screens in one centered
-   row, wrapping if they must. The field's own bottom margin is the only gap above it; the
-   content's trailing padding keeps the last chip clear of the home
-   indicator. */
+   last row. The field's own bottom margin is the only gap above it. */
 .form-submit > .btn {
     margin: 0;
     padding: 0.75rem 1rem;
     border-radius: 0.4rem;
+}
+
+/* A form panel: the kit's settings-list look holding a form's fields under
+   a header with the panel's name centered on it. The fields keep the
+   panel's padding; the chips to the other sign-in screens are a bar along
+   the panel's foot under a rule, wrapping if they must. */
+.form-panel {
+    width: 100%;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.form-panel > .settings-list-header {
+    justify-content: center;
+}
+
+.form-panel > form,
+.form-panel-fields {
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+}
+
+.form-panel + .form-panel {
+    margin-top: var(--panel-gap);
 }
 
 .form-links {
@@ -211,9 +235,17 @@ button {
     flex-wrap: wrap;
     justify-content: center;
     gap: 0.5rem;
-    /* The row may run wider than the form's column: it spans the screen,
-       centered on the column, with the page gutter at each side. */
-    margin: 1rem calc(50% - 50vw + 1rem) 0;
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--border-secondary);
+}
+
+/* On the sign-in screens the panel is the hero's width, a gutter at each
+   side, a panel gap under the hero. */
+.form-panel.container-sm {
+    width: calc(100% - 2rem);
+    max-width: 24rem;
+    padding: 0;
+    margin-top: var(--panel-gap);
 }
 
 /* The filter dot sits on the funnel's top left, clear of the reset. */
@@ -1481,8 +1513,26 @@ button {
 .skeleton-edit-deck {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: var(--panel-gap);
     width: 100%;
+}
+
+/* The form panels' ghosts: the panel's outline with a centered title bar,
+   the fields at the panel's padding. */
+.form-panel > .skeleton-card-header {
+    display: flex;
+    justify-content: center;
+}
+
+.form-panel > .skeleton-card-header > .skeleton-section-label {
+    margin-bottom: 0;
+}
+
+.skeleton-edit-deck-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
 }
 
 .skeleton-edit-deck-field {

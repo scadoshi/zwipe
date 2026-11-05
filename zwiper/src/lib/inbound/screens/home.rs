@@ -8,31 +8,30 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Instant;
 
 use chrono::Utc;
-use components::{AlertDialog, DialogAction, ThemeConfig, Toasts, use_toast};
+use components::{ThemeConfig, Toasts, use_toast};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_core::domain::user::settings::PipColor;
 use zwipe_ui::generation::Ticket;
 use zwipe_ui::home::{Figures, Scope};
 use zwipe_ui::screens::home::{
-    self, Action, Age, Cached, CachedFigures, DeckTile, Destination, Effect, Flavor, State,
+    self, Action, Age, Cached, CachedFigures, DeckTile, Destination, Effect, State,
 };
 
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::auth::session_upkeep::FlavorCard;
 use crate::inbound::components::hint_dialog::{self, OneTimeHintDialog};
 use crate::inbound::components::home_decks::{CachedDecks, HomeDecks};
+use crate::inbound::components::home_flavor::FlavorPanel;
 use crate::inbound::components::home_hero::{CachedCounts, CachedMyCounts, HomeHeroScoped};
 use crate::inbound::components::home_play_style::{CachedPlayStyle, HomePlayStyle};
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::Screen;
 use crate::inbound::components::ui_toast;
 use crate::inbound::router::Router;
-use crate::inbound::screens::deck::card::components::image_preview::ImagePreview;
 use crate::outbound::app_icon;
 use crate::outbound::count_scope_store::CountScope;
 use crate::outbound::counts_store::PersistCounts;
@@ -449,12 +448,6 @@ pub fn Home() -> Element {
         driver.dispatch(Action::CheckFlavor { now: Utc::now() });
     });
 
-    // The flavor card's Image button previews that card's image.
-    let mut preview_card: Signal<Option<(ScryfallData, usize)>> = use_signal(|| None);
-    let preview_dismissing: Signal<bool> = use_signal(|| false);
-    // The flavor card's Buy button opens its buy sheet (TCGplayer / CK).
-    let mut show_buy_sheet = use_signal(|| false);
-
     // Snapshot the model once per render.
     let state = driver.model.read();
     let figures = state.figures();
@@ -463,17 +456,8 @@ pub fn Home() -> Element {
     let decks = state.decks();
     let play_style = state.play_style();
     let flavor = state.flavor();
-    let flavor_data = state.flavor_card().map(|c| c.scryfall_data.clone());
-    let buy_links = state.buy_links();
+    let flavor_card = state.flavor_card().cloned();
     drop(state);
-
-    // The Buy-card dialog: Close, then the retailers for the flavor card.
-    let buy_actions: Vec<DialogAction> = std::iter::once(DialogAction::Dismiss(home::CLOSE.into()))
-        .chain(buy_links.into_iter().map(|link| DialogAction::Link {
-            label: link.label.into(),
-            href: link.url,
-        }))
-        .collect();
 
     rsx! {
             div { class: "screen",
@@ -502,76 +486,9 @@ pub fn Home() -> Element {
                     onplaystyle: move |()| driver.dispatch(Action::Playstyle),
                 }
 
-                // Display random flavor text
-                div { class: "container-sm text-center flex-col home-flavor content-enter-delayed",
-                    match flavor {
-                        Flavor::Quote(quote) => {
-                            rsx! {
-                                div { class: "settings-list-header", style: "justify-content: center;",
-                                    span { class: "settings-list-title", {home::FEATURED_FLAVOR} }
-                                }
-                                div { class: "flavor-quote", style: "padding: 1rem;",
-                                    "{quote.text} "
-                                }
-                                div { class: "flavor-buy-row",
-                                    span { class: "flavor-name", "{quote.name}" }
-                                    if let Some(price) = quote.price.as_ref() {
-                                        span { class: "flavor-price", "{price}" }
-                                    }
-                                    button {
-                                        class: "card-action-btn",
-                                        onclick: move |_| {
-                                            if let Some(sd) = flavor_data.clone() {
-                                                preview_card.set(Some((sd, 0)));
-                                            }
-                                        },
-                                        {home::IMAGE}
-                                    }
-                                    if quote.price.is_some() {
-                                        button {
-                                            class: "card-action-btn",
-                                            onclick: move |_| show_buy_sheet.set(true),
-                                            {home::BUY}
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        Flavor::Blank => rsx! {},
-                        Flavor::Loading => rsx! {
-                            // Mirror the loaded card: a "Featured flavor" title
-                            // bar + divider, the quote lines, then a chip
-                            // ghost for each tag and button on the row under
-                            // them.
-                            div { class: "skeleton-card-header", style: "display: flex; justify-content: center;",
-                                div { class: "skeleton-bar skeleton-section-label", style: "width: 45%; margin-bottom: 0;" }
-                            }
-                            div { class: "skeleton-flavor", style: "padding: 1rem;",
-                                div { class: "skeleton-bar skeleton-flavor-line skeleton-flavor-line-1" }
-                                div { class: "skeleton-bar skeleton-flavor-line skeleton-flavor-line-2" }
-                                div { class: "skeleton-bar skeleton-flavor-line skeleton-flavor-line-3" }
-                            }
-                            div { class: "flavor-buy-row",
-                                div { class: "skeleton-bar skeleton-chip skeleton-chip-lg" }
-                                for i in 0..3 {
-                                    div { key: "{i}", class: "skeleton-bar skeleton-chip skeleton-chip-md" }
-                                }
-                            }
-                        },
-                    }
-                }
+                FlavorPanel { flavor, card: flavor_card }
             }
             OneTimeHintDialog { open: first_login_hint_open, hint: OneTimeHint::FirstLogin }
-
-            ImagePreview { card: preview_card, dismissing: preview_dismissing }
-
-
-            AlertDialog {
-                open: show_buy_sheet,
-                title: home::BUY_TITLE,
-                actions: buy_actions,
-                {home::BUY_BODY}
-            }
             }
     }
 }

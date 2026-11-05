@@ -1,4 +1,6 @@
-//! User login screen.
+//! Login: the hero, then the two fields and `Log in` in a panel headed
+//! with the screen's name, `Create profile` and `Forgot password` as chips
+//! along its foot, then the featured flavor card.
 
 use components::{
     Button, ButtonVariant, TOAST_NORMAL, TextInput, ThemeConfig, ToastOptions, Toasts, use_toast,
@@ -12,6 +14,7 @@ use zwipe_core::http::contracts::auth::HttpAuthenticateUser;
 use zwipe_ui::account::Password;
 use zwipe_ui::screens::login::{self, Action, Destination, Effect, Field, State};
 
+use crate::inbound::components::home_flavor::PublicFlavor;
 use crate::inbound::components::home_hero::HomeHero;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::ui_toast;
@@ -156,7 +159,10 @@ pub fn Login() -> Element {
             ScreenHeader { title: login::TITLE }
             div { class: "screen-content centered content-enter",
             HomeHero {}
-            div { class : "container-sm text-center",
+            div { class: "container-sm text-center form-panel",
+                div { class: "settings-list-header",
+                    span { class: "settings-list-title", {login::TITLE} }
+                }
                 form { class: "flex-col", onsubmit: move |evt| evt.prevent_default(),
                     TextInput {
                         value: driver.identifier,
@@ -197,6 +203,7 @@ pub fn Login() -> Element {
                     }
                 }
             }
+            PublicFlavor {}
         }
     }
     }

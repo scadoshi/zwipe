@@ -1,4 +1,6 @@
-//! Forgot password screen.
+//! Forgot password: the hero, then the email field and `Send reset link`
+//! in a panel headed with the screen's name, `Back to login` and `Create
+//! profile` as chips along its foot, then the featured flavor card.
 
 use components::{Button, ButtonVariant, TOAST_NORMAL, TextInput, ToastOptions, Toasts, use_toast};
 use dioxus::prelude::*;
@@ -9,6 +11,7 @@ use zwipe_ui::screens::forgot_password::{
     self, Action, BACK, CREATE_PROFILE, Destination, EMAIL, Effect, SEND, State,
 };
 
+use crate::inbound::components::home_flavor::PublicFlavor;
 use crate::inbound::components::home_hero::HomeHero;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::ui_toast;
@@ -101,7 +104,10 @@ pub fn ForgotPassword() -> Element {
             ScreenHeader { title: forgot_password::TITLE }
             div { class: "screen-content centered content-enter",
                 HomeHero {}
-                div { class: "container-sm text-center",
+                div { class: "container-sm text-center form-panel",
+                    div { class: "settings-list-header",
+                        span { class: "settings-list-title", {forgot_password::TITLE} }
+                    }
                     form { class: "flex-col", onsubmit: move |evt| evt.prevent_default(),
                         TextInput {
                             value: driver.email,
@@ -140,6 +146,7 @@ pub fn ForgotPassword() -> Element {
                         }
                     }
                 }
+                PublicFlavor {}
             }
         }
     }

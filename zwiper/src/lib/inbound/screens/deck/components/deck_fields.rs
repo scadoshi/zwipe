@@ -15,7 +15,7 @@ use crate::inbound::components::hint_dialog::OneTimeHintDialog;
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::info_button::{self, InfoButton};
 
-/// The form's fields, drawn from `model`. Every tap goes out through `on_action`; a field's Swipe chip asks the screen to open that slot's swipe picker through `on_swipe`. `name` is the name input's text, which the screen keeps in step with the model.
+/// The form's fields in three panels, Profile, Budget and Tags, drawn from `model`. Every tap goes out through `on_action`; a field's Swipe chip asks the screen to open that slot's swipe picker through `on_swipe`. `name` is the name input's text, which the screen keeps in step with the model.
 #[component]
 pub(crate) fn DeckFields(
     model: ReadSignal<State>,
@@ -38,259 +38,268 @@ pub(crate) fn DeckFields(
 
     rsx! {
         // Profile: name, format, command zone, power level.
-        div { style: "margin-bottom: 0.5rem;",
-            span { class: "settings-list-title", {model::PROFILE} }
-        }
+        div { class: "form-panel",
+            div { class: "settings-list-header",
+                span { class: "settings-list-title", {model::PROFILE} }
+            }
+            div { class: "form-panel-fields",
+                // Deck name
+                TextInput {
+                    label: model::DECK_NAME,
+                    on_info: info_button::open_topic(HintTopic::DeckName),
+                    value: name,
+                    id: "deck_name",
+                    placeholder: model::NOT_SET,
+                    error: name_error,
+                }
 
-        // Deck name
-        TextInput {
-            label: model::DECK_NAME,
-            on_info: info_button::open_topic(HintTopic::DeckName),
-            value: name,
-            id: "deck_name",
-            placeholder: model::NOT_SET,
-            error: name_error,
-        }
+                // Format (open the full-screen picker to choose)
+                div {
+                    div { class: "label-row",
+                        label { class: "label", {model::FORMAT} }
+                        InfoButton { topic: HintTopic::Format }
+                        if format.is_some() {
+                            button {
+                                class: "clear-btn",
+                                onclick: move |_| on_action.call(Action::ClearFormat),
+                                "\u{00d7}"
+                            }
+                        }
+                    }
 
-        // Format (open the full-screen picker to choose)
-        div {
-            div { class: "label-row",
-                label { class: "label", {model::FORMAT} }
-                InfoButton { topic: HintTopic::Format }
-                if format.is_some() {
-                    button {
-                        class: "clear-btn",
-                        onclick: move |_| on_action.call(Action::ClearFormat),
-                        "\u{00d7}"
+                    if let Some(fmt) = format {
+                        div { class: "input input-tappable", onclick: move |_| on_action.call(Action::OpenPicker(Picker::Format)), "{fmt.display_name()}" }
+                    } else {
+                        div { class: "input input-placeholder input-tappable", onclick: move |_| on_action.call(Action::OpenPicker(Picker::Format)), {model::NOT_SET} }
                     }
                 }
-            }
 
-            if let Some(fmt) = format {
-                div { class: "input input-tappable", onclick: move |_| on_action.call(Action::OpenPicker(Picker::Format)), "{fmt.display_name()}" }
-            } else {
-                div { class: "input input-placeholder input-tappable", onclick: move |_| on_action.call(Action::OpenPicker(Picker::Format)), {model::NOT_SET} }
-            }
-        }
-
-        for slot in Slot::ALL {
-            SlotField { key: "{slot:?}", slot, model, on_action, on_swipe }
-        }
-
-        // Power level (single-select WotC bracket; Not set = none)
-        div { style: "margin-top: 1rem;",
-            div { class: "label-row",
-                label { class: "label", {model::POWER_LEVEL} }
-                InfoButton { topic: HintTopic::PowerLevel }
-                if power_level.is_some() {
-                    button {
-                        class: "clear-btn",
-                        onclick: move |_| on_action.call(Action::ClearPowerLevel),
-                        "\u{00d7}"
-                    }
+                for slot in Slot::ALL {
+                    SlotField { key: "{slot:?}", slot, model, on_action, on_swipe }
                 }
-            }
-            div { class: "chip-row", style: "flex-wrap: wrap; justify-content: center;",
-                for pl in PowerLevel::all().iter().copied() {
-                    div {
-                        key: "{pl}",
-                        class: if power_level == Some(pl) { "chip selected" } else { "chip" },
-                        onclick: move |_| on_action.call(Action::TogglePowerLevel(pl)),
-                        "{pl.display_name()}"
+
+                // Power level (single-select WotC bracket; Not set = none)
+                div { style: "margin-top: 1rem;",
+                    div { class: "label-row",
+                        label { class: "label", {model::POWER_LEVEL} }
+                        InfoButton { topic: HintTopic::PowerLevel }
+                        if power_level.is_some() {
+                            button {
+                                class: "clear-btn",
+                                onclick: move |_| on_action.call(Action::ClearPowerLevel),
+                                "\u{00d7}"
+                            }
+                        }
+                    }
+                    div { class: "chip-row", style: "flex-wrap: wrap; justify-content: center;",
+                        for pl in PowerLevel::all().iter().copied() {
+                            div {
+                                key: "{pl}",
+                                class: if power_level == Some(pl) { "chip selected" } else { "chip" },
+                                onclick: move |_| on_action.call(Action::TogglePowerLevel(pl)),
+                                "{pl.display_name()}"
+                            }
+                        }
                     }
                 }
             }
         }
 
         // Budget: land target + price target.
-        div { style: "margin-top: 1.5rem;",
-            span { class: "settings-list-title", {model::BUDGET} }
-        }
-
-        // Land target (Not set = use the format heuristic)
-        div { style: "margin-top: 1rem;",
-            div { class: "label-row",
-                label { class: "label", {model::LAND_TARGET} }
-                InfoButton { topic: HintTopic::LandTarget }
-                if land_target.is_some() {
-                    button {
-                        class: "clear-btn",
-                        onclick: move |_| on_action.call(Action::ClearLand),
-                        "\u{00d7}"
-                    }
-                }
+        div { class: "form-panel",
+            div { class: "settings-list-header",
+                span { class: "settings-list-title", {model::BUDGET} }
             }
-
-            div { class: "stepper",
-                button {
-                    class: "stepper-btn",
-                    r#type: "button",
-                    onclick: move |_| on_action.call(Action::StepLand(Step::Down)),
-                    "-"
-                }
-                span { class: "stepper-value", style: "width: auto; min-width: 4rem;",
-                    if let Some(v) = land_target { "{v}" } else { {model::NOT_SET} }
-                }
-                button {
-                    class: "stepper-btn",
-                    r#type: "button",
-                    onclick: move |_| on_action.call(Action::StepLand(Step::Up)),
-                    "+"
-                }
-            }
-        }
-
-        // Price target (budget; empty = no budget)
-        div { style: "margin-top: 1rem;",
-            div { class: "label-row",
-                label { class: "label", {model::PRICE_TARGET} }
-                InfoButton { topic: HintTopic::PriceTarget }
-                if !price_text.is_empty() {
-                    button {
-                        class: "clear-btn",
-                        onclick: move |_| on_action.call(Action::ClearPrice),
-                        "\u{00d7}"
-                    }
-                }
-            }
-
-            div { class: "chip-row", style: "margin-bottom: 0.5rem; justify-content: center;",
-                for currency in PriceCurrency::all().iter().copied() {
-                    div {
-                        class: if currency_picked == currency { "chip selected" } else { "chip" },
-                        onclick: move |_| on_action.call(Action::PickCurrency(currency)),
-                        "{currency.label()}"
-                    }
-                }
-            }
-
-            input { class: "input",
-                id: "price_target",
-                r#type: "text",
-                inputmode: "decimal",
-                placeholder: model::NOT_SET,
-                value: "{price_text}",
-                autocapitalize: "none",
-                autocorrect: "off",
-                spellcheck: "false",
-                oninput: move |event| on_action.call(Action::TypePrice(event.value())),
-            }
-        }
-
-        // Tags: deck tags, oracle tags, other tags. Grouped at the bottom
-        // (under a "Tags" heading) to mirror the deck view's Tags section.
-        div { style: "margin-top: 1.5rem;",
-            span { class: "settings-list-title", {model::TAGS} }
-        }
-
-        // Deck tags (open the full-screen picker to choose)
-        div { style: "margin-top: 1rem;",
-            div { class: "label-row",
-                label { class: "label", {model::DECK_TAGS} }
-                InfoButton { topic: HintTopic::DeckTags }
-                span { class: "field-count", "{deck_tags.len()}/{MAX_DECK_TAGS}" }
-                if !deck_tags.is_empty() {
-                    button {
-                        class: "clear-btn",
-                        onclick: move |_| on_action.call(Action::ClearTags(TagPicker::DeckTags)),
-                        "\u{00d7}"
-                    }
-                }
-            }
-
-            if deck_tags.is_empty() {
-                div { class: "input input-placeholder input-tappable", onclick: move |_| on_action.call(Action::OpenPicker(Picker::DeckTags)), {model::NOT_SET} }
-            } else {
-                div { class: "chip-box input-tappable", onclick: move |_| on_action.call(Action::OpenPicker(Picker::DeckTags)),
-                    for tag in deck_tags {
-                        div {
-                            key: "{tag}",
-                            class: "chip selected flex items-center gap-05",
-                            "{deck::deck_tag_label(&tag)}"
-                            // Remove just this tag; stop propagation so the
-                            // chip-box's own onclick doesn't also open the picker.
-                            button {
-                                class: "chip-remove",
-                                onclick: move |evt| {
-                                    evt.stop_propagation();
-                                    on_action.call(Action::RemoveTag {
-                                        picker: TagPicker::DeckTags,
-                                        slug: tag.clone(),
-                                    });
-                                },
-                                "\u{00d7}"
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // Oracle tags (granular strategy; deck tags seed these)
-        div { style: "margin-top: 1rem;",
-            div { class: "label-row",
-                label { class: "label", {model::ORACLE_TAGS} }
-                InfoButton { topic: HintTopic::OracleTags }
-                span { class: "field-count", "{oracle_tags.len()}/{MAX_DECK_ORACLE_TAGS}" }
-                if !oracle_tags.is_empty() {
-                    button {
-                        class: "clear-btn",
-                        onclick: move |_| on_action.call(Action::ClearTags(TagPicker::OracleTags)),
-                        "\u{00d7}"
-                    }
-                }
-            }
-
-            if oracle_tags.is_empty() {
+            div { class: "form-panel-fields",
+                // Land target (Not set = use the format heuristic)
                 div {
-                    class: "input input-placeholder input-tappable",
-                    onclick: move |_| on_action.call(Action::OpenPicker(Picker::OracleTags)),
-                    {model::NOT_SET}
-                }
-            } else {
-                div { class: "chip-box input-tappable", onclick: move |_| on_action.call(Action::OpenPicker(Picker::OracleTags)),
-                    for slug in oracle_tags {
-                        div {
-                            key: "{slug}",
-                            class: "chip selected flex items-center gap-05",
-                            "{slug}"
+                    div { class: "label-row",
+                        label { class: "label", {model::LAND_TARGET} }
+                        InfoButton { topic: HintTopic::LandTarget }
+                        if land_target.is_some() {
                             button {
-                                class: "chip-remove",
-                                onclick: move |evt| {
-                                    evt.stop_propagation();
-                                    on_action.call(Action::RemoveTag {
-                                        picker: TagPicker::OracleTags,
-                                        slug: slug.clone(),
-                                    });
-                                },
+                                class: "clear-btn",
+                                onclick: move |_| on_action.call(Action::ClearLand),
                                 "\u{00d7}"
                             }
                         }
+                    }
+
+                    div { class: "stepper",
+                        button {
+                            class: "stepper-btn",
+                            r#type: "button",
+                            onclick: move |_| on_action.call(Action::StepLand(Step::Down)),
+                            "-"
+                        }
+                        span { class: "stepper-value", style: "width: auto; min-width: 4rem;",
+                            if let Some(v) = land_target { "{v}" } else { {model::NOT_SET} }
+                        }
+                        button {
+                            class: "stepper-btn",
+                            r#type: "button",
+                            onclick: move |_| on_action.call(Action::StepLand(Step::Up)),
+                            "+"
+                        }
+                    }
+                }
+
+                // Price target (budget; empty = no budget)
+                div { style: "margin-top: 1rem;",
+                    div { class: "label-row",
+                        label { class: "label", {model::PRICE_TARGET} }
+                        InfoButton { topic: HintTopic::PriceTarget }
+                        if !price_text.is_empty() {
+                            button {
+                                class: "clear-btn",
+                                onclick: move |_| on_action.call(Action::ClearPrice),
+                                "\u{00d7}"
+                            }
+                        }
+                    }
+
+                    div { class: "chip-row", style: "margin-bottom: 0.5rem; justify-content: center;",
+                        for currency in PriceCurrency::all().iter().copied() {
+                            div {
+                                class: if currency_picked == currency { "chip selected" } else { "chip" },
+                                onclick: move |_| on_action.call(Action::PickCurrency(currency)),
+                                "{currency.label()}"
+                            }
+                        }
+                    }
+
+                    input { class: "input",
+                        id: "price_target",
+                        r#type: "text",
+                        inputmode: "decimal",
+                        placeholder: model::NOT_SET,
+                        value: "{price_text}",
+                        autocapitalize: "none",
+                        autocorrect: "off",
+                        spellcheck: "false",
+                        oninput: move |event| on_action.call(Action::TypePrice(event.value())),
                     }
                 }
             }
         }
 
-        // Other tags (non-gameplay labels; multi-select)
-        div { style: "margin-top: 1rem;",
-            div { class: "label-row",
-                label { class: "label", {model::OTHER_TAGS} }
-                InfoButton { topic: HintTopic::OtherTags }
-                if !other_tags.is_empty() {
-                    button {
-                        class: "clear-btn",
-                        onclick: move |_| on_action.call(Action::ClearOtherTags),
-                        "\u{00d7}"
+        // Tags: deck tags, oracle tags, other tags, last to mirror the deck
+        // view's Tags section.
+        div { class: "form-panel",
+            div { class: "settings-list-header",
+                span { class: "settings-list-title", {model::TAGS} }
+            }
+            div { class: "form-panel-fields",
+                // Deck tags (open the full-screen picker to choose)
+                div {
+                    div { class: "label-row",
+                        label { class: "label", {model::DECK_TAGS} }
+                        InfoButton { topic: HintTopic::DeckTags }
+                        span { class: "field-count", "{deck_tags.len()}/{MAX_DECK_TAGS}" }
+                        if !deck_tags.is_empty() {
+                            button {
+                                class: "clear-btn",
+                                onclick: move |_| on_action.call(Action::ClearTags(TagPicker::DeckTags)),
+                                "\u{00d7}"
+                            }
+                        }
+                    }
+
+                    if deck_tags.is_empty() {
+                        div { class: "input input-placeholder input-tappable", onclick: move |_| on_action.call(Action::OpenPicker(Picker::DeckTags)), {model::NOT_SET} }
+                    } else {
+                        div { class: "chip-box input-tappable", onclick: move |_| on_action.call(Action::OpenPicker(Picker::DeckTags)),
+                            for tag in deck_tags {
+                                div {
+                                    key: "{tag}",
+                                    class: "chip selected flex items-center gap-05",
+                                    "{deck::deck_tag_label(&tag)}"
+                                    // Remove just this tag; stop propagation so the
+                                    // chip-box's own onclick doesn't also open the picker.
+                                    button {
+                                        class: "chip-remove",
+                                        onclick: move |evt| {
+                                            evt.stop_propagation();
+                                            on_action.call(Action::RemoveTag {
+                                                picker: TagPicker::DeckTags,
+                                                slug: tag.clone(),
+                                            });
+                                        },
+                                        "\u{00d7}"
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
-            }
-            div { class: "chip-row", style: "flex-wrap: wrap; justify-content: center;",
-                for tag in DeckOtherTag::all().iter().copied() {
-                    div {
-                        key: "{tag}",
-                        class: if other_tags.contains(&tag) { "chip selected" } else { "chip" },
-                        onclick: move |_| on_action.call(Action::ToggleOtherTag(tag)),
-                        "{tag.display_name()}"
+
+                // Oracle tags (granular strategy; deck tags seed these)
+                div { style: "margin-top: 1rem;",
+                    div { class: "label-row",
+                        label { class: "label", {model::ORACLE_TAGS} }
+                        InfoButton { topic: HintTopic::OracleTags }
+                        span { class: "field-count", "{oracle_tags.len()}/{MAX_DECK_ORACLE_TAGS}" }
+                        if !oracle_tags.is_empty() {
+                            button {
+                                class: "clear-btn",
+                                onclick: move |_| on_action.call(Action::ClearTags(TagPicker::OracleTags)),
+                                "\u{00d7}"
+                            }
+                        }
+                    }
+
+                    if oracle_tags.is_empty() {
+                        div {
+                            class: "input input-placeholder input-tappable",
+                            onclick: move |_| on_action.call(Action::OpenPicker(Picker::OracleTags)),
+                            {model::NOT_SET}
+                        }
+                    } else {
+                        div { class: "chip-box input-tappable", onclick: move |_| on_action.call(Action::OpenPicker(Picker::OracleTags)),
+                            for slug in oracle_tags {
+                                div {
+                                    key: "{slug}",
+                                    class: "chip selected flex items-center gap-05",
+                                    "{slug}"
+                                    button {
+                                        class: "chip-remove",
+                                        onclick: move |evt| {
+                                            evt.stop_propagation();
+                                            on_action.call(Action::RemoveTag {
+                                                picker: TagPicker::OracleTags,
+                                                slug: slug.clone(),
+                                            });
+                                        },
+                                        "\u{00d7}"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Other tags (non-gameplay labels; multi-select)
+                div { style: "margin-top: 1rem;",
+                    div { class: "label-row",
+                        label { class: "label", {model::OTHER_TAGS} }
+                        InfoButton { topic: HintTopic::OtherTags }
+                        if !other_tags.is_empty() {
+                            button {
+                                class: "clear-btn",
+                                onclick: move |_| on_action.call(Action::ClearOtherTags),
+                                "\u{00d7}"
+                            }
+                        }
+                    }
+                    div { class: "chip-row", style: "flex-wrap: wrap; justify-content: center;",
+                        for tag in DeckOtherTag::all().iter().copied() {
+                            div {
+                                key: "{tag}",
+                                class: if other_tags.contains(&tag) { "chip selected" } else { "chip" },
+                                onclick: move |_| on_action.call(Action::ToggleOtherTag(tag)),
+                                "{tag.display_name()}"
+                            }
+                        }
                     }
                 }
             }

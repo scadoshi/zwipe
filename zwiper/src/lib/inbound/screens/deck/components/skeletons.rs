@@ -137,70 +137,100 @@ pub(crate) fn DeckCardListSkeleton() -> Element {
     }
 }
 
+/// The create and edit deck form while the deck loads: the Profile, Budget
+/// and Tags panels' outlines with their fields ghosted at the live form's
+/// heights, so the swap doesn't jump.
 #[component]
 pub(crate) fn EditDeckSkeleton() -> Element {
     rsx! {
         div { class: "skeleton-edit-deck",
-            // Deck name / Format / Commander: label + input.
-            for i in 0..3 {
-                div { key: "{i}", class: "skeleton-edit-deck-field",
-                    div { class: "skeleton-bar skeleton-edit-deck-label" }
-                    div { class: "skeleton-edit-deck-input",
-                        div { class: "skeleton-bar skeleton-edit-deck-value" }
-                    }
-                }
-            }
-            // Tags: label + bordered box of chips.
-            div { class: "skeleton-edit-deck-field",
-                div { class: "skeleton-bar skeleton-edit-deck-label" }
-                div { class: "skeleton-edit-deck-chipbox",
-                    div { class: "skeleton-bar skeleton-chip skeleton-chip-md" }
-                    div { class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
-                    div { class: "skeleton-bar skeleton-chip skeleton-chip-md" }
-                    div { class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
-                }
-            }
-            // Power level: label + the five wrapped picker chips.
-            div { class: "skeleton-edit-deck-field",
-                div { class: "skeleton-bar skeleton-edit-deck-label" }
-                div { class: "skeleton-edit-deck-chips",
-                    for i in 0..5 {
-                        div { key: "{i}", class: "skeleton-bar skeleton-chip skeleton-chip-lg" }
-                    }
-                }
-            }
-            // Other tags: label + five chips of varying sizes.
-            div { class: "skeleton-edit-deck-field",
-                div { class: "skeleton-bar skeleton-edit-deck-label" }
-                div { class: "skeleton-edit-deck-chips",
-                    div { class: "skeleton-bar skeleton-chip skeleton-chip-md" }
-                    div { class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
-                    div { class: "skeleton-bar skeleton-chip skeleton-chip-lg" }
-                    div { class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
-                    div { class: "skeleton-bar skeleton-chip skeleton-chip-xl" }
-                }
-            }
-            // Land target: label + the -/value/+ stepper row.
-            div { class: "skeleton-edit-deck-field",
-                div { class: "skeleton-bar skeleton-edit-deck-label" }
-                div { class: "skeleton-edit-deck-chips",
+            // Profile: Deck name / Format / Commander as label + input, then
+            // Power level as label + the five wrapped picker chips.
+            div { class: "form-panel",
+                SkeletonPanelHeader {}
+                div { class: "skeleton-edit-deck-fields",
                     for i in 0..3 {
-                        div { key: "{i}", class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
+                        div { key: "{i}", class: "skeleton-edit-deck-field",
+                            div { class: "skeleton-bar skeleton-edit-deck-label" }
+                            div { class: "skeleton-edit-deck-input",
+                                div { class: "skeleton-bar skeleton-edit-deck-value" }
+                            }
+                        }
+                    }
+                    div { class: "skeleton-edit-deck-field",
+                        div { class: "skeleton-bar skeleton-edit-deck-label" }
+                        div { class: "skeleton-edit-deck-chips",
+                            for i in 0..5 {
+                                div { key: "{i}", class: "skeleton-bar skeleton-chip skeleton-chip-lg" }
+                            }
+                        }
                     }
                 }
             }
-            // Price target: label + currency chips + the target input.
-            div { class: "skeleton-edit-deck-field",
-                div { class: "skeleton-bar skeleton-edit-deck-label" }
-                div { class: "skeleton-edit-deck-chips",
-                    for i in 0..3 {
-                        div { key: "{i}", class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
+            // Budget: Land target as label + the -/value/+ stepper row, then
+            // Price target as label + currency chips + the target input.
+            div { class: "form-panel",
+                SkeletonPanelHeader {}
+                div { class: "skeleton-edit-deck-fields",
+                    div { class: "skeleton-edit-deck-field",
+                        div { class: "skeleton-bar skeleton-edit-deck-label" }
+                        div { class: "skeleton-edit-deck-chips",
+                            for i in 0..3 {
+                                div { key: "{i}", class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
+                            }
+                        }
+                    }
+                    div { class: "skeleton-edit-deck-field",
+                        div { class: "skeleton-bar skeleton-edit-deck-label" }
+                        div { class: "skeleton-edit-deck-chips",
+                            for i in 0..3 {
+                                div { key: "{i}", class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
+                            }
+                        }
+                        div { class: "skeleton-edit-deck-input",
+                            div { class: "skeleton-bar skeleton-edit-deck-value" }
+                        }
                     }
                 }
-                div { class: "skeleton-edit-deck-input",
-                    div { class: "skeleton-bar skeleton-edit-deck-value" }
+            }
+            // Tags: Deck tags and Oracle tags as label + bordered box of
+            // chips, then Other tags as label + five chips of varying sizes.
+            div { class: "form-panel",
+                SkeletonPanelHeader {}
+                div { class: "skeleton-edit-deck-fields",
+                    for i in 0..2 {
+                        div { key: "{i}", class: "skeleton-edit-deck-field",
+                            div { class: "skeleton-bar skeleton-edit-deck-label" }
+                            div { class: "skeleton-edit-deck-chipbox",
+                                div { class: "skeleton-bar skeleton-chip skeleton-chip-md" }
+                                div { class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
+                                div { class: "skeleton-bar skeleton-chip skeleton-chip-md" }
+                                div { class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
+                            }
+                        }
+                    }
+                    div { class: "skeleton-edit-deck-field",
+                        div { class: "skeleton-bar skeleton-edit-deck-label" }
+                        div { class: "skeleton-edit-deck-chips",
+                            div { class: "skeleton-bar skeleton-chip skeleton-chip-md" }
+                            div { class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
+                            div { class: "skeleton-bar skeleton-chip skeleton-chip-lg" }
+                            div { class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
+                            div { class: "skeleton-bar skeleton-chip skeleton-chip-xl" }
+                        }
+                    }
                 }
             }
+        }
+    }
+}
+
+/// A form panel's title bar while it loads: one bar centered on it.
+#[component]
+fn SkeletonPanelHeader() -> Element {
+    rsx! {
+        div { class: "skeleton-card-header",
+            div { class: "skeleton-bar skeleton-section-label" }
         }
     }
 }

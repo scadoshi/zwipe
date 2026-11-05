@@ -68,6 +68,8 @@ pub const UPCOMING: &[Release] = &[Release {
         "The color map is gone: Home, Playstyle and a deck's Mana section show colors as bars with mana pips",
         "Distributions shows the top five card roles and a new oracle tags chart, the rest behind See more",
         "Draw odds shows its top five groups, the rest behind See more",
+        "Login, Create profile and Forgot password hold their fields in a panel headed with the screen's name, the featured flavor card under it",
+        "Create deck and Edit deck group their fields in Profile, Budget and Tags panels",
         "Draw odds names the opening hand turn 0",
         "About, a new screen in the main menu with the version, links, credits and the changelog, each release in a panel of its own",
         "About and the privacy policy open from the main menu signed out",

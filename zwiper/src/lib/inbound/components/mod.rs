@@ -20,6 +20,8 @@ pub mod hint_dialog;
 pub mod hint_host;
 /// Home's Decks panel: the deck count and the All decks chip over the latest decks as tiles.
 pub mod home_decks;
+/// The Featured flavor panel, on home and the auth screens.
+pub mod home_flavor;
 /// The mark with the public counters, on home and the auth screens.
 pub mod home_hero;
 /// Home's Colors panel: a bar per color with the card count across the user's decks, and the Playstyle chip.
