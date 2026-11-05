@@ -342,13 +342,9 @@ pub fn DeckControls(
                     class: "btn-icon deck-fold-all",
                     onclick: move |_| on_fold_all.call(()),
                     DockIcon { path: if all_folded { UNFOLD } else { FOLD } }
-
                     span { class: "sr-only", if all_folded { "Open every group" } else { "Shut every group" } }
                 }
             }
-        }
-        if let Some(boards) = boards {
-            {boards}
         }
         if let Some(boards) = boards {
             {boards}
