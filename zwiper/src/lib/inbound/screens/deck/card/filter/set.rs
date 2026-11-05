@@ -1,5 +1,6 @@
 //! Card set filter component.
 
+use components::ClearWrap;
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
@@ -195,34 +196,29 @@ pub fn Set() -> Element {
             }
 
             // Search input (at the bottom)
-            div { class: "flex items-center gap-05",
-                input { class: "input input-compact",
-                    style: "flex: 1; margin-bottom: 0;",
-                    id: "set-search",
-                    placeholder: "Type to search",
-                    value: "{search_query()}",
-                    r#type: "text",
-                    autocapitalize: "none",
-                    autocorrect: "off",
-                    spellcheck: "false",
-                    oninput: move |event| {
-                        is_typing.set(true);
-                        search_query.set(event.value());
-                    },
-                    onblur: move |_| {
-                        is_typing.set(false);
-                    }
-                }
-                if !search_query().is_empty() {
-                    button {
-                        class: "clear-btn",
-                        onclick: move |_| {
-                            search_query.set(String::new());
-                            is_typing.set(false);
+            ClearWrap {
+                filled: !search_query().is_empty(),
+                on_clear: move |()| {
+                    search_query.set(String::new());
+                    is_typing.set(false);
+                },
+    input { class: "input input-compact",
+                        style: "flex: 1; margin-bottom: 0;",
+                        id: "set-search",
+                        placeholder: "Type to search",
+                        value: "{search_query()}",
+                        r#type: "text",
+                        autocapitalize: "none",
+                        autocorrect: "off",
+                        spellcheck: "false",
+                        oninput: move |event| {
+                            is_typing.set(true);
+                            search_query.set(event.value());
                         },
-                        "\u{00d7}"
+                        onblur: move |_| {
+                            is_typing.set(false);
+                        }
                     }
-                }
             }
         }
     }

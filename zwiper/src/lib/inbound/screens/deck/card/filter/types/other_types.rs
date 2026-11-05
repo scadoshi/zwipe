@@ -1,5 +1,6 @@
 //! Other type-line filter sub-component (search-based type selection).
 
+use components::ClearWrap;
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
@@ -189,34 +190,29 @@ pub(crate) fn OtherTypes() -> Element {
             }
         }
 
-        div { class: "flex items-center gap-05",
-            input { class: "input input-compact",
-                style: "flex: 1; margin-bottom: 0;",
-                id: "other-type-search",
-                placeholder: "Type to search",
-                value: "{search_query()}",
-                r#type: "text",
-                autocapitalize: "none",
-                autocorrect: "off",
-                spellcheck: "false",
-                oninput: move |event| {
-                    is_typing.set(true);
-                    search_query.set(event.value());
-                },
-                onblur: move |_| {
-                    is_typing.set(false);
-                }
-            }
-            if !search_query().is_empty() {
-                button {
-                    class: "clear-btn",
-                    onclick: move |_| {
-                        search_query.set(String::new());
-                        is_typing.set(false);
+        ClearWrap {
+            filled: !search_query().is_empty(),
+            on_clear: move |()| {
+                search_query.set(String::new());
+                is_typing.set(false);
+            },
+    input { class: "input input-compact",
+                    style: "flex: 1; margin-bottom: 0;",
+                    id: "other-type-search",
+                    placeholder: "Type to search",
+                    value: "{search_query()}",
+                    r#type: "text",
+                    autocapitalize: "none",
+                    autocorrect: "off",
+                    spellcheck: "false",
+                    oninput: move |event| {
+                        is_typing.set(true);
+                        search_query.set(event.value());
                     },
-                    "\u{00d7}"
+                    onblur: move |_| {
+                        is_typing.set(false);
+                    }
                 }
-            }
         }
 
         // == type line excludes ==
@@ -296,34 +292,29 @@ pub(crate) fn OtherTypes() -> Element {
             }
         }
 
-        div { class: "flex items-center gap-05",
-            input { class: "input input-compact",
-                style: "flex: 1; margin-bottom: 0;",
-                id: "type-excludes-search",
-                placeholder: "Type to search",
-                value: "{excludes_search()}",
-                r#type: "text",
-                autocapitalize: "none",
-                autocorrect: "off",
-                spellcheck: "false",
-                oninput: move |event| {
-                    excludes_is_typing.set(true);
-                    excludes_search.set(event.value());
-                },
-                onblur: move |_| {
-                    excludes_is_typing.set(false);
-                }
-            }
-            if !excludes_search().is_empty() {
-                button {
-                    class: "clear-btn",
-                    onclick: move |_| {
-                        excludes_search.set(String::new());
-                        excludes_is_typing.set(false);
+        ClearWrap {
+            filled: !excludes_search().is_empty(),
+            on_clear: move |()| {
+                excludes_search.set(String::new());
+                excludes_is_typing.set(false);
+            },
+    input { class: "input input-compact",
+                    style: "flex: 1; margin-bottom: 0;",
+                    id: "type-excludes-search",
+                    placeholder: "Type to search",
+                    value: "{excludes_search()}",
+                    r#type: "text",
+                    autocapitalize: "none",
+                    autocorrect: "off",
+                    spellcheck: "false",
+                    oninput: move |event| {
+                        excludes_is_typing.set(true);
+                        excludes_search.set(event.value());
                     },
-                    "\u{00d7}"
+                    onblur: move |_| {
+                        excludes_is_typing.set(false);
+                    }
                 }
-            }
         }
     }
 }

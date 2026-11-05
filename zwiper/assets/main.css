@@ -2752,6 +2752,12 @@ button {
     border-radius: 0.5rem;
 }
 
+/* A compact field in the kit's clear wrap keeps the compact spacing under
+   it. */
+.input-clear-wrap:has(> .input-compact) {
+    margin-bottom: 0.5rem;
+}
+
 .input-half-compact {
     width: 48%;
     margin-right: 2%;

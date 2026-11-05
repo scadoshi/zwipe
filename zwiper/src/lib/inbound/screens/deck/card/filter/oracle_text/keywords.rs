@@ -1,5 +1,6 @@
 //! Keywords chip multi-select component.
 
+use components::ClearWrap;
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
@@ -184,29 +185,24 @@ pub(crate) fn Keywords() -> Element {
             }
         }
 
-        div { class: "flex items-center gap-05",
-            input { class: "input input-compact",
-                style: "flex: 1; margin-bottom: 0;",
-                id: "keyword-search",
-                placeholder: "Type to search",
-                value: "{keywords_search()}",
-                r#type: "text",
-                autocapitalize: "none",
-                autocorrect: "off",
-                spellcheck: "false",
-                oninput: move |event| {
-                    keywords_search.set(event.value());
+        ClearWrap {
+            filled: !keywords_search().is_empty(),
+            on_clear: move |()| {
+                keywords_search.set(String::new());
+            },
+    input { class: "input input-compact",
+                    style: "flex: 1; margin-bottom: 0;",
+                    id: "keyword-search",
+                    placeholder: "Type to search",
+                    value: "{keywords_search()}",
+                    r#type: "text",
+                    autocapitalize: "none",
+                    autocorrect: "off",
+                    spellcheck: "false",
+                    oninput: move |event| {
+                        keywords_search.set(event.value());
+                    }
                 }
-            }
-            if !keywords_search().is_empty() {
-                button {
-                    class: "clear-btn",
-                    onclick: move |_| {
-                        keywords_search.set(String::new());
-                    },
-                    "\u{00d7}"
-                }
-            }
         }
 
         // == excludes ==
@@ -285,29 +281,24 @@ pub(crate) fn Keywords() -> Element {
             }
         }
 
-        div { class: "flex items-center gap-05",
-            input { class: "input input-compact",
-                style: "flex: 1; margin-bottom: 0;",
-                id: "keyword-excludes-search",
-                placeholder: "Type to search",
-                value: "{excludes_search()}",
-                r#type: "text",
-                autocapitalize: "none",
-                autocorrect: "off",
-                spellcheck: "false",
-                oninput: move |event| {
-                    excludes_search.set(event.value());
+        ClearWrap {
+            filled: !excludes_search().is_empty(),
+            on_clear: move |()| {
+                excludes_search.set(String::new());
+            },
+    input { class: "input input-compact",
+                    style: "flex: 1; margin-bottom: 0;",
+                    id: "keyword-excludes-search",
+                    placeholder: "Type to search",
+                    value: "{excludes_search()}",
+                    r#type: "text",
+                    autocapitalize: "none",
+                    autocorrect: "off",
+                    spellcheck: "false",
+                    oninput: move |event| {
+                        excludes_search.set(event.value());
+                    }
                 }
-            }
-            if !excludes_search().is_empty() {
-                button {
-                    class: "clear-btn",
-                    onclick: move |_| {
-                        excludes_search.set(String::new());
-                    },
-                    "\u{00d7}"
-                }
-            }
         }
     }
 }
