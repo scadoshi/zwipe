@@ -20,7 +20,7 @@ use zwipe_ui::deck::command_zone::Slot;
 use zwipe_ui::deck_cards::Display;
 
 use crate::icons::{DockIcon, FOLD, UNFOLD};
-use crate::{Chip, FlippableCardImage};
+use crate::{Button, ButtonVariant, Chip, FlippableCardImage};
 
 /// The card types the Filter row offers.
 const FILTER_TYPES: [CardType; 6] = [
@@ -337,11 +337,13 @@ pub fn DeckControls(
                 }
             }
             if let Some(on_fold_all) = on_fold_all {
-                button {
+                Button {
+                    variant: ButtonVariant::Action,
                     class: "btn-icon deck-fold-all",
-                    "aria-label": if all_folded { "Open every group" } else { "Shut every group" },
                     onclick: move |_| on_fold_all.call(()),
                     DockIcon { path: if all_folded { UNFOLD } else { FOLD } }
+
+                    span { class: "sr-only", if all_folded { "Open every group" } else { "Shut every group" } }
                 }
             }
         }

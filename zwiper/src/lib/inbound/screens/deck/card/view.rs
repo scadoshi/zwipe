@@ -1,5 +1,5 @@
 use components::icons::{self};
-use components::{Chip, DockAction, DockFilter, Toasts, use_toast};
+use components::{Button, ButtonVariant, Chip, DockAction, DockFilter, Toasts, use_toast};
 use dioxus::core::spawn_forever;
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -820,9 +820,9 @@ pub fn View(deck_id: Uuid) -> Element {
                                     "{option}"
                                 }
                             }
-                            button {
+                            Button {
+                                variant: ButtonVariant::Action,
                                 class: "btn-icon deck-fold-all",
-                                "aria-label": if all_collapsed { "Open every group" } else { "Shut every group" },
                                 onclick: move |_| {
                                     driver.dispatch(Action::SetSections {
                                         keys: section_keys.clone(),
@@ -830,6 +830,8 @@ pub fn View(deck_id: Uuid) -> Element {
                                     });
                                 },
                                 icons::DockIcon { path: if all_collapsed { icons::UNFOLD } else { icons::FOLD } }
+
+                                span { class: "sr-only", if all_collapsed { "Open every group" } else { "Shut every group" } }
                             }
                         }
 
