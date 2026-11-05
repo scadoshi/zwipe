@@ -3,7 +3,7 @@
 //! Right removes every copy, left keeps the card, up moves it between the
 //! main deck and the maybeboard, down undoes, by drag, the arrow keys or the
 //! four buttons under the card. The `Boards` row picks which board is
-//! trimmed. The columns and the docked filter follow Add; Ctrl+Z also
+//! trimmed. The columns and the filter drawer follow Add; Ctrl+Z also
 //! undoes, F flips, P opens the printings to look at and R is `Refresh`.
 
 use components::icons::{DockIcon, EyeIcon, REFRESH};
@@ -32,7 +32,7 @@ use zwipe_ui::stores::filters::FilterScope;
 use zwipe_ui::stores::undo::{UndoAction, create_board_field};
 
 use super::{SwipeDetails, flip_top_card, signal_toast};
-use crate::inbound::card_filter::{CardFilterPanel, use_filter_docked};
+use crate::inbound::card_filter::CardFilterPanel;
 use crate::inbound::card_stores::CardStores;
 use crate::inbound::cards::card_info::{CardDetailsSheet, CardInfoDisplay, CardSkeleton};
 use crate::inbound::cards::printing_sheet::PrintingSheet;
@@ -103,7 +103,6 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
     let mut printing_open = use_signal(|| false);
     let mut filter_open = use_signal(|| false);
     let mut hint_open = use_one_time_hint(OneTimeHint::RemoveDeckCards);
-    let docked = use_filter_docked();
     let control = use_swipe_control();
 
     let mut bump = move || {
@@ -510,15 +509,6 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                     }
                 }
                 SwipeDetails { card: current.clone() }
-                if docked() {
-                    CardFilterPanel {
-                        open: filter_open,
-                        filter,
-                        config: panel_config.clone(),
-                        on_apply,
-                        docked: Some(docked),
-                    }
-                }
             }
             // The bottom row: the board chips on the left, the action dock
             // (filter, refresh, card details) on the right. Back is the
@@ -543,12 +533,10 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                     }
                 }
                 div { class: "action-dock",
-                    if !docked() {
-                        DockFilter {
-                            label: "Filter",
-                            dot,
-                            onclick: move |()| filter_open.set(true),
-                        }
+                    DockFilter {
+                        label: "Filter",
+                        dot,
+                        onclick: move |()| filter_open.set(true),
                     }
                     button {
                         class: "action-dock-btn",
@@ -582,13 +570,11 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                 on_save: move |_: Card| {},
             }
         }
-        if !docked() {
-            CardFilterPanel {
-                open: filter_open,
-                filter,
-                config: panel_config,
-                on_apply,
-            }
+        CardFilterPanel {
+            open: filter_open,
+            filter,
+            config: panel_config,
+            on_apply,
         }
         OneTimeHintDialog { hint: OneTimeHint::RemoveDeckCards, open: hint_open }
     }

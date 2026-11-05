@@ -1,6 +1,6 @@
-//! The card filter: the app's filter sheet, as a right side panel on a wide
-//! window, the app's bottom sheet below the breakpoint, and on Add and
-//! Remove at three columns a panel docked open beside the card.
+//! The card filter: the app's filter sheet, the kit's drawer on a wide
+//! window and the app's bottom sheet below the breakpoint, opened from the
+//! host's funnel.
 //!
 //! The panel edits a draft over the host's applied filter (zwipe-ui's
 //! [`FilterDraft`]) and hands it back from the checkmark in its dock, where
@@ -19,7 +19,7 @@
 //! ```
 //!
 //! The one-time `filter` hint opens the first time the user opens a
-//! section, a kept deviation: a docked panel is open from the start.
+//! section.
 
 mod rows;
 
@@ -41,31 +41,19 @@ use zwipe_ui::screens::card_filter;
 use self::rows::{SectionRows, bump};
 use crate::inbound::catalog::CatalogCache;
 use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
-use crate::inbound::chrome::media::{THREE_COLUMNS_PX, use_min_width};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, open_and_record_hint};
 use crate::inbound::chrome::toast::raise;
 use crate::inbound::screens::oracle_tag_dictionary::OracleTagDictionary;
 
-/// Whether the panel is docked open: on a window at least three columns
-/// wide. The host reads it to hide its `Filter` button.
-pub fn use_filter_docked() -> Signal<bool> {
-    let wide = use_min_width(THREE_COLUMNS_PX);
-    let mut docked = use_signal(|| false);
-    use_effect(move || docked.set(wide()));
-    docked
-}
-
 /// The filter panel. `filter` is the host's applied filter; `on_apply` takes
-/// the committed draft. `docked` (from [`use_filter_docked`]) draws it as an
-/// open column instead of a sheet. `quiet_reset` stages the blank filter on
-/// `Reset` without a toast, as the commander maybeboard and Swipe select do.
+/// the committed draft. `quiet_reset` stages the blank filter on `Reset`
+/// without a toast, as the commander maybeboard and Swipe select do.
 #[component]
 pub fn CardFilterPanel(
     open: Signal<bool>,
     filter: ReadSignal<CardQueryBuilder>,
     config: SheetConfig,
     on_apply: EventHandler<CardQueryBuilder>,
-    #[props(default)] docked: Option<Signal<bool>>,
     #[props(default)] quiet_reset: bool,
 ) -> Element {
     use_overlay_back(open);
@@ -73,11 +61,10 @@ pub fn CardFilterPanel(
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
     let cache: CatalogCache = use_context();
-    let is_docked = move || docked.is_some_and(|d| d());
 
     let config_for_draft = config.clone();
     let mut draft = use_signal(|| FilterDraft::new(&filter.peek(), config_for_draft));
-    // Whether `draft` belongs to an opening: the sheet is open, or docked.
+    // Whether `draft` belongs to an opening.
     let mut armed = use_signal(|| false);
     let epoch = use_signal(|| 0u32);
     let mut open_section: Signal<Option<Section>> = use_signal(|| None);
@@ -93,10 +80,10 @@ pub fn CardFilterPanel(
     };
     let needs = config.sources.needs();
 
-    // Opening, docking and closing. A close that was not Apply drops the
-    // edits with `Filter unchanged`.
+    // Opening and closing. A close that was not Apply drops the edits with
+    // `Filter unchanged`.
     use_effect(move || {
-        let live = open() || is_docked();
+        let live = open();
         if live && !*armed.peek() {
             armed.set(true);
             reseed_for_open(&filter.peek());
@@ -117,9 +104,9 @@ pub fn CardFilterPanel(
         }
     });
 
-    // The host changed its filter while docked (Synergy, a source switch):
-    // an untouched draft follows it; an edited one keeps its edits over the
-    // new filter, with the host's synergy.
+    // The host changed its filter while the sheet is open (Synergy, a
+    // source switch): an untouched draft follows it; an edited one keeps
+    // its edits over the new filter, with the host's synergy.
     let config_for_follow = config.clone();
     use_effect(move || {
         let applied = filter();
@@ -152,11 +139,9 @@ pub fn CardFilterPanel(
             bump(epoch);
             on_apply.call(applied);
             raise(toast, &t);
-            if !is_docked() {
-                armed.set(false);
-                open_section.set(None);
-                open.set(false);
-            }
+            armed.set(false);
+            open_section.set(None);
+            open.set(false);
         }
     };
 
@@ -261,13 +246,11 @@ pub fn CardFilterPanel(
     };
     let header = rsx! {
         div { class: "sheet-header", style: "position: relative;",
-            if !is_docked() {
-                button {
-                    class: "sheet-close",
-                    "aria-label": "Close",
-                    onclick: move |_| open.set(false),
-                    "\u{00d7}"
-                }
+            button {
+                class: "sheet-close",
+                "aria-label": "Close",
+                onclick: move |_| open.set(false),
+                "\u{00d7}"
             }
             span { class: "sheet-title", {card_filter::TITLE} }
             Button {
@@ -295,27 +278,19 @@ pub fn CardFilterPanel(
     };
 
     rsx! {
-        if is_docked() {
-            div { class: "web-filter-dock",
-                {header}
-                div { class: "sheet-content web-filter-dock-content", {body} }
-                {dock}
+        SheetFrame { wide: SheetWide::Drawer,
+            div {
+                class: if open() { "sheet-backdrop show" } else { "sheet-backdrop" },
+                onclick: move |_| open.set(false),
             }
-        } else {
-            SheetFrame { wide: SheetWide::Drawer,
-                div {
-                    class: if open() { "sheet-backdrop show" } else { "sheet-backdrop" },
-                    onclick: move |_| open.set(false),
-                }
-                div { class: if open() { "bottom-sheet show web-filter-sheet" } else { "bottom-sheet web-filter-sheet" },
-                    {header}
-                    div { class: "sheet-content",
-                        if open() {
-                            {body}
-                        }
+            div { class: if open() { "bottom-sheet show web-filter-sheet" } else { "bottom-sheet web-filter-sheet" },
+                {header}
+                div { class: "sheet-content",
+                    if open() {
+                        {body}
                     }
-                    {dock}
                 }
+                {dock}
             }
         }
         OneTimeHintDialog { hint: OneTimeHint::Filter, open: hint_open }

@@ -3,7 +3,7 @@
 //! Right adds a copy to the main deck, left skips the card for a week, up
 //! sends it to the maybeboard and down undoes, by drag, the arrow keys or
 //! the four buttons under the card. On a wide window the card's details sit
-//! beside it, and at three columns the filter is docked open after them;
+//! beside it, and the filter opens as the drawer from the funnel;
 //! below that it is a side panel behind `Filter`. Ctrl+Z also undoes, F
 //! flips the card, P opens its printings and R is `Refresh`.
 //!
@@ -44,7 +44,7 @@ use zwipe_ui::stores::undo::UndoAction;
 use zwipe_ui::timing::LOAD_MORE_AT;
 
 use super::{SwipeDetails, flip_top_card, signal_toast};
-use crate::inbound::card_filter::{CardFilterPanel, use_filter_docked};
+use crate::inbound::card_filter::CardFilterPanel;
 use crate::inbound::card_stores::CardStores;
 use crate::inbound::cards::card_info::{CardDetailsSheet, CardInfoDisplay, CardSkeleton};
 use crate::inbound::cards::printing_sheet::PrintingSheet;
@@ -137,7 +137,6 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
     let mut filter_open = use_signal(|| false);
     let mut pull_from: Signal<Option<(f64, f64)>> = use_signal(|| None);
     let mut hint_open = use_one_time_hint(OneTimeHint::AddDeckCards);
-    let docked = use_filter_docked();
     let control = use_swipe_control();
 
     let context = move || -> AddContext {
@@ -925,16 +924,6 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                     }
                 }
                 SwipeDetails { card: current.clone() }
-                if docked() {
-                    CardFilterPanel {
-                        key: "{panel_key}",
-                        open: filter_open,
-                        filter,
-                        config: panel_config.clone(),
-                        on_apply,
-                        docked: Some(docked),
-                    }
-                }
             }
             // The bottom row: From and the chip naming the current source on
             // the left, a tap switching to the other; the action dock (synergy,
@@ -965,12 +954,10 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                             BoltIcon {}
                         }
                     }
-                    if !docked() {
-                        DockFilter {
-                            label: "Filter",
-                            dot,
-                            onclick: move |()| filter_open.set(true),
-                        }
+                    DockFilter {
+                        label: "Filter",
+                        dot,
+                        onclick: move |()| filter_open.set(true),
                     }
                     button {
                         class: "action-dock-btn",
@@ -1014,14 +1001,16 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                 }
             }
         }
-        if !docked() {
+        // Keyed, so a source switch remounts it with a fresh draft; the key
+        // needs a block of its own.
+        Fragment {
             CardFilterPanel {
                 key: "{panel_key}",
                 open: filter_open,
                 filter,
                 config: panel_config,
                 on_apply,
-            }
+                }
         }
         OneTimeHintDialog { hint: OneTimeHint::AddDeckCards, open: hint_open }
     }

@@ -1167,8 +1167,8 @@ body {
 
 /* ---- Commander maybeboard ---- */
 
-/* The app's column: Quick add, Show and the list. A wide window keeps it on
-   the left so the filter's side panel opens beside the list. */
+/* The app's column: Quick add, Show and the list. A wide window gives it
+   the page's width, the list and Danger zone as full panels. */
 .web-maybeboard {
     max-width: 40rem;
     width: 100%;
@@ -1177,13 +1177,17 @@ body {
 }
 
 @media (min-width: 900px) {
-    .web-screen > .screen-content:has(> .web-maybeboard) {
-        align-items: flex-start;
+    .web-maybeboard {
+        max-width: var(--web-page-max);
+        padding: 1rem 1.5rem 2rem;
     }
 
-    .web-maybeboard {
-        max-width: 44rem;
-        margin: 1rem 0 2rem 1.5rem;
+    .web-maybeboard > .settings-list,
+    .web-maybeboard > .card-group {
+        width: 100%;
+        max-width: none;
+        margin-left: 0;
+        margin-right: 0;
     }
 }
 
@@ -1511,26 +1515,6 @@ body {
 
 /* ---- Card filter ---- */
 
-/* Docked open as a column beside Add's and Remove's card at three columns:
-   the sheet's parts in a panel that stays, the content scrolling inside. */
-.web-filter-dock {
-    position: sticky;
-    top: var(--web-sticky-top);
-    display: flex;
-    flex-direction: column;
-    max-height: var(--web-sticky-max);
-    min-width: 0;
-    background: var(--bg-primary);
-    border: 1px solid var(--border-secondary);
-    border-radius: 1rem;
-    overflow: hidden;
-    isolation: isolate;
-}
-
-.web-filter-dock > .sheet-header {
-    background-color: var(--bg-primary);
-}
-
 /* The filter sheet's `?`, in the header's right corner at the title's
    height, faded like a hint button. */
 .web-sheet-hint {
@@ -1540,24 +1524,6 @@ body {
     transform: translateY(-50%);
     opacity: 0.55;
     padding: 0.2rem 0.6rem;
-}
-
-.web-filter-dock-content {
-    flex: 1 1 auto;
-    overflow-y: auto;
-    /* Room to scroll the last row clear of the dock. */
-    padding-bottom: 5rem;
-}
-
-/* The docked panel's dock floats at its bottom right, as a sheet's does:
-   the transform makes the panel the containing block of the fixed dock. */
-.web-filter-dock {
-    transform: translateZ(0);
-}
-
-.web-filter-dock > .sheet-dock {
-    position: fixed;
-    z-index: 2;
 }
 
 /* The chip's hover title rides on a wrapper that adds no box. */
@@ -1578,8 +1544,7 @@ body {
 /* ---- Add and Remove cards ---- */
 
 /* Below the breakpoint it is the app's swipe screen: the card, its prices
-   and the bottom row. A wide window puts the card's details beside it, and
-   at three columns the filter docked after them. */
+   and the bottom row. A wide window puts the card's details beside it. */
 .web-cards-swipe-main {
     display: contents;
 }
@@ -1633,12 +1598,6 @@ body {
         width: 100%;
         max-width: 26rem;
         min-height: min(55vh, 32rem);
-    }
-}
-
-@media (min-width: 1280px) {
-    .web-cards-swipe.screen-content {
-        grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr) minmax(20rem, 0.95fr);
     }
 }
 

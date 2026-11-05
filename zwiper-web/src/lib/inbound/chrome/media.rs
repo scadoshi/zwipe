@@ -1,13 +1,8 @@
 //! Whether the window is at least a width, for the few places where a wide
-//! window changes what a screen does and not only how it looks, such as the
-//! filter docked open beside Add.
+//! window changes what a screen does and not only how it looks.
 
 use dioxus::prelude::*;
 use uuid::Uuid;
-
-/// The window's width at which Add and Remove dock the filter as a third
-/// column, `web-layout.md`'s three-panel width.
-pub const THREE_COLUMNS_PX: u32 = 1280;
 
 /// The width at which the layout leaves the phone's: the stylesheet's wide
 /// breakpoint.
