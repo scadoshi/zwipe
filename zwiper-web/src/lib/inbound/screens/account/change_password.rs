@@ -2,11 +2,17 @@
 //! confirm dialog stacked on top.
 
 use components::icons::{CHECK, DockIcon};
-use components::{AlertDialog, BottomSheet, DialogAction, TOAST_QUICK, TextInput};
+use components::{
+    AlertDialog, BottomSheet, Button, ButtonVariant, DialogAction, TOAST_NORMAL, TOAST_QUICK,
+    TextInput,
+};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
-use zwipe_core::http::contracts::auth::HttpChangePassword;
+use zwipe_client::ZwipeClient;
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::http::contracts::auth::{HttpChangePassword, HttpRequestPasswordReset};
 use zwipe_ui::account;
+use zwipe_ui::screens::account::{FORGOT_PASSWORD, RESET_LINK_SENT};
 
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::hint_topic::{self, HintTopic};
@@ -16,11 +22,15 @@ use crate::inbound::chrome::sheet::{SheetForm, SheetFrame};
 /// confirmation has held text or after an attempt; the current one never
 /// is, so a password from before the policy can still be changed. `Save
 /// changes` (or Enter) opens the confirm dialog, whose `Confirm` checks again
-/// and sends. This device stays signed in.
+/// and sends. This device stays signed in. `Forgot password` in the header
+/// emails the account a reset link, as the signed-out screen does, for a
+/// user who no longer knows the current one.
 #[component]
 pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
     let authed = use_authed();
     let toast = use_toast();
+    let client: Signal<ZwipeClient> = use_context();
+    let session: Signal<Option<Session>> = use_context();
 
     let mut current = use_signal(String::new);
     let mut new_password = use_signal(String::new);
@@ -98,12 +108,53 @@ pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
         });
     });
 
+    let mut sending_reset = use_signal(|| false);
+    let forgot = use_callback(move |()| {
+        if *sending_reset.peek() {
+            return;
+        }
+        let Some(email) = session.peek().as_ref().map(|s| s.user.email.to_string()) else {
+            return;
+        };
+        sending_reset.set(true);
+        let request = HttpRequestPasswordReset::new(&email);
+        spawn(async move {
+            let client = client.peek().clone();
+            match client.request_password_reset(request).await {
+                Ok(()) => {
+                    toast.success(
+                        format!("{RESET_LINK_SENT} {email}"),
+                        ToastOptions::default().duration(TOAST_NORMAL),
+                    );
+                    open.set(false);
+                }
+                Err(e) => {
+                    tracing::warn!("password reset request failed: {e}");
+                    toast.error(
+                        e.to_user_message(),
+                        ToastOptions::default().duration(TOAST_NORMAL),
+                    );
+                }
+            }
+            sending_reset.set(false);
+        });
+    });
+
     rsx! {
         SheetFrame { form: SheetForm::Modal,
             BottomSheet {
                 open,
                 title: "Change password".to_string(),
                 closable: true,
+                trailing: rsx! {
+                    Button {
+                        variant: ButtonVariant::Action,
+                        class: "page-header-corner",
+                        disabled: sending_reset(),
+                        onclick: move |_| forgot.call(()),
+                        {FORGOT_PASSWORD}
+                    }
+                },
                 form {
                     class: "flex-col text-center",
                     onsubmit: move |event| {
