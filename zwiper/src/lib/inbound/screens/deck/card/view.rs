@@ -820,19 +820,6 @@ pub fn View(deck_id: Uuid) -> Element {
                                     "{option}"
                                 }
                             }
-                            Button {
-                                variant: ButtonVariant::Action,
-                                class: "btn-icon deck-fold-all",
-                                onclick: move |_| {
-                                    driver.dispatch(Action::SetSections {
-                                        keys: section_keys.clone(),
-                                        collapsed: !all_collapsed,
-                                    });
-                                },
-                                icons::DockIcon { path: if all_collapsed { icons::UNFOLD } else { icons::FOLD } }
-
-                                span { class: "sr-only", if all_collapsed { "Open every group" } else { "Shut every group" } }
-                            }
                         }
 
                         // Board filter row (multi-select, at least one must be on)
@@ -874,6 +861,19 @@ pub fn View(deck_id: Uuid) -> Element {
                                 selected: show_row_art(),
                                 onclick: move |_| show_row_art.set(!show_row_art()),
                                 "{deck_cards::ART}"
+                            }
+                            Button {
+                                variant: ButtonVariant::Action,
+                                class: "btn-icon deck-fold-all",
+                                onclick: move |_| {
+                                    driver.dispatch(Action::SetSections {
+                                        keys: section_keys.clone(),
+                                        collapsed: !all_collapsed,
+                                    });
+                                },
+                                icons::DockIcon { path: if all_collapsed { icons::UNFOLD } else { icons::FOLD } }
+
+                                span { class: "sr-only", if all_collapsed { "Open every group" } else { "Shut every group" } }
                             }
                         }
                     } else {

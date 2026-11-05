@@ -296,8 +296,8 @@ pub fn FeaturedCard(
 /// The rows over the cards: the host's `leading` row, Group by, the host's
 /// `boards` row, Show and Filter. The host holds every signal; `show_tokens`
 /// is `None` for a list with no tokens, and `on_change` fires when a row
-/// changes what the list shows. With `on_fold_all` the Group by row ends in
-/// the fold-all button, which shuts every group, or opens every group once
+/// changes what the list shows. With `on_fold_all` the Show row ends in the
+/// fold-all button, which shuts every group, or opens every group once
 /// `all_folded`.
 #[component]
 pub fn DeckControls(
@@ -336,15 +336,6 @@ pub fn DeckControls(
                     "{option}"
                 }
             }
-            if let Some(on_fold_all) = on_fold_all {
-                Button {
-                    variant: ButtonVariant::Action,
-                    class: "btn-icon deck-fold-all",
-                    onclick: move |_| on_fold_all.call(()),
-                    DockIcon { path: if all_folded { UNFOLD } else { FOLD } }
-                    span { class: "sr-only", if all_folded { "Open every group" } else { "Shut every group" } }
-                }
-            }
         }
         if let Some(boards) = boards {
             {boards}
@@ -367,6 +358,16 @@ pub fn DeckControls(
                 selected: show_art(),
                 onclick: move |_| show_art.toggle(),
                 "Art"
+            }
+            if let Some(on_fold_all) = on_fold_all {
+                Button {
+                    variant: ButtonVariant::Action,
+                    class: "btn-icon deck-fold-all",
+                    onclick: move |_| on_fold_all.call(()),
+                    DockIcon { path: if all_folded { UNFOLD } else { FOLD } }
+
+                    span { class: "sr-only", if all_folded { "Open every group" } else { "Shut every group" } }
+                }
             }
         }
         div { class: "chip-row",
