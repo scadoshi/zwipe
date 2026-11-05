@@ -106,7 +106,7 @@ All three fire on every mount of Home (Home remounts on every navigation back to
      - `email_verified_at.is_none()` → warning toast "Verify your email!" for TOAST_QUICK. Not gated: shows on every Home mount while unverified. No greeting in that case.
      - else, once per app launch (process-wide `static GREETED: AtomicBool`): info toast `"Hello, {username}!"` for TOAST_QUICK.
    - Err: log. If the cached session's user is verified and not yet greeted this launch, info toast `"Hello, {username}!"` (cached username), TOAST_QUICK.
-2. Preferences refresh. `client.fetch_preferences(&session) -> Result<UserPreferences, ClientError>` (GET `/api/user/preferences`). Ok: `components::theme_from_preferences(&prefs)` becomes the live theme, the app icon follows it, and `pip_style` is set from `prefs.pip_style`. Err: logged only.
+2. Settings refresh. `client.fetch_settings(&session) -> Result<UserSettings, ClientError>` (GET `/api/user/settings`). Ok: `components::theme_from_settings(&settings)` becomes the live theme, the app icon follows it, and `pip_style` is set from `settings.pip_style`. Err: logged only.
 3. Featured flavor (see 1.4).
 
 ### 1.2 Hero panel (`components/home_hero.rs`)
@@ -699,7 +699,7 @@ Gaps and differences, Home:
 - The app shows an empty-state when `deck_count == 0` even if the map has data; the TUI checks the same (`deck_count > 0`), which matches.
 - Featured flavor: no hourly cache (refetched on every home open; app caches to the top of the next UTC hour and keeps the last card on failure); no "Image" preview; no "Buy" dialog or retailer links; no skeleton (the panel is just absent while loading). Quote omits the app's trailing space (cosmetic).
 - No user refresh on home (`fetch_user`), so no "Verify your email!" warning on each visit and no once-per-launch "Hello" gated on verification; the TUI's status greeting ignores verification.
-- No preferences refresh on home (theme and pip style mid-session).
+- No settings refresh on home (theme and pip style mid-session).
 - No first-login welcome hint and no `mark_hint_shown`.
 - Navigation keys exist for Decks, Account, Config; Activity and Playstyle need keys.
 
@@ -722,7 +722,7 @@ Gaps, other screens:
    - Buy links: `tcgplayer_card_url`, `cardkingdom_card_url` (`zwiper/src/lib/outbound/buy_links.rs`).
    - `CountScope` persistence (the TUI could keep it in its config dir beside the theme file).
 2. Already in zwipe-core and usable now: `card_role::role_short_label`, `colors::identity_name`, `Color::to_long_name`/`to_short_name`, `oracle_tag::search_oracle_tags`, `deck_metrics::card_price`, `PriceCurrency::format_amount`, `DeckMetrics::bar_pct`, `Cards::matching`/`sorted`, `CardQueryBuilder`, all `Http*` contract types and `ACTIVITY_*`/`PROFILE_*`/`MAX_SUGGESTION_LIMIT` constants, hint keys.
-3. zwipe-client calls needed: `fetch_user`, `fetch_preferences`, `public_metrics`, `my_metrics`, `play_style_summary`, `featured_flavor`, `activity`, `commander_suggestions(limit)`, `dismiss_commander`, `undismiss_commander`, `clear_commander_dismissals`, `fetch_commander_maybeboard`, `add_commander_maybeboard_card`, `remove_commander_maybeboard_card`, `clear_commander_maybeboard`, `search_commanders`, `search_cards`, `fetch_deck_profiles`, `fetch_oracle_tags`, `mark_hint_shown`.
+3. zwipe-client calls needed: `fetch_user`, `fetch_settings`, `public_metrics`, `my_metrics`, `play_style_summary`, `featured_flavor`, `activity`, `commander_suggestions(limit)`, `dismiss_commander`, `undismiss_commander`, `clear_commander_dismissals`, `fetch_commander_maybeboard`, `add_commander_maybeboard_card`, `remove_commander_maybeboard_card`, `clear_commander_maybeboard`, `search_commanders`, `search_cards`, `fetch_deck_profiles`, `fetch_oracle_tags`, `mark_hint_shown`.
 4. TUI widgets to build once and reuse:
    - Toasts with levels (info, success, warning, error) and durations 3/5/8 s and 1.5 s, replacing the single status line.
    - A one-time hint dialog plus a "?" topic dialog (all the topic texts in 0.3), "Got it" button.

@@ -10,11 +10,11 @@ use components::{Button, ButtonVariant, DarkModeButton, TOAST_NORMAL, ThemeConfi
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::user::models::preferences::{self as user_preferences, PipColor};
-use zwipe_core::http::contracts::user::HttpUpdatePreferences;
+use zwipe_core::domain::user::models::settings::{self as user_settings, PipColor};
+use zwipe_core::http::contracts::user::HttpUpdateSettings;
 use zwipe_ui::screens::config;
 
-use crate::domain::preferences::{self, RequestSeq};
+use crate::domain::settings::{self, RequestSeq};
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
@@ -24,8 +24,8 @@ use crate::inbound::shell::{ScreenFrame, page_description};
 use crate::outbound::session_store::SessionStore;
 
 /// The update that changes only what `edit` sets.
-fn update(edit: impl FnOnce(&mut HttpUpdatePreferences)) -> HttpUpdatePreferences {
-    let mut request = HttpUpdatePreferences {
+fn update(edit: impl FnOnce(&mut HttpUpdateSettings)) -> HttpUpdateSettings {
+    let mut request = HttpUpdateSettings {
         theme: None,
         dark_mode: None,
         exclude_universes_beyond: None,
@@ -37,7 +37,7 @@ fn update(edit: impl FnOnce(&mut HttpUpdatePreferences)) -> HttpUpdatePreference
 }
 
 /// The Settings screen. Theme and pips show at once from what this browser
-/// has; the Universes Beyond controls wait for the account's preferences,
+/// has; the Universes Beyond controls wait for the account's settings,
 /// and stay disabled for the visit if that load fails. Every toggle flips at
 /// once, saves, and says what it did; a failure puts back the value from
 /// before that click, and a reply overtaken by a newer click is ignored.
@@ -68,7 +68,7 @@ pub fn Config() -> Element {
         spawn(async move {
             if let Some(loaded) = authed
                 .run_quiet("load_preferences", |c, s| async move {
-                    c.fetch_preferences(&s).await
+                    c.fetch_settings(&s).await
                 })
                 .await
             {
@@ -92,19 +92,19 @@ pub fn Config() -> Element {
         spawn(async move {
             let saved = authed
                 .try_run("update_preferences", |c, s| async move {
-                    c.update_preferences(request, &s).await
+                    c.update_settings(request, &s).await
                 })
                 .await
                 .ok()
                 .map(|r| r.pip_style);
-            let Some(shown) = preferences::settle(*pip_seq.peek(), mine, saved, prev) else {
+            let Some(shown) = settings::settle(*pip_seq.peek(), mine, saved, prev) else {
                 return;
             };
             pip_style.set(shown);
             if saved.is_some() {
                 let latest = session.peek().clone();
                 if let Some(mut latest) = latest {
-                    latest.preferences.pip_style = shown;
+                    latest.settings.pip_style = shown;
                     SessionStore::browser().infallible_save(&latest);
                     session.set(Some(latest));
                 }
@@ -126,12 +126,12 @@ pub fn Config() -> Element {
         spawn(async move {
             let saved = authed
                 .try_run("update_preferences", |c, s| async move {
-                    c.update_preferences(request, &s).await
+                    c.update_settings(request, &s).await
                 })
                 .await
                 .ok()
                 .map(|r| r.exclude_universes_beyond);
-            let Some(shown) = preferences::settle(*ub_seq.peek(), mine, saved, prev) else {
+            let Some(shown) = settings::settle(*ub_seq.peek(), mine, saved, prev) else {
                 return;
             };
             ub_hide.set(shown);
@@ -145,7 +145,7 @@ pub fn Config() -> Element {
         });
     };
 
-    let names = preferences::exception_names(&ub_exceptions());
+    let names = settings::exception_names(&ub_exceptions());
 
     rsx! {
         ScreenFrame {
@@ -164,7 +164,7 @@ pub fn Config() -> Element {
                         div { class: "settings-row",
                             RowLabel { label: "Theme", topic: HintTopic::Theme }
                             div { class: "settings-row-value",
-                                span { {user_preferences::display_theme_name(&theme().name)} }
+                                span { {user_settings::display_theme_name(&theme().name)} }
                                 DarkModeButton { is_dark: theme().is_dark, onclick: move |_| toggle_dark_mode.call(()) }
                                 Button {
                                     variant: ButtonVariant::Action,

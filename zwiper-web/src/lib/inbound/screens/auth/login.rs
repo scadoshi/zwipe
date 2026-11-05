@@ -11,7 +11,7 @@ use dioxus::router::Navigator;
 use dioxus_primitives::toast::{ToastOptions, Toasts, use_toast};
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::user::models::preferences::PipColor;
+use zwipe_core::domain::user::models::settings::PipColor;
 use zwipe_core::http::contracts::auth::HttpAuthenticateUser;
 use zwipe_ui::account::Password;
 use zwipe_ui::screens::login::{self, Action, Destination, Effect, Field, State};
@@ -92,8 +92,8 @@ impl Driver {
             Effect::ClearPassword => password.set(String::new()),
             Effect::SignedIn(new_session) => {
                 SessionStore::browser().infallible_save(&new_session);
-                theme.set(components::theme_from_preferences(&new_session.preferences));
-                pip_style.set(new_session.preferences.pip_style);
+                theme.set(components::theme_from_settings(&new_session.settings));
+                pip_style.set(new_session.settings.pip_style);
                 session.set(Some(*new_session));
             }
             Effect::Navigate(to) => {

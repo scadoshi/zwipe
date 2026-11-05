@@ -7,7 +7,7 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::http::contracts::user::HttpUpdatePreferences;
+use zwipe_core::http::contracts::user::HttpUpdateSettings;
 use zwipe_ui::filter::fields;
 
 use crate::inbound::caches::UbFranchises;
@@ -62,7 +62,7 @@ pub(super) fn ExceptionsSheet(
     });
 
     let save = move |_| {
-        let request = HttpUpdatePreferences {
+        let request = HttpUpdateSettings {
             theme: None,
             dark_mode: None,
             exclude_universes_beyond: None,
@@ -73,7 +73,7 @@ pub(super) fn ExceptionsSheet(
         spawn(async move {
             if let Some(saved) = authed
                 .run("update_preferences", |c, s| async move {
-                    c.update_preferences(request, &s).await
+                    c.update_settings(request, &s).await
                 })
                 .await
             {

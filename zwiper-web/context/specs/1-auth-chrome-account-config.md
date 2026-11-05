@@ -4,7 +4,7 @@ Copied from zwipe-tui's specs (`zwipe-tui/context/specs/1-auth-chrome-account-co
 
 Source of truth, read for this spec (worktree `the repo root`):
 
-- App: `zwiper/src/bin/zwipe.rs`, `zwiper/src/lib/inbound/router.rs`, `zwiper/src/lib/inbound/components/{auth/*, hint_dialog.rs, hint_host.rs, info_button.rs, screen_header.rs, support.rs, logout_dialog.rs, update_required.rs, home_hero.rs, concept_explainers.rs}`, `zwiper/src/lib/inbound/screens/{auth/*, account/**, config/{mod,preferences,universes_beyond}.rs, changelog.rs, legal/privacy_policy.rs}`, `zwiper/assets/main.css`.
+- App: `zwiper/src/bin/zwipe.rs`, `zwiper/src/lib/inbound/router.rs`, `zwiper/src/lib/inbound/components/{auth/*, hint_dialog.rs, hint_host.rs, info_button.rs, screen_header.rs, support.rs, logout_dialog.rs, update_required.rs, home_hero.rs, concept_explainers.rs}`, `zwiper/src/lib/inbound/screens/{auth/*, account/**, config/{mod,settings,universes_beyond}.rs, changelog.rs, legal/privacy_policy.rs}`, `zwiper/assets/main.css`.
 - Kit: `components/src/{lib.rs, changelog.rs, theme.rs}`, `components/assets/magic.css`; orangui at `the orangui repo` (same commit `1bd3943` the worktree's Cargo.lock pins): `src/{entrance, splash, stats_strip, toast_stack, toast_timing, alert_dialog, bottom_sheet, action_bar, page_header, hint, text_input, password_input, button, panel, theme, theme_sheet, theme_picker, theme_wipe, grid_cells}.rs`, `assets/{app,components,toast}.css`, `assets/grid-cells.js`.
 - Domain/API: `zwipe-core/src/{domain/user/models/*, domain/auth/models/{password,session}.rs, domain/site.rs, http/contracts/*, http/paths.rs, version.rs, legal/mod.rs, content/changelog}`, `zwipe-client/src/**`.
 - TUI today: `zwipe-tui/src/lib/**`.
@@ -17,9 +17,9 @@ Conventions in this file: strings in `code` are verbatim. `↗` is U+2197, `·` 
 
 ### 0.1 Session model and storage
 
-- `zwipe_core::domain::auth::models::session::Session { user: User, access_token: AccessToken, refresh_token: RefreshToken, preferences: UserPreferences }`. `Session::is_expired()` is true when `refresh_token.expires_at < now` (refresh token 14 d; access token 24 h).
+- `zwipe_core::domain::auth::models::session::Session { user: User, access_token: AccessToken, refresh_token: RefreshToken, settings: UserSettings }`. `Session::is_expired()` is true when `refresh_token.expires_at < now` (refresh token 14 d; access token 24 h).
 - `User { id: Uuid, username: Username, email: Email, email_verified_at: Option<DateTime<Utc>>, hints_shown: HashMap<String, bool>, pending_email: Option<Email>, pending_email_expires_at: Option<DateTime<Utc>> }`. `User::has_seen_hint(key)` = `hints_shown.get(key) == Some(true)`.
-- `UserPreferences { theme: String, dark_mode: bool, exclude_universes_beyond: bool, universes_beyond_exceptions: Vec<String>, pip_style: PipStyle }`. Default: `gruvbox`, dark, false, empty, `PipStyle::Theme`. `PipStyle` is `Theme` | `Natural`, wire `"theme"` / `"natural"`, `toggled()` flips.
+- `UserSettings { theme: String, dark_mode: bool, exclude_universes_beyond: bool, universes_beyond_exceptions: Vec<String>, pip_style: PipStyle }`. Default: `gruvbox`, dark, false, empty, `PipStyle::Theme`. `PipStyle` is `Theme` | `Natural`, wire `"theme"` / `"natural"`, `toggled()` flips.
 - The app loads the stored session at start (`Session::infallible_load()`), saves after login and after each refresh (save BEFORE updating the in-memory session, so a crash never strands a rotated token), deletes on logout, on refresh rejection and on refresh-token expiry.
 
 ### 0.2 Refresh (`ensure_fresh`, `components/auth/ensure_session.rs`)
@@ -57,7 +57,7 @@ Runs once at the app root (above the router), so it runs on every screen includi
   - Logged-out launch only: anonymous funnel event `AppOpened` (see 1.2).
   - Pending crash report post (native only).
   - Usage telemetry flushers (30 s timer + on app backgrounding).
-- Theme at start: the stored session's `preferences` (via `theme_from_preferences`) if a session exists, else the last theme cached locally, else default `gruvbox` dark. Every theme change is persisted locally so pre-auth screens render in the last theme. Pip style at start: stored session's `preferences.pip_style`, else `Theme`.
+- Theme at start: the stored session's `settings` (via `theme_from_settings`) if a session exists, else the last theme cached locally, else default `gruvbox` dark. Every theme change is persisted locally so pre-auth screens render in the last theme. Pip style at start: stored session's `settings.pip_style`, else `Theme`.
 
 ### 0.6 Update required screen (`components/update_required.rs`)
 
@@ -102,7 +102,7 @@ Behavior:
 - Prefill: a root `LoginPrefill(Signal<Option<String>>)`. Whenever it holds a value (set by Register on success), the identifier field takes it, the password field clears, and the prefill resets to `None`. Works even while Login is mounted under Register.
 - Submit gate: if a request is out, ignore the tap. Else if `identifier.trim()` is empty or the password is empty, `toast.error("Enter your username or email and password", TOAST_NORMAL)` and stop. Login deliberately applies NO username/email/password policy (rules may tighten; the server is the only judge).
 - Request: `HttpAuthenticateUser::new(&identifier, &password)` (note: identifier sent untrimmed as typed); `client.authenticate_user(request) -> Result<Session, ClientError>` (`POST /api/auth/login`, no auth). The client fills `platform = ClientPlatform::CURRENT` and `client_version = CARGO_PKG_VERSION`.
-- Success: save session; compute theme from `session.preferences` (`theme_from_preferences`: unknown slug → default, retired slug → replacement), apply it (app-wide theme wipe), set pip style, set session, clear the password field, clear loading, `navigator.push(Home)`. No toast.
+- Success: save session; compute theme from `session.settings` (`theme_from_settings`: unknown slug → default, retired slug → replacement), apply it (app-wide theme wipe), set pip style, set session, clear the password field, clear loading, `navigator.push(Home)`. No toast.
 - Failure: `toast.error(e.to_user_message(), TOAST_NORMAL)`, clear loading, fields kept. (Wrong credentials surface the server's 401 message verbatim.)
 
 ### 1.2 Register (`/register`, `screens/auth/register.rs`)
@@ -187,7 +187,7 @@ What exists:
 - Startup: one `CheckVersion` request at launch; `Update::TooOld` swaps to `Screen::UpdateRequired` (TUI copy: `Update required` / `This version of zwipe-tui is no longer supported. Update to keep building:` / `cargo install --git https://github.com/scadoshi/zwipe zwipe-tui`, key `q` quit). Esc or q quits.
 - Unauthorized on any request → `SessionEnded` → Login with inline error `Your session ended. Sign in again.` (app: silent redirect, no message).
 - Sign out: `O` on Home and Decks signs out immediately with status `Signing out...`, no confirm; `Account::sign_out` awaits `logout` with no 5 s cap.
-- On sign-in: applies preferences palette, remembers theme to a local theme file, status `Hello, {username}!`, opens Home.
+- On sign-in: applies settings palette, remembers theme to a local theme file, status `Hello, {username}!`, opens Home.
 
 Gaps and differences to close:
 
@@ -462,9 +462,9 @@ Gaps and differences:
 
 ## 4. Config (`/config`, `screens/config/mod.rs`)
 
-Reached from Home (bar button `Config`). Telemetry screen `Profile(Preferences)`.
+Reached from Home (bar button `Config`). Telemetry screen `Profile(Settings)`.
 
-On mount: one-time hint `config`. Also once: facade `run_quiet("get_preferences", c.fetch_preferences(&s))` → `ZwipeClient::fetch_preferences(&self, session: &Session) -> Result<UserPreferences, ClientError>` (`GET /api/user/preferences`). On success: set `ub_hide = exclude_universes_beyond`, `ub_exceptions = universes_beyond_exceptions`, `ub_loaded = true`, `pip_style = prefs.pip_style`. On failure: quiet (no toast); the two Universes Beyond controls stay disabled for the life of the screen.
+On mount: one-time hint `config`. Also once: facade `run_quiet("get_preferences", c.fetch_settings(&s))` → `ZwipeClient::fetch_settings(&self, session: &Session) -> Result<UserSettings, ClientError>` (`GET /api/user/settings`). On success: set `ub_hide = exclude_universes_beyond`, `ub_exceptions = universes_beyond_exceptions`, `ub_loaded = true`, `pip_style = settings.pip_style`. On failure: quiet (no toast); the two Universes Beyond controls stay disabled for the life of the screen.
 
 Top to bottom:
 
@@ -475,20 +475,20 @@ Top to bottom:
      - Row `Pips` + `?` (topic Pips) | Action button labeled with the current style: `Theme` or `Natural` (tap toggles).
      - Row `App icon` (only where the platform supports it; skip for the TUI).
    - Header `Cards`:
-     - Row `Universes Beyond` + `?` (topic UniversesBeyond) | Action button labeled with the current state: `Hide` when hidden, `Show` when shown (tap toggles). Disabled until preferences load.
+     - Row `Universes Beyond` + `?` (topic UniversesBeyond) | Action button labeled with the current state: `Hide` when hidden, `Show` when shown (tap toggles). Disabled until settings load.
      - Row `Exceptions` + `?` (opens the screen-owned `Franchise exceptions` HintDialog, NOT via HintHost) | Action `Change` → Exceptions sheet, disabled unless loaded AND hidden. The whole row is dimmed (opacity 0.45, no pointer) while Universes Beyond is shown. When the saved list is non-empty, a wrapped row of muted chips under it: franchise display names (`zwipe_core::domain::card::scryfall_data::universe::franchise_by_slug(slug).name`, unknown slugs dropped), sorted alphabetically, each `chip-in` with delay `i * 45 ms`.
 3. `ActionBar`: `Back` only.
 
 `display_theme_name(slug)`: special cases `rose-pine` → `Rosé Pine`, `vscode` → `VS Code`, `github` → `GitHub`, `github-high-contrast` → `GitHub High Contrast`, `synthwave-84` → `Synthwave '84`, `powershell` → `PowerShell`, `docs-rs` → `docs.rs`; else split on `-` and capitalize each word's first letter (`kanagawa-dragon` → `Kanagawa Dragon`, `one-dark` → `One Dark`).
 
-Toggles (all optimistic, all share this shape): flip the shown value at once; number the request (`RequestSeq`, per toggle); send `update_preferences`; when the reply arrives, act only if no newer tap went out since (`settle`): success → show the server's value and toast; failure → put back the value from before THIS tap (facade already toasted the error). Toggle toasts are success, TOAST_NORMAL.
+Toggles (all optimistic, all share this shape): flip the shown value at once; number the request (`RequestSeq`, per toggle); send `update_settings`; when the reply arrives, act only if no newer tap went out since (`settle`): success → show the server's value and toast; failure → put back the value from before THIS tap (facade already toasted the error). Toggle toasts are success, TOAST_NORMAL.
 
-- `ZwipeClient::update_preferences(&self, request: HttpUpdatePreferences, session: &Session) -> Result<UserPreferences, ClientError>` (`PATCH /api/user/preferences`). `HttpUpdatePreferences { theme: Option<String>, dark_mode: Option<bool>, exclude_universes_beyond: Option<bool>, universes_beyond_exceptions: Option<Vec<String>>, pip_style: Option<PipStyle> }`; absent = unchanged; exceptions replace the whole list.
-- Dark mode (`DarkModeButton`): next = same theme name, `is_dark` flipped; theme applied at once (wipe). Request `{ theme: Some(name), dark_mode: Some(next) }` via `try_run`. Success: theme = `theme_from_preferences(reply)`; toast `Dark mode on` or `Dark mode off` (by the reply's `dark_mode`). Failure: revert theme.
-- Pips: request `{ pip_style: Some(next) }`. Success: show reply's style; also write it into `session.preferences.pip_style` and persist the session; toast `Pips in theme colors` (Theme) or `Pips in natural colors` (Natural). Failure: revert. Pip style is app-wide (mana symbols drawn in theme colors vs classic fills).
+- `ZwipeClient::update_settings(&self, request: HttpUpdateSettings, session: &Session) -> Result<UserSettings, ClientError>` (`PATCH /api/user/settings`). `HttpUpdateSettings { theme: Option<String>, dark_mode: Option<bool>, exclude_universes_beyond: Option<bool>, universes_beyond_exceptions: Option<Vec<String>>, pip_style: Option<PipStyle> }`; absent = unchanged; exceptions replace the whole list.
+- Dark mode (`DarkModeButton`): next = same theme name, `is_dark` flipped; theme applied at once (wipe). Request `{ theme: Some(name), dark_mode: Some(next) }` via `try_run`. Success: theme = `theme_from_settings(reply)`; toast `Dark mode on` or `Dark mode off` (by the reply's `dark_mode`). Failure: revert theme.
+- Pips: request `{ pip_style: Some(next) }`. Success: show reply's style; also write it into `session.settings.pip_style` and persist the session; toast `Pips in theme colors` (Theme) or `Pips in natural colors` (Natural). Failure: revert. Pip style is app-wide (mana symbols drawn in theme colors vs classic fills).
 - Universes Beyond: request `{ exclude_universes_beyond: Some(next) }`. Success: toast `Universes Beyond hidden` or `Universes Beyond shown`. Failure: revert.
 
-### 4.1 Themes sheet (`preferences.rs` + orangui `ThemeSheet`)
+### 4.1 Themes sheet (`settings.rs` + orangui `ThemeSheet`)
 
 - `BottomSheet` title `Themes`, no hint. Content: for each group in `THEME_GROUPS` order, a section label then one row per theme. Row: button with the display name on the left and six swatch dots on the right (`--palette-1` … `--palette-6` of that theme in the CURRENT mode); selected row highlighted. Groups (labels and slugs, verbatim order):
   - `Warm & earthy`: darcula, flexoki, gruvbox, kanagawa-dragon, melange, miasma, rustbox, zenburn
@@ -503,7 +503,7 @@ Toggles (all optimistic, all share this shape): flip the shown value at once; nu
 - On open: snapshot the live theme (original), select its name.
 - Tapping a row: select it and set the app's live theme to `{ name, is_dark: current mode }` at once (live preview via the wipe).
 - Footer: `Back`, `Save` (disabled while the selection equals the original).
-- Save: close the sheet, then `update_preferences({ theme: Some(name), dark_mode: Some(is_dark) })` via facade `run`. Success: theme = `theme_from_preferences(reply)`; `toast.success("Theme saved", TOAST_QUICK)`. Failure: facade error toast; the previewed theme stays applied (the app does NOT revert on a failed save).
+- Save: close the sheet, then `update_settings({ theme: Some(name), dark_mode: Some(is_dark) })` via facade `run`. Success: theme = `theme_from_settings(reply)`; `toast.success("Theme saved", TOAST_QUICK)`. Failure: facade error toast; the previewed theme stays applied (the app does NOT revert on a failed save).
 - Back / backdrop / OS back: if nothing was picked, just close. If a pick is on screen: restore the original theme (it wipes back in), the sheet holds still and disappears inside the wipe, and once the sweep finishes `toast.info("Theme unchanged", TOAST_QUICK)`.
 
 ### 4.2 Exceptions sheet (`universes_beyond.rs`)
@@ -524,7 +524,7 @@ In: Home `Config`. Out: `Back`.
 
 What exists (`inbound/app/config.rs`, `inbound/ui/config.rs`, `inbound/event_loop/settings.rs`):
 
-- Opened with `c` from Home. Whole body shows `Loading...` until `fetch_preferences` answers (app shows Theme/Pips at once from local state and only disables the UB controls).
+- Opened with `c` from Home. Whole body shows `Loading...` until `fetch_settings` answers (app shows Theme/Pips at once from local state and only disables the UB controls).
 - Rows: Appearance: `Theme` (display name), `Mode` (`Dark`/`Light`, its own row), `Pips` (`Theme`/`Natural`); Cards: `Universes Beyond` (`Hide`/`Show`), `Exceptions` (comma-joined sorted names or `None`, dimmed when shown). Enter/Space activates. Esc home, q quit.
 - Optimistic changes with a single sequence counter for all toggles (app keeps one per toggle) and revert-to-last-confirmed on failure (app reverts to the value before that tap). Status line messages match the app's toast strings (`Theme saved`, `Dark mode on/off`, `Pips in theme colors/natural colors`, `Universes Beyond hidden/shown`, `Exceptions saved`, `Theme unchanged`, `Exceptions unchanged`).
 - Theme picker: centered list titled `Themes` with group headers (muted bold) and theme names; j/k previews live; Enter saves when changed (closes silently when unchanged); Esc/q restores and says `Theme unchanged` if moved. Hints `j/k preview  Enter save  Esc back`.
@@ -537,7 +537,7 @@ Gaps and differences:
 - No swatches in the theme picker (app shows six palette dots per row).
 - App theme save failure keeps the previewed theme; TUI reverts. Exceptions save in the app is not optimistic; TUI shows the new list before the server answers.
 - Exceptions row with nothing picked: app shows nothing (no `None`).
-- On preferences fetch failure the app leaves UB controls disabled silently; TUI's Config stays on `Loading...` forever (it ignores `PreferencesUnavailable`), which blocks theme and pips too.
+- On settings fetch failure the app leaves UB controls disabled silently; TUI's Config stays on `Loading...` forever (it ignores `SettingsUnavailable`), which blocks theme and pips too.
 - No toasts (status line).
 
 ---
@@ -615,7 +615,7 @@ Not implemented. No startup changelog fetch either. Needs: background `fetch_cha
 | Exceptions saved | success | QUICK | `Exceptions saved` |
 | Exceptions discarded (after a change) | info | QUICK | `Exceptions unchanged` |
 
-No toast on: logout, account deletion, session expiry, hint recording, Account user refresh, Config preferences fetch, counters, changelog.
+No toast on: logout, account deletion, session expiry, hint recording, Account user refresh, Config settings fetch, counters, changelog.
 
 ---
 

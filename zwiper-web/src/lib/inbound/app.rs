@@ -6,7 +6,7 @@ use components::{
 };
 use dioxus::prelude::*;
 use zwipe_core::domain::logo;
-use zwipe_core::domain::user::models::preferences::PipColor;
+use zwipe_core::domain::user::models::settings::PipColor;
 
 use crate::inbound::chrome::hint_topic::{HintHost, HintTopic};
 use crate::inbound::router::Route;

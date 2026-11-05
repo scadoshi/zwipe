@@ -32,7 +32,7 @@ src/
 - `Signal<ZwipeClient>`, built in `main` from `BACKEND_URL`.
 
 State a root task writes (a `spawn_forever` that outlives the screen that started it) is made with `root_signal::use_root_signal`, so it belongs to the root scope those tasks run in; `use_signal_for_root_tasks` does the same for a screen's own signal and drops it with the screen.
-- `Signal<ThemeConfig>` (the session's preferences, else the stored theme, else the default) and `Signal<PipStyle>`. Every theme change is stored, so Login opens in the last one.
+- `Signal<ThemeConfig>` (the session's settings, else the stored theme, else the default) and `Signal<PipStyle>`. Every theme change is stored, so Login opens in the last one.
 - `UpgradeRequired`, the min-version gate. While it is true the root draws `UpdateRequired` in place of the router.
 
 The upkeep loop runs `ensure_fresh` and then the min-version check, at once and every 60 s after. `ensure_fresh` is the only way to an authed call: it refreshes a token that expires within two minutes, one refresh at a time, stores the new session before setting the signal, and clears the session when the server rejects the refresh. `AuthGate` sends the user to Login the moment the session is gone, with no message, as the app does.

@@ -8,9 +8,9 @@ use components::{TOAST_NORMAL, TOAST_QUICK, ThemeConfig, ThemeSheet};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::http::contracts::user::HttpUpdatePreferences;
+use zwipe_core::http::contracts::user::HttpUpdateSettings;
 
-use crate::domain::preferences::{self, RequestSeq};
+use crate::domain::settings::{self, RequestSeq};
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::sheet::{SheetForm, SheetFrame};
 
@@ -38,7 +38,7 @@ pub(crate) fn use_toggle_dark_mode() -> Callback<()> {
             return;
         }
         let mine = dark_seq.write().begin();
-        let request = HttpUpdatePreferences {
+        let request = HttpUpdateSettings {
             theme: Some(next.name),
             dark_mode: Some(next.is_dark),
             exclude_universes_beyond: None,
@@ -48,13 +48,13 @@ pub(crate) fn use_toggle_dark_mode() -> Callback<()> {
         spawn(async move {
             let reply = authed
                 .try_run("update_preferences", |c, s| async move {
-                    c.update_preferences(request, &s).await
+                    c.update_settings(request, &s).await
                 })
                 .await
                 .ok();
             let saved_dark = reply.as_ref().map(|r| r.dark_mode);
-            let saved = reply.map(|r| components::theme_from_preferences(&r));
-            let Some(shown) = preferences::settle(*dark_seq.peek(), mine, saved, prev) else {
+            let saved = reply.map(|r| components::theme_from_settings(&r));
+            let Some(shown) = settings::settle(*dark_seq.peek(), mine, saved, prev) else {
                 return;
             };
             theme.set(shown);
@@ -89,7 +89,7 @@ pub(crate) fn ThemesSheet(open: Signal<bool>) -> Element {
             );
             return;
         }
-        let request = HttpUpdatePreferences {
+        let request = HttpUpdateSettings {
             theme: Some(picked.name),
             dark_mode: Some(picked.is_dark),
             exclude_universes_beyond: None,
@@ -97,13 +97,13 @@ pub(crate) fn ThemesSheet(open: Signal<bool>) -> Element {
             pip_style: None,
         };
         spawn(async move {
-            if let Some(preferences) = authed
+            if let Some(settings) = authed
                 .run("update_preferences", |c, s| async move {
-                    c.update_preferences(request, &s).await
+                    c.update_settings(request, &s).await
                 })
                 .await
             {
-                theme.set(components::theme_from_preferences(&preferences));
+                theme.set(components::theme_from_settings(&settings));
                 toast.success(
                     "Theme saved".to_string(),
                     ToastOptions::default().duration(TOAST_QUICK),

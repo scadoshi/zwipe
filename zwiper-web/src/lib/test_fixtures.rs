@@ -15,7 +15,7 @@ use zwipe_core::domain::auth::models::refresh_token::RefreshToken;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user::models::User;
 use zwipe_core::domain::user::models::email::Email;
-use zwipe_core::domain::user::models::preferences::UserPreferences;
+use zwipe_core::domain::user::models::settings::UserSettings;
 use zwipe_core::domain::user::models::username::Username;
 
 /// A live session for a made-up user; the tokens are well formed but sign
@@ -35,7 +35,7 @@ pub(crate) fn session() -> Session {
             value: "x".repeat(64),
             expires_at: Utc::now() + Duration::days(14),
         },
-        preferences: UserPreferences::default(),
+        settings: UserSettings::default(),
     }
 }
 

@@ -20,7 +20,7 @@ use dioxus_primitives::toast::{Toasts, use_toast};
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
-use zwipe_core::domain::user::models::preferences::PipColor;
+use zwipe_core::domain::user::models::settings::PipColor;
 use zwipe_ui::generation::Ticket;
 use zwipe_ui::home::Figures;
 use zwipe_ui::screens::home::{
@@ -151,7 +151,7 @@ impl Driver {
     fn perform(self, effect: Effect) {
         match effect {
             Effect::FetchUser(ticket) => self.fetch_user(ticket),
-            Effect::FetchPreferences => self.fetch_preferences(),
+            Effect::FetchSettings => self.fetch_settings(),
             Effect::FetchCounts(ticket) => self.fetch_counts(ticket),
             Effect::FetchMyCounts(ticket) => self.fetch_my_counts(ticket),
             Effect::FetchPlayStyle(ticket) => self.fetch_play_style(ticket),
@@ -210,9 +210,9 @@ impl Driver {
         });
     }
 
-    /// Applies fresh preferences, so a theme changed on another device shows
+    /// Applies fresh settings, so a theme changed on another device shows
     /// here.
-    fn fetch_preferences(self) {
+    fn fetch_settings(self) {
         let Self {
             session,
             client,
@@ -225,12 +225,12 @@ impl Driver {
         };
         spawn(async move {
             let http = client.peek().clone();
-            match http.fetch_preferences(&current).await {
-                Ok(prefs) => {
-                    theme.set(components::theme_from_preferences(&prefs));
-                    pip_style.set(prefs.pip_style);
+            match http.fetch_settings(&current).await {
+                Ok(settings) => {
+                    theme.set(components::theme_from_settings(&settings));
+                    pip_style.set(settings.pip_style);
                 }
-                Err(e) => tracing::warn!("preferences fetch failed: {e}"),
+                Err(e) => tracing::warn!("settings fetch failed: {e}"),
             }
         });
     }
@@ -372,7 +372,7 @@ fn route(destination: Destination) -> Route {
 }
 
 /// Home. Each mount refreshes the user (warning while the email is
-/// unverified, greeting once per page load otherwise), the preferences (theme
+/// unverified, greeting once per page load otherwise), the settings (theme
 /// and pips), the counters, the decks, the playstyle summary and, once the
 /// hour's card has expired, the featured flavor, as the model asks.
 #[component]
