@@ -17,7 +17,7 @@ This is a beta, so things might break. Please report any crashes, bugs, or weird
 - Filters (color identity, card type, mana cost, produced mana)
 - Commander search
 - Deck management (create, edit, import, export, delete)
-- Themes and dark mode (preferences screen)
+- Themes and dark mode (Settings screen)
 - Card image previews
 
 ### Feedback Email
@@ -36,7 +36,7 @@ Things to try:
 - Swipe through cards (right to add, left to skip)
 - Build a deck with a commander
 - Check out the filters (colors, types, mana cost)
-- Try different themes in preferences
+- Try different themes in Settings
 
 Let me know:
 - Did anything crash or feel broken?
