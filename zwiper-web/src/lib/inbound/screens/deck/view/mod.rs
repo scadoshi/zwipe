@@ -222,7 +222,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     rsx! {
         ScreenFrame {
             title: "Deck",
-            description: Some("One deck at a glance: its profile, stats, warnings and cards".to_string()),
+            description: Some("The deck's profile, stats, warnings and cards".to_string()),
             on_hint: move |()| {
                 let mut hint_open = hint_open;
                 hint_open.set(true);

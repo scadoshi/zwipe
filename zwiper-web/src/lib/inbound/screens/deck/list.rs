@@ -118,7 +118,7 @@ pub fn DeckList() -> Element {
     rsx! {
         ScreenFrame {
             title: "Decks",
-            description: Some("Every deck you've built, grouped and filtered your way".to_string()),
+            description: Some("Every deck you own".to_string()),
             on_hint: move |()| {
                 let mut hint_open = hint_open;
                 hint_open.set(true);
