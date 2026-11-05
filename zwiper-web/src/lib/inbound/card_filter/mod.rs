@@ -25,7 +25,8 @@ mod rows;
 
 use components::icons::{CHECK, ERASER};
 use components::{
-    ActionDock, Button, ButtonVariant, DockAction, DockPlace, TOAST_NORMAL, use_overlay_back,
+    ActionDock, Button, ButtonVariant, DockAction, DockPlace, SheetFrame, SheetWide, TOAST_NORMAL,
+    use_overlay_back,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -42,7 +43,6 @@ use crate::inbound::catalog::CatalogCache;
 use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
 use crate::inbound::chrome::media::{THREE_COLUMNS_PX, use_min_width};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, open_and_record_hint};
-use crate::inbound::chrome::sheet::{SheetForm, SheetFrame};
 use crate::inbound::chrome::toast::raise;
 use crate::inbound::screens::oracle_tag_dictionary::OracleTagDictionary;
 
@@ -302,7 +302,7 @@ pub fn CardFilterPanel(
                 {dock}
             }
         } else {
-            SheetFrame { form: SheetForm::SidePanel,
+            SheetFrame { wide: SheetWide::Drawer,
                 div {
                     class: if open() { "sheet-backdrop show" } else { "sheet-backdrop" },
                     onclick: move |_| open.set(false),

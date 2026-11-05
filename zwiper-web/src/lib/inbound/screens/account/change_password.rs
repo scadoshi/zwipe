@@ -3,8 +3,8 @@
 
 use components::icons::{CHECK, DockIcon};
 use components::{
-    AlertDialog, BottomSheet, Button, ButtonVariant, DialogAction, TOAST_NORMAL, TOAST_QUICK,
-    TextInput,
+    AlertDialog, BottomSheet, Button, ButtonVariant, DialogAction, SheetFrame, SheetWide,
+    TOAST_NORMAL, TOAST_QUICK, TextInput,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -16,7 +16,6 @@ use zwipe_ui::screens::account::{FORGOT_PASSWORD, RESET_LINK_SENT};
 
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::hint_topic::{self, HintTopic};
-use crate::inbound::chrome::sheet::{SheetForm, SheetFrame};
 
 /// Current, new and confirm. Only the new password is judged, once it or the
 /// confirmation has held text or after an attempt; the current one never
@@ -141,7 +140,7 @@ pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
     });
 
     rsx! {
-        SheetFrame { form: SheetForm::Modal,
+        SheetFrame { wide: SheetWide::Modal,
             BottomSheet {
                 open,
                 title: "Change password".to_string(),

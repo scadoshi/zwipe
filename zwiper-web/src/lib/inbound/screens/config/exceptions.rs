@@ -2,7 +2,7 @@
 //! that still show while Universes Beyond is hidden.
 
 use components::icons::{CHECK, DockIcon};
-use components::{BottomSheet, TOAST_QUICK};
+use components::{BottomSheet, SheetFrame, SheetWide, TOAST_QUICK};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
@@ -13,7 +13,6 @@ use zwipe_ui::filter::fields;
 use crate::inbound::caches::UbFranchises;
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::one_time_hint::{self, OneTimeHint};
-use crate::inbound::chrome::sheet::{SheetForm, SheetFrame};
 
 /// Edits a draft of `exceptions`, the saved list, copied in on each open.
 /// The dock's checkmark closes at once and writes the draft; the saved list
@@ -92,7 +91,7 @@ pub(super) fn ExceptionsSheet(
     let offered = franchises.0.read().loaded().cloned().unwrap_or_default();
 
     rsx! {
-        SheetFrame { form: SheetForm::Modal,
+        SheetFrame { wide: SheetWide::Modal,
             BottomSheet {
                 open,
                 title: "Exceptions".to_string(),

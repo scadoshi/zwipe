@@ -1,7 +1,7 @@
 //! The Change username sheet, a centered modal on a wide window.
 
 use components::icons::{CHECK, DockIcon};
-use components::{BottomSheet, TOAST_QUICK, TextInput};
+use components::{BottomSheet, SheetFrame, SheetWide, TOAST_QUICK, TextInput};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::domain::auth::models::session::Session;
@@ -9,7 +9,6 @@ use zwipe_core::http::contracts::auth::HttpChangeUsername;
 use zwipe_ui::account;
 
 use crate::inbound::chrome::authed::use_authed;
-use crate::inbound::chrome::sheet::{SheetForm, SheetFrame};
 
 /// New username and password. Every open starts empty; each field shows its
 /// error line once it has held text or after a submit attempt. Enter runs
@@ -96,7 +95,7 @@ pub(super) fn ChangeUsernameSheet(mut open: Signal<bool>) -> Element {
     };
 
     rsx! {
-        SheetFrame { form: SheetForm::Modal,
+        SheetFrame { wide: SheetWide::Modal,
             BottomSheet {
                 open,
                 title: "Change username".to_string(),

@@ -4,7 +4,7 @@
 //! out, a pick is kept on this device (the root stores every theme change)
 //! and a profile's theme takes over at login.
 
-use components::{TOAST_NORMAL, TOAST_QUICK, ThemeConfig, ThemeSheet};
+use components::{SheetFrame, SheetWide, TOAST_NORMAL, TOAST_QUICK, ThemeConfig, ThemeSheet};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::domain::auth::models::session::Session;
@@ -12,7 +12,6 @@ use zwipe_core::http::contracts::user::HttpUpdateSettings;
 
 use crate::domain::settings::{self, RequestSeq};
 use crate::inbound::chrome::authed::use_authed;
-use crate::inbound::chrome::sheet::{SheetForm, SheetFrame};
 
 /// Flips Dark/Light at once and saves it, saying what it did; a failure
 /// puts back the mode from before the click, and a reply overtaken by a
@@ -114,7 +113,7 @@ pub(crate) fn ThemesSheet(open: Signal<bool>) -> Element {
 
     rsx! {
         div { class: "web-theme-sheet",
-            SheetFrame { form: SheetForm::SidePanel,
+            SheetFrame { wide: SheetWide::Drawer,
                 ThemeSheet {
                     open,
                     theme,

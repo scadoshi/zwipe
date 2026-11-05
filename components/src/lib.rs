@@ -83,11 +83,11 @@ pub use orangui::{
     HeatHit, HeatReadout, HintBullet, HintBullets, HintDialog, HintKey, HintLine, InfoButton,
     KEYBOARD_INSET_JS, ModeIcon, NAV_GLIDE_JS, NavBar, NavCtaIcon, PageHeader, PageMeta,
     PaletteIcon, Panel, PasswordInput, RETIRED_THEMES, REVEAL_JS, Replay, SCROLL_FADE_JS, SITE_CSS,
-    SiteMeta, Splash, SplashGate, StatsStrip, THEME_GROUPS, THEMES_CSS, TOAST_LONG, TOAST_NORMAL,
-    TOAST_QUICK, TextInput, ThemeConfig, ThemePicker, ThemeSheet, heat_span, icons, peak_indices,
-    status_uses, use_dialog_host, use_heat_pick, use_os_back, use_overlay_back,
-    use_overlay_back_action, use_overlay_back_stack, use_persisted_theme, use_theme_follow,
-    use_theme_wipe, with_separators,
+    SheetFrame, SheetWide, SiteMeta, Splash, SplashGate, StatsStrip, THEME_GROUPS, THEMES_CSS,
+    TOAST_LONG, TOAST_NORMAL, TOAST_QUICK, TextInput, ThemeConfig, ThemePicker, ThemeSheet,
+    heat_span, icons, peak_indices, status_uses, use_dialog_host, use_heat_pick, use_os_back,
+    use_overlay_back, use_overlay_back_action, use_overlay_back_stack, use_persisted_theme,
+    use_theme_follow, use_theme_wipe, with_separators,
 };
 #[cfg(feature = "links")]
 pub use orangui::{OpenUrlError, open_url, use_in_app_links};

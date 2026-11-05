@@ -13,7 +13,9 @@
 use std::collections::HashSet;
 
 use components::icons::{BoltIcon, DockIcon, EyeIcon, REFRESH};
-use components::{Chip, DockFilter, TOAST_NORMAL, TOAST_QUICK, reset_image_ease};
+use components::{
+    Chip, DockFilter, SheetFrame, SheetWide, TOAST_NORMAL, TOAST_QUICK, reset_image_ease,
+};
 use dioxus::core::spawn_forever;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -52,7 +54,6 @@ use crate::inbound::cards::swipe_stack::{
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::chrome::page_keys::{use_page_keys, use_undo_key};
-use crate::inbound::chrome::sheet::{SheetForm, SheetFrame};
 use crate::inbound::root_signal::use_signal_for_root_tasks;
 use crate::inbound::session::ensure_fresh::ensure_fresh;
 use crate::inbound::shell::ScreenFrame;
@@ -989,7 +990,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             }
         }
         if let Some(card) = current {
-            SheetFrame { form: SheetForm::Modal,
+            SheetFrame { wide: SheetWide::Modal,
                 if at == AddSource::Search {
                     CardDetailsSheet {
                         open: show_details,

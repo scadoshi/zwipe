@@ -32,7 +32,10 @@
 use std::collections::HashSet;
 
 use components::icons::{DockIcon, EyeIcon, REFRESH};
-use components::{BottomSheet, CardDetails, DockFilter, PageHeader, TOAST_QUICK, use_overlay_back};
+use components::{
+    BottomSheet, CardDetails, DockFilter, PageHeader, SheetFrame, SheetWide, TOAST_QUICK,
+    use_overlay_back,
+};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
@@ -65,7 +68,6 @@ use crate::inbound::cards::swipe_stack::{
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::back_arrow::BackArrow;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, SwipeSelectHint, open_and_record_hint};
-use crate::inbound::chrome::sheet::{SheetForm, SheetFrame};
 use crate::inbound::screens::playstyle::SuggestionReasons;
 
 /// Pages of commanders the search keeps pulling when the host's exclusions
@@ -770,7 +772,7 @@ fn SwipeSelectBody(
             }
         }
         if let (true, Some(chips)) = (suggested, suggested_filter) {
-            SheetFrame { form: SheetForm::SidePanel,
+            SheetFrame { wide: SheetWide::Drawer,
                 BottomSheet { open: filter_open, title: "Filter", closable: true, {chips} }
             }
         }

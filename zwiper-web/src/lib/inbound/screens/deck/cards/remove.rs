@@ -7,7 +7,7 @@
 //! undoes, F flips, P opens the printings to look at and R is `Refresh`.
 
 use components::icons::{DockIcon, EyeIcon, REFRESH};
-use components::{Chip, DockFilter, TOAST_QUICK};
+use components::{Chip, DockFilter, SheetFrame, SheetWide, TOAST_QUICK};
 use dioxus::core::spawn_forever;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -42,7 +42,6 @@ use crate::inbound::cards::swipe_stack::{
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::chrome::page_keys::{use_page_keys, use_undo_key};
-use crate::inbound::chrome::sheet::{SheetForm, SheetFrame};
 use crate::inbound::session::ensure_fresh::ensure_fresh;
 use crate::inbound::shell::ScreenFrame;
 
@@ -569,7 +568,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
             }
         }
         if let Some(card) = current {
-            SheetFrame { form: SheetForm::Modal,
+            SheetFrame { wide: SheetWide::Modal,
                 CardDetailsSheet {
                     open: show_details,
                     card: card.clone(),
