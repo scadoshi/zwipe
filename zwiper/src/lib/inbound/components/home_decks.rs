@@ -99,8 +99,8 @@ fn PanelHeader(count: Option<u32>, action: DecksAction, onaction: EventHandler) 
     }
 }
 
-/// Three tiles across: the commander's art crop in a squircle (a filled
-/// squircle with the deck's pips without one), then the name chip and the
+/// Three tiles across: the commander's art crop in a rounded square (a
+/// filled square with the deck's pips without one), then the name chip and the
 /// format chip under it. The name keeps to one line and ellipsizes; the
 /// format sits beside it when both fit and under it otherwise.
 #[component]

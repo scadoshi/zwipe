@@ -1077,9 +1077,11 @@ button {
 
 /* The deck list: each group is a chip with the fold arrow, floating with the
    Group by and Show chips, over its decks as tiles two to a row. A tile is
-   its own panel: the command zone's art as a squircle over the name, then
+   its own panel: the command zone's art over the name, then
    the pips and the chips wrapping under it. */
-.deck-group {
+/* Compound selectors so these outrank .card-group and the collapsible
+   header's own rules below. */
+.card-group.deck-group {
     margin: 0;
     overflow: visible;
     background: none;
@@ -1087,7 +1089,7 @@ button {
     box-shadow: none;
 }
 
-.deck-group > .card-group-header {
+.deck-group > .card-group-header.group-collapsible {
     --tone: var(--accent-tertiary);
     display: inline-flex;
     align-items: center;
@@ -1124,14 +1126,15 @@ button {
     cursor: pointer;
 }
 
-/* The command zone's art fills the tile's width as a squircle; a two-card
+/* The command zone's art fills the tile's width at the panel's own corner
+   radius; a two-card
    zone (partners, or oathbreaker and signature spell) shares the square. */
 .deck-row-art-img {
     flex: 0 0 auto;
     width: 100%;
     aspect-ratio: 1 / 1;
     object-fit: cover;
-    border-radius: 22%;
+    border-radius: 1rem;
     border: 1px solid var(--border-secondary);
     box-shadow: var(--shadow-sm);
 }
@@ -1304,7 +1307,7 @@ button {
 .skeleton-card-thumb {
     width: 2.6rem;
     height: 1.9rem;
-    border-radius: 0.35rem;
+    border-radius: 0.3rem;
     flex: 0 0 auto;
 }
 
@@ -1692,12 +1695,12 @@ button {
     margin: 0.2rem 0;
 }
 
-/* Stands in for the command zone art squircle (matches .deck-row-art-img). */
+/* Stands in for the command zone art (matches .deck-row-art-img). */
 .skeleton-deck-list-art {
     flex: 0 0 auto;
     width: 100%;
     aspect-ratio: 1 / 1;
-    border-radius: 22%;
+    border-radius: 1rem;
 }
 
 .skeleton-deck-list-title {
@@ -3198,7 +3201,7 @@ button {
     padding: 0.75rem 1rem 1rem;
 }
 
-/* A tile is the squircle over its chips with nothing drawn around them;
+/* A tile is the art square over its chips with nothing drawn around them;
    the whole of it is the deck's button. */
 .home-deck-tile {
     display: flex;
@@ -3219,7 +3222,8 @@ button {
     filter: brightness(0.85);
 }
 
-/* The squircle: the art crop filling it, or the raised fill with the pips
+/* The square, at the panels' corner radius: the art crop filling it, or
+   the raised fill with the pips
    centered as the placeholder. */
 .home-deck-tile-art {
     display: flex;
@@ -3228,7 +3232,7 @@ button {
     gap: 0.2rem;
     width: 100%;
     aspect-ratio: 1 / 1;
-    border-radius: 22%;
+    border-radius: 1rem;
     background-color: var(--bg-raised);
     overflow: hidden;
     font-size: 1.3rem;
