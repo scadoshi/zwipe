@@ -2937,7 +2937,7 @@ button {
     margin-right: 0.35rem;
 }
 
-/* The kit's in-box × in the app's clear red, as its label-row clears are. */
+/* The kit's × beside a field in the app's clear red, as its label-row clears are. */
 .input-clear-btn {
     color: var(--color-error);
     border-color: var(--color-error);
