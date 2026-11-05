@@ -1075,46 +1075,101 @@ button {
     margin-bottom: var(--panel-gap);
 }
 
-/* A deck reads as a row of one contained list, like the card list's rows:
-   its command zone's art on the left, everything else to the right. The
-   container (.card-group) supplies the border; .card-row supplies the padding
-   and the divider between decks. */
+/* The deck list: each group is a chip with the fold arrow, floating with the
+   Group by and Show chips, over its decks as tiles two to a row. A tile is
+   its own panel: the command zone's art as a squircle over the name, then
+   the pips and the chips wrapping under it. */
+.deck-group {
+    margin: 0;
+    overflow: visible;
+    background: none;
+    border: 0;
+    box-shadow: none;
+}
+
+.deck-group > .card-group-header {
+    --tone: var(--accent-tertiary);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.2rem 0.7rem 0.2rem 0.45rem;
+    margin: 0.25rem 0 0;
+    border: 1px solid color-mix(in srgb, var(--tone) 35%, transparent);
+    border-radius: 0.6rem;
+    background-color: color-mix(in srgb, var(--tone) 12%, transparent);
+    color: var(--tone);
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.deck-group > .card-group-header .card-row-arrow {
+    width: 1rem;
+    height: 1rem;
+    color: var(--tone);
+}
+
+.deck-group > .collapsible > .collapsible-inner {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--panel-gap);
+    padding: var(--panel-gap) 0;
+}
+
 .deck-row {
+    padding: 1rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-sm);
     cursor: pointer;
 }
 
-/* The command zone's art crops sit inline in the wrapping row, as flex items
-   beside the name — not a fixed column — so the chips wrap onto the next line
-   underneath the art instead of into a narrow column beside it. Two crops (a
-   pair of partners, or oathbreaker + signature spell) just follow one another.
-   Narrower than the card row's single thumb so a two-card zone doesn't crowd
-   the name off a phone. */
+/* The command zone's art fills the tile's width as a squircle; a two-card
+   zone (partners, or oathbreaker and signature spell) shares the square. */
 .deck-row-art-img {
     flex: 0 0 auto;
-    width: 3.2rem;
-    height: 2.9rem;
+    width: 100%;
+    aspect-ratio: 1 / 1;
     object-fit: cover;
-    border-radius: 0.6rem;
+    border-radius: 22%;
     border: 1px solid var(--border-secondary);
     box-shadow: var(--shadow-sm);
 }
 
+.deck-list-row:has(> .deck-row-art-img + .deck-row-art-img) > .deck-row-art-img {
+    width: calc(50% - 0.2rem);
+}
+
 .deck-list-row {
-    /* Unlike card rows (deliberately single-line for consistency), a deck
-       carries far more chips than a card does, so these wrap. */
     display: flex;
+    flex-direction: column;
     flex-wrap: wrap;
     align-items: center;
     gap: 0.4rem;
     min-width: 0;
+    text-align: center;
 }
 
 .deck-list-name {
-    flex: 0 1 auto;
+    width: 100%;
     min-width: 0;
-    margin-right: 0.25rem;
+    margin: 0.2rem 0 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* The pips take their own line under the name; the chips wrap after, and a
+   long commander name wraps inside its chip rather than cutting. */
+.deck-list-row > .identity-pips {
+    width: 100%;
+    justify-content: center;
+}
+
+.deck-list-row > .stat-chip {
+    max-width: 100%;
+    white-space: normal;
     overflow-wrap: anywhere;
-    word-break: break-word;
 }
 
 /* Tag chips inside a deck-detail info row wrap instead of forcing one line. */
@@ -1621,12 +1676,10 @@ button {
 }
 
 /* Deck list skeleton (deck list screen) */
-/* Mirrors the live list: one container, decks as rows inside it (see
-   .card-group / .deck-row). */
 /* The deck list skeleton borrows the live list's own classes (.card-group,
-   .card-group-header, .collapsible, .card-row, .deck-list-row), so container,
-   header, dividers and row wrapping all come from one place. Only the ghosted
-   bars below are skeleton-specific.
+   .deck-group, .card-group-header, .collapsible, .card-row, .deck-row,
+   .deck-list-row), so the group chip, the tile grid and the tile panels all
+   come from one place. Only the ghosted bars below are skeleton-specific.
 
    The header is inert while loading: nothing to fold until the decks land. */
 .skeleton-deck-list-header {
@@ -1636,14 +1689,15 @@ button {
 /* The header's arrow and "All" as one bar. */
 .skeleton-deck-list-header-title {
     width: 2.5rem;
+    margin: 0.2rem 0;
 }
 
-/* Stands in for the command zone art crop (matches .deck-row-art-img). */
+/* Stands in for the command zone art squircle (matches .deck-row-art-img). */
 .skeleton-deck-list-art {
     flex: 0 0 auto;
-    width: 3.2rem;
-    height: 2.9rem;
-    border-radius: 0.6rem;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: 22%;
 }
 
 .skeleton-deck-list-title {
