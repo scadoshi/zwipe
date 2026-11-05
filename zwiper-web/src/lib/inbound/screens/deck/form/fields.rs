@@ -206,22 +206,23 @@ fn BudgetFields(form: DeckForm) -> Element {
                     div { class: "label-row",
                         label { class: "label", r#for: "price_target", "Price target" }
                         InfoButton { topic: HintTopic::PriceTarget }
+                        // The currencies on the label's line.
+                        div { class: "label-row-chips",
+                            for each in PriceCurrency::all().iter().copied() {
+                                div {
+                                    key: "{each.label()}",
+                                    class: if currency() == each { "chip selected" } else { "chip" },
+                                    onclick: move |_| currency.set(each),
+                                    "{each.label()}"
+                                }
+                            }
+                        }
                         if !price().is_empty() {
                             button {
                                 class: "clear-btn",
                                 r#type: "button",
                                 onclick: move |_| price.set(String::new()),
                                 "\u{00d7}"
-                            }
-                        }
-                    }
-                    div { class: "chip-row", style: "margin-bottom: 0.5rem; justify-content: center;",
-                        for each in PriceCurrency::all().iter().copied() {
-                            div {
-                                key: "{each.label()}",
-                                class: if currency() == each { "chip selected" } else { "chip" },
-                                onclick: move |_| currency.set(each),
-                                "{each.label()}"
                             }
                         }
                     }
