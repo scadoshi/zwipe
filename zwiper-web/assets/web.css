@@ -1259,93 +1259,9 @@ body {
         padding: 1rem 1.5rem 2rem;
     }
 
-    /* A group is a chip with the fold arrow, floating among the Group by
-       and Show chips, over its decks laid out as tiles. Each tile is its
-       own panel: Home's squircle over the name, then the pips and chips
-       wrapping under it, as many tiles per row as fit. */
-    .web-deck-group {
-        margin: 0;
-        overflow: visible;
-        background: none;
-        border: 0;
-        box-shadow: none;
-    }
-
-    .web-deck-group > .card-group-header {
-        --tone: var(--accent-tertiary);
-        display: inline-flex;
-        align-items: center;
-        gap: 0.3rem;
-        padding: 0.2rem 0.7rem 0.2rem 0.45rem;
-        margin: 0.25rem 0 0;
-        border: 1px solid color-mix(in srgb, var(--tone) 35%, transparent);
-        border-radius: 0.6rem;
-        background-color: color-mix(in srgb, var(--tone) 12%, transparent);
-        color: var(--tone);
-        font-size: 0.78rem;
-        font-weight: 600;
-    }
-
-    .web-deck-group > .card-group-header .card-row-arrow {
-        width: 1rem;
-        height: 1rem;
-        color: var(--tone);
-    }
-
-    .web-deck-group > .collapsible > .collapsible-inner {
-        display: grid;
+    /* The app's tile grid, as many tiles per row as fit. */
+    .deck-group > .collapsible > .collapsible-inner {
         grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
-        gap: var(--panel-gap);
-        padding: var(--panel-gap) 0;
-    }
-
-    .web-deck-group .deck-row {
-        padding: 1rem;
-        background-color: var(--bg-primary);
-        border: 1px solid var(--border-secondary);
-        border-radius: 1rem;
-        box-shadow: var(--shadow-sm);
-    }
-
-    .web-deck-group .deck-list-row {
-        flex-direction: column;
-        justify-content: flex-start;
-        align-items: center;
-        gap: 0.4rem;
-        text-align: center;
-    }
-
-    .web-deck-group .deck-row-art-img {
-        width: 100%;
-        height: auto;
-        aspect-ratio: 1 / 1;
-        border-radius: 22%;
-    }
-
-    /* A two-card command zone shares the square. */
-    .web-deck-group .deck-list-row:has(> .deck-row-art-img + .deck-row-art-img) > .deck-row-art-img {
-        width: calc(50% - 0.2rem);
-    }
-
-    .web-deck-group .deck-list-name {
-        width: 100%;
-        margin: 0.2rem 0 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    /* The pips sit under the name on their own line; the chips wrap after. */
-    .web-deck-group .deck-list-row > .identity-pips {
-        width: 100%;
-        justify-content: center;
-    }
-
-    /* A long commander name wraps inside its chip rather than cutting. */
-    .web-deck-group .deck-list-row > .stat-chip {
-        max-width: 100%;
-        white-space: normal;
-        overflow-wrap: anywhere;
     }
 
     /* There is room for every tag, so the row stays unfolded and the fold

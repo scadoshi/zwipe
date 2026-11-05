@@ -256,7 +256,7 @@ fn DeckGroupSection(
     let expanded = !collapsed().contains(&group_key);
     rsx! {
         div {
-            class: if expanded { "card-group row-enter web-deck-group" } else { "card-group row-enter web-deck-group collapsed" },
+            class: if expanded { "card-group deck-group row-enter" } else { "card-group deck-group row-enter collapsed" },
             div {
                 class: if expanded { "card-group-header group-collapsible expanded" } else { "card-group-header group-collapsible" },
                 onclick: move |_| {

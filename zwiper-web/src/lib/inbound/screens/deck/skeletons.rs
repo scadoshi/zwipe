@@ -27,14 +27,14 @@ pub fn DeckListSkeleton() -> Element {
         &["lg", "md", "sm", "md"],
     ];
     rsx! {
-        div { class: "card-group web-deck-group",
+        div { class: "card-group deck-group",
             div { class: "card-group-header group-collapsible expanded skeleton-deck-list-header",
                 div { class: "skeleton-bar skeleton-deck-list-header-title" }
             }
             div { class: "collapsible open",
                 div { class: "collapsible-inner",
                     for (i, chips) in TILES.iter().enumerate() {
-                        div { key: "{i}", class: "card-row",
+                        div { key: "{i}", class: "card-row deck-row",
                             div { class: "deck-list-row",
                                 div { class: "skeleton-bar skeleton-deck-list-art" }
                                 div { class: "skeleton-bar skeleton-deck-list-title" }
