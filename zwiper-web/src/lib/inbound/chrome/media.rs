@@ -9,6 +9,15 @@ use uuid::Uuid;
 /// column, `web-layout.md`'s three-panel width.
 pub const THREE_COLUMNS_PX: u32 = 1280;
 
+/// The width at which the layout leaves the phone's: the stylesheet's wide
+/// breakpoint.
+pub const WIDE_PX: u32 = 900;
+
+/// True while the window is wide, as [`use_min_width`] with [`WIDE_PX`].
+pub fn use_wide() -> Signal<bool> {
+    use_min_width(WIDE_PX)
+}
+
 /// True while the window is at least `px` wide, kept current as it resizes.
 /// Off the browser it stays false.
 pub fn use_min_width(px: u32) -> Signal<bool> {
