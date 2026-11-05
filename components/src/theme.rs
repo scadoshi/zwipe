@@ -7,16 +7,16 @@
 //! join two foreign types (the orphan rule), so the conversion is a function.
 
 use orangui::ThemeConfig;
-use zwipe_core::domain::user::models::preferences::{PipColor, UserPreferences};
+use zwipe_core::domain::user::models::settings::{PipColor, UserSettings};
 
-/// The theme a user's saved preferences select. A retired slug moves to its
+/// The theme a user's saved settings select. A retired slug moves to its
 /// replacement, and one this build does not know (a theme added after it)
 /// falls back to the default.
 #[must_use]
-pub fn theme_from_preferences(prefs: &UserPreferences) -> ThemeConfig {
+pub fn theme_from_settings(settings: &UserSettings) -> ThemeConfig {
     ThemeConfig {
-        name: prefs.theme.clone(),
-        is_dark: prefs.dark_mode,
+        name: settings.theme.clone(),
+        is_dark: settings.dark_mode,
     }
     .resolve()
     .unwrap_or_default()
@@ -35,7 +35,7 @@ pub const fn pip_color_class(color: PipColor) -> &'static str {
 
 #[cfg(test)]
 mod tests {
-    use zwipe_core::domain::user::preferences as core;
+    use zwipe_core::domain::user::settings as core;
 
     #[test]
     fn the_classic_pip_class_is_styled() {
@@ -55,12 +55,12 @@ mod tests {
     }
 
     #[test]
-    fn saved_preferences_always_name_a_theme_with_a_palette() {
-        let prefs = |theme: &str| core::UserPreferences {
+    fn saved_settings_always_name_a_theme_with_a_palette() {
+        let settings = |theme: &str| core::UserSettings {
             theme: theme.to_string(),
-            ..core::UserPreferences::default()
+            ..core::UserSettings::default()
         };
-        let name = |theme: &str| super::theme_from_preferences(&prefs(theme)).name;
+        let name = |theme: &str| super::theme_from_settings(&settings(theme)).name;
         assert_eq!(name("flexoki"), "flexoki");
         assert_eq!(name("visual-studio"), "vscode");
         assert_eq!(name("a-theme-from-a-newer-build"), "gruvbox");

@@ -26,8 +26,8 @@
 //! resolve theme variables and host rules override shared defaults at equal
 //! specificity.
 //!
-//! The hosts hold orangui's [`ThemeConfig`]; [`theme_from_preferences`] builds
-//! it from a user's saved preferences, and a test in `theme.rs` keeps
+//! The hosts hold orangui's [`ThemeConfig`]; [`theme_from_settings`] builds
+//! it from a user's saved settings, and a test in `theme.rs` keeps
 //! zwipe-core's theme list equal to orangui's.
 //!
 //! These components deliberately depend only on base `dioxus` (no platform
@@ -94,7 +94,7 @@ pub use orangui::{OpenUrlError, open_url, use_in_app_links};
 #[cfg(feature = "toast")]
 pub use orangui::{TOAST_CSS, ToastOptions, ToastStack, Toasts, use_toast};
 pub use role_tags::{OtagDef, RoleTags};
-pub use theme::{pip_color_class, theme_from_preferences};
+pub use theme::{pip_color_class, theme_from_settings};
 
 /// The Magic rules: oracle text, keyword chips, card rows, the flippable card
 /// image, the changelog, the color bars and the mana glyph inside a chip. Load it after

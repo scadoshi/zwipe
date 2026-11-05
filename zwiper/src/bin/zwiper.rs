@@ -4,7 +4,7 @@ use components::{DialogHostView, ThemeConfig, ToastStack, use_dialog_host};
 use dioxus::prelude::*;
 use tracing_subscriber::EnvFilter;
 use zwipe_core::domain::logo;
-use zwipe_core::domain::user::preferences::PipColor;
+use zwipe_core::domain::user::settings::PipColor;
 use zwiper::config::Config;
 use zwiper::inbound::components::auth::session_upkeep;
 use zwiper::inbound::components::hint_host::HintHost;
@@ -75,7 +75,7 @@ fn launch_app(config: Config) {
 #[component]
 fn ThemeWrapper(children: Element) -> Element {
     // Whatever sets the theme (the Themes sheet, the dark-mode toggle, a
-    // session's preferences), the shell wipes over to it.
+    // session's settings), the shell wipes over to it.
     let follow = components::use_theme_follow(use_context::<Signal<ThemeConfig>>(), ".app-shell");
     // The Themes sheet reads it to leave inside the wipe that restores a
     // discarded pick.

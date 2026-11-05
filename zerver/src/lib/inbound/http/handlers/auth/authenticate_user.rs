@@ -3,8 +3,7 @@
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
-use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::http::contracts::auth::HttpAuthenticateUser;
+use zwipe_core::http::contracts::auth::{HttpAuthenticateUser, HttpSession};
 use zwipe_core::version::Version;
 
 use crate::domain::auth::ports::AuthService;
@@ -64,7 +63,7 @@ pub async fn authenticate_user(
     State(state): State<AppState>,
     ClientIp(client_ip): ClientIp,
     Json(body): Json<HttpAuthenticateUser>,
-) -> Result<(StatusCode, Json<Session>), ApiError> {
+) -> Result<(StatusCode, Json<HttpSession>), ApiError> {
     let mut request = AuthenticateUser::new(&body.identifier, body.password.read())?;
     request.platform = body.platform;
     request.client_version = body
@@ -99,5 +98,5 @@ pub async fn authenticate_user(
         }
     });
 
-    Ok((StatusCode::OK, session.into()))
+    Ok((StatusCode::OK, Json(HttpSession::from(session))))
 }

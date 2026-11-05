@@ -3,7 +3,7 @@
 //! that style standing in for the mode icon.
 
 use dioxus::prelude::*;
-use zwipe_core::domain::user::preferences::PipColor;
+use zwipe_core::domain::user::settings::PipColor;
 
 /// Flips the site's pip style between the theme's colors and the classic
 /// ones. It names the style in use; the tooltip names the one a click

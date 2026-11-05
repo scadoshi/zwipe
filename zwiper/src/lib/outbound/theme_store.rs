@@ -3,7 +3,7 @@
 //! Caches the last-used [`ThemeConfig`](zwipe_core::domain::user::models::theme::ThemeConfig) so pre-auth screens (login, register,
 //! verify, reset) render in it before a session loads, instead of the default.
 //! The theme can drift (changed on another device), so this is a best-effort
-//! "last known" that a live session's preferences override.
+//! "last known" that a live session's settings override.
 //!
 //! The theme isn't a secret, but this reuses the same backends as [`session`]
 //! (keyring on Apple/desktop, a JSON file in Android private storage) to avoid

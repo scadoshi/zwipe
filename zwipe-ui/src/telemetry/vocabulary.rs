@@ -38,7 +38,9 @@ pub mod screen {
     pub const PROFILE_CHANGE_EMAIL: &str = "profile_change_email";
     pub const PROFILE_CHANGE_PASSWORD: &str = "profile_change_password";
     pub const PROFILE_CHANGE_USERNAME: &str = "profile_change_username";
-    pub const PROFILE_PREFERENCES: &str = "profile_preferences";
+    /// Keeps the stored name of the Settings screen, so its usage rows
+    /// stay one series.
+    pub const PROFILE_SETTINGS: &str = "profile_preferences";
     pub const SUGGESTED_COMMANDERS: &str = "suggested_commanders";
     pub const ACTIVITY: &str = "activity";
 }
@@ -105,7 +107,7 @@ pub enum OracleTagScreen {
     Examples,
 }
 
-/// `screens/account/` members, plus `Preferences` for `screens/config/`.
+/// `screens/account/` members, plus `Settings` for `screens/config/`.
 #[expect(missing_docs, reason = "the variants are the screen names")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ProfileScreen {
@@ -113,7 +115,7 @@ pub enum ProfileScreen {
     ChangeEmail,
     ChangePassword,
     ChangeUsername,
-    Preferences,
+    Settings,
 }
 
 impl Screen {
@@ -143,7 +145,7 @@ impl Screen {
             Self::Profile(ProfileScreen::ChangeEmail) => screen::PROFILE_CHANGE_EMAIL,
             Self::Profile(ProfileScreen::ChangePassword) => screen::PROFILE_CHANGE_PASSWORD,
             Self::Profile(ProfileScreen::ChangeUsername) => screen::PROFILE_CHANGE_USERNAME,
-            Self::Profile(ProfileScreen::Preferences) => screen::PROFILE_PREFERENCES,
+            Self::Profile(ProfileScreen::Settings) => screen::PROFILE_SETTINGS,
             Self::SuggestedCommanders => screen::SUGGESTED_COMMANDERS,
             Self::Activity => screen::ACTIVITY,
         }
@@ -196,7 +198,7 @@ mod tests {
             Screen::Profile(ProfileScreen::ChangeEmail),
             Screen::Profile(ProfileScreen::ChangePassword),
             Screen::Profile(ProfileScreen::ChangeUsername),
-            Screen::Profile(ProfileScreen::Preferences),
+            Screen::Profile(ProfileScreen::Settings),
             Screen::SuggestedCommanders,
             Screen::Activity,
         ];
@@ -224,7 +226,7 @@ mod tests {
             screen::PROFILE_CHANGE_EMAIL,
             screen::PROFILE_CHANGE_PASSWORD,
             screen::PROFILE_CHANGE_USERNAME,
-            screen::PROFILE_PREFERENCES,
+            screen::PROFILE_SETTINGS,
             screen::SUGGESTED_COMMANDERS,
             screen::ACTIVITY,
         ];

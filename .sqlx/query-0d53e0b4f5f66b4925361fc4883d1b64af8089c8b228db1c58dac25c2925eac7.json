@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO user_preferences\n                   (user_id, theme, dark_mode, exclude_universes_beyond,\n                    universes_beyond_exceptions, pip_style, updated_at)\n               VALUES ($1, COALESCE($2, 'zwipe'), COALESCE($3, true),\n                       COALESCE($4, false), COALESCE($5::text[], '{}'::text[]),\n                       COALESCE($6, 'theme'), NOW())\n               ON CONFLICT (user_id)\n               DO UPDATE SET\n                   theme = COALESCE($2, user_preferences.theme),\n                   dark_mode = COALESCE($3, user_preferences.dark_mode),\n                   exclude_universes_beyond =\n                       COALESCE($4, user_preferences.exclude_universes_beyond),\n                   universes_beyond_exceptions =\n                       COALESCE($5::text[], user_preferences.universes_beyond_exceptions),\n                   pip_style = COALESCE($6, user_preferences.pip_style),\n                   updated_at = NOW()\n               RETURNING user_id, theme, dark_mode, exclude_universes_beyond,\n                         universes_beyond_exceptions, pip_style",
+  "query": "INSERT INTO user_settings\n                   (user_id, theme, dark_mode, exclude_universes_beyond,\n                    universes_beyond_exceptions, pip_style, updated_at)\n               VALUES ($1, COALESCE($2, 'zwipe'), COALESCE($3, true),\n                       COALESCE($4, false), COALESCE($5::text[], '{}'::text[]),\n                       COALESCE($6, 'theme'), NOW())\n               ON CONFLICT (user_id)\n               DO UPDATE SET\n                   theme = COALESCE($2, user_settings.theme),\n                   dark_mode = COALESCE($3, user_settings.dark_mode),\n                   exclude_universes_beyond =\n                       COALESCE($4, user_settings.exclude_universes_beyond),\n                   universes_beyond_exceptions =\n                       COALESCE($5::text[], user_settings.universes_beyond_exceptions),\n                   pip_style = COALESCE($6, user_settings.pip_style),\n                   updated_at = NOW()\n               RETURNING user_id, theme, dark_mode, exclude_universes_beyond,\n                         universes_beyond_exceptions, pip_style",
   "describe": {
     "columns": [
       {
@@ -9,7 +9,7 @@
         "type_info": "Uuid",
         "origin": {
           "Table": {
-            "table": "user_preferences",
+            "table": "user_settings",
             "name": "user_id"
           }
         }
@@ -20,7 +20,7 @@
         "type_info": "Varchar",
         "origin": {
           "Table": {
-            "table": "user_preferences",
+            "table": "user_settings",
             "name": "theme"
           }
         }
@@ -31,7 +31,7 @@
         "type_info": "Bool",
         "origin": {
           "Table": {
-            "table": "user_preferences",
+            "table": "user_settings",
             "name": "dark_mode"
           }
         }
@@ -42,7 +42,7 @@
         "type_info": "Bool",
         "origin": {
           "Table": {
-            "table": "user_preferences",
+            "table": "user_settings",
             "name": "exclude_universes_beyond"
           }
         }
@@ -53,7 +53,7 @@
         "type_info": "TextArray",
         "origin": {
           "Table": {
-            "table": "user_preferences",
+            "table": "user_settings",
             "name": "universes_beyond_exceptions"
           }
         }
@@ -64,7 +64,7 @@
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "user_preferences",
+            "table": "user_settings",
             "name": "pip_style"
           }
         }
@@ -89,5 +89,5 @@
       false
     ]
   },
-  "hash": "c6154627a0244ac21d55d69f307fa48c95d5d19da8865f24d07154c3d13c61cf"
+  "hash": "0d53e0b4f5f66b4925361fc4883d1b64af8089c8b228db1c58dac25c2925eac7"
 }

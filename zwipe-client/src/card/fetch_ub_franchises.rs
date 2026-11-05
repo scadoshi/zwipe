@@ -10,7 +10,7 @@ impl ZwipeClient {
     ///
     /// Served rather than compiled in, so a new crossover release becomes
     /// selectable on a deploy instead of a store train. There is no offline
-    /// fallback: the picker writes a preference, which needs the server
+    /// fallback: the picker writes a setting, which needs the server
     /// anyway.
     ///
     /// # Errors

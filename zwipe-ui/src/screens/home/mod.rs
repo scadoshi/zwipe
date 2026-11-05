@@ -268,8 +268,8 @@ pub enum Action {
 pub enum Effect {
     /// Fetches the user, stores them in the session, and answers with [`Action::UserLoaded`] or [`Action::UserFailed`] carrying this ticket. A failure only logs.
     FetchUser(Ticket),
-    /// Fetches the preferences and applies the theme and pip style. Nothing answers; a failure only logs.
-    FetchPreferences,
+    /// Fetches the settings and applies the theme and pip style. Nothing answers; a failure only logs.
+    FetchSettings,
     /// Fetches everybody's counters, stores them, and answers with [`Action::CountsLoaded`] carrying this ticket. A failure only logs.
     FetchCounts(Ticket),
     /// Fetches the user's own counters, stores them, and answers with [`Action::MyCountsLoaded`] carrying this ticket. A failure is reported without a toast.
@@ -537,7 +537,7 @@ impl State {
         Vec::new()
     }
 
-    /// Takes in what the client holds and asks for what is missing or old: the user and preferences with a session, everybody's counters unless fresh, the user's own when they show and are not fresh, the summary and the decks with a session, and the flavor card when none is held or it expired. Then offers the first-login hint.
+    /// Takes in what the client holds and asks for what is missing or old: the user and settings with a session, everybody's counters unless fresh, the user's own when they show and are not fresh, the summary and the decks with a session, and the flavor card when none is held or it expired. Then offers the first-login hint.
     fn load(&mut self, cached: Cached) -> Vec<Effect> {
         let Cached {
             user,
@@ -565,7 +565,7 @@ impl State {
         let mut effects = Vec::new();
         if user.is_some() {
             effects.push(Effect::FetchUser(self.generations.user.next_ticket()));
-            effects.push(Effect::FetchPreferences);
+            effects.push(Effect::FetchSettings);
         }
         if !everybody_fresh {
             effects.push(Effect::FetchCounts(self.generations.counts.next_ticket()));

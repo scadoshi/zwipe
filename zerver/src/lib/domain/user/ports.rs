@@ -16,16 +16,16 @@ use std::future::Future;
 use uuid::Uuid;
 use zwipe_core::domain::user::User;
 use zwipe_core::domain::user::models::hints::MarkHintShown;
-use zwipe_core::domain::user::preferences::{UpdatePreferences, UserPreferences};
 use zwipe_core::domain::user::requests::get_user::GetUser;
+use zwipe_core::domain::user::settings::{UpdateSettings, UserSettings};
 
 use crate::domain::user::models::get_user::GetUserError;
 use crate::domain::user::models::hints::MarkHintShownError;
-use crate::domain::user::models::preferences::{GetPreferencesError, UpdatePreferencesError};
+use crate::domain::user::models::settings::{FetchSettingsError, UpdateSettingsError};
 
 /// Database port for user profile operations.
 ///
-/// Provides read access to user data and preferences. Auth mutations
+/// Provides read access to user data and settings. Auth mutations
 /// (register, change password, etc.) are in the `auth` module.
 pub trait UserRepository: Clone + Send + Sync + 'static {
     /// Retrieves a user profile by ID.
@@ -33,17 +33,17 @@ pub trait UserRepository: Clone + Send + Sync + 'static {
     /// Returns user data without password hash (use `AuthRepository` for that).
     fn fetch_user(&self, user_id: Uuid) -> impl Future<Output = Result<User, GetUserError>> + Send;
 
-    /// Fetches display preferences for a user. Returns defaults if no row exists.
-    fn fetch_preferences(
+    /// Fetches display settings for a user. Returns defaults if no row exists.
+    fn fetch_settings(
         &self,
         user_id: Uuid,
-    ) -> impl Future<Output = Result<UserPreferences, GetPreferencesError>> + Send;
+    ) -> impl Future<Output = Result<UserSettings, FetchSettingsError>> + Send;
 
-    /// Upserts display preferences for a user. Creates the row on first update.
-    fn update_preferences(
+    /// Upserts display settings for a user. Creates the row on first update.
+    fn update_settings(
         &self,
-        request: &UpdatePreferences,
-    ) -> impl Future<Output = Result<UserPreferences, UpdatePreferencesError>> + Send;
+        request: &UpdateSettings,
+    ) -> impl Future<Output = Result<UserSettings, UpdateSettingsError>> + Send;
 
     /// Marks a one-time UI hint as shown; returns the updated user.
     fn mark_hint_shown(
@@ -64,19 +64,19 @@ pub trait UserService: Clone + Send + Sync + 'static {
         request: &GetUser,
     ) -> impl Future<Output = Result<User, GetUserError>> + Send;
 
-    // == preferences ==
+    // == settings ==
 
-    /// Fetches display preferences for a user.
-    fn fetch_preferences(
+    /// Fetches display settings for a user.
+    fn fetch_settings(
         &self,
         user_id: Uuid,
-    ) -> impl Future<Output = Result<UserPreferences, GetPreferencesError>> + Send;
+    ) -> impl Future<Output = Result<UserSettings, FetchSettingsError>> + Send;
 
-    /// Validates and updates display preferences for a user.
-    fn update_preferences(
+    /// Validates and updates display settings for a user.
+    fn update_settings(
         &self,
-        request: &UpdatePreferences,
-    ) -> impl Future<Output = Result<UserPreferences, UpdatePreferencesError>> + Send;
+        request: &UpdateSettings,
+    ) -> impl Future<Output = Result<UserSettings, UpdateSettingsError>> + Send;
 
     // == hints ==
 

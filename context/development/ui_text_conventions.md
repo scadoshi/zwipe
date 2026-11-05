@@ -10,7 +10,7 @@ Established during the 2026-05-24 zwiper casing revamp (commits `b1cacaaf`, `4cb
 
 | Use case | Rule | Examples |
 |---|---|---|
-| Nav links, screen titles, section headings, card titles | **Title Case** | "Account", "Preferences", "Edit Deck", "Card Filters" |
+| Nav links, screen titles, section headings, card titles | **Title Case** | "Account", "Settings", "Edit Deck", "Card Filters" |
 | **Button labels & action CTAs (zwiper mobile)** | **Sentence case** (Apple HIG / Material convention) | "Log in", "Send reset link", "Save changes", "Back to login" |
 | **Button labels & action CTAs (zite web)** | **Title Case** (marketing-page convention) | "Download on the App Store", "Set New Password" |
 | Body text, descriptions, helper text, placeholders, captions | **Sentence case** | "Enter your email address.", "Choose a new password." |
@@ -101,7 +101,7 @@ Theme slugs (`gruvbox`, `tokyo-night`, `rose-pine`, etc.) are stored as-is in `A
 - It's hardcoded in the helper rather than renaming the slug, because the slug drives CSS class names and DB stored values for every user with that theme selected. A display-only special case is cheaper than a SQL migration + CSS rename.
 - Same treatment for `vscode` → "VS Code", `github` → "GitHub", `synthwave-84` → "Synthwave '84", `powershell` → "PowerShell", `docs-rs` → "docs.rs".
 
-The canonical copy is `display_theme_name` in `zwipe-core/src/domain/user/models/preferences.rs`, beside `ALLOWED_THEMES`; add new overrides there. zite renders the shared `ThemePicker`, and both it and zwiper's preferences sheet import that one function, so there is no duplicate to keep in sync.
+The canonical copy is `display_theme_name` in `zwipe-core/src/domain/user/models/settings.rs`, beside `ALLOWED_THEMES`; add new overrides there. zite renders the shared `ThemePicker`, and both it and zwiper's theme sheet import that one function, so there is no duplicate to keep in sync.
 
 ---
 

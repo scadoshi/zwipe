@@ -18,7 +18,7 @@ use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user;
 use zwipe_core::domain::user::hints::OneTimeHint;
-use zwipe_core::domain::user::preferences::PipColor;
+use zwipe_core::domain::user::settings::PipColor;
 use zwipe_core::text::sentence_case;
 use zwipe_ui::screens::config::{self as model, Action, Destination, Effect, Sheet, State};
 
@@ -48,7 +48,7 @@ struct Driver {
     app_icon_theme: Signal<ThemeConfig>,
     config_hint_open: Signal<bool>,
     ub_hint_open: Signal<bool>,
-    preferences_open: Signal<bool>,
+    settings_open: Signal<bool>,
     ub_exceptions_open: Signal<bool>,
 }
 
@@ -83,19 +83,19 @@ impl Driver {
                 };
                 hint_dialog::open_and_record_hint(hint.key(), session, client, open);
             }
-            Effect::FetchPreferences(ticket) => {
+            Effect::FetchSettings(ticket) => {
                 spawn(async move {
                     // Quiet on failure: the Universes Beyond rows stay off, and
                     // the failure still reaches telemetry through the facade.
                     let reply = authed
                         .run_quiet("load_preferences", |c, s| async move {
-                            c.fetch_preferences(&s).await
+                            c.fetch_settings(&s).await
                         })
                         .await;
                     self.dispatch(match reply {
-                        Some(preferences) => Action::Loaded {
+                        Some(settings) => Action::Loaded {
                             ticket,
-                            preferences: Box::new(preferences),
+                            settings: Box::new(settings),
                         },
                         None => Action::Failed { ticket },
                     });
@@ -118,7 +118,7 @@ impl Driver {
                 // opens with it.
                 let current = session.peek().clone();
                 if let Some(mut current) = current {
-                    current.preferences.pip_style = style;
+                    current.settings.pip_style = style;
                     current.infallible_save();
                     session.set(Some(current));
                 }
@@ -134,7 +134,7 @@ impl Driver {
     /// on a pick, so a close that is already done writes nothing.
     fn show_sheet(self, sheet: Sheet, open: bool) {
         let mut signal = match sheet {
-            Sheet::Themes => self.preferences_open,
+            Sheet::Themes => self.settings_open,
             Sheet::Exceptions => self.ub_exceptions_open,
         };
         if *signal.peek() != open {
@@ -143,8 +143,8 @@ impl Driver {
     }
 }
 
-/// Config screen: the account's appearance and card preferences. Theme, pips
-/// and Universes Beyond save through the preferences API; the app icon is a
+/// Config screen: the account's appearance and card settings. Theme, pips
+/// and Universes Beyond save through the settings API; the app icon is a
 /// device setting and only shows where the platform supports it.
 ///
 /// What the screen knows and does is `zwipe_ui::screens::config`; this file
@@ -164,7 +164,7 @@ pub fn Config() -> Element {
         model: use_signal(State::new),
         navigator: use_navigator(),
         toast,
-        authed: use_authed(Screen::Profile(ProfileScreen::Preferences)),
+        authed: use_authed(Screen::Profile(ProfileScreen::Settings)),
         session: use_context(),
         client: use_context(),
         theme_config,
@@ -176,7 +176,7 @@ pub fn Config() -> Element {
         // Exceptions explainer, shared with the sheet: the row's "?" and the
         // sheet's header "?" both open it.
         ub_hint_open: use_signal(|| false),
-        preferences_open: use_signal(|| false),
+        settings_open: use_signal(|| false),
         ub_exceptions_open: use_signal(|| false),
     };
     let config_hint_open = driver.config_hint_open;
@@ -239,7 +239,7 @@ pub fn Config() -> Element {
                                     InfoButton { topic: HintTopic::Theme }
                                 }
                                 div { class: "settings-row-value",
-                                    span { { user::preferences::display_theme_name(&theme_config().name) } }
+                                    span { { user::settings::display_theme_name(&theme_config().name) } }
                                     DarkModeButton {
                                         is_dark: theme_config().is_dark,
                                         onclick: move |_| {
@@ -286,7 +286,7 @@ pub fn Config() -> Element {
                                         if app_icon_follows() {
                                             span { "Matches theme" }
                                         } else {
-                                            span { { user::preferences::display_theme_name(&app_icon_theme().name) } }
+                                            span { { user::settings::display_theme_name(&app_icon_theme().name) } }
                                             DarkModeButton {
                                                 is_dark: app_icon_theme().is_dark,
                                                 onclick: toggle_app_icon_dark,
@@ -366,7 +366,7 @@ pub fn Config() -> Element {
 
 
                 ThemeSaveSheet {
-                    open: driver.preferences_open,
+                    open: driver.settings_open,
                     on: move |action| driver.dispatch(action),
                 }
                 AppIconSheet {

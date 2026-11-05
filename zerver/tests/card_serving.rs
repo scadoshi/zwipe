@@ -12,8 +12,7 @@
 )]
 
 use zwipe_core::http::paths::{
-    DECK_ROUTE, PREFERENCES_ROUTE, SEARCH_CARDS_ROUTE, card_route, deck_route,
-    search_deck_cards_route,
+    DECK_ROUTE, SEARCH_CARDS_ROUTE, SETTINGS_ROUTE, card_route, deck_route, search_deck_cards_route,
 };
 mod common;
 
@@ -347,12 +346,12 @@ async fn deck_selected_otags_lift_matching_cards_end_to_end(pool: sqlx::PgPool) 
 }
 
 /// The plain card search (the deck form's typed commander/partner pickers)
-/// honors the Universes Beyond preference: with the exclusion on, a typed
+/// honors the Universes Beyond setting: with the exclusion on, a typed
 /// name that only exists as a crossover card returns nothing, and flipping
 /// the setting off brings it back. Regression for the 1.10.0 smoke-test hole
 /// where typing "sonic" served Sonic past the exclusion.
 #[sqlx::test]
-async fn plain_search_honors_universes_beyond_preference(pool: sqlx::PgPool) {
+async fn plain_search_honors_universes_beyond_setting(pool: sqlx::PgPool) {
     let app = TestApp::new(pool.clone());
     seed_cards(
         &pool,
@@ -369,7 +368,7 @@ async fn plain_search_honors_universes_beyond_preference(pool: sqlx::PgPool) {
 
     let (status, _) = app
         .patch(
-            PREFERENCES_ROUTE,
+            SETTINGS_ROUTE,
             json!({ "exclude_universes_beyond": true }),
             Some(&token),
         )
@@ -391,7 +390,7 @@ async fn plain_search_honors_universes_beyond_preference(pool: sqlx::PgPool) {
 
     let (status, _) = app
         .patch(
-            PREFERENCES_ROUTE,
+            SETTINGS_ROUTE,
             json!({ "exclude_universes_beyond": false }),
             Some(&token),
         )

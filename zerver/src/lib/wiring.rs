@@ -7,7 +7,7 @@ use crate::outbound::sqlx::postgres::Postgres;
 
 /// Registration, login, sessions and account changes.
 pub type Auth = auth::services::Service<Postgres, Postgres>;
-/// User profiles, preferences and hints.
+/// User profiles, settings and hints.
 pub type Users = user::services::Service<Postgres>;
 /// Database health checks.
 pub type Health = health::services::Service<Postgres>;

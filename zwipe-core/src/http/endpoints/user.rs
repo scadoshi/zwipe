@@ -1,4 +1,4 @@
-//! Profile, preferences and the commander maybeboard.
+//! Profile, settings and the commander maybeboard.
 
 use std::borrow::Cow;
 
@@ -6,17 +6,17 @@ use uuid::Uuid;
 
 use crate::domain::card::Card;
 use crate::domain::user::User;
-use crate::domain::user::models::preferences::UserPreferences;
+use crate::domain::user::models::settings::UserSettings;
 use crate::http::contracts::auth::{
     HttpChangeEmail, HttpChangePassword, HttpChangeUsername, HttpDeleteUser,
 };
-use crate::http::contracts::user::{HttpMarkHintShown, HttpUpdatePreferences};
+use crate::http::contracts::user::{HttpMarkHintShown, HttpUpdateSettings};
 use crate::http::endpoint::{Endpoint, Method};
 use crate::http::paths;
 use crate::http::paths::{
     CHANGE_EMAIL_ROUTE, CHANGE_PASSWORD_ROUTE, CHANGE_USERNAME_ROUTE,
     CLEAR_COMMANDER_MAYBEBOARD_ROUTE, DELETE_USER_ROUTE, GET_COMMANDER_MAYBEBOARD_ROUTE,
-    GET_USER_ROUTE, MARK_HINT_SHOWN_ROUTE, PREFERENCES_ROUTE,
+    GET_USER_ROUTE, MARK_HINT_SHOWN_ROUTE, SETTINGS_ROUTE,
 };
 
 /// The signed-in user's profile.
@@ -106,27 +106,27 @@ impl Endpoint for MarkHintShown {
     }
 }
 
-/// Read display preferences.
+/// Read display settings.
 #[derive(Debug)]
-pub struct GetPreferences;
-impl Endpoint for GetPreferences {
+pub struct GetSettings;
+impl Endpoint for GetSettings {
     const METHOD: Method = Method::Get;
     type Request = ();
-    type Response = UserPreferences;
+    type Response = UserSettings;
     fn path(&self) -> Cow<'static, str> {
-        Cow::Borrowed(PREFERENCES_ROUTE)
+        Cow::Borrowed(SETTINGS_ROUTE)
     }
 }
 
-/// Update display preferences; answers the stored result.
+/// Update display settings; answers the stored result.
 #[derive(Debug)]
-pub struct UpdatePreferences(pub HttpUpdatePreferences);
-impl Endpoint for UpdatePreferences {
+pub struct UpdateSettings(pub HttpUpdateSettings);
+impl Endpoint for UpdateSettings {
     const METHOD: Method = Method::Patch;
-    type Request = HttpUpdatePreferences;
-    type Response = UserPreferences;
+    type Request = HttpUpdateSettings;
+    type Response = UserSettings;
     fn path(&self) -> Cow<'static, str> {
-        Cow::Borrowed(PREFERENCES_ROUTE)
+        Cow::Borrowed(SETTINGS_ROUTE)
     }
     fn body(&self) -> Option<&Self::Request> {
         Some(&self.0)

@@ -133,7 +133,7 @@ zwipe-core/src/
 │   │   │   ├── email.rs            # Email handling
 │   │   │   ├── hints.rs            # One-time UI hint tracking
 │   │   │   ├── theme.rs            # ThemeConfig
-│   │   │   └── preferences.rs      # Theme (ALLOWED_THEMES, 50), dark mode, franchises
+│   │   │   └── settings.rs         # Theme (ALLOWED_THEMES, 50), dark mode, franchises
 │   │   └── requests/
 │   │       └── get_user.rs
 │   │
@@ -209,7 +209,7 @@ zerver/src/
     │   │       ├── card/       # Search, get card, filter metadata
     │   │       ├── deck/       # Deck CRUD, get deck with entries
     │   │       ├── deck_card/  # Add/update/delete/import cards
-    │   │       ├── user/       # Profile, preferences, delete account
+    │   │       ├── user/       # Profile, settings, delete account
     │   │       ├── metrics/    # Usage/event/crash/error intake, public metrics
     │   │       └── changelog.rs, client.rs, health.rs
     │   └── external/
@@ -224,7 +224,7 @@ zerver/src/
         │   ├── deck/           # Deck repository (CRUD, card management)
         │   │   ├── models.rs   # DatabaseDeckProfile, DatabaseDeckCard
         │   │   └── helper.rs   # Ownership verification
-        │   └── user/           # User repository (preferences, profile)
+        │   └── user/           # User repository (settings, profile)
         ├── archidekt/          # Fetches public Archidekt decks for import by URL
         └── resend/             # Transactional email via Resend API
 ```
@@ -234,7 +234,7 @@ zerver/src/
 | Table | Purpose |
 |-------|---------|
 | `users` | Accounts (email, username, hashed password; the lockout columns are legacy, the lockout is in memory per address) |
-| `user_preferences` | Theme, dark mode |
+| `user_settings` | Theme, dark mode |
 | `scryfall_data` | All card printings (~110k rows, ~100 columns) |
 | `card_profiles` | Internal card metadata (is_token, card_roles) |
 | `decks` | Deck profiles (name, format, commander_id, partner_commander_id, background_id, signature_spell_id) |
@@ -260,7 +260,7 @@ The rest are signal/analytics tables (user and commander signal, weekly facets, 
 Dioxus cross-platform app. Primary target: iOS. Same hexagonal structure: screens are inbound adapters, and the API client is the outbound adapter and lives in `zwipe-client`.
 
 - UI building blocks and the theme CSS come from `components`. It re-exports orangui's app kit (bottom sheet, page header, theme sheet, hint pieces, overlay back stack, toast stack) and the `APP_CSS` and `TOAST_CSS` sheets, and adds the Magic pieces.
-- The theme type is orangui's `ThemeConfig`, built from a session's preferences by `theme_from_preferences`. zwipe-core keeps the list zerver validates against.
+- The theme type is orangui's `ThemeConfig`, built from a session's settings by `theme_from_settings`. zwipe-core keeps the list zerver validates against.
 
 ```
 zwiper/src/
@@ -288,7 +288,7 @@ zwiper/src/
     │       ├── home.rs
     │       ├── auth/           # Login, register, forgot password
     │       ├── profile/        # User settings, change email/password/username
-    │       │   └── components/ # Preferences UI
+    │       │   └── components/ # Settings UI
     │       └── deck/
     │           ├── list.rs     # Deck list
     │           ├── create.rs   # Create deck (DeckFields with commander/partner/background/spell)
@@ -381,7 +381,7 @@ zwipe-client/src/
 ├── deck/           # CRUD, tokens, profiles, sharing, skips
 ├── deck_card/      # Add, update, delete, import
 ├── metrics/        # Usage batches, crash reports, anonymous events
-├── user/           # Profile, preferences, maybeboard
+├── user/           # Profile, settings, maybeboard
 └── version/        # Minimum supported client version
 ```
 
@@ -400,7 +400,7 @@ The Magic pieces of the UI, over [orangui](https://github.com/scadoshi/orangui),
 - The portfolio and cairn take orangui directly. Nothing outside this repo imports this crate.
 - The crate shares its name with the `components` modules in zwiper (`inbound/components/` and the screen-level `components/` folders) and zite (`src/components/`). A module that declares its own `components` submodule reaches the crate as `::components::`.
 
-Styling: orangui's `THEMES_CSS`, `COMPONENTS_CSS`, `APP_CSS`, `SITE_CSS` and `TOAST_CSS` come through as they are; `MAGIC_CSS` (`assets/magic.css`) holds this crate's own rules. CSS load order matters: themes, components, Magic rules, the opt-in sheet, then the host's own styles. The source is flat, one file per component: card_details.rs and card_row.rs (shared card rendering), card_role_chips.rs, keyword_chips.rs, oracle_text.rs, flippable_card_image.rs, changelog.rs (renders the compiled-in changelog), charts.rs and architecture.rs. theme.rs converts a user's saved preferences to orangui's `ThemeConfig`, names the class a pip style puts beside the theme class (`pip_style_class`, `pips-natural` for the classic fills `magic.css` keeps), and holds the test that keeps zwipe-core's theme list (`ALLOWED_THEMES`, `COLORBLIND_THEMES`, `display_theme_name`) equal to orangui's, since zerver validates against core's and the palettes live in orangui.
+Styling: orangui's `THEMES_CSS`, `COMPONENTS_CSS`, `APP_CSS`, `SITE_CSS` and `TOAST_CSS` come through as they are; `MAGIC_CSS` (`assets/magic.css`) holds this crate's own rules. CSS load order matters: themes, components, Magic rules, the opt-in sheet, then the host's own styles. The source is flat, one file per component: card_details.rs and card_row.rs (shared card rendering), card_role_chips.rs, keyword_chips.rs, oracle_text.rs, flippable_card_image.rs, changelog.rs (renders the compiled-in changelog), charts.rs and architecture.rs. theme.rs converts a user's saved settings to orangui's `ThemeConfig`, names the class a pip style puts beside the theme class (`pip_style_class`, `pips-natural` for the classic fills `magic.css` keeps), and holds the test that keeps zwipe-core's theme list (`ALLOWED_THEMES`, `COLORBLIND_THEMES`, `display_theme_name`) equal to orangui's, since zerver validates against core's and the palettes live in orangui.
 
 ---
 

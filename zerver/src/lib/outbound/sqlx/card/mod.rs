@@ -1260,7 +1260,7 @@ impl CardRepository for MyPostgres {
             sep.push_unseparated(" ->> LOWER(name)) IS NOT NULL");
         }
 
-        // Universes Beyond preference: serve a card only when its pick is
+        // Universes Beyond setting: serve a card only when its pick is
         // in-universe (the view's pick preference makes that a card-level
         // truth: an OOU pick means no in-universe printing exists) or it has
         // a printing in a whitelisted franchise. An empty whitelist overlaps
@@ -1685,18 +1685,18 @@ impl CardRepository for MyPostgres {
         Ok(sets)
     }
 
-    async fn fetch_universes_beyond_preferences(
+    async fn fetch_universes_beyond_settings(
         &self,
         user_id: uuid::Uuid,
     ) -> anyhow::Result<(bool, Vec<String>)> {
         let row: Option<(bool, Vec<String>)> = sqlx::query_as(
             "SELECT exclude_universes_beyond, universes_beyond_exceptions \
-             FROM user_preferences WHERE user_id = $1",
+             FROM user_settings WHERE user_id = $1",
         )
         .bind(user_id)
         .fetch_optional(&self.pool)
         .await
-        .context("failed to read universes beyond preferences")?;
+        .context("failed to read universes beyond settings")?;
         let (exclude, slugs) = row.unwrap_or((false, Vec::new()));
         Ok((
             exclude,
@@ -1842,9 +1842,9 @@ impl CardRepository for MyPostgres {
     ) -> Result<Vec<Card>, SearchCardsError> {
         let seed = format!("{user_id}:{}", Utc::now().date_naive());
         // Same degrade-to-everything read as the deck-aware serve: the UB
-        // preference should never fail commander select.
+        // setting should never fail commander select.
         let (exclude_universes_beyond, universes_beyond_exception_set_names) = self
-            .fetch_universes_beyond_preferences(user_id)
+            .fetch_universes_beyond_settings(user_id)
             .await
             .unwrap_or_default();
         let scryfall_data = self

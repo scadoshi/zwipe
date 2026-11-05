@@ -6,7 +6,7 @@
 
 ## Why this one first
 
-It is the clearest case. The picker writes `user_preferences.universes_beyond_exceptions`, which is a server round trip, so a compiled list can only ever render checkboxes the user cannot save.
+It is the clearest case. The picker writes `user_settings.universes_beyond_exceptions`, which is a server round trip, so a compiled list can only ever render checkboxes the user cannot save.
 
 It is also the one with a standing chore attached. `universe.rs` is hand-maintained and grows with every crossover set, and `todo.md` carries a per-release top-up task. Detection already updates on a zerver deploy, since zerver compiles the same table for its SQL predicates. The picker was the only half still waiting on a client build.
 

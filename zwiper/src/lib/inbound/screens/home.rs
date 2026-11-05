@@ -15,7 +15,7 @@ use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::user::hints::OneTimeHint;
-use zwipe_core::domain::user::preferences::PipColor;
+use zwipe_core::domain::user::settings::PipColor;
 use zwipe_ui::generation::Ticket;
 use zwipe_ui::home::{Figures, Scope};
 use zwipe_ui::screens::home::{
@@ -145,7 +145,7 @@ impl Driver {
     fn perform(self, effect: Effect) {
         match effect {
             Effect::FetchUser(ticket) => self.fetch_user(ticket),
-            Effect::FetchPreferences => self.fetch_preferences(),
+            Effect::FetchSettings => self.fetch_settings(),
             Effect::FetchCounts(ticket) => self.fetch_counts(ticket),
             Effect::FetchMyCounts(ticket) => self.fetch_my_counts(ticket),
             Effect::FetchPlayStyle(ticket) => self.fetch_play_style(ticket),
@@ -212,8 +212,8 @@ impl Driver {
         });
     }
 
-    /// Applies fresh preferences, so the theme stays current mid-session.
-    fn fetch_preferences(self) {
+    /// Applies fresh settings, so the theme stays current mid-session.
+    fn fetch_settings(self) {
         let Self {
             session,
             client,
@@ -225,15 +225,15 @@ impl Driver {
             return;
         };
         spawn(async move {
-            match client().fetch_preferences(&s).await {
-                Ok(prefs) => {
-                    let theme = components::theme_from_preferences(&prefs);
+            match client().fetch_settings(&s).await {
+                Ok(settings) => {
+                    let theme = components::theme_from_settings(&settings);
                     app_icon::follow(&theme);
                     theme_config.set(theme);
-                    pip_style.set(prefs.pip_style);
+                    pip_style.set(settings.pip_style);
                 }
                 Err(e) => {
-                    tracing::warn!("preferences fetch failed: {e}");
+                    tracing::warn!("settings fetch failed: {e}");
                 }
             }
         });
@@ -434,7 +434,7 @@ pub fn Home() -> Element {
     let first_login_hint_open = driver.hint_open;
 
     // Refreshes the user (then greets with `home::greeting`), the
-    // preferences, the counters, the summary and the flavor card as the
+    // settings, the counters, the summary and the flavor card as the
     // model asks, and offers the first-login hint, once per mount.
     use_hook(move || {
         for effect in opening {

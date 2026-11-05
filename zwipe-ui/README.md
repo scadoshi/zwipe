@@ -17,7 +17,7 @@ Anything that decides what a screen shows or does and that two or more clients n
 - The swipe stack and its actions, Add's search rules, the deck cards view's pass and quantity bursts, and the land and budget crossings.
 - The changelog's filing and filter, a card's faces as text and info lines (`card::info`), the session freshness rule, the version gate and the problem report link.
 - The oracle tag dictionary's buckets, letter rail and rows (`dictionary`).
-- Config's preference changes, sparse update, toggle settle, exception chips and toasts (`preferences`).
+- Config's setting changes, sparse update, toggle settle, exception chips and toasts (`settings`).
 - The account forms: every field check and its words, the Log in gate, the Resend and Delete account labels; Home's greeting.
 - Hint copy as typed spans: every `?` topic and every one-time hint (`hint`).
 - Usage telemetry: the buffer, handled-error reports, error kinds and the screen vocabulary (`telemetry`), with each client's lock, flush timer and send left to the client.

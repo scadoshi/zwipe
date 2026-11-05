@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT user_id, theme, dark_mode, exclude_universes_beyond, universes_beyond_exceptions, pip_style FROM user_preferences WHERE user_id = $1",
+  "query": "SELECT user_id, theme, dark_mode, exclude_universes_beyond, universes_beyond_exceptions, pip_style FROM user_settings WHERE user_id = $1",
   "describe": {
     "columns": [
       {
@@ -9,7 +9,7 @@
         "type_info": "Uuid",
         "origin": {
           "Table": {
-            "table": "user_preferences",
+            "table": "user_settings",
             "name": "user_id"
           }
         }
@@ -20,7 +20,7 @@
         "type_info": "Varchar",
         "origin": {
           "Table": {
-            "table": "user_preferences",
+            "table": "user_settings",
             "name": "theme"
           }
         }
@@ -31,7 +31,7 @@
         "type_info": "Bool",
         "origin": {
           "Table": {
-            "table": "user_preferences",
+            "table": "user_settings",
             "name": "dark_mode"
           }
         }
@@ -42,7 +42,7 @@
         "type_info": "Bool",
         "origin": {
           "Table": {
-            "table": "user_preferences",
+            "table": "user_settings",
             "name": "exclude_universes_beyond"
           }
         }
@@ -53,7 +53,7 @@
         "type_info": "TextArray",
         "origin": {
           "Table": {
-            "table": "user_preferences",
+            "table": "user_settings",
             "name": "universes_beyond_exceptions"
           }
         }
@@ -64,7 +64,7 @@
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "user_preferences",
+            "table": "user_settings",
             "name": "pip_style"
           }
         }
@@ -84,5 +84,5 @@
       false
     ]
   },
-  "hash": "f65c8765c43895ffe27f209fc56bc83a3f4e8ed8b763a841e057ca2fc0deb24f"
+  "hash": "7f0d216da04266dd38db1a2f9b96f8033243426544cdd55dbfbf9e456a25ecc5"
 }

@@ -72,7 +72,7 @@ fn cold() -> Cached {
     }
 }
 
-/// Everything held and fresh, so Load only asks for the user, the preferences and the summary.
+/// Everything held and fresh, so Load only asks for the user, the settings and the summary.
 fn warm() -> Cached {
     Cached {
         everybody: Some(held(3, Age::Fresh)),
@@ -169,7 +169,7 @@ fn a_cold_load_asks_for_everything_then_offers_the_hint() {
     let (state, effects) = load(cold());
     let [
         Effect::FetchUser(_),
-        Effect::FetchPreferences,
+        Effect::FetchSettings,
         Effect::FetchCounts(_),
         Effect::FetchPlayStyle(_),
         Effect::FetchDecks(_),
@@ -189,7 +189,7 @@ fn a_warm_load_draws_what_is_held_and_skips_fresh_copies() {
     let (state, effects) = load(warm());
     let [
         Effect::FetchUser(_),
-        Effect::FetchPreferences,
+        Effect::FetchSettings,
         Effect::FetchPlayStyle(_),
         Effect::FetchDecks(_),
         Effect::OfferHint(OneTimeHint::FirstLogin),

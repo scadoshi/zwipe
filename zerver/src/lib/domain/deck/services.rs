@@ -415,12 +415,12 @@ where
             .await
             .unwrap_or_default();
 
-        // Universes Beyond preference: served from the user's stored setting
+        // Universes Beyond setting: served from the user's stored setting
         // so every client gets it without a wire change. A failed read
         // degrades to serving everything rather than failing the search.
         let (exclude_universes_beyond, universes_beyond_exception_set_names) = self
             .card_repo
-            .fetch_universes_beyond_preferences(request.user_id)
+            .fetch_universes_beyond_settings(request.user_id)
             .await
             .unwrap_or_default();
 

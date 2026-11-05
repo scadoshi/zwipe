@@ -206,14 +206,14 @@ impl<R: CardRepository> CardService for Service<R> {
         request: &CardQuery,
         user_id: uuid::Uuid,
     ) -> Result<Vec<Card>, SearchCardsError> {
-        // The Universes Beyond preference applies here too: this path backs
+        // The Universes Beyond setting applies here too: this path backs
         // the deck form's typed commander/partner pickers, and typed-name
         // intent does not override a "never serve crossover cards" setting
         // (unlike suppressions, which typed Quick add deliberately bypasses).
         // A failed read degrades to serving everything.
         let (exclude_universes_beyond, universes_beyond_exception_set_names) = self
             .repo
-            .fetch_universes_beyond_preferences(user_id)
+            .fetch_universes_beyond_settings(user_id)
             .await
             .unwrap_or_default();
         self.repo

@@ -17,5 +17,5 @@ pub mod delete_user;
 pub mod fetch_user;
 /// Mark one-time UI hint shown endpoint.
 pub mod mark_hint_shown;
-/// User preferences endpoints.
-pub mod preferences;
+/// User settings endpoints.
+pub mod settings;

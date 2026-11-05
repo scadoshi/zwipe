@@ -31,7 +31,7 @@ pub fn UniversesBeyondExceptionsSheet(
 
     // Server-driven franchise catalog; no compiled fallback. A failed fetch
     // renders no chips and is reported by the catalog-failure toast, which is
-    // the right outcome: the picker writes a preference, so it needs the
+    // the right outcome: the picker writes a setting, so it needs the
     // server regardless of what it could render.
     use_effect(move || cache.ensure_ub_franchises(client));
 

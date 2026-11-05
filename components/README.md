@@ -10,7 +10,7 @@ From orangui, re-exported whole (`pub use orangui::*`): `ActionBar`, `Banner`, `
 
 ## Theme
 
-The hosts hold orangui's `ThemeConfig`. `theme_from_preferences` builds one from a user's saved `UserPreferences`. zwipe-core keeps its own theme list because zerver validates a saved theme against it and core cannot depend on a UI crate; a test in `src/theme.rs` fails if the two lists or their display names differ.
+The hosts hold orangui's `ThemeConfig`. `theme_from_settings` builds one from a user's saved `UserSettings`. zwipe-core keeps its own theme list because zerver validates a saved theme against it and core cannot depend on a UI crate; a test in `src/theme.rs` fails if the two lists or their display names differ.
 
 ## CSS exports
 
@@ -25,4 +25,4 @@ Load them in this order: `THEMES_CSS`, `COMPONENTS_CSS`, `MAGIC_CSS`, then `APP_
 
 ## Notes
 
-Domain types (card data, the changelog entries, the user's preferences) come from `zwipe-core`; this crate adds only presentation. The `Changelog` component renders the shared release history, identical on web and in-app. `tests/html_golden.rs` renders the drawn pieces with the props the hosts pass and compares them to saved copies in `tests/html/`; after a deliberate markup change, rewrite them with `BLESS_HTML=1 cargo test -p components --test html_golden` and review the diff. `scripts/swatch/` renders a themes.css as a review page; point it at orangui's.
+Domain types (card data, the changelog entries, the user's settings) come from `zwipe-core`; this crate adds only presentation. The `Changelog` component renders the shared release history, identical on web and in-app. `tests/html_golden.rs` renders the drawn pieces with the props the hosts pass and compares them to saved copies in `tests/html/`; after a deliberate markup change, rewrite them with `BLESS_HTML=1 cargo test -p components --test html_golden` and review the diff. `scripts/swatch/` renders a themes.css as a review page; point it at orangui's.

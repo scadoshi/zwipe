@@ -628,11 +628,11 @@ async fn set_filters_are_printing_aware(pool: sqlx::PgPool) {
     );
 }
 
-/// The Universes Beyond serve preference: exclusion hides cards with no
+/// The Universes Beyond serve setting: exclusion hides cards with no
 /// in-universe printing, the franchise whitelist lets its cards back through,
 /// and a card with any in-universe printing is never touched.
 #[sqlx::test]
-async fn universes_beyond_preference_filters_serve(pool: sqlx::PgPool) {
+async fn universes_beyond_setting_filters_serve(pool: sqlx::PgPool) {
     let oracle = Uuid::from_u128(0x0003);
     seed_cards(
         &pool,
@@ -658,7 +658,7 @@ async fn universes_beyond_preference_filters_serve(pool: sqlx::PgPool) {
     let repo = Postgres { pool: pool.clone() };
     let q = default_query();
 
-    // Preference off: everything serves.
+    // Setting off: everything serves.
     let served = repo
         .search_scryfall_data_deck_aware(&q, DeckServeContext::default())
         .await

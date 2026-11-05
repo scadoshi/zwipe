@@ -7,7 +7,7 @@ use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::user::preferences::PipColor;
+use zwipe_core::domain::user::settings::PipColor;
 use zwipe_core::http::contracts::auth::HttpAuthenticateUser;
 use zwipe_ui::account::Password;
 use zwipe_ui::screens::login::{self, Action, Destination, Effect, Field, State};
@@ -89,10 +89,10 @@ impl Driver {
             Effect::ClearPassword => password.set(String::new()),
             Effect::SignedIn(new_session) => {
                 new_session.infallible_save();
-                let picked = components::theme_from_preferences(&new_session.preferences);
+                let picked = components::theme_from_settings(&new_session.settings);
                 app_icon::follow(&picked);
                 theme.set(picked);
-                pip_style.set(new_session.preferences.pip_style);
+                pip_style.set(new_session.settings.pip_style);
                 session.set(Some(*new_session));
             }
             Effect::Navigate(to) => {

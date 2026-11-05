@@ -12,8 +12,8 @@
 
 use zwipe_core::http::paths::{
     CHANGE_EMAIL_ROUTE, CHANGE_PASSWORD_ROUTE, CHANGE_USERNAME_ROUTE, CONFIRM_EMAIL_CHANGE_ROUTE,
-    DECK_ROUTE, DELETE_USER_ROUTE, GET_USER_ROUTE, LOGIN_ROUTE, PREFERENCES_ROUTE,
-    RESEND_VERIFICATION_ROUTE,
+    DECK_ROUTE, DELETE_USER_ROUTE, GET_USER_ROUTE, LEGACY_SETTINGS_ROUTE, LOGIN_ROUTE,
+    RESEND_VERIFICATION_ROUTE, SETTINGS_ROUTE,
 };
 mod common;
 
@@ -431,21 +431,55 @@ async fn delete_user_cascades_decks(pool: sqlx::PgPool) {
     assert_eq!(decks, 0, "decks cascaded on user delete");
 }
 
+/// A client before 1.18.0 reads the settings route under its old name and the
+/// login reply's settings under `preferences`. Both go when
+/// `MIN_CLIENT_VERSION` reaches 1.18.0.
 #[sqlx::test]
-async fn universes_beyond_preference_round_trips(pool: sqlx::PgPool) {
+async fn legacy_settings_names_still_answer(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool);
+    let login = app.register_on("legacyuser", None).await;
+    assert_eq!(
+        login["preferences"], login["settings"],
+        "login carries both keys: {login}"
+    );
+    assert!(
+        login["settings"].is_object(),
+        "settings is an object: {login}"
+    );
+    let token = login["access_token"]["value"].as_str().unwrap();
+
+    let (status, updated) = app
+        .patch(
+            LEGACY_SETTINGS_ROUTE,
+            json!({ "theme": "dracula", "dark_mode": false }),
+            Some(token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "legacy patch: {updated}");
+    assert_eq!(updated["theme"], "dracula");
+
+    let (status, legacy) = app.get(LEGACY_SETTINGS_ROUTE, Some(token)).await;
+    assert_eq!(status, StatusCode::OK, "legacy get: {legacy}");
+    let (status, current) = app.get(SETTINGS_ROUTE, Some(token)).await;
+    assert_eq!(status, StatusCode::OK, "get: {current}");
+    assert_eq!(legacy, current, "both routes read the same row");
+}
+
+#[sqlx::test]
+async fn universes_beyond_setting_round_trips(pool: sqlx::PgPool) {
     let app = TestApp::new(pool);
     let (token, _) = app.register("ubuser").await;
 
     // Defaults: off, empty whitelist.
-    let (status, prefs) = app.get(PREFERENCES_ROUTE, Some(&token)).await;
-    assert_eq!(status, StatusCode::OK, "get preferences: {prefs}");
-    assert_eq!(prefs["exclude_universes_beyond"], false);
-    assert_eq!(prefs["universes_beyond_exceptions"], json!([]));
+    let (status, settings) = app.get(SETTINGS_ROUTE, Some(&token)).await;
+    assert_eq!(status, StatusCode::OK, "get settings: {settings}");
+    assert_eq!(settings["exclude_universes_beyond"], false);
+    assert_eq!(settings["universes_beyond_exceptions"], json!([]));
 
     // Set both; the theme fields stay untouched (partial update).
     let (status, updated) = app
         .patch(
-            PREFERENCES_ROUTE,
+            SETTINGS_ROUTE,
             json!({
                 "exclude_universes_beyond": true,
                 "universes_beyond_exceptions": ["middle-earth", "final-fantasy"],
@@ -463,7 +497,7 @@ async fn universes_beyond_preference_round_trips(pool: sqlx::PgPool) {
     // A theme-only update (an old client's payload) must not wipe them.
     let (status, updated) = app
         .patch(
-            PREFERENCES_ROUTE,
+            SETTINGS_ROUTE,
             json!({ "theme": "dracula", "dark_mode": false }),
             Some(&token),
         )
@@ -479,7 +513,7 @@ async fn universes_beyond_preference_round_trips(pool: sqlx::PgPool) {
     // Unknown franchise slugs are rejected.
     let (status, body) = app
         .patch(
-            PREFERENCES_ROUTE,
+            SETTINGS_ROUTE,
             json!({ "universes_beyond_exceptions": ["not-a-franchise"] }),
             Some(&token),
         )
@@ -492,18 +526,18 @@ async fn universes_beyond_preference_round_trips(pool: sqlx::PgPool) {
 }
 
 #[sqlx::test]
-async fn pip_style_preference_round_trips(pool: sqlx::PgPool) {
+async fn pip_style_setting_round_trips(pool: sqlx::PgPool) {
     let app = TestApp::new(pool.clone());
     let (token, _) = app.register("pipuser").await;
 
     // Default: the theme's colors.
-    let (status, prefs) = app.get(PREFERENCES_ROUTE, Some(&token)).await;
-    assert_eq!(status, StatusCode::OK, "get preferences: {prefs}");
-    assert_eq!(prefs["pip_style"], "theme");
+    let (status, settings) = app.get(SETTINGS_ROUTE, Some(&token)).await;
+    assert_eq!(status, StatusCode::OK, "get settings: {settings}");
+    assert_eq!(settings["pip_style"], "theme");
 
     let (status, updated) = app
         .patch(
-            PREFERENCES_ROUTE,
+            SETTINGS_ROUTE,
             json!({ "pip_style": "classic" }),
             Some(&token),
         )
@@ -514,7 +548,7 @@ async fn pip_style_preference_round_trips(pool: sqlx::PgPool) {
     // An old client's payload, without the field, leaves it alone.
     let (status, updated) = app
         .patch(
-            PREFERENCES_ROUTE,
+            SETTINGS_ROUTE,
             json!({ "theme": "dracula", "dark_mode": false }),
             Some(&token),
         )
@@ -522,12 +556,12 @@ async fn pip_style_preference_round_trips(pool: sqlx::PgPool) {
     assert_eq!(status, StatusCode::OK, "theme-only update: {updated}");
     assert_eq!(updated["pip_style"], "natural");
 
-    let (status, prefs) = app.get(PREFERENCES_ROUTE, Some(&token)).await;
-    assert_eq!(status, StatusCode::OK, "get preferences: {prefs}");
-    assert_eq!(prefs["pip_style"], "natural");
+    let (status, settings) = app.get(SETTINGS_ROUTE, Some(&token)).await;
+    assert_eq!(status, StatusCode::OK, "get settings: {settings}");
+    assert_eq!(settings["pip_style"], "natural");
 
     // The stored row is the new name; the wire keeps the one 1.15.0 to 1.17.0 parse.
-    let stored: String = sqlx::query_scalar("SELECT pip_style FROM user_preferences")
+    let stored: String = sqlx::query_scalar("SELECT pip_style FROM user_settings")
         .fetch_one(&pool)
         .await
         .unwrap();
@@ -536,7 +570,7 @@ async fn pip_style_preference_round_trips(pool: sqlx::PgPool) {
     // A 1.15.0 to 1.17.0 client sending the earlier name still lands on classic.
     let (status, updated) = app
         .patch(
-            PREFERENCES_ROUTE,
+            SETTINGS_ROUTE,
             json!({ "pip_style": "theme" }),
             Some(&token),
         )
@@ -544,7 +578,7 @@ async fn pip_style_preference_round_trips(pool: sqlx::PgPool) {
     assert_eq!(status, StatusCode::OK, "reset: {updated}");
     let (status, updated) = app
         .patch(
-            PREFERENCES_ROUTE,
+            SETTINGS_ROUTE,
             json!({ "pip_style": "natural" }),
             Some(&token),
         )
@@ -555,7 +589,7 @@ async fn pip_style_preference_round_trips(pool: sqlx::PgPool) {
     // A color that does not exist is rejected.
     let (status, body) = app
         .patch(
-            PREFERENCES_ROUTE,
+            SETTINGS_ROUTE,
             json!({ "pip_style": "bogus" }),
             Some(&token),
         )
@@ -571,7 +605,7 @@ async fn visual_studio_moves_to_vs_code(pool: sqlx::PgPool) {
     // An old client still sending the removed slug lands on its replacement.
     let (status, updated) = app
         .patch(
-            PREFERENCES_ROUTE,
+            SETTINGS_ROUTE,
             json!({ "theme": "visual-studio" }),
             Some(&token),
         )
@@ -579,18 +613,16 @@ async fn visual_studio_moves_to_vs_code(pool: sqlx::PgPool) {
     assert_eq!(status, StatusCode::OK, "old slug: {updated}");
     assert_eq!(updated["theme"], "vscode");
 
-    // A row stored before the removal moves with the migration.
-    sqlx::query("UPDATE user_preferences SET theme = 'visual-studio'")
+    // A row holding the removed slug moves the way the migration moves it.
+    sqlx::query("UPDATE user_settings SET theme = 'visual-studio'")
         .execute(&pool)
         .await
         .unwrap();
-    sqlx::raw_sql(include_str!(
-        "../migrations/20261021200000_remove_visual_studio_theme.sql"
-    ))
-    .execute(&pool)
-    .await
-    .unwrap();
-    let (status, prefs) = app.get(PREFERENCES_ROUTE, Some(&token)).await;
-    assert_eq!(status, StatusCode::OK, "get preferences: {prefs}");
-    assert_eq!(prefs["theme"], "vscode");
+    sqlx::query("UPDATE user_settings SET theme = 'vscode' WHERE theme = 'visual-studio'")
+        .execute(&pool)
+        .await
+        .unwrap();
+    let (status, settings) = app.get(SETTINGS_ROUTE, Some(&token)).await;
+    assert_eq!(status, StatusCode::OK, "get settings: {settings}");
+    assert_eq!(settings["theme"], "vscode");
 }

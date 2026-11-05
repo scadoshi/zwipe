@@ -8,23 +8,23 @@ use uuid::Uuid;
 use zwipe_core::domain::Email;
 use zwipe_core::domain::user::User;
 use zwipe_core::domain::user::models::hints::MarkHintShown;
-use zwipe_core::domain::user::preferences::{
-    ParsePipColorError, PipColor, UpdatePreferences, UserPreferences,
+use zwipe_core::domain::user::settings::{
+    ParsePipColorError, PipColor, UpdateSettings, UserSettings,
 };
 
 use crate::domain::user::models::get_user::GetUserError;
 use crate::domain::user::models::hints::MarkHintShownError;
-use crate::domain::user::models::preferences::{GetPreferencesError, UpdatePreferencesError};
+use crate::domain::user::models::settings::{FetchSettingsError, UpdateSettingsError};
 use crate::domain::user::ports::UserRepository;
 use crate::outbound::sqlx::postgres::Postgres;
 use crate::outbound::sqlx::user::models::DatabaseUser;
 
-/// Raw database preferences record.
+/// Raw database settings record.
 #[derive(Debug, Clone, sqlx::FromRow)]
-struct DatabaseUserPreferences {
+struct DatabaseUserSettings {
     #[expect(
         dead_code,
-        reason = "the query selects it, but UserPreferences does not carry it"
+        reason = "the query selects it, but UserSettings does not carry it"
     )]
     user_id: Uuid,
     theme: String,
@@ -34,10 +34,10 @@ struct DatabaseUserPreferences {
     pip_style: String,
 }
 
-impl TryFrom<DatabaseUserPreferences> for UserPreferences {
+impl TryFrom<DatabaseUserSettings> for UserSettings {
     type Error = ParsePipColorError;
 
-    fn try_from(db: DatabaseUserPreferences) -> Result<Self, Self::Error> {
+    fn try_from(db: DatabaseUserSettings) -> Result<Self, Self::Error> {
         Ok(Self {
             theme: db.theme,
             dark_mode: db.dark_mode,
@@ -98,42 +98,39 @@ impl UserRepository for Postgres {
         Ok(User::from(database_user))
     }
 
-    // == preferences ==
+    // == settings ==
 
-    async fn fetch_preferences(
-        &self,
-        user_id: Uuid,
-    ) -> Result<UserPreferences, GetPreferencesError> {
+    async fn fetch_settings(&self, user_id: Uuid) -> Result<UserSettings, FetchSettingsError> {
         let result = query_as!(
-            DatabaseUserPreferences,
+            DatabaseUserSettings,
             "SELECT user_id, theme, dark_mode, exclude_universes_beyond, universes_beyond_exceptions, \
-             pip_style FROM user_preferences WHERE user_id = $1",
+             pip_style FROM user_settings WHERE user_id = $1",
             user_id
         )
         .fetch_optional(&self.pool)
         .await
-        .map_err(|e: sqlx::Error| GetPreferencesError::Database(e.into()))?;
+        .map_err(|e: sqlx::Error| FetchSettingsError::Database(e.into()))?;
 
         result
-            .map(UserPreferences::try_from)
+            .map(UserSettings::try_from)
             .transpose()
             .map(Option::unwrap_or_default)
-            .map_err(|e| GetPreferencesError::Database(e.into()))
+            .map_err(|e| FetchSettingsError::Database(e.into()))
     }
 
-    async fn update_preferences(
+    async fn update_settings(
         &self,
-        request: &UpdatePreferences,
-    ) -> Result<UserPreferences, UpdatePreferencesError> {
+        request: &UpdateSettings,
+    ) -> Result<UserSettings, UpdateSettingsError> {
         let mut tx = self
             .pool
             .begin()
             .await
-            .map_err(|e: sqlx::Error| UpdatePreferencesError::Database(e.into()))?;
+            .map_err(|e: sqlx::Error| UpdateSettingsError::Database(e.into()))?;
 
         let result = query_as!(
-            DatabaseUserPreferences,
-            r#"INSERT INTO user_preferences
+            DatabaseUserSettings,
+            r#"INSERT INTO user_settings
                    (user_id, theme, dark_mode, exclude_universes_beyond,
                     universes_beyond_exceptions, pip_style, updated_at)
                VALUES ($1, COALESCE($2, 'zwipe'), COALESCE($3, true),
@@ -141,13 +138,13 @@ impl UserRepository for Postgres {
                        COALESCE($6, 'theme'), NOW())
                ON CONFLICT (user_id)
                DO UPDATE SET
-                   theme = COALESCE($2, user_preferences.theme),
-                   dark_mode = COALESCE($3, user_preferences.dark_mode),
+                   theme = COALESCE($2, user_settings.theme),
+                   dark_mode = COALESCE($3, user_settings.dark_mode),
                    exclude_universes_beyond =
-                       COALESCE($4, user_preferences.exclude_universes_beyond),
+                       COALESCE($4, user_settings.exclude_universes_beyond),
                    universes_beyond_exceptions =
-                       COALESCE($5::text[], user_preferences.universes_beyond_exceptions),
-                   pip_style = COALESCE($6, user_preferences.pip_style),
+                       COALESCE($5::text[], user_settings.universes_beyond_exceptions),
+                   pip_style = COALESCE($6, user_settings.pip_style),
                    updated_at = NOW()
                RETURNING user_id, theme, dark_mode, exclude_universes_beyond,
                          universes_beyond_exceptions, pip_style"#,
@@ -160,14 +157,14 @@ impl UserRepository for Postgres {
         )
         .fetch_one(&mut *tx)
         .await
-        .map_err(|e: sqlx::Error| UpdatePreferencesError::Database(e.into()))?;
+        .map_err(|e: sqlx::Error| UpdateSettingsError::Database(e.into()))?;
 
         tx.commit()
             .await
-            .map_err(|e: sqlx::Error| UpdatePreferencesError::Database(e.into()))?;
+            .map_err(|e: sqlx::Error| UpdateSettingsError::Database(e.into()))?;
 
         result
             .try_into()
-            .map_err(|e: ParsePipColorError| UpdatePreferencesError::Database(e.into()))
+            .map_err(|e: ParsePipColorError| UpdateSettingsError::Database(e.into()))
     }
 }

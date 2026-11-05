@@ -12,9 +12,9 @@ fn gruvbox(dark_mode: bool) -> Theme {
     }
 }
 
-/// The account's preferences: gruvbox dark, theme pips, Universes Beyond hidden with one exception.
-fn account() -> UserPreferences {
-    UserPreferences {
+/// The account's settings: gruvbox dark, theme pips, Universes Beyond hidden with one exception.
+fn account() -> UserSettings {
+    UserSettings {
         theme: "gruvbox".to_owned(),
         dark_mode: true,
         exclude_universes_beyond: true,
@@ -29,7 +29,7 @@ fn loading() -> (State, Ticket) {
     let effects = state.update(Action::Load);
     let [
         Effect::OfferHint(OneTimeHint::Config),
-        Effect::FetchPreferences(ticket),
+        Effect::FetchSettings(ticket),
     ] = effects.as_slice()
     else {
         panic!("Load offers the hint and fetches: {effects:?}");
@@ -37,18 +37,18 @@ fn loading() -> (State, Ticket) {
     (state, *ticket)
 }
 
-/// A state with `preferences` loaded.
-fn loaded(preferences: UserPreferences) -> State {
+/// A state with `settings` loaded.
+fn loaded(settings: UserSettings) -> State {
     let (mut state, ticket) = loading();
     let _ = state.update(Action::Loaded {
         ticket,
-        preferences: Box::new(preferences),
+        settings: Box::new(settings),
     });
     state
 }
 
 /// The ticket and change of the one [`Effect::Save`] in `effects`.
-fn save_in(effects: &[Effect]) -> (SaveTicket, PreferenceChange) {
+fn save_in(effects: &[Effect]) -> (SaveTicket, SettingChange) {
     let mut saves = effects.iter().filter_map(|effect| match effect {
         Effect::Save { ticket, change } => Some((*ticket, change.clone())),
         _ => None,
@@ -59,10 +59,10 @@ fn save_in(effects: &[Effect]) -> (SaveTicket, PreferenceChange) {
     save
 }
 
-fn saved(state: &mut State, ticket: SaveTicket, preferences: UserPreferences) -> Vec<Effect> {
+fn saved(state: &mut State, ticket: SaveTicket, settings: UserSettings) -> Vec<Effect> {
     state.update(Action::Saved {
         ticket,
-        preferences: Box::new(preferences),
+        settings: Box::new(settings),
     })
 }
 
@@ -99,19 +99,19 @@ fn the_hint_is_offered_once_per_visit() {
     let (mut state, _) = loading();
     let effects = state.update(Action::Load);
     assert!(
-        matches!(effects.as_slice(), [Effect::FetchPreferences(_)]),
+        matches!(effects.as_slice(), [Effect::FetchSettings(_)]),
         "{effects:?}"
     );
 }
 
 #[test]
-fn loaded_preferences_enable_universes_beyond_and_show_the_pips() {
+fn loaded_settings_enable_universes_beyond_and_show_the_pips() {
     let (mut state, ticket) = loading();
-    let mut preferences = account();
-    preferences.pip_style = PipColor::Classic;
+    let mut settings = account();
+    settings.pip_style = PipColor::Classic;
     let effects = state.update(Action::Loaded {
         ticket,
-        preferences: Box::new(preferences),
+        settings: Box::new(settings),
     });
     assert_eq!(effects, [Effect::ShowPips(PipColor::Classic)]);
     assert_eq!(state.status(), Status::Loaded);
@@ -126,9 +126,9 @@ fn loaded_preferences_enable_universes_beyond_and_show_the_pips() {
 
 #[test]
 fn exceptions_stay_off_while_universes_beyond_shows() {
-    let mut preferences = account();
-    preferences.exclude_universes_beyond = false;
-    let mut state = loaded(preferences);
+    let mut settings = account();
+    settings.exclude_universes_beyond = false;
+    let mut state = loaded(settings);
     assert!(state.universes_beyond_enabled());
     assert!(!state.exceptions_enabled());
     assert!(state.exceptions_muted());
@@ -150,13 +150,13 @@ fn a_failed_load_keeps_universes_beyond_off_and_says_nothing() {
 fn a_late_reply_is_ignored() {
     let (mut state, old) = loading();
     let effects = state.update(Action::Load);
-    let [Effect::FetchPreferences(new)] = effects.as_slice() else {
+    let [Effect::FetchSettings(new)] = effects.as_slice() else {
         panic!("{effects:?}");
     };
     assert_eq!(
         state.update(Action::Loaded {
             ticket: old,
-            preferences: Box::new(account()),
+            settings: Box::new(account()),
         }),
         []
     );
@@ -164,7 +164,7 @@ fn a_late_reply_is_ignored() {
     assert_eq!(state.status(), Status::Loading);
     let _ = state.update(Action::Loaded {
         ticket: *new,
-        preferences: Box::new(account()),
+        settings: Box::new(account()),
     });
     assert_eq!(state.status(), Status::Loaded);
 }
@@ -173,7 +173,7 @@ fn a_late_reply_is_ignored() {
 fn a_failed_reload_keeps_what_loaded() {
     let mut state = loaded(account());
     let effects = state.update(Action::Load);
-    let [Effect::FetchPreferences(ticket)] = effects.as_slice() else {
+    let [Effect::FetchSettings(ticket)] = effects.as_slice() else {
         panic!("{effects:?}");
     };
     assert_eq!(state.status(), Status::Loaded);
@@ -192,7 +192,7 @@ fn dark_mode_shows_at_once_and_saves_the_same_theme() {
     let (_, change) = save_in(&effects);
     assert_eq!(
         change,
-        PreferenceChange::DarkMode {
+        SettingChange::DarkMode {
             theme: "gruvbox".to_owned(),
             dark_mode: false,
         }
@@ -256,7 +256,7 @@ fn pips_show_at_once_and_save_the_other_style() {
     });
     assert_eq!(effects.first(), Some(&Effect::ShowPips(PipColor::Classic)));
     let (ticket, change) = save_in(&effects);
-    assert_eq!(change, PreferenceChange::Pips(PipColor::Classic));
+    assert_eq!(change, SettingChange::Pips(PipColor::Classic));
     let mut reply = account();
     reply.pip_style = PipColor::Classic;
     assert_eq!(
@@ -298,14 +298,14 @@ fn a_pips_reply_overtaken_by_a_newer_tap_is_ignored() {
 
 #[test]
 fn universes_beyond_flips_at_once_and_toasts_the_reply() {
-    let mut preferences = account();
-    preferences.exclude_universes_beyond = false;
-    let mut state = loaded(preferences);
+    let mut settings = account();
+    settings.exclude_universes_beyond = false;
+    let mut state = loaded(settings);
     let effects = state.update(Action::ToggleUniversesBeyond);
     assert!(state.hides_universes_beyond());
     assert!(state.exceptions_enabled());
     let (ticket, change) = save_in(&effects);
-    assert_eq!(change, PreferenceChange::HideUniversesBeyond(true));
+    assert_eq!(change, SettingChange::HideUniversesBeyond(true));
     assert_eq!(
         saved(&mut state, ticket, account()),
         [Effect::Toast(Toast::new(
@@ -405,7 +405,7 @@ fn a_kept_theme_closes_the_sheet_and_saves_without_a_preview_change() {
     let (ticket, change) = save_in(&effects);
     assert_eq!(
         change,
-        PreferenceChange::Theme {
+        SettingChange::Theme {
             theme: "dracula".to_owned(),
             dark_mode: false,
         }
@@ -554,7 +554,7 @@ fn saved_exceptions_close_the_sheet_then_land_on_the_reply() {
         Some(&Effect::CloseSheet(Sheet::Exceptions))
     );
     let (ticket, change) = save_in(&effects);
-    assert_eq!(change, PreferenceChange::Exceptions(slugs(&["a", "b"])));
+    assert_eq!(change, SettingChange::Exceptions(slugs(&["a", "b"])));
     assert!(!state.editing_exceptions());
     assert_eq!(state.exceptions(), slugs(&["a"]), "waits for the server");
     let mut reply = account();
@@ -581,9 +581,9 @@ fn a_failed_exceptions_save_keeps_the_saved_list() {
 
 #[test]
 fn unknown_saved_slugs_still_draw_the_chip_row_but_no_chip() {
-    let mut preferences = account();
-    preferences.universes_beyond_exceptions = slugs(&["not-a-franchise"]);
-    let state = loaded(preferences);
+    let mut settings = account();
+    settings.universes_beyond_exceptions = slugs(&["not-a-franchise"]);
+    let state = loaded(settings);
     assert!(state.shows_exception_chips());
     assert_eq!(state.exception_names(), Vec::<&str>::new());
 }
