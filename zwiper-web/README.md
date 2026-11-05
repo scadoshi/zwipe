@@ -24,7 +24,7 @@ BACKEND_URL=http://localhost:3000 dx serve
 
 3. Open http://localhost:8080 and log in with an account on that zerver.
 
-`BACKEND_URL` is read at build time. Without it a debug build talks to `http://localhost:3000` and a release build to `https://api.zwipe.net`. The session, the last theme, the last counters and Home's count scope live in the browser's `localStorage` for this origin.
+`BACKEND_URL` is read at build time, from the process env or a `.env` in this folder (see `.env.example`); a change to either rebuilds. Without it a debug build talks to `http://localhost:3000` and a release build to `https://api.zwipe.net`. A browser enforces zerver's `ALLOWED_ORIGINS`, so the zerver you point at must list `http://localhost:8080`. The session, the last theme, the last counters and Home's count scope live in the browser's `localStorage` for this origin.
 
 `dx build --platform web` makes the bundle without serving it. The gate every commit passes is in `context/parity-plan.md`.
 
