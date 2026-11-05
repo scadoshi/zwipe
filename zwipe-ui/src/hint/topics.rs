@@ -287,9 +287,11 @@ impl HintTopic {
             ],
             Self::Commander => vec![
                 bullet(vec![
-                    text("Search only shows cards that can lead this format. "),
+                    text("With "),
                     key_in("Filter", Role::Warning),
-                    text(" searches any card"),
+                    text(
+                        " lit, search shows only cards that can lead this format. Turn it off to set any card as the commander",
+                    ),
                 ]),
                 bullet(vec![key("Swipe"), text(" picks one by swiping")]),
             ],
