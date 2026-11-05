@@ -195,7 +195,7 @@
 
 /* Opt-in art-crop thumbnail at the far left of the row (CardRow `show_art`).
    Art crops vary in aspect card to card, so a fixed box with cover-fit keeps
-   every row's squircle identical. Lazy-loaded by the img attribute. The
+   every row's thumb identical. Lazy-loaded by the img attribute. The
    host's toggle flips `.art-hidden`, easing size + opacity instead of
    clipping the DOM in and out; the negative margin swallows the flex gap so
    a hidden thumb leaves no double-gap. */
@@ -204,7 +204,7 @@
     width: 4rem;
     height: 2.9rem;
     object-fit: cover;
-    border-radius: 0.6rem;
+    border-radius: 0.5rem;
     border: 1px solid var(--border-secondary);
     box-shadow: var(--shadow-sm);
     transition:
@@ -1629,7 +1629,7 @@ i.ms.ms-cost.ms-gp {
     padding: 0.75rem 1rem 1rem;
 }
 
-/* A tile is the squircle over its chips with nothing drawn around them;
+/* A tile is the art square over its chips with nothing drawn around them;
    the whole of it is the deck's button. */
 .home-deck-tile {
     display: flex;
@@ -1650,8 +1650,8 @@ i.ms.ms-cost.ms-gp {
     filter: brightness(0.85);
 }
 
-/* The squircle: the art crop filling it, or the raised fill with the pips
-   centered as the placeholder. */
+/* The square, at the panels' corner radius: the art crop filling it, or
+   the raised fill with the pips centered as the placeholder. */
 .home-deck-tile-art {
     display: flex;
     align-items: center;
@@ -1659,7 +1659,7 @@ i.ms.ms-cost.ms-gp {
     gap: 0.2rem;
     width: 100%;
     aspect-ratio: 1 / 1;
-    border-radius: 22%;
+    border-radius: 1rem;
     background-color: var(--bg-raised);
     overflow: hidden;
     font-size: 1.3rem;
