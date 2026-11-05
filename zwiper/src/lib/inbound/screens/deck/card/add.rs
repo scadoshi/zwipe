@@ -771,7 +771,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                             "aria-label": add_cards::SYNERGY,
                             "aria-pressed": "{filter_builder.read().synergy()}",
                             onclick: move |_| driver.dispatch(Action::ToggleSynergy),
-                            DockIcon { path: icons::LINK }
+                            DockIcon { path: icons::BOLT }
                         }
                     }
                     DockFilter {

@@ -197,7 +197,7 @@ pub(crate) static GUIDES: &[Guide] = &[
             ]),
             Block::Image {
                 file: "getting-started/02-add-cards.webp",
-                alt: "The Add deck cards screen: a Goblin on top of the stack, the From row's Search chip, the link icon lit in the dock",
+                alt: "The Add deck cards screen: a Goblin on top of the stack, the From row's Search chip, the bolt lit in the dock",
                 caption: None,
             },
             Block::P(
@@ -205,7 +205,7 @@ pub(crate) static GUIDES: &[Guide] = &[
             ),
             Block::H2("Shape the stack"),
             Block::P(
-                "On a commander deck, Synergy, the [[link]] in the dock, starts the stack with cards that fit your commander. The [[funnel]] narrows by color, type, keyword, price, and more. Sorting reorders without changing which cards are eligible.",
+                "On a commander deck, Synergy, the [[bolt]] in the dock, starts the stack with cards that fit your commander. The [[funnel]] narrows by color, type, keyword, price, and more. Sorting reorders without changing which cards are eligible.",
             ),
             Block::H2("Review and refine"),
             Block::P(
@@ -250,7 +250,7 @@ pub(crate) static GUIDES: &[Guide] = &[
             ),
             Block::H2("Synergy"),
             Block::P(
-                "On a commander deck, the [[link]] in the dock turns Synergy on and the stack starts with cards that fit your commander, best fits first. Off, you browse every legal card. See Synergy-ranked cards.",
+                "On a commander deck, the [[bolt]] in the dock turns Synergy on and the stack starts with cards that fit your commander, best fits first. Off, you browse every legal card. See Synergy-ranked cards.",
             ),
             Block::Note(
                 "If synergy is still warming up, Zwipe shows the full pool and tells you once.",
@@ -464,7 +464,7 @@ pub(crate) static GUIDES: &[Guide] = &[
             ),
             Block::H2("Where and how"),
             Block::P(
-                "Synergy is the [[link]] in the Add deck cards dock, there when the source is Search and the deck has a commander. On, the stack starts with fitting cards, best first, 25 at a time, shuffled within each batch per deck per day. Off, you browse everything legal. It's on by default, and toggling it reloads the stack.",
+                "Synergy is the [[bolt]] in the Add deck cards dock, there when the source is Search and the deck has a commander. On, the stack starts with fitting cards, best first, 25 at a time, shuffled within each batch per deck per day. Off, you browse everything legal. It's on by default, and toggling it reloads the stack.",
             ),
             Block::Image {
                 file: "synergy/01-synergy-on.webp",
