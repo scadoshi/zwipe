@@ -3,7 +3,7 @@
 //! (deck, oracle and other tags). A wide window puts `Profile` in the left
 //! column and the other two in the right.
 
-use components::TextInput;
+use components::{ClearWrap, TextInput};
 use dioxus::prelude::*;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::card::search_card::commander_eligibility;
@@ -89,19 +89,15 @@ fn ProfileFields(form: DeckForm, on_enter: EventHandler<()>) -> Element {
                     div { class: "label-row",
                         label { class: "label", "Format" }
                         InfoButton { topic: HintTopic::Format }
-                        if format.is_some() {
-                            button {
-                                class: "clear-btn",
-                                r#type: "button",
-                                onclick: move |_| form.clear_format(),
-                                "\u{00d7}"
-                            }
-                        }
                     }
-                    if let Some(format) = format {
-                        div { class: "input input-tappable", onclick: move |_| format_open.set(true), "{format.display_name()}" }
-                    } else {
-                        div { class: "input input-placeholder input-tappable", onclick: move |_| format_open.set(true), "Not set" }
+                    ClearWrap {
+                        filled: format.is_some(),
+                        on_clear: move |()| form.clear_format(),
+                        if let Some(format) = format {
+                            div { class: "input input-tappable", onclick: move |_| format_open.set(true), "{format.display_name()}" }
+                        } else {
+                            div { class: "input input-placeholder input-tappable", onclick: move |_| format_open.set(true), "Not set" }
+                        }
                     }
                 }
                 Collapsible { show: show_commander,
@@ -217,29 +213,25 @@ fn BudgetFields(form: DeckForm) -> Element {
                                 }
                             }
                         }
-                        if !price().is_empty() {
-                            button {
-                                class: "clear-btn",
-                                r#type: "button",
-                                onclick: move |_| price.set(String::new()),
-                                "\u{00d7}"
-                            }
-                        }
                     }
-                    input {
-                        class: "input",
-                        id: "price_target",
-                        r#type: "text",
-                        inputmode: "decimal",
-                        placeholder: "Not set",
-                        value: "{price}",
-                        autocapitalize: "none",
-                        autocorrect: "off",
-                        spellcheck: "false",
-                        oninput: move |event| {
-                            let kept: String = event.value().chars().filter(|c| form::price_char(*c)).collect();
-                            price.set(kept);
-                        },
+                    ClearWrap {
+                        filled: !price().is_empty(),
+                        on_clear: move |()| price.set(String::new()),
+                        input {
+                            class: "input",
+                            id: "price_target",
+                            r#type: "text",
+                            inputmode: "decimal",
+                            placeholder: "Not set",
+                            value: "{price}",
+                            autocapitalize: "none",
+                            autocorrect: "off",
+                            spellcheck: "false",
+                            oninput: move |event| {
+                                let kept: String = event.value().chars().filter(|c| form::price_char(*c)).collect();
+                                price.set(kept);
+                            },
+                        }
                     }
                 }
             }
@@ -266,15 +258,10 @@ fn TagFields(form: DeckForm) -> Element {
                         label { class: "label", "Deck tags" }
                         InfoButton { topic: HintTopic::DeckTags }
                         span { class: "field-count", "{tags.read().len()}/{MAX_DECK_TAGS}" }
-                        if !tags.read().is_empty() {
-                            button {
-                                class: "clear-btn",
-                                r#type: "button",
-                                onclick: move |_| tags.set(Vec::new()),
-                                "\u{00d7}"
-                            }
-                        }
                     }
+                    ClearWrap {
+                        filled: !tags.read().is_empty(),
+                        on_clear: move |()| tags.set(Vec::new()),
                     if tags.read().is_empty() {
                         div { class: "input input-placeholder input-tappable", onclick: move |_| tags_open.set(true), "Not set" }
                     } else {
@@ -295,21 +282,17 @@ fn TagFields(form: DeckForm) -> Element {
                             }
                         }
                     }
+                    }
                 }
                 div { style: "margin-top: 1rem;",
                     div { class: "label-row",
                         label { class: "label", "Oracle tags" }
                         InfoButton { topic: HintTopic::OracleTags }
                         span { class: "field-count", "{oracle_tags.read().len()}/{MAX_DECK_ORACLE_TAGS}" }
-                        if !oracle_tags.read().is_empty() {
-                            button {
-                                class: "clear-btn",
-                                r#type: "button",
-                                onclick: move |_| oracle_tags.set(Vec::new()),
-                                "\u{00d7}"
-                            }
-                        }
                     }
+                    ClearWrap {
+                        filled: !oracle_tags.read().is_empty(),
+                        on_clear: move |()| oracle_tags.set(Vec::new()),
                     if oracle_tags.read().is_empty() {
                         div { class: "input input-placeholder input-tappable", onclick: move |_| oracle_open.set(true), "Not set" }
                     } else {
@@ -329,6 +312,7 @@ fn TagFields(form: DeckForm) -> Element {
                                 }
                             }
                         }
+                    }
                     }
                 }
                 div { style: "margin-top: 1rem;",

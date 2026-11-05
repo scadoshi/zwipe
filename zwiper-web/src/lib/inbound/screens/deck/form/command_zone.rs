@@ -6,7 +6,7 @@
 //! one. A picked card clears when typing starts, never on a click, a kept
 //! deviation from the app.
 
-use components::TOAST_NORMAL;
+use components::{ClearWrap, TOAST_NORMAL};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, Toasts, use_toast};
 use zwipe_core::domain::card::Card;
@@ -170,17 +170,6 @@ pub fn CommandZoneField(form: DeckForm, slot: Slot, label: String) -> Element {
                     onclick: move |_| filter_on.toggle(),
                     "Filter"
                 }
-                if card.read().is_some() {
-                    button {
-                        class: "clear-btn",
-                        r#type: "button",
-                        onclick: move |_| {
-                            state.clear_all();
-                            dropdown.set(false);
-                        },
-                        "\u{00d7}"
-                    }
-                }
                 div {
                     class: "chip-xs chip-primary",
                     onclick: move |_| swipe_open.set(true),
@@ -208,10 +197,21 @@ pub fn CommandZoneField(form: DeckForm, slot: Slot, label: String) -> Element {
                     }
                 }
             }
-            div { class: "flex items-center gap-05",
+            // The × in the box clears what it shows: the search typed into
+            // it, or the card picked.
+            ClearWrap {
+                filled: !query().is_empty() || card.read().is_some(),
+                on_clear: move |()| {
+                    if query.peek().is_empty() {
+                        state.clear_all();
+                    } else {
+                        query.set(String::new());
+                        text.set(String::new());
+                    }
+                    dropdown.set(false);
+                },
                 input {
                     class: "input",
-                    style: "flex: 1;",
                     id: input_id(slot),
                     r#type: "text",
                     placeholder: "Not set",
@@ -250,18 +250,6 @@ pub fn CommandZoneField(form: DeckForm, slot: Slot, label: String) -> Element {
                             _ => {}
                         }
                     },
-                }
-                if !query().is_empty() {
-                    button {
-                        class: "clear-btn",
-                        r#type: "button",
-                        onclick: move |_| {
-                            query.set(String::new());
-                            text.set(String::new());
-                            dropdown.set(false);
-                        },
-                        "\u{00d7}"
-                    }
                 }
             }
         }
