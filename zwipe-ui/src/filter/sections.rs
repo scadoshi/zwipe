@@ -186,13 +186,12 @@ impl Section {
             Self::Sort => {
                 b.unset_sort();
             }
-            // The app's clear sets promo to No, while the default leaves it at Any.
+            // Every toggle back to its default, so the section reads as unset.
             Self::Config => {
-                b.set_is_playable(true)
-                    .set_digital(false)
-                    .set_oversized(false)
-                    .set_promo(false)
-                    .set_content_warning(false);
+                let default = CardQueryBuilder::default();
+                for toggle in Toggle::ALL {
+                    toggle.set(b, toggle.get(&default));
+                }
             }
         }
     }
@@ -807,11 +806,12 @@ mod tests {
         }
         assert!(Section::Config.is_active(&b));
         Section::Config.clear(&mut b);
-        assert_eq!(b.promo(), Some(false), "the config clear sets promo to No");
-        assert!(
-            Section::Config.is_active(&b),
-            "so Config still reads as set, as in the app"
+        assert_eq!(
+            b.promo(),
+            CardQueryBuilder::default().promo(),
+            "the config clear restores the default"
         );
+        assert!(!Section::Config.is_active(&b), "so Config reads as unset");
     }
 
     #[test]
