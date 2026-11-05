@@ -3042,11 +3042,14 @@ button {
 }
 
 .home-flavor {
-    /* As wide as the hero panel above it, with a gap between the two. */
+    /* As wide as the hero panel above it, with a gap between the two. In a
+       screen's column it keeps its full height instead of shrinking to the
+       minimum and spilling its row past the border. */
     width: calc(100% - 2rem);
     max-width: 24rem;
     margin-top: var(--panel-gap);
     min-height: 9rem;
+    flex-shrink: 0;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
