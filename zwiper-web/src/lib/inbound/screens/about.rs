@@ -3,7 +3,8 @@
 //! Credits sit side by side under the page head, and the Changelog panel
 //! and the release panels run the page's width under them.
 //!
-//! The top panel holds the Version, Website and Privacy policy rows. Under it
+//! The top panel holds the Version and Privacy policy rows; the app's
+//! Website row has no place on the website itself. Under it
 //! a Credits panel holds the Scryfall credit and the Fan Content notice from
 //! `zwipe_core::legal`, then a Changelog panel holds the shared
 //! [`components::ChangelogFilters`] as a row, with each release a panel of
@@ -103,16 +104,6 @@ pub fn About() -> Element {
                             RowLabel { label: Row::Version.label(), topic: HintTopic::Version }
                             div { class: "settings-row-value",
                                 span { {about::version_label(APP_VERSION)} }
-                            }
-                        }
-                        div { class: "settings-row",
-                            RowLabel { label: Row::Website.label(), topic: HintTopic::Website }
-                            div { class: "settings-row-value",
-                                Button {
-                                    variant: ButtonVariant::Action,
-                                    onclick: move |_| driver.dispatch(Action::Website),
-                                    {about::WEBSITE_LINK}
-                                }
                             }
                         }
                         div { class: "settings-row",

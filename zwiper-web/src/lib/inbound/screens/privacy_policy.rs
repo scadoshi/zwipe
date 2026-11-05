@@ -1,5 +1,4 @@
-//! Privacy policy: a sticky contents column beside the section cards on a
-//! wide window, the cards alone below the breakpoint.
+//! Privacy policy: the section cards, centered at every width.
 //!
 //! The copy is zwipe-core's, compiled in, so the app, the website and this
 //! page say the same; there is nothing to load.
@@ -11,38 +10,16 @@ use zwipe_core::legal::{PRIVACY_INTRO_HTML, PRIVACY_LAST_UPDATED};
 use crate::domain::privacy::{self, CONTACT};
 use crate::inbound::shell::ScreenFrame;
 
-/// The policy, from About. A contents entry scrolls its card into view;
-/// Back is the header's arrow.
+/// The policy, from About. Back is the header's arrow.
 #[component]
 pub fn PrivacyPolicy() -> Element {
     let sections = privacy::sections();
-    let headings = sections
-        .iter()
-        .map(|s| s.heading.clone())
-        .chain([CONTACT.to_string()]);
 
     rsx! {
         ScreenFrame { title: "Privacy policy",
             description: Some("What data Zwipe collects, how it's used, and your rights".to_string()),
             div { class: "screen-content content-enter",
                 div { class: "web-privacy",
-                    nav { class: "web-privacy-contents", "aria-label": "Contents",
-                        for heading in headings {
-                            button {
-                                key: "{heading}",
-                                class: "web-privacy-contents-link",
-                                onclick: {
-                                    let id = privacy::anchor(&heading);
-                                    move |_| {
-                                        document::eval(&format!(
-                                            "document.getElementById('{id}')?.scrollIntoView({{ behavior: 'smooth', block: 'start' }});"
-                                        ));
-                                    }
-                                },
-                                "{heading}"
-                            }
-                        }
-                    }
                     div { class: "privacy-content",
                         div { class: "privacy-section",
                             div { class: "privacy-head",
