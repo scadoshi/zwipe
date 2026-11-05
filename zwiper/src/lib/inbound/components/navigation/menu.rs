@@ -176,7 +176,7 @@ pub fn MenuFooter(open: Signal<bool>) -> Element {
                 } else {
                     MenuEntry {
                         label: Section::About.label(),
-                        to: Section::About.route(),
+                        to: route_of(Section::About),
                         current: current == Some(Section::About),
                         open,
                         icon: Section::About.icon(),
