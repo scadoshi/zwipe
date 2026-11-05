@@ -45,7 +45,7 @@ fn SwipeDetails(card: Option<Card>) -> Element {
     rsx! {
         div { class: "web-swipe-details",
             if let Some(card) = card {
-                div { class: "sheet-panel",
+                div { class: "web-details-panel",
                     CardDetails {
                         key: "{card.scryfall_data.id}",
                         card,

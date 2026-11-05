@@ -898,6 +898,22 @@ body {
     display: none;
 }
 
+/* The top card's details beside it on a swipe screen sit on the page, so
+   they get a panel of their own; the detail's own inset becomes the
+   panel's. */
+.web-details-panel {
+    --card-row-detail-pad-x: 1rem;
+    padding: 0.75rem 1rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.web-details-panel .card-row-detail {
+    padding: 0;
+}
+
 @media (min-width: 900px) {
     /* The transform makes the modal the containing block of its own fixed
        grid backdrop, so the backdrop stays inside it and the page around it
