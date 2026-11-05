@@ -57,7 +57,7 @@ pub(crate) fn FormatSelect(
                 div { class: "screen-content content-enter tag-screen",
                     div { class: "tag-controls",
                         div { class: "tag-controls-head",
-                            label { class: "tag-search-label", "Search" }
+                            span { class: "stat-chip stat-chip-p1 chip-row-label", "Search" }
                         }
 
                         input { class: "input",

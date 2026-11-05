@@ -248,6 +248,13 @@ button {
     margin-top: var(--panel-gap);
 }
 
+/* The deck form's column: its panels at the hero's width, a gutter at each
+   side. */
+.deck-form {
+    width: calc(100% - 2rem);
+    max-width: 24rem;
+}
+
 /* ==================
   deck view actions
  ==================== */
@@ -3419,48 +3426,46 @@ button {
     background-color: var(--bg-primary);
 }
 
+/* The grid is the screen's scroller and runs to the window's bottom edge;
+   its own trailing padding scrolls the last row clear of the dock. */
 .screen-content.tag-screen {
     overflow-y: hidden;
     justify-content: flex-start;
+    padding-bottom: 0;
 }
 
 .tag-controls {
     flex: 0 0 auto;
     width: 100%;
     max-width: 22rem;
-    padding: 0.75rem 1rem;
+    padding: 0.75rem 1rem 0;
     display: flex;
     flex-direction: column;
     align-items: stretch;
 }
 
+/* Search as a label chip, the count as a chip at the row's end. */
 .tag-controls-head {
     display: flex;
     align-items: center;
     gap: 0.4rem;
     width: 100%;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.35rem;
 }
 
 .tag-count {
-    color: var(--palette-5);
-    font-size: 0.9rem;
     margin-left: auto;
 }
 
-.tag-search-label {
-    color: var(--accent-tertiary);
-    font-size: 1rem;
-    letter-spacing: 0.1em;
-}
-
+/* The rows fade in right under the definition bar, which the controls end
+   on, and run out under the dock to the window's edge. */
 .tag-grid {
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
     width: 100%;
     max-width: 22rem;
-    padding: 1rem 1rem 0.75rem 1rem;
+    padding: 0.5rem 1rem calc(var(--content-pad-bottom, 0px) + env(safe-area-inset-bottom, 0px) + 0.75rem);
     display: flex;
     flex-wrap: wrap;
     align-content: flex-start;
@@ -3510,7 +3515,8 @@ button {
   oracle-tag dictionary
  ==================== */
 
-/* Search + letter rail, pinned above the scrolling list. */
+/* The Search chip, the field and the letter rail, pinned above the
+   scrolling list; the chip sits as close over the field as the pickers'. */
 .dict-controls {
     flex: 0 0 auto;
     width: 100%;
@@ -3520,6 +3526,10 @@ button {
     flex-direction: column;
     align-items: stretch;
     gap: 0.5rem;
+}
+
+.dict-controls > .tag-controls-head {
+    margin-bottom: calc(0.35rem - 0.5rem);
 }
 
 /* The letter rail is the horizontal scroll container itself: the ancestor
@@ -3557,24 +3567,18 @@ button {
     overflow-x: hidden;
     width: 100%;
     max-width: 24rem;
-    padding: 0.75rem 1rem 1rem 1rem;
+    /* The entries fade in under the rail and run out under the dock to the
+       window's edge, the trailing padding scrolling the last one clear. */
+    padding: 0.75rem 1rem calc(var(--content-pad-bottom, 0px) + env(safe-area-inset-bottom, 0px) + 1rem);
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    -webkit-mask-image: linear-gradient(
-        to bottom,
-        transparent 0,
-        #000 1rem,
-        #000 calc(100% - 1rem),
-        transparent 100%
-    );
-    mask-image: linear-gradient(
-        to bottom,
-        transparent 0,
-        #000 1rem,
-        #000 calc(100% - 1rem),
-        transparent 100%
-    );
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 1rem);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 1rem);
+}
+
+.dict-overlay .screen-content {
+    padding-bottom: 0;
 }
 
 .dict-row {

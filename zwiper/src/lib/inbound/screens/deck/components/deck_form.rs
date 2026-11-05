@@ -362,7 +362,7 @@ pub(crate) fn DeckForm(open: Open) -> Element {
                 ScreenHeader { title: mode.title(), hint: hint_open, back: move |()| driver.dispatch(Action::Back) }
 
                 div { class: "screen-content content-enter",
-                div { class : "container-sm",
+                div { class: "deck-form",
                     match status {
                         Status::Ready => rsx! {
                             form { class: "flex-col text-center",

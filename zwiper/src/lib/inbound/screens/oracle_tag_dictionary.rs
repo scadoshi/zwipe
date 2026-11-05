@@ -148,6 +148,9 @@ pub fn OracleTagDictionary(open: Signal<bool>, on_use: EventHandler<String>) -> 
                     // (mirrors the changelog filter pattern, per-row not per-list).
                     Body::Browse { rail, list } => rsx! {
                         div { class: "dict-controls",
+                            div { class: "tag-controls-head",
+                                span { class: "stat-chip stat-chip-p1 chip-row-label", "Search" }
+                            }
                             input {
                                 class: "input",
                                 id: "oracle-tag-dictionary-search",

@@ -85,14 +85,14 @@ pub(crate) fn OracleTagSelect(
                 div { class: "screen-content content-enter tag-screen",
                     div { class: "tag-controls",
                         div { class: "tag-controls-head",
-                            label { class: "tag-search-label", "Search" }
+                            span { class: "stat-chip stat-chip-p1 chip-row-label", "Search" }
                             Button {
                                 variant: ButtonVariant::Small,
                                 class: "dict-btn-fill",
                                 onclick: move |_| dict_open.set(true),
                                 "Dictionary"
                             }
-                            span { class: "tag-count", "{sel.len()}/{MAX_DECK_ORACLE_TAGS}" }
+                            span { class: "stat-chip stat-chip-p5 tag-count", "{sel.len()}/{MAX_DECK_ORACLE_TAGS}" }
                             if !sel.is_empty() {
                                 button {
                                     class: "clear-btn",
