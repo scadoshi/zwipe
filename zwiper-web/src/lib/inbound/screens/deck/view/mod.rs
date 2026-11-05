@@ -232,22 +232,8 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
             on_hint,
             div { class: "screen-content",
                 match loaded_profile {
-                    Some(Ok(p)) if wide() => rsx! {
-                        div { class: "content-enter web-page web-deck-page",
-                            DeckWidePage {
-                                deck_id,
-                                profile: p,
-                                deck: loaded_deck,
-                                deck_loading,
-                                metrics,
-                                buy: buy_links,
-                                currency,
-                                warnings,
-                                fixes,
-                                dialogs,
-                                on_hint,
-                            }
-                        }
+                    _ if wide() => rsx! {
+                        DeckWidePage { deck_id, currency, fixes, dialogs, on_hint }
                     },
                     Some(Ok(p)) => {
                         let cards = metrics
@@ -286,7 +272,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                         p { class: "text-muted", "Could not load deck" }
                     },
                     None => rsx! {
-                        div { class: if wide() { "content-enter web-page web-deck-page" } else { "content-enter web-deck-view" },
+                        div { class: "content-enter web-deck-view",
                             DeckProfileSkeleton {}
                             DeckStatsSkeleton {}
                         }
@@ -294,7 +280,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 }
             }
             // Cards, the screen's main action, floats at the bottom right.
-            if shows_cards {
+            if shows_cards && !wide() {
                 div { class: "action-dock action-dock-right content-enter-delayed",
                     Button {
                         variant: ButtonVariant::Action,

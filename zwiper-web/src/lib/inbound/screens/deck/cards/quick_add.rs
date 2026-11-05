@@ -24,12 +24,12 @@ use crate::inbound::chrome::authed::use_authed;
 use crate::outbound::timer;
 
 /// The input's id, for `/`.
-pub(super) const QUICK_ADD_ID: &str = "quick-add";
+pub(crate) const QUICK_ADD_ID: &str = "quick-add";
 
 /// The Quick add row. A picked card lands in `entries`, and `on_added` lets
 /// the view run its pass again.
 #[component]
-pub(super) fn QuickAdd(
+pub(crate) fn QuickAdd(
     deck_id: Uuid,
     mut entries: Signal<Vec<DeckEntry>>,
     on_added: EventHandler<()>,

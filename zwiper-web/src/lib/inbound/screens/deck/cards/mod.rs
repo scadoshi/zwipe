@@ -3,8 +3,9 @@
 //! [`CardStores`](crate::inbound::card_stores::CardStores).
 
 pub mod add;
+pub(crate) mod editor;
 mod featured;
-mod quick_add;
+pub(crate) mod quick_add;
 pub mod remove;
 pub mod view;
 

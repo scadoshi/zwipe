@@ -1,25 +1,29 @@
-//! The deck view on a wide window: the deck page both sites share, with the
-//! owner's pieces in its slots. The head carries Edit, Clone, Share and the
-//! page's `?`; the cards are the deck's rows; the stats fold under them;
-//! and the foot holds Warnings, Data and Danger zone.
+//! The deck on a wide window: the deck page both sites share, editing. The
+//! head carries Edit, Clone, Share and the page's `?` beside the name; the
+//! controls add Quick add and the Boards row; the bands are the editor's
+//! rows, a click selecting one into the pane beside them; the stats fold
+//! under the cards; and the foot holds Warnings, Data and Danger zone. The
+//! dock floats add, remove, the filter and undo.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
+use components::icons::{DockIcon, MINUS, PLUS, UNDO};
 use components::{
-    DeckBand, DeckControls, DeckFacts, DeckFold, DeckHead, DeckPage, FeaturedCard, sections,
+    Chip, DeckBand, DeckControls, DeckFacts, DeckFold, DeckHead, DeckPage, DeckSection, DockFilter,
+    FeaturedCard,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
-use zwipe_core::domain::card::scryfall_data::colors::Color;
+use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use zwipe_core::domain::card::search_card::card_type::CardType;
-use zwipe_core::domain::card::search_card::group_cards::GroupByOption;
 use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
-use zwipe_core::domain::deck::{Deck, DeckProfile, DeckWarning, deck_tag_label};
-use zwipe_ui::deck_cards::{self, Zone};
+use zwipe_core::domain::deck::{Board, deck_tag_label};
+use zwipe_ui::deck::form::Slot;
+use zwipe_ui::filter::draft::SheetConfig;
+use zwipe_ui::filter::picker::Sources;
+use zwipe_ui::{buy, deck_cards, filter};
 
-use super::cards::zone;
 use super::dialogs::DeckDialogs;
 use super::panels::{DangerZonePanel, DataPanel};
 use super::sections::{
@@ -27,175 +31,446 @@ use super::sections::{
     TagsBody, WarningFixes, WarningsBody, charted,
 };
 use crate::domain::deck::{has_budget, tag_count};
-use crate::inbound::cards::card_row::{CardOverlays, CardRow, ShowRowArt};
+use crate::inbound::card_filter::CardFilterPanel;
+use crate::inbound::card_stores::CardStores;
+use crate::inbound::cards::card_row::{CardOverlays, CardOverlaysHost, use_card_overlays};
+use crate::inbound::cards::otag::{OtagExamplesHost, OtagExamplesOpen, use_otag_reveals};
+use crate::inbound::cards::printing_sheet::PrintingSheet;
 use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
+use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog};
+use crate::inbound::router::Route;
+use crate::inbound::screens::deck::cards::editor::{
+    DetailPane, Editor, Listed, RowInfo, RowKind, main_row_of, row_view, use_deck_editor,
+};
+use crate::inbound::screens::deck::cards::quick_add::QuickAdd;
 use crate::inbound::screens::deck::skeletons::DeckCardsSkeleton;
 
 /// The stat panels' fold keys, shut when the page opens.
 const FOLDED_STATS: [&str; 5] = ["Budget", "Tags", "Distributions", "Mana", "Draw odds"];
 
-/// The page for a loaded `profile`; `deck` arrives after it and brings the
-/// cards, the metrics and the warnings.
+/// The page for `deck_id`. `fixes` are the warnings' fixes; after one the
+/// page reloads the deck.
 #[component]
 pub fn DeckWidePage(
     deck_id: Uuid,
-    profile: DeckProfile,
-    deck: Option<Deck>,
-    deck_loading: bool,
-    metrics: Option<DeckMetrics>,
-    buy: Option<(String, String)>,
     currency: Signal<PriceCurrency>,
-    warnings: Vec<DeckWarning>,
     fixes: WarningFixes,
     dialogs: DeckDialogs,
     on_hint: Callback<()>,
 ) -> Element {
-    let group_by = use_signal(|| GroupByOption::CardType);
-    let show_zone = use_signal(|| true);
-    let show_art = use_signal(|| true);
-    use_context_provider(|| ShowRowArt(show_art));
-    let name = use_signal(String::new);
-    let types = use_signal(Vec::<CardType>::new);
-    let colors = use_signal(Vec::<Color>::new);
+    let navigator = use_navigator();
+    let ed = use_deck_editor(deck_id);
+    let Editor {
+        deck,
+        entries,
+        zone,
+        profile,
+        loaded,
+        tokens,
+        mut filter,
+        inline_name,
+        inline_types,
+        inline_colors,
+        group_by,
+        mut boards,
+        show_tokens,
+        show_zone,
+        show_art,
+        collapsed,
+        mut selected,
+        face,
+        mut printing,
+        mut printing_open,
+        mut filter_open,
+        hint_open,
+        listing,
+        meta,
+        change_quantity,
+        move_to_board,
+        toggle_mvp,
+        save_printing,
+        apply_undo,
+        reset_filter,
+        on_drop,
+        ..
+    } = ed;
+    let CardStores { undo, .. } = use_context();
+    let examples = use_otag_reveals();
+    let overlays = use_card_overlays();
+    let CardOverlays { mut preview, .. } = overlays;
+    let on_examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
     let folded: Signal<HashSet<String>> =
         use_signal(|| FOLDED_STATS.into_iter().map(String::from).collect());
-    let expanded: Signal<Option<Uuid>> = use_signal(|| None);
-    let overlays = try_use_context::<CardOverlays>();
-
-    // The command zone in its slots, the main board without it, and what
-    // each card's row shows.
-    let held = deck.as_ref().map_or_else(Zone::default, zone);
-    let mut entries = deck.as_ref().map(|d| d.entries.clone()).unwrap_or_default();
-    held.strip(&mut entries);
-    let qty: HashMap<Uuid, i32> = entries
-        .iter()
-        .filter(|e| e.deck_card.board.is_active())
-        .map(|e| (e.card.scryfall_data.id, *e.deck_card.quantity))
-        .collect();
-    let mvp: HashSet<Uuid> = entries
-        .iter()
-        .filter(|e| e.deck_card.mvp_at.is_some())
-        .map(|e| e.card.scryfall_data.id)
-        .collect();
-    let oathbreaker = profile.format.is_some_and(|f| f.has_signature_spell());
-    let featured = deck_cards::featured(&held, &entries, oathbreaker);
-
-    let mut builder = CardQueryBuilder::new();
-    let query = name();
-    if !query.trim().is_empty() {
-        builder.set_name_contains(query.trim());
-    }
-    if !types().is_empty() {
-        builder.set_card_type_contains_any(types());
-    }
-    if !colors().is_empty() {
-        builder.set_color_identity_within(colors().into_iter().collect());
-    }
-    let listed = if show_zone() {
-        held.clone()
-    } else {
-        Zone::default()
+    // A fix made at the foot reloads the deck, so the rows follow.
+    let after_fix = use_callback(move |()| ed.reload.call(()));
+    let fixes = WarningFixes {
+        fix_quantity: use_callback(move |change: (Uuid, i32)| {
+            fixes.fix_quantity.call(change);
+            after_fix.call(());
+        }),
+        clear_commander: use_callback(move |()| {
+            fixes.clear_commander.call(());
+            after_fix.call(());
+        }),
+        remove: use_callback(move |card: Uuid| {
+            fixes.remove.call(card);
+            after_fix.call(());
+        }),
     };
-    let display = deck_cards::pass(&entries, &listed, &builder, group_by());
-    let bands = sections(&display, profile.format, None, &qty);
-    let empty = deck.is_some() && bands.is_empty();
 
-    let total_cards = metrics.as_ref().map_or_else(
-        || profile.card_count,
-        |m| i64::try_from(m.total_cards).unwrap_or(profile.card_count),
+    let Listed {
+        tokens: token_rows,
+        maybe: maybe_rows,
+        side: side_rows,
+        zone: zone_rows,
+        groups: main_groups,
+        lands: main_lands,
+        rows,
+    } = listing();
+    let row_meta = meta();
+    let applied = filter.read().clone();
+    let shown_boards = boards();
+    let held_profile = profile();
+    let format = held_profile.as_ref().and_then(|p| p.format);
+    let oathbreaker = format.is_some_and(|f| f.has_signature_spell());
+    let pane_row =
+        selected().and_then(|id| rows.iter().find(|r| r.card.scryfall_data.id == id).cloned());
+    let qty_count = |cards: &[Card]| -> i32 {
+        cards
+            .iter()
+            .map(|c| row_meta.get(&c.scryfall_data.id).map_or(1, |m| m.qty))
+            .fold(0, i32::saturating_add)
+    };
+    let has_maybe = entries
+        .read()
+        .iter()
+        .any(|e| e.deck_card.board.is_maybeboard());
+    let has_side = entries
+        .read()
+        .iter()
+        .any(|e| e.deck_card.board.is_sideboard());
+    let featured = deck_cards::featured(&zone.read(), &entries.read(), oathbreaker);
+    let sources = Sources::deck(
+        &entries
+            .read()
+            .iter()
+            .map(|e| e.card.clone())
+            .collect::<Vec<_>>(),
     );
+    let cur = ed.currency();
+    let undo_ready = !undo.read().is_empty(deck_id);
+    let filter_on = !applied.is_empty();
+    let dot = filter::shows_dot(&applied);
+    let has_partner = zone_rows.iter().any(|(slot, _)| *slot == Slot::Partner);
+
+    // The sections, in the editor's order: tokens, the maybeboard and
+    // sideboard, the command zone, the main board's groups and its lands.
+    let mut sections: Vec<(DeckSection, Vec<RowInfo>, Option<Board>)> = Vec::new();
+    if !token_rows.is_empty() {
+        let rows = token_rows
+            .iter()
+            .map(|card| RowInfo {
+                card: card.clone(),
+                qty: 1,
+                kind: RowKind::Token,
+            })
+            .collect();
+        sections.push((
+            DeckSection {
+                key: "Tokens".to_owned(),
+                title: format!("Tokens ({})", token_rows.len()),
+                pips: None,
+                cards: token_rows,
+            },
+            rows,
+            None,
+        ));
+    }
+    for (board, title, entries_on) in [
+        (Board::Maybeboard, "Maybeboard", maybe_rows),
+        (Board::Sideboard, "Sideboard", side_rows),
+    ] {
+        if entries_on.is_empty() {
+            continue;
+        }
+        let rows = entries_on
+            .iter()
+            .map(|entry| RowInfo {
+                card: entry.card.clone(),
+                qty: *entry.deck_card.quantity,
+                kind: RowKind::Board(board),
+            })
+            .collect();
+        sections.push((
+            DeckSection {
+                key: title.to_owned(),
+                title: format!("{title} ({})", entries_on.len()),
+                pips: None,
+                cards: entries_on.into_iter().map(|e| e.card).collect(),
+            },
+            rows,
+            Some(board),
+        ));
+    }
+    let commanders: Vec<(Slot, Card)> = zone_rows
+        .iter()
+        .filter(|(slot, _)| matches!(slot, Slot::Commander | Slot::Partner))
+        .cloned()
+        .collect();
+    if !commanders.is_empty() {
+        let title = Slot::Commander.group_header(format, has_partner).to_owned();
+        sections.push((
+            DeckSection {
+                key: title.clone(),
+                title,
+                pips: None,
+                cards: commanders.iter().map(|(_, c)| c.clone()).collect(),
+            },
+            commanders
+                .into_iter()
+                .map(|(slot, card)| RowInfo {
+                    card,
+                    qty: 1,
+                    kind: RowKind::Zone(slot),
+                })
+                .collect(),
+            None,
+        ));
+    }
+    for (slot, card) in zone_rows
+        .iter()
+        .filter(|(slot, _)| matches!(slot, Slot::Background | Slot::SignatureSpell))
+        .cloned()
+    {
+        let title = slot.group_header(format, has_partner).to_owned();
+        sections.push((
+            DeckSection {
+                key: title.clone(),
+                title,
+                pips: None,
+                cards: vec![card.clone()],
+            },
+            vec![RowInfo {
+                card,
+                qty: 1,
+                kind: RowKind::Zone(slot),
+            }],
+            None,
+        ));
+    }
+    for group in main_groups {
+        let n = qty_count(&group.cards);
+        let title = if group.label.is_empty() {
+            format!("({n})")
+        } else {
+            format!("{} ({n})", group.label)
+        };
+        let rows = group
+            .cards
+            .iter()
+            .map(|c| main_row_of(&row_meta, c))
+            .collect();
+        sections.push((
+            DeckSection {
+                key: group.key,
+                title,
+                pips: group.pips,
+                cards: group.cards,
+            },
+            rows,
+            Some(Board::Deck),
+        ));
+    }
+    if !main_lands.is_empty() {
+        let n = qty_count(&main_lands);
+        let rows = main_lands
+            .iter()
+            .map(|c| main_row_of(&row_meta, c))
+            .collect();
+        sections.push((
+            DeckSection {
+                key: "Lands".to_owned(),
+                title: format!("Lands ({n})"),
+                pips: None,
+                cards: main_lands,
+            },
+            rows,
+            Some(Board::Deck),
+        ));
+    }
+    let empty = loaded() && shown_boards.main && sections.is_empty();
+
+    // The owner's facts and stats from the deck as fetched.
+    let held_deck = deck();
+    let metrics = held_deck
+        .as_ref()
+        .filter(|d| !d.entries.is_empty() || !d.command_zone_cards.is_empty())
+        .map(|d| DeckMetrics::from_entries_and_command_zone(&d.entries, &d.command_zone_cards));
+    let warnings = held_deck
+        .as_ref()
+        .map(|d| d.warnings.clone())
+        .unwrap_or_default();
+    let buy_links = held_deck.as_ref().map(buy::links);
+    let has_cards = metrics.is_some();
     let shown = currency();
     let price = metrics.as_ref().and_then(|m| match shown {
         PriceCurrency::Eur => m.total_price_eur,
         PriceCurrency::Tix => m.total_price_tix,
         PriceCurrency::Usd => m.total_price_usd,
     });
-    let facts = DeckFacts {
-        cards: total_cards,
-        format: profile.format,
-        power_level: profile.power_level,
+    let facts = held_profile.as_ref().map(|p| DeckFacts {
+        cards: metrics.as_ref().map_or_else(
+            || p.card_count,
+            |m| i64::try_from(m.total_cards).unwrap_or(p.card_count),
+        ),
+        format: p.format,
+        power_level: p.power_level,
         zone_names: [
-            profile.commander_name.clone(),
-            profile.partner_commander_name.clone(),
-            profile.background_name.clone(),
-            profile.signature_spell_name.clone(),
+            p.commander_name.clone(),
+            p.partner_commander_name.clone(),
+            p.background_name.clone(),
+            p.signature_spell_name.clone(),
         ]
         .into_iter()
         .flatten()
         .collect(),
-        tags: profile.tags.iter().map(|t| deck_tag_label(t)).collect(),
-        other_tags: profile
+        tags: p.tags.iter().map(|t| deck_tag_label(t)).collect(),
+        other_tags: p
             .other_tags
             .iter()
             .map(|t| t.display_name().to_owned())
             .collect(),
-        price: price.filter(|p| *p > 0.0).map(|p| shown.format_amount(p)),
-    };
+        price: price.filter(|v| *v > 0.0).map(|v| shown.format_amount(v)),
+    });
     let charts = charted(metrics.as_ref());
     let land_count = metrics.as_ref().map_or(0, |m| m.land_count);
-    let has_cards = metrics.is_some();
+    let land_target = held_profile.as_ref().and_then(|p| p.land_target);
 
     rsx! {
-        DeckPage {
-            head: rsx! {
-                DeckHead {
-                    name: profile.name.to_string(),
-                    facts,
-                    has_featured: !featured.is_empty(),
-                    actions: rsx! {
-                        ProfileActions { deck_id, dialogs, on_hint }
-                    },
-                    for (card, role) in featured.iter().cloned() {
-                        FeaturedCard {
-                            key: "{card.scryfall_data.id}-{role}",
-                            card,
-                            role: role.to_string(),
-                            on_open: overlays.map(|CardOverlays { mut preview, .. }| {
-                                Callback::new(move |(sd, face)| preview.set(Some((sd, face))))
-                            }),
-                        }
-                    }
-                }
-            },
-            controls: rsx! {
-                DeckControls { group_by, show_zone, show_art, name, types, colors }
-            },
-            empty,
-            bands: rsx! {
-                if deck.is_none() && deck_loading {
-                    DeckCardsSkeleton {}
-                }
-                for section in bands {
-                    DeckBand {
-                        key: "{section.key}",
-                        section: section.clone(),
-                        folded,
-                        for card in section.cards {
-                            CardRow {
-                                key: "{card.scryfall_data.id}",
-                                qty: qty.get(&card.scryfall_data.id).copied().unwrap_or(1),
-                                mvp: mvp.contains(&card.scryfall_data.id).then_some(true),
+        // The dock floats outside the page's entrance, whose transform would
+        // otherwise pin it to the page instead of the window.
+        div { class: "content-enter web-page web-deck-page",
+            DeckPage {
+                head: rsx! {
+                if let (Some(p), Some(facts)) = (held_profile.clone(), facts) {
+                    DeckHead {
+                        name: p.name.to_string(),
+                        facts,
+                        has_featured: !featured.is_empty(),
+                        actions: rsx! {
+                            ProfileActions { deck_id, dialogs, on_hint }
+                        },
+                        for (card, role) in featured.iter().cloned() {
+                            FeaturedCard {
+                                key: "{card.scryfall_data.id}-{role}",
                                 card,
-                                expanded_card: expanded,
-                                price_currency: shown,
+                                role: role.to_string(),
+                                on_open: move |(sd, shown_face)| preview.set(Some((sd, shown_face))),
                             }
                         }
                     }
                 }
             },
-            stats: rsx! {
-                if has_budget(&profile, has_cards) {
-                    DeckFold {
-                        fold_key: "Budget",
-                        title: "Budget",
-                        folded,
-                        accessory: has_cards.then(|| rsx! { CurrencyChips { currency } }),
-                        BudgetBody { profile: profile.clone(), metrics, buy, currency }
+            controls: rsx! {
+                if loaded() {
+                    DeckControls {
+                        group_by,
+                        show_tokens: tokens().is_some_and(|t| !t.is_empty()).then_some(show_tokens),
+                        show_zone,
+                        show_art,
+                        name: inline_name,
+                        types: inline_types,
+                        colors: inline_colors,
+                        on_change: move |()| selected.set(None),
+                        leading: rsx! {
+                            QuickAdd { deck_id, entries, on_added: move |()| {} }
+                        },
+                        boards: rsx! {
+                            div { class: "chip-row",
+                                span { class: "stat-chip stat-chip-p1 chip-row-label", "Boards" }
+                                for (label, board, on, enabled) in [
+                                    ("Main", Board::Deck, shown_boards.main, true),
+                                    ("Maybe", Board::Maybeboard, shown_boards.maybe, has_maybe || shown_boards.maybe),
+                                    ("Side", Board::Sideboard, shown_boards.side, has_side || shown_boards.side),
+                                ] {
+                                    span {
+                                        key: "{label}",
+                                        class: "web-filter-chip",
+                                        ondragover: move |e| e.prevent_default(),
+                                        ondrop: move |e| {
+                                            e.prevent_default();
+                                            on_drop.call(board);
+                                        },
+                                        Chip {
+                                            selected: on,
+                                            disabled: !enabled,
+                                            onclick: move |_| {
+                                                boards.write().toggle(board);
+                                                selected.set(None);
+                                            },
+                                            "{label}"
+                                        }
+                                    }
+                                }
+                            }
+                        },
                     }
                 }
-                if tag_count(&profile) > 0 {
-                    DeckFold { fold_key: "Tags", title: "Tags", folded,
-                        TagsBody { profile: profile.clone() }
+            },
+            empty,
+            bands: rsx! {
+                if !loaded() {
+                    DeckCardsSkeleton {}
+                }
+                for (section, rows, drop_to) in sections {
+                    DeckBand {
+                        key: "{section.key}",
+                        section,
+                        folded: collapsed,
+                        drop_to,
+                        on_drop,
+                        for row in rows {
+                            {row_view(&ed, cur, &row_meta, row)}
+                        }
+                    }
+                }
+            },
+            pane: rsx! {
+                if let Some(row) = pane_row {
+                    DetailPane {
+                        key: "{row.card.scryfall_data.id}",
+                        row,
+                        face,
+                        board: row_meta.get(&selected().unwrap_or_default()).map(|m| m.board),
+                        on_examples,
+                        on_qty: move |(id, d): (Uuid, i32)| change_quantity.call((id, d, true)),
+                        on_move: move |(id, b): (Uuid, Board)| move_to_board.call((id, b, true)),
+                        on_star: move |(id, s): (Uuid, bool)| toggle_mvp.call((id, s)),
+                        on_printing: move |(c, slot): (Card, Option<Slot>)| {
+                            printing.set(Some((c, slot)));
+                            printing_open.set(true);
+                        },
+                        on_image: move |(c, f): (Card, usize)| preview.set(Some((c.scryfall_data, f))),
+                    }
+                } else {
+                    p { class: "text-muted web-deck-pane-empty", "Select a card" }
+                }
+            },
+            stats: rsx! {
+                if let Some(p) = held_profile {
+                    if has_budget(&p, has_cards) {
+                        DeckFold {
+                            fold_key: "Budget",
+                            title: "Budget",
+                            folded,
+                            accessory: has_cards.then(|| rsx! { CurrencyChips { currency } }),
+                            BudgetBody { profile: p.clone(), metrics, buy: buy_links, currency }
+                        }
+                    }
+                    if tag_count(&p) > 0 {
+                        DeckFold { fold_key: "Tags", title: "Tags", folded,
+                            TagsBody { profile: p }
+                        }
                     }
                 }
                 if let Some(m) = charts.clone() {
@@ -203,9 +478,9 @@ pub fn DeckWidePage(
                         DistributionsBody { metrics: m }
                     }
                 }
-                if charts.is_some() || profile.land_target.is_some() {
+                if charts.is_some() || land_target.is_some() {
                     DeckFold { fold_key: "Mana", title: "Mana", folded,
-                        ManaBody { charts: charts.clone(), land_count, land_target: profile.land_target }
+                        ManaBody { charts: charts.clone(), land_count, land_target }
                     }
                 }
                 if let Some(m) = charts {
@@ -236,6 +511,64 @@ pub fn DeckWidePage(
                 }
                 DangerZonePanel { dialogs }
             },
+            }
+        }
+        // The page's actions as one floating icon bar at the bottom right:
+        // add and remove, then the filter (with its reset while a filter is
+        // on) and undo.
+        div { class: "action-dock action-dock-right",
+            button {
+                class: "action-dock-btn",
+                "aria-label": "Add",
+                onclick: move |_| {
+                    navigator.push(Route::AddDeckCard { deck_id });
+                },
+                DockIcon { path: PLUS }
+            }
+            button {
+                class: "action-dock-btn",
+                "aria-label": "Remove",
+                onclick: move |_| {
+                    navigator.push(Route::RemoveDeckCard { deck_id });
+                },
+                DockIcon { path: MINUS }
+            }
+            span { class: "action-dock-divider" }
+            DockFilter {
+                label: "Filter",
+                dot,
+                active: filter_on,
+                onclick: move |()| filter_open.set(true),
+                on_reset: move |()| reset_filter.call(()),
+                reset_label: "Reset filter",
+            }
+            button {
+                class: "action-dock-btn",
+                "aria-label": "Undo",
+                disabled: !undo_ready,
+                onclick: move |_| apply_undo.call(()),
+                DockIcon { path: UNDO }
+            }
+        }
+        CardFilterPanel {
+            open: filter_open,
+            filter,
+            config: SheetConfig { show_format: true, sources, ..SheetConfig::default() },
+            on_apply: move |next: CardQueryBuilder| {
+                filter.set(next);
+                selected.set(None);
+            },
+        }
+        CardOverlaysHost { overlays, on_printing_save: move |_| {} }
+        OtagExamplesHost { examples }
+        OneTimeHintDialog { hint: OneTimeHint::DeckCards, open: hint_open }
+        if let Some((card, _)) = printing() {
+            PrintingSheet {
+                key: "{card.scryfall_data.id}",
+                card,
+                open: printing_open,
+                on_save: move |picked: Card| save_printing.call(picked),
+            }
         }
     }
 }

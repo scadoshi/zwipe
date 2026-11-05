@@ -1666,48 +1666,14 @@ body {
 }
 
 @media (min-width: 900px) {
-    /* The controls over the groups on the left, the selected row's pane on
-       the right; a click selects into the pane instead of opening the row. */
-    .web-deck-cards-view.screen-content {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) minmax(20rem, 28rem);
-        grid-template-areas:
-            "controls pane"
-            "list pane";
-        align-items: start;
-        align-content: start;
-        column-gap: 1.5rem;
-        width: 100%;
-        max-width: 96rem;
-        margin: 0 auto;
-        padding: 1rem 1.5rem 2rem;
-        box-sizing: border-box;
-    }
-
-    .web-deck-cards-controls {
-        grid-area: controls;
-        max-width: none;
-        padding: 0;
-    }
-
-    .web-deck-cards-list {
-        grid-area: list;
-        max-width: none;
-        padding: 0;
-    }
-
-    .web-deck-cards-pane {
-        grid-area: pane;
-        display: block;
-        position: sticky;
-        top: var(--web-sticky-top);
-        max-height: var(--web-sticky-max);
-        overflow-y: auto;
-        min-width: 0;
-    }
-
-    .web-deck-cards-list .card-row-collapse {
+    /* On the deck page a click selects a row into the pane rather than
+       opening it inline. */
+    .web-deck-page .card-row-collapse {
         display: none;
+    }
+
+    .web-deck-page {
+        --deck-pane-top: var(--web-sticky-top);
     }
 
     .web-deck-row.selected .card-row-name {
@@ -1727,21 +1693,9 @@ body {
         border-radius: 0.9rem;
     }
 
-    .web-deck-cards-pane-empty {
+    .web-deck-pane-empty {
         text-align: center;
         padding-top: 2rem;
-    }
-}
-
-@media (min-width: 1280px) {
-    .web-deck-cards-view.screen-content {
-        grid-template-columns: minmax(18rem, 0.8fr) minmax(0, 1.2fr) minmax(20rem, 26rem);
-        grid-template-areas: "controls list pane";
-    }
-
-    .web-deck-cards-controls {
-        position: sticky;
-        top: var(--web-sticky-top);
     }
 }
 
