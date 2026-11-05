@@ -1309,21 +1309,6 @@ body {
         overflow: visible;
     }
 
-    /* Two decks to a line in each group, with a rule between the columns
-       and none under the last line. */
-    .web-deck-group > .collapsible > .collapsible-inner {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .web-deck-group .card-row:nth-child(odd):not(:last-child) {
-        border-right: 1px solid var(--border-secondary);
-    }
-
-    .web-deck-group .card-row:nth-child(odd):nth-last-child(2) {
-        border-bottom: none;
-    }
-
     .web-deck-group .deck-row-art-img {
         width: 4.8rem;
         height: 4.3rem;
