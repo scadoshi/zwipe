@@ -80,11 +80,10 @@ pub fn saved(mut theme_config: Signal<ThemeConfig>, theme: Theme) {
     theme_config.set(theme);
 }
 
-/// The kit's theme sheet over the app's live theme, handing a kept pick on as
-/// an action. Selections live-preview against the whole app; the save check
-/// hands the pick on as [`Action::KeepTheme`], which persists it and toasts
-/// once the server answers, and a discarded pick hands on
-/// [`Action::DiscardTheme`] once it has wiped back out.
+/// The kit's theme sheet over the app's live theme, handing each pick on as
+/// an action. A tap draws the whole app in the pick and hands it on as
+/// [`Action::KeepTheme`], which persists it and toasts once the server
+/// answers; the sheet stays open to keep browsing.
 #[component]
 pub fn ThemeSaveSheet(open: Signal<bool>, on: EventHandler<Action>) -> Element {
     let theme_config: Signal<ThemeConfig> = use_context();
@@ -96,7 +95,6 @@ pub fn ThemeSaveSheet(open: Signal<bool>, on: EventHandler<Action>) -> Element {
             on_save: move |picked: ThemeConfig| {
                 on.call(Action::KeepTheme(theme_of(picked)));
             },
-            on_unchanged: move |()| on.call(Action::DiscardTheme { picked: true }),
         }
     }
 }

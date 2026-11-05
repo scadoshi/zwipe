@@ -391,7 +391,7 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
             "Playstyle",
             vec![
                 line(vec![text(
-                    "Your colors, card roles and top oracle tags, read from every deck you own in any format",
+                    "Your colors, card roles and top oracle tags from every deck you own in any format",
                 )]),
                 bullet(vec![
                     key("Create deck"),
@@ -427,7 +427,9 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
         OneTimeHint::Activity => content(
             "Activity",
             vec![
-                line(vec![text("How you pick, read from your swipes")]),
+                line(vec![text(
+                    "Your swipes and searches over the last year, with the card roles, oracle tags and cards you skip most",
+                )]),
                 bullet(vec![
                     key("Activity"),
                     text(

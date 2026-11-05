@@ -143,13 +143,8 @@ pub enum Action {
     },
     /// Presses the Theme row's Change.
     OpenThemes,
-    /// Saves the theme the Themes sheet kept. The client has already closed the sheet and keeps drawing in the pick.
+    /// Saves a theme picked in the Themes sheet, which stays open and keeps drawing in the pick.
     KeepTheme(Theme),
-    /// Closes the Themes sheet without saving. The client has already put back the theme it opened on.
-    DiscardTheme {
-        /// Whether a different theme was picked before the sheet closed.
-        picked: bool,
-    },
     /// Presses the Pips button.
     TogglePips {
         /// The pip style the client draws in now.
@@ -287,17 +282,7 @@ impl State {
                     theme: theme.name,
                     dark_mode: theme.dark_mode,
                 };
-                vec![
-                    Effect::CloseSheet(Sheet::Themes),
-                    self.send(Slot::Themes, change.clone(), change),
-                ]
-            }
-            Action::DiscardTheme { picked } => {
-                let mut effects = vec![Effect::CloseSheet(Sheet::Themes)];
-                if picked {
-                    effects.push(Effect::Toast(settings::theme_unchanged()));
-                }
-                effects
+                vec![self.send(Slot::Themes, change.clone(), change)]
             }
             Action::TogglePips { shown } => {
                 let next = shown.toggled();

@@ -234,13 +234,6 @@ pub fn exception_names<S: AsRef<str>>(slugs: &[S]) -> Vec<&'static str> {
     names
 }
 
-/// The toast when the Themes sheet closes without a new pick: info, up for
-/// [`QUICK`](crate::toast::QUICK).
-#[must_use]
-pub fn theme_unchanged() -> Toast {
-    Toast::quick(ToastKind::Info, "Theme unchanged")
-}
-
 /// The toast when the Exceptions sheet closes on a draft that differs from
 /// the saved list: info, up for [`QUICK`](crate::toast::QUICK). A draft that
 /// matches says nothing.
@@ -413,11 +406,7 @@ mod tests {
     }
 
     #[test]
-    fn the_unchanged_toasts_have_the_apps_words_kind_and_band() {
-        assert_eq!(
-            theme_unchanged(),
-            Toast::new(ToastKind::Info, "Theme unchanged", QUICK)
-        );
+    fn the_unchanged_toast_has_the_apps_words_kind_and_band() {
         assert_eq!(
             exceptions_unchanged(),
             Toast::new(ToastKind::Info, "Exceptions unchanged", QUICK)
