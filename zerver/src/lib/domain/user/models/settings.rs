@@ -1,24 +1,24 @@
-//! User display preferences.
+//! User display settings.
 //!
-//! Service-layer error types for preference operations. Domain types live in zwipe-core.
+//! Service-layer error types for setting operations. Domain types live in zwipe-core.
 
 use thiserror::Error;
-pub use zwipe_core::domain::user::preferences::InvalidUpdatePreferences;
+pub use zwipe_core::domain::user::settings::InvalidUpdateSettings;
 
-/// Error from the update preferences operation.
+/// Error from the update settings operation.
 #[derive(Debug, Error)]
-pub enum UpdatePreferencesError {
+pub enum UpdateSettingsError {
     /// Validation failed.
     #[error(transparent)]
-    Invalid(#[from] InvalidUpdatePreferences),
+    Invalid(#[from] InvalidUpdateSettings),
     /// Database error.
     #[error("database error")]
     Database(#[from] anyhow::Error),
 }
 
-/// Error from the get preferences operation.
+/// Error from the fetch settings operation.
 #[derive(Debug, Error)]
-pub enum GetPreferencesError {
+pub enum FetchSettingsError {
     /// Database error.
     #[error("database error")]
     Database(#[from] anyhow::Error),

@@ -3,12 +3,12 @@ use std::fmt::Debug;
 use uuid::Uuid;
 use zwipe_core::domain::user::User;
 use zwipe_core::domain::user::models::hints::MarkHintShown;
-use zwipe_core::domain::user::preferences::{UpdatePreferences, UserPreferences};
 use zwipe_core::domain::user::requests::get_user::GetUser;
+use zwipe_core::domain::user::settings::{UpdateSettings, UserSettings};
 
 use crate::domain::user::models::get_user::GetUserError;
 use crate::domain::user::models::hints::MarkHintShownError;
-use crate::domain::user::models::preferences::{GetPreferencesError, UpdatePreferencesError};
+use crate::domain::user::models::settings::{FetchSettingsError, UpdateSettingsError};
 use crate::domain::user::ports::{UserRepository, UserService};
 
 /// User service implementation handling user data retrieval operations.
@@ -38,20 +38,17 @@ impl<R: UserRepository> UserService for Service<R> {
         self.repo.fetch_user(request.user_id).await
     }
 
-    // == preferences ==
+    // == settings ==
 
-    async fn fetch_preferences(
-        &self,
-        user_id: Uuid,
-    ) -> Result<UserPreferences, GetPreferencesError> {
-        self.repo.fetch_preferences(user_id).await
+    async fn fetch_settings(&self, user_id: Uuid) -> Result<UserSettings, FetchSettingsError> {
+        self.repo.fetch_settings(user_id).await
     }
 
-    async fn update_preferences(
+    async fn update_settings(
         &self,
-        request: &UpdatePreferences,
-    ) -> Result<UserPreferences, UpdatePreferencesError> {
-        self.repo.update_preferences(request).await
+        request: &UpdateSettings,
+    ) -> Result<UserSettings, UpdateSettingsError> {
+        self.repo.update_settings(request).await
     }
 
     // == hints ==

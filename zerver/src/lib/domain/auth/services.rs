@@ -365,9 +365,9 @@ where
         self.lockout.clear(user.id, client_ip);
         tracing::info!(event = "login_success", identifier = %request.identifier);
 
-        let preferences = self
+        let settings = self
             .user_repo
-            .fetch_preferences(user.id)
+            .fetch_settings(user.id)
             .await
             .unwrap_or_default();
 
@@ -388,15 +388,15 @@ where
             user,
             access_token,
             refresh_token,
-            preferences,
+            settings,
         })
     }
 
     async fn create_session(&self, request: &CreateSession) -> Result<Session, CreateSessionError> {
         let user = self.user_repo.fetch_user(request.user_id).await?;
-        let preferences = self
+        let settings = self
             .user_repo
-            .fetch_preferences(request.user_id)
+            .fetch_settings(request.user_id)
             .await
             .unwrap_or_default();
 
@@ -420,7 +420,7 @@ where
             user,
             access_token,
             refresh_token,
-            preferences,
+            settings,
         };
 
         Ok(session)
@@ -431,9 +431,9 @@ where
         request: &RefreshSession,
     ) -> Result<Session, RefreshSessionError> {
         let user = self.user_repo.fetch_user(request.user_id).await?;
-        let preferences = self
+        let settings = self
             .user_repo
-            .fetch_preferences(request.user_id)
+            .fetch_settings(request.user_id)
             .await
             .unwrap_or_default();
 
@@ -453,7 +453,7 @@ where
             user,
             access_token,
             refresh_token,
-            preferences,
+            settings,
         };
 
         Ok(session)

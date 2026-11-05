@@ -63,7 +63,7 @@ pub struct DeckServeContext<'a> {
     /// Distinct `card_roles` of the deck's mainboard MVPs, for the `W_STEER`
     /// term. Empty (the default) leaves ordering byte-identical.
     pub mvp_card_roles: &'a [String],
-    /// User preference: hide cards with no in-universe printing. The pick
+    /// User setting: hide cards with no in-universe printing. The pick
     /// preference in `latest_cards` makes the picked printing's stamp/set a
     /// card-level truth, so the predicate reads the row directly.
     pub exclude_universes_beyond: bool,
@@ -238,10 +238,10 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// Retrieves all distinct set codes from card database.
     fn fetch_sets(&self) -> impl Future<Output = Result<Vec<String>, GetSetsError>> + Send;
 
-    /// The user's Universes Beyond serving preference: the exclude flag plus
+    /// The user's Universes Beyond serving setting: the exclude flag plus
     /// the exception franchises already expanded to set names for the
-    /// `printing_set_names` overlap. No preferences row = default off.
-    fn fetch_universes_beyond_preferences(
+    /// `printing_set_names` overlap. No settings row = default off.
+    fn fetch_universes_beyond_settings(
         &self,
         user_id: uuid::Uuid,
     ) -> impl Future<Output = anyhow::Result<(bool, Vec<String>)>> + Send;
@@ -489,7 +489,7 @@ pub trait CardService: Clone + Send + Sync + 'static {
     ) -> impl Future<Output = Result<Vec<Card>, GetCardError>> + Send;
 
     /// Searches for complete cards matching filter criteria. Applies the
-    /// user's Universes Beyond preference, same as the deck-aware serve and
+    /// user's Universes Beyond setting, same as the deck-aware serve and
     /// commander select (the plain search backs the deck form's typed
     /// commander/partner pickers).
     fn search_cards(

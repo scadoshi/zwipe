@@ -3,8 +3,7 @@
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
-use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::http::contracts::auth::HttpRefreshSession;
+use zwipe_core::http::contracts::auth::{HttpRefreshSession, HttpSession};
 use zwipe_core::version::Version;
 
 use crate::domain::auth::ports::AuthService;
@@ -79,7 +78,7 @@ impl TryFrom<HttpRefreshSession> for RefreshSession {
 pub async fn refresh_session(
     State(state): State<AppState>,
     Json(body): Json<HttpRefreshSession>,
-) -> Result<(StatusCode, Json<Session>), ApiError> {
+) -> Result<(StatusCode, Json<HttpSession>), ApiError> {
     let request = RefreshSession::try_from(body)?;
 
     let session = state
@@ -110,5 +109,5 @@ pub async fn refresh_session(
         }
     });
 
-    Ok((StatusCode::OK, session.into()))
+    Ok((StatusCode::OK, Json(HttpSession::from(session))))
 }

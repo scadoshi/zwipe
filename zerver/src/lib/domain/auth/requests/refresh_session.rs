@@ -245,7 +245,7 @@ mod tests {
     use zwipe_core::domain::auth::models::refresh_token::RefreshToken;
     use zwipe_core::domain::auth::models::session::Session;
     use zwipe_core::domain::user::User;
-    use zwipe_core::domain::user::preferences::UserPreferences;
+    use zwipe_core::domain::user::settings::UserSettings;
     use zwipe_core::domain::user::username::Username;
 
     use super::*;
@@ -269,7 +269,7 @@ mod tests {
                 value: "token-value-from-previous-session".to_string(),
                 expires_at: Utc::now() + Duration::days(14),
             },
-            preferences: UserPreferences::default(),
+            settings: UserSettings::default(),
         }
     }
 

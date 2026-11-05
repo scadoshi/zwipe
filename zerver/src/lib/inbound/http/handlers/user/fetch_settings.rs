@@ -1,36 +1,36 @@
-//! Get user preferences handler.
+//! Get user settings handler.
 
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
-use zwipe_core::domain::user::preferences::UserPreferences;
+use zwipe_core::domain::user::settings::UserSettings;
 
-use crate::domain::user::models::preferences::GetPreferencesError;
+use crate::domain::user::models::settings::FetchSettingsError;
 use crate::domain::user::ports::UserService;
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState, To500};
 
-impl From<GetPreferencesError> for ApiError {
-    fn from(value: GetPreferencesError) -> Self {
+impl From<FetchSettingsError> for ApiError {
+    fn from(value: FetchSettingsError) -> Self {
         match value {
-            GetPreferencesError::Database(e) => e.to_500(),
+            FetchSettingsError::Database(e) => e.to_500(),
         }
     }
 }
 
-/// Returns the authenticated user's display preferences.
+/// Returns the authenticated user's display settings.
 ///
 /// # Errors
 ///
 /// Returns 500 on a database failure.
-pub async fn get_preferences(
+pub async fn fetch_settings(
     user: AuthenticatedUser,
     State(state): State<AppState>,
-) -> Result<(StatusCode, Json<UserPreferences>), ApiError> {
+) -> Result<(StatusCode, Json<UserSettings>), ApiError> {
     state
         .user_service
-        .fetch_preferences(user.id)
+        .fetch_settings(user.id)
         .await
-        .map(|prefs| (StatusCode::OK, Json(prefs)))
+        .map(|settings| (StatusCode::OK, Json(settings)))
         .map_err(ApiError::from)
 }
