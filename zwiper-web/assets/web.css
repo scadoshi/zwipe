@@ -1359,8 +1359,9 @@ body {
 /* ---- Deck form (Create, Edit) ---- */
 
 /* Below the breakpoint the two columns stack into the app's one form. */
-.web-deck-form-heading {
-    margin-top: 1.5rem;
+/* The deck form's panels stack a panel gap apart. */
+.web-deck-form .web-form-panel + .web-form-panel {
+    margin-top: var(--panel-gap);
 }
 
 @media (min-width: 900px) {
@@ -1374,10 +1375,6 @@ body {
         max-width: 64rem;
         padding: 1rem 1.5rem 2rem;
         box-sizing: border-box;
-    }
-
-    .web-deck-form-column > .web-deck-form-heading:first-child {
-        margin-top: 0;
     }
 
     /* A picker is a panel over the right column, so the form and its
@@ -1677,10 +1674,11 @@ body {
     }
 }
 
-/* Below the breakpoint a public screen's form is a headed panel under the
-   hero, its chips in a bar along its foot, and the flavor card follows. */
+/* Below the breakpoint a form is a headed panel: on a public screen under
+   the hero with its chips in a bar along its foot and the flavor card
+   after, on the deck form one panel per group. */
 @media (max-width: 899px) {
-    .web-auth .web-form-panel {
+    .web-form-panel {
         width: calc(100% - 2rem);
         margin: 0 1rem;
         padding: 0;
@@ -1692,16 +1690,25 @@ body {
         overflow: hidden;
     }
 
-    .web-auth .web-form-panel > .web-form-head {
+    .web-form-panel > .web-form-head {
         display: flex;
         justify-content: center;
     }
 
-    .web-auth .web-form-panel > form {
+    .web-form-panel > form,
+    .web-form-panel > .web-form-fields {
         padding: 1rem;
     }
 
-    .web-auth .web-form-panel > .form-links {
+    /* The deck form's column gives way to its panels, which take the
+       screen's width with the page gutter, as the sign-in panels do. */
+    .web-deck-form.container-sm {
+        width: 100%;
+        max-width: none;
+        padding: 0;
+    }
+
+    .web-form-panel > .form-links {
         margin: 0;
         padding: 0.75rem 1rem;
         border-top: 1px solid var(--border-secondary);
