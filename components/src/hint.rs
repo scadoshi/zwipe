@@ -9,7 +9,7 @@
 
 use dioxus::prelude::*;
 use orangui::icons::{
-    CHECK, COG, COPY, CloneIcon, DockIcon, ERASER, EditIcon, EyeIcon, FUNNEL, HOUSE, INFO, LINK,
+    BOLT, CHECK, COG, COPY, CloneIcon, DockIcon, ERASER, EditIcon, EyeIcon, FUNNEL, HOUSE, INFO,
     MINUS, PERSON, PLUS, REFRESH, ShareIcon, UNDO,
 };
 use orangui::{
@@ -102,7 +102,7 @@ pub fn KeyGlyph(icon: KeyIcon) -> Element {
         KeyIcon::Refresh => REFRESH,
         KeyIcon::Check => CHECK,
         KeyIcon::Copy => COPY,
-        KeyIcon::Link => LINK,
+        KeyIcon::Bolt => BOLT,
         KeyIcon::Person => PERSON,
         KeyIcon::Cog => COG,
         KeyIcon::Info => INFO,

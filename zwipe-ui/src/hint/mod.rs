@@ -93,8 +93,8 @@ pub enum KeyIcon {
     Check,
     /// The copy button's two stacked sheets.
     Copy,
-    /// The synergy button's chain links.
-    Link,
+    /// The synergy button's lightning bolt.
+    Bolt,
     /// The card details button's eye.
     Eye,
     /// The edit button's pencil.
@@ -130,7 +130,7 @@ impl KeyIcon {
         Self::Refresh,
         Self::Check,
         Self::Copy,
-        Self::Link,
+        Self::Bolt,
         Self::Eye,
         Self::Edit,
         Self::Clone,
@@ -164,7 +164,7 @@ impl KeyIcon {
             Self::Refresh => "refresh",
             Self::Check => "check",
             Self::Copy => "copy",
-            Self::Link => "link",
+            Self::Bolt => "bolt",
             Self::Eye => "eye",
             Self::Edit => "pencil",
             Self::Clone => "clone",

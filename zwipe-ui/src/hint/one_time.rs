@@ -241,7 +241,7 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
                     text(" switches between Search and your Maybe pile"),
                 ]),
                 bullet(vec![
-                    icon_key(KeyIcon::Link),
+                    icon_key(KeyIcon::Bolt),
                     text(
                         " is Synergy: on starts with cards that work with your commander, then cards like your deck. Off shows every legal card",
                     ),

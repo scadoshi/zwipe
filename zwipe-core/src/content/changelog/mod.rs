@@ -55,7 +55,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Add, Remove, swipe select and Oracle tag examples float their filter, refresh and card details as icons at the bottom right",
         "Swipe screens give the card more room: the pile chips sit at the bottom beside the icons, and only the card's prices show under it",
         "Card details from the eye include the release date and artist",
-        "Synergy on Add is a link icon beside the filter",
+        "Synergy on Add is a lightning bolt beside the filter",
         "Add switches between Search and Maybe with one chip after From",
         "Add deck cards, Remove deck cards and Deck cards are titled Add, Remove and Cards",
         "The password reset screen is titled Forgot password, as the menu names it",
