@@ -1,4 +1,5 @@
-use components::{BottomSheet, Button, ButtonVariant, CardDetails};
+use components::icons::{FLIP, LAYERS};
+use components::{ActionDock, BottomSheet, CardDetails, DockAction, DockPlace};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::Card;
@@ -47,9 +48,9 @@ pub(crate) fn use_describe_tag() -> Callback<String, Option<String>> {
 /// [`CardDetails`], opening on the shown face's mana cost since the sheet's
 /// title holds only text. The details and the host's `footer` share one
 /// panel, so nothing lies straight on the sheet's grid. The sheet closes
-/// from its title bar's × or a drag down; its own footer, present only when
-/// there is something to hold, has Flip for a multi-faced card (it leaves
-/// the sheet open) and an optional Printings.
+/// from its title bar's × or a drag down; its dock, pinned at its bottom
+/// right and present only when there is something to hold, has Flip for a
+/// multi-faced card (it leaves the sheet open) and an optional Printings.
 ///
 /// Printings leaves this sheet open: the host's printing sheet draws over it,
 /// and the host closes this one too when a printing is saved. Mount it at the
@@ -73,20 +74,19 @@ pub(crate) fn CardDetailsSheet(
     let face_count = components::card_face_count(&card);
     let mut face = use_signal(|| 0usize);
     let describe_tag = use_describe_tag();
-    let actions = (face_count > 1 || on_printings.is_some()).then(|| {
+    // Flip and Printings as the sheet's dock, pinned at its bottom right.
+    let dock = (face_count > 1 || on_printings.is_some()).then(|| {
         rsx! {
-            if face_count > 1 {
-                    Button {
-                        variant: ButtonVariant::Action,
-                        onclick: move |_| face.set((face() + 1) % face_count),
-                        "Flip"
+            ActionDock { place: DockPlace::Sheet,
+                if face_count > 1 {
+                    DockAction {
+                        label: "Flip",
+                        icon: FLIP,
+                        onclick: move |()| face.set((face() + 1) % face_count),
                     }
                 }
-            if let Some(handler) = on_printings {
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| handler.call(()),
-                    "Printings"
+                if let Some(handler) = on_printings {
+                    DockAction { label: "Printings", icon: LAYERS, onclick: move |()| handler.call(()) }
                 }
             }
         }
@@ -97,7 +97,6 @@ pub(crate) fn CardDetailsSheet(
             open,
             title: name,
             closable: true,
-            footer: actions,
             // The sheet's content is the scroll container and the surface;
             // `card-rules` only styles the text.
             div { class: "card-rules",
@@ -114,6 +113,9 @@ pub(crate) fn CardDetailsSheet(
                 if let Some(footer) = footer {
                     {footer}
                 }
+            }
+            if let Some(dock) = dock {
+                {dock}
             }
         }
     }

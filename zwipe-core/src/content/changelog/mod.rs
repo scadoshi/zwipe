@@ -81,6 +81,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "The deck form's fields clear from a × beside the box, which makes room for it as you type",
         "The Commander hint says a lit Filter keeps search to cards that can lead the format, and off lets any card lead",
         "The filter's Config clear puts every toggle back to its default, so the section reads as unset",
+        "The card details sheet's Flip and Printings are icons in its dock at the bottom right",
         "Config is now called Settings",
         "The Natural setting for mana symbols is now called Classic",
         "Log in, Create profile and Send are full-width buttons under their forms, with chips to the other sign-in screens beneath",
