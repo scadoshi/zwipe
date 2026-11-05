@@ -189,7 +189,7 @@ pub(crate) fn OracleWords() -> Element {
             on_clear: move |()| {
                 oracle_words_search.set(String::new());
             },
-    input { class: "input input-compact",
+            input { class: "input input-compact",
                     style: "flex: 1; margin-bottom: 0;",
                     id: "oracle-words-search",
                     placeholder: "Type to search",
@@ -285,7 +285,7 @@ pub(crate) fn OracleWords() -> Element {
             on_clear: move |()| {
                 excludes_search.set(String::new());
             },
-    input { class: "input input-compact",
+            input { class: "input input-compact",
                     style: "flex: 1; margin-bottom: 0;",
                     id: "oracle-words-excludes-search",
                     placeholder: "Type to search",

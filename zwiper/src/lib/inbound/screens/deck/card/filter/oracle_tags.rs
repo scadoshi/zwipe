@@ -195,7 +195,7 @@ pub(crate) fn OracleTags(on_dictionary: EventHandler<PickerField>) -> Element {
                 on_clear: move |()| {
                     includes_search.set(String::new());
                 },
-    input { class: "input input-compact",
+                input { class: "input input-compact",
                         style: "flex: 1; margin-bottom: 0;",
                         id: "oracle-tags-search",
                         placeholder: "Search all oracle tags",
@@ -286,7 +286,7 @@ pub(crate) fn OracleTags(on_dictionary: EventHandler<PickerField>) -> Element {
                 on_clear: move |()| {
                     excludes_search.set(String::new());
                 },
-    input { class: "input input-compact",
+                input { class: "input input-compact",
                         style: "flex: 1; margin-bottom: 0;",
                         id: "oracle-tags-excludes-search",
                         placeholder: "Search all oracle tags",

@@ -196,7 +196,7 @@ pub(crate) fn OtherTypes() -> Element {
                 search_query.set(String::new());
                 is_typing.set(false);
             },
-    input { class: "input input-compact",
+            input { class: "input input-compact",
                     style: "flex: 1; margin-bottom: 0;",
                     id: "other-type-search",
                     placeholder: "Type to search",
@@ -298,7 +298,7 @@ pub(crate) fn OtherTypes() -> Element {
                 excludes_search.set(String::new());
                 excludes_is_typing.set(false);
             },
-    input { class: "input input-compact",
+            input { class: "input input-compact",
                     style: "flex: 1; margin-bottom: 0;",
                     id: "type-excludes-search",
                     placeholder: "Type to search",

@@ -202,7 +202,7 @@ pub fn Set() -> Element {
                     search_query.set(String::new());
                     is_typing.set(false);
                 },
-    input { class: "input input-compact",
+                input { class: "input input-compact",
                         style: "flex: 1; margin-bottom: 0;",
                         id: "set-search",
                         placeholder: "Type to search",

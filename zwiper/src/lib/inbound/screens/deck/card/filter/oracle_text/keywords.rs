@@ -190,7 +190,7 @@ pub(crate) fn Keywords() -> Element {
             on_clear: move |()| {
                 keywords_search.set(String::new());
             },
-    input { class: "input input-compact",
+            input { class: "input input-compact",
                     style: "flex: 1; margin-bottom: 0;",
                     id: "keyword-search",
                     placeholder: "Type to search",
@@ -286,7 +286,7 @@ pub(crate) fn Keywords() -> Element {
             on_clear: move |()| {
                 excludes_search.set(String::new());
             },
-    input { class: "input input-compact",
+            input { class: "input input-compact",
                     style: "flex: 1; margin-bottom: 0;",
                     id: "keyword-excludes-search",
                     placeholder: "Type to search",

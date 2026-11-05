@@ -26,7 +26,7 @@ pub fn Name() -> Element {
                 on_clear: move |()| {
                     filter_builder.write().unset_name_contains();
                 },
-    input { class: "input input-compact",
+                input { class: "input input-compact",
                     id: "name-contains",
                     placeholder: "Name contains",
                     value: name_value,
@@ -47,7 +47,7 @@ pub fn Name() -> Element {
                 on_clear: move |()| {
                     filter_builder.write().unset_name_not_contains();
                 },
-    input { class: "input input-compact",
+                input { class: "input input-compact",
                     id: "name-not-contains",
                     placeholder: "Name doesn't contain",
                     value: name_not_value,
