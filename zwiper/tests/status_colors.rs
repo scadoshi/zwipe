@@ -8,11 +8,12 @@ use std::path::Path;
 
 use components::status_uses;
 
-const ALLOWED: [&str; 8] = [
+const ALLOWED: [&str; 9] = [
     ".badge-unverified",
     ".badge-verified",
     ".chip-bubble-error",
     ".clear-btn",
+    ".input-clear-btn",
     ".outcome-success .panel-title",
     ".settings-list-title.danger-zone-title",
     ".text-error",
