@@ -1727,34 +1727,35 @@ code {
 }
 
 /* Vary the widths so the skeleton reads like real deck tags, not uniform pills. */
-.sd-header-meta .sk-chip:nth-child(1) {
+.deck-head-meta .sk-chip:nth-child(1) {
     width: 5.5rem;
 }
-.sd-header-meta .sk-chip:nth-child(2) {
+.deck-head-meta .sk-chip:nth-child(2) {
     width: 7rem;
 }
-.sd-header-meta .sk-chip:nth-child(3) {
+.deck-head-meta .sk-chip:nth-child(3) {
     width: 4rem;
 }
-.sd-header-meta .sk-chip:nth-child(4) {
+.deck-head-meta .sk-chip:nth-child(4) {
     width: 6rem;
 }
 
-/* (The featured strip's ghosts lived here — .sk-card, .sk-line,
-   .sk-line-name, .sk-line-role. They're gone: the real cards now deal
-   themselves in from above as they load, so there's nothing to ghost.) */
-
-.sk-controls {
-    height: 12rem;
-    border-radius: 1rem;
-    margin-bottom: 1.75rem;
+/* A control row's label chip, as the live rows lead with one. */
+.sk-chip-label {
+    width: 4rem;
 }
 
-/* Ghost card-list group: one plain box, same language as the card shapes. */
+/* The featured card's footprint, at the card's own corner radius. */
+.sk-card {
+    width: 100%;
+    aspect-ratio: 5 / 7;
+    border-radius: 4.75% / 3.5%;
+}
+
+/* Ghost card band: one plain box, same language as the card shapes. */
 .sk-group {
     height: 15rem;
     border-radius: 1rem;
-    margin-bottom: 1.75rem;
 }
 
 /* Pinned card-art preview, top-left. Only shown on hover (desktop); the left

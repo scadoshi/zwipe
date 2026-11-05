@@ -171,30 +171,45 @@ fn CardRow(
     }
 }
 
-/// Loading placeholder in the shape of the loaded deck: a featured card row,
-/// the controls panel, and grouped card columns. Pulses while the fetch runs.
+/// Loading placeholder in the shape of the loaded deck: the head's title,
+/// chips and one featured card, the three control rows, and three card
+/// bands, in the deck page's own layout. Pulses while the fetch runs.
 #[component]
 fn SharedDeckSkeleton() -> Element {
     rsx! {
         div { class: "shared-deck content-enter",
-            header { class: "sd-header",
-                div { class: "sk sk-title" }
-                div { class: "sd-header-meta",
-                    for i in 0..4 {
-                        div { key: "{i}", class: "sk sk-chip" }
+            div { class: "deck-page",
+                div { class: "deck-head",
+                    div { class: "deck-head-text",
+                        div { class: "sk sk-title" }
+                        div { class: "deck-head-meta",
+                            for i in 0..4 {
+                                div { key: "{i}", class: "sk sk-chip" }
+                            }
+                        }
+                    }
+                    div { class: "deck-head-featured",
+                        div { class: "deck-featured-card",
+                            div { class: "sk sk-card" }
+                        }
                     }
                 }
-            }
-            // No featured ghosts: the real cards deal themselves in from above
-            // as they arrive (see .sd-cz-card's animation), the way the app's
-            // deck screen does. Ghosting them first would replace that entrance
-            // with a swap. The rest of the page's skeleton stays.
-            div { class: "sk sk-controls" }
-            section { class: "sd-groups",
-                // Ghost card-list groups: like every other skeleton piece,
-                // just big translucent boxes with no chrome or inner structure.
-                for g in 0..3 {
-                    div { key: "{g}", class: "sk sk-group" }
+                div { class: "deck-controls",
+                    for (row, chips) in [3usize, 2, 7].into_iter().enumerate() {
+                        div { key: "{row}", class: "chip-row",
+                            div { class: "sk sk-chip sk-chip-label" }
+                            for i in 0..chips {
+                                div { key: "{i}", class: "sk sk-chip" }
+                            }
+                        }
+                    }
+                }
+                div { class: "deck-bands",
+                    // Ghost card bands: like every other skeleton piece, big
+                    // translucent boxes with no chrome or inner structure.
+                    for g in 0..3 {
+                        div { key: "{g}", class: "sk sk-group" }
+                    }
                 }
             }
         }
