@@ -70,7 +70,7 @@ pub const NOT_VERIFIED: &str = "Not verified yet. Check your inbox";
 /// The toast once the password changed.
 pub const PASSWORD_CHANGED: &str = "Password change successful";
 /// The Change password sheet's header chip, for a user who no longer knows the current one.
-pub const FORGOT_PASSWORD: &str = "Forgot password";
+pub const FORGOT_PASSWORD: &str = "Forgot?";
 /// The toast once the reset link went out, before the address it went to.
 pub const RESET_LINK_SENT: &str = "Reset link sent to";
 
