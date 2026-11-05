@@ -1,8 +1,9 @@
 use std::collections::{HashMap, HashSet};
 
 use components::{
-    CardRow as SharedCardRow, Chip, ColorChart, DeckCharts, DrawOdds, FlippableCardImage,
-    ManaCurve, ManaFulfillment, Panel,
+    CardRow as SharedCardRow, Chip, ColorChart, DeckBand, DeckCharts, DeckControls, DeckFacts,
+    DeckFold, DeckHead, DeckPage, DrawOdds, FeaturedCard, FlippableCardImage, ManaCurve,
+    ManaFulfillment, Panel,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -17,17 +18,15 @@ use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCur
 use zwipe_core::domain::card::search_card::card_filter::sort_direction::SortDirection;
 use zwipe_core::domain::card::search_card::card_type::CardType;
 use zwipe_core::domain::card::search_card::cards::Cards;
-use zwipe_core::domain::card::search_card::group_cards::{GroupByOption, GroupCards};
+use zwipe_core::domain::card::search_card::group_cards::GroupByOption;
 use zwipe_core::domain::deck::deck_metrics::{self, DeckMetrics};
 use zwipe_core::domain::deck::{Board, DeckEntry, Format, deck_tag_label};
 use zwipe_core::http::contracts::deck::HttpSharedDeck;
 use zwipe_ui::colors::ColorCounts;
+use zwipe_ui::deck_cards::{self, Zone};
 
 use crate::components::{OVERLAY_EXIT_MS, PageMeta, sleep_ms};
 use crate::{Footer, Nav, api};
-
-/// Desktop columns the deck sections split into, in order.
-const SECTION_COLUMNS: usize = 3;
 
 /// How long a hover preview stays up once the cursor leaves its row or the row flips.
 const PREVIEW_LIFE_MS: u32 = 2000;
@@ -59,135 +58,6 @@ struct PreviewCard {
     url: String,
     /// True once the card's timer has fired and it's playing its exit fade.
     leaving: bool,
-}
-
-/// One card section in the deck grid: the command zone, tokens, lands, or a
-/// group from the Group by control.
-struct Section {
-    /// Collapse identity. Separate from `title` because color groups show pips
-    /// instead of a name, leaving titles that can repeat.
-    key: String,
-    /// Header text, e.g. `Creatures (21)`, or a bare count for color groups.
-    title: String,
-    /// Color pips shown before the title, when grouping by color.
-    pips: Option<Vec<Color>>,
-    cards: Vec<Card>,
-}
-
-impl Section {
-    /// A section whose header is a plain name, with no pips.
-    fn titled(title: String, cards: Vec<Card>) -> Self {
-        Self {
-            key: title.clone(),
-            title,
-            pips: None,
-            cards,
-        }
-    }
-}
-
-/// Collapsible bordered group (card sections and the stat panels alike): a
-/// header with the card-row disclosure arrow over a body easing open/closed
-/// via the `.collapsible` grid-rows technique. It mirrors the app's deck-screen
-/// collapse but is multi-open (no accordion). Card groups default
-/// open, stat panels default collapsed; all ephemeral per visit.
-#[component]
-fn SdCollapsibleGroup(
-    title: String,
-    section_key: String,
-    /// Color-identity pips rendered before the title, for color groups.
-    #[props(default)]
-    pips: Option<Vec<Color>>,
-    collapsed_groups: Signal<HashSet<String>>,
-    children: Element,
-) -> Element {
-    let expanded = !collapsed_groups().contains(&section_key);
-    let mut collapsed_groups = collapsed_groups;
-    rsx! {
-        div {
-            class: if expanded { "sd-group" } else { "sd-group collapsed" },
-            div {
-                class: if expanded { "sd-group-header group-collapsible expanded" } else { "sd-group-header group-collapsible" },
-                onclick: move |_| {
-                    let mut set = collapsed_groups.write();
-                    if !set.remove(&section_key) {
-                        set.insert(section_key.clone());
-                    }
-                },
-                span { class: "card-row-arrow", "▸" }
-                if let Some(pips) = pips.as_ref().filter(|p| !p.is_empty()) {
-                    span { class: "identity-pips",
-                        for color in pips.iter() {
-                            i {
-                                key: "{color.to_short_name()}",
-                                class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
-                            }
-                        }
-                    }
-                }
-                "{title}"
-            }
-            div {
-                class: if expanded { "collapsible open" } else { "collapsible" },
-                div { class: "collapsible-inner", {children} }
-            }
-        }
-    }
-}
-
-/// One pinned command zone card: image (when available) above name + role.
-/// Tapping the image opens the page's full-art overlay on the shown face,
-/// like the card rows below.
-#[component]
-fn CommandZoneCard(
-    card: Card,
-    role: String,
-    mut overlay_card: Signal<Option<(ScryfallData, usize)>>,
-    /// Fires once the card's image has its bytes, or at once when it has none.
-    on_load: EventHandler<()>,
-) -> Element {
-    let name = card.scryfall_data.name.clone();
-    let sd = card.scryfall_data;
-    let has_image = sd.primary_image_url(ImageSize::Normal).is_some();
-    use_effect(use_reactive!(|has_image| {
-        if !has_image {
-            on_load.call(());
-        }
-    }));
-    // Which face the flip control is showing, so the overlay opens on it.
-    let mut current_face = use_signal(|| 0usize);
-    let sd_overlay = sd.clone();
-    rsx! {
-        div { class: "sd-cz-card",
-            if has_image {
-                // Flippable so DFC commanders (e.g. Valki // Tibalt) show both
-                // faces; opens on the front. display:contents wrapper carries
-                // the tap without touching layout (the flip button stops
-                // propagation, so flipping never opens the overlay).
-                div {
-                    style: "display: contents;",
-                    onclick: move |_| {
-                        overlay_card.set(Some((sd_overlay.clone(), current_face())));
-                    },
-                    FlippableCardImage {
-                        sd,
-                        size: ImageSize::Normal,
-                        class: "sd-cz-image".to_string(),
-                        draggable: false,
-                        on_face_change: move |face: usize| current_face.set(face),
-                        on_load: move |()| on_load.call(()),
-                    }
-                }
-            }
-            div { class: "sd-cz-name", "{name}" }
-            if !role.is_empty() {
-                div {
-                    class: if role == "MVP" { "sd-cz-role sd-cz-role-mvp" } else { "sd-cz-role sd-cz-role-zone" },
-                    "{role}"
-                }
-            }
-        }
-    }
 }
 
 /// Read-only wrapper over the shared [`SharedCardRow`]: wires zite's desktop
@@ -443,14 +313,17 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
         })
     });
 
-    let mut group_option = use_signal(|| GroupByOption::CardType);
-    let mut name_filter = use_signal(String::new);
-    let mut selected_types = use_signal(Vec::<CardType>::new);
-    let mut selected_colors = use_signal(Vec::<Color>::new);
-    let mut show_command_zone = use_signal(|| true);
-    let mut show_tokens = use_signal(|| false);
-    // Featured cards with their image bytes in hand. The row stays collapsed
-    // until every card reports in, or 4 s pass, then opens and deals.
+    // The controls' state, ephemeral per visit.
+    let group_by = use_signal(|| GroupByOption::CardType);
+    let name_filter = use_signal(String::new);
+    let selected_types = use_signal(Vec::<CardType>::new);
+    let selected_colors = use_signal(Vec::<Color>::new);
+    let show_zone = use_signal(|| true);
+    let show_tokens = use_signal(|| false);
+    // Art-crop thumbnails on the card rows, on by default (matches the app).
+    let show_row_art = use_signal(|| true);
+    // Featured cards with their image bytes in hand. The row stays unseen
+    // until every card reports in, or 4 s pass, then deals.
     let mut featured_loaded = use_signal(|| 0usize);
     let mut featured_timed_out = use_signal(|| false);
     use_future(move || async move {
@@ -459,17 +332,13 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
     });
     // Budget panel currency, mirroring the app's Budget section chips.
     let mut selected_currency = use_signal(|| "usd");
-    // Collapsed sections, keyed by header label, mirroring the app's
-    // deck-screen collapse. Card groups default open; the stat panels default
-    // collapsed (headers as a compact strip). Ephemeral per visit.
-    let collapsed_groups: Signal<HashSet<String>> = use_signal(|| {
+    // The folded panels, by key. The card groups open; the stat panels fold.
+    let folded: Signal<HashSet<String>> = use_signal(|| {
         ["Budget", "Tags", "Distributions", "Mana", "Draw odds"]
             .into_iter()
             .map(String::from)
             .collect()
     });
-    // Art-crop thumbnails on the card rows, on by default (matches the app).
-    let mut show_row_art = use_signal(|| true);
     // The hover-preview stack dodges the cursor: working the LEFT half of the
     // screen glides the stack to the right gutter so it never covers the rows
     // being read. Written only when the side actually changes, so mousemove
@@ -503,12 +372,21 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
     let mut overlay_card: Signal<Option<(ScryfallData, usize)>> = use_signal(|| None);
     let mut overlay_dismissing = use_signal(|| false);
 
-    // Mainboard only: the maybeboard is scratch space, not the deck statement.
-    let mainboard: Vec<&DeckEntry> = deck
+    // The command zone in its slots, and the main board without it: the
+    // maybeboard is scratch space, not the deck statement.
+    let zone = Zone {
+        commander: deck.commander.clone(),
+        partner: deck.partner_commander.clone(),
+        background: deck.background.clone(),
+        signature: deck.signature_spell.clone(),
+    };
+    let mut mainboard: Vec<DeckEntry> = deck
         .entries
         .iter()
         .filter(|e| e.deck_card.board == Board::Deck)
+        .cloned()
         .collect();
+    zone.strip(&mut mainboard);
     let card_count: i64 = mainboard
         .iter()
         .map(|e| i64::from(*e.deck_card.quantity))
@@ -522,26 +400,16 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
         .filter(|e| e.deck_card.mvp_at.is_some())
         .map(|e| e.deck_card.scryfall_data_id)
         .collect();
-    // Starred cards, oldest star first (the vesting clock), for the featured
-    // MVP row, the deck's personality statement.
-    let mut mvp_entries: Vec<&DeckEntry> = mainboard
-        .iter()
-        .copied()
-        .filter(|e| e.deck_card.mvp_at.is_some())
-        .collect();
-    mvp_entries.sort_by_key(|e| e.deck_card.mvp_at);
-    let mvp_cards: Vec<Card> = mvp_entries.iter().map(|e| e.card.clone()).collect();
-    let featured_total = [
-        deck.commander.is_some(),
-        deck.partner_commander.is_some(),
-        deck.background.is_some(),
-        deck.signature_spell.is_some(),
-    ]
-    .iter()
-    .filter(|present| **present)
-    .count()
-    .saturating_add(mvp_cards.len());
-    let featured_ready = featured_timed_out() || featured_loaded() >= featured_total;
+    // A format with a signature spell is Oathbreaker: the "commander" is the
+    // oathbreaker planeswalker.
+    let is_oathbreaker = deck
+        .format
+        .as_ref()
+        .is_some_and(Format::has_signature_spell);
+    // The command zone with its roles, then the MVPs: the deck's identity at
+    // a glance, and the one strip the Command zone chip never hides.
+    let featured = deck_cards::featured(&zone, &mainboard, is_oathbreaker);
+    let featured_ready = featured_timed_out() || featured_loaded() >= featured.len();
     let featured_class = if featured_ready {
         "sd-featured ready"
     } else {
@@ -552,12 +420,6 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
         let loaded = featured_loaded();
         featured_loaded.set(loaded.saturating_add(1));
     };
-    // A format with a signature spell is Oathbreaker: the "commander" is the
-    // oathbreaker planeswalker.
-    let is_oathbreaker = deck
-        .format
-        .as_ref()
-        .is_some_and(Format::has_signature_spell);
 
     let price = deck_metrics::mainboard_total_price(&deck.entries, PriceCurrency::Usd);
 
@@ -575,21 +437,27 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
     // A display count: it saturates rather than wraps on a corrupt quantity.
     let display_count =
         i64::try_from(zone_slots).map_or(card_count, |slots| card_count.saturating_add(slots));
-    // Command-zone names as chips, in the app's order: commander, partner,
-    // background, signature spell.
-    let zone_names: Vec<String> = [
-        &deck.commander,
-        &deck.partner_commander,
-        &deck.background,
-        &deck.signature_spell,
-    ]
-    .into_iter()
-    .filter_map(|c| c.as_ref().map(|c| c.scryfall_data.name.clone()))
-    .collect();
+    let facts = DeckFacts {
+        cards: display_count,
+        format: deck.format,
+        power_level: deck.power_level,
+        zone_names: zone
+            .cards()
+            .into_iter()
+            .map(|(_, c)| c.scryfall_data.name.clone())
+            .collect(),
+        tags: deck.tags.iter().map(|t| deck_tag_label(t)).collect(),
+        other_tags: deck
+            .other_tags
+            .iter()
+            .map(|t| t.display_name().to_owned())
+            .collect(),
+        price: (price > 0.0).then(|| format!("${price:.2}")),
+    };
 
-    // The same in-memory path the app's deck view runs: criteria match, name
-    // sort, then group. Filter parse failures degrade to the unfiltered list.
-    let cards: Vec<Card> = mainboard.iter().map(|e| e.card.clone()).collect();
+    // The same pass the app's deck view runs: criteria match, name sort, then
+    // group, with the lands pulled out. A filter that fails to parse lists
+    // every card.
     let mut builder = CardQueryBuilder::new();
     let name_query = name_filter();
     if !name_query.trim().is_empty() {
@@ -601,331 +469,64 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
     if !selected_colors().is_empty() {
         builder.set_color_identity_within(selected_colors().into_iter().collect());
     }
-    let filtered: Vec<Card> = if builder.is_empty() {
-        cards
+    let listed_zone = if show_zone() {
+        zone.clone()
     } else {
-        match builder.build_criteria() {
-            Ok(criteria) => Cards::from(cards).matching(&criteria).into(),
-            Err(_) => cards,
-        }
+        Zone::default()
     };
-    let filtered: Vec<Card> = Cards::from(filtered)
-        .sorted(CardSortKey::Name, SortDirection::Ascending)
-        .into();
-    // Lands render in their own section, pinned below the grouped columns, out of
-    // the group-by pipeline (consistent across grouping modes). Both stay filtered.
-    let (lands, nonlands): (Vec<Card>, Vec<Card>) = filtered
-        .into_iter()
-        .partition(|c| c.scryfall_data.is_land());
-    let land_qty: i64 = lands
-        .iter()
-        .map(|c| i64::from(*qty_by_id.get(&c.scryfall_data.id).unwrap_or(&1)))
-        .sum();
-    let groups = nonlands.group_by(group_option());
-    let no_matching = groups.is_empty() && lands.is_empty();
-
-    // Flatten command zone + type groups into one ordered section list, then
-    // balance them into independent columns. CSS multi-column would
-    // reflow the whole layout when a card expands (shifting groups between
-    // columns); independent flex columns let a column just grow taller.
-    let mut sections: Vec<Section> = Vec::new();
+    let display = deck_cards::pass(&mainboard, &listed_zone, &builder, group_by());
     // Tokens the deck's cards produce (server-derived), shown like the app's
     // token list. Name-sorted, not run through the card filter.
-    if show_tokens() && !deck.tokens.is_empty() {
-        let tokens: Vec<Card> = Cards::from(deck.tokens.clone())
+    let tokens: Option<Vec<Card>> = show_tokens().then(|| {
+        Cards::from(deck.tokens.clone())
             .sorted(CardSortKey::Name, SortDirection::Ascending)
-            .into();
-        sections.push(Section::titled(
-            format!("Tokens ({})", tokens.len()),
-            tokens,
-        ));
-    }
-    if show_command_zone() {
-        let mut cz: Vec<Card> = Vec::new();
-        if let Some(c) = &deck.commander {
-            cz.push(c.clone());
-        }
-        if let Some(c) = &deck.partner_commander {
-            cz.push(c.clone());
-        }
-        if !cz.is_empty() {
-            let header = if is_oathbreaker {
-                "Oathbreaker"
-            } else if deck.partner_commander.is_some() {
-                "Commanders"
-            } else {
-                "Commander"
-            };
-            sections.push(Section::titled(header.to_string(), cz));
-        }
-        if let Some(c) = &deck.background {
-            sections.push(Section::titled("Background".to_string(), vec![c.clone()]));
-        }
-        if let Some(c) = &deck.signature_spell {
-            sections.push(Section::titled(
-                "Signature spell".to_string(),
-                vec![c.clone()],
-            ));
-        }
-    }
-    for group in groups {
-        let qty: i64 = group
-            .cards
-            .iter()
-            .map(|c| i64::from(*qty_by_id.get(&c.scryfall_data.id).unwrap_or(&1)))
-            .sum();
-        // Color groups render as pips with no label, so the title is the bare
-        // count and the collapse key comes from the group itself. Two color
-        // groups with equal counts would otherwise share a key and fold together.
-        let title = if group.label.is_empty() {
-            format!("({qty})")
-        } else {
-            format!("{} ({})", group.label, qty)
-        };
-        sections.push(Section {
-            key: group.key(),
-            title,
-            pips: group.pips.clone(),
-            cards: group.cards,
-        });
-    }
-    // Lands as a dedicated section (pulled out of the group-by so it's consistent
-    // across grouping modes), appended last so it closes out the final column.
-    // That keeps it connected to the grid instead of an orphan band.
-    if !lands.is_empty() {
-        sections.push(Section::titled(format!("Lands ({land_qty})"), lands));
-    }
+            .into()
+    });
+    let sections = components::sections(&display, deck.format, tokens.as_deref(), &qty_by_id);
+    let empty = sections.is_empty();
 
     // Distribution charts, mirroring the app's deck screen sections: metrics
     // over the full entry list (mainboard-only inside, same as the app) plus
     // the command zone; suppressed while the deck holds only its command zone.
-    let cz_cards: Vec<Card> = [
-        deck.commander.clone(),
-        deck.partner_commander.clone(),
-        deck.background.clone(),
-        deck.signature_spell.clone(),
-    ]
-    .into_iter()
-    .flatten()
-    .collect();
+    let cz_cards: Vec<Card> = zone.cards().into_iter().map(|(_, c)| c.clone()).collect();
     let metrics = DeckMetrics::from_entries_and_command_zone(&deck.entries, &cz_cards);
     let show_charts = metrics.land_count > 0 || metrics.nonland_count > 0;
-
-    // The stat panels (Budget, Tags, Distributions, Mana, Draw odds: the
-    // app's deck-view sections in its order), each as (title, height proxy,
-    // body). They flow through the same balanced-columns partition as the
-    // card sections so panels pack tightly instead of leaving grid-row gaps.
-    // Heights are layout estimates, so their sums saturate.
-    let chart_panels: Vec<(&'static str, usize, Element)> = if show_charts {
-        let mut panels: Vec<(&'static str, usize, Element)> = Vec::new();
-        {
-            let currency = PriceCurrency::from_key(selected_currency()).unwrap_or_default();
-            let (total, avg) = match currency {
-                PriceCurrency::Eur => (metrics.total_price_eur, metrics.avg_price_eur),
-                PriceCurrency::Tix => (metrics.total_price_tix, metrics.avg_price_tix),
-                PriceCurrency::Usd => (metrics.total_price_usd, metrics.avg_price_usd),
-            };
-            // Total shown as `total / target` when a price target is set; the
-            // target keeps its own stored currency, never converted (same as
-            // the app's Budget section).
-            let running = currency.format_amount(total.unwrap_or(0.0));
-            let total_fmt = match deck.price_target {
-                Some(target) => {
-                    let target_currency = deck.price_target_currency.unwrap_or_default();
-                    format!("{running} / {}", target_currency.format_amount(target))
-                }
-                None => running,
-            };
-            let avg_fmt = avg.map_or_else(|| "N/A".to_string(), |v| currency.format_amount(v));
-            panels.push((
-                "Budget",
-                6,
-                rsx! {
-                    div { class: "sd-chart-body",
-                        div { class: "chip-row", style: "padding: 0 1rem;",
-                            for (label, key) in [("USD", "usd"), ("EUR", "eur"), ("TIX", "tix")] {
-                                Chip {
-                                    key: "{key}",
-                                    selected: selected_currency() == key,
-                                    onclick: move |_| selected_currency.set(key),
-                                    "{label}"
-                                }
-                            }
-                        }
-                        div { class: "info-row",
-                            span { class: "info-row-label", "Total price" }
-                            span { class: "info-row-value", "{total_fmt}" }
-                        }
-                        div { class: "info-row",
-                            span { class: "info-row-label", "Average card price" }
-                            span { class: "info-row-value", "{avg_fmt}" }
-                        }
-                    }
-                },
-            ));
-        }
-        if !deck.tags.is_empty() || !deck.oracle_tags.is_empty() || !deck.other_tags.is_empty() {
-            let height = (deck.oracle_tags.len() / 3).saturating_add(4);
-            panels.push((
-                "Tags",
-                height,
-                rsx! {
-                    div { class: "sd-chart-body",
-                        if !deck.tags.is_empty() {
-                            div { class: "info-row info-row-stacked",
-                                span { class: "info-row-label", "Deck tags" }
-                                span { class: "info-row-value info-row-tags",
-                                    for tag in deck.tags.iter() {
-                                        span { key: "{tag}", class: "stat-chip stat-chip-muted", "{deck_tag_label(tag)}" }
-                                    }
-                                }
-                            }
-                        }
-                        if !deck.oracle_tags.is_empty() {
-                            div { class: "info-row info-row-stacked",
-                                span { class: "info-row-label", "Oracle tags" }
-                                span { class: "info-row-value info-row-tags",
-                                    for slug in deck.oracle_tags.iter() {
-                                        span { key: "{slug}", class: "stat-chip stat-chip-muted", "{slug}" }
-                                    }
-                                }
-                            }
-                        }
-                        if !deck.other_tags.is_empty() {
-                            div { class: "info-row info-row-stacked",
-                                span { class: "info-row-label", "Other tags" }
-                                span { class: "info-row-value info-row-tags",
-                                    for tag in deck.other_tags.iter() {
-                                        span { key: "{tag}", class: "stat-chip stat-chip-muted", "{tag.display_name()}" }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-            ));
-        }
-        {
-            // Each folded chart stands five rows and a See more tall.
-            let role_rows = metrics.card_role_bars().map_or(0, |b| b.len().min(6));
-            let tag_rows = metrics.oracle_tag_bars().map_or(0, |b| b.len().min(6));
-            let avg_pt = if metrics.avg_power.is_some() || metrics.avg_toughness.is_some() {
-                let fmt = |v: Option<f64>| v.map_or_else(|| "-".to_string(), |v| format!("{v:.1}"));
-                Some(format!(
-                    "{} / {}",
-                    fmt(metrics.avg_power),
-                    fmt(metrics.avg_toughness)
-                ))
-            } else {
-                None
-            };
-            panels.push((
-                "Distributions",
-                role_rows.saturating_add(tag_rows).saturating_add(7),
-                rsx! {
-                    div { class: "sd-chart-body",
-                        if let Some(value) = avg_pt {
-                            div { class: "info-row",
-                                span { class: "info-row-label", "Average P/T" }
-                                span { class: "info-row-value", style: "white-space:nowrap;", "{value}" }
-                            }
-                        }
-                        DeckCharts {
-                            type_bars: Some(metrics.type_bars()),
-                            category_bars: metrics.card_role_bars(),
-                            oracle_tag_bars: metrics.oracle_tag_bars(),
-                            role_tags: Some(metrics.card_role_tags.clone()),
-                            describe_tag,
-                        }
-                    }
-                },
-            ));
-        }
-        {
-            let balance_rows = metrics.mana_balance_rows();
-            panels.push((
-                "Mana",
-                balance_rows.len().saturating_add(15),
-                rsx! {
-                    div { class: "sd-chart-body",
-                        div { class: "info-row",
-                            span { class: "info-row-label", "Lands" }
-                            span { class: "info-row-value",
-                                {
-                                    // `actual / target` when a land target is
-                                    // set, like the app's Mana section.
-                                    match deck.land_target {
-                                        Some(target) => format!("{} / {target}", metrics.land_count),
-                                        None => metrics.land_count.to_string(),
-                                    }
-                                }
-                            }
-                        }
-                        div { class: "info-row",
-                            span { class: "info-row-label", "Average mana value" }
-                            span { class: "info-row-value", "{metrics.avg_cmc:.1}" }
-                        }
-                        ManaCurve { mana_curve_bars: metrics.mana_curve_bars() }
-                        ColorChart { bars: ColorCounts::from(&metrics).bars() }
-                        ManaFulfillment { rows: balance_rows }
-                    }
-                },
-            ));
-        }
-        {
-            let (deck_size, buckets) = metrics.draw_odds_buckets();
-            let bucket_count = buckets.len().min(6);
-            panels.push((
-                "Draw odds",
-                bucket_count.saturating_add(3),
-                rsx! {
-                    div { class: "sd-chart-body",
-                        DrawOdds { deck_size, buckets }
-                    }
-                },
-            ));
-        }
-        panels
-    } else {
-        Vec::new()
+    let has_tags =
+        !deck.tags.is_empty() || !deck.oracle_tags.is_empty() || !deck.other_tags.is_empty();
+    let currency = PriceCurrency::from_key(selected_currency()).unwrap_or_default();
+    let (total, avg) = match currency {
+        PriceCurrency::Eur => (metrics.total_price_eur, metrics.avg_price_eur),
+        PriceCurrency::Tix => (metrics.total_price_tix, metrics.avg_price_tix),
+        PriceCurrency::Usd => (metrics.total_price_usd, metrics.avg_price_usd),
     };
-
-    // Partition the ordered sections into contiguous runs, one per column,
-    // picking the two cut points that minimize the tallest column. Contiguous
-    // (not shortest-column greedy) so section order survives both layouts:
-    // desktop columns read left-to-right in order, and the phone single-column
-    // stack keeps the same order instead of scrambling it.
-    let section_heights: Vec<usize> = sections
-        .iter()
-        .map(|s| s.cards.len().saturating_add(2))
-        .collect();
-    let run_height =
-        |from: usize, to: usize| -> usize { section_heights.iter().take(to).skip(from).sum() };
-    let n = sections.len();
-    let mut cuts = (n, n);
-    let mut best_max = usize::MAX;
-    for i in 0..=n {
-        for j in i..=n {
-            let tallest = run_height(0, i).max(run_height(i, j)).max(run_height(j, n));
-            if tallest < best_max {
-                best_max = tallest;
-                cuts = (i, j);
-            }
+    // Total shown as `total / target` when a price target is set; the target
+    // keeps its own stored currency, never converted (same as the app's
+    // Budget section).
+    let running = currency.format_amount(total.unwrap_or(0.0));
+    let total_fmt = match deck.price_target {
+        Some(target) => {
+            let target_currency = deck.price_target_currency.unwrap_or_default();
+            format!("{running} / {}", target_currency.format_amount(target))
         }
-    }
-    let mut columns: Vec<Vec<Section>> = (0..SECTION_COLUMNS).map(|_| Vec::new()).collect();
-    for (idx, section) in sections.into_iter().enumerate() {
-        let ci = if idx < cuts.0 {
-            0
-        } else if idx < cuts.1 {
-            1
-        } else {
-            2
-        };
-        if let Some(col) = columns.get_mut(ci) {
-            col.push(section);
-        }
-    }
+        None => running,
+    };
+    let avg_fmt = avg.map_or_else(|| "N/A".to_string(), |v| currency.format_amount(v));
+    let avg_pt = if metrics.avg_power.is_some() || metrics.avg_toughness.is_some() {
+        let fmt = |v: Option<f64>| v.map_or_else(|| "-".to_string(), |v| format!("{v:.1}"));
+        Some(format!(
+            "{} / {}",
+            fmt(metrics.avg_power),
+            fmt(metrics.avg_toughness)
+        ))
+    } else {
+        None
+    };
+    // `actual / target` when a land target is set, like the app's Mana section.
+    let lands_line = match deck.land_target {
+        Some(target) => format!("{} / {target}", metrics.land_count),
+        None => metrics.land_count.to_string(),
+    };
+    let (deck_size, buckets) = metrics.draw_odds_buckets();
 
     rsx! {
         PageMeta {
@@ -988,202 +589,159 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                     preview_on_right.set(cursor_on_left);
                 }
             },
-            header { class: "sd-header",
-                h1 { "{deck.name}" }
-                div { class: "sd-header-meta",
-                    span { class: "stat-chip stat-chip-p5", "{display_count} cards" }
-                    if let Some(fmt) = deck.format {
-                        span { class: "stat-chip stat-chip-p3", "{fmt.display_name()}" }
-                    }
-                    if let Some(pl) = deck.power_level {
-                        span { class: "stat-chip stat-chip-p5", "{pl.display_name()}" }
-                    }
-                    for name in zone_names.iter() {
-                        span { key: "{name}", class: "stat-chip stat-chip-p3", "{name}" }
-                    }
-                    for tag in deck.tags.iter() {
-                        span { key: "{tag}", class: "stat-chip stat-chip-muted", "{deck_tag_label(tag)}" }
-                    }
-                    for tag in deck.other_tags.iter() {
-                        span { key: "{tag}", class: "stat-chip stat-chip-p5", "{tag.display_name()}" }
-                    }
-                    if price > 0.0 {
-                        span { class: "stat-chip stat-chip-money", "${price:.2}" }
-                    }
-                }
-            }
-
-            // Featured row: the command zone and the deck MVPs together on one
-            // line, each card labeled underneath: the deck's identity at a
-            // glance. Always pinned at the top (the Command zone toggle only
-            // governs list inclusion below, like the app).
-            if deck.commander.is_some() || deck.partner_commander.is_some()
-                || deck.background.is_some() || deck.signature_spell.is_some()
-                || !mvp_cards.is_empty() {
-                section { class: "{featured_class}",
-                    div { class: "sd-featured-row",
-                        if let Some(card) = deck.commander.clone() {
-                            CommandZoneCard {
+            DeckPage {
+                head: rsx! {
+                    DeckHead {
+                        name: deck.name.clone(),
+                        facts,
+                        has_featured: !featured.is_empty(),
+                        featured_class: featured_class.to_string(),
+                        for (card, role) in featured.iter().cloned() {
+                            FeaturedCard {
+                                key: "{card.scryfall_data.id}-{role}",
                                 card,
-                                role: if is_oathbreaker { "Oathbreaker".to_string() } else { "Commander".to_string() },
-                                overlay_card,
+                                role: role.to_string(),
+                                on_open: move |(sd, face): (ScryfallData, usize)| overlay_card.set(Some((sd, face))),
                                 on_load: on_featured_load,
                             }
                         }
-                        if let Some(card) = deck.partner_commander.clone() {
-                            CommandZoneCard { card, role: "Partner".to_string(), overlay_card, on_load: on_featured_load }
-                        }
-                        if let Some(card) = deck.background.clone() {
-                            CommandZoneCard { card, role: "Background".to_string(), overlay_card, on_load: on_featured_load }
-                        }
-                        if let Some(card) = deck.signature_spell.clone() {
-                            CommandZoneCard { card, role: "Signature spell".to_string(), overlay_card, on_load: on_featured_load }
-                        }
-                        for card in mvp_cards.iter().cloned() {
-                            CommandZoneCard { card, role: "MVP".to_string(), overlay_card, on_load: on_featured_load }
-                        }
                     }
-                }
-            }
-
-            // The app's deck-view sections (Budget, Tags, Distributions, Mana,
-            // Draw odds) as collapsible panels between the featured cards and
-            // the controls, collapsed by default. Independent columns like
-            // the card grid (round-robin split), so expanding a panel pushes
-            // only its own column down, never its row neighbors.
-            // (Warnings stays app-only: a builder tool.)
-            if show_charts {
-                section { class: "sd-columns sd-charts",
-                    for ci in 0..3 {
-                        div { class: "sd-column", key: "charts-{ci}",
-                            for (title, _height, body) in chart_panels
-                                .iter()
-                                .enumerate()
-                                .filter(|(idx, _)| idx % 3 == ci)
-                                .map(|(_, p)| p.clone())
-                            {
-                                SdCollapsibleGroup {
-                                    key: "{title}",
-                                    title: title.to_string(),
-                                    section_key: title.to_string(),
-                                    collapsed_groups,
-                                    {body}
+                },
+                controls: rsx! {
+                    DeckControls {
+                        group_by,
+                        show_tokens: (!deck.tokens.is_empty()).then_some(show_tokens),
+                        show_zone,
+                        show_art: show_row_art,
+                        name: name_filter,
+                        types: selected_types,
+                        colors: selected_colors,
+                    }
+                },
+                empty,
+                bands: rsx! {
+                    for section in sections {
+                        DeckBand {
+                            key: "{section.key}",
+                            section: section.clone(),
+                            folded,
+                            for card in section.cards {
+                                CardRow {
+                                    key: "{card.scryfall_data.id}",
+                                    qty: *qty_by_id.get(&card.scryfall_data.id).unwrap_or(&1),
+                                    mvp: mvp_ids.contains(&card.scryfall_data.id),
+                                    card,
+                                    expanded_card,
+                                    preview_stack,
+                                    preview_next_id,
+                                    overlay_card,
+                                    describe_tag,
+                                    show_art: show_row_art(),
                                 }
                             }
                         }
                     }
-                }
-            }
-
-            section { class: "sd-controls",
-                div { class: "sd-control-row",
-                    span { class: "sd-control-label", "Group by:" }
-                    for option in GroupByOption::all() {
-                        Chip {
-                            key: "{option}",
-                            selected: group_option() == option,
-                            onclick: move |_| group_option.set(option),
-                            "{option}"
-                        }
-                    }
-                }
-                div { class: "sd-control-row",
-                    span { class: "sd-control-label", "Show:" }
-                    Chip {
-                        selected: show_tokens(),
-                        onclick: move |_| show_tokens.set(!show_tokens()),
-                        "Tokens"
-                    }
-                    Chip {
-                        selected: show_command_zone(),
-                        onclick: move |_| show_command_zone.set(!show_command_zone()),
-                        "Command zone"
-                    }
-                    Chip {
-                        selected: show_row_art(),
-                        onclick: move |_| show_row_art.set(!show_row_art()),
-                        "Art"
-                    }
-                }
-                div { class: "sd-control-row",
-                    span { class: "sd-control-label", "Filter by:" }
-                    input {
-                        class: "sd-filter-input",
-                        r#type: "search",
-                        placeholder: "Name",
-                        value: "{name_filter}",
-                        oninput: move |evt| name_filter.set(evt.value()),
-                    }
-                    for card_type in [
-                        CardType::Creature, CardType::Instant, CardType::Sorcery,
-                        CardType::Artifact, CardType::Enchantment,
-                        CardType::Planeswalker,
-                    ] {
-                        Chip {
-                            key: "{card_type}",
-                            selected: selected_types().contains(&card_type),
-                            onclick: move |_| {
-                                let mut current = selected_types();
-                                match current.iter().position(|t| *t == card_type) {
-                                    Some(idx) => { current.remove(idx); }
-                                    None => current.push(card_type),
+                },
+                // The app's deck-view sections (Budget, Tags, Distributions,
+                // Mana, Draw odds), folded. Warnings stays app-only: a
+                // builder's tool.
+                stats: show_charts.then(|| rsx! {
+                    DeckFold { fold_key: "Budget", title: "Budget", folded,
+                        div { class: "deck-stat-body",
+                            div { class: "chip-row", style: "padding: 0 1rem;",
+                                for (label, key) in [("USD", "usd"), ("EUR", "eur"), ("TIX", "tix")] {
+                                    Chip {
+                                        key: "{key}",
+                                        selected: selected_currency() == key,
+                                        onclick: move |_| selected_currency.set(key),
+                                        "{label}"
+                                    }
                                 }
-                                selected_types.set(current);
-                            },
-                            "{card_type}"
+                            }
+                            div { class: "info-row",
+                                span { class: "info-row-label", "Total price" }
+                                span { class: "info-row-value", "{total_fmt}" }
+                            }
+                            div { class: "info-row",
+                                span { class: "info-row-label", "Average card price" }
+                                span { class: "info-row-value", "{avg_fmt}" }
+                            }
                         }
                     }
-                }
-                div { class: "sd-control-row",
-                    for color in Color::all() {
-                        button {
-                            key: "{color:?}",
-                            class: if selected_colors().contains(&color) { "sd-chip sd-chip-color active" } else { "sd-chip sd-chip-color" },
-                            onclick: move |_| {
-                                let mut current = selected_colors();
-                                match current.iter().position(|c| *c == color) {
-                                    Some(idx) => { current.remove(idx); }
-                                    None => current.push(color),
+                    if has_tags {
+                        DeckFold { fold_key: "Tags", title: "Tags", folded,
+                            div { class: "deck-stat-body",
+                                if !deck.tags.is_empty() {
+                                    div { class: "info-row info-row-stacked",
+                                        span { class: "info-row-label", "Deck tags" }
+                                        span { class: "info-row-value info-row-tags",
+                                            for tag in deck.tags.iter() {
+                                                span { key: "{tag}", class: "stat-chip stat-chip-muted", "{deck_tag_label(tag)}" }
+                                            }
+                                        }
+                                    }
                                 }
-                                selected_colors.set(current);
-                            },
-                            i { class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost" }
-                        }
-                    }
-                }
-            }
-
-            if no_matching {
-                p { class: "sd-empty", "No cards found" }
-            }
-            section { class: "sd-columns",
-                for (ci, col) in columns.into_iter().enumerate() {
-                    div { class: "sd-column", key: "{ci}",
-                        for section in col {
-                            SdCollapsibleGroup {
-                                key: "{section.key}",
-                                title: section.title.clone(),
-                                section_key: section.key.clone(),
-                                pips: section.pips.clone(),
-                                collapsed_groups,
-                                for card in section.cards {
-                                    CardRow {
-                                        key: "{card.scryfall_data.id}",
-                                        qty: *qty_by_id.get(&card.scryfall_data.id).unwrap_or(&1),
-                                        mvp: mvp_ids.contains(&card.scryfall_data.id),
-                                        card,
-                                        expanded_card,
-                                        preview_stack,
-                                        preview_next_id,
-                                        overlay_card,
-                                        describe_tag,
-                                        show_art: show_row_art(),
+                                if !deck.oracle_tags.is_empty() {
+                                    div { class: "info-row info-row-stacked",
+                                        span { class: "info-row-label", "Oracle tags" }
+                                        span { class: "info-row-value info-row-tags",
+                                            for slug in deck.oracle_tags.iter() {
+                                                span { key: "{slug}", class: "stat-chip stat-chip-muted", "{slug}" }
+                                            }
+                                        }
+                                    }
+                                }
+                                if !deck.other_tags.is_empty() {
+                                    div { class: "info-row info-row-stacked",
+                                        span { class: "info-row-label", "Other tags" }
+                                        span { class: "info-row-value info-row-tags",
+                                            for tag in deck.other_tags.iter() {
+                                                span { key: "{tag}", class: "stat-chip stat-chip-muted", "{tag.display_name()}" }
+                                            }
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                }
+                    DeckFold { fold_key: "Distributions", title: "Distributions", folded,
+                        div { class: "deck-stat-body",
+                            if let Some(value) = avg_pt {
+                                div { class: "info-row",
+                                    span { class: "info-row-label", "Average P/T" }
+                                    span { class: "info-row-value", style: "white-space:nowrap;", "{value}" }
+                                }
+                            }
+                            DeckCharts {
+                                type_bars: Some(metrics.type_bars()),
+                                category_bars: metrics.card_role_bars(),
+                                oracle_tag_bars: metrics.oracle_tag_bars(),
+                                role_tags: Some(metrics.card_role_tags.clone()),
+                                describe_tag,
+                            }
+                        }
+                    }
+                    DeckFold { fold_key: "Mana", title: "Mana", folded,
+                        div { class: "deck-stat-body",
+                            div { class: "info-row",
+                                span { class: "info-row-label", "Lands" }
+                                span { class: "info-row-value", "{lands_line}" }
+                            }
+                            div { class: "info-row",
+                                span { class: "info-row-label", "Average mana value" }
+                                span { class: "info-row-value", "{metrics.avg_cmc:.1}" }
+                            }
+                            ManaCurve { mana_curve_bars: metrics.mana_curve_bars() }
+                            ColorChart { bars: ColorCounts::from(&metrics).bars() }
+                            ManaFulfillment { rows: metrics.mana_balance_rows() }
+                        }
+                    }
+                    DeckFold { fold_key: "Draw odds", title: "Draw odds", folded,
+                        div { class: "deck-stat-body",
+                            DrawOdds { deck_size, buckets }
+                        }
+                    }
+                }),
             }
         }
     }

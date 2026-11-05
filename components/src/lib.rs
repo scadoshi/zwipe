@@ -8,7 +8,9 @@
 //! [`OracleText`], [`FlippableCardImage`], [`ChangelogFilters`] and
 //! [`ChangelogReleases`], the deck charts ([`BarChart`], [`DeckCharts`], [`ColorChart`], [`ManaCurve`], [`ManaFulfillment`],
 //! [`DrawOdds`], [`ChartLabel`], with [`Fold`] and [`SeeMore`] behind their
-//! long rows), the [`ColorBars`], [`ZwipeArchitecture`] and the [`hint`]
+//! long rows), the [`ColorBars`], the deck page the sites share ([`DeckPage`],
+//! [`DeckHead`], [`FeaturedCard`], [`DeckControls`], [`DeckBand`],
+//! [`DeckFold`] and [`sections`]), [`ZwipeArchitecture`] and the [`hint`]
 //! renderer that draws zwipe-ui's typed hint copy. orangui's [`icons`] come
 //! through by name like the rest of the kit.
 //!
@@ -39,6 +41,7 @@ mod card_row;
 mod changelog;
 mod charts;
 mod color_bars;
+mod deck_page;
 mod flippable_card_image;
 mod fold;
 pub mod hint;
@@ -59,6 +62,10 @@ pub use charts::{
     ManaCurve, ManaFulfillment,
 };
 pub use color_bars::{ColorBars, ColorBarsGhost};
+pub use deck_page::{
+    DeckBand, DeckControls, DeckFacts, DeckFold, DeckHead, DeckPage, DeckSection, FeaturedCard,
+    NO_CARDS, sections,
+};
 pub use flippable_card_image::{FlippableCardImage, reset_image_ease};
 pub use fold::{FOLD_AT, Fold, SEE_LESS, SEE_MORE, SeeMore, fold_split};
 pub use keyword_chips::{KeywordChips, KeywordReminders};

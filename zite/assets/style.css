@@ -1879,98 +1879,38 @@ code {
     }
 }
 
-.sd-header h1 {
-    font-size: 1.6rem;
-    letter-spacing: 0.02em;
-    margin-bottom: 0.5rem;
-}
-
-.sd-header-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-bottom: 1.5rem;
-}
-
-/* Deck stat chips tint over the page background, so they stay opaque and the
-   page grid never shows through them. */
-.sd-header-meta,
+/* The deck page's chips and the stat panels' tag rows tint over the page
+   background, so the page grid never shows through them. */
 .info-row-tags {
     --tone-base: var(--bg-primary);
 }
 
-/* Featured row: command zone + MVPs on one line, each labeled. The section
-   holds zero height until every card's image has loaded (`.ready`), then
-   opens to the row's height, and the cards deal in after it. 0fr to 1fr
-   animates to whatever height the card count gives without measuring. */
-.sd-featured {
-    display: grid;
-    grid-template-rows: 0fr;
-    transition: grid-template-rows 0.8s cubic-bezier(0.33, 1, 0.68, 1);
-    margin-bottom: 1.75rem;
-}
-
-.sd-featured.ready {
-    grid-template-rows: 1fr;
-}
-
-/* The clip is only for the height transition. Once the row is open the cards
-   drop in from above its edge and must not be cut off by it. */
-.sd-featured.ready .sd-featured-row {
-    overflow: visible;
-}
-
-/* nowrap with the cards sharing the width so they shrink together instead of
-   wrapping. */
-.sd-featured-row {
-    display: flex;
-    flex-wrap: nowrap;
-    justify-content: center;
-    /* Layout inside the row stays inside it while the height moves. */
-    contain: layout;
-    gap: 1.25rem;
-    min-height: 0;
-    overflow: hidden;
-}
-
-.sd-cz-card {
-    flex: 1 1 0;
-    min-width: 0;
-    max-width: 13rem;
-    text-align: center;
-    /* Invisible until the row is ready; the deal below brings it in. */
+/* The featured cards deal in from above once every image has loaded (the
+   page adds `.ready`), each a beat after the one before, at the size they
+   keep. Same motion as the app's .deck-featured-card. The components
+   crate's DeckHead lays the row out. */
+.sd-featured .deck-featured-card {
     opacity: 0;
-    /* A card that arrives after the others is a layout change, not an
-       entrance, so its siblings ease their width share instead of snapping. */
-    transition: flex-grow 0.3s ease;
 }
 
-/* Cards deal in from above once the row has opened: drop + settle with a
-   slight tilt, at the size they keep. Width is not animated: growing cards in
-   sequence reflows the row on each one and reads as a scramble rather than a
-   deal. `both` holds a card invisible through its delay and visible after.
-   Same motion as the app's .deck-featured-card. */
-.sd-featured.ready .sd-cz-card {
+.sd-featured.ready .deck-featured-card {
     animation: sd-featured-deal 0.78s cubic-bezier(0.33, 1, 0.68, 1) both;
-    /* Starts once the height transition above has finished. */
-    animation-delay: 0.8s;
 }
 
-/* Staggered like a real deal: each card lands a beat after the one before. */
-.sd-featured.ready .sd-cz-card:nth-child(2) {
-    animation-delay: calc(0.8s + 180ms);
+.sd-featured.ready .deck-featured-card:nth-child(2) {
+    animation-delay: 180ms;
 }
-.sd-featured.ready .sd-cz-card:nth-child(3) {
-    animation-delay: calc(0.8s + 360ms);
+.sd-featured.ready .deck-featured-card:nth-child(3) {
+    animation-delay: 360ms;
 }
-.sd-featured.ready .sd-cz-card:nth-child(4) {
-    animation-delay: calc(0.8s + 540ms);
+.sd-featured.ready .deck-featured-card:nth-child(4) {
+    animation-delay: 540ms;
 }
-.sd-featured.ready .sd-cz-card:nth-child(5) {
-    animation-delay: calc(0.8s + 720ms);
+.sd-featured.ready .deck-featured-card:nth-child(5) {
+    animation-delay: 720ms;
 }
-.sd-featured.ready .sd-cz-card:nth-child(6) {
-    animation-delay: calc(0.8s + 900ms);
+.sd-featured.ready .deck-featured-card:nth-child(6) {
+    animation-delay: 900ms;
 }
 
 @keyframes sd-featured-deal {
@@ -1984,210 +1924,13 @@ code {
     }
 }
 
-/* Reduced motion: the row is open and the cards are simply there, no deal.
-   The page already honors this for the testimonials marquee. */
+/* Reduced motion: the cards are simply there, no deal. */
 @media (prefers-reduced-motion: reduce) {
-    .sd-featured {
-        grid-template-rows: 1fr;
-        transition: none;
-    }
-    .sd-cz-card,
-    .sd-featured.ready .sd-cz-card {
+    .sd-featured .deck-featured-card,
+    .sd-featured.ready .deck-featured-card {
         opacity: 1;
         animation: none;
     }
-}
-
-/* `.sd-cz-image` is now the FlippableCardImage wrapper; fill the card and style
-   its inner img. Specificity clears the shared `.flippable-card-wrapper img`
-   base regardless of stylesheet order. */
-.sd-cz-image {
-    width: 100%;
-    /* Reserves the card's footprint before the image loads, so the row deals
-       at its final size instead of collapsing and popping back. */
-    aspect-ratio: 5 / 7;
-}
-
-.sd-cz-card .sd-cz-image img {
-    width: 100%;
-    height: auto;
-    max-width: 100%;
-    border-radius: 4.75% / 3.5%;
-    border: 1px solid var(--border-secondary);
-    box-shadow: var(--shadow-md);
-}
-
-.sd-cz-name {
-    margin-top: 0.55rem;
-    font-size: 0.82rem;
-    font-weight: 700;
-    line-height: 1.3;
-}
-
-.sd-cz-role {
-    display: inline-block;
-    margin-top: 0.4rem;
-    padding: 0.15rem 0.5rem;
-    font-size: 0.68rem;
-    border: 1px solid transparent;
-    border-radius: 0.6rem;
-}
-
-.sd-cz-role-zone {
-    color: var(--palette-3);
-    background-color: color-mix(in srgb, var(--palette-3) 12%, var(--bg-primary));
-    border-color: color-mix(in srgb, var(--palette-3) 35%, var(--bg-primary));
-}
-
-.sd-cz-role-mvp {
-    color: var(--palette-6);
-    background-color: color-mix(in srgb, var(--palette-6) 12%, var(--bg-primary));
-    border-color: color-mix(in srgb, var(--palette-6) 35%, var(--bg-primary));
-}
-
-.sd-controls {
-    display: flex;
-    flex-direction: column;
-    gap: 0.7rem;
-    margin-bottom: 1.75rem;
-    padding: 1.25rem 0;
-}
-
-.sd-control-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-/* Row labels match the app's chip-row-label (accent-tertiary, 600 — these sit
-   straight on the background grid, where the regular face gets lost). */
-.sd-control-label {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--accent-tertiary);
-    white-space: nowrap;
-    margin-right: 0.25rem;
-}
-
-.sd-chip {
-    border: 1px solid var(--border-primary);
-    border-radius: 0.6rem;
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
-    font-family: "JetBrains Mono", monospace;
-    font-size: 0.75rem;
-    padding: 0.3rem 0.6rem;
-    box-shadow: var(--shadow-sm);
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-/* Selected state mirrors the app's .chip.selected: accent-secondary. */
-.sd-chip.active {
-    border-color: var(--accent-secondary);
-    color: var(--accent-secondary);
-}
-
-.sd-chip-color {
-    padding: 0.25rem 0.5rem;
-    line-height: 1;
-}
-
-.sd-chip-color .ms {
-    font-size: 1.1rem;
-    vertical-align: middle;
-}
-
-.sd-chip-color.active {
-    background-color: color-mix(
-        in srgb,
-        var(--accent-secondary) 12%,
-        transparent
-    );
-}
-
-.sd-filter-input {
-    border: 1px solid var(--border-primary);
-    border-radius: 0.4rem;
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
-    font-family: "JetBrains Mono", monospace;
-    font-size: 0.82rem;
-    padding: 0.35rem 0.7rem;
-    box-shadow: var(--shadow-sm);
-    flex: 0 1 11rem;
-    min-width: 0;
-    transition: border-color 0.15s;
-}
-
-.sd-filter-input:focus {
-    outline: none;
-    border-color: var(--accent-primary);
-}
-
-.sd-empty {
-    color: var(--text-muted);
-    font-size: 0.85rem;
-    margin-bottom: 1rem;
-}
-
-/* Independent columns (not CSS multi-column): each column is its own vertical
-   stack, so expanding a card grows only that column and the page extends
-   downward — no cross-column reflow/jump. Collapses to one column on phones. */
-.sd-columns {
-    display: flex;
-    align-items: flex-start;
-    gap: var(--panel-gap);
-}
-
-.sd-column {
-    flex: 1 1 0;
-    min-width: 0;
-    /* Cap to the container: on iOS WebKit a flex-column item is sized to its
-       content's max-content (the card name's white-space:nowrap width) instead
-       of the column width, pushing the whole deck past the viewport. Blink/Gecko
-       don't, so this only shows on mobile. min-width:0 governs the main axis, not
-       this cross-axis width, hence the explicit cap. */
-    max-width: 100%;
-    display: flex;
-    flex-direction: column;
-}
-
-@media (max-width: 800px) {
-    .sd-columns {
-        flex-direction: column;
-        /* flex-start is for the row layout; once the axis flips it becomes
-           shrink-to-fit WIDTH and every stacked panel sizes to its title.
-           Stretch snaps them all to the container. */
-        align-items: stretch;
-    }
-}
-
-/* Stat panels (Budget, Tags, Distributions, Mana, Draw odds) between the
-   featured cards and the controls: collapsed header strips by default, in
-   the card grid's independent columns — expanding a panel pushes only its
-   own column down, never its row neighbors (same reason the card sections
-   use columns instead of a grid). */
-.sd-charts {
-    margin-bottom: var(--panel-gap);
-}
-
-.sd-charts .sd-group {
-    min-width: 0;
-    margin-bottom: var(--panel-gap);
-}
-
-.sd-charts .sd-column > .sd-group:last-child {
-    margin-bottom: 0;
-}
-
-/* Chart block stack inside a panel — the app's section-body rhythm. */
-.sd-chart-body {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    padding: 0.75rem 0;
 }
 
 /* The app's chip-row: chips in a wrapping row with breathing room. */
@@ -2246,73 +1989,6 @@ code {
 
 .info-row.info-row-stacked .info-row-tags {
     justify-content: flex-start;
-}
-
-/* Collapsible card groups: the app's deck cards collapse, mirrored — the
-   card-row disclosure arrow in the header, body easing open/closed via the
-   grid-template-rows 0fr<->1fr technique (same rules as the app's
-   .collapsible). */
-.sd-group-header.group-collapsible {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    cursor: pointer;
-    user-select: none;
-    transition: border-color 0.25s ease;
-}
-
-.sd-group-header.group-collapsible.expanded .card-row-arrow {
-    transform: rotate(90deg);
-}
-
-.sd-group.collapsed .sd-group-header {
-    border-bottom-color: transparent;
-}
-
-.collapsible {
-    display: grid;
-    grid-template-rows: 0fr;
-    /* One bounded column, matching the app: keeps wide content (an expanded
-       row's detail) from pushing the auto track past the container. */
-    grid-template-columns: minmax(0, 1fr);
-    opacity: 0;
-    transition:
-        grid-template-rows 0.25s ease,
-        opacity 0.25s ease;
-}
-
-.collapsible.open {
-    grid-template-rows: 1fr;
-    opacity: 1;
-}
-
-.collapsible-inner {
-    overflow: hidden;
-    min-height: 0;
-    min-width: 0;
-}
-
-.sd-group {
-    border: 1px solid var(--border-secondary);
-    border-radius: 1rem;
-    background-color: var(--bg-primary);
-    box-shadow: var(--shadow-sm);
-    overflow: hidden;
-    margin-bottom: var(--panel-gap);
-}
-
-/* Tap target: the featured images open the full-art overlay. */
-.sd-cz-image {
-    cursor: pointer;
-}
-
-/* Matches the app's .card-group-header (accent-tertiary). */
-.sd-group-header {
-    font-size: 0.85rem;
-    font-weight: 600;
-    padding: 0.6rem 1rem;
-    border-bottom: 1px solid var(--border-secondary);
-    color: var(--accent-tertiary);
 }
 
 /* Card rows come from the components crate (magic.css); zite-only additions
@@ -2437,22 +2113,6 @@ code {
         padding: 1rem 0.85rem 2.5rem;
     }
 
-    .sd-header h1 {
-        font-size: 1.3rem;
-    }
-
-    /* Tighter gap so the one-line featured row keeps room for the cards. */
-    .sd-featured {
-        gap: 0.5rem;
-    }
-
-    .sd-cz-name {
-        font-size: 0.7rem;
-    }
-
-    .sd-cz-role {
-        font-size: 0.62rem;
-    }
 }
 
 
