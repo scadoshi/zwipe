@@ -1499,16 +1499,6 @@ body {
     isolation: isolate;
 }
 
-.web-filter-dock > .grid-cells {
-    position: absolute;
-    z-index: 0;
-}
-
-.web-filter-dock > :not(.grid-cells) {
-    position: relative;
-    z-index: 1;
-}
-
 .web-filter-dock > .sheet-header {
     background-color: var(--bg-primary);
 }

@@ -297,7 +297,6 @@ pub fn CardFilterPanel(
     rsx! {
         if is_docked() {
             div { class: "web-filter-dock",
-                components::GridCells { still: true }
                 {header}
                 div { class: "sheet-content web-filter-dock-content", {body} }
                 {dock}
@@ -309,7 +308,6 @@ pub fn CardFilterPanel(
                     onclick: move |_| open.set(false),
                 }
                 div { class: if open() { "bottom-sheet show web-filter-sheet" } else { "bottom-sheet web-filter-sheet" },
-                    components::GridCells { still: true }
                     {header}
                     div { class: "sheet-content",
                         if open() {
