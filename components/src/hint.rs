@@ -9,8 +9,8 @@
 
 use dioxus::prelude::*;
 use orangui::icons::{
-    BOLT, CHECK, COG, COPY, CloneIcon, DockIcon, ERASER, EditIcon, EyeIcon, FUNNEL, HOUSE, INFO,
-    MINUS, PERSON, PLUS, REFRESH, ShareIcon, UNDO,
+    BoltIcon, CHECK, COG, COPY, CloneIcon, DockIcon, ERASER, EditIcon, EyeIcon, FUNNEL, HOUSE,
+    INFO, MINUS, PERSON, PLUS, REFRESH, ShareIcon, UNDO,
 };
 use orangui::{
     DialogAction, HintBullet, HintBullets, HintDialog, HintKey, HintLine, ModeIcon, PaletteIcon,
@@ -102,7 +102,7 @@ pub fn KeyGlyph(icon: KeyIcon) -> Element {
         KeyIcon::Refresh => REFRESH,
         KeyIcon::Check => CHECK,
         KeyIcon::Copy => COPY,
-        KeyIcon::Bolt => BOLT,
+        KeyIcon::Bolt => return rsx! { BoltIcon {} },
         KeyIcon::Person => PERSON,
         KeyIcon::Cog => COG,
         KeyIcon::Info => INFO,
