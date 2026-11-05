@@ -1637,11 +1637,11 @@ i.ms.ms-cost.ms-gp {
     min-width: 0;
 }
 
-/* A band's rows flow in as many columns as fit; an open row takes the whole
-   band for its details. */
+/* A band's rows, one under another the band's width, so no card is lost
+   among its neighbors. */
 .deck-band-rows {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     align-items: start;
 }
 
