@@ -488,14 +488,19 @@ body {
 
 /* ---- Settings lists (Account, Config) ---- */
 
-/* Two lists side by side on a wide window. */
+/* Two lists side by side on a wide window, at the page's width under its
+   head. */
 @media (min-width: 900px) {
     .settings-sections.web-settings-pair {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--panel-gap);
         align-items: start;
-        max-width: 64rem;
-        padding-top: 1rem;
+        width: 100%;
+        max-width: var(--web-page-max);
+        margin: 0 auto;
+        padding: 0 1.5rem 1.5rem;
+        box-sizing: border-box;
     }
 
     .web-settings-pair > .settings-list {
