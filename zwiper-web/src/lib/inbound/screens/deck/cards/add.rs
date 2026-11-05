@@ -12,7 +12,7 @@
 
 use std::collections::HashSet;
 
-use components::icons::{DockIcon, EyeIcon, LINK, REFRESH};
+use components::icons::{BOLT, DockIcon, EyeIcon, REFRESH};
 use components::{Chip, DockFilter, TOAST_NORMAL, TOAST_QUICK, reset_image_ease};
 use dioxus::core::spawn_forever;
 use dioxus::prelude::*;
@@ -961,7 +961,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                                 filter.write().set_synergy(on);
                                 bump();
                             },
-                            DockIcon { path: LINK }
+                            DockIcon { path: BOLT }
                         }
                     }
                     if !docked() {
