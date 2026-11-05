@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::domain::auth::models::platform::ClientPlatform;
 use crate::domain::auth::models::secret::Secret;
+use crate::domain::auth::models::session::Session;
+use crate::domain::user::models::settings::UserSettings;
 
 /// Login request body.
 ///
@@ -118,6 +120,29 @@ impl HttpRefreshSession {
             user_id: user_id.to_string(),
             refresh_token: refresh_token.to_string(),
             client_version: None,
+        }
+    }
+}
+
+/// Login and refresh reply: the session, with its settings written a second
+/// time under `preferences`, the key clients before 1.18.0 read. The second
+/// key goes with the legacy settings route once `MIN_CLIENT_VERSION` reaches
+/// 1.18.0.
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+pub struct HttpSession {
+    /// The session, serialized with its settings under `settings`.
+    #[serde(flatten)]
+    pub session: Session,
+    /// The same settings under the pre-1.18.0 key.
+    pub preferences: UserSettings,
+}
+
+impl From<Session> for HttpSession {
+    fn from(session: Session) -> Self {
+        let preferences = session.settings.clone();
+        Self {
+            session,
+            preferences,
         }
     }
 }

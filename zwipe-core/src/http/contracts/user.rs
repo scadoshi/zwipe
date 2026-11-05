@@ -2,13 +2,13 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::domain::user::preferences::PipColor;
+use crate::domain::user::settings::PipColor;
 
-/// HTTP request body for updating preferences.
+/// HTTP request body for updating settings.
 ///
 /// Uses `Option<T>` for partial update semantics: absent fields are unchanged.
 #[derive(Debug, Serialize, Deserialize)]
-pub struct HttpUpdatePreferences {
+pub struct HttpUpdateSettings {
     /// Theme identifier, or absent to leave unchanged.
     pub theme: Option<String>,
     /// Dark mode setting, or absent to leave unchanged.

@@ -12,9 +12,9 @@
 //! Scryfall records them triangle-stamped under their canonical Universes
 //! Within names, with the UB originals kept only as flavor names.
 //!
-//! Franchises are the user-facing grouping for the exclude-UB preference's
+//! Franchises are the user-facing grouping for the exclude-UB setting's
 //! exceptions ("exclude UB but let Middle-earth through"): slugs are stored in
-//! `user_preferences.universes_beyond_exceptions`, names label the checkboxes,
+//! `user_settings.universes_beyond_exceptions`, names label the checkboxes,
 //! and the (code, name) pairs drive both the SQL predicates (set names match
 //! `latest_cards.printing_set_names`) and the nightly `oou_sets` overlay.
 //!
@@ -33,10 +33,10 @@
 use serde::{Deserialize, Serialize};
 
 /// One Universes Beyond franchise: the unit users except from the exclude-UB
-/// preference.
+/// setting.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct UbFranchise {
-    /// Stable identifier stored in user preferences. Never rename.
+    /// Stable identifier stored in user settings. Never rename.
     pub slug: &'static str,
     /// Display name for the exceptions checkboxes.
     pub name: &'static str,
@@ -236,7 +236,7 @@ pub fn selectable_franchises() -> impl Iterator<Item = &'static UbFranchise> {
 /// becomes selectable on a deploy instead of a store train.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct UbFranchiseView {
-    /// Stable identifier stored in user preferences. Never rename.
+    /// Stable identifier stored in user settings. Never rename.
     pub slug: String,
     /// Display name for the exceptions checkboxes.
     pub name: String,
@@ -267,7 +267,7 @@ pub fn franchise_by_slug(slug: &str) -> Option<&'static UbFranchise> {
 
 /// Set names covered by the given exception slugs, for overlap against
 /// `latest_cards.printing_set_names`. Unknown slugs are ignored so a retired
-/// franchise slug in stored preferences degrades to no exception.
+/// franchise slug in stored settings degrades to no exception.
 pub fn exception_set_names(slugs: &[String]) -> Vec<String> {
     slugs
         .iter()

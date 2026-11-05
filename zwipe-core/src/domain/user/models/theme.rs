@@ -5,7 +5,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use super::preferences::UserPreferences;
+use super::settings::UserSettings;
 
 /// Display theme configuration used by the UI. Serializable so clients can cache
 /// the last-used theme locally (see zwiper `theme_store`, zite `theme_store`) and
@@ -36,11 +36,11 @@ impl Default for ThemeConfig {
     }
 }
 
-impl From<&UserPreferences> for ThemeConfig {
-    fn from(prefs: &UserPreferences) -> Self {
+impl From<&UserSettings> for ThemeConfig {
+    fn from(settings: &UserSettings) -> Self {
         Self {
-            name: prefs.theme.clone(),
-            is_dark: prefs.dark_mode,
+            name: settings.theme.clone(),
+            is_dark: settings.dark_mode,
         }
     }
 }

@@ -2,7 +2,7 @@
 
 pub mod email;
 pub mod hints;
-pub mod preferences;
+pub mod settings;
 pub mod theme;
 pub mod username;
 
@@ -11,11 +11,11 @@ use std::collections::HashMap;
 use chrono::{DateTime, Utc};
 pub use email::{Email, InvalidEmail};
 pub use hints::{InvalidHintKey, MarkHintShown, OneTimeHint};
-pub use preferences::{
-    ALLOWED_THEMES, InvalidUpdatePreferences, ParsePipColorError, PipColor, UpdatePreferences,
-    UserPreferences,
-};
 use serde::{Deserialize, Serialize};
+pub use settings::{
+    ALLOWED_THEMES, InvalidUpdateSettings, ParsePipColorError, PipColor, UpdateSettings,
+    UserSettings,
+};
 pub use username::{InvalidUsername, Username};
 use uuid::Uuid;
 

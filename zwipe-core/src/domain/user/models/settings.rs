@@ -1,7 +1,7 @@
-//! User display preferences (theme, dark mode, pip style).
+//! User display settings (theme, dark mode, pip style).
 //!
-//! Preferences are stored per-user and embedded in JWT claims for instant
-//! application on login. Users without a preferences row get defaults.
+//! Settings are stored per-user and embedded in JWT claims for instant
+//! application on login. Users without a settings row get defaults.
 
 use std::fmt;
 use std::str::FromStr;
@@ -165,9 +165,9 @@ impl FromStr for PipColor {
     }
 }
 
-/// User display preferences.
+/// User display settings.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct UserPreferences {
+pub struct UserSettings {
     /// Theme identifier (e.g. "gruvbox", "dracula").
     pub theme: String,
     /// Whether dark mode is active.
@@ -188,7 +188,7 @@ pub struct UserPreferences {
     pub pip_style: PipColor,
 }
 
-impl Default for UserPreferences {
+impl Default for UserSettings {
     fn default() -> Self {
         Self {
             theme: "gruvbox".to_string(),
@@ -200,11 +200,11 @@ impl Default for UserPreferences {
     }
 }
 
-/// Validated request to update a user's preferences.
+/// Validated request to update a user's settings.
 ///
 /// Uses `Option<T>` for partial update semantics: `None` means unchanged.
 #[derive(Debug)]
-pub struct UpdatePreferences {
+pub struct UpdateSettings {
     /// User to update.
     pub user_id: Uuid,
     /// New theme identifier, or `None` to leave unchanged.
@@ -220,15 +220,15 @@ pub struct UpdatePreferences {
     pub pip_style: Option<PipColor>,
 }
 
-impl UpdatePreferences {
+impl UpdateSettings {
     /// Validates and constructs the request. A slug in [`RENAMED_THEMES`]
     /// becomes the theme it maps to.
     ///
     /// # Errors
     ///
-    /// Returns [`InvalidUpdatePreferences::InvalidTheme`] when `theme` is not
+    /// Returns [`InvalidUpdateSettings::InvalidTheme`] when `theme` is not
     /// in [`ALLOWED_THEMES`], and
-    /// [`InvalidUpdatePreferences::InvalidFranchise`] when an exception slug
+    /// [`InvalidUpdateSettings::InvalidFranchise`] when an exception slug
     /// names no known Universes Beyond franchise.
     pub fn new(
         user_id: Uuid,
@@ -237,7 +237,7 @@ impl UpdatePreferences {
         exclude_universes_beyond: Option<bool>,
         universes_beyond_exceptions: Option<Vec<String>>,
         pip_style: Option<PipColor>,
-    ) -> Result<Self, InvalidUpdatePreferences> {
+    ) -> Result<Self, InvalidUpdateSettings> {
         let theme = theme.map(|t| {
             RENAMED_THEMES
                 .iter()
@@ -247,14 +247,14 @@ impl UpdatePreferences {
         if let Some(theme) = theme
             && !ALLOWED_THEMES.contains(&theme)
         {
-            return Err(InvalidUpdatePreferences::InvalidTheme);
+            return Err(InvalidUpdateSettings::InvalidTheme);
         }
         if let Some(slugs) = &universes_beyond_exceptions
             && slugs.iter().any(|s| {
                 crate::domain::card::scryfall_data::universe::franchise_by_slug(s).is_none()
             })
         {
-            return Err(InvalidUpdatePreferences::InvalidFranchise);
+            return Err(InvalidUpdateSettings::InvalidFranchise);
         }
         Ok(Self {
             user_id,
@@ -267,9 +267,9 @@ impl UpdatePreferences {
     }
 }
 
-/// Validation error for preference updates.
+/// Validation error for setting updates.
 #[derive(Debug, Error)]
-pub enum InvalidUpdatePreferences {
+pub enum InvalidUpdateSettings {
     /// Theme is not in the allowed list.
     #[error("invalid theme")]
     InvalidTheme,
@@ -372,9 +372,9 @@ mod tests {
 
     #[test]
     fn default_is_gruvbox_dark() {
-        let prefs = UserPreferences::default();
-        assert_eq!(prefs.theme, "gruvbox");
-        assert!(prefs.dark_mode);
+        let settings = UserSettings::default();
+        assert_eq!(settings.theme, "gruvbox");
+        assert!(settings.dark_mode);
     }
 
     // == valid theme names ==
@@ -383,15 +383,14 @@ mod tests {
     fn accepts_all_allowed_themes() {
         let id = Uuid::new_v4();
         for theme in ALLOWED_THEMES {
-            let result = UpdatePreferences::new(id, Some(theme), Some(true), None, None, None);
+            let result = UpdateSettings::new(id, Some(theme), Some(true), None, None, None);
             assert!(result.is_ok(), "should accept theme: {theme}");
         }
     }
 
     #[test]
     fn an_old_slug_updates_to_its_current_theme() {
-        let result =
-            UpdatePreferences::new(Uuid::new_v4(), Some("ristretto"), None, None, None, None);
+        let result = UpdateSettings::new(Uuid::new_v4(), Some("ristretto"), None, None, None, None);
         assert_eq!(
             result.unwrap().theme.as_deref(),
             Some("monokai-pro-ristretto")
@@ -400,7 +399,7 @@ mod tests {
 
     #[test]
     fn a_removed_theme_updates_to_its_closest_one() {
-        let result = UpdatePreferences::new(
+        let result = UpdateSettings::new(
             Uuid::new_v4(),
             Some("visual-studio"),
             None,
@@ -413,7 +412,7 @@ mod tests {
 
     #[test]
     fn rejects_unknown_theme() {
-        let result = UpdatePreferences::new(
+        let result = UpdateSettings::new(
             Uuid::new_v4(),
             Some("not-a-theme"),
             Some(true),
@@ -421,19 +420,13 @@ mod tests {
             None,
             None,
         );
-        assert!(matches!(
-            result,
-            Err(InvalidUpdatePreferences::InvalidTheme)
-        ));
+        assert!(matches!(result, Err(InvalidUpdateSettings::InvalidTheme)));
     }
 
     #[test]
     fn rejects_empty_theme() {
-        let result = UpdatePreferences::new(Uuid::new_v4(), Some(""), Some(true), None, None, None);
-        assert!(matches!(
-            result,
-            Err(InvalidUpdatePreferences::InvalidTheme)
-        ));
+        let result = UpdateSettings::new(Uuid::new_v4(), Some(""), Some(true), None, None, None);
+        assert!(matches!(result, Err(InvalidUpdateSettings::InvalidTheme)));
     }
 
     // == partial update (None) ==
@@ -441,7 +434,7 @@ mod tests {
     #[test]
     fn none_theme_passes_through() {
         let result =
-            UpdatePreferences::new(Uuid::new_v4(), None, Some(false), None, None, None).unwrap();
+            UpdateSettings::new(Uuid::new_v4(), None, Some(false), None, None, None).unwrap();
         assert!(result.theme.is_none());
         assert_eq!(result.dark_mode, Some(false));
     }
@@ -449,15 +442,14 @@ mod tests {
     #[test]
     fn none_dark_mode_passes_through() {
         let result =
-            UpdatePreferences::new(Uuid::new_v4(), Some("dracula"), None, None, None, None)
-                .unwrap();
+            UpdateSettings::new(Uuid::new_v4(), Some("dracula"), None, None, None, None).unwrap();
         assert_eq!(result.theme.as_deref(), Some("dracula"));
         assert!(result.dark_mode.is_none());
     }
 
     #[test]
     fn both_none_is_valid() {
-        let result = UpdatePreferences::new(Uuid::new_v4(), None, None, None, None, None).unwrap();
+        let result = UpdateSettings::new(Uuid::new_v4(), None, None, None, None, None).unwrap();
         assert!(result.theme.is_none());
         assert!(result.dark_mode.is_none());
     }
@@ -466,7 +458,7 @@ mod tests {
 
     #[test]
     fn accepts_known_franchise_slugs() {
-        let result = UpdatePreferences::new(
+        let result = UpdateSettings::new(
             Uuid::new_v4(),
             None,
             None,
@@ -490,7 +482,7 @@ mod tests {
 
     #[test]
     fn rejects_unknown_franchise_slug() {
-        let result = UpdatePreferences::new(
+        let result = UpdateSettings::new(
             Uuid::new_v4(),
             None,
             None,
@@ -500,18 +492,18 @@ mod tests {
         );
         assert!(matches!(
             result,
-            Err(InvalidUpdatePreferences::InvalidFranchise)
+            Err(InvalidUpdateSettings::InvalidFranchise)
         ));
     }
 
     #[test]
     fn old_payload_without_ub_fields_deserializes_with_defaults() {
         // JWT claims and wire payloads minted before the fields existed.
-        let prefs: UserPreferences =
+        let settings: UserSettings =
             serde_json::from_str(r#"{"theme":"gruvbox","dark_mode":true}"#).unwrap();
-        assert!(!prefs.exclude_universes_beyond);
-        assert_eq!(prefs.universes_beyond_exceptions, Vec::<String>::new());
-        assert_eq!(prefs.pip_style, PipColor::Theme);
+        assert!(!settings.exclude_universes_beyond);
+        assert_eq!(settings.universes_beyond_exceptions, Vec::<String>::new());
+        assert_eq!(settings.pip_style, PipColor::Theme);
     }
 
     // == pip color ==
@@ -558,7 +550,7 @@ mod tests {
 
     #[test]
     fn pip_style_passes_through_the_update() {
-        let result = UpdatePreferences::new(
+        let result = UpdateSettings::new(
             Uuid::new_v4(),
             None,
             None,

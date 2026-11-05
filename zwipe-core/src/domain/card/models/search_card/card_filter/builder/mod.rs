@@ -334,7 +334,7 @@ impl CardQueryBuilder {
     /// synergy mode.
     ///
     /// This is the lenient gate for "should we serve / re-search," distinct
-    /// from [`is_empty`](Self::is_empty). Config-only prefs (playable,
+    /// from [`is_empty`](Self::is_empty). Config-only settings (playable,
     /// language, currency, ...) and a bare deck-context filter (format legality
     /// or commander colors) do not count on their own: alone they're the
     /// unbounded full pool the add screen nudges the user past. A sort, or
