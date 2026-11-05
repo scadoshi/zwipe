@@ -159,35 +159,43 @@ pub fn CardRow(
                         draggable: false,
                     }
                 }
-                span { class: "card-row-arrow", "▸" }
-                if qty_tags.is_empty() {
-                    span { class: "card-row-qty", "{qty}" }
-                }
-                for tag in qty_tags {
-                    span { class: "card-row-stat", "{tag}" }
-                }
-                span { class: "card-row-name",
-                    // MVP star: indicator only, rendered solely on starred
-                    // rows (an outline star on every row is 97% noise).
-                    // Toggling lives on the expanded view's Star button.
-                    if mvp == Some(true) {
-                        span { class: "card-row-mvp", "★" }
+                // The name's head and its tags flow beside the art; the tags
+                // wrap under the head when the line is short (see the CSS).
+                div { class: "card-row-body",
+                    div { class: "card-row-head",
+                        span { class: "card-row-arrow", "▸" }
+                        if qty_tags.is_empty() {
+                            span { class: "card-row-qty", "{qty}" }
+                        }
+                        for tag in qty_tags {
+                            span { class: "card-row-stat", "{tag}" }
+                        }
+                        span { class: "card-row-name",
+                            // MVP star: indicator only, rendered solely on starred
+                            // rows (an outline star on every row is 97% noise).
+                            // Toggling lives on the expanded view's Star button.
+                            if mvp == Some(true) {
+                                span { class: "card-row-mvp", "★" }
+                            }
+                            "{name}"
+                        }
                     }
-                    "{name}"
-                }
-                // Card-stat tag: P/T (always slashed, e.g. 4/5) for creatures,
-                // else a bare loyalty number for planeswalkers.
-                if !pt_display.is_empty() {
-                    span { class: "card-row-stat", "{pt_display}" }
-                } else if !loyalty_display.is_empty() {
-                    span { class: "card-row-stat", "{loyalty_display}" }
-                }
-                if let Some(price) = price_display {
-                    span { class: "card-row-price", "{price}" }
-                }
-                span { class: "card-row-colors",
-                    for code in color_codes.iter() {
-                        i { key: "{code}", class: "ms ms-{code} ms-cost ms-shadow" }
+                    div { class: "card-row-tags",
+                        // Card-stat tag: P/T (always slashed, e.g. 4/5) for creatures,
+                        // else a bare loyalty number for planeswalkers.
+                        if !pt_display.is_empty() {
+                            span { class: "card-row-stat", "{pt_display}" }
+                        } else if !loyalty_display.is_empty() {
+                            span { class: "card-row-stat", "{loyalty_display}" }
+                        }
+                        if let Some(price) = price_display {
+                            span { class: "card-row-price", "{price}" }
+                        }
+                        span { class: "card-row-colors",
+                            for code in color_codes.iter() {
+                                i { key: "{code}", class: "ms ms-{code} ms-cost ms-shadow" }
+                            }
+                        }
                     }
                 }
             }

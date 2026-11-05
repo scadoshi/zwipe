@@ -63,6 +63,8 @@ pub const UPCOMING: &[Release] = &[Release {
         "Sheets close from an x in their corner or a drag down",
         "Floating buttons rise above the keyboard",
         "Home shows your three latest decks as tiles with a button to all of them",
+        "Decks lists each deck in a panel of its own, with Group by folding them under chips",
+        "Card rows show the whole name, with power and toughness, price and colors beside it or wrapped underneath",
         "The color map is gone: Home, Playstyle and a deck's Mana section show colors as bars with mana pips",
         "Distributions shows the top five card roles and a new oracle tags chart, the rest behind See more",
         "Draw odds shows its top five groups, the rest behind See more",
