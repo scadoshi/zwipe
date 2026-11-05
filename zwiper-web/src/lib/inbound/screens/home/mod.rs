@@ -485,7 +485,7 @@ pub fn Home() -> Element {
 /// for the image preview and the links. A card without flavor text leaves
 /// the panel empty; before any card it ghosts.
 #[component]
-fn FlavorPanel(
+pub(crate) fn FlavorPanel(
     flavor: Flavor,
     card: Option<ScryfallData>,
     on_image: EventHandler<ScryfallData>,

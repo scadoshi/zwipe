@@ -1,5 +1,6 @@
-//! Forgot password: the email field as its own panel at the top of the page
-//! at every width, `Send reset link` full width under it, then `Back to
+//! Forgot password: the email field as a panel headed with the screen's
+//! name, under the hero and beside the featured flavor card on a wide
+//! window, over it below the breakpoint, `Send reset link` full width under it, then `Back to
 //! login` and `Create profile` as chips beneath. A sent link returns to
 //! Login in this screen's place with the email filled in and says a link is
 //! on its way.
@@ -20,6 +21,7 @@ use zwipe_ui::screens::forgot_password::{
 
 use crate::inbound::chrome::toast::raise;
 use crate::inbound::router::Route;
+use crate::inbound::screens::auth::hero::{PublicFlavor, PublicHero};
 use crate::inbound::screens::auth::login::LoginPrefill;
 use crate::inbound::screens::auth::register::go_back_or_login;
 use crate::inbound::shell::ScreenFrame;
@@ -112,7 +114,12 @@ pub fn ForgotPassword() -> Element {
         ScreenFrame { title: forgot_password::TITLE,
             div { class: "screen-content centered content-enter",
                 div { class: "web-auth web-page",
+                    PublicHero {}
+                    div { class: "web-auth-row",
                     div { class: "container-sm text-center web-form-panel",
+                        div { class: "settings-list-header web-form-head",
+                            span { class: "settings-list-title", {forgot_password::TITLE} }
+                        }
                         form {
                             class: "flex-col",
                             onsubmit: move |event| {
@@ -155,6 +162,8 @@ pub fn ForgotPassword() -> Element {
                                 {CREATE_PROFILE}
                             }
                         }
+                    }
+                    PublicFlavor {}
                     }
                 }
             }

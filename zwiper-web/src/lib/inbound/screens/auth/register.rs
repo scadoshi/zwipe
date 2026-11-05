@@ -1,5 +1,6 @@
-//! Register: the four fields as their own panel at the top of the page at
-//! every width, `Create profile` full width under them, then `Back to
+//! Register: the four fields as a panel headed with the screen's name,
+//! under the hero and beside the featured flavor card on a wide window,
+//! over it below the breakpoint, `Create profile` full width under them, then `Back to
 //! login` as a chip beneath. The password rules are the `?` beside
 //! `Password`, as in the app. A profile created returns to Login in this
 //! screen's place with the username filled in.
@@ -20,6 +21,7 @@ use zwipe_ui::screens::register::{self, Action, Destination, Effect, Field, Stat
 use crate::inbound::chrome::hint_topic::{self, HintTopic};
 use crate::inbound::chrome::toast::raise;
 use crate::inbound::router::Route;
+use crate::inbound::screens::auth::hero::{PublicFlavor, PublicHero};
 use crate::inbound::screens::auth::login::LoginPrefill;
 use crate::inbound::session::funnel;
 use crate::inbound::shell::ScreenFrame;
@@ -148,7 +150,12 @@ pub fn Register() -> Element {
         ScreenFrame { title: register::TITLE,
             div { class: "screen-content content-enter",
                 div { class: "web-auth web-page",
+                    PublicHero {}
+                    div { class: "web-auth-row",
                     div { class: "container-sm text-center web-form-panel",
+                        div { class: "settings-list-header web-form-head",
+                            span { class: "settings-list-title", {register::TITLE} }
+                        }
                         form {
                             class: "flex-col",
                             onsubmit: move |event| {
@@ -207,6 +214,8 @@ pub fn Register() -> Element {
                                 {register::BACK}
                             }
                         }
+                    }
+                    PublicFlavor {}
                     }
                 }
             }

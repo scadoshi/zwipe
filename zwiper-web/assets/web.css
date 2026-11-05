@@ -122,7 +122,12 @@ body {
 
 .web-hero,
 .web-columns,
-.web-column {
+.web-column,
+.web-auth-row {
+    display: contents;
+}
+
+.web-auth-flavor {
     display: contents;
 }
 
@@ -164,6 +169,15 @@ body {
         box-shadow: var(--shadow-sm);
     }
 
+    /* The panel's title, the screen's name, as a panel header across its
+       top like the flavor card's. */
+    .web-form-panel > .web-form-head {
+        display: flex;
+        justify-content: center;
+        margin: -1.5rem -1.5rem 1.5rem;
+        border-radius: 1rem 1rem 0 0;
+    }
+
     /* A sign-in panel is held to a form's width; the page head wears the
        same panel at the page's. */
     .web-auth > .web-form-panel {
@@ -175,6 +189,36 @@ body {
     .web-form-panel > .form-links {
         margin: 1rem 0 0;
     }
+
+    /* A public screen: the hero at the page's width, then the form in the
+       left column and the featured flavor card beside it, both from the
+       top. */
+    .web-auth-row {
+        display: grid;
+        grid-template-columns: 30rem minmax(0, 1fr);
+        align-items: start;
+        gap: var(--panel-gap);
+        width: 100%;
+    }
+
+    .web-auth-row > .web-form-panel {
+        width: 100%;
+        max-width: none;
+        margin: 0;
+    }
+
+    .web-auth-flavor {
+        display: block;
+        min-width: 0;
+    }
+
+    .web-auth-flavor .home-flavor {
+        width: 100%;
+        max-width: none;
+        margin: 0;
+        box-sizing: border-box;
+    }
+
 }
 
 @media (min-width: 900px) {
@@ -1614,5 +1658,36 @@ body {
         min-width: 20rem;
         max-width: min(var(--web-page-max), calc(100% - 3rem));
         max-height: calc(100dvh - 8rem);
+    }
+}
+
+/* Below the breakpoint a public screen's form is a headed panel under the
+   hero, its chips in a bar along its foot, and the flavor card follows. */
+@media (max-width: 899px) {
+    .web-auth .web-form-panel {
+        width: calc(100% - 2rem);
+        margin: 0 1rem;
+        padding: 0;
+        background-color: var(--bg-primary);
+        border: 1px solid var(--border-secondary);
+        border-radius: 1rem;
+        box-shadow: var(--shadow-sm);
+        box-sizing: border-box;
+        overflow: hidden;
+    }
+
+    .web-auth .web-form-panel > .web-form-head {
+        display: flex;
+        justify-content: center;
+    }
+
+    .web-auth .web-form-panel > form {
+        padding: 1rem;
+    }
+
+    .web-auth .web-form-panel > .form-links {
+        margin: 0;
+        padding: 0.75rem 1rem;
+        border-top: 1px solid var(--border-secondary);
     }
 }

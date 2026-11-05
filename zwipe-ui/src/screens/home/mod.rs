@@ -441,6 +441,21 @@ pub struct State {
     generations: Generations,
 }
 
+/// What the featured flavor panel draws for `card`: any flavor text quotes, even a blank one, as in the app; a card without one is `Blank`.
+#[must_use]
+pub fn quote(card: &Card) -> Flavor {
+    let data = &card.scryfall_data;
+    let Some(text) = data.flavor_text.clone() else {
+        return Flavor::Blank;
+    };
+    Flavor::Quote(Quote {
+        text,
+        name: data.name.clone(),
+        price: deck_metrics::card_price(data, PriceCurrency::Usd)
+            .map(|p| PriceCurrency::Usd.format_amount(p)),
+    })
+}
+
 impl State {
     /// Home before [`Action::Load`]: every panel ghosts and the scope is everybody's.
     #[must_use]
@@ -661,22 +676,10 @@ impl State {
         self.flavor.as_ref().map(|f| &f.card)
     }
 
-    /// What the featured flavor panel draws. Any flavor text quotes, even a blank one, as in the app.
+    /// What the featured flavor panel draws: [`quote`] of the card held, `Loading` with none.
     #[must_use]
     pub fn flavor(&self) -> Flavor {
-        let Some(card) = self.flavor_card() else {
-            return Flavor::Loading;
-        };
-        let data = &card.scryfall_data;
-        let Some(text) = data.flavor_text.clone() else {
-            return Flavor::Blank;
-        };
-        Flavor::Quote(Quote {
-            text,
-            name: data.name.clone(),
-            price: deck_metrics::card_price(data, PriceCurrency::Usd)
-                .map(|p| PriceCurrency::Usd.format_amount(p)),
-        })
+        self.flavor_card().map_or(Flavor::Loading, quote)
     }
 
     /// The Buy dialog's retailer links for the flavor card held, `TCGplayer` then `Card Kingdom`. Empty with no card.

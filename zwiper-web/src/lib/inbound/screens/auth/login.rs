@@ -1,5 +1,6 @@
-//! Login: the form as its own panel at the top of the page at every width:
-//! the two fields, `Log in` full width under them, then
+//! Login: the form as a panel headed with the screen's name, under the hero
+//! and beside the featured flavor card on a wide window, over it below the
+//! breakpoint: the two fields, `Log in` full width under them, then
 //! `Create profile` and `Forgot password` as chips in one centered row.
 //!
 //! What the screen knows and does is `zwipe_ui::screens::login`; this file
@@ -18,6 +19,7 @@ use zwipe_ui::screens::login::{self, Action, Destination, Effect, Field, State};
 
 use crate::inbound::chrome::toast::raise;
 use crate::inbound::router::Route;
+use crate::inbound::screens::auth::hero::{PublicFlavor, PublicHero};
 use crate::inbound::shell::ScreenFrame;
 use crate::outbound::session_store::SessionStore;
 
@@ -156,7 +158,12 @@ pub fn Login() -> Element {
         ScreenFrame { title: login::TITLE,
             div { class: "screen-content centered content-enter",
                 div { class: "web-auth web-page",
+                    PublicHero {}
+                    div { class: "web-auth-row",
                     div { class: "container-sm text-center web-form-panel",
+                        div { class: "settings-list-header web-form-head",
+                            span { class: "settings-list-title", {login::TITLE} }
+                        }
                         form {
                             class: "flex-col",
                             onsubmit: move |event| {
@@ -202,6 +209,8 @@ pub fn Login() -> Element {
                                 {login::FORGOT_PASSWORD}
                             }
                         }
+                    }
+                    PublicFlavor {}
                     }
                 }
             }
