@@ -1,7 +1,8 @@
 //! A swipe card's text: its prices under the card, and its full details in
 //! a sheet behind the dock's eye.
 
-use components::{BottomSheet, Button, ButtonVariant, CardDetails};
+use components::icons::{FLIP, LAYERS};
+use components::{ActionDock, BottomSheet, CardDetails, DockAction, DockPlace};
 use dioxus::prelude::*;
 use zwipe_core::domain::card::Card;
 use zwipe_ui::card::info;
@@ -23,8 +24,8 @@ pub fn CardInfoDisplay(card: Card) -> Element {
 
 /// The card's details (cost, type, oracle text, keywords, roles) as the
 /// sheet behind the eye button. It closes from its title bar's × or a drag
-/// down; its own footer, there only when it has something to hold, has
-/// `Flip` for a multi-faced card and `Printings` when the host passes
+/// down; its dock at the bottom right, there only when it has something to
+/// hold, has `Flip` for a multi-faced card and `Printings` when the host passes
 /// `on_printings`, as the app's does. Mount it at the screen root beside
 /// the printing sheet.
 #[component]
@@ -38,17 +39,20 @@ pub fn CardDetailsSheet(
     let face_count = components::card_face_count(&card);
     let mut face = use_signal(|| 0usize);
     let describe_tag = use_describe_tag();
-    let actions = (face_count > 1 || on_printings.is_some()).then(|| {
+    // Flip and Printings as the sheet's dock, pinned at its bottom right.
+    let dock = (face_count > 1 || on_printings.is_some()).then(|| {
         rsx! {
-            if face_count > 1 {
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| face.set(face().saturating_add(1).checked_rem(face_count).unwrap_or(0)),
-                    "Flip"
+            ActionDock { place: DockPlace::Sheet,
+                if face_count > 1 {
+                    DockAction {
+                        label: "Flip",
+                        icon: FLIP,
+                        onclick: move |()| face.set(face().saturating_add(1).checked_rem(face_count).unwrap_or(0)),
+                    }
                 }
-            }
-            if let Some(handler) = on_printings {
-                Button { variant: ButtonVariant::Action, onclick: move |_| handler.call(()), "Printings" }
+                if let Some(handler) = on_printings {
+                    DockAction { label: "Printings", icon: LAYERS, onclick: move |()| handler.call(()) }
+                }
             }
         }
     });
@@ -57,7 +61,6 @@ pub fn CardDetailsSheet(
             open,
             title: name,
             closable: true,
-            footer: actions,
             div { class: "card-rules",
                 CardDetails {
                     card,
@@ -71,6 +74,9 @@ pub fn CardDetailsSheet(
                 if let Some(footer) = footer {
                     {footer}
                 }
+            }
+            if let Some(dock) = dock {
+                {dock}
             }
         }
     }
