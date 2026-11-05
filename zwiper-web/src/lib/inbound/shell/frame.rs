@@ -51,20 +51,55 @@ pub fn OpenFrame() -> Element {
 /// Back is the folded nav's arrow. Help is the menu's `!`. There is no site
 /// footer.
 ///
+/// Where a screen's page head goes on a wide window.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum HeadPlace {
+    /// Over the page, the full width, before the screen's content.
+    #[default]
+    Page,
+    /// Drawn by the screen itself, as a [`PageHead`] inside its content,
+    /// so a panel can share its row.
+    Content,
+}
+
+/// The page head, zite's page header: a panel with the title, the `?` at
+/// its right end and the line under a rule. The frame draws it over the
+/// page; a screen with [`HeadPlace::Content`] draws it in a column.
+#[component]
+pub fn PageHead(
+    title: String,
+    line: String,
+    #[props(default)] on_hint: Option<Callback<()>>,
+) -> Element {
+    rsx! {
+        div { class: "web-form-panel web-page-head",
+            div { class: "panel-head web-panel-head web-page-head-bar",
+                h2 { class: "panel-title", "{title}" }
+                if let Some(open) = on_hint {
+                    InfoButton { onclick: move |_| open.call(()) }
+                }
+            }
+            hr { class: "panel-rule web-panel-head" }
+            p { class: "web-page-head-line", "{line}" }
+        }
+    }
+}
+
 /// Below the breakpoint the title and the `?` sit centered in the folded
-/// nav. With a `description`, a wide window opens the page with a page
-/// head, zite's page header: a panel with the title, the `?` at its right
-/// end and the description under a rule. Without one the `?` stays at the
-/// bar's right end on a wide window.
+/// nav. With a `description`, a wide window opens the page with a
+/// [`PageHead`]. Without one the `?` stays at the bar's right end on a wide
+/// window. With `head_place` [`HeadPlace::Content`] the frame draws neither:
+/// the screen places the head itself.
 #[component]
 pub fn ScreenFrame(
     title: String,
     #[props(default)] on_hint: Option<Callback<()>>,
     #[props(default)] description: Option<String>,
+    #[props(default)] head_place: HeadPlace,
     children: Element,
 ) -> Element {
     let page = try_use_context::<Signal<Option<PageTitle>>>();
-    let has_head = description.is_some();
+    let has_head = description.is_some() || head_place == HeadPlace::Content;
     let nav_title = title.clone();
     use_effect(use_reactive!(|nav_title, on_hint| {
         if let Some(mut page) = page {
@@ -85,18 +120,9 @@ pub fn ScreenFrame(
             // Under the nav a screen has no header bar; the title stays for
             // assistive tech.
             h1 { class: "sr-only", "{title}" }
-            if let Some(line) = description {
+            if let Some(line) = description.filter(|_| head_place == HeadPlace::Page) {
                 div { class: "web-page-head-wrap",
-                    div { class: "web-form-panel web-page-head",
-                        div { class: "panel-head web-panel-head web-page-head-bar",
-                            h2 { class: "panel-title", "{title}" }
-                            if let Some(open) = on_hint {
-                                InfoButton { onclick: move |_| open.call(()) }
-                            }
-                        }
-                        hr { class: "panel-rule web-panel-head" }
-                        p { class: "web-page-head-line", "{line}" }
-                    }
+                    PageHead { title, line, on_hint }
                 }
             }
             {children}

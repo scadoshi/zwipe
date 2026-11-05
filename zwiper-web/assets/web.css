@@ -222,12 +222,6 @@ body {
     }
 
 
-    /* A hero that is a list of rows stays the phone column's width. */
-    .web-hero.web-hero-narrow {
-        max-width: 40rem;
-        margin: 0 auto;
-    }
-
     .web-columns {
         display: grid;
         grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -635,6 +629,18 @@ body {
     .web-page-head-line {
         margin: 0;
         color: var(--text-primary);
+    }
+}
+
+/* A page head drawn inside a column (the deck view's, beside the profile)
+   shows only on a wide window, as the page-level one does. */
+.web-column > .web-page-head {
+    display: none;
+}
+
+@media (min-width: 900px) {
+    .web-column > .web-page-head {
+        display: block;
     }
 }
 
@@ -1103,11 +1109,6 @@ body {
         display: contents;
     }
 
-    .web-playstyle-grid > .web-playstyle-summary-hero.web-hero-narrow {
-        max-width: none;
-        margin: 0;
-    }
-
     .web-playstyle-cell {
         min-width: 0;
     }
@@ -1467,6 +1468,17 @@ body {
 }
 
 @media (max-width: 899px) {
+    /* The profile opens the page as in the app, ahead of the stats column
+       it follows in the markup. */
+    .web-deck-view {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .web-deck-view .web-deck-profile {
+        order: -1;
+    }
+
     .web-deck-view {
         width: calc(100% - 4rem);
         max-width: 40rem;

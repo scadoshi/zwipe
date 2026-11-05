@@ -274,7 +274,7 @@ pub fn Playstyle() -> Element {
             div { class: "screen-content",
                 if is_loading() {
                     div { class: "web-playstyle web-page",
-                        div { class: "web-hero web-hero-narrow web-playstyle-summary-hero",
+                        div { class: "web-hero web-playstyle-summary-hero",
                             SkeletonInfoList { rows: 3 }
                         }
                         div { class: "web-columns",
@@ -309,7 +309,7 @@ pub fn Playstyle() -> Element {
                 } else {
                     div { class: "web-playstyle web-playstyle-grid web-page content-enter",
                         if let Some(profile) = profile() {
-                            div { class: "web-hero web-hero-narrow web-playstyle-summary-hero web-playstyle-cell web-sections-open",
+                            div { class: "web-hero web-playstyle-summary-hero web-playstyle-cell web-sections-open",
                                 ProfileSummary { profile, open_section: summary_section }
                             }
                         }

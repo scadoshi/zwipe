@@ -43,7 +43,12 @@ use crate::inbound::cards::otag::{OtagExamplesHost, use_otag_reveals};
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::router::Route;
-use crate::inbound::shell::ScreenFrame;
+use crate::inbound::shell::{HeadPlace, PageHead, ScreenFrame};
+
+/// The screen's title, in the tab, the folded nav and the page head.
+const TITLE: &str = "Deck";
+/// The page head's line under the title.
+const LINE: &str = "The deck's profile, stats, warnings and cards";
 
 /// The deck view for `deck_id`.
 #[component]
@@ -54,6 +59,10 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     let authed = use_authed();
     let toast = use_toast();
     let hint_open = use_one_time_hint(OneTimeHint::FirstDeck);
+    let on_hint = use_callback(move |()| {
+        let mut hint_open = hint_open;
+        hint_open.set(true);
+    });
     let dialogs = use_deck_dialogs();
     let examples = use_otag_reveals();
     let overlays = use_card_overlays();
@@ -221,12 +230,9 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
 
     rsx! {
         ScreenFrame {
-            title: "Deck",
-            description: Some("The deck's profile, stats, warnings and cards".to_string()),
-            on_hint: move |()| {
-                let mut hint_open = hint_open;
-                hint_open.set(true);
-            },
+            title: TITLE,
+            head_place: HeadPlace::Content,
+            on_hint,
             div { class: "screen-content",
                 match loaded_profile {
                     Some(Ok(p)) => {
@@ -234,12 +240,13 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                             .as_ref()
                             .map_or_else(|| usize::try_from(p.card_count).unwrap_or(0), |m| m.total_cards);
                         rsx! {
+                            // The head beside the profile on a wide window,
+                            // then the stats under the head and the cards under
+                            // the profile.
                             div { class: "content-enter web-deck-view web-page web-sections-open",
-                                div { class: "web-hero web-hero-narrow",
-                                    ProfileCard { profile: p.clone(), commander: commander(), cards, dialogs }
-                                }
                                 div { class: "web-columns",
                                     div { class: "web-column",
+                                        PageHead { title: TITLE, line: LINE, on_hint }
                                         if has_budget(&p, metrics.is_some()) {
                                             BudgetSection {
                                                 profile: p.clone(),
@@ -259,8 +266,8 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                         }
                                     }
                                     div { class: "web-column",
-                                        if !warnings.is_empty() {
-                                            WarningsSection { deck_id, warnings, fixes, open_section }
+                                        div { class: "web-deck-profile",
+                                            ProfileCard { profile: p, commander: commander(), cards, dialogs }
                                         }
                                         div { class: "web-deck-view-cards",
                                             if let Some(loaded) = loaded_deck {
@@ -271,11 +278,14 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                         }
                                     }
                                 }
-                                // The less used actions at the foot of the page,
-                                // Danger zone last; the content's trailing room
-                                // keeps the floating Cards off Delete.
+                                // The warnings and the less used actions at the
+                                // foot of the page, Danger zone last; the content's
+                                // trailing room keeps the floating Cards off Delete.
                                 div { class: "web-columns",
                                     div { class: "web-column",
+                                        if !warnings.is_empty() {
+                                            WarningsSection { deck_id, warnings, fixes, open_section }
+                                        }
                                         DataPanel { deck_id, has_cards: metrics.is_some() }
                                     }
                                     div { class: "web-column",
@@ -290,14 +300,15 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                     },
                     None => rsx! {
                         div { class: "content-enter web-deck-view web-page",
-                            div { class: "web-hero web-hero-narrow",
-                                DeckProfileSkeleton {}
-                            }
                             div { class: "web-columns",
                                 div { class: "web-column",
+                                    PageHead { title: TITLE, line: LINE, on_hint }
                                     DeckStatsSkeleton {}
                                 }
                                 div { class: "web-column",
+                                    div { class: "web-deck-profile",
+                                        DeckProfileSkeleton {}
+                                    }
                                     div { class: "web-deck-view-cards",
                                         DeckCardsSkeleton {}
                                     }
