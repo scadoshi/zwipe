@@ -48,6 +48,8 @@ pub const UPCOMING: &[Release] = &[Release {
         "Decks creates a deck from a + at the bottom right",
         "The deck view's actions sit on the page: Edit, Clone and Share as icons by the profile, the store links in Budget, and Import, Export, Clear skips and Delete in Data and Danger zone panels at the bottom",
         "Account ends with a Danger zone panel for Log out and Delete account",
+        "Account's Change username, email and password sheets save from a checkmark at the bottom right",
+        "Change password has a Forgot password button in its header that emails you a reset link",
         "Commander maybeboard and Playstyle put Swipe in their list's header, float Filter at the bottom right, and keep Clear in a Danger zone panel",
         "The deck's card list has a floating bar of icons for add, remove, filter and undo; an x on the filter resets it",
         "Add, Remove, swipe select and Oracle tag examples float their filter, refresh and card details as icons at the bottom right",

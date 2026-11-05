@@ -1,8 +1,11 @@
 //! Change password bottom sheet.
 
-use components::{AlertDialog, BottomSheet, Button, ButtonVariant, DialogAction, TextInput};
+use components::{
+    ActionDock, AlertDialog, BottomSheet, Button, ButtonVariant, DialogAction, DockAction,
+    DockPlace, TextInput, icons,
+};
 use dioxus::prelude::*;
-use zwipe_ui::screens::account::{Action, CANCEL, Dialog, Field, Sheet};
+use zwipe_ui::screens::account::{Action, CANCEL, Dialog, FORGOT_PASSWORD, Field, Sheet};
 
 use super::driver::{Driver, use_field_sync};
 use crate::inbound::components::hint_host::HintTopic;
@@ -31,12 +34,14 @@ pub fn ChangePasswordSheet(open: Signal<bool>) -> Element {
             open,
             title: sheet.title().to_string(),
             closable: true,
-            footer: rsx! {
+            // The way out for a user who no longer knows the current password.
+            trailing: rsx! {
                 Button {
                     variant: ButtonVariant::Action,
+                    class: "page-header-corner",
                     disabled: is_loading,
-                    onclick: move |_| driver.dispatch(Action::Save(sheet)),
-                    {save_label}
+                    onclick: move |_| driver.dispatch(Action::ForgotPassword),
+                    {FORGOT_PASSWORD}
                 }
             },
 
@@ -66,6 +71,15 @@ pub fn ChangePasswordSheet(open: Signal<bool>) -> Element {
                     label: Field::ConfirmPassword.label(),
                     placeholder: Field::ConfirmPassword.placeholder(),
                     input_type: "password",
+                }
+            }
+            // Save floats at the sheet's bottom right.
+            ActionDock { place: DockPlace::Sheet,
+                DockAction {
+                    label: save_label,
+                    icon: icons::CHECK,
+                    disabled: is_loading,
+                    onclick: move |()| driver.dispatch(Action::Save(sheet)),
                 }
             }
         }

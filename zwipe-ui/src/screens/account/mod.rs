@@ -69,6 +69,10 @@ pub const NOT_VERIFIED: &str = "Not verified yet. Check your inbox";
 
 /// The toast once the password changed.
 pub const PASSWORD_CHANGED: &str = "Password change successful";
+/// The Change password sheet's header chip, for a user who no longer knows the current one.
+pub const FORGOT_PASSWORD: &str = "Forgot password";
+/// The toast once the reset link went out, before the address it went to.
+pub const RESET_LINK_SENT: &str = "Reset link sent to";
 
 /// How long the client waits between [`Effect::Wait`] and the [`Action::Tick`] it sends back.
 pub const TICK: Duration = Duration::from_secs(1);
@@ -236,6 +240,13 @@ pub enum Action {
     Save(Sheet),
     /// Confirms the password change, from [`Dialog::ConfirmPassword`].
     ConfirmPassword,
+    /// Presses the Change password sheet's Forgot password: asks for a reset link to the account's email, unless one is out.
+    ForgotPassword,
+    /// The reset link holding `ticket` went out.
+    ResetLinkSent {
+        /// The ticket from the [`Effect::RequestPasswordReset`] this answers.
+        ticket: Ticket,
+    },
     /// The username change holding `ticket` went through.
     UsernameChanged {
         /// The ticket from the [`Effect::ChangeUsername`] this answers.
@@ -321,6 +332,13 @@ pub enum Effect {
         /// The new password as typed.
         new: Password,
     },
+    /// Asks for a password reset link to this email and answers with [`Action::ResetLinkSent`] or [`Action::Failed`].
+    RequestPasswordReset {
+        /// The ticket to hand back.
+        ticket: Ticket,
+        /// The account's email.
+        email: String,
+    },
     /// Deletes the account and answers with [`Action::Deleted`] or [`Action::Failed`].
     DeleteAccount {
         /// The ticket to hand back.
@@ -353,6 +371,8 @@ enum Request {
     Email(String),
     /// A password change.
     Password,
+    /// The reset link to this email.
+    Reset(String),
     /// The delete.
     Delete,
 }
@@ -364,7 +384,7 @@ impl Request {
             Self::Username => Some(Sheet::Username),
             Self::Email(_) => Some(Sheet::Email),
             Self::Password => Some(Sheet::Password),
-            Self::Refresh | Self::Check | Self::Resend | Self::Delete => None,
+            Self::Refresh | Self::Check | Self::Resend | Self::Reset(_) | Self::Delete => None,
         }
     }
 }
@@ -497,6 +517,8 @@ impl State {
                 Vec::new()
             }
             Action::Save(sheet) => self.save(sheet),
+            Action::ForgotPassword => self.forgot_password(),
+            Action::ResetLinkSent { ticket } => self.reset_link_sent(ticket),
             Action::ConfirmPassword => self.change_password(),
             Action::UsernameChanged { ticket, username } => {
                 if self.take(ticket, |r| *r == Request::Username).is_none() {
@@ -688,6 +710,35 @@ impl State {
             current,
             new,
         }]
+    }
+
+    /// Asks for a reset link to the account's email, unless one is already out or no user is loaded.
+    fn forgot_password(&mut self) -> Vec<Effect> {
+        let Some(user) = self.user.as_ref() else {
+            return Vec::new();
+        };
+        if self.is_waiting(|r| matches!(r, Request::Reset(_))) {
+            return Vec::new();
+        }
+        let email = user.email.to_string();
+        let ticket = self.send(Request::Reset(email.clone()));
+        vec![Effect::RequestPasswordReset { ticket, email }]
+    }
+
+    /// Says where the link went and closes the sheet, since the next step is the inbox.
+    fn reset_link_sent(&mut self, ticket: Ticket) -> Vec<Effect> {
+        let Some(Request::Reset(email)) = self.take(ticket, |r| matches!(r, Request::Reset(_)))
+        else {
+            return Vec::new();
+        };
+        *self.forms.get_mut(Sheet::Password) = Form::default();
+        vec![
+            Effect::Toast(Toast::normal(
+                ToastKind::Success,
+                format!("{RESET_LINK_SENT} {email}"),
+            )),
+            Effect::CloseSheet(Sheet::Password),
+        ]
     }
 
     /// Empties `sheet` and closes it after its change went through.
