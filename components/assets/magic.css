@@ -1689,3 +1689,8 @@ i.ms.ms-cost.ms-gp {
         grid-template-columns: minmax(0, 1fr);
     }
 }
+
+/* The fold-all button sits at the end of the Group by row. */
+.deck-fold-all {
+    margin-left: auto;
+}

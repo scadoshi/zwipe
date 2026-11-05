@@ -323,6 +323,13 @@ pub enum Action {
     ToggleCommandZone,
     /// Opens or collapses the section with this key.
     ToggleSection(String),
+    /// The fold-all button: collapses every section under `keys`, or opens every one when `collapsed` is false.
+    SetSections {
+        /// The sections on screen.
+        keys: Vec<String>,
+        /// Whether they end up collapsed.
+        collapsed: bool,
+    },
     /// The Quick add input reads `query`. A trimmed query of [`timing::QUICK_ADD_MIN_CHARS`] bytes or more waits out the debounce and searches; a shorter one closes the results.
     Type(String),
     /// The Quick add clear button: empties the input and the results.
@@ -735,6 +742,7 @@ impl State {
                 }
                 Vec::new()
             }
+            Action::SetSections { keys, collapsed } => self.set_sections(keys, collapsed),
             Action::Type(query) => self.type_query(query),
             Action::ClearQuickAdd => {
                 self.quick.results.clear();
@@ -789,6 +797,18 @@ impl State {
                 .collect(),
             Action::Leave => self.leave(),
         }
+    }
+
+    /// Collapses or opens every section under `keys`.
+    fn set_sections(&mut self, keys: Vec<String>, collapsed: bool) -> Vec<Effect> {
+        if collapsed {
+            self.collapsed.extend(keys);
+        } else {
+            for key in &keys {
+                self.collapsed.remove(key);
+            }
+        }
+        Vec::new()
     }
 
     fn load(&mut self, deck_id: Uuid, filter: CardQueryBuilder) -> Vec<Effect> {
@@ -1584,6 +1604,12 @@ impl State {
     #[must_use]
     pub fn is_collapsed(&self, key: &str) -> bool {
         self.collapsed.contains(key)
+    }
+
+    /// Whether every section under `keys` is collapsed, for the fold-all button's state. False with no keys.
+    #[must_use]
+    pub fn all_collapsed(&self, keys: &[String]) -> bool {
+        !keys.is_empty() && keys.iter().all(|k| self.collapsed.contains(k))
     }
 
     /// The lists after the filter and group pass. The main board's groups and lands and the command zone follow the applied filter; the maybeboard and sideboard follow `live`, the client's filter as it stands.
