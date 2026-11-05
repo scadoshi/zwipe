@@ -128,11 +128,12 @@ body {
 
 /* ---- Input panels ----
 
-   A sign-in form is its own panel at every width, centered and held to
-   30rem on a wide window: the fields, the full-width submit under them at
-   the inputs' corner radius, then the links to the other sign-in screens as
-   chips in one centered row (the app's .form-submit and .form-links). Below
-   the breakpoint it fills the page inside its side gutter. */
+   Below the breakpoint a sign-in form sits on the page as the app's does:
+   the fields in the app's 20rem column, the full-width submit under them,
+   then the links to the other sign-in screens as chips in one centered row
+   spanning the screen (the app's .form-submit and .form-links). On a wide
+   window the form wears a panel, centered and held to 30rem, the wide form
+   of the screen as the drawer is of the sheet. */
 .web-auth {
     display: flex;
     flex-direction: column;
@@ -145,31 +146,34 @@ body {
 }
 
 .web-form-panel {
-    width: 100%;
     margin: 0 auto;
-    padding: 1.5rem;
     box-sizing: border-box;
-    background-color: var(--bg-primary);
-    border: 1px solid var(--border-secondary);
-    border-radius: 1rem;
-    box-shadow: var(--shadow-sm);
-}
-
-/* A sign-in panel is held to a form's width; the page head wears the same
-   panel at the page's. */
-.web-auth > .web-form-panel {
-    max-width: 30rem;
-}
-
-/* The chip row stays inside the panel, under the form's column, instead
-   of spanning the window as the app's does. */
-.web-form-panel > .form-links {
-    margin: 1rem 0 0;
 }
 
 @media (min-width: 900px) {
     .web-auth {
         padding: 0 1.5rem 1.5rem;
+    }
+
+    .web-form-panel {
+        width: 100%;
+        padding: 1.5rem;
+        background-color: var(--bg-primary);
+        border: 1px solid var(--border-secondary);
+        border-radius: 1rem;
+        box-shadow: var(--shadow-sm);
+    }
+
+    /* A sign-in panel is held to a form's width; the page head wears the
+       same panel at the page's. */
+    .web-auth > .web-form-panel {
+        max-width: 30rem;
+    }
+
+    /* The chip row stays inside the panel, under the form's column,
+       instead of spanning the window as the app's does. */
+    .web-form-panel > .form-links {
+        margin: 1rem 0 0;
     }
 }
 
