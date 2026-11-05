@@ -182,15 +182,40 @@
     box-shadow: var(--shadow-sm);
 }
 
-/* Flowing row: chevron + qty prefix, then the name with its metadata trailing
-   as tags (price pill, mana pips) right after it, rather than locked into
-   vertical columns across rows. */
+/* The row: the art at the left, then the name and its tags flowing beside
+   it. The head (chevron, qty, name) is one item, so the three never part;
+   each tag (P/T or loyalty, the price, the pips) is its own item that stays
+   on the head's line while it fits and drops under it when it does not. A
+   head wider than the row takes the line alone and cuts its name. So a row
+   is one line when everything fits and two when it does not, whether the
+   art shows or not. */
 .card-row-compact {
     display: flex;
     align-items: center;
     gap: 0.4rem;
     font-size: 0.8rem;
     cursor: pointer;
+}
+
+.card-row-body {
+    display: flex;
+    flex: 1 1 auto;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3rem 0.4rem;
+    min-width: 0;
+}
+
+.card-row-head {
+    display: flex;
+    flex: 0 1 auto;
+    align-items: center;
+    gap: 0.4rem;
+    min-width: 0;
+}
+
+.card-row-tags {
+    display: contents;
 }
 
 /* Opt-in art-crop thumbnail at the far left of the row (CardRow `show_art`).
