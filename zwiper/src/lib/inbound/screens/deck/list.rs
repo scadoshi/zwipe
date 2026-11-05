@@ -136,7 +136,7 @@ fn DeckGroupSection(
 ) -> Element {
     rsx! {
         div {
-            class: if expanded { "card-group row-enter" } else { "card-group row-enter collapsed" },
+            class: if expanded { "card-group deck-group row-enter" } else { "card-group deck-group row-enter collapsed" },
             div {
                 class: if expanded { "card-group-header group-collapsible expanded" } else { "card-group-header group-collapsible" },
                 onclick: move |_| ontoggle.call(()),

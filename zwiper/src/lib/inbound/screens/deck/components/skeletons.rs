@@ -230,16 +230,16 @@ pub(crate) fn DeckListSkeleton() -> Element {
         // `card-row`, `deck-list-row`) rather than skeleton lookalikes, so the
         // two can't drift apart. The header's arrow and "All" ghost as one
         // short bar, and the console above ghosts in the list screen.
-        div { class: "card-group",
+        div { class: "card-group deck-group",
             div { class: "card-group-header group-collapsible expanded skeleton-deck-list-header",
                 div { class: "skeleton-bar skeleton-deck-list-header-title" }
             }
             div { class: "collapsible open",
                 div { class: "collapsible-inner",
                     for (i , chips) in TILES.iter().enumerate() {
-                        div { key: "{i}", class: "card-row",
-                            // One wrapping row, like the live one: art, name,
-                            // then chips that wrap underneath the art.
+                        div { key: "{i}", class: "card-row deck-row",
+                            // One tile, like the live one: art, name, then
+                            // the chips under them.
                             div { class: "deck-list-row",
                                 div { class: "skeleton-bar skeleton-deck-list-art" }
                                 div { class: "skeleton-bar skeleton-deck-list-title" }
