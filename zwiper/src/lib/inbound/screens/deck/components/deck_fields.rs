@@ -51,6 +51,7 @@ pub(crate) fn DeckFields(
                     id: "deck_name",
                     placeholder: model::NOT_SET,
                     error: name_error,
+                    on_clear: |()| {},
                 }
 
                 // Format (open the full-screen picker to choose)
@@ -190,11 +191,15 @@ pub(crate) fn DeckFields(
                         label { class: "label", {model::DECK_TAGS} }
                         InfoButton { topic: HintTopic::DeckTags }
                         span { class: "field-count", "{deck_tags.len()}/{MAX_DECK_TAGS}" }
+                        if !deck_tags.is_empty() {
+                            button {
+                                class: "clear-btn",
+                                onclick: move |_| on_action.call(Action::ClearTags(TagPicker::DeckTags)),
+                                "\u{00d7}"
+                            }
+                        }
                     }
 
-                    ClearWrap {
-                        filled: !deck_tags.is_empty(),
-                        on_clear: move |()| on_action.call(Action::ClearTags(TagPicker::DeckTags)),
                     if deck_tags.is_empty() {
                         div { class: "input input-placeholder input-tappable", onclick: move |_| on_action.call(Action::OpenPicker(Picker::DeckTags)), {model::NOT_SET} }
                     } else {
@@ -221,7 +226,6 @@ pub(crate) fn DeckFields(
                             }
                         }
                     }
-                    }
                 }
 
                 // Oracle tags (granular strategy; deck tags seed these)
@@ -230,11 +234,15 @@ pub(crate) fn DeckFields(
                         label { class: "label", {model::ORACLE_TAGS} }
                         InfoButton { topic: HintTopic::OracleTags }
                         span { class: "field-count", "{oracle_tags.len()}/{MAX_DECK_ORACLE_TAGS}" }
+                        if !oracle_tags.is_empty() {
+                            button {
+                                class: "clear-btn",
+                                onclick: move |_| on_action.call(Action::ClearTags(TagPicker::OracleTags)),
+                                "\u{00d7}"
+                            }
+                        }
                     }
 
-                    ClearWrap {
-                        filled: !oracle_tags.is_empty(),
-                        on_clear: move |()| on_action.call(Action::ClearTags(TagPicker::OracleTags)),
                     if oracle_tags.is_empty() {
                         div {
                             class: "input input-placeholder input-tappable",
@@ -262,7 +270,6 @@ pub(crate) fn DeckFields(
                                 }
                             }
                         }
-                    }
                     }
                 }
 

@@ -331,16 +331,6 @@ button {
     z-index: 102;
 }
 
-/* A theme wipe's snapshots: WebKit lays the view transition's box out from
-   under the status bar, while the page starts above it, so the new page
-   landed one inset too low and the strip over the status bar went unpainted
-   for the sweep. The box is pulled up by the inset to cover the whole
-   screen. On a window without an inset this is no change. */
-::view-transition {
-    top: calc(-1 * env(safe-area-inset-top, 0px));
-    height: calc(100% + env(safe-area-inset-top, 0px));
-}
-
 /* The kit's NavBar as the app's header. A phone is always under the kit's
    60rem fold, so the bar shows the back arrow (or nothing, on Home and the
    auth screens), the title and the hamburger, and the links wait in the
