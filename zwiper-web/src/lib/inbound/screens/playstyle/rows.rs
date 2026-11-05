@@ -75,11 +75,11 @@ pub fn SuggestionReasons(
                         evt.stop_propagation();
                         reasons_open.toggle();
                     },
-                    "Why this commander?"
                     span {
                         class: if reasons_open() { "chip-fold-arrow expanded" } else { "chip-fold-arrow" },
                         "\u{25b8}"
                     }
+                    "Why this commander?"
                 }
                 div { class: if reasons_open() { "collapsible open" } else { "collapsible" },
                     div { class: "collapsible-inner", {bullets} }

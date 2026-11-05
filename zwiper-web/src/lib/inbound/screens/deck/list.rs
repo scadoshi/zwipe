@@ -160,11 +160,11 @@ pub fn DeckList() -> Element {
                                     Chip {
                                         selected: tags_open(),
                                         onclick: move |_| tags_open.toggle(),
-                                        "Tags"
                                         span {
                                             class: if tags_open() { "chip-fold-arrow expanded" } else { "chip-fold-arrow" },
                                             "\u{25B8}"
                                         }
+                                        "Tags"
                                     }
                                     if !tags_open() {
                                         for (key, label) in tags_present.iter().filter(|(key, _)| filter.tags.contains(key)).cloned() {
