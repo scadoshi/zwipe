@@ -1,6 +1,6 @@
 //! The deck fields the create and edit screens share: name, format, the command zone, power level, budget and tags, drawn from the screen model.
 
-use components::TextInput;
+use components::{ClearWrap, TextInput};
 use dioxus::prelude::*;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::{
@@ -58,19 +58,16 @@ pub(crate) fn DeckFields(
                     div { class: "label-row",
                         label { class: "label", {model::FORMAT} }
                         InfoButton { topic: HintTopic::Format }
-                        if format.is_some() {
-                            button {
-                                class: "clear-btn",
-                                onclick: move |_| on_action.call(Action::ClearFormat),
-                                "\u{00d7}"
-                            }
-                        }
                     }
 
-                    if let Some(fmt) = format {
-                        div { class: "input input-tappable", onclick: move |_| on_action.call(Action::OpenPicker(Picker::Format)), "{fmt.display_name()}" }
-                    } else {
-                        div { class: "input input-placeholder input-tappable", onclick: move |_| on_action.call(Action::OpenPicker(Picker::Format)), {model::NOT_SET} }
+                    ClearWrap {
+                        filled: format.is_some(),
+                        on_clear: move |()| on_action.call(Action::ClearFormat),
+                        if let Some(fmt) = format {
+                            div { class: "input input-tappable", onclick: move |_| on_action.call(Action::OpenPicker(Picker::Format)), "{fmt.display_name()}" }
+                        } else {
+                            div { class: "input input-placeholder input-tappable", onclick: move |_| on_action.call(Action::OpenPicker(Picker::Format)), {model::NOT_SET} }
+                        }
                     }
                 }
 
@@ -159,25 +156,22 @@ pub(crate) fn DeckFields(
                                 }
                             }
                         }
-                        if !price_text.is_empty() {
-                            button {
-                                class: "clear-btn",
-                                onclick: move |_| on_action.call(Action::ClearPrice),
-                                "\u{00d7}"
-                            }
-                        }
                     }
 
-                    input { class: "input",
-                        id: "price_target",
-                        r#type: "text",
-                        inputmode: "decimal",
-                        placeholder: model::NOT_SET,
-                        value: "{price_text}",
-                        autocapitalize: "none",
-                        autocorrect: "off",
-                        spellcheck: "false",
-                        oninput: move |event| on_action.call(Action::TypePrice(event.value())),
+                    ClearWrap {
+                        filled: !price_text.is_empty(),
+                        on_clear: move |()| on_action.call(Action::ClearPrice),
+                        input { class: "input",
+                            id: "price_target",
+                            r#type: "text",
+                            inputmode: "decimal",
+                            placeholder: model::NOT_SET,
+                            value: "{price_text}",
+                            autocapitalize: "none",
+                            autocorrect: "off",
+                            spellcheck: "false",
+                            oninput: move |event| on_action.call(Action::TypePrice(event.value())),
+                        }
                     }
                 }
             }
@@ -196,15 +190,11 @@ pub(crate) fn DeckFields(
                         label { class: "label", {model::DECK_TAGS} }
                         InfoButton { topic: HintTopic::DeckTags }
                         span { class: "field-count", "{deck_tags.len()}/{MAX_DECK_TAGS}" }
-                        if !deck_tags.is_empty() {
-                            button {
-                                class: "clear-btn",
-                                onclick: move |_| on_action.call(Action::ClearTags(TagPicker::DeckTags)),
-                                "\u{00d7}"
-                            }
-                        }
                     }
 
+                    ClearWrap {
+                        filled: !deck_tags.is_empty(),
+                        on_clear: move |()| on_action.call(Action::ClearTags(TagPicker::DeckTags)),
                     if deck_tags.is_empty() {
                         div { class: "input input-placeholder input-tappable", onclick: move |_| on_action.call(Action::OpenPicker(Picker::DeckTags)), {model::NOT_SET} }
                     } else {
@@ -231,6 +221,7 @@ pub(crate) fn DeckFields(
                             }
                         }
                     }
+                    }
                 }
 
                 // Oracle tags (granular strategy; deck tags seed these)
@@ -239,15 +230,11 @@ pub(crate) fn DeckFields(
                         label { class: "label", {model::ORACLE_TAGS} }
                         InfoButton { topic: HintTopic::OracleTags }
                         span { class: "field-count", "{oracle_tags.len()}/{MAX_DECK_ORACLE_TAGS}" }
-                        if !oracle_tags.is_empty() {
-                            button {
-                                class: "clear-btn",
-                                onclick: move |_| on_action.call(Action::ClearTags(TagPicker::OracleTags)),
-                                "\u{00d7}"
-                            }
-                        }
                     }
 
+                    ClearWrap {
+                        filled: !oracle_tags.is_empty(),
+                        on_clear: move |()| on_action.call(Action::ClearTags(TagPicker::OracleTags)),
                     if oracle_tags.is_empty() {
                         div {
                             class: "input input-placeholder input-tappable",
@@ -275,6 +262,7 @@ pub(crate) fn DeckFields(
                                 }
                             }
                         }
+                    }
                     }
                 }
 
@@ -342,13 +330,6 @@ fn SlotField(
                         onclick: move |_| on_action.call(Action::ToggleFilter(slot)),
                         {model::FILTER}
                     }
-                    if has_card {
-                        button {
-                            class: "clear-btn",
-                            onclick: move |_| on_action.call(Action::ClearSlot(slot)),
-                            "\u{00d7}"
-                        }
-                    }
                     div {
                         class: "chip-xs chip-primary",
                         onclick: move |_| on_swipe.call(slot),
@@ -393,9 +374,18 @@ fn SlotField(
                     }
                 }
 
-                div { class: "flex items-center gap-05",
+                // The × in the box clears what it shows: the search typed
+                // into it, or the card picked.
+                ClearWrap {
+                    filled: has_query || has_card,
+                    on_clear: move |()| {
+                        on_action.call(if has_query {
+                            Action::ClearSearch(slot)
+                        } else {
+                            Action::ClearSlot(slot)
+                        });
+                    },
                     input { class: "input",
-                        style: "flex: 1;",
                         id,
                         r#type: "text",
                         placeholder: model::NOT_SET,
@@ -405,13 +395,6 @@ fn SlotField(
                         spellcheck: "false",
                         onclick: move |_| on_action.call(Action::TapInput(slot)),
                         oninput: move |event| on_action.call(Action::Type { slot, text: event.value() }),
-                    }
-                    if has_query {
-                        button {
-                            class: "clear-btn",
-                            onclick: move |_| on_action.call(Action::ClearSearch(slot)),
-                            "\u{00d7}"
-                        }
                     }
                 }
             }
