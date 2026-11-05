@@ -1018,9 +1018,9 @@ button {
 }
 
 /* The deck list: each group is a chip with the fold arrow, floating with the
-   Group by and Show chips, over its decks as tiles two to a row. A tile is
-   its own panel: the command zone's art over the name, then
-   the pips and the chips wrapping under it. */
+   Group by and Show chips, over its decks one under another. A deck is its
+   own panel, edge to edge: the command zone's art at the left, the name
+   beside it, then the pips and the chips wrapping under them. */
 /* Compound selectors so these outrank .card-group and the collapsible
    header's own rules below. */
 .card-group.deck-group {
@@ -1058,12 +1058,12 @@ button {
     border-bottom-color: color-mix(in srgb, var(--tone) 35%, transparent);
 }
 
-/* The tiles sit a panel gap under their chip and over the next one. The
+/* The decks sit a panel gap under their chip and over the next one. The
    padding opens and closes with the fold, so folded groups stack at the
    chip row's own spacing instead of holding two gaps of empty space. */
 .deck-group > .collapsible > .collapsible-inner {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     gap: var(--panel-gap);
     padding: 0;
     transition: padding 0.25s ease;
@@ -1074,7 +1074,7 @@ button {
 }
 
 .deck-row {
-    padding: 1rem;
+    padding: 0.75rem 1rem;
     background-color: var(--bg-primary);
     border: 1px solid var(--border-secondary);
     border-radius: 1rem;
@@ -1082,53 +1082,37 @@ button {
     cursor: pointer;
 }
 
-/* The command zone's art fills the tile's width at the panel's own corner
-   radius; a two-card
-   zone (partners, or oathbreaker and signature spell) shares the square. */
+/* The command zone's art crops sit inline in the wrapping row, as flex items
+   beside the name rather than a fixed column, so the chips wrap onto the
+   next line under the art instead of into a narrow column beside it. Two
+   crops (partners, or oathbreaker and signature spell) follow one another.
+   The corners are the panel's at this size. */
 .deck-row-art-img {
     flex: 0 0 auto;
-    width: 100%;
-    aspect-ratio: 1 / 1;
+    width: 3.6rem;
+    height: 3.2rem;
     object-fit: cover;
-    border-radius: 1rem;
+    border-radius: 0.6rem;
     border: 1px solid var(--border-secondary);
     box-shadow: var(--shadow-sm);
 }
 
-.deck-list-row:has(> .deck-row-art-img + .deck-row-art-img) > .deck-row-art-img {
-    width: calc(50% - 0.2rem);
-}
-
 .deck-list-row {
+    /* Unlike card rows (deliberately single-line for consistency), a deck
+       carries far more chips than a card does, so these wrap. */
     display: flex;
-    flex-direction: column;
     flex-wrap: wrap;
     align-items: center;
     gap: 0.4rem;
     min-width: 0;
-    text-align: center;
 }
 
 .deck-list-name {
-    width: 100%;
+    flex: 0 1 auto;
     min-width: 0;
-    margin: 0.2rem 0 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-/* The pips take their own line under the name; the chips wrap after, and a
-   long commander name wraps inside its chip rather than cutting. */
-.deck-list-row > .identity-pips {
-    width: 100%;
-    justify-content: center;
-}
-
-.deck-list-row > .stat-chip {
-    max-width: 100%;
-    white-space: normal;
+    margin-right: 0.25rem;
     overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 /* Tag chips inside a deck-detail info row wrap instead of forcing one line. */
@@ -1616,9 +1600,9 @@ button {
 /* Stands in for the command zone art (matches .deck-row-art-img). */
 .skeleton-deck-list-art {
     flex: 0 0 auto;
-    width: 100%;
-    aspect-ratio: 1 / 1;
-    border-radius: 1rem;
+    width: 3.6rem;
+    height: 3.2rem;
+    border-radius: 0.6rem;
 }
 
 .skeleton-deck-list-title {
