@@ -2,7 +2,7 @@
 
 **Status: Phase 1 committed on main `c089dcc1f`, 2026-11-02, riding 1.17.1. Phase 4 built on `server/pip-color-classic` (`32428253f`), not merged. Phases 2 and 3 not started.**
 
-**One sentence:** the pip preference's second value is renamed from `natural` to `classic`; the database stores `classic` now, the wire keeps writing `natural` because 1.15.0 through 1.17.0 can only parse that, and once the client floor is past a release that reads both, the server writes `classic` and stops accepting `natural`.
+**One sentence:** the pip setting's second value is renamed from `natural` to `classic`; the database stores `classic` now, the wire keeps writing `natural` because 1.15.0 through 1.17.0 can only parse that, and once the client floor is past a release that reads both, the server writes `classic` and stops accepting `natural`.
 
 ## Why
 
@@ -10,7 +10,7 @@
 
 ## What the wire looks like
 
-`UserPreferences` (`zwipe-core/src/domain/user/models/preferences.rs`) carries `pip_style`. It rides in the session the server returns on login and refresh, in `GET` and `PATCH /api/user/preferences`, and the app keeps it in the stored session. zite keeps the visitor's choice in localStorage under `zwipe.pips` as the serde JSON of the value.
+`UserSettings` (`zwipe-core/src/domain/user/models/settings.rs`) carries `pip_style`. It rides in the session the server returns on login and refresh, in `GET` and `PATCH /api/user/settings`, and the app keeps it in the stored session. zite keeps the visitor's choice in localStorage under `zwipe.pips` as the serde JSON of the value.
 
 The setting shipped in 1.15.0, and 1.15.0 through 1.17.0 carry `PipStyle { Theme, Natural }` with `rename_all = "lowercase"` and nothing else, so it parses `"theme"` and `"natural"` and fails on `"classic"`. A session it cannot parse is a broken sign-in, so the server must not write `"classic"` until 1.17.0 is below the floor.
 
@@ -37,7 +37,7 @@ End state:
 - `as_str` is `classic` (the database name) and `FromStr` reads `classic` or `natural`.
 - Migration `20261102130000_pip_style_classic.sql` rewrites stored `natural` rows to `classic` and narrows the CHECK to `('theme', 'classic')`.
 - zite's inline script in `index.html` adds `pips-classic` for a stored `"classic"` or `"natural"`.
-- Tests: `classic_stores_as_classic_and_reads_either_name` and `the_wire_writes_the_name_shipped_clients_parse` in core, and `pip_style_preference_round_trips` in zerver, which checks that the row stores `classic`, a `natural` PATCH lands and the response says `natural`.
+- Tests: `classic_stores_as_classic_and_reads_either_name` and `the_wire_writes_the_name_shipped_clients_parse` in core, and `pip_style_setting_round_trips` in zerver, which checks that the row stores `classic`, a `natural` PATCH lands and the response says `natural`.
 
 The field keeps its name, `pip_style`, on the wire and in the column. Renaming it is a separate wire change and not part of this plan.
 
@@ -62,7 +62,7 @@ Built 2026-11-02 (`32428253f`), not merged. Merge after Phase 3 is quiet:
 - Tests: `classic_stores_and_writes_as_classic` and `the_earlier_natural_name_no_longer_reads` in core, three request-body tests in `http/contracts/user.rs`, and the zerver test PATCHes `classic`, expects `classic` back and expects `natural` to be refused.
 - Grep gate holds: `natural` appears only in the tests that assert it is refused.
 
-Access token claims carry no preferences (`user_id`, `username`, `email`, `exp`, `iat`, checked 2026-11-02), so tokens are not a concern.
+Access token claims carry no settings (`user_id`, `username`, `email`, `exp`, `iat`, checked 2026-11-02), so tokens are not a concern.
 
 ## Verification
 
