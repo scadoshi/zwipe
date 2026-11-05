@@ -1,6 +1,6 @@
 //! Login: a username-or-email and password form with Log in, Create profile and Forgot password under it.
 //!
-//! The client keeps a [`State`] while the screen is up and hands every keystroke in as [`Action::EditIdentifier`] or [`Action::EditPassword`]. The submit gate is [`account::login_gate`]. A login that goes through comes back as [`Effect::SignedIn`] carrying the session: storing it, applying its preferences and the keyring are the client's. The text inputs, their focus and the password's Show and Hide stay in the client.
+//! The client keeps a [`State`] while the screen is up and hands every keystroke in as [`Action::EditIdentifier`] or [`Action::EditPassword`]. The submit gate is [`account::login_gate`]. A login that goes through comes back as [`Effect::SignedIn`] carrying the session: storing it, applying its settings and the keyring are the client's. The text inputs, their focus and the password's Show and Hide stay in the client.
 
 #[cfg(test)]
 mod tests;
@@ -117,7 +117,7 @@ pub enum Effect {
     SetIdentifier(String),
     /// Empties the password input. The model already has.
     ClearPassword,
-    /// Takes this session as the signed-in one: the client stores it and applies its preferences.
+    /// Takes this session as the signed-in one: the client stores it and applies its settings.
     SignedIn(Box<Session>),
     /// Goes to this screen.
     Navigate(Destination),

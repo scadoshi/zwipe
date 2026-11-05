@@ -6,7 +6,7 @@
 //! through the same path as Settings' Theme row (see
 //! [`theme_save`](crate::inbound::components::theme_save)), so the pair and
 //! the row never disagree: both draw the app-wide theme and both persist to
-//! the account's preferences. The sheet is the menu's descendant, so the menu
+//! the account's settings. The sheet is the menu's descendant, so the menu
 //! stays painted and folds as the sheet rises, the way the kit's
 //! `ThemePicker` folds a site's menu.
 
@@ -78,7 +78,7 @@ impl Driver {
             }
             Effect::Toast(raised) => ui_toast::raise(toast, raised),
             Effect::OfferHint(_)
-            | Effect::FetchPreferences(_)
+            | Effect::FetchSettings(_)
             | Effect::ShowPips(_)
             | Effect::PipsSaved(_)
             | Effect::OpenSheet(Sheet::Exceptions)
@@ -96,7 +96,7 @@ pub fn MenuTheme(open: Signal<bool>) -> Element {
     let theme_config: Signal<ThemeConfig> = use_context();
     let driver = Driver {
         model: use_signal(State::new),
-        authed: use_authed(Screen::Profile(ProfileScreen::Preferences)),
+        authed: use_authed(Screen::Profile(ProfileScreen::Settings)),
         session: use_context(),
         toast: use_toast(),
         theme_config,

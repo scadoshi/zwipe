@@ -12,9 +12,9 @@
 use components::{ThemeConfig, ThemeSheet};
 use dioxus::prelude::*;
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::http::contracts::user::HttpUpdatePreferences;
-use zwipe_ui::preferences::PreferenceChange;
+use zwipe_core::http::contracts::user::HttpUpdateSettings;
 use zwipe_ui::screens::config::{Action, SaveTicket, Theme};
+use zwipe_ui::settings::SettingChange;
 
 use crate::inbound::components::auth::authed::Authed;
 use crate::outbound::app_icon;
@@ -36,7 +36,7 @@ pub fn theme_of(config: ThemeConfig) -> Theme {
 }
 
 /// Sends `change` as its sparse update and hands the model's reply to
-/// `dispatch`: [`Action::Saved`] with the server's preferences, or
+/// `dispatch`: [`Action::Saved`] with the server's settings, or
 /// [`Action::SaveFailed`] once `authed` has reported the failure and raised
 /// its error toast. Without a session the reply is the pick kept on the
 /// device.
@@ -44,27 +44,27 @@ pub fn save(
     authed: Authed,
     session: Signal<Option<Session>>,
     ticket: SaveTicket,
-    change: PreferenceChange,
+    change: SettingChange,
     dispatch: impl Fn(Action) + 'static,
 ) {
     if session.peek().is_none() {
         dispatch(Action::Saved {
             ticket,
-            preferences: Box::new(change.kept_on_device()),
+            settings: Box::new(change.kept_on_device()),
         });
         return;
     }
-    let request = HttpUpdatePreferences::from(change);
+    let request = HttpUpdateSettings::from(change);
     spawn(async move {
         let reply = authed
             .try_run("update_preferences", |c, s| async move {
-                c.update_preferences(request, &s).await
+                c.update_settings(request, &s).await
             })
             .await;
         dispatch(match reply {
-            Ok(preferences) => Action::Saved {
+            Ok(settings) => Action::Saved {
                 ticket,
-                preferences: Box::new(preferences),
+                settings: Box::new(settings),
             },
             Err(_) => Action::SaveFailed { ticket },
         });

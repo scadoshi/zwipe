@@ -11,15 +11,15 @@
 //! guard and change nothing until the server answers.
 
 use zwipe_core::domain::card::scryfall_data::universe;
-use zwipe_core::domain::user::preferences::{PipColor, UserPreferences};
-use zwipe_core::http::contracts::user::HttpUpdatePreferences;
+use zwipe_core::domain::user::settings::{PipColor, UserSettings};
+use zwipe_core::http::contracts::user::HttpUpdateSettings;
 
 use crate::generation::{Generation, Ticket};
 use crate::toast::{Toast, ToastKind};
 
-/// A change to one preference, as Config sends it.
+/// A change to one setting, as Config sends it.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum PreferenceChange {
+pub enum SettingChange {
     /// A theme kept in the Themes sheet, in the mode it was picked in.
     Theme {
         /// The theme's slug.
@@ -42,52 +42,50 @@ pub enum PreferenceChange {
     Exceptions(Vec<String>),
 }
 
-impl PreferenceChange {
-    /// Writes the change into `preferences`, the way the screen shows it
+impl SettingChange {
+    /// Writes the change into `settings`, the way the screen shows it
     /// before the server answers.
-    pub fn apply(&self, preferences: &mut UserPreferences) {
+    pub fn apply(&self, settings: &mut UserSettings) {
         match self {
             Self::Theme { theme, dark_mode } | Self::DarkMode { theme, dark_mode } => {
-                preferences.theme.clone_from(theme);
-                preferences.dark_mode = *dark_mode;
+                settings.theme.clone_from(theme);
+                settings.dark_mode = *dark_mode;
             }
-            Self::Pips(style) => preferences.pip_style = *style,
-            Self::HideUniversesBeyond(hide) => preferences.exclude_universes_beyond = *hide,
-            Self::Exceptions(slugs) => preferences.universes_beyond_exceptions.clone_from(slugs),
+            Self::Pips(style) => settings.pip_style = *style,
+            Self::HideUniversesBeyond(hide) => settings.exclude_universes_beyond = *hide,
+            Self::Exceptions(slugs) => settings.universes_beyond_exceptions.clone_from(slugs),
         }
     }
 
-    /// The preferences a pick made signed out stands for: the defaults with
+    /// The settings a pick made signed out stands for: the defaults with
     /// this change applied. A client keeps them on the device and answers
     /// its own save with them, so the screen settles the way a server reply
-    /// settles it; a profile's preferences take over at login.
+    /// settles it; a profile's settings take over at login.
     #[must_use]
-    pub fn kept_on_device(&self) -> UserPreferences {
-        let mut preferences = UserPreferences::default();
-        self.apply(&mut preferences);
-        preferences
+    pub fn kept_on_device(&self) -> UserSettings {
+        let mut settings = UserSettings::default();
+        self.apply(&mut settings);
+        settings
     }
 
-    /// The same preference as `preferences` hold it now, so applying it puts
+    /// The same setting as `settings` hold it now, so applying it puts
     /// back what this change replaces. Take it before [`apply`](Self::apply).
     #[must_use]
-    pub fn undo(&self, preferences: &UserPreferences) -> Self {
+    pub fn undo(&self, settings: &UserSettings) -> Self {
         match self {
             Self::Theme { .. } => Self::Theme {
-                theme: preferences.theme.clone(),
-                dark_mode: preferences.dark_mode,
+                theme: settings.theme.clone(),
+                dark_mode: settings.dark_mode,
             },
             Self::DarkMode { .. } => Self::DarkMode {
-                theme: preferences.theme.clone(),
-                dark_mode: preferences.dark_mode,
+                theme: settings.theme.clone(),
+                dark_mode: settings.dark_mode,
             },
-            Self::Pips(_) => Self::Pips(preferences.pip_style),
+            Self::Pips(_) => Self::Pips(settings.pip_style),
             Self::HideUniversesBeyond(_) => {
-                Self::HideUniversesBeyond(preferences.exclude_universes_beyond)
+                Self::HideUniversesBeyond(settings.exclude_universes_beyond)
             }
-            Self::Exceptions(_) => {
-                Self::Exceptions(preferences.universes_beyond_exceptions.clone())
-            }
+            Self::Exceptions(_) => Self::Exceptions(settings.universes_beyond_exceptions.clone()),
         }
     }
 
@@ -104,9 +102,9 @@ impl PreferenceChange {
     }
 
     /// The words the app says once the server takes the change, read from
-    /// `saved`, the preferences it answered with.
+    /// `saved`, the settings it answered with.
     #[must_use]
-    pub fn saved_message(&self, saved: &UserPreferences) -> &'static str {
+    pub fn saved_message(&self, saved: &UserSettings) -> &'static str {
         match self {
             Self::Theme { .. } => "Theme saved",
             Self::DarkMode { .. } if saved.dark_mode => "Dark mode on",
@@ -129,7 +127,7 @@ impl PreferenceChange {
     /// [`NORMAL`](crate::toast::NORMAL), since it changes something Config
     /// cannot show.
     #[must_use]
-    pub fn saved_toast(&self, saved: &UserPreferences) -> Toast {
+    pub fn saved_toast(&self, saved: &UserSettings) -> Toast {
         let message = self.saved_message(saved);
         match self.toggle() {
             Some(_) => Toast::normal(ToastKind::Success, message),
@@ -138,10 +136,10 @@ impl PreferenceChange {
     }
 }
 
-impl From<PreferenceChange> for HttpUpdatePreferences {
+impl From<SettingChange> for HttpUpdateSettings {
     /// The sparse update that sends only what the change sets. A theme and
     /// a mode always go together.
-    fn from(change: PreferenceChange) -> Self {
+    fn from(change: SettingChange) -> Self {
         let mut request = Self {
             theme: None,
             dark_mode: None,
@@ -150,16 +148,16 @@ impl From<PreferenceChange> for HttpUpdatePreferences {
             pip_style: None,
         };
         match change {
-            PreferenceChange::Theme { theme, dark_mode }
-            | PreferenceChange::DarkMode { theme, dark_mode } => {
+            SettingChange::Theme { theme, dark_mode }
+            | SettingChange::DarkMode { theme, dark_mode } => {
                 request.theme = Some(theme);
                 request.dark_mode = Some(dark_mode);
             }
-            PreferenceChange::Pips(style) => request.pip_style = Some(style),
-            PreferenceChange::HideUniversesBeyond(hide) => {
+            SettingChange::Pips(style) => request.pip_style = Some(style),
+            SettingChange::HideUniversesBeyond(hide) => {
                 request.exclude_universes_beyond = Some(hide);
             }
-            PreferenceChange::Exceptions(slugs) => {
+            SettingChange::Exceptions(slugs) => {
                 request.universes_beyond_exceptions = Some(slugs);
             }
         }
@@ -258,8 +256,8 @@ mod tests {
     use super::*;
     use crate::toast::{NORMAL, QUICK};
 
-    fn preferences() -> UserPreferences {
-        UserPreferences {
+    fn settings() -> UserSettings {
+        UserSettings {
             theme: "gruvbox".to_owned(),
             dark_mode: true,
             exclude_universes_beyond: false,
@@ -272,19 +270,19 @@ mod tests {
         items.iter().map(ToString::to_string).collect()
     }
 
-    fn every_change() -> Vec<PreferenceChange> {
+    fn every_change() -> Vec<SettingChange> {
         vec![
-            PreferenceChange::Theme {
+            SettingChange::Theme {
                 theme: "dracula".to_owned(),
                 dark_mode: false,
             },
-            PreferenceChange::DarkMode {
+            SettingChange::DarkMode {
                 theme: "gruvbox".to_owned(),
                 dark_mode: false,
             },
-            PreferenceChange::Pips(PipColor::Classic),
-            PreferenceChange::HideUniversesBeyond(true),
-            PreferenceChange::Exceptions(slugs(&["b", "c"])),
+            SettingChange::Pips(PipColor::Classic),
+            SettingChange::HideUniversesBeyond(true),
+            SettingChange::Exceptions(slugs(&["b", "c"])),
         ]
     }
 
@@ -335,7 +333,7 @@ mod tests {
     #[test]
     fn undo_puts_back_what_the_change_replaced() {
         for change in every_change() {
-            let before = preferences();
+            let before = settings();
             let undo = change.undo(&before);
             let mut shown = before.clone();
             change.apply(&mut shown);
@@ -347,10 +345,8 @@ mod tests {
 
     #[test]
     fn only_the_three_buttons_are_toggles() {
-        let toggles: Vec<Option<Toggle>> = every_change()
-            .iter()
-            .map(PreferenceChange::toggle)
-            .collect();
+        let toggles: Vec<Option<Toggle>> =
+            every_change().iter().map(SettingChange::toggle).collect();
         assert_eq!(
             toggles,
             [
@@ -365,27 +361,27 @@ mod tests {
 
     #[test]
     fn each_saved_toast_has_the_apps_words_kind_and_band() {
-        let mut on = preferences();
+        let mut on = settings();
         on.dark_mode = true;
         on.pip_style = PipColor::Theme;
         on.exclude_universes_beyond = true;
-        let mut off = preferences();
+        let mut off = settings();
         off.dark_mode = false;
         off.pip_style = PipColor::Classic;
         off.exclude_universes_beyond = false;
 
-        let theme = PreferenceChange::Theme {
+        let theme = SettingChange::Theme {
             theme: "dracula".to_owned(),
             dark_mode: true,
         };
-        let dark = PreferenceChange::DarkMode {
+        let dark = SettingChange::DarkMode {
             theme: "gruvbox".to_owned(),
             dark_mode: true,
         };
-        let pips = PreferenceChange::Pips(PipColor::Theme);
-        let universes = PreferenceChange::HideUniversesBeyond(true);
-        let exceptions = PreferenceChange::Exceptions(Vec::new());
-        let cases: [(&PreferenceChange, &UserPreferences, &str, Duration); 9] = [
+        let pips = SettingChange::Pips(PipColor::Theme);
+        let universes = SettingChange::HideUniversesBeyond(true);
+        let exceptions = SettingChange::Exceptions(Vec::new());
+        let cases: [(&SettingChange, &UserSettings, &str, Duration); 9] = [
             (&theme, &on, "Theme saved", QUICK),
             (&dark, &on, "Dark mode on", NORMAL),
             (&dark, &off, "Dark mode off", NORMAL),
@@ -407,9 +403,9 @@ mod tests {
 
     #[test]
     fn the_saved_words_follow_the_reply_not_the_request() {
-        let mut saved = preferences();
+        let mut saved = settings();
         saved.dark_mode = false;
-        let asked_for_dark = PreferenceChange::DarkMode {
+        let asked_for_dark = SettingChange::DarkMode {
             theme: "gruvbox".to_owned(),
             dark_mode: true,
         };
@@ -430,7 +426,7 @@ mod tests {
 
     #[test]
     fn each_change_sends_only_its_own_fields() {
-        let request = HttpUpdatePreferences::from(PreferenceChange::DarkMode {
+        let request = HttpUpdateSettings::from(SettingChange::DarkMode {
             theme: "gruvbox".to_owned(),
             dark_mode: false,
         });
@@ -440,7 +436,7 @@ mod tests {
         assert_eq!(request.universes_beyond_exceptions, None);
         assert_eq!(request.pip_style, None);
 
-        let request = HttpUpdatePreferences::from(PreferenceChange::Theme {
+        let request = HttpUpdateSettings::from(SettingChange::Theme {
             theme: "dracula".to_owned(),
             dark_mode: true,
         });
@@ -448,19 +444,19 @@ mod tests {
         assert_eq!(request.dark_mode, Some(true));
         assert_eq!(request.pip_style, None);
 
-        let request = HttpUpdatePreferences::from(PreferenceChange::Pips(PipColor::Classic));
+        let request = HttpUpdateSettings::from(SettingChange::Pips(PipColor::Classic));
         assert_eq!(request.pip_style, Some(PipColor::Classic));
         assert_eq!((request.theme, request.dark_mode), (None, None));
         assert_eq!(request.exclude_universes_beyond, None);
         assert_eq!(request.universes_beyond_exceptions, None);
 
-        let request = HttpUpdatePreferences::from(PreferenceChange::HideUniversesBeyond(true));
+        let request = HttpUpdateSettings::from(SettingChange::HideUniversesBeyond(true));
         assert_eq!(request.exclude_universes_beyond, Some(true));
         assert_eq!((request.theme, request.dark_mode), (None, None));
         assert_eq!(request.universes_beyond_exceptions, None);
         assert_eq!(request.pip_style, None);
 
-        let request = HttpUpdatePreferences::from(PreferenceChange::Exceptions(slugs(&["b"])));
+        let request = HttpUpdateSettings::from(SettingChange::Exceptions(slugs(&["b"])));
         assert_eq!(request.universes_beyond_exceptions, Some(slugs(&["b"])));
         assert_eq!((request.theme, request.dark_mode), (None, None));
         assert_eq!(request.exclude_universes_beyond, None);

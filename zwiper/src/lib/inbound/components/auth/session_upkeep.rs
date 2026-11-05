@@ -13,7 +13,7 @@ use tokio::time;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
-use zwipe_core::domain::user::preferences::PipColor;
+use zwipe_core::domain::user::settings::PipColor;
 use zwipe_core::http::contracts::metrics::AnonymousEventKind;
 use zwipe_core::version;
 pub use zwipe_ui::changelog::ChangelogCache;
@@ -278,31 +278,31 @@ fn use_server_catalogs(session: Signal<Option<Session>>, client: Signal<ZwipeCli
 
 /// Provides the theme and pip style, seeded from the stored session.
 fn use_theme_and_pips(session: Signal<Option<Session>>) {
-    // Theme: a live session's preferences win (freshest for this account),
+    // Theme: a live session's settings win (freshest for this account),
     // else the last-used theme cached locally (so pre-auth screens render in it
     // even logged out / after a device-to-device change), else the default.
     let theme = use_signal(|| {
         session
             .peek()
             .as_ref()
-            .map(|s| components::theme_from_preferences(&s.preferences))
+            .map(|s| components::theme_from_settings(&s.settings))
             .or_else(ThemeConfig::infallible_load)
             .unwrap_or_default()
     });
     use_context_provider(|| theme);
 
-    // Persist every theme change at one point (login, prefs update, picker), so
+    // Persist every theme change at one point (login, settings update, picker), so
     // the choice survives logout and themes the next launch's pre-auth screens.
     use_effect(move || theme.read().infallible_save());
 
-    // Pip style: the stored session's preferences, which the Config toggle
-    // keeps current, else the default. Login and the preference fetches set
+    // Pip style: the stored session's settings, which the Config toggle
+    // keeps current, else the default. Login and the setting fetches set
     // it from the server.
     let pip_style: Signal<PipColor> = use_signal(|| {
         session
             .peek()
             .as_ref()
-            .map(|s| s.preferences.pip_style)
+            .map(|s| s.settings.pip_style)
             .unwrap_or_default()
     });
     use_context_provider(|| pip_style);

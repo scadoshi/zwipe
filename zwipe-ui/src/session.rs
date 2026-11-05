@@ -72,7 +72,7 @@ mod tests {
             },
             "access_token": {"value": "aGVhZA.cGF5bG9hZA.c2ln", "expires_at": now.checked_add_signed(access_in).unwrap()},
             "refresh_token": {"value": "r", "expires_at": now.checked_add_signed(refresh_in).unwrap()},
-            "preferences": zwipe_core::domain::user::UserPreferences::default(),
+            "settings": zwipe_core::domain::user::UserSettings::default(),
         }))
         .unwrap()
     }

@@ -1,8 +1,8 @@
 //! Config: the theme's Dark/Light button and the Themes sheet, the pip style, Universes Beyond and its Exceptions sheet.
 //!
-//! The theme and the pip style are the client's live values, since every screen draws in them and the Themes sheet previews over them. The client hands them in on the action that changes them, and the model says what to draw through [`Effect::ShowTheme`], [`Effect::ShowPips`] and their saved forms. Universes Beyond and its exceptions are the model's: they wait for the preferences to load, and stay off for the visit if the load fails.
+//! The theme and the pip style are the client's live values, since every screen draws in them and the Themes sheet previews over them. The client hands them in on the action that changes them, and the model says what to draw through [`Effect::ShowTheme`], [`Effect::ShowPips`] and their saved forms. Universes Beyond and its exceptions are the model's: they wait for the settings to load, and stay off for the visit if the load fails.
 //!
-//! Dark/Light, pips and Universes Beyond are optimistic toggles. Each tap shows its new value at once and takes a ticket from that toggle's own generation in [`Toggles`]; when the reply lands, [`preferences::settle`] keeps the server's value, puts back the value from before that tap when the request failed, or ignores a reply a newer tap has overtaken. The two sheets save without the guard, and every one of their replies lands. Which sheet is up stays in the client: the model only says when to open or close one.
+//! Dark/Light, pips and Universes Beyond are optimistic toggles. Each tap shows its new value at once and takes a ticket from that toggle's own generation in [`Toggles`]; when the reply lands, [`settings::settle`] keeps the server's value, puts back the value from before that tap when the request failed, or ignores a reply a newer tap has overtaken. The two sheets save without the guard, and every one of their replies lands. Which sheet is up stays in the client: the model only says when to open or close one.
 
 #[cfg(test)]
 mod tests;
@@ -10,11 +10,11 @@ mod tests;
 use std::mem;
 
 use zwipe_core::domain::user::hints::OneTimeHint;
-use zwipe_core::domain::user::preferences::{PipColor, UserPreferences};
+use zwipe_core::domain::user::settings::{PipColor, UserSettings};
 
 use crate::filter::fields;
 use crate::generation::{Generation, Ticket};
-use crate::preferences::{self, PreferenceChange, Toggle, Toggles};
+use crate::settings::{self, SettingChange, Toggle, Toggles};
 use crate::toast::Toast;
 
 /// The screen's title.
@@ -93,14 +93,14 @@ pub struct Theme {
     pub dark_mode: bool,
 }
 
-/// Where the preferences fetch stands. Only Universes Beyond and its exceptions wait on it.
+/// Where the settings fetch stands. Only Universes Beyond and its exceptions wait on it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Status {
     /// The fetch is out: the Universes Beyond buttons are off.
     Loading,
     /// The fetch failed: the Universes Beyond buttons stay off for the visit.
     Failed,
-    /// The preferences arrived: the Universes Beyond button is on, and Exceptions while they are hidden.
+    /// The settings arrived: the Universes Beyond button is on, and Exceptions while they are hidden.
     Loaded,
 }
 
@@ -122,18 +122,18 @@ enum Slot {
 /// What a user does on Config, and each reply the client hands back.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Action {
-    /// Offers the screen's hint and fetches the preferences, as the screen does when it opens. What has loaded stays shown.
+    /// Offers the screen's hint and fetches the settings, as the screen does when it opens. What has loaded stays shown.
     Load,
-    /// The preferences arrived for the fetch holding `ticket`.
+    /// The settings arrived for the fetch holding `ticket`.
     Loaded {
-        /// The ticket from the [`Effect::FetchPreferences`] this answers.
+        /// The ticket from the [`Effect::FetchSettings`] this answers.
         ticket: Ticket,
-        /// The account's preferences.
-        preferences: Box<UserPreferences>,
+        /// The account's settings.
+        settings: Box<UserSettings>,
     },
     /// The fetch holding `ticket` failed. The client has already reported it; the app raises no toast for it.
     Failed {
-        /// The ticket from the [`Effect::FetchPreferences`] this answers.
+        /// The ticket from the [`Effect::FetchSettings`] this answers.
         ticket: Ticket,
     },
     /// Presses the Theme row's Dark/Light button.
@@ -155,9 +155,9 @@ pub enum Action {
         /// The pip style the client draws in now.
         shown: PipColor,
     },
-    /// Presses the Universes Beyond button. Does nothing until the preferences load.
+    /// Presses the Universes Beyond button. Does nothing until the settings load.
     ToggleUniversesBeyond,
-    /// Presses the Exceptions row's Change, seeding the draft from the saved list. Does nothing unless the preferences loaded and Universes Beyond is hidden.
+    /// Presses the Exceptions row's Change, seeding the draft from the saved list. Does nothing unless the settings loaded and Universes Beyond is hidden.
     OpenExceptions,
     /// Picks or unpicks the franchise with this slug in the draft.
     ToggleException(String),
@@ -167,12 +167,12 @@ pub enum Action {
     SaveExceptions,
     /// Presses the Exceptions sheet's Back or its backdrop: closes it and drops the draft.
     DiscardExceptions,
-    /// The save holding `ticket` went through, and the server answered with `preferences`.
+    /// The save holding `ticket` went through, and the server answered with `settings`.
     Saved {
         /// The ticket from the [`Effect::Save`] this answers.
         ticket: SaveTicket,
-        /// The account's preferences as the server holds them now.
-        preferences: Box<UserPreferences>,
+        /// The account's settings as the server holds them now.
+        settings: Box<UserSettings>,
     },
     /// The save holding `ticket` failed. The client has already reported it and raised its error toast.
     SaveFailed {
@@ -188,18 +188,18 @@ pub enum Action {
 pub enum Effect {
     /// Opens this one-time hint if the user hasn't seen it, and records it as seen.
     OfferHint(OneTimeHint),
-    /// Fetches the preferences and answers with [`Action::Loaded`] or [`Action::Failed`] carrying this ticket.
-    FetchPreferences(Ticket),
+    /// Fetches the settings and answers with [`Action::Loaded`] or [`Action::Failed`] carrying this ticket.
+    FetchSettings(Ticket),
     /// Sends the change as its sparse update and answers with [`Action::Saved`] or [`Action::SaveFailed`] carrying this ticket.
     Save {
         /// The ticket to hand back.
         ticket: SaveTicket,
         /// What to send.
-        change: PreferenceChange,
+        change: SettingChange,
     },
     /// Draws the client in this theme: a Dark/Light tap's new mode, or the mode from before a tap whose save failed.
     ShowTheme(Theme),
-    /// Draws pips in this style: a tap's new style, the loaded preference, or the style from before a tap whose save failed.
+    /// Draws pips in this style: a tap's new style, the loaded setting, or the style from before a tap whose save failed.
     ShowPips(PipColor),
     /// The server holds this theme: draw in it, resolved the way the client reads a theme from the account.
     ThemeSaved(Theme),
@@ -215,7 +215,7 @@ pub enum Effect {
     Toast(Toast),
 }
 
-/// The preferences fetch as the last reply left it.
+/// The settings fetch as the last reply left it.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
 enum Load {
     #[default]
@@ -236,9 +236,9 @@ enum HintOffer {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct Waiting {
     ticket: SaveTicket,
-    change: PreferenceChange,
-    /// The same preference as it stood before the change, put back if a toggle's save fails. A sheet's save never puts anything back and keeps its own change here.
-    undo: PreferenceChange,
+    change: SettingChange,
+    /// The same setting as it stood before the change, put back if a toggle's save fails. A sheet's save never puts anything back and keeps its own change here.
+    undo: SettingChange,
 }
 
 /// Config for one visit. Starts loading with Universes Beyond shown and no exceptions; send [`Action::Load`] to start the fetch.
@@ -273,10 +273,7 @@ impl State {
     pub fn update(&mut self, action: Action) -> Vec<Effect> {
         match action {
             Action::Load => self.load(),
-            Action::Loaded {
-                ticket,
-                preferences,
-            } => self.loaded(ticket, *preferences),
+            Action::Loaded { ticket, settings } => self.loaded(ticket, *settings),
             Action::Failed { ticket } => {
                 if self.generation.is_current(ticket) && self.load == Load::Loading {
                     self.load = Load::Failed;
@@ -286,7 +283,7 @@ impl State {
             Action::ToggleDarkMode { shown } => self.toggle_dark_mode(shown),
             Action::OpenThemes => vec![Effect::OpenSheet(Sheet::Themes)],
             Action::KeepTheme(theme) => {
-                let change = PreferenceChange::Theme {
+                let change = SettingChange::Theme {
                     theme: theme.name,
                     dark_mode: theme.dark_mode,
                 };
@@ -298,7 +295,7 @@ impl State {
             Action::DiscardTheme { picked } => {
                 let mut effects = vec![Effect::CloseSheet(Sheet::Themes)];
                 if picked {
-                    effects.push(Effect::Toast(preferences::theme_unchanged()));
+                    effects.push(Effect::Toast(settings::theme_unchanged()));
                 }
                 effects
             }
@@ -308,8 +305,8 @@ impl State {
                     Effect::ShowPips(next),
                     self.send(
                         Slot::Toggle(Toggle::Pips),
-                        PreferenceChange::Pips(next),
-                        PreferenceChange::Pips(shown),
+                        SettingChange::Pips(next),
+                        SettingChange::Pips(shown),
                     ),
                 ]
             }
@@ -329,16 +326,13 @@ impl State {
             }
             Action::SaveExceptions => self.save_exceptions(),
             Action::DiscardExceptions => self.discard_exceptions(),
-            Action::Saved {
-                ticket,
-                preferences,
-            } => self.settle(ticket, Some(&preferences)),
+            Action::Saved { ticket, settings } => self.settle(ticket, Some(&settings)),
             Action::SaveFailed { ticket } => self.settle(ticket, None),
             Action::Back => vec![Effect::Navigate(Destination::Previous)],
         }
     }
 
-    /// Where the preferences fetch stands.
+    /// Where the settings fetch stands.
     #[must_use]
     pub fn status(&self) -> Status {
         match self.load {
@@ -348,7 +342,7 @@ impl State {
         }
     }
 
-    /// Whether the Universes Beyond button can be pressed: once the preferences loaded.
+    /// Whether the Universes Beyond button can be pressed: once the settings loaded.
     #[must_use]
     pub fn universes_beyond_enabled(&self) -> bool {
         self.load == Load::Loaded
@@ -370,7 +364,7 @@ impl State {
         }
     }
 
-    /// Whether the Exceptions row's Change can be pressed: once the preferences loaded, while Universes Beyond is hidden.
+    /// Whether the Exceptions row's Change can be pressed: once the settings loaded, while Universes Beyond is hidden.
     #[must_use]
     pub fn exceptions_enabled(&self) -> bool {
         self.universes_beyond_enabled() && self.hide_universes_beyond
@@ -397,7 +391,7 @@ impl State {
     /// The Exceptions row's chips: the saved franchises by name, alphabetical, unknown slugs dropped.
     #[must_use]
     pub fn exception_names(&self) -> Vec<&'static str> {
-        preferences::exception_names(&self.exceptions)
+        settings::exception_names(&self.exceptions)
     }
 
     /// Whether the Exceptions sheet is open, so its draft takes edits.
@@ -434,19 +428,19 @@ impl State {
             self.hint = HintOffer::Offered;
             effects.push(Effect::OfferHint(OneTimeHint::Config));
         }
-        effects.push(Effect::FetchPreferences(self.generation.next_ticket()));
+        effects.push(Effect::FetchSettings(self.generation.next_ticket()));
         effects
     }
 
-    /// Lands the preferences fetched under `ticket`, unless a newer fetch has replaced it.
-    fn loaded(&mut self, ticket: Ticket, preferences: UserPreferences) -> Vec<Effect> {
+    /// Lands the settings fetched under `ticket`, unless a newer fetch has replaced it.
+    fn loaded(&mut self, ticket: Ticket, settings: UserSettings) -> Vec<Effect> {
         if !self.generation.is_current(ticket) {
             return Vec::new();
         }
         self.load = Load::Loaded;
-        self.hide_universes_beyond = preferences.exclude_universes_beyond;
-        self.exceptions = preferences.universes_beyond_exceptions;
-        vec![Effect::ShowPips(preferences.pip_style)]
+        self.hide_universes_beyond = settings.exclude_universes_beyond;
+        self.exceptions = settings.universes_beyond_exceptions;
+        vec![Effect::ShowPips(settings.pip_style)]
     }
 
     /// Shows `shown` in the other mode at once and saves it.
@@ -455,11 +449,11 @@ impl State {
             name: shown.name.clone(),
             dark_mode: !shown.dark_mode,
         };
-        let change = PreferenceChange::DarkMode {
+        let change = SettingChange::DarkMode {
             theme: next.name.clone(),
             dark_mode: next.dark_mode,
         };
-        let undo = PreferenceChange::DarkMode {
+        let undo = SettingChange::DarkMode {
             theme: shown.name,
             dark_mode: shown.dark_mode,
         };
@@ -469,7 +463,7 @@ impl State {
         ]
     }
 
-    /// Flips Universes Beyond at once and saves it, once the preferences loaded.
+    /// Flips Universes Beyond at once and saves it, once the settings loaded.
     fn toggle_universes_beyond(&mut self) -> Vec<Effect> {
         if !self.universes_beyond_enabled() {
             return Vec::new();
@@ -478,8 +472,8 @@ impl State {
         self.hide_universes_beyond = !shown;
         vec![self.send(
             Slot::Toggle(Toggle::UniversesBeyond),
-            PreferenceChange::HideUniversesBeyond(!shown),
-            PreferenceChange::HideUniversesBeyond(shown),
+            SettingChange::HideUniversesBeyond(!shown),
+            SettingChange::HideUniversesBeyond(shown),
         )]
     }
 
@@ -488,7 +482,7 @@ impl State {
         if !mem::replace(&mut self.editing_exceptions, false) {
             return Vec::new();
         }
-        let change = PreferenceChange::Exceptions(self.draft.clone());
+        let change = SettingChange::Exceptions(self.draft.clone());
         vec![
             Effect::CloseSheet(Sheet::Exceptions),
             self.send(Slot::Exceptions, change.clone(), change),
@@ -502,7 +496,7 @@ impl State {
         }
         let mut effects = Vec::new();
         if !self.draft_unchanged() {
-            effects.push(Effect::Toast(preferences::exceptions_unchanged()));
+            effects.push(Effect::Toast(settings::exceptions_unchanged()));
         }
         effects.push(Effect::CloseSheet(Sheet::Exceptions));
         effects
@@ -524,7 +518,7 @@ impl State {
     }
 
     /// Takes a ticket for a save from `slot`, keeps the change and its undo for the reply, and returns the effect that sends it.
-    fn send(&mut self, slot: Slot, change: PreferenceChange, undo: PreferenceChange) -> Effect {
+    fn send(&mut self, slot: Slot, change: SettingChange, undo: SettingChange) -> Effect {
         let ticket = SaveTicket {
             slot,
             ticket: match slot {
@@ -541,18 +535,18 @@ impl State {
         Effect::Save { ticket, change }
     }
 
-    /// Lands the reply to the save holding `ticket`: `saved` is the server's preferences, or `None` when the save failed.
-    fn settle(&mut self, ticket: SaveTicket, saved: Option<&UserPreferences>) -> Vec<Effect> {
+    /// Lands the reply to the save holding `ticket`: `saved` is the server's settings, or `None` when the save failed.
+    fn settle(&mut self, ticket: SaveTicket, saved: Option<&UserSettings>) -> Vec<Effect> {
         let Some(at) = self.waiting.iter().position(|w| w.ticket == ticket) else {
             return Vec::new();
         };
         let waiting = self.waiting.remove(at);
         // `undo` read from the reply is the change as the server holds it.
-        let held = saved.map(|preferences| waiting.change.undo(preferences));
+        let held = saved.map(|settings| waiting.change.undo(settings));
         let shown = match ticket.slot {
             Slot::Toggle(toggle) => {
                 let generation = self.toggles.generation(toggle);
-                preferences::settle(generation, ticket.ticket, held, waiting.undo)
+                settings::settle(generation, ticket.ticket, held, waiting.undo)
             }
             // A sheet's save changes nothing on failure, and every reply lands.
             Slot::Themes | Slot::Exceptions => held,
@@ -564,17 +558,17 @@ impl State {
             .show(shown, /* saved */ saved.is_some())
             .into_iter()
             .collect();
-        if let Some(preferences) = saved {
-            effects.push(Effect::Toast(waiting.change.saved_toast(preferences)));
+        if let Some(settings) = saved {
+            effects.push(Effect::Toast(waiting.change.saved_toast(settings)));
         }
         effects
     }
 
-    /// Puts `change` on screen: the model's own preferences change here, the client's come back as an effect. `saved` says the server holds it.
-    fn show(&mut self, change: PreferenceChange, saved: bool) -> Option<Effect> {
+    /// Puts `change` on screen: the model's own settings change here, the client's come back as an effect. `saved` says the server holds it.
+    fn show(&mut self, change: SettingChange, saved: bool) -> Option<Effect> {
         match change {
-            PreferenceChange::Theme { theme, dark_mode }
-            | PreferenceChange::DarkMode { theme, dark_mode } => {
+            SettingChange::Theme { theme, dark_mode }
+            | SettingChange::DarkMode { theme, dark_mode } => {
                 let theme = Theme {
                     name: theme,
                     dark_mode,
@@ -585,16 +579,16 @@ impl State {
                     Effect::ShowTheme(theme)
                 })
             }
-            PreferenceChange::Pips(style) => Some(if saved {
+            SettingChange::Pips(style) => Some(if saved {
                 Effect::PipsSaved(style)
             } else {
                 Effect::ShowPips(style)
             }),
-            PreferenceChange::HideUniversesBeyond(hide) => {
+            SettingChange::HideUniversesBeyond(hide) => {
                 self.hide_universes_beyond = hide;
                 None
             }
-            PreferenceChange::Exceptions(slugs) => {
+            SettingChange::Exceptions(slugs) => {
                 self.exceptions = slugs;
                 None
             }

@@ -13,7 +13,7 @@ fn session() -> Box<Session> {
             },
             "access_token": {"value": "aGVhZA.cGF5bG9hZA.c2ln", "expires_at": "2030-01-01T01:00:00Z"},
             "refresh_token": {"value": "r", "expires_at": "2030-01-15T00:00:00Z"},
-            "preferences": zwipe_core::domain::user::UserPreferences::default(),
+            "settings": zwipe_core::domain::user::UserSettings::default(),
         }))
         .unwrap(),
     )

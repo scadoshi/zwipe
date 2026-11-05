@@ -9,14 +9,14 @@
 //! classic pips show without a flash.
 
 use dioxus::prelude::*;
-use zwipe_core::domain::user::preferences::PipColor;
+use zwipe_core::domain::user::settings::PipColor;
 
 /// The `localStorage` key, beside the theme's `zwipe.theme`.
 pub(crate) const PIP_STYLE_KEY: &str = "zwipe.pips";
 
 #[cfg(target_arch = "wasm32")]
 mod imp {
-    use zwipe_core::domain::user::preferences::PipColor;
+    use zwipe_core::domain::user::settings::PipColor;
 
     fn storage() -> Option<web_sys::Storage> {
         web_sys::window()?.local_storage().ok().flatten()
@@ -38,7 +38,7 @@ mod imp {
 
 #[cfg(not(target_arch = "wasm32"))]
 mod imp {
-    use zwipe_core::domain::user::preferences::PipColor;
+    use zwipe_core::domain::user::settings::PipColor;
 
     pub(super) fn load(_key: &str) -> Option<PipColor> {
         None

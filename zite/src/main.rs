@@ -6,7 +6,7 @@ use ::components::{
     Replay, SCROLL_FADE_JS, SITE_CSS, THEMES_CSS, ThemeConfig, ThemePicker, use_theme_wipe,
 };
 use dioxus::prelude::*;
-use zwipe_core::domain::user::preferences::PipColor;
+use zwipe_core::domain::user::settings::PipColor;
 
 mod api;
 mod components;
