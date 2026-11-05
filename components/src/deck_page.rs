@@ -146,9 +146,8 @@ pub fn sections(
     out
 }
 
-/// The page: the head, the controls, the bands with the host's `pane`
-/// beside them when it has one, then the stats and the host's foot, one
-/// panel gap apart.
+/// The page: the head, the controls, the bands, then the stats and the
+/// host's foot, one panel gap apart.
 #[component]
 pub fn DeckPage(
     head: Element,
@@ -157,7 +156,6 @@ pub fn DeckPage(
     #[props(default)]
     empty: bool,
     bands: Element,
-    #[props(default)] pane: Option<Element>,
     #[props(default)] stats: Option<Element>,
     #[props(default)] foot: Option<Element>,
 ) -> Element {
@@ -170,14 +168,7 @@ pub fn DeckPage(
             if empty {
                 p { class: "deck-empty", {NO_CARDS} }
             }
-            if let Some(pane) = pane {
-                div { class: "deck-body",
-                    div { class: "deck-bands", {bands} }
-                    div { class: "deck-pane", {pane} }
-                }
-            } else {
-                div { class: "deck-bands", {bands} }
-            }
+            div { class: "deck-bands", {bands} }
             if let Some(stats) = stats {
                 div { class: "deck-stats", {stats} }
             }
