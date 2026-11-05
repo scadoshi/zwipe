@@ -56,6 +56,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Synergy on Add is a link icon beside the filter",
         "Add switches between Search and Maybe with one chip after From",
         "Add deck cards, Remove deck cards and Deck cards are titled Add, Remove and Cards",
+        "The password reset screen is titled Forgot password, as the menu names it",
         "Create and Edit deck, the pickers and the filter and printing sheets save from a checkmark at the bottom right",
         "Sheets close from an x in their corner or a drag down",
         "Floating buttons rise above the keyboard",

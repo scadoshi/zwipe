@@ -168,7 +168,7 @@ fn the_copy_matches_the_app() {
     assert_eq!(
         [TITLE, EMAIL, BACK, SEND, CREATE_PROFILE, LINK_SENT],
         [
-            "Reset password",
+            "Forgot password",
             "Email",
             "Back to login",
             "Send reset link",
