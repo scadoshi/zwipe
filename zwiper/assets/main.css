@@ -3377,33 +3377,6 @@ button {
     height: 1.5rem;
 }
 
-/* A bottom sheet's sections (the card details sheet): the .card-group surface
-   with block padding instead of a list's rows, so the text sits in a container
-   over the sheet's grid. */
-.sheet-panel {
-    --sheet-panel-pad-x: 1rem;
-    padding: 0.75rem var(--sheet-panel-pad-x);
-    background-color: var(--bg-primary);
-    border: 1px solid var(--border-secondary);
-    border-radius: 1rem;
-    box-shadow: var(--shadow-sm);
-}
-
-.sheet-panel + .sheet-panel {
-    margin-top: var(--panel-gap);
-}
-
-/* The panel supplies the inset the row detail and footer carry themselves,
-   so a rule inside the detail pulls out by the panel's padding instead. */
-.sheet-panel .card-row-detail {
-    --card-row-detail-pad-x: var(--sheet-panel-pad-x);
-    padding: 0;
-}
-
-.sheet-panel > .card-detail-footer {
-    margin: 0;
-}
-
 /* The reasons bullets fold open under their chip; the gap rides inside the
    clip so a folded block ends at the chip. */
 .card-detail-footer .collapsible-inner > .card-detail-bullets {

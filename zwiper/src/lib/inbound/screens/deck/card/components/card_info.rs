@@ -63,7 +63,7 @@ pub(crate) fn CardDetailsSheet(
     /// sheet footer (mirrors the deck-view expand-row → Printing button).
     #[props(default)]
     on_printings: Option<EventHandler<()>>,
-    /// Host content shown under the details, in the same panel.
+    /// Host content shown under the details.
     #[props(default)]
     footer: Option<Element>,
 ) -> Element {
@@ -98,24 +98,21 @@ pub(crate) fn CardDetailsSheet(
             title: name,
             closable: true,
             footer: actions,
-            // The sheet's content is the scroll container; `card-rules` only
-            // styles the text. Each panel is the card-group surface, so the
-            // sheet reads like the list behind it.
+            // The sheet's content is the scroll container and the surface;
+            // `card-rules` only styles the text.
             div { class: "card-rules",
-                div { class: "sheet-panel",
-                    CardDetails {
-                        card,
-                        show_name: false,
-                        show_cost: true,
-                        show_classification: true,
-                        show_printing: true,
-                        show_flip: false,
-                        face: Some(face),
-                        describe_tag: Some(describe_tag),
-                    }
-                    if let Some(footer) = footer {
-                        {footer}
-                    }
+                CardDetails {
+                    card,
+                    show_name: false,
+                    show_cost: true,
+                    show_classification: true,
+                    show_printing: true,
+                    show_flip: false,
+                    face: Some(face),
+                    describe_tag: Some(describe_tag),
+                }
+                if let Some(footer) = footer {
+                    {footer}
                 }
             }
         }
