@@ -220,7 +220,7 @@ Reached only from the Home hero's "Activity" button. Header title "Activity" wit
 
 ### 2.1 Hint dialog
 
-Title "Activity". Line "How you pick, read from your swipes". Bullets:
+Title "Activity". Line "Your swipes and searches over the last year, with the card roles, oracle tags and cards you skip most". Bullets:
 
 - key "Activity" + " maps your swipes and searches over the last year, and what the cards dealt to your decks came to"
 - key "Card roles" + " and " + key "Oracle tags" + " show how often you add, skip, save or remove each one"
@@ -347,7 +347,7 @@ Header title "Playstyle" with "?" (hint `HINT_SUGGESTED_COMMANDERS`).
 
 ### 3.1 Hint dialog
 
-Title "Playstyle". Line "Your colors, card roles and top oracle tags, read from every deck you own in any format". Bullets:
+Title "Playstyle". Line "Your colors, card roles and top oracle tags from every deck you own in any format". Bullets:
 
 - key "Create deck" + " begins a deck with that commander"
 - key "Maybeboard" + " saves it to your commander maybeboard"
