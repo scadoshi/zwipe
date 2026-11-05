@@ -546,7 +546,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                     }
                     span { class: "action-dock-divider" }
                     button {
-                        class: "action-dock-btn",
+                        class: "action-dock-btn web-dock-eye",
                         "aria-label": "Card details",
                         disabled: current.is_none(),
                         onclick: move |_| show_details.toggle(),

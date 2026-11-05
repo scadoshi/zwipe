@@ -1160,7 +1160,9 @@ body {
     /* The card's details sit beside it, so the dock's eye has nothing to
        open. */
     .web-swipe-select .web-dock-eye,
-    .web-swipe-select .action-dock-divider {
+    .web-swipe-select .action-dock-divider,
+    .web-screen:has(.web-cards-swipe) .web-dock-eye,
+    .web-screen:has(.web-cards-swipe) .action-dock-divider {
         display: none;
     }
 }
@@ -1563,9 +1565,11 @@ body {
 }
 
 @media (min-width: 900px) {
+    /* The card in the middle of the page, as on the phone, its details in
+       the column to its right and the left column empty to balance it. */
     .web-cards-swipe.screen-content {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        grid-template-columns: minmax(0, 1fr) minmax(20rem, 30rem) minmax(0, 1fr);
         align-items: start;
         align-content: start;
         gap: 1.5rem;
@@ -1578,6 +1582,8 @@ body {
     }
 
     .web-cards-swipe-main {
+        grid-column: 2;
+        width: 100%;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -1586,6 +1592,7 @@ body {
     }
 
     .web-swipe-details {
+        grid-column: 3;
         display: block;
         min-width: 0;
         position: sticky;
@@ -1604,17 +1611,13 @@ body {
 /* ---- Deck cards ---- */
 
 /* Below the breakpoint it is the app's list: the controls over the groups,
-   rows opening inline, no pane. */
+   rows opening inline. */
 .web-deck-cards-controls,
 .web-deck-cards-list {
     max-width: 40rem;
     width: 100%;
     padding: 0 1rem;
     box-sizing: border-box;
-}
-
-.web-deck-cards-pane {
-    display: none;
 }
 
 /* A row being dragged onto a board's header. */

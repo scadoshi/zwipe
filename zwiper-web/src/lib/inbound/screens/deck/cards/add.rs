@@ -967,7 +967,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                     }
                     span { class: "action-dock-divider" }
                     button {
-                        class: "action-dock-btn",
+                        class: "action-dock-btn web-dock-eye",
                         "aria-label": "Card details",
                         disabled: !has_current,
                         onclick: move |_| show_details.toggle(),
