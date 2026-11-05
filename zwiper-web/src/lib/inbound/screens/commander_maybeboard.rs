@@ -10,8 +10,8 @@
 use std::collections::HashSet;
 
 use components::{
-    AlertDialog, Button, ButtonVariant, Chip, DangerZoneAction, DialogAction, TOAST_LONG,
-    TOAST_QUICK,
+    ActionDock, AlertDialog, Button, ButtonVariant, Chip, DangerZoneAction, DialogAction,
+    DockFilter, TOAST_LONG, TOAST_QUICK,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -543,15 +543,13 @@ pub fn CommanderMaybeboard() -> Element {
                     }
                 }
             }
-            // Filter, the screen's action, floats at the bottom right.
-            div { class: "action-dock action-dock-right",
-                Button {
-                    variant: ButtonVariant::Action,
-                    onclick: move |_| filter_open.set(true),
-                    "Filter"
-                    if filter::shows_dot(&filter.read()) {
-                        span { class: "filter-dot" }
-                    }
+            // Filter, the screen's action, floats at the bottom right as the
+            // dock's funnel, its dot on while a filter is set.
+            ActionDock {
+                DockFilter {
+                    label: "Filter",
+                    dot: filter::shows_dot(&filter.read()),
+                    onclick: move |()| filter_open.set(true),
                 }
             }
         }
