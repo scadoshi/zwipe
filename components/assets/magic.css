@@ -1264,6 +1264,11 @@ i.ms.ms-cost.ms-gp {
     text-align: left;
 }
 
+/* The failure note keeps a chip's own width instead of the row's. */
+.changelog-filters-row > .chip-note {
+    align-self: flex-start;
+}
+
 .changelog-panels {
     display: flex;
     flex-direction: column;
