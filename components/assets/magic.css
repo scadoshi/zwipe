@@ -1883,6 +1883,30 @@ i.ms.ms-cost.ms-gp {
     gap: var(--panel-gap);
 }
 
+/* The bands with the host's pane beside them, the pane staying put as the
+   bands scroll. */
+.deck-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(20rem, 26rem);
+    gap: var(--panel-gap);
+    align-items: start;
+}
+
+.deck-pane {
+    position: sticky;
+    top: var(--deck-pane-top, 1rem);
+    max-height: calc(100vh - var(--deck-pane-top, 1rem) - 1rem);
+    overflow-y: auto;
+    min-width: 0;
+}
+
+/* A header taking a dragged row. */
+.deck-fold-head.deck-drop-over {
+    color: var(--accent-primary);
+    outline: 1px dashed var(--accent-primary);
+    outline-offset: -2px;
+}
+
 .deck-empty {
     margin: 0;
     padding: 1rem;
@@ -1993,7 +2017,13 @@ i.ms.ms-cost.ms-gp {
     }
 
     .deck-stats,
-    .deck-foot {
+    .deck-foot,
+    .deck-body {
         grid-template-columns: minmax(0, 1fr);
+    }
+
+    .deck-pane {
+        position: static;
+        max-height: none;
     }
 }

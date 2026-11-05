@@ -15,7 +15,7 @@ use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
 use zwipe_core::domain::card::search_card::card_type::CardType;
 use zwipe_core::domain::card::search_card::group_cards::GroupByOption;
-use zwipe_core::domain::deck::{Format, PowerLevel};
+use zwipe_core::domain::deck::{Board, Format, PowerLevel};
 use zwipe_ui::deck::command_zone::Slot;
 use zwipe_ui::deck_cards::Display;
 
@@ -146,8 +146,9 @@ pub fn sections(
     out
 }
 
-/// The page: the head, the controls, the bands, then the stats and the
-/// host's foot, one panel gap apart.
+/// The page: the head, the controls, the bands with the host's `pane`
+/// beside them when it has one, then the stats and the host's foot, one
+/// panel gap apart.
 #[component]
 pub fn DeckPage(
     head: Element,
@@ -156,6 +157,7 @@ pub fn DeckPage(
     #[props(default)]
     empty: bool,
     bands: Element,
+    #[props(default)] pane: Option<Element>,
     #[props(default)] stats: Option<Element>,
     #[props(default)] foot: Option<Element>,
 ) -> Element {
@@ -168,7 +170,14 @@ pub fn DeckPage(
             if empty {
                 p { class: "deck-empty", {NO_CARDS} }
             }
-            div { class: "deck-bands", {bands} }
+            if let Some(pane) = pane {
+                div { class: "deck-body",
+                    div { class: "deck-bands", {bands} }
+                    div { class: "deck-pane", {pane} }
+                }
+            } else {
+                div { class: "deck-bands", {bands} }
+            }
             if let Some(stats) = stats {
                 div { class: "deck-stats", {stats} }
             }
@@ -292,8 +301,10 @@ pub fn FeaturedCard(
     }
 }
 
-/// The three rows over the cards: Group by, Show and Filter. The host
-/// holds every signal; `show_tokens` is `None` for a list with no tokens.
+/// The rows over the cards: the host's `leading` row, Group by, the host's
+/// `boards` row, Show and Filter. The host holds every signal; `show_tokens`
+/// is `None` for a list with no tokens, and `on_change` fires when a row
+/// changes what the list shows.
 #[component]
 pub fn DeckControls(
     mut group_by: Signal<GroupByOption>,
@@ -303,18 +314,35 @@ pub fn DeckControls(
     mut name: Signal<String>,
     mut types: Signal<Vec<CardType>>,
     mut colors: Signal<Vec<Color>>,
+    #[props(default)] on_change: Option<Callback<()>>,
+    #[props(default)] leading: Option<Element>,
+    #[props(default)] boards: Option<Element>,
 ) -> Element {
+    let changed = move || {
+        if let Some(on_change) = on_change {
+            on_change.call(());
+        }
+    };
     rsx! {
+        if let Some(leading) = leading {
+            {leading}
+        }
         div { class: "chip-row",
             span { class: "stat-chip stat-chip-p1 chip-row-label", "Group by" }
             for option in GroupByOption::all() {
                 Chip {
                     key: "{option}",
                     selected: group_by() == option,
-                    onclick: move |_| group_by.set(option),
+                    onclick: move |_| {
+                        group_by.set(option);
+                        changed();
+                    },
                     "{option}"
                 }
             }
+        }
+        if let Some(boards) = boards {
+            {boards}
         }
         div { class: "chip-row",
             span { class: "stat-chip stat-chip-p1 chip-row-label", "Show" }
@@ -343,7 +371,10 @@ pub fn DeckControls(
                 r#type: "search",
                 placeholder: "Name",
                 value: "{name}",
-                oninput: move |evt| name.set(evt.value()),
+                oninput: move |evt| {
+                    name.set(evt.value());
+                    changed();
+                },
             }
             for card_type in FILTER_TYPES {
                 Chip {
@@ -358,6 +389,7 @@ pub fn DeckControls(
                             None => picked.push(card_type),
                         }
                         types.set(picked);
+                        changed();
                     },
                     "{card_type}"
                 }
@@ -375,6 +407,7 @@ pub fn DeckControls(
                             None => picked.push(color),
                         }
                         colors.set(picked);
+                        changed();
                     },
                     i { class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost" }
                 }
@@ -385,7 +418,8 @@ pub fn DeckControls(
 
 /// A folding panel: a header with the disclosure arrow, the `pips` or the
 /// `title`, and the host's `accessory` at its right end, over a body that
-/// eases shut. `folded` holds the keys of the shut panels.
+/// eases shut. `folded` holds the keys of the shut panels. With `on_drop`
+/// the header takes a dragged row.
 #[component]
 pub fn DeckFold(
     fold_key: String,
@@ -393,17 +427,38 @@ pub fn DeckFold(
     #[props(default)] pips: Option<Vec<Color>>,
     #[props(default)] accessory: Option<Element>,
     mut folded: Signal<HashSet<String>>,
+    #[props(default)] on_drop: Option<Callback<()>>,
     children: Element,
 ) -> Element {
     let shut = folded().contains(&fold_key);
+    let mut over = use_signal(|| false);
+    let head_class = if over() {
+        "deck-fold-head deck-drop-over"
+    } else {
+        "deck-fold-head"
+    };
     rsx! {
         div { class: if shut { "deck-fold folded" } else { "deck-fold" },
             div {
-                class: "deck-fold-head",
+                class: head_class,
                 onclick: move |_| {
                     let mut set = folded.write();
                     if !set.remove(&fold_key) {
                         set.insert(fold_key.clone());
+                    }
+                },
+                ondragover: move |evt| {
+                    if on_drop.is_some() {
+                        evt.prevent_default();
+                        over.set(true);
+                    }
+                },
+                ondragleave: move |_| over.set(false),
+                ondrop: move |evt| {
+                    over.set(false);
+                    if let Some(on_drop) = on_drop {
+                        evt.prevent_default();
+                        on_drop.call(());
                     }
                 },
                 span { class: "card-row-arrow", "\u{25b8}" }
@@ -433,20 +488,28 @@ pub fn DeckFold(
     }
 }
 
-/// One card group as a band the page's width: a [`DeckFold`] whose rows
-/// (`children`) flow in as many columns as fit.
+/// One card group as a band the page's width: a [`DeckFold`] over its rows
+/// (`children`). With `drop_to`, a row dragged onto its header moves to
+/// that board through `on_drop`.
 #[component]
 pub fn DeckBand(
     section: DeckSection,
     folded: Signal<HashSet<String>>,
+    #[props(default)] drop_to: Option<Board>,
+    #[props(default)] on_drop: Option<Callback<Board>>,
     children: Element,
 ) -> Element {
+    let dropped = match (drop_to, on_drop) {
+        (Some(board), Some(on_drop)) => Some(Callback::new(move |()| on_drop.call(board))),
+        _ => None,
+    };
     rsx! {
         DeckFold {
             fold_key: section.key,
             title: section.title,
             pips: section.pips,
             folded,
+            on_drop: dropped,
             div { class: "deck-band-rows", {children} }
         }
     }
