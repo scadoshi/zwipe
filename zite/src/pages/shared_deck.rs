@@ -189,7 +189,7 @@ fn SharedDeckSkeleton() -> Element {
                         }
                     }
                     div { class: "deck-head-featured",
-                        div { class: "deck-featured-card",
+                        div { class: "deck-head-card",
                             div { class: "sk sk-card" }
                         }
                     }

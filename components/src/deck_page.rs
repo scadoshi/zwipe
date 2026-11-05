@@ -256,16 +256,16 @@ pub fn FeaturedCard(
     let mut face = use_signal(|| 0usize);
     let sd_open = sd.clone();
     let role_class = if role == "MVP" {
-        "deck-featured-role deck-featured-role-mvp"
+        "deck-head-card-role deck-head-card-role-mvp"
     } else {
-        "deck-featured-role deck-featured-role-zone"
+        "deck-head-card-role deck-head-card-role-zone"
     };
     rsx! {
-        div { class: "deck-featured-card",
+        div { class: "deck-head-card",
             if has_image {
                 // The flip control stops its click, so flipping never opens.
                 div {
-                    class: "deck-featured-image",
+                    class: "deck-head-card-image",
                     onclick: move |_| {
                         if let Some(open) = on_open {
                             open.call((sd_open.clone(), face()));
@@ -284,7 +284,7 @@ pub fn FeaturedCard(
                     }
                 }
             }
-            div { class: "deck-featured-name", "{name}" }
+            div { class: "deck-head-card-name", "{name}" }
             if !role.is_empty() {
                 div { class: "{role_class}", "{role}" }
             }

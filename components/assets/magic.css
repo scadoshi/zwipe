@@ -1725,6 +1725,8 @@ i.ms.ms-cost.ms-gp {
    the danger color. Compound selector so it outranks orangui's title color. */
 .settings-list-title.danger-zone-title {
     color: var(--color-error);
+}
+
 /* ---- DeckPage (components::DeckPage) ---- */
 
 /* The page: its parts one panel gap apart, each the page's width. */
@@ -1751,7 +1753,7 @@ i.ms.ms-cost.ms-gp {
     gap: 1.25rem;
 }
 
-.deck-featured-card {
+.deck-head-card {
     flex: 1 1 0;
     min-width: 0;
     max-width: 13rem;
@@ -1760,13 +1762,13 @@ i.ms.ms-cost.ms-gp {
 
 /* The image's footprint is reserved before it loads, so the head does not
    jump when it lands. */
-.deck-featured-image {
+.deck-head-card-image {
     width: 100%;
     aspect-ratio: 5 / 7;
     cursor: pointer;
 }
 
-.deck-featured-card .deck-featured-image img {
+.deck-head-card .deck-head-card-image img {
     width: 100%;
     height: auto;
     max-width: 100%;
@@ -1775,14 +1777,14 @@ i.ms.ms-cost.ms-gp {
     box-shadow: var(--shadow-md);
 }
 
-.deck-featured-name {
+.deck-head-card-name {
     margin-top: 0.55rem;
     font-size: 0.82rem;
     font-weight: 700;
     line-height: 1.3;
 }
 
-.deck-featured-role {
+.deck-head-card-role {
     display: inline-block;
     margin-top: 0.4rem;
     padding: 0.15rem 0.5rem;
@@ -1791,13 +1793,13 @@ i.ms.ms-cost.ms-gp {
     border-radius: 0.6rem;
 }
 
-.deck-featured-role-zone {
+.deck-head-card-role-zone {
     color: var(--palette-3);
     background-color: color-mix(in srgb, var(--palette-3) 12%, var(--bg-primary));
     border-color: color-mix(in srgb, var(--palette-3) 35%, var(--bg-primary));
 }
 
-.deck-featured-role-mvp {
+.deck-head-card-role-mvp {
     color: var(--palette-6);
     background-color: color-mix(in srgb, var(--palette-6) 12%, var(--bg-primary));
     border-color: color-mix(in srgb, var(--palette-6) 35%, var(--bg-primary));
