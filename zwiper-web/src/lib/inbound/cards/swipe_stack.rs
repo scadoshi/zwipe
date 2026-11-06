@@ -401,8 +401,8 @@ pub fn use_swipe_key_handler(keys: Vec<Swipe>, on_key: Callback<Swipe>) {
 }
 
 /// Registers a key listener for one surface. Only the newest registered
-/// surface answers, and never while a text field has focus or a dialog is
-/// open.
+/// surface answers, never while a text field has focus or a dialog is open,
+/// and never to a held key's repeats.
 const SWIPE_KEYS_JS: &str = r#"
 window.__zwipeSwipe = window.__zwipeSwipe || [];
 window.__zwipeSwipe.push('__ID__');
@@ -416,6 +416,7 @@ const onKey = (e) => {
     if (document.querySelector('.alert-dialog[data-state="open"]')) return;
     if (document.querySelector('.bottom-sheet.show')) return;
     e.preventDefault();
+    if (e.repeat) return;
     dioxus.send(e.key);
 };
 window['__zwipeSwipeKey__ID__'] = onKey;
