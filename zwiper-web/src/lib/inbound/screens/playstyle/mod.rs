@@ -3,11 +3,12 @@
 //! staples.
 //!
 //! On a wide window the profile's Summary is the hero at the top of zite's
-//! page; under it the other profile sections sit open in the left column
-//! and the Show row, the suggestions and Staples in the right. Below the
-//! breakpoint it is the app's single column with the profile as one
-//! accordion, Color map open. Swipe sits in the list's header and Clear
-//! skips is the Danger zone panel after Staples.
+//! page; under it the other profile sections sit open in the left column. The
+//! Show row sits above the suggestions and Staples' rows above Staples. Below
+//! the breakpoint it is the app's single column with the profile as one
+//! accordion, Color map open, and the chip rows inside their panels. Swipe
+//! sits in the list's header and Clear skips is the Danger zone panel after
+//! Staples.
 
 mod chips;
 mod profile;
@@ -42,6 +43,7 @@ use crate::inbound::cards::otag::{OtagExamplesHost, use_otag_reveals};
 use crate::inbound::cards::swipe_select::{SuggestedPile, SwipeMode, SwipeSelect};
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
+use crate::inbound::chrome::media::use_wide;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::router::Route;
 use crate::inbound::screens::deck::skeletons::SkeletonInfoList;
@@ -83,6 +85,7 @@ pub fn Playstyle() -> Element {
     let mut profile: Signal<Option<HttpBuilderProfile>> = use_signal(|| None);
     // The hero's Summary only shows on a wide window, where it is always open.
     let summary_section: Signal<Option<String>> = use_signal(|| None);
+    let wide = use_wide();
     let mut is_loading = use_signal(|| true);
     let mut load_failed = use_signal(|| false);
     let mut reload = use_signal(|| 0u32);
@@ -257,6 +260,15 @@ pub fn Playstyle() -> Element {
     let cold_start = deck_count() == 0;
     let has_entries = !entries().is_empty();
     let rows = shown(&filtered());
+    let show_chips = rsx! {
+        ShowIdentityChips { active_identity, identities: identities(),
+            Chip {
+                selected: show_row_art(),
+                onclick: move |_| show_row_art.toggle(),
+                "Art"
+            }
+        }
+    };
     let staples: Vec<HttpStaple> = profile
         .read()
         .as_ref()
@@ -320,37 +332,35 @@ pub fn Playstyle() -> Element {
                                 }
                             }
                             div { class: "web-playstyle-list",
-                                div { class: "maybeboard-list card-group row-enter web-playstyle-cell web-playstyle-suggested",
-                                    // Swipe sits in the list's header, so it
-                                    // says what gets swiped.
-                                    div { class: "card-group-header card-group-header-with-hint",
-                                        span { "{LIST_TITLE}" }
-                                        div { class: "card-group-header-actions",
-                                            Button {
-                                                variant: ButtonVariant::Action,
-                                                onclick: move |_| swipe_open.set(true),
-                                                "Swipe"
-                                            }
-                                            InfoButton { topic: HintTopic::SuggestionList }
-                                        }
+                                div { class: "web-playstyle-cell web-playstyle-suggested",
+                                    if wide() {
+                                        div { class: "deck-controls", {show_chips.clone()} }
                                     }
-                                    div { class: "web-card-group-filters",
-                                        ShowIdentityChips { active_identity, identities: identities(),
-                                            Chip {
-                                                selected: show_row_art(),
-                                                onclick: move |_| show_row_art.toggle(),
-                                                "Art"
+                                    div { class: "maybeboard-list card-group row-enter",
+                                        // Swipe sits in the list's header, so it
+                                        // says what gets swiped.
+                                        div { class: "card-group-header card-group-header-with-hint",
+                                            span { "{LIST_TITLE}" }
+                                            div { class: "card-group-header-actions",
+                                                Button {
+                                                    variant: ButtonVariant::Action,
+                                                    onclick: move |_| swipe_open.set(true),
+                                                    "Swipe"
+                                                }
+                                                InfoButton { topic: HintTopic::SuggestionList }
                                             }
                                         }
-                                    }
-                                    if !has_entries {
-                                        div { class: "activity-total activity-total-group", "No suggestions right now" }
-                                    } else if rows.is_empty() {
-                                        div { class: "activity-total activity-total-group",
-                                            {empty_identity_line(&active_identity().unwrap_or_default())}
+                                        if !wide() {
+                                            div { class: "web-card-group-filters", {show_chips} }
                                         }
-                                    }
-                                    for suggestion in rows {
+                                        if !has_entries {
+                                            div { class: "activity-total activity-total-group", "No suggestions right now" }
+                                        } else if rows.is_empty() {
+                                            div { class: "activity-total activity-total-group",
+                                                {empty_identity_line(&active_identity().unwrap_or_default())}
+                                            }
+                                        }
+                                        for suggestion in rows {
                                             SuggestionRow {
                                                 key: "{suggestion.card.scryfall_data.id}",
                                                 suggestion,
@@ -360,10 +370,11 @@ pub fn Playstyle() -> Element {
                                                 on_maybe,
                                                 on_dismiss,
                                             }
+                                        }
                                     }
                                 }
                                 if !staples.is_empty() {
-                                    StaplesPanel { staples, deck_count: deck_count(), expanded_card }
+                                    StaplesPanel { staples, deck_count: deck_count(), expanded_card, wide: wide() }
                                 }
                                 div { class: "web-playstyle-cell web-playstyle-danger",
                                     DangerZoneAction {
