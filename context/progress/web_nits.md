@@ -21,13 +21,11 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
-| 31, 32 | thinker | `nits/thinker-31-32` (PR #160, approved) |
-| 26 | thinker | `nits/thinker-26` |
-| Oracle tag catch-up (12 tags, upkeep alert at zero blanks) | laptop | `otags/catch-up-2026-11-06` |
-| 29 | scotland | `nits/scotland-29` (PR #159, approved) |
 | 14, 15 | scotland | `nits/scotland-14-15` |
-| 5, 17 | halo | `nits/halo-5-17` (PR #158, approved) |
-| 1 | halo | `nits/halo-1` |
+| 26 | thinker | `nits/thinker-26` |
+| 27 | halo | `nits/halo-27` |
+| 12, scoping only | laptop | `plans/web-stylesheet-split` |
+| 29, 31, 32, 1, oracle tag catch-up | composer | PRs #159, #160, #162, #161 approved, merging in order |
 
 The loop is in [`../development/factory.md`](../development/factory.md).
 
@@ -84,3 +82,4 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 - 8, 16, image preview sized as zite's, dialog padding rebalanced: PR #155 into `release`.
 - 9, 10, 4, 30, panel lift, deck art hover, wide deck page dividers, nav icon hover: PR #156 into `release`.
 - 19, 25, pickers as the kit's drawer, no grid tiles inside overlays: PR #157 into `release`.
+- 5, 17, modals and drawers stay put on a wide window, Account changes as drawers: PR #158 into `release`.
