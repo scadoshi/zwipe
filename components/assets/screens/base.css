@@ -1,1 +1,606 @@
-/* main.css lines 8 to 963: the reset layer, form fonts, screen layout, action dock, deck view and list header actions, header and main menu, utilities. */
+/* The screen rules the app and the web share, from main.css's base section through its utilities. */
+
+/* ==================
+        base
+ ==================== */
+
+/* In a layer, so it sits under every unlayered rule: the kit's :where()
+   defaults (dialog padding, stat-chip padding) have zero specificity like
+   this reset, and this sheet loads after the kit's. */
+@layer reset {
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        /* Android WebView flashes its own translucent highlight on any tappable
+           element (blue on stock Android) before our styles react; iOS keeps this
+           effectively invisible by default. Kill it — the app provides its own
+           touch feedback. */
+        -webkit-tap-highlight-color: transparent;
+    }
+}
+
+/* Form elements don't inherit font-family by default — opt them in so the
+   body's JetBrains Mono propagates everywhere. */
+input,
+textarea,
+select,
+button {
+    font-family: inherit;
+}
+
+/* ==================
+  screen layout
+ ==================== */
+
+.screen {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    /* No fill: orangui's GridCells layer under the screen is the backdrop. */
+    color: var(--text-primary);
+}
+
+/* The scroll area runs from the window's top edge, under the status bar, to
+   its bottom edge, under the home indicator, so content scrolls on under
+   both instead of stopping at a hard line. The two insets are the content's
+   own padding: the status bar's on top of the kit's 1rem, the indicator's on
+   top of the room a screen asks for in --content-pad-bottom. */
+.screen > .screen-content {
+    padding-top: calc(1rem + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(var(--content-pad-bottom, 0px) + env(safe-area-inset-bottom, 0px));
+}
+
+/* Width wrapper for the shared changelog (screen-content centers full-width
+   children, so the content needs its own inset like the privacy screen). */
+.changelog-screen {
+    width: calc(100% - 4rem);
+    max-width: 40rem;
+    padding-bottom: 1rem;
+    text-align: left;
+}
+
+/* About's panels under the first, Credits and Changelog, each a panel gap
+   below what precedes it. */
+.about-panel {
+    margin-top: var(--panel-gap);
+}
+
+/* The Credits panel's body: two short paragraphs as the row text, with the
+   row's padding. Their links share the privacy policy's link rule. */
+.about-credits {
+    padding: 0.75rem 1rem;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: var(--text-primary);
+    text-align: left;
+}
+
+.about-credits p {
+    margin: 0 0 0.5rem;
+}
+
+.about-credits p:last-child {
+    margin-bottom: 0;
+}
+
+.screen-content.card-swipe {
+    overflow-y: hidden;
+    justify-content: flex-start;
+}
+
+/* ==================
+  action dock
+ ==================== */
+
+/* The kit's .action-dock is the floating bar; the screen's content ends
+   with room to scroll its last row clear of it. The room goes through
+   --content-pad-bottom rather than the kit's soft 5rem, so the screen's own
+   trailing padding adds the home indicator's inset to it, and a swipe
+   screen's bottom row asks for the same room. */
+.screen:has(> .action-dock, > .swipe-bottom-row) > .screen-content {
+    --content-pad-bottom: 5rem;
+}
+
+/* A text Button floating in a dock (the deck view's Cards, the maybeboard's
+   action): the bar is its chrome. */
+.action-dock > .btn-action {
+    min-height: 2.4rem;
+    margin: 0.3rem 0;
+    border: none;
+    box-shadow: none;
+    background: transparent;
+}
+
+/* A swipe screen's bottom row: its pile chips on the left, compact, and the
+   action dock on the right, so no chip row costs the card height up top. The
+   row floats where a dock would and lifts over the keyboard the same way. */
+.swipe-bottom-row {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 0.4rem + var(--keyboard-inset, 0px));
+    z-index: 50;
+    transition: bottom 0.25s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0 1rem;
+    box-sizing: border-box;
+    pointer-events: none;
+}
+
+.swipe-bottom-row > * {
+    pointer-events: auto;
+}
+
+.swipe-bottom-row > .action-dock {
+    position: static;
+    margin: 0;
+}
+
+.swipe-bottom-chips {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 0;
+}
+
+.swipe-bottom-chips > .chip {
+    padding: 0.3rem 0.5rem;
+    white-space: nowrap;
+}
+
+/* A sign-in form's submit: the kit's full-width button under the last
+   field, with the field's corners and padding so it reads as the form's
+   last row. The field's own bottom margin is the only gap above it. */
+.form-submit > .btn {
+    margin: 0;
+    padding: 0.75rem 1rem;
+    border-radius: 0.4rem;
+}
+
+.form-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--border-secondary);
+}
+
+/* The deck form's column: its panels at the hero's width, a gutter at each
+   side. */
+.deck-form {
+    width: calc(100% - 2rem);
+    max-width: 24rem;
+}
+
+/* ==================
+  deck view actions
+ ==================== */
+
+/* Edit, Clone and Share at the end of the profile panel's header row. */
+.deck-profile-actions {
+    display: flex;
+    gap: 0.4rem;
+}
+
+/* The header row's icons, edit, clone and share, each in a kit .btn-icon. */
+.deck-profile-actions .action-dock-icon {
+    display: block;
+}
+
+/* The retailer links under the Budget rows, behind a Buy label chip and a
+   rule. */
+.deck-buy-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 0.4rem;
+    padding: 0.75rem 0.5rem;
+    border-top: 1px solid var(--border-secondary);
+}
+
+/* Compact enough that the chip and both links share one line on a phone. */
+.deck-buy-row > .btn,
+.deck-buy-row > button {
+    padding-left: 0.6rem;
+    padding-right: 0.6rem;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+/* ==================
+  header and main menu
+ ==================== */
+
+/* The status bar strip (orangui's .screen::before) sits over the content
+   scrolling past and under the header, which rises into it in plain view,
+   fading as it goes. Once the header is gone the strip takes its rule;
+   header_hide.js marks the screen header-collapsed then. No rule where there
+   is no status bar to rule off. */
+.screen::before {
+    box-sizing: border-box;
+    border-bottom: min(1px, env(safe-area-inset-top, 0px)) solid transparent;
+    transition: border-color 0.15s ease;
+}
+
+/* The back arrow in the left corner, on a screen below a section, as
+   gentle as the hamburger it mirrors. */
+.app-nav-back {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 2.1rem;
+    height: 1.7rem;
+    padding: 0;
+    margin: 0;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 0.4rem;
+    color: var(--text-primary);
+    cursor: pointer;
+    opacity: var(--fade-corner);
+}
+
+.app-nav-back:active {
+    opacity: 1;
+}
+
+.app-nav-back-icon {
+    display: block;
+    width: 1rem;
+    height: 1rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.app-nav-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+}
+
+.app-nav-title-text {
+    font-size: 1rem;
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    margin: 0;
+    color: var(--accent-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* The menu's footer is the kit's .nav-trailing-row: the ! and, signed in,
+   the Home, Account, Settings and About icons with the Theme palette and
+   the mode's sun or moon at one end, and Log out at the other. The two
+   text buttons sit at the icons' height and fade. */
+.app-nav-support,
+.app-nav-logout {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 1.7rem;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.85rem;
+    opacity: var(--fade-corner);
+}
+
+/* ==================
+  utilities - layout
+ ==================== */
+
+.flex {
+    display: flex;
+}
+
+.flex-row {
+    display: flex;
+    flex-direction: row;
+}
+
+.flex-center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.flex-end {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+}
+
+.items-center {
+    align-items: center;
+}
+
+.flex-wrap {
+    flex-wrap: wrap;
+}
+
+/* ===================
+  utilities - spacing
+ ===================== */
+
+.gap-05 {
+    gap: 0.25rem;
+}
+
+.gap-1 {
+    gap: 0.5rem;
+}
+
+.gap-2 {
+    gap: 1rem;
+}
+
+.m-2 {
+    margin: 1rem;
+}
+
+.mb-05 {
+    margin-bottom: 0.25rem;
+}
+
+.mb-1 {
+    margin-bottom: 0.5rem;
+}
+
+.mb-2 {
+    margin-bottom: 1rem;
+}
+
+.mb-3 {
+    margin-bottom: 1.5rem;
+}
+
+.mb-4 {
+    margin-bottom: 2rem;
+}
+
+.mt-2 {
+    margin-top: 1rem;
+}
+
+/* ==================
+  utilities - sizing
+ ==================== */
+
+.min-h-50 {
+    min-height: 50vh;
+}
+
+.max-h-20 {
+    max-height: 20rem;
+}
+
+.max-h-30 {
+    max-height: 30vh;
+}
+
+/* =============================
+  utilities - borders & corners
+ =============================== */
+
+.border {
+    border: 1px solid var(--border-primary);
+}
+
+.rounded-sm {
+    border-radius: 0.5rem;
+}
+
+.rounded {
+    border-radius: 1rem;
+}
+
+.rounded-full {
+    border-radius: 50%;
+}
+
+/* ======================
+  utilities - typography
+ ======================== */
+
+.text-xs {
+    font-size: 0.75rem;
+}
+
+.text-muted {
+    color: var(--text-muted);
+}
+
+.text-sm {
+    font-size: 0.875rem;
+}
+
+.text-base {
+    font-size: 1rem;
+}
+
+.text-lg {
+    font-size: 1.125rem;
+}
+
+.text-xl {
+    font-size: 1.2rem;
+}
+
+.text-2xl {
+    font-size: 2rem;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.text-left {
+    text-align: left;
+}
+
+.font-light {
+    font-weight: 400;
+}
+
+.tracking-wide {
+    letter-spacing: 0.1em;
+}
+
+.tracking-wider {
+    letter-spacing: 0.2em;
+}
+
+/* ============================
+  utilities - colors & opacity
+ ============================== */
+
+.text-light {
+    color: var(--text-primary);
+}
+
+.text-dark {
+    color: var(--bg-primary);
+}
+
+.text-gray {
+    color: var(--text-muted);
+}
+
+.text-error {
+    color: var(--color-error);
+}
+
+.text-success {
+    color: var(--color-success);
+}
+
+.opacity-50 {
+    opacity: 0.5;
+}
+
+/* =======================
+  utilities - positioning
+ ========================= */
+
+.relative {
+    position: relative;
+}
+
+.top-0 {
+    top: 0;
+}
+
+.right-0 {
+    right: 0;
+}
+
+/* ======================
+  utilities - page header
+  ======================== */
+
+.import-controls {
+    /* Fixed flex child inside the grid-painted .screen-content: stays put
+       while .import-scroll below owns the scrolling (dictionary pattern).
+       Bottom padding stays thin so the scroll fade starts right against
+       the hint bubble. */
+    flex: 0 0 auto;
+    width: 100%;
+    max-width: 40rem;
+    padding: 0.75rem 1rem 0.25rem 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+/* The scroll container under the console: imported entries / the decklist
+   slide under the pinned rows and fade out at the edges, mirroring
+   .dict-list. */
+.import-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    -webkit-mask-image: linear-gradient(
+        to bottom,
+        transparent 0,
+        #000 1rem,
+        #000 calc(100% - 1rem),
+        transparent 100%
+    );
+    mask-image: linear-gradient(
+        to bottom,
+        transparent 0,
+        #000 1rem,
+        #000 calc(100% - 1rem),
+        transparent 100%
+    );
+}
+
+.hl-key {
+    color: var(--accent-tertiary);
+    font-weight: 500;
+}
+
+.import-hint {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 0.6rem;
+    box-shadow: var(--shadow-sm);
+    padding: 0.6rem 0.8rem;
+    margin-top: 0.5rem;
+}
+
+/* Min-version gate blocking screen — the headline pulses red. */
+/* Compound selector so it outranks orangui's .settings-list-title color. */
+.settings-list-title.update-required-title {
+    display: block;
+    color: #ff3030;
+    font-weight: bold;
+    text-transform: uppercase;
+    animation: update-required-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes update-required-pulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.35;
+    }
+}
+
+/* =======================
+  utilities - utility bar
+  ========================= */
+
+/* .action-bar (ActionBar) is in orangui's components.css. */
+
+/* =======================
+  utilities - positioning
+ ========================= */
+
+.transition {
+    transition: all 0.2s ease;
+}
+
+.transition-slow {
+    transition: all 0.3s ease;
+}
