@@ -1182,6 +1182,12 @@ i.ms.ms-cost.ms-gp {
     gap: var(--panel-gap);
 }
 
+/* The button under a capped list that reveals the next page. */
+.changelog-more {
+    align-self: center;
+    font-family: inherit;
+}
+
 .changelog-card {
     background-color: var(--bg-primary);
     border: 1px solid var(--border-secondary);

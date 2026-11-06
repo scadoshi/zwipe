@@ -205,16 +205,30 @@ pub fn ChangelogFilters(
 /// The newest-first list of the releases `selection` shows, each with its
 /// date and notes. `data` is the same copy [`ChangelogFilters`] draws.
 /// `link_versions` makes each version heading a link to its card.
+/// `page_size` caps the list at that many releases, with a "Show more"
+/// button under it that reveals that many more; a new selection starts
+/// back at one page. `None` shows every release.
 #[component]
 pub fn ChangelogReleases(
     #[props(default = HttpChangelog::current())] data: HttpChangelog,
     selection: Signal<Filter>,
     #[props(default)] link_versions: bool,
     #[props(default)] look: ChangelogLook,
+    #[props(default)] page_size: Option<usize>,
 ) -> Element {
+    // The selection the reveal was made under, and how many it reveals.
+    let mut revealed = use_signal(|| None::<(Filter, usize)>);
     let listed = listed(&data);
     let current = selection();
-    let shown = visible(&listed, &current);
+    let mut shown = visible(&listed, &current);
+    let cap = page_size.map(|page| match revealed() {
+        Some((filter, count)) if filter == current => count,
+        _ => page,
+    });
+    let more = cap.filter(|&cap| shown.len() > cap);
+    if let Some(cap) = cap {
+        shown.truncate(cap);
+    }
     // Every listed release keeps its slot, shown or not, so a filter change
     // toggles cards in place.
     let show = |item: &Listed<'_>| shown.iter().any(|s| ptr::eq(s.release, item.release));
@@ -269,6 +283,13 @@ pub fn ChangelogReleases(
                             }
                         }
                     }
+                }
+            }
+            if let (Some(cap), Some(page)) = (more, page_size) {
+                button {
+                    class: "chip changelog-more",
+                    onclick: move |_| revealed.set(Some((current.clone(), cap.saturating_add(page)))),
+                    "Show more"
                 }
             }
         }
