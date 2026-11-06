@@ -14,6 +14,12 @@ Only open, actionable items live here. When something ships, its outcome moves t
 
 - [ ] **Merge main into `feat/web` and finish the web's hint rendering.** The branch last merged 6f133985e. Expect conflicts in `components/src/icons.rs` (main grew its own) and `home_colors.rs`; `zwiper-web/src/lib/inbound/chrome/hint_body.rs` needs the `KeyIcon` to icon mapping so icon-only keys draw. Hosting is `app.zwipe.net` (owner, 2026-11-04); the Log in pill on zite waits for the web app to be up.
 
+- [ ] **Redesign the app's card details sheet (owner 2026-11-05).** The sheet that opens over a card (on Swipe select and elsewhere) looks poor: the type, rarity, set, date and artist chips wrap into a loose stack, the mana cost sits alone on its own row, and the quantity badge and Card roles chips float under the oracle text without structure. Rework the layout as a whole.
+
+- [ ] **Review the image-less text card (owner 2026-11-05).** The card-shaped text proxy drawn when a card has no art (`no-image-card` in `components/src/flippable_card_image.rs`, shipped in 1.7.1) predates the unified UI; look it over in the current look and decide what to change.
+
+- [ ] **Review the business card (owner 2026-11-05).** Look over `context/marketing/business_card.html` (last touched 2026-10-21) before the next reprint. Print notes are under Marketing & Discovery below.
+
 
 - [x] ~~**Close the email enumeration oracle.**~~ DONE 2026-10-23: with the floor at 1.13.0, Phase 4 of [`../plans/archive/verify_first_registration.md`](../plans/archive/verify_first_registration.md) and [`../plans/archive/confirm_first_email_change.md`](../plans/archive/confirm_first_email_change.md) is on main. The old register and change-email paths and both flags are gone, and PR #32's 409s came in with it. Left: one live registration from the shipped app with a new address and one with a taken one.
 
