@@ -123,3 +123,8 @@ pub const SCREENS_CSS: &str = concat!(
     include_str!("../assets/screens/screens-a.css"),
     include_str!("../assets/screens/screens-b.css"),
 );
+
+/// The filter accordion's rules. zwiper loads it after its own `main.css`
+/// and zwiper-web after [`SCREENS_CSS`], each before `TOAST_CSS`; zite
+/// does not load it.
+pub const ACCORDION_CSS: &str = include_str!("../assets/accordion.css");

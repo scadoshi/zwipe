@@ -341,6 +341,11 @@
     gap: 0.5rem;
 }
 
+.card-group-header-with-hint .info-button,
+.card-group-header-with-hint .skeleton-info-button {
+    margin: -0.25rem 0;
+}
+
 /* The "?" button's ghost, its size as a bare chip. */
 .skeleton-info-button {
     flex: none;
@@ -620,6 +625,14 @@
     box-shadow: var(--shadow-sm);
 }
 
+/* The grid is the screen's scroller and runs to the window's bottom edge;
+   its own trailing padding scrolls the last row clear of the dock. */
+.screen-content.tag-screen {
+    overflow-y: hidden;
+    justify-content: flex-start;
+    padding-bottom: 0;
+}
+
 .tag-controls {
     flex: 0 0 auto;
     width: 100%;
@@ -761,6 +774,10 @@
     gap: 0.5rem;
     -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 1rem);
     mask-image: linear-gradient(to bottom, transparent 0, #000 1rem);
+}
+
+.dict-overlay .screen-content {
+    padding-bottom: 0;
 }
 
 .dict-row {
