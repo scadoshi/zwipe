@@ -23,6 +23,7 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
+| 7, Decks as rows: one column, two at 1400px and up to compare (queued after #185) | thinker | `nits/thinker-7` |
 | 43, the web's favicons match zwipe.net's set (queued after 8) | laptop | `nits/laptop-43` |
 | 8 reopened, the image preview as large as zwipe.net's at every width | laptop | `nits/laptop-8-again` |
 | 41, 42, 44, hovers at any width, hint buttons, the deck entry hover | thinker | `nits/thinker-41` |
@@ -45,7 +46,7 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 4. **Deck page card rows have no dividers.** On the wide deck page the rows inside a group (Commander, Creatures) run with no rule between them, where the app's card list separates each row with a bottom border (the shared `.card-row` rule in `components/assets/magic.css`, last row excepted). Likely a web or band style overriding it.
 5. **Modals can be dragged around the screen.** Clicking and dragging a modal (the Universes Beyond exceptions picker, the other screen pickers) moves it. Likely the bottom sheet's drag-to-dismiss gesture still live on the kit's wide `SheetFrame { wide: Modal }` form, where nothing should move it; it should be off on a wide window.
 6. **Privacy policy is too narrow on a wide window.** The page head and sections are held to the policy's 40rem column (the `.web-privacy` rules and the `:has(+ .screen-content .web-privacy)` head cap in `web.css`), so a large window leaves wide empty margins. Wanted wider, likely the page width other screens use (`--web-page-max`), or zite's privacy page width. The head still repeats Privacy policy above the first section's own title.
-7. **Deck tiles on Decks are much too tall.** Six tiles to a row on a wide window, each about 11rem wide (`repeat(auto-fill, minmax(11rem, 1fr))` in `web.css`), so the chips under the name stack one per line: count, format, power, commander, then every tag. A tagged deck runs over 800px tall. Needs a plan; options to weigh:
+7. **Deck tiles on Decks are much too tall.** Decided 2026-11-06: the phone's row shape (art left, name and chips beside) in one column, with two columns at wide widths to compare. Six tiles to a row on a wide window, each about 11rem wide (`repeat(auto-fill, minmax(11rem, 1fr))` in `web.css`), so the chips under the name stack one per line: count, format, power, commander, then every tag. A tagged deck runs over 800px tall. Needs a plan; options to weigh:
    - Fewer, wider tiles: raise the tile minimum to about 18 to 20rem, three or four to a row, so chips wrap several to a line.
    - Let the chips flow in rows: they read as a column now even when two short ones would fit side by side; a centered wrapping row alone cuts the height a lot.
    - The app's row shape on wide too: art at the left, name and chips beside it, two or three rows across the page, the shape the phone layout already uses.
