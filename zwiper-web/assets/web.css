@@ -998,6 +998,12 @@ body {
         box-shadow: 0 0 0 100vmax var(--bg-overlay), var(--shadow-sm);
     }
 
+    /* The backdrop keeps its fill and drops the tiles: the grid lives only
+       on the app's own backdrop. */
+    .screen.web-large-modal > .grid-cells .grid-cells-canvas {
+        display: none;
+    }
+
     .web-examples-body {
         display: grid;
         grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
