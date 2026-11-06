@@ -23,6 +23,7 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
+| 49, every clear-x input through `components::ClearWrap` | halo | `nits/halo-49` |
 | 45, 47, no page heads, the page's ? in the nav, About drops Credits on wide (queued after 21) | scotland | `nits/scotland-45` |
 | 46, a compact footer on both sites (queued after 40) | halo | `nits/halo-46` |
 | 21, the card filter into components (plan phases 3 and 4) | laptop | `shared/card-filter` |
@@ -89,6 +90,7 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 46. **The footer is far too tall on both sites.** The copyright sits in line with the pills, the Scryfall credit in line with the Fan Content notice, the attributions use the footer's full width, and the padding shrinks. Shared `SiteFooter`, so zwipe.net and the web change together.
 47. **About repeats the footer's credits.** On a wide window the Credits panel duplicates the footer's Scryfall and Fan Content lines; it goes there. Below 900px, with no footer, it stays.
 48. **zwipe.net's manifest points at missing install icons.** zite's site.webmanifest lists /assets/icon-192.png and /assets/icon-512.png, which return 404 live because zite never bundles them (found by laptop on 43).
+49. **Hand-rolled clear-× inputs.** The deck page's Quick add (and other inputs: the maybeboard's Quick add, the exceptions and picker searches, the dictionary, Import's URL) draw their own input and × instead of `components::ClearWrap`, so they sit slightly smaller and the × doesn't ease in. All go through `ClearWrap`.
 
 ## Done
 
