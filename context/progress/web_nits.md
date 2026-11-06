@@ -23,6 +23,7 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
+| 53, the app's Quick add through ClearWrap | halo | `nits/halo-53` |
 | 52, the swipe buttons move into the action dock (queued after 51) | laptop | `nits/laptop-52` |
 | 51, swipe twice as fast, same animation speed | laptop | `nits/laptop-51` |
 | 50, the deck head's ? matches Edit, Clone and Share | thinker | `nits/thinker-50` |
