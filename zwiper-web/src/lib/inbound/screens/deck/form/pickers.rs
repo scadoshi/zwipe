@@ -11,8 +11,8 @@
 use components::hint::{ContentHintDialog, HintBody};
 use components::icons::CHECK;
 use components::{
-    ActionDock, Button, ButtonVariant, DialogAction, DockAction, DockPlace, HintDialog, SheetFrame,
-    SheetWide, TOAST_NORMAL, TOAST_QUICK, use_overlay_back_action,
+    Button, ButtonVariant, DialogAction, DockAction, DrawerSheet, HintDialog, TOAST_NORMAL,
+    TOAST_QUICK, use_overlay_back_action,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -36,8 +36,9 @@ use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::page_keys::{focus_by_id, use_page_keys};
 use crate::inbound::screens::oracle_tag_dictionary::OracleTagDictionary;
 
-/// The picker's sheet, the card filter's: the kit's drawer on a wide window
-/// and its bottom sheet below the breakpoint, sliding in on `open`. The
+/// The picker's sheet, components' [`DrawerSheet`] as the card filter draws
+/// it: the kit's drawer on a wide window and its bottom sheet below the
+/// breakpoint, sliding in on `open`. The
 /// title bar's × and a backdrop tap call `on_back`; the dock's checkmark
 /// calls `on_save` and stays off while `unchanged`. The body mounts only
 /// while open, so its keys never answer under a closed picker.
@@ -53,41 +54,21 @@ fn PickerSheet(
     children: Element,
 ) -> Element {
     rsx! {
-        SheetFrame { wide: SheetWide::Drawer,
-            div {
-                class: if open() { "sheet-backdrop show" } else { "sheet-backdrop" },
-                onclick: move |_| on_back.call(()),
-            }
-            div { class: if open() { "bottom-sheet show web-picker-sheet" } else { "bottom-sheet web-picker-sheet" },
-                div { class: "sheet-header", style: "position: relative;",
-                    button {
-                        class: "sheet-close",
-                        "aria-label": "Close",
-                        onclick: move |_| on_back.call(()),
-                        "\u{00d7}"
-                    }
-                    span { class: "sheet-title", "{title}" }
-                    Button {
-                        variant: ButtonVariant::Action,
-                        class: "web-sheet-hint",
-                        onclick: move |_| hint_open.set(true),
-                        "?"
-                    }
+        DrawerSheet {
+            open,
+            title,
+            on_close: move |()| on_back.call(()),
+            on_hint: move |()| hint_open.set(true),
+            class: "web-picker-sheet",
+            dock: rsx! {
+                DockAction {
+                    label: "Save",
+                    icon: CHECK,
+                    disabled: unchanged,
+                    onclick: move |()| on_save.call(()),
                 }
-                div { class: "sheet-content",
-                    if open() {
-                        PickerBody { search_id, {children} }
-                    }
-                }
-                ActionDock { place: DockPlace::Sheet,
-                    DockAction {
-                        label: "Save",
-                        icon: CHECK,
-                        disabled: unchanged,
-                        onclick: move |()| on_save.call(()),
-                    }
-                }
-            }
+            },
+            PickerBody { search_id, {children} }
         }
     }
 }

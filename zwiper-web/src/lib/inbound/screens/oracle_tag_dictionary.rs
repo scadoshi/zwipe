@@ -186,7 +186,7 @@ pub fn OracleTagDictionary(mut open: Signal<bool>, on_use: EventHandler<String>)
                             span { class: "sheet-title", "Oracle tags" }
                             Button {
                                 variant: ButtonVariant::Action,
-                                class: "web-sheet-hint",
+                                class: "drawer-sheet-hint",
                                 onclick: move |_| {
                                     let mut hint_open = hint_open;
                                     hint_open.set(true);
