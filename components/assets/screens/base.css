@@ -315,21 +315,6 @@ button {
   utilities - layout
  ==================== */
 
-.flex {
-    display: flex;
-}
-
-.flex-row {
-    display: flex;
-    flex-direction: row;
-}
-
-.flex-center {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
 .flex-end {
     display: flex;
     flex-direction: column;
@@ -340,20 +325,12 @@ button {
     align-items: center;
 }
 
-.flex-wrap {
-    flex-wrap: wrap;
-}
-
 /* ===================
   utilities - spacing
  ===================== */
 
 .gap-05 {
     gap: 0.25rem;
-}
-
-.gap-1 {
-    gap: 0.5rem;
 }
 
 .gap-2 {
@@ -368,10 +345,6 @@ button {
     margin-bottom: 0.25rem;
 }
 
-.mb-1 {
-    margin-bottom: 0.5rem;
-}
-
 .mb-2 {
     margin-bottom: 1rem;
 }
@@ -382,10 +355,6 @@ button {
 
 .mb-4 {
     margin-bottom: 2rem;
-}
-
-.mt-2 {
-    margin-top: 1rem;
 }
 
 /* ==================
@@ -430,10 +399,6 @@ button {
 
 .text-xs {
     font-size: 0.75rem;
-}
-
-.text-muted {
-    color: var(--text-muted);
 }
 
 .text-sm {

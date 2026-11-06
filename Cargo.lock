@@ -8862,6 +8862,7 @@ dependencies = [
 name = "zite"
 version = "1.18.0"
 dependencies = [
+ "chrono",
  "components",
  "dioxus",
  "getrandom 0.4.3",
