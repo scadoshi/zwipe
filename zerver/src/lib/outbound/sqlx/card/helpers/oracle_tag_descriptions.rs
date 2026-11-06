@@ -18030,7 +18030,7 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
     ),
     (
         "tribal-whale",
-        "Searches your library for a Whale card and rewards you for controlling a Whale.",
+        "A card that cares about Whale creatures you control.",
     ),
 ];
 
