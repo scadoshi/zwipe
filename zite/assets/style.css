@@ -1758,77 +1758,6 @@ code {
     border-radius: 1rem;
 }
 
-/* Pinned card-art preview, top-left. Only shown on hover (desktop); the left
-   gutter exists only when the viewport is wider than the content, so hide it
-   below that width to avoid overlapping the deck. */
-/* Stack of up to 5 hovered cards. Newest sits on top (front); older cards
-   cascade down behind it, each peeking below the one above. Absolute children
-   inside a fixed, zero-size anchor. */
-.sd-hover-stack {
-    position: fixed;
-    top: 5.5rem;
-    left: 1.5rem;
-    width: 18rem;
-    z-index: 50;
-    pointer-events: none;
-    /* Cursor dodge: `.pin-right` glides the whole stack to the right gutter
-       (transform, not left/right, so the move animates). */
-    transition: transform 0.35s ease;
-}
-
-.sd-hover-stack.pin-right {
-    transform: translateX(calc(100vw - 100% - 3rem));
-}
-
-.sd-preview-card {
-    position: absolute;
-    left: 0;
-    width: 100%;
-    filter: drop-shadow(0 0.4rem 1rem rgba(0, 0, 0, 0.6));
-    /* Newcomer drops in from above. */
-    animation: sd-preview-in 0.35s ease-out both;
-}
-
-.sd-preview-card img {
-    width: 100%;
-    height: auto;
-    display: block;
-    border-radius: 4.75% / 3.5%;
-}
-
-/* Leaver fades out downward. */
-.sd-preview-card.leaving {
-    animation: sd-preview-out 0.4s ease forwards;
-}
-
-@keyframes sd-preview-in {
-    from {
-        opacity: 0;
-        transform: translateY(-40px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-@keyframes sd-preview-out {
-    from {
-        opacity: 1;
-        transform: translateY(0);
-    }
-    to {
-        opacity: 0;
-        transform: translateY(28px);
-    }
-}
-
-@media (max-width: 1100px) {
-    .sd-hover-stack {
-        display: none;
-    }
-}
-
 /* The expanded row's actions (Image + Flip for DFCs) and muted separator come
    from the components crate. Shown at every width: the Flip control has to be
    reachable on desktop too, and Image opens the full overlay. */
@@ -1992,20 +1921,8 @@ code {
     justify-content: flex-start;
 }
 
-/* Card rows come from the components crate (magic.css); zite-only additions
-   below: a mouse-hover cue (this is the one surface with a pointer) and
+/* Card rows come from the components crate (magic.css); zite's addition:
    slightly smaller detail text than the app. */
-@media (hover: hover) {
-    .card-row:not(.expanded):hover {
-        position: relative;
-        z-index: 2;
-        transform: scale(1.02);
-        border-radius: 0.4rem;
-        background-color: color-mix(in srgb, var(--accent-primary) 8%, var(--bg-primary));
-        box-shadow: var(--shadow-sm);
-    }
-}
-
 .card-detail-name {
     font-size: 0.8rem;
 }

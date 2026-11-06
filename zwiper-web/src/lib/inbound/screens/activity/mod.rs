@@ -10,6 +10,7 @@
 
 pub mod sections;
 
+use components::{HoverStackHost, use_hover_stack};
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
@@ -101,6 +102,7 @@ pub fn Activity() -> Element {
     use_context_provider(|| ShowRowArt(show_row_art));
     let examples = use_otag_reveals();
     let overlays = use_card_overlays();
+    let hover_stack = use_hover_stack();
     let expanded_card: Signal<Option<Uuid>> = use_signal(|| None);
 
     let mut activity: Signal<Option<HttpActivity>> = use_signal(|| None);
@@ -125,7 +127,9 @@ pub fn Activity() -> Element {
             title: "Activity",
             description: page_description(OneTimeHint::Activity),
             on_hint: move |()| hint_again.set(true),
-            div { class: "screen-content",
+            div {
+                class: "screen-content",
+                onmousemove: move |e| hover_stack.track(e.client_coordinates().x),
                 div { class: "flex-col web-activity web-page web-sections-open",
                     div { class: "web-hero",
                         MyCountsPanel { ready: !is_loading() }
@@ -156,6 +160,7 @@ pub fn Activity() -> Element {
         }
         OneTimeHintDialog { hint: OneTimeHint::Activity, open: hint_open }
         OtagExamplesHost { examples }
+        HoverStackHost { stack: hover_stack }
         CardOverlaysHost {
             overlays,
             on_printing_save: move |picked: Card| {

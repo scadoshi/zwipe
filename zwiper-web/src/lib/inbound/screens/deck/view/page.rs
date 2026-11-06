@@ -11,7 +11,7 @@ use std::collections::HashSet;
 use components::icons::{DockIcon, MINUS, PLUS, UNDO};
 use components::{
     Chip, DeckBand, DeckControls, DeckFacts, DeckFold, DeckHead, DeckPage, DeckSection, DockFilter,
-    FeaturedCard,
+    FeaturedCard, HoverStackHost, use_hover_stack,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -34,9 +34,7 @@ use super::sections::{
 use crate::domain::deck::{has_budget, tag_count};
 use crate::inbound::card_filter::CardFilterPanel;
 use crate::inbound::card_stores::CardStores;
-use crate::inbound::cards::card_row::{
-    CardOverlays, CardOverlaysHost, HoverCard, HoverPreview, HoverPreviewHost, use_card_overlays,
-};
+use crate::inbound::cards::card_row::{CardOverlays, CardOverlaysHost, use_card_overlays};
 use crate::inbound::cards::otag::{OtagExamplesHost, use_otag_reveals};
 use crate::inbound::cards::printing_sheet::PrintingSheet;
 use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
@@ -97,10 +95,9 @@ pub fn DeckWidePage(
     let examples = use_otag_reveals();
     let overlays = use_card_overlays();
     let CardOverlays { mut preview, .. } = overlays;
-    // The hover preview pins to the far side of the window, outside the
-    // rows, whose hover scale would otherwise pin it to the row.
-    let hover: Signal<Option<HoverCard>> = use_signal(|| None);
-    use_context_provider(|| HoverPreview(hover));
+    // The rows' hover stack, drawn outside the rows and the page's entrance,
+    // whose transforms would pin it to them instead of the window.
+    let hover_stack = use_hover_stack();
     let folded: Signal<HashSet<String>> =
         use_signal(|| FOLDED_STATS.into_iter().map(String::from).collect());
     // A fix made at the foot reloads the deck, so the rows follow.
@@ -349,7 +346,9 @@ pub fn DeckWidePage(
     rsx! {
         // The dock floats outside the page's entrance, whose transform would
         // otherwise pin it to the page instead of the window.
-        div { class: "content-enter web-page web-deck-page",
+        div {
+            class: "content-enter web-page web-deck-page",
+            onmousemove: move |e| hover_stack.track(e.client_coordinates().x),
             DeckPage {
                 head: rsx! {
                 if let (Some(p), Some(facts)) = (held_profile.clone(), facts) {
@@ -538,7 +537,7 @@ pub fn DeckWidePage(
                 selected.set(None);
             },
         }
-        HoverPreviewHost { preview: hover }
+        HoverStackHost { stack: hover_stack }
         CardOverlaysHost { overlays, on_printing_save: move |_| {} }
         OtagExamplesHost { examples }
         OneTimeHintDialog { hint: OneTimeHint::DeckCards, open: hint_open }

@@ -964,35 +964,10 @@ body {
     }
 }
 
-/* ---- Card rows: the image beside the cursor ---- */
+/* ---- Card rows ---- */
 
 .web-card-row {
     display: contents;
-}
-
-.web-hover-preview {
-    display: none;
-}
-
-@media (min-width: 900px) and (hover: hover) {
-    .web-hover-preview {
-        display: block;
-        position: fixed;
-        left: min(calc(var(--hover-x) + 1.5rem), calc(100vw - 16rem));
-        top: clamp(1rem, calc(var(--hover-y) - 10rem), calc(100vh - 22rem));
-        width: 15rem;
-        z-index: 60;
-        pointer-events: none;
-        border-radius: 4.75% / 3.5%;
-        overflow: hidden;
-        box-shadow: var(--shadow-md);
-        animation: chip-in 0.2s ease-out;
-    }
-
-    .web-hover-preview img {
-        display: block;
-        width: 100%;
-    }
 }
 
 /* A row sits in its .web-card-row, and a deck's rows in a .web-deck-row
@@ -1997,17 +1972,6 @@ body {
     outline-offset: 2px;
 }
 
-@media (min-width: 900px) and (hover: hover) {
-    /* The deck page's preview pins under the nav on the side the cursor is
-       not on, so it never covers the row being read: the factor turns the
-       cursor's distance from the middle into a far-off value the clamp
-       pulls back to one gutter or the other. */
-    .web-hover-preview.web-hover-pinned {
-        left: clamp(1rem, (50vw - var(--hover-x)) * 1000, calc(100vw - 16rem));
-        top: calc(var(--sheet-drawer-top, 5.5rem) + 0.5rem);
-        width: 15rem;
-    }
-}
 
 /* ---- Dialogs ----
 

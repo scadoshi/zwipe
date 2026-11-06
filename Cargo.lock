@@ -968,6 +968,7 @@ version = "1.18.0"
 dependencies = [
  "dioxus",
  "dioxus-ssr",
+ "gloo-timers 0.4.0",
  "orangui",
  "serde_json",
  "uuid",

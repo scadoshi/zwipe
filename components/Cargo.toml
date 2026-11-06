@@ -25,6 +25,11 @@ zwipe-ui = { path = "../zwipe-ui" }
 # one copy.
 orangui = { git = "https://github.com/scadoshi/orangui", branch = "main" }
 
+# The hover stack's life and fade timers, the browser's setTimeout as a
+# future. Off the browser the stack times nothing.
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+gloo-timers.workspace = true
+
 [features]
 # ToastStack and TOAST_CSS, for the apps.
 toast = ["orangui/toast"]
