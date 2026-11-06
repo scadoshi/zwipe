@@ -1654,55 +1654,6 @@ body {
         padding: 1rem 1.5rem 2rem;
     }
 
-    /* A wide window lays a group's decks out as tiles, as many per row as
-       fit: the art as a square over the name, then the pips on their own
-       line and the chips wrapping under them. */
-    .deck-group > .collapsible > .collapsible-inner {
-        grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
-    }
-
-    .deck-group .deck-row {
-        padding: 1rem;
-    }
-
-    .deck-group .deck-list-row {
-        flex-direction: column;
-        justify-content: flex-start;
-        text-align: center;
-    }
-
-    .deck-group .deck-row-art-img {
-        width: 100%;
-        height: auto;
-        aspect-ratio: 1 / 1;
-        border-radius: 1rem;
-    }
-
-    /* A two-card command zone shares the square. */
-    .deck-group .deck-list-row:has(> .deck-row-art-img + .deck-row-art-img) > .deck-row-art-img {
-        width: calc(50% - 0.2rem);
-    }
-
-    .deck-group .deck-list-name {
-        width: 100%;
-        margin: 0.2rem 0 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .deck-group .deck-list-row > .identity-pips {
-        width: 100%;
-        justify-content: center;
-    }
-
-    /* A long commander name wraps inside its chip rather than cutting. */
-    .deck-group .deck-list-row > .stat-chip {
-        max-width: 100%;
-        white-space: normal;
-        overflow-wrap: anywhere;
-    }
-
     /* There is room for every tag, so the row stays unfolded and the fold
        chip goes. */
     .web-deck-tags-fold {
@@ -1718,6 +1669,16 @@ body {
         overflow: visible;
     }
 
+}
+
+/* Each deck keeps the phone's row on a wide window, its art at the left
+   and the name, pips and chips flowing beside it, one row under another.
+   From 1400px a group's rows pair up in two columns; its header stays
+   across the page over them. */
+@media (min-width: 1400px) {
+    .deck-group > .collapsible > .collapsible-inner {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }
 
 /* ---- Deck form (Create, Edit) ---- */
