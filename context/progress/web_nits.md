@@ -25,7 +25,6 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 | --- | --- | --- |
 | 21, the card filter into components (plan phases 3 and 4) | laptop | `shared/card-filter` |
 | 35, About overflows at a phone width | thinker | `nits/thinker-35` |
-| 19 reopened: the pickers through the kit's real drawer, the dictionary through the kit's modal | scotland | `nits/scotland-picker-drawer` |
 | cycle-trk-mission description, held until scotland's 2026-11-07 sync confirms its cards | halo | `otags/cycle-trk-mission` (PR #178) |
 | 38, the footer looks like zwipe.net's | scotland | `nits/scotland-footer-look` |
 
@@ -103,6 +102,7 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 - 12, split phase 0, the empty `components::SCREENS_CSS` frame: PR #169 into `release`.
 - 2, 23, the web's deck page drops the inline Filter row (`DeckControls` takes an optional `DeckFilter`) and gains fold-all: PR #170 into `release`. 11 won't do.
 - 12, split phases 1 to 4, `main.css` moved into `components/assets/screens/`: PRs #171, #174, #175, #173 into `release`.
+- 19 (reopened), the deck form's pickers as the card filter's drawer and bottom sheet, the dictionary as the kit's modal: PR #182 into `release`.
 - 12, split phase 5: the web stops loading `main.css`, `accordion.css` moves to `components`, scrollbars show on a wide window: PR #180 into `release`. The split is done.
 - 39, the splash plays once a session and not on arrival from zwipe.net (zite mirrors it): PR #181 into `release`.
 - 38, the footer spans the window as zwipe.net's does: PR #179 into `release`.
