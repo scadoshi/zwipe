@@ -907,17 +907,17 @@ body {
     }
 }
 
-/* The deck page's rows sit one wrapper deep in their band, so each is its
-   wrapper's last child; a rule under every row but the band's last stands
-   in for the app's. */
-@media (min-width: 900px) {
-    .deck-band-rows > .web-deck-row:not(:last-child) .card-row:not(.expanded) {
-        border-bottom: 1px solid var(--border-secondary);
-    }
+/* A row sits in its .web-card-row, and a deck's rows in a .web-deck-row
+   around that, so each is its wrapper's last child. The app's rule goes
+   under every row but its list's last and the expanded one, keyed on the
+   outer wrapper. */
+.web-card-row > .card-row:not(.expanded) {
+    border-bottom: 1px solid var(--border-secondary);
+}
 
-    .deck-band-rows > .web-deck-row:last-child .card-row {
-        border-bottom: none;
-    }
+.web-card-row:not(.web-deck-row > *):last-child > .card-row,
+.web-deck-row:last-child > .web-card-row > .card-row {
+    border-bottom: none;
 }
 
 /* ---- Image preview ----
