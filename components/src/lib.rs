@@ -80,10 +80,7 @@ pub use flippable_card_image::{FlippableCardImage, reset_image_ease};
 pub use fold::{FOLD_AT, Fold, SEE_LESS, SEE_MORE, SeeMore, fold_split};
 pub use home_colors::{ColorsEmpty, HomeColors};
 pub use home_decks::HomeDecks;
-pub use hover_stack::{
-    HOVER_STACK_CAP, HOVER_STACK_STEP_REM, HoverEntry, HoverStack, HoverStackHost, PREVIEW_FADE_MS,
-    PREVIEW_LIFE_MS, use_hover_stack,
-};
+pub use hover_stack::{HoverStack, HoverStackHost, use_hover_stack};
 pub use keyword_chips::{KeywordChips, KeywordReminders};
 pub use menu_section::MenuSection;
 pub use oracle_text::OracleText;

@@ -3,8 +3,8 @@
 //!
 //! Hovering a [`CardRow`](crate::CardRow) pushes the face it shows onto the
 //! stack and holds it there while the cursor stays on the row. Leaving the
-//! row starts that card's life: [`PREVIEW_LIFE_MS`] later it fades out over
-//! [`PREVIEW_FADE_MS`] and drops off, each card on its own timer. Flipping a
+//! row starts that card's life: `PREVIEW_LIFE_MS` later it fades out over
+//! `PREVIEW_FADE_MS` and drops off, each card on its own timer. Flipping a
 //! row's face pushes the new face with its life already running. The stack
 //! sits in the corner away from the cursor.
 //!
@@ -22,29 +22,40 @@ use dioxus::core::Runtime;
 use dioxus::prelude::*;
 
 /// The most cards the stack holds; a push past it drops the oldest.
-pub const HOVER_STACK_CAP: usize = 5;
+const HOVER_STACK_CAP: usize = 5;
 
 /// How long a card stays up once its row is left or flipped.
-pub const PREVIEW_LIFE_MS: u32 = 2000;
+#[cfg(target_arch = "wasm32")]
+const PREVIEW_LIFE_MS: u32 = 2000;
 
 /// A card's fade out, the `hover-stack-out` animation in `magic.css`.
-pub const PREVIEW_FADE_MS: u32 = 400;
+#[cfg(target_arch = "wasm32")]
+const PREVIEW_FADE_MS: u32 = 400;
 
 /// How far each older card sits under the one above it, in rem.
-pub const HOVER_STACK_STEP_REM: f64 = 2.6;
+const HOVER_STACK_STEP_REM: f64 = 2.6;
+
+/// Where a card is in its life.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum HoverPhase {
+    /// The cursor is still on the row that pushed it; its life has not
+    /// started.
+    Held,
+    /// Let go, counting down its life (`PREVIEW_LIFE_MS`).
+    Living,
+    /// Its life is over and it is fading out (`PREVIEW_FADE_MS`).
+    Leaving,
+}
 
 /// One card in the stack.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct HoverEntry {
+struct HoverEntry {
     /// Unique per push, so a card hovered twice stacks twice.
-    pub id: u64,
+    id: u64,
     /// The image the card shows.
-    pub url: String,
-    /// True while the cursor is still on the row that pushed it; its life
-    /// has not started.
-    pub held: bool,
-    /// True once its life is over and it is fading out.
-    pub leaving: bool,
+    url: String,
+    /// Where the card is in its life.
+    phase: HoverPhase,
 }
 
 /// Puts `entry` on top of the stack and drops what falls past the cap.
@@ -56,9 +67,12 @@ fn push(entries: &mut Vec<HoverEntry>, entry: HoverEntry) {
 /// Lets go of a held entry, true when `id` was held (and is still in the
 /// stack), so its life starts once.
 fn release(entries: &mut [HoverEntry], id: u64) -> bool {
-    match entries.iter_mut().find(|e| e.id == id && e.held) {
+    match entries
+        .iter_mut()
+        .find(|e| e.id == id && e.phase == HoverPhase::Held)
+    {
         Some(entry) => {
-            entry.held = false;
+            entry.phase = HoverPhase::Living;
             true
         }
         None => false,
@@ -69,7 +83,7 @@ fn release(entries: &mut [HoverEntry], id: u64) -> bool {
 #[cfg(any(target_arch = "wasm32", test))]
 fn mark_leaving(entries: &mut [HoverEntry], id: u64) {
     if let Some(entry) = entries.iter_mut().find(|e| e.id == id) {
-        entry.leaving = true;
+        entry.phase = HoverPhase::Leaving;
     }
 }
 
@@ -97,7 +111,7 @@ pub struct HoverStack {
 impl HoverStack {
     /// Pushes a hovered row's image, held until [`Self::leave`] with the id
     /// it returns.
-    pub fn enter(self, url: String) -> u64 {
+    pub(crate) fn enter(self, url: String) -> u64 {
         let id = self.take_id();
         let mut entries = self.entries;
         push(
@@ -105,15 +119,14 @@ impl HoverStack {
             HoverEntry {
                 id,
                 url,
-                held: true,
-                leaving: false,
+                phase: HoverPhase::Held,
             },
         );
         id
     }
 
     /// Starts the life of the held card `id`; nothing if it is not held.
-    pub fn leave(self, id: u64) {
+    pub(crate) fn leave(self, id: u64) {
         let mut entries = self.entries;
         let released = entries.try_write().is_ok_and(|mut e| release(&mut e, id));
         if released {
@@ -127,7 +140,7 @@ impl HoverStack {
             .entries
             .peek()
             .iter()
-            .filter(|e| e.held)
+            .filter(|e| e.phase == HoverPhase::Held)
             .map(|e| e.id)
             .collect();
         for id in held {
@@ -136,7 +149,7 @@ impl HoverStack {
     }
 
     /// Pushes an image with its life already running, as for a flipped face.
-    pub fn flash(self, url: String) {
+    pub(crate) fn flash(self, url: String) {
         let id = self.take_id();
         let mut entries = self.entries;
         push(
@@ -144,8 +157,7 @@ impl HoverStack {
             HoverEntry {
                 id,
                 url,
-                held: false,
-                leaving: false,
+                phase: HoverPhase::Living,
             },
         );
         self.retire(id);
@@ -239,7 +251,7 @@ pub fn HoverStackHost(stack: HoverStack) -> Element {
             for (i, entry) in entries.into_iter().enumerate() {
                 div {
                     key: "{entry.id}",
-                    class: if entry.leaving { "hover-stack-card leaving" } else { "hover-stack-card" },
+                    class: if entry.phase == HoverPhase::Leaving { "hover-stack-card leaving" } else { "hover-stack-card" },
                     style: "top: calc({i} * {HOVER_STACK_STEP_REM}rem); z-index: {200_usize.saturating_sub(i)};",
                     img { src: "{entry.url}", alt: "Card preview" }
                 }
@@ -260,8 +272,7 @@ mod tests {
         HoverEntry {
             id,
             url: format!("card-{id}"),
-            held: true,
-            leaving: false,
+            phase: HoverPhase::Held,
         }
     }
 
@@ -312,6 +323,7 @@ mod tests {
     fn a_held_card_is_let_go_once() {
         let mut entries = vec![entry(3)];
         assert!(release(&mut entries, 3));
+        assert!(entries.iter().all(|e| e.phase == HoverPhase::Living));
         assert!(!release(&mut entries, 3));
         assert!(!release(&mut entries, 9));
     }
@@ -320,7 +332,11 @@ mod tests {
     fn a_card_fades_then_drops() {
         let mut entries = vec![entry(1), entry(0)];
         mark_leaving(&mut entries, 0);
-        assert!(entries.iter().any(|e| e.id == 0 && e.leaving));
+        assert!(
+            entries
+                .iter()
+                .any(|e| e.id == 0 && e.phase == HoverPhase::Leaving)
+        );
         remove(&mut entries, 0);
         assert_eq!(ids(&entries), vec![1]);
     }
