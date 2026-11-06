@@ -473,6 +473,23 @@ body {
     }
 }
 
+/* The bar's icons, the `!` and Log out answer a mouse as the pills beside
+   them do: the accent on the glyph and the border, at full strength. */
+@media (min-width: 900px) and (hover: hover) {
+    .web-shell .nav-trailing-row .btn-action {
+        transition:
+            color 0.15s,
+            border-color 0.15s,
+            opacity 0.15s;
+    }
+
+    .web-shell .nav-trailing-row .btn-action:hover {
+        opacity: 1;
+        color: var(--accent-primary);
+        border-color: var(--accent-primary);
+    }
+}
+
 /* ---- Header below the breakpoint ----
 
    The app's header from the kit's NavBar: the back arrow or an empty left
