@@ -2121,3 +2121,86 @@ body {
         border-top: 1px solid var(--border-secondary);
     }
 }
+
+/* ---- Between a phone and the breakpoint ----
+
+   A window wider than a phone and narrower than 900px (a tablet, half a
+   desktop screen) fills its width as zwipe.net does: every page's panels
+   run the window's width inside zite's 1.5rem gutter, where the app's
+   phone column would leave wide empty margins. Home's hero scales with
+   it as zite's does. Below 480px the phone layout stands as it is. */
+@media (min-width: 480px) and (max-width: 899px) {
+    /* The page columns held to the app's 40rem take the window's width. */
+    .web-deck-list,
+    .web-playstyle,
+    .web-activity,
+    .web-maybeboard,
+    .web-deck-cards-controls,
+    .web-deck-cards-list {
+        max-width: none;
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+    }
+
+    .web-deck-view,
+    .settings-sections.web-settings-pair,
+    .changelog-screen.web-about,
+    .web-privacy .privacy-content {
+        width: calc(100% - 3rem);
+        max-width: none;
+    }
+
+    .import-controls {
+        max-width: none;
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+    }
+
+    /* The kit's lists keep to 40rem; on the page they run the column. */
+    .web-main .settings-list:not(.bottom-sheet .settings-list) {
+        max-width: none;
+    }
+
+    /* A form panel sits in the gutter like every other panel. */
+    .web-auth {
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    .web-form-panel {
+        width: calc(100% - 3rem);
+        margin-left: 1.5rem;
+        margin-right: 1.5rem;
+    }
+
+    /* Home and the sign-in screens: the hero and the cards beside it at
+       the window's width, the mark and the counters at zite's sizes. */
+    .home-hero {
+        max-width: none;
+        padding: 0 1.5rem;
+        box-sizing: border-box;
+    }
+
+    .web-home .container-sm,
+    .web-auth-flavor .container-sm {
+        width: calc(100% - 3rem);
+        max-width: none;
+    }
+
+    .web-home-page .home-hero .logo,
+    .web-auth .home-hero .logo {
+        font-size: clamp(0.45rem, min(2.1vw, 2.2vh), 1.1rem);
+    }
+
+    .home-hero .stat {
+        padding: 0.7rem 0.35rem 0.6rem;
+    }
+
+    .home-hero .stat-num {
+        font-size: clamp(0.9rem, 3.8vw, 1.5rem);
+    }
+
+    .home-hero .stat-label {
+        font-size: clamp(0.6rem, 2.4vw, 0.75rem);
+    }
+}
