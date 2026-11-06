@@ -867,8 +867,27 @@ body {
 /* The app's stack fills what its column leaves; a browser column may leave
    nothing, so the stack keeps room for a card. */
 .web-swipe-stack {
+    --web-swipe-h: min(55vh, 32rem);
     flex: 1 0 auto;
-    min-height: min(55vh, 32rem);
+    min-height: var(--web-swipe-h);
+}
+
+@media (min-width: 900px) {
+    .web-swipe-stack {
+        --web-swipe-h: min(68vh, 42rem);
+    }
+}
+
+/* The card keeps its own shape: not stretched to the row's height, its
+   height capped by a length (a percentage of the face does not resolve) and
+   its width following, or the column's width capping it and the height
+   following. The 3.25rem is the stack card's padding. */
+.web-swipe-stack .swipe-stack-card .flippable-card-wrapper.card-image img {
+    align-self: center;
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: calc(var(--web-swipe-h) - 3.25rem);
 }
 
 .web-swipe-stack .swipe-stack-card.top {
