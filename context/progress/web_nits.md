@@ -23,6 +23,7 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
+| 39, the splash plays once a session and not when arriving from zwipe.net | thinker | `nits/thinker-splash-once` |
 | 12, split phase 5, the cut | laptop | `split/phase-5` |
 | cycle-trk-mission description, held until scotland's 2026-11-07 sync confirms its cards | halo | `otags/cycle-trk-mission` (PR #178) |
 | 38, the footer looks like zwipe.net's | scotland | `nits/scotland-footer-look` |
@@ -77,6 +78,7 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 36. **Outbound links open in the same tab on zwipe.net and app.zwipe.net.** Home's "Magic: The Gathering" link and every other `target="_blank"` or programmatic new-tab open take over the current tab instead. The mobile app keeps sending links to the system browser.
 37. **Every clickable chip and panel header button gets the plain button hover on the web.** Home's All decks and Playstyle header buttons, Decks' Group by options, Show pips, tag chips and fold toggles, and the same chips across the deck page, Playstyle, the filter drawer and Activity. The kit's hover (accent text and border), no transform or size change; label and count chips stay still.
 38. **The web's footer looks wrong.** It sits as a solid block boxed into the page column, cuts off the grid backdrop, and its pills are gold. Match zwipe.net's footer.
+39. **The web's splash plays like zwipe.net's.** zwipe.net plays its splash once a session. The web should too: a fresh app.zwipe.net tab shows it, a refresh does not, and arriving from zwipe.net does not (detected by the referrer, since session storage does not cross origins). zite mirrors it for arrivals from app.zwipe.net.
 
 ## Done
 
