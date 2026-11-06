@@ -23,6 +23,7 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
+| 28, the skeleton pass, Playstyle first | halo | `nits/halo-28` |
 | 55, zwipe.net's testimonial rating inline with its title (queued after 53) | halo | `nits/halo-55` |
 | 54, card details pane redesign, prices move into it (queued after 50) | thinker | `nits/thinker-54` |
 | 53, the app's Quick add through ClearWrap | halo | `nits/halo-53` |
