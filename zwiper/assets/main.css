@@ -1527,6 +1527,40 @@ button {
     width: 100%;
 }
 
+/* Import's and Export's panels: the box and the results, a panel gap
+   apart, at the screen's width with the page gutter, scrolling under the
+   pinned chips past the screen's foot with the fade at the top only, clear
+   of the dock at the end. */
+.import-panels.container-sm {
+    display: flex;
+    flex-direction: column;
+    gap: var(--panel-gap);
+    width: calc(100% - 2rem);
+    max-width: 40rem;
+    padding: 0.75rem 0 6rem;
+}
+
+.import-panels .form-panel + .form-panel {
+    margin-top: 0;
+}
+
+.import-panels .form-panel-fields > .input {
+    margin-bottom: 0;
+}
+
+.import-cards > :last-child {
+    margin-bottom: 0;
+}
+
+.screen-content:has(> .import-scroll > .import-panels) {
+    padding-bottom: 0;
+}
+
+.import-scroll:has(> .import-panels) {
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 1rem);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 1rem);
+}
+
 /* The form panels' ghosts: the panel's outline with a centered title bar,
    the fields at the panel's padding. */
 .form-panel > .skeleton-card-header {
@@ -1786,18 +1820,8 @@ button {
     width: 9rem;
 }
 
-/* Export screen: a label bar + textarea-shaped block while the deck loads,
-   mirroring the Decklist label + textarea it resolves to. */
-.skeleton-export {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.skeleton-export-label {
-    width: 5rem;
-}
-
+/* Export screen: the Decklist panel's ghost holds a textarea-shaped block
+   while the deck loads. */
 .skeleton-export-textarea {
     min-height: 16rem;
     border-radius: 0.375rem;
