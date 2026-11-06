@@ -1073,13 +1073,19 @@ body {
 
 /* ---- Image preview ----
 
-   On a wide window the open card is as large as zwipe.net's: up to 28rem
+   The open card is as large as zwipe.net's at every width: up to 28rem
    wide and most of the window's height. */
-@media (min-width: 900px) {
-    .image-preview-container .flippable-card-wrapper.card-image img {
-        max-width: min(28rem, 92vw);
-        max-height: 92vh;
-    }
+.image-preview-container .flippable-card-wrapper.card-image img {
+    max-width: min(28rem, 92vw);
+    max-height: 92vh;
+}
+
+/* An entrance animation that holds its end state makes its block the
+   containing block of the preview's fixed layers. While a preview is open
+   the block's finished entrance stops holding (its end state is the
+   block's own), so the preview fills the window. */
+:is(.content-enter, .content-enter-delayed, .row-enter):has(.image-preview-container) {
+    animation-fill-mode: backwards;
 }
 
 /* ---- Printing sheet ---- */
