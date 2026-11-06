@@ -24,8 +24,8 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 | 31, 32 | thinker | `nits/thinker-31-32` |
 | Oracle tag catch-up (12 tags, upkeep alert at zero blanks) | laptop | `otags/catch-up-2026-11-06` |
 | 29 | scotland | `nits/scotland-29` |
-| 5, 17 | halo | `nits/halo-5-17` |
-| 19, 25 | laptop | `nits/laptop-19-25` (PR #157, approved) |
+| 5, 17 | halo | `nits/halo-5-17` (PR #158, approved) |
+| 1 | halo | `nits/halo-1` |
 
 The loop is in [`../development/factory.md`](../development/factory.md).
 
@@ -71,6 +71,7 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 30. **The nav bar's icon buttons have no hover on a wide window.** The top bar's icon buttons (the `!`, Home, Account, Settings, About, Theme and the light/dark toggle) sit still under a mouse, where the text pills beside them (Decks, Playstyle, Activity, Commander maybeboard, Log out) read as clickable. Give them a hover inside `@media (hover: hover)`, matching whatever the pills and the panels (item 9) settle on.
 31. **Card row dividers elsewhere (follow-up to 4).** Each web card row sits in a wrapper (`.web-deck-row > .web-card-row > .card-row`), so the shared `.card-row:last-child { border-bottom: none }` strips every divider. 4 fixed the wide deck page only; the same likely happens below 900px and on Activity, Playstyle and the maybeboard lists.
 32. **Text fields still uncapped (follow-up to 18).** The deck form's fields, the command zone search and the deck dialog's input were not checked for full-width stretch on a wide window.
+33. **The kit's BottomSheet should not drag in modal or drawer form (follow-up to 5).** 5 was fixed in `web.css` by turning off pointer events on the header and pinning an open modal or drawer with `!important` over the drag's inline transform. The clean fix is in orangui: skip starting the drag-to-dismiss when the sheet shows as `SheetWide::Modal` or `Drawer`. That is a kit change and pin bump across zwipe, cairn and portfolio; once it lands, drop the web.css workaround.
 
 ## Done
 
@@ -79,3 +80,4 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 - 18, 20, wide fields capped at 32rem, dictionary letters in one row: PR #154 into `release`.
 - 8, 16, image preview sized as zite's, dialog padding rebalanced: PR #155 into `release`.
 - 9, 10, 4, 30, panel lift, deck art hover, wide deck page dividers, nav icon hover: PR #156 into `release`.
+- 19, 25, pickers as the kit's drawer, no grid tiles inside overlays: PR #157 into `release`.
