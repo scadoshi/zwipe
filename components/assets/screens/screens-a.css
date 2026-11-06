@@ -1,1 +1,725 @@
 /* main.css lines 1769 to 2860: swipe stack through the collapsible field. */
+
+/* ===========================
+  specific - swipe stack
+ ============================= */
+
+/* Container holds STACK_DEPTH absolutely-positioned card wrappers and
+   provides the flex slot the surrounding screen layout expects. */
+.swipe-stack {
+    position: relative;
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+    touch-action: pan-y pinch-zoom;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* Each card in the stack — absolutely positioned so peeking layers overlap.
+   The transform transition drives the subtle "new top slides up into place"
+   animation when the slice shifts, and also carries the exit transform. */
+.swipe-stack-card {
+    position: absolute;
+    inset: 0;
+    /* Breathing room the card can never eat into: side gutters plus a
+       consistent gap from the source chips above and details below. */
+    padding: 0.75rem 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transform-origin: center;
+    will-change: transform;
+    pointer-events: none;
+    /* Shared transition duration for peek→top promotion and sub-threshold
+       return-to-origin. 200ms feels smooth for the grow animation without
+       rate-limiting rapid swipes (gestures never block on this — the new
+       top is interactive the instant parent advances, regardless of whether
+       its grow transition has finished). */
+    transition: transform 0.2s ease-out;
+}
+
+/* Only the top card receives pointer events; layers beneath just peek. */
+.swipe-stack-card.top {
+    pointer-events: auto;
+}
+
+/* Undo enter animations — the restored card slides in from the direction
+   it originally exited. `forwards` keeps the final frame in sync with the
+   element's normal (origin) inline transform after the animation ends. */
+@keyframes card-stack-enter-left {
+    from {
+        transform: translateX(-120vw) rotate(-25deg);
+        opacity: 0;
+    }
+    to {
+        transform: translate(0, 0) rotate(0);
+        opacity: 1;
+    }
+}
+
+@keyframes card-stack-enter-right {
+    from {
+        transform: translateX(120vw) rotate(25deg);
+        opacity: 0;
+    }
+    to {
+        transform: translate(0, 0) rotate(0);
+        opacity: 1;
+    }
+}
+
+@keyframes card-stack-enter-up {
+    from {
+        transform: translateY(-120vh);
+        opacity: 0;
+    }
+    to {
+        transform: translate(0, 0);
+        opacity: 1;
+    }
+}
+
+.swipe-stack-card.top.card-stack-enter-left {
+    animation: card-stack-enter-left 0.2s ease-out;
+}
+
+.swipe-stack-card.top.card-stack-enter-right {
+    animation: card-stack-enter-right 0.2s ease-out;
+}
+
+.swipe-stack-card.top.card-stack-enter-up {
+    animation: card-stack-enter-up 0.2s ease-out;
+}
+
+/* Exit animations — overlay cards play these one-shot keyframes when a swipe
+   commits, then remove themselves on animationend. Duration is intentionally
+   slightly longer than the 0.12s peek→top transition so the exiting card is
+   still mid-flight when the new top has finished growing into place — the two
+   animations layer instead of cutting. */
+/* The `from` frames read the release-position custom properties the stack
+   sets on each exiting overlay card, so the fly-off starts where the finger
+   let go instead of snapping back to rest. Defaults keep unseeded cards on
+   the old behavior. */
+@keyframes card-stack-exit-left {
+    from {
+        transform: translate(var(--exit-from-x, 0px), var(--exit-from-y, 0px))
+            rotate(var(--exit-from-rot, 0deg));
+        opacity: 1;
+    }
+    to {
+        transform: translateX(-120vw) rotate(-25deg);
+        opacity: 0;
+    }
+}
+
+@keyframes card-stack-exit-right {
+    from {
+        transform: translate(var(--exit-from-x, 0px), var(--exit-from-y, 0px))
+            rotate(var(--exit-from-rot, 0deg));
+        opacity: 1;
+    }
+    to {
+        transform: translateX(120vw) rotate(25deg);
+        opacity: 0;
+    }
+}
+
+@keyframes card-stack-exit-up {
+    from {
+        transform: translate(var(--exit-from-x, 0px), var(--exit-from-y, 0px));
+        opacity: 1;
+    }
+    to {
+        transform: translateY(-120vh);
+        opacity: 0;
+    }
+}
+
+.swipe-stack-card.swipe-stack-exiting.card-stack-exit-left {
+    animation: card-stack-exit-left 0.18s ease-out forwards;
+}
+
+.swipe-stack-card.swipe-stack-exiting.card-stack-exit-right {
+    animation: card-stack-exit-right 0.18s ease-out forwards;
+}
+
+.swipe-stack-card.swipe-stack-exiting.card-stack-exit-up {
+    animation: card-stack-exit-up 0.18s ease-out forwards;
+}
+
+/* ==============================
+  specific - carousel
+ ================================ */
+
+.carousel-card-image {
+    display: block;
+    max-width: calc(100% - 2rem);
+    max-height: 45vh;
+    width: auto;
+    height: auto;
+    border-radius: 1rem;
+    margin: 0.75rem auto;
+}
+
+.carousel-dots {
+    overflow: hidden;
+    width: 100%;
+    padding: 0.5rem 0;
+    box-sizing: border-box;
+    -webkit-mask-image: linear-gradient(
+        to right,
+        transparent,
+        black 2rem,
+        black calc(100% - 2rem),
+        transparent
+    );
+    mask-image: linear-gradient(
+        to right,
+        transparent,
+        black 2rem,
+        black calc(100% - 2rem),
+        transparent
+    );
+}
+
+.carousel-dots-track {
+    display: flex;
+    gap: 0.375rem;
+    width: max-content;
+    transition: transform 0.2s ease-out;
+}
+
+.carousel-dot {
+    flex-shrink: 0;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: var(--text-primary);
+    opacity: 0.3;
+    transition: opacity 0.2s ease;
+}
+
+.carousel-dot.active {
+    opacity: 1;
+    background: var(--accent-secondary);
+}
+
+/* ===============
+  specific - logo
+ ================= */
+
+.logo {
+    font-family: "JetBrains Mono", monospace;
+    font-size: clamp(0.5rem, 2.5vw, 1.4rem);
+    line-height: 0.9;
+    white-space: pre;
+    text-align: left;
+    padding: 1rem;
+    margin: 1rem;
+    color: var(--logo);
+}
+
+/* ======================
+  specific - home screen
+ ======================== */
+
+/* The mark and the three public counters share one panel, the mark above the
+   tiles. The tiles are the ones zwipe.net and cairn use: a sunk box with the
+   number in the accent over its label. The panel is not a link, so it keeps
+   its resting border under a finger. */
+.home-hero {
+    width: 100%;
+    max-width: 26rem;
+    padding: 0 1rem;
+}
+
+/* A tighter foot than the panel's default, so the source chips don't sit
+   in a band of empty space. */
+.home-hero .panel-card {
+    padding-bottom: 1rem;
+}
+
+.home-hero .panel-card:hover {
+    border-color: var(--border-secondary);
+}
+
+/* The Activity screen's counters: Home's hero strip at the Activity
+   column's full width, which pads itself. */
+.home-hero.activity-counts {
+    max-width: none;
+    padding: 0;
+}
+
+/* The strip sits one gap over its tags, as under Home's mark. */
+.home-hero.activity-counts .stats-figures {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.home-hero .hero-head {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+/* Lets the strip and its source row sit in .hero-head's column as if they
+   were its own children, gap and all. */
+.home-hero .stats-figures {
+    display: contents;
+}
+
+.home-hero .logo {
+    /* A tenth under the plain mark's size, so the panel and a sign-in form
+       share one screen. */
+    font-size: clamp(0.45rem, 2.25vw, 1.26rem);
+    padding: 0;
+    margin: 0;
+}
+
+.home-hero .stat {
+    padding: 0.6rem 0.25rem 0.5rem;
+}
+
+.home-hero .stat-num {
+    font-size: 1.25rem;
+}
+
+/* The source chips sit one column gap under the strip, nothing more. */
+.home-hero .stats-source {
+    display: flex;
+    justify-content: center;
+    gap: 0.4rem;
+    margin-top: 0;
+}
+
+/* Home's buttons take the row's height, level with the Live tag, and the
+   scope button eases to its new label's width on a switch. */
+.home-hero .stats-source > .card-action-btn {
+    align-self: stretch;
+}
+
+.home-hero .stats-source > .hero-scope {
+    transition:
+        width 0.25s ease,
+        border-color 0.15s,
+        color 0.15s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .home-hero .stats-source > .hero-scope {
+        transition: none;
+    }
+}
+
+/* Each label fades in as it mounts, and so does the live tag. */
+.home-hero .hero-scope-label,
+.home-hero .stats-source > .stat-chip {
+    display: inline-block;
+    animation: hero-scope-in 0.25s ease-out;
+}
+
+@keyframes hero-scope-in {
+    from {
+        opacity: 0;
+        transform: translateY(2px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .home-hero .hero-scope-label,
+    .home-hero .stats-source > .stat-chip {
+        animation: none;
+    }
+}
+
+.home-hero .stat-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.04em;
+    text-align: center;
+}
+
+.arrow {
+    font-size: 2rem;
+}
+
+/* ==================
+  specific - spinner
+ ==================== */
+
+.spinner {
+    border: 3px solid var(--text-muted);
+    border-radius: 0.2rem;
+    width: 1.25rem;
+    height: 1.75rem;
+    animation: spin 0.5s linear infinite;
+    margin: 0 auto;
+    margin-bottom: 3rem;
+    display: flex;
+    justify-content: center;
+    align-self: center;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* ================================
+  specific - commander/card images
+ ================================== */
+
+.card-image {
+    display: block;
+    object-fit: contain;
+    flex: 1;
+    min-height: 0;
+    max-width: calc(100% - 2rem);
+    border-radius: 1rem;
+    overflow: hidden;
+    margin: 1rem auto 0.75rem auto;
+}
+
+/* FlippableCardImage: base wrapper/img/flip-button rules live in
+   components/assets/magic.css (shared with zite). The rules below are
+   the zwiper-surface-specific max bounds layered on the `.card-image` /
+   `.carousel-card-image` layout classes. */
+/* Swipe stack (Add/Remove Deck Cards) */
+.flippable-card-wrapper.card-image img {
+    max-height: 55vh;
+    box-shadow: var(--shadow-md);
+}
+
+/* Inside the swipe stack the image is bound to the padded card layer's
+   height, not the viewport, so it can't spill into the chip row above or
+   the details below on short screens. */
+.swipe-stack-card .flippable-card-wrapper.card-image {
+    height: 100%;
+    width: 100%;
+    min-height: 0;
+}
+
+.swipe-stack-card .flippable-card-wrapper.card-image img {
+    max-height: min(55vh, 100%);
+    max-width: 100%;
+}
+
+/* Printing carousel + single-printing view */
+.flippable-card-wrapper.carousel-card-image img {
+    max-height: 45vh;
+}
+
+/* Printing sheet inside a bottom sheet — tighter cap */
+.bottom-sheet .flippable-card-wrapper.carousel-card-image img {
+    max-height: 38vh;
+}
+
+/* The swipe card's prices under it: money chips on one line, centered, a
+   chip tall even with none. */
+.card-prices {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.4rem;
+    flex-shrink: 0;
+    min-height: 1.7rem;
+    margin-top: 0.5rem;
+}
+
+.skeleton-bar.skeleton-price-chip {
+    width: 4.5rem;
+    height: 1.6rem;
+    border-radius: 0.4rem;
+}
+
+.card-prices > .card-price-chip {
+    font-size: 0.8rem;
+    padding: 0.2rem 0.55rem;
+}
+
+/* Card-rules sheet body: reuses the expanded card-row detail markup
+   (card-detail-* classes) so mana/oracle symbols and chips render identically.
+   Scrolling is owned by the enclosing .sheet-content (a single scroll
+   container); this stays a plain text-styling wrapper so the two don't nest. */
+.card-rules {
+    text-align: left;
+    font-size: 0.75rem;
+}
+
+/* ===================
+  specific - dropdown
+ ===================== */
+
+.dropdown {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.4rem;
+    background-color: var(--bg-primary);
+    max-height: 20rem;
+    overflow-y: auto;
+    box-shadow: var(--shadow-md);
+    animation: dropdown-enter 0.3s ease;
+}
+
+@keyframes dropdown-enter {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* =========================
+  unified chip system
+ =========================== */
+
+/* .chip and .chip.selected are in orangui's components.css and .chip .ms in
+   the components crate's magic.css. .chip-xs keeps its own glyph sizing here. */
+.chip-xs .ms {
+    font-size: 1.1rem;
+    vertical-align: middle;
+}
+
+.chip-xs {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.4rem;
+    font-size: 0.7rem;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-color: var(--bg-primary);
+    box-shadow: var(--shadow-sm);
+}
+
+.chip-xs.selected {
+    border-color: var(--accent-secondary);
+    color: var(--accent-secondary);
+}
+
+.chip-xs.chip-primary {
+    border-color: var(--palette-2);
+    color: var(--palette-2);
+}
+
+.chip-unselected {
+    display: inline-block;
+    padding: 0.3rem 0.6rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-muted);
+    border-radius: 0.6rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-sm);
+}
+
+/* Non-interactive note chip: the empty/error states that used to be bare
+   text against the background grid (deck list, commander maybeboard). Same
+   face as .chip-unselected, minus the pointer. */
+.chip-note {
+    display: inline-block;
+    padding: 0.3rem 0.6rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-muted);
+    border-radius: 0.6rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    box-shadow: var(--shadow-sm);
+}
+
+/* An empty swipe stack's note at full strength, with a chip's edge and the
+   subtle text color: faded on a light theme it was a smudge on the page. */
+.message-empty:has(> .chip-note) {
+    opacity: 1;
+}
+
+.message-empty .chip-note {
+    border-color: var(--border-primary);
+    color: var(--text-subtle);
+}
+
+/* An empty heatmap day on a light theme: the kit's --border-secondary is
+   the panel's own cream, so the cell fills with the sink and takes a faint
+   edge instead. */
+[class*="theme-"][class*="-light"] .heat-cell.heat-0 {
+    fill: var(--bg-sink);
+    stroke: var(--border-muted);
+    stroke-width: 0.5;
+}
+
+.chip-remove {
+    all: unset;
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    margin-left: 0.3rem;
+}
+
+/* ================================
+  specific - card image preview
+================================== */
+
+@keyframes image-drop-in {
+    from {
+        opacity: 0;
+        transform: translateY(-40px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes image-drop-out {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-40px);
+    }
+}
+
+.image-preview-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 202; /* above sheet-backdrop (200) and bottom-sheet (201) */
+    pointer-events: none;
+}
+
+.image-preview-container.show {
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+.image-preview-container.show .card-image {
+    animation: image-drop-in 0.3s ease-out both;
+}
+
+.image-preview-container.dismissing .card-image {
+    animation: image-drop-out 0.2s ease-in both;
+}
+
+.bottom-sheet .carousel-card-image {
+    max-height: 38vh;
+}
+
+/* On top of the shared app.css .sheet-header. */
+.sheet-header {
+    gap: 0.75rem;
+}
+
+.sheet-content .btn {
+    margin-bottom: 0;
+}
+
+/* ================================
+  compact utilities - accordion/modal
+================================== */
+
+.input-compact {
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+    border-radius: 0.5rem;
+}
+
+/* A compact field in the kit's clear wrap keeps the compact spacing under
+   it. */
+.input-clear-wrap:has(> .input-compact) {
+    margin-bottom: 0.5rem;
+}
+
+.label-xs {
+    font-size: 0.875rem;
+    margin-bottom: 0.25rem;
+    color: var(--accent-tertiary);
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    text-align: center;
+    /* No width:100% — the label shrinks to its text so any toggle/clear controls
+       sit inline beside it, and the centered .label-row keeps the group centered
+       (label just shifts left a touch). Label-only rows still center fine. */
+}
+
+.gap-half {
+    gap: 0.5rem;
+}
+
+/* =========================
+  collapsible field (ease in/out)
+=========================== */
+
+/* Animates a command-zone field's height + opacity open/closed via the
+   grid-template-rows 0fr<->1fr technique, so fields ease in and out instead of
+   popping. The inner wrapper clips the content as it collapses. */
+.collapsible {
+    display: grid;
+    grid-template-rows: 0fr;
+    /* One bounded column. Without minmax(0, 1fr), an OPEN group's inner
+       (overflow: visible, see below) regains its automatic minimum width and
+       wide content — an expanded card row's detail — pushes the auto track
+       past the container, clipping at the viewport (WebKit, deck cards). */
+    grid-template-columns: minmax(0, 1fr);
+    opacity: 0;
+    transition:
+        grid-template-rows 0.25s ease,
+        opacity 0.25s ease;
+}
+
+.collapsible.open {
+    grid-template-rows: 1fr;
+    opacity: 1;
+}
+
+.collapsible-inner {
+    overflow: hidden;
+    min-height: 0;
+    min-width: 0;
+}
+
+/* Visible at steady open state so floating search results
+   (.search-float-results, e.g. the command-zone pickers) can escape the clip;
+   the guard keyframes pin overflow to hidden for the open transition's 250ms
+   (both endpoints hold the same discrete value), and the base rule above
+   clips the collapse. Same trick as the filter sheet's accordion. */
+.collapsible.open .collapsible-inner {
+    overflow: visible;
+    animation: collapsible-open-guard 0.25s ease;
+}
+
+@keyframes collapsible-open-guard {
+    from {
+        overflow: hidden;
+    }
+
+    to {
+        overflow: hidden;
+    }
+}
