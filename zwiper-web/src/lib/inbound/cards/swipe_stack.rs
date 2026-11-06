@@ -6,8 +6,10 @@
 //! host's handler runs at once, so the next card takes a drag right away. A
 //! down swipe never moves the card: it is the host's undo. The keys and the
 //! buttons go through [`SwipeControl`], so they animate the same way a drag
-//! does, and a press while a card is still flying off is dropped.
+//! does, and a press before the last card is half way out is dropped, so
+//! two exits overlap at most by half.
 
+use chrono::{DateTime, Utc};
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
@@ -19,6 +21,14 @@ pub const COMMIT_PX: f64 = 90.0;
 
 /// Degrees of tilt per pixel of horizontal drag, as in the app.
 const TILT_PER_PX: f64 = 0.06;
+
+/// How long a card's exit runs on the web, in milliseconds: `web.css`'s
+/// `--web-swipe-exit`.
+const EXIT_MS: i64 = 320;
+
+/// How long after a card starts flying off a key or button press plays:
+/// half of [`EXIT_MS`], when the card is half way out.
+const PRESS_GAP_MS: i64 = EXIT_MS / 2;
 
 /// A direction a card can be swiped, down being the host's undo.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -64,10 +74,12 @@ impl Swipe {
         }
     }
 
-    /// Whether a key or button press of this swipe plays now, given whether
-    /// a card is still flying off. Down always plays, having no exit.
-    fn plays_while(self, card_leaving: bool) -> bool {
-        self == Self::Down || !card_leaving
+    /// Whether a key or button press of this swipe plays now, given how
+    /// long ago, in milliseconds, the last card started flying off (`None`
+    /// when none has). It plays once that card is half way out, so two exits
+    /// overlap. Down always plays, having no exit.
+    fn plays_after(self, since_last_exit_ms: Option<i64>) -> bool {
+        self == Self::Down || since_last_exit_ms.is_none_or(|ms| ms >= PRESS_GAP_MS)
     }
 
     /// The swipe a drag of `(dx, dy)` pixels makes, if it went far enough.
@@ -170,11 +182,14 @@ pub fn SwipeStack(
 ) -> Element {
     let mut drag: Signal<Option<Drag>> = use_signal(|| None);
     let mut exiting: Signal<Vec<Exiting>> = use_signal(Vec::new);
+    // When the last card started flying off, on the browser's clock.
+    let mut last_exit_at: Signal<Option<DateTime<Utc>>> = use_signal(|| None);
     let top = cards.first().cloned();
     let allowed_for_control = allowed.clone();
 
     let commit = use_callback(move |(swipe, card, from): (Swipe, Card, (f64, f64))| {
         if let Some(direction) = swipe.exit() {
+            last_exit_at.set(Some(Utc::now()));
             exiting.write().push(Exiting {
                 key: Uuid::new_v4(),
                 card: card.clone(),
@@ -187,14 +202,17 @@ pub fn SwipeStack(
     });
 
     // A key or a button: play the swipe on the top card from rest, or drop
-    // it while a card is still flying off.
+    // it while the last card is less than half way out.
     let mut asked = control.0;
     use_effect(use_reactive!(|top| {
         let Some(swipe) = asked() else {
             return;
         };
         asked.set(None);
-        if !allowed_for_control.contains(&swipe) || !swipe.plays_while(!exiting.peek().is_empty()) {
+        let last_exit = *last_exit_at.peek();
+        let since_last_exit =
+            last_exit.map(|at| Utc::now().signed_duration_since(at).num_milliseconds());
+        if !allowed_for_control.contains(&swipe) || !swipe.plays_after(since_last_exit) {
             return;
         }
         if let Some(card) = top {
@@ -288,30 +306,39 @@ pub fn SwipeStack(
                 }
             }
             for gone in exiting() {
-                {
-                    let exit_class = match gone.direction {
-                        Direction::Left => "card-stack-exit-left",
-                        Direction::Right => "card-stack-exit-right",
-                        Direction::Up => "card-stack-exit-up",
-                    };
-                    let key = gone.key;
-                    let rot = gone.from_x * TILT_PER_PX;
-                    rsx! {
-                        div {
-                            key: "exit-{key}",
-                            class: "swipe-stack-card swipe-stack-exiting {exit_class}",
-                            style: "z-index: 100; --exit-from-x: {gone.from_x}px; --exit-from-y: {gone.from_y}px; --exit-from-rot: {rot}deg;",
-                            onanimationend: move |_| exiting.write().retain(|e| e.key != key),
-                            components::FlippableCardImage {
-                                sd: gone.card.scryfall_data.clone(),
-                                size: ImageSize::Large,
-                                class: "card-image".to_string(),
-                                draggable: false,
-                                flippable: false,
-                            }
-                        }
-                    }
+                ExitingCard {
+                    key: "{gone.key}",
+                    gone,
+                    on_end: move |key: Uuid| exiting.write().retain(|e| e.key != key),
                 }
+            }
+        }
+    }
+}
+
+/// One card flying off on its exit keyframe, keyed by its own id so the
+/// cards still flying keep their place when another one lands. `on_end`
+/// takes the id once the flight ends.
+#[component]
+fn ExitingCard(gone: Exiting, on_end: EventHandler<Uuid>) -> Element {
+    let exit_class = match gone.direction {
+        Direction::Left => "card-stack-exit-left",
+        Direction::Right => "card-stack-exit-right",
+        Direction::Up => "card-stack-exit-up",
+    };
+    let key = gone.key;
+    let rot = gone.from_x * TILT_PER_PX;
+    rsx! {
+        div {
+            class: "swipe-stack-card swipe-stack-exiting {exit_class}",
+            style: "z-index: 100; --exit-from-x: {gone.from_x}px; --exit-from-y: {gone.from_y}px; --exit-from-rot: {rot}deg;",
+            onanimationend: move |_| on_end.call(key),
+            components::FlippableCardImage {
+                sd: gone.card.scryfall_data.clone(),
+                size: ImageSize::Large,
+                class: "card-image".to_string(),
+                draggable: false,
+                flippable: false,
             }
         }
     }
@@ -468,13 +495,25 @@ mod tests {
     }
 
     #[test]
-    fn a_press_waits_for_the_leaving_card_but_undo_does_not() {
+    fn a_press_waits_until_the_last_card_is_half_way_out() {
         for swipe in [Swipe::Left, Swipe::Right, Swipe::Up] {
-            assert!(swipe.plays_while(false), "{swipe:?}");
-            assert!(!swipe.plays_while(true), "{swipe:?}");
+            assert!(swipe.plays_after(None), "{swipe:?}");
+            assert!(!swipe.plays_after(Some(0)), "{swipe:?}");
+            assert!(!swipe.plays_after(Some(PRESS_GAP_MS - 1)), "{swipe:?}");
+            assert!(swipe.plays_after(Some(PRESS_GAP_MS)), "{swipe:?}");
+            assert!(swipe.plays_after(Some(EXIT_MS)), "{swipe:?}");
         }
-        assert!(Swipe::Down.plays_while(false));
-        assert!(Swipe::Down.plays_while(true));
+    }
+
+    #[test]
+    fn undo_never_waits() {
+        assert!(Swipe::Down.plays_after(None));
+        assert!(Swipe::Down.plays_after(Some(0)));
+    }
+
+    #[test]
+    fn the_gap_is_half_the_exit() {
+        assert_eq!(PRESS_GAP_MS, 160);
     }
 
     #[test]

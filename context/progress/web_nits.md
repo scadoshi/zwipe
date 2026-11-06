@@ -23,10 +23,15 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
-| 43, the web's favicons match zwipe.net's set (queued after 8) | laptop | `nits/laptop-43` |
-| 8 reopened, the image preview as large as zwipe.net's at every width | laptop | `nits/laptop-8-again` |
-| 41, 42, 44, hovers at any width, hint buttons, the deck entry hover | thinker | `nits/thinker-41` |
-| 40, the narrow layout fills a tablet-width window as zwipe.net does | halo | `nits/halo-40` |
+| 28, the skeleton pass, Playstyle first | halo | `nits/halo-28` |
+| 55, zwipe.net's testimonial rating inline with its title (queued after 53) | halo | `nits/halo-55` |
+| 54, card details pane redesign, prices move into it (queued after 50) | thinker | `nits/thinker-54` |
+| 53, the app's Quick add through ClearWrap | halo | `nits/halo-53` |
+| 52, the swipe buttons move into the action dock (queued after 51) | laptop | `nits/laptop-52` |
+| 51, swipe twice as fast, same animation speed | laptop | `nits/laptop-51` |
+| 50, the deck head's ? matches Edit, Clone and Share | thinker | `nits/thinker-50` |
+| 45, 47, no page heads, the page's ? in the nav, About drops Credits on wide (queued after 21) | scotland | `nits/scotland-45` |
+| 46, a compact footer on both sites (queued after 40) | halo | `nits/halo-46` |
 | 21, the card filter into components (plan phases 3 and 4) | laptop | `shared/card-filter` |
 | cycle-trk-mission description, held until scotland's 2026-11-07 sync confirms its cards | halo | `otags/cycle-trk-mission` (PR #178) |
 | 38, the footer looks like zwipe.net's | scotland | `nits/scotland-footer-look` |
@@ -45,7 +50,7 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 4. **Deck page card rows have no dividers.** On the wide deck page the rows inside a group (Commander, Creatures) run with no rule between them, where the app's card list separates each row with a bottom border (the shared `.card-row` rule in `components/assets/magic.css`, last row excepted). Likely a web or band style overriding it.
 5. **Modals can be dragged around the screen.** Clicking and dragging a modal (the Universes Beyond exceptions picker, the other screen pickers) moves it. Likely the bottom sheet's drag-to-dismiss gesture still live on the kit's wide `SheetFrame { wide: Modal }` form, where nothing should move it; it should be off on a wide window.
 6. **Privacy policy is too narrow on a wide window.** The page head and sections are held to the policy's 40rem column (the `.web-privacy` rules and the `:has(+ .screen-content .web-privacy)` head cap in `web.css`), so a large window leaves wide empty margins. Wanted wider, likely the page width other screens use (`--web-page-max`), or zite's privacy page width. The head still repeats Privacy policy above the first section's own title.
-7. **Deck tiles on Decks are much too tall.** Six tiles to a row on a wide window, each about 11rem wide (`repeat(auto-fill, minmax(11rem, 1fr))` in `web.css`), so the chips under the name stack one per line: count, format, power, commander, then every tag. A tagged deck runs over 800px tall. Needs a plan; options to weigh:
+7. **Deck tiles on Decks are much too tall.** Decided 2026-11-06: the phone's row shape (art left, name and chips beside) in one column, with two columns at wide widths to compare. Six tiles to a row on a wide window, each about 11rem wide (`repeat(auto-fill, minmax(11rem, 1fr))` in `web.css`), so the chips under the name stack one per line: count, format, power, commander, then every tag. A tagged deck runs over 800px tall. Needs a plan; options to weigh:
    - Fewer, wider tiles: raise the tile minimum to about 18 to 20rem, three or four to a row, so chips wrap several to a line.
    - Let the chips flow in rows: they read as a column now even when two short ones would fit side by side; a centered wrapping row alone cuts the height a lot.
    - The app's row shape on wide too: art at the left, name and chips beside it, two or three rows across the page, the shape the phone layout already uses.
@@ -87,6 +92,17 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 42. **Every hint button on the web gets the plain button hover.** The `?` buttons (panel headers, charts, the swipe screens' corner hint, the drawer title bar) sit still under a mouse.
 43. **The two sites' favicons differ.** app.zwipe.net shows a gold Z on a dark square from its lone favicon.ico; zwipe.net a light Z from a full icon set. The web takes zwipe.net's set.
 44. **A deck entry's hover squares its corners.** Hovering a deck on Decks shrinks its corner radius. Wanted: the same radius, a slight grow (no lift), a quick transition, and the background color change kept for now (Scotty may drop it later).
+45. **The wide page heads go.** Each wide page opens with a panel restating the page's title and a one-line description: ceremony, no function. Remove them on every page, Settings included (keeping Home's hero, and any head that carries real controls or identity) and move the page's `?` into the nav bar's icon row.
+46. **The footer is far too tall on both sites.** The copyright sits in line with the pills, the Scryfall credit in line with the Fan Content notice, the attributions use the footer's full width, and the padding shrinks. Shared `SiteFooter`, so zwipe.net and the web change together.
+47. **About repeats the footer's credits.** On a wide window the Credits panel duplicates the footer's Scryfall and Fan Content lines; it goes there. Below 900px, with no footer, it stays.
+48. **zwipe.net's manifest points at missing install icons.** zite's site.webmanifest lists /assets/icon-192.png and /assets/icon-512.png, which return 404 live because zite never bundles them (found by laptop on 43).
+49. **Hand-rolled clear-× inputs.** The deck page's Quick add (and other inputs: the maybeboard's Quick add, the exceptions and picker searches, the dictionary, Import's URL) draw their own input and × instead of `components::ClearWrap`, so they sit slightly smaller and the × doesn't ease in. All go through `ClearWrap`.
+50. **The deck page head's `?` is smaller than its neighbors.** Edit, Clone and Share are full icon buttons; the `?` beside them is the small info button. Same size and shape as the other three.
+51. **Swiping on the web is too slow.** 24 drops a press until the leaving card's 0.32s exit ends. Keep the exit's speed but take the next press halfway through it, so swipes can come twice as fast; a held key still swipes once.
+52. **The swipe surfaces' text buttons belong in the dock.** The "← Skip / ↑ Maybeboard / ↓ Undo / → Add" row under the card moves into the action dock at the bottom right (or a second dock beside it) as icon buttons, on every swipe surface.
+53. **The app's Quick add hand-rolls its clear ×** (zwiper/src/lib/inbound/screens/deck/card/components/quick_add.rs ~117) instead of `components::ClearWrap`, as the web's did before 49. An app change: rides the next app release with a changelog entry if visible.
+54. **Redesign the card details pane** (`components::CardDetails`, both clients; also the todo's 2026-11-05 card details redesign). A kit `Panel` titled with the card's name; a chip row with keys (Type, Rarity, Set, Artist) and the mana pips inline instead of pinned right; the oracle text in the body; card roles, tags and the other bottom pieces in the footer; the price chips under the web's swipe card move into the pane. Wherever it opens as an overlay it slides in as a side drawer from the right, at every width and in the app too (Scotty prefers the side entrance to the pop-up).
+55. **zwipe.net: the testimonials' rating sits on its own line.** Move the "★★★★★ 4.8" chip into the panel header beside "Deck builder testimonials".
 
 ## Done
 
@@ -110,6 +126,12 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 - 12, split phase 0, the empty `components::SCREENS_CSS` frame: PR #169 into `release`.
 - 2, 23, the web's deck page drops the inline Filter row (`DeckControls` takes an optional `DeckFilter`) and gains fold-all: PR #170 into `release`. 11 won't do.
 - 12, split phases 1 to 4, `main.css` moved into `components/assets/screens/`: PRs #171, #174, #175, #173 into `release`.
+- 41, 42, 44, hovers at any width with a mouse, hint button hover, deck entries keep their corners: PR #185 into `release`.
+- 40, the narrow layout fills a tablet-width window with zwipe.net's gutter: PR #186 into `release`.
+- 7, Decks as rows on a wide window, two columns from 1400px: PR #187 into `release`.
+- 8 (reopened), the image preview as large as zwipe.net's at every width: PR #188 into `release`.
+- 43, the web's favicons match zwipe.net's: PR #189 into `release`.
+- 49, the text inputs that clear typed text go through `components::ClearWrap`: PR #192 into `release`.
 - 19 (reopened), the deck form's pickers as the card filter's drawer and bottom sheet, the dictionary as the kit's modal: PR #182 into `release`.
 - 12, split phase 5: the web stops loading `main.css`, `accordion.css` moves to `components`, scrollbars show on a wide window: PR #180 into `release`. The split is done.
 - 39, the splash plays once a session and not on arrival from zwipe.net (zite mirrors it): PR #181 into `release`.
