@@ -54,6 +54,18 @@ pub struct DeckFacts {
     pub price: Option<String>,
 }
 
+/// The Filter row's state, held by the host: the name box's text and the
+/// type and color chips picked.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct DeckFilter {
+    /// The name box's text.
+    pub name: Signal<String>,
+    /// The type chips picked.
+    pub types: Signal<Vec<CardType>>,
+    /// The color pips picked.
+    pub colors: Signal<Vec<Color>>,
+}
+
 /// One card group of the list.
 #[derive(Debug, Clone, PartialEq)]
 pub struct DeckSection {
@@ -300,8 +312,8 @@ pub fn FeaturedCard(
 /// is `None` for a list with no tokens, and `on_change` fires when a row
 /// changes what the list shows. With `on_fold_all` the Show row ends in the
 /// fold-all button, which shuts every group, or opens every group once
-/// `all_folded`. The Filter row (a name box, six type chips and the five
-/// pips) shows when the host passes all of `name`, `types` and `colors`.
+/// `all_folded`. With `filter` the controls end in the Filter row: a name
+/// box, six type chips and the five pips.
 #[component]
 pub fn DeckControls(
     mut group_by: Signal<GroupByOption>,
@@ -310,9 +322,7 @@ pub fn DeckControls(
     #[props(default)] show_tokens: Option<Signal<bool>>,
     mut show_zone: Signal<bool>,
     mut show_art: Signal<bool>,
-    #[props(default)] name: Option<Signal<String>>,
-    #[props(default)] types: Option<Signal<Vec<CardType>>>,
-    #[props(default)] colors: Option<Signal<Vec<Color>>>,
+    #[props(default)] filter: Option<DeckFilter>,
     #[props(default)] on_change: Option<Callback<()>>,
     #[props(default)] leading: Option<Element>,
     #[props(default)] boards: Option<Element>,
@@ -373,8 +383,8 @@ pub fn DeckControls(
                 }
             }
         }
-        if let (Some(name), Some(types), Some(colors)) = (name, types, colors) {
-            FilterRow { name, types, colors, on_change }
+        if let Some(filter) = filter {
+            FilterRow { filter, on_change }
         }
     }
 }
@@ -382,12 +392,12 @@ pub fn DeckControls(
 /// The Filter row: a name box, six type chips and the five pips, each
 /// change firing `on_change`.
 #[component]
-fn FilterRow(
-    mut name: Signal<String>,
-    mut types: Signal<Vec<CardType>>,
-    mut colors: Signal<Vec<Color>>,
-    on_change: Option<Callback<()>>,
-) -> Element {
+fn FilterRow(filter: DeckFilter, on_change: Option<Callback<()>>) -> Element {
+    let DeckFilter {
+        mut name,
+        mut types,
+        mut colors,
+    } = filter;
     let changed = move || {
         if let Some(on_change) = on_change {
             on_change.call(());
