@@ -23,11 +23,7 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
-| 22, hover stack into components | thinker | `shared/hover-stack` |
-| 12, split phase 1 | laptop | `split/phase-1` (PR #171, approved) |
-| 12, split phase 2 | halo | `split/phase-2` |
-| 12, split phase 3 | scotland | `split/phase-3` |
-| 12, split phase 4 | laptop | `split/phase-4` |
+| 12, split phase 5, the cut | laptop | `split/phase-5` |
 
 The loop is in [`../development/factory.md`](../development/factory.md).
 
@@ -98,3 +94,5 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 - 27, zwipe.net's footer on the web through `components::SiteFooter`: PR #168 into `release`.
 - 12, split phase 0, the empty `components::SCREENS_CSS` frame: PR #169 into `release`.
 - 2, 23, the web's deck page drops the inline Filter row (`DeckControls` takes an optional `DeckFilter`) and gains fold-all: PR #170 into `release`. 11 won't do.
+- 12, split phases 1 to 4, `main.css` moved into `components/assets/screens/`: PRs #171, #174, #175, #173 into `release`.
+- 22, zite's hover stack in `components`, drawn by zite and the web: PR #172 into `release`.
