@@ -133,6 +133,7 @@ fn App() -> Element {
         document::Style { {components::COMPONENTS_CSS} }
         document::Style { {components::MAGIC_CSS} }
         document::Style { {components::APP_CSS} }
+        document::Style { {components::SCREENS_CSS} }
         document::Link { rel: "stylesheet", href: MAIN_CSS }
         document::Link { rel: "stylesheet", href: ACCORDION_CSS }
         document::Style { {components::TOAST_CSS} }
