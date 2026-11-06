@@ -13,6 +13,21 @@
     --web-sticky-max: calc(100dvh - 10rem);
 }
 
+/* A text field on a wide page stops at a field's width, left-aligned
+   beside or under its label. */
+@media (min-width: 900px) {
+    :root {
+        --web-field-max: 32rem;
+    }
+
+    #quick-add,
+    #commander-maybeboard-search,
+    #import-url,
+    #oracle-tag-dictionary-search {
+        max-width: var(--web-field-max);
+    }
+}
+
 html {
     overflow: auto;
     touch-action: auto;
@@ -1280,14 +1295,16 @@ body {
         min-height: 0;
     }
 
-    /* Search and the letter rail as a column on the left, the list beside. */
+    /* The Search label and box, the letters in one row under them, then
+       the list, one column up to the page's width. */
     .web-dict-browse {
-        display: grid;
-        grid-template-columns: 15rem minmax(0, 1fr);
-        gap: 1rem;
+        display: flex;
+        flex-direction: column;
         flex: 1 1 auto;
         min-height: 0;
         width: 100%;
+        max-width: var(--web-page-max);
+        margin: 0 auto;
         padding: 0 1.5rem;
         box-sizing: border-box;
     }
@@ -1295,19 +1312,24 @@ body {
     .web-dict-browse .dict-controls {
         max-width: none;
         padding: 0.75rem 0;
-        min-height: 0;
-        overflow-y: auto;
+    }
+
+    .web-dict-browse .dict-skeleton-search {
+        max-width: var(--web-field-max);
     }
 
     .web-dict-browse .dict-letter-rail {
-        flex-wrap: wrap;
-        overflow-x: visible;
         -webkit-mask-image: none;
         mask-image: none;
     }
 
+    .web-dict-browse .dict-letter-rail > * {
+        flex: 1 1 0;
+        min-width: 1.75rem;
+    }
+
     .web-dict-browse .dict-list {
-        max-width: 48rem;
+        max-width: none;
         min-height: 0;
     }
 }
