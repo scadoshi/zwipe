@@ -378,7 +378,7 @@ body {
    inside it, and a card list's rows carry their own hover. Any width with
    a mouse. */
 @media (hover: hover) {
-    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold, .web-details-panel, .deck-row) {
+    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold, .web-details-panel) {
         transition:
             border-color 0.4s ease,
             min-height 0.3s ease,
@@ -386,18 +386,43 @@ body {
             box-shadow 0.4s ease;
     }
 
-    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold, .web-details-panel, .deck-row):is(.content-enter, .content-enter-delayed, .row-enter, .changelog-panel) {
+    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold, .web-details-panel):is(.content-enter, .content-enter-delayed, .row-enter, .changelog-panel) {
         animation-fill-mode: backwards;
     }
 
-    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold, .web-details-panel, .deck-row):hover:not(:is(.screen .screen, .bottom-sheet, .alert-dialog) *):not(:has(.card-row, .bottom-sheet, .screen, .image-preview-container, .action-dock, .heat-grid, .grid-cells, .swipe-bottom-row)) {
+    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold, .web-details-panel):hover:not(:is(.screen .screen, .bottom-sheet, .alert-dialog) *):not(:has(.card-row, .bottom-sheet, .screen, .image-preview-container, .action-dock, .heat-grid, .grid-cells, .swipe-bottom-row)) {
         box-shadow: var(--shadow-md);
     }
 }
 
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
-    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold, .web-details-panel, .deck-row):hover:not(:is(.screen .screen, .bottom-sheet, .alert-dialog) *):not(:has(.card-row, .bottom-sheet, .screen, .image-preview-container, .action-dock, .heat-grid, .grid-cells, .swipe-bottom-row)) {
+    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold, .web-details-panel):hover:not(:is(.screen .screen, .bottom-sheet, .alert-dialog) *):not(:has(.card-row, .bottom-sheet, .screen, .image-preview-container, .action-dock, .heat-grid, .grid-cells, .swipe-bottom-row)) {
         transform: translateY(-3px);
+    }
+}
+
+/* A deck on Decks is a card row, so the kit's row hover reaches it with
+   the expanded row's smaller corners and a larger scale. Under a mouse it
+   keeps its own corners, keeps the row hover's tint and grows a touch.
+   Its entrance fills backwards only, so its end transform lets go of the
+   hover. */
+@media (hover: hover) {
+    .card-row.deck-row {
+        animation-fill-mode: backwards;
+        transition:
+            background-color 0.15s ease,
+            transform 0.15s ease;
+    }
+
+    .card-row.deck-row:not(.expanded):hover {
+        border-radius: 1rem;
+        transform: scale(1.012);
+    }
+}
+
+@media (hover: hover) and (prefers-reduced-motion: reduce) {
+    .card-row.deck-row:not(.expanded):hover {
+        transform: none;
     }
 }
 
