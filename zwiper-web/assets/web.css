@@ -562,11 +562,14 @@ body {
     width: 100%;
 }
 
-/* On a wide window the page head is as wide as the policy's column (its
-   40rem plus the head's side padding), not the page. */
+/* On a wide window the policy's sections run the page's width, under a
+   head of the same width. */
 @media (min-width: 900px) {
-    .web-page-head-wrap:has(+ .screen-content .web-privacy) {
-        max-width: calc(40rem + 3rem);
+    .web-privacy .privacy-content {
+        width: 100%;
+        max-width: var(--web-page-max);
+        padding: 0 1.5rem 1rem;
+        box-sizing: border-box;
     }
 }
 
