@@ -1,9 +1,10 @@
 // The header follows the scroll, as in X: scrolling a screen's content down
-// slides its header up behind the status bar strip, point for point, until it
-// is gone, and any scroll up slides it back the same way. At the top of the
-// content it is always fully shown. One listener, in the capture phase since
-// scroll events do not bubble, serves every screen. It guards itself so a
-// second load does nothing.
+// slides its header up into the status bar strip, point for point, its
+// contents fading into the bar's background as it goes until it is gone,
+// and any scroll up brings it back the same way. At the top of the content
+// it is always fully shown. One listener, in the capture phase since scroll
+// events do not bubble, serves every screen. It guards itself so a second
+// load does nothing.
 (() => {
     if (window.__zwipeHeaderHide) return;
     window.__zwipeHeaderHide = true;
@@ -37,6 +38,8 @@
             pushed = top <= 0 ? 0 : Math.min(height, Math.max(0, pushed));
             offset.set(nav, pushed);
             nav.style.transform = pushed ? `translateY(${-pushed}px)` : "";
+            nav.style.setProperty("--nav-fade", String(1 - pushed / height));
+            nav.parentElement.classList.toggle("header-collapsed", pushed >= height);
         },
         { capture: true, passive: true },
     );
@@ -51,6 +54,8 @@
             if (area) lastTop.delete(area);
             offset.delete(nav);
             nav.style.transform = "";
+            nav.style.removeProperty("--nav-fade");
+            nav.parentElement.classList.remove("header-collapsed");
         }
     });
     observer.observe(document.documentElement, { childList: true, subtree: true });
