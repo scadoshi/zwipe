@@ -26,6 +26,15 @@
     #oracle-tag-dictionary-search {
         max-width: var(--web-field-max);
     }
+
+    /* A dialog's field, as Clone deck's name, sits centered under the
+       dialog's message. */
+    .alert-dialog-description > .input {
+        display: block;
+        max-width: var(--web-field-max);
+        margin-left: auto;
+        margin-right: auto;
+    }
 }
 
 html {
