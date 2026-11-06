@@ -23,6 +23,7 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
+| 19 reopened, the pickers through the kit's real drawer | scotland | `nits/scotland-picker-drawer` |
 | 39, the splash plays once a session and not when arriving from zwipe.net | thinker | `nits/thinker-splash-once` |
 | 12, split phase 5, the cut | laptop | `split/phase-5` |
 | cycle-trk-mission description, held until scotland's 2026-11-07 sync confirms its cards | halo | `otags/cycle-trk-mission` (PR #178) |
@@ -87,7 +88,7 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 - 18, 20, wide fields capped at 32rem, dictionary letters in one row: PR #154 into `release`.
 - 8, 16, image preview sized as zite's, dialog padding rebalanced: PR #155 into `release`.
 - 9, 10, 4, 30, panel lift, deck art hover, wide deck page dividers, nav icon hover: PR #156 into `release`.
-- 19, 25, pickers as the kit's drawer, no grid tiles inside overlays: PR #157 into `release`.
+- 25, no grid tiles inside overlays: PR #157 into `release`. 19 from the same PR only restyled the old picker and was reopened.
 - 5, 17, modals and drawers stay put on a wide window, Account changes as drawers: PR #158 into `release`.
 - 29, featured card names in chips on every client: PR #159 into `release`.
 - 31, 32, dividers on every web card list, dialog fields capped: PR #160 into `release`.
