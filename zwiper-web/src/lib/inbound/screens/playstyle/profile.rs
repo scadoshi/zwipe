@@ -1,8 +1,10 @@
 //! Playstyle's profile: the Colors, Summary, Card roles and Oracle tags
 //! sections over the suggestions, and their loading ghosts.
 
+use std::collections::HashSet;
+
 use components::{
-    BarChart, BarOrientation, ColorBars, ColorBarsGhost, ColorsEmpty, OtagDef, RoleTags,
+    BarChart, BarOrientation, ColorBars, ColorBarsGhost, ColorsEmpty, DeckFold, OtagDef, RoleTags,
 };
 use dioxus::prelude::*;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
@@ -21,13 +23,40 @@ const SUMMARY_TITLE: &str = "Summary";
 const ROLES_TITLE: &str = "Card roles";
 const TAGS_TITLE: &str = "Oracle tags";
 
-/// What the user builds: one accordion with Colors open on entry,
-/// then Summary, Card roles (a role chart whose roles reveal their tags) and
-/// Oracle tags (the [`TagTable`]). The host wraps it in a
-/// `web-sections-open` box, so a wide window shows every section open, and
-/// draws Summary as its hero there, so this one hides.
+/// One profile section: a [`DeckFold`] keyed by its title when `folds` is
+/// given (a wide window), else a section of the accordion over
+/// `open_section`. `accessory` sits at the header's right end.
 #[component]
-pub fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
+fn ProfilePanel(
+    title: &'static str,
+    open_section: Signal<Option<String>>,
+    folds: Option<Signal<HashSet<String>>>,
+    #[props(default)] accessory: Option<Element>,
+    children: Element,
+) -> Element {
+    if let Some(folded) = folds {
+        rsx! {
+            DeckFold { fold_key: title, title, folded, accessory,
+                div { class: "web-playstyle-fold-body", {children} }
+            }
+        }
+    } else {
+        rsx! {
+            CollapsibleSection { title, open_section, header_accessory: accessory, {children} }
+        }
+    }
+}
+
+/// What the user builds: Colors, Summary, Card roles (a role chart whose
+/// roles reveal their tags) and Oracle tags (the [`TagTable`]). With `folds`
+/// (a wide window) each is a fold, all open on entry; without, they are one
+/// accordion with Colors open. The host draws Summary as its hero on a wide
+/// window, so this one hides there.
+#[component]
+pub fn BuilderProfileSections(
+    profile: HttpBuilderProfile,
+    folds: Option<Signal<HashSet<String>>>,
+) -> Element {
     let summary = profile.clone();
     let mut selected_role: Signal<Option<String>> = use_signal(|| None);
     let colors = profile.color_map.as_ref().and_then(color_bars);
@@ -52,10 +81,11 @@ pub fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
     });
     rsx! {
         div { class: "web-playstyle-cell web-playstyle-colors",
-            CollapsibleSection {
+            ProfilePanel {
                 title: COLORS_TITLE,
                 open_section,
-                header_accessory: rsx! { InfoButton { topic: HintTopic::Colors } },
+                folds,
+                accessory: rsx! { InfoButton { topic: HintTopic::Colors } },
                 if let Some(bars) = colors {
                     ColorBars { bars }
                 } else {
@@ -64,14 +94,15 @@ pub fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
             }
         }
         div { class: "web-playstyle-summary-inline",
-            ProfileSummary { profile: summary, open_section }
+            ProfileSummary { profile: summary, open_section, folds }
         }
         if !roles.is_empty() {
             div { class: "web-playstyle-cell web-playstyle-roles",
-                CollapsibleSection {
+                ProfilePanel {
                     title: ROLES_TITLE,
                     open_section,
-                    header_accessory: rsx! { InfoButton { topic: HintTopic::SuggestionRoleChart } },
+                    folds,
+                    accessory: rsx! { InfoButton { topic: HintTopic::SuggestionRoleChart } },
                     BarChart {
                         bars: roles,
                         orientation: BarOrientation::Horizontal,
@@ -84,10 +115,11 @@ pub fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
         }
         if !tags.is_empty() {
             div { class: "web-playstyle-cell web-playstyle-tags",
-                CollapsibleSection {
+                ProfilePanel {
                     title: TAGS_TITLE,
                     open_section,
-                    header_accessory: rsx! { InfoButton { topic: HintTopic::SuggestionTagChart } },
+                    folds,
+                    accessory: rsx! { InfoButton { topic: HintTopic::SuggestionTagChart } },
                     TagTable { rows: tags }
                 }
             }
@@ -97,15 +129,17 @@ pub fn BuilderProfileSections(profile: HttpBuilderProfile) -> Element {
 
 /// The Summary section: the deck count, then the top color set and the top
 /// color with their deck counts. In the profile accordion below the
-/// breakpoint, and Playstyle's hero on a wide window.
+/// breakpoint, and Playstyle's hero on a wide window, a fold there through
+/// `folds`.
 #[component]
 pub fn ProfileSummary(
     profile: HttpBuilderProfile,
     open_section: Signal<Option<String>>,
+    folds: Option<Signal<HashSet<String>>>,
 ) -> Element {
     let summary = profile_summary(&profile);
     rsx! {
-        CollapsibleSection { title: SUMMARY_TITLE, open_section,
+        ProfilePanel { title: SUMMARY_TITLE, open_section, folds,
             div { class: "flex-col",
                 div { class: "settings-row",
                     span { class: "settings-row-label", "Decks" }

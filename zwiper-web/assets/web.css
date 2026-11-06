@@ -1346,7 +1346,8 @@ body {
     }
 }
 
-/* A card list's filter chips sit inside its panel, under the header. */
+/* Below the breakpoint a card list's filter chips sit inside its panel,
+   under the header. */
 .web-card-group-filters {
     display: flex;
     flex-direction: column;
@@ -1378,6 +1379,23 @@ body {
 
     .web-playstyle-cell {
         min-width: 0;
+    }
+
+    /* Suggested commanders and Staples each take their chip rows above the
+       panel, a panel gap over it, as the deck page keeps its controls. */
+    .web-playstyle-suggested,
+    .web-playstyle-staples {
+        display: flex;
+        flex-direction: column;
+        gap: var(--panel-gap);
+    }
+
+    /* A profile fold's body, at the accordion section's rhythm. */
+    .web-playstyle-fold-body {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        padding: 0.75rem 0;
     }
 
     .web-playstyle-summary-hero { order: 1; }

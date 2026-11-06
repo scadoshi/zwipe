@@ -149,13 +149,15 @@ pub fn SuggestionRow(
 }
 
 /// The cards in the most of the user's decks, under their own Type and
-/// Color rows; the first ten that match both show. The filters start over
-/// when the screen mounts again.
+/// Color rows; the first ten that match both show. The rows sit above the
+/// panel when `wide`, and inside it under the header otherwise. The filters
+/// start over when the screen mounts again.
 #[component]
 pub fn StaplesPanel(
     staples: Vec<HttpStaple>,
     deck_count: u32,
     expanded_card: Signal<Option<Uuid>>,
+    wide: bool,
 ) -> Element {
     let active_type: Signal<Option<CardType>> = use_signal(|| None);
     let active_color: Signal<Option<StapleColor>> = use_signal(|| None);
@@ -168,25 +170,33 @@ pub fn StaplesPanel(
         active_type(),
         active_color(),
     );
+    let filters = rsx! {
+        StapleTypeChips { active_type, types }
+        StapleColorChips { active_color, colors }
+    };
     rsx! {
-        div { class: "maybeboard-list card-group row-enter web-playstyle-cell web-playstyle-staples",
-            div { class: "card-group-header card-group-header-with-hint",
-                span { "{STAPLES_TITLE}" }
-                InfoButton { topic: HintTopic::SuggestionStaples }
+        div { class: "web-playstyle-cell web-playstyle-staples",
+            if wide {
+                div { class: "deck-controls", {filters.clone()} }
             }
-            div { class: "web-card-group-filters",
-                StapleTypeChips { active_type, types }
-                StapleColorChips { active_color, colors }
-            }
-            if rows.is_empty() {
-                div { class: "activity-total activity-total-group", "No staples match" }
-            }
-            for staple in rows {
-                StapleRow {
-                    key: "{staple.card.scryfall_data.id}",
-                    staple,
-                    deck_count,
-                    expanded_card,
+            div { class: "maybeboard-list card-group row-enter",
+                div { class: "card-group-header card-group-header-with-hint",
+                    span { "{STAPLES_TITLE}" }
+                    InfoButton { topic: HintTopic::SuggestionStaples }
+                }
+                if !wide {
+                    div { class: "web-card-group-filters", {filters} }
+                }
+                if rows.is_empty() {
+                    div { class: "activity-total activity-total-group", "No staples match" }
+                }
+                for staple in rows {
+                    StapleRow {
+                        key: "{staple.card.scryfall_data.id}",
+                        staple,
+                        deck_count,
+                        expanded_card,
+                    }
                 }
             }
         }
