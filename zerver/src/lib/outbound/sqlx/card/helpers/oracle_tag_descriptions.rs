@@ -17988,6 +17988,50 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
         "nanni",
         "Lets you play the top card of an opponent's library, spending mana as any color.",
     ),
+    (
+        "force-shuffle",
+        "Makes a player shuffle their library, often after searching it or shuffling cards into it.",
+    ),
+    (
+        "protects-self",
+        "A permanent with an ability that protects itself, such as hexproof, protection or indestructible.",
+    ),
+    (
+        "prowess-like",
+        "A creature that gets bigger whenever you cast a noncreature spell, like prowess without the keyword.",
+    ),
+    (
+        "unearth",
+        "Unearth returns this card from your graveyard with haste, then exiles it at end of turn or if it would leave.",
+    ),
+    (
+        "disturb",
+        "Disturb lets you cast this card transformed from your graveyard, exiling it if it would go to a graveyard again.",
+    ),
+    (
+        "impulsive-freecast",
+        "Exiles cards from a library and lets you play them without paying their mana costs.",
+    ),
+    (
+        "proto-finality",
+        "Returns a card to the battlefield with a rule that exiles it if it would leave, like a finality counter.",
+    ),
+    (
+        "pre-game-choice",
+        "Has you make a choice before the game begins or while building your deck.",
+    ),
+    (
+        "finality",
+        "Returns a card from a graveyard that is exiled instead if it would leave the battlefield again.",
+    ),
+    (
+        "klingon",
+        "A Star Trek card whose art or flavor text features the Klingons.",
+    ),
+    (
+        "tribal-whale",
+        "A card that cares about Whale creatures you control.",
+    ),
 ];
 
 /// Flatten [`ORACLE_TAG_DESCRIPTIONS`] into parallel `(slug, description)` arrays
