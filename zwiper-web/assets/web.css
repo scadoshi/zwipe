@@ -136,10 +136,6 @@ body {
     opacity: 0.55;
 }
 
-.web-screen-hint:hover {
-    opacity: 1;
-}
-
 /* Below the breakpoint the folded nav carries the screen's `?`. */
 @media (max-width: 899px) {
     .web-screen-hint {
@@ -376,11 +372,13 @@ body {
    .web-main prefix outranks the kit's `transition: border-color`, and an
    entrance animation fills backwards only, so its end transform lets go of
    the lift. A panel in a sheet, a dialog or a screen over the page holds
-   still, and so does one holding card rows, a sheet, a picker screen or a
-   preview: a transform makes the panel the containing block of the fixed
-   overlays inside it, and a card list's rows carry their own hover. */
-@media (min-width: 900px) and (hover: hover) {
-    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold, .web-details-panel, .deck-row) {
+   still, and so does one holding card rows, a sheet, a picker screen, a
+   preview, a dock, a heatmap (its floating tip) or a grid backdrop: a
+   transform makes the panel the containing block of the fixed overlays
+   inside it, and a card list's rows carry their own hover. Any width with
+   a mouse. */
+@media (hover: hover) {
+    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold, .web-details-panel) {
         transition:
             border-color 0.4s ease,
             min-height 0.3s ease,
@@ -388,18 +386,43 @@ body {
             box-shadow 0.4s ease;
     }
 
-    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold, .web-details-panel, .deck-row):is(.content-enter, .content-enter-delayed, .row-enter, .changelog-panel) {
+    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold, .web-details-panel):is(.content-enter, .content-enter-delayed, .row-enter, .changelog-panel) {
         animation-fill-mode: backwards;
     }
 
-    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold, .web-details-panel, .deck-row):hover:not(:is(.screen .screen, .bottom-sheet, .alert-dialog) *):not(:has(.card-row, .bottom-sheet, .screen, .image-preview-container, .action-dock)) {
+    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold, .web-details-panel):hover:not(:is(.screen .screen, .bottom-sheet, .alert-dialog) *):not(:has(.card-row, .bottom-sheet, .screen, .image-preview-container, .action-dock, .heat-grid, .grid-cells, .swipe-bottom-row)) {
         box-shadow: var(--shadow-md);
     }
 }
 
-@media (min-width: 900px) and (hover: hover) and (prefers-reduced-motion: no-preference) {
-    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold, .web-details-panel, .deck-row):hover:not(:is(.screen .screen, .bottom-sheet, .alert-dialog) *):not(:has(.card-row, .bottom-sheet, .screen, .image-preview-container, .action-dock)) {
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold, .web-details-panel):hover:not(:is(.screen .screen, .bottom-sheet, .alert-dialog) *):not(:has(.card-row, .bottom-sheet, .screen, .image-preview-container, .action-dock, .heat-grid, .grid-cells, .swipe-bottom-row)) {
         transform: translateY(-3px);
+    }
+}
+
+/* A deck on Decks is a card row, so the kit's row hover reaches it with
+   the expanded row's smaller corners and a larger scale. Under a mouse it
+   keeps its own corners, keeps the row hover's tint and grows a touch.
+   Its entrance fills backwards only, so its end transform lets go of the
+   hover. */
+@media (hover: hover) {
+    .card-row.deck-row {
+        animation-fill-mode: backwards;
+        transition:
+            background-color 0.15s ease,
+            transform 0.15s ease;
+    }
+
+    .card-row.deck-row:not(.expanded):hover {
+        border-radius: 1rem;
+        transform: scale(1.012);
+    }
+}
+
+@media (hover: hover) and (prefers-reduced-motion: reduce) {
+    .card-row.deck-row:not(.expanded):hover {
+        transform: none;
     }
 }
 
@@ -551,8 +574,9 @@ body {
 }
 
 /* The bar's icons, the `!` and Log out answer a mouse as the pills beside
-   them do: the accent on the glyph and the border, at full strength. */
-@media (min-width: 900px) and (hover: hover) {
+   them do: the accent on the glyph and the border, at full strength. In
+   the folded menu too, under a mouse at any width. */
+@media (hover: hover) {
     .web-shell .nav-trailing-row .btn-action {
         transition:
             color 0.15s,
@@ -585,6 +609,18 @@ body {
     :is(button, a):is(.chip, .chip-xs, .chip-remove):not(.selected, .disabled, :disabled):hover,
     .deck-fold-all:not(:disabled):hover,
     .card-group-header.group-collapsible:hover {
+        color: var(--accent-primary);
+        border-color: var(--accent-primary);
+    }
+
+    /* Every hint and help button, and a dialog's buttons, the same way and
+       at full strength where it rests faded: the `?` beside a title (the
+       kit's InfoButton, the folded nav's included), a swipe screen's
+       corner `?`, a sheet's or drawer's title-bar `?`, and a dialog's
+       buttons. Color, border and opacity only: the corner buttons hold
+       their place with a transform. */
+    :is(.info-button, .web-screen-hint, .drawer-sheet-hint, .page-header-corner, .alert-dialog-cancel, .alert-dialog-action):not(:disabled, [aria-disabled="true"]):hover {
+        opacity: 1;
         color: var(--accent-primary);
         border-color: var(--accent-primary);
     }
@@ -1285,7 +1321,7 @@ body {
 }
 
 /* A recent deck's art grows a little under a mouse, inside its square. */
-@media (min-width: 900px) and (hover: hover) {
+@media (hover: hover) {
     .home-deck-tile-art > img {
         transition: transform 0.2s ease;
     }
@@ -1295,7 +1331,7 @@ body {
     }
 }
 
-@media (min-width: 900px) and (hover: hover) and (prefers-reduced-motion: reduce) {
+@media (hover: hover) and (prefers-reduced-motion: reduce) {
     .home-deck-tile:hover > .home-deck-tile-art > img {
         transform: none;
     }
