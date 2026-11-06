@@ -3,10 +3,10 @@
 //!
 //! A drag commits past [`COMMIT_PX`] along its axis; a shorter one springs
 //! back. A committed card flies off on the app's exit keyframes while the
-//! host's handler runs at once, so the next card takes input right away. A
+//! host's handler runs at once, so the next card takes a drag right away. A
 //! down swipe never moves the card: it is the host's undo. The keys and the
 //! buttons go through [`SwipeControl`], so they animate the same way a drag
-//! does.
+//! does, and a press while a card is still flying off is dropped.
 
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -62,6 +62,12 @@ impl Swipe {
             Self::Up => Some(Direction::Up),
             Self::Down => None,
         }
+    }
+
+    /// Whether a key or button press of this swipe plays now, given whether
+    /// a card is still flying off. Down always plays, having no exit.
+    fn plays_while(self, card_leaving: bool) -> bool {
+        self == Self::Down || !card_leaving
     }
 
     /// The swipe a drag of `(dx, dy)` pixels makes, if it went far enough.
@@ -180,14 +186,15 @@ pub fn SwipeStack(
         on_swipe.call((swipe, card));
     });
 
-    // A key or a button: play the swipe on the top card from rest.
+    // A key or a button: play the swipe on the top card from rest, or drop
+    // it while a card is still flying off.
     let mut asked = control.0;
     use_effect(use_reactive!(|top| {
         let Some(swipe) = asked() else {
             return;
         };
         asked.set(None);
-        if !allowed_for_control.contains(&swipe) {
+        if !allowed_for_control.contains(&swipe) || !swipe.plays_while(!exiting.peek().is_empty()) {
             return;
         }
         if let Some(card) = top {
@@ -401,8 +408,8 @@ pub fn use_swipe_key_handler(keys: Vec<Swipe>, on_key: Callback<Swipe>) {
 }
 
 /// Registers a key listener for one surface. Only the newest registered
-/// surface answers, and never while a text field has focus or a dialog is
-/// open.
+/// surface answers, never while a text field has focus or a dialog is open,
+/// and never to a held key's repeats.
 const SWIPE_KEYS_JS: &str = r#"
 window.__zwipeSwipe = window.__zwipeSwipe || [];
 window.__zwipeSwipe.push('__ID__');
@@ -416,6 +423,7 @@ const onKey = (e) => {
     if (document.querySelector('.alert-dialog[data-state="open"]')) return;
     if (document.querySelector('.bottom-sheet.show')) return;
     e.preventDefault();
+    if (e.repeat) return;
     dioxus.send(e.key);
 };
 window['__zwipeSwipeKey__ID__'] = onKey;
@@ -457,6 +465,16 @@ mod tests {
                 "{swipe:?}"
             );
         }
+    }
+
+    #[test]
+    fn a_press_waits_for_the_leaving_card_but_undo_does_not() {
+        for swipe in [Swipe::Left, Swipe::Right, Swipe::Up] {
+            assert!(swipe.plays_while(false), "{swipe:?}");
+            assert!(!swipe.plays_while(true), "{swipe:?}");
+        }
+        assert!(Swipe::Down.plays_while(false));
+        assert!(Swipe::Down.plays_while(true));
     }
 
     #[test]
