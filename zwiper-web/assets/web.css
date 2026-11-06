@@ -842,6 +842,17 @@ body {
     }
 }
 
+/* ---- Image preview ----
+
+   On a wide window the open card is as large as zwipe.net's: up to 28rem
+   wide and most of the window's height. */
+@media (min-width: 900px) {
+    .image-preview-container .flippable-card-wrapper.card-image img {
+        max-width: min(28rem, 92vw);
+        max-height: 92vh;
+    }
+}
+
 /* ---- Printing sheet ---- */
 
 .web-printing-stage {
