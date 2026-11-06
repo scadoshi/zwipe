@@ -21,7 +21,8 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
-| 31, 32 | thinker | `nits/thinker-31-32` |
+| 31, 32 | thinker | `nits/thinker-31-32` (PR #160, approved) |
+| 26 | thinker | `nits/thinker-26` |
 | Oracle tag catch-up (12 tags, upkeep alert at zero blanks) | laptop | `otags/catch-up-2026-11-06` |
 | 29 | scotland | `nits/scotland-29` (PR #159, approved) |
 | 14, 15 | scotland | `nits/scotland-14-15` |
@@ -73,6 +74,7 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 31. **Card row dividers elsewhere (follow-up to 4).** Each web card row sits in a wrapper (`.web-deck-row > .web-card-row > .card-row`), so the shared `.card-row:last-child { border-bottom: none }` strips every divider. 4 fixed the wide deck page only; the same likely happens below 900px and on Activity, Playstyle and the maybeboard lists.
 32. **Text fields still uncapped (follow-up to 18).** The deck form's fields, the command zone search and the deck dialog's input were not checked for full-width stretch on a wide window.
 33. **The kit's BottomSheet should not drag in modal or drawer form (follow-up to 5).** 5 was fixed in `web.css` by turning off pointer events on the header and pinning an open modal or drawer with `!important` over the drag's inline transform. The clean fix is in orangui: skip starting the drag-to-dismiss when the sheet shows as `SheetWide::Modal` or `Drawer`. That is a kit change and pin bump across zwipe, cairn and portfolio; once it lands, drop the web.css workaround.
+34. **The maybeboard's row entrance stagger is broken on the web.** The web's row wrappers make each `.card-row` its wrapper's only child, so `main.css`'s `.maybeboard-list .card-row:nth-child(n)` delays all match the first, and every row enters at once.
 
 ## Done
 
