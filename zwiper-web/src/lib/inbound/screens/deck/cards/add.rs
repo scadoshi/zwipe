@@ -12,7 +12,7 @@
 
 use std::collections::HashSet;
 
-use components::icons::{BoltIcon, DockIcon, EyeIcon, REFRESH};
+use components::icons::{BoltIcon, DockIcon, REFRESH};
 use components::{
     Chip, DockFilter, SheetFrame, SheetWide, TOAST_NORMAL, TOAST_QUICK, reset_image_ease,
 };
@@ -52,6 +52,7 @@ use crate::inbound::cards::swipe_stack::{
     EndUndoButton, Swipe, SwipeButtons, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
 };
 use crate::inbound::chrome::authed::use_authed;
+use crate::inbound::chrome::details_eye::{DockEye, use_details_eye};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::chrome::page_keys::{use_page_keys, use_undo_key};
 use crate::inbound::root_signal::use_signal_for_root_tasks;
@@ -133,6 +134,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
     let mut searches = use_signal(Generation::default);
     let mut first_run = use_signal(|| true);
     let mut show_details = use_signal(|| false);
+    let eye = use_details_eye(show_details);
     let mut printing_open = use_signal(|| false);
     let mut filter_open = use_signal(|| false);
     let mut pull_from: Signal<Option<(f64, f64)>> = use_signal(|| None);
@@ -871,7 +873,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         ScreenFrame {
             title: add_cards::TITLE,
             on_hint: move |()| hint_open.set(true),
-            div { class: "screen-content card-swipe content-enter web-cards-swipe",
+            div { class: "screen-content card-swipe content-enter web-cards-swipe {eye.body_class()}",
                 div { class: "web-cards-swipe-main",
                     div { class: "form-container",
                         if let Some(card) = current.clone() {
@@ -965,13 +967,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                         DockIcon { path: REFRESH }
                     }
                     span { class: "action-dock-divider" }
-                    button {
-                        class: "action-dock-btn web-dock-eye",
-                        "aria-label": "Card details",
-                        disabled: !has_current,
-                        onclick: move |_| show_details.toggle(),
-                        EyeIcon {}
-                    }
+                    DockEye { eye, disabled: !has_current }
                 }
             }
         }

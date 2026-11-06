@@ -6,7 +6,6 @@
 //! a wide window it is a large modal with the card's details beside it;
 //! below the breakpoint it is the app's full-screen overlay.
 
-use components::icons::EyeIcon;
 use components::{CardDetails, PageHeader, TOAST_QUICK, use_overlay_back};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -24,6 +23,7 @@ use crate::inbound::cards::swipe_stack::{
 };
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::back_arrow::BackArrow;
+use crate::inbound::chrome::details_eye::{DockEye, use_details_eye};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 
 /// A step forward through the examples. It leaves to the left, so a step
@@ -54,7 +54,8 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
     let mut loading_more = use_signal(|| false);
     let mut loading = use_signal(|| true);
     let mut exhausted = use_signal(|| false);
-    let mut show_details = use_signal(|| false);
+    let show_details = use_signal(|| false);
+    let eye = use_details_eye(show_details);
     let mut printing_open = use_signal(|| false);
     let control = use_swipe_control();
 
@@ -168,7 +169,7 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
                 },
                 on_hint: move |()| hint_again.set(true),
             }
-            div { class: "screen-content card-swipe content-enter web-examples-body",
+            div { class: "screen-content card-swipe content-enter web-examples-body {eye.body_class()}",
                 div { class: "form-container web-examples-card",
                     if let Some(card) = current.clone() {
                         SwipeStack {
@@ -214,13 +215,7 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
             }
             // Card details as the action dock; Back is the header's arrow.
             div { class: "action-dock action-dock-right",
-                button {
-                    class: "action-dock-btn web-dock-eye",
-                    "aria-label": "Card details",
-                    disabled: !has_card,
-                    onclick: move |_| show_details.toggle(),
-                    EyeIcon {}
-                }
+                DockEye { eye, disabled: !has_card }
             }
             OneTimeHintDialog { hint: OneTimeHint::OtagExamples, open: hint_open }
             if let Some(card) = current {

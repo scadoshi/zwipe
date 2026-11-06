@@ -31,7 +31,7 @@
 
 use std::collections::HashSet;
 
-use components::icons::{DockIcon, EyeIcon, REFRESH};
+use components::icons::{DockIcon, REFRESH};
 use components::{
     BottomSheet, CardDetails, DockFilter, PageHeader, SheetFrame, SheetWide, TOAST_QUICK,
     use_overlay_back,
@@ -67,6 +67,7 @@ use crate::inbound::cards::swipe_stack::{
 };
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::back_arrow::BackArrow;
+use crate::inbound::chrome::details_eye::{DockEye, use_details_eye};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, SwipeSelectHint, open_and_record_hint};
 use crate::inbound::screens::playstyle::SuggestionReasons;
 
@@ -470,7 +471,8 @@ fn SwipeSelectBody(
         ..
     } = pile;
     let mut hint_again = hint_open;
-    let mut show_details = use_signal(|| false);
+    let show_details = use_signal(|| false);
+    let eye = use_details_eye(show_details);
     let mut printing_open = use_signal(|| false);
     let mut filter_open = use_signal(|| false);
     let suggested = mode == SwipeMode::Suggested;
@@ -643,7 +645,7 @@ fn SwipeSelectBody(
             },
             on_hint: move |()| hint_again.set(true),
         }
-        div { class: "screen-content card-swipe content-enter web-swipe-select-body",
+        div { class: "screen-content card-swipe content-enter web-swipe-select-body {eye.body_class()}",
             div { class: "form-container web-swipe-select-card",
                 if let Some(card) = current.clone() {
                     SwipeStack {
@@ -729,13 +731,7 @@ fn SwipeSelectBody(
                 DockIcon { path: REFRESH }
             }
             span { class: "action-dock-divider" }
-            button {
-                class: "action-dock-btn web-dock-eye",
-                "aria-label": "Card details",
-                disabled: !has_card,
-                onclick: move |_| show_details.toggle(),
-                EyeIcon {}
-            }
+            DockEye { eye, disabled: !has_card }
         }
         if let Some(card) = current {
             CardDetailsSheet {

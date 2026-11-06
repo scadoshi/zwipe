@@ -4,6 +4,7 @@
 
 pub mod authed;
 pub mod back_arrow;
+pub mod details_eye;
 pub mod hint_topic;
 pub mod logout_dialog;
 pub mod media;
