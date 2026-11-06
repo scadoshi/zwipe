@@ -73,7 +73,7 @@ The root also mounts the kit's `ToastStack` (screens raise toasts with `dioxus_p
 
 ## Styling
 
-The root loads, in order: the kit's `THEMES_CSS`, `COMPONENTS_CSS`, `MAGIC_CSS` and `APP_CSS`, zwiper's `main.css` and `accordion.css` (included from `zwiper/assets` as they are, never copied), `TOAST_CSS`, then `assets/web.css`, and runs `assets/header_hide.js`, which slides the folded header away on a scroll down and back on a scroll up below the breakpoint. A screen uses the app's class names, so it looks like the app with no new CSS. `web.css` only holds what a browser window changes: the top nav, the wide layouts, the 900px breakpoint, and undoing the phone-only rules (`body` capped to the screen height, `.screen` fixed to the viewport). The fonts are copies of zwiper's, because `asset!` only reads files inside the crate.
+The root loads, in order: the kit's `THEMES_CSS`, `COMPONENTS_CSS`, `MAGIC_CSS` and `APP_CSS`, components' `SCREENS_CSS` and `ACCORDION_CSS` (the screen rules the app shares; the app's own `main.css` is never loaded), `TOAST_CSS`, then `assets/web.css`, and runs `assets/header_hide.js`, which slides the folded header away on a scroll down and back on a scroll up below the breakpoint. A screen uses the app's class names, so it looks like the app with no new CSS. `web.css` only holds what a browser window changes: the top nav, the wide layouts, the 900px breakpoint, the page's `html` and `body`, the scrollbars (hidden below the breakpoint only), and undoing the phone-only rules (`.screen` fixed to the viewport). The fonts are copies of zwiper's, because `asset!` only reads files inside the crate.
 
 ## Adding a screen
 

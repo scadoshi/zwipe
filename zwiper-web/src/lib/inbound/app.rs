@@ -26,11 +26,6 @@ const FONT_JBM_400: Asset = asset!("/assets/fonts/jetbrains-mono-400.woff2");
 const FONT_JBM_500: Asset = asset!("/assets/fonts/jetbrains-mono-500.woff2");
 const FONT_JBM_700: Asset = asset!("/assets/fonts/jetbrains-mono-700.woff2");
 
-/// zwiper's own stylesheets, shared as they are. `web.css` loads after them
-/// and holds only what a browser window changes.
-const ZWIPER_MAIN_CSS: &str = include_str!("../../../../zwiper/assets/main.css");
-const ZWIPER_ACCORDION_CSS: &str = include_str!("../../../../zwiper/assets/accordion.css");
-
 /// The app root. Launch it with a [`ZwipeClient`](zwipe_client::ZwipeClient)
 /// in the root context.
 #[component]
@@ -76,8 +71,7 @@ pub fn App() -> Element {
         document::Style { {components::MAGIC_CSS} }
         document::Style { {components::APP_CSS} }
         document::Style { {components::SCREENS_CSS} }
-        document::Style { {ZWIPER_MAIN_CSS} }
-        document::Style { {ZWIPER_ACCORDION_CSS} }
+        document::Style { {components::ACCORDION_CSS} }
         document::Style { {components::TOAST_CSS} }
         document::Link { rel: "stylesheet", href: WEB_CSS }
         document::Script { {components::SCROLL_FADE_JS} }

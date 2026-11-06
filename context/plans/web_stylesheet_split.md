@@ -111,5 +111,7 @@ Check per phase: the app and the web at a phone width and at a wide width on the
 
 ## Phase status
 
-- Phase 0: done on `split/phase-0`. The four empty files under `components/assets/screens/` and `components::SCREENS_CSS` are in, loaded by both roots after `APP_CSS`.
-- Phases 1 to 6: not started.
+- Phase 0: done (`split/phase-0`). The four empty files under `components/assets/screens/` and `components::SCREENS_CSS` are in, loaded by both roots after `APP_CSS`.
+- Phases 1 to 4: done (`split/phase-1` to `split/phase-4`). `main.css` keeps only the app's own rules.
+- Phase 5: done on `split/phase-5`. The web no longer loads `main.css`; `accordion.css` is `components::ACCORDION_CSS`, the mana-font import sits at the top of `screens/base.css`, the three rules Phase 4 held back for the cascade are in `screens/screens-b.css`, `deploy-web.yml` no longer watches `zwiper/assets/**`, and `web.css` owns the page's `html`, `body` and the narrow-only scrollbar hide (item 12).
+- Phase 6: not started.

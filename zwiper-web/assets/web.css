@@ -1,6 +1,7 @@
-/* zwiper-web: what a browser window changes over zwiper's stylesheets.
- * Loads after them. Wide is 900px and up; below that the screens keep the
- * phone layout in one column. */
+/* zwiper-web: the web's own rules over the shared sheets (the kit's and
+ * components' SCREENS_CSS and ACCORDION_CSS). Loads after them. Wide is
+ * 900px and up; below that the screens keep the phone layout in one
+ * column. */
 
 :root {
     --web-content-max: 72rem;
@@ -37,15 +38,38 @@
     }
 }
 
+/* The theme class rides on html as well as the shell, so the page color
+   under everything is the theme's and not the launch color. The page
+   scrolls as one document. */
 html {
     overflow: auto;
-    touch-action: auto;
+    background-color: var(--bg-primary);
 }
 
 body {
-    max-width: none;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 400;
+    line-height: 1.6;
+    min-height: 100vh;
     overflow: auto;
     user-select: text;
+}
+
+/* Below the breakpoint scrollbars hide, as in the app, which signals a
+   scroller with edge fades; a wide window shows the browser's. */
+@media (max-width: 899px) {
+    *::-webkit-scrollbar {
+        width: 0;
+        height: 0;
+        display: none;
+    }
+
+    * {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
 }
 
 .app-shell {
@@ -575,7 +599,8 @@ body {
    scrolls down. Its height is the kit's --app-nav-h, and the screen opens
    with that much padding, so nothing moves at rest. The pieces' own rules
    (.app-nav-back, .app-nav-title, the menu footer's buttons) come from
-   zwiper's main.css; these are the ones it scopes to its .app-nav. */
+   components' SCREENS_CSS; these are the ones the app scopes to its
+   .app-nav. */
 @media (max-width: 899px) {
     .web-shell {
         position: relative;
