@@ -23,7 +23,7 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
-| 19 reopened, the pickers through the kit's real drawer | scotland | `nits/scotland-picker-drawer` |
+| 19 reopened: the pickers through the kit's real drawer, the dictionary through the kit's modal | scotland | `nits/scotland-picker-drawer` |
 | 39, the splash plays once a session and not when arriving from zwipe.net | thinker | `nits/thinker-splash-once` |
 | 12, split phase 5, the cut | laptop | `split/phase-5` |
 | cycle-trk-mission description, held until scotland's 2026-11-07 sync confirms its cards | halo | `otags/cycle-trk-mission` (PR #178) |
