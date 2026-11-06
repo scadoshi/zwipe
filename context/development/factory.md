@@ -24,7 +24,7 @@ The herdr agents are named after their machines: `composer` and `laptop` on the 
 
 ## Rules for workers
 
-- Work in the machine's normal `~/Developer/zwipe` checkout, never a worktree, and leave the tree clean when done.
+- Work in the machine's normal `~/Developer/zwipe` checkout, never a worktree, and leave the tree clean when done. Create the plan's branch before the first edit and check `git branch --show-current` before every commit: never commit on `main` or `release`. On the laptop the checkout is shared with Scotty, so a stray commit on `main` blocks his push.
 - Commits follow [`commit_guidelines.md`](commit_guidelines.md) and the commit rules in `CLAUDE.md`: no Co-Authored-By, "Generated with" or session lines.
 - Web-only CSS lives in `zwiper-web/assets/web.css`, inside `@media (min-width: 900px)` for the wide layout and `@media (hover: hover)` for anything a mouse triggers. `zwiper/assets/main.css` changes only when the plan says so.
 - Visual changes say in the reply what was checked by eye, at what width, or that nothing was.
