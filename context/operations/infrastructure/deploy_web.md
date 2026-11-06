@@ -43,3 +43,15 @@ Visit `https://zwipe.net` and confirm the latest changes are live.
 
 - GitHub Pages config: **Repository Settings → Pages → Source**: GitHub Actions
 - Custom domain `zwipe.net` with HTTPS enforced
+
+---
+
+# Deploy: zwiper-web (app.zwipe.net)
+
+The web app is hosted on Cloudflare Pages, project `zwipe-app`, at `app.zwipe.net`. `.github/workflows/deploy-web.yml` runs on a push to `main` that touches `zwiper-web/**`, the shared crates (`zwipe-core`, `zwipe-client`, `zwipe-ui`, `components`), `zwiper/assets/**` (the web still inlines the app's stylesheets) or `Cargo.lock`, and by hand from the Actions tab.
+
+- `test` (`cargo test -p zwiper-web`) and `build` (`dx build --release --platform web` with `BACKEND_URL=https://api.zwipe.net`) run side by side; `deploy` waits on both and uploads the build with `wrangler pages deploy --branch main`.
+- `zwiper-web/deploy/_headers` is copied into the build: the security headers, with the Content-Security-Policy in report-only until a click-through shows no violations.
+- No `404.html`, so Pages answers app routes with `index.html` and a 200.
+- Secrets: `CLOUDFLARE_API_TOKEN` (an account token, Pages Edit only, expires 2027-11-06) and `CLOUDFLARE_ACCOUNT_ID`.
+- The API must list `https://app.zwipe.net` in `ALLOWED_ORIGINS` (`/etc/zwipe/zerver.env`): CORS and the cookie session routes both check it.
