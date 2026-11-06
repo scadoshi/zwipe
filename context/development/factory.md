@@ -10,7 +10,7 @@ The herdr agents are named after their machines: `composer` and `laptop` on the 
 
 - `release` collects approved work. Nothing deploys from it; `deploy-*.yml` only runs on `main`.
 - Each worker branches from `origin/release` as `nits/<machine>-<items>`, for example `nits/halo-13-6-3`.
-- Scotty moves `release` into `main` when he wants it live. Nobody else touches `main`.
+- Scotty moves `release` into `main` to put it live. Nobody else touches `main`.
 
 ## The loop
 
