@@ -140,7 +140,7 @@ pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
     });
 
     rsx! {
-        SheetFrame { wide: SheetWide::Modal,
+        SheetFrame { wide: SheetWide::Drawer,
             BottomSheet {
                 open,
                 title: "Change password".to_string(),

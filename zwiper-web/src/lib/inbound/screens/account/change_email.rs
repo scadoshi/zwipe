@@ -96,7 +96,7 @@ pub(super) fn ChangeEmailSheet(mut open: Signal<bool>) -> Element {
     };
 
     rsx! {
-        SheetFrame { wide: SheetWide::Modal,
+        SheetFrame { wide: SheetWide::Drawer,
             BottomSheet {
                 open,
                 title: "Change email".to_string(),
