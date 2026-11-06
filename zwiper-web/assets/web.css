@@ -1762,6 +1762,12 @@ body {
         min-width: 20rem;
         max-width: min(var(--web-page-max), calc(100% - 3rem));
         max-height: calc(100dvh - 8rem);
+        padding-top: 1.25rem;
+        padding-bottom: 1.25rem;
+    }
+
+    .alert-dialog-description {
+        padding: 0.75rem 0;
     }
 }
 
