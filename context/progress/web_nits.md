@@ -21,10 +21,11 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
-| 9, 10, 4, 30 | thinker | `nits/thinker-9-10-4-30` |
+| 31, 32 | thinker | `nits/thinker-31-32` |
+| Oracle tag catch-up (12 tags, upkeep alert at zero blanks) | laptop | `otags/catch-up-2026-11-06` |
 | 29 | scotland | `nits/scotland-29` |
 | 5, 17 | halo | `nits/halo-5-17` |
-| 19, 25 | laptop | `nits/laptop-19-25` |
+| 19, 25 | laptop | `nits/laptop-19-25` (PR #157, approved) |
 
 The loop is in [`../development/factory.md`](../development/factory.md).
 
@@ -77,3 +78,4 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 - 13, 6, 3, changelog pages by five, privacy at page width, chart title gaps: PR #153 into `release`.
 - 18, 20, wide fields capped at 32rem, dictionary letters in one row: PR #154 into `release`.
 - 8, 16, image preview sized as zite's, dialog padding rebalanced: PR #155 into `release`.
+- 9, 10, 4, 30, panel lift, deck art hover, wide deck page dividers, nav icon hover: PR #156 into `release`.
