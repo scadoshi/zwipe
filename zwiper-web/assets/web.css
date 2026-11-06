@@ -125,9 +125,10 @@ body {
 
 /* ---- Footer ----
 
-   zwipe.net's footer closes the page on a wide window, after the last
-   panel and as wide as the page. Below the breakpoint, as in the app,
-   there is none. */
+   zwipe.net's footer closes the page on a wide window: a bar the window's
+   width, 1rem under the last panel. The screen's content keeps that 1rem
+   and its wrappers none of their own, so the panels end where zwipe.net's
+   page does. Below the breakpoint, as in the app, there is none. */
 .web-site-footer {
     display: none;
 }
@@ -137,9 +138,17 @@ body {
         display: block;
         order: 2;
         flex: 0 0 auto;
-        width: min(calc(100% - 3rem), calc(var(--web-page-max) - 3rem));
-        margin: 0 auto;
+        width: 100%;
+        margin: 0;
         box-sizing: border-box;
+    }
+
+    .web-scroll-screen:has(> .web-site-footer) > .screen-content {
+        padding-bottom: 1rem;
+    }
+
+    .web-scroll-screen:has(> .web-site-footer) > .screen-content > :not(.action-dock) {
+        padding-bottom: 0;
     }
 }
 
