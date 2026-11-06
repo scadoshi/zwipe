@@ -21,9 +21,7 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
-| 27 | halo | `nits/halo-27` |
-| 22, 21, scoping only | scotland | `plans/shared-hover-and-filter` |
-| 14, 15, 26, 34 | composer | PRs #164, #165, #166 approved, merging in order |
+| Nothing in flight | | |
 
 The loop is in [`../development/factory.md`](../development/factory.md).
 
@@ -86,3 +84,8 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 - 1, toasts bottom left on a wide window: PR #162 into `release`.
 - Oracle tag catch-up, 11 descriptions (anime left blank): PR #161 into `release`.
 - 12, scoping: [`../plans/web_stylesheet_split.md`](../plans/web_stylesheet_split.md), PR #163; the split itself waits on Scotty.
+- 14, 15, Playstyle chip rows above panels, foldable profile: PR #164 into `release`.
+- 26, the eye on every swipe surface, toggling the details beside the card on a wide window: PR #165 into `release`.
+- 34, the maybeboard row cascade on the web: PR #166 into `release`.
+- 22, 21, scoping: [`../plans/shared_hover_and_filter.md`](../plans/shared_hover_and_filter.md), PR #167.
+- 27, zwipe.net's footer on the web through `components::SiteFooter`: PR #168 into `release`.
