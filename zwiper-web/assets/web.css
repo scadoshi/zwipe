@@ -673,6 +673,17 @@ body {
         max-height: none;
         overflow: visible;
     }
+
+    /* The menu's footer keeps inside a narrow phone: where the icons and
+       Log out do not fit one line, Log out takes the next, at the right. */
+    .web-app-nav .nav-trailing-row {
+        flex-wrap: wrap;
+        row-gap: 0.5rem;
+    }
+
+    .web-app-nav .nav-trailing-row > .app-nav-logout {
+        margin-left: auto;
+    }
 }
 
 /* ---- Toasts ----
