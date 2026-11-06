@@ -3,7 +3,8 @@
 //! toggle itself lives on the Config screen; this sheet edits only
 //! the whitelist. The server applies both at serve time.
 
-use components::{BottomSheet, Button, ButtonVariant};
+use components::icons::CHECK;
+use components::{ActionDock, BottomSheet, DockAction, DockPlace};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::user::hints::OneTimeHint;
@@ -42,14 +43,15 @@ pub fn UniversesBeyondExceptionsSheet(
             hint: hint_open,
             on_dismiss: move |()| on.call(Action::DiscardExceptions),
             closable: true,
-            footer: rsx! {
-                Button {
-                    variant: ButtonVariant::Action,
+            // Save as the dock's checkmark, pinned at the sheet's bottom right.
+            ActionDock { place: DockPlace::Sheet,
+                DockAction {
+                    label: model::SAVE,
+                    icon: CHECK,
                     disabled: unchanged,
-                    onclick: move |_| on.call(Action::SaveExceptions),
-                    {model::SAVE}
+                    onclick: move |()| on.call(Action::SaveExceptions),
                 }
-            },
+            }
 
             // Clear-all for the draft; like every edit here it only persists
             // through Save. Always mounted inside a collapsible so the count

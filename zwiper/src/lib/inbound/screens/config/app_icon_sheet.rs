@@ -2,9 +2,10 @@
 //! the icon drawn in that theme's colors in the mode the icon is in now
 //! (Config's App icon row flips the mode), laid out like the theme sheet.
 
+use components::icons::CHECK;
 use components::{
-    BottomSheet, Button, ButtonVariant, THEME_GROUPS, TOAST_NORMAL, TOAST_QUICK, ThemeConfig,
-    ToastOptions, use_toast,
+    ActionDock, BottomSheet, DockAction, DockPlace, THEME_GROUPS, TOAST_NORMAL, TOAST_QUICK,
+    ThemeConfig, ToastOptions, use_toast,
 };
 use dioxus::prelude::*;
 use zwipe_core::domain::logo::Z;
@@ -80,7 +81,7 @@ pub fn AppIconSheet(
         open.set(false);
     });
 
-    let save = move |_| {
+    let mut save = move |_| {
         let picked = draft();
         let (next, message) = match &picked {
             None => (app_theme(), "App icon matches your theme".to_string()),
@@ -121,14 +122,15 @@ pub fn AppIconSheet(
             title: "App icon",
             on_dismiss: move |()| discard.call(()),
             closable: true,
-            footer: rsx! {
-                Button {
-                    variant: ButtonVariant::Action,
+            // Save as the dock's checkmark, pinned at the sheet's bottom right.
+            ActionDock { place: DockPlace::Sheet,
+                DockAction {
+                    label: "Save",
+                    icon: CHECK,
                     disabled: draft() == saved(),
-                    onclick: save,
-                    "Save"
+                    onclick: move |()| save(()),
                 }
-            },
+            }
             IconRow { label: "Match theme", pick: None, tile: app_theme(), draft }
             for group in THEME_GROUPS {
                 div { class: "pref-section-label", "{group.label}" }

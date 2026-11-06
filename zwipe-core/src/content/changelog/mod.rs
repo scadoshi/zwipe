@@ -82,6 +82,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "The Commander hint says a lit Filter keeps search to cards that can lead the format, and off lets any card lead",
         "The filter's Config clear puts every toggle back to its default, so the section reads as unset",
         "The card details sheet's Flip and Printings are icons in its dock at the bottom right",
+        "The App icon and Universes Beyond sheets save from the dock's checkmark, with no footer",
         "Config is now called Settings",
         "The Natural setting for mana symbols is now called Classic",
         "Log in, Create profile and Send are full-width buttons under their forms, with chips to the other sign-in screens beneath",
