@@ -24,8 +24,8 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 | Items | Machine | Branch |
 | --- | --- | --- |
 | 12, split phase 5, the cut | laptop | `split/phase-5` |
-| 36, links open in the same tab | halo | `nits/halo-same-tab` |
-| 37, plain hover on every clickable chip and header button | thinker | `nits/thinker-header-chip-hover` |
+| 36, links open in the same tab | halo | `nits/halo-same-tab` (PR #177, approved) |
+| 37, plain hover on every clickable chip and header button | thinker | `nits/thinker-header-chip-hover` (PR #176, approved) |
 | 38, the footer looks like zwipe.net's | scotland | `nits/scotland-footer-look` |
 
 The loop is in [`../development/factory.md`](../development/factory.md).
@@ -72,7 +72,7 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 30. **The nav bar's icon buttons have no hover on a wide window.** The top bar's icon buttons (the `!`, Home, Account, Settings, About, Theme and the light/dark toggle) sit still under a mouse, where the text pills beside them (Decks, Playstyle, Activity, Commander maybeboard, Log out) read as clickable. Give them a hover inside `@media (hover: hover)`, matching whatever the pills and the panels (item 9) settle on.
 31. **Card row dividers elsewhere (follow-up to 4).** Each web card row sits in a wrapper (`.web-deck-row > .web-card-row > .card-row`), so the shared `.card-row:last-child { border-bottom: none }` strips every divider. 4 fixed the wide deck page only; the same likely happens below 900px and on Activity, Playstyle and the maybeboard lists.
 32. **Text fields still uncapped (follow-up to 18).** The deck form's fields, the command zone search and the deck dialog's input were not checked for full-width stretch on a wide window.
-33. **The kit's BottomSheet should not drag in modal or drawer form (follow-up to 5).** 5 was fixed in `web.css` by turning off pointer events on the header and pinning an open modal or drawer with `!important` over the drag's inline transform. The clean fix is in orangui: skip starting the drag-to-dismiss when the sheet shows as `SheetWide::Modal` or `Drawer`. That is a kit change and pin bump across zwipe, cairn and portfolio; once it lands, drop the web.css workaround.
+33. **The kit's BottomSheet should not drag in modal or drawer form (follow-up to 5).** 5 was fixed in `web.css` by turning off pointer events on the header and pinning an open modal or drawer with `!important` over the drag's inline transform. The clean fix is in orangui: skip starting the drag-to-dismiss when the sheet shows as `SheetWide::Modal` or `Drawer`. That is a kit change and pin bump across zwipe, cairn and portfolio; once it lands, drop the web.css workaround. The same kit pass should drop `AlertDialog`'s hardcoded `target="_blank"` on dialog links for the wasm build, so the web's support dialog (Report a problem, Discord) opens in the same tab too (follow-up to 36).
 34. **The maybeboard's row entrance stagger is broken on the web.** The web's row wrappers make each `.card-row` its wrapper's only child, so `main.css`'s `.maybeboard-list .card-row:nth-child(n)` delays all match the first, and every row enters at once.
 35. **About overflows on a phone width.** At 400px the About page's panels run off the right edge (seen in builds before and after the split's phase 1, so it predates it).
 36. **Outbound links open in the same tab on zwipe.net and app.zwipe.net.** Home's "Magic: The Gathering" link and every other `target="_blank"` or programmatic new-tab open take over the current tab instead. The mobile app keeps sending links to the system browser.
