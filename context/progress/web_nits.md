@@ -23,7 +23,8 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 | --- | --- | --- |
 | 31, 32 | thinker | `nits/thinker-31-32` |
 | Oracle tag catch-up (12 tags, upkeep alert at zero blanks) | laptop | `otags/catch-up-2026-11-06` |
-| 29 | scotland | `nits/scotland-29` |
+| 29 | scotland | `nits/scotland-29` (PR #159, approved) |
+| 14, 15 | scotland | `nits/scotland-14-15` |
 | 5, 17 | halo | `nits/halo-5-17` (PR #158, approved) |
 | 1 | halo | `nits/halo-1` |
 
