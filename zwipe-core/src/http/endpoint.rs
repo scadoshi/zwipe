@@ -55,6 +55,9 @@ pub trait Endpoint {
     const METHOD: Method;
     /// Whether the call carries a bearer token.
     const AUTH: bool = true;
+    /// Whether a browser sends and stores cookies on the call. Only the web
+    /// session endpoints set it; every other call stays cookie-free.
+    const CREDENTIALS: bool = false;
     /// Body this call accepts. `()` when it sends none.
     type Request: Serialize;
     /// Decoded success body.

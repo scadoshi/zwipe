@@ -34,7 +34,7 @@ async fn invalidate_on_server(
 ) -> Result<(), ClientError> {
     let current = ensure_fresh(session, client).await?;
     let http = client.peek().clone();
-    http.logout(&current).await
+    http.logout_cookie(&current).await
 }
 
 /// Drops the stored session and the signal.

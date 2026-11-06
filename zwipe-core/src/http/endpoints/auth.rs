@@ -4,14 +4,15 @@ use std::borrow::Cow;
 
 use crate::domain::auth::models::session::Session;
 use crate::http::contracts::auth::{
-    HttpAuthenticateUser, HttpConfirmEmailChange, HttpRefreshSession, HttpRegisterUser,
-    HttpRegistrationAccepted, HttpRequestPasswordReset, HttpResetPassword, HttpVerifyEmail,
+    HttpAuthenticateUser, HttpConfirmEmailChange, HttpCookieRefresh, HttpRefreshSession,
+    HttpRegisterUser, HttpRegistrationAccepted, HttpRequestPasswordReset, HttpResetPassword,
+    HttpVerifyEmail,
 };
 use crate::http::endpoint::{Endpoint, Method};
 use crate::http::paths::{
-    CONFIRM_EMAIL_CHANGE_ROUTE, FORGOT_PASSWORD_ROUTE, LOGIN_ROUTE, LOGOUT_ROUTE,
-    REFRESH_SESSION_ROUTE, REGISTER_ROUTE, RESEND_VERIFICATION_ROUTE, RESET_PASSWORD_ROUTE,
-    VERIFY_EMAIL_ROUTE,
+    CONFIRM_EMAIL_CHANGE_ROUTE, COOKIE_LOGIN_ROUTE, COOKIE_LOGOUT_ROUTE, COOKIE_REFRESH_ROUTE,
+    FORGOT_PASSWORD_ROUTE, LOGIN_ROUTE, LOGOUT_ROUTE, REFRESH_SESSION_ROUTE, REGISTER_ROUTE,
+    RESEND_VERIFICATION_ROUTE, RESET_PASSWORD_ROUTE, VERIFY_EMAIL_ROUTE,
 };
 
 /// Exchange credentials for a session.
@@ -74,6 +75,55 @@ impl Endpoint for Logout {
     type Response = ();
     fn path(&self) -> Cow<'static, str> {
         Cow::Borrowed(LOGOUT_ROUTE)
+    }
+}
+
+/// The browser's login. The reply's refresh token is blank; the real one is
+/// set as an `HttpOnly` cookie the page cannot read.
+#[derive(Debug)]
+pub struct CookieLogin(pub HttpAuthenticateUser);
+impl Endpoint for CookieLogin {
+    const METHOD: Method = Method::Post;
+    const AUTH: bool = false;
+    const CREDENTIALS: bool = true;
+    type Request = HttpAuthenticateUser;
+    type Response = Session;
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Borrowed(COOKIE_LOGIN_ROUTE)
+    }
+    fn body(&self) -> Option<&Self::Request> {
+        Some(&self.0)
+    }
+}
+
+/// The browser's refresh, carried by the `HttpOnly` cookie. The reply's
+/// refresh token is blank, as on [`CookieLogin`].
+#[derive(Debug)]
+pub struct CookieRefresh(pub HttpCookieRefresh);
+impl Endpoint for CookieRefresh {
+    const METHOD: Method = Method::Post;
+    const AUTH: bool = false;
+    const CREDENTIALS: bool = true;
+    type Request = HttpCookieRefresh;
+    type Response = Session;
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Borrowed(COOKIE_REFRESH_ROUTE)
+    }
+    fn body(&self) -> Option<&Self::Request> {
+        Some(&self.0)
+    }
+}
+
+/// The browser's logout: revokes the sessions and expires the cookie.
+#[derive(Debug)]
+pub struct CookieLogout;
+impl Endpoint for CookieLogout {
+    const METHOD: Method = Method::Post;
+    const CREDENTIALS: bool = true;
+    type Request = ();
+    type Response = ();
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Borrowed(COOKIE_LOGOUT_ROUTE)
     }
 }
 

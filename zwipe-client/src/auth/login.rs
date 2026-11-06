@@ -23,7 +23,7 @@ impl ZwipeClient {
 }
 
 /// `request` with this build's version, and [`ClientPlatform::CURRENT`] unless it already names a platform.
-fn stamped(mut request: HttpAuthenticateUser) -> HttpAuthenticateUser {
+pub(crate) fn stamped(mut request: HttpAuthenticateUser) -> HttpAuthenticateUser {
     request.platform = request.platform.or(Some(ClientPlatform::CURRENT));
     request.client_version = Some(env!("CARGO_PKG_VERSION").to_string());
     request

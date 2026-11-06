@@ -40,6 +40,9 @@ use zwipe::domain::email::models::{SendEmail, SendEmailError};
 use zwipe::domain::email::ports::{EmailSender, SendEmailFuture};
 use zwipe::domain::{auth, card, deck, health, metrics, user};
 use zwipe::inbound::http::{AppState, build_router};
+
+/// The one origin the test router allows, for the browser's cookie routes.
+pub(crate) const TEST_ORIGIN: &str = "https://app.zwipe.net";
 use zwipe::outbound::sqlx::postgres::Postgres;
 use zwipe_core::domain::card::scryfall_data::rarity::Rarity;
 
@@ -162,7 +165,11 @@ impl TestApp {
             swipe_cap: Arc::new(zwipe::inbound::http::swipe_cap::SwipeCap::new()),
         };
 
-        let router = build_router(state, jwt_secret, vec![]);
+        let router = build_router(
+            state,
+            jwt_secret,
+            vec![axum::http::HeaderValue::from_static(TEST_ORIGIN)],
+        );
 
         let n = IP_COUNTER.fetch_add(1, Ordering::Relaxed);
         let o = n.to_be_bytes();
@@ -224,6 +231,44 @@ impl TestApp {
             serde_json::from_slice(&bytes).unwrap_or(Value::Null)
         };
         (status, value)
+    }
+
+    /// Sends a request with extra headers and returns the response headers
+    /// too, for the cookie routes.
+    pub(crate) async fn send_raw(
+        &self,
+        method: Method,
+        path: &str,
+        json: Option<Value>,
+        token: Option<&str>,
+        headers: &[(header::HeaderName, String)],
+    ) -> (StatusCode, header::HeaderMap, Value) {
+        let mut builder = Request::builder().method(method).uri(path);
+        if let Some(t) = token {
+            builder = builder.header(header::AUTHORIZATION, format!("Bearer {t}"));
+        }
+        for (name, value) in headers {
+            builder = builder.header(name, value);
+        }
+        let body = match &json {
+            Some(v) => {
+                builder = builder.header(header::CONTENT_TYPE, "application/json");
+                Body::from(serde_json::to_vec(v).unwrap())
+            }
+            None => Body::empty(),
+        };
+        let mut request = builder.body(body).unwrap();
+        request.extensions_mut().insert(ConnectInfo(self.fake_ip));
+        let response = self.router.clone().oneshot(request).await.unwrap();
+        let status = response.status();
+        let response_headers = response.headers().clone();
+        let bytes = response.into_body().collect().await.unwrap().to_bytes();
+        let value = if bytes.is_empty() {
+            Value::Null
+        } else {
+            serde_json::from_slice(&bytes).unwrap_or(Value::Null)
+        };
+        (status, response_headers, value)
     }
 
     pub(crate) async fn post(

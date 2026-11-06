@@ -317,12 +317,28 @@ pub fn public_routes() -> Router<AppState> {
                         .route(
                             "/login",
                             post(auth::authenticate_user).layer(
-                                GovernorLayer::new(login_config).error_handler(stable_rate_limit),
+                                GovernorLayer::new(Arc::clone(&login_config))
+                                    .error_handler(stable_rate_limit),
                             ),
                         )
                         .route(
                             "/refresh",
                             post(auth::refresh_session).layer(
+                                GovernorLayer::new(Arc::clone(&refresh_config))
+                                    .error_handler(stable_rate_limit),
+                            ),
+                        )
+                        // The browser's session, its refresh token in an
+                        // HttpOnly cookie. Shares the app routes' limits.
+                        .route(
+                            "/cookie/login",
+                            post(auth::cookie_login).layer(
+                                GovernorLayer::new(login_config).error_handler(stable_rate_limit),
+                            ),
+                        )
+                        .route(
+                            "/cookie/refresh",
+                            post(auth::cookie_refresh).layer(
                                 GovernorLayer::new(refresh_config).error_handler(stable_rate_limit),
                             ),
                         )
@@ -519,6 +535,7 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
                     "/auth",
                     Router::new()
                         .route("/logout", post(auth::revoke_sessions))
+                        .route("/cookie/logout", post(auth::cookie_logout))
                         .route(
                             "/resend-verification",
                             post(auth::resend_verification).layer(

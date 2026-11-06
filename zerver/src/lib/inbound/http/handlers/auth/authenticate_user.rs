@@ -3,6 +3,7 @@
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
+use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::http::contracts::auth::{HttpAuthenticateUser, HttpSession};
 use zwipe_core::version::Version;
 
@@ -64,6 +65,21 @@ pub async fn authenticate_user(
     ClientIp(client_ip): ClientIp,
     Json(body): Json<HttpAuthenticateUser>,
 ) -> Result<(StatusCode, Json<HttpSession>), ApiError> {
+    let session = login(&state, client_ip, &body).await?;
+    Ok((StatusCode::OK, Json(HttpSession::from(session))))
+}
+
+/// The login both the app's route and the browser's run: checks the
+/// credentials, opens a session and records the login.
+///
+/// # Errors
+///
+/// As [`authenticate_user`].
+pub(crate) async fn login(
+    state: &AppState,
+    client_ip: std::net::IpAddr,
+    body: &HttpAuthenticateUser,
+) -> Result<Session, ApiError> {
     let mut request = AuthenticateUser::new(&body.identifier, body.password.read())?;
     request.platform = body.platform;
     request.client_version = body
@@ -98,5 +114,5 @@ pub async fn authenticate_user(
         }
     });
 
-    Ok((StatusCode::OK, Json(HttpSession::from(session))))
+    Ok(session)
 }

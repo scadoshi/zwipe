@@ -3,6 +3,7 @@
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
+use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::http::contracts::auth::{HttpRefreshSession, HttpSession};
 use zwipe_core::version::Version;
 
@@ -80,10 +81,23 @@ pub async fn refresh_session(
     Json(body): Json<HttpRefreshSession>,
 ) -> Result<(StatusCode, Json<HttpSession>), ApiError> {
     let request = RefreshSession::try_from(body)?;
+    let session = refresh(&state, &request).await?;
+    Ok((StatusCode::OK, Json(HttpSession::from(session))))
+}
 
+/// The rotation both the app's route and the browser's run: consumes the
+/// refresh token, opens the next session and records the refresh.
+///
+/// # Errors
+///
+/// As [`refresh_session`].
+pub(crate) async fn refresh(
+    state: &AppState,
+    request: &RefreshSession,
+) -> Result<Session, ApiError> {
     let session = state
         .auth_service
-        .refresh_session(&request)
+        .refresh_session(request)
         .await
         .map_err(ApiError::from)?;
 
@@ -109,5 +123,5 @@ pub async fn refresh_session(
         }
     });
 
-    Ok((StatusCode::OK, Json(HttpSession::from(session))))
+    Ok(session)
 }

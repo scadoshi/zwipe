@@ -73,7 +73,7 @@ impl Driver {
                 let request = HttpAuthenticateUser::new(&identifier, password.read());
                 spawn(async move {
                     let client = self.client.peek().clone();
-                    let reply = match client.authenticate_user(request).await {
+                    let reply = match client.login_cookie(request).await {
                         Ok(new_session) => Action::LoggedIn {
                             ticket,
                             session: Box::new(new_session),

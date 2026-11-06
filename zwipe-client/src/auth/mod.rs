@@ -5,6 +5,8 @@
 
 /// Pending email change confirmation endpoint.
 pub mod confirm_email_change;
+/// The browser's login, refresh and logout, carried by an `HttpOnly` cookie.
+pub mod cookie;
 /// Forgot password / password reset initiation endpoint.
 pub mod forgot_password;
 /// User login endpoint.

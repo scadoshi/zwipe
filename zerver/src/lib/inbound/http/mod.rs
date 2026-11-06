@@ -235,6 +235,8 @@ pub fn build_router(
     // → trace → CatchPanic → Compression → Cors → security_headers → Timeout(30s)
     // → RequestBodyLimit(2 MiB, innermost).
     let x_request_id = header::HeaderName::from_static("x-request-id");
+    let cookie_origins =
+        handlers::auth::cookie_session::CookieOrigins(allowed_origins.clone().into());
     axum::Router::new()
         .merge(
             // last-active layer wraps private routes only: it peeks the Bearer
@@ -245,6 +247,7 @@ pub fn build_router(
             )),
         )
         .merge(routes::public_routes())
+        .layer(axum::Extension(cookie_origins))
         .layer(RequestBodyLimitLayer::new(REQUEST_BODY_LIMIT))
         .layer(TimeoutLayer::with_status_code(
             StatusCode::REQUEST_TIMEOUT,
@@ -261,7 +264,10 @@ pub fn build_router(
                     Method::PATCH,
                     Method::DELETE,
                 ])
-                .allow_headers([header::CONTENT_TYPE, header::AUTHORIZATION]),
+                .allow_headers([header::CONTENT_TYPE, header::AUTHORIZATION])
+                // The browser's session routes carry the refresh cookie. Sound
+                // only because the origins are an explicit list, never `*`.
+                .allow_credentials(true),
         )
         .layer(CompressionLayer::new())
         .layer(CatchPanicLayer::new())

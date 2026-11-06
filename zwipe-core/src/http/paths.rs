@@ -25,6 +25,13 @@ pub const REGISTER_ROUTE: &str = "/api/auth/register";
 pub const LOGIN_ROUTE: &str = "/api/auth/login";
 pub const REFRESH_SESSION_ROUTE: &str = "/api/auth/refresh";
 pub const LOGOUT_ROUTE: &str = "/api/auth/logout";
+/// The browser's login: the refresh token comes back only as an `HttpOnly`
+/// cookie, never in the body.
+pub const COOKIE_LOGIN_ROUTE: &str = "/api/auth/cookie/login";
+/// The browser's refresh: the refresh token travels only in that cookie.
+pub const COOKIE_REFRESH_ROUTE: &str = "/api/auth/cookie/refresh";
+/// The browser's logout: revokes the sessions and expires the cookie.
+pub const COOKIE_LOGOUT_ROUTE: &str = "/api/auth/cookie/logout";
 pub const VERIFY_EMAIL_ROUTE: &str = "/api/auth/verify-email";
 pub const CONFIRM_EMAIL_CHANGE_ROUTE: &str = "/api/auth/confirm-email-change";
 pub const FORGOT_PASSWORD_ROUTE: &str = "/api/auth/forgot-password";
@@ -258,6 +265,9 @@ pub const FIXED_ROUTES: &[(Method, &str, bool)] = &[
     (Method::Post, SEARCH_CARDS_ROUTE, true),
     (Method::Post, SEARCH_COMMANDERS_ROUTE, true),
     (Method::Post, VERIFY_EMAIL_ROUTE, false),
+    (Method::Post, COOKIE_LOGIN_ROUTE, false),
+    (Method::Post, COOKIE_LOGOUT_ROUTE, true),
+    (Method::Post, COOKIE_REFRESH_ROUTE, false),
 ];
 
 #[cfg(test)]

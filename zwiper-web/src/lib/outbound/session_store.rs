@@ -1,9 +1,14 @@
 //! The session, kept in browser storage between visits.
 //!
-//! The session holds the refresh token, so anything that can run script on
-//! this origin can read it. The app keeps it in the OS keychain; a browser
-//! has no equivalent that survives a reload.
+//! Anything that can run script on this origin can read `localStorage`, so
+//! no token is ever written here. The refresh token lives in an `HttpOnly`
+//! cookie the server sets and the page cannot read; the access token lives
+//! in memory and is refreshed through that cookie after a reload.
 
+use std::str::FromStr;
+
+use chrono::DateTime;
+use zwipe_core::domain::auth::models::access_token::Jwt;
 use zwipe_core::domain::auth::models::session::Session;
 
 use crate::outbound::storage::{BrowserStorage, Storage, StorageError};
@@ -23,6 +28,24 @@ pub enum SessionStoreError {
     /// The stored copy does not parse as a session.
     #[error("stored session does not parse: {0}")]
     Decode(#[source] serde_json::Error),
+    /// The placeholder access token would not build.
+    #[error("placeholder access token would not build")]
+    Placeholder,
+}
+
+/// A JWT-shaped stand-in for the access token in storage. It is no token:
+/// no server accepts it, and its expiry makes the session refresh first.
+const PLACEHOLDER_JWT: &str = "stored.without.token";
+
+/// `session` as it may be written to storage: its access token replaced by
+/// an expired placeholder and its refresh token value blanked.
+fn without_tokens(session: &Session) -> Result<Session, SessionStoreError> {
+    let mut stored = session.clone();
+    stored.access_token.value =
+        Jwt::from_str(PLACEHOLDER_JWT).map_err(|_| SessionStoreError::Placeholder)?;
+    stored.access_token.expires_at = DateTime::UNIX_EPOCH;
+    stored.refresh_token.value = String::new();
+    Ok(stored)
 }
 
 /// Saves, loads and deletes the one session in `S`.
@@ -44,13 +67,18 @@ impl<S: Storage> SessionStore<S> {
         Self { storage }
     }
 
-    /// Writes `session` over any stored one.
+    /// Writes `session` over any stored one, without its tokens: page scripts
+    /// can read `localStorage`, so it keeps only the user, the settings and
+    /// the refresh token's expiry. The access token is a placeholder marked
+    /// expired, so a loaded session refreshes through the `HttpOnly` cookie
+    /// before its first call, and the refresh token is blank.
     ///
     /// # Errors
     ///
     /// Fails when the session will not serialize or the store refuses it.
     pub fn save(&self, session: &Session) -> Result<(), SessionStoreError> {
-        let json = serde_json::to_string(session).map_err(SessionStoreError::Encode)?;
+        let json =
+            serde_json::to_string(&without_tokens(session)?).map_err(SessionStoreError::Encode)?;
         self.storage.write(SESSION_KEY, &json)?;
         Ok(())
     }
@@ -120,11 +148,47 @@ mod tests {
     }
 
     #[test]
-    fn a_saved_session_loads_back_equal() {
+    fn a_saved_session_loads_back_without_its_tokens() {
         let store = store();
         let session = test_fixtures::session();
         store.save(&session).unwrap();
-        assert_eq!(store.load().unwrap(), Some(session));
+        let loaded = store.load().unwrap().unwrap();
+        assert_eq!(loaded.user, session.user);
+        assert_eq!(loaded.settings, session.settings);
+        assert_eq!(
+            loaded.refresh_token.expires_at,
+            session.refresh_token.expires_at
+        );
+        assert_eq!(loaded.refresh_token.value, "");
+        assert_eq!(loaded.access_token.value.as_str(), PLACEHOLDER_JWT);
+        assert_eq!(loaded.access_token.expires_at, DateTime::UNIX_EPOCH);
+    }
+
+    #[test]
+    fn no_token_reaches_storage() {
+        let store = store();
+        let session = test_fixtures::session();
+        store.save(&session).unwrap();
+        let raw = store.storage.read(SESSION_KEY).unwrap();
+        assert!(
+            !raw.contains(session.access_token.value.as_str()),
+            "access token stored"
+        );
+        assert!(
+            !raw.contains(&session.refresh_token.value),
+            "refresh token stored"
+        );
+    }
+
+    #[test]
+    fn a_loaded_session_refreshes_before_its_first_call() {
+        let store = store();
+        store.save(&test_fixtures::session()).unwrap();
+        let loaded = store.load().unwrap().unwrap();
+        assert_eq!(
+            zwipe_ui::session::freshness(&loaded, Utc::now()),
+            zwipe_ui::session::Freshness::Stale
+        );
     }
 
     #[test]
@@ -138,7 +202,10 @@ mod tests {
         store.save(&test_fixtures::session()).unwrap();
         let rotated = test_fixtures::session();
         store.save(&rotated).unwrap();
-        assert_eq!(store.load().unwrap(), Some(rotated));
+        assert_eq!(
+            store.load().unwrap(),
+            Some(without_tokens(&rotated).unwrap())
+        );
     }
 
     #[test]

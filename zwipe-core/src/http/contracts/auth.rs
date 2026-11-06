@@ -124,6 +124,15 @@ impl HttpRefreshSession {
     }
 }
 
+/// The browser's refresh request. The refresh token and its owner ride in
+/// the `HttpOnly` cookie, so the body carries only the running version.
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
+pub struct HttpCookieRefresh {
+    /// The app version running now, if the client sends one.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub client_version: Option<String>,
+}
+
 /// Login and refresh reply: the session, with its settings written a second
 /// time under `preferences`, the key clients before 1.18.0 read. The second
 /// key goes with the legacy settings route once `MIN_CLIENT_VERSION` reaches

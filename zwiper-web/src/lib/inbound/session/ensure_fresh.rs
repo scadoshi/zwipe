@@ -7,7 +7,6 @@ use dioxus::prelude::*;
 use tokio::sync::{Mutex, oneshot};
 use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::http::contracts::auth::HttpRefreshSession;
 use zwipe_ui::session::{self, Freshness};
 
 use crate::outbound::session_store::SessionStore;
@@ -50,17 +49,17 @@ pub async fn ensure_fresh(
         Checked::Failed(e) => return Err(e),
         Checked::Stale => session.peek().clone(),
     };
-    let Some(current) = current else {
+    if current.is_none() {
         return Err(not_logged_in());
-    };
+    }
 
     let (tx, rx) = oneshot::channel();
     dioxus::core::spawn_forever(async move {
         let _guard = guard;
-        let request =
-            HttpRefreshSession::new(&current.user.id.to_string(), &current.refresh_token.value);
+        // The refresh token rides in the HttpOnly cookie, which the browser
+        // sends on its own.
         let http = client.peek().clone();
-        let result = match http.refresh(&request).await {
+        let result = match http.refresh_cookie().await {
             Ok(new) => {
                 SessionStore::browser().infallible_save(&new);
                 session.set(Some(new.clone()));

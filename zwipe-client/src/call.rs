@@ -49,6 +49,13 @@ impl ZwipeClient {
             request = request.json(body);
         }
 
+        // The browser keeps cross-origin cookies out of a fetch unless asked;
+        // only the web session endpoints ask, so no other call sends one.
+        #[cfg(target_arch = "wasm32")]
+        if E::CREDENTIALS {
+            request = request.fetch_credentials_include();
+        }
+
         info!("{} {}", E::METHOD.as_str(), url);
         hold_for_skeleton_audit(E::METHOD).await;
         decode::<E>(request.send().await?).await
