@@ -1192,7 +1192,8 @@ body {
     cursor: grabbing;
 }
 
-/* A leaving card flies off slower than the app's. */
+/* A leaving card flies off slower than the app's. swipe_stack.rs's EXIT_MS
+   holds the same length, for when the next press plays. */
 .web-swipe-stack {
     --web-swipe-exit: 0.32s;
 }
