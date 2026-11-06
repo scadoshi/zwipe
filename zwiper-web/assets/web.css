@@ -13,6 +13,21 @@
     --web-sticky-max: calc(100dvh - 10rem);
 }
 
+/* A text field on a wide page stops at a field's width, left-aligned
+   beside or under its label. */
+@media (min-width: 900px) {
+    :root {
+        --web-field-max: 32rem;
+    }
+
+    #quick-add,
+    #commander-maybeboard-search,
+    #import-url,
+    #oracle-tag-dictionary-search {
+        max-width: var(--web-field-max);
+    }
+}
+
 html {
     overflow: auto;
     touch-action: auto;
@@ -612,11 +627,14 @@ body {
     width: 100%;
 }
 
-/* On a wide window the page head is as wide as the policy's column (its
-   40rem plus the head's side padding), not the page. */
+/* On a wide window the policy's sections run the page's width, under a
+   head of the same width. */
 @media (min-width: 900px) {
-    .web-page-head-wrap:has(+ .screen-content .web-privacy) {
-        max-width: calc(40rem + 3rem);
+    .web-privacy .privacy-content {
+        width: 100%;
+        max-width: var(--web-page-max);
+        padding: 0 1.5rem 1rem;
+        box-sizing: border-box;
     }
 }
 
@@ -902,6 +920,17 @@ body {
     }
 }
 
+/* ---- Image preview ----
+
+   On a wide window the open card is as large as zwipe.net's: up to 28rem
+   wide and most of the window's height. */
+@media (min-width: 900px) {
+    .image-preview-container .flippable-card-wrapper.card-image img {
+        max-width: min(28rem, 92vw);
+        max-height: 92vh;
+    }
+}
+
 /* ---- Printing sheet ---- */
 
 .web-printing-stage {
@@ -960,6 +989,17 @@ body {
 
 .web-swipe-stack .swipe-stack-card.top:active {
     cursor: grabbing;
+}
+
+/* A leaving card flies off slower than the app's. */
+.web-swipe-stack {
+    --web-swipe-exit: 0.32s;
+}
+
+.web-swipe-stack .swipe-stack-card.swipe-stack-exiting.card-stack-exit-left,
+.web-swipe-stack .swipe-stack-card.swipe-stack-exiting.card-stack-exit-right,
+.web-swipe-stack .swipe-stack-card.swipe-stack-exiting.card-stack-exit-up {
+    animation-duration: var(--web-swipe-exit);
 }
 
 .web-swipe-buttons {
@@ -1346,14 +1386,16 @@ body {
         min-height: 0;
     }
 
-    /* Search and the letter rail as a column on the left, the list beside. */
+    /* The Search label and box, the letters in one row under them, then
+       the list, one column up to the page's width. */
     .web-dict-browse {
-        display: grid;
-        grid-template-columns: 15rem minmax(0, 1fr);
-        gap: 1rem;
+        display: flex;
+        flex-direction: column;
         flex: 1 1 auto;
         min-height: 0;
         width: 100%;
+        max-width: var(--web-page-max);
+        margin: 0 auto;
         padding: 0 1.5rem;
         box-sizing: border-box;
     }
@@ -1361,19 +1403,24 @@ body {
     .web-dict-browse .dict-controls {
         max-width: none;
         padding: 0.75rem 0;
-        min-height: 0;
-        overflow-y: auto;
+    }
+
+    .web-dict-browse .dict-skeleton-search {
+        max-width: var(--web-field-max);
     }
 
     .web-dict-browse .dict-letter-rail {
-        flex-wrap: wrap;
-        overflow-x: visible;
         -webkit-mask-image: none;
         mask-image: none;
     }
 
+    .web-dict-browse .dict-letter-rail > * {
+        flex: 1 1 0;
+        min-width: 1.75rem;
+    }
+
     .web-dict-browse .dict-list {
-        max-width: 48rem;
+        max-width: none;
         min-height: 0;
     }
 }
@@ -1665,6 +1712,15 @@ body {
     .web-deck-warnings {
         margin: 0;
     }
+
+    /* A stat panel that holds charts spaces its rows and charts as the
+       phone's open section does, so each chart's title sits clear of what
+       is above it. */
+    .web-deck-page .deck-fold-inner:has(> div > .chart-label) {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
 }
 
 /* ---- Card filter ---- */
@@ -1808,6 +1864,12 @@ body {
         min-width: 20rem;
         max-width: min(var(--web-page-max), calc(100% - 3rem));
         max-height: calc(100dvh - 8rem);
+        padding-top: 1.25rem;
+        padding-bottom: 1.25rem;
+    }
+
+    .alert-dialog-description {
+        padding: 0.75rem 0;
     }
 }
 

@@ -17,6 +17,16 @@ Order of attack, by what users hit and what it costs:
 
 Still open beyond nits: the platform tag on funnel events (check `ClientPlatform` for a web value first), and switching the CSP from report-only to enforced after a click-through with the console open.
 
+## In progress
+
+| Items | Machine | Branch |
+| --- | --- | --- |
+| 9, 10, 4, 30 | thinker | `nits/thinker-9-10-4-30` |
+| 8, 16 | halo | `nits/halo-8-16` |
+| 18, 20 | laptop | `nits/laptop-18-20` |
+
+The loop is in [`../development/factory.md`](../development/factory.md).
+
 ## Open
 
 1. **Toasts cover the nav on a wide window.** They sit top right (`zwiper-web/assets/web.css`, the `.toast-container` override at `min-width: 900px`), over Log in, Create profile and Forgot password. Wanted: bottom left. Scope, CSS only in `web.css`:
@@ -60,4 +70,5 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 ## Done
 
-None yet.
+- 24, held arrow swipes once and the exit slows to 0.32s: PR #152 into `release`.
+- 13, 6, 3, changelog pages by five, privacy at page width, chart title gaps: PR #153 into `release`.

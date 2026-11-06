@@ -31,6 +31,10 @@ use crate::inbound::router::Route;
 use crate::inbound::shell::ScreenFrame;
 use crate::outbound::browser;
 
+/// How many releases the Changelog shows before its "Show more" button, and
+/// how many more each click reveals.
+const CHANGELOG_PAGE_SIZE: usize = 5;
+
 /// The wide page head's line under the title.
 const DESCRIPTION: &str = "The version, credits and what changed in each release";
 
@@ -148,7 +152,7 @@ pub fn About() -> Element {
                     }
                     match (status, data) {
                         (Status::Loaded, Some(data)) => rsx! {
-                            ChangelogReleases { data, selection, look: ChangelogLook::App }
+                            ChangelogReleases { data, selection, look: ChangelogLook::App, page_size: CHANGELOG_PAGE_SIZE }
                         },
                         (Status::Failed, _) => rsx! {},
                         (Status::Loading | Status::Loaded, _) => rsx! { ChangelogSkeletonPanels {} },
