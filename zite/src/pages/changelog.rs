@@ -7,6 +7,10 @@ use crate::{Footer, Nav};
 /// One frame for the selected month's cards to mount before the scroll.
 const MOUNT_WAIT_MS: u32 = 50;
 
+/// How many releases the list shows before its "Show more" button, and how
+/// many more each click reveals.
+const PAGE_SIZE: usize = 5;
+
 /// Reads the URL fragment on the client, as text without its `#`.
 const READ_HASH_JS: &str = "dioxus.send(decodeURIComponent(window.location.hash.slice(1)))";
 
@@ -50,7 +54,7 @@ pub fn Changelog() -> Element {
                     ChangelogFilters { selection, anchor: anchor() }
                 }
             }
-            ChangelogReleases { selection, link_versions: true }
+            ChangelogReleases { selection, link_versions: true, page_size: PAGE_SIZE }
         }
         Footer {}
     }
