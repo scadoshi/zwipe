@@ -23,6 +23,7 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
+| 43, the web's favicons match zwipe.net's set (queued after 8) | laptop | `nits/laptop-43` |
 | 8 reopened, the image preview as large as zwipe.net's at every width | laptop | `nits/laptop-8-again` |
 | 41, 42, hovers at any width with a mouse, and on every hint button | thinker | `nits/thinker-41` |
 | 40, the narrow layout fills a tablet-width window as zwipe.net does | halo | `nits/halo-40` |
@@ -84,6 +85,7 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 40. **Between a phone and the 900px breakpoint the web keeps the phone column.** At a half-screen window (~720px) app.zwipe.net's Home stays a narrow centered column with wide empty margins, where zwipe.net's panels fill the window with a small gutter. Below 900px the web's content fills the window as zite's does; a real phone width looks the same as today.
 41. **Hovers vanish below 900px on a desktop.** On a half-width window Home's deck art hover (and the other wide-only hovers) stops. Hover rules key on `(hover: hover)`, not the window's width.
 42. **Every hint button on the web gets the plain button hover.** The `?` buttons (panel headers, charts, the swipe screens' corner hint, the drawer title bar) sit still under a mouse.
+43. **The two sites' favicons differ.** app.zwipe.net shows a gold Z on a dark square from its lone favicon.ico; zwipe.net a light Z from a full icon set. The web takes zwipe.net's set.
 
 ## Done
 
