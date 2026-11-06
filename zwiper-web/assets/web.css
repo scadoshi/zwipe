@@ -1460,6 +1460,39 @@ body {
     }
 }
 
+/* The app's row cascade keyed on the row's wrapper, since each .card-row
+   is its .web-card-row's only child. The group header is child 1, and rows
+   past the eighth keep the app's 320ms tail delay. */
+@media (prefers-reduced-motion: no-preference) {
+    .maybeboard-list > .web-card-row:nth-child(2) > .card-row {
+        animation-delay: 0ms;
+    }
+
+    .maybeboard-list > .web-card-row:nth-child(3) > .card-row {
+        animation-delay: 45ms;
+    }
+
+    .maybeboard-list > .web-card-row:nth-child(4) > .card-row {
+        animation-delay: 90ms;
+    }
+
+    .maybeboard-list > .web-card-row:nth-child(5) > .card-row {
+        animation-delay: 135ms;
+    }
+
+    .maybeboard-list > .web-card-row:nth-child(6) > .card-row {
+        animation-delay: 180ms;
+    }
+
+    .maybeboard-list > .web-card-row:nth-child(7) > .card-row {
+        animation-delay: 225ms;
+    }
+
+    .maybeboard-list > .web-card-row:nth-child(8) > .card-row {
+        animation-delay: 270ms;
+    }
+}
+
 /* The Quick add result the arrow keys point at. */
 .web-float-highlight {
     border-color: var(--accent-primary);
