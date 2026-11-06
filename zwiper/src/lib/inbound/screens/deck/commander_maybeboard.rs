@@ -20,7 +20,9 @@
 
 use std::collections::HashSet;
 
-use components::{AlertDialog, Button, ButtonVariant, Chip, DialogAction, Toasts, use_toast};
+use components::{
+    AlertDialog, Button, ButtonVariant, Chip, ClearWrap, DialogAction, Toasts, use_toast,
+};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use tokio::time;
@@ -408,23 +410,20 @@ pub fn CommanderMaybeboard() -> Element {
                     } else {
                         div { class: "chip-row",
                             span { class: "stat-chip stat-chip-p1 chip-row-label", {model::QUICK_ADD} }
-                            input {
-                                class: "input input-compact",
-                                style: "flex: 1; margin-bottom: 0;",
-                                id: "commander-maybeboard-search",
-                                r#type: "text",
-                                placeholder: model::QUICK_ADD_PLACEHOLDER,
-                                value: "{query}",
-                                autocapitalize: "none",
-                                autocorrect: "off",
-                                spellcheck: "false",
-                                oninput: move |event| driver.dispatch(Action::Type(event.value())),
-                            }
-                            if !query.is_empty() {
-                                button {
-                                    class: "clear-btn",
-                                    onclick: move |_| driver.dispatch(Action::Type(String::new())),
-                                    "\u{00d7}"
+                            ClearWrap {
+                                filled: !query.is_empty(),
+                                on_clear: move |()| driver.dispatch(Action::Type(String::new())),
+                                label: "Clear the search".to_string(),
+                                input {
+                                    class: "input input-compact",
+                                    id: "commander-maybeboard-search",
+                                    r#type: "text",
+                                    placeholder: model::QUICK_ADD_PLACEHOLDER,
+                                    value: "{query}",
+                                    autocapitalize: "none",
+                                    autocorrect: "off",
+                                    spellcheck: "false",
+                                    oninput: move |event| driver.dispatch(Action::Type(event.value())),
                                 }
                             }
                         }

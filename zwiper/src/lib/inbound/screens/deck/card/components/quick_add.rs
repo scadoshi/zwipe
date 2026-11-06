@@ -4,6 +4,7 @@
 //! floating over the content above. The search itself (debounce, the
 //! deck-aware request, the add) is `zwipe_ui::screens::deck_cards`'.
 
+use components::ClearWrap;
 use dioxus::prelude::*;
 use zwipe_core::domain::card::Card;
 use zwipe_ui::screens::deck_cards::{self, QuickAddResults};
@@ -92,31 +93,28 @@ pub fn QuickAdd(
             // in the same accent-tertiary `chip-row-label`; the input fills the rest.
             div { class: "chip-row",
                 span { class: "stat-chip stat-chip-p1 chip-row-label", "{deck_cards::QUICK_ADD}" }
-                input {
-                    class: "input input-compact",
-                    style: "flex: 1; margin-bottom: 0;",
-                    id: "quick-add",
-                    r#type: "text",
-                    placeholder: deck_cards::QUICK_ADD_PLACEHOLDER,
-                    value: "{query}",
-                    autocapitalize: "none",
-                    autocorrect: "off",
-                    spellcheck: "false",
-                    // Scroll back to the top on focus so the header above the
-                    // bar (the float's canvas) is in view before results
-                    // appear, instead of them tucking under the screen header.
-                    onfocus: move |_| {
-                        let _ = document::eval(
-                            "const el = document.querySelector('.screen-content'); if (el) el.scrollTo({ top: 0, behavior: 'smooth' });",
-                        );
-                    },
-                    oninput: move |event| oninput(event.value()),
-                }
-                if !query.is_empty() {
-                    button {
-                        class: "clear-btn",
-                        onclick: move |_| onclear(()),
-                        "\u{00d7}"
+                ClearWrap {
+                    filled: !query.is_empty(),
+                    on_clear: move |()| onclear(()),
+                    label: "Clear the search".to_string(),
+                    input {
+                        class: "input input-compact",
+                        id: "quick-add",
+                        r#type: "text",
+                        placeholder: deck_cards::QUICK_ADD_PLACEHOLDER,
+                        value: "{query}",
+                        autocapitalize: "none",
+                        autocorrect: "off",
+                        spellcheck: "false",
+                        // Scroll back to the top on focus so the header above the
+                        // bar (the float's canvas) is in view before results
+                        // appear, instead of them tucking under the screen header.
+                        onfocus: move |_| {
+                            let _ = document::eval(
+                                "const el = document.querySelector('.screen-content'); if (el) el.scrollTo({ top: 0, behavior: 'smooth' });",
+                            );
+                        },
+                        oninput: move |event| oninput(event.value()),
                     }
                 }
             }
