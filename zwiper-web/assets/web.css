@@ -872,6 +872,19 @@ body {
     }
 }
 
+/* The deck page's rows sit one wrapper deep in their band, so each is its
+   wrapper's last child; a rule under every row but the band's last stands
+   in for the app's. */
+@media (min-width: 900px) {
+    .deck-band-rows > .web-deck-row:not(:last-child) .card-row:not(.expanded) {
+        border-bottom: 1px solid var(--border-secondary);
+    }
+
+    .deck-band-rows > .web-deck-row:last-child .card-row {
+        border-bottom: none;
+    }
+}
+
 /* ---- Printing sheet ---- */
 
 .web-printing-stage {
