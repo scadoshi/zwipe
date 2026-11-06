@@ -1063,6 +1063,23 @@ body {
     }
 }
 
+/* A recent deck's art grows a little under a mouse, inside its square. */
+@media (min-width: 900px) and (hover: hover) {
+    .home-deck-tile-art > img {
+        transition: transform 0.2s ease;
+    }
+
+    .home-deck-tile:hover > .home-deck-tile-art > img {
+        transform: scale(1.05);
+    }
+}
+
+@media (min-width: 900px) and (hover: hover) and (prefers-reduced-motion: reduce) {
+    .home-deck-tile:hover > .home-deck-tile-art > img {
+        transform: none;
+    }
+}
+
 /* ---- Buy links ---- */
 
 /* A retailer link drawn as the action buttons beside it, with zite's
