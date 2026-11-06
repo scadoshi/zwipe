@@ -21,11 +21,9 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
-| 14, 15 | scotland | `nits/scotland-14-15` |
-| 26 | thinker | `nits/thinker-26` |
 | 27 | halo | `nits/halo-27` |
-| 12, scoping only | laptop | `plans/web-stylesheet-split` |
-| 29, 31, 32, 1, oracle tag catch-up | composer | PRs #159, #160, #162, #161 approved, merging in order |
+| 22, 21, scoping only | scotland | `plans/shared-hover-and-filter` |
+| 14, 15, 26, 34 | composer | PRs #164, #165, #166 approved, merging in order |
 
 The loop is in [`../development/factory.md`](../development/factory.md).
 
@@ -83,3 +81,8 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 - 9, 10, 4, 30, panel lift, deck art hover, wide deck page dividers, nav icon hover: PR #156 into `release`.
 - 19, 25, pickers as the kit's drawer, no grid tiles inside overlays: PR #157 into `release`.
 - 5, 17, modals and drawers stay put on a wide window, Account changes as drawers: PR #158 into `release`.
+- 29, featured card names in chips on every client: PR #159 into `release`.
+- 31, 32, dividers on every web card list, dialog fields capped: PR #160 into `release`.
+- 1, toasts bottom left on a wide window: PR #162 into `release`.
+- Oracle tag catch-up, 11 descriptions (anime left blank): PR #161 into `release`.
+- 12, scoping: [`../plans/web_stylesheet_split.md`](../plans/web_stylesheet_split.md), PR #163; the split itself waits on Scotty.
