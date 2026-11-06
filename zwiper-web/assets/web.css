@@ -562,11 +562,14 @@ body {
     width: 100%;
 }
 
-/* On a wide window the page head is as wide as the policy's column (its
-   40rem plus the head's side padding), not the page. */
+/* On a wide window the policy's sections run the page's width, under a
+   head of the same width. */
 @media (min-width: 900px) {
-    .web-page-head-wrap:has(+ .screen-content .web-privacy) {
-        max-width: calc(40rem + 3rem);
+    .web-privacy .privacy-content {
+        width: 100%;
+        max-width: var(--web-page-max);
+        padding: 0 1.5rem 1rem;
+        box-sizing: border-box;
     }
 }
 
@@ -1595,6 +1598,15 @@ body {
     /* Warnings at the foot, open, in the section's own warning dress. */
     .web-deck-warnings {
         margin: 0;
+    }
+
+    /* A stat panel that holds charts spaces its rows and charts as the
+       phone's open section does, so each chart's title sits clear of what
+       is above it. */
+    .web-deck-page .deck-fold-inner:has(> div > .chart-label) {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
     }
 }
 
