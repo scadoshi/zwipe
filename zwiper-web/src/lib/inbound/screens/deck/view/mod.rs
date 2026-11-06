@@ -229,7 +229,6 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         ScreenFrame {
             title: TITLE,
             head_place: HeadPlace::Content,
-            footer: false,
             on_hint,
             div { class: "screen-content",
                 match loaded_profile {
