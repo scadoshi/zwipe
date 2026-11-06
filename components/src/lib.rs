@@ -16,7 +16,8 @@
 //! clients' chrome shares sit here too: [`DangerZoneAction`], the one-row
 //! Danger zone panel, [`MenuSection`], the main menu's section list, and
 //! Home's [`HomeDecks`] and [`HomeColors`] panels with [`ColorsEmpty`], the
-//! line the Colors bars show before any deck has a card.
+//! line the Colors bars show before any deck has a card. [`SiteFooter`] is
+//! zwipe.net's footer, which the web app draws too.
 //!
 //! Styling ships as string constants to inline through `document::Style`.
 //! orangui's sheets come through as they are; [`MAGIC_CSS`] holds this crate's
@@ -56,6 +57,7 @@ mod keyword_chips;
 mod menu_section;
 mod oracle_text;
 mod role_tags;
+mod site_footer;
 mod theme;
 
 pub use architecture::ZwipeArchitecture;
@@ -101,6 +103,7 @@ pub use orangui::{OpenUrlError, open_url, use_in_app_links};
 #[cfg(feature = "toast")]
 pub use orangui::{TOAST_CSS, ToastOptions, ToastStack, Toasts, use_toast};
 pub use role_tags::{OtagDef, RoleTags};
+pub use site_footer::SiteFooter;
 pub use theme::{pip_style_class, theme_from_settings};
 
 /// The Magic rules: oracle text, keyword chips, card rows, the flippable card

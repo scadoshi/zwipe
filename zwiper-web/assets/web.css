@@ -114,6 +114,26 @@ body {
     }
 }
 
+/* ---- Footer ----
+
+   zwipe.net's footer closes the page on a wide window, after the last
+   panel and as wide as the page. Below the breakpoint, as in the app,
+   there is none. */
+.web-site-footer {
+    display: none;
+}
+
+@media (min-width: 900px) {
+    .web-site-footer {
+        display: block;
+        order: 2;
+        flex: 0 0 auto;
+        width: min(calc(100% - 3rem), calc(var(--web-page-max) - 3rem));
+        margin: 0 auto;
+        box-sizing: border-box;
+    }
+}
+
 /* ---- Page grammar ----
 
    zite's page on a wide window: the content is one centered column at

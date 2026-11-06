@@ -487,6 +487,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
     rsx! {
         ScreenFrame {
             title: remove_cards::TITLE,
+            footer: false,
             on_hint: move |()| hint_open.set(true),
             div { class: "screen-content card-swipe content-enter web-cards-swipe",
                 div { class: "web-cards-swipe-main",
