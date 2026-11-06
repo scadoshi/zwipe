@@ -598,11 +598,66 @@ body {
     }
 }
 
+/* ---- Toasts ----
+
+   On a wide window the stack sits bottom left, clear of the nav, and reads
+   up from the bottom: the newest at the bottom, the older ones tucked above
+   it, each rising in from below. A swipe screen's pile chips hold the
+   bottom left, so there the stack sits above them. */
 @media (min-width: 900px) {
-    /* Toasts move top right. */
     .toast-container {
-        left: auto;
-        right: 1rem;
+        top: auto;
+        right: auto;
+        bottom: var(--web-toast-bottom, 1rem);
+        left: 1rem;
+    }
+
+    body:has(.swipe-bottom-row) .toast-container {
+        --web-toast-bottom: 4.5rem;
+    }
+
+    .toast-container ol {
+        flex-direction: column-reverse;
+    }
+
+    .toast-container li {
+        margin-top: 0;
+        margin-bottom: -2.75rem;
+    }
+
+    .toast-container li:first-child,
+    .toast-container.expanded li {
+        margin-bottom: 0;
+    }
+
+    .toast-container.animating li {
+        transition: margin-bottom 0.2s ease;
+    }
+
+    .toast-container [role="alertdialog"] {
+        animation-name: web-toast-rise-in;
+    }
+
+    @keyframes web-toast-rise-in {
+        from {
+            opacity: 0;
+            transform: translateY(1.5rem) scale(0.96);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+}
+
+@media (min-width: 900px) and (prefers-reduced-motion: reduce) {
+    .toast-container [role="alertdialog"] {
+        animation: none;
+    }
+
+    .toast-container.animating li {
+        transition: none;
     }
 }
 
