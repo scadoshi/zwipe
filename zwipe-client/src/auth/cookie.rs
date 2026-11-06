@@ -1,5 +1,5 @@
 //! The browser's session calls. The server keeps the refresh token in an
-//! `HttpOnly` cookie the page cannot read, so every [`Session`] these return
+//! `HttpOnly` cookie the page cannot read, so every [`Session`](zwipe_core::domain::auth::models::session::Session) these return
 //! has a blank refresh token; the browser sends the cookie on its own.
 
 use zwipe_core::domain::auth::models::session::Session;
