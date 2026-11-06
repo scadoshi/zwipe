@@ -95,7 +95,7 @@ pub(super) fn ChangeUsernameSheet(mut open: Signal<bool>) -> Element {
     };
 
     rsx! {
-        SheetFrame { wide: SheetWide::Modal,
+        SheetFrame { wide: SheetWide::Drawer,
             BottomSheet {
                 open,
                 title: "Change username".to_string(),

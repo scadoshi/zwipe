@@ -669,6 +669,30 @@ body {
     }
 }
 
+/* A modal or drawer stays put. The kit's header drag (the bottom sheet's
+   drag-to-dismiss) starts from no part of its header but the controls, and
+   an open one keeps its place over the drag's inline transform. The kit
+   turns a sheet into a modal or drawer at 60rem, so a sheet narrower than
+   that still drags. */
+@media (min-width: 60rem) {
+    :is(.sheet-form-modal, .sheet-form-drawer) > .bottom-sheet > .sheet-header {
+        pointer-events: none;
+    }
+
+    :is(.sheet-form-modal, .sheet-form-drawer) > .bottom-sheet > .sheet-header
+        :is(button, a, input, select, textarea) {
+        pointer-events: auto;
+    }
+
+    .sheet-form-modal > .bottom-sheet.show {
+        transform: translate(-50%, -50%) !important;
+    }
+
+    .sheet-form-drawer > .bottom-sheet.show {
+        transform: translateX(0) !important;
+    }
+}
+
 /* ---- Page head ----
 
    zite's page header on a wide window: a panel at the top of the page with
