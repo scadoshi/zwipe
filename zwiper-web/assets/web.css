@@ -1728,6 +1728,40 @@ body {
     min-height: 0;
 }
 
+/* ---- The oracle tag dictionary as the kit's modal ----
+
+   From the kit's modal width the dictionary is its modal, the large
+   overlay's size so the descriptions read at length, layered over a
+   picker's drawer and under the examples overlay. The Search label and
+   box, the letters and the list keep their wide layout; the list scrolls
+   under the controls. */
+.web-dict-sheet {
+    display: contents;
+}
+
+@media (min-width: 60rem) {
+    .web-dict-sheet > .sheet-form-modal > .sheet-backdrop {
+        z-index: 220;
+    }
+
+    .web-dict-sheet > .sheet-form-modal > .bottom-sheet {
+        z-index: 221;
+        width: min(76rem, calc(100vw - 4rem));
+        height: 92vh;
+        max-height: 92vh;
+    }
+
+    .web-dict-sheet .sheet-content {
+        overflow: hidden;
+        padding: 0 1.5rem;
+    }
+
+    .web-dict-sheet .web-dict-browse {
+        max-width: none;
+        padding: 0;
+    }
+}
+
 /* ---- Import, Export ---- */
 
 @media (min-width: 900px) {
