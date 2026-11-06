@@ -543,6 +543,18 @@ body {
         color: var(--accent-primary);
         border-color: var(--accent-primary);
     }
+
+    /* Every chip a click acts on, the same way: the kit's Chip and the
+       chips drawn as buttons or links, the filter's small toggles and its
+       remove marks, the deck page's fold-all and a card group's fold
+       header. A selected chip keeps its look; label and count chips are
+       spans and divs and stay still. */
+    :is(button, a):is(.chip, .chip-xs, .chip-remove):not(.selected, .disabled, :disabled):hover,
+    .deck-fold-all:not(:disabled):hover,
+    .card-group-header.group-collapsible:hover {
+        color: var(--accent-primary);
+        border-color: var(--accent-primary);
+    }
 }
 
 /* ---- Header below the breakpoint ----
