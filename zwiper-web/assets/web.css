@@ -1302,6 +1302,14 @@ body {
         gap: var(--panel-gap);
     }
 
+    /* A profile fold's body, at the accordion section's rhythm. */
+    .web-playstyle-fold-body {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        padding: 0.75rem 0;
+    }
+
     .web-playstyle-summary-hero { order: 1; }
     .web-playstyle-colors { order: 2; }
     .web-playstyle-roles { order: 3; }

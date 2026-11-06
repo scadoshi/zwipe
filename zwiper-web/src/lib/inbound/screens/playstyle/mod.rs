@@ -3,9 +3,9 @@
 //! staples.
 //!
 //! On a wide window the profile's Summary is the hero at the top of zite's
-//! page; under it the other profile sections sit open in the left column. The
-//! Show row sits above the suggestions and Staples' rows above Staples. Below
-//! the breakpoint it is the app's single column with the profile as one
+//! page and every profile section is a fold, each open on entry. The Show row
+//! sits above the suggestions and Staples' rows above Staples. Below the
+//! breakpoint it is the app's single column with the profile as one
 //! accordion, Color map open, and the chip rows inside their panels. Swipe
 //! sits in the list's header and Clear skips is the Danger zone panel after
 //! Staples.
@@ -13,6 +13,8 @@
 mod chips;
 mod profile;
 mod rows;
+
+use std::collections::HashSet;
 
 use components::{
     AlertDialog, Button, ButtonVariant, Chip, DangerZoneAction, DialogAction, TOAST_LONG,
@@ -83,8 +85,10 @@ pub fn Playstyle() -> Element {
     let mut entries: Signal<Vec<HttpCommanderSuggestion>> = use_signal(Vec::new);
     let mut deck_count = use_signal(|| 0u32);
     let mut profile: Signal<Option<HttpBuilderProfile>> = use_signal(|| None);
-    // The hero's Summary only shows on a wide window, where it is always open.
+    // The hero's Summary only shows on a wide window, where it is a fold.
     let summary_section: Signal<Option<String>> = use_signal(|| None);
+    // The titles of the profile folds shut on a wide window; all start open.
+    let folded: Signal<HashSet<String>> = use_signal(HashSet::new);
     let wide = use_wide();
     let mut is_loading = use_signal(|| true);
     let mut load_failed = use_signal(|| false);
@@ -260,6 +264,7 @@ pub fn Playstyle() -> Element {
     let cold_start = deck_count() == 0;
     let has_entries = !entries().is_empty();
     let rows = shown(&filtered());
+    let folds = wide().then_some(folded);
     let show_chips = rsx! {
         ShowIdentityChips { active_identity, identities: identities(),
             Chip {
@@ -321,14 +326,14 @@ pub fn Playstyle() -> Element {
                 } else {
                     div { class: "web-playstyle web-playstyle-grid web-page content-enter",
                         if let Some(profile) = profile() {
-                            div { class: "web-hero web-playstyle-summary-hero web-playstyle-cell web-sections-open",
-                                ProfileSummary { profile, open_section: summary_section }
+                            div { class: "web-hero web-playstyle-summary-hero web-playstyle-cell",
+                                ProfileSummary { profile, open_section: summary_section, folds }
                             }
                         }
                         div { class: "web-columns",
                             if let Some(profile) = profile() {
-                                div { class: "web-playstyle-profile web-sections-open",
-                                    BuilderProfileSections { profile }
+                                div { class: "web-playstyle-profile",
+                                    BuilderProfileSections { profile, folds }
                                 }
                             }
                             div { class: "web-playstyle-list",
