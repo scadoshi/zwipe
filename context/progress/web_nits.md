@@ -23,6 +23,7 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
+| 52, the swipe buttons move into the action dock (queued after 51) | laptop | `nits/laptop-52` |
 | 51, swipe twice as fast, same animation speed | laptop | `nits/laptop-51` |
 | 50, the deck head's ? matches Edit, Clone and Share | thinker | `nits/thinker-50` |
 | 49, every clear-x input through `components::ClearWrap` | halo | `nits/halo-49` |
@@ -95,6 +96,7 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 49. **Hand-rolled clear-× inputs.** The deck page's Quick add (and other inputs: the maybeboard's Quick add, the exceptions and picker searches, the dictionary, Import's URL) draw their own input and × instead of `components::ClearWrap`, so they sit slightly smaller and the × doesn't ease in. All go through `ClearWrap`.
 50. **The deck page head's `?` is smaller than its neighbors.** Edit, Clone and Share are full icon buttons; the `?` beside them is the small info button. Same size and shape as the other three.
 51. **Swiping on the web is too slow.** 24 drops a press until the leaving card's 0.32s exit ends. Keep the exit's speed but take the next press halfway through it, so swipes can come twice as fast; a held key still swipes once.
+52. **The swipe surfaces' text buttons belong in the dock.** The "← Skip / ↑ Maybeboard / ↓ Undo / → Add" row under the card moves into the action dock at the bottom right (or a second dock beside it) as icon buttons, on every swipe surface.
 
 ## Done
 
