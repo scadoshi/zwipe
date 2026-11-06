@@ -71,9 +71,6 @@ pub fn DeckWidePage(
         loaded,
         tokens,
         mut filter,
-        inline_name,
-        inline_types,
-        inline_colors,
         group_by,
         mut boards,
         show_tokens,
@@ -378,9 +375,6 @@ pub fn DeckWidePage(
                         show_tokens: tokens().is_some_and(|t| !t.is_empty()).then_some(show_tokens),
                         show_zone,
                         show_art,
-                        name: inline_name,
-                        types: inline_types,
-                        colors: inline_colors,
                         on_change: move |()| selected.set(None),
                         leading: rsx! {
                             QuickAdd { deck_id, entries, on_added: move |()| {} }

@@ -300,7 +300,8 @@ pub fn FeaturedCard(
 /// is `None` for a list with no tokens, and `on_change` fires when a row
 /// changes what the list shows. With `on_fold_all` the Show row ends in the
 /// fold-all button, which shuts every group, or opens every group once
-/// `all_folded`.
+/// `all_folded`. The Filter row (a name box, six type chips and the five
+/// pips) shows when the host passes all of `name`, `types` and `colors`.
 #[component]
 pub fn DeckControls(
     mut group_by: Signal<GroupByOption>,
@@ -309,9 +310,9 @@ pub fn DeckControls(
     #[props(default)] show_tokens: Option<Signal<bool>>,
     mut show_zone: Signal<bool>,
     mut show_art: Signal<bool>,
-    mut name: Signal<String>,
-    mut types: Signal<Vec<CardType>>,
-    mut colors: Signal<Vec<Color>>,
+    #[props(default)] name: Option<Signal<String>>,
+    #[props(default)] types: Option<Signal<Vec<CardType>>>,
+    #[props(default)] colors: Option<Signal<Vec<Color>>>,
     #[props(default)] on_change: Option<Callback<()>>,
     #[props(default)] leading: Option<Element>,
     #[props(default)] boards: Option<Element>,
@@ -372,6 +373,27 @@ pub fn DeckControls(
                 }
             }
         }
+        if let (Some(name), Some(types), Some(colors)) = (name, types, colors) {
+            FilterRow { name, types, colors, on_change }
+        }
+    }
+}
+
+/// The Filter row: a name box, six type chips and the five pips, each
+/// change firing `on_change`.
+#[component]
+fn FilterRow(
+    mut name: Signal<String>,
+    mut types: Signal<Vec<CardType>>,
+    mut colors: Signal<Vec<Color>>,
+    on_change: Option<Callback<()>>,
+) -> Element {
+    let changed = move || {
+        if let Some(on_change) = on_change {
+            on_change.call(());
+        }
+    };
+    rsx! {
         div { class: "chip-row",
             span { class: "stat-chip stat-chip-p1 chip-row-label", "Filter" }
             input {
