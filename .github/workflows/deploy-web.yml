@@ -1,0 +1,87 @@
+name: Deploy web
+
+# Builds zwiper-web and uploads it to the Cloudflare Pages project zwipe-app,
+# served at app.zwipe.net. Manual for now: run it from the Actions tab and
+# pick the branch to deploy. It needs the repo secrets CLOUDFLARE_API_TOKEN
+# (Account > Cloudflare Pages > Edit) and CLOUDFLARE_ACCOUNT_ID.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-web
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      SQLX_OFFLINE: "true"
+      # The API the build talks to; build.rs bakes it in.
+      BACKEND_URL: https://api.zwipe.net
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
+        with:
+          toolchain: stable
+          targets: wasm32-unknown-unknown
+
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+        with:
+          workspaces: zwiper-web
+          cache-all-crates: true
+
+      - name: Install system dependencies
+        timeout-minutes: 6
+        run: |
+          set -euo pipefail
+          APT_OPTS="-o Acquire::Retries=3 -o Acquire::http::Timeout=15 -o Acquire::https::Timeout=15"
+          for attempt in 1 2 3; do
+            if sudo apt-get $APT_OPTS update \
+              && sudo apt-get $APT_OPTS install -y build-essential; then
+              exit 0
+            fi
+            echo "apt attempt $attempt failed, retrying" >&2
+            sleep $((attempt * 10))
+          done
+          echo "apt failed three times; the mirror is likely degraded" >&2
+          exit 1
+
+      - name: Install dioxus-cli
+        # Matched to the workspace dioxus version, as in deploy-zite.yml.
+        uses: taiki-e/install-action@68a389c788b2cd04016ce8c80ee23b80d2ab3d68 # v2
+        with:
+          tool: dioxus-cli@0.7.10
+
+      - name: Test
+        run: cargo test -p zwiper-web
+
+      - name: Build
+        working-directory: zwiper-web
+        env:
+          CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER: gcc
+        run: dx build --release --platform web
+
+      - name: Add headers
+        # No 404.html: Pages then serves index.html with a 200 for app routes.
+        run: cp zwiper-web/deploy/_headers target/dx/zwiper-web/release/web/public/_headers
+
+      - name: Deploy to Cloudflare Pages
+        # Direct Upload; --branch main publishes to production (app.zwipe.net)
+        # whichever git branch the run was started from.
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: >
+          npx --yes wrangler@4.151.2 pages deploy
+          target/dx/zwiper-web/release/web/public
+          --project-name zwipe-app
+          --branch main
+          --commit-hash "${GITHUB_SHA}"
+          --commit-dirty=true
