@@ -1421,24 +1421,6 @@ code {
     }
 }
 
-/* ==================
-        footer
- ==================== */
-
-.site-footer {
-    margin-top: 0;
-}
-
-/* The links under the copyright: Privacy policy, Community and Contribute
-   as pills, centered in one row. */
-.footer-links {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.5rem;
-    margin: 0.75rem 0 1rem;
-}
-
 /* Visually hidden but exposed to assistive tech and crawlers. Used for the
    home <h1> since the ASCII logo is the visual title. */
 .sr-only {

@@ -16,11 +16,9 @@ use uuid::Uuid;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::card::search_card::card_filter::CardSortKey;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use zwipe_core::domain::card::search_card::card_type::CardType;
 use zwipe_core::domain::card::search_card::cards::Cards;
 use zwipe_core::domain::card::search_card::group_cards::GroupByOption;
 use zwipe_core::domain::deck::deck_metrics::deck_price;
@@ -215,10 +213,6 @@ pub(crate) struct Editor {
     pub tokens: Signal<Option<Vec<Card>>>,
     /// The filter sheet's filter.
     pub filter: Signal<CardQueryBuilder>,
-    /// The inline Filter row over it: a name, types and colors.
-    pub inline_name: Signal<String>,
-    pub inline_types: Signal<Vec<CardType>>,
-    pub inline_colors: Signal<Vec<Color>>,
     pub group_by: Signal<GroupByOption>,
     pub boards: Signal<Boards>,
     pub show_tokens: Signal<bool>,
@@ -281,9 +275,6 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
     let mut zone_cards: Signal<Vec<Card>> = use_signal(Vec::new);
     let mut profile: Signal<Option<DeckProfile>> = use_signal(|| None);
     let mut deck: Signal<Option<Deck>> = use_signal(|| None);
-    let mut inline_name = use_signal(String::new);
-    let mut inline_types = use_signal(Vec::<CardType>::new);
-    let mut inline_colors = use_signal(Vec::<Color>::new);
     let mut loaded = use_signal(|| false);
     let mut tokens: Signal<Option<Vec<Card>>> = use_signal(|| None);
     let group_by = use_signal(|| GroupByOption::CardType);
@@ -398,18 +389,7 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
     });
 
     let display = use_memo(move || {
-        let mut applied = filter.read().clone();
-        let query = inline_name();
-        if !query.trim().is_empty() {
-            applied.set_name_contains(query.trim());
-        }
-        if !inline_types().is_empty() {
-            applied.set_card_type_contains_any(inline_types());
-        }
-        if !inline_colors().is_empty() {
-            applied.set_color_identity_within(inline_colors().into_iter().collect());
-        }
-        deck_cards::pass(&entries.read(), &zone.read(), &applied, group_by())
+        deck_cards::pass(&entries.read(), &zone.read(), &filter.read(), group_by())
     });
     let meta = use_memo(move || {
         let mut map: HashMap<Uuid, Meta> = HashMap::new();
@@ -811,9 +791,6 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
 
     let reset_filter = use_callback(move |()| {
         filter.set(CardQueryBuilder::default());
-        inline_name.set(String::new());
-        inline_types.set(Vec::new());
-        inline_colors.set(Vec::new());
         selected.set(None);
         toast.info(
             "Filter reset".to_string(),
@@ -921,9 +898,6 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
         loaded,
         tokens,
         filter,
-        inline_name,
-        inline_types,
-        inline_colors,
         group_by,
         boards,
         show_tokens,

@@ -108,3 +108,8 @@ Check per phase: the app and the web at a phone width and at a wide width on the
 **Phase 5, the cut (one worker, after 1 to 4 merge).** Drop `ZWIPER_MAIN_CSS` and `ZWIPER_ACCORDION_CSS` from the web's root (moving `accordion.css` to `components` first if Phase 3 didn't absorb it), drop `zwiper/assets/**` from `deploy-web.yml`'s paths, add the narrow-only scrollbar hide to `web.css`, and delete the `html`/`body` reverts. Then sweep `web.css` for overrides that only undid an app-only rule the web no longer loads. This is the one visible change: scrollbars on a wide window (item 12).
 
 **Phase 6, optional.** The kit's `APP_CSS` is the same kind of question one level down (an app sheet the web loads whole); look at it once the split has settled, not as part of this plan.
+
+## Phase status
+
+- Phase 0: done on `split/phase-0`. The four empty files under `components/assets/screens/` and `components::SCREENS_CSS` are in, loaded by both roots after `APP_CSS`.
+- Phases 1 to 6: not started.

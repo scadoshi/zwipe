@@ -15,13 +15,19 @@ Order of attack, by what users hit and what it costs:
 7. **Skeletons:** 28 (a full alignment pass, both layouts), after the layout work so the ghosts match the final screens.
 8. **Shared-code moves, scoped first:** 22 (zite's hover stack into `components`), 21 (the full filter on zwipe.net's shared deck, which needs the filter drawer in `components`).
 
+Decided 2026-11-06: the stylesheet split goes ahead as option (d); gloo-timers joins components for the hover stack; fold-all stays after the Show chips everywhere, so 11 is won't do (21 removes its row).
+
 Still open beyond nits: the platform tag on funnel events (check `ClientPlatform` for a web value first), and switching the CSP from report-only to enforced after a click-through with the console open.
 
 ## In progress
 
 | Items | Machine | Branch |
 | --- | --- | --- |
-| 27 (doc link fix after CI) | halo | `nits/halo-27` (PR #168) |
+| 22, hover stack into components | thinker | `shared/hover-stack` |
+| 12, split phase 1 | laptop | `split/phase-1` (PR #171, approved) |
+| 12, split phase 2 | halo | `split/phase-2` |
+| 12, split phase 3 | scotland | `split/phase-3` |
+| 12, split phase 4 | laptop | `split/phase-4` |
 
 The loop is in [`../development/factory.md`](../development/factory.md).
 
@@ -69,6 +75,7 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 32. **Text fields still uncapped (follow-up to 18).** The deck form's fields, the command zone search and the deck dialog's input were not checked for full-width stretch on a wide window.
 33. **The kit's BottomSheet should not drag in modal or drawer form (follow-up to 5).** 5 was fixed in `web.css` by turning off pointer events on the header and pinning an open modal or drawer with `!important` over the drag's inline transform. The clean fix is in orangui: skip starting the drag-to-dismiss when the sheet shows as `SheetWide::Modal` or `Drawer`. That is a kit change and pin bump across zwipe, cairn and portfolio; once it lands, drop the web.css workaround.
 34. **The maybeboard's row entrance stagger is broken on the web.** The web's row wrappers make each `.card-row` its wrapper's only child, so `main.css`'s `.maybeboard-list .card-row:nth-child(n)` delays all match the first, and every row enters at once.
+35. **About overflows on a phone width.** At 400px the About page's panels run off the right edge (seen in builds before and after the split's phase 1, so it predates it).
 
 ## Done
 
@@ -88,3 +95,6 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 - 26, the eye on every swipe surface, toggling the details beside the card on a wide window: PR #165 into `release`.
 - 34, the maybeboard row cascade on the web: PR #166 into `release`.
 - 22, 21, scoping: [`../plans/shared_hover_and_filter.md`](../plans/shared_hover_and_filter.md), PR #167.
+- 27, zwipe.net's footer on the web through `components::SiteFooter`: PR #168 into `release`.
+- 12, split phase 0, the empty `components::SCREENS_CSS` frame: PR #169 into `release`.
+- 2, 23, the web's deck page drops the inline Filter row (`DeckControls` takes an optional `DeckFilter`) and gains fold-all: PR #170 into `release`. 11 won't do.

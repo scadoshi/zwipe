@@ -71,6 +71,7 @@ pub fn App() -> Element {
         document::Style { {components::COMPONENTS_CSS} }
         document::Style { {components::MAGIC_CSS} }
         document::Style { {components::APP_CSS} }
+        document::Style { {components::SCREENS_CSS} }
         document::Style { {ZWIPER_MAIN_CSS} }
         document::Style { {ZWIPER_ACCORDION_CSS} }
         document::Style { {components::TOAST_CSS} }

@@ -2,8 +2,8 @@ use std::collections::{HashMap, HashSet};
 
 use components::{
     CardRow as SharedCardRow, Chip, ColorChart, DeckBand, DeckCharts, DeckControls, DeckFacts,
-    DeckFold, DeckHead, DeckPage, DrawOdds, FeaturedCard, FlippableCardImage, HoverStackHost,
-    ManaCurve, ManaFulfillment, Panel, use_hover_stack,
+    DeckFilter, DeckFold, DeckHead, DeckPage, DrawOdds, FeaturedCard, FlippableCardImage,
+    HoverStackHost, ManaCurve, ManaFulfillment, Panel, use_hover_stack,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -519,9 +519,11 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                         show_tokens: (!deck.tokens.is_empty()).then_some(show_tokens),
                         show_zone,
                         show_art: show_row_art,
-                        name: name_filter,
-                        types: selected_types,
-                        colors: selected_colors,
+                        filter: Some(DeckFilter {
+                            name: name_filter,
+                            types: selected_types,
+                            colors: selected_colors,
+                        }),
                     }
                 },
                 empty,
