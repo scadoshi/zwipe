@@ -23,7 +23,7 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
-| 45, no page heads, the page's ? in the nav (queued after 21) | scotland | `nits/scotland-45` |
+| 45, 47, no page heads, the page's ? in the nav, About drops Credits on wide (queued after 21) | scotland | `nits/scotland-45` |
 | 46, a compact footer on both sites (queued after 40) | halo | `nits/halo-46` |
 | 7, Decks as rows: one column, two at 1400px and up to compare (queued after #185) | thinker | `nits/thinker-7` |
 | 43, the web's favicons match zwipe.net's set (queued after 8) | laptop | `nits/laptop-43` |
@@ -92,6 +92,7 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 44. **A deck entry's hover squares its corners.** Hovering a deck on Decks shrinks its corner radius. Wanted: the same radius, a slight grow (no lift), a quick transition, and the background color change kept for now (Scotty may drop it later).
 45. **The wide page heads go.** Each wide page opens with a panel restating the page's title and a one-line description: ceremony, no function. Remove them on every page, Settings included (keeping Home's hero, and any head that carries real controls or identity) and move the page's `?` into the nav bar's icon row.
 46. **The footer is far too tall on both sites.** The copyright sits in line with the pills, the Scryfall credit in line with the Fan Content notice, the attributions use the footer's full width, and the padding shrinks. Shared `SiteFooter`, so zwipe.net and the web change together.
+47. **About repeats the footer's credits.** On a wide window the Credits panel duplicates the footer's Scryfall and Fan Content lines; it goes there. Below 900px, with no footer, it stays.
 
 ## Done
 
