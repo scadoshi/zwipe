@@ -157,7 +157,7 @@ pub fn Login() -> Element {
     rsx! {
         div { class: "screen",
             ScreenHeader { title: login::TITLE }
-            div { class: "screen-content centered content-enter",
+            div { class: "screen-content content-enter",
             HomeHero {}
             div { class: "container-sm text-center form-panel",
                 div { class: "settings-list-header",
