@@ -11,7 +11,7 @@
 //! guard and change nothing until the server answers.
 
 use zwipe_core::domain::card::scryfall_data::universe;
-use zwipe_core::domain::user::settings::{PipColor, UserSettings};
+use zwipe_core::domain::user::settings::{PipStyle, UserSettings};
 use zwipe_core::http::contracts::user::HttpUpdateSettings;
 
 use crate::generation::{Generation, Ticket};
@@ -35,7 +35,7 @@ pub enum SettingChange {
         dark_mode: bool,
     },
     /// The Pips button.
-    Pips(PipColor),
+    Pips(PipStyle),
     /// The Universes Beyond button: `true` hides them.
     HideUniversesBeyond(bool),
     /// The Exceptions sheet's Save: the whole list of franchise slugs.
@@ -110,8 +110,8 @@ impl SettingChange {
             Self::DarkMode { .. } if saved.dark_mode => "Dark mode on",
             Self::DarkMode { .. } => "Dark mode off",
             Self::Pips(_) => match saved.pip_style {
-                PipColor::Theme => "Pips in theme colors",
-                PipColor::Classic => "Pips in classic colors",
+                PipStyle::Theme => "Pips in theme colors",
+                PipStyle::Classic => "Pips in classic colors",
             },
             Self::HideUniversesBeyond(_) if saved.exclude_universes_beyond => {
                 "Universes Beyond hidden"
@@ -255,7 +255,7 @@ mod tests {
             dark_mode: true,
             exclude_universes_beyond: false,
             universes_beyond_exceptions: vec!["a".to_owned()],
-            pip_style: PipColor::Theme,
+            pip_style: PipStyle::Theme,
         }
     }
 
@@ -273,7 +273,7 @@ mod tests {
                 theme: "gruvbox".to_owned(),
                 dark_mode: false,
             },
-            SettingChange::Pips(PipColor::Classic),
+            SettingChange::Pips(PipStyle::Classic),
             SettingChange::HideUniversesBeyond(true),
             SettingChange::Exceptions(slugs(&["b", "c"])),
         ]
@@ -356,11 +356,11 @@ mod tests {
     fn each_saved_toast_has_the_apps_words_kind_and_band() {
         let mut on = settings();
         on.dark_mode = true;
-        on.pip_style = PipColor::Theme;
+        on.pip_style = PipStyle::Theme;
         on.exclude_universes_beyond = true;
         let mut off = settings();
         off.dark_mode = false;
-        off.pip_style = PipColor::Classic;
+        off.pip_style = PipStyle::Classic;
         off.exclude_universes_beyond = false;
 
         let theme = SettingChange::Theme {
@@ -371,7 +371,7 @@ mod tests {
             theme: "gruvbox".to_owned(),
             dark_mode: true,
         };
-        let pips = SettingChange::Pips(PipColor::Theme);
+        let pips = SettingChange::Pips(PipStyle::Theme);
         let universes = SettingChange::HideUniversesBeyond(true);
         let exceptions = SettingChange::Exceptions(Vec::new());
         let cases: [(&SettingChange, &UserSettings, &str, Duration); 9] = [
@@ -433,8 +433,8 @@ mod tests {
         assert_eq!(request.dark_mode, Some(true));
         assert_eq!(request.pip_style, None);
 
-        let request = HttpUpdateSettings::from(SettingChange::Pips(PipColor::Classic));
-        assert_eq!(request.pip_style, Some(PipColor::Classic));
+        let request = HttpUpdateSettings::from(SettingChange::Pips(PipStyle::Classic));
+        assert_eq!(request.pip_style, Some(PipStyle::Classic));
         assert_eq!((request.theme, request.dark_mode), (None, None));
         assert_eq!(request.exclude_universes_beyond, None);
         assert_eq!(request.universes_beyond_exceptions, None);

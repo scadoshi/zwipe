@@ -20,7 +20,7 @@ use dioxus_primitives::toast::{Toasts, use_toast};
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
-use zwipe_core::domain::user::models::settings::PipColor;
+use zwipe_core::domain::user::models::settings::PipStyle;
 use zwipe_ui::generation::Ticket;
 use zwipe_ui::home::Figures;
 use zwipe_ui::screens::home::{
@@ -133,7 +133,7 @@ struct Driver {
     client: Signal<ZwipeClient>,
     hint_open: Signal<bool>,
     theme: Signal<ThemeConfig>,
-    pip_style: Signal<PipColor>,
+    pip_style: Signal<PipStyle>,
     caches: Caches,
 }
 

@@ -18,7 +18,7 @@ use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user;
 use zwipe_core::domain::user::hints::OneTimeHint;
-use zwipe_core::domain::user::settings::PipColor;
+use zwipe_core::domain::user::settings::PipStyle;
 use zwipe_core::text::sentence_case;
 use zwipe_ui::screens::config::{self as model, Action, Destination, Effect, Sheet, State};
 
@@ -44,7 +44,7 @@ struct Driver {
     session: Signal<Option<Session>>,
     client: Signal<ZwipeClient>,
     theme_config: Signal<ThemeConfig>,
-    pip_style: Signal<PipColor>,
+    pip_style: Signal<PipStyle>,
     app_icon_theme: Signal<ThemeConfig>,
     config_hint_open: Signal<bool>,
     ub_hint_open: Signal<bool>,
@@ -153,7 +153,7 @@ impl Driver {
 #[component]
 pub fn Config() -> Element {
     let theme_config: Signal<ThemeConfig> = use_context();
-    let pip_style: Signal<PipColor> = use_context();
+    let pip_style: Signal<PipStyle> = use_context();
     let toast = use_toast();
 
     let mut app_icon_open = use_signal(|| false);

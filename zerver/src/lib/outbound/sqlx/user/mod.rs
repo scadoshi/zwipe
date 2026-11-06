@@ -9,7 +9,7 @@ use zwipe_core::domain::Email;
 use zwipe_core::domain::user::User;
 use zwipe_core::domain::user::models::hints::MarkHintShown;
 use zwipe_core::domain::user::settings::{
-    ParsePipColorError, PipColor, UpdateSettings, UserSettings,
+    ParsePipStyleError, PipStyle, UpdateSettings, UserSettings,
 };
 
 use crate::domain::user::models::get_user::GetUserError;
@@ -35,7 +35,7 @@ struct DatabaseUserSettings {
 }
 
 impl TryFrom<DatabaseUserSettings> for UserSettings {
-    type Error = ParsePipColorError;
+    type Error = ParsePipStyleError;
 
     fn try_from(db: DatabaseUserSettings) -> Result<Self, Self::Error> {
         Ok(Self {
@@ -153,7 +153,7 @@ impl UserRepository for Postgres {
             request.dark_mode,
             request.exclude_universes_beyond,
             request.universes_beyond_exceptions.as_deref(),
-            request.pip_style.map(PipColor::as_str)
+            request.pip_style.map(PipStyle::as_str)
         )
         .fetch_one(&mut *tx)
         .await
@@ -165,6 +165,6 @@ impl UserRepository for Postgres {
 
         result
             .try_into()
-            .map_err(|e: ParsePipColorError| UpdateSettingsError::Database(e.into()))
+            .map_err(|e: ParsePipStyleError| UpdateSettingsError::Database(e.into()))
     }
 }

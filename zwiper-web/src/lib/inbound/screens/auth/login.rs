@@ -12,7 +12,7 @@ use dioxus::router::Navigator;
 use dioxus_primitives::toast::{ToastOptions, Toasts, use_toast};
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::user::models::settings::PipColor;
+use zwipe_core::domain::user::models::settings::PipStyle;
 use zwipe_core::http::contracts::auth::HttpAuthenticateUser;
 use zwipe_ui::account::Password;
 use zwipe_ui::screens::login::{self, Action, Destination, Effect, Field, State};
@@ -41,7 +41,7 @@ struct Driver {
     toast: Toasts,
     client: Signal<ZwipeClient>,
     session: Signal<Option<Session>>,
-    pip_style: Signal<PipColor>,
+    pip_style: Signal<PipStyle>,
     theme: Signal<ThemeConfig>,
 }
 

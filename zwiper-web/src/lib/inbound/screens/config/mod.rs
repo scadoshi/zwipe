@@ -10,7 +10,7 @@ use components::{Button, ButtonVariant, DarkModeButton, PaletteIcon, TOAST_NORMA
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::user::models::settings::{self as user_settings, PipColor};
+use zwipe_core::domain::user::models::settings::{self as user_settings, PipStyle};
 use zwipe_core::http::contracts::user::HttpUpdateSettings;
 use zwipe_ui::screens::config;
 
@@ -44,7 +44,7 @@ fn update(edit: impl FnOnce(&mut HttpUpdateSettings)) -> HttpUpdateSettings {
 #[component]
 pub fn Config() -> Element {
     let theme: Signal<ThemeConfig> = use_context();
-    let mut pip_style: Signal<PipColor> = use_context();
+    let mut pip_style: Signal<PipStyle> = use_context();
     let mut session: Signal<Option<Session>> = use_context();
     let authed = use_authed();
     let toast = use_toast();
@@ -109,8 +109,8 @@ pub fn Config() -> Element {
                     session.set(Some(latest));
                 }
                 said.call(match shown {
-                    PipColor::Theme => "Pips in theme colors",
-                    PipColor::Classic => "Pips in classic colors",
+                    PipStyle::Theme => "Pips in theme colors",
+                    PipStyle::Classic => "Pips in classic colors",
                 });
             }
         });
@@ -182,8 +182,8 @@ pub fn Config() -> Element {
                                     variant: ButtonVariant::Action,
                                     onclick: toggle_pips,
                                     match pip_style() {
-                                        PipColor::Theme => "Theme",
-                                        PipColor::Classic => "Classic",
+                                        PipStyle::Theme => "Theme",
+                                        PipStyle::Classic => "Classic",
                                     }
                                 }
                             }

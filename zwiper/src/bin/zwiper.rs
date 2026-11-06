@@ -4,7 +4,7 @@ use components::{DialogHostView, ThemeConfig, ToastStack, use_dialog_host};
 use dioxus::prelude::*;
 use tracing_subscriber::EnvFilter;
 use zwipe_core::domain::logo;
-use zwipe_core::domain::user::settings::PipColor;
+use zwipe_core::domain::user::settings::PipStyle;
 use zwiper::config::Config;
 use zwiper::inbound::components::auth::session_upkeep;
 use zwiper::inbound::components::hint_host::HintHost;
@@ -89,7 +89,7 @@ fn ThemeWrapper(children: Element) -> Element {
         let class = shown.read().css_class();
         document::eval(&format!("document.documentElement.className = {class:?};"));
     });
-    let pips = components::pip_color_class(use_context::<Signal<PipColor>>()());
+    let pips = components::pip_style_class(use_context::<Signal<PipStyle>>()());
     rsx! {
         div { class: "app-shell {class} {pips}",
             // In place from the start; the splash is what rains.

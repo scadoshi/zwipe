@@ -4,7 +4,7 @@ use components::ThemeConfig;
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::user::models::settings::PipColor;
+use zwipe_core::domain::user::models::settings::PipStyle;
 use zwipe_core::http::contracts::metrics::AnonymousEventKind;
 use zwipe_ui::session;
 use zwipe_ui::timing::UPKEEP_INTERVAL;
@@ -54,7 +54,7 @@ pub fn use_session_upkeep() -> UpgradeRequired {
     use_context_provider(|| theme);
     use_effect(move || ThemeStore::browser().save(&theme.read()));
 
-    let pip_style: Signal<PipColor> = use_signal(|| {
+    let pip_style: Signal<PipStyle> = use_signal(|| {
         session
             .peek()
             .as_ref()

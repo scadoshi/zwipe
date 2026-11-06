@@ -30,6 +30,8 @@ End state:
 
 [`../development/api_evolution.md`](../development/api_evolution.md): reads go lenient first, the writer changes only once every reader understands the new value, and removing an old value is a wire change behind `MIN_CLIENT_VERSION`. The precedent is [`archive/sort_direction_wire.md`](archive/sort_direction_wire.md).
 
+Note, 2026-11-06: the type went back to `PipStyle` (and `ParsePipStyleError`, `pip_style_class`): a style describes the scheme better than colors. The field, key and column were `pip_style` throughout, so no wire change came of it. Read the names below with that swap.
+
 ## Phase 1: rename everywhere but the wire, read both. BUILT
 
 - `PipStyle` is `PipColor`, `Natural` is `Classic`, `ParsePipStyleError` is `ParsePipColorError`, `pip_style_class` is `pip_color_class`, the CSS class is `pips-classic`. The toast reads "Pips in classic colors", and the Pips button, the zite toggle and both Pips hints say Classic.

@@ -7,7 +7,7 @@
 //! join two foreign types (the orphan rule), so the conversion is a function.
 
 use orangui::ThemeConfig;
-use zwipe_core::domain::user::models::settings::{PipColor, UserSettings};
+use zwipe_core::domain::user::models::settings::{PipStyle, UserSettings};
 
 /// The theme a user's saved settings select. A retired slug moves to its
 /// replacement, and one this build does not know (a theme added after it)
@@ -26,10 +26,10 @@ pub fn theme_from_settings(settings: &UserSettings) -> ThemeConfig {
 /// back the classic fills in `magic.css`, and the theme's own colors need no
 /// class.
 #[must_use]
-pub const fn pip_color_class(color: PipColor) -> &'static str {
+pub const fn pip_style_class(color: PipStyle) -> &'static str {
     match color {
-        PipColor::Theme => "",
-        PipColor::Classic => "pips-classic",
+        PipStyle::Theme => "",
+        PipStyle::Classic => "pips-classic",
     }
 }
 
@@ -39,12 +39,12 @@ mod tests {
 
     #[test]
     fn the_classic_pip_class_is_styled() {
-        let class = super::pip_color_class(core::PipColor::Classic);
+        let class = super::pip_style_class(core::PipStyle::Classic);
         assert!(
             crate::MAGIC_CSS.contains(&format!(".{class} {{")),
             "magic.css has no .{class} rule"
         );
-        assert_eq!(super::pip_color_class(core::PipColor::Theme), "");
+        assert_eq!(super::pip_style_class(core::PipStyle::Theme), "");
     }
 
     #[test]

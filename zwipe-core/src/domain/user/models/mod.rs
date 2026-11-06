@@ -13,7 +13,7 @@ pub use email::{Email, InvalidEmail};
 pub use hints::{InvalidHintKey, MarkHintShown, OneTimeHint};
 use serde::{Deserialize, Serialize};
 pub use settings::{
-    ALLOWED_THEMES, InvalidUpdateSettings, ParsePipColorError, PipColor, UpdateSettings,
+    ALLOWED_THEMES, InvalidUpdateSettings, ParsePipStyleError, PipStyle, UpdateSettings,
     UserSettings,
 };
 pub use username::{InvalidUsername, Username};

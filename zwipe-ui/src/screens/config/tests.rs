@@ -19,7 +19,7 @@ fn account() -> UserSettings {
         dark_mode: true,
         exclude_universes_beyond: true,
         universes_beyond_exceptions: slugs(&["a"]),
-        pip_style: PipColor::Theme,
+        pip_style: PipStyle::Theme,
     }
 }
 
@@ -108,12 +108,12 @@ fn the_hint_is_offered_once_per_visit() {
 fn loaded_settings_enable_universes_beyond_and_show_the_pips() {
     let (mut state, ticket) = loading();
     let mut settings = account();
-    settings.pip_style = PipColor::Classic;
+    settings.pip_style = PipStyle::Classic;
     let effects = state.update(Action::Loaded {
         ticket,
         settings: Box::new(settings),
     });
-    assert_eq!(effects, [Effect::ShowPips(PipColor::Classic)]);
+    assert_eq!(effects, [Effect::ShowPips(PipStyle::Classic)]);
     assert_eq!(state.status(), Status::Loaded);
     assert!(state.universes_beyond_enabled());
     assert!(state.exceptions_enabled());
@@ -252,17 +252,17 @@ fn a_dark_mode_reply_overtaken_by_a_newer_tap_is_ignored() {
 fn pips_show_at_once_and_save_the_other_style() {
     let mut state = State::new();
     let effects = state.update(Action::TogglePips {
-        shown: PipColor::Theme,
+        shown: PipStyle::Theme,
     });
-    assert_eq!(effects.first(), Some(&Effect::ShowPips(PipColor::Classic)));
+    assert_eq!(effects.first(), Some(&Effect::ShowPips(PipStyle::Classic)));
     let (ticket, change) = save_in(&effects);
-    assert_eq!(change, SettingChange::Pips(PipColor::Classic));
+    assert_eq!(change, SettingChange::Pips(PipStyle::Classic));
     let mut reply = account();
-    reply.pip_style = PipColor::Classic;
+    reply.pip_style = PipStyle::Classic;
     assert_eq!(
         saved(&mut state, ticket, reply),
         [
-            Effect::PipsSaved(PipColor::Classic),
+            Effect::PipsSaved(PipStyle::Classic),
             Effect::Toast(Toast::new(
                 ToastKind::Success,
                 "Pips in classic colors",
@@ -276,11 +276,11 @@ fn pips_show_at_once_and_save_the_other_style() {
 fn a_failed_pips_save_puts_back_the_style_before_the_tap() {
     let mut state = State::new();
     let (ticket, _) = save_in(&state.update(Action::TogglePips {
-        shown: PipColor::Classic,
+        shown: PipStyle::Classic,
     }));
     assert_eq!(
         state.update(Action::SaveFailed { ticket }),
-        [Effect::ShowPips(PipColor::Classic)]
+        [Effect::ShowPips(PipStyle::Classic)]
     );
 }
 
@@ -288,10 +288,10 @@ fn a_failed_pips_save_puts_back_the_style_before_the_tap() {
 fn a_pips_reply_overtaken_by_a_newer_tap_is_ignored() {
     let mut state = State::new();
     let (first, _) = save_in(&state.update(Action::TogglePips {
-        shown: PipColor::Theme,
+        shown: PipStyle::Theme,
     }));
     let _ = state.update(Action::TogglePips {
-        shown: PipColor::Classic,
+        shown: PipStyle::Classic,
     });
     assert_eq!(state.update(Action::SaveFailed { ticket: first }), []);
 }
@@ -362,7 +362,7 @@ fn a_universes_beyond_reply_overtaken_by_a_newer_tap_is_ignored() {
 fn a_tap_on_one_toggle_leaves_anothers_reply_current() {
     let mut state = loaded(account());
     let (pips, _) = save_in(&state.update(Action::TogglePips {
-        shown: PipColor::Theme,
+        shown: PipStyle::Theme,
     }));
     let _ = state.update(Action::ToggleUniversesBeyond);
     let _ = state.update(Action::ToggleDarkMode {
@@ -370,7 +370,7 @@ fn a_tap_on_one_toggle_leaves_anothers_reply_current() {
     });
     assert_eq!(
         state.update(Action::SaveFailed { ticket: pips }),
-        [Effect::ShowPips(PipColor::Theme)]
+        [Effect::ShowPips(PipStyle::Theme)]
     );
 }
 
@@ -378,7 +378,7 @@ fn a_tap_on_one_toggle_leaves_anothers_reply_current() {
 fn a_reply_lands_once() {
     let mut state = State::new();
     let (ticket, _) = save_in(&state.update(Action::TogglePips {
-        shown: PipColor::Theme,
+        shown: PipStyle::Theme,
     }));
     let _ = state.update(Action::SaveFailed { ticket });
     assert_eq!(saved(&mut state, ticket, account()), []);
@@ -593,7 +593,7 @@ fn the_copy_matches_the_app() {
     assert_eq!(SHOW, "Show");
     assert_eq!(BACK, "Back");
     assert_eq!(SAVE, "Save");
-    assert_eq!(pips_label(PipColor::Theme), "Theme");
-    assert_eq!(pips_label(PipColor::Classic), "Classic");
+    assert_eq!(pips_label(PipStyle::Theme), "Theme");
+    assert_eq!(pips_label(PipStyle::Classic), "Classic");
     assert_eq!(selected_line(3), "3 selected");
 }

@@ -110,7 +110,7 @@ pub fn display_theme_name(slug: &str) -> String {
 /// How mana pips are colored, app-wide.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
-pub enum PipColor {
+pub enum PipStyle {
     /// Pips in the current theme's own five mana colors.
     #[default]
     Theme,
@@ -121,7 +121,7 @@ pub enum PipColor {
     Classic,
 }
 
-impl PipColor {
+impl PipStyle {
     /// The stored name: `theme` or `classic`.
     #[must_use]
     pub const fn as_str(self) -> &'static str {
@@ -141,7 +141,7 @@ impl PipColor {
     }
 }
 
-impl fmt::Display for PipColor {
+impl fmt::Display for PipStyle {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(self.as_str())
     }
@@ -151,16 +151,16 @@ impl fmt::Display for PipColor {
 /// `natural`.
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
 #[error("unknown pip color")]
-pub struct ParsePipColorError;
+pub struct ParsePipStyleError;
 
-impl FromStr for PipColor {
-    type Err = ParsePipColorError;
+impl FromStr for PipStyle {
+    type Err = ParsePipStyleError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "theme" => Ok(Self::Theme),
             "classic" | "natural" => Ok(Self::Classic),
-            _ => Err(ParsePipColorError),
+            _ => Err(ParsePipStyleError),
         }
     }
 }
@@ -183,9 +183,9 @@ pub struct UserSettings {
     #[serde(default)]
     pub universes_beyond_exceptions: Vec<String>,
     /// How mana pips are colored. Claims and payloads without the field read
-    /// as [`PipColor::Theme`].
+    /// as [`PipStyle::Theme`].
     #[serde(default)]
-    pub pip_style: PipColor,
+    pub pip_style: PipStyle,
 }
 
 impl Default for UserSettings {
@@ -195,7 +195,7 @@ impl Default for UserSettings {
             dark_mode: true,
             exclude_universes_beyond: false,
             universes_beyond_exceptions: Vec::new(),
-            pip_style: PipColor::Theme,
+            pip_style: PipStyle::Theme,
         }
     }
 }
@@ -216,8 +216,8 @@ pub struct UpdateSettings {
     /// New exception whitelist (replaces the whole list), or `None` to leave
     /// unchanged. Slugs are validated against `universe::FRANCHISES`.
     pub universes_beyond_exceptions: Option<Vec<String>>,
-    /// New pip style, or `None` to leave unchanged.
-    pub pip_style: Option<PipColor>,
+    /// New pip colors, or `None` to leave unchanged.
+    pub pip_style: Option<PipStyle>,
 }
 
 impl UpdateSettings {
@@ -236,7 +236,7 @@ impl UpdateSettings {
         dark_mode: Option<bool>,
         exclude_universes_beyond: Option<bool>,
         universes_beyond_exceptions: Option<Vec<String>>,
-        pip_style: Option<PipColor>,
+        pip_style: Option<PipStyle>,
     ) -> Result<Self, InvalidUpdateSettings> {
         let theme = theme.map(|t| {
             RENAMED_THEMES
@@ -503,29 +503,29 @@ mod tests {
             serde_json::from_str(r#"{"theme":"gruvbox","dark_mode":true}"#).unwrap();
         assert!(!settings.exclude_universes_beyond);
         assert_eq!(settings.universes_beyond_exceptions, Vec::<String>::new());
-        assert_eq!(settings.pip_style, PipColor::Theme);
+        assert_eq!(settings.pip_style, PipStyle::Theme);
     }
 
     // == pip color ==
 
     #[test]
-    fn pip_color_round_trips_through_its_name() {
-        for color in [PipColor::Theme, PipColor::Classic] {
-            assert_eq!(color.as_str().parse::<PipColor>(), Ok(color));
+    fn pip_style_round_trips_through_its_name() {
+        for color in [PipStyle::Theme, PipStyle::Classic] {
+            assert_eq!(color.as_str().parse::<PipStyle>(), Ok(color));
             let json = serde_json::to_string(&color).unwrap();
-            assert_eq!(serde_json::from_str::<PipColor>(&json).unwrap(), color);
+            assert_eq!(serde_json::from_str::<PipStyle>(&json).unwrap(), color);
         }
-        assert_eq!("bogus".parse::<PipColor>(), Err(ParsePipColorError));
+        assert_eq!("bogus".parse::<PipStyle>(), Err(ParsePipStyleError));
     }
 
     #[test]
     fn classic_stores_as_classic_and_reads_either_name() {
-        assert_eq!(PipColor::Classic.as_str(), "classic");
+        assert_eq!(PipStyle::Classic.as_str(), "classic");
         for name in ["classic", "natural"] {
-            assert_eq!(name.parse::<PipColor>(), Ok(PipColor::Classic));
+            assert_eq!(name.parse::<PipStyle>(), Ok(PipStyle::Classic));
             assert_eq!(
-                serde_json::from_str::<PipColor>(&format!("\"{name}\"")).unwrap(),
-                PipColor::Classic
+                serde_json::from_str::<PipStyle>(&format!("\"{name}\"")).unwrap(),
+                PipStyle::Classic
             );
         }
     }
@@ -533,19 +533,19 @@ mod tests {
     #[test]
     fn the_wire_writes_the_name_shipped_clients_parse() {
         assert_eq!(
-            serde_json::to_string(&PipColor::Classic).unwrap(),
+            serde_json::to_string(&PipStyle::Classic).unwrap(),
             "\"natural\""
         );
         assert_eq!(
-            serde_json::to_string(&PipColor::Theme).unwrap(),
+            serde_json::to_string(&PipStyle::Theme).unwrap(),
             "\"theme\""
         );
     }
 
     #[test]
-    fn pip_color_toggles_between_the_two() {
-        assert_eq!(PipColor::Theme.toggled(), PipColor::Classic);
-        assert_eq!(PipColor::Classic.toggled(), PipColor::Theme);
+    fn pip_style_toggles_between_the_two() {
+        assert_eq!(PipStyle::Theme.toggled(), PipStyle::Classic);
+        assert_eq!(PipStyle::Classic.toggled(), PipStyle::Theme);
     }
 
     #[test]
@@ -556,9 +556,9 @@ mod tests {
             None,
             None,
             None,
-            Some(PipColor::Classic),
+            Some(PipStyle::Classic),
         )
         .unwrap();
-        assert_eq!(result.pip_style, Some(PipColor::Classic));
+        assert_eq!(result.pip_style, Some(PipStyle::Classic));
     }
 }

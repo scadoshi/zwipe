@@ -101,7 +101,7 @@ pub use orangui::{OpenUrlError, open_url, use_in_app_links};
 #[cfg(feature = "toast")]
 pub use orangui::{TOAST_CSS, ToastOptions, ToastStack, Toasts, use_toast};
 pub use role_tags::{OtagDef, RoleTags};
-pub use theme::{pip_color_class, theme_from_settings};
+pub use theme::{pip_style_class, theme_from_settings};
 
 /// The Magic rules: oracle text, keyword chips, card rows, the flippable card
 /// image, the changelog, the color bars and the mana glyph inside a chip. Load it after
