@@ -83,6 +83,9 @@ pub fn OracleTagDictionary(mut open: Signal<bool>, on_use: EventHandler<String>)
         rsx! {
             div { class: "web-dict-browse",
                 div { class: "dict-controls",
+                    div { class: "tag-controls-head",
+                        span { class: "stat-chip stat-chip-p1 chip-row-label", "Search" }
+                    }
                     input {
                         class: "input",
                         id: SEARCH_ID,
@@ -211,6 +214,9 @@ fn DictionarySkeleton() -> Element {
     rsx! {
         div { class: "web-dict-browse",
             div { class: "dict-controls",
+                div { class: "tag-controls-head",
+                    span { class: "stat-chip stat-chip-p1 chip-row-label", "Search" }
+                }
                 div { class: "skeleton-bar dict-skeleton-search" }
                 div { class: "dict-letter-rail scroll-fade-x",
                     for i in 0..12 {
