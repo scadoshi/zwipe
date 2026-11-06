@@ -18,6 +18,11 @@ use crate::inbound::shell::MenuOpen;
 use crate::inbound::{caches, card_stores, catalog};
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
+const FAVICON_16: Asset = asset!("/assets/favicon-16x16.png");
+const FAVICON_32: Asset = asset!("/assets/favicon-32x32.png");
+const APPLE_TOUCH_ICON: Asset = asset!("/assets/icon-180.png");
+/// The install manifest; its 192 and 512 icons sit unhashed in `public/icons`.
+const MANIFEST: Asset = asset!("/assets/site.webmanifest");
 const WEB_CSS: Asset = asset!("/assets/web.css");
 /// The header's scroll follow at phone width: the web's own copy of the
 /// app's `header_hide.js`, keyed to the shell's header and scroller.
@@ -59,6 +64,10 @@ pub fn App() -> Element {
 
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
+        document::Link { rel: "icon", r#type: "image/png", sizes: "16x16", href: FAVICON_16 }
+        document::Link { rel: "icon", r#type: "image/png", sizes: "32x32", href: FAVICON_32 }
+        document::Link { rel: "apple-touch-icon", href: APPLE_TOUCH_ICON }
+        document::Link { rel: "manifest", href: MANIFEST }
         document::Style {
             {format!(
                 "@font-face{{font-family:'JetBrains Mono';font-style:normal;font-weight:400;font-display:swap;src:url({FONT_JBM_400}) format('woff2');}}\
