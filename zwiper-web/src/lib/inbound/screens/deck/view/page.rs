@@ -71,9 +71,6 @@ pub fn DeckWidePage(
         loaded,
         tokens,
         mut filter,
-        inline_name,
-        inline_types,
-        inline_colors,
         group_by,
         mut boards,
         show_tokens,
@@ -300,6 +297,24 @@ pub fn DeckWidePage(
     }
     let empty = loaded() && shown_boards.main && sections.is_empty();
 
+    // The fold-all button: every band shut, or every one open again.
+    let section_keys: Vec<String> = sections.iter().map(|(s, _, _)| s.key.clone()).collect();
+    let all_folded = {
+        let shut = collapsed.read();
+        !section_keys.is_empty() && section_keys.iter().all(|k| shut.contains(k))
+    };
+    let fold_all = move |()| {
+        let mut collapsed = collapsed;
+        let mut shut = collapsed.write();
+        if all_folded {
+            for key in &section_keys {
+                shut.remove(key);
+            }
+        } else {
+            shut.extend(section_keys.iter().cloned());
+        }
+    };
+
     // The owner's facts and stats from the deck as fetched.
     let held_deck = deck();
     let metrics = held_deck
@@ -378,9 +393,8 @@ pub fn DeckWidePage(
                         show_tokens: tokens().is_some_and(|t| !t.is_empty()).then_some(show_tokens),
                         show_zone,
                         show_art,
-                        name: inline_name,
-                        types: inline_types,
-                        colors: inline_colors,
+                        all_folded,
+                        on_fold_all: fold_all,
                         on_change: move |()| selected.set(None),
                         leading: rsx! {
                             QuickAdd { deck_id, entries, on_added: move |()| {} }

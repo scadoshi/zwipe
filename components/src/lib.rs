@@ -75,8 +75,8 @@ pub use charts::{
 pub use color_bars::{ColorBars, ColorBarsGhost};
 pub use danger_zone::DangerZoneAction;
 pub use deck_page::{
-    DeckBand, DeckControls, DeckFacts, DeckFold, DeckHead, DeckPage, DeckSection, FeaturedCard,
-    NO_CARDS, sections,
+    DeckBand, DeckControls, DeckFacts, DeckFilter, DeckFold, DeckHead, DeckPage, DeckSection,
+    FeaturedCard, NO_CARDS, sections,
 };
 pub use flippable_card_image::{FlippableCardImage, reset_image_ease};
 pub use fold::{FOLD_AT, Fold, SEE_LESS, SEE_MORE, SeeMore, fold_split};
