@@ -22,6 +22,8 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 | Items | Machine | Branch |
 | --- | --- | --- |
 | 9, 10, 4, 30 | thinker | `nits/thinker-9-10-4-30` |
+| 8, 16 | halo | `nits/halo-8-16` |
+| 18, 20 | laptop | `nits/laptop-18-20` |
 
 The loop is in [`../development/factory.md`](../development/factory.md).
 
