@@ -6,8 +6,7 @@
 
 use components::icons::{CloneIcon, EditIcon, ShareIcon};
 use components::{
-    Button, ButtonVariant, ColorChart, DeckCharts, DrawOdds, InfoButton as HintButton, ManaCurve,
-    ManaFulfillment,
+    Button, ButtonVariant, ColorChart, DeckCharts, DrawOdds, ManaCurve, ManaFulfillment,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -40,7 +39,8 @@ fn InfoRow(label: String, value: String) -> Element {
 
 /// Edit, Clone and Share as icons, the actions on the deck as a whole, in
 /// the Profile card's header on the phone and the deck page's head on a
-/// wide window, where `on_hint` adds the page's `?` after them.
+/// wide window, where `on_hint` adds the page's `?` after them as one more
+/// button of the same box.
 #[component]
 pub fn ProfileActions(
     deck_id: Uuid,
@@ -79,7 +79,13 @@ pub fn ProfileActions(
                 span { class: "sr-only", {MoreItem::ShareDeck.short_label()} }
             }
             if let Some(open) = on_hint {
-                HintButton { onclick: move |_| open.call(()) }
+                Button {
+                    variant: ButtonVariant::Action,
+                    class: "btn-icon deck-head-hint",
+                    onclick: move |_| open.call(()),
+                    span { aria_hidden: "true", "?" }
+                    span { class: "sr-only", "What is this?" }
+                }
             }
         }
     }
