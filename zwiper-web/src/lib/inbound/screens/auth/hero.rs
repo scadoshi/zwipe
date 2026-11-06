@@ -145,8 +145,6 @@ pub fn HeroPanel(
                     "The "
                     a {
                         href: "https://magic.wizards.com/en",
-                        target: "_blank",
-                        rel: "noopener",
                         "Magic: The Gathering"
                     }
                     " deck builder. Swipe through cards for any format, and pick a commander to get the best synergy first."

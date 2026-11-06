@@ -1,5 +1,4 @@
-//! Buy links: one link per retailer that opens in a new tab, as zite's
-//! featured flavor does, where the app opens a `Buy` dialog to pick one.
+//! Buy links: one link per retailer, as zite's featured flavor has, where the app opens a `Buy` dialog to pick one.
 //! The URLs are zwipe-ui's.
 
 use dioxus::prelude::*;
@@ -13,8 +12,6 @@ pub fn BuyLink(href: String, label: &'static str) -> Element {
         a {
             class: "card-action-btn web-buy-link",
             href,
-            target: "_blank",
-            rel: "noopener",
             onclick: move |evt| evt.stop_propagation(),
             "{label}"
             span { class: "web-buy-ext", "\u{2197}" }

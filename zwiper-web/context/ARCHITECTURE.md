@@ -8,7 +8,7 @@ src/
 └── lib/
     ├── config.rs           BACKEND_URL and APP_VERSION, fixed at build time
     ├── domain/             rules zwipe-ui does not hold yet, as pure functions with tests
-    ├── outbound/           the browser: storage, the session, theme, counter and count scope stores, new tabs, the clipboard, the timer
+    ├── outbound/           the browser: storage, the session, theme, counter and count scope stores, leaving for another page, the clipboard, the timer
     └── inbound/
         ├── app.rs          the root: stylesheets, theme, splash, upkeep, toasts, hints, dialogs, keys, router
         ├── caches.rs       what the root fetches once and shares: counters, my counters, the playstyle summary, the flavor card, changelog, franchises, the Create deck seed
@@ -57,7 +57,7 @@ The root also mounts the kit's `ToastStack` (screens raise toasts with `dioxus_p
 - `cards::otag`: `use_otag_reveals()` provides the tag description lookup and the `Examples` opener; `OtagExamplesHost` draws the examples over the screen.
 - `cards::swipe_stack`: the stack with mouse and touch drag, `SwipeButtons`, and `use_swipe_keys` for the arrows; keys and buttons go through `SwipeControl` so they animate like a drag. `cards::swipe_select` is Swipe select in suggested and commander modes.
 - `cards::charts`: zwipe-ui bars as kit bars, the user's color map seed and counts, the map's ghost and empty line.
-- `cards::buy_links`: `Buy` as one link per retailer that opens a new tab, as zite does it, for a card (`CardBuyLinks`); the deck view draws its own pair in its Budget panel. The URLs are zwipe-ui's `buy`.
+- `cards::buy_links`: `Buy` as one link per retailer, as zite does it, for a card (`CardBuyLinks`); the deck view draws its own pair in its Budget panel. The URLs are zwipe-ui's `buy`.
 
 ## Decks
 

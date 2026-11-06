@@ -47,8 +47,6 @@ pub fn PrivacyPolicy() -> Element {
                                 a {
                                     class: "privacy-link",
                                     href: DISCORD_URL,
-                                    target: "_blank",
-                                    rel: "noopener noreferrer",
                                     "Discord"
                                 }
                                 " for support."

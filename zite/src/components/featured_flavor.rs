@@ -129,16 +129,12 @@ pub fn FeaturedFlavor(overlay: Signal<Option<ScryfallData>>) -> Element {
                         a {
                             class: "panel-action",
                             href: "{tcgplayer}",
-                            target: "_blank",
-                            rel: "noopener",
                             "TCGplayer"
                             span { class: "ext", "\u{2197}" }
                         }
                         a {
                             class: "panel-action",
                             href: "{cardkingdom}",
-                            target: "_blank",
-                            rel: "noopener",
                             "Card Kingdom"
                             span { class: "ext", "\u{2197}" }
                         }

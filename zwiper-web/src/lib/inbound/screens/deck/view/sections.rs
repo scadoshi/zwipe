@@ -209,15 +209,13 @@ pub fn BudgetSection(
 }
 
 /// One retailer link in the Buy row, drawn as the row's action buttons,
-/// opening in a new tab with the `↗` that marks it as leaving the site.
+/// with the `↗` that marks it as leaving the site.
 #[component]
 fn BuyLink(href: String, label: &'static str) -> Element {
     rsx! {
         a {
             class: "btn-action web-buy-link",
             href,
-            target: "_blank",
-            rel: "noopener",
             "{label}"
             span { class: "web-buy-ext", "\u{2197}" }
         }
