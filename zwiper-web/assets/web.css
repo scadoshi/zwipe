@@ -534,6 +534,17 @@ body {
     }
 }
 
+/* ---- Hover on buttons in panels ----
+
+   A mouse lights a panel header's button as the nav pills light: the
+   accent on its text and border, nothing moved or resized. */
+@media (hover: hover) {
+    :is(.settings-list-header, .card-group-header) .btn-action:not(:disabled, .btn-action-danger):hover {
+        color: var(--accent-primary);
+        border-color: var(--accent-primary);
+    }
+}
+
 /* ---- Header below the breakpoint ----
 
    The app's header from the kit's NavBar: the back arrow or an empty left
