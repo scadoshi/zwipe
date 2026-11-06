@@ -1,6 +1,6 @@
 //! The frames screens draw in.
 
-use components::InfoButton;
+use components::{InfoButton, SiteFooter};
 use dioxus::prelude::*;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user::models::hints::OneTimeHint;
@@ -8,6 +8,12 @@ use zwipe_ui::hint::one_time::content_for;
 
 use crate::inbound::router::Route;
 use crate::inbound::shell::top_nav::{PageTitle, PublicNav, Shell};
+
+/// zwipe.net's Community page, which the footer links out to.
+const COMMUNITY_URL: &str = "https://zwipe.net/community";
+
+/// zwipe.net's Contribute page, which the footer links out to.
+const CONTRIBUTE_URL: &str = "https://zwipe.net/contribute";
 
 /// A screen's page-head description: the first line of its one-time hint,
 /// the sentence the app opens that hint with.
@@ -89,13 +95,16 @@ pub fn PageHead(
 /// nav. With a `description`, a wide window opens the page with a
 /// [`PageHead`]. Without one the `?` stays at the bar's right end on a wide
 /// window. With `head_place` [`HeadPlace::Content`] the frame draws neither:
-/// the screen places the head itself.
+/// the screen places the head itself. A wide window ends the page with
+/// zwipe.net's footer unless `footer` is false, for a screen whose layout
+/// holds the window's height.
 #[component]
 pub fn ScreenFrame(
     title: String,
     #[props(default)] on_hint: Option<Callback<()>>,
     #[props(default)] description: Option<String>,
     #[props(default)] head_place: HeadPlace,
+    #[props(default = true)] footer: bool,
     children: Element,
 ) -> Element {
     let page = try_use_context::<Signal<Option<PageTitle>>>();
@@ -126,6 +135,9 @@ pub fn ScreenFrame(
                 }
             }
             {children}
+            if footer {
+                WebFooter {}
+            }
             if let Some(open) = on_hint.filter(|_| !has_head) {
                 button {
                     class: "btn-action web-screen-hint",
@@ -133,6 +145,31 @@ pub fn ScreenFrame(
                     onclick: move |_| open.call(()),
                     "?"
                 }
+            }
+        }
+    }
+}
+
+/// zwipe.net's footer at a page's end on a wide window: Privacy policy on
+/// the app's own route, Community and Contribute out to zwipe.net.
+#[component]
+fn WebFooter() -> Element {
+    rsx! {
+        SiteFooter { class: "web-site-footer".to_owned(),
+            Link { to: Route::PrivacyPolicy {}, class: "nav-cta", "Privacy policy" }
+            a {
+                class: "nav-cta",
+                href: COMMUNITY_URL,
+                target: "_blank",
+                rel: "noopener noreferrer",
+                "Community"
+            }
+            a {
+                class: "nav-cta",
+                href: CONTRIBUTE_URL,
+                target: "_blank",
+                rel: "noopener noreferrer",
+                "Contribute"
             }
         }
     }

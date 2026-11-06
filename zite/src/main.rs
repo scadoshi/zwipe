@@ -388,32 +388,15 @@ pub fn Nav() -> Element {
     }
 }
 
-/// The site footer: the copyright, then Privacy policy, Community and Contribute as pills, and the Scryfall and
-/// Wizards notices.
+/// The site footer: the shared [`SiteFooter`](fn@::components::SiteFooter) with Privacy policy, Community and
+/// Contribute as its pills.
 #[component]
 pub fn Footer() -> Element {
     rsx! {
-        footer { class: "site-footer content-enter-delayed",
-            p { "© 2026 Zwipe" }
-            div { class: "footer-links",
-                Link { to: Route::Privacy {}, class: "nav-cta", "Privacy policy" }
-                Link { to: Route::Community {}, class: "nav-cta", "Community" }
-                Link { to: Route::Contribute {}, class: "nav-cta", "Contribute" }
-            }
-            p { class: "site-footer-note",
-                "Card data and images from "
-                a { href: "https://scryfall.com", "Scryfall" }
-                "."
-            }
-            p { class: "site-footer-note",
-                "Zwipe is unofficial Fan Content permitted under the "
-                a {
-                    href: "https://company.wizards.com/en/legal/fancontentpolicy",
-                    "Fan Content Policy"
-                }
-                ". Not approved/endorsed by Wizards. Portions of the materials used are property "
-                "of Wizards of the Coast. ©Wizards of the Coast LLC."
-            }
+        ::components::SiteFooter {
+            Link { to: Route::Privacy {}, class: "nav-cta", "Privacy policy" }
+            Link { to: Route::Community {}, class: "nav-cta", "Community" }
+            Link { to: Route::Contribute {}, class: "nav-cta", "Contribute" }
         }
     }
 }
