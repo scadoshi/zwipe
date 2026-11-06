@@ -42,6 +42,7 @@
 
 mod architecture;
 mod card_details;
+mod card_filter;
 mod card_role_chips;
 mod card_row;
 mod changelog;
@@ -64,6 +65,7 @@ mod theme;
 
 pub use architecture::ZwipeArchitecture;
 pub use card_details::{CardDetails, card_face_count};
+pub use card_filter::{CardFilterPanel, DictionarySlot};
 pub use card_role_chips::CardRoleChips;
 pub use card_row::CardRow;
 pub use changelog::{
@@ -128,3 +130,9 @@ pub const SCREENS_CSS: &str = concat!(
 /// and zwiper-web after [`SCREENS_CSS`], each before `TOAST_CSS`; zite
 /// does not load it.
 pub const ACCORDION_CSS: &str = include_str!("../assets/accordion.css");
+
+/// The [`CardFilterPanel`]'s own rules: its title bar's `?`, the Oracle tags
+/// trigger's focus ring, the chips' wrappers and the picker's highlighted
+/// result. A host that draws the panel loads it after its other shared
+/// sheets and before its own stylesheet.
+pub const FILTER_CSS: &str = include_str!("../assets/filter.css");

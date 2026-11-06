@@ -1942,32 +1942,11 @@ body {
     }
 }
 
-/* ---- Card filter ---- */
+/* ---- Chip wrappers ---- */
 
-/* The filter sheet's `?`, in the header's right corner at the title's
-   height, faded like a hint button. */
-.web-sheet-hint {
-    position: absolute;
-    right: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    opacity: 0.55;
-    padding: 0.2rem 0.6rem;
-}
-
-/* The chip's hover title rides on a wrapper that adds no box. */
+/* A chip's hover title rides on a wrapper that adds no box. */
 .web-filter-chip {
     display: contents;
-}
-
-.web-filter-chips-center {
-    margin-bottom: 0.5rem;
-    justify-content: center;
-}
-
-.web-filter-accordion .accordion-trigger:focus-visible {
-    outline: 2px solid var(--accent-primary);
-    outline-offset: 2px;
 }
 
 /* ---- Add and Remove cards ---- */

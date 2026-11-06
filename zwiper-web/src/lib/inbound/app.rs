@@ -73,6 +73,7 @@ pub fn App() -> Element {
         document::Style { {components::SCREENS_CSS} }
         document::Style { {components::ACCORDION_CSS} }
         document::Style { {components::TOAST_CSS} }
+        document::Style { {components::FILTER_CSS} }
         document::Link { rel: "stylesheet", href: WEB_CSS }
         document::Script { {components::SCROLL_FADE_JS} }
         document::Script { {HEADER_HIDE_JS} }

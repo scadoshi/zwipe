@@ -1,0 +1,33 @@
+/* The card filter panel (components::CardFilterPanel). */
+
+/* The filter sheet's `?`, in the header's right corner at the title's
+   height, faded like a hint button. */
+.card-filter-hint {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.55;
+    padding: 0.2rem 0.6rem;
+}
+
+/* The chip's hover title rides on a wrapper that adds no box. */
+.card-filter-chip {
+    display: contents;
+}
+
+.card-filter-chips-center {
+    margin-bottom: 0.5rem;
+    justify-content: center;
+}
+
+.card-filter-accordion .accordion-trigger:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+}
+
+/* The picker result the arrow keys point at. */
+.card-filter-highlight {
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+}
