@@ -388,7 +388,7 @@ pub fn Nav() -> Element {
     }
 }
 
-/// The site footer: the shared [`SiteFooter`](::components::SiteFooter) with Privacy policy, Community and
+/// The site footer: the shared [`SiteFooter`](fn@::components::SiteFooter) with Privacy policy, Community and
 /// Contribute as its pills.
 #[component]
 pub fn Footer() -> Element {
