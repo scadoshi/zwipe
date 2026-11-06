@@ -11,4 +11,5 @@ pub mod media;
 pub mod one_time_hint;
 pub mod page_keys;
 pub mod section;
+pub mod splash;
 pub mod toast;
