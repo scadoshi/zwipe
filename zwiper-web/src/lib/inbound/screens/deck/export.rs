@@ -87,13 +87,20 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                 div { class: "import-scroll",
                     div { class: "container-sm web-export-body",
                         if let Some(list) = text() {
-                            label { class: "label", r#for: "export-text", "Decklist" }
-                            textarea {
-                                id: "export-text",
-                                class: "input",
-                                style: "width:100%;min-height:16rem;resize:vertical;",
-                                readonly: true,
-                                value: "{list}",
+                            div { class: "web-form-panel",
+                                div { class: "settings-list-header web-form-head",
+                                    span { class: "settings-list-title", "Decklist" }
+                                }
+                                div { class: "web-form-fields",
+                                    textarea {
+                                        id: "export-text",
+                                        class: "input",
+                                        "aria-label": "Decklist",
+                                        style: "width:100%;min-height:16rem;resize:vertical;",
+                                        readonly: true,
+                                        value: "{list}",
+                                    }
+                                }
                             }
                         } else if failed {
                             p { class: "text-muted", "Could not load deck" }

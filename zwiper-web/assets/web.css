@@ -1454,10 +1454,6 @@ body {
         grid-row: 1 / span 2;
     }
 
-    .web-import-results > .label:first-child {
-        margin-top: 0;
-    }
-
     /* Export: the board chips over the decklist, one column. */
     .web-export.screen-content {
         grid-template-columns: minmax(0, 1fr);
@@ -1468,12 +1464,53 @@ body {
         flex-wrap: wrap;
     }
 
-    .web-export-body > .label {
-        margin-top: 0;
+    /* The decklist runs to the window's foot, under the page head, the
+       chips and its panel's header. */
+    .web-export-body textarea {
+        min-height: calc(100vh - 26rem) !important;
+    }
+}
+
+/* Import's and Export's boxes and Import's results sit in headed panels,
+   as the deck form's fields do, a panel gap apart; the chip rows and the
+   explainer stay on the grid above them. */
+.web-import-results {
+    display: flex;
+    flex-direction: column;
+    gap: var(--panel-gap);
+}
+
+.web-import-results:empty {
+    display: none;
+}
+
+.web-import .web-form-fields > .input,
+.web-export .web-form-fields > .input {
+    margin-bottom: 0;
+}
+
+.web-import-cards > :last-child {
+    margin-bottom: 0;
+}
+
+/* Below the breakpoint the panels take the screen's width with the page
+   gutter, and the list scrolls under the pinned chips with its fade at
+   the top only, past the screen's foot like the pickers. */
+@media (max-width: 899px) {
+    .web-import-body.container-sm,
+    .web-export-body.container-sm {
+        display: flex;
+        flex-direction: column;
+        gap: var(--panel-gap);
+        width: 100%;
+        max-width: none;
+        padding: 0.75rem 0 6rem;
     }
 
-    .web-export-body > textarea {
-        min-height: calc(100vh - 14rem) !important;
+    .web-import > .import-scroll,
+    .web-export > .import-scroll {
+        -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 1rem);
+        mask-image: linear-gradient(to bottom, transparent 0, #000 1rem);
     }
 }
 

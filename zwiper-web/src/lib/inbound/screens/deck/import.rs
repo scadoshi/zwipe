@@ -170,53 +170,76 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                 }
                 div { class: "import-scroll",
                     div { class: "container-sm web-import-body",
-                        div { class: "web-import-input",
-                            if source() == Source::Text {
-                                label { class: "label", r#for: "import-text", "Paste decklist" }
-                                textarea {
-                                    id: "import-text",
-                                    class: "input",
-                                    style: "width:100%;min-height:12rem;resize:vertical;",
-                                    placeholder: "1 Krenko, Mob Boss\n1 Urza, Lord High Artificer\n1 Sol Ring",
-                                    value: "{text}",
-                                    autocapitalize: "none",
-                                    autocorrect: "off",
-                                    spellcheck: "false",
-                                    oninput: move |e| text.set(e.value()),
+                        div { class: "web-form-panel web-import-input",
+                            div { class: "settings-list-header web-form-head",
+                                span { class: "settings-list-title",
+                                    if source() == Source::Text {
+                                        "Paste decklist"
+                                    } else {
+                                        "Archidekt deck URL"
+                                    }
                                 }
-                            } else {
-                                label { class: "label", r#for: "import-url", "Paste an Archidekt deck URL" }
-                                input {
-                                    id: "import-url",
-                                    class: "input",
-                                    style: "width:100%;",
-                                    r#type: "url",
-                                    placeholder: "https://archidekt.com/decks/...",
-                                    value: "{url}",
-                                    autocapitalize: "none",
-                                    autocorrect: "off",
-                                    spellcheck: "false",
-                                    oninput: move |e| url.set(e.value()),
+                            }
+                            div { class: "web-form-fields",
+                                if source() == Source::Text {
+                                    textarea {
+                                        id: "import-text",
+                                        class: "input",
+                                        "aria-label": "Paste decklist",
+                                        style: "width:100%;min-height:12rem;resize:vertical;",
+                                        placeholder: "1 Krenko, Mob Boss\n1 Urza, Lord High Artificer\n1 Sol Ring",
+                                        value: "{text}",
+                                        autocapitalize: "none",
+                                        autocorrect: "off",
+                                        spellcheck: "false",
+                                        oninput: move |e| text.set(e.value()),
+                                    }
+                                } else {
+                                    input {
+                                        id: "import-url",
+                                        class: "input",
+                                        "aria-label": "Archidekt deck URL",
+                                        style: "width:100%;",
+                                        r#type: "url",
+                                        placeholder: "https://archidekt.com/decks/...",
+                                        value: "{url}",
+                                        autocapitalize: "none",
+                                        autocorrect: "off",
+                                        spellcheck: "false",
+                                        oninput: move |e| url.set(e.value()),
+                                    }
                                 }
                             }
                         }
                         div { class: "web-import-results",
                             if let Some(r) = result() {
                                 if !r.imported.is_empty() {
-                                    label { class: "label mt-2", "Imported" }
-                                    for card in r.imported.iter() {
-                                        div { class: "chip-bubble",
-                                            span { class: "font-light", "{card.name}" }
-                                            span { class: "font-light opacity-50", "x{card.quantity}" }
+                                    div { class: "web-form-panel",
+                                        div { class: "settings-list-header web-form-head",
+                                            span { class: "settings-list-title", "Imported" }
+                                        }
+                                        div { class: "web-form-fields web-import-cards",
+                                            for card in r.imported.iter() {
+                                                div { class: "chip-bubble",
+                                                    span { class: "font-light", "{card.name}" }
+                                                    span { class: "font-light opacity-50", "x{card.quantity}" }
+                                                }
+                                            }
                                         }
                                     }
                                 }
                                 if !r.unresolved.is_empty() {
-                                    label { class: "label mt-2", "Unresolved" }
-                                    for card in r.unresolved.iter() {
-                                        div { class: "chip-bubble-error",
-                                            span { class: "font-light", "{card.name}" }
-                                            span { class: "font-light opacity-50", "{card.reason}" }
+                                    div { class: "web-form-panel",
+                                        div { class: "settings-list-header web-form-head",
+                                            span { class: "settings-list-title", "Unresolved" }
+                                        }
+                                        div { class: "web-form-fields web-import-cards",
+                                            for card in r.unresolved.iter() {
+                                                div { class: "chip-bubble-error",
+                                                    span { class: "font-light", "{card.name}" }
+                                                    span { class: "font-light opacity-50", "{card.reason}" }
+                                                }
+                                            }
                                         }
                                     }
                                 }
