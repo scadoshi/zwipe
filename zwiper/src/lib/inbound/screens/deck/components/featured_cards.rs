@@ -49,11 +49,13 @@ fn FeaturedCard(
                     on_load: move |()| on_load.call(()),
                 }
             }
-            div { class: "deck-featured-name", "{name}" }
-            if !role.is_empty() {
-                div {
-                    class: if role == "MVP" { "deck-featured-role deck-featured-role-mvp" } else { "deck-featured-role deck-featured-role-zone" },
-                    "{role}"
+            div { class: "deck-featured-chips",
+                span { class: "stat-chip deck-featured-name", "{name}" }
+                if !role.is_empty() {
+                    span {
+                        class: if role == "MVP" { "stat-chip deck-featured-role-mvp" } else { "stat-chip deck-featured-role-zone" },
+                        "{role}"
+                    }
                 }
             }
         }

@@ -191,6 +191,10 @@ fn SharedDeckSkeleton() -> Element {
                     div { class: "deck-head-featured",
                         div { class: "deck-head-card",
                             div { class: "sk sk-card" }
+                            div { class: "deck-head-card-chips",
+                                div { class: "sk sk-chip" }
+                                div { class: "sk sk-chip" }
+                            }
                         }
                     }
                 }

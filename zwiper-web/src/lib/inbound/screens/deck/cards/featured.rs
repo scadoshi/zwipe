@@ -31,9 +31,9 @@ fn FeaturedCard(
         }
     }));
     let role_class = if role == "MVP" {
-        "deck-featured-role deck-featured-role-mvp"
+        "stat-chip deck-featured-role-mvp"
     } else {
-        "deck-featured-role deck-featured-role-zone"
+        "stat-chip deck-featured-role-zone"
     };
     rsx! {
         div { class: "deck-featured-card", onclick: move |_| on_tap.call(card.clone()),
@@ -46,8 +46,10 @@ fn FeaturedCard(
                     on_load: move |()| on_load.call(()),
                 }
             }
-            div { class: "deck-featured-name", "{name}" }
-            div { class: role_class, "{role}" }
+            div { class: "deck-featured-chips",
+                span { class: "stat-chip deck-featured-name", "{name}" }
+                span { class: role_class, "{role}" }
+            }
         }
     }
 }

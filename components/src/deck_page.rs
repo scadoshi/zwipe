@@ -235,7 +235,7 @@ pub fn DeckHead(
     }
 }
 
-/// One featured card: its image over its name and role. `on_open` fires
+/// One featured card: its image over its name chip and role chip. `on_open` fires
 /// with the card and the face shown when the image is clicked; `on_load`
 /// once the image has its bytes, or at once when the card has no image.
 #[component]
@@ -257,9 +257,9 @@ pub fn FeaturedCard(
     let mut face = use_signal(|| 0usize);
     let sd_open = sd.clone();
     let role_class = if role == "MVP" {
-        "deck-head-card-role deck-head-card-role-mvp"
+        "stat-chip deck-head-card-role-mvp"
     } else {
-        "deck-head-card-role deck-head-card-role-zone"
+        "stat-chip deck-head-card-role-zone"
     };
     rsx! {
         div { class: "deck-head-card",
@@ -285,9 +285,11 @@ pub fn FeaturedCard(
                     }
                 }
             }
-            div { class: "deck-head-card-name", "{name}" }
-            if !role.is_empty() {
-                div { class: "{role_class}", "{role}" }
+            div { class: "deck-head-card-chips",
+                span { class: "stat-chip deck-head-card-name", "{name}" }
+                if !role.is_empty() {
+                    span { class: "{role_class}", "{role}" }
+                }
             }
         }
     }
