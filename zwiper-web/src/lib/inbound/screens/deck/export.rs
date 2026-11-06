@@ -1,9 +1,8 @@
 //! Export: the deck as a decklist that round-trips through Import, with the
 //! boards to include and `Copy`.
 //!
-//! A screen at every width. On a wide window the `Export` chips sit in a
-//! narrow column on the left and the decklist fills the right. Copy is the
-//! icon in the dock at the bottom right.
+//! A screen at every width: the `Export` chips over the decklist. Copy is
+//! the icon in the dock at the bottom right.
 
 use components::icons::{COPY, DockIcon};
 use components::{Chip, TOAST_QUICK};

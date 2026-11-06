@@ -1458,32 +1458,21 @@ body {
         margin-top: 0;
     }
 
-    /* Export: the board chips in a narrow column, the decklist at full
-       height beside them. */
+    /* Export: the board chips over the decklist, one column. */
     .web-export.screen-content {
-        grid-template-columns: 16rem minmax(0, 1fr);
+        grid-template-columns: minmax(0, 1fr);
         flex: 1 1 auto;
-    }
-
-    .web-export > .import-controls {
-        grid-row: 1 / span 2;
     }
 
     .web-export > .import-controls .chip-row {
         flex-wrap: wrap;
     }
 
-    .web-export-body > * {
-        grid-column: 2;
-    }
-
     .web-export-body > .label {
-        grid-row: 1;
         margin-top: 0;
     }
 
     .web-export-body > textarea {
-        grid-row: 2;
         min-height: calc(100vh - 14rem) !important;
     }
 }
