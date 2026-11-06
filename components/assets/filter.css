@@ -1,8 +1,9 @@
-/* The card filter panel (components::CardFilterPanel). */
+/* The drawer sheet (components::DrawerSheet) and the card filter panel
+   (components::CardFilterPanel). */
 
-/* The filter sheet's `?`, in the header's right corner at the title's
-   height, faded like a hint button. */
-.card-filter-hint {
+/* The sheet's `?`, in the header's right corner at the title's height,
+   faded like a hint button. */
+.drawer-sheet-hint {
     position: absolute;
     right: 1rem;
     top: 50%;

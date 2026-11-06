@@ -39,10 +39,7 @@ use zwipe_ui::toast::{Toast, ToastKind};
 
 use self::rows::{SectionRows, bump};
 use crate::icons::{CHECK, ERASER};
-use crate::{
-    ActionDock, Button, ButtonVariant, DockAction, DockPlace, SheetFrame, SheetWide,
-    use_overlay_back,
-};
+use crate::{DockAction, DrawerSheet, use_overlay_back};
 
 /// What the panel hands the host's dictionary: whether it is open, and
 /// where a tag the user picks in it goes.
@@ -283,53 +280,26 @@ pub fn CardFilterPanel(
             }
         }
     };
-    let header = rsx! {
-        div { class: "sheet-header", style: "position: relative;",
-            button {
-                class: "sheet-close",
-                "aria-label": "Close",
-                onclick: move |_| open.set(false),
-                "\u{00d7}"
-            }
-            span { class: "sheet-title", {card_filter::TITLE} }
-            if let Some(on_hint) = on_hint {
-                Button {
-                    variant: ButtonVariant::Action,
-                    class: "card-filter-hint",
-                    onclick: move |_| on_hint.call(()),
-                    "?"
-                }
-            }
-        }
-    };
     // Reset and Apply float at the panel's bottom right, as in the app.
     let dock = rsx! {
-        ActionDock { place: DockPlace::Sheet,
-            DockAction { label: card_filter::RESET, icon: ERASER, onclick: move |()| reset() }
-            DockAction {
-                label: card_filter::APPLY,
-                icon: CHECK,
-                disabled: unchanged,
-                onclick: move |()| apply(),
-            }
+        DockAction { label: card_filter::RESET, icon: ERASER, onclick: move |()| reset() }
+        DockAction {
+            label: card_filter::APPLY,
+            icon: CHECK,
+            disabled: unchanged,
+            onclick: move |()| apply(),
         }
     };
 
     rsx! {
-        SheetFrame { wide: SheetWide::Drawer,
-            div {
-                class: if open() { "sheet-backdrop show" } else { "sheet-backdrop" },
-                onclick: move |_| open.set(false),
-            }
-            div { class: if open() { "bottom-sheet show card-filter-sheet" } else { "bottom-sheet card-filter-sheet" },
-                {header}
-                div { class: "sheet-content",
-                    if open() {
-                        {body}
-                    }
-                }
-                {dock}
-            }
+        DrawerSheet {
+            open,
+            title: card_filter::TITLE,
+            on_close: move |()| open.set(false),
+            on_hint,
+            class: "card-filter-sheet",
+            dock,
+            {body}
         }
         if let Some(hint) = hint {
             {hint}
