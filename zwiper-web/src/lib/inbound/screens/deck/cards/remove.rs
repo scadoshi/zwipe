@@ -6,7 +6,7 @@
 //! trimmed. The columns and the filter drawer follow Add; Ctrl+Z also
 //! undoes, F flips, P opens the printings to look at and R is `Refresh`.
 
-use components::icons::{DockIcon, EyeIcon, REFRESH};
+use components::icons::{DockIcon, REFRESH};
 use components::{Chip, DockFilter, SheetFrame, SheetWide, TOAST_QUICK};
 use dioxus::core::spawn_forever;
 use dioxus::prelude::*;
@@ -40,6 +40,7 @@ use crate::inbound::cards::swipe_stack::{
     Swipe, SwipeButtons, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
 };
 use crate::inbound::chrome::authed::use_authed;
+use crate::inbound::chrome::details_eye::{DockEye, use_details_eye};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::chrome::page_keys::{use_page_keys, use_undo_key};
 use crate::inbound::session::ensure_fresh::ensure_fresh;
@@ -99,7 +100,8 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
     let mut stack: Signal<CardStack<RemoveAction>> = use_signal(CardStack::default);
     let mut board_filter = use_signal(|| BoardFilter::Deck);
     let mut counter = use_signal(|| 0u32);
-    let mut show_details = use_signal(|| false);
+    let show_details = use_signal(|| false);
+    let eye = use_details_eye(show_details);
     let mut printing_open = use_signal(|| false);
     let mut filter_open = use_signal(|| false);
     let mut hint_open = use_one_time_hint(OneTimeHint::RemoveDeckCards);
@@ -488,7 +490,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
         ScreenFrame {
             title: remove_cards::TITLE,
             on_hint: move |()| hint_open.set(true),
-            div { class: "screen-content card-swipe content-enter web-cards-swipe",
+            div { class: "screen-content card-swipe content-enter web-cards-swipe {eye.body_class()}",
                 div { class: "web-cards-swipe-main",
                     div { class: "form-container",
                         if let Some(card) = current.clone() {
@@ -544,13 +546,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                         DockIcon { path: REFRESH }
                     }
                     span { class: "action-dock-divider" }
-                    button {
-                        class: "action-dock-btn web-dock-eye",
-                        "aria-label": "Card details",
-                        disabled: current.is_none(),
-                        onclick: move |_| show_details.toggle(),
-                        EyeIcon {}
-                    }
+                    DockEye { eye, disabled: current.is_none() }
                 }
             }
         }

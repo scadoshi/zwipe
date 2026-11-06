@@ -1168,12 +1168,6 @@ body {
         display: block;
         align-self: stretch;
     }
-
-    /* The card's details sit beside it, so the dock's eye has nothing to
-       open. */
-    .web-examples .action-dock {
-        display: none;
-    }
 }
 
 /* ---- Home ---- */
@@ -1441,14 +1435,20 @@ body {
     .web-swipe-select-details {
         display: block;
     }
+}
 
-    /* The card's details sit beside it, so the dock's eye has nothing to
-       open. */
-    .web-swipe-select .web-dock-eye,
-    .web-swipe-select .action-dock-divider,
-    .web-screen:has(.web-cards-swipe) .web-dock-eye,
-    .web-screen:has(.web-cards-swipe) .action-dock-divider {
+/* ---- The eye on a wide window ----
+
+   The dock's eye hides the card's details beside it and shows them again.
+   Hidden, Add and Remove keep the card in their middle column; swipe select
+   and the examples go to one column with the card centered in it. */
+@media (min-width: 900px) {
+    .web-details-hidden :is(.web-swipe-details, .web-examples-details) {
         display: none;
+    }
+
+    :is(.web-swipe-select-body, .web-examples-body).web-details-hidden {
+        grid-template-columns: minmax(0, 1fr);
     }
 }
 
