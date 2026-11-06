@@ -124,7 +124,7 @@ pub fn DeckList() -> Element {
                 hint_open.set(true);
             },
             div { class: "screen-content",
-                div { class: "flex-col web-deck-list",
+                div { class: "flex-col web-deck-list deck-list-stack",
                     if loading {
                         ChipRowSkeleton { label: "md", chips: vec!["sm", "md", "sm", "sm"] }
                         ChipRowSkeleton { label: "sm", chips: vec!["sm", "sm", "sm", "sm", "sm", "sm", "md"] }
