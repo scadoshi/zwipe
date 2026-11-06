@@ -23,6 +23,7 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
+| 51, swipe twice as fast, same animation speed | laptop | `nits/laptop-51` |
 | 50, the deck head's ? matches Edit, Clone and Share | thinker | `nits/thinker-50` |
 | 49, every clear-x input through `components::ClearWrap` | halo | `nits/halo-49` |
 | 45, 47, no page heads, the page's ? in the nav, About drops Credits on wide (queued after 21) | scotland | `nits/scotland-45` |
@@ -93,6 +94,7 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 48. **zwipe.net's manifest points at missing install icons.** zite's site.webmanifest lists /assets/icon-192.png and /assets/icon-512.png, which return 404 live because zite never bundles them (found by laptop on 43).
 49. **Hand-rolled clear-× inputs.** The deck page's Quick add (and other inputs: the maybeboard's Quick add, the exceptions and picker searches, the dictionary, Import's URL) draw their own input and × instead of `components::ClearWrap`, so they sit slightly smaller and the × doesn't ease in. All go through `ClearWrap`.
 50. **The deck page head's `?` is smaller than its neighbors.** Edit, Clone and Share are full icon buttons; the `?` beside them is the small info button. Same size and shape as the other three.
+51. **Swiping on the web is too slow.** 24 drops a press until the leaving card's 0.32s exit ends. Keep the exit's speed but take the next press halfway through it, so swipes can come twice as fast; a held key still swipes once.
 
 ## Done
 
