@@ -1,1 +1,1290 @@
-/* main.css lines 2861 to 4202: label row through the Playstyle heatmap. */
+/* The screen rules the app and the web share, from main.css's label row section through the Playstyle heatmap. */
+
+/* =========================
+  label row with clear button
+=========================== */
+
+.label-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    width: 100%;
+    /* Breathing room so chips that wrap below a long label (e.g. "Signature
+       spell") don't sit flush against the input beneath them. */
+    margin-bottom: 0.4rem;
+}
+
+/* Chips on the label's own line, a step after its "?", wrapping under it
+   as one group when the line is short. */
+.label-row-chips {
+    display: flex;
+    gap: 0.4rem;
+    margin-left: 0.5rem;
+}
+
+.label-row .label {
+    margin-bottom: 0;
+}
+
+/* Filter sheet labels: each group already sits a flex gap plus its chips'
+   bottom margin below the last, so a small lead keeps the groups snug. */
+.label-row.mt-2 {
+    margin-top: 0.25rem;
+    margin-bottom: 0.25rem;
+}
+
+.label-row .info-button {
+    margin-left: 0;
+    margin-right: 0.35rem;
+}
+
+/* The kit's × beside a field in the app's clear red, as its label-row clears are. */
+.input-clear-btn {
+    color: var(--color-error);
+    border-color: var(--color-error);
+}
+
+.clear-btn {
+    all: unset;
+    cursor: pointer;
+    font-size: 0.85rem;
+    line-height: 1;
+    color: var(--color-error);
+    padding: 0.2rem 0.45rem;
+    margin-left: 0.25rem;
+    border: 1px solid var(--color-error);
+    border-radius: 0.4rem;
+    /* Opaque fill so the page grid doesn't show through the button. */
+    background-color: var(--bg-primary);
+    transition: all 0.2s ease;
+}
+
+/* Home's panels center while they fit and scroll from the top once they
+   don't: the auto margins collapse to zero on overflow, where a centered
+   column would push its top out of reach. No panel shrinks to make room. */
+.home-content {
+    /* Room under the last panel once the column scrolls, matching the top. */
+    --content-pad-bottom: 1rem;
+}
+
+.home-content > * {
+    flex-shrink: 0;
+}
+
+.home-content > :first-child {
+    margin-top: auto;
+}
+
+.home-content > :last-child {
+    margin-bottom: auto;
+}
+
+@keyframes flavor-enter {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.flavor-quote {
+    color: var(--text-primary);
+    animation: flavor-enter 0.2s ease-out 0.1s backwards;
+}
+
+@keyframes row-enter {
+    from {
+        opacity: 0;
+        transform: translateY(-2px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.row-enter {
+    animation: row-enter 0.25s ease-out both;
+}
+
+/* ── Floating type-to-search results ─────────────────────────────────────
+   Shared by every type-to-search picker (deck-cards quick add, the filter
+   sheet's artist/set/type/keyword/oracle-word/otag fields, the deck form's
+   command-zone pickers). Result chips float in a layer above the input, out
+   of document flow, so the screen never reflows under the user while they
+   type. The anchor is a zero-height in-flow marker placed where the old
+   in-flow row sat (directly above the input); the results hang upward from
+   it. Not a back-aware overlay (see the overlay z-index registry) — just a
+   popover: above base content (swipe stack is 100), below the modal band
+   (200). Chips are opaque pills, so they read fine over whatever's behind.
+   The deck-cards quick add additionally measures overflow past the
+   scrollport top and grows its anchor's inline height by the deficit (see
+   QUICK_ADD_FIT_JS), so its results overlay in most cases and take real
+   space only when they'd run under the screen header — hence the height
+   transition below. */
+.search-float-anchor {
+    position: relative;
+    height: 0;
+    transition: height 0.2s ease;
+}
+
+.search-float-results {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin-bottom: 0.5rem;
+    z-index: 150;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    justify-content: center;
+}
+
+/* Downward variant: the commander maybeboard's search bar sits at the very
+   top of the page, so its results hang below the anchor instead, floating
+   over the Show row and the list. */
+.search-float-results.search-float-below {
+    bottom: auto;
+    top: 0;
+    margin-bottom: 0;
+    margin-top: 0.5rem;
+}
+
+/* Entrance float-up (staggered per chip via inline animation-delay), then a
+   soft idle drift so the layer reads as hovering rather than parked. */
+.search-float-chip {
+    animation:
+        search-float-in 0.25s ease-out both,
+        search-float-drift 3.2s ease-in-out 0.25s infinite;
+}
+
+@keyframes search-float-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes search-float-drift {
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-2px);
+    }
+}
+
+/* Card name and price tags, then the Image and Buy buttons, centered on
+   their own lines below the quote, under a full-bleed rule like a panel's
+   action bar. Wraps the rest to a new line before the name is forced to
+   wrap internally. */
+.flavor-buy-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.75rem 1rem 0;
+    border-top: 1px solid var(--border-secondary);
+}
+
+/* The card's name and USD price as tags, under the quote. */
+.flavor-name,
+.flavor-price {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+    border-radius: 0.5rem;
+    animation: flavor-enter 0.3s ease-out 0.15s backwards;
+}
+
+/* Cap the width and let a long name wrap. Give wrapped lines a comfortable
+   line-height so descenders never touch the line below, then trim the vertical
+   padding by the same amount the taller line-box adds, so a single-line name
+   stays the exact height of the price tag while wrapped names grow taller. */
+.flavor-name {
+    display: inline-block;
+    max-width: 100%;
+    flex-shrink: 0;
+    padding: 0.28rem 0.8rem;
+    line-height: 1.3;
+    white-space: normal;
+    text-align: center;
+    color: var(--palette-1);
+    background-color: color-mix(in srgb, var(--palette-1) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--palette-1) 35%, transparent);
+}
+
+/* USD price in the theme's money color. */
+.flavor-price {
+    flex-shrink: 0;
+    color: var(--color-money);
+    background-color: color-mix(in srgb, var(--color-money) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-money) 35%, transparent);
+    font-variant-numeric: tabular-nums;
+}
+
+/* A button on the row takes its line's height, level with the tags. */
+.flavor-buy-row > .card-action-btn {
+    align-self: stretch;
+}
+
+/* =========================
+  stepper for integer inputs
+=========================== */
+
+.stepper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+}
+
+/* .stepper-btn is in orangui's components.css; the DrawOdds component that
+   uses it is in the components crate. */
+
+.stepper-value {
+    width: 2rem;
+    text-align: center;
+    font-size: 0.85rem;
+}
+
+/* Narrow input for CMC */
+.input-narrow {
+    width: 5rem;
+    text-align: center;
+    display: block;
+    margin: 0 auto;
+}
+
+/* =========================
+  browse screen
+ =========================== */
+
+.chip-row {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+/* The row's label at its head as a palette-1 tag (the kit's tinted chip,
+   plainly not a control), so the row is one console and no bare text sits on
+   the backdrop. No colon. */
+.chip-row-label {
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.chip-bubble {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.3rem 0.6rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 0.6rem;
+    font-size: 0.75rem;
+    margin-bottom: 0.35rem;
+}
+
+.chip-bubble-error {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.3rem 0.6rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-error);
+    border-radius: 0.6rem;
+    font-size: 0.75rem;
+    margin-bottom: 0.35rem;
+}
+
+.card-group {
+    margin-bottom: var(--panel-gap);
+    overflow: hidden;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.card-group-header {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--accent-tertiary);
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid var(--border-secondary);
+}
+
+/* A group header with a "?" at its right end. The button's negative block
+   margin keeps the header the height of a plain one. */
+.card-group-header-with-hint {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+/* The "?" button's ghost, its size as a bare chip. */
+.skeleton-info-button {
+    flex: none;
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
+/* The reasons bullets fold open under their chip; the gap rides inside the
+   clip so a folded block ends at the chip. */
+.card-detail-footer .collapsible-inner > .card-detail-bullets {
+    margin-top: 0.5rem;
+}
+
+/* The fold chip's arrow: the card rows' disclosure grammar, pointing
+   sideways while folded and easing down when open, a size up so it reads
+   in a chip. */
+.chip-fold-arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    /* A fixed square box with the glyph centered in it, so the turn is
+       about the arrow's own middle rather than the glyph cell's. */
+    width: 1em;
+    height: 1em;
+    margin-right: 0.35rem;
+    font-size: 1rem;
+    line-height: 1;
+    transform-origin: 50% 50%;
+    transition: transform 0.2s ease;
+}
+
+.chip-fold-arrow.expanded {
+    transform: rotate(90deg);
+}
+
+/* Collapsible group headers (deck cards screen): the card-row disclosure
+   grammar — arrow points down while expanded, eases sideways when collapsed
+   (rotation transition rides .card-row-arrow's own 0.2s ease). The body
+   opens/closes via the shared .collapsible grid-rows ease; rows stay
+   mounted, so this only styles the header. */
+.card-group-header.group-collapsible {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+    user-select: none;
+    transition: border-color 0.25s ease;
+}
+
+.card-group-header.group-collapsible.expanded .card-row-arrow {
+    transform: rotate(90deg);
+}
+
+/* Collapsed: the header's rule fades out in step with the closing body,
+   since nothing sits under it once shut. */
+.card-group.collapsed .card-group-header {
+    border-bottom-color: transparent;
+}
+
+/* =========================
+  specific - info list (read-only card layout)
+ =========================== */
+
+.info-row-value {
+    font-size: 1rem;
+    font-weight: 400;
+    text-align: right;
+    flex-shrink: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+/* Full-bleed divider under a subtitle inside a padded box (e.g. charts). */
+.box-rule {
+    border: none;
+    border-top: 1px solid var(--border-secondary);
+    margin: 0.35rem -0.75rem 0.6rem -0.75rem;
+    align-self: stretch;
+}
+
+/* Suggested commanders' oracle tags table: the tag chip, then Decks, Cards
+   and Impact right-aligned. The chip column takes what the numbers leave, so
+   a long slug wraps inside its chip. Rows space by the chip cell's padding,
+   not a row gap, so the shut reveals add no height. */
+.tag-table {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto auto;
+    column-gap: 0.5rem;
+    align-items: center;
+    padding: 0 0.75rem;
+}
+
+.tag-table-head {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-bottom: 0.25rem;
+}
+
+.tag-table-head:first-child {
+    justify-content: flex-start;
+}
+
+/* The Summary labels, sized down so three columns and their "?" fit a phone. */
+.tag-table-head .settings-row-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.05em;
+}
+
+.tag-table-head .info-button {
+    margin-left: 0.2rem;
+}
+
+.tag-table-tag {
+    min-width: 0;
+    padding: 0.175rem 0;
+}
+
+/* A long slug wraps inside its chip, the way the deck charts' tag chips do,
+   so every tag reads in full; a wrapped row is simply taller. Tapping the
+   chip still reveals the tag's description. */
+.tag-table-tag .keyword-chip {
+    max-width: 100%;
+    text-align: center;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+/* Each number column takes a palette slot; its header label and its stat
+   chips share it. */
+.tag-table-head-p3 .settings-row-label {
+    color: var(--palette-3);
+}
+
+.tag-table-head-p5 .settings-row-label {
+    color: var(--palette-5);
+}
+
+.tag-table-head-p2 .settings-row-label {
+    color: var(--palette-2);
+}
+
+/* Each number sits in a stat chip, the deck list's count box. */
+.tag-table-num {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.badge-verified {
+    display: inline-block;
+    padding: 0.15rem 0.4rem;
+    border: 1px solid color-mix(in srgb, var(--color-success) 35%, transparent);
+    background-color: color-mix(in srgb, var(--color-success) 12%, transparent);
+    border-radius: 0.4rem;
+    font-size: 0.7rem;
+    color: var(--color-success);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.badge-unverified {
+    display: inline-block;
+    padding: 0.15rem 0.4rem;
+    border: 1px solid color-mix(in srgb, var(--color-error) 35%, transparent);
+    background-color: color-mix(in srgb, var(--color-error) 12%, transparent);
+    border-radius: 0.4rem;
+    font-size: 0.7rem;
+    color: var(--color-error);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* =========================
+  specific - settings
+=========================== */
+
+/* On top of the shared app.css .pref-row. */
+.pref-row {
+    margin-bottom: 0.4rem;
+}
+
+/* Universes Beyond sheet: grayed franchise chips until the hide toggle is on,
+   and short explanatory notes under the title and section label. */
+.ub-chips-disabled {
+    opacity: 0.45;
+    pointer-events: none;
+}
+
+/* The Exceptions row wraps so its selected-franchise chips sit on their own
+   line inside the same row, under the label and Change button. */
+.settings-row.ub-exceptions-row {
+    flex-wrap: wrap;
+}
+
+.ub-exception-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    width: 100%;
+}
+
+/* ================================
+  Zwipe select
+================================== */
+
+/* ── Overlay z-index registry ──────────────────────────────────────────────
+   Back-aware overlays stack in a documented band so depths never collide. Leave
+   gaps (10s) for future insertion. Each is a full-screen fixed layer that
+   `use_overlay_back(open)` wires into the OS back gesture (see
+   navigation::overlay_stack).
+     base screen                              (default)
+     modal backdrop / bottom sheet / filter   200–202
+     a sheet over a sheet (printings)         204–205
+     swipe-select / oracle-tag-select         210
+     dictionary overlay                       220
+     examples overlay                         230
+     toasts                                   (top, unchanged)
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* The printing sheet opens over the card details sheet, so its backdrop and
+   sheet sit above both of the shared sheet layers; the backdrop dims the sheet
+   under it and a tap outside the printings lands on that backdrop. */
+.sheet-over > .sheet-backdrop {
+    z-index: 204;
+}
+
+.sheet-over > .bottom-sheet {
+    z-index: 205;
+}
+
+/* Dictionary + examples are opaque `.screen` overlays stacked above the picker
+   (220) and above the dictionary (230). Fixed layers, no cross-fade — they mount
+   on open and unmount on close, so a static stacking order is enough. */
+.dict-overlay {
+    z-index: 220;
+}
+
+.examples-overlay {
+    z-index: 230;
+}
+
+/* Full-screen swipe-select picker rendered as a sibling overlay above the form
+   (both are fixed .screen) — lift it above with an explicit stacking order. It
+   stays mounted and cross-fades on `.show` so the form eases back into view
+   rather than the overlay popping away; it's click-through while hidden. */
+.swipe-select-screen {
+    z-index: 210;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+.swipe-select-screen.show {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.field-count {
+    color: var(--palette-5);
+    font-size: 0.85rem;
+}
+
+.chip-box {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 0.3rem;
+    width: 100%;
+    min-height: 2.75rem;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 1rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.4rem;
+    background-color: var(--bg-primary);
+    box-shadow: var(--shadow-sm);
+}
+
+.tag-controls {
+    flex: 0 0 auto;
+    width: 100%;
+    max-width: 22rem;
+    padding: 0.75rem 1rem 0;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+/* Search as a label chip, the count as a chip at the row's end. */
+.tag-controls-head {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    width: 100%;
+    margin-bottom: 0.35rem;
+}
+
+.tag-count {
+    margin-left: auto;
+}
+
+/* The rows fade in right under the definition bar, which the controls end
+   on, and run out under the dock to the window's edge. */
+.tag-grid {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    width: 100%;
+    max-width: 22rem;
+    padding: 0.5rem 1rem calc(var(--content-pad-bottom, 0px) + env(safe-area-inset-bottom, 0px) + 0.75rem);
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    justify-content: center;
+    gap: 0.4rem;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 1rem);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 1rem);
+}
+
+.tag-def-bar {
+    min-height: 3.5rem;
+    margin-top: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    border: 1px solid var(--border-secondary);
+    border-radius: 0.6rem;
+    background-color: var(--bg-primary);
+    box-shadow: var(--shadow-sm);
+}
+
+.tag-def-name {
+    color: var(--palette-3);
+    font-weight: 600;
+    margin-bottom: 0.15rem;
+}
+
+.tag-def-text {
+    color: var(--text-primary);
+    opacity: 0.85;
+    font-size: 0.85rem;
+}
+
+.tag-def-list {
+    margin: 0.25rem 0 0 0;
+    padding-left: 1.1rem;
+    color: var(--text-primary);
+    opacity: 0.85;
+    font-size: 0.85rem;
+    text-align: left;
+}
+
+.tag-def-list li {
+    margin-bottom: 0.2rem;
+}
+
+/* ==================
+  oracle-tag dictionary
+ ==================== */
+
+/* The Search chip, the field and the letter rail, pinned above the
+   scrolling list; the chip sits as close over the field as the pickers'. */
+.dict-controls {
+    flex: 0 0 auto;
+    width: 100%;
+    max-width: 24rem;
+    padding: 0.75rem 1rem 0.5rem 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+}
+
+.dict-controls > .tag-controls-head {
+    margin-bottom: calc(0.35rem - 0.5rem);
+}
+
+/* The letter rail is the horizontal scroll container itself: the ancestor
+   .screen-content sets overflow-x: hidden, so scrolling must live here. */
+.dict-letter-rail {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 0.35rem;
+    padding-bottom: 0.25rem;
+    -webkit-overflow-scrolling: touch;
+    /* The edge fade is the kit's scroll-fade-x, which lifts at the edge the
+       rail is scrolled to, so A is whole at rest. */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.dict-letter-rail::-webkit-scrollbar {
+    display: none;
+}
+
+.dict-letter-rail .chip {
+    flex: 0 0 auto;
+    min-width: 2rem;
+    justify-content: center;
+    text-align: center;
+}
+
+.dict-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    /* `overflow-y: auto` alone makes `overflow-x` compute to `auto`; pin it so a
+       row that's a hair too wide can't scroll the list sideways. */
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 24rem;
+    /* The entries fade in under the rail and run out under the dock to the
+       window's edge, the trailing padding scrolling the last one clear. */
+    padding: 0.75rem 1rem calc(var(--content-pad-bottom, 0px) + env(safe-area-inset-bottom, 0px) + 1rem);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 1rem);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 1rem);
+}
+
+.dict-row {
+    padding: 0.6rem 0.75rem;
+    text-align: left;
+    border: 1px solid var(--border-secondary);
+    border-radius: 0.6rem;
+    background-color: var(--bg-primary);
+    box-shadow: var(--shadow-sm);
+    animation: dict-row-in 0.18s ease-out both;
+}
+
+.dict-row-divider {
+    border: none;
+    border-top: 1px solid var(--border-secondary);
+    margin: 0.6rem -0.75rem 0;
+}
+
+.dict-row-actions {
+    display: flex;
+    gap: 0.4rem;
+    margin-top: 0.6rem;
+}
+
+@keyframes dict-row-in {
+    from {
+        opacity: 0;
+        transform: translateY(0.25rem);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.dict-slug {
+    color: var(--palette-3);
+    font-weight: 600;
+    word-break: break-word;
+}
+
+.dict-desc {
+    color: var(--text-primary);
+    opacity: 0.9;
+    font-size: 0.85rem;
+    margin-top: 0.15rem;
+}
+
+.dict-desc-missing {
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.dict-parents {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    margin-top: 0.4rem;
+}
+
+.dict-parent {
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    padding: 0.05rem 0.4rem;
+    border: 1px solid var(--border-muted);
+    border-radius: 0.4rem;
+}
+
+.dict-empty {
+    color: var(--text-muted);
+    text-align: center;
+    padding: 1.5rem 1rem;
+    font-size: 0.9rem;
+}
+
+/* Solid fill for the picker's "Dictionary" button so the grid background does not
+   show through the otherwise-transparent .btn-xs. Compound selector to override. */
+.btn-xs.dict-btn-fill {
+    background-color: var(--bg-primary);
+}
+
+/* Skeletons reuse .skeleton-bar's pulse. */
+.dict-skeleton-search {
+    height: 2.5rem;
+    width: 100%;
+    border-radius: 0.5rem;
+}
+
+.dict-skeleton-letter {
+    flex: 0 0 auto;
+    height: 1.75rem;
+    width: 2rem;
+    border-radius: 0.5rem;
+}
+
+.dict-skeleton-slug {
+    height: 1rem;
+    width: 40%;
+}
+
+.dict-skeleton-desc {
+    height: 0.85rem;
+    width: 85%;
+    margin-top: 0.4rem;
+}
+
+/* ==================
+  privacy policy
+ ==================== */
+
+.privacy-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--panel-gap);
+    width: calc(100% - 4rem);
+    max-width: 40rem;
+    padding-bottom: 1rem;
+    text-align: left;
+    color: var(--text-primary);
+    line-height: 1.6;
+}
+
+.privacy-section {
+    padding: 1.25rem 1.5rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.privacy-section > :first-child {
+    margin-top: 0;
+}
+
+.privacy-section > :last-child {
+    margin-bottom: 0;
+}
+
+/* The first panel's heading row: the title, then the revision chip. */
+.privacy-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.privacy-head h2 {
+    margin: 0;
+}
+
+.privacy-content h2 {
+    font-size: 1rem;
+    letter-spacing: 0.1em;
+    color: var(--accent-primary);
+}
+
+.privacy-section hr {
+    border: none;
+    border-top: 1px solid var(--border-secondary);
+    margin: 0.85rem -1.5rem 1rem;
+}
+
+.privacy-content p,
+.privacy-content ul {
+    font-size: 0.85rem;
+    margin-top: 0.6rem;
+}
+
+.privacy-content ul {
+    padding-left: 1.25rem;
+}
+
+.privacy-content li {
+    margin-bottom: 0.4rem;
+}
+
+/* Links in body text: the privacy policy's and About's credits. */
+.privacy-content a,
+.privacy-content .privacy-link,
+.about-credits a {
+    color: var(--palette-1);
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+/* ==============================
+  specific - deck featured strip
+ ================================ */
+
+/* Command zone + MVPs on one line at the top of the deck screen, each card
+   labeled underneath, mirroring the zite share page's featured row. The
+   section holds zero height until every card's image has loaded (`.ready`),
+   then opens to the row's height, and the cards deal in after it. 0fr to 1fr
+   animates to whatever height the card count gives without measuring. */
+.deck-featured {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.8s cubic-bezier(0.33, 1, 0.68, 1);
+    /* Breathing room before the group-by controls below. */
+    margin-bottom: 1rem;
+}
+
+.deck-featured.ready {
+    grid-template-rows: 1fr;
+}
+
+/* The clip is only for the height transition. Once the row is open the cards
+   drop in from above its edge and must not be cut off by it. */
+.deck-featured.ready .deck-featured-row {
+    overflow: visible;
+}
+
+/* nowrap with the cards sharing the width so they shrink together. */
+.deck-featured-row {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: center;
+    /* Layout inside the row stays inside it while the height moves. */
+    contain: layout;
+    gap: 0.5rem;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.deck-featured-card {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 11rem;
+    text-align: center;
+    /* Invisible until the row is ready; the deal below brings it in. */
+    opacity: 0;
+    /* A card starred after the row opened is a layout change, not an
+       entrance, so its siblings ease their width share instead of snapping. */
+    transition: flex-grow 0.3s ease;
+}
+
+/* Cards deal in from above once the row has opened: drop + settle with a
+   slight tilt, at the size they keep. Width is not animated: growing cards in
+   sequence reflows the row on each one and reads as a scramble rather than a
+   deal. `both` holds a card invisible through its delay and visible after. */
+.deck-featured.ready .deck-featured-card {
+    animation: deck-featured-deal 0.78s cubic-bezier(0.33, 1, 0.68, 1) both;
+    /* Starts once the height transition above has finished. */
+    animation-delay: 0.8s;
+}
+
+/* Staggered like a real deal: each card lands a beat after the one before. */
+.deck-featured.ready .deck-featured-card:nth-child(2) {
+    animation-delay: calc(0.8s + 180ms);
+}
+
+.deck-featured.ready .deck-featured-card:nth-child(3) {
+    animation-delay: calc(0.8s + 360ms);
+}
+
+.deck-featured.ready .deck-featured-card:nth-child(4) {
+    animation-delay: calc(0.8s + 540ms);
+}
+
+.deck-featured.ready .deck-featured-card:nth-child(5) {
+    animation-delay: calc(0.8s + 720ms);
+}
+
+.deck-featured.ready .deck-featured-card:nth-child(6) {
+    animation-delay: calc(0.8s + 900ms);
+}
+
+@keyframes deck-featured-deal {
+    from {
+        opacity: 0;
+        transform: translateY(-1.5rem) rotate(-3deg);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) rotate(0deg);
+    }
+}
+
+/* Reserve the card's footprint before the image loads. The img inside starts
+   transparent with height:auto, so without a ratio here the strip collapses to
+   nothing and pops back when the bytes land. */
+.deck-featured-image {
+    width: 100%;
+    aspect-ratio: 5 / 7;
+}
+
+.deck-featured-card .deck-featured-image img {
+    width: 100%;
+    height: auto;
+    max-width: 100%;
+    border-radius: 4.75% / 3.5%;
+    border: 1px solid var(--border-secondary);
+    box-shadow: var(--shadow-md);
+}
+
+/* The name chip, then the role chip, wrapping and centered under the image
+   as Home's deck tiles set theirs. A long name ellipsizes inside its chip. */
+.deck-featured-chips {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.25rem;
+    margin-top: 0.4rem;
+    min-width: 0;
+}
+
+.deck-featured-chips > .stat-chip {
+    padding: 0.1rem 0.45rem;
+    font-size: 0.62rem;
+    border-radius: 0.5rem;
+}
+
+.deck-featured-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ── Deck cards header ───────────────────────────────────────────────────
+   Deck identity atop the deck cards screen — name + format/power/tag chips
+   in one left-aligned wrapping row, echoing the zite share page's header. */
+.deck-cards-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3rem;
+    margin-bottom: 0.75rem;
+}
+
+.deck-cards-header-name {
+    font-size: 1.15rem;
+    font-weight: 700;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+    margin-right: 0.2rem;
+}
+
+/* Compound selectors so the role colors outrank the chip's own tone. */
+.stat-chip.deck-featured-role-zone {
+    color: var(--palette-3);
+    background-color: color-mix(in srgb, var(--palette-3) 12%, var(--bg-primary));
+    border-color: color-mix(in srgb, var(--palette-3) 35%, var(--bg-primary));
+}
+
+.stat-chip.deck-featured-role-mvp {
+    color: var(--palette-6);
+    background-color: color-mix(in srgb, var(--palette-6) 12%, var(--bg-primary));
+    border-color: color-mix(in srgb, var(--palette-6) 35%, var(--bg-primary));
+}
+
+/* ── Commander maybeboard ─────────────────────────────────────────────── */
+
+/* Every entry is a single copy — the shared row's qty column is noise here.
+   The compact row is a flex line, so hiding it just closes the gap. */
+.maybeboard-list .card-row-qty {
+    display: none;
+}
+
+/* Rows land softly when the fetch replaces the ghosts: each plays the shared
+   row-enter ease with a short cascade down the list (the group header is
+   child 1, so the first row is nth-child(2)). Rows past the eighth land
+   together on the tail delay — they're below the fold anyway. Keyed rows
+   persist across pip/filter narrowing, so the cascade doesn't replay there;
+   a quick-added row mounts near the top and eases in the same way. */
+.maybeboard-list .card-row {
+    animation: row-enter 0.3s ease-out both;
+    animation-delay: 320ms;
+}
+
+.maybeboard-list .card-row:nth-child(2) {
+    animation-delay: 0ms;
+}
+
+.maybeboard-list .card-row:nth-child(3) {
+    animation-delay: 45ms;
+}
+
+.maybeboard-list .card-row:nth-child(4) {
+    animation-delay: 90ms;
+}
+
+.maybeboard-list .card-row:nth-child(5) {
+    animation-delay: 135ms;
+}
+
+.maybeboard-list .card-row:nth-child(6) {
+    animation-delay: 180ms;
+}
+
+.maybeboard-list .card-row:nth-child(7) {
+    animation-delay: 225ms;
+}
+
+.maybeboard-list .card-row:nth-child(8) {
+    animation-delay: 270ms;
+}
+
+/* The shell is its own stacking context, so orangui's GridCells layer (z-index -1)
+   stays under every screen, sheet and dialog in it, including mid-rain when
+   each cell carries a transform. */
+.app-shell {
+    isolation: isolate;
+}
+
+/* A screen stacked over another (the pickers, the dictionary) carries its
+   own GridCells; this is the floor under that, so a stacked screen without
+   one still hides what it covers. */
+.screen .screen {
+    background-color: var(--bg-sink);
+}
+
+/* =========================
+  Playstyle activity heatmap
+=========================== */
+
+/* The year scrolls sideways inside its section, faded at an edge with more
+   past it, and opens on the latest week. */
+.activity-scroll {
+    padding: 0.25rem 0.75rem 0;
+}
+
+/* The grid at its own size, so a cell keeps its pitch on any phone, and the
+   box the day chip is placed in. */
+.activity-plot {
+    position: relative;
+}
+
+.activity-plot .heat-grid {
+    height: auto;
+    max-width: none;
+}
+
+/* The Rates section: its chip row inset like the charts under it. */
+.activity-rates {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.activity-rate-chips {
+    padding: 0 0.75rem;
+}
+
+/* The Activity section's body while the screen loads, in its loaded
+   shape: the section's padding and gap around the empty grid, its tags, the
+   rule and Totals, so the loaded section lands where the ghost stood. */
+.activity-ghost-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0.6rem 0 0.75rem;
+}
+
+/* A tag's size, so the row sits where the loaded tags do. */
+.activity-ghost-tag {
+    width: 6.5rem;
+    height: 1.75rem;
+}
+
+/* Totals as BarChart lays it out: the title, 6rem of columns, the labels. */
+.activity-ghost-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0 0.75rem;
+}
+
+/* The title chip, a plain ghost chip like the tags'. */
+.activity-ghost-title {
+    align-self: center;
+    width: 4.5rem;
+    height: 1.45rem;
+}
+
+.activity-ghost-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.25rem;
+    height: 6rem;
+}
+
+.activity-ghost-column {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    align-items: flex-end;
+}
+
+.activity-ghost-bar {
+    width: 100%;
+    border-radius: 0.15rem 0.15rem 0 0;
+}
+
+.activity-ghost-labels {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.activity-ghost-label {
+    flex: 1;
+    height: 0.65rem;
+    margin: 0 0.75rem;
+}
+
+/* The full-bleed rule between the heatmap's tags and Totals. */
+.activity-rule {
+    margin-top: 0.75rem;
+}
+
+/* The Totals columns under that rule. */
+.activity-outcomes {
+    margin-top: 0.75rem;
+}
+
+/* A section's one-line note, such as a rate with nothing to show. */
+.activity-total {
+    padding: 0.5rem 0.75rem 0;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+/* The same note alone under a card group's header, spaced off the frame. */
+.activity-total-group {
+    padding-bottom: 0.75rem;
+}
