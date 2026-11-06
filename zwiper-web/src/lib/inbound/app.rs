@@ -9,6 +9,7 @@ use zwipe_core::domain::logo;
 use zwipe_core::domain::user::models::settings::PipStyle;
 
 use crate::inbound::chrome::hint_topic::{HintHost, HintTopic};
+use crate::inbound::chrome::splash::splash_plays_this_load;
 use crate::inbound::router::Route;
 use crate::inbound::screens::auth::login::LoginPrefill;
 use crate::inbound::screens::update_required::UpdateRequired;
@@ -52,8 +53,11 @@ pub fn App() -> Element {
     use_context_provider(|| LoginPrefill(Signal::new(None)));
     // The `?` buttons post here and the HintHost draws the topic.
     use_context_provider(|| Signal::new(None::<HintTopic>));
-    // Closed until the splash starts to fade; the entrances wait on it.
-    use_context_provider(|| components::SplashGate(Signal::new(false)));
+    // The splash plays once a tab session. While it plays the gate is
+    // closed until it starts to fade, and the entrances wait on it; a load
+    // that skips it opens the gate at once.
+    let splash = use_hook(splash_plays_this_load);
+    use_context_provider(|| components::SplashGate(Signal::new(!splash)));
     // The main menu's open state, above the router so it carries across
     // screens.
     use_context_provider(|| MenuOpen(Signal::new(false)));
@@ -80,7 +84,7 @@ pub fn App() -> Element {
         document::Script { {HEADER_HIDE_JS} }
         document::Meta { name: "viewport", content: "width=device-width, initial-scale=1.0" }
 
-        ThemeShell {
+        ThemeShell { splash,
             if upgrade_required.required() {
                 UpdateRequired {}
             } else {
@@ -123,8 +127,9 @@ document.addEventListener('keydown', (e) => {
 "#;
 
 /// The themed element every screen sits in. A theme change wipes over it.
+/// `splash` opens it on the splash.
 #[component]
-fn ThemeShell(children: Element) -> Element {
+fn ThemeShell(splash: bool, children: Element) -> Element {
     let follow = components::use_theme_follow(use_context::<Signal<ThemeConfig>>(), ".app-shell");
     use_context_provider(|| follow);
     let class = follow.shown.read().css_class();
@@ -134,8 +139,10 @@ fn ThemeShell(children: Element) -> Element {
             components::GridCells { still: true }
             // The opening: the field rains in under the mark, then fades to
             // the first screen while it mounts underneath.
-            components::Splash {
-                div { class: "logo", components::Decode { text: logo::ZWIPE } }
+            if splash {
+                components::Splash {
+                    div { class: "logo", components::Decode { text: logo::ZWIPE } }
+                }
             }
             {children}
         }
