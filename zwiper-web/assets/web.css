@@ -17,7 +17,7 @@
 /* A clearable field in a chip row fills the rest of the row, level with
    the row's label chip. */
 .chip-row > .input-clear-wrap {
-    flex: 1 1 auto;
+    flex: 1 1 0%;
     min-width: 0;
     margin-bottom: 0;
 }
