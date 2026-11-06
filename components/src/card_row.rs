@@ -4,17 +4,22 @@
 //!
 //! One component for every surface: the app passes edit callbacks (quantity,
 //! printing, star, move-to-board); a read-only page like zite's shared deck
-//! passes only what it supports (e.g. `on_image`) and hover callbacks for its
-//! desktop preview. Every action is an `Option`; `None` simply omits the
-//! control.
+//! passes only what it supports (e.g. `on_image`). Every action is an
+//! `Option`; `None` simply omits the control. Under a screen's
+//! [`HoverStack`] the row shows a mouse its card's image there.
+
+use std::cell::Cell;
+use std::rc::Rc;
 
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::scryfall_data::ImageSize;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::{Board, deck_metrics};
 
 use crate::CardDetails;
+use crate::hover_stack::{HeldEntry, HoverStack};
 
 /// Expandable card row with compact view and optional actions.
 #[component]
@@ -27,7 +32,7 @@ pub fn CardRow(
     /// host's business.
     on_image: Option<EventHandler<()>>,
     /// Fires with the new face index when the expanded detail is flipped, so a
-    /// host can mirror the shown side (e.g. zite's hover preview + image overlay).
+    /// host can mirror the shown side (e.g. zite's image overlay).
     on_face_change: Option<EventHandler<usize>>,
     on_qty_change: Option<EventHandler<i32>>,
     on_move_to: Option<EventHandler<Board>>,
@@ -42,8 +47,9 @@ pub fn CardRow(
     #[props(default)]
     extra_actions: Option<Element>,
     on_toggle_mvp: Option<EventHandler<()>>,
-    /// Cursor enters/leaves the compact row (desktop hover previews). Never
-    /// fires on touch devices (no mouseenter), so touch hosts can omit them.
+    /// Cursor enters/leaves the compact row. Never fires on touch devices
+    /// (no mouseenter), so touch hosts can omit them. The screen's
+    /// [`HoverStack`], when there is one, follows the cursor without them.
     on_hover_enter: Option<EventHandler<()>>,
     on_hover_leave: Option<EventHandler<()>>,
     /// Currency for the compact-row price, from the deck's price-target
@@ -83,6 +89,34 @@ pub fn CardRow(
 ) -> Element {
     let card_id = card.scryfall_data.id;
     let is_expanded = expanded_card() == Some(card_id);
+    // The screen's hover stack: the row pushes the face it shows while the
+    // cursor is on it, lets go on leave or unmount, and flashes a flipped face.
+    let hover_stack = try_use_context::<HoverStack>();
+    let held: HeldEntry = use_hook(|| Rc::new(Cell::new(None)));
+    let shown_face: Rc<Cell<usize>> = use_hook(|| Rc::new(Cell::new(0)));
+    let held_on_drop = Rc::clone(&held);
+    use_drop(move || {
+        if let (Some(stack), Some(id)) = (hover_stack, held_on_drop.take()) {
+            stack.leave(id);
+        }
+    });
+    let held_on_enter = Rc::clone(&held);
+    let held_on_leave = held;
+    let face_on_enter = Rc::clone(&shown_face);
+    let face_on_flip = shown_face;
+    let sd_on_enter = card.scryfall_data.clone();
+    let sd_on_flip = card.scryfall_data.clone();
+    let face_change = EventHandler::new(move |face: usize| {
+        face_on_flip.set(face);
+        if let Some(stack) = hover_stack
+            && let Some(url) = sd_on_flip.face_image_url(face, ImageSize::Normal)
+        {
+            stack.flash(url.to_string());
+        }
+        if let Some(handler) = on_face_change {
+            handler.call(face);
+        }
+    });
     let sd = &card.scryfall_data;
 
     let name = sd.name.clone();
@@ -135,11 +169,20 @@ pub fn CardRow(
             div {
                 class: "card-row-compact",
                 onmouseenter: move |_| {
+                    if let Some(stack) = hover_stack
+                        && let Some(url) = sd_on_enter.face_image_url(face_on_enter.get(), ImageSize::Normal)
+                        && let Some(stale) = held_on_enter.replace(Some(stack.enter(url.to_string())))
+                    {
+                        stack.leave(stale);
+                    }
                     if let Some(handler) = on_hover_enter {
                         handler.call(());
                     }
                 },
                 onmouseleave: move |_| {
+                    if let (Some(stack), Some(id)) = (hover_stack, held_on_leave.take()) {
+                        stack.leave(id);
+                    }
                     if let Some(handler) = on_hover_leave {
                         handler.call(());
                     }
@@ -209,7 +252,7 @@ pub fn CardRow(
                     describe_tag,
                     on_examples,
                     on_image,
-                    on_face_change,
+                    on_face_change: Some(face_change),
                     footer,
                     has_actions: has_slot_actions,
                     actions: rsx! {

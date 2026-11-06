@@ -17,8 +17,8 @@ mod rows;
 use std::collections::HashSet;
 
 use components::{
-    AlertDialog, Button, ButtonVariant, Chip, DangerZoneAction, DialogAction, TOAST_LONG,
-    TOAST_QUICK,
+    AlertDialog, Button, ButtonVariant, Chip, DangerZoneAction, DialogAction, HoverStackHost,
+    TOAST_LONG, TOAST_QUICK, use_hover_stack,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -72,6 +72,7 @@ pub fn Playstyle() -> Element {
     use_context_provider(|| ShowRowArt(show_row_art));
     let examples = use_otag_reveals();
     let overlays = use_card_overlays();
+    let hover_stack = use_hover_stack();
 
     let expanded_card: Signal<Option<Uuid>> = use_signal(|| None);
     let mut swipe_open = use_signal(|| false);
@@ -288,7 +289,9 @@ pub fn Playstyle() -> Element {
                 let mut hint_open = hint_open;
                 hint_open.set(true);
             },
-            div { class: "screen-content",
+            div {
+                class: "screen-content",
+                onmousemove: move |e| hover_stack.track(e.client_coordinates().x),
                 if is_loading() {
                     div { class: "web-playstyle web-page",
                         div { class: "web-hero web-playstyle-summary-hero",
@@ -421,6 +424,7 @@ pub fn Playstyle() -> Element {
             },
             on_close: move |()| swipe_open.set(false),
         }
+        HoverStackHost { stack: hover_stack }
         CardOverlaysHost {
             overlays,
             on_printing_save: move |picked: Card| {

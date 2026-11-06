@@ -11,7 +11,7 @@ use std::collections::HashSet;
 
 use components::{
     ActionDock, AlertDialog, Button, ButtonVariant, Chip, DangerZoneAction, DialogAction,
-    DockFilter, TOAST_LONG, TOAST_QUICK,
+    DockFilter, HoverStackHost, TOAST_LONG, TOAST_QUICK, use_hover_stack,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -129,6 +129,7 @@ pub fn CommanderMaybeboard() -> Element {
     use_context_provider(|| ShowRowArt(show_row_art));
     let examples = use_otag_reveals();
     let overlays = use_card_overlays();
+    let hover_stack = use_hover_stack();
     let expanded_card: Signal<Option<Uuid>> = use_signal(|| None);
 
     let mut query = use_signal(String::new);
@@ -385,7 +386,9 @@ pub fn CommanderMaybeboard() -> Element {
                 let mut hint_open = hint_open;
                 hint_open.set(true);
             },
-            div { class: "screen-content",
+            div {
+                class: "screen-content",
+                onmousemove: move |e| hover_stack.track(e.client_coordinates().x),
                 div { class: "flex-col web-maybeboard",
                     if is_loading() {
                         div { class: "chip-row",
@@ -567,6 +570,7 @@ pub fn CommanderMaybeboard() -> Element {
             ],
             "Every commander on your maybeboard will be removed. This can't be undone."
         }
+        HoverStackHost { stack: hover_stack }
         CardOverlaysHost { overlays, on_printing_save }
         OtagExamplesHost { examples }
         CardFilterPanel {

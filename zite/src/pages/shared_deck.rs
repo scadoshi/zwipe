@@ -3,7 +3,7 @@ use std::collections::{HashMap, HashSet};
 use components::{
     CardRow as SharedCardRow, Chip, ColorChart, DeckBand, DeckCharts, DeckControls, DeckFacts,
     DeckFilter, DeckFold, DeckHead, DeckPage, DrawOdds, FeaturedCard, FlippableCardImage,
-    ManaCurve, ManaFulfillment, Panel,
+    HoverStackHost, ManaCurve, ManaFulfillment, Panel, use_hover_stack,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -28,12 +28,6 @@ use zwipe_ui::deck_cards::{self, Zone};
 use crate::components::{OVERLAY_EXIT_MS, PageMeta, sleep_ms};
 use crate::{Footer, Nav, api};
 
-/// How long a hover preview stays up once the cursor leaves its row or the row flips.
-const PREVIEW_LIFE_MS: u32 = 2000;
-
-/// A hover preview's fade out, `sd-preview-out` in `assets/style.css`.
-const PREVIEW_FADE_MS: u32 = 400;
-
 /// Shortest the retry spinner shows, so an instant failure still reads as a click.
 const RETRY_SPINNER_MIN_MS: u32 = 500;
 
@@ -49,28 +43,15 @@ enum FetchError {
     Network(String),
 }
 
-/// A card in the top-left hover-preview stack. The stack holds up to 5, newest
-/// first; each card has its own timer and fades out on its own.
-#[derive(Clone, PartialEq)]
-struct PreviewCard {
-    /// Monotonic id, unique per hover (so the same card hovered twice stacks).
-    id: u64,
-    url: String,
-    /// True once the card's timer has fired and it's playing its exit fade.
-    leaving: bool,
-}
-
-/// Read-only wrapper over the shared [`SharedCardRow`]: wires zite's desktop
-/// hover-preview stack and the mobile tap-to-open image overlay, passing no
-/// edit callbacks (this page has none).
+/// Read-only wrapper over the shared [`SharedCardRow`]: wires the mobile
+/// tap-to-open image overlay, passing no edit callbacks (this page has none).
+/// The row feeds the page's hover stack itself.
 #[component]
 fn CardRow(
     card: Card,
     qty: i32,
     mvp: bool,
     expanded_card: Signal<Option<Uuid>>,
-    mut preview_stack: Signal<Vec<PreviewCard>>,
-    mut preview_next_id: Signal<u64>,
     /// Tap-to-open full-art overlay target. Set to this card's data + the face
     /// currently shown when the in-detail "Image" button is tapped.
     mut overlay_card: Signal<Option<(ScryfallData, usize)>>,
@@ -81,16 +62,10 @@ fn CardRow(
     /// `Some(..)` here so the toggle eases thumbs in/out instead of clipping.
     show_art: bool,
 ) -> Element {
-    // This row's live stack entry id (while the cursor is on it); the leave
-    // handler times it out. `None` when the row isn't hovered.
-    let mut my_preview_id = use_signal(|| None::<u64>);
-    // Which face the expanded detail is flipped to (0 = front). Drives which
-    // side lands in the hover preview and opens in the overlay. Kept in sync via
-    // the detail's `on_face_change`.
+    // Which face the expanded detail is flipped to (0 = front), the side the
+    // overlay opens on. Kept in sync via the detail's `on_face_change`.
     let mut current_face = use_signal(|| 0usize);
     // Owned copies for the move closures below (each may fire many times).
-    let sd_hover = card.scryfall_data.clone();
-    let sd_flip = card.scryfall_data.clone();
     let sd_overlay = card.scryfall_data.clone();
 
     rsx! {
@@ -106,67 +81,7 @@ fn CardRow(
             on_image: move |()| {
                 overlay_card.set(Some((sd_overlay.clone(), current_face())));
             },
-            on_face_change: move |face: usize| {
-                current_face.set(face);
-                // Throw the now-showing side onto the hover stack, on its own
-                // 2s timer (there's no hover-leave to retire it).
-                let Some(url) = sd_flip.face_image_url(face, ImageSize::Normal).map(str::to_string)
-                else {
-                    return;
-                };
-                let id = preview_next_id();
-                preview_next_id.set(id + 1);
-                preview_stack.with_mut(|s| {
-                    s.insert(0, PreviewCard { id, url, leaving: false });
-                    s.truncate(5);
-                });
-                spawn(async move {
-                    sleep_ms(PREVIEW_LIFE_MS).await;
-                    preview_stack.with_mut(|s| {
-                        if let Some(c) = s.iter_mut().find(|c| c.id == id) {
-                            c.leaving = true;
-                        }
-                    });
-                    sleep_ms(PREVIEW_FADE_MS).await;
-                    preview_stack.with_mut(|s| s.retain(|c| c.id != id));
-                });
-            },
-            on_hover_enter: move |()| {
-                // The currently-shown side's art (front unless flipped).
-                let Some(url) = sd_hover
-                    .face_image_url(current_face(), ImageSize::Normal)
-                    .map(str::to_string)
-                else {
-                    return;
-                };
-                // Push onto the top of the stack (newest first), cap at 5.
-                // No timer yet: the card is held as long as the cursor stays
-                // on the row; the leave handler starts its 2s countdown.
-                let id = preview_next_id();
-                preview_next_id.set(id + 1);
-                my_preview_id.set(Some(id));
-                preview_stack.with_mut(|s| {
-                    s.insert(0, PreviewCard { id, url, leaving: false });
-                    s.truncate(5);
-                });
-            },
-            on_hover_leave: move |()| {
-                let Some(id) = my_preview_id() else {
-                    return;
-                };
-                my_preview_id.set(None);
-                // Now the card's 2s life runs; then a short fade-out, then drop.
-                spawn(async move {
-                    sleep_ms(PREVIEW_LIFE_MS).await;
-                    preview_stack.with_mut(|s| {
-                        if let Some(c) = s.iter_mut().find(|c| c.id == id) {
-                            c.leaving = true;
-                        }
-                    });
-                    sleep_ms(PREVIEW_FADE_MS).await;
-                    preview_stack.with_mut(|s| s.retain(|c| c.id != id));
-                });
-            },
+            on_face_change: move |face: usize| current_face.set(face),
         }
     }
 }
@@ -358,32 +273,10 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
             .map(String::from)
             .collect()
     });
-    // The hover-preview stack dodges the cursor: working the LEFT half of the
-    // screen glides the stack to the right gutter so it never covers the rows
-    // being read. Written only when the side actually changes, so mousemove
-    // spam never re-renders. Viewport width measured once on the client (the
-    // stack is hover-only, so touch/SSR never need it).
-    let mut preview_on_right = use_signal(|| false);
-    let mut viewport_width = use_signal(|| 0.0f64);
-    use_future(move || async move {
-        #[cfg(target_arch = "wasm32")]
-        {
-            let mut eval = document::eval("dioxus.send(window.innerWidth)");
-            if let Ok(w) = eval.recv::<f64>().await {
-                viewport_width.set(w);
-            }
-        }
-        #[cfg(not(target_arch = "wasm32"))]
-        {
-            let _ = &mut viewport_width;
-        }
-    });
+    // The hover stack the rows feed, pinned in the corner away from the
+    // cursor; it stays empty on touch (no mouseenter).
+    let hover_stack = use_hover_stack();
     let expanded_card: Signal<Option<Uuid>> = use_signal(|| None);
-    // Full-art hover-preview stack pinned top-left (desktop). Each hovered row
-    // pushes a card on top; each card fades out on its own 2s timer. Never set
-    // on touch devices (no mouseenter), so it simply stays empty there.
-    let preview_stack: Signal<Vec<PreviewCard>> = use_signal(Vec::new);
-    let preview_next_id: Signal<u64> = use_signal(|| 0);
     // Tap-to-open full-art overlay. Holds the card's data + the face to open on
     // (so it lands on whichever side the row was flipped to) and flips from
     // there via the shared FlippableCardImage. A short dismiss fade mirrors the
@@ -569,22 +462,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
             description: "A Magic: The Gathering deck shared from Zwipe.".to_string(),
             path: "/deck".to_string(),
         }
-        // Pinned full-art preview stack, top-left, populated by row hover. Sits
-        // in the wide-screen left gutter; empty on touch (no mouseenter) and
-        // hidden below the gutter width so it never overlaps the content.
-        if !preview_stack().is_empty() {
-            div {
-                class: if preview_on_right() { "sd-hover-stack pin-right" } else { "sd-hover-stack" },
-                for (i, card) in preview_stack().into_iter().enumerate() {
-                    div {
-                        key: "{card.id}",
-                        class: if card.leaving { "sd-preview-card leaving" } else { "sd-preview-card" },
-                        style: "top: calc({i} * 2.6rem); z-index: {200 - i};",
-                        img { src: "{card.url}", alt: "Card preview" }
-                    }
-                }
-            }
-        }
+        HoverStackHost { stack: hover_stack }
         // Tap-to-open full-art overlay. Mirrors the app's ImagePreview: a dimmed
         // backdrop with the card art (its own flip button for DFCs), tap anywhere
         // to dismiss. The flip button stops propagation, so flipping never
@@ -614,16 +492,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
         }
         div {
             class: "shared-deck content-enter",
-            onmousemove: move |e| {
-                let w = viewport_width();
-                if w <= 0.0 {
-                    return;
-                }
-                let cursor_on_left = e.client_coordinates().x < w / 2.0;
-                if preview_on_right() != cursor_on_left {
-                    preview_on_right.set(cursor_on_left);
-                }
-            },
+            onmousemove: move |e| hover_stack.track(e.client_coordinates().x),
             DeckPage {
                 head: rsx! {
                     DeckHead {
@@ -671,8 +540,6 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                                     mvp: mvp_ids.contains(&card.scryfall_data.id),
                                     card,
                                     expanded_card,
-                                    preview_stack,
-                                    preview_next_id,
                                     overlay_card,
                                     describe_tag,
                                     show_art: show_row_art(),

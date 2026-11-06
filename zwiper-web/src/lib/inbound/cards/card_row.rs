@@ -1,58 +1,23 @@
 //! The app's card row over the kit's, with the screen-level overlays its
-//! `Image` and `Printing` buttons open, and the hover preview a browser adds.
+//! `Image` and `Printing` buttons open. The kit's row feeds the screen's
+//! [`HoverStack`] itself.
 
-use std::time::Duration;
-
-use components::CardRow as SharedCardRow;
+use components::{CardRow as SharedCardRow, HoverStack};
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
+use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::Board;
 
 use crate::inbound::cards::image_preview::ImagePreview;
 use crate::inbound::cards::otag::{OtagDescribe, OtagExamplesOpen};
 use crate::inbound::cards::printing_sheet::PrintingSheet;
-use crate::outbound::timer;
 
 /// Whether compact rows show their art thumbnail; a screen's `Art` chip
 /// toggles it. Rows without the context show no art.
 #[derive(Debug, Clone, Copy)]
 pub struct ShowRowArt(pub Signal<bool>);
-
-/// The card a hovered row shows, with the cursor's x, for a screen that
-/// draws the preview itself with [`HoverPreviewHost`] pinned clear of the
-/// rows. Rows without the context float the preview beside the cursor.
-#[derive(Debug, Clone, Copy)]
-pub struct HoverPreview(pub Signal<Option<HoverCard>>);
-
-/// A hovered card's image and where the cursor was.
-#[derive(Debug, Clone, PartialEq)]
-pub struct HoverCard {
-    /// The card's image.
-    pub url: String,
-    /// What the image shows, for assistive tech.
-    pub name: String,
-    /// The cursor's x in the window.
-    pub x: f64,
-}
-
-/// The pinned preview of the row under the cursor, on the side of the
-/// window the cursor is not on. Mount it outside any transformed ancestor,
-/// where `position: fixed` means the window.
-#[component]
-pub fn HoverPreviewHost(preview: Signal<Option<HoverCard>>) -> Element {
-    rsx! {
-        if let Some(card) = preview() {
-            div {
-                class: "web-hover-preview web-hover-pinned",
-                style: "--hover-x: {card.x}px;",
-                img { src: "{card.url}", alt: "{card.name}" }
-            }
-        }
-    }
-}
 
 /// The overlays a screen's rows open: the full image and the printing
 /// sheet. `Copy`; provided by [`use_card_overlays`].
@@ -110,14 +75,11 @@ pub fn CardOverlaysHost(
     }
 }
 
-/// How long the cursor rests on a compact row before its image shows.
-const HOVER_DELAY: Duration = Duration::from_millis(450);
-
 /// A card row: the compact line, and on a click the card's detail with the
 /// host's `footer`, then `Image`, `Printing` and the host's
 /// `extra_actions`. One row per screen is open at a time, by
-/// `expanded_card`. Resting the cursor on the compact line shows the card's
-/// image beside it.
+/// `expanded_card`. Under a screen's hover stack, hovering the compact
+/// line shows the card's image there.
 ///
 /// The deck cards view adds the editing actions: the quantity stepper
 /// (`on_qty_change`), the board moves (`on_move_to` from `current_board`)
@@ -145,13 +107,8 @@ pub fn CardRow(
     let describe_tag = try_use_context::<OtagDescribe>().map(|d| d.0);
     let on_examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
     let show_art = try_use_context::<ShowRowArt>().map(|s| (s.0)());
-    let pinned = try_use_context::<HoverPreview>().map(|p| p.0);
-    let mut hovering = use_signal(|| false);
-    let mut hover_shown = use_signal(|| false);
-    let mut cursor = use_signal(|| (0.0_f64, 0.0_f64));
+    let hover_stack = try_use_context::<HoverStack>();
     let sd_for_image = card.scryfall_data.clone();
-    let sd_for_hover = card.scryfall_data.clone();
-    let sd_for_pin = card.scryfall_data.clone();
     let on_image = overlays.map(|CardOverlays { mut preview, .. }| {
         EventHandler::new(move |()| preview.set(Some((sd_for_image.clone(), face()))))
     });
@@ -160,21 +117,17 @@ pub fn CardRow(
             EventHandler::new(move |picked: Card| printing.set(Some(picked)))
         })
     });
-    let (x, y) = cursor();
     rsx! {
         div {
             class: "web-card-row",
             draggable: on_drag_start.is_some(),
             ondragstart: move |_| {
-                hovering.set(false);
-                hover_shown.set(false);
+                if let Some(stack) = hover_stack {
+                    stack.leave_held();
+                }
                 if let Some(handler) = on_drag_start {
                     handler.call(());
                 }
-            },
-            onmousemove: move |e| {
-                let p = e.client_coordinates();
-                cursor.set((p.x, p.y));
             },
             SharedCardRow {
                 card,
@@ -190,50 +143,12 @@ pub fn CardRow(
                 mvp,
                 on_toggle_mvp,
                 price_currency,
-                on_hover_enter: move |()| {
-                    hovering.set(true);
-                    let sd_for_pin = sd_for_pin.clone();
-                    spawn(async move {
-                        timer::sleep(HOVER_DELAY).await;
-                        if !hovering() {
-                            return;
-                        }
-                        match pinned {
-                            Some(mut pinned) => {
-                                if let Some(url) = sd_for_pin.primary_image_url(ImageSize::Normal) {
-                                    pinned.set(Some(HoverCard {
-                                        url: url.to_owned(),
-                                        name: sd_for_pin.name.clone(),
-                                        x: cursor().0,
-                                    }));
-                                }
-                            }
-                            None => hover_shown.set(true),
-                        }
-                    });
-                },
-                on_hover_leave: move |()| {
-                    hovering.set(false);
-                    hover_shown.set(false);
-                    if let Some(mut pinned) = pinned {
-                        pinned.set(None);
-                    }
-                },
                 extra_actions,
                 footer,
                 qty_tags,
                 show_classification: true,
                 describe_tag,
                 on_examples,
-            }
-            if hover_shown() {
-                if let Some(url) = sd_for_hover.primary_image_url(ImageSize::Normal) {
-                    div {
-                        class: "web-hover-preview",
-                        style: "--hover-x: {x}px; --hover-y: {y}px;",
-                        img { src: "{url}", alt: "{sd_for_hover.name}" }
-                    }
-                }
             }
         }
     }
