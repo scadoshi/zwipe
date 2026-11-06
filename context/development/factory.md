@@ -17,7 +17,7 @@ The herdr agents are named after their machines: `composer` and `laptop` on the 
 1. The composer picks the next items from [`../progress/web_nits.md`](../progress/web_nits.md), writes a plan per worker, and marks them in progress there with the machine and branch.
 2. Batches are split by file, so two workers rarely edit the same rules at once. A batch that crosses clients (app, zite, components) goes to one worker alone.
 3. The worker builds only what the plan says. A plan that turns out wrong comes back as a question, not an improvisation.
-4. Before pushing, the worker runs `cargo +nightly fmt --all`, `cargo clippy --workspace --all-targets -- -D warnings`, the tests for the crates it touched, and `RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps --lib`.
+4. Before pushing, the worker runs `cargo +nightly fmt --all`, `cargo clippy --workspace --all-targets -- -D warnings`, the tests for the crates it touched, and `RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps` (not `--lib`: CI documents the zite and zwiper binaries too).
 5. The worker pushes and opens a pull request into `release` (`gh pr create --base release`), one commit per item, then replies with the PR link and anything it was unsure of.
 6. CI (`test.yml`) runs on the PR. The composer reviews the diff against [`scadoshi-rust`](../CLAUDE.md#linting) and this repo's rules, asks for changes on the PR or merges it.
 7. After a merge the composer marks the items done in the nits file, and any worker still open rebases on the new `release`.

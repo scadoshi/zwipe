@@ -21,7 +21,7 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
-| Nothing in flight | | |
+| 27 (doc link fix after CI) | halo | `nits/halo-27` (PR #168) |
 
 The loop is in [`../development/factory.md`](../development/factory.md).
 
@@ -88,4 +88,3 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 - 26, the eye on every swipe surface, toggling the details beside the card on a wide window: PR #165 into `release`.
 - 34, the maybeboard row cascade on the web: PR #166 into `release`.
 - 22, 21, scoping: [`../plans/shared_hover_and_filter.md`](../plans/shared_hover_and_filter.md), PR #167.
-- 27, zwipe.net's footer on the web through `components::SiteFooter`: PR #168 into `release`.
