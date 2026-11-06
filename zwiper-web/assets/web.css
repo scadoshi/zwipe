@@ -136,10 +136,6 @@ body {
     opacity: 0.55;
 }
 
-.web-screen-hint:hover {
-    opacity: 1;
-}
-
 /* Below the breakpoint the folded nav carries the screen's `?`. */
 @media (max-width: 899px) {
     .web-screen-hint {
@@ -588,6 +584,18 @@ body {
     :is(button, a):is(.chip, .chip-xs, .chip-remove):not(.selected, .disabled, :disabled):hover,
     .deck-fold-all:not(:disabled):hover,
     .card-group-header.group-collapsible:hover {
+        color: var(--accent-primary);
+        border-color: var(--accent-primary);
+    }
+
+    /* Every hint and help button, and a dialog's buttons, the same way and
+       at full strength where it rests faded: the `?` beside a title (the
+       kit's InfoButton, the folded nav's included), a swipe screen's
+       corner `?`, a sheet's or drawer's title-bar `?`, and a dialog's
+       buttons. Color, border and opacity only: the corner buttons hold
+       their place with a transform. */
+    :is(.info-button, .web-screen-hint, .web-sheet-hint, .page-header-corner, .alert-dialog-cancel, .alert-dialog-action):not(:disabled, [aria-disabled="true"]):hover {
+        opacity: 1;
         color: var(--accent-primary);
         border-color: var(--accent-primary);
     }
