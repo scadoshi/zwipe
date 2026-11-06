@@ -22,8 +22,9 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 | Items | Machine | Branch |
 | --- | --- | --- |
 | 9, 10, 4, 30 | thinker | `nits/thinker-9-10-4-30` |
-| 8, 16 | halo | `nits/halo-8-16` |
-| 18, 20 | laptop | `nits/laptop-18-20` |
+| 29 | scotland | `nits/scotland-29` |
+| 5, 17 | halo | `nits/halo-5-17` |
+| 19, 25 | laptop | `nits/laptop-19-25` |
 
 The loop is in [`../development/factory.md`](../development/factory.md).
 
@@ -67,8 +68,12 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 28. **Skeleton alignment pass across the whole web app, both layouts.** Loading skeletons are mismatched all over: their shapes, sizes and positions don't match the screens they stand in for, so content jumps when it loads. Walk every screen at a wide and a phone width, compare each skeleton against its loaded screen, and fix the ghosts to match (the `SKELETON_DELAY_MS` build flag holds GETs so each skeleton stays up long enough to compare).
 29. **Featured cards: the card's name in a tag chip, as Home's decks show theirs.** Under each featured card on a deck (the commander and the MVPs) the name is plain text over its Commander or MVP chip; Home's Decks panel puts each deck's name in a chip beside its Commander chip. Do the same for the featured cards on every client: the app's deck view (`deck-featured-card`), and the shared deck page (`components`' `FeaturedCard`, `deck-head-card*`) that zwipe.net's shared deck and the web's deck page draw, plus the web's own `screens/deck/cards/featured.rs` and zite's `pages/shared_deck.rs` where they place it. An app change, so it rides the next app release with a changelog entry.
 30. **The nav bar's icon buttons have no hover on a wide window.** The top bar's icon buttons (the `!`, Home, Account, Settings, About, Theme and the light/dark toggle) sit still under a mouse, where the text pills beside them (Decks, Playstyle, Activity, Commander maybeboard, Log out) read as clickable. Give them a hover inside `@media (hover: hover)`, matching whatever the pills and the panels (item 9) settle on.
+31. **Card row dividers elsewhere (follow-up to 4).** Each web card row sits in a wrapper (`.web-deck-row > .web-card-row > .card-row`), so the shared `.card-row:last-child { border-bottom: none }` strips every divider. 4 fixed the wide deck page only; the same likely happens below 900px and on Activity, Playstyle and the maybeboard lists.
+32. **Text fields still uncapped (follow-up to 18).** The deck form's fields, the command zone search and the deck dialog's input were not checked for full-width stretch on a wide window.
 
 ## Done
 
 - 24, held arrow swipes once and the exit slows to 0.32s: PR #152 into `release`.
 - 13, 6, 3, changelog pages by five, privacy at page width, chart title gaps: PR #153 into `release`.
+- 18, 20, wide fields capped at 32rem, dictionary letters in one row: PR #154 into `release`.
+- 8, 16, image preview sized as zite's, dialog padding rebalanced: PR #155 into `release`.
