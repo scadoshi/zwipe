@@ -23,6 +23,8 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
+| 21, the card filter into components (plan phases 3 and 4) | laptop | `shared/card-filter` |
+| 35, About overflows at a phone width | thinker | `nits/thinker-35` |
 | 19 reopened: the pickers through the kit's real drawer, the dictionary through the kit's modal | scotland | `nits/scotland-picker-drawer` |
 | cycle-trk-mission description, held until scotland's 2026-11-07 sync confirms its cards | halo | `otags/cycle-trk-mission` (PR #178) |
 | 38, the footer looks like zwipe.net's | scotland | `nits/scotland-footer-look` |
