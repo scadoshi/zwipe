@@ -24,7 +24,8 @@
 //! the changelog, the color bars, the mana colors and the mana glyph inside a
 //! chip). **CSS cascade order
 //! matters:** `THEMES_CSS`, then `COMPONENTS_CSS`, then `MAGIC_CSS`, then
-//! `APP_CSS` or `SITE_CSS`, then the host's own stylesheet, so component rules
+//! `APP_CSS` or `SITE_CSS`, then [`SCREENS_CSS`] in the app and the web, then
+//! the host's own stylesheet, so component rules
 //! resolve theme variables and host rules override shared defaults at equal
 //! specificity.
 //!
@@ -107,3 +108,13 @@ pub use theme::{pip_style_class, theme_from_settings};
 /// image, the changelog, the color bars and the mana glyph inside a chip. Load it after
 /// orangui's [`COMPONENTS_CSS`] and before [`APP_CSS`] or [`SITE_CSS`].
 pub const MAGIC_CSS: &str = include_str!("../assets/magic.css");
+
+/// The screen rules the app and the web both draw with, in `main.css`'s
+/// order. zwiper and zwiper-web load it right after [`APP_CSS`] and before
+/// their own stylesheets; zite does not load it.
+pub const SCREENS_CSS: &str = concat!(
+    include_str!("../assets/screens/base.css"),
+    include_str!("../assets/screens/components.css"),
+    include_str!("../assets/screens/screens-a.css"),
+    include_str!("../assets/screens/screens-b.css"),
+);
