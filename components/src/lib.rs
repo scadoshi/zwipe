@@ -11,8 +11,12 @@
 //! long rows), the [`ColorBars`], the deck page the sites share ([`DeckPage`],
 //! [`DeckHead`], [`FeaturedCard`], [`DeckControls`], [`DeckBand`],
 //! [`DeckFold`] and [`sections`]), [`ZwipeArchitecture`] and the [`hint`]
-//! renderer that draws zwipe-ui's typed hint copy. orangui's [`icons`] come
-//! through by name like the rest of the kit.
+//! renderer that draws zwipe-ui's typed hint copy. orangui's [`icons`] and
+//! dock come through by name like the rest of the kit. The pieces the two
+//! clients' chrome shares sit here too: [`DangerZoneAction`], the one-row
+//! Danger zone panel, [`MenuSection`], the main menu's section list, and
+//! Home's [`HomeDecks`] and [`HomeColors`] panels with [`ColorsEmpty`], the
+//! line the Colors bars show before any deck has a card.
 //!
 //! Styling ships as string constants to inline through `document::Style`.
 //! orangui's sheets come through as they are; [`MAGIC_CSS`] holds this crate's
@@ -41,11 +45,15 @@ mod card_row;
 mod changelog;
 mod charts;
 mod color_bars;
+mod danger_zone;
 mod deck_page;
 mod flippable_card_image;
 mod fold;
 pub mod hint;
+mod home_colors;
+mod home_decks;
 mod keyword_chips;
+mod menu_section;
 mod oracle_text;
 mod role_tags;
 mod theme;
@@ -62,13 +70,17 @@ pub use charts::{
     ManaCurve, ManaFulfillment,
 };
 pub use color_bars::{ColorBars, ColorBarsGhost};
+pub use danger_zone::DangerZoneAction;
 pub use deck_page::{
     DeckBand, DeckControls, DeckFacts, DeckFold, DeckHead, DeckPage, DeckSection, FeaturedCard,
     NO_CARDS, sections,
 };
 pub use flippable_card_image::{FlippableCardImage, reset_image_ease};
 pub use fold::{FOLD_AT, Fold, SEE_LESS, SEE_MORE, SeeMore, fold_split};
+pub use home_colors::{ColorsEmpty, HomeColors};
+pub use home_decks::HomeDecks;
 pub use keyword_chips::{KeywordChips, KeywordReminders};
+pub use menu_section::MenuSection;
 pub use oracle_text::OracleText;
 pub use orangui::{
     ALLOWED_THEMES, APP_CSS, ActionBar, ActionButton, ActionDock, AlertDialog, BOOT_BG, BOOT_HEAD,
@@ -78,11 +90,11 @@ pub use orangui::{
     HeatGrid, HeatHit, HeatReadout, HintBullet, HintBullets, HintDialog, HintKey, HintLine,
     InfoButton, KEYBOARD_INSET_JS, ModeIcon, NAV_GLIDE_JS, NavBar, NavCtaIcon, PageHeader,
     PageMeta, PaletteIcon, Panel, PasswordInput, RETIRED_THEMES, REVEAL_JS, Replay, SCROLL_FADE_JS,
-    SITE_CSS, SiteMeta, Splash, SplashGate, StatsStrip, THEME_GROUPS, THEMES_CSS, TOAST_LONG,
-    TOAST_NORMAL, TOAST_QUICK, TextInput, ThemeConfig, ThemePicker, ThemeSheet, heat_span, icons,
-    peak_indices, status_uses, use_dialog_host, use_heat_pick, use_os_back, use_overlay_back,
-    use_overlay_back_action, use_overlay_back_stack, use_persisted_theme, use_theme_follow,
-    use_theme_wipe, with_separators,
+    SITE_CSS, SheetFrame, SheetWide, SiteMeta, Splash, SplashGate, StatsStrip, THEME_GROUPS,
+    THEMES_CSS, TOAST_LONG, TOAST_NORMAL, TOAST_QUICK, TextInput, ThemeConfig, ThemePicker,
+    ThemeSheet, heat_span, icons, peak_indices, status_uses, use_dialog_host, use_heat_pick,
+    use_os_back, use_overlay_back, use_overlay_back_action, use_overlay_back_stack,
+    use_persisted_theme, use_theme_follow, use_theme_wipe, with_separators,
 };
 #[cfg(feature = "links")]
 pub use orangui::{OpenUrlError, open_url, use_in_app_links};

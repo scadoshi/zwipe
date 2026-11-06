@@ -1,0 +1,276 @@
+//! Playstyle's card rows: a suggestion with the reasons it fits, and the
+//! Staples panel with its Type and Color filters.
+
+use components::{CardRoleChips, Chip};
+use dioxus::prelude::*;
+use uuid::Uuid;
+use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::search_card::card_type::CardType;
+use zwipe_core::http::contracts::suggestions::{
+    HttpCommanderSuggestion, HttpStaple, HttpSuggestionReasons,
+};
+use zwipe_ui::playstyle::{
+    StapleColor, color_lines, group_shared_tags, matching_staples, staple_colors_present,
+    staple_decks, staple_identity, staple_percent, staple_type_line, staple_types_present,
+};
+
+use super::chips::{IdentityPips, identity_key};
+use crate::inbound::cards::card_row::CardRow;
+use crate::inbound::cards::otag::{OtagDescribe, OtagExamplesOpen};
+use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
+
+/// The Staples group's title.
+const STAPLES_TITLE: &str = "Staples";
+
+/// The "Why this commander?" block under a suggestion: folded under a chip
+/// in a list row (`foldable`), or open under a `chips-label` heading in a
+/// details sheet. It holds the shared oracle tags grouped by card role and
+/// one bullet per shared color, each left out when empty, and renders
+/// nothing when both are. Tag reveals use `describe_tag` and `on_examples`,
+/// else the screen's contexts.
+#[component]
+pub fn SuggestionReasons(
+    reasons: HttpSuggestionReasons,
+    deck_count: u32,
+    #[props(default)] describe_tag: Option<Callback<String, Option<String>>>,
+    #[props(default)] on_examples: Option<Callback<String>>,
+    #[props(default)] foldable: bool,
+) -> Element {
+    let mut reasons_open = use_signal(|| false);
+    let context_describe = try_use_context::<OtagDescribe>().map(|d| d.0);
+    let context_examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
+    let colors = color_lines(&reasons.colors, deck_count);
+    if reasons.tags.is_empty() && colors.is_empty() {
+        return rsx! {};
+    }
+    let shared = group_shared_tags(&reasons.tags);
+    let describe_tag = describe_tag.or(context_describe);
+    let on_examples = on_examples.or(context_examples);
+    let bullets = rsx! {
+        ul { class: "card-detail-bullets",
+            if !reasons.tags.is_empty() {
+                li {
+                    "Shares oracle tags with your decks"
+                    CardRoleChips {
+                        roles: shared.roles,
+                        tags_by_role: shared.by_role,
+                        other_tags: shared.other,
+                        describe_tag,
+                        on_examples,
+                        show_label: false,
+                    }
+                }
+            }
+            for line in colors {
+                li { key: "{line}", "{line}" }
+            }
+        }
+    };
+    rsx! {
+        div { class: "card-detail-footer",
+            if foldable {
+                Chip {
+                    selected: reasons_open(),
+                    onclick: move |evt: MouseEvent| {
+                        evt.stop_propagation();
+                        reasons_open.toggle();
+                    },
+                    span {
+                        class: if reasons_open() { "chip-fold-arrow expanded" } else { "chip-fold-arrow" },
+                        "\u{25b8}"
+                    }
+                    "Why this commander?"
+                }
+                div { class: if reasons_open() { "collapsible open" } else { "collapsible" },
+                    div { class: "collapsible-inner", {bullets} }
+                }
+            } else {
+                span { class: "chips-label", "Why this commander?" }
+                {bullets}
+            }
+        }
+    }
+}
+
+/// One suggestion: the card row with its reasons in the footer and
+/// `Create deck`, then `Maybeboard` and `Remove` when the card has an oracle
+/// id.
+#[component]
+pub fn SuggestionRow(
+    suggestion: HttpCommanderSuggestion,
+    deck_count: u32,
+    expanded_card: Signal<Option<Uuid>>,
+    on_start: EventHandler<Card>,
+    on_maybe: EventHandler<Uuid>,
+    on_dismiss: EventHandler<Uuid>,
+) -> Element {
+    let card = suggestion.card;
+    let oracle_id = card.scryfall_data.oracle_id;
+    let card_for_start = card.clone();
+    rsx! {
+        CardRow {
+            card,
+            qty: 1,
+            expanded_card,
+            footer: rsx! {
+                hr { class: "card-row-rule card-row-rule-muted" }
+                SuggestionReasons { reasons: suggestion.reasons, deck_count, foldable: true }
+            },
+            extra_actions: rsx! {
+                button {
+                    class: "card-action-btn",
+                    onclick: move |evt| {
+                        evt.stop_propagation();
+                        on_start.call(card_for_start.clone());
+                    },
+                    "Create deck"
+                }
+                if let Some(oid) = oracle_id {
+                    button {
+                        class: "card-action-btn",
+                        onclick: move |evt| {
+                            evt.stop_propagation();
+                            on_maybe.call(oid);
+                        },
+                        "Maybeboard"
+                    }
+                    button {
+                        class: "card-action-btn",
+                        onclick: move |evt| {
+                            evt.stop_propagation();
+                            on_dismiss.call(oid);
+                        },
+                        "Remove"
+                    }
+                }
+            },
+        }
+    }
+}
+
+/// The cards in the most of the user's decks, under their own Type and
+/// Color rows; the first ten that match both show. The filters start over
+/// when the screen mounts again.
+#[component]
+pub fn StaplesPanel(
+    staples: Vec<HttpStaple>,
+    deck_count: u32,
+    expanded_card: Signal<Option<Uuid>>,
+) -> Element {
+    let active_type: Signal<Option<CardType>> = use_signal(|| None);
+    let active_color: Signal<Option<StapleColor>> = use_signal(|| None);
+    let types = staple_types_present(&staples, staple_type_line);
+    let colors = staple_colors_present(&staples, staple_identity);
+    let rows = matching_staples(
+        &staples,
+        staple_type_line,
+        staple_identity,
+        active_type(),
+        active_color(),
+    );
+    rsx! {
+        div { class: "maybeboard-list card-group row-enter web-playstyle-cell web-playstyle-staples",
+            div { class: "card-group-header card-group-header-with-hint",
+                span { "{STAPLES_TITLE}" }
+                InfoButton { topic: HintTopic::SuggestionStaples }
+            }
+            div { class: "web-card-group-filters",
+                StapleTypeChips { active_type, types }
+                StapleColorChips { active_color, colors }
+            }
+            if rows.is_empty() {
+                div { class: "activity-total activity-total-group", "No staples match" }
+            }
+            for staple in rows {
+                StapleRow {
+                    key: "{staple.card.scryfall_data.id}",
+                    staple,
+                    deck_count,
+                    expanded_card,
+                }
+            }
+        }
+    }
+}
+
+/// A staple: its share of the user's decks in place of the quantity, and
+/// how many decks run it in the footer.
+#[component]
+fn StapleRow(staple: HttpStaple, deck_count: u32, expanded_card: Signal<Option<Uuid>>) -> Element {
+    let decks_label = staple_decks(staple.decks, deck_count);
+    rsx! {
+        CardRow {
+            card: staple.card,
+            qty: i32::try_from(staple.decks).unwrap_or(i32::MAX),
+            qty_tags: staple_percent(staple.decks, deck_count).into_iter().collect::<Vec<String>>(),
+            expanded_card,
+            footer: rsx! {
+                div { class: "keyword-chips",
+                    span { class: "detail-chip detail-chip-pt", "{decks_label}" }
+                }
+            },
+        }
+    }
+}
+
+/// The Type row: `All`, then each card type some staple has.
+#[component]
+fn StapleTypeChips(mut active_type: Signal<Option<CardType>>, types: Vec<CardType>) -> Element {
+    rsx! {
+        div { class: "chip-row",
+            span { class: "stat-chip stat-chip-p1 chip-row-label", "Type" }
+            Chip {
+                selected: active_type().is_none(),
+                onclick: move |_| active_type.set(None),
+                "All"
+            }
+            for card_type in types {
+                Chip {
+                    key: "{card_type}",
+                    selected: active_type() == Some(card_type),
+                    onclick: move |_| {
+                        if active_type() == Some(card_type) {
+                            active_type.set(None);
+                        } else {
+                            active_type.set(Some(card_type));
+                        }
+                    },
+                    "{card_type}"
+                }
+            }
+        }
+    }
+}
+
+/// The Color row: `All`, then each color (and colorless) some staple falls
+/// under.
+#[component]
+fn StapleColorChips(
+    mut active_color: Signal<Option<StapleColor>>,
+    colors: Vec<StapleColor>,
+) -> Element {
+    rsx! {
+        div { class: "chip-row",
+            span { class: "stat-chip stat-chip-p1 chip-row-label", "Color" }
+            Chip {
+                selected: active_color().is_none(),
+                onclick: move |_| active_color.set(None),
+                "All"
+            }
+            for chip in colors {
+                Chip {
+                    key: "{identity_key(&chip.pips())}",
+                    selected: active_color() == Some(chip),
+                    onclick: move |_| {
+                        if active_color() == Some(chip) {
+                            active_color.set(None);
+                        } else {
+                            active_color.set(Some(chip));
+                        }
+                    },
+                    IdentityPips { identity: chip.pips() }
+                }
+            }
+        }
+    }
+}

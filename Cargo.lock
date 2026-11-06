@@ -9021,3 +9021,26 @@ dependencies = [
  "zwipe-core",
  "zwipe-ui",
 ]
+
+[[package]]
+name = "zwiper-web"
+version = "1.18.0"
+dependencies = [
+ "chrono",
+ "components",
+ "dioxus",
+ "dioxus-primitives",
+ "dotenvy",
+ "getrandom 0.4.3",
+ "gloo-timers 0.4.0",
+ "reqwest",
+ "serde_json",
+ "thiserror 2.0.19",
+ "tokio",
+ "tracing",
+ "uuid",
+ "web-sys",
+ "zwipe-client",
+ "zwipe-core",
+ "zwipe-ui",
+]

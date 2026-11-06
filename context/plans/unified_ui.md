@@ -58,19 +58,22 @@ Settled with the owner before the per-screen review. A screen breaks one only wh
 ### zwiper-web at phone width
 
 - Below 900px the web matches the app: no panels, bottom sheets for pickers, the theme and filters, and the same header with the hamburger. Wide windows keep zite's centered page and panels.
+- The back arrow shows at every width on zwiper-web since the wide layout lost its bars (owner, 2026-11-04).
 
 ## Web follow-ups
 
 What zwiper-web and zite change to match. Items marked kit land in orangui, so zite, zwiper-web, cairn and the portfolio site take them together.
 
-- Kit: the gentle hamburger and back arrow (2.1 by 1.7rem, 0.4rem corners, 0.55 opacity, 2px bars) in `NavBar`, so every site's folded nav matches the app.
-- Kit: a tap outside an open menu closes it everywhere, and nothing that transforms the bar may trap its backdrop.
-- Kit: the theme picker opens as a bottom sheet below the 60rem fold (phone width) and stays the drop-down on wide windows (owner, 2026-11-03).
-- Kit: bottom sheets have no footers: an × in the corner, drag down to close, Apply or Save as a dock checkmark.
-- zwiper-web narrow view: no Z mark, a back arrow on screens below a section, the same menu (the four sections, the footer icons, the theme pair, Help & feedback and Log out), no page footers, and the action docks, floating Cards, Data and Danger zone panels, Settings and About as in the app.
-- zwiper-web narrow view: the swipe screens' layout (pile chips on the bottom row beside the dock, only prices under the card, Synergy as the dock's link icon, the From toggle chip).
-- zwiper-web: Config's route becomes `/settings`; screen titles come from zwipe-ui, so Add, Remove, Cards and Settings arrive with the next merge of main.
-- zite: at phone width its nav drops the Z mark, as the app's does (owner, 2026-11-03); wide windows keep it as the marketing site's brand. Otherwise it takes the kit items above.
+- [ ] Kit: the gentle hamburger and back arrow (2.1 by 1.7rem, 0.4rem corners, 0.55 opacity, 2px bars) in `NavBar`, so every site's folded nav matches the app.
+- [ ] Kit: the back arrow and the header's scroll follow that zwiper-web copies for now (`zwiper-web/src/lib/inbound/chrome/back_arrow.rs`, `zwiper-web/assets/header_hide.js`), so the web and the app take both from `NavBar`.
+- [ ] Kit: the rules the `components` pieces emit moved from zwiper's `main.css` into `components/assets/magic.css` (Home panels, dock filter dot, danger zone, the icon glyph, the skeleton ghosts, `sr-only`, `message-empty`, `container-sm`); the generic ones belong in orangui's `components.css`.
+- [ ] Kit: a tap outside an open menu closes it everywhere, and nothing that transforms the bar may trap its backdrop.
+- [x] Kit: the theme picker opens as a bottom sheet below the 60rem fold (phone width) and stays the drop-down on wide windows (owner, 2026-11-03).
+- [x] Kit: bottom sheets have no footers: an × in the corner, drag down to close, Apply or Save as a dock checkmark.
+- [x] zwiper-web narrow view: no Z mark, a back arrow on screens below a section, the same menu (the four sections, the footer icons, the theme pair, Help & feedback and Log out), no page footers, and the action docks, floating Cards, Data and Danger zone panels, Settings and About as in the app.
+- [x] zwiper-web narrow view: the swipe screens' layout (pile chips on the bottom row beside the dock, only prices under the card, Synergy as the dock's link icon, the From toggle chip).
+- [x] zwiper-web: Config's route is `/settings`; the screen titles come from zwipe-ui.
+- [ ] zite: at phone width its nav drops the Z mark, as the app's does (owner, 2026-11-03); wide windows keep it as the marketing site's brand. Otherwise it takes the kit items above.
 
 ## At release
 

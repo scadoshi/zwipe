@@ -11,7 +11,10 @@
 //! tap on an entry only navigates: the new screen's header mounts with the
 //! panel still open and folds it shut over its own content.
 
-use components::icons::{COG, DockIcon, HOUSE, INFO, PERSON};
+/// The menu's sections, the shape shared with zwiper-web; the routes they
+/// open are this app's, in [`route_of`] and [`section_of`].
+pub use components::MenuSection as Section;
+use components::icons::DockIcon;
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
@@ -23,116 +26,43 @@ use crate::inbound::components::navigation::menu_theme::MenuTheme;
 use crate::inbound::components::support::SupportButton;
 use crate::inbound::router::Router;
 
-/// A screen the signed-in menu opens.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Section {
-    /// Home.
-    Home,
-    /// The deck list, and every screen inside a deck.
-    Decks,
-    /// Playstyle, with its suggested commanders.
-    Playstyle,
-    /// The commander maybeboard.
-    Maybeboard,
-    /// Activity.
-    Activity,
-    /// Account.
-    Account,
-    /// Settings (the `config` screen).
-    Config,
-    /// About, and the privacy policy it links to.
-    About,
+/// The screen `section` opens.
+#[must_use]
+pub const fn route_of(section: Section) -> Router {
+    match section {
+        Section::Home => Router::Home {},
+        Section::Decks => Router::DeckList {},
+        Section::Playstyle => Router::SuggestedCommanders {},
+        Section::Maybeboard => Router::CommanderMaybeboard {},
+        Section::Activity => Router::Activity {},
+        Section::Account => Router::Account {},
+        Section::Config => Router::Config {},
+        Section::About => Router::About {},
+    }
 }
 
-impl Section {
-    /// Every section, in menu order: the listed ones, then the footer's.
-    pub const ALL: [Self; 8] = [
-        Self::Decks,
-        Self::Playstyle,
-        Self::Activity,
-        Self::Maybeboard,
-        Self::Home,
-        Self::Account,
-        Self::Config,
-        Self::About,
-    ];
-
-    /// The deck screens, the menu's list, in order.
-    pub const LISTED: [Self; 4] = [
-        Self::Decks,
-        Self::Playstyle,
-        Self::Activity,
-        Self::Maybeboard,
-    ];
-
-    /// The sections the footer holds as icons, left to right.
-    pub const FOOTER: [Self; 4] = [Self::Home, Self::Account, Self::Config, Self::About];
-
-    /// The entry's label, the title of the screen it opens.
-    #[must_use]
-    pub const fn label(self) -> &'static str {
-        match self {
-            Self::Home => "Home",
-            Self::Decks => "Decks",
-            Self::Playstyle => "Playstyle",
-            Self::Maybeboard => "Commander maybeboard",
-            Self::Activity => "Activity",
-            Self::Account => "Account",
-            Self::Config => "Settings",
-            Self::About => "About",
-        }
-    }
-
-    /// The footer icon's path, for the sections in [`Self::FOOTER`]; the listed sections draw their label instead.
-    #[must_use]
-    pub const fn icon(self) -> Option<&'static str> {
-        match self {
-            Self::Home => Some(HOUSE),
-            Self::Account => Some(PERSON),
-            Self::Config => Some(COG),
-            Self::About => Some(INFO),
-            Self::Decks | Self::Playstyle | Self::Maybeboard | Self::Activity => None,
-        }
-    }
-
-    /// The screen the entry opens.
-    #[must_use]
-    pub const fn route(self) -> Router {
-        match self {
-            Self::Home => Router::Home {},
-            Self::Decks => Router::DeckList {},
-            Self::Playstyle => Router::SuggestedCommanders {},
-            Self::Maybeboard => Router::CommanderMaybeboard {},
-            Self::Activity => Router::Activity {},
-            Self::Account => Router::Account {},
-            Self::Config => Router::Config {},
-            Self::About => Router::About {},
-        }
-    }
-
-    /// The section a route sits under, lit in the menu; `None` for the auth
-    /// screens.
-    #[must_use]
-    pub const fn of(route: &Router) -> Option<Self> {
-        match route {
-            Router::Home {} => Some(Self::Home),
-            Router::DeckList {}
-            | Router::CreateDeck
-            | Router::EditDeck { .. }
-            | Router::ViewDeck { .. }
-            | Router::ImportDeck { .. }
-            | Router::ExportDeck { .. }
-            | Router::AddDeckCard { .. }
-            | Router::ViewDeckCard { .. }
-            | Router::RemoveDeckCard { .. } => Some(Self::Decks),
-            Router::SuggestedCommanders {} => Some(Self::Playstyle),
-            Router::CommanderMaybeboard {} => Some(Self::Maybeboard),
-            Router::Activity {} => Some(Self::Activity),
-            Router::Account {} => Some(Self::Account),
-            Router::Config {} => Some(Self::Config),
-            Router::About {} | Router::PrivacyPolicy {} => Some(Self::About),
-            Router::Login {} | Router::Register {} | Router::ForgotPassword {} => None,
-        }
+/// The section `route` sits under, lit in the menu; `None` for the auth
+/// screens.
+#[must_use]
+pub const fn section_of(route: &Router) -> Option<Section> {
+    match route {
+        Router::Home {} => Some(Section::Home),
+        Router::DeckList {}
+        | Router::CreateDeck
+        | Router::EditDeck { .. }
+        | Router::ViewDeck { .. }
+        | Router::ImportDeck { .. }
+        | Router::ExportDeck { .. }
+        | Router::AddDeckCard { .. }
+        | Router::ViewDeckCard { .. }
+        | Router::RemoveDeckCard { .. } => Some(Section::Decks),
+        Router::SuggestedCommanders {} => Some(Section::Playstyle),
+        Router::CommanderMaybeboard {} => Some(Section::Maybeboard),
+        Router::Activity {} => Some(Section::Activity),
+        Router::Account {} => Some(Section::Account),
+        Router::Config {} => Some(Section::Config),
+        Router::About {} | Router::PrivacyPolicy {} => Some(Section::About),
+        Router::Login {} | Router::Register {} | Router::ForgotPassword {} => None,
     }
 }
 
@@ -163,13 +93,13 @@ pub fn MenuLinks(open: Signal<bool>, route: Router) -> Element {
             }
         };
     }
-    let current = Section::of(&route);
+    let current = section_of(&route);
     rsx! {
         for section in Section::LISTED {
             li { key: "{section.label()}",
                 MenuEntry {
                     label: section.label(),
-                    to: section.route(),
+                    to: route_of(section),
                     current: current == Some(section),
                     open,
                 }
@@ -227,7 +157,7 @@ pub fn MenuFooter(open: Signal<bool>) -> Element {
     let route: Router = use_route();
     let mut confirm = use_signal(|| false);
     let signed_in = session.read().is_some();
-    let current = Section::of(&route);
+    let current = section_of(&route);
     rsx! {
         div { class: "nav-trailing-row",
             div { class: "nav-trailing-group",
@@ -237,7 +167,7 @@ pub fn MenuFooter(open: Signal<bool>) -> Element {
                         MenuEntry {
                             key: "{section.label()}",
                             label: section.label(),
-                            to: section.route(),
+                            to: route_of(section),
                             current: current == Some(section),
                             open,
                             icon: section.icon(),
@@ -246,7 +176,7 @@ pub fn MenuFooter(open: Signal<bool>) -> Element {
                 } else {
                     MenuEntry {
                         label: Section::About.label(),
-                        to: Section::About.route(),
+                        to: route_of(Section::About),
                         current: current == Some(Section::About),
                         open,
                         icon: Section::About.icon(),
@@ -282,7 +212,7 @@ mod tests {
     #[test]
     fn every_section_lights_up_on_its_own_screen() {
         for section in Section::ALL {
-            assert_eq!(Section::of(&section.route()), Some(section), "{section:?}");
+            assert_eq!(section_of(&route_of(section)), Some(section), "{section:?}");
         }
     }
 
@@ -299,7 +229,7 @@ mod tests {
             Router::ViewDeckCard { deck_id },
             Router::RemoveDeckCard { deck_id },
         ] {
-            assert_eq!(Section::of(&route), Some(Section::Decks), "{route:?}");
+            assert_eq!(section_of(&route), Some(Section::Decks), "{route:?}");
         }
     }
 
@@ -310,27 +240,12 @@ mod tests {
             Router::Register {},
             Router::ForgotPassword {},
         ] {
-            assert_eq!(Section::of(&route), None, "{route:?}");
-        }
-    }
-
-    #[test]
-    fn the_listed_and_footer_sections_partition_all() {
-        let mut split: Vec<Section> = Section::LISTED.into_iter().chain(Section::FOOTER).collect();
-        let mut all: Vec<Section> = Section::ALL.to_vec();
-        split.sort_by_key(|section| section.label());
-        all.sort_by_key(|section| section.label());
-        assert_eq!(split, all);
-        for section in Section::FOOTER {
-            assert!(section.icon().is_some(), "{section:?} has no icon");
-        }
-        for section in Section::LISTED {
-            assert_eq!(section.icon(), None, "{section:?} draws its label");
+            assert_eq!(section_of(&route), None, "{route:?}");
         }
     }
 
     #[test]
     fn the_privacy_policy_sits_under_about() {
-        assert_eq!(Section::of(&Router::PrivacyPolicy {}), Some(Section::About));
+        assert_eq!(section_of(&Router::PrivacyPolicy {}), Some(Section::About));
     }
 }

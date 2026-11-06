@@ -1,0 +1,270 @@
+//! The deck view's dialogs: Clone, Share with Copy and Stop share, Clear
+//! skips and Delete. The profile header's icons and the Danger zone panel
+//! open them; an action in a dialog closes it, as the app does.
+
+use components::{ActionButton, AlertDialog, DialogAction, TOAST_QUICK};
+use dioxus::prelude::*;
+use dioxus_primitives::toast::{ToastOptions, use_toast};
+use uuid::Uuid;
+use zwipe_core::http::contracts::deck::HttpCloneDeck;
+
+use crate::domain::deck::share_link;
+use crate::inbound::chrome::authed::use_authed;
+use crate::inbound::router::Route;
+use crate::outbound::browser;
+
+/// Which of the deck's dialogs is up. `Copy`, so the buttons that open
+/// them and the dialogs share it.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct DeckDialogs {
+    /// The Clone dialog.
+    pub clone: Signal<bool>,
+    /// The Share dialog.
+    pub share: Signal<bool>,
+    /// The Clear skips dialog.
+    pub clear: Signal<bool>,
+    /// The Delete dialog.
+    pub delete: Signal<bool>,
+}
+
+/// Every dialog closed.
+pub fn use_deck_dialogs() -> DeckDialogs {
+    DeckDialogs {
+        clone: use_signal(|| false),
+        share: use_signal(|| false),
+        clear: use_signal(|| false),
+        delete: use_signal(|| false),
+    }
+}
+
+/// The dialogs for `deck_id`. `share_token` is the deck's live link, which
+/// Share and Stop share update in place.
+#[component]
+pub fn DeckDialogsHost(
+    deck_id: Uuid,
+    dialogs: DeckDialogs,
+    mut share_token: Signal<Option<Uuid>>,
+    clone_name: String,
+) -> Element {
+    let navigator = use_navigator();
+    let authed = use_authed();
+    let toast = use_toast();
+    let DeckDialogs {
+        clone: clone_open,
+        share: share_open,
+        clear: clear_open,
+        delete: delete_open,
+    } = dialogs;
+
+    let copy_link = move |token: Uuid| {
+        browser::copy_to_clipboard(&share_link(token));
+        toast.info(
+            "Share link copied".to_string(),
+            ToastOptions::default().duration(TOAST_QUICK),
+        );
+    };
+    let create_link = use_callback(move |()| {
+        spawn(async move {
+            if let Some(shared) = authed
+                .run("share_deck", |c, s| async move {
+                    c.share_deck(deck_id, &s).await
+                })
+                .await
+            {
+                share_token.set(Some(shared.share_token));
+                copy_link(shared.share_token);
+            }
+        });
+    });
+    let copy_shared = use_callback(move |()| {
+        if let Some(token) = *share_token.peek() {
+            copy_link(token);
+        }
+    });
+    let stop_share = use_callback(move |()| {
+        spawn(async move {
+            if authed
+                .run("unshare_deck", |c, s| async move {
+                    c.unshare_deck(deck_id, &s).await
+                })
+                .await
+                .is_some()
+            {
+                share_token.set(None);
+                toast.info(
+                    "Link disabled".to_string(),
+                    ToastOptions::default().duration(TOAST_QUICK),
+                );
+            }
+        });
+    });
+    // The app first sends its pending skips so they clear too; the web
+    // records none.
+    let clear_skips = use_callback(move |()| {
+        spawn(async move {
+            if authed
+                .run("clear_suppressions", |c, s| async move {
+                    c.clear_deck_suppressions(deck_id, &s).await
+                })
+                .await
+                .is_some()
+            {
+                toast.info(
+                    "Skips cleared".to_string(),
+                    ToastOptions::default().duration(TOAST_QUICK),
+                );
+            }
+        });
+    });
+    // Decks replaces the gone deck in history, so Back never reopens it.
+    let delete = use_callback(move |()| {
+        spawn(async move {
+            if authed
+                .run("delete_deck", |c, s| async move {
+                    c.delete_deck(deck_id, &s).await
+                })
+                .await
+                .is_some()
+            {
+                navigator.replace(Route::DeckList {});
+            }
+        });
+    });
+
+    let (share_body, share_actions) = if share_token().is_some() {
+        (
+            "Anyone with the link can view this deck. Stop sharing disables the link; sharing again creates a new one.",
+            vec![
+                DialogAction::Dismiss("Close".into()),
+                DialogAction::Confirm {
+                    label: "Copy link".into(),
+                    danger: false,
+                    on_confirm: copy_shared,
+                },
+                DialogAction::Confirm {
+                    label: "Stop share".into(),
+                    danger: true,
+                    on_confirm: stop_share,
+                },
+            ],
+        )
+    } else {
+        (
+            "Anyone with the link can view this deck. You can stop sharing at any time.",
+            vec![
+                DialogAction::Dismiss("Close".into()),
+                DialogAction::Confirm {
+                    label: "Create link".into(),
+                    danger: false,
+                    on_confirm: create_link,
+                },
+            ],
+        )
+    };
+
+    rsx! {
+        AlertDialog {
+            open: share_open,
+            title: "Share deck",
+            actions: share_actions,
+            "{share_body}"
+        }
+        AlertDialog {
+            open: clear_open,
+            title: "Clear skips",
+            actions: vec![
+                DialogAction::Dismiss("Cancel".into()),
+                DialogAction::Confirm {
+                    label: "Clear".into(),
+                    danger: true,
+                    on_confirm: clear_skips,
+                },
+            ],
+            "Skipped cards come back on their own after a week, and removed cards after a month. Clearing brings them all back now. This can't be undone."
+        }
+        AlertDialog {
+            open: delete_open,
+            title: "Delete deck",
+            actions: vec![
+                DialogAction::Dismiss("Cancel".into()),
+                DialogAction::Confirm {
+                    label: "Delete".into(),
+                    danger: true,
+                    on_confirm: delete,
+                },
+            ],
+            "Are you sure you want to delete this deck?"
+        }
+        CloneDeckDialog { source_deck_id: deck_id, default_name: clone_name, open: clone_open }
+    }
+}
+
+/// Clone deck: a copy of the deck under a new name, prefilled with
+/// `{name} (clone)` on every open. `Save` stays off while the name is
+/// blank; a failure keeps the dialog open.
+#[component]
+fn CloneDeckDialog(source_deck_id: Uuid, default_name: String, open: Signal<bool>) -> Element {
+    let navigator = use_navigator();
+    let authed = use_authed();
+    let toast = use_toast();
+    let mut name = use_signal(String::new);
+    use_effect(move || {
+        if open() {
+            name.set(default_name.clone());
+        }
+    });
+    let blank = use_memo(move || name().trim().is_empty());
+    let save = ActionButton::new("Save")
+        .disabled(blank)
+        .busy("Cloning...", move || {
+            let new_name = name.peek().trim().to_owned();
+            async move {
+                let body = HttpCloneDeck {
+                    new_name: new_name.clone(),
+                };
+                let Some(cloned) = authed
+                    .run("clone_deck", |c, s| async move {
+                        c.clone_deck(source_deck_id, &body, &s).await
+                    })
+                    .await
+                else {
+                    return false;
+                };
+                toast.info(
+                    format!("Cloned as \"{new_name}\""),
+                    ToastOptions::default().duration(TOAST_QUICK),
+                );
+                navigator.push(Route::ViewDeck {
+                    deck_id: cloned.deck_id,
+                });
+                true
+            }
+        });
+    rsx! {
+        AlertDialog {
+            open,
+            title: "Clone deck",
+            actions: vec![DialogAction::Dismiss("Cancel".into()), save.into()],
+            "Make an exact copy of your deck under a new name."
+            CloneNameInput { name }
+        }
+    }
+}
+
+/// The new name field, its own component so it reads the name where the
+/// dialog host draws it.
+#[component]
+fn CloneNameInput(mut name: Signal<String>) -> Element {
+    rsx! {
+        input {
+            r#type: "text",
+            class: "input",
+            placeholder: "New deck name",
+            value: "{name}",
+            autocapitalize: "none",
+            autocorrect: "off",
+            spellcheck: "false",
+            oninput: move |evt| name.set(evt.value()),
+        }
+    }
+}

@@ -181,7 +181,7 @@ jobs:
           set -a
           source /etc/zwipe/migrate.env
           set +a
-          cargo sqlx prepare --workspace --check -- --workspace --exclude zwiper --exclude zite
+          cargo sqlx prepare --workspace --check -- --workspace --exclude zwiper --exclude zite --exclude zwiper-web
 
       # The old binaries are kept, and put back if zerver does not answer /health.
       - name: Deploy

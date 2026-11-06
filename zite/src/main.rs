@@ -19,7 +19,7 @@ use pages::{
 // Base URLs + contact points live in zwipe-core's `site` module (shared with
 // zwiper and zerver so they can't drift); re-exported so pages keep importing
 // them from crate root. Debug builds resolve the URLs to the local dev servers.
-pub use zwipe_core::domain::site::{API_BASE, DISCORD_URL, SUPPORT_EMAIL, WEB_BASE};
+pub use zwipe_core::domain::site::{API_BASE, APP_BASE, DISCORD_URL, SUPPORT_EMAIL, WEB_BASE};
 
 const STYLE: Asset = asset!("/assets/style.css");
 const FAVICON: Asset = asset!("/assets/favicon.ico");
@@ -345,6 +345,7 @@ pub fn Nav() -> Element {
                         path: cta.path,
                     }
                 }
+                a { class: "nav-cta", href: "{APP_BASE}/login", "Log in" }
             },
             links: rsx! {
                 li {
@@ -370,6 +371,9 @@ pub fn Nav() -> Element {
                             onclick: move |_| open.set(false),
                         }
                     }
+                }
+                li { class: "nav-cta-item",
+                    a { class: "nav-cta", href: "{APP_BASE}/login", onclick: move |_| open.set(false), "Log in" }
                 }
             },
             trailing: rsx! {

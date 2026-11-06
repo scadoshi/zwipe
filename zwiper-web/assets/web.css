@@ -1,0 +1,1773 @@
+/* zwiper-web: what a browser window changes over zwiper's stylesheets.
+ * Loads after them. Wide is 900px and up; below that the screens keep the
+ * phone layout in one column. */
+
+:root {
+    --web-content-max: 72rem;
+    /* zite's page on a wide window (the page grammar below). */
+    --web-page-max: 74rem;
+    /* Where a sticky column stops: the page's 1rem gap under the nav. */
+    --web-sticky-top: 1rem;
+    /* How tall a sticky column may be: the window less the nav, the gap
+       over the column and room at the bottom. */
+    --web-sticky-max: calc(100dvh - 10rem);
+}
+
+html {
+    overflow: auto;
+    touch-action: auto;
+}
+
+body {
+    max-width: none;
+    overflow: auto;
+    user-select: text;
+}
+
+.app-shell {
+    min-height: 100vh;
+}
+
+/* A screen fills its frame instead of the whole viewport: one window tall
+   under the nav, scrolling inside itself (see Scrolling below). */
+.screen.web-screen {
+    position: relative;
+    inset: auto;
+    height: 100vh;
+}
+
+.web-screen > .screen-content {
+    min-height: 0;
+}
+
+/* ---- Scrolling ----
+
+   A screen under the nav scrolls as one column. Its content grows to fill
+   the window and ends with a little room; a screen with a floating dock or a
+   swipe screen's bottom row leaves enough to scroll its last row clear of
+   it, the kit's soft 5rem. There is no bar at a screen's end and no site
+   footer. */
+.web-main > .web-scroll-screen {
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.web-scroll-screen > .screen-content,
+.web-scroll-screen > .screen-content.card-swipe {
+    order: 1;
+    flex: 1 0 auto;
+    overflow: visible;
+    padding-bottom: 1.5rem;
+}
+
+.web-scroll-screen:has(> .action-dock, > .swipe-bottom-row) > .screen-content {
+    padding-bottom: 5rem;
+}
+
+/* Below the breakpoint a tall card cannot scroll the swipe screen and
+   take the header with it, as in the app. */
+@media (max-width: 899px) {
+    .web-scroll-screen > .screen-content.card-swipe {
+        overflow-y: hidden;
+    }
+}
+
+/* On a wide window without a page head the `?` sits on its own line at
+   the page's end, at the right, so it never covers the last panel. */
+/* A screen with no page head (the swipe screens) keeps its `?` in the
+   window's top right corner, just under the nav, clear of the dock at the
+   bottom right. */
+.web-screen-hint {
+    position: fixed;
+    top: calc(var(--sheet-drawer-top, 5.4rem) - 0.4rem);
+    right: 1.5rem;
+    z-index: 4;
+    box-sizing: border-box;
+    height: 1.9rem;
+    margin: 0;
+    opacity: 0.55;
+}
+
+.web-screen-hint:hover {
+    opacity: 1;
+}
+
+/* Below the breakpoint the folded nav carries the screen's `?`. */
+@media (max-width: 899px) {
+    .web-screen-hint {
+        display: none;
+    }
+}
+
+/* ---- Page grammar ----
+
+   zite's page on a wide window: the content is one centered column at
+   most 74rem wide inside a 1.5rem gutter. A screen with a hero puts it
+   centered at the top; the rest of its panels share two equal columns
+   under it, each a stack one panel gap apart, and the shorter column ends
+   early. Below the breakpoint the columns dissolve into the screen's own
+   single column. */
+
+/* zite's tagline under the hero's mark and counters. */
+.web-hero-tagline {
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    text-align: center;
+}
+
+.web-hero-tagline a {
+    color: var(--palette-1);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.web-hero,
+.web-columns,
+.web-column,
+.web-auth-row {
+    display: contents;
+}
+
+.web-auth-flavor {
+    display: contents;
+}
+
+/* ---- Input panels ----
+
+   Below the breakpoint a sign-in form sits on the page as the app's does:
+   the fields in the app's 20rem column, the full-width submit under them,
+   then the links to the other sign-in screens as chips in one centered row
+   spanning the screen (the app's .form-submit and .form-links). On a wide
+   window the form wears a panel, centered and held to 30rem, the wide form
+   of the screen as the drawer is of the sheet. */
+.web-auth {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--panel-gap);
+    width: 100%;
+    margin: 0 auto auto;
+    padding: 0 1rem 1rem;
+    box-sizing: border-box;
+}
+
+.web-form-panel {
+    margin: 0 auto;
+    box-sizing: border-box;
+}
+
+@media (min-width: 900px) {
+    .web-auth {
+        padding: 0 1.5rem 1.5rem;
+    }
+
+    .web-form-panel {
+        width: 100%;
+        padding: 1.5rem;
+        background-color: var(--bg-primary);
+        border: 1px solid var(--border-secondary);
+        border-radius: 1rem;
+        box-shadow: var(--shadow-sm);
+    }
+
+    /* The panel's title, the screen's name, as a panel header across its
+       top like the flavor card's. */
+    .web-form-panel > .web-form-head {
+        display: flex;
+        justify-content: center;
+        margin: -1.5rem -1.5rem 1.5rem;
+        border-radius: 1rem 1rem 0 0;
+    }
+
+    /* A sign-in panel is held to a form's width; the page head wears the
+       same panel at the page's. */
+    .web-auth > .web-form-panel {
+        max-width: 30rem;
+    }
+
+    /* The chip row stays inside the panel, under the form's column,
+       instead of spanning the window as the app's does. */
+    .web-form-panel > .form-links {
+        margin: 1rem 0 0;
+    }
+
+    /* A public screen: the hero at the page's width, then the form in the
+       left column and the featured flavor card beside it, both from the
+       top. */
+    .web-auth-row {
+        display: grid;
+        grid-template-columns: 30rem minmax(0, 1fr);
+        align-items: start;
+        gap: var(--panel-gap);
+        width: 100%;
+    }
+
+    .web-auth-row > .web-form-panel {
+        width: 100%;
+        max-width: none;
+        margin: 0;
+    }
+
+    .web-auth-flavor {
+        display: block;
+        min-width: 0;
+    }
+
+    .web-auth-flavor .home-flavor {
+        width: 100%;
+        max-width: none;
+        margin: 0;
+        box-sizing: border-box;
+    }
+
+}
+
+@media (min-width: 900px) {
+    /* Pinned to the top even in a column that centers its content, so
+       the page starts the screen's 1rem top padding under the nav, as
+       zite's starts 1rem under its nav. */
+    .web-page {
+        width: 100%;
+        max-width: var(--web-page-max);
+        margin: 0 auto auto;
+        padding: 0 1.5rem 1.5rem;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--panel-gap);
+    }
+
+    .web-hero {
+        display: block;
+        width: 100%;
+        max-width: none;
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    /* The home hero's card: the mark beside the counters and their tags. */
+    .web-hero .home-hero {
+        padding: 0;
+    }
+
+    .web-hero .home-hero .hero-head {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        column-gap: 2.5rem;
+        row-gap: 1rem;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .web-hero .home-hero .logo {
+        grid-row: span 2;
+        font-size: 0.85rem;
+    }
+
+
+    .web-columns {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: var(--panel-gap);
+        align-items: start;
+        width: 100%;
+    }
+
+    .web-column {
+        display: flex;
+        flex-direction: column;
+        gap: var(--panel-gap);
+        min-width: 0;
+    }
+
+    /* A panel fills its column; the phone's widths and outer margins go. */
+    .web-column > *,
+    .web-page > .web-hero > * {
+        width: 100%;
+        max-width: none;
+        margin: 0;
+        box-sizing: border-box;
+    }
+}
+
+/* ---- Top nav ----
+
+   zite's bar from the kit's NavBar: the Z mark home on the left and the
+   screens on the right as pills, folding behind the hamburger below the
+   breakpoint. The shell is one window tall: the nav, then the screen,
+   which scrolls. */
+
+.web-shell {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
+}
+
+.web-shell > .web-app-nav {
+    flex: none;
+}
+
+.web-shell .nav-wrapper {
+    margin-bottom: 0;
+}
+
+.web-main {
+    flex: 1;
+    min-height: 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.web-main > .screen.web-screen {
+    flex: 1;
+    height: auto;
+    min-height: 0;
+}
+
+/* The Z mark as zite draws it, in the logo color: seven lines at 0.9 line
+   height, sized to stand as tall as a 1.85rem nav pill. */
+.web-nav-logo {
+    font-family: "JetBrains Mono", monospace;
+    font-size: calc(1.85rem / 6.3);
+    line-height: 0.9;
+    white-space: pre;
+    display: block;
+    letter-spacing: 0;
+    color: var(--logo);
+}
+
+@media (hover: hover) {
+    .nav-brand:hover .web-nav-logo {
+        color: var(--accent-primary);
+    }
+}
+
+/* The kit folds the nav at 60rem; zwiper-web's breakpoint is 900px, so
+   between the two the bar stays open as above 60rem. */
+@media (min-width: 900px) and (max-width: 60rem) {
+    .web-shell .nav-wrapper nav {
+        display: flex;
+        padding: 1.25rem 1.5rem;
+        gap: 2rem;
+        max-height: none;
+    }
+
+    .web-shell .nav-toggle,
+    .web-shell .nav-persistent {
+        display: none;
+    }
+
+    .web-shell .nav-panel,
+    .web-shell .nav-panel-open {
+        display: flex;
+        flex: 1;
+        justify-content: flex-end;
+        margin: 0;
+        padding: 0;
+        border-top: none;
+        opacity: 1;
+        visibility: visible;
+        transition: none;
+    }
+
+    .web-shell .nav-panel .nav-panel-inner {
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.75rem 1.5rem;
+        overflow: visible;
+        padding: 0;
+    }
+
+    .web-shell .nav-panel .nav-links {
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.75rem 1.5rem;
+        max-height: none;
+        overflow: visible;
+    }
+
+    .web-shell .nav-panel .nav-links li {
+        width: auto;
+        height: 1.85rem;
+    }
+
+    .web-shell .nav-panel .nav-links > li > a,
+    .web-shell .nav-panel .nav-links > li > button.nav-link {
+        width: auto;
+        height: 1.85rem;
+        font-size: 0.8rem;
+        padding: 0 0.8rem;
+    }
+
+    .web-shell .nav-wrapper nav > .nav-brand {
+        justify-self: auto;
+    }
+}
+
+/* The nav's width-only pieces keep their own boxes: a corner button, a
+   list item, the footer row. */
+@media (max-width: 899px) {
+    .web-nav-wide {
+        display: none !important;
+    }
+}
+
+/* A wide window shows the app's list as pills, in the app's order, with the
+   menu footer's icons after them. */
+@media (min-width: 900px) {
+    .web-nav-narrow {
+        display: none !important;
+    }
+
+    /* The menu footer sits in the bar after the pills, one row of icons
+       and Log out, with no band of its own. */
+    .web-shell .nav-panel .nav-trailing {
+        margin-left: 0.75rem;
+    }
+
+    .web-shell .nav-trailing-row {
+        padding-bottom: 0;
+        gap: 0.75rem;
+    }
+}
+
+/* ---- Header below the breakpoint ----
+
+   The app's header from the kit's NavBar: the back arrow or an empty left
+   corner, the screen's title and its `?` in the middle, the hamburger on
+   the right, and the menu dropping from it over the screen. It sits over
+   the top of the shell, and header_hide.js slides it up as the screen
+   scrolls down. Its height is the kit's --app-nav-h, and the screen opens
+   with that much padding, so nothing moves at rest. The pieces' own rules
+   (.app-nav-back, .app-nav-title, the menu footer's buttons) come from
+   zwiper's main.css; these are the ones it scopes to its .app-nav. */
+@media (max-width: 899px) {
+    .web-shell {
+        position: relative;
+    }
+
+    .web-shell > .web-app-nav {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 101;
+    }
+
+    /* The header holds still while the menu or the theme sheet is up: a
+       transform would make it the containing block of the kit's fixed
+       backdrop and sheet. */
+    .web-shell > .web-app-nav:has(.nav-panel-open),
+    .web-shell > .web-app-nav:has(.theme-picker-sheet .bottom-sheet.show) {
+        transform: none !important;
+    }
+
+    .web-shell .web-main > .web-scroll-screen {
+        padding-top: var(--app-nav-h);
+        box-sizing: border-box;
+    }
+
+    .web-app-nav .nav-wrapper {
+        box-shadow: none;
+        border-bottom: 1px solid var(--border-secondary);
+    }
+
+    /* Both outer columns are one width, so the title centers on the screen
+       whatever sits in the corners; one fixed row, the corner buttons'
+       height, so every screen's bar is the same height. */
+    .web-app-nav .nav-wrapper nav {
+        grid-template-columns: 2.6rem minmax(0, 1fr) 2.6rem;
+        grid-template-rows: 1.7rem;
+        padding: 0.5rem 0.75rem;
+    }
+
+    .web-app-nav .nav-persistent {
+        grid-column: 2;
+        grid-row: 1;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    /* The open menu drops over the screen instead of pushing it down. It
+       leaves the grid, so it runs edge to edge. */
+    .web-app-nav .nav-panel {
+        grid-column: auto;
+        grid-row: auto;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        margin-left: 0;
+        margin-right: 0;
+        border-bottom: 1px solid transparent;
+    }
+
+    .web-app-nav .nav-panel-open {
+        margin-top: 0;
+        padding-bottom: 0;
+        border-bottom-color: var(--border-secondary);
+    }
+
+    /* Every entry shows; the kit caps the list for zite's longer menu. */
+    .web-app-nav .nav-panel .nav-links {
+        max-height: none;
+        overflow: visible;
+    }
+}
+
+@media (min-width: 900px) {
+    /* Toasts move top right. */
+    .toast-container {
+        left: auto;
+        right: 1rem;
+    }
+}
+
+/* ---- Settings lists (Account, Config) ---- */
+
+/* Two lists side by side on a wide window, at the page's width under its
+   head. */
+@media (min-width: 900px) {
+    .settings-sections.web-settings-pair {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--panel-gap);
+        align-items: start;
+        width: 100%;
+        max-width: var(--web-page-max);
+        margin: 0 auto;
+        padding: 0 1.5rem 1.5rem;
+        box-sizing: border-box;
+    }
+
+    .web-settings-pair > .settings-list {
+        max-width: none;
+    }
+}
+
+/* ---- Privacy policy ---- */
+
+.web-privacy {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+/* On a wide window the page head is as wide as the policy's column (its
+   40rem plus the head's side padding), not the page. */
+@media (min-width: 900px) {
+    .web-page-head-wrap:has(+ .screen-content .web-privacy) {
+        max-width: calc(40rem + 3rem);
+    }
+}
+
+/* ---- About ---- */
+
+/* About on a wide window: the rows and Credits side by side under the page
+   head, each as wide as its column with the columns' gap between, then the
+   Changelog panel and the release panels at the page's width. */
+@media (min-width: 900px) {
+    .changelog-screen.web-about {
+        width: 100%;
+        max-width: var(--web-page-max);
+        margin: 0 auto;
+        padding: 0 1.5rem 1rem;
+        box-sizing: border-box;
+    }
+
+    .web-about .settings-list {
+        max-width: none;
+    }
+
+    .web-about .web-column > .about-panel {
+        margin-top: 0;
+    }
+}
+
+/* ---- Sheets on a wide window ----
+   The kit's SheetFrame draws them; the drawer starts under the bar. */
+@media (min-width: 900px) {
+    :root {
+        --sheet-drawer-top: 5.4rem;
+    }
+}
+
+/* ---- Page head ----
+
+   zite's page header on a wide window: a panel at the top of the page with
+   the screen's title, its `?` at the right end, and the description under
+   a rule. Below the breakpoint it hides and the title and `?` sit in the
+   header's middle (see the header below). */
+.web-page-head-wrap {
+    display: none;
+}
+
+@media (min-width: 900px) {
+    .web-page-head-wrap {
+        display: block;
+        width: 100%;
+        max-width: var(--web-page-max);
+        margin: 1rem auto var(--panel-gap);
+        padding: 0 1.5rem;
+        box-sizing: border-box;
+    }
+
+    /* The page's panels start one panel gap under the head, as they sit
+       one panel gap apart everywhere else. */
+    .web-page-head-wrap + .screen-content {
+        padding-top: 0;
+    }
+
+    .web-page-head {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .web-page-head-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .web-page-head-line {
+        margin: 0;
+        color: var(--text-primary);
+    }
+}
+
+/* A page head drawn inside a column (the deck view's, beside the profile)
+   shows only on a wide window, as the page-level one does. */
+.web-column > .web-page-head {
+    display: none;
+}
+
+@media (min-width: 900px) {
+    .web-column > .web-page-head {
+        display: block;
+    }
+}
+
+/* ---- Not found: zite's dead end ---- */
+
+.web-dead-end {
+    width: calc(100% - 2rem);
+    max-width: 25rem;
+    margin: 1rem auto auto;
+}
+
+.web-dead-end .panel-title {
+    color: var(--color-error);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-align: center;
+    animation: web-alert-pulse 1.6s ease-in-out infinite;
+}
+
+.web-dead-end .panel-actions {
+    justify-content: center;
+}
+
+/* zite's panel body line: the site sheet's size and muted color, which the
+   web does not load. */
+.web-dead-end-line {
+    text-align: center;
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: var(--text-subtle);
+}
+
+@keyframes web-alert-pulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.45;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .web-dead-end .panel-title {
+        animation: none;
+    }
+}
+
+/* ---- Collapsible sections ---- */
+
+/* The app's section card. Its padding sits on the head and body so the rule
+   under the head runs edge to edge. */
+.web-section {
+    width: 100%;
+    background: var(--bg-primary);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-secondary);
+    border-radius: 0.5rem;
+    padding: 0.75rem 0;
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+    user-select: none;
+    box-sizing: border-box;
+}
+
+.web-section.warn {
+    border-color: var(--border-warning);
+}
+
+.web-section-head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0 0.75rem;
+}
+
+.web-section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.web-section-arrow {
+    transform: rotate(0deg);
+}
+
+.web-section.open .web-section-arrow {
+    transform: rotate(90deg);
+}
+
+.web-section-badge {
+    font-size: 0.65rem;
+    opacity: 0.5;
+}
+
+.web-section-accessory {
+    transition: opacity 0.25s ease;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.web-section.open .web-section-accessory {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.web-section > .collapsible {
+    cursor: default;
+}
+
+.web-section-rule {
+    border: none;
+    border-top: 1px solid var(--border-secondary);
+    margin: 0.5rem 0 0.6rem;
+}
+
+.web-section-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+/* A wide window shows every section open, with no arrow to toggle. */
+@media (min-width: 900px) {
+    .web-sections-open .web-section {
+        cursor: default;
+    }
+
+    .web-sections-open .web-section-arrow {
+        display: none;
+    }
+
+    .web-sections-open .web-section-head {
+        pointer-events: none;
+    }
+
+    .web-sections-open .web-section-accessory {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .web-sections-open .web-section > .collapsible {
+        grid-template-rows: 1fr;
+        opacity: 1;
+    }
+
+    .web-sections-open .web-section > .collapsible > .collapsible-inner {
+        overflow: visible;
+    }
+}
+
+/* ---- Card rows: the image beside the cursor ---- */
+
+.web-card-row {
+    display: contents;
+}
+
+.web-hover-preview {
+    display: none;
+}
+
+@media (min-width: 900px) and (hover: hover) {
+    .web-hover-preview {
+        display: block;
+        position: fixed;
+        left: min(calc(var(--hover-x) + 1.5rem), calc(100vw - 16rem));
+        top: clamp(1rem, calc(var(--hover-y) - 10rem), calc(100vh - 22rem));
+        width: 15rem;
+        z-index: 60;
+        pointer-events: none;
+        border-radius: 4.75% / 3.5%;
+        overflow: hidden;
+        box-shadow: var(--shadow-md);
+        animation: chip-in 0.2s ease-out;
+    }
+
+    .web-hover-preview img {
+        display: block;
+        width: 100%;
+    }
+}
+
+/* ---- Printing sheet ---- */
+
+.web-printing-stage {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.web-printing-stage .carousel-card-image {
+    max-width: min(18rem, 70vw);
+}
+
+.web-printing-step {
+    flex: none;
+}
+
+/* The body takes the arrow keys once clicked, with no focus ring. */
+.web-printing-body:focus {
+    outline: none;
+}
+
+/* ---- Swipe surfaces ---- */
+
+/* The app's stack fills what its column leaves; a browser column may leave
+   nothing, so the stack keeps room for a card. */
+.web-swipe-stack {
+    --web-swipe-h: min(55vh, 32rem);
+    flex: 1 0 auto;
+    min-height: var(--web-swipe-h);
+}
+
+@media (min-width: 900px) {
+    .web-swipe-stack {
+        --web-swipe-h: min(68vh, 42rem);
+    }
+}
+
+/* The card keeps its own shape: not stretched to the row's height, its
+   height capped by a length (a percentage of the face does not resolve) and
+   its width following, or the column's width capping it and the height
+   following. The 3.25rem is the stack card's padding. */
+.web-swipe-stack .swipe-stack-card .flippable-card-wrapper.card-image img {
+    align-self: center;
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: calc(var(--web-swipe-h) - 3.25rem);
+}
+
+.web-swipe-stack .swipe-stack-card.top {
+    touch-action: none;
+    cursor: grab;
+}
+
+.web-swipe-stack .swipe-stack-card.top:active {
+    cursor: grabbing;
+}
+
+.web-swipe-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    margin: 0.75rem 0;
+}
+
+/* Below the breakpoint the card is swiped, as in the app: only its prices
+   sit under it. The buttons stay for a wide window's mouse. */
+@media (max-width: 899px) {
+    .web-swipe-buttons {
+        display: none;
+    }
+}
+
+.web-swipe-arrow {
+    font-weight: 700;
+}
+
+/* ---- Large overlays (Oracle tag examples, the dictionary) ---- */
+
+/* Below the breakpoint these are the app's full-screen overlays. On a wide
+   window they are a large modal over a dimmed page. */
+.web-examples-details {
+    display: none;
+}
+
+/* The top card's details beside it on a swipe screen sit on the page, so
+   they get a panel of their own; the detail's own inset becomes the
+   panel's. */
+.web-details-panel {
+    --card-row-detail-pad-x: 1rem;
+    padding: 0.75rem 1rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.web-details-panel .card-row-detail {
+    padding: 0;
+}
+
+@media (min-width: 900px) {
+    /* The transform makes the modal the containing block of its own fixed
+       grid backdrop, so the backdrop stays inside it and the page around it
+       dims. */
+    .screen.web-large-modal {
+        inset: 4vh max(2rem, calc(50vw - 38rem));
+        width: auto;
+        height: auto;
+        transform: translateZ(0);
+        border: 1px solid var(--border-secondary);
+        border-radius: 1rem;
+        overflow: hidden;
+        box-shadow: 0 0 0 100vmax var(--bg-overlay), var(--shadow-sm);
+    }
+
+    .web-examples-body {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        align-items: start;
+        gap: 1.5rem;
+        max-width: none;
+        padding: 1rem 1.5rem;
+    }
+
+    .web-examples-details {
+        display: block;
+        align-self: stretch;
+    }
+
+    /* The card's details sit beside it, so the dock's eye has nothing to
+       open. */
+    .web-examples .action-dock {
+        display: none;
+    }
+}
+
+/* ---- Home ---- */
+
+/* Below the breakpoint the page is the app's stack, centered in the column:
+   the panels are the home column's own children. */
+.web-home-page {
+    display: contents;
+}
+
+@media (max-width: 899px) {
+    .web-home-page .home-hero,
+    .web-home-page .home-flavor {
+        flex-shrink: 0;
+    }
+
+    /* The mark sizes off the hero's own width, not the window's, so a
+       tablet's wider window with the phone's panel keeps it inside. The
+       size is the app's 2.25vw on a phone, as a share of the panel. */
+    .web-home-page .home-hero {
+        container-type: inline-size;
+    }
+
+    .web-home-page .home-hero .logo {
+        font-size: clamp(0.45rem, 2.45cqw, 1.26rem);
+    }
+
+    .web-home-page .home-hero {
+        margin-top: auto;
+    }
+
+    .web-home-page > .home-flavor {
+        margin-bottom: auto;
+    }
+}
+
+@media (min-width: 900px) {
+    /* zite's page from the top: the hero, Decks beside Colors, then the
+       flavor card at the page's width. */
+    .web-home .web-home-page {
+        display: flex;
+        margin: 0 auto;
+    }
+
+    .web-home-page > .home-flavor {
+        width: 100%;
+        max-width: none;
+        margin: 0;
+        box-sizing: border-box;
+        min-height: 0;
+    }
+}
+
+/* ---- Buy links ---- */
+
+/* A retailer link drawn as the action buttons beside it, with zite's
+   trailing arrow that nudges along its diagonal on hover. */
+.web-buy-link {
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+}
+
+.web-buy-ext {
+    display: inline-block;
+    margin-left: 1ch;
+    transition: transform 0.25s ease;
+}
+
+@media (hover: hover) {
+    .web-buy-link:hover .web-buy-ext {
+        transform: translate(0.12em, -0.12em);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .web-buy-link:hover .web-buy-ext {
+        transform: none;
+    }
+}
+
+/* ---- Activity ---- */
+
+.web-activity-year,
+.web-activity-rates {
+    display: contents;
+}
+
+/* Below the breakpoint the sections are one accordion column, in the
+   app's order: Activity, Card roles, Oracle tags, then Most skipped, which
+   sits in the left column on a wide window. */
+@media (max-width: 899px) {
+    .web-activity {
+        max-width: 40rem;
+        width: 100%;
+        padding: 0 1rem;
+        gap: var(--panel-gap);
+        box-sizing: border-box;
+    }
+
+    .web-activity > .web-columns .maybeboard-list {
+        order: 1;
+    }
+}
+
+@media (min-width: 900px) {
+    /* A year fits, so the heatmap scales to its column instead of scrolling;
+       the grid's inline pixel width is the phone's scroll width. */
+    .web-activity-heat .activity-scroll {
+        overflow-x: visible;
+        mask-image: none;
+        -webkit-mask-image: none;
+    }
+
+    .web-activity-heat .activity-plot,
+    .web-activity-heat .heat-grid {
+        width: 100% !important;
+        height: auto;
+    }
+}
+
+/* ---- Playstyle ---- */
+
+.web-playstyle-profile,
+.web-playstyle-list {
+    width: 100%;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--panel-gap);
+}
+
+/* The app's bounded column below the breakpoint: the profile accordion with
+   Summary in it, then the Show row, the suggestions and Staples, a panel gap
+   apart. */
+@media (max-width: 899px) {
+    .web-playstyle {
+        width: 100%;
+        max-width: 40rem;
+        padding: 0 1rem;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        gap: var(--panel-gap);
+    }
+
+    .web-playstyle-summary-hero {
+        display: none;
+    }
+
+    .web-playstyle-summary-inline {
+        display: contents;
+    }
+}
+
+/* A card list's filter chips sit inside its panel, under the header. */
+.web-card-group-filters {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem 0.25rem;
+}
+
+/* A wide window draws Summary in the page's first row, so the profile
+   column leaves it out. The panels pair up in rows of two: Summary beside
+   Color map, Card roles beside Oracle tags, then Suggested commanders
+   beside Staples, and the Danger zone last across both columns, so it
+   follows whichever column runs longer. */
+@media (min-width: 900px) {
+    .web-playstyle-summary-inline {
+        display: none;
+    }
+
+    .web-playstyle-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        align-items: start;
+    }
+
+    .web-playstyle-grid .web-columns,
+    .web-playstyle-grid .web-playstyle-profile,
+    .web-playstyle-grid .web-playstyle-list {
+        display: contents;
+    }
+
+    .web-playstyle-cell {
+        min-width: 0;
+    }
+
+    .web-playstyle-summary-hero { order: 1; }
+    .web-playstyle-colors { order: 2; }
+    .web-playstyle-roles { order: 3; }
+    .web-playstyle-tags { order: 4; }
+    .web-playstyle-suggested { order: 5; }
+    .web-playstyle-staples { order: 6; }
+    .web-playstyle-danger {
+        order: 7;
+        grid-column: 1 / -1;
+    }
+
+    .web-playstyle-danger > .settings-list {
+        width: 100%;
+        max-width: none;
+        margin: 0;
+    }
+}
+
+/* ---- Swipe select ---- */
+
+/* Hidden while closed and click-through, as in the app; it cross-fades on
+   .show. On a wide window the card and its info sit left and the card's
+   details beside them. */
+.web-swipe-select-details {
+    display: none;
+}
+
+@media (min-width: 900px) {
+    .web-swipe-select-body {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        align-items: start;
+        gap: 1.5rem;
+        max-width: var(--web-content-max);
+        margin: 0 auto;
+        width: 100%;
+        padding: 1rem 1.5rem;
+        box-sizing: border-box;
+    }
+
+    .web-swipe-select-details {
+        display: block;
+    }
+
+    /* The card's details sit beside it, so the dock's eye has nothing to
+       open. */
+    .web-swipe-select .web-dock-eye,
+    .web-swipe-select .action-dock-divider,
+    .web-screen:has(.web-cards-swipe) .web-dock-eye,
+    .web-screen:has(.web-cards-swipe) .action-dock-divider {
+        display: none;
+    }
+}
+
+/* ---- Commander maybeboard ---- */
+
+/* The app's column: Quick add, Show and the list. A wide window gives it
+   the page's width, the list and Danger zone as full panels. */
+.web-maybeboard {
+    max-width: 40rem;
+    width: 100%;
+    padding: 0 1rem;
+    box-sizing: border-box;
+}
+
+@media (min-width: 900px) {
+    .web-maybeboard {
+        max-width: var(--web-page-max);
+        padding: 1rem 1.5rem 2rem;
+    }
+
+    .web-maybeboard > .settings-list,
+    .web-maybeboard > .card-group {
+        width: 100%;
+        max-width: none;
+        margin-left: 0;
+        margin-right: 0;
+    }
+}
+
+/* The Quick add result the arrow keys point at. */
+.web-float-highlight {
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+}
+
+/* ---- Oracle tag dictionary ---- */
+
+/* Below the breakpoint the browse wrapper adds no box, so the controls and
+   list sit in the screen's column as in the app. */
+.web-dict-browse {
+    display: contents;
+}
+
+@media (min-width: 900px) {
+    .web-dictionary > .screen-content {
+        align-items: stretch;
+        min-height: 0;
+    }
+
+    /* Search and the letter rail as a column on the left, the list beside. */
+    .web-dict-browse {
+        display: grid;
+        grid-template-columns: 15rem minmax(0, 1fr);
+        gap: 1rem;
+        flex: 1 1 auto;
+        min-height: 0;
+        width: 100%;
+        padding: 0 1.5rem;
+        box-sizing: border-box;
+    }
+
+    .web-dict-browse .dict-controls {
+        max-width: none;
+        padding: 0.75rem 0;
+        min-height: 0;
+        overflow-y: auto;
+    }
+
+    .web-dict-browse .dict-letter-rail {
+        flex-wrap: wrap;
+        overflow-x: visible;
+        -webkit-mask-image: none;
+        mask-image: none;
+    }
+
+    .web-dict-browse .dict-list {
+        max-width: 48rem;
+        min-height: 0;
+    }
+}
+
+/* ---- Deck list ---- */
+
+/* The app's column below the breakpoint. The Tags fold chip and the tags it
+   keeps in view while folded are items of the Show row. */
+.web-deck-list {
+    max-width: 40rem;
+    width: 100%;
+    padding: 0 1rem;
+    box-sizing: border-box;
+}
+
+.web-deck-tags-fold {
+    display: contents;
+}
+
+@media (min-width: 900px) {
+    .web-deck-list {
+        max-width: var(--web-page-max);
+        padding: 1rem 1.5rem 2rem;
+    }
+
+    /* A wide window lays a group's decks out as tiles, as many per row as
+       fit: the art as a square over the name, then the pips on their own
+       line and the chips wrapping under them. */
+    .deck-group > .collapsible > .collapsible-inner {
+        grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+    }
+
+    .deck-group .deck-row {
+        padding: 1rem;
+    }
+
+    .deck-group .deck-list-row {
+        flex-direction: column;
+        justify-content: flex-start;
+        text-align: center;
+    }
+
+    .deck-group .deck-row-art-img {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 1 / 1;
+        border-radius: 1rem;
+    }
+
+    /* A two-card command zone shares the square. */
+    .deck-group .deck-list-row:has(> .deck-row-art-img + .deck-row-art-img) > .deck-row-art-img {
+        width: calc(50% - 0.2rem);
+    }
+
+    .deck-group .deck-list-name {
+        width: 100%;
+        margin: 0.2rem 0 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .deck-group .deck-list-row > .identity-pips {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* A long commander name wraps inside its chip rather than cutting. */
+    .deck-group .deck-list-row > .stat-chip {
+        max-width: 100%;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    /* There is room for every tag, so the row stays unfolded and the fold
+       chip goes. */
+    .web-deck-tags-fold {
+        display: none;
+    }
+
+    .web-deck-tags.collapsible {
+        grid-template-rows: 1fr;
+        opacity: 1;
+    }
+
+    .web-deck-tags > .collapsible-inner {
+        overflow: visible;
+    }
+
+}
+
+/* ---- Deck form (Create, Edit) ---- */
+
+/* The panels sit a panel gap apart: inside a column, and between the two
+   columns when they stack below the breakpoint, the form a panel gap under
+   the header. */
+.web-deck-form,
+.web-deck-form-column {
+    display: flex;
+    flex-direction: column;
+    gap: var(--panel-gap);
+}
+
+.web-deck-form {
+    padding-top: var(--panel-gap);
+}
+
+@media (min-width: 900px) {
+    /* Profile on the left, Budget above Tags on the right. */
+    .web-deck-form.container-sm {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: start;
+        column-gap: var(--panel-gap);
+        width: 100%;
+        max-width: var(--web-page-max);
+        padding: 0 1.5rem 2rem;
+        box-sizing: border-box;
+    }
+
+    /* A picker is a panel over the right column, so the form and its
+       cascades stay in view beside it. */
+    .web-picker.swipe-select-screen {
+        left: auto;
+        width: min(30rem, 46vw);
+        border-left: 1px solid var(--border-secondary);
+        box-shadow: var(--shadow-lg);
+        transform: translateX(1.5rem);
+        transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .web-picker.swipe-select-screen.show {
+        transform: none;
+    }
+
+    .web-picker > .grid-cells {
+        position: absolute;
+    }
+}
+
+@media (min-width: 900px) and (prefers-reduced-motion: reduce) {
+    .web-picker.swipe-select-screen {
+        transform: none;
+        transition: opacity 0.2s ease;
+    }
+}
+
+/* ---- Import, Export ---- */
+
+@media (min-width: 900px) {
+    /* Import: the controls over the input on the left, the results on the
+       right beside them. The phone's scroll wrapper adds no box here; the
+       screen's column scrolls. */
+    .web-import.screen-content,
+    .web-export.screen-content {
+        display: grid;
+        align-items: start;
+        align-content: start;
+        column-gap: 2.5rem;
+        width: 100%;
+        max-width: 72rem;
+        margin: 0 auto;
+        padding: 1rem 1.5rem 2rem;
+        box-sizing: border-box;
+    }
+
+    .web-import.screen-content {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .web-import > .import-controls,
+    .web-export > .import-controls {
+        grid-column: 1;
+        grid-row: 1;
+        max-width: none;
+        padding: 0 0 0.75rem;
+    }
+
+    .web-import > .import-scroll,
+    .web-export > .import-scroll,
+    .web-import-body.container-sm,
+    .web-export-body.container-sm {
+        display: contents;
+    }
+
+    .web-import-input {
+        grid-column: 1;
+        grid-row: 2;
+    }
+
+    .web-import-results {
+        grid-column: 2;
+        grid-row: 1 / span 2;
+    }
+
+    /* Export: the board chips over the decklist, one column. */
+    .web-export.screen-content {
+        grid-template-columns: minmax(0, 1fr);
+        flex: 1 1 auto;
+    }
+
+    .web-export > .import-controls .chip-row {
+        flex-wrap: wrap;
+    }
+
+    /* The decklist runs to the window's foot, under the page head, the
+       chips and its panel's header. */
+    .web-export-body textarea {
+        min-height: calc(100vh - 26rem) !important;
+    }
+}
+
+/* A panel's ghost while its screen loads: the title bar centered, as the
+   header it stands in for. */
+.web-form-panel > .skeleton-card-header {
+    display: flex;
+    justify-content: center;
+}
+
+.web-form-panel > .skeleton-card-header > .skeleton-section-label {
+    margin-bottom: 0;
+}
+
+/* Import's and Export's boxes and Import's results sit in headed panels,
+   as the deck form's fields do, a panel gap apart; the chip rows and the
+   explainer stay on the grid above them. */
+.web-import-results {
+    display: flex;
+    flex-direction: column;
+    gap: var(--panel-gap);
+}
+
+.web-import-results:empty {
+    display: none;
+}
+
+.web-import .web-form-fields > .input,
+.web-export .web-form-fields > .input {
+    margin-bottom: 0;
+}
+
+.web-import-cards > :last-child {
+    margin-bottom: 0;
+}
+
+/* Below the breakpoint the panels take the screen's width with the page
+   gutter, and the list scrolls under the pinned chips with its fade at
+   the top only, past the screen's foot like the pickers. */
+@media (max-width: 899px) {
+    .web-import-body.container-sm,
+    .web-export-body.container-sm {
+        display: flex;
+        flex-direction: column;
+        gap: var(--panel-gap);
+        width: 100%;
+        max-width: none;
+        padding: 0.75rem 0 6rem;
+    }
+
+    .web-import > .import-scroll,
+    .web-export > .import-scroll {
+        -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 1rem);
+        mask-image: linear-gradient(to bottom, transparent 0, #000 1rem);
+    }
+}
+
+/* ---- Deck view ---- */
+
+/* Below the breakpoint the page is the app's one stack. */
+@media (max-width: 899px) {
+    .web-deck-view {
+        width: calc(100% - 4rem);
+        max-width: 40rem;
+        display: flex;
+        flex-direction: column;
+        gap: var(--panel-gap);
+        padding: 1rem 0;
+    }
+}
+
+/* On a wide window it is the deck page both sites share; the page's
+   trailing room keeps the floating Cards off Delete. */
+@media (min-width: 900px) {
+    .web-deck-page {
+        padding-bottom: 5rem;
+    }
+
+    /* Warnings at the foot, open, in the section's own warning dress. */
+    .web-deck-warnings {
+        margin: 0;
+    }
+}
+
+/* ---- Card filter ---- */
+
+/* The filter sheet's `?`, in the header's right corner at the title's
+   height, faded like a hint button. */
+.web-sheet-hint {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.55;
+    padding: 0.2rem 0.6rem;
+}
+
+/* The chip's hover title rides on a wrapper that adds no box. */
+.web-filter-chip {
+    display: contents;
+}
+
+.web-filter-chips-center {
+    margin-bottom: 0.5rem;
+    justify-content: center;
+}
+
+.web-filter-accordion .accordion-trigger:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+}
+
+/* ---- Add and Remove cards ---- */
+
+/* Below the breakpoint it is the app's swipe screen: the card, its prices
+   and the bottom row. A wide window puts the card's details beside it. */
+.web-cards-swipe-main {
+    display: contents;
+}
+
+.web-swipe-details {
+    display: none;
+}
+
+.web-pile-end {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    touch-action: none;
+}
+
+@media (min-width: 900px) {
+    /* The card in the middle of the page, as on the phone, its details in
+       the column to its right and the left column empty to balance it. */
+    .web-cards-swipe.screen-content {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(20rem, 30rem) minmax(0, 1fr);
+        align-items: start;
+        align-content: start;
+        gap: 1.5rem;
+        width: 100%;
+        max-width: 96rem;
+        margin: 0 auto;
+        padding: 1rem 1.5rem;
+        box-sizing: border-box;
+        overflow-y: auto;
+    }
+
+    /* The `?` sits in the top right corner over this page; the card and its
+       details start under it. */
+    .web-screen:has(> .web-screen-hint) .web-cards-swipe.screen-content {
+        padding-top: 3.25rem;
+    }
+
+    .web-cards-swipe-main {
+        grid-column: 2;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        min-width: 0;
+    }
+
+    .web-swipe-details {
+        grid-column: 3;
+        display: block;
+        min-width: 0;
+        position: sticky;
+        top: var(--web-sticky-top);
+    }
+
+    /* The app sizes the card's ghost to the phone's width; in a column it
+       takes the stack's room instead. */
+    .web-cards-swipe .skeleton-card {
+        width: 100%;
+        max-width: 26rem;
+        min-height: min(55vh, 32rem);
+    }
+}
+
+/* ---- Deck cards ---- */
+
+/* Below the breakpoint it is the app's list: the controls over the groups,
+   rows opening inline. */
+.web-deck-cards-controls,
+.web-deck-cards-list {
+    max-width: 40rem;
+    width: 100%;
+    padding: 0 1rem;
+    box-sizing: border-box;
+}
+
+/* A row being dragged onto a board's header. */
+.card-group-header.web-drop-over {
+    color: var(--accent-primary);
+    outline: 1px dashed var(--accent-primary);
+    outline-offset: 2px;
+}
+
+@media (min-width: 900px) and (hover: hover) {
+    /* The deck page's preview pins under the nav on the side the cursor is
+       not on, so it never covers the row being read: the factor turns the
+       cursor's distance from the middle into a far-off value the clamp
+       pulls back to one gutter or the other. */
+    .web-hover-preview.web-hover-pinned {
+        left: clamp(1rem, (50vw - var(--hover-x)) * 1000, calc(100vw - 16rem));
+        top: calc(var(--sheet-drawer-top, 5.5rem) + 0.5rem);
+        width: 15rem;
+    }
+}
+
+/* ---- Dialogs ----
+
+   On a wide window a dialog sizes to its content up to the page width, so
+   a long hint spreads out instead of scrolling in a phone-width column,
+   and a short confirmation stays compact. */
+@media (min-width: 900px) {
+    .alert-dialog {
+        width: max-content;
+        min-width: 20rem;
+        max-width: min(var(--web-page-max), calc(100% - 3rem));
+        max-height: calc(100dvh - 8rem);
+    }
+}
+
+/* Below the breakpoint a form is a headed panel: on a public screen under
+   the hero with its chips in a bar along its foot and the flavor card
+   after, on the deck form one panel per group. */
+@media (max-width: 899px) {
+    .web-form-panel {
+        width: calc(100% - 2rem);
+        margin: 0 1rem;
+        padding: 0;
+        background-color: var(--bg-primary);
+        border: 1px solid var(--border-secondary);
+        border-radius: 1rem;
+        box-shadow: var(--shadow-sm);
+        box-sizing: border-box;
+        overflow: hidden;
+    }
+
+    .web-form-panel > .web-form-head {
+        display: flex;
+        justify-content: center;
+    }
+
+    .web-form-panel > form,
+    .web-form-panel > .web-form-fields {
+        padding: 1rem;
+    }
+
+    /* The deck form's column gives way to its panels, which take the
+       screen's width with the page gutter, as the sign-in panels do. */
+    .web-deck-form.container-sm {
+        width: 100%;
+        max-width: none;
+        padding: var(--panel-gap) 0 0;
+    }
+
+    .web-form-panel > .form-links {
+        margin: 0;
+        padding: 0.75rem 1rem;
+        border-top: 1px solid var(--border-secondary);
+    }
+}
