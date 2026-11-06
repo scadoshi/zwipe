@@ -1061,6 +1061,12 @@ body {
         box-shadow: 0 0 0 100vmax var(--bg-overlay), var(--shadow-sm);
     }
 
+    /* The backdrop keeps its fill and drops the tiles: the grid lives only
+       on the app's own backdrop. */
+    .screen.web-large-modal > .grid-cells .grid-cells-canvas {
+        display: none;
+    }
+
     .web-examples-body {
         display: grid;
         grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -1541,29 +1547,40 @@ body {
         box-sizing: border-box;
     }
 
-    /* A picker is a panel over the right column, so the form and its
-       cascades stay in view beside it. */
+    /* A picker is the kit's drawer (SheetFrame's wide Drawer form): an
+       inset panel along the right edge under the bar, sliding in from the
+       right, so the form and its cascades stay in view beside it. It has
+       the drawer's fill and no grid cells, and its transform holds the dock
+       inside its bottom right corner. */
     .web-picker.swipe-select-screen {
+        top: var(--sheet-drawer-top, 5.5rem);
+        bottom: 1rem;
         left: auto;
-        width: min(30rem, 46vw);
-        border-left: 1px solid var(--border-secondary);
-        box-shadow: var(--shadow-lg);
-        transform: translateX(1.5rem);
+        right: 1rem;
+        width: min(24rem, calc(100vw - 2rem));
+        height: auto;
+        background: var(--bg-primary);
+        border: 1px solid var(--border-secondary);
+        border-radius: 1rem;
+        overflow: hidden;
+        box-shadow: var(--shadow-md), var(--shadow-md);
+        transform: translateX(calc(100% + 1rem));
         transition: opacity 0.2s ease, transform 0.2s ease;
     }
 
     .web-picker.swipe-select-screen.show {
-        transform: none;
+        transform: translateX(0);
     }
 
     .web-picker > .grid-cells {
-        position: absolute;
+        display: none;
     }
 }
 
 @media (min-width: 900px) and (prefers-reduced-motion: reduce) {
-    .web-picker.swipe-select-screen {
-        transform: none;
+    .web-picker.swipe-select-screen,
+    .web-picker.swipe-select-screen.show {
+        transform: translateX(0);
         transition: opacity 0.2s ease;
     }
 }
