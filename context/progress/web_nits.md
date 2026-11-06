@@ -23,7 +23,6 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 | --- | --- | --- |
 | 13, 6, 3 | halo | `nits/halo-13-6-3` |
 | 9, 10, 4, 30 | thinker | `nits/thinker-9-10-4-30` |
-| 24 | laptop | `nits/laptop-24` |
 
 The loop is in [`../development/factory.md`](../development/factory.md).
 
@@ -70,4 +69,4 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 
 ## Done
 
-None yet.
+- 24, held arrow swipes once and the exit slows to 0.32s: PR #152 into `release`.
