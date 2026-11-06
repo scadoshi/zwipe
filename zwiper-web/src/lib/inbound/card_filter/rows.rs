@@ -2,7 +2,7 @@
 //! app's classes: labels with their mode chip and `×`, text and number
 //! boxes, chip rows, steppers and the searchable pickers.
 
-use components::Chip;
+use components::{Chip, ClearWrap};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::use_toast;
 use zwipe_ui::filter::chips as filter_chips;
@@ -40,8 +40,13 @@ pub(super) fn SectionRows(
     let generation = epoch();
     let mut out: Vec<Element> = Vec::new();
     let mut i = 0usize;
-    while let Some(row) = rows.get(i).copied() {
+    while let Some(mut row) = rows.get(i).copied() {
         let next = rows.get(i.saturating_add(1)).copied();
+        // A text box clears from the × beside it, as the app's do; its label
+        // keeps no × of its own.
+        if let (Row::Label { clear, .. }, Some(Row::Text(_))) = (&mut row, next) {
+            *clear = None;
+        }
         let paired = match (row, next) {
             (Row::Number(NumberField::ManaMin), Some(Row::Number(NumberField::ManaMax))) => {
                 Some((NumberField::ManaMin, NumberField::ManaMax))
@@ -98,15 +103,22 @@ fn RowView(
             let value = draft.read().draft.clone();
             let value = field.get(&value).to_owned();
             rsx! {
-                input {
-                    class: "input input-compact",
-                    placeholder: field.placeholder(),
-                    value,
-                    r#type: "text",
-                    autocapitalize: "none",
-                    autocorrect: "off",
-                    spellcheck: "false",
-                    oninput: move |e| field.set(&mut draft.write().draft, &e.value()),
+                ClearWrap {
+                    filled: !value.is_empty(),
+                    on_clear: move |()| {
+                        field.set(&mut draft.write().draft, "");
+                        bump(epoch);
+                    },
+                    input {
+                        class: "input input-compact",
+                        placeholder: field.placeholder(),
+                        value,
+                        r#type: "text",
+                        autocapitalize: "none",
+                        autocorrect: "off",
+                        spellcheck: "false",
+                        oninput: move |e| field.set(&mut draft.write().draft, &e.value()),
+                    }
                 }
             }
         }
@@ -414,7 +426,9 @@ fn Picker(mut draft: Signal<FilterDraft>, field: PickerField, sources: Sources) 
                 }
             }
         }
-        div { class: "flex items-center gap-05",
+        ClearWrap {
+            filled: !query().is_empty(),
+            on_clear: move |()| query.set(String::new()),
             input {
                 class: "input input-compact",
                 style: "flex: 1; margin-bottom: 0;",
@@ -446,13 +460,6 @@ fn Picker(mut draft: Signal<FilterDraft>, field: PickerField, sources: Sources) 
                     }
                     _ => {}
                 },
-            }
-            if !query().is_empty() {
-                button {
-                    class: "clear-btn",
-                    onclick: move |_| query.set(String::new()),
-                    "\u{00d7}"
-                }
             }
         }
     }
