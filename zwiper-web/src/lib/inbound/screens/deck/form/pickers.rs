@@ -1,18 +1,18 @@
 //! The form's three pickers: format, deck tags and oracle tags. Each is the
-//! app's full-screen picker below the breakpoint and a side panel over the
-//! form's right column on a wide window: the header's back arrow, the
-//! search, the definition bar, the chip grid, and Save as the checkmark in
-//! the dock at its bottom right.
+//! kit's sheet as the card filter draws it: a drawer along the right edge on
+//! a wide window and a bottom sheet below the breakpoint, with the title
+//! bar's ×, the search, the definition bar, the chip grid, and Save as the
+//! checkmark in the dock at its bottom right.
 //!
-//! Each opens on a snapshot. The back arrow (and Esc) puts the snapshot
-//! back and says so when something changed; the checkmark keeps the change
+//! Each opens on a snapshot. The ×, a backdrop tap and Esc put the snapshot
+//! back and say so when something changed; the checkmark keeps the change
 //! and stays off while nothing has. `/` focuses the search.
 
 use components::hint::{ContentHintDialog, HintBody};
-use components::icons::{CHECK, DockIcon};
+use components::icons::CHECK;
 use components::{
-    Button, ButtonVariant, DialogAction, HintDialog, PageHeader, TOAST_NORMAL, TOAST_QUICK,
-    use_overlay_back_action,
+    ActionDock, Button, ButtonVariant, DialogAction, DockAction, DockPlace, HintDialog, SheetFrame,
+    SheetWide, TOAST_NORMAL, TOAST_QUICK, use_overlay_back_action,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -33,39 +33,17 @@ use crate::domain::deck::{
 };
 use crate::inbound::catalog::CatalogCache;
 use crate::inbound::chrome::authed::use_authed;
-use crate::inbound::chrome::back_arrow::BackArrow;
 use crate::inbound::chrome::page_keys::{focus_by_id, use_page_keys};
 use crate::inbound::screens::oracle_tag_dictionary::OracleTagDictionary;
 
-/// The picker's shell: hidden and click-through while closed, its header,
-/// body and dock while open. Mounted only while open, so its keys never
-/// answer under a closed picker. The header's back arrow calls `on_back`;
-/// the dock's checkmark calls `on_save` and stays off while `unchanged`.
+/// The picker's sheet, the card filter's: the kit's drawer on a wide window
+/// and its bottom sheet below the breakpoint, sliding in on `open`. The
+/// title bar's × and a backdrop tap call `on_back`; the dock's checkmark
+/// calls `on_save` and stays off while `unchanged`. The body mounts only
+/// while open, so its keys never answer under a closed picker.
 #[component]
-fn PickerFrame(
+fn PickerSheet(
     open: Signal<bool>,
-    title: &'static str,
-    search_id: &'static str,
-    hint_open: Signal<bool>,
-    unchanged: bool,
-    on_back: EventHandler<()>,
-    on_save: EventHandler<()>,
-    children: Element,
-) -> Element {
-    rsx! {
-        div {
-            class: if open() { "screen swipe-select-screen web-picker show" } else { "screen swipe-select-screen web-picker" },
-            components::GridCells { still: true }
-            if open() {
-                PickerBody { title, search_id, hint_open, unchanged, on_back, on_save, {children} }
-            }
-        }
-    }
-}
-
-/// The open picker's parts, with `/` focusing its search.
-#[component]
-fn PickerBody(
     title: &'static str,
     search_id: &'static str,
     mut hint_open: Signal<bool>,
@@ -74,30 +52,56 @@ fn PickerBody(
     on_save: EventHandler<()>,
     children: Element,
 ) -> Element {
+    rsx! {
+        SheetFrame { wide: SheetWide::Drawer,
+            div {
+                class: if open() { "sheet-backdrop show" } else { "sheet-backdrop" },
+                onclick: move |_| on_back.call(()),
+            }
+            div { class: if open() { "bottom-sheet show web-picker-sheet" } else { "bottom-sheet web-picker-sheet" },
+                div { class: "sheet-header", style: "position: relative;",
+                    button {
+                        class: "sheet-close",
+                        "aria-label": "Close",
+                        onclick: move |_| on_back.call(()),
+                        "\u{00d7}"
+                    }
+                    span { class: "sheet-title", "{title}" }
+                    Button {
+                        variant: ButtonVariant::Action,
+                        class: "web-sheet-hint",
+                        onclick: move |_| hint_open.set(true),
+                        "?"
+                    }
+                }
+                div { class: "sheet-content",
+                    if open() {
+                        PickerBody { search_id, {children} }
+                    }
+                }
+                ActionDock { place: DockPlace::Sheet,
+                    DockAction {
+                        label: "Save",
+                        icon: CHECK,
+                        disabled: unchanged,
+                        onclick: move |()| on_save.call(()),
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// The open picker's body, with `/` focusing its search.
+#[component]
+fn PickerBody(search_id: &'static str, children: Element) -> Element {
     use_page_keys(Callback::new(move |key: String| {
         if key == "/" {
             focus_by_id(search_id);
         }
     }));
     rsx! {
-        PageHeader {
-            title,
-            leading: rsx! {
-                BackArrow { class: "page-header-support", onclick: move |()| on_back.call(()) }
-            },
-            on_hint: move |()| hint_open.set(true),
-        }
-        div { class: "screen-content content-enter tag-screen", {children} }
-        // Save as the action dock's checkmark, pinned bottom right.
-        div { class: "action-dock action-dock-right",
-            button {
-                class: "action-dock-btn",
-                "aria-label": "Save",
-                disabled: unchanged,
-                onclick: move |_| on_save.call(()),
-                DockIcon { path: CHECK }
-            }
-        }
+        div { class: "web-picker-body", {children} }
     }
 }
 
@@ -179,7 +183,7 @@ pub fn FormatPicker(form: DeckForm) -> Element {
         .filter(|f| typed.is_empty() || f.display_name().to_lowercase().contains(&typed))
         .collect();
     rsx! {
-        PickerFrame {
+        PickerSheet {
             open,
             title: "Format",
             search_id: "format-search",
@@ -299,7 +303,7 @@ pub fn DeckTagPicker(form: DeckForm) -> Element {
         .collect();
     let count = tags.read().len();
     rsx! {
-        PickerFrame {
+        PickerSheet {
             open,
             title: "Deck tags",
             search_id: "tag-search",
@@ -463,7 +467,7 @@ pub fn OracleTagPicker(form: DeckForm) -> Element {
     drop(catalog);
     let content = deck::oracle_tag_picker_hint();
     rsx! {
-        PickerFrame {
+        PickerSheet {
             open,
             title: "Oracle tags",
             search_id: "oracle-tag-search",

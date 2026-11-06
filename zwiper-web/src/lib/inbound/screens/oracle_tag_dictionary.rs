@@ -10,12 +10,16 @@
 //! }
 //! ```
 //!
-//! On a wide window it is a large modal with the letter rail as a column on
-//! the left; below the breakpoint it is the app's full-screen overlay. `/`
-//! focuses the search, a letter key jumps to that letter while the search
-//! is empty and unfocused, and Esc is Back, the header's arrow.
+//! Where the kit draws a sheet form as a modal it is the kit's modal, wide
+//! enough to read in, with the title bar's × and the Search label and box,
+//! the letters and the list inside; below that it is the app's full-screen
+//! overlay. `/` focuses the search, a letter key jumps to that letter while
+//! the search is empty and unfocused, and Esc closes it, as the × or the
+//! header's back arrow do.
 
-use components::{PageHeader, TOAST_NORMAL, use_overlay_back};
+use components::{
+    Button, ButtonVariant, PageHeader, SheetFrame, SheetWide, TOAST_NORMAL, use_overlay_back,
+};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
@@ -24,12 +28,16 @@ use zwipe_ui::dictionary;
 
 use crate::inbound::catalog::CatalogCache;
 use crate::inbound::chrome::back_arrow::BackArrow;
+use crate::inbound::chrome::media::use_min_width;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::chrome::page_keys::{focus_by_id, use_page_keys};
 use crate::inbound::screens::oracle_tag_examples::OracleTagExamples;
 
 /// The search input's id, for `/`.
 const SEARCH_ID: &str = "oracle-tag-dictionary-search";
+
+/// The width, 60rem, from which the kit draws a sheet form as a modal.
+const KIT_MODAL_PX: u32 = 960;
 
 /// The dictionary over its host while `open`. `on_use` takes the slug of
 /// the row whose `Use` was pressed.
@@ -44,6 +52,10 @@ pub fn OracleTagDictionary(mut open: Signal<bool>, on_use: EventHandler<String>)
     let mut query = use_signal(String::new);
     let mut examples_open = use_signal(|| false);
     let mut examples_slug = use_signal(String::new);
+    let modal = use_min_width(KIT_MODAL_PX);
+    // The modal mounts shut and opens a frame later, so it settles in.
+    let mut shown = use_signal(|| false);
+    use_effect(move || shown.set(true));
 
     use_hook(move || cache.ensure_oracle_tags(client));
     let mut warned = use_signal(|| false);
@@ -143,6 +155,54 @@ pub fn OracleTagDictionary(mut open: Signal<bool>, on_use: EventHandler<String>)
     };
     drop(catalog);
 
+    let examples = rsx! {
+        if examples_open() {
+            for slug in [examples_slug()] {
+                OracleTagExamples { key: "{slug}", open: examples_open, slug }
+            }
+        }
+    };
+    if modal() {
+        let class = if shown() {
+            "bottom-sheet show"
+        } else {
+            "bottom-sheet"
+        };
+        return rsx! {
+            div { class: "web-dict-sheet",
+                SheetFrame { wide: SheetWide::Modal,
+                    div {
+                        class: if shown() { "sheet-backdrop show" } else { "sheet-backdrop" },
+                        onclick: move |_| open.set(false),
+                    }
+                    div { class,
+                        div { class: "sheet-header", style: "position: relative;",
+                            button {
+                                class: "sheet-close",
+                                "aria-label": "Close",
+                                onclick: move |_| open.set(false),
+                                "\u{00d7}"
+                            }
+                            span { class: "sheet-title", "Oracle tags" }
+                            Button {
+                                variant: ButtonVariant::Action,
+                                class: "web-sheet-hint",
+                                onclick: move |_| {
+                                    let mut hint_open = hint_open;
+                                    hint_open.set(true);
+                                },
+                                "?"
+                            }
+                        }
+                        div { class: "sheet-content", {body} }
+                    }
+                }
+            }
+            OneTimeHintDialog { hint: OneTimeHint::OracleTagDictionary, open: hint_open }
+            {examples}
+        };
+    }
+
     rsx! {
         div { class: "screen dict-overlay web-large-modal web-dictionary",
             components::GridCells { still: true }
@@ -158,11 +218,7 @@ pub fn OracleTagDictionary(mut open: Signal<bool>, on_use: EventHandler<String>)
             }
             div { class: "screen-content content-enter", {body} }
             OneTimeHintDialog { hint: OneTimeHint::OracleTagDictionary, open: hint_open }
-            if examples_open() {
-                for slug in [examples_slug()] {
-                    OracleTagExamples { key: "{slug}", open: examples_open, slug }
-                }
-            }
+            {examples}
         }
     }
 }

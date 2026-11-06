@@ -1737,42 +1737,53 @@ body {
         padding: 0 1.5rem 2rem;
         box-sizing: border-box;
     }
-
-    /* A picker is the kit's drawer (SheetFrame's wide Drawer form): an
-       inset panel along the right edge under the bar, sliding in from the
-       right, so the form and its cascades stay in view beside it. It has
-       the drawer's fill and no grid cells, and its transform holds the dock
-       inside its bottom right corner. */
-    .web-picker.swipe-select-screen {
-        top: var(--sheet-drawer-top, 5.5rem);
-        bottom: 1rem;
-        left: auto;
-        right: 1rem;
-        width: min(24rem, calc(100vw - 2rem));
-        height: auto;
-        background: var(--bg-primary);
-        border: 1px solid var(--border-secondary);
-        border-radius: 1rem;
-        overflow: hidden;
-        box-shadow: var(--shadow-md), var(--shadow-md);
-        transform: translateX(calc(100% + 1rem));
-        transition: opacity 0.2s ease, transform 0.2s ease;
-    }
-
-    .web-picker.swipe-select-screen.show {
-        transform: translateX(0);
-    }
-
-    .web-picker > .grid-cells {
-        display: none;
-    }
 }
 
-@media (min-width: 900px) and (prefers-reduced-motion: reduce) {
-    .web-picker.swipe-select-screen,
-    .web-picker.swipe-select-screen.show {
-        transform: translateX(0);
-        transition: opacity 0.2s ease;
+/* A picker's body in its sheet: the controls on top and the chip grid
+   under them, the grid scrolling on its own in the drawer's height. */
+.web-picker-sheet > .sheet-content {
+    padding: 0 0 1rem;
+}
+
+.web-picker-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+/* ---- The oracle tag dictionary as the kit's modal ----
+
+   From the kit's modal width the dictionary is its modal, the large
+   overlay's size so the descriptions read at length, layered over a
+   picker's drawer and under the examples overlay. The Search label and
+   box, the letters and the list keep their wide layout; the list scrolls
+   under the controls. */
+.web-dict-sheet {
+    display: contents;
+}
+
+@media (min-width: 60rem) {
+    .web-dict-sheet > .sheet-form-modal > .sheet-backdrop {
+        z-index: 220;
+    }
+
+    .web-dict-sheet > .sheet-form-modal > .bottom-sheet {
+        z-index: 221;
+        width: min(76rem, calc(100vw - 4rem));
+        height: 92vh;
+        max-height: 92vh;
+    }
+
+    .web-dict-sheet .sheet-content {
+        overflow: hidden;
+        padding: 0 1.5rem;
+    }
+
+    .web-dict-sheet .web-dict-browse {
+        max-width: none;
+        padding: 0;
     }
 }
 
