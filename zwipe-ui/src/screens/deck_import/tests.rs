@@ -233,11 +233,7 @@ fn some_unresolved_lines_toast_info() {
         effects,
         [
             Effect::ClearUndo(deck_id),
-            Effect::Toast(Toast::new(
-                ToastKind::Info,
-                "Imported 1, 2 unresolved",
-                QUICK
-            )),
+            Effect::Toast(Toast::new(ToastKind::Info, "Imported 1, 2 failed", QUICK)),
         ]
     );
 }
@@ -254,7 +250,7 @@ fn only_unresolved_lines_toast_an_error_and_keep_undo() {
         effects,
         [Effect::Toast(Toast::new(
             ToastKind::Error,
-            "1 card unresolved",
+            "1 card failed",
             NORMAL
         ))]
     );
@@ -365,7 +361,7 @@ fn the_copy_matches_the_app() {
     );
     assert_eq!(URL_LABEL, "Paste an Archidekt deck URL");
     assert_eq!(URL_PLACEHOLDER, "https://archidekt.com/decks/...");
-    assert_eq!((IMPORTED, UNRESOLVED), ("Imported", "Unresolved"));
+    assert_eq!((IMPORTED, FAILED), ("Imported", "Failed"));
     assert_eq!(BACK, "Back");
     assert_eq!(
         (IMPORT, REPLACE, IMPORTING),

@@ -261,7 +261,7 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                                 }
                             }
                             if !r.unresolved.is_empty() {
-                                label { class: "label mt-2", "{deck_import::UNRESOLVED}" }
+                                label { class: "label mt-2", "{deck_import::FAILED}" }
                                 for card in r.unresolved.iter() {
                                     div { class: "chip-bubble-error",
                                         span { class: "font-light", "{card.name}" }
