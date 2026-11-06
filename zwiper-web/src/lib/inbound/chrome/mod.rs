@@ -7,7 +7,6 @@ pub mod back_arrow;
 pub mod hint_topic;
 pub mod logout_dialog;
 pub mod media;
-pub mod modal_screen;
 pub mod one_time_hint;
 pub mod page_keys;
 pub mod section;

@@ -1408,29 +1408,6 @@ body {
 
 /* ---- Import, Export ---- */
 
-/* A screen that is a modal on a wide window: its body keeps the screen's
-   classes, so the page rules below lay it out, inside the sheet's content
-   with room under it for the dock in the corner. */
-@media (min-width: 900px) {
-    .web-modal-screen .web-modal-body > .screen-content {
-        max-width: none;
-        min-height: 0;
-        margin: 0;
-        padding: 0 0 3.5rem;
-    }
-
-    .web-modal-wide .sheet-form-modal > .bottom-sheet {
-        width: min(64rem, calc(100vw - 4rem));
-    }
-
-    /* The modal is 85vh at most, so the decklist fits inside it rather
-       than running to the window's height as the page's does. */
-    .web-modal-screen .web-export-body > textarea {
-        min-height: 20rem !important;
-        height: 55vh;
-    }
-}
-
 @media (min-width: 900px) {
     /* Import: the controls over the input on the left, the results on the
        right beside them. The phone's scroll wrapper adds no box here; the

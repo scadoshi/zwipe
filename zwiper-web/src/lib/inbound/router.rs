@@ -18,7 +18,6 @@ use crate::inbound::screens::deck::create::CreateDeck;
 use crate::inbound::screens::deck::edit::EditDeck;
 use crate::inbound::screens::deck::export::ExportDeck;
 use crate::inbound::screens::deck::import::ImportDeck;
-use crate::inbound::screens::deck::layout::DeckLayout;
 use crate::inbound::screens::deck::list::DeckList;
 use crate::inbound::screens::deck::view::ViewDeck;
 use crate::inbound::screens::home::Home;
@@ -94,16 +93,14 @@ pub enum Route {
         #[route("/deck/update/:deck_id")]
         EditDeck { deck_id: Uuid },
         /// A deck: profile, sections and stats.
-        #[layout(DeckLayout)]
-            #[route("/deck/get/:deck_id")]
-            ViewDeck { deck_id: Uuid },
-            /// Cards from a pasted list.
-            #[route("/deck/card/import/:deck_id")]
-            ImportDeck { deck_id: Uuid },
-            /// The deck as a text list.
-            #[route("/deck/card/export/:deck_id")]
-            ExportDeck { deck_id: Uuid },
-        #[end_layout]
+        #[route("/deck/get/:deck_id")]
+        ViewDeck { deck_id: Uuid },
+        /// Cards from a pasted list.
+        #[route("/deck/card/import/:deck_id")]
+        ImportDeck { deck_id: Uuid },
+        /// The deck as a text list.
+        #[route("/deck/card/export/:deck_id")]
+        ExportDeck { deck_id: Uuid },
         /// Swipe to add cards.
         #[route("/deck/card/add/:deck_id")]
         AddDeckCard { deck_id: Uuid },

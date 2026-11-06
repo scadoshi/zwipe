@@ -1,13 +1,12 @@
 //! Import: a pasted decklist or an Archidekt link into one board of the
 //! deck, adding or replacing, with what came in and what did not.
 //!
-//! On a wide window it is a modal over the deck view, the controls and the
-//! input on the left and the results on the right, so the paste can be
-//! fixed while reading what failed. Import (or Replace) is the checkmark in
-//! the dock at the bottom right; Ctrl+Enter (Cmd+Enter on a Mac) runs it
-//! too.
+//! A screen at every width. On a wide window the controls and the input sit
+//! on the left and the results on the right, so the paste can be fixed
+//! while reading what failed. Import (or Replace) is the checkmark in the
+//! dock at the bottom right; Ctrl+Enter (Cmd+Enter on a Mac) runs it too.
 
-use components::icons::CHECK;
+use components::icons::{CHECK, DockIcon};
 use components::{Chip, TOAST_NORMAL, TOAST_QUICK};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -17,9 +16,8 @@ use zwipe_ui::deck::form::{ImportTone, import_outcome};
 
 use crate::inbound::card_stores::CardStores;
 use crate::inbound::chrome::authed::use_authed;
-use crate::inbound::chrome::modal_screen::{DockButton, ModalScreen};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
-use crate::inbound::router::Route;
+use crate::inbound::shell::ScreenFrame;
 
 /// Where the cards come from.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -41,7 +39,6 @@ const BOARDS: [(&str, Option<&str>); 3] = [
 /// The Import screen for `deck_id`.
 #[component]
 pub fn ImportDeck(deck_id: Uuid) -> Element {
-    let navigator = use_navigator();
     let authed = use_authed();
     let stores: CardStores = use_context();
     let toast = use_toast();
@@ -106,22 +103,15 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
     } else {
         "Import"
     };
-    let dock = DockButton {
-        label: submit_label.to_owned(),
-        icon: CHECK,
-        disabled,
-        onclick: use_callback(move |()| run_import()),
-    };
+    let on_hint = use_callback(move |()| {
+        let mut hint_open = hint_open;
+        hint_open.set(true);
+    });
     rsx! {
-        ModalScreen {
+        ScreenFrame {
             title: "Import",
-            description: "Add cards from a pasted decklist or an Archidekt deck link",
-            hint_open,
-            dock,
-            class: "web-modal-wide",
-            on_close: move |()| {
-                navigator.push(Route::ViewDeck { deck_id });
-            },
+            description: Some("Add cards from a pasted decklist or an Archidekt deck link".to_owned()),
+            on_hint,
             div {
                 class: "screen-content content-enter web-import",
                 onkeydown: move |event: Event<KeyboardData>| {
@@ -233,6 +223,15 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                             }
                         }
                     }
+                }
+            }
+            div { class: "action-dock action-dock-right",
+                button {
+                    class: "action-dock-btn",
+                    "aria-label": submit_label,
+                    disabled,
+                    onclick: move |_| run_import(),
+                    DockIcon { path: CHECK }
                 }
             }
         }

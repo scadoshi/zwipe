@@ -1,11 +1,11 @@
 //! Export: the deck as a decklist that round-trips through Import, with the
 //! boards to include and `Copy`.
 //!
-//! On a wide window it is a modal over the deck view, the `Export` chips in
-//! a narrow column on the left and the decklist filling the right. Copy is
-//! the icon in the dock at the bottom right.
+//! A screen at every width. On a wide window the `Export` chips sit in a
+//! narrow column on the left and the decklist fills the right. Copy is the
+//! icon in the dock at the bottom right.
 
-use components::icons::COPY;
+use components::icons::{COPY, DockIcon};
 use components::{Chip, TOAST_QUICK};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -16,15 +16,13 @@ use zwipe_ui::deck::export::{self, Boards};
 
 use super::skeletons::ChipRowSkeleton;
 use crate::inbound::chrome::authed::use_authed;
-use crate::inbound::chrome::modal_screen::{DockButton, ModalScreen};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
-use crate::inbound::router::Route;
+use crate::inbound::shell::ScreenFrame;
 use crate::outbound::browser;
 
 /// The Export screen for `deck_id`.
 #[component]
 pub fn ExportDeck(deck_id: Uuid) -> Element {
-    let navigator = use_navigator();
     let authed = use_authed();
     let toast = use_toast();
     let hint_open = use_one_time_hint(OneTimeHint::Export);
@@ -53,22 +51,15 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
             );
         }
     });
-    let dock = DockButton {
-        label: "Copy".to_owned(),
-        icon: COPY,
-        disabled: text().is_none(),
-        onclick: copy,
-    };
+    let on_hint = use_callback(move |()| {
+        let mut hint_open = hint_open;
+        hint_open.set(true);
+    });
     rsx! {
-        ModalScreen {
+        ScreenFrame {
             title: "Export",
-            description: "Copy the deck as a text decklist, board by board",
-            hint_open,
-            dock,
-            class: "web-modal-wide",
-            on_close: move |()| {
-                navigator.push(Route::ViewDeck { deck_id });
-            },
+            description: Some("Copy the deck as a text decklist, board by board".to_owned()),
+            on_hint,
             div { class: "screen-content content-enter web-export",
                 div { class: "import-controls",
                     if loading {
@@ -114,6 +105,15 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                             }
                         }
                     }
+                }
+            }
+            div { class: "action-dock action-dock-right",
+                button {
+                    class: "action-dock-btn",
+                    "aria-label": "Copy",
+                    disabled: text().is_none(),
+                    onclick: move |_| copy.call(()),
+                    DockIcon { path: COPY }
                 }
             }
         }
