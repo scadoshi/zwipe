@@ -1,1 +1,669 @@
 /* main.css lines 964 to 1768: buttons, inputs, labels, cards and containers, skeleton. */
+
+/* ===========================
+  common components - buttons
+ ============================= */
+
+/* .btn / .btn:disabled (Button Primary) moved to the shared components.css. */
+
+/* .btn-action (Button Action) is in the shared components.css and the header
+   corners in the shared app.css. The .btn-action-eye modifier stays here. */
+
+.refresh-icon {
+    display: block;
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
+}
+
+.btn-action-eye {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    align-self: stretch;
+}
+
+/* ===========================
+  common components - inputs
+ ============================= */
+
+.input-placeholder {
+    color: var(--text-muted);
+}
+
+.input-tappable {
+    cursor: pointer;
+}
+
+/* ============================
+  common components - messages
+ ============================== */
+
+/* ====================================
+  common components - cards/containers
+ ====================================== */
+
+.card {
+    padding: 1rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: var(--panel-gap);
+}
+
+/* The deck list: each group is a chip with the fold arrow, floating with the
+   Group by and Show chips, over its decks one under another. A deck is its
+   own panel, edge to edge: the command zone's art at the left, the name
+   beside it, then the pips and the chips wrapping under them. */
+/* Compound selectors so these outrank .card-group and the collapsible
+   header's own rules below. */
+.card-group.deck-group {
+    margin: 0;
+    overflow: visible;
+    background: none;
+    border: 0;
+    box-shadow: none;
+}
+
+/* The kit's Chip, as the Tags fold chip above it: a control, not a label. */
+.deck-group > .card-group-header.group-collapsible {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.6rem;
+    margin: 0.5rem 0 0;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.6rem;
+    background-color: var(--bg-primary);
+    box-shadow: var(--shadow-sm);
+    color: var(--text-primary);
+    font-size: 0.75rem;
+    font-weight: 400;
+}
+
+/* Every row on Decks sits one --deck-list-gap from the next: the chip rows
+   and their wrapped lines, the group chips, the decks. The first group's
+   chip takes the last chip row's margin; a group that follows another takes
+   its own. An open group's decks sit the gap under its chip, with nothing
+   added after the last, so the next chip's margin is the only gap. */
+.deck-list-stack {
+    --deck-list-gap: 0.75rem;
+}
+
+.deck-list-stack .chip-row {
+    row-gap: var(--deck-list-gap);
+    margin-bottom: var(--deck-list-gap);
+}
+
+.deck-list-stack .deck-group > .card-group-header.group-collapsible {
+    margin-top: var(--deck-list-gap);
+}
+
+.deck-list-stack .deck-group:not(.deck-group + .deck-group) > .card-group-header.group-collapsible {
+    margin-top: 0;
+}
+
+.deck-list-stack .deck-group > .collapsible > .collapsible-inner {
+    gap: var(--deck-list-gap);
+}
+
+.deck-list-stack .deck-group > .collapsible.open > .collapsible-inner {
+    padding: var(--deck-list-gap) 0 0;
+}
+
+.deck-group > .card-group-header .card-row-arrow {
+    width: 1em;
+    height: 1em;
+    font-size: 1rem;
+    color: var(--text-primary);
+}
+
+/* The chip keeps its whole border while folded; the folded rule below
+   that clears a group header's bottom edge does not apply to it. */
+.card-group.deck-group.collapsed > .card-group-header.group-collapsible {
+    border-bottom-color: var(--border-primary);
+}
+
+/* The decks sit a panel gap under their chip and over the next one. The
+   padding opens and closes with the fold, so folded groups stack at the
+   chip row's own spacing instead of holding two gaps of empty space. */
+.deck-group > .collapsible > .collapsible-inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--panel-gap);
+    padding: 0;
+    transition: padding 0.25s ease;
+}
+
+.deck-group > .collapsible.open > .collapsible-inner {
+    padding: var(--panel-gap) 0;
+}
+
+.deck-row {
+    padding: 0.75rem 1rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+}
+
+/* A deck is a whole panel, so the last in its group keeps the bottom edge
+   the card list's last row gives up. */
+.card-row.deck-row:last-child {
+    border-bottom: 1px solid var(--border-secondary);
+}
+
+/* The command zone's art crops sit inline in the wrapping row, as flex items
+   beside the name rather than a fixed column, so the chips wrap onto the
+   next line under the art instead of into a narrow column beside it. Two
+   crops (partners, or oathbreaker and signature spell) follow one another.
+   The corners are the panel's at this size. */
+.deck-row-art-img {
+    flex: 0 0 auto;
+    width: 3.6rem;
+    height: 3.2rem;
+    object-fit: cover;
+    border-radius: 0.6rem;
+    border: 1px solid var(--border-secondary);
+    box-shadow: var(--shadow-sm);
+}
+
+.deck-list-row {
+    /* Unlike card rows (deliberately single-line for consistency), a deck
+       carries far more chips than a card does, so these wrap. */
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    min-width: 0;
+}
+
+.deck-list-name {
+    flex: 0 1 auto;
+    min-width: 0;
+    margin-right: 0.25rem;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+/* Tag chips inside a deck-detail info row wrap instead of forcing one line. */
+.info-row-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    justify-content: flex-end;
+}
+
+/* Tag rows stack: a wide, wrapping chip list can't share a line with the label
+   (the chips shrink the value box and overflow back over the label). Label on
+   top, chips left-aligned below, spanning the full row width. */
+.settings-row.info-row-stacked {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+}
+
+.settings-row.info-row-stacked .info-row-tags {
+    justify-content: flex-start;
+}
+
+.card h3 {
+    color: var(--accent-primary);
+}
+
+.form-container {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+/* ===========================
+  specific - skeleton
+ ============================= */
+
+/* The loading swipe card: laid out as the real one is, a stack slot that
+   fills the height with the card centered in it, then the price line. */
+.skeleton-card {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+    animation: skeleton-enter 250ms ease;
+}
+
+/* The stack's slot: .swipe-stack-card's padding and centering. */
+.skeleton-stack {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 1rem;
+    box-sizing: border-box;
+}
+
+@keyframes skeleton-enter {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* The card's ghost in a Magic card's shape, bound as the swipe card's image
+   is: .card-image's calc(100% - 2rem) width, and its min(55vh, 100%) height
+   carried into the width through the card's shape. */
+.skeleton-image {
+    width: min(calc(100% - 2rem), calc(55vh * 63 / 88));
+    aspect-ratio: 63 / 88;
+    max-height: 100%;
+    border-radius: 1rem;
+    background-color: var(--border-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: 0.975rem;
+    animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Deck stats + chart skeleton (deck view) */
+.skeleton-stats {
+    display: flex;
+    flex-direction: column;
+    gap: var(--panel-gap);
+    width: 100%;
+}
+
+/* Row art thumbnail (the real rows lead with a landscape art crop). */
+.skeleton-card-thumb {
+    width: 2.6rem;
+    height: 1.9rem;
+    border-radius: 0.3rem;
+    flex: 0 0 auto;
+}
+
+/* Deck card list skeleton (deck cards screen) */
+.skeleton-card-list {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    padding: 0.5rem 0;
+}
+
+.skeleton-card-group {
+    margin-bottom: var(--panel-gap);
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+}
+
+.skeleton-card-group-header {
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid var(--border-secondary);
+}
+
+.skeleton-card-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.65rem 1rem;
+    border-bottom: 1px solid var(--border-secondary);
+}
+
+.skeleton-card-row .skeleton-card-bar-row {
+    flex: 1;
+}
+
+.skeleton-card-row:last-child {
+    border-bottom: none;
+}
+
+/* Changelog skeleton (changelog screen, while the startup fetch loads) */
+.changelog-skeleton-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.changelog-skeleton-chip {
+    width: 2.75rem;
+    height: 1.5rem;
+    border-radius: 0.5rem;
+}
+
+.changelog-skeleton-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.changelog-skeleton-version {
+    width: 3rem;
+    height: 1rem;
+}
+
+.changelog-skeleton-date {
+    width: 5rem;
+}
+
+.changelog-skeleton-bullets {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.changelog-skeleton-bullet {
+    width: 100%;
+}
+
+.changelog-skeleton-bullet:nth-child(3n + 2) {
+    width: 82%;
+}
+
+.changelog-skeleton-bullet:nth-child(3n) {
+    width: 90%;
+}
+
+.skeleton-card-bar-header {
+    width: 35%;
+}
+
+.skeleton-card-bar-header-wide {
+    width: 50%;
+}
+
+.skeleton-card-bar-row {
+    width: 60%;
+}
+
+/* A ghost title in a live .card-group-header, padded to the height of the
+   header's text line. */
+.card-group-header > .skeleton-bar {
+    margin: 0.2rem 0;
+}
+
+/* Printing sheet skeleton */
+.skeleton-printing {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    padding: 0 1rem;
+    box-sizing: border-box;
+}
+
+.skeleton-printing-image {
+    aspect-ratio: 5 / 7;
+    height: 38vh;
+    width: auto;
+    max-width: calc(100% - 2rem);
+    border-radius: 1rem;
+    background-color: var(--border-muted);
+    margin: 0.75rem auto;
+    animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.skeleton-printing-dots {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.5rem 0;
+    justify-content: center;
+}
+
+.skeleton-printing-dot {
+    width: 0.4rem;
+    height: 0.4rem;
+    border-radius: 50%;
+    background-color: var(--border-muted);
+    animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.skeleton-printing-info {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    padding: 0.75rem 0 0 0;
+}
+
+.skeleton-printing-info-price {
+    width: 65%;
+    height: 0.65rem;
+}
+
+.skeleton-printing-info-set {
+    width: 55%;
+    height: 0.65rem;
+}
+
+.skeleton-printing-info-released {
+    width: 40%;
+    height: 0.65rem;
+}
+
+.skeleton-printing-info-artist {
+    width: 50%;
+    height: 0.65rem;
+}
+
+/* Edit deck / form skeleton */
+.skeleton-edit-deck {
+    display: flex;
+    flex-direction: column;
+    gap: var(--panel-gap);
+    width: 100%;
+}
+
+.skeleton-edit-deck-field {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    width: 100%;
+}
+
+.skeleton-edit-deck-label {
+    width: 25%;
+    height: 0.65rem;
+}
+
+/* Input placeholder shaped like the real .input: a bordered box (not a solid
+   fill) with a pulsing value bar inside, so the form skeleton reads as a form. */
+.skeleton-edit-deck-input {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    height: 2.75rem;
+    padding: 0 1rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 0.4rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.skeleton-edit-deck-value {
+    width: 45%;
+    height: 0.7rem;
+}
+
+/* Tags box: input-like bordered container with wrapped chip placeholders. */
+.skeleton-edit-deck-chipbox {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 0.4rem;
+    box-shadow: var(--shadow-sm);
+}
+
+/* Bare chip rows (power level, other tags) — centered like the real pickers. */
+.skeleton-edit-deck-chips {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+/* Deck profile skeleton */
+.skeleton-profile {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    width: 100%;
+}
+
+/* Shared "settings-list" skeleton — bordered box with row pulses inside.
+   Matches dimensions of real .settings-list / .settings-row. */
+.skeleton-info-list {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    overflow: hidden;
+    width: 100%;
+    box-shadow: var(--shadow-sm);
+}
+
+.skeleton-chart-box {
+    width: 100%;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 0.5rem;
+    box-shadow: var(--shadow-sm);
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.skeleton-info-row {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    gap: 0.75rem;
+    border-bottom: 1px solid var(--border-secondary);
+}
+
+.skeleton-info-row:last-child {
+    border-bottom: none;
+}
+
+.skeleton-info-row-label {
+    width: 30%;
+    height: 0.75rem;
+    flex-shrink: 0;
+}
+
+.skeleton-info-row-value {
+    width: 35%;
+    height: 0.75rem;
+}
+
+/* A ghost that keeps its element's tint: pair it with the class that sets
+   --tone (stat-chip-pN...) and drop the text. On a bare
+   .skeleton-chip it paints the stat-chip's tinted fill and edge. */
+.skeleton-tinted {
+    animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* The bare stat-chip's tone, at zero specificity so any tone class wins. */
+:where(.skeleton-tinted) {
+    --tone: var(--accent-primary);
+}
+
+.skeleton-chip.skeleton-tinted {
+    background-color: color-mix(in srgb, var(--tone) 12%, transparent);
+    border-color: color-mix(in srgb, var(--tone) 35%, transparent);
+}
+
+/* An empty .input-compact filling the rest of its chip row. */
+.skeleton-input-compact {
+    flex: 1;
+    height: 2.2rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 0.5rem;
+    animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Home screen flavor text skeleton */
+.skeleton-flavor {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+.skeleton-flavor-line {
+    height: 0.7rem;
+}
+
+.skeleton-flavor-line-1 {
+    width: 65%;
+}
+.skeleton-flavor-line-2 {
+    width: 75%;
+}
+.skeleton-flavor-line-3 {
+    width: 55%;
+}
+
+/* Deck list skeleton (deck list screen) */
+/* The deck list skeleton borrows the live list's own classes (.card-group,
+   .deck-group, .card-group-header, .collapsible, .card-row, .deck-row,
+   .deck-list-row), so the group chip, the tile grid and the tile panels all
+   come from one place. Only the ghosted bars below are skeleton-specific.
+
+   The header is inert while loading: nothing to fold until the decks land. */
+.skeleton-deck-list-header {
+    cursor: default;
+}
+
+/* The header's arrow and "All" as one bar. */
+.skeleton-deck-list-header-title {
+    width: 2.5rem;
+    margin: 0.2rem 0;
+}
+
+/* Stands in for the command zone art (matches .deck-row-art-img). */
+.skeleton-deck-list-art {
+    flex: 0 0 auto;
+    width: 3.6rem;
+    height: 3.2rem;
+    border-radius: 0.6rem;
+}
+
+.skeleton-deck-list-title {
+    width: 6rem;
+    height: 1rem;
+}
+
+/* Export screen: the Decklist panel's ghost holds a textarea-shaped block
+   while the deck loads. */
+.skeleton-export-textarea {
+    min-height: 16rem;
+    border-radius: 0.375rem;
+    background-color: var(--border-muted);
+    animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
