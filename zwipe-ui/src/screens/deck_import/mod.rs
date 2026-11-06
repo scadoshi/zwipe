@@ -53,7 +53,7 @@ pub const URL_PLACEHOLDER: &str = "https://archidekt.com/decks/...";
 pub const IMPORTED: &str = "Imported";
 
 /// The label over the lines that did not resolve.
-pub const UNRESOLVED: &str = "Unresolved";
+pub const FAILED: &str = "Failed";
 
 /// The Back button, to the deck.
 pub const BACK: &str = "Back";
@@ -446,7 +446,7 @@ impl State {
     }
 }
 
-/// The toast after an import: unresolved lines alone stay up longer, the rest are routine.
+/// The toast after an import: failed lines alone stay up longer, the rest are routine.
 fn outcome_toast(result: &ImportDeckCardsResult) -> Toast {
     let (tone, text) = form::import_outcome(result.imported.len(), result.unresolved.len());
     match tone {

@@ -97,6 +97,8 @@ pub const UPCOMING: &[Release] = &[Release {
         "zwipe.net's theme menu stays open after a pick",
         "zwipe.net's nav shows the stores as Apple and Play icons and its footer holds Contribute",
         "Hints and the guides on zwipe.net show an icon button as the icon itself instead of naming it in words",
+        "Import lists the lines it could not add under Failed, and its toast says failed",
+        "zwipe.net's menu shows every link down to the bottom of the window, with no scrollbar",
     ],
 }];
 

@@ -230,9 +230,9 @@ pub fn import_outcome(imported: usize, unresolved: usize) -> (ImportTone, String
     let plural = |n: usize| if n == 1 { "card" } else { "cards" };
     match (imported, unresolved) {
         (0, 0) => (ImportTone::Info, "No cards found".to_owned()),
-        (0, n) => (ImportTone::Error, format!("{n} {} unresolved", plural(n))),
+        (0, n) => (ImportTone::Error, format!("{n} {} failed", plural(n))),
         (n, 0) => (ImportTone::Success, format!("Imported {n} {}", plural(n))),
-        (n, m) => (ImportTone::Info, format!("Imported {n}, {m} unresolved")),
+        (n, m) => (ImportTone::Info, format!("Imported {n}, {m} failed")),
     }
 }
 
@@ -357,7 +357,7 @@ mod tests {
         );
         assert_eq!(
             import_outcome(0, 1),
-            (ImportTone::Error, "1 card unresolved".to_owned())
+            (ImportTone::Error, "1 card failed".to_owned())
         );
         assert_eq!(
             import_outcome(3, 0),
@@ -365,7 +365,7 @@ mod tests {
         );
         assert_eq!(
             import_outcome(1, 2),
-            (ImportTone::Info, "Imported 1, 2 unresolved".to_owned())
+            (ImportTone::Info, "Imported 1, 2 failed".to_owned())
         );
     }
 }
