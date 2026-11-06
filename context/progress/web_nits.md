@@ -23,6 +23,7 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
+| 8 reopened, the image preview as large as zwipe.net's at every width | laptop | `nits/laptop-8-again` |
 | 41, 42, hovers at any width with a mouse, and on every hint button | thinker | `nits/thinker-41` |
 | 40, the narrow layout fills a tablet-width window as zwipe.net does | halo | `nits/halo-40` |
 | 21, the card filter into components (plan phases 3 and 4) | laptop | `shared/card-filter` |
@@ -89,7 +90,7 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 - 24, held arrow swipes once and the exit slows to 0.32s: PR #152 into `release`.
 - 13, 6, 3, changelog pages by five, privacy at page width, chart title gaps: PR #153 into `release`.
 - 18, 20, wide fields capped at 32rem, dictionary letters in one row: PR #154 into `release`.
-- 8, 16, image preview sized as zite's, dialog padding rebalanced: PR #155 into `release`.
+- 16, dialog padding rebalanced: PR #155 into `release`. 8 from the same PR matched zite only above 900px and was reopened.
 - 9, 10, 4, 30, panel lift, deck art hover, wide deck page dividers, nav icon hover: PR #156 into `release`.
 - 25, no grid tiles inside overlays: PR #157 into `release`. 19 from the same PR only restyled the old picker and was reopened.
 - 5, 17, modals and drawers stay put on a wide window, Account changes as drawers: PR #158 into `release`.
