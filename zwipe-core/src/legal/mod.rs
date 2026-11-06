@@ -13,11 +13,12 @@
 
 /// The card data credit, as an HTML fragment: Scryfall supplies the card data
 /// and images. Shown on the app's About screen and in zite's footer.
-pub const SCRYFALL_CREDIT_HTML: &str = r#"Card data and images from <a href="https://scryfall.com" target="_blank" rel="noopener noreferrer">Scryfall</a>."#;
+pub const SCRYFALL_CREDIT_HTML: &str =
+    r#"Card data and images from <a href="https://scryfall.com">Scryfall</a>."#;
 
 /// The Fan Content notice Wizards' policy asks for, as an HTML fragment,
 /// shown on the app's About screen and in zite's footer.
-pub const FAN_CONTENT_HTML: &str = r#"Zwipe is unofficial Fan Content permitted under the <a href="https://company.wizards.com/en/legal/fancontentpolicy" target="_blank" rel="noopener noreferrer">Fan Content Policy</a>. Not approved/endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. ©Wizards of the Coast LLC."#;
+pub const FAN_CONTENT_HTML: &str = r#"Zwipe is unofficial Fan Content permitted under the <a href="https://company.wizards.com/en/legal/fancontentpolicy">Fan Content Policy</a>. Not approved/endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. ©Wizards of the Coast LLC."#;
 
 /// When the privacy policy was last revised, shown as a chip in each app's
 /// first panel.
@@ -25,7 +26,7 @@ pub const PRIVACY_LAST_UPDATED: &str = "November 2026";
 
 /// The policy's opening paragraph. Each app renders it under its own
 /// "Privacy policy" heading, beside the [`PRIVACY_LAST_UPDATED`] chip.
-pub const PRIVACY_INTRO_HTML: &str = r#"<p>Zwipe is a <a href="https://magic.wizards.com/en" target="_blank" rel="noopener noreferrer">Magic: The Gathering</a> deck builder for mobile. This policy describes what data we collect, how we use it, and your rights.</p>"#;
+pub const PRIVACY_INTRO_HTML: &str = r#"<p>Zwipe is a <a href="https://magic.wizards.com/en">Magic: The Gathering</a> deck builder for mobile. This policy describes what data we collect, how we use it, and your rights.</p>"#;
 
 /// The privacy policy body as an HTML fragment: headings, paragraphs, lists, and
 /// inline `https://` links. Rendered via `dangerous_inner_html` in both apps. The
@@ -53,10 +54,10 @@ pub const PRIVACY_POLICY_HTML: &str = r#"<h2>Data we collect</h2>
 
 <h2>Third-party services</h2>
 <ul>
-<li><strong><a href="https://scryfall.com" target="_blank" rel="noopener noreferrer">Scryfall</a></strong>: card data (names, images, oracle text) is sourced from the Scryfall API and stored on our servers. Your account data is never shared with Scryfall.</li>
-<li><strong><a href="https://resend.com" target="_blank" rel="noopener noreferrer">Resend</a></strong>: transactional email delivery (the emails listed above). Your email address is passed to Resend solely to deliver these messages.</li>
-<li><strong><a href="https://archidekt.com" target="_blank" rel="noopener noreferrer">Archidekt</a></strong>: when you import a deck from Archidekt, we request that deck's public card data from the Archidekt API. This only happens when you use the import feature, and no account data is shared with Archidekt.</li>
-<li><strong><a href="https://www.cloudflare.com" target="_blank" rel="noopener noreferrer">Cloudflare</a></strong>: all traffic between the app and our server passes through Cloudflare's network, which forwards requests to our server.</li>
+<li><strong><a href="https://scryfall.com">Scryfall</a></strong>: card data (names, images, oracle text) is sourced from the Scryfall API and stored on our servers. Your account data is never shared with Scryfall.</li>
+<li><strong><a href="https://resend.com">Resend</a></strong>: transactional email delivery (the emails listed above). Your email address is passed to Resend solely to deliver these messages.</li>
+<li><strong><a href="https://archidekt.com">Archidekt</a></strong>: when you import a deck from Archidekt, we request that deck's public card data from the Archidekt API. This only happens when you use the import feature, and no account data is shared with Archidekt.</li>
+<li><strong><a href="https://www.cloudflare.com">Cloudflare</a></strong>: all traffic between the app and our server passes through Cloudflare's network, which forwards requests to our server.</li>
 </ul>
 
 <h2>Data retention</h2>

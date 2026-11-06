@@ -160,15 +160,11 @@ fn WebFooter() -> Element {
             a {
                 class: "nav-cta",
                 href: COMMUNITY_URL,
-                target: "_blank",
-                rel: "noopener noreferrer",
                 "Community"
             }
             a {
                 class: "nav-cta",
                 href: CONTRIBUTE_URL,
-                target: "_blank",
-                rel: "noopener noreferrer",
                 "Contribute"
             }
         }

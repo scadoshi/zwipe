@@ -58,7 +58,7 @@ impl Driver {
         let effects = model.write().update(action);
         for effect in effects {
             match effect {
-                Effect::OpenUrl(url) => browser::open_in_new_tab(&url),
+                Effect::OpenUrl(url) => browser::open_here(&url),
                 Effect::Navigate(Destination::Previous) if self.navigator.can_go_back() => {
                     self.navigator.go_back();
                 }

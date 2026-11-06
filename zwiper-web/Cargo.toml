@@ -46,7 +46,7 @@ tokio = { version = "1.47.1", default-features = false, features = ["sync"] }
 # The browser build: localStorage for the session and theme, the browser's
 # timer for the upkeep loop, the console for logs.
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-web-sys = { version = "0.3", features = ["Window", "Storage"] }
+web-sys = { version = "0.3", features = ["Location", "Storage", "Window"] }
 gloo-timers = { version = "0.4", features = ["futures"] }
 # getrandom 0.4+ needs the browser backend named for wasm32-unknown-unknown.
 getrandom = { version = "0.4", features = ["wasm_js"] }
