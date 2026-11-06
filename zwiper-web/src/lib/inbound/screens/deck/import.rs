@@ -13,6 +13,7 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
 use zwipe_core::domain::deck::{ImportDeckCardsResult, ImportMode};
 use zwipe_ui::deck::form::{ImportTone, import_outcome};
+use zwipe_ui::screens::deck_import;
 
 use crate::inbound::card_stores::CardStores;
 use crate::inbound::chrome::authed::use_authed;
@@ -216,7 +217,7 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                                 if !r.imported.is_empty() {
                                     div { class: "web-form-panel",
                                         div { class: "settings-list-header web-form-head",
-                                            span { class: "settings-list-title", "Imported" }
+                                            span { class: "settings-list-title", "{deck_import::IMPORTED}" }
                                         }
                                         div { class: "web-form-fields web-import-cards",
                                             for card in r.imported.iter() {
@@ -231,7 +232,7 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                                 if !r.unresolved.is_empty() {
                                     div { class: "web-form-panel",
                                         div { class: "settings-list-header web-form-head",
-                                            span { class: "settings-list-title", "Unresolved" }
+                                            span { class: "settings-list-title", "{deck_import::FAILED}" }
                                         }
                                         div { class: "web-form-fields web-import-cards",
                                             for card in r.unresolved.iter() {
