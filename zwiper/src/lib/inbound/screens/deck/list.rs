@@ -288,7 +288,7 @@ pub fn DeckList() -> Element {
                 OneTimeHintDialog { open: decks_hint_open, hint: OneTimeHint::DeckList }
 
                 div { class: "screen-content",
-                div { class: "flex-col",
+                div { class: "flex-col deck-list-stack",
                     // Same wrapper as the deck cards and maybeboard screens,
                     // so the console starts at the same distance from the
                     // header on all three.
