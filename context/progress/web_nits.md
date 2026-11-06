@@ -26,7 +26,6 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 | 52, the swipe buttons move into the action dock (queued after 51) | laptop | `nits/laptop-52` |
 | 51, swipe twice as fast, same animation speed | laptop | `nits/laptop-51` |
 | 50, the deck head's ? matches Edit, Clone and Share | thinker | `nits/thinker-50` |
-| 49, every clear-x input through `components::ClearWrap` | halo | `nits/halo-49` |
 | 45, 47, no page heads, the page's ? in the nav, About drops Credits on wide (queued after 21) | scotland | `nits/scotland-45` |
 | 46, a compact footer on both sites (queued after 40) | halo | `nits/halo-46` |
 | 21, the card filter into components (plan phases 3 and 4) | laptop | `shared/card-filter` |
@@ -97,6 +96,7 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 50. **The deck page head's `?` is smaller than its neighbors.** Edit, Clone and Share are full icon buttons; the `?` beside them is the small info button. Same size and shape as the other three.
 51. **Swiping on the web is too slow.** 24 drops a press until the leaving card's 0.32s exit ends. Keep the exit's speed but take the next press halfway through it, so swipes can come twice as fast; a held key still swipes once.
 52. **The swipe surfaces' text buttons belong in the dock.** The "← Skip / ↑ Maybeboard / ↓ Undo / → Add" row under the card moves into the action dock at the bottom right (or a second dock beside it) as icon buttons, on every swipe surface.
+53. **The app's Quick add hand-rolls its clear ×** (zwiper/src/lib/inbound/screens/deck/card/components/quick_add.rs ~117) instead of `components::ClearWrap`, as the web's did before 49. An app change: rides the next app release with a changelog entry if visible.
 
 ## Done
 
@@ -125,6 +125,7 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 - 7, Decks as rows on a wide window, two columns from 1400px: PR #187 into `release`.
 - 8 (reopened), the image preview as large as zwipe.net's at every width: PR #188 into `release`.
 - 43, the web's favicons match zwipe.net's: PR #189 into `release`.
+- 49, the text inputs that clear typed text go through `components::ClearWrap`: PR #192 into `release`.
 - 19 (reopened), the deck form's pickers as the card filter's drawer and bottom sheet, the dictionary as the kit's modal: PR #182 into `release`.
 - 12, split phase 5: the web stops loading `main.css`, `accordion.css` moves to `components`, scrollbars show on a wide window: PR #180 into `release`. The split is done.
 - 39, the splash plays once a session and not on arrival from zwipe.net (zite mirrors it): PR #181 into `release`.
