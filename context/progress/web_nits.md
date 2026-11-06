@@ -23,6 +23,7 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
+| 41, hovers work at any width with a mouse | thinker | `nits/thinker-41` |
 | 40, the narrow layout fills a tablet-width window as zwipe.net does | halo | `nits/halo-40` |
 | 21, the card filter into components (plan phases 3 and 4) | laptop | `shared/card-filter` |
 | cycle-trk-mission description, held until scotland's 2026-11-07 sync confirms its cards | halo | `otags/cycle-trk-mission` (PR #178) |
@@ -80,6 +81,7 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 38. **The web's footer looks wrong.** It sits as a solid block boxed into the page column, cuts off the grid backdrop, and its pills are gold. Match zwipe.net's footer.
 39. **The web's splash plays like zwipe.net's.** zwipe.net plays its splash once a session. The web should too: a fresh app.zwipe.net tab shows it, a refresh does not, and arriving from zwipe.net does not (detected by the referrer, since session storage does not cross origins). zite mirrors it for arrivals from app.zwipe.net.
 40. **Between a phone and the 900px breakpoint the web keeps the phone column.** At a half-screen window (~720px) app.zwipe.net's Home stays a narrow centered column with wide empty margins, where zwipe.net's panels fill the window with a small gutter. Below 900px the web's content fills the window as zite's does; a real phone width looks the same as today.
+41. **Hovers vanish below 900px on a desktop.** On a half-width window Home's deck art hover (and the other wide-only hovers) stops. Hover rules key on `(hover: hover)`, not the window's width.
 
 ## Done
 
