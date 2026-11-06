@@ -23,6 +23,7 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
+| 55, zwipe.net's testimonial rating inline with its title (queued after 53) | halo | `nits/halo-55` |
 | 54, card details pane redesign, prices move into it (queued after 50) | thinker | `nits/thinker-54` |
 | 53, the app's Quick add through ClearWrap | halo | `nits/halo-53` |
 | 52, the swipe buttons move into the action dock (queued after 51) | laptop | `nits/laptop-52` |
@@ -100,6 +101,7 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 52. **The swipe surfaces' text buttons belong in the dock.** The "← Skip / ↑ Maybeboard / ↓ Undo / → Add" row under the card moves into the action dock at the bottom right (or a second dock beside it) as icon buttons, on every swipe surface.
 53. **The app's Quick add hand-rolls its clear ×** (zwiper/src/lib/inbound/screens/deck/card/components/quick_add.rs ~117) instead of `components::ClearWrap`, as the web's did before 49. An app change: rides the next app release with a changelog entry if visible.
 54. **Redesign the card details pane** (`components::CardDetails`, both clients; also the todo's 2026-11-05 card details redesign). A kit `Panel` titled with the card's name; a chip row with keys (Type, Rarity, Set, Artist) and the mana pips inline instead of pinned right; the oracle text in the body; card roles, tags and the other bottom pieces in the footer; the price chips under the web's swipe card move into the pane. Wherever it opens as an overlay it slides in as a side drawer from the right, at every width and in the app too (Scotty prefers the side entrance to the pop-up).
+55. **zwipe.net: the testimonials' rating sits on its own line.** Move the "★★★★★ 4.8" chip into the panel header beside "Deck builder testimonials".
 
 ## Done
 
