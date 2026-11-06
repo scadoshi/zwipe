@@ -25,11 +25,6 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 | --- | --- | --- |
 | 45, 47, no page heads, the page's ? in the nav, About drops Credits on wide (queued after 21) | scotland | `nits/scotland-45` |
 | 46, a compact footer on both sites (queued after 40) | halo | `nits/halo-46` |
-| 7, Decks as rows: one column, two at 1400px and up to compare (queued after #185) | thinker | `nits/thinker-7` |
-| 43, the web's favicons match zwipe.net's set (queued after 8) | laptop | `nits/laptop-43` |
-| 8 reopened, the image preview as large as zwipe.net's at every width | laptop | `nits/laptop-8-again` |
-| 41, 42, 44, hovers at any width, hint buttons, the deck entry hover | thinker | `nits/thinker-41` |
-| 40, the narrow layout fills a tablet-width window as zwipe.net does | halo | `nits/halo-40` |
 | 21, the card filter into components (plan phases 3 and 4) | laptop | `shared/card-filter` |
 | cycle-trk-mission description, held until scotland's 2026-11-07 sync confirms its cards | halo | `otags/cycle-trk-mission` (PR #178) |
 | 38, the footer looks like zwipe.net's | scotland | `nits/scotland-footer-look` |
@@ -117,6 +112,11 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 - 12, split phase 0, the empty `components::SCREENS_CSS` frame: PR #169 into `release`.
 - 2, 23, the web's deck page drops the inline Filter row (`DeckControls` takes an optional `DeckFilter`) and gains fold-all: PR #170 into `release`. 11 won't do.
 - 12, split phases 1 to 4, `main.css` moved into `components/assets/screens/`: PRs #171, #174, #175, #173 into `release`.
+- 41, 42, 44, hovers at any width with a mouse, hint button hover, deck entries keep their corners: PR #185 into `release`.
+- 40, the narrow layout fills a tablet-width window with zwipe.net's gutter: PR #186 into `release`.
+- 7, Decks as rows on a wide window, two columns from 1400px: PR #187 into `release`.
+- 8 (reopened), the image preview as large as zwipe.net's at every width: PR #188 into `release`.
+- 43, the web's favicons match zwipe.net's: PR #189 into `release`.
 - 19 (reopened), the deck form's pickers as the card filter's drawer and bottom sheet, the dictionary as the kit's modal: PR #182 into `release`.
 - 12, split phase 5: the web stops loading `main.css`, `accordion.css` moves to `components`, scrollbars show on a wide window: PR #180 into `release`. The split is done.
 - 39, the splash plays once a session and not on arrival from zwipe.net (zite mirrors it): PR #181 into `release`.
