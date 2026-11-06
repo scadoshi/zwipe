@@ -13,6 +13,21 @@
     --web-sticky-max: calc(100dvh - 10rem);
 }
 
+/* A text field on a wide page stops at a field's width, left-aligned
+   beside or under its label. */
+@media (min-width: 900px) {
+    :root {
+        --web-field-max: 32rem;
+    }
+
+    #quick-add,
+    #commander-maybeboard-search,
+    #import-url,
+    #oracle-tag-dictionary-search {
+        max-width: var(--web-field-max);
+    }
+}
+
 html {
     overflow: auto;
     touch-action: auto;
