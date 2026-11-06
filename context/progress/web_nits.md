@@ -24,6 +24,9 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 | Items | Machine | Branch |
 | --- | --- | --- |
 | 12, split phase 5, the cut | laptop | `split/phase-5` |
+| 36, links open in the same tab | halo | `nits/halo-same-tab` |
+| 37, plain hover on every clickable chip and header button | thinker | `nits/thinker-header-chip-hover` |
+| 38, the footer looks like zwipe.net's | scotland | `nits/scotland-footer-look` |
 
 The loop is in [`../development/factory.md`](../development/factory.md).
 
@@ -72,6 +75,9 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 33. **The kit's BottomSheet should not drag in modal or drawer form (follow-up to 5).** 5 was fixed in `web.css` by turning off pointer events on the header and pinning an open modal or drawer with `!important` over the drag's inline transform. The clean fix is in orangui: skip starting the drag-to-dismiss when the sheet shows as `SheetWide::Modal` or `Drawer`. That is a kit change and pin bump across zwipe, cairn and portfolio; once it lands, drop the web.css workaround.
 34. **The maybeboard's row entrance stagger is broken on the web.** The web's row wrappers make each `.card-row` its wrapper's only child, so `main.css`'s `.maybeboard-list .card-row:nth-child(n)` delays all match the first, and every row enters at once.
 35. **About overflows on a phone width.** At 400px the About page's panels run off the right edge (seen in builds before and after the split's phase 1, so it predates it).
+36. **Outbound links open in the same tab on zwipe.net and app.zwipe.net.** Home's "Magic: The Gathering" link and every other `target="_blank"` or programmatic new-tab open take over the current tab instead. The mobile app keeps sending links to the system browser.
+37. **Every clickable chip and panel header button gets the plain button hover on the web.** Home's All decks and Playstyle header buttons, Decks' Group by options, Show pips, tag chips and fold toggles, and the same chips across the deck page, Playstyle, the filter drawer and Activity. The kit's hover (accent text and border), no transform or size change; label and count chips stay still.
+38. **The web's footer looks wrong.** It sits as a solid block boxed into the page column, cuts off the grid backdrop, and its pills are gold. Match zwipe.net's footer.
 
 ## Done
 
