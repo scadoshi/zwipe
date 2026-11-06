@@ -664,6 +664,7 @@ body {
 
 .web-dead-end .panel-title {
     color: var(--color-error);
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     text-align: center;
     animation: web-alert-pulse 1.6s ease-in-out infinite;
@@ -673,9 +674,14 @@ body {
     justify-content: center;
 }
 
+/* zite's panel body line: the site sheet's size and muted color, which the
+   web does not load. */
 .web-dead-end-line {
     text-align: center;
     margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: var(--text-subtle);
 }
 
 @keyframes web-alert-pulse {
