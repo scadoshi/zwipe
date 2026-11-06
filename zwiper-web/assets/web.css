@@ -899,6 +899,17 @@ body {
     cursor: grabbing;
 }
 
+/* A leaving card flies off slower than the app's. */
+.web-swipe-stack {
+    --web-swipe-exit: 0.32s;
+}
+
+.web-swipe-stack .swipe-stack-card.swipe-stack-exiting.card-stack-exit-left,
+.web-swipe-stack .swipe-stack-card.swipe-stack-exiting.card-stack-exit-right,
+.web-swipe-stack .swipe-stack-card.swipe-stack-exiting.card-stack-exit-up {
+    animation-duration: var(--web-swipe-exit);
+}
+
 .web-swipe-buttons {
     display: flex;
     flex-wrap: wrap;
