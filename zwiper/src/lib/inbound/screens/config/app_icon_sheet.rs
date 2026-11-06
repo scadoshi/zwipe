@@ -81,7 +81,7 @@ pub fn AppIconSheet(
         open.set(false);
     });
 
-    let mut save = move |_| {
+    let mut save = move |()| {
         let picked = draft();
         let (next, message) = match &picked {
             None => (app_theme(), "App icon matches your theme".to_string()),
