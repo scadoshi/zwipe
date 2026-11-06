@@ -93,6 +93,7 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 45. **The wide page heads go.** Each wide page opens with a panel restating the page's title and a one-line description: ceremony, no function. Remove them on every page, Settings included (keeping Home's hero, and any head that carries real controls or identity) and move the page's `?` into the nav bar's icon row.
 46. **The footer is far too tall on both sites.** The copyright sits in line with the pills, the Scryfall credit in line with the Fan Content notice, the attributions use the footer's full width, and the padding shrinks. Shared `SiteFooter`, so zwipe.net and the web change together.
 47. **About repeats the footer's credits.** On a wide window the Credits panel duplicates the footer's Scryfall and Fan Content lines; it goes there. Below 900px, with no footer, it stays.
+48. **zwipe.net's manifest points at missing install icons.** zite's site.webmanifest lists /assets/icon-192.png and /assets/icon-512.png, which return 404 live because zite never bundles them (found by laptop on 43).
 
 ## Done
 
