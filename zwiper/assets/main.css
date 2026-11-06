@@ -1190,6 +1190,12 @@ button {
     cursor: pointer;
 }
 
+/* A deck is a whole panel, so the last in its group keeps the bottom edge
+   the card list's last row gives up. */
+.card-row.deck-row:last-child {
+    border-bottom: 1px solid var(--border-secondary);
+}
+
 /* The command zone's art crops sit inline in the wrapping row, as flex items
    beside the name rather than a fixed column, so the chips wrap onto the
    next line under the art instead of into a narrow column beside it. Two
