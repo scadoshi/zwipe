@@ -219,57 +219,84 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                         }
                     }
 
+                    // The box and the results sit in headed panels; the
+                    // chips and the explainer above stay on the grid.
                     div { class: "import-scroll",
-                        div { class: "container-sm",
-                        if source == Source::Text {
-                            label { class: "label", r#for: "import-text", "{deck_import::TEXT_LABEL}" }
-                            textarea {
-                                id: "import-text",
-                                class: "input",
-                                style: "width:100%;min-height:12rem;resize:vertical;",
-                                placeholder: deck_import::TEXT_PLACEHOLDER,
-                                value: "{text}",
-                                autocapitalize: "none",
-                                autocorrect: "off",
-                                spellcheck: "false",
-                                oninput: move |e| text.set(e.value()),
+                        div { class: "container-sm import-panels",
+                            div { class: "form-panel",
+                                div { class: "settings-list-header",
+                                    span { class: "settings-list-title",
+                                        if source == Source::Text {
+                                            "{deck_import::TEXT_LABEL}"
+                                        } else {
+                                            "{deck_import::URL_LABEL}"
+                                        }
+                                    }
+                                }
+                                div { class: "form-panel-fields",
+                                    if source == Source::Text {
+                                        textarea {
+                                            id: "import-text",
+                                            class: "input",
+                                            "aria-label": deck_import::TEXT_LABEL,
+                                            style: "width:100%;min-height:12rem;resize:vertical;",
+                                            placeholder: deck_import::TEXT_PLACEHOLDER,
+                                            value: "{text}",
+                                            autocapitalize: "none",
+                                            autocorrect: "off",
+                                            spellcheck: "false",
+                                            oninput: move |e| text.set(e.value()),
+                                        }
+                                    } else {
+                                        input {
+                                            id: "import-url",
+                                            class: "input",
+                                            "aria-label": deck_import::URL_LABEL,
+                                            style: "width:100%;",
+                                            r#type: "url",
+                                            placeholder: deck_import::URL_PLACEHOLDER,
+                                            value: "{url}",
+                                            autocapitalize: "none",
+                                            autocorrect: "off",
+                                            spellcheck: "false",
+                                            oninput: move |e| url.set(e.value()),
+                                        }
+                                    }
+                                }
                             }
-                        } else {
-                            label { class: "label", r#for: "import-url", "{deck_import::URL_LABEL}" }
-                            input {
-                                id: "import-url",
-                                class: "input",
-                                style: "width:100%;",
-                                r#type: "url",
-                                placeholder: deck_import::URL_PLACEHOLDER,
-                                value: "{url}",
-                                autocapitalize: "none",
-                                autocorrect: "off",
-                                spellcheck: "false",
-                                oninput: move |e| url.set(e.value()),
-                            }
-                        }
 
-                        if let Some(r) = result {
-                            if !r.imported.is_empty() {
-                                label { class: "label mt-2", "{deck_import::IMPORTED}" }
-                                for card in r.imported.iter() {
-                                    div { class: "chip-bubble",
-                                        span { class: "font-light", "{card.name}" }
-                                        span { class: "font-light opacity-50", "x{card.quantity}" }
+                            if let Some(r) = result {
+                                if !r.imported.is_empty() {
+                                    div { class: "form-panel",
+                                        div { class: "settings-list-header",
+                                            span { class: "settings-list-title", "{deck_import::IMPORTED}" }
+                                        }
+                                        div { class: "form-panel-fields import-cards",
+                                            for card in r.imported.iter() {
+                                                div { class: "chip-bubble",
+                                                    span { class: "font-light", "{card.name}" }
+                                                    span { class: "font-light opacity-50", "x{card.quantity}" }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                if !r.unresolved.is_empty() {
+                                    div { class: "form-panel",
+                                        div { class: "settings-list-header",
+                                            span { class: "settings-list-title", "{deck_import::FAILED}" }
+                                        }
+                                        div { class: "form-panel-fields import-cards",
+                                            for card in r.unresolved.iter() {
+                                                div { class: "chip-bubble-error",
+                                                    span { class: "font-light", "{card.name}" }
+                                                    span { class: "font-light opacity-50", "{card.reason}" }
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
-                            if !r.unresolved.is_empty() {
-                                label { class: "label mt-2", "{deck_import::FAILED}" }
-                                for card in r.unresolved.iter() {
-                                    div { class: "chip-bubble-error",
-                                        span { class: "font-light", "{card.name}" }
-                                        span { class: "font-light opacity-50", "{card.reason}" }
-                                    }
-                                }
-                            }
-                        }
                         }
                     }
                 }

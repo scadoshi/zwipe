@@ -156,17 +156,26 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                         }
                     }
 
+                    // The decklist sits in a headed panel; the chips above
+                    // stay on the grid.
                     div { class: "import-scroll",
-                        div { class: "container-sm",
+                        div { class: "container-sm import-panels",
                         match export_text {
                             Some(text) => rsx! {
-                                label { class: "label", r#for: "export-text", "{deck_export::DECKLIST}" }
-                                textarea {
-                                    id: "export-text",
-                                    class: "input",
-                                    style: "width:100%;min-height:16rem;resize:vertical;",
-                                    readonly: true,
-                                    value: "{text}",
+                                div { class: "form-panel",
+                                    div { class: "settings-list-header",
+                                        span { class: "settings-list-title", "{deck_export::DECKLIST}" }
+                                    }
+                                    div { class: "form-panel-fields",
+                                        textarea {
+                                            id: "export-text",
+                                            class: "input",
+                                            "aria-label": deck_export::DECKLIST,
+                                            style: "width:100%;min-height:16rem;resize:vertical;",
+                                            readonly: true,
+                                            value: "{text}",
+                                        }
+                                    }
                                 }
                             },
                             None => {
@@ -178,9 +187,13 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                                     }
                                 } else {
                                     rsx! {
-                                        div { class: "skeleton-export",
-                                            div { class: "skeleton-bar skeleton-export-label" }
-                                            div { class: "skeleton-export-textarea" }
+                                        div { class: "form-panel",
+                                            div { class: "skeleton-card-header",
+                                                div { class: "skeleton-bar skeleton-section-label" }
+                                            }
+                                            div { class: "form-panel-fields",
+                                                div { class: "skeleton-export-textarea" }
+                                            }
                                         }
                                     }
                                 }

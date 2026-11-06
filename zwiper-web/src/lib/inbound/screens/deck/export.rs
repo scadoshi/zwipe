@@ -105,9 +105,13 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                         } else if failed {
                             p { class: "text-muted", "Could not load deck" }
                         } else {
-                            div { class: "skeleton-export",
-                                div { class: "skeleton-bar skeleton-export-label" }
-                                div { class: "skeleton-export-textarea" }
+                            div { class: "web-form-panel",
+                                div { class: "skeleton-card-header web-form-head",
+                                    div { class: "skeleton-bar skeleton-section-label" }
+                                }
+                                div { class: "web-form-fields",
+                                    div { class: "skeleton-export-textarea" }
+                                }
                             }
                         }
                     }

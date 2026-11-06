@@ -1471,6 +1471,17 @@ body {
     }
 }
 
+/* A panel's ghost while its screen loads: the title bar centered, as the
+   header it stands in for. */
+.web-form-panel > .skeleton-card-header {
+    display: flex;
+    justify-content: center;
+}
+
+.web-form-panel > .skeleton-card-header > .skeleton-section-label {
+    margin-bottom: 0;
+}
+
 /* Import's and Export's boxes and Import's results sit in headed panels,
    as the deck form's fields do, a panel gap apart; the chip rows and the
    explainer stay on the grid above them. */
