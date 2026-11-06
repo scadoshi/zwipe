@@ -23,7 +23,7 @@ The running log, newest first. Update this when something ships; [`progress/todo
 
 ## 2026-11-05: 1.18.0 cut
 
-1.18.0 is cut as iOS build 113, built on scotland-halo with Xcode 27.2 and opened in Transporter; Android vc75 follows. Notes are at [`operations/store-submissions/1.18.0/whats_new.md`](operations/store-submissions/1.18.0/whats_new.md), which summarize the 78 changelog entries by area. The release is the navigation overhaul: a main menu behind a hamburger in every header, a back arrow, a header that slides away on scroll with its contents fading, actions floating as icons at each screen's bottom right, About, and redesigned Home, Decks and deck charts. The changelog dates 1.18.0 to 2026-11-05.
+1.18.0 is cut as iOS build 113 and Android vc75, both built on scotland-halo, iOS with Xcode 27.2. Notes are at [`operations/store-submissions/1.18.0/whats_new.md`](operations/store-submissions/1.18.0/whats_new.md), which summarize the 78 changelog entries by area. The release is the navigation overhaul: a main menu behind a hamburger in every header, a back arrow, a header that slides away on scroll with its contents fading, actions floating as icons at each screen's bottom right, About, and redesigned Home, Decks and deck charts. The changelog dates 1.18.0 to 2026-11-05.
 
 ## 2026-11-01: zerver's services are concrete types
 
