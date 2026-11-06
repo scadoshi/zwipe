@@ -3969,11 +3969,27 @@ button {
     box-shadow: var(--shadow-md);
 }
 
-.deck-featured-name {
+/* The name chip, then the role chip, wrapping and centered under the image
+   as Home's deck tiles set theirs. A long name ellipsizes inside its chip. */
+.deck-featured-chips {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.25rem;
     margin-top: 0.4rem;
-    font-size: 0.7rem;
-    font-weight: 700;
-    line-height: 1.3;
+    min-width: 0;
+}
+
+.deck-featured-chips > .stat-chip {
+    padding: 0.1rem 0.45rem;
+    font-size: 0.62rem;
+    border-radius: 0.5rem;
+}
+
+.deck-featured-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 /* ── Deck cards header ───────────────────────────────────────────────────
@@ -3995,22 +4011,14 @@ button {
     margin-right: 0.2rem;
 }
 
-.deck-featured-role {
-    display: inline-block;
-    margin-top: 0.3rem;
-    padding: 0.1rem 0.45rem;
-    font-size: 0.62rem;
-    border: 1px solid transparent;
-    border-radius: 0.5rem;
-}
-
-.deck-featured-role-zone {
+/* Compound selectors so the role colors outrank the chip's own tone. */
+.stat-chip.deck-featured-role-zone {
     color: var(--palette-3);
     background-color: color-mix(in srgb, var(--palette-3) 12%, var(--bg-primary));
     border-color: color-mix(in srgb, var(--palette-3) 35%, var(--bg-primary));
 }
 
-.deck-featured-role-mvp {
+.stat-chip.deck-featured-role-mvp {
     color: var(--palette-6);
     background-color: color-mix(in srgb, var(--palette-6) 12%, var(--bg-primary));
     border-color: color-mix(in srgb, var(--palette-6) 35%, var(--bg-primary));
