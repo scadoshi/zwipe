@@ -25,7 +25,7 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 | --- | --- | --- |
 | 43, the web's favicons match zwipe.net's set (queued after 8) | laptop | `nits/laptop-43` |
 | 8 reopened, the image preview as large as zwipe.net's at every width | laptop | `nits/laptop-8-again` |
-| 41, 42, hovers at any width with a mouse, and on every hint button | thinker | `nits/thinker-41` |
+| 41, 42, 44, hovers at any width, hint buttons, the deck entry hover | thinker | `nits/thinker-41` |
 | 40, the narrow layout fills a tablet-width window as zwipe.net does | halo | `nits/halo-40` |
 | 21, the card filter into components (plan phases 3 and 4) | laptop | `shared/card-filter` |
 | cycle-trk-mission description, held until scotland's 2026-11-07 sync confirms its cards | halo | `otags/cycle-trk-mission` (PR #178) |
@@ -86,6 +86,7 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 41. **Hovers vanish below 900px on a desktop.** On a half-width window Home's deck art hover (and the other wide-only hovers) stops. Hover rules key on `(hover: hover)`, not the window's width.
 42. **Every hint button on the web gets the plain button hover.** The `?` buttons (panel headers, charts, the swipe screens' corner hint, the drawer title bar) sit still under a mouse.
 43. **The two sites' favicons differ.** app.zwipe.net shows a gold Z on a dark square from its lone favicon.ico; zwipe.net a light Z from a full icon set. The web takes zwipe.net's set.
+44. **A deck entry's hover squares its corners.** Hovering a deck on Decks shrinks its corner radius. Wanted: the same radius, a slight grow (no lift), a quick transition, and the background color change kept for now (Scotty may drop it later).
 
 ## Done
 
