@@ -376,10 +376,12 @@ body {
    .web-main prefix outranks the kit's `transition: border-color`, and an
    entrance animation fills backwards only, so its end transform lets go of
    the lift. A panel in a sheet, a dialog or a screen over the page holds
-   still, and so does one holding card rows, a sheet, a picker screen or a
-   preview: a transform makes the panel the containing block of the fixed
-   overlays inside it, and a card list's rows carry their own hover. */
-@media (min-width: 900px) and (hover: hover) {
+   still, and so does one holding card rows, a sheet, a picker screen, a
+   preview, a dock, a heatmap (its floating tip) or a grid backdrop: a
+   transform makes the panel the containing block of the fixed overlays
+   inside it, and a card list's rows carry their own hover. Any width with
+   a mouse. */
+@media (hover: hover) {
     .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold, .web-details-panel, .deck-row) {
         transition:
             border-color 0.4s ease,
@@ -392,13 +394,13 @@ body {
         animation-fill-mode: backwards;
     }
 
-    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold, .web-details-panel, .deck-row):hover:not(:is(.screen .screen, .bottom-sheet, .alert-dialog) *):not(:has(.card-row, .bottom-sheet, .screen, .image-preview-container, .action-dock)) {
+    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold, .web-details-panel, .deck-row):hover:not(:is(.screen .screen, .bottom-sheet, .alert-dialog) *):not(:has(.card-row, .bottom-sheet, .screen, .image-preview-container, .action-dock, .heat-grid, .grid-cells, .swipe-bottom-row)) {
         box-shadow: var(--shadow-md);
     }
 }
 
-@media (min-width: 900px) and (hover: hover) and (prefers-reduced-motion: no-preference) {
-    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold, .web-details-panel, .deck-row):hover:not(:is(.screen .screen, .bottom-sheet, .alert-dialog) *):not(:has(.card-row, .bottom-sheet, .screen, .image-preview-container, .action-dock)) {
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold, .web-details-panel, .deck-row):hover:not(:is(.screen .screen, .bottom-sheet, .alert-dialog) *):not(:has(.card-row, .bottom-sheet, .screen, .image-preview-container, .action-dock, .heat-grid, .grid-cells, .swipe-bottom-row)) {
         transform: translateY(-3px);
     }
 }
@@ -551,8 +553,9 @@ body {
 }
 
 /* The bar's icons, the `!` and Log out answer a mouse as the pills beside
-   them do: the accent on the glyph and the border, at full strength. */
-@media (min-width: 900px) and (hover: hover) {
+   them do: the accent on the glyph and the border, at full strength. In
+   the folded menu too, under a mouse at any width. */
+@media (hover: hover) {
     .web-shell .nav-trailing-row .btn-action {
         transition:
             color 0.15s,
@@ -1285,7 +1288,7 @@ body {
 }
 
 /* A recent deck's art grows a little under a mouse, inside its square. */
-@media (min-width: 900px) and (hover: hover) {
+@media (hover: hover) {
     .home-deck-tile-art > img {
         transition: transform 0.2s ease;
     }
@@ -1295,7 +1298,7 @@ body {
     }
 }
 
-@media (min-width: 900px) and (hover: hover) and (prefers-reduced-motion: reduce) {
+@media (hover: hover) and (prefers-reduced-motion: reduce) {
     .home-deck-tile:hover > .home-deck-tile-art > img {
         transform: none;
     }
