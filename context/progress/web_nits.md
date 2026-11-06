@@ -15,6 +15,8 @@ Order of attack, by what users hit and what it costs:
 7. **Skeletons:** 28 (a full alignment pass, both layouts), after the layout work so the ghosts match the final screens.
 8. **Shared-code moves, scoped first:** 22 (zite's hover stack into `components`), 21 (the full filter on zwipe.net's shared deck, which needs the filter drawer in `components`).
 
+Decided 2026-11-06: the stylesheet split goes ahead as option (d); gloo-timers joins components for the hover stack; fold-all stays after the Show chips everywhere, so 11 is won't do (21 removes its row).
+
 Still open beyond nits: the platform tag on funnel events (check `ClientPlatform` for a web value first), and switching the CSP from report-only to enforced after a click-through with the console open.
 
 ## In progress
@@ -22,6 +24,9 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 | Items | Machine | Branch |
 | --- | --- | --- |
 | 27 (doc link fix after CI) | halo | `nits/halo-27` (PR #168) |
+| 12, split phase 0 | laptop | `split/phase-0` |
+| 22, hover stack into components | thinker | `shared/hover-stack` |
+| 2, 23, DeckControls without the inline row, fold-all on the web | scotland | `nits/scotland-2-23` |
 
 The loop is in [`../development/factory.md`](../development/factory.md).
 
