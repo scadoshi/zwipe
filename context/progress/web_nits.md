@@ -24,8 +24,7 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 | Items | Machine | Branch |
 | --- | --- | --- |
 | 12, split phase 5, the cut | laptop | `split/phase-5` |
-| 36, links open in the same tab | halo | `nits/halo-same-tab` (PR #177, approved) |
-| 37, plain hover on every clickable chip and header button | thinker | `nits/thinker-header-chip-hover` (PR #176, approved) |
+| cycle-trk-mission description, held until scotland's 2026-11-07 sync confirms its cards | halo | `otags/cycle-trk-mission` (PR #178) |
 | 38, the footer looks like zwipe.net's | scotland | `nits/scotland-footer-look` |
 
 The loop is in [`../development/factory.md`](../development/factory.md).
@@ -101,4 +100,6 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 - 12, split phase 0, the empty `components::SCREENS_CSS` frame: PR #169 into `release`.
 - 2, 23, the web's deck page drops the inline Filter row (`DeckControls` takes an optional `DeckFilter`) and gains fold-all: PR #170 into `release`. 11 won't do.
 - 12, split phases 1 to 4, `main.css` moved into `components/assets/screens/`: PRs #171, #174, #175, #173 into `release`.
+- 36, outbound links open in the same tab on zwipe.net and app.zwipe.net: PR #177 into `release`.
+- 37, plain hover on every clickable chip and panel header button: PR #176 into `release`.
 - 22, zite's hover stack in `components`, drawn by zite and the web: PR #172 into `release`.
