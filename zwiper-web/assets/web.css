@@ -308,6 +308,39 @@ body {
     }
 }
 
+/* ---- Panel lift ----
+
+   zwipe.net's: under a mouse a panel rises 3px with the medium shadow. The
+   .web-main prefix outranks the kit's `transition: border-color`, and an
+   entrance animation fills backwards only, so its end transform lets go of
+   the lift. A panel in a sheet, a dialog or a screen over the page holds
+   still, and so does one holding card rows, a sheet, a picker screen or a
+   preview: a transform makes the panel the containing block of the fixed
+   overlays inside it, and a card list's rows carry their own hover. */
+@media (min-width: 900px) and (hover: hover) {
+    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold, .web-details-panel, .deck-row) {
+        transition:
+            border-color 0.4s ease,
+            min-height 0.3s ease,
+            transform 0.4s ease,
+            box-shadow 0.4s ease;
+    }
+
+    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold, .web-details-panel, .deck-row):is(.content-enter, .content-enter-delayed, .row-enter, .changelog-panel) {
+        animation-fill-mode: backwards;
+    }
+
+    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold, .web-details-panel, .deck-row):hover:not(:is(.screen .screen, .bottom-sheet, .alert-dialog) *):not(:has(.card-row, .bottom-sheet, .screen, .image-preview-container, .action-dock)) {
+        box-shadow: var(--shadow-md);
+    }
+}
+
+@media (min-width: 900px) and (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold, .web-details-panel, .deck-row):hover:not(:is(.screen .screen, .bottom-sheet, .alert-dialog) *):not(:has(.card-row, .bottom-sheet, .screen, .image-preview-container, .action-dock)) {
+        transform: translateY(-3px);
+    }
+}
+
 /* ---- Top nav ----
 
    zite's bar from the kit's NavBar: the Z mark home on the left and the
@@ -452,6 +485,23 @@ body {
     .web-shell .nav-trailing-row {
         padding-bottom: 0;
         gap: 0.75rem;
+    }
+}
+
+/* The bar's icons, the `!` and Log out answer a mouse as the pills beside
+   them do: the accent on the glyph and the border, at full strength. */
+@media (min-width: 900px) and (hover: hover) {
+    .web-shell .nav-trailing-row .btn-action {
+        transition:
+            color 0.15s,
+            border-color 0.15s,
+            opacity 0.15s;
+    }
+
+    .web-shell .nav-trailing-row .btn-action:hover {
+        opacity: 1;
+        color: var(--accent-primary);
+        border-color: var(--accent-primary);
     }
 }
 
@@ -857,6 +907,19 @@ body {
     }
 }
 
+/* The deck page's rows sit one wrapper deep in their band, so each is its
+   wrapper's last child; a rule under every row but the band's last stands
+   in for the app's. */
+@media (min-width: 900px) {
+    .deck-band-rows > .web-deck-row:not(:last-child) .card-row:not(.expanded) {
+        border-bottom: 1px solid var(--border-secondary);
+    }
+
+    .deck-band-rows > .web-deck-row:last-child .card-row {
+        border-bottom: none;
+    }
+}
+
 /* ---- Image preview ----
 
    On a wide window the open card is as large as zwipe.net's: up to 28rem
@@ -1067,6 +1130,23 @@ body {
         margin: 0;
         box-sizing: border-box;
         min-height: 0;
+    }
+}
+
+/* A recent deck's art grows a little under a mouse, inside its square. */
+@media (min-width: 900px) and (hover: hover) {
+    .home-deck-tile-art > img {
+        transition: transform 0.2s ease;
+    }
+
+    .home-deck-tile:hover > .home-deck-tile-art > img {
+        transform: scale(1.05);
+    }
+}
+
+@media (min-width: 900px) and (hover: hover) and (prefers-reduced-motion: reduce) {
+    .home-deck-tile:hover > .home-deck-tile-art > img {
+        transform: none;
     }
 }
 
