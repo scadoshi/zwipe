@@ -119,6 +119,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Import and Export hold the decklist and Import's results in titled panels",
         "zwipe.net's menu shows every link down to the bottom of the window, with no scrollbar",
         "zwipe.net's changelog shows five releases at a time, the rest behind Show more",
+        "The header's title and buttons fade into it as it slides away, leaving a rule under the status bar",
     ],
 }];
 
