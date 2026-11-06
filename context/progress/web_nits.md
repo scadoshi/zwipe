@@ -23,6 +23,8 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
+| 45, no page heads, the page's ? in the nav (queued after 21) | scotland | `nits/scotland-45` |
+| 46, a compact footer on both sites (queued after 40) | halo | `nits/halo-46` |
 | 7, Decks as rows: one column, two at 1400px and up to compare (queued after #185) | thinker | `nits/thinker-7` |
 | 43, the web's favicons match zwipe.net's set (queued after 8) | laptop | `nits/laptop-43` |
 | 8 reopened, the image preview as large as zwipe.net's at every width | laptop | `nits/laptop-8-again` |
@@ -88,6 +90,8 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 42. **Every hint button on the web gets the plain button hover.** The `?` buttons (panel headers, charts, the swipe screens' corner hint, the drawer title bar) sit still under a mouse.
 43. **The two sites' favicons differ.** app.zwipe.net shows a gold Z on a dark square from its lone favicon.ico; zwipe.net a light Z from a full icon set. The web takes zwipe.net's set.
 44. **A deck entry's hover squares its corners.** Hovering a deck on Decks shrinks its corner radius. Wanted: the same radius, a slight grow (no lift), a quick transition, and the background color change kept for now (Scotty may drop it later).
+45. **The wide page heads go.** Each wide page opens with a panel restating the page's title and a one-line description: ceremony, no function. Remove them on every page (keeping any head that carries real controls or identity) and move the page's `?` into the nav bar's icon row.
+46. **The footer is far too tall on both sites.** The copyright sits in line with the pills, the Scryfall credit in line with the Fan Content notice, the attributions use the footer's full width, and the padding shrinks. Shared `SiteFooter`, so zwipe.net and the web change together.
 
 ## Done
 
