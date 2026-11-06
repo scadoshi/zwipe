@@ -89,17 +89,6 @@ body {
 }
 
 /* ==================
-  list header actions
- ==================== */
-
-/* A card group header's trailing side: the list's own action beside its ?. */
-.card-group-header-actions {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-/* ==================
   header and main menu
  ==================== */
 
