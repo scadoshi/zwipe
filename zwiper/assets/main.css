@@ -1147,10 +1147,34 @@ button {
     font-weight: 400;
 }
 
-/* The first group sits under the chip rows at their own 0.5rem; its top
-   margin is for the groups that follow another. */
-.deck-group:not(.deck-group + .deck-group) > .card-group-header.group-collapsible {
+/* Every row on Decks sits one --deck-list-gap from the next: the chip rows
+   and their wrapped lines, the group chips, the decks. The first group's
+   chip takes the last chip row's margin; a group that follows another takes
+   its own. An open group's decks sit the gap under its chip, with nothing
+   added after the last, so the next chip's margin is the only gap. */
+.deck-list-stack {
+    --deck-list-gap: 0.75rem;
+}
+
+.deck-list-stack .chip-row {
+    row-gap: var(--deck-list-gap);
+    margin-bottom: var(--deck-list-gap);
+}
+
+.deck-list-stack .deck-group > .card-group-header.group-collapsible {
+    margin-top: var(--deck-list-gap);
+}
+
+.deck-list-stack .deck-group:not(.deck-group + .deck-group) > .card-group-header.group-collapsible {
     margin-top: 0;
+}
+
+.deck-list-stack .deck-group > .collapsible > .collapsible-inner {
+    gap: var(--deck-list-gap);
+}
+
+.deck-list-stack .deck-group > .collapsible.open > .collapsible-inner {
+    padding: var(--deck-list-gap) 0 0;
 }
 
 .deck-group > .card-group-header .card-row-arrow {
