@@ -18032,6 +18032,10 @@ pub const ORACLE_TAG_DESCRIPTIONS: &[(&str, &str)] = &[
         "tribal-whale",
         "A card that cares about Whale creatures you control.",
     ),
+    (
+        "cycle-trk-mission",
+        "A one-color enchantment that gets a quest counter each time it triggers, with a bonus that grows once enough counters pile up.",
+    ),
 ];
 
 /// Flatten [`ORACLE_TAG_DESCRIPTIONS`] into parallel `(slug, description)` arrays
