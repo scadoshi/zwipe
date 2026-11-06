@@ -2,9 +2,7 @@
 //! app's classes: labels with their mode chip and `×`, text and number
 //! boxes, chip rows, steppers and the searchable pickers.
 
-use components::{Chip, ClearWrap};
 use dioxus::prelude::*;
-use dioxus_primitives::toast::use_toast;
 use zwipe_ui::filter::chips as filter_chips;
 use zwipe_ui::filter::draft::FilterDraft;
 use zwipe_ui::filter::fields::{End, Stat};
@@ -12,9 +10,11 @@ use zwipe_ui::filter::picker::{PickerField, Sources};
 use zwipe_ui::filter::sections::{
     self, ChipSet, Clear, ModeChip, NumberField, Row, Section, StepRow,
 };
+use zwipe_ui::stores::catalog::Catalog;
+use zwipe_ui::toast::Toast;
 
-use crate::inbound::catalog::CatalogCache;
-use crate::inbound::chrome::toast::raise;
+use super::raise;
+use crate::{Chip, ClearWrap};
 
 /// Moves `epoch` on, remounting the boxes that hold typed text.
 pub(super) fn bump(mut epoch: Signal<u32>) {
@@ -31,7 +31,9 @@ pub(super) fn SectionRows(
     draft: Signal<FilterDraft>,
     epoch: Signal<u32>,
     sources: Sources,
-    on_dictionary: EventHandler<PickerField>,
+    catalog: ReadSignal<Catalog>,
+    on_toast: Option<EventHandler<Toast>>,
+    on_dictionary: Option<EventHandler<PickerField>>,
 ) -> Element {
     let rows = {
         let d = draft.read();
@@ -58,7 +60,7 @@ pub(super) fn SectionRows(
         };
         if let Some((min, max)) = paired {
             out.push(rsx! {
-                NumberPair { key: "{generation}-{min:?}", draft, min, max }
+                NumberPair { key: "{generation}-{min:?}", draft, min, max, on_toast }
             });
             i = i.saturating_add(2);
             continue;
@@ -70,6 +72,8 @@ pub(super) fn SectionRows(
                 draft,
                 epoch,
                 sources: sources.clone(),
+                catalog,
+                on_toast,
                 on_dictionary,
             }
         });
@@ -91,7 +95,9 @@ fn RowView(
     draft: Signal<FilterDraft>,
     epoch: Signal<u32>,
     sources: Sources,
-    on_dictionary: EventHandler<PickerField>,
+    catalog: ReadSignal<Catalog>,
+    on_toast: Option<EventHandler<Toast>>,
+    on_dictionary: Option<EventHandler<PickerField>>,
 ) -> Element {
     match row {
         Row::Label {
@@ -123,22 +129,22 @@ fn RowView(
             }
         }
         Row::Number(field) => rsx! {
-            NumberBox { draft, field }
+            NumberBox { draft, field, on_toast }
         },
         Row::Chips(set) => rsx! {
-            ChipRow { draft, set }
+            ChipRow { draft, set, catalog }
         },
         Row::Stepper(step) => rsx! {
             StepperRow { draft, step }
         },
         Row::Picker(field) => rsx! {
-            Picker { draft, field, sources }
+            Picker { draft, field, sources, catalog }
         },
     }
 }
 
-/// A label with its mode chip, the Oracle tags `Dictionary` chip and its
-/// `×`.
+/// A label with its mode chip, the Oracle tags `Dictionary` chip (when the
+/// host has a dictionary) and its `×`.
 #[component]
 fn LabelRow(
     text: &'static str,
@@ -147,9 +153,9 @@ fn LabelRow(
     row: Row,
     mut draft: Signal<FilterDraft>,
     mut epoch: Signal<u32>,
-    on_dictionary: EventHandler<PickerField>,
+    on_dictionary: Option<EventHandler<PickerField>>,
 ) -> Element {
-    let dictionary = sections::dictionary_for(row);
+    let dictionary = on_dictionary.and_then(|_| sections::dictionary_for(row));
     let mode_label = mode.map(|chip| {
         let d = draft.read();
         d.modes.label(&d.draft, chip)
@@ -160,7 +166,11 @@ fn LabelRow(
             if let Some(field) = dictionary {
                 button {
                     class: "chip-xs",
-                    onclick: move |_| on_dictionary.call(field),
+                    onclick: move |_| {
+                        if let Some(handler) = on_dictionary {
+                            handler.call(field);
+                        }
+                    },
                     "Dictionary"
                 }
             }
@@ -193,10 +203,8 @@ fn LabelRow(
 
 /// A row of chips.
 #[component]
-fn ChipRow(mut draft: Signal<FilterDraft>, set: ChipSet) -> Element {
-    let cache: CatalogCache = use_context();
-    let roles = cache
-        .0
+fn ChipRow(mut draft: Signal<FilterDraft>, set: ChipSet, catalog: ReadSignal<Catalog>) -> Element {
+    let roles = catalog
         .read()
         .card_roles
         .ready()
@@ -212,7 +220,7 @@ fn ChipRow(mut draft: Signal<FilterDraft>, set: ChipSet) -> Element {
         (options, selected)
     };
     let class = if matches!(set, ChipSet::Currency) {
-        "chip-row web-filter-chips-center"
+        "chip-row card-filter-chips-center"
     } else {
         "flex flex-wrap gap-1 mb-1 flex-center"
     };
@@ -222,7 +230,7 @@ fn ChipRow(mut draft: Signal<FilterDraft>, set: ChipSet) -> Element {
                 {
                     let value = option.value.clone();
                     rsx! {
-                        span { key: "{option.value}", title: option.title.unwrap_or_default(), class: "web-filter-chip",
+                        span { key: "{option.value}", title: option.title.unwrap_or_default(), class: "card-filter-chip",
                             Chip {
                                 selected: on,
                                 onclick: move |_| {
@@ -296,8 +304,11 @@ fn RangeStepper(mut draft: Signal<FilterDraft>, stat: Stat, end: End, shown: Str
 
 /// A number box parsed as it loses focus: the exact mana value.
 #[component]
-fn NumberBox(mut draft: Signal<FilterDraft>, field: NumberField) -> Element {
-    let toast = use_toast();
+fn NumberBox(
+    mut draft: Signal<FilterDraft>,
+    field: NumberField,
+    on_toast: Option<EventHandler<Toast>>,
+) -> Element {
     let mut text = use_signal(|| field.text(&draft.peek().draft));
     rsx! {
         input {
@@ -315,7 +326,7 @@ fn NumberBox(mut draft: Signal<FilterDraft>, field: NumberField) -> Element {
                 let result = draft.write().set_number(field, &typed, "");
                 match result {
                     Ok(()) => text.set(field.text(&draft.peek().draft)),
-                    Err(t) => raise(toast, &t),
+                    Err(t) => raise(on_toast, t),
                 }
             },
         }
@@ -324,8 +335,12 @@ fn NumberBox(mut draft: Signal<FilterDraft>, field: NumberField) -> Element {
 
 /// A min box, `to` and a max box, each parsed as it loses focus.
 #[component]
-fn NumberPair(mut draft: Signal<FilterDraft>, min: NumberField, max: NumberField) -> Element {
-    let toast = use_toast();
+fn NumberPair(
+    mut draft: Signal<FilterDraft>,
+    min: NumberField,
+    max: NumberField,
+    on_toast: Option<EventHandler<Toast>>,
+) -> Element {
     let mut min_text = use_signal(|| min.text(&draft.peek().draft));
     let mut max_text = use_signal(|| max.text(&draft.peek().draft));
     let mut commit = move |field: NumberField| {
@@ -336,7 +351,7 @@ fn NumberPair(mut draft: Signal<FilterDraft>, min: NumberField, max: NumberField
         };
         let result = draft.write().set_number(field, &typed, &other);
         if let Err(t) = result {
-            raise(toast, &t);
+            raise(on_toast, t);
         }
     };
     rsx! {
@@ -374,14 +389,18 @@ fn NumberPair(mut draft: Signal<FilterDraft>, min: NumberField, max: NumberField
 /// with its results floating above it. ↑ and ↓ move through the results and
 /// Enter picks the highlighted one.
 #[component]
-fn Picker(mut draft: Signal<FilterDraft>, field: PickerField, sources: Sources) -> Element {
-    let cache: CatalogCache = use_context();
+fn Picker(
+    mut draft: Signal<FilterDraft>,
+    field: PickerField,
+    sources: Sources,
+    catalog: ReadSignal<Catalog>,
+) -> Element {
     let mut query = use_signal(String::new);
     let mut highlight = use_signal(|| 0usize);
     let (picked, results) = {
         let d = draft.read();
         let picked = field.picked(&d.draft);
-        let results = field.results(&d.draft, &query(), &sources, &cache.0.read());
+        let results = field.results(&d.draft, &query(), &sources, &catalog.read());
         (picked, results)
     };
     let lit = highlight().min(results.len().saturating_sub(1));
@@ -416,7 +435,7 @@ fn Picker(mut draft: Signal<FilterDraft>, field: PickerField, sources: Sources) 
                     for (i, value) in results.into_iter().enumerate() {
                         div {
                             key: "{value}",
-                            class: if i == lit { "chip-unselected search-float-chip web-float-highlight" } else { "chip-unselected search-float-chip" },
+                            class: if i == lit { "chip-unselected search-float-chip card-filter-highlight" } else { "chip-unselected search-float-chip" },
                             style: "animation-delay: {i * 40}ms, {250 + i * 40}ms;",
                             onmousedown: move |e| e.prevent_default(),
                             onclick: move |_| pick(value.clone()),

@@ -42,6 +42,7 @@
 
 mod architecture;
 mod card_details;
+mod card_filter;
 mod card_role_chips;
 mod card_row;
 mod changelog;
@@ -49,6 +50,7 @@ mod charts;
 mod color_bars;
 mod danger_zone;
 mod deck_page;
+mod drawer_sheet;
 mod flippable_card_image;
 mod fold;
 pub mod hint;
@@ -64,6 +66,7 @@ mod theme;
 
 pub use architecture::ZwipeArchitecture;
 pub use card_details::{CardDetails, card_face_count};
+pub use card_filter::{CardFilterPanel, DictionarySlot};
 pub use card_role_chips::CardRoleChips;
 pub use card_row::CardRow;
 pub use changelog::{
@@ -79,6 +82,7 @@ pub use deck_page::{
     DeckBand, DeckControls, DeckFacts, DeckFilter, DeckFold, DeckHead, DeckPage, DeckSection,
     FeaturedCard, NO_CARDS, sections,
 };
+pub use drawer_sheet::DrawerSheet;
 pub use flippable_card_image::{FlippableCardImage, reset_image_ease};
 pub use fold::{FOLD_AT, Fold, SEE_LESS, SEE_MORE, SeeMore, fold_split};
 pub use home_colors::{ColorsEmpty, HomeColors};
@@ -128,3 +132,9 @@ pub const SCREENS_CSS: &str = concat!(
 /// and zwiper-web after [`SCREENS_CSS`], each before `TOAST_CSS`; zite
 /// does not load it.
 pub const ACCORDION_CSS: &str = include_str!("../assets/accordion.css");
+
+/// The rules of [`DrawerSheet`] and [`CardFilterPanel`]: the title bar's
+/// `?`, the Oracle tags trigger's focus ring, the chips' wrappers and the
+/// picker's highlighted result. A host that draws either loads it after its
+/// other shared sheets and before its own stylesheet.
+pub const FILTER_CSS: &str = include_str!("../assets/filter.css");
