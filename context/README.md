@@ -21,9 +21,9 @@ Plus [`CLAUDE.md`](CLAUDE.md), the authoritative rules for AI assistants.
 
 The running log, newest first. Update this when something ships; [`progress/todo.md`](progress/todo.md) holds what is still open.
 
-## 2026-11-05: 1.18.0 cut
+## 2026-11-05: 1.18.0 submitted
 
-1.18.0 is cut as iOS build 113 and Android vc75, both built on scotland-halo, iOS with Xcode 27.2. Notes are at [`operations/store-submissions/1.18.0/whats_new.md`](operations/store-submissions/1.18.0/whats_new.md), which summarize the 78 changelog entries by area. The release is the navigation overhaul: a main menu behind a hamburger in every header, a back arrow, a header that slides away on scroll with its contents fading, actions floating as icons at each screen's bottom right, About, and redesigned Home, Decks and deck charts. The changelog dates 1.18.0 to 2026-11-05.
+1.18.0 is cut and submitted to both stores, iOS build 113 and Android vc75, both built on scotland-halo, iOS with Xcode 27.2. Notes are at [`operations/store-submissions/1.18.0/whats_new.md`](operations/store-submissions/1.18.0/whats_new.md), which summarize the 78 changelog entries by area. The release is the navigation overhaul: a main menu behind a hamburger in every header, a back arrow, a header that slides away on scroll with its contents fading, actions floating as icons at each screen's bottom right, About, and redesigned Home, Decks and deck charts. The changelog dates 1.18.0 to 2026-11-05, the day it was submitted.
 
 ## 2026-11-01: zerver's services are concrete types
 
