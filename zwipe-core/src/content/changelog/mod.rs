@@ -88,6 +88,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Log in, Create profile and Send are full-width buttons under their forms, with chips to the other sign-in screens beneath",
         "Create profile and Forgot password return you to Log in once they succeed, with your username filled in",
         "Login opens scrolled to the top",
+        "Decks spaces its first group under the chips as the chip rows are spaced",
         "Back after deleting a deck returns to Decks, not the deleted deck",
         "Could not load lines are muted chips, the same as other empty results",
         "Change username and Change email refuse your current username or email",
