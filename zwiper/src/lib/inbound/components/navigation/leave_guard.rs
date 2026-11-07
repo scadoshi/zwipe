@@ -484,4 +484,105 @@ mod tests {
             release(guard.owner);
         });
     }
+
+    /// The routes the router tests run on: a deck, and its edit form under
+    /// the layout that mounts the dialog, as the app's router has them.
+    #[derive(Routable, Clone, PartialEq, Debug)]
+    enum Route {
+        #[layout(Layout)]
+        #[route("/deck")]
+        Deck {},
+        #[route("/deck/edit")]
+        Edit {},
+    }
+
+    #[component]
+    fn Layout() -> Element {
+        rsx! {
+            Outlet::<Route> {}
+            LeaveDialog {}
+        }
+    }
+
+    #[component]
+    fn Deck() -> Element {
+        rsx! { "deck" }
+    }
+
+    thread_local! {
+        /// The edit form's header back and the OS back, handed to the test.
+        static BACKS: RefCell<Option<(Callback<()>, Callback<()>)>> = const { RefCell::new(None) };
+    }
+
+    /// An edit form with unsaved changes. Its header back arms the guard
+    /// and pushes the deck, as the deck form's Back does; the OS back is the
+    /// router's go back, as the back handler calls it.
+    #[component]
+    fn Edit() -> Element {
+        let guard = use_leave_guard(COPY);
+        let navigator = use_navigator();
+        let header_back = use_callback(move |()| {
+            guard.set(true);
+            navigator.push(Route::Deck {});
+        });
+        let os_back = use_callback(move |()| navigator.go_back());
+        use_hook(move || {
+            guard.set(true);
+            BACKS.with(|b| *b.borrow_mut() = Some((header_back, os_back)));
+        });
+        rsx! { "edit" }
+    }
+
+    fn app() -> Element {
+        use_hook(GuardedHistory::provide);
+        rsx! {
+            Router::<Route> {}
+        }
+    }
+
+    /// The app on the edit form, opened from the deck, with its two backs.
+    fn on_the_edit_form() -> (VirtualDom, Callback<()>, Callback<()>) {
+        let mut dom = VirtualDom::new(app);
+        let history: Rc<dyn History> =
+            Rc::new(dioxus::history::MemoryHistory::with_initial_path("/deck"));
+        history.push("/deck/edit".to_owned());
+        dom.provide_root_context(history);
+        dom.rebuild_in_place();
+        let (header_back, os_back) = BACKS.with(|b| b.borrow_mut().take()).unwrap();
+        (dom, header_back, os_back)
+    }
+
+    fn route_on_view() -> String {
+        GUARD
+            .with(|g| g.inner.borrow().as_ref().map(|inner| inner.current_route()))
+            .unwrap()
+    }
+
+    fn asking() -> bool {
+        GUARD.with(|g| g.asking.get().is_some_and(|a| *a.peek()))
+    }
+
+    #[test]
+    fn the_header_back_asks_before_leaving_unsaved_changes() {
+        let (mut dom, header_back, _) = on_the_edit_form();
+        dom.in_runtime(|| header_back.call(()));
+        dom.render_immediate_to_vec();
+        assert_eq!(route_on_view(), "/deck/edit", "the form stays on view");
+        assert!(asking(), "the dialog asks");
+        assert_eq!(
+            GUARD.with(|g| g.held.borrow().clone()),
+            Some(Held::Push("/deck".to_owned())),
+            "the header's move waits on the answer"
+        );
+    }
+
+    #[test]
+    fn the_os_back_asks_before_leaving_unsaved_changes() {
+        let (mut dom, _, os_back) = on_the_edit_form();
+        dom.in_runtime(|| os_back.call(()));
+        dom.render_immediate_to_vec();
+        assert_eq!(route_on_view(), "/deck/edit", "the form stays on view");
+        assert!(asking(), "the dialog asks");
+        assert_eq!(GUARD.with(|g| g.held.borrow().clone()), Some(Held::Back));
+    }
 }
