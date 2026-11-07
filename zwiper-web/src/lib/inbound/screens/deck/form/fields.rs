@@ -1,7 +1,7 @@
 //! The form's fields in the app's order: `Profile` (name, format, the
 //! command zone, power level), `Budget` (land and price targets) and `Tags`
-//! (deck, oracle and other tags). A wide window puts `Profile` in the left
-//! column and the other two in the right.
+//! (deck, oracle and other tags). A wide window puts `Profile` and `Budget`
+//! in the left column and `Tags` in the right.
 
 use components::{ClearWrap, TextInput};
 use dioxus::prelude::*;
@@ -11,6 +11,7 @@ use zwipe_core::domain::deck::{
     DeckOtherTag, MAX_DECK_ORACLE_TAGS, MAX_DECK_TAGS, PowerLevel, deck_tag_label,
 };
 use zwipe_ui::deck::form::{self, Slot, Step};
+use zwipe_ui::text::sentence_case;
 
 use super::DeckForm;
 use super::command_zone::CommandZoneField;
@@ -26,9 +27,9 @@ pub fn DeckFields(form: DeckForm, on_enter: EventHandler<()>) -> Element {
         div { class: "container-sm web-deck-form",
             div { class: "flex-col text-center web-deck-form-column",
                 ProfileFields { form, on_enter }
+                BudgetFields { form }
             }
             div { class: "flex-col text-center web-deck-form-column",
-                BudgetFields { form }
                 TagFields { form }
             }
         }
@@ -82,7 +83,7 @@ fn ProfileFields(form: DeckForm, on_enter: EventHandler<()>) -> Element {
                         value: form.name,
                         id: DECK_NAME_ID,
                         placeholder: "Not set",
-                        error: (form.name_error)(),
+                        error: (form.name_error)().as_deref().map(sentence_case),
                         on_clear: |()| {},
                     }
                 }

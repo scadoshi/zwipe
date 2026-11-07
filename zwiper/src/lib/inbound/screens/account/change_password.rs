@@ -6,6 +6,7 @@ use components::{
 };
 use dioxus::prelude::*;
 use zwipe_ui::screens::account::{Action, CANCEL, Dialog, FORGOT_PASSWORD, Field, Sheet};
+use zwipe_ui::text::sentence_case;
 
 use super::driver::{Driver, use_field_sync};
 use crate::inbound::components::hint_host::HintTopic;
@@ -61,7 +62,7 @@ pub fn ChangePasswordSheet(open: Signal<bool>) -> Element {
                     label: Field::NewPassword.label(),
                     placeholder: Field::NewPassword.placeholder(),
                     input_type: "password",
-                    error: password_error,
+                    error: password_error.as_deref().map(sentence_case),
                     on_info: info_button::open_topic(HintTopic::Password),
                 }
 

@@ -2,6 +2,7 @@ use components::{InfoButton, Panel, PasswordInput};
 use dioxus::prelude::*;
 use zwipe_client::ClientError;
 use zwipe_core::domain::auth::models::secret::Secret;
+use zwipe_ui::text::sentence_case;
 
 use crate::{Nav, api};
 
@@ -186,7 +187,7 @@ pub fn Reset(token: String) -> Element {
                     }
 
                     if let ResetState::Error(msg) = &*state.read() {
-                        div { class: "status-message error", "{msg}" }
+                        div { class: "status-message error", {sentence_case(msg)} }
                     } else if mismatch {
                         div { class: "status-message error", "Passwords do not match" }
                     }

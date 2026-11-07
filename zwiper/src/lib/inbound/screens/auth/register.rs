@@ -10,6 +10,7 @@ use zwipe_core::http::contracts::auth::HttpRegisterUser;
 use zwipe_core::http::contracts::metrics::AnonymousEventKind;
 use zwipe_ui::account::Password;
 use zwipe_ui::screens::register::{self, Action, Destination, Effect, Field, State};
+use zwipe_ui::text::sentence_case;
 
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::home_flavor::PublicFlavor;
@@ -148,7 +149,7 @@ pub fn Register() -> Element {
                         id: "username",
                         label: Field::Username.label(),
                         placeholder: Field::Username.placeholder(),
-                        error: username_error,
+                        error: username_error.as_deref().map(sentence_case),
                     }
                     TextInput {
                         value: driver.email,
@@ -156,7 +157,7 @@ pub fn Register() -> Element {
                         label: Field::Email.label(),
                         placeholder: Field::Email.placeholder(),
                         input_type: "email",
-                        error: email_error,
+                        error: email_error.as_deref().map(sentence_case),
                     }
                     TextInput {
                         value: driver.password,
@@ -164,7 +165,7 @@ pub fn Register() -> Element {
                         label: Field::Password.label(),
                         placeholder: Field::Password.placeholder(),
                         input_type: "password",
-                        error: password_error,
+                        error: password_error.as_deref().map(sentence_case),
                         on_info: info_button::open_topic(HintTopic::Password),
                     }
                     TextInput {
