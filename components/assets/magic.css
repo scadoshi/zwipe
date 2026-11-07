@@ -1730,6 +1730,11 @@ i.ms.ms-cost.ms-gp {
     touch-action: pan-y;
     -webkit-mask-image: var(--flow-fade);
     mask-image: var(--flow-fade);
+    /* Clips the cards' 3D transforms too, which WebKit lets past
+       `overflow: hidden` into the sheet's scroll width; the sheet itself
+       never scrolls sideways. */
+    overflow: clip;
+    contain: paint;
 }
 
 .cover-flow-stage:active {
