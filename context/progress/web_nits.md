@@ -22,7 +22,7 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 ## In progress
 
 | 116 to 119, swipe screens: no head, title chip, panel scroll, eye remembered | halo | `nits/halo-116` |
-| 120, 121, picker ✓ room and zwipe.net ghost, focus after a hint | laptop | `nits/laptop-120` |
+| 120, 121, then 124, picker ✓ room and zwipe.net ghost, focus after a hint, portfolio footer | laptop | `nits/laptop-120`, portfolio `nits/laptop-124` |
 | 122, unsaved changes guard on the deck form | scotland | `nits/scotland-122` |
 | 123, skeleton audit | thinker | `nits/thinker-123` |
 
@@ -171,6 +171,8 @@ From Surfer's Part 3 (2026-11-06), triaged with Scotty:
 
 122. **Leaving the deck form loses unsaved changes without a word.** Creating or editing a deck (its pickers, drawers, the Commander → Swipe select and any other layer on top) with changes not yet saved: any way out (nav, logo, back button, browser back or reload, a link) asks first, "Leave without saving? Your changes to this deck will be lost", with Stay and Leave. The dialog sits above every modal layer the form can have open. No changes means no dialog.
 123. **Skeleton audit.** Every skeleton matches what replaces it: bar thickness, row height and spacing equal the real chart's (Playstyle's charts differ from each other today: one skeleton's bars match, the other's don't); a chip skeleton is an empty chip, never a chip with dots or circles inside standing in for text or pips; and nothing touches its panel's wall (Activity's right-hand chip row starts flush against the panel's left edge). All screens, wide and phone.
+
+124. **scottyfermo.com's footer is three stacked rows.** The © 2026 Scotty Fermo line moves into the row with the icon buttons and Contribute, as zwipe.net's and the app's compact footers do; the Rust/Heron line stays under it.
 
 Skipped with Scotty: S35 (old /deck paths 404; old paths don't reroute), S37 (overscroll shade, 104 as designed).
 
