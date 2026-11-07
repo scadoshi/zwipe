@@ -622,3 +622,51 @@ On the composer's question: **the misclick script in Part 13 did not touch the C
     - The commander maybeboard guide doesn't mention 194's Swipe on the maybeboard page yet, and says a row has three actions where the app shows four (Image, Printings, Create deck, Remove).
 
 Not verified: the phone filter drawer at 390. In the background popup its slide-in never ran (`show` class set, still `translateY(662px)`), which matches Part 13's picker caught mid-slide. That's the popup's throttling, not the app, and Droid covers it on mobile.
+
+## Part 15, zwipe.net, the portfolio and the app's signed-out screens (2026-11-07, done 14:58)
+
+zwipe.net serves `zite_bg-dxh9074ac72e5c198ca.wasm`; the app is still on live f699acc37. Wide is 1450. 390 was checked with same-origin iframes for zwipe.net and the portfolio (screenshots work), and with the script-sized popup for the app (DOM only). The test session stayed signed in throughout, **no logouts**. zwipe.net's and the portfolio's local themes went back to Gruvbox dark and Poimandres dark.
+
+**How I saw the app signed out without signing out:** from app.zwipe.net/robots.txt I opened a popup and wrote the app's own index.html into it with a small shim first:
+- reads of `zwiper-web.session` return nothing;
+- writes and removals of that key are dropped, so the real session can't be touched;
+- calls to `/auth/(cookie|refresh|logout|login|register|password|reset)` get a canned 401.
+
+The popup boots the real wasm signed out. None of the guards fired (0 blocked writes, 0 blocked requests), and the main tab's session was present and working afterwards. I didn't submit any sign-in, sign-up or reset, and typed no passwords. Production is no place for test passwords, so password strength, mismatch and the reset submit are untested.
+
+### Works
+
+| Area | Check | Result |
+|---|---|---|
+| Crawl | Every internal link and asset from each home page | zwipe.net: 58 URLs over 29 pages, all 200. Portfolio: 43 URLs over 22 pages, all 200, apart from Cloudflare's `/cdn-cgi/l/email-protection` (S23, skipped before) |
+| Meta | title, description, og:title/url/image, canonical, h1 on all 51 pages | Unique titles and descriptions, og:url and canonical match each page, og:image present, exactly one h1 everywhere |
+| Sitemaps/robots | zwipe.net | sitemap has 29 locs (= the crawl). robots allows / and disallows `/deck/`, `/verify/`, `/confirm-email/`, `/reset/` |
+| External links | 89, skipping retailers | All fine apart from the two below. LinkedIn's 999 is its bot wall |
+| Changelog | Latest, year → months → minor chips, Show more, `#v1-12-1` | Latest shows 1.18.0 and the upcoming 1.18.1. 2026 shows 5 at a time, and 11 Show mores reach all 59 releases. Sep narrows to 5. The fragment lands on 1.12.1 just under the nav with 2026 › Oct › 1.12 lit. Cairn's changelog on the portfolio lists 1.3.0 and 1.3.1 |
+| Theme toggles | zwipe.net and portfolio, signed out: Light, pick a theme, Escape | Both apply at once and keep the choice. Escape closes the theme panel on both. On zwipe.net, opening it moves focus to the current theme's row and Escape gives focus back to the trigger |
+| Metrics | zwipe.net counters, portfolio stats | zwipe.net matches live (2,270 / 31.8k / 264.7k, "as of Nov 7" then Live). Portfolio "7,897 commits · 14 repos · 88 stars" lines up with Heron's allowlist (the 14 showcased repos sum to about 88 stars). GitHub's overall totals are 40 public repos and 128 stars |
+| Keyboard | Tab through zwipe.net and portfolio homes | Logical order (nav, banner, content, footer). The closed theme panels' 50 buttons are out of the tab order. Portfolio cards waiting on scroll-reveal come in at full opacity when focused |
+| 390 | zwipe.net: home, guides, about, changelog, community, privacy, contribute, two guides. Portfolio: home, projects, zwipe, systems, contribute, cairn changelog | No sideways scroll on any (scrollWidth = clientWidth 379 in a 390 frame). The phone menu lists every link with the theme and dark buttons at the bottom (p15-1) |
+| App signed out: Login | 390 and 1400 | Renders with counters, form, Create profile and Forgot password. Empty submit, or a name with no password, shows "Enter your username or email and password" and sends nothing |
+| Create profile | Empty, `ab`, `a b!`, `not-an-email`, valid name and email with no password | "Must be at least 3 characters long", "Cannot contain whitespace", "Missing @ symbol", "Must be at least 8 characters long". No request sent |
+| Forgot password | Empty, `bad` | "Please enter a valid email address", no request |
+| Deep links | `/`, `/decks`, a deck, its Add, `/settings`, `/account`, `/maybeboard`, `/playstyle` | All land on `/login` (history replaced, length 1) with no deck or user API calls. `/nonexistent-page` gives the app's "Page not found" |
+| Token pages | zwipe.net `/verify/…`, `/confirm-email/…` with a bogus token | "Link already used or expired" with what to do next |
+
+### Findings
+
+1. **Escape doesn't close zwipe.net's phone menu.** At 390, with the menu open and focus on Guides, a real Escape key leaves it open (`aria-expanded` stays true) (p15-1). The portfolio's phone menu closes on Escape, and zwipe.net's theme panel does too (164).
+2. **zwipe.net doesn't declare `color-scheme`.** It's `normal` on dark themes (the portfolio sets `dark`). So Chrome draws its default dark-blue focus ring, rgb(0,95,204), which is **2.66:1 on Gruvbox's background**, under the 3:1 non-text minimum. Nearly every control uses it (only the testimonial link has a themed 3px ring). The same default also affects scrollbars and native controls. The portfolio's ring is light blue and easy to see. The app wasn't checked for this.
+3. **zwipe.net has no `<main>` landmark** (only nav and footer), and neither site has a skip link.
+4. **Two dead links on the portfolio's orangui page:** `github.com/scadoshi/orangui/blob/main/src/chart_math.rs` and `.../src/theme.rs` are 404. orangui's `src/` no longer has those files. The other 20 file links on that page resolve.
+5. **Reset link doesn't check the token up front.** `zwipe.net/reset/<bogus>` shows the full "Set new password" form, so someone with a dead link only finds out after choosing a password. Verify and confirm-email check on load and say "Link already used or expired". (Submit not tested; see above.)
+6. **Generic titles on the token pages.** `/reset/…`, `/verify/…` and `/confirm-email/…` all have the home page's title ("Magic: The Gathering Deck Builder for Phone and Web | Zwipe") instead of "Reset password" etc. They're disallowed in robots, so this only shows in tabs and history.
+7. **No autocomplete hints on auth forms.**
+    - Login's fields have no `autocomplete` and no `name`; they should be `username` and `current-password`.
+    - Create profile's and zwipe.net's reset form's password fields have none either; they should be `new-password`.
+    - Without these, password managers guess or skip the forms.
+8. **Forgot password's email field is `type=text`.** Phones won't show the email keyboard. Create profile's is `type=email`.
+9. **Email errors are worded differently.** Create profile says "Missing @ symbol", even when the field is empty. Forgot password says "Please enter a valid email address".
+10. **A deep link signed out probably loses its target.** A signed-out deck link redirects to plain `/login`, with no `?next=` and nothing in localStorage or sessionStorage. So after signing in you'd likely land on Home, not the deck. I can't confirm the after-sign-in step without signing in.
+11. **Login's counters keep "as of Nov 7" after fetching live stats.** They settle on the live 2,270 / 31.8k / 264.7k, but the tag still says "as of Nov 7". Home (signed in) says "Live" once fresh (195).
+12. **Portfolio stats don't say what they count.** "14 repos · 88 stars" reads as the whole GitHub account (40 repos, 128 stars). "Counted by Heron" is there, but not that it covers showcased repos only. Wording question for Scotty.
