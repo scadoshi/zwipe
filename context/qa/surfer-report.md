@@ -535,3 +535,42 @@ Wide is 1450 × 759. Phone width (390 × 777) was checked in a script-sized popu
 | 168 | Portfolio no sideways scroll at 375 | **Fixed.** upsee, sharpmas, rustmas: scrollWidth 364 in a 375 frame (p11-7) |
 
 Small: after a Quick add, the suggestion pill under the field flips to "No results" while the input still holds the added card's name, which reads like the add failed (p11-1).
+
+## Part 12, release f2c6e80a0 (10:49–10:53, wide 1450 × 759, hard-reloaded)
+
+Fresh app wasm `zwiper-web_bg-dxh9751c7d2ad9bda6e.wasm` (2.36 MB transferred). Signed in throughout, **no logouts**. Deck and theme restored (Surfer test: Edgar Markov plus 5 creatures; Gruvbox dark).
+
+| # | Check | Result |
+|---|---|---|
+| 182 | Swipe screen title tag outlined in its action color | **Fixed.** Remove has a red outline on its red tint (p12-1) |
+| 183 | Picker search-to-hint gap equals hint-to-chips | **Fixed.** Format, Deck tags, Oracle tags: 8px and 8px in all three (p12-4) |
+| 184 | Remove to the end: plain ghost card, no chip, "No cards left" toast | **Fixed.** Empty ghost card with no label, one toast "No cards left" (p12-2). No per-remove toasts |
+| 175 | Undo at the end | **Works.** Charismatic Conqueror back, details panel back, docks re-enabled, `POST /card` |
+| Toasts | Whole message, no 2-line clamp | **Fixed.** "Added Clavileño, First of the Blessed" wraps to 3 lines in full (p12-3) |
+| Board chips | Wrap clear of the dock | Wide only: Main/Maybe/Side/All sit at x 16–220 and the dock starts at about x 930, so they're clear. Narrow not checked (Droid has mobile web) |
+| zwipe.net counters | Still honest | **Not on first paint.** After a hard reload (new `zite_bg-dxhd13f5913dad17271.wasm`), the hero showed **4,076 decks / 57.2k searches / 475.5k swiped, "as of 09:16"** for at least 3s. The next load showed the live values from `api/marketing/stats`: **2,270 / 31.8k / 264.7k, "Live"**, which matches the app's Home (2,270 / 31.8k / 264.7k, "as of 09:57"). So the built-in snapshot numbers are about 1.8× too high, possibly from a different database at build time. Anyone with a slow API call, or a failed one, sees the inflated figures (p12-5 is the live state) |
+
+## Part 13, release f699acc37 (2026-11-07, done 14:09)
+
+Fresh app wasm `zwiper-web_bg-dxhf5246e19639ede98.wasm` (2.35 MB transferred) after a hard reload. Signed in throughout, **no logouts**. Wide is 1450 × 759. Phone width (390 × ~780) was checked in a script-sized popup, DOM measurements only. Deck, maybeboard and theme restored (Surfer test: Edgar Markov plus 5 creatures, $81.25; commander maybeboard empty; Zenburn dark, which is what the account had when I started).
+
+| # | Check | Result |
+|---|---|---|
+| 194 | Commander maybeboard Swipe | **Works.** "Swipe" sits in the Commanders header, in the empty state and with commanders listed. It opens Swipe select with the dock Skip / Save / Undo / Pick. ← skips (no request), ↑ saves (`POST /api/user/commander-maybeboard/{id}` 204, "Maybe" tag), ↓ undoes the save (`DELETE` same path 204, "Undone"), → opens Create deck with that commander and Format Commander filled in. A saved commander isn't dealt again: with Edgar on the board he no longer came up second. The help dialog spells out all four directions (p13-1) |
+| 192 | Phone card-details drawer: title in its header, no fold | **Fixed.** At 390 the drawer header (76px, 1px bottom border) holds ×, the title and the mana cost on one row. There is no separate head band. The body (`.panel-body`) starts exactly at the header's bottom edge and scrolls (481/447) under it |
+| 193 | Swipe card fills a phone screen | **Fixed.** 326 × 454 at 390 wide (32px gutters) on maybeboard Swipe, Add and Remove. Previously about half the width |
+| 186 | Card preview as wide as the app's on a phone | **Fixed.** Home's Featured flavor "Image" opens at 358px in a 390 window (16px gutters) |
+| 188 | Chip skeletons hold no inner bar | **Fixed visually.** The ghost chips on the deck page (group-by, profile icons, stat chip, buttons) still contain a `.skeleton-bar` child, but it's `visibility: hidden` and only sizes the chip. What shows is an empty chip |
+| 189 | No fade at bordered edges | **Mostly.** "Welcome to your deck" hint at 390: the description scrolls (609/363) between its two rules with no mask. Card-details drawer: no mask. **Still faded:** the picker's chip grid (`.web-picker-body > .tag-grid`, 16px top and bottom). Its top edge is right under the hint box's bordered bottom, so the chips fade out at a border. The Oracle tags dictionary list (`.dict-list`, top) and Import/Export (`.import-scroll`, top) also keep a top fade, under their controls rather than a rule. Worth a look at whether the picker grid should drop its top fade |
+| 191 | A–Z rail scrolls on x only; tighter top gap | **Fixed.** `.dict-letter-rail` is `overflow: auto / hidden`, scrollHeight = clientHeight (35), scrollWidth 1017 in 366. Oracle tags picker: header bottom 75 → Search label 93 |
+| 190 | No double-tap zoom | **Fixed (CSS).** `touch-action: manipulation` on html and body on app.zwipe.net and zwipe.net. Viewport is `width=device-width, initial-scale=1`, so pinch zoom stays. Not tested with a real touch device |
+| 195 | "as of <date>" | **Fixed.** zwipe.net's served HTML says **"as of Nov 7"** with 2,270 / 31.8k / 264.7k. After load the numbers scramble and settle on the live values, labeled "Live". The portfolio's two cached labels also read "as of Nov 7". The app's Home showed "Live" |
+| zwipe.net counters | Snapshot honest | **Fixed.** The built-in snapshot now matches the live API (2,270 / 31.8k / 264.7k). Part 12's 1.8× inflation is gone. The figures I saw at first glance (e.g. 2,257) were mid-scramble frames |
+| 165 | Light-theme contrast | **Fixed.** On the deck page (109 enabled chips, tags and buttons), all 50 light themes clear 4.5:1, the lowest at 4.60 (Flexoki "Tribal", Kanagawa Dragon "Keywords", Rustbox "$81.25"). Dark: the same, apart from the off-state Maybe/Side board chips (2.6 on Material, 2.7 on Bluloco), which are disabled and exempt |
+| 182–184 | Rechecked in Part 12 | Held (outline on the title tag, picker gaps, ghost card without chip) |
+
+**New: deck page Warnings go stale after board moves and adds.** While restoring the deck I moved Drana from Maybeboard and Welcoming Vampire from Sideboard to Main, then Quick added Clavileño. The header chips and Creatures (5) updated live to "6 cards · $81.25", but Warnings still said **"Deck has 3 cards, commander requires at least 100"** and **"Commander does not use sideboards"** with the sideboard empty (p13-2). A reload fixed it ("Deck has 6 cards", sideboard warning gone). 181 made Warnings follow the row's −. It doesn't follow "To mainboard", or (maybe) Quick add.
+
+Small: the maybeboard Swipe's dock labels the right swipe "Pick" while the help says "starts a new deck with that commander". It's clear enough, but "Create deck" (the row action's label) would match.
+
+Tester's note: my first light-theme contrast run clicked buttons outside the theme sheet (a bad selector). It toggled Surfer test's boards and moved, starred and removed some of its cards, and opened Log out's confirm, which it then closed. Nothing outside the test account was touched. The session stayed signed in, and everything was put back as described above.
