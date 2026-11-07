@@ -119,6 +119,7 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 63. **The swipe arrow dock needs labels and a place beside the other dock.** "← Skip / ↑ Maybeboard / ↓ Undo / → Add" text on the buttons, and the arrow dock to the left of the existing dock on the same row.
 64. **One chip grammar for tags, every client.** Keywords, card roles and oracle tags draw as a one-off outlined `.keyword-chip` under bare colored group names. They become the kit's regular clickable `Chip`s, with "Keywords", "Card roles" and "Oracle tags" as label chips leading their rows, as Show and Group by do. Shared components, so the app, the web and zwipe.net change together; a 1.18.1 changelog entry.
 65. **The web's printing picker becomes a cover-flow modal on a wide window.** A large modal with the printings as a stacked, fanned carousel (selected large in the middle, ~10 each side shrinking behind it) that glides left and right as you scroll, arrow, drag or click; Enter or a click selects. Phones keep today's picker.
+66. **Home's hero matches across the two sites** (Scotty to thinker directly). app.zwipe.net takes zwipe.net's larger mark, figures and labels on a wide window; zwipe.net takes the app's rounded counters (31.8k) and its pre-hydration roll keeps that shape. PR #206.
 
 ## Done
 
