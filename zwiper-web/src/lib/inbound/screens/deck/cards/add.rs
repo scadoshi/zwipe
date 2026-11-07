@@ -46,7 +46,7 @@ use zwipe_ui::timing::LOAD_MORE_AT;
 use super::{SwipeDetails, flip_top_card, signal_toast};
 use crate::inbound::card_filter::CardFilterPanel;
 use crate::inbound::card_stores::CardStores;
-use crate::inbound::cards::card_info::{CardDetailsSheet, CardInfoDisplay, CardSkeleton};
+use crate::inbound::cards::card_info::{CardDetailsSheet, CardSkeleton};
 use crate::inbound::cards::printing_sheet::PrintingSheet;
 use crate::inbound::cards::swipe_stack::{
     EndUndoButton, Swipe, SwipeButtons, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
@@ -877,7 +877,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             div { class: "screen-content card-swipe content-enter web-cards-swipe {eye.body_class()}",
                 div { class: "web-cards-swipe-main",
                     div { class: "form-container",
-                        if let Some(card) = current.clone() {
+                        if current.is_some() {
                             SwipeStack {
                                 cards: window,
                                 allowed: ALL_SWIPES.to_vec(),
@@ -893,7 +893,6 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                                 },
                             }
                             SwipeButtons { control, buttons }
-                            CardInfoDisplay { card }
                         } else if end_of_pile {
                             if loading_more() {
                                 CardSkeleton { is_loading: true }
@@ -925,7 +924,10 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                         }
                     }
                 }
-                SwipeDetails { card: current.clone() }
+                SwipeDetails {
+                    card: current.clone(),
+                    loading: (end_of_pile && loading_more()) || (at == AddSource::Search && loading_cards()),
+                }
             }
             // The bottom row: From and the chip naming the current source on
             // the left, a tap switching to the other; the action dock (synergy,

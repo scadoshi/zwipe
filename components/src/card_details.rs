@@ -8,6 +8,11 @@
 //! actions (Flip for multi-faced cards, Image when art + a handler are present)
 //! and appends whatever the host passes via `actions`.
 //!
+//! [`CardDetailsPanel`] is the same card as a pane of its own: a kit panel
+//! titled with the name, a chip row of labeled facts with the mana cost and
+//! the prices, the rules text in its body and the analysis in its foot. The
+//! swipe surfaces draw it beside the card and in their details drawer.
+//!
 //! [`CardRow`]: crate::CardRow
 
 use std::collections::BTreeMap;
@@ -16,7 +21,7 @@ use dioxus::prelude::*;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ImageSize;
 
-use crate::{CardRoleChips, KeywordChips, OracleText};
+use crate::{CardRoleChips, KeywordChips, OracleText, Panel};
 
 /// One card face's rules text, extracted for display. Single-faced cards yield
 /// one of these; multi-faced cards (DFCs, split, etc.) yield one per face.
@@ -285,6 +290,215 @@ pub fn CardDetails(
                     }
                 }
                 {actions}
+            }
+        }
+    }
+}
+
+/// One labeled fact in the pane's chip row: the key as a row label chip and
+/// the value in its color-coded detail chip, kept together as they wrap.
+#[component]
+fn KeyChip(key_label: &'static str, value: String, value_class: &'static str) -> Element {
+    rsx! {
+        span { class: "card-details-pair",
+            span { class: "stat-chip stat-chip-p1 chip-row-label", "{key_label}" }
+            span { class: "detail-chip {value_class}", "{value}" }
+        }
+    }
+}
+
+/// The card as a pane: a kit [`Panel`] titled with the card's name.
+///
+/// Under the title a chip row holds the shown face's mana cost and the card's
+/// facts as labeled chips (Type, Rarity, Set, Artist, with Released when
+/// `show_printing`), then its prices when `show_prices`. The body is the
+/// shown face's rules text with its power and toughness, loyalty or defense
+/// after it. The panel's foot holds the keywords, the card roles and their
+/// oracle tags when `show_classification`, the host's `footer`, and the Flip
+/// and Image buttons. A multi-faced card shows one face at a time, as in
+/// [`CardDetails`]: `face` lets the host own the shown face (pair it with
+/// `show_flip: false` to put Flip in its own chrome).
+#[component]
+pub fn CardDetailsPanel(
+    card: Card,
+    /// Add the printing's release date to the chip row.
+    #[props(default)]
+    show_printing: bool,
+    /// Show the card's prices in the chip row.
+    #[props(default = true)]
+    show_prices: bool,
+    /// Show the card roles and their oracle tags in the foot.
+    #[props(default = true)]
+    show_classification: bool,
+    /// Resolve an oracle tag's description. Forwarded to [`CardRoleChips`].
+    #[props(default)]
+    describe_tag: Option<Callback<String, Option<String>>>,
+    /// Open the example-cards browse for a tag slug. Forwarded to [`CardRoleChips`].
+    #[props(default)]
+    on_examples: Option<Callback<String>>,
+    /// Image action: an Image button in the foot when the card has art.
+    #[props(default)]
+    on_image: Option<EventHandler<()>>,
+    /// Fires with the new face index when Flip turns the card.
+    #[props(default)]
+    on_face_change: Option<EventHandler<usize>>,
+    /// The host's shown-face index, when the host owns it.
+    #[props(default)]
+    face: Option<Signal<usize>>,
+    /// Draw Flip in the foot for a multi-faced card.
+    #[props(default = true)]
+    show_flip: bool,
+    /// Host content at the end of the foot.
+    #[props(default)]
+    footer: Option<Element>,
+    /// Extra classes on the panel.
+    #[props(default)]
+    class: Option<String>,
+) -> Element {
+    let sd = &card.scryfall_data;
+    let name = sd.name.clone();
+    let rarity = sd.rarity.to_long_name();
+    let set_name = sd.set_name.clone();
+    let released_at = sd.released_at.to_string();
+    let artist = sd.artist.clone().filter(|a| !a.is_empty());
+    let keywords = sd.keywords.clone().unwrap_or_default();
+    let prices = if show_prices {
+        zwipe_ui::card::info::prices(sd)
+    } else {
+        Vec::new()
+    };
+    let has_image = sd.primary_image_url(ImageSize::Large).is_some();
+    let (roles, tags_by_role, other_tags) = if show_classification {
+        (
+            card.card_profile.card_roles.clone(),
+            card.card_profile.oracle_tags_by_role.clone(),
+            card.card_profile.other_oracle_tags.clone(),
+        )
+    } else {
+        (Vec::new(), BTreeMap::default(), Vec::new())
+    };
+
+    let faces = build_rules(&card);
+    let face_count = faces.as_ref().map_or(0, Vec::len);
+    let internal_face = use_signal(|| 0usize);
+    let mut face_idx = face.unwrap_or(internal_face);
+    let cur = face_idx().min(face_count.saturating_sub(1));
+    let current_face = faces.as_ref().and_then(|f| f.get(cur)).cloned();
+    let show_flip_btn = face_count > 1 && show_flip;
+    let show_image = has_image && on_image.is_some();
+    let has_foot = !keywords.is_empty()
+        || (show_classification && !(roles.is_empty() && other_tags.is_empty()))
+        || footer.is_some()
+        || show_flip_btn
+        || show_image;
+    let class = match class {
+        Some(extra) => format!("card-details-panel {extra}"),
+        None => "card-details-panel".to_string(),
+    };
+
+    rsx! {
+        Panel {
+            title: name,
+            class,
+            actions: has_foot.then(|| rsx! {
+                div { class: "card-details-foot",
+                    if !keywords.is_empty() {
+                        KeywordChips { keywords }
+                    }
+                    if show_classification {
+                        CardRoleChips { roles, tags_by_role, other_tags, describe_tag, on_examples }
+                    }
+                    {footer}
+                    if show_flip_btn || show_image {
+                        div { class: "card-action-row",
+                            if show_flip_btn {
+                                button {
+                                    class: "card-action-btn",
+                                    onclick: move |evt| {
+                                        evt.stop_propagation();
+                                        let next = cur.saturating_add(1).checked_rem(face_count).unwrap_or(0);
+                                        face_idx.set(next);
+                                        if let Some(handler) = on_face_change {
+                                            handler.call(next);
+                                        }
+                                    },
+                                    "Flip"
+                                }
+                            }
+                            if let (true, Some(handler)) = (show_image, on_image) {
+                                button {
+                                    class: "card-action-btn",
+                                    onclick: move |evt| {
+                                        evt.stop_propagation();
+                                        handler.call(());
+                                    },
+                                    "Image"
+                                }
+                            }
+                        }
+                    }
+                }
+            }),
+            div { class: "card-details-keys",
+                if let Some(face) = current_face.as_ref().filter(|f| !f.mana_cost.is_empty()) {
+                    OracleText { text: face.mana_cost.clone(), class: "card-details-cost".to_string() }
+                }
+                if let Some(face) = current_face.as_ref().filter(|f| !f.type_line.is_empty()) {
+                    KeyChip { key_label: "Type", value: face.type_line.clone(), value_class: "detail-chip-type" }
+                }
+                KeyChip { key_label: "Rarity", value: rarity, value_class: "detail-chip-rarity" }
+                KeyChip { key_label: "Set", value: set_name, value_class: "detail-chip-set" }
+                if let Some(artist) = artist {
+                    KeyChip { key_label: "Artist", value: artist, value_class: "detail-chip-artist" }
+                }
+                if show_printing {
+                    KeyChip { key_label: "Released", value: released_at, value_class: "detail-chip-date" }
+                }
+                if !prices.is_empty() {
+                    span { class: "card-details-pair",
+                        span { class: "stat-chip stat-chip-p1 chip-row-label", "Price" }
+                        for price in prices {
+                            span { key: "{price}", class: "card-row-price card-price-chip", "{price}" }
+                        }
+                    }
+                }
+            }
+            if let Some(face) = current_face {
+                if !face.oracle.is_empty() {
+                    OracleText { text: face.oracle, class: "card-detail-oracle card-details-oracle".to_string() }
+                }
+                if let Some(stats) = face.stats {
+                    div { class: "card-detail-stats",
+                        span { class: "detail-chip detail-chip-pt", "{stats}" }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// The ghost of a [`CardDetailsPanel`] while its card loads: the panel with
+/// a title bar, a row of label and value chip pairs and the rules text's lines.
+#[component]
+pub fn CardDetailsPanelSkeleton() -> Element {
+    rsx! {
+        div { class: "panel-card card-details-panel card-details-ghost",
+            div { class: "panel-head",
+                div { class: "skeleton-bar card-details-ghost-title" }
+            }
+            hr { class: "panel-rule" }
+            div { class: "panel-body",
+                div { class: "card-details-keys",
+                    for i in 0..4 {
+                        span { key: "{i}", class: "card-details-pair",
+                            span { class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
+                            span { class: "skeleton-bar skeleton-chip skeleton-chip-md" }
+                        }
+                    }
+                }
+                for i in 0..4 {
+                    div { key: "{i}", class: "skeleton-bar card-details-ghost-line" }
+                }
             }
         }
     }

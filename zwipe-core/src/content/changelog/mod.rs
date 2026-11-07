@@ -40,7 +40,10 @@ pub struct Release {
 pub const UPCOMING: &[Release] = &[Release {
     version: Version::new(1, 18, 1),
     date: None,
-    entries: &["A deck's commander and MVPs show their names in chips beside their role"],
+    entries: &[
+        "A deck's commander and MVPs show their names in chips beside their role",
+        "Card details slide in from the right as a panel with labeled facts, the prices included",
+    ],
 }];
 
 /// Shipped releases, newest first.

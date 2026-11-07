@@ -33,9 +33,7 @@ use crate::inbound::components::interactions::swipe::direction::Direction;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{OracleTagScreen, Screen, screen};
 use crate::inbound::components::ui_toast;
-use crate::inbound::screens::deck::card::components::card_info::{
-    CardDetailsSheet, CardInfoDisplay, CardSkeleton,
-};
+use crate::inbound::screens::deck::card::components::card_info::{CardDetailsSheet, CardSkeleton};
 use crate::inbound::screens::deck::card::components::printing_sheet::PrintingSheet;
 
 /// Pixels a swipe travels to commit.
@@ -195,9 +193,6 @@ pub fn OracleTagExamples(open: Signal<bool>, slug: String) -> Element {
                                 },
                             }
 
-                            if let Some(card) = current.clone() {
-                                CardInfoDisplay { card }
-                            }
                         },
                         Status::Loading => rsx! {
                             CardSkeleton {}

@@ -1,6 +1,42 @@
 /* The drawer sheet (components::DrawerSheet) and the card filter panel
    (components::CardFilterPanel). */
 
+/* A drawer at every width (DrawerSheet's `every_width`). Above the kit's
+   breakpoint it is the kit's drawer. Below it the drawer runs the window's
+   height along the right edge, most of its width, leaving a sliver of the
+   dimmed page, and slides in from the right as the wide one does. */
+@media (max-width: 59.99rem) {
+    .sheet-form-drawer > .bottom-sheet.drawer-every-width {
+        top: 0;
+        bottom: 0;
+        left: auto;
+        right: 0;
+        width: min(88vw, 26rem);
+        max-height: none;
+        border-radius: 1rem 0 0 1rem;
+        border-left: 1px solid var(--border-secondary);
+        padding-top: env(safe-area-inset-top, 0px);
+        transform: translateX(100%);
+    }
+
+    .sheet-form-drawer > .bottom-sheet.drawer-every-width.show {
+        transform: translateX(0);
+    }
+
+    .sheet-form-drawer > .bottom-sheet.drawer-every-width .sheet-dock {
+        position: absolute;
+        right: 1rem;
+        bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+    }
+}
+
+@media (max-width: 59.99rem) and (prefers-reduced-motion: reduce) {
+    .sheet-form-drawer > .bottom-sheet.drawer-every-width,
+    .sheet-form-drawer > .bottom-sheet.drawer-every-width.show {
+        transition: none;
+    }
+}
+
 /* The sheet's `?`, in the header's right corner at the title's height,
    faded like a hint button. */
 .drawer-sheet-hint {

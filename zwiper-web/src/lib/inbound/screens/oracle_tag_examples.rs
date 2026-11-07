@@ -6,7 +6,9 @@
 //! a wide window it is a large modal with the card's details beside it;
 //! below the breakpoint it is the app's full-screen overlay.
 
-use components::{CardDetails, PageHeader, TOAST_QUICK, use_overlay_back};
+use components::{
+    CardDetailsPanel, CardDetailsPanelSkeleton, PageHeader, TOAST_QUICK, use_overlay_back,
+};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::domain::card::Card;
@@ -15,7 +17,7 @@ use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortK
 use zwipe_ui::stack::{CardStack, Direction, StackAction};
 use zwipe_ui::timing::{EXAMPLES_MAX_CARDS, LOAD_MORE_AT, PAGE_SIZE};
 
-use crate::inbound::cards::card_info::{CardDetailsSheet, CardInfoDisplay, CardSkeleton};
+use crate::inbound::cards::card_info::{CardDetailsSheet, CardSkeleton};
 use crate::inbound::cards::otag::use_describe_tag;
 use crate::inbound::cards::printing_sheet::PrintingSheet;
 use crate::inbound::cards::swipe_stack::{
@@ -171,7 +173,7 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
             }
             div { class: "screen-content card-swipe content-enter web-examples-body {eye.body_class()}",
                 div { class: "form-container web-examples-card",
-                    if let Some(card) = current.clone() {
+                    if current.is_some() {
                         SwipeStack {
                             cards: window,
                             allowed: vec![Swipe::Left, Swipe::Down],
@@ -184,7 +186,6 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
                             control,
                             buttons: vec![(Swipe::Left, "Next"), (Swipe::Down, "Back one")],
                         }
-                        CardInfoDisplay { card }
                     } else if past_end {
                         if loading_more() {
                             CardSkeleton { is_loading: true }
@@ -202,14 +203,15 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
                 }
                 if let Some(card) = current.clone() {
                     div { class: "web-examples-details",
-                        CardDetails {
+                        CardDetailsPanel {
                             key: "{card.scryfall_data.id}",
                             card,
-                            show_name: true,
-                            show_cost: true,
-                            show_classification: true,
                             describe_tag: Some(describe_tag),
                         }
+                    }
+                } else if loading() || (empty && loading_more()) {
+                    div { class: "web-examples-details",
+                        CardDetailsPanelSkeleton {}
                     }
                 }
             }

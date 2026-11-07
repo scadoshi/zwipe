@@ -449,6 +449,7 @@
    mana cost, the oracle-text symbols, and the compact-row color pips alike so
    the glyph stays centered in the pill everywhere. */
 .card-detail-cost .ms-cost,
+.card-details-cost .ms-cost,
 .oracle-sym.ms-cost,
 .card-row-colors .ms-cost {
     width: 1.5em;
@@ -947,6 +948,76 @@ i.ms.ms-cost.ms-gp {
     margin-bottom: 0.25rem;
     font-size: 0.7rem;
     color: var(--accent-tertiary);
+}
+
+/* ---- CardDetailsPanel (components::CardDetailsPanel) ----
+   The card as a pane: the kit panel titled with the name, then one wrapping
+   chip row of the mana cost and the labeled facts, each label held to its
+   value, the rules text and its stats in the body, and the keywords, roles
+   and tags in the panel's foot. */
+.card-details-keys {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem 0.6rem;
+    margin-bottom: 0.9rem;
+}
+
+.card-details-pair {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3rem;
+    max-width: 100%;
+    min-width: 0;
+}
+
+.card-details-pair > .detail-chip {
+    overflow-wrap: anywhere;
+}
+
+.card-details-cost {
+    margin: 0;
+    white-space: nowrap;
+}
+
+.card-details-cost .ms {
+    font-size: 0.8rem;
+    vertical-align: middle;
+}
+
+.card-details-panel {
+    text-align: left;
+}
+
+.card-details-panel .card-details-oracle {
+    margin-bottom: 0;
+    font-size: 0.85rem;
+}
+
+/* The foot is the analysis, not a button row: blocks stacked at the
+   panel's left. */
+.card-details-panel > .panel-actions {
+    display: block;
+}
+
+.card-details-foot > :last-child {
+    margin-bottom: 0;
+}
+
+/* The pane's ghost: the title's bar and the rules text's lines. */
+.card-details-ghost-title {
+    width: 12rem;
+    height: 1.1rem;
+}
+
+.card-details-ghost-line {
+    height: 0.85rem;
+    margin-top: 0.6rem;
+}
+
+.card-details-ghost-line:last-child {
+    width: 60%;
 }
 
 /* ---- CardDetails footer ----
