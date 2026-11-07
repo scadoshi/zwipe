@@ -1991,11 +1991,27 @@ body {
         transition: transform 0.3s ease, visibility 0s linear 0.3s;
     }
 
-    /* A finished entrance that holds its end state makes its block the
-       panel's containing block; it lets go, so the panel docks to the
-       window. */
-    :is(.content-enter, .content-enter-delayed):has(> :is(.web-swipe-details, .web-examples-details)) {
-        animation-fill-mode: backwards;
+    /* A transform on the panel's block, even one mid-entrance, makes the
+       block its containing block, so the panel would ride the block's
+       fade up and then jump to the window. The block only fades; the card
+       column fades up on its own. */
+    .web-main .web-cards-swipe.screen-content,
+    .screen-content.web-swipe-select-body,
+    .screen-content.web-examples-body {
+        animation-name: web-swipe-body-in;
+    }
+
+    :is(.web-main .web-cards-swipe.screen-content, .web-swipe-select-body, .web-examples-body) > :not(.web-swipe-details, .web-examples-details) {
+        animation: content-enter 0.3s ease-out both;
+    }
+
+    @keyframes web-swipe-body-in {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
     }
 
     /* The card takes one centered column, clear of the panel while it is
@@ -2019,6 +2035,10 @@ body {
     .web-examples-details,
     .web-details-hidden :is(.web-swipe-details, .web-examples-details) {
         transition: none;
+    }
+
+    :is(.web-main .web-cards-swipe.screen-content, .web-swipe-select-body, .web-examples-body) > :not(.web-swipe-details, .web-examples-details) {
+        animation: none;
     }
 }
 
