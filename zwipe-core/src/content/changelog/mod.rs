@@ -69,6 +69,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "The counters on Home and the sign-in screen read Live only while their copy is under five minutes old, otherwise as of its time",
         "The Pips setting's options read Themed and Classic",
         "Swipe screens confirm each swipe in a quiet chip at the top left, with a Swipe confirmations setting for toasts or nothing instead",
+        "Closing the Format, Deck tags or Oracle tags picker with changed picks asks Keep or Discard first",
     ],
 }];
 
