@@ -829,7 +829,7 @@ i.ms.ms-cost.ms-gp {
 @media (hover: hover) {
     .card-action-btn:hover {
         border-color: var(--palette-2);
-        color: var(--palette-2);
+        color: var(--ink-palette-2, var(--palette-2));
     }
 }
 
@@ -893,7 +893,7 @@ i.ms.ms-cost.ms-gp {
     border: 1px solid var(--palette-2);
     border-radius: 0.4rem;
     font-size: 0.72rem;
-    color: var(--palette-2);
+    color: var(--ink-palette-2, var(--palette-2));
     background-color: var(--bg-primary);
     cursor: pointer;
 }
@@ -2579,7 +2579,7 @@ footer.site-footer {
 @media (hover: hover) {
     .footer-links > .nav-cta:hover,
     .footer-links > .nav-cta:visited:hover {
-        color: var(--accent-primary);
+        color: var(--ink-accent-primary, var(--accent-primary));
         border-color: var(--accent-primary);
     }
 }
@@ -2594,7 +2594,7 @@ footer.site-footer .site-footer-note {
 }
 
 .site-footer-note a {
-    color: var(--palette-1);
+    color: var(--ink-palette-1, var(--palette-1));
     text-decoration: underline;
     text-underline-offset: 3px;
 }

@@ -873,7 +873,7 @@
 .privacy-content a,
 .privacy-content .privacy-link,
 .about-credits a {
-    color: var(--palette-1);
+    color: var(--ink-palette-1, var(--palette-1));
     text-decoration: underline;
     cursor: pointer;
 }
