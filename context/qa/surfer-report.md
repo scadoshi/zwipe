@@ -391,3 +391,14 @@ New at 504: none.
 56. **#53 update: the counters may not be stale, there may be two.** Signed in, the app's Home shows 2,269 / 31.8k / 264.6k (same as zwipe.net). The 3,125 / 43.8k / 364.5k I saw in Part 6 was on the **logged-out Login page**. So the login page's counters come from a different source (or include something the others don't) than signed-in Home and zwipe.net. Severity: question.
 
 Theme state left: the app was left on **Gruvbox light** (I toggled to light for the 144 reload check, then got logged out before switching back). It's stored server-side, so Scotty's next sign-in will show light. Needs flipping back to dark.
+
+## Part 7, after Scotty signed back in (1450 × 759, one tab only)
+
+| # | Check | Result |
+|---|---|---|
+| 141 | Activity heatmap themed scrollbar, Mon/Wed/Fri pinned | **Fixed at wide.** `.chart-scroll.activity-scroll` has `scrollbar-width: thin; scrollbar-color: rgb(60,56,54) transparent`. At 1450 the full year fits, so there's no scroll, and Mon/Wed/Fri show at the left (p7-8). Pinning while it scrolls is narrow-only, untested |
+| 147 | Panel titles, pink on card-row panels, warnings rows | **Fixed at wide.** Panel titles are all 16px (Activity, Card roles, Oracle tags, Warnings, Data, Danger zone). "Most skipped", a card-row panel, keeps the pink (rgb 211,134,155) while the others are aqua (p7-9). The deck page's Warnings rows read cleanly: capitalized, Add cards / Import buttons aligned (p7-10) |
+| 144 | Theme state | Found already back on **dark** at sign-in (server and local agree), so the light left from earlier was reverted |
+| 132, 118 wide | Toasts bottom-left; wide panel | **Untested**: logged out again before I got to them |
+
+**#55 revised: the session drops without a second tab.** After Scotty signed in, I used one tab only: Settings → Activity → deck page → Add, each a full page load (`navigate`), over about 1.5 minutes. On the load of /add the app landed on /login, and `zwiper-web.session` was gone again (07:44:56Z). So the second tab wasn't the cause, or at least not the only one. A theory that fits all three logouts (deploy reload, second tab, plain navigations): when a page load triggers a token refresh and the page is unloaded (a new full navigation) before the response is stored, the server has rotated the refresh token, but the client still holds the old one. The next load sends the old token, it's seen as a replay, and the family is revoked. That would hit real users on reloads, back/forward to the site, or link clicks during a refresh. Worth checking zerver's logs for replay-revocations from the test account between 07:40 and 07:45Z. Severity: **broken**.
