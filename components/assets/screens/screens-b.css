@@ -551,8 +551,9 @@
     margin-left: auto;
 }
 
-/* The rows fade in right under the definition bar, which the controls end
-   on, and run out under the dock to the window's edge. */
+/* The rows are cut at the definition bar's bottom border, which the
+   controls end on and the grid starts at, and run out under the dock to
+   the window's edge. */
 .tag-grid {
     flex: 1 1 auto;
     min-height: 0;
@@ -565,8 +566,6 @@
     align-content: flex-start;
     justify-content: center;
     gap: 0.4rem;
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 1rem);
-    mask-image: linear-gradient(to bottom, transparent 0, #000 1rem);
 }
 
 .tag-def-bar {
