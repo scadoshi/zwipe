@@ -865,6 +865,7 @@
 .deck-featured {
     display: grid;
     grid-template-rows: 0fr;
+    grid-template-columns: minmax(0, 1fr);
     transition: grid-template-rows 0.8s cubic-bezier(0.33, 1, 0.68, 1);
     /* Breathing room before the group-by controls below. */
     margin-bottom: 1rem;
@@ -874,28 +875,42 @@
     grid-template-rows: 1fr;
 }
 
-/* The clip is only for the height transition. Once the row is open the cards
-   drop in from above its edge and must not be cut off by it. */
+/* Once the row is open it scrolls sideways within the page's width,
+   snapping to a card and faded at an edge with more past it (the kit's
+   scroll-fade-x). Before then it clips, for the height transition. */
 .deck-featured.ready .deck-featured-row {
-    overflow: visible;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
 }
 
-/* nowrap with the cards sharing the width so they shrink together. */
+.deck-featured.ready .deck-featured-row::-webkit-scrollbar {
+    display: none;
+}
+
+/* The cards share the row up to 11rem each while they fit, centered; past
+   about two and a third on a phone they keep that width and the row
+   scrolls. */
 .deck-featured-row {
     display: flex;
     flex-wrap: nowrap;
-    justify-content: center;
+    justify-content: flex-start;
+    justify-content: safe center;
     /* Layout inside the row stays inside it while the height moves. */
     contain: layout;
     gap: 0.5rem;
+    min-width: 0;
     min-height: 0;
     overflow: hidden;
 }
 
 .deck-featured-card {
-    flex: 1 1 0;
+    flex: 1 0 min(11rem, calc((100% - 1rem) / 2.3));
     min-width: 0;
     max-width: 11rem;
+    scroll-snap-align: start;
     text-align: center;
     /* Invisible until the row is ready; the deal below brings it in. */
     opacity: 0;
