@@ -8,10 +8,11 @@ use zwipe_core::domain::deck::{DeckName, Format};
 
 use super::form::fields::DeckFields;
 use super::form::overlays::DeckFormOverlays;
-use super::form::use_deck_form;
-use crate::domain::deck::create_request;
+use super::form::{DECK_LEAVE, use_deck_form};
+use crate::domain::deck::{FormStart, create_request, has_unsaved_changes};
 use crate::inbound::caches::CreateDeckSeed;
 use crate::inbound::chrome::authed::use_authed;
+use crate::inbound::chrome::leave_guard::use_leave_guard;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::router::Route;
 use crate::inbound::shell::ScreenFrame;
@@ -38,6 +39,11 @@ pub fn CreateDeck() -> Element {
         }
     });
 
+    // Leaving asks first once the form differs from how it opened.
+    let opened = use_hook(move || form.values());
+    let changed = use_memo(move || has_unsaved_changes(FormStart::Opened(&opened), &form.values()));
+    let guard = use_leave_guard(changed, DECK_LEAVE);
+
     let submit = use_callback(move |(): ()| {
         if *saving.peek() {
             return;
@@ -58,6 +64,7 @@ pub fn CreateDeck() -> Element {
                 .await
             {
                 Ok(created) => {
+                    guard.release();
                     navigator.push(Route::ViewDeck {
                         deck_id: created.id,
                     });

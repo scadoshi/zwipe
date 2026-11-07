@@ -1,13 +1,27 @@
-//! The last theme, kept in browser storage so the login screen opens in it.
+//! The last theme, kept in browser storage so the login screen opens in it,
+//! and the server's theme as this browser last saw it, which decides
+//! whether a fetched copy is newer (see `domain::theme::reconcile`).
 //!
-//! Unlike the session, it stays after logout.
+//! Unlike the session, it stays after logout. The stored JSON keeps the
+//! theme's own fields at its top level, where the page shell's first-paint
+//! script reads them.
 
 use components::ThemeConfig;
+use serde::{Deserialize, Serialize};
 
 use crate::outbound::storage::{BrowserStorage, Storage};
 
 /// The storage key the theme lives under.
 pub const THEME_KEY: &str = "zwiper-web.theme";
+
+/// What the store holds: the theme last shown, and the server's as last seen.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+struct Stored {
+    #[serde(flatten)]
+    theme: ThemeConfig,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    server: Option<ThemeConfig>,
+}
 
 /// Saves and loads the last theme in `S`.
 #[derive(Debug, Clone, Default)]
@@ -32,16 +46,44 @@ impl<S: Storage> ThemeStore<S> {
     /// or when it names no theme this build has; a retired theme loads as
     /// its replacement.
     pub fn load(&self) -> Option<ThemeConfig> {
-        let json = self.storage.read(THEME_KEY)?;
-        serde_json::from_str::<ThemeConfig>(&json)
-            .ok()
+        self.read()
+            .and_then(|stored| ThemeConfig::resolve(stored.theme))
+    }
+
+    /// The server's theme as this browser last saw it, resolved as
+    /// [`Self::load`] resolves the theme. `None` when none was recorded.
+    pub fn load_server(&self) -> Option<ThemeConfig> {
+        self.read()
+            .and_then(|stored| stored.server)
             .and_then(ThemeConfig::resolve)
     }
 
-    /// Stores `theme`, logging a failure. The theme is a convenience, so a
-    /// lost write costs only the next visit's first look.
+    /// Stores `theme` as the one shown, keeping the server's record, and
+    /// logs a failure. The theme is a convenience, so a lost write costs
+    /// only the next visit's first look.
     pub fn save(&self, theme: &ThemeConfig) {
-        let result = serde_json::to_string(theme)
+        let server = self.read().and_then(|stored| stored.server);
+        self.write(&Stored {
+            theme: theme.clone(),
+            server,
+        });
+    }
+
+    /// Records `theme` as the server's copy, which is also the one shown.
+    pub fn save_synced(&self, theme: &ThemeConfig) {
+        self.write(&Stored {
+            theme: theme.clone(),
+            server: Some(theme.clone()),
+        });
+    }
+
+    fn read(&self) -> Option<Stored> {
+        let json = self.storage.read(THEME_KEY)?;
+        serde_json::from_str::<Stored>(&json).ok()
+    }
+
+    fn write(&self, stored: &Stored) {
+        let result = serde_json::to_string(stored)
             .map_err(|e| e.to_string())
             .and_then(|json| {
                 self.storage
@@ -68,6 +110,40 @@ mod tests {
         };
         store.save(&theme);
         assert_eq!(store.load(), Some(theme));
+    }
+
+    #[test]
+    fn showing_a_theme_keeps_the_servers_record() {
+        let store = ThemeStore::new(MemoryStorage::default());
+        let dark = ThemeConfig {
+            name: "nord".to_string(),
+            is_dark: true,
+        };
+        let light = ThemeConfig {
+            name: "nord".to_string(),
+            is_dark: false,
+        };
+        store.save_synced(&dark);
+        store.save(&light);
+        assert_eq!(store.load(), Some(light));
+        assert_eq!(store.load_server(), Some(dark));
+    }
+
+    #[test]
+    fn a_store_from_an_older_build_loads_with_no_server_record() {
+        let storage = MemoryStorage::default();
+        storage
+            .write(THEME_KEY, r#"{"name":"nord","is_dark":false}"#)
+            .unwrap();
+        let store = ThemeStore::new(storage);
+        assert_eq!(
+            store.load(),
+            Some(ThemeConfig {
+                name: "nord".to_string(),
+                is_dark: false
+            })
+        );
+        assert_eq!(store.load_server(), None);
     }
 
     #[test]

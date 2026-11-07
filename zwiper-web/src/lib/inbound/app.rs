@@ -9,6 +9,7 @@ use zwipe_core::domain::logo;
 use zwipe_core::domain::user::models::settings::PipStyle;
 
 use crate::inbound::chrome::hint_topic::{HintHost, HintTopic};
+use crate::inbound::chrome::leave_guard::GuardedHistory;
 use crate::inbound::chrome::splash::splash_plays_this_load;
 use crate::inbound::router::Route;
 use crate::inbound::screens::auth::login::LoginPrefill;
@@ -64,6 +65,8 @@ pub fn App() -> Element {
     // The main menu's open state, above the router so it carries across
     // screens.
     use_context_provider(|| MenuOpen(Signal::new(false)));
+    // The router's history, with the leave guard in front of it.
+    use_hook(GuardedHistory::provide);
 
     rsx! {
         document::Link { rel: "icon", href: FAVICON }

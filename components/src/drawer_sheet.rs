@@ -15,8 +15,8 @@ use crate::{ActionDock, Button, ButtonVariant, DockPlace, SheetFrame, SheetWide}
 /// corner. `class` joins the sheet's own classes. `children` mount only
 /// while open; `dock`, when given, holds the dock's actions. With
 /// `every_width` it is a drawer at every width: below the kit's breakpoint
-/// it slides in from the right edge over most of the window, leaving a
-/// sliver of the dimmed page.
+/// it floats in from the right, inset under the header, above the docks and
+/// from the right edge, over most of the window's width.
 #[component]
 pub fn DrawerSheet(
     open: ReadSignal<bool>,

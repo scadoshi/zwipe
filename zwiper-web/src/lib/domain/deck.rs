@@ -63,6 +63,24 @@ impl FormValues {
     }
 }
 
+/// Where a deck form's changes are measured from.
+#[derive(Debug, Clone, Copy)]
+pub enum FormStart<'a> {
+    /// Create: the form as it opened, with any commander handed over.
+    Opened(&'a FormValues),
+    /// Edit: the deck as loaded.
+    Saved(&'a FormValues),
+}
+
+/// Whether leaving the form now would lose a change: any field off Create's
+/// opening values, or anything Edit's save would send.
+pub fn has_unsaved_changes(start: FormStart<'_>, values: &FormValues) -> bool {
+    match start {
+        FormStart::Opened(opened) => values != opened,
+        FormStart::Saved(saved) => update_request(saved, values).is_some(),
+    }
+}
+
 /// `Some(v)` for a non-empty list, `None` for an empty one.
 fn non_empty<T>(v: Vec<T>) -> Option<Vec<T>> {
     (!v.is_empty()).then_some(v)
@@ -309,5 +327,48 @@ mod tests {
         assert_eq!(wire["price_target"], serde_json::Value::Null);
         assert_eq!(wire["price_target_currency"], serde_json::Value::Null);
         assert_eq!(wire["format"], "commander");
+    }
+
+    #[test]
+    fn create_counts_any_field_off_its_opening_values() {
+        let opened = FormValues::default();
+        let mut now = FormValues::default();
+        assert!(!has_unsaved_changes(FormStart::Opened(&opened), &now));
+        now.name = "Goblins".to_owned();
+        assert!(has_unsaved_changes(FormStart::Opened(&opened), &now));
+        now.name.clear();
+        assert!(
+            !has_unsaved_changes(FormStart::Opened(&opened), &now),
+            "typed then cleared is no change"
+        );
+        now.currency = PriceCurrency::Eur;
+        assert!(has_unsaved_changes(FormStart::Opened(&opened), &now));
+    }
+
+    #[test]
+    fn a_handed_over_commander_is_where_create_starts() {
+        let opened = FormValues {
+            format: Some(Format::Commander),
+            commander: Some(Uuid::nil()),
+            ..FormValues::default()
+        };
+        let mut now = opened.clone();
+        assert!(!has_unsaved_changes(FormStart::Opened(&opened), &now));
+        now.commander = None;
+        assert!(has_unsaved_changes(FormStart::Opened(&opened), &now));
+    }
+
+    #[test]
+    fn edit_counts_what_its_save_would_send() {
+        let saved = values();
+        let mut now = values();
+        assert!(!has_unsaved_changes(FormStart::Saved(&saved), &now));
+        now.price_text = "50.0".to_owned();
+        assert!(
+            !has_unsaved_changes(FormStart::Saved(&saved), &now),
+            "the same budget written another way is no change"
+        );
+        now.oracle_tags.push("mana-rock".to_owned());
+        assert!(has_unsaved_changes(FormStart::Saved(&saved), &now));
     }
 }

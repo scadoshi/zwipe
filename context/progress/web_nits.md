@@ -203,6 +203,21 @@ From Surfer's Part 5 (narrowest, 504px), triaged with Scotty:
 143. **Settings' Pips button reads "Theme" under the Theme row.** [S50] Scotty's call: rename the value itself, `Theme` to `Themed`, wire included, following `pip_color_wire.md`: Phase 1 renames everywhere and reads both while the wire still writes `theme`; the floor rises; Phase 4 writes `themed` only. Plan in `context/plans/pip_themed_wire.md`, row in `wire_changes.md`.
 144. **Light/dark can flip a few seconds after load.** [S51] The local copy and the server's race: a Settings toggle sometimes doesn't write localStorage, and on load the server's older copy overwrites the newer local one. The latest choice wins everywhere, with no flip after load.
 
+From Droid's Android pass 1 (`target/droid/report.md`, items D1 to D38), the confident ones:
+
+145. **The app's keyboard and load states.** Login's keyboard covers the password field (D1, broken); the keyboard lifts the Cards dock over Group by and Boards (D20); load errors offer no Retry (D4); the filter's Mana value placeholder clips (D23); the section header's tiny × clear sits inside the toggle (D21).
+146. **The app's spacing sweep.** One side gutter on every screen (D12); collapsible sections start and space like the rest (D15); the deck form's field gaps even (D18); and the few-pixel nits D9, D11, D13, D14, D22, D24, D27, D34.
+147. **The app's copy and contrast.** Draw odds' − disabled at turn 0 (D16); Remove's help points at where the board chips are (D25); the first warning row and its buttons get room (D26); row buttons don't wrap (D30); labels reach 4.5:1 (D31); hint text uses the dialog's width (D35); a tapped format chip stays put while its details open (D10).
+Extended to the app: D2 into 132 (toasts), D5 to D8 into 123 (skeletons), D17 into 136, D19 into 135, D33 into 140 (tap targets).
+Open with Scotty: none.
+148. **The import screen's panels touch.** The mode description panel sits flush on the Paste decklist panel; the usual panel gap between them, and the chip rows above spaced like the rest.
+149. **Toasts and floating buttons land on the footer.** On Export the "Copied to clipboard" toast and the copy button sit over the footer; toasts, like docks (134), stop above the footer at their lowest.
+150. **On Scotty's iPhone in light mode, Home's theme sheet is see-through.** Home's hero, stats and deck tiles show through it, faded; the same sheet on other screens, and Home in the simulator, are opaque. Investigate first: whether the sheet renders inside Home's animated content (an opacity animation that holds or stalls on a device), a compositing layer above it, or a translucent light background; then fix.
+
+151. **Both apps degrade when left open a long time.** In zwipe and Cairn, after hours open (or backgrounded and resumed): screens go see-through (150), taps stop landing (Cairn's counters), or data goes stale (Cairn shows yesterday's count until a relaunch). Likely shared: timers, listeners or layers piling up (orangui's grid rain, polls), and app lifecycle (no refresh on foreground or day rollover, WKWebView's content process killed in the background). Investigate across both apps and orangui, then fix at the shared root.
+
+Scotty on Droid's open items: D3 toasts "Nothing left to remove" (no way back needed; into 145); D29 leave the Art toggle; D32 a follow-up in todo; D36 fine as an outline; D37 hero chips in the logged-in order everywhere (into 147); D38 list rows wrap their chips as the rendered layout intends, consistently (into 146). D28: card-row panels (Suggested commanders, Staples, Most skipped) keep their pink title color, but take the other panel titles' size, weight, letter spacing and inset (into 147).
+
 Skipped with Scotty: S44 (the About diagram scrolls under its arrows; fine as is).
 
 Skipped with Scotty: S35 (old /deck paths 404; old paths don't reroute), S37 (overscroll shade, 104 as designed).

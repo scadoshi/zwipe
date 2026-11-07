@@ -18,8 +18,18 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::{DeckName, DeckOtherTag, DeckProfile, Format, PowerLevel};
 use zwipe_ui::deck::form::Slot;
+use zwipe_ui::screens::deck_form;
 
 use crate::domain::deck::FormValues;
+use crate::inbound::chrome::leave_guard::LeaveCopy;
+
+/// What the leave guard asks with while the form holds unsaved changes.
+pub const DECK_LEAVE: LeaveCopy = LeaveCopy {
+    title: deck_form::LEAVE_TITLE,
+    body: deck_form::LEAVE_BODY,
+    stay: deck_form::STAY,
+    leave: deck_form::LEAVE,
+};
 
 /// One command-zone slot: the picked card, the text its input shows, the
 /// search typed, the slot's `Filter` toggle and its Swipe select.

@@ -1,9 +1,12 @@
 //! Bottom sheet for browsing and selecting card printings.
 //!
 //! What the sheet knows and does is `zwipe_ui::screens::printing_sheet`;
-//! this file draws its state, keeps the carousel, and performs its effects.
+//! this file draws its state as components' cover flow, keeps the shown
+//! index, and performs its effects.
 
-use components::{BottomSheet, DockAction, TOAST_NORMAL, ToastOptions, Toasts, icons, use_toast};
+use components::{
+    BottomSheet, CoverFlow, DockAction, TOAST_NORMAL, ToastOptions, Toasts, icons, use_toast,
+};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::Card;
@@ -12,24 +15,17 @@ use zwipe_ui::screens::printing_sheet::{self as model, Action, Effect, Mode, Sta
 
 use super::card_info::{CardInfoDisplay, PrintingSheetSkeleton};
 use super::flippable_card_image::FlippableCardImage;
-use crate::inbound::components::interactions::carousel::Carousel;
-use crate::inbound::components::interactions::carousel::dots::CarouselDots;
-use crate::inbound::components::interactions::carousel::state::CarouselState;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::component;
 use crate::inbound::components::ui_toast;
-
-/// Page width in pixels when the viewport can't be measured.
-const FALLBACK_PAGE_WIDTH_PX: f64 = 375.0;
 
 /// The sheet's model with the handles that perform its effects. Copy, so
 /// every handler and task holds its own.
 #[derive(Clone, Copy)]
 struct Driver {
     model: Signal<State>,
-    carousel: Signal<CarouselState>,
-    /// The viewport width measured after the last fetch, for laying out its carousel.
-    page_width: Signal<f64>,
+    /// The printing the cover flow shows in its middle.
+    index: Signal<usize>,
     open: Signal<bool>,
     on_save: EventHandler<Card>,
     host_screen: &'static str,
@@ -53,14 +49,9 @@ impl Driver {
         match effect {
             Effect::FetchPrintings { ticket, oracle_id } => {
                 let client = self.client;
-                let mut page_width = self.page_width;
                 spawn(async move {
                     match client().fetch_printings(oracle_id).await {
                         Ok(printings) => {
-                            // The carousel runs the sheet's full width.
-                            let mut eval = document::eval("dioxus.send(window.innerWidth)");
-                            page_width
-                                .set(eval.recv::<f64>().await.unwrap_or(FALLBACK_PAGE_WIDTH_PX));
                             self.dispatch(Action::Loaded { ticket, printings });
                         }
                         Err(e) => {
@@ -79,19 +70,9 @@ impl Driver {
                     }
                 });
             }
-            Effect::Show(at) => {
-                let count = self.model.peek().printings().len();
-                let width = *self.page_width.peek();
-                let mut carousel = self.carousel;
-                carousel.set(CarouselState::new(count, at, width));
-            }
-            Effect::Rewind(at) => {
-                let mut carousel = self.carousel;
-                carousel.with_mut(|s| {
-                    s.current_index = at;
-                    s.drag_offset_px = 0.0;
-                    s.snap_transition_ms = 0;
-                });
+            Effect::Show(at) | Effect::Rewind(at) => {
+                let mut index = self.index;
+                index.set(at);
             }
             Effect::Pick(card) => self.on_save.call(*card),
             Effect::Toast(toast) => ui_toast::raise(self.toast, toast),
@@ -132,8 +113,7 @@ pub(crate) fn PrintingSheet(
     };
     let driver = Driver {
         model: use_signal(|| State::new(mode, saved_message)),
-        carousel: use_signal(CarouselState::empty),
-        page_width: use_signal(|| FALLBACK_PAGE_WIDTH_PX),
+        index: use_signal(|| 0usize),
         open,
         on_save,
         host_screen,
@@ -141,7 +121,7 @@ pub(crate) fn PrintingSheet(
         toast: use_toast(),
         usage_buffer: use_context(),
     };
-    let carousel_state = driver.carousel;
+    let index = driver.index;
 
     let current_scryfall_id = card.scryfall_data.id;
     let oracle_id = card.scryfall_data.oracle_id;
@@ -158,7 +138,7 @@ pub(crate) fn PrintingSheet(
         });
     });
 
-    let current_idx = carousel_state().current_index;
+    let current_idx = index();
     let (status, printings, visible_card, can_save, shows_save) = {
         let sheet = driver.model.read();
         (
@@ -186,28 +166,9 @@ pub(crate) fn PrintingSheet(
                     if status == Status::Loading {
                         PrintingSheetSkeleton {}
                     } else if status == Status::Several {
-                        // Multi-printing: carousel
-                        Carousel { state: carousel_state,
-                            for printing in printings.iter() {
-                                {
-                                    let id = printing.scryfall_data.id;
-                                    let sd = printing.scryfall_data.clone();
-                                    rsx! {
-                                        div { class: "carousel-page", key: "{id}",
-                                            FlippableCardImage {
-                                                sd,
-                                                size: ImageSize::Large,
-                                                class: "carousel-card-image".to_string(),
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                        CoverFlow { printings, index }
 
-                        CarouselDots { current: current_idx, total: printings.len() }
-
-                        // Info row for currently visible printing
+                        // Info row for the printing in the middle
                         if let Some(card) = visible_card {
                             CardInfoDisplay { card }
                         }
