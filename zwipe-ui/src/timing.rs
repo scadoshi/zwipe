@@ -46,7 +46,7 @@ pub const UPKEEP_INTERVAL: Duration = Duration::from_secs(60);
 pub const COUNTS_FRESH: Duration = Duration::from_secs(60);
 
 /// How old a copy of everybody's counters may be and still read `Live`; an
-/// older one, as an edge cache serves, reads "as of" its time.
+/// older one, as an edge cache serves, reads "as of" its day.
 pub const COUNTS_LIVE: Duration = Duration::from_mins(5);
 
 /// How long Activity's heatmap keeps a picked day's readout before letting

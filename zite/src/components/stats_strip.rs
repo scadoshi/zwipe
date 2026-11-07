@@ -6,16 +6,16 @@
 //! carries real numbers before any script runs. After load the browser asks
 //! zerver once and swaps the answer in; the chip under the strip says which
 //! one is showing: the deploy's date, or `Live` while the answer's copy is
-//! new and "as of" its time when the edge cache served an older one.
+//! new and "as of" its day when the edge cache served an older one.
 
 use std::sync::LazyLock;
 
-use chrono::Utc;
+use chrono::{NaiveDate, Utc};
 use dioxus::prelude::*;
 use serde::Deserialize;
 use zwipe_client::call::Dated;
 use zwipe_core::http::contracts::metrics::HttpPublicMetrics;
-use zwipe_ui::home::CountsTag;
+use zwipe_ui::home::{self, CountsTag};
 
 use crate::api;
 
@@ -47,7 +47,15 @@ pub fn StatsStrip() -> Element {
     let baked = BAKED.as_ref();
     // The live answer, else the baked one; with neither the figures roll.
     let figures = live.or_else(|| baked.map(|baked| &baked.metrics));
-    let as_of = baked.map(|baked| baked.fetched_at.get(..10).unwrap_or(&baked.fetched_at));
+    // The deploy's day, from the baked copy's RFC 3339 stamp; a stamp that
+    // does not parse shows as it is.
+    let as_of = baked.map(|baked| {
+        let stamp = &baked.fetched_at;
+        stamp
+            .get(..10)
+            .and_then(|day| NaiveDate::parse_from_str(day, "%Y-%m-%d").ok())
+            .map_or_else(|| format!("as of {stamp}"), home::as_of)
+    });
 
     let count =
         |pick: fn(&HttpPublicMetrics) -> i64| figures.map(|s| u64::try_from(pick(s)).unwrap_or(0));
@@ -55,7 +63,7 @@ pub fn StatsStrip() -> Element {
     // the as-of chip changing its words in place.
     let label = match (fetched, as_of) {
         (Some(stats), _) => Some(CountsTag::at(stats.made_at, Utc::now()).label()),
-        (None, Some(day)) => Some(format!("as of {day}")),
+        (None, Some(as_of)) => Some(as_of),
         (None, None) => None,
     };
 

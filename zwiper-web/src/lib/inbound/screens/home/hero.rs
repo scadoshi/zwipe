@@ -56,14 +56,14 @@ pub fn use_my_counts(scope: Signal<Scope>) -> Option<HttpLifetimeCounters> {
 }
 
 /// Home's hero: the mark over everybody's or the user's own three
-/// `figures`, tagged `tag` (`Live`, or "as of" an edge-cached copy's time)
+/// `figures`, tagged `tag` (`Live`, or "as of" an edge-cached copy's day)
 /// once the figures on screen come from this visit, then the scope button,
 /// which calls `ontoggle`. A new scope rolls the figures to the other counts
 /// while its label fades in. Home's model holds the figures and the scope.
 #[component]
 pub fn HomeHeroScoped(
     figures: Figures,
-    /// The tag before the scope button: `Live`, "as of" a time, or nothing.
+    /// The tag before the scope button: `Live`, "as of" a day, or nothing.
     tag: Option<String>,
     scope: Scope,
     ontoggle: EventHandler,

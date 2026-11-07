@@ -2,7 +2,7 @@
 //! buy links live in [`crate::buy`] and the Colors panel's bars in
 //! [`crate::colors`].
 
-use chrono::{DateTime, Local, TimeDelta, Timelike, Utc};
+use chrono::{DateTime, Local, NaiveDate, TimeDelta, Timelike, Utc};
 use zwipe_core::domain::user::User;
 use zwipe_core::http::contracts::metrics::{HttpLifetimeCounters, HttpPublicMetrics};
 
@@ -25,7 +25,7 @@ pub struct Figures {
 pub enum CountsTag {
     /// Made under [`COUNTS_LIVE`](crate::timing::COUNTS_LIVE) ago.
     Live,
-    /// Made longer ago, at this time.
+    /// Made longer ago, at this time; the tag names its day.
     AsOf(DateTime<Utc>),
 }
 
@@ -41,15 +41,25 @@ impl CountsTag {
         }
     }
 
-    /// `Live`, or "as of" the copy's time in the device's time zone, as
-    /// `as of 14:05`.
+    /// `Live`, or "as of" the copy's day in the device's time zone, as
+    /// `as of Nov 7`.
     #[must_use]
     pub fn label(self) -> String {
         match self {
             Self::Live => crate::screens::home::LIVE.to_owned(),
-            Self::AsOf(made) => format!("as of {}", made.with_timezone(&Local).format("%H:%M")),
+            Self::AsOf(made) => as_of(made.with_timezone(&Local).date_naive()),
         }
     }
+}
+
+/// How an "as of" tag names its day: the month's short name and the day of
+/// the month, as `Nov 7`.
+pub const AS_OF_DAY_FORMAT: &str = "%b %-d";
+
+/// The tag for counts as of `day`, as `as of Nov 7`.
+#[must_use]
+pub fn as_of(day: NaiveDate) -> String {
+    format!("as of {}", day.format(AS_OF_DAY_FORMAT))
 }
 
 /// A count the server keeps signed, never below zero.
@@ -226,7 +236,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn a_copy_reads_live_for_five_minutes_then_as_of_its_time() {
+    fn a_copy_reads_live_for_five_minutes_then_as_of_its_day() {
         let made = Utc.with_ymd_and_hms(2026, 11, 7, 8, 0, 0).unwrap();
         let after = |secs: i64| made + TimeDelta::seconds(secs);
         assert_eq!(CountsTag::at(Some(made), after(0)), CountsTag::Live);
@@ -240,11 +250,19 @@ mod tests {
     }
 
     #[test]
-    fn the_tag_reads_live_or_as_of_the_local_time() {
+    fn the_tag_reads_live_or_as_of_the_local_day() {
         assert_eq!(CountsTag::Live.label(), "Live");
         let made = Utc.with_ymd_and_hms(2026, 11, 7, 8, 5, 0).unwrap();
-        let local = made.with_timezone(&Local).format("%H:%M").to_string();
-        assert_eq!(CountsTag::AsOf(made).label(), format!("as of {local}"));
+        let local = made.with_timezone(&Local).date_naive();
+        assert_eq!(CountsTag::AsOf(made).label(), as_of(local));
+    }
+
+    #[test]
+    fn as_of_names_the_month_and_day_without_padding() {
+        let day = NaiveDate::from_ymd_opt(2026, 11, 7).unwrap();
+        assert_eq!(as_of(day), "as of Nov 7");
+        let day = NaiveDate::from_ymd_opt(2026, 1, 23).unwrap();
+        assert_eq!(as_of(day), "as of Jan 23");
     }
 
     fn mine(swipes_right: i64) -> HttpLifetimeCounters {

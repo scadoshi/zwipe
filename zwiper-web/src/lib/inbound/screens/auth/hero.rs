@@ -26,7 +26,7 @@ pub fn strip_figures(figures: Option<Figures>) -> Vec<(Option<u64>, &'static str
 /// The public screens' hero: the mark over decks created, searches run and
 /// cards swiped across everyone from the root's copy, tagged `Everybody`
 /// and, once the copy comes from this visit, `Live` or "as of" an
-/// edge-cached copy's time. A restored or stale
+/// edge-cached copy's day. A restored or stale
 /// copy is fetched again on mount and stored for the next visit; a failed
 /// fetch leaves the copy on screen.
 #[component]

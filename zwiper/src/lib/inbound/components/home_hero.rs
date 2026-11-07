@@ -98,7 +98,7 @@ fn backdated(fetched_at: Instant) -> Instant {
 }
 
 /// Everyone's counters from the cache above the router, refetched when
-/// stale, with their tag (`Live`, or "as of" an edge-cached copy's time)
+/// stale, with their tag (`Live`, or "as of" an edge-cached copy's day)
 /// once the copy came from this launch. A stale copy keeps showing while the
 /// refetch is out and is only replaced on success.
 fn use_public_counts() -> (Option<HttpPublicMetrics>, Option<String>) {
@@ -246,7 +246,7 @@ pub fn HomeHero() -> Element {
 #[component]
 pub fn HomeHeroScoped(
     figures: Figures,
-    /// The tag before the scope button: `Live`, "as of" a time, or nothing.
+    /// The tag before the scope button: `Live`, "as of" a day, or nothing.
     tag: Option<String>,
     scope: Scope,
     ontoggle: EventHandler,

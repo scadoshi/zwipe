@@ -250,7 +250,7 @@ fn restored_counts_show_without_live_and_are_asked_for_again() {
 }
 
 #[test]
-fn an_edge_cached_copy_reads_as_of_its_time() {
+fn an_edge_cached_copy_reads_as_of_its_day() {
     let (mut state, effects) = load(Cached {
         everybody: Some(held(5, Age::Restored)),
         ..warm()

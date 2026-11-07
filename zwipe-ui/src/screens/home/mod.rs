@@ -719,7 +719,7 @@ impl State {
     }
 
     /// The tag under the hero's figures at `now`: everybody's, once fetched
-    /// this launch, `Live` while the server's copy is new and "as of" its time
+    /// this launch, `Live` while the server's copy is new and "as of" its day
     /// after; the user's own, never edge-cached, `Live` once any copy is held.
     /// `None` before then.
     #[must_use]
