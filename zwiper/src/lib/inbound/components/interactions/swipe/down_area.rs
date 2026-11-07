@@ -29,8 +29,10 @@ pub fn SwipeDownArea(config: SwipeConfig, on_down: EventHandler<()>, children: E
     rsx! {
         div {
             class: "swipe-down-area",
-            // The gesture is ours, not the page's scroll.
-            style: "touch-action: none;",
+            // Fills the stack's slot as a column, so a card's ghost inside
+            // keeps the card's size; the gesture is ours, not the page's
+            // scroll.
+            style: "display: flex; flex-direction: column; flex: 1; min-height: 0; width: 100%; touch-action: none;",
             ontouchstart: move |e: Event<TouchData>| state.ontouchstart(e),
             ontouchmove: move |e: Event<TouchData>| state.ontouchmove(e),
             ontouchend: move |e: Event<TouchData>| {
