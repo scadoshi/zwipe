@@ -2397,9 +2397,12 @@ body {
 
 @media (max-width: 599px) {
     .sheet-form-drawer > .bottom-sheet.web-picker-sheet.drawer-every-width {
-        width: 100%;
+        inset: 0;
+        width: auto;
+        padding-top: env(safe-area-inset-top, 0px);
+        border: none;
         border-radius: 0;
-        border-left: none;
+        box-shadow: none;
         background-color: transparent;
     }
 
