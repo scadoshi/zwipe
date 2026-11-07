@@ -23,6 +23,7 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
+| 65, 67, cover-flow picker on wide, the phone picker's bottom row (PR #207, waiting on Scotty's eye) | scotland | `nits/scotland-65` |
 | 65, the printing picker as a cover-flow modal on wide | scotland | `nits/scotland-65` |
 | 64, one chip grammar for tags, label chips for group names (queued after 54) | thinker | `nits/thinker-64` |
 | 62, the nav's ? spaced evenly and bolder | scotland | `nits/scotland-62` |
@@ -120,6 +121,7 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 64. **One chip grammar for tags, every client.** Keywords, card roles and oracle tags draw as a one-off outlined `.keyword-chip` under bare colored group names. They become the kit's regular clickable `Chip`s, with "Keywords", "Card roles" and "Oracle tags" as label chips leading their rows, as Show and Group by do. Shared components, so the app, the web and zwipe.net change together; a 1.18.1 changelog entry.
 65. **The web's printing picker becomes a cover-flow modal on a wide window.** A large modal with the printings as a stacked, fanned carousel (selected large in the middle, ~10 each side shrinking behind it) that glides left and right as you scroll, arrow, drag or click; Enter or a click selects. Phones keep today's picker.
 66. **Home's hero matches across the two sites** (Scotty to thinker directly). app.zwipe.net takes zwipe.net's larger mark, figures and labels on a wide window; zwipe.net takes the app's rounded counters (31.8k) and its pre-hydration roll keeps that shape. PR #206.
+67. **The phone printing picker floats its pager and prices mid-sheet.** The dots and price chips hug the sheet's bottom, and the ✓ sits on the prices' row instead of in its own dock.
 
 ## Done
 
