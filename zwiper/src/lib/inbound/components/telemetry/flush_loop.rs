@@ -45,7 +45,7 @@ pub fn use_background_flush(
 ) {
     let life = use_app_lifecycle();
     use_effect(move || {
-        if life.phase() == AppPhase::Background {
+        if life.is_some_and(|life| life.phase() == AppPhase::Background) {
             let buffer = buffer.clone();
             spawn(async move { flush_once(&buffer, &client, &session).await });
         }
