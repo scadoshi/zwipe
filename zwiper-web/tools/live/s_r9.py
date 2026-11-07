@@ -18,7 +18,7 @@ else { const b=bar.getBoundingClientRect(); out.push('bar bottom '+Math.round(b.
 return location.pathname+' | '+out.join(' | ');})()"""
 m = js(MEASURE)
 which = sys.argv[1]
-screens = {'home':'/','activity':'/activity','playstyle':'/deck/suggested-commanders','deck-view':f'/deck/get/{g}','account':'/user','config':'/config','privacy':'/privacy','changelog':'/changelog','decks':'/deck','create':'/deck/create','edit':f'/deck/update/{g}','import':f'/deck/card/import/{g}','export':f'/deck/card/export/{g}','maybeboard':'/deck/commander-maybeboard','add':f'/deck/card/add/{g}','deck-cards':f'/deck/card/view/{g}','remove':f'/deck/card/remove/{g}','not-found':'/nope/nowhere'}
+screens = {'home':'/','activity':'/activity','playstyle':'/playstyle','deck-view':f'/decks/{g}','account':'/account','config':'/settings','privacy':'/privacy','changelog':'/changelog','decks':'/decks','create':'/decks/new','edit':f'/decks/{g}/edit','import':f'/decks/{g}/import','export':f'/decks/{g}/export','maybeboard':'/maybeboard','add':f'/decks/{g}/add','deck-cards':f'/decks/{g}/cards','remove':f'/decks/{g}/remove','not-found':'/nope/nowhere'}
 scroll = lambda f: js(f"(()=>{{const s=document.querySelector('.web-scroll-screen'); s.scrollTo(0,{f}); return s.scrollTop+'/'+s.scrollHeight}})()")
 pub = [wait(6), shot('login'), go('/register'), wait(2), shot('register'),
   js("(()=>{const b=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='?'&&b.offsetParent); if(!b) return 'no ?'; b.click(); return 'opened'})()"), wait(1), shot('register-hint'), gotit, wait(1),
