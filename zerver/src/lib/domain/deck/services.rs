@@ -15,7 +15,7 @@ use zwipe_core::domain::deck::requests::delete_deck_card::DeleteDeckCard;
 use zwipe_core::domain::deck::requests::get_deck_profile::GetDeckProfile;
 use zwipe_core::domain::deck::requests::get_deck_profiles::GetDeckProfiles;
 use zwipe_core::domain::deck::requests::import_deck_cards::{
-    self, ImportDeckCards, ImportDeckCardsResult, ImportedCard, UnresolvedCard,
+    self, ImportDeckCards, ImportDeckCardsResult, ImportLine, ImportedCard, UnresolvedCard,
 };
 use zwipe_core::domain::deck::requests::skip_deck_card::SkipDeckCard;
 use zwipe_core::domain::deck::requests::update_deck_card::UpdateDeckCard;
@@ -49,7 +49,9 @@ use crate::domain::deck::models::deck::skip_deck_card::SkipDeckCardError;
 use crate::domain::deck::models::deck::update_deck_profile::UpdateDeckProfileError;
 use crate::domain::deck::models::deck_card::create_deck_card::CreateDeckCardError;
 use crate::domain::deck::models::deck_card::delete_deck_card::DeleteDeckCardError;
-use crate::domain::deck::models::deck_card::import_deck_cards::ImportDeckCardsError;
+use crate::domain::deck::models::deck_card::import_deck_cards::{
+    ImportDeckCardsError, ImportRow, NamedPrintings, RowPrinting,
+};
 use crate::domain::deck::models::deck_card::update_deck_card::UpdateDeckCardError;
 use crate::domain::deck::ports::{DeckRepository, DeckService};
 use crate::domain::deck::{
@@ -90,6 +92,46 @@ where
             deck_repo,
             card_repo,
         }
+    }
+
+    /// The printings the import's lines name with `(SET) number`, for the
+    /// cards those lines resolved to (`matched`, one per line).
+    async fn fetch_named_printings(
+        &self,
+        lines: &[ImportLine],
+        matched: &[Option<&Card>],
+    ) -> Result<NamedPrintings, ImportDeckCardsError> {
+        let mut oracle_ids: Vec<Uuid> = Vec::new();
+        let mut set_codes: Vec<String> = Vec::new();
+        for (line, card) in lines.iter().zip(matched) {
+            let (Some(named), Some(oracle_id)) = (
+                line.printing.as_ref(),
+                card.and_then(|c| c.scryfall_data.oracle_id),
+            ) else {
+                continue;
+            };
+            oracle_ids.push(oracle_id);
+            set_codes.push(named.set_code.clone());
+        }
+        let mut printings = NamedPrintings::default();
+        if oracle_ids.is_empty() {
+            return Ok(printings);
+        }
+        oracle_ids.sort_unstable();
+        oracle_ids.dedup();
+        set_codes.sort_unstable();
+        set_codes.dedup();
+        let rows = self
+            .card_repo
+            .fetch_printings_in_sets(&oracle_ids, &set_codes)
+            .await
+            .map_err(|e| ImportDeckCardsError::Database(e.into()))?;
+        for row in rows {
+            if let Some(oracle_id) = row.oracle_id {
+                printings.insert(oracle_id, &row.set, row.id, row.collector_number);
+            }
+        }
+        Ok(printings)
     }
 
     /// The user's staples with their cards: every mainboard row ranked by
@@ -873,25 +915,34 @@ where
                     .collect()
             };
 
-        // Classify lines, deduplicating by oracle_id (summing quantities).
-        // Tuple: (scryfall_id, oracle_id, quantity, name, is_basic_land, board)
-        let mut unresolved: Vec<UnresolvedCard> = request.rejected.clone();
-        let mut insert_map: HashMap<Uuid, (Uuid, Uuid, i32, String, bool, String)> = HashMap::new();
+        // Resolve each line to its default card, then the printings its
+        // `(SET) number` could name, in one batch.
+        let matched: Vec<Option<&Card>> = request
+            .lines
+            .iter()
+            .map(|line| {
+                let key = line.card_name.to_lowercase();
+                // Try the entry as written, then its front face (before a
+                // slash), so "A // B", "A / B", and "A" all resolve to the
+                // same card.
+                card_map.get(&key).or_else(|| {
+                    let front = import_deck_cards::entry_front_face(&key);
+                    if front.is_empty() || front == key {
+                        None
+                    } else {
+                        card_map.get(front)
+                    }
+                })
+            })
+            .collect();
+        let printings = self.fetch_named_printings(&request.lines, &matched).await?;
 
-        for line in &request.lines {
-            let key = line.card_name.to_lowercase();
-            // Try the entry as written, then its front face (before a slash), so
-            // "A // B", "A / B", and "A" all resolve to the same card.
-            let matched = card_map.get(&key).or_else(|| {
-                let front = import_deck_cards::entry_front_face(&key);
-                if front.is_empty() || front == key {
-                    None
-                } else {
-                    card_map.get(front)
-                }
-            });
+        // Classify lines, deduplicating by oracle_id (summing quantities).
+        let mut unresolved: Vec<UnresolvedCard> = request.rejected.clone();
+        let mut insert_map: HashMap<Uuid, (ImportRow, String)> = HashMap::new();
+
+        for (line, matched) in request.lines.iter().zip(matched) {
             if let Some(card) = matched {
-                let scryfall_id = card.scryfall_data.id;
                 let Some(oracle_id) = card.scryfall_data.oracle_id else {
                     unresolved.push(UnresolvedCard {
                         name: line.card_name.clone(),
@@ -903,20 +954,27 @@ where
                 if additional_oracle_ids.contains(&oracle_id) {
                     continue;
                 }
-                let is_basic_land = card.scryfall_data.is_basic_land();
-                let board = line.board.display_name().to_string();
-                let (_, _, qty, _, _, _) = insert_map.entry(oracle_id).or_insert_with(|| {
+                let (scryfall_data_id, printing) = line
+                    .printing
+                    .as_ref()
+                    .and_then(|named| printings.pick(oracle_id, named))
+                    .map_or((card.scryfall_data.id, RowPrinting::Default), |id| {
+                        (id, RowPrinting::Named)
+                    });
+                let (row, _) = insert_map.entry(oracle_id).or_insert_with(|| {
                     (
-                        scryfall_id,
-                        oracle_id,
-                        0,
+                        ImportRow {
+                            scryfall_data_id,
+                            oracle_id,
+                            quantity: 0,
+                            board: line.board,
+                            printing,
+                        },
                         card.scryfall_data.name.clone(),
-                        is_basic_land,
-                        board,
                     )
                 });
-                match qty.checked_add(line.quantity) {
-                    Some(sum) => *qty = sum,
+                match row.quantity.checked_add(line.quantity) {
+                    Some(sum) => row.quantity = sum,
                     None => unresolved.push(UnresolvedCard {
                         name: line.card_name.clone(),
                         reason: "quantity too large".to_string(),
@@ -930,11 +988,7 @@ where
             }
         }
 
-        // Build batch insert data: (scryfall_data_id, oracle_id, quantity, board)
-        let batch: Vec<(Uuid, Uuid, i32, String)> = insert_map
-            .values()
-            .map(|(sid, oid, qty, _, _, board)| (*sid, *oid, *qty, board.clone()))
-            .collect();
+        let batch: Vec<ImportRow> = insert_map.values().map(|(row, _)| row.clone()).collect();
 
         // Ownership, the card-limit check, the upsert, and the replace-mode
         // reconcile all run atomically in the repo (one tx under a deck row
@@ -960,9 +1014,9 @@ where
         // doesn't follow HashMap order.
         let mut imported: Vec<ImportedCard> = insert_map
             .into_values()
-            .map(|(_, _, qty, name, _, _)| ImportedCard {
+            .map(|(row, name)| ImportedCard {
                 name,
-                quantity: qty,
+                quantity: row.quantity,
             })
             .collect();
         imported.sort_by(|a, b| a.name.cmp(&b.name));
@@ -1098,10 +1152,21 @@ where
             }
         }
 
-        let board_name = board.display_name().to_string();
-        let batch: Vec<(Uuid, Uuid, i32, String)> = insert_map
+        // A card resolved by its Archidekt id carries the deck's printing; one
+        // that fell back to its name carries the default printing.
+        let batch: Vec<ImportRow> = insert_map
             .iter()
-            .map(|(oracle_id, (sid, qty, _))| (*sid, *oracle_id, *qty, board_name.clone()))
+            .map(|(oracle_id, (sid, qty, _))| ImportRow {
+                scryfall_data_id: *sid,
+                oracle_id: *oracle_id,
+                quantity: *qty,
+                board,
+                printing: if oracle_by_id.contains_key(sid) {
+                    RowPrinting::Named
+                } else {
+                    RowPrinting::Default
+                },
+            })
             .collect();
 
         // Ownership, the card-limit check, the upsert, and the replace-mode

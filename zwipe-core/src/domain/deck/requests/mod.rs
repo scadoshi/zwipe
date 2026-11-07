@@ -26,7 +26,7 @@ pub use get_deck_card::InvalidGetDeckCard;
 pub use get_deck_profile::GetDeckProfile;
 pub use get_deck_profiles::{GetDeckProfiles, InvalidGetDeckProfiles};
 pub use import_deck_cards::{
-    ImportDeckCards, ImportDeckCardsResult, ImportLine, ImportedCard, UnresolvedCard,
+    ImportDeckCards, ImportDeckCardsResult, ImportLine, ImportedCard, NamedPrinting, UnresolvedCard,
 };
 pub use skip_deck_card::{InvalidSkipDeckCard, SkipDeckCard};
 pub use update_deck_card::{InvalidUpdateDeckCard, UpdateDeckCard};

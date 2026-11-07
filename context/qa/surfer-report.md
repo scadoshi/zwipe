@@ -622,3 +622,86 @@ On the composer's question: **the misclick script in Part 13 did not touch the C
     - The commander maybeboard guide doesn't mention 194's Swipe on the maybeboard page yet, and says a row has three actions where the app shows four (Image, Printings, Create deck, Remove).
 
 Not verified: the phone filter drawer at 390. In the background popup its slide-in never ran (`show` class set, still `translateY(662px)`), which matches Part 13's picker caught mid-slide. That's the popup's throttling, not the app, and Droid covers it on mobile.
+
+## Part 15, zwipe.net, the portfolio and the app's signed-out screens (2026-11-07, done 14:58)
+
+zwipe.net serves `zite_bg-dxh9074ac72e5c198ca.wasm`; the app is still on live f699acc37. Wide is 1450. 390 was checked with same-origin iframes for zwipe.net and the portfolio (screenshots work), and with the script-sized popup for the app (DOM only). The test session stayed signed in throughout, **no logouts**. zwipe.net's and the portfolio's local themes went back to Gruvbox dark and Poimandres dark.
+
+**How I saw the app signed out without signing out:** from app.zwipe.net/robots.txt I opened a popup and wrote the app's own index.html into it with a small shim first:
+- reads of `zwiper-web.session` return nothing;
+- writes and removals of that key are dropped, so the real session can't be touched;
+- calls to `/auth/(cookie|refresh|logout|login|register|password|reset)` get a canned 401.
+
+The popup boots the real wasm signed out. None of the guards fired (0 blocked writes, 0 blocked requests), and the main tab's session was present and working afterwards. I didn't submit any sign-in, sign-up or reset, and typed no passwords. Production is no place for test passwords, so password strength, mismatch and the reset submit are untested.
+
+### Works
+
+| Area | Check | Result |
+|---|---|---|
+| Crawl | Every internal link and asset from each home page | zwipe.net: 58 URLs over 29 pages, all 200. Portfolio: 43 URLs over 22 pages, all 200, apart from Cloudflare's `/cdn-cgi/l/email-protection` (S23, skipped before) |
+| Meta | title, description, og:title/url/image, canonical, h1 on all 51 pages | Unique titles and descriptions, og:url and canonical match each page, og:image present, exactly one h1 everywhere |
+| Sitemaps/robots | zwipe.net | sitemap has 29 locs (= the crawl). robots allows / and disallows `/deck/`, `/verify/`, `/confirm-email/`, `/reset/` |
+| External links | 89, skipping retailers | All fine apart from the two below. LinkedIn's 999 is its bot wall |
+| Changelog | Latest, year → months → minor chips, Show more, `#v1-12-1` | Latest shows 1.18.0 and the upcoming 1.18.1. 2026 shows 5 at a time, and 11 Show mores reach all 59 releases. Sep narrows to 5. The fragment lands on 1.12.1 just under the nav with 2026 › Oct › 1.12 lit. Cairn's changelog on the portfolio lists 1.3.0 and 1.3.1 |
+| Theme toggles | zwipe.net and portfolio, signed out: Light, pick a theme, Escape | Both apply at once and keep the choice. Escape closes the theme panel on both. On zwipe.net, opening it moves focus to the current theme's row and Escape gives focus back to the trigger |
+| Metrics | zwipe.net counters, portfolio stats | zwipe.net matches live (2,270 / 31.8k / 264.7k, "as of Nov 7" then Live). Portfolio "7,897 commits · 14 repos · 88 stars" lines up with Heron's allowlist (the 14 showcased repos sum to about 88 stars). GitHub's overall totals are 40 public repos and 128 stars |
+| Keyboard | Tab through zwipe.net and portfolio homes | Logical order (nav, banner, content, footer). The closed theme panels' 50 buttons are out of the tab order. Portfolio cards waiting on scroll-reveal come in at full opacity when focused |
+| 390 | zwipe.net: home, guides, about, changelog, community, privacy, contribute, two guides. Portfolio: home, projects, zwipe, systems, contribute, cairn changelog | No sideways scroll on any (scrollWidth = clientWidth 379 in a 390 frame). The phone menu lists every link with the theme and dark buttons at the bottom (p15-1) |
+| App signed out: Login | 390 and 1400 | Renders with counters, form, Create profile and Forgot password. Empty submit, or a name with no password, shows "Enter your username or email and password" and sends nothing |
+| Create profile | Empty, `ab`, `a b!`, `not-an-email`, valid name and email with no password | "Must be at least 3 characters long", "Cannot contain whitespace", "Missing @ symbol", "Must be at least 8 characters long". No request sent |
+| Forgot password | Empty, `bad` | "Please enter a valid email address", no request |
+| Deep links | `/`, `/decks`, a deck, its Add, `/settings`, `/account`, `/maybeboard`, `/playstyle` | All land on `/login` (history replaced, length 1) with no deck or user API calls. `/nonexistent-page` gives the app's "Page not found" |
+| Token pages | zwipe.net `/verify/…`, `/confirm-email/…` with a bogus token | "Link already used or expired" with what to do next |
+
+### Findings
+
+1. **Escape doesn't close zwipe.net's phone menu.** At 390, with the menu open and focus on Guides, a real Escape key leaves it open (`aria-expanded` stays true) (p15-1). The portfolio's phone menu closes on Escape, and zwipe.net's theme panel does too (164).
+2. **zwipe.net doesn't declare `color-scheme`.** It's `normal` on dark themes (the portfolio sets `dark`). So Chrome draws its default dark-blue focus ring, rgb(0,95,204), which is **2.66:1 on Gruvbox's background**, under the 3:1 non-text minimum. Nearly every control uses it (only the testimonial link has a themed 3px ring). The same default also affects scrollbars and native controls. The portfolio's ring is light blue and easy to see. The app wasn't checked for this.
+3. **zwipe.net has no `<main>` landmark** (only nav and footer), and neither site has a skip link.
+4. **Two dead links on the portfolio's orangui page:** `github.com/scadoshi/orangui/blob/main/src/chart_math.rs` and `.../src/theme.rs` are 404. orangui's `src/` no longer has those files. The other 20 file links on that page resolve.
+5. **Reset link doesn't check the token up front.** `zwipe.net/reset/<bogus>` shows the full "Set new password" form, so someone with a dead link only finds out after choosing a password. Verify and confirm-email check on load and say "Link already used or expired". (Submit not tested; see above.)
+6. **Generic titles on the token pages.** `/reset/…`, `/verify/…` and `/confirm-email/…` all have the home page's title ("Magic: The Gathering Deck Builder for Phone and Web | Zwipe") instead of "Reset password" etc. They're disallowed in robots, so this only shows in tabs and history.
+7. **No autocomplete hints on auth forms.**
+    - Login's fields have no `autocomplete` and no `name`; they should be `username` and `current-password`.
+    - Create profile's and zwipe.net's reset form's password fields have none either; they should be `new-password`.
+    - Without these, password managers guess or skip the forms.
+8. **Forgot password's email field is `type=text`.** Phones won't show the email keyboard. Create profile's is `type=email`.
+9. **Email errors are worded differently.** Create profile says "Missing @ symbol", even when the field is empty. Forgot password says "Please enter a valid email address".
+10. **A deep link signed out probably loses its target.** A signed-out deck link redirects to plain `/login`, with no `?next=` and nothing in localStorage or sessionStorage. So after signing in you'd likely land on Home, not the deck. I can't confirm the after-sign-in step without signing in.
+11. **Login's counters keep "as of Nov 7" after fetching live stats.** They settle on the live 2,270 / 31.8k / 264.7k, but the tag still says "as of Nov 7". Home (signed in) says "Live" once fresh (195).
+12. **Portfolio stats don't say what they count.** "14 repos · 88 stars" reads as the whole GitHub account (40 repos, 128 stars). "Counted by Heron" is there, but not that it covers showcased repos only. Wording question for Scotty.
+
+## Part 16, deck page in depth, plus Home and Decks order (2026-11-07, live f699acc37, wide 1450)
+
+Signed in throughout, **no logouts**. I cloned isshin (101 cards, not mine) into a temp deck and did everything on the clone, then deleted it. isshin itself was only read. Surfer test, settings and theme untouched. Decks reads 13 because Droid added a long-named deck during the pass.
+
+### Works
+
+| Area | Check | Result |
+|---|---|---|
+| Price totals | Sum of qty × row price vs header and Budget | **Exact:** $568.94 in all three over 83 rows / 101 cards. Changing a printing (Boros Charm → OTJ Commander $4.99) updated the row, header and Budget live to $573.93. The dock's Undo restored the old printing ("Boros Charm printing restored") and $568.94. Sideboard cards are left out of the total (moving Chaos Warp to Side dropped it $0.76) |
+| Row actions | Image, Printings (arrow keys, Select), −, +, Star, To maybeboard / To sideboard | All work. Star adds ★ to the row and puts the card in the deck head as an "MVP" card, and the button becomes Unstar. +/− change the count and header live. To sideboard moves the card and the header live |
+| Group by | Type, Mana value, Color, Card role | Type and Mana value add up to 100 (+1 commander = 101). Color adds up to 100 (W 10, B 4, R 13, WB 5, WR 13, BR 3, WBR 5, UBR 1, colorless 8, lands 38). Card role adds up to 221, since cards carry several roles |
+| Stats | Types chart, mana curve | Types match the Type groups. The curve (5/18/19/10/7/3) matches the Mana value groups. The Card roles chart reads 1–2 higher than the Card role groups (AGGRO 35 vs 33, RAMP 17 vs 16, SACRF 9 vs 8), probably because the chart counts the commander. Worth labeling |
+| Sort | Filter → Sort → Price (USD), Descending | Rows within each group come out by price, high to low (46.85, 28.74, 12.25…). See 7 for unpriced cards |
+| Large deck | 101 cards, 83 rows | Rows render ~0.8s after navigation. ~6,900 DOM nodes, 44 MB heap, 82 of 84 images lazy-loaded |
+| Long names | 64-character deck name | Accepted at 64 exactly. Home's deck tile cuts it off with an ellipsis. Decks wraps it (see 9) |
+| Decks order | List | Alphabetical, ignoring case (big fat chud … Surfer test, test, WWWW…). No sort control |
+| Home order | Decks panel | The three most recently changed decks (the new clone first) |
+
+### Findings
+
+1. **Card rows can't be used from the keyboard.** A row (`div.web-card-row`) and its head have no tabindex or role, so Tab never lands on a row and nothing expands it from the keyboard. Group headers (`div.deck-fold-head`) are the same. On a phone or with a mouse that's fine. For keyboard users it's a dead end.
+2. **…and collapsed rows still own over a thousand tab stops.** Every collapsed row keeps its chips and its Image / Printings / − / + / Star / To maybeboard / To sideboard buttons at tabindex 0 inside a 0-height, opacity-0 wrapper (`card-row-collapse`). On this deck that's **1,017 of the page's 1,056 tab stops**, all invisible. Real Tab presses from Quick add go: Group by chips, Boards, Show, "Shut every group", then hidden "Aggression", "Image", "Printings", "−", "+"… An Enter there changes the deck unseen. The page dock (+ − filter undo edit clone share) comes after all of them. The fix is `inert` (or tabindex -1) on collapsed content, plus a focusable row head with `aria-expanded`.
+3. **Warnings don't follow +, − or board moves** (adds to Part 13's To mainboard and Part 14's Fix to 1).
+    - **+** took Chaos Warp to 2 in a Commander deck. The header went 101 → 102, but the Warnings count stayed at 2 with no copy-limit line.
+    - **To sideboard** dropped the header to 100, but Warnings still said "Deck has 101 cards" and had no "Commander does not use sideboards".
+    - After a reload both are right: "Crackling doom exceeds copy limit (2/1)" and the sideboard warning show up.
+4. **Hover preview covers the row actions.** The floating card preview opens over the list itself, on whichever side has more room, so it sits on the expanded row above. In p16-1 the pointer is on Chaos Warp, and its preview hides Boros Charm's details and its Image and Printings buttons. Moving to those buttons means passing other rows, which swaps the preview.
+5. **Drag between boards does nothing.** All 82 rows are `draggable="true"`, but a real mouse drag onto the Sideboard group and a synthetic dragstart/dragover/drop both did nothing (no data set, no drop highlight). If drag isn't a feature, `draggable` should go. Moving with the row buttons works.
+6. **Deck name length isn't limited in the field.** The clone (and probably the create/edit) name input has no `maxlength`. A 98-character name only fails on Save with the raw server message "Invalid deck name: deck name maximum length is 64 characters" in a toast. A maxlength of 64, or a counter, would stop it at the field.
+7. **Unpriced cards: the total silently excludes them, and they sort first.** 11 of the 101 cards have no USD price on their chosen printing (Phyrexian Arena, Boros Charm FDN, Sword of the Animist, Mountain…). The total and "Average card price" ($7.39 = $568.94 / 77 priced cards) leave them out with no note. Sorting by Price (USD) Descending puts these unpriced cards **first** in each group, ahead of $46.85.
+8. **Card names lowercased in warnings, badly.** "Nicol bolas, the ravager // nicol bolas, the arisen is outside commander's color identity", "Crackling doom exceeds copy limit". Same root as Part 14's "Lightning bolt".
+9. **A long name drops below the art on Decks.** Short names sit beside the thumbnail. The 64-character one wraps onto its own lines under it, so that card's layout differs from its neighbors (p16-2).
+10. **Color groups are icon-only.** Group by Color headers show just mana symbols and "(10)", with no text or aria-label, so a screen reader hears "(10)".
+11. **No sort on Decks or Home.** Decks is alphabetical only. Home shows recent. There's no way to sort by size, price, format or last changed. That's a feature question, not a bug.

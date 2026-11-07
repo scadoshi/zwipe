@@ -3,8 +3,9 @@ use std::collections::{HashMap, HashSet};
 use chrono::Utc;
 use components::{
     CardFilterPanel, CardRow as SharedCardRow, Chip, ColorChart, DeckBand, DeckCharts,
-    DeckControls, DeckFacts, DeckFold, DeckHead, DeckPage, DockFilter, DrawOdds, FeaturedCard,
-    FlippableCardImage, HoverStackHost, ManaCurve, ManaFulfillment, Panel, use_hover_stack,
+    DeckControls, DeckFacts, DeckFold, DeckHead, DeckPage, DeckSection, DockFilter, DrawOdds,
+    FeaturedCard, FlippableCardImage, HoverStackHost, ManaCurve, ManaFulfillment, Panel,
+    use_hover_stack,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -36,6 +37,27 @@ const RETRY_SPINNER_MIN_MS: u32 = 500;
 
 /// Longest the featured row waits for its images before it opens anyway.
 const FEATURED_WAIT_MS: u32 = 4000;
+
+/// The sideboard band's title and fold key.
+const SIDEBOARD: &str = "Sideboard";
+
+/// The sideboard as a band after the main board, titled with its card count;
+/// `None` when it is empty or the filter leaves none of it.
+fn sideboard_section(side: &[DeckEntry]) -> Option<DeckSection> {
+    if side.is_empty() {
+        return None;
+    }
+    let count = side
+        .iter()
+        .map(|e| i64::from(*e.deck_card.quantity))
+        .fold(0, i64::saturating_add);
+    Some(DeckSection {
+        key: SIDEBOARD.to_owned(),
+        title: format!("{SIDEBOARD} ({count})"),
+        pips: None,
+        cards: side.iter().map(|e| e.card.clone()).collect(),
+    })
+}
 
 /// How a shared-deck fetch can fail, from the reader's point of view.
 #[derive(Clone, PartialEq)]
@@ -424,7 +446,18 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
     } else {
         Zone::default()
     };
-    let display = deck_cards::pass(&mainboard, &listed_zone, &builder, group_by());
+    let sideboard: Vec<DeckEntry> = deck
+        .entries
+        .iter()
+        .filter(|e| e.deck_card.board == Board::Sideboard)
+        .cloned()
+        .collect();
+    let side_qty: HashMap<Uuid, i32> = sideboard
+        .iter()
+        .map(|e| (e.deck_card.scryfall_data_id, *e.deck_card.quantity))
+        .collect();
+    let listed: Vec<DeckEntry> = mainboard.iter().chain(&sideboard).cloned().collect();
+    let display = deck_cards::pass(&listed, &listed_zone, &builder, group_by());
     // Tokens the deck's cards produce (server-derived), shown like the app's
     // token list. Name-sorted, not run through the card filter.
     let tokens: Option<Vec<Card>> = show_tokens().then(|| {
@@ -432,7 +465,10 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
             .sorted(CardSortKey::Name, SortDirection::Ascending)
             .into()
     });
-    let sections = components::sections(&display, deck.format, tokens.as_deref(), &qty_by_id);
+    let mut sections = components::sections(&display, deck.format, tokens.as_deref(), &qty_by_id);
+    if let Some(section) = sideboard_section(&display.side) {
+        sections.push(section);
+    }
     // The fold-all button: every card group shut, or every one open again.
     let section_keys: Vec<String> = sections.iter().map(|s| s.key.clone()).collect();
     let all_folded = {
@@ -450,6 +486,21 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
         }
     };
     let empty = sections.is_empty();
+    // Each band with its rows' quantities, the sideboard's from its own
+    // entries: a card can sit in both boards in different numbers.
+    let bands = sections.into_iter().map(|section| {
+        let qty_of = if section.key == SIDEBOARD {
+            &side_qty
+        } else {
+            &qty_by_id
+        };
+        let quantities: Vec<i32> = section
+            .cards
+            .iter()
+            .map(|c| qty_of.get(&c.scryfall_data.id).copied().unwrap_or(1))
+            .collect();
+        (section, quantities)
+    });
 
     // Distribution charts, mirroring the app's deck screen sections: metrics
     // over the full entry list (mainboard-only inside, same as the app) plus
@@ -581,15 +632,15 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                 },
                 empty,
                 bands: rsx! {
-                    for section in sections {
+                    for (section, quantities) in bands {
                         DeckBand {
                             key: "{section.key}",
                             section: section.clone(),
                             folded,
-                            for card in section.cards {
+                            for (card, qty) in section.cards.into_iter().zip(quantities) {
                                 CardRow {
                                     key: "{card.scryfall_data.id}",
-                                    qty: *qty_by_id.get(&card.scryfall_data.id).unwrap_or(&1),
+                                    qty,
                                     mvp: mvp_ids.contains(&card.scryfall_data.id),
                                     card,
                                     expanded_card,

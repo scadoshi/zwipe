@@ -422,6 +422,7 @@ pub(crate) struct CardFixture {
     set: String,
     set_name: String,
     set_id: Uuid,
+    set_type: String,
     collector_number: String,
     legalities: Value,
     flavor_text: Option<String>,
@@ -463,6 +464,7 @@ pub(crate) fn card(name: &str) -> CardFixture {
         set: "TST".to_string(),
         set_name: "Test Set".to_string(),
         set_id: Uuid::from_u128(0x5e7),
+        set_type: "expansion".to_string(),
         collector_number: n.to_string(),
         legalities: json!({}),
         flavor_text: None,
@@ -600,6 +602,16 @@ impl CardFixture {
         self.set_name = name.to_string();
         self
     }
+    /// The printing's collector number (defaults to a unique sequence number).
+    pub(crate) fn collector_number(mut self, number: &str) -> Self {
+        self.collector_number = number.to_string();
+        self
+    }
+    /// Scryfall's set type (defaults to `"expansion"`), e.g. `"memorabilia"`.
+    pub(crate) fn set_type(mut self, set_type: &str) -> Self {
+        self.set_type = set_type.to_string();
+        self
+    }
     /// Security stamp on the printing (e.g. "triangle" for Universes Beyond).
     pub(crate) fn stamp(mut self, stamp: &str) -> Self {
         self.security_stamp = Some(stamp.to_string());
@@ -733,7 +745,7 @@ pub(crate) async fn seed_cards(pool: &PgPool, cards: &[CardFixture]) {
                 .push_bind("https://scryfall.test/set")
                 .push_bind(c.set_name.as_str())
                 .push_bind("https://scryfall.test/set-search")
-                .push_bind("expansion")
+                .push_bind(c.set_type.as_str())
                 .push_bind("https://scryfall.test/set-uri")
                 .push_bind(c.set.as_str())
                 .push_bind(c.set_id)

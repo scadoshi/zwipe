@@ -107,7 +107,7 @@ fn check_card_count(format: Format, profile: &DeckProfile, warnings: &mut Vec<De
             "deck has {} {}, {} requires at least {}",
             count,
             plural(count),
-            format.display_name().to_lowercase(),
+            format.display_name(),
             min
         )));
     }
@@ -119,7 +119,7 @@ fn check_card_count(format: Format, profile: &DeckProfile, warnings: &mut Vec<De
             "deck has {} {}, {} allows at most {}",
             count,
             plural(count),
-            format.display_name().to_lowercase(),
+            format.display_name(),
             max
         )));
     }
@@ -179,9 +179,14 @@ fn check_commander_required(
     warnings: &mut Vec<DeckWarning>,
 ) {
     if format.has_commander() && profile.commander_id.is_none() {
+        let leader = if format.has_signature_spell() {
+            "an oathbreaker"
+        } else {
+            "a commander"
+        };
         warnings.push(DeckWarning::new(format!(
-            "the format, {}, requires a commander",
-            format.display_name().to_lowercase()
+            "{} decks need {leader}",
+            format.display_name()
         )));
     }
 }
@@ -195,8 +200,8 @@ fn check_legality(format: Format, entries: &[DeckEntry], warnings: &mut Vec<Deck
                 warnings.push(DeckWarning::with_card(
                     format!(
                         "{} is not legal in {}",
-                        entry.card.scryfall_data.name.to_lowercase(),
-                        format.display_name().to_lowercase()
+                        entry.card.scryfall_data.name,
+                        format.display_name()
                     ),
                     entry.card.scryfall_data.id,
                 ));
@@ -205,8 +210,8 @@ fn check_legality(format: Format, entries: &[DeckEntry], warnings: &mut Vec<Deck
                 warnings.push(DeckWarning::with_card(
                     format!(
                         "{} is banned in {}",
-                        entry.card.scryfall_data.name.to_lowercase(),
-                        format.display_name().to_lowercase()
+                        entry.card.scryfall_data.name,
+                        format.display_name()
                     ),
                     entry.card.scryfall_data.id,
                 ));
@@ -240,10 +245,9 @@ fn check_copy_limits(format: Format, entries: &[DeckEntry], warnings: &mut Vec<D
         if qty > max {
             warnings.push(DeckWarning::with_action(
                 format!(
-                    "{} exceeds copy limit ({}/{})",
-                    entry.card.scryfall_data.name.to_lowercase(),
-                    qty,
-                    max
+                    "{} has {qty} copies, {} allows {max}",
+                    entry.card.scryfall_data.name,
+                    format.display_name()
                 ),
                 entry.card.scryfall_data.id,
                 WarningAction::FixQuantity(max),
@@ -327,8 +331,8 @@ fn check_color_identity(
             if !allowed_colors.contains(&color) {
                 warnings.push(DeckWarning::with_card(
                     format!(
-                        "{} is outside commander's color identity",
-                        entry.card.scryfall_data.name.to_lowercase()
+                        "{} is outside your commander's color identity",
+                        entry.card.scryfall_data.name
                     ),
                     entry.card.scryfall_data.id,
                 ));
@@ -361,8 +365,8 @@ fn check_commander_eligibility(
         warnings.push(DeckWarning::with_action(
             format!(
                 "{} is not a valid commander for {}",
-                card.scryfall_data.name.to_lowercase(),
-                format.display_name().to_lowercase()
+                card.scryfall_data.name,
+                format.display_name()
             ),
             card.scryfall_data.id,
             WarningAction::ClearCommander,
@@ -383,7 +387,7 @@ fn check_partner_validity(
     if !format.supports_partner() {
         warnings.push(DeckWarning::new(format!(
             "{} does not support partner commanders",
-            format.display_name().to_lowercase()
+            format.display_name()
         )));
         return;
     }
@@ -396,7 +400,7 @@ fn check_partner_validity(
             warnings.push(DeckWarning::with_card(
                 format!(
                     "{} does not have a partner ability",
-                    commander.scryfall_data.name.to_lowercase()
+                    commander.scryfall_data.name
                 ),
                 commander.scryfall_data.id,
             ));
@@ -407,8 +411,7 @@ fn check_partner_validity(
             warnings.push(DeckWarning::with_card(
                 format!(
                     "{} and {} cannot be partners",
-                    commander.scryfall_data.name.to_lowercase(),
-                    partner.scryfall_data.name.to_lowercase()
+                    commander.scryfall_data.name, partner.scryfall_data.name
                 ),
                 partner_id,
             ));
@@ -429,7 +432,7 @@ fn check_background_validity(
     if !format.supports_background() {
         warnings.push(DeckWarning::new(format!(
             "{} does not support backgrounds",
-            format.display_name().to_lowercase()
+            format.display_name()
         )));
         return;
     }
@@ -440,8 +443,8 @@ fn check_background_validity(
     {
         warnings.push(DeckWarning::with_card(
             format!(
-                "{} does not have 'choose a background'",
-                commander.scryfall_data.name.to_lowercase()
+                "{} doesn't have Choose a Background",
+                commander.scryfall_data.name
             ),
             commander.scryfall_data.id,
         ));
@@ -454,7 +457,7 @@ fn check_background_validity(
         warnings.push(DeckWarning::with_card(
             format!(
                 "{} is not a valid background enchantment",
-                bg.scryfall_data.name.to_lowercase()
+                bg.scryfall_data.name
             ),
             bg_id,
         ));
@@ -482,7 +485,7 @@ fn check_sideboard_limits(format: Format, entries: &[DeckEntry], warnings: &mut 
     if !format.has_sideboard() {
         warnings.push(DeckWarning::new(format!(
             "{} does not use sideboards",
-            format.display_name().to_lowercase()
+            format.display_name()
         )));
         return;
     }
@@ -493,7 +496,7 @@ fn check_sideboard_limits(format: Format, entries: &[DeckEntry], warnings: &mut 
         warnings.push(DeckWarning::new(format!(
             "sideboard has {} cards, {} allows at most {}",
             sideboard_count,
-            format.display_name().to_lowercase(),
+            format.display_name(),
             max
         )));
     }
@@ -509,7 +512,7 @@ fn check_signature_spell_validity(
         // Warn if format requires one but none selected
         if format.has_signature_spell() {
             warnings.push(DeckWarning::new(
-                "oathbreaker format requires a signature spell".to_string(),
+                "Oathbreaker decks need a signature spell".to_string(),
             ));
         }
         return;
@@ -518,7 +521,7 @@ fn check_signature_spell_validity(
     if !format.has_signature_spell() {
         warnings.push(DeckWarning::new(format!(
             "{} does not use signature spells",
-            format.display_name().to_lowercase()
+            format.display_name()
         )));
         return;
     }
@@ -529,7 +532,7 @@ fn check_signature_spell_validity(
             warnings.push(DeckWarning::with_card(
                 format!(
                     "{} must be an instant or sorcery to be a signature spell",
-                    spell.scryfall_data.name.to_lowercase()
+                    spell.scryfall_data.name
                 ),
                 spell.scryfall_data.id,
             ));
@@ -541,8 +544,8 @@ fn check_signature_spell_validity(
         {
             warnings.push(DeckWarning::with_card(
                 format!(
-                    "{} is outside the oathbreaker's color identity",
-                    spell.scryfall_data.name.to_lowercase()
+                    "{} is outside your oathbreaker's color identity",
+                    spell.scryfall_data.name
                 ),
                 spell.scryfall_data.id,
             ));
@@ -572,13 +575,56 @@ mod tests {
     }
 
     #[test]
+    fn warnings_keep_card_names_and_capitalize_formats() {
+        use crate::test_utils::make_entry;
+        let mut profile = test_profile(Some(Format::Oathbreaker));
+        profile.card_count = 60;
+        let mut ring = make_entry("Sol Ring", 1);
+        ring.card.scryfall_data.legalities.oathbreaker = Some(LegalityKind::Banned);
+        let warnings = validate_deck(&profile, &[ring], &empty_command_zone());
+        let lines: Vec<String> = warnings.iter().map(ToString::to_string).collect();
+        assert!(
+            lines
+                .iter()
+                .any(|l| l == "Sol Ring is banned in Oathbreaker"),
+            "{lines:?}"
+        );
+        assert!(
+            lines
+                .iter()
+                .any(|l| l == "Oathbreaker decks need an oathbreaker"),
+            "{lines:?}"
+        );
+
+        let mut bolas = make_entry("Nicol Bolas, the Ravager // Nicol Bolas, the Arisen", 1);
+        bolas.card.scryfall_data.legalities.oathbreaker = Some(LegalityKind::NotLegal);
+        let warnings = validate_deck(&profile, &[bolas], &empty_command_zone());
+        let lines: Vec<String> = warnings.iter().map(ToString::to_string).collect();
+        assert!(
+            lines.iter().any(|l| l
+                == "Nicol Bolas, the Ravager // Nicol Bolas, the Arisen is not legal in Oathbreaker"),
+            "each face keeps its casing: {lines:?}"
+        );
+
+        let commander = test_profile(Some(Format::Commander));
+        let warnings = validate_deck(&commander, &[], &empty_command_zone());
+        let lines: Vec<String> = warnings.iter().map(ToString::to_string).collect();
+        assert!(
+            lines
+                .iter()
+                .any(|l| l == "Commander decks need a commander"),
+            "{lines:?}"
+        );
+    }
+
+    #[test]
     fn card_count_at_the_i64_limit_still_warns() {
         let mut profile = test_profile(Some(Format::Commander));
         profile.card_count = i64::MAX;
         profile.commander_id = Some(uuid::Uuid::new_v4());
         profile.partner_commander_id = Some(uuid::Uuid::new_v4());
         let warnings = validate_deck(&profile, &[], &empty_command_zone());
-        let want = format!("Deck has {} cards, commander allows at most 100", i64::MAX);
+        let want = format!("Deck has {} cards, Commander allows at most 100", i64::MAX);
         assert!(
             warnings.iter().any(|w| w.contains(&want)),
             "warnings {warnings:?}"
@@ -856,9 +902,9 @@ mod tests {
             };
             let warnings = validate_deck(&profile, &[entry], &cz);
             assert!(
-                warnings
-                    .iter()
-                    .any(|w| w.to_string().contains("outside commander's color identity")),
+                warnings.iter().any(|w| w
+                    .to_string()
+                    .contains("outside your commander's color identity")),
                 "expected color identity warning for black card in RGWU deck"
             );
         }
@@ -882,9 +928,9 @@ mod tests {
             };
             let warnings = validate_deck(&profile, &[entry], &cz);
             assert!(
-                !warnings
-                    .iter()
-                    .any(|w| w.to_string().contains("outside commander's color identity")),
+                !warnings.iter().any(|w| w
+                    .to_string()
+                    .contains("outside your commander's color identity")),
                 "expected no color identity warning for red card in RGWU deck"
             );
         }
@@ -917,9 +963,9 @@ mod tests {
             };
             let warnings = validate_deck(&profile, &[entry], &cz);
             assert!(
-                !warnings
-                    .iter()
-                    .any(|w| w.to_string().contains("outside commander's color identity")),
+                !warnings.iter().any(|w| w
+                    .to_string()
+                    .contains("outside your commander's color identity")),
                 "commander entry should be skipped by oracle_id, not warned about"
             );
         }
@@ -953,9 +999,9 @@ mod tests {
             };
             let warnings = validate_deck(&profile, &[entry], &cz);
             assert!(
-                !warnings
-                    .iter()
-                    .any(|w| w.to_string().contains("outside commander's color identity")),
+                !warnings.iter().any(|w| w
+                    .to_string()
+                    .contains("outside your commander's color identity")),
                 "blue card should be allowed via partner's color identity"
             );
         }

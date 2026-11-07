@@ -643,11 +643,22 @@ pub fn Add(deck_id: Uuid) -> Element {
         driver.dispatch(committed.map_or(Action::Undo, Action::Swipe));
     };
 
-    let (source, pile, window, current, printing_card, shows_synergy, validates_apply, shows_dot) = {
+    let (
+        source,
+        pile,
+        ghost_note,
+        window,
+        current,
+        printing_card,
+        shows_synergy,
+        validates_apply,
+        shows_dot,
+    ) = {
         let model = driver.model.read();
         (
             model.source(),
             model.pile(),
+            model.ghost_note(),
             model.window().to_vec(),
             model.current().cloned(),
             model.printing_card().cloned(),
@@ -722,7 +733,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 CardSkeleton {}
                             }
                         } else {
-                            CardSkeleton {}
+                            CardSkeleton { note: ghost_note }
                         }
                     } else {
                         // Maybeboard mode
@@ -738,7 +749,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                             }
 
                         } else {
-                            CardSkeleton {}
+                            CardSkeleton { note: ghost_note }
                         }
                     }
 

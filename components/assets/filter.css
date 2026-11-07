@@ -490,6 +490,19 @@
     outline-offset: 2px;
 }
 
+/* A picker's results, in flow under its search box, each easing in. */
+.card-filter-results {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.25rem;
+}
+
+.card-filter-result {
+    cursor: pointer;
+    animation: search-float-in 0.25s ease-out both;
+}
+
 /* The picker result the arrow keys point at. */
 .card-filter-highlight {
     border-color: var(--accent-primary);

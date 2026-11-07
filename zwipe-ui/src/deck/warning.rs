@@ -72,7 +72,7 @@ mod tests {
             None
         );
         let copies = DeckWarning::with_action(
-            "Sol Ring exceeds copy limit (2/1)",
+            "Sol Ring has 2 copies, Commander allows 1",
             card,
             WarningAction::FixQuantity(1),
         );

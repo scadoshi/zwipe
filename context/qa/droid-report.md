@@ -338,3 +338,89 @@ Build: main at f699acc37 (live on app.zwipe.net and zwipe.net), debug APK from ~
 ### Cleanup
 
 Droid test is as Scotty left it, apart from skips on Add (app and web). The maybeboard is empty on the server. Throttle and airplane mode are off. The clone's target is 11 GB.
+
+## Pass 7
+
+Build: main at f699acc37 (prod), debug APK on the Pixel_9a emulator against production, then app.zwipe.net at 411px in the emulator's Chrome, both as `test`. Shots are in ~/Developer/droid/shots/pass7-<n>.png (app) and web7-<n>.png (web). No logouts.
+
+I made two throwaway decks ("Droid tmp" in the app, "Droid web tmp" on web) so swipes and imports didn't touch Droid test, and deleted both on web. Every setting I changed went back and I checked it on the server.
+
+### What works
+
+- **Deck create, edit, clone, delete** (app and web). Create with only a name, then Edit to set format, commander (Swipe select), power level, land target, price target, deck tag and other tag, and save. Clone opens "<name> (clone)" with a toast. Delete asks first and the list count drops.
+- **Import** (app and web). Text import in Add mode handles "2 Swamp", "1x Name", a "Sideboard" header (Bolt went to the side board) and reports "Notacard Fakename not found". Replace mode and an export round trip work: importing the export gives the same list.
+- **Export**. The Deck, Maybe and Side chips add their sections with "// Commander", "// Deck", "// Sideboard" headers, and copy toasts "Copied to clipboard".
+- **Share**. Create link copies it ("Share link copied") and Stop sharing disables it ("Link disabled").
+- **Filters on Add**: oracle text, flavor text, price max, mana value, artist (typeahead pick), Planeswalker plus Mythic, excluding Creature and Land plus the Removal role, legal in Pauper on its own, and sort by price. Every one returned cards that fit.
+- **Swipe select in each mode** (app): commander (right picks Edgar Markov), oathbreaker, signature spell, background (Wilson, Refined Grizzly, then Scion of Halaster) and partner. Each mode's hint names what right does. Maybeboard mode was covered in pass 6.
+- **Format changes** drop a command zone card that no longer fits (Edgar left when the deck became Oathbreaker), and the deck page warns about the new format: 60 cards, banned Sol Ring, no signature spell, no sideboards.
+- **Themes**: picking Bluloco and toggling light mode both apply at once and save. Zenburn dark is restored.
+- **Settings** (app and web): Pips (Themed and Classic), Swipe confirmations (Chip, Toasts, Off), Universes Beyond (Show and Hide, which enables Exceptions) all save at once with a toast. All restored.
+- **Hints**: every "?" I opened had text, and Add's "See guide ↗" points at zwipe.net/guides/swipe-to-build/ (200).
+- **About, Account, Help & feedback** open with sensible content (v1.18.0).
+- **Offline Home** shows the cached counters and decks. Decks offline shows "Could not load decks" with Retry, and Retry works once online (app and web).
+- **Rotation**: forcing landscape keeps the app in portrait, as the manifest locks it.
+
+### New
+
+1. **The app's header Back drops unsaved Edit deck changes without asking** (bug, app only). Rename the deck in Edit deck, then tap the header ‹: the Deck page opens and the rename is gone. System Back on the same edit shows "Leave without saving?", and so does the web's header Back. Pass 4 had the app's header Back asking (178), so this looks like a regression. Shots: pass7-25, pass7-26, web7-1.
+2. **A colorless commander is treated as five-color** (bug, app and web). Droid tmp with Arzakon (a colorless planeswalker) shows W U B R G pips on Decks, and the signature-spell Swipe select offers Negate, Chaos Warp and Nature's Lore. Shot: pass7-29.
+3. **The partner Swipe select offers the commander itself** (bug). With Tymna the Weaver as commander, the partner stack's second card is Tymna the Weaver.
+4. **Import with set and number picks an Art Series card** (bug, app and web). "1 Bloodline Keeper (ISD) 90" imports "Bloodline Keeper // Bloodline Keeper", Common, Innistrad Remastered Art Series, grouped under Other. The export then carries that name. Shots: pass7-11, pass7-13, pass7-14.
+5. **"Could not load deck" is a dead end** (bug, app and web). Opening a deck offline shows "Could not load deck" with no Retry, and it stays there after the network returns. Only leaving and coming back loads it. The same visit raises the connection toast twice. Shot: pass7-39.
+6. **More than one "Is legal in" format means any of them** (question). With the deck's Commander preselected, adding Pauper still shows Elenda and other rares; Pauper alone shows commons. If "legal in both" is meant, it should narrow.
+7. **Warnings lowercase card names** (nit): "Sol ring is banned in oathbreaker", "Bloodline keeper // bloodline keeper is not legal in oathbreaker".
+8. **Replace import doesn't confirm** (question). It clears the mainboard straight away.
+9. **The share dialog never shows the link** (nit). It offers Copy link and "Stop share" (the body says "Stop sharing"), but never the URL itself.
+10. **Create and Edit treat the commander rows differently** (nit). The app's Create deck shows Commander, Partner, Background and Signature spell rows with no format set; Edit hides them until a format is chosen. On web, Create leaves an empty gap where they hide. Shots: pass7-2, web7-3.
+11. **Switching to Oathbreaker keeps the 37 land target** (nit). It was set while the deck was Commander; a 60-card format may want its own default.
+12. **A toast covers the Exceptions sheet's chips** (nit). "Universes Beyond hidden" sits over the last row of the picker (Warhammer 40,000). Shot: pass7-35.
+13. **Lightning Bolt imports at $28.99** (question). With no set given, the printing chosen is a pricey one, which skews the deck total.
+14. **Back from a deck goes to Decks, not where I came from** (nit, app). Open Droid test from Home's tile, and the header Back lands on Decks.
+15. **Web's "See guide ↗" opens in the same tab** (question). The arrow suggests a new tab, but `target` is empty, so it leaves the app.
+
+### Not covered
+
+- The Universes Beyond exclusion's effect on Add results, the Archidekt import source and the Combat filter. I ran out of time on these.
+- Slow network: GSM was tried in pass 6 (Decks timed out). This pass only did offline.
+
+### Cleanup
+
+Both throwaway decks are deleted (12 decks on the server, Droid test untouched). Server settings: zenburn, dark, theme pips, chip confirmations, Universes Beyond shown with the same four exceptions. The maybeboard is empty, as the composer asked. Airplane mode is off and rotation is back to portrait. The clone's target is 10 GB.
+
+## Pass 8
+
+Build: main at f699acc37 (prod), debug APK on the Pixel_9a emulator against production, plus app.zwipe.net in the emulator's Chrome, as `test`. Shots are in ~/Developer/droid/shots/pass8-<n>.png. I used one throwaway deck (deleted at the end) for imports, swipes and the long name.
+
+### Nit 210 repro (app, header ‹ on Edit deck)
+
+| Case | "Leave without saving?" | Result |
+|---|---|---|
+| (a) rename only | no | rename lost |
+| (b) format only (None to Commander, shown in the form) | no | still None |
+| (c) Commander format, then Edgar Markov via Swipe select | no | both lost |
+
+System Back on the same edits shows the prompt (pass 7), and so does the web's header Back.
+
+### Pass 7's Not covered list
+
+- **Universes Beyond hidden on Add** works. With UB shown, Name "Dalek" gives The Dalek Emperor and friends. Hidden, it gives "No results for this filter". Spider-Man cards still show because Marvel is one of the four exceptions, and Sliver Queen (not UB) is unaffected. Restored to Show. Shot: pass8-1.
+- **Combat filter** works. Power exact 4 returned Terry Pin 4/3, Inga and Esika 4/4, Treasury Thrull 4/4, Kheru Lich Lord 4/4, Monet 4/4, Everlasting Lich 4/0 (each checked in card details).
+- **Archidekt import** works. https://archidekt.com/decks/59349 brought in all 100 cards ($587.51), Bloodline Keeper as "Bloodline Keeper // Lord of Lineage" (unlike the text import's Art Series card, pass 7 New 4). But the deck stayed format None with no commander: Edgar Markov arrived as an ordinary creature. Question: should an Archidekt import set the commander (and format) from Archidekt's Commander category? Shots: pass8-2, pass8-3.
+
+### Slow network
+
+1. **Big loads time out on EDGE in the app because responses come uncompressed** (bug, app only). With `adb emu network speed edge` and `delay edge`, Decks shows skeletons for about 31s, then "Could not load decks" with a connection toast. Playstyle, Activity, Commander maybeboard, the Droid test deck, its Cards and Add stayed on skeletons past 25s. Home, Settings, Account and About show at once from cache. The cause looks like the client: the workspace `reqwest` has `features = ["json", "rustls-tls", "http2"]` and no `gzip` or `brotli`, so the app never sends Accept-Encoding. The server does compress: the 100-card deck is 512,820 bytes raw and 51,395 bytes with `accept-encoding: br`. Add `REQUEST_TIMEOUT` = 30s in `zwipe-client/src/lib.rs`, and a few decks' worth of raw JSON can't arrive in time at EDGE speed. The web isn't affected (the browser asks for compression). With DevTools throttled to about 30 KB/s and 400ms latency, web Decks, Activity and the maybeboard showed in under a second and Playstyle in about 5s. Shot: pass8-10.
+2. **Add stalls on a bare ghost card on a slow network** (bug, app). On EDGE, Droid test's Add sat on an empty ghost card for over a minute with no message, toast or error. It stayed empty after the network went back to full, and Add's refresh button didn't help; leaving and coming back loaded 10 cards. Shots: pass8-11, pass8-12.
+
+### Free roam
+
+- **100-card deck**: the Cards page drew 90 rows in under 0.6s. The Type, Mana value, Color and Card role groupings all add up (Type 27+14+6+12+9+32 = 100, Mana value 13+26+14+6+4+5+32 = 100). Shot: pass8-6.
+- **Long deck names**: a 94-character name is refused on save with "Deck name maximum length is 64 characters". The field itself has no maxlength, so you can keep typing past 64 and only learn at save (nit). A 64-character name wraps cleanly on the Deck page, the Cards header and the Decks list, and Home truncates it with "…". Shots: pass8-4 to pass8-8.
+- **Rapid swipes and undo** (temp deck, server counts after each burst). Ten right swipes sent back to back added 5 cards (100 to 105). The other five were ignored mid-animation. UI and server agreed, so nothing was lost or doubled. Bursts of five swipe-downs undid two cards each (105 to 103 to 101), then one more brought it to 100 exactly, and the next said "Nothing to undo". The "Undone" chip was still on screen next to that toast (nit, one message per action).
+- **Help & feedback**: "Join the Discord ↗" is a live invite (discord.gg/s2UReqUUeg, server "Zwipers", no expiry). "Report a problem ↗" opens the mail app (a mailto), which is the Gmail welcome tour on the emulator.
+- **About**: "View" opens the in-app Privacy policy. "zwipe.net ↗" opens a Chrome Custom Tab. The Scryfall, Fan Content Policy, zwipe.net and zwipe.net/privacy links all return 200.
+
+### Cleanup
+
+The temp deck is deleted (12 decks on the server, Droid test untouched). Server settings are unchanged (zenburn, dark, theme pips, chip, Universes Beyond shown with the same four exceptions), the maybeboard is empty, the network is back to full and airplane mode is off.
