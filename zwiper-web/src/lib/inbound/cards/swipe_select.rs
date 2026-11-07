@@ -10,6 +10,7 @@
 //!     open: swipe_open,
 //!     mode: SwipeMode::Commander(Format::Commander),
 //!     exclude_oracle_ids: saved_ids,     // a ReadSignal<HashSet<Uuid>>
+//!     starts_deck: true,                 // the hint says a pick starts a deck
 //!     on_select: move |card: Card| { swipe_open.set(false); create_with(card); },
 //!     on_close: move |()| swipe_open.set(false),
 //! }
@@ -51,7 +52,7 @@ use zwipe_ui::deck::form::{self, Slot};
 use zwipe_ui::filter;
 use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::generation::Generation;
-use zwipe_ui::hint::SwipeSelectMode;
+use zwipe_ui::hint::{Role, SwipeSelectMode};
 use zwipe_ui::playstyle::empty_identity_line;
 use zwipe_ui::stack::{CardStack, Direction, StackAction};
 use zwipe_ui::timing::{LOAD_MORE_AT, MAYBEBOARD_TOAST, PAGE_SIZE};
@@ -202,6 +203,7 @@ pub fn SwipeSelect(
     #[props(default)] suggested_pile: Option<ReadSignal<SuggestedPile>>,
     #[props(default)] suggested_filter: Option<Element>,
     #[props(default)] commander: Option<Card>,
+    #[props(default)] starts_deck: bool,
 ) -> Element {
     use_overlay_back(open);
     let session: Signal<Option<Session>> = use_context();
@@ -413,6 +415,7 @@ pub fn SwipeSelect(
         SwipeMode::Suggested => SwipeSelectMode::Suggested {
             has_filter: suggested_filter.is_some(),
         },
+        _ if starts_deck => SwipeSelectMode::StartsDeck,
         SwipeMode::Commander(_)
         | SwipeMode::Partner
         | SwipeMode::Background
@@ -639,7 +642,7 @@ fn SwipeSelectBody(
             on_hint: move |()| hint_again.set(true),
         }
         div { class: "screen-content card-swipe content-enter web-swipe-select-body {eye.body_class()}",
-            SwipeScreenChips { title, confirm }
+            SwipeScreenChips { title, tone: Role::Success, confirm }
             div { class: "form-container web-swipe-select-card",
                 if current.is_some() {
                     SwipeStack {

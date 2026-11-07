@@ -16,10 +16,12 @@ use zwipe_ui::deck::pickers::{self, Picker};
 use crate::inbound::components::held_open;
 use crate::inbound::components::screen_header::ScreenHeader;
 
-/// In-place tag picker, up while `open`, over the server-delivered `catalog` (`GET /api/deck/tags`), so a new deck tag is selectable without a client release. `selected` holds the deck's tag slugs; a chip tap goes to `on_toggle` and the × to `on_clear`. The dock's checkmark (`on_save`) stays off while `unchanged`; the header's back arrow (`on_back`) and the OS back gesture put back the tags it opened on.
+/// In-place tag picker, up while `open`, over the server-delivered `catalog` (`GET /api/deck/tags`), so a new deck tag is selectable without a client release. `selected` holds the deck's tag slugs; a chip tap goes to `on_toggle` and the × to `on_clear`. The dock's checkmark (`on_save`) stays off while `unchanged`; the header's back arrow and the OS back gesture go to `on_back`: the form puts back the tags it opened on, asking first (`asking`) when that throws a pick away.
 #[component]
 pub(crate) fn TagSelect(
     open: ReadSignal<bool>,
+    /// Whether the form is asking before this picker's Back throws its picks away.
+    asking: ReadSignal<bool>,
     selected: Vec<String>,
     catalog: Vec<DeckTagView>,
     unchanged: bool,
@@ -30,12 +32,20 @@ pub(crate) fn TagSelect(
 ) -> Element {
     let mut query = use_signal(String::new);
     let mut focused = use_signal(|| Option::<DeckTagView>::None);
+    // Each opening starts the bar on its hint, not the last chip tapped.
+    use_effect(move || {
+        if open() {
+            focused.set(None);
+        }
+    });
     let hint_open = use_signal(|| false);
 
     // OS back gesture closes this picker before the router sees it, and maps to
     // Back rather than Save, the same as the header's back arrow.
     let back = use_callback(move |(): ()| on_back.call(()));
-    use_overlay_back_action(open, back);
+    // Off the stack while the form asks about discarding, so Keep puts it back on top.
+    let listening = use_memo(move || open() && !asking());
+    use_overlay_back_action(listening.into(), back);
 
     let backdrop = held_open::use_held_open(open);
     let screen_class = if open() {

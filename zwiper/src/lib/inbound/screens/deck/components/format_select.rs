@@ -16,10 +16,12 @@ use zwipe_ui::deck::pickers::{self, Picker};
 use crate::inbound::components::held_open;
 use crate::inbound::components::screen_header::ScreenHeader;
 
-/// In-place format picker, up while `open`. A chip tap goes to `on_tap`, which picks the format or clears it when it is the one picked, with the command-zone knock-on clears. The dock's checkmark (`on_save`) stays off while `unchanged`; the header's back arrow (`on_back`) and the OS back gesture put the format and command zone back as they were when the picker opened.
+/// In-place format picker, up while `open`. A chip tap goes to `on_tap`, which picks the format or clears it when it is the one picked, with the command-zone knock-on clears. The dock's checkmark (`on_save`) stays off while `unchanged`; the header's back arrow and the OS back gesture go to `on_back`: the form puts the format and command zone back as they were when the picker opened, asking first (`asking`) when that throws a pick away.
 #[component]
 pub(crate) fn FormatSelect(
     open: ReadSignal<bool>,
+    /// Whether the form is asking before this picker's Back throws its picks away.
+    asking: ReadSignal<bool>,
     selected_format: Option<Format>,
     unchanged: bool,
     on_tap: EventHandler<Format>,
@@ -29,10 +31,18 @@ pub(crate) fn FormatSelect(
     // OS back gesture closes this overlay before touching the router. It maps
     // to Back, not Save: leaving a picker abandons the pick.
     let back = use_callback(move |(): ()| on_back.call(()));
-    use_overlay_back_action(open, back);
+    // Off the stack while the form asks about discarding, so Keep puts it back on top.
+    let listening = use_memo(move || open() && !asking());
+    use_overlay_back_action(listening.into(), back);
 
     let mut query = use_signal(String::new);
     let mut focused = use_signal(|| Option::<Format>::None);
+    // Each opening starts the bar on its hint, not the last chip tapped.
+    use_effect(move || {
+        if open() {
+            focused.set(None);
+        }
+    });
     let hint_open = use_signal(|| false);
 
     let backdrop = held_open::use_held_open(open);

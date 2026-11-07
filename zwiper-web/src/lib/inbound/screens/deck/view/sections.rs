@@ -447,7 +447,7 @@ pub fn WarningsBody(deck_id: Uuid, warnings: Vec<DeckWarning>, fixes: WarningFix
                                     Button {
                                         key: "{j}",
                                         variant: ButtonVariant::Small,
-                                        style: "color: var(--color-warning); border-color: var(--border-warning); margin-bottom: 0;",
+                                        style: "color: var(--ink-color-warning, var(--color-warning)); border-color: var(--border-warning); margin-bottom: 0;",
                                         onclick: move |_| match fix {
                                             Fix::BelowMinimum if j == 0 => {
                                                 navigator.push(Route::AddDeckCard { deck_id });

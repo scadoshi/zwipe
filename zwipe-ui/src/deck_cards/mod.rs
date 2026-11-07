@@ -8,6 +8,7 @@ use zwipe_core::domain::card::search_card::card_filter::CardSortKey;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::cards::{Cards, sort_deck_entries};
 use zwipe_core::domain::card::search_card::group_cards::{CardGroup, GroupByOption, GroupCards};
+use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
 use zwipe_core::domain::deck::{Board, DeckEntry};
 
 use crate::deck::form::Slot;
@@ -64,12 +65,35 @@ impl Zone {
 
     /// Drops every entry that shares an oracle ID with a command zone card, which never appear in the groups.
     pub fn strip(&self, entries: &mut Vec<DeckEntry>) {
-        let oracles: Vec<Uuid> = self
-            .cards()
+        let oracles = self.oracles();
+        entries.retain(|e| !oracles.contains(&e.deck_card.oracle_id));
+    }
+
+    /// The oracle IDs of the zone's cards.
+    fn oracles(&self) -> Vec<Uuid> {
+        self.cards()
             .iter()
             .filter_map(|(_, c)| c.scryfall_data.oracle_id)
+            .collect()
+    }
+
+    /// The deck's metrics as a fresh fetch would give them while the screen holds `live`: its entries as edited since the fetch, with this zone [stripped](Self::strip). The stripped entries come back from `fetched`, the deck's entries as fetched, and `zone_cards`, the fetched command zone cards, count once each. `None` when the deck holds no card at all.
+    #[must_use]
+    pub fn live_metrics(
+        &self,
+        fetched: &[DeckEntry],
+        live: &[DeckEntry],
+        zone_cards: &[Card],
+    ) -> Option<DeckMetrics> {
+        let oracles = self.oracles();
+        let mut stripped: Vec<DeckEntry> = fetched
+            .iter()
+            .filter(|e| oracles.contains(&e.deck_card.oracle_id))
+            .cloned()
             .collect();
-        entries.retain(|e| !oracles.contains(&e.deck_card.oracle_id));
+        stripped.extend_from_slice(live);
+        (!stripped.is_empty() || !zone_cards.is_empty())
+            .then(|| DeckMetrics::from_entries_and_command_zone(&stripped, zone_cards))
     }
 }
 
@@ -436,6 +460,37 @@ mod tests {
         };
         zone.strip(&mut list);
         assert_eq!(list.len(), 4);
+    }
+
+    #[test]
+    fn live_metrics_match_the_fetch_until_an_edit_and_follow_it() {
+        let fetched = entries();
+        let zone = Zone {
+            commander: Some(fetched[0].card.clone()),
+            ..Zone::default()
+        };
+        let zone_cards = vec![fetched[0].card.clone()];
+        let mut live = fetched.clone();
+        zone.strip(&mut live);
+        let as_fetched = DeckMetrics::from_entries_and_command_zone(&fetched, &zone_cards);
+        let unedited = zone.live_metrics(&fetched, &live, &zone_cards).unwrap();
+        assert_eq!(unedited.total_cards, as_fetched.total_cards);
+        assert_eq!(unedited.total_price_usd, as_fetched.total_price_usd);
+        assert_eq!(unedited.type_counts, as_fetched.type_counts);
+
+        let mut added = deck(deck_profile("D"), vec![typed("Bee", "Creature — Insect")]).entries;
+        live.append(&mut added);
+        let after_add = zone.live_metrics(&fetched, &live, &zone_cards).unwrap();
+        assert_eq!(after_add.total_cards, as_fetched.total_cards + 1);
+
+        live.retain(|e| e.card.scryfall_data.name != "Ant" && e.card.scryfall_data.name != "Bee");
+        let after_remove = zone.live_metrics(&fetched, &live, &zone_cards).unwrap();
+        assert_eq!(after_remove.total_cards, as_fetched.total_cards - 1);
+    }
+
+    #[test]
+    fn live_metrics_are_none_for_an_empty_deck() {
+        assert!(Zone::default().live_metrics(&[], &[], &[]).is_none());
     }
 
     #[test]

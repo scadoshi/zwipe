@@ -16,7 +16,7 @@ use crate::buy;
 use crate::deck::view::{self, Done};
 use crate::deck::warning::{self, Fix};
 use crate::generation::{Generation, Ticket};
-use crate::toast::Toast;
+use crate::toast::{Line, Toast, keep_one};
 
 /// The screen's title.
 pub const TITLE: &str = "Deck";
@@ -522,6 +522,14 @@ pub enum Effect {
     Toast(Toast),
 }
 
+/// Which of an action's effects raise a toast, for [`keep_one`].
+fn toast_line(effect: &Effect) -> Option<Line<'_>> {
+    match effect {
+        Effect::Toast(toast) => Some(Line::Toast(toast)),
+        _ => None,
+    }
+}
+
 /// The labels and actions of a warning's fix buttons, in order. Empty for a warning with nothing to tap.
 #[must_use]
 pub fn fix_buttons(warning: &DeckWarning) -> Vec<(String, Action)> {
@@ -692,6 +700,12 @@ impl State {
     /// The currency follows the first profile's price target currency, once per visit, and the user's pick after that. The share link follows every profile that lands, and Share and Stop share after that. The hint is offered once per visit, on the first [`Action::Load`].
     #[must_use = "the client performs the effects"]
     pub fn update(&mut self, action: Action) -> Vec<Effect> {
+        let mut effects = self.dispatch(action);
+        keep_one(&mut effects, toast_line);
+        effects
+    }
+
+    fn dispatch(&mut self, action: Action) -> Vec<Effect> {
         match action {
             Action::Load(deck_id) => self.load(deck_id),
             Action::ProfileLoaded { ticket, profile } => self.profile_loaded(ticket, *profile),

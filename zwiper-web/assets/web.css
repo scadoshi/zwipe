@@ -246,7 +246,7 @@ body {
 }
 
 .web-hero-tagline a {
-    color: var(--palette-1);
+    color: var(--ink-palette-1, var(--palette-1));
     text-decoration: underline;
     text-underline-offset: 3px;
 }
@@ -679,7 +679,7 @@ body {
 
     .web-shell .nav-trailing-row .btn-action:hover {
         opacity: 1;
-        color: var(--accent-primary);
+        color: var(--ink-accent-primary, var(--accent-primary));
         border-color: var(--accent-primary);
     }
 }
@@ -692,7 +692,7 @@ body {
 @media (hover: hover) {
     :is(.settings-list-header, .card-group-header) .btn-action:not(:disabled, .btn-action-danger):hover,
     .cover-flow-step:not(:disabled):hover {
-        color: var(--accent-primary);
+        color: var(--ink-accent-primary, var(--accent-primary));
         border-color: var(--accent-primary);
     }
 
@@ -704,7 +704,7 @@ body {
     :is(button, a):is(.chip, .chip-xs, .chip-remove):not(.selected, .disabled, :disabled):hover,
     .deck-fold-all:not(:disabled):hover,
     .card-group-header.group-collapsible:hover {
-        color: var(--accent-primary);
+        color: var(--ink-accent-primary, var(--accent-primary));
         border-color: var(--accent-primary);
     }
 
@@ -716,7 +716,7 @@ body {
        their place with a transform. */
     :is(.info-button, .drawer-sheet-hint, .page-header-corner, .alert-dialog-cancel, .alert-dialog-action):not(:disabled, [aria-disabled="true"]):hover {
         opacity: 1;
-        color: var(--accent-primary);
+        color: var(--ink-accent-primary, var(--accent-primary));
         border-color: var(--accent-primary);
     }
 }
@@ -2100,11 +2100,18 @@ body {
         left: 1.5rem;
     }
 
+    /* A tag, not a button: the screen's action color tinted over the page
+       with its ink on it, and no edge, lift or pointer. */
     .chip-note.web-screen-chip {
         display: inline-block;
         padding: 0.3rem 0.6rem;
         font-size: 0.75rem;
         line-height: 1.4;
+        color: var(--chip-ink);
+        background-color: color-mix(in srgb, var(--chip-tone) 12%, var(--bg-primary));
+        border-color: transparent;
+        box-shadow: none;
+        cursor: default;
     }
 }
 

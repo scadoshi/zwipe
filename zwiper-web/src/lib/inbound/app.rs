@@ -154,11 +154,15 @@ if (!window.__zwipeHintFocus) {
 /// root, which closes the top overlay, and Enter with nothing focused
 /// submits the page's form panel when it has exactly one, as Enter in one
 /// of its fields does.
+///
+/// Escape sends once the key's dispatch is over, so a dialog the close
+/// opens (a picker asking before it discards) draws after the kit's
+/// listener has passed on this same key and doesn't take it as a dismiss.
 const KEYS_JS: &str = r#"
 document.addEventListener('keydown', (e) => {
     if (document.querySelector('.alert-dialog[data-state="open"]')) return;
     if (e.key === 'Escape') {
-        dioxus.send(true);
+        setTimeout(() => dioxus.send(true), 0);
         return;
     }
     const focus = document.activeElement;
