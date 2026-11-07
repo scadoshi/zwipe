@@ -23,6 +23,7 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
+| 96, the details panel's footer pinned, header hides on scroll | thinker | `nits/thinker-96` |
 | 93 to 95, the docked panel's jump, the card pinned to center, panel default by space, no lift on the docked panel (queued after 88) | halo | `nits/halo-93` |
 | 92, the web's URLs name resources, not actions (queued after 91) | laptop | `nits/laptop-92` |
 | 91, a live session skips the login page | laptop | `nits/laptop-91` |
@@ -137,6 +138,7 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 93. **The docked details panel jumps on load.** On Add it first sits low, then snaps up under the nav when the screen finishes loading. It must paint in its final place from the first frame.
 94. **The swipe card shifts when the details panel toggles.** The card stays pinned to the window's center; on a narrow window the panel overlays it; the panel starts open when there's room and closed when it would touch the card, the eye lit while it shows.
 95. **The docked panel's hover lifts its content but not its frame.** Docked panels and drawers don't lift; any hover lights the one frame.
+96. **The docked details panel scrolls its footer away.** When it scrolls, the footer (Printings) stays pinned at the bottom and the header slides away on scroll down, back on scroll up, like the app's header.
 
 ## Done
 
