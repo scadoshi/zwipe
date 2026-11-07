@@ -86,7 +86,7 @@ pub(crate) fn FormatSelect(
                         }
 
                         div { class: "tag-def-bar format-def-bar",
-                            div { class: "format-def-scroll scroll-fade-y",
+                            div { class: "format-def-scroll",
                                 if let Some(fmt) = focused() {
                                     div { class: "tag-def-name", "{fmt.display_name()}" }
                                     ul { class: "tag-def-list",

@@ -582,9 +582,11 @@
 
 /* The format picker's bar keeps one height, so a tapped format's details
    never push the chips down under the finger. Details longer than the bar
-   scroll inside it and fade at the edge they run past. */
+   scroll inside it edge to edge: the bar's padding is the scroller's own,
+   so the lines run right up to its border and are cut there. */
 .tag-def-bar.format-def-bar {
     height: 11rem;
+    padding: 0;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -595,6 +597,7 @@
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
+    padding: 0.5rem 0.75rem;
 }
 
 .tag-def-name {
