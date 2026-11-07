@@ -21,9 +21,10 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 ## In progress
 
-| 115, the dictionary list's bottom clip | scotland | `nits/scotland-115` |
 | 116 to 119, swipe screens: no head, title chip, panel scroll, eye remembered | halo | `nits/halo-116` |
 | 120, 121, picker ✓ room and zwipe.net ghost, focus after a hint | laptop | `nits/laptop-120` |
+| 122, unsaved changes guard on the deck form | scotland | `nits/scotland-122` |
+| 123, skeleton audit | thinker | `nits/thinker-123` |
 
 The loop is in [`../development/factory.md`](../development/factory.md).
 
@@ -167,6 +168,9 @@ From Surfer's Part 3 (2026-11-06), triaged with Scotty:
 119. **The details panel forgets the eye.** [S34] Closing it with the eye sticks across reloads (stored per browser). Where the panel doesn't fit beside the card it still starts closed.
 120. **The picker ✓ covers the last chips, and zwipe.net ghosts its page dock behind it.** [S4] Room under the picker list so the ✓ never covers a chip; zwipe.net's shared deck hides its page dock while the filter drawer is open, as the app now does.
 121. **After Enter closes a hint, focus jumps to the nav logo.** [S36] A second Enter then leaves the form. Focus stays in the drawer or form the hint was opened from.
+
+122. **Leaving the deck form loses unsaved changes without a word.** Creating or editing a deck (its pickers, drawers, the Commander → Swipe select and any other layer on top) with changes not yet saved: any way out (nav, logo, back button, browser back or reload, a link) asks first, "Leave without saving? Your changes to this deck will be lost", with Stay and Leave. The dialog sits above every modal layer the form can have open. No changes means no dialog.
+123. **Skeleton audit.** Every skeleton matches what replaces it: bar thickness, row height and spacing equal the real chart's (Playstyle's charts differ from each other today: one skeleton's bars match, the other's don't); a chip skeleton is an empty chip, never a chip with dots or circles inside standing in for text or pips; and nothing touches its panel's wall (Activity's right-hand chip row starts flush against the panel's left edge). All screens, wide and phone.
 
 Skipped with Scotty: S35 (old /deck paths 404; old paths don't reroute), S37 (overscroll shade, 104 as designed).
 
