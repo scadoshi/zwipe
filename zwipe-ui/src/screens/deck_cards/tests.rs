@@ -524,11 +524,8 @@ fn a_quick_add_joins_the_deck_records_undo_and_toasts() {
         panic!("an add creates the card: {effects:?}");
     };
     assert_eq!(request.quantity, 1);
-    assert_eq!(
-        state.quick_add(),
-        Some(QuickAddResults::Empty),
-        "the pick leaves the results at once"
-    );
+    assert!(state.quick_add().is_none(), "the pick closes the results");
+    assert_eq!(state.quick_query(), "", "and clears the search");
     let ticket = *ticket;
     let deck_card = deck(deck_profile("D"), vec![signet.clone()]).entries[0]
         .deck_card

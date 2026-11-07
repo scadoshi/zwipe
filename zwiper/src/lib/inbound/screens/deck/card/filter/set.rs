@@ -151,51 +151,6 @@ pub fn Set() -> Element {
                 }
             }
 
-            // Search result bubbles (above input, click to add)
-            if !search_query().is_empty() {
-                if let Some(sets) = all_sets.read().as_ref() {
-                    {
-                        let query = search_query().to_lowercase();
-                        let already_selected = selected_sets.as_slice();
-
-                        let results: Vec<String> = sets
-                            .iter()
-                            .filter(|s| {
-                                s.to_lowercase().contains(&query)
-                                && !already_selected.contains(s)
-                            })
-                            .take(5)
-                            .cloned()
-                            .collect();
-
-                        if results.is_empty() {
-                            rsx! {}
-                        } else {
-                            rsx! {
-                                div { class: "search-float-anchor",
-                                    div { class: "search-float-results",
-                                        for (i, set) in results.into_iter().enumerate() {
-                                            div {
-                                                class: "chip-unselected search-float-chip",
-                                                style: "animation-delay: {i * 40}ms, {250 + i * 40}ms;",
-                                                onclick: move |_| {
-                                                    let mut current = read_sets(&filter_builder(), mode());
-                                                    current.push(set.clone());
-                                                    write_sets(&mut filter_builder.write(), mode(), current);
-                                                    is_typing.set(false);
-                                                },
-                                                {set.clone()}
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Search input (at the bottom)
             ClearWrap {
                 filled: !search_query().is_empty(),
                 on_clear: move |()| {
@@ -219,6 +174,50 @@ pub fn Set() -> Element {
                             is_typing.set(false);
                         }
                     }
+            }
+            if !search_query().is_empty() {
+                if let Some(sets) = all_sets.read().as_ref() {
+                    {
+                        let query = search_query().to_lowercase();
+                        let already_selected = selected_sets.as_slice();
+
+                        let results: Vec<String> = sets
+                            .iter()
+                            .filter(|s| {
+                                s.to_lowercase().contains(&query)
+                                && !already_selected.contains(s)
+                            })
+                            .take(5)
+                            .cloned()
+                            .collect();
+
+                        if results.is_empty() {
+                            rsx! {}
+                        } else {
+                            rsx! {
+                                div {
+                                    div { class: "card-filter-results",
+                                        for (i, set) in results.into_iter().enumerate() {
+                                            button {
+                                                r#type: "button",
+                                                class: "chip-unselected card-filter-result",
+                                                style: "animation-delay: {i * 40}ms;",
+                                                onclick: move |_| {
+                                                    search_query.set(String::new());
+                                                    let mut current = read_sets(&filter_builder(), mode());
+                                                    current.push(set.clone());
+                                                    write_sets(&mut filter_builder.write(), mode(), current);
+                                                    is_typing.set(false);
+                                                },
+                                                {set.clone()}
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }

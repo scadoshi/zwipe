@@ -7,6 +7,8 @@ use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCur
 use zwipe_ui::filter::chips;
 use zwipe_ui::filter::sections::{ChipSet, Modes};
 
+use super::typed_number::TypedNumber;
+
 /// Price filter sub-component: USD/EUR/TIX chips + min/max bounds.
 #[component]
 pub(crate) fn PriceFilter() -> Element {
@@ -28,7 +30,7 @@ pub(crate) fn PriceFilter() -> Element {
             .unwrap_or_default()
     });
 
-    // Parse and write the min bound on blur (empty clears it).
+    // Parse and write the min bound on blur (empty clears it), tidying the text or saying it is invalid.
     let mut try_parse_price_min = move || {
         if price_min_string().is_empty() {
             filter_builder.write().unset_price_min();
@@ -45,7 +47,7 @@ pub(crate) fn PriceFilter() -> Element {
         }
     };
 
-    // Parse and write the max bound on blur (empty clears it).
+    // Parse and write the max bound on blur (empty clears it), tidying the text or saying it is invalid.
     let mut try_parse_price_max = move || {
         if price_max_string().is_empty() {
             filter_builder.write().unset_price_max();
@@ -60,6 +62,27 @@ pub(crate) fn PriceFilter() -> Element {
                 ToastOptions::default().duration(TOAST_QUICK),
             );
         }
+    };
+
+    // Writes a bound as it is typed; half-typed text waits for the blur,
+    // which says it is invalid.
+    let mut write_typed_min = move |text: &str| match TypedNumber::read(text) {
+        TypedNumber::Number(n) => {
+            filter_builder.write().set_price_min(n);
+        }
+        TypedNumber::Empty => {
+            filter_builder.write().unset_price_min();
+        }
+        TypedNumber::Partial => {}
+    };
+    let mut write_typed_max = move |text: &str| match TypedNumber::read(text) {
+        TypedNumber::Number(n) => {
+            filter_builder.write().set_price_max(n);
+        }
+        TypedNumber::Empty => {
+            filter_builder.write().unset_price_max();
+        }
+        TypedNumber::Partial => {}
     };
 
     let price_is_active =
@@ -123,7 +146,9 @@ pub(crate) fn PriceFilter() -> Element {
                     autocorrect: "off",
                     spellcheck: "false",
                     oninput: move |event| {
-                        price_min_string.set(event.value());
+                        let text = event.value();
+                        write_typed_min(&text);
+                        price_min_string.set(text);
                     },
                     onblur: move |_| {
                         try_parse_price_min();
@@ -140,7 +165,9 @@ pub(crate) fn PriceFilter() -> Element {
                     autocorrect: "off",
                     spellcheck: "false",
                     oninput: move |event| {
-                        price_max_string.set(event.value());
+                        let text = event.value();
+                        write_typed_max(&text);
+                        price_max_string.set(text);
                     },
                     onblur: move |_| {
                         try_parse_price_max();

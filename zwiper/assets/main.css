@@ -353,3 +353,8 @@ body {
     white-space: nowrap;
     flex-shrink: 0;
 }
+
+/* Quick add's results under its bar keep a row's gap from the row below. */
+.quick-add-results {
+    margin-bottom: 0.5rem;
+}

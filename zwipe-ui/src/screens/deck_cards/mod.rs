@@ -346,7 +346,7 @@ pub enum Action {
         /// The cards found.
         cards: Vec<Card>,
     },
-    /// Adds a Quick add result to the main board. It leaves the results at once and joins the deck when the server confirms.
+    /// Adds a Quick add result to the main board. It clears the search and closes the results at once, and joins the deck when the server confirms.
     AddCard(Box<Card>),
     /// The [`Effect::CreateCard`] holding `ticket` created this deck card.
     Created {
@@ -991,12 +991,20 @@ impl State {
         }]
     }
 
+    /// Empties Quick add's search and closes its results.
+    fn close_quick_add(&mut self) {
+        self.quick.query.clear();
+        self.quick.results.clear();
+        self.quick.waiting = None;
+        self.quick.searching = false;
+        self.quick.open = false;
+    }
+
     fn add_card(&mut self, card: Card) -> Vec<Effect> {
         let Some(deck_id) = self.deck_id else {
             return Vec::new();
         };
-        let card_id = card.scryfall_data.id;
-        self.quick.results.retain(|c| c.scryfall_data.id != card_id);
+        self.close_quick_add();
         let request = HttpCreateDeckCard::new(&card.scryfall_data, 1, None);
         let ticket = self.request(Pending::QuickAdd(Box::new(card)));
         vec![Effect::CreateCard {

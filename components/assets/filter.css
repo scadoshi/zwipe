@@ -499,6 +499,8 @@
 }
 
 .card-filter-result {
+    font-family: inherit;
+    line-height: inherit;
     cursor: pointer;
     animation: search-float-in 0.25s ease-out both;
 }
