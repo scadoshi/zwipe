@@ -14,14 +14,6 @@
     --web-sticky-max: calc(100dvh - 10rem);
 }
 
-/* A clearable field in a chip row fills the rest of the row, level with
-   the row's label chip. */
-.chip-row > .input-clear-wrap {
-    flex: 1 1 auto;
-    min-width: 0;
-    margin-bottom: 0;
-}
-
 /* A text field on a wide page stops at a field's width, left-aligned
    beside or under its label. */
 @media (min-width: 900px) {
