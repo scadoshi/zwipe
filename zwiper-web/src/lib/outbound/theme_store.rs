@@ -86,4 +86,88 @@ mod tests {
         storage.write(THEME_KEY, "nope").unwrap();
         assert_eq!(ThemeStore::new(storage).load(), None);
     }
+
+    /// The page shell, whose first-paint script reads this store's key.
+    const INDEX_HTML: &str = include_str!("../../../index.html");
+
+    /// The response headers, whose CSP names that script's hash.
+    const HEADERS: &str = include_str!("../../../deploy/_headers");
+
+    /// `text` between the first `start` and the next `end` after it.
+    fn between<'a>(text: &'a str, start: &str, end: &str) -> &'a str {
+        let (_, after) = text.split_once(start).expect("start marker");
+        let (inside, _) = after.split_once(end).expect("end marker");
+        inside
+    }
+
+    /// Standard base64 with padding, as a CSP hash is written.
+    #[expect(
+        clippy::arithmetic_side_effects,
+        clippy::as_conversions,
+        reason = "bit arithmetic on bytes and 6-bit indexes that cannot overflow"
+    )]
+    fn base64(bytes: &[u8]) -> String {
+        const ALPHABET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        let mut out = String::new();
+        for chunk in bytes.chunks(3) {
+            let byte = |i: usize| u32::from(chunk.get(i).copied().unwrap_or(0));
+            let n = (byte(0) << 16) | (byte(1) << 8) | byte(2);
+            for i in 0..4 {
+                if i <= chunk.len() {
+                    let index = ((n >> (18 - 6 * i)) & 63) as usize;
+                    out.push(char::from(*ALPHABET.get(index).expect("a 6-bit index")));
+                } else {
+                    out.push('=');
+                }
+            }
+        }
+        out
+    }
+
+    #[test]
+    fn first_paint_matches_the_themes() {
+        use sha2::{Digest, Sha256};
+
+        assert!(
+            INDEX_HTML.contains(&format!("localStorage.getItem(\"{THEME_KEY}\")")),
+            "index.html reads another key than {THEME_KEY}"
+        );
+
+        // Every theme's page color, in step with orangui's themes.css.
+        let colors: std::collections::HashMap<String, String> =
+            serde_json::from_str(between(INDEX_HTML, "var colors = ", ";\n"))
+                .expect("the color map");
+        assert_eq!(colors.len(), components::ALLOWED_THEMES.len() * 2);
+        for theme in components::ALLOWED_THEMES {
+            for mode in ["dark", "light"] {
+                let block = between(
+                    components::THEMES_CSS,
+                    &format!(".theme-{theme}-{mode} {{"),
+                    "}",
+                );
+                let color = between(block, "--bg-primary:", ";").trim().to_lowercase();
+                assert_eq!(
+                    colors.get(&format!("{theme}-{mode}")),
+                    Some(&color),
+                    "{theme}-{mode}'s first paint differs from themes.css"
+                );
+            }
+        }
+
+        // The retired slugs, as the store reads them.
+        for (from, to) in components::RETIRED_THEMES {
+            assert!(
+                INDEX_HTML.contains(&format!("\"{from}\": \"{to}\"")),
+                "{from} -> {to}"
+            );
+        }
+
+        // The CSP lets this exact script run.
+        let script = between(INDEX_HTML, "<script>", "</script>");
+        let hash = base64(&Sha256::digest(script.as_bytes()));
+        assert!(
+            HEADERS.contains(&format!("'sha256-{hash}'")),
+            "deploy/_headers' script-src lacks 'sha256-{hash}'"
+        );
+    }
 }

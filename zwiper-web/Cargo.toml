@@ -58,3 +58,5 @@ tokio = { version = "1.47.1", default-features = false, features = ["sync", "tim
 
 [dev-dependencies]
 tokio = { version = "1.47.1", features = ["macros", "rt", "time", "test-util"] }
+# Hashes index.html's first-paint script against deploy/_headers' CSP.
+sha2 = { workspace = true }

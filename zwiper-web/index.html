@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<!-- Custom dx shell: dioxus-cli's index.html plus a first paint in the
+     stored theme. dx injects assets and scripts and fills the title
+     placeholder at build. -->
+<html lang="en">
+    <head>
+        <title>{app_title}</title>
+        <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta charset="UTF-8">
+        <!-- The first frame, before the app's stylesheets and wasm arrive:
+             the stored theme's backdrop (its --bg-sink, the color the grid's
+             layer paints), mixed as orangui's themes.css mixes it, so the page
+             never flashes white. The app's grid then draws over it in place. -->
+        <style>
+            html {
+                background-color: color-mix(in srgb, var(--first-paint-bg, #282828), #000 15%);
+            }
+
+            html.first-paint-light {
+                background-color: color-mix(in srgb, var(--first-paint-bg), #fff 35%);
+            }
+        </style>
+        <!-- Sets the color above from the stored theme. Its hash is in
+             deploy/_headers' script-src; change the script and the hash
+             must change with it. -->
+        <script>
+            (function () {
+                // Each theme's page color (--bg-primary in orangui's themes.css),
+                // by theme and mode. A test keeps it in step with the stylesheet.
+                var colors = {"achromatopsia-dark":"#1a1a1a","achromatopsia-light":"#f2f2f2","ayu-dark":"#0f1419","ayu-light":"#fcfcfc","bluloco-dark":"#282c34","bluloco-light":"#f9f9f9","catppuccin-dark":"#1e1e2e","catppuccin-light":"#eff1f5","darcula-dark":"#2b2b2b","darcula-light":"#ffffff","deuteranopia-dark":"#1e1f24","deuteranopia-light":"#f0f0f4","docs-rs-dark":"#353535","docs-rs-light":"#f9f7ec","dracula-dark":"#282a36","dracula-light":"#f8f8f2","eclipse-dark":"#1e1f22","eclipse-light":"#ffffff","ethereal-dark":"#1b1d29","ethereal-light":"#f4f5fb","everforest-dark":"#272e33","everforest-light":"#f3ead3","flexoki-dark":"#100f0f","flexoki-light":"#fffcf0","github-dark":"#0d1117","github-high-contrast-dark":"#0a0c10","github-high-contrast-light":"#ffffff","github-light":"#ffffff","gruvbox-dark":"#282828","gruvbox-light":"#fbf1c7","hackerman-dark":"#050805","hackerman-light":"#e6f2e6","kanagawa-dark":"#1f1f28","kanagawa-dragon-dark":"#181616","kanagawa-dragon-light":"#f2ecbc","kanagawa-light":"#f2ecbc","material-dark":"#212121","material-light":"#fafafa","matte-black-dark":"#121212","matte-black-light":"#efefef","melange-dark":"#292522","melange-light":"#f1f1f1","miasma-dark":"#222222","miasma-light":"#e6e2d4","modus-dark":"#000000","modus-light":"#ffffff","monokai-dark":"#272822","monokai-light":"#fdf9f3","monokai-pro-dark":"#2d2a2e","monokai-pro-light":"#faf4f2","monokai-pro-machine-dark":"#273136","monokai-pro-machine-light":"#eaf2f5","monokai-pro-octagon-dark":"#282a3a","monokai-pro-octagon-light":"#eff0f6","monokai-pro-ristretto-dark":"#2c2525","monokai-pro-ristretto-light":"#f5ece9","monokai-pro-spectrum-dark":"#222222","monokai-pro-spectrum-light":"#f0f0f0","neovim-dark":"#14161b","neovim-light":"#e0e2ea","night-owl-dark":"#011627","night-owl-light":"#fbfbfb","nightfox-dark":"#192330","nightfox-light":"#f6f2ee","nord-dark":"#2e3440","nord-light":"#eceff4","one-dark-dark":"#282c34","one-dark-light":"#fafafa","osaka-jade-dark":"#111c18","osaka-jade-light":"#e8efe8","oxocarbon-dark":"#161616","oxocarbon-light":"#ffffff","poimandres-dark":"#1b1e28","poimandres-light":"#eef2f9","powershell-dark":"#012456","powershell-light":"#f2f4f8","protanopia-dark":"#1e1e22","protanopia-light":"#f2f0ed","rose-pine-dark":"#191724","rose-pine-light":"#faf4ed","rustbox-dark":"#1c1210","rustbox-light":"#f0dac5","solarized-dark":"#002b36","solarized-light":"#fdf6e3","synthwave-84-dark":"#262335","synthwave-84-light":"#f5eefb","terafox-dark":"#152528","terafox-light":"#f6f2ee","tokyo-night-dark":"#1a1b26","tokyo-night-light":"#d5d6db","tritanopia-dark":"#22201e","tritanopia-light":"#f2efe8","vantablack-dark":"#000000","vantablack-light":"#ffffff","vscode-dark":"#1e1e1e","vscode-light":"#ffffff","xcode-dark":"#1f1f24","xcode-light":"#ffffff","zenburn-dark":"#3f3f3f","zenburn-light":"#e8e6d8"};
+                // Slugs a theme moved from, as the app's theme store reads them.
+                var retired = {"ristretto": "monokai-pro-ristretto", "visual-studio": "vscode"};
+                var root = document.documentElement;
+                // The app's own first theme when nothing is stored: gruvbox, dark.
+                var key = "gruvbox-dark";
+                try {
+                    var stored = JSON.parse(localStorage.getItem("zwiper-web.theme"));
+                    if (stored && typeof stored.name === "string") {
+                        var name = retired[stored.name] || stored.name;
+                        var picked = name + (stored.is_dark ? "-dark" : "-light");
+                        if (colors[picked]) key = picked;
+                    }
+                } catch (e) {}
+                root.style.setProperty("--first-paint-bg", colors[key]);
+                if (/-light$/.test(key)) root.classList.add("first-paint-light");
+            })();
+        </script>
+    </head>
+    <body>
+        <div id="main"></div>
+    </body>
+</html>

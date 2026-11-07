@@ -3,9 +3,12 @@
 # The Content-Security-Policy runs as Report-Only: the browser logs what the
 # policy would block to the console and blocks nothing. Once a click-through
 # shows no violations, the header is renamed to Content-Security-Policy.
+# The script-src hash is index.html's first-paint script; the test
+# `first_paint_matches_the_themes` in src/lib/outbound/theme_store.rs fails
+# when the script changes and the hash here does not.
 /*
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=()
-  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data: https://cdn.jsdelivr.net; img-src 'self' data: blob: https://cards.scryfall.io https://svgs.scryfall.io; connect-src 'self' https://api.zwipe.net; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
+  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-vzS7wNFdrljc6gGQ+wsLewMU+/I5mAQWZPnUWqanIbo='; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data: https://cdn.jsdelivr.net; img-src 'self' data: blob: https://cards.scryfall.io https://svgs.scryfall.io; connect-src 'self' https://api.zwipe.net; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
