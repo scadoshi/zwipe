@@ -694,7 +694,7 @@ body {
    nothing moved or resized. */
 @media (hover: hover) {
     :is(.settings-list-header, .card-group-header) .btn-action:not(:disabled, .btn-action-danger):hover,
-    .web-flow-step:not(:disabled):hover {
+    .cover-flow-step:not(:disabled):hover {
         color: var(--accent-primary);
         border-color: var(--accent-primary);
     }
@@ -1191,20 +1191,9 @@ body {
 
 /* ---- Printing sheet ---- */
 
-.web-printing-stage {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
+/* The cover flow, then the foot under it. */
+.web-printing-body > .cover-flow {
     margin-bottom: 0.75rem;
-}
-
-.web-printing-stage .carousel-card-image {
-    max-width: min(18rem, 70vw);
-}
-
-.web-printing-step {
-    flex: none;
 }
 
 /* The body takes the arrow keys once clicked, with no focus ring. */
@@ -1212,8 +1201,8 @@ body {
     outline: none;
 }
 
-/* The foot at the sheet's bottom: the dots, then the prices at the left
-   and Save at the right of one row. Save is the dock's button, sitting in
+/* The foot at the sheet's bottom: the prices at the left and Save at the
+   right of one row. Save is the dock's button, sitting in
    the row rather than floating over the sheet. */
 .web-printing-foot {
     display: flex;
@@ -1243,10 +1232,8 @@ body {
 
    From the kit's modal width the printing picker is a large modal over a
    dimmed page, layered over a details sheet as .sheet-over layers the
-   narrow picker. The stage holds the printings in perspective: each card's
-   left edge at the stage's middle, its inline transform placing it, and
-   one shared transition gliding every card as the selection moves. Under
-   the stage sit the selected printing's set, number and prices and Select. */
+   narrow picker, with components' cover flow filling it. Under the flow
+   sit the selected printing's set, number and prices and Select. */
 .web-flow {
     display: contents;
 }
@@ -1274,106 +1261,16 @@ body {
         outline: none;
     }
 
-    /* The stage between its two step buttons, each centered on it beside
-       the fade. */
-    .web-flow-row {
+    /* The cover flow takes the modal's height, its stage stretching
+       between the step buttons rather than keeping the phone's shape. */
+    .web-flow-body > .cover-flow {
         flex: 1 1 auto;
         min-height: 0;
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
     }
 
-    .web-flow-row > .web-flow-stage {
-        flex: 1 1 auto;
+    .web-flow-body .cover-flow-stage {
         align-self: stretch;
-        min-width: 0;
-    }
-
-    /* A squircle icon button holding the swipe dock's arrow, drawn a
-       little heavier at this size. */
-    .web-flow-step {
-        flex: none;
-        width: 2.75rem;
-        height: 2.75rem;
-        border-radius: 0.8rem;
-    }
-
-    .web-flow-step > .action-dock-icon {
-        width: 1.35rem;
-        height: 1.35rem;
-        stroke-width: 2.5;
-    }
-
-    /* The stack melts into the modal at its sides: the outermost cards fade
-       out over the stage's outer ninth on each side, short of the
-       selected card's neighbors. */
-    .web-flow-stage {
-        --flow-fade: linear-gradient(to right, transparent, #000 11%, #000 89%, transparent);
-        position: relative;
-        flex: 1 1 auto;
-        min-height: 0;
-        overflow: hidden;
-        perspective: 1600px;
-        cursor: grab;
-        user-select: none;
-        -webkit-mask-image: var(--flow-fade);
-        mask-image: var(--flow-fade);
-    }
-
-    .web-flow-stage:active {
-        cursor: grabbing;
-    }
-
-    .web-flow-card {
-        position: absolute;
-        top: 4%;
-        left: 50%;
-        height: 92%;
-        aspect-ratio: 488 / 680;
-        transform-origin: center center;
-        transition: transform 0.3s ease;
-        will-change: transform;
-        cursor: pointer;
-    }
-
-    /* A dark veil over each card, as dark as `--flow-dim` says: the
-       selected card's is clear, and each step out darker. */
-    .web-flow-card::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        border-radius: 4.75% / 3.5%;
-        background: #000;
-        opacity: var(--flow-dim, 0);
-        transition: opacity 0.3s ease;
-        pointer-events: none;
-        z-index: 1;
-    }
-
-    .web-flow-card img,
-    .web-flow-missing {
-        display: block;
-        width: 100%;
-        height: 100%;
-        border-radius: 4.75% / 3.5%;
-        box-shadow: var(--shadow-md);
-    }
-
-    .web-flow-card img {
-        object-fit: contain;
-    }
-
-    .web-flow-missing {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 1rem;
-        box-sizing: border-box;
-        text-align: center;
-        background: var(--bg-primary);
-        border: 1px solid var(--border-secondary);
-        color: var(--text-muted);
+        aspect-ratio: auto;
     }
 
     .web-flow-info {
@@ -1389,13 +1286,6 @@ body {
     .web-flow-count {
         color: var(--text-muted);
         font-size: 0.8rem;
-    }
-}
-
-@media (min-width: 60rem) and (prefers-reduced-motion: reduce) {
-    .web-flow-card,
-    .web-flow-card::after {
-        transition: none;
     }
 }
 
@@ -1503,6 +1393,13 @@ body {
 @media (max-width: 899px) {
     .web-dock-pair {
         flex-direction: column;
+    }
+
+    /* The floating card details drawer rises over both docks: one more
+       dock's height and the pair's gap above where the kit's single dock
+       would put it. */
+    body:has(.web-dock-pair) .sheet-form-drawer > .bottom-sheet.drawer-every-width {
+        bottom: calc(env(safe-area-inset-bottom, 0px) / 2 + 0.6rem + 2 * 3.125rem + 0.5rem + var(--drawer-float-gap));
     }
 
     .web-dock-pair > .action-dock {

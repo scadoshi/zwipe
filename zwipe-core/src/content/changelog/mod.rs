@@ -59,6 +59,8 @@ pub const UPCOMING: &[Release] = &[Release {
         "Enter closes a picker's ? hint on the web, and the hint no longer reopens on the next Enter",
         "Hovering a card row shows one preview at a time, gone once the pointer leaves the row",
         "A card's P/T reads as clearly as its price in every light theme",
+        "Card details while swiping float in from the right as one card, clear of the header and the dock",
+        "Printings show as a cover flow, the neighbors at the sides, stepped by the arrows or a swipe",
     ],
 }];
 

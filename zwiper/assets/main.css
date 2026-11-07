@@ -271,30 +271,6 @@ body {
     animation: card-stack-enter-down 0.2s ease-out;
 }
 
-/* ==============================
-  specific - carousel
- ================================ */
-
-.carousel-viewport {
-    overflow: hidden;
-    width: 100%;
-    touch-action: pan-y pinch-zoom;
-    user-select: none;
-    -webkit-user-select: none;
-}
-
-.carousel-strip {
-    display: flex;
-    will-change: transform;
-}
-
-.carousel-page {
-    flex: 0 0 100%;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-}
-
 /* ===============
   specific - logo
  ================= */
