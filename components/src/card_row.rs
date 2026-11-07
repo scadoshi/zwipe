@@ -282,7 +282,7 @@ pub fn CardRow(
                                                 evt.stop_propagation();
                                                 handler.call(card_clone.clone());
                                             },
-                                            "Printing"
+                                            "Printings"
                                         }
                                     }
                                 }
