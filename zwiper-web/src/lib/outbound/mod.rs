@@ -3,6 +3,7 @@
 
 pub mod browser;
 pub mod counts_store;
+pub mod details_store;
 pub mod scope_store;
 pub mod session_store;
 pub mod storage;
