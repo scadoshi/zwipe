@@ -23,6 +23,7 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
+| 70, a deck entry lifts on hover like a panel | scotland | `nits/scotland-70` |
 | 68, About drops Privacy policy on wide | halo | `nits/halo-68` |
 | 69, the app's About changelog pages by five | thinker | `nits/thinker-69` |
 | 65, 67, cover-flow printing picker, the phone picker's bottom row (PR #207, waiting on Scotty's eye) | scotland | `nits/scotland-65` |
@@ -109,6 +110,7 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 67. **The phone printing picker floats its pager and prices mid-sheet.** The dots and price chips hug the sheet's bottom, and the ✓ sits on the prices' row instead of in its own dock.
 68. **The web's About repeats the footer's Privacy policy.** On a wide window the row goes; Version stays. Phones keep it.
 69. **The app's About changelog scrolls forever on a year.** It pages by five with Show more, as the web and zwipe.net do. App change, 1.18.1 entry.
+70. **A deck entry lifts on hover.** Decks keeps two columns; a hovered entry rises like the panels do (translateY(-3px) with the medium shadow) instead of growing.
 
 ## Done
 
