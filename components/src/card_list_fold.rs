@@ -8,7 +8,7 @@ use dioxus::prelude::*;
 /// Commander maybeboard): a header of the arrow and `title`, then `actions`
 /// at its end, over `children`, which ease shut and open with the
 /// `.collapsible` the card groups use. A click on the header folds it; a
-/// click among `actions` does not. Opens open.
+/// click among `actions` does not. Starts open.
 #[component]
 pub fn CardListFold(
     #[props(into)] title: String,

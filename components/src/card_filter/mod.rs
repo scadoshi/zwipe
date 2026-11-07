@@ -328,10 +328,14 @@ fn section_id(section: Section) -> String {
     format!("filter-section-{section:?}")
 }
 
+/// How long an opened section waits before scrolling, in milliseconds,
+/// so it scrolls from where the accordion has started to open it.
+const SECTION_SCROLL_DELAY_MS: u32 = 50;
+
 /// Scrolls an opened section to the top of its panel, as the app does.
 fn scroll_section_into_view(section: Section) {
     let id = section_id(section);
     document::eval(&format!(
-        "setTimeout(() => {{ const el = document.getElementById('{id}'); if (el) el.scrollIntoView({{ behavior: 'smooth', block: 'start' }}); }}, 50)"
+        "setTimeout(() => {{ const el = document.getElementById('{id}'); if (el) el.scrollIntoView({{ behavior: 'smooth', block: 'start' }}); }}, {SECTION_SCROLL_DELAY_MS})"
     ));
 }

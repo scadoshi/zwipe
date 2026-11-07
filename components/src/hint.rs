@@ -153,7 +153,7 @@ pub fn ContentHintDialog(
 }
 
 /// The guide action's label.
-pub const SEE_GUIDE: &str = "See guide \u{2197}";
+pub(crate) const SEE_GUIDE: &str = "See guide \u{2197}";
 
 /// The guide action for a screen's header hint, by the `?` topic that
 /// explains the same thing, empty when the topic has no guide.
@@ -162,11 +162,10 @@ pub fn guide_for_screen(topic: HintTopic) -> Vec<DialogAction> {
     guide_action(topic.guide_slug())
 }
 
-/// The guide action for a one-time hint, by the key it is recorded under,
-/// empty when the hint has no guide.
+/// The guide action for a one-time `hint`, empty when it has no guide.
 #[must_use]
-pub fn guide_for_one_time(key: &str) -> Vec<DialogAction> {
-    guide_action(OneTimeHint::from_key(key).and_then(guide::one_time_slug))
+pub fn guide_for_one_time(hint: OneTimeHint) -> Vec<DialogAction> {
+    guide_action(guide::one_time_slug(hint))
 }
 
 /// The guide action for the Swipe select hint, whose guide changes with
@@ -209,17 +208,12 @@ mod tests {
     }
 
     #[test]
-    fn a_one_time_hint_links_by_its_key() {
-        let key = OneTimeHint::Filter.key();
-        assert!(
-            matches!(
-                guide_for_one_time(key).as_slice(),
-                [DialogAction::Link { href, .. }] if href == "https://zwipe.net/guides/filtering/"
-            ),
-            "key {key}"
-        );
-        assert_eq!(guide_for_one_time(OneTimeHint::Config.key()), Vec::new());
-        assert_eq!(guide_for_one_time("not-a-hint"), Vec::new());
+    fn a_one_time_hint_links_to_its_guide() {
+        assert!(matches!(
+            guide_for_one_time(OneTimeHint::Filter).as_slice(),
+            [DialogAction::Link { href, .. }] if href == "https://zwipe.net/guides/filtering/"
+        ));
+        assert_eq!(guide_for_one_time(OneTimeHint::Config), Vec::new());
     }
 
     #[test]

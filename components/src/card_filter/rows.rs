@@ -106,8 +106,7 @@ fn RowView(
             LabelRow { text, mode, clear, row, draft, epoch, on_dictionary }
         },
         Row::Text(field) => {
-            let value = draft.read().draft.clone();
-            let value = field.get(&value).to_owned();
+            let value = field.get(&draft.read().draft).to_owned();
             rsx! {
                 ClearWrap {
                     filled: !value.is_empty(),
@@ -254,11 +253,10 @@ fn ChipRow(mut draft: Signal<FilterDraft>, set: ChipSet, catalog: ReadSignal<Cat
 /// A power or toughness stepper, or a range's two on one line.
 #[component]
 fn StepperRow(mut draft: Signal<FilterDraft>, step: StepRow) -> Element {
-    let b = draft.read().draft.clone();
     match step {
         StepRow::Exact(stat) => {
             let shown = stat
-                .exact(&b)
+                .exact(&draft.read().draft)
                 .map_or_else(|| "-".to_owned(), |v| v.to_string());
             rsx! {
                 div { class: "stepper",
@@ -269,7 +267,7 @@ fn StepperRow(mut draft: Signal<FilterDraft>, step: StepRow) -> Element {
             }
         }
         StepRow::Range(stat) => {
-            let range = stat.range(&b);
+            let range = stat.range(&draft.read().draft);
             let end_text = |end: End| {
                 range.map_or_else(
                     || "-".to_owned(),
@@ -436,7 +434,7 @@ fn Picker(
                         div {
                             key: "{value}",
                             class: if i == lit { "chip-unselected search-float-chip card-filter-highlight" } else { "chip-unselected search-float-chip" },
-                            style: "animation-delay: {i * 40}ms, {250 + i * 40}ms;",
+                            style: result_delays(i),
                             onmousedown: move |e| e.prevent_default(),
                             onclick: move |_| pick(value.clone()),
                             "{value}"
@@ -482,4 +480,17 @@ fn Picker(
             }
         }
     }
+}
+
+/// How far apart the results ease in, in milliseconds.
+const RESULT_STAGGER_MS: usize = 40;
+
+/// How long after its entrance a result's fade starts, in milliseconds.
+const RESULT_FADE_MS: usize = 250;
+
+/// The `i`th result's entrance and fade delays.
+fn result_delays(i: usize) -> String {
+    let enter = i.saturating_mul(RESULT_STAGGER_MS);
+    let fade = RESULT_FADE_MS.saturating_add(enter);
+    format!("animation-delay: {enter}ms, {fade}ms;")
 }

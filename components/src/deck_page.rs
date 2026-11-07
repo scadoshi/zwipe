@@ -13,7 +13,6 @@ use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
-use zwipe_core::domain::card::search_card::card_type::CardType;
 use zwipe_core::domain::card::search_card::group_cards::GroupByOption;
 use zwipe_core::domain::deck::{Board, Format, PowerLevel};
 use zwipe_ui::deck::command_zone::Slot;
@@ -21,16 +20,6 @@ use zwipe_ui::deck_cards::Display;
 
 use crate::icons::{DockIcon, FOLD, UNFOLD};
 use crate::{Button, ButtonVariant, Chip, FlippableCardImage};
-
-/// The card types the Filter row offers.
-const FILTER_TYPES: [CardType; 6] = [
-    CardType::Creature,
-    CardType::Instant,
-    CardType::Sorcery,
-    CardType::Artifact,
-    CardType::Enchantment,
-    CardType::Planeswalker,
-];
 
 /// The line under an empty card list.
 pub const NO_CARDS: &str = "No cards found";
@@ -52,18 +41,6 @@ pub struct DeckFacts {
     pub other_tags: Vec<String>,
     /// The deck's price, formatted, when it has one.
     pub price: Option<String>,
-}
-
-/// The Filter row's state, held by the host: the name box's text and the
-/// type and color chips picked.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct DeckFilter {
-    /// The name box's text.
-    pub name: Signal<String>,
-    /// The type chips picked.
-    pub types: Signal<Vec<CardType>>,
-    /// The color pips picked.
-    pub colors: Signal<Vec<Color>>,
 }
 
 /// One card group of the list.
@@ -316,12 +293,11 @@ pub fn FeaturedCard(
 }
 
 /// The rows over the cards: the host's `leading` row, Group by, the host's
-/// `boards` row, Show and Filter. The host holds every signal; `show_tokens`
+/// `boards` row and Show. The host holds every signal; `show_tokens`
 /// is `None` for a list with no tokens, and `on_change` fires when a row
 /// changes what the list shows. With `on_fold_all` the Show row ends in the
 /// fold-all button, which shuts every group, or opens every group once
-/// `all_folded`. With `filter` the controls end in the Filter row: a name
-/// box, six type chips and the five pips.
+/// `all_folded`.
 #[component]
 pub fn DeckControls(
     mut group_by: Signal<GroupByOption>,
@@ -330,7 +306,6 @@ pub fn DeckControls(
     #[props(default)] show_tokens: Option<Signal<bool>>,
     mut show_zone: Signal<bool>,
     mut show_art: Signal<bool>,
-    #[props(default)] filter: Option<DeckFilter>,
     #[props(default)] on_change: Option<Callback<()>>,
     #[props(default)] leading: Option<Element>,
     #[props(default)] boards: Option<Element>,
@@ -388,76 +363,6 @@ pub fn DeckControls(
                     DockIcon { path: if all_folded { UNFOLD } else { FOLD } }
 
                     span { class: "sr-only", if all_folded { "Open every group" } else { "Shut every group" } }
-                }
-            }
-        }
-        if let Some(filter) = filter {
-            FilterRow { filter, on_change }
-        }
-    }
-}
-
-/// The Filter row: a name box, six type chips and the five pips, each
-/// change firing `on_change`.
-#[component]
-fn FilterRow(filter: DeckFilter, on_change: Option<Callback<()>>) -> Element {
-    let DeckFilter {
-        mut name,
-        mut types,
-        mut colors,
-    } = filter;
-    let changed = move || {
-        if let Some(on_change) = on_change {
-            on_change.call(());
-        }
-    };
-    rsx! {
-        div { class: "chip-row",
-            span { class: "stat-chip stat-chip-p1 chip-row-label", "Filter" }
-            input {
-                class: "deck-controls-name",
-                r#type: "search",
-                placeholder: "Name",
-                value: "{name}",
-                oninput: move |evt| {
-                    name.set(evt.value());
-                    changed();
-                },
-            }
-            for card_type in FILTER_TYPES {
-                Chip {
-                    key: "{card_type}",
-                    selected: types().contains(&card_type),
-                    onclick: move |_| {
-                        let mut picked = types();
-                        match picked.iter().position(|t| *t == card_type) {
-                            Some(at) => {
-                                picked.remove(at);
-                            }
-                            None => picked.push(card_type),
-                        }
-                        types.set(picked);
-                        changed();
-                    },
-                    "{card_type}"
-                }
-            }
-            for color in Color::all() {
-                Chip {
-                    key: "{color:?}",
-                    selected: colors().contains(&color),
-                    onclick: move |_| {
-                        let mut picked = colors();
-                        match picked.iter().position(|c| *c == color) {
-                            Some(at) => {
-                                picked.remove(at);
-                            }
-                            None => picked.push(color),
-                        }
-                        colors.set(picked);
-                        changed();
-                    },
-                    i { class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost" }
                 }
             }
         }
