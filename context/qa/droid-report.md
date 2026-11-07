@@ -387,3 +387,40 @@ I made two throwaway decks ("Droid tmp" in the app, "Droid web tmp" on web) so s
 ### Cleanup
 
 Both throwaway decks are deleted (12 decks on the server, Droid test untouched). Server settings: zenburn, dark, theme pips, chip confirmations, Universes Beyond shown with the same four exceptions. The maybeboard is empty, as the composer asked. Airplane mode is off and rotation is back to portrait. The clone's target is 10 GB.
+
+## Pass 8
+
+Build: main at f699acc37 (prod), debug APK on the Pixel_9a emulator against production, plus app.zwipe.net in the emulator's Chrome, as `test`. Shots are in ~/Developer/droid/shots/pass8-<n>.png. I used one throwaway deck (deleted at the end) for imports, swipes and the long name.
+
+### Nit 210 repro (app, header ‹ on Edit deck)
+
+| Case | "Leave without saving?" | Result |
+|---|---|---|
+| (a) rename only | no | rename lost |
+| (b) format only (None to Commander, shown in the form) | no | still None |
+| (c) Commander format, then Edgar Markov via Swipe select | no | both lost |
+
+System Back on the same edits shows the prompt (pass 7), and so does the web's header Back.
+
+### Pass 7's Not covered list
+
+- **Universes Beyond hidden on Add** works. With UB shown, Name "Dalek" gives The Dalek Emperor and friends. Hidden, it gives "No results for this filter". Spider-Man cards still show because Marvel is one of the four exceptions, and Sliver Queen (not UB) is unaffected. Restored to Show. Shot: pass8-1.
+- **Combat filter** works. Power exact 4 returned Terry Pin 4/3, Inga and Esika 4/4, Treasury Thrull 4/4, Kheru Lich Lord 4/4, Monet 4/4, Everlasting Lich 4/0 (each checked in card details).
+- **Archidekt import** works. https://archidekt.com/decks/59349 brought in all 100 cards ($587.51), Bloodline Keeper as "Bloodline Keeper // Lord of Lineage" (unlike the text import's Art Series card, pass 7 New 4). But the deck stayed format None with no commander: Edgar Markov arrived as an ordinary creature. Question: should an Archidekt import set the commander (and format) from Archidekt's Commander category? Shots: pass8-2, pass8-3.
+
+### Slow network
+
+1. **Big loads time out on EDGE in the app because responses come uncompressed** (bug, app only). With `adb emu network speed edge` and `delay edge`, Decks shows skeletons for about 31s, then "Could not load decks" with a connection toast. Playstyle, Activity, Commander maybeboard, the Droid test deck, its Cards and Add stayed on skeletons past 25s. Home, Settings, Account and About show at once from cache. The cause looks like the client: the workspace `reqwest` has `features = ["json", "rustls-tls", "http2"]` and no `gzip` or `brotli`, so the app never sends Accept-Encoding. The server does compress: the 100-card deck is 512,820 bytes raw and 51,395 bytes with `accept-encoding: br`. Add `REQUEST_TIMEOUT` = 30s in `zwipe-client/src/lib.rs`, and a few decks' worth of raw JSON can't arrive in time at EDGE speed. The web isn't affected (the browser asks for compression). With DevTools throttled to about 30 KB/s and 400ms latency, web Decks, Activity and the maybeboard showed in under a second and Playstyle in about 5s. Shot: pass8-10.
+2. **Add stalls on a bare ghost card on a slow network** (bug, app). On EDGE, Droid test's Add sat on an empty ghost card for over a minute with no message, toast or error. It stayed empty after the network went back to full, and Add's refresh button didn't help; leaving and coming back loaded 10 cards. Shots: pass8-11, pass8-12.
+
+### Free roam
+
+- **100-card deck**: the Cards page drew 90 rows in under 0.6s. The Type, Mana value, Color and Card role groupings all add up (Type 27+14+6+12+9+32 = 100, Mana value 13+26+14+6+4+5+32 = 100). Shot: pass8-6.
+- **Long deck names**: a 94-character name is refused on save with "Deck name maximum length is 64 characters". The field itself has no maxlength, so you can keep typing past 64 and only learn at save (nit). A 64-character name wraps cleanly on the Deck page, the Cards header and the Decks list, and Home truncates it with "…". Shots: pass8-4 to pass8-8.
+- **Rapid swipes and undo** (temp deck, server counts after each burst). Ten right swipes sent back to back added 5 cards (100 to 105). The other five were ignored mid-animation. UI and server agreed, so nothing was lost or doubled. Bursts of five swipe-downs undid two cards each (105 to 103 to 101), then one more brought it to 100 exactly, and the next said "Nothing to undo". The "Undone" chip was still on screen next to that toast (nit, one message per action).
+- **Help & feedback**: "Join the Discord ↗" is a live invite (discord.gg/s2UReqUUeg, server "Zwipers", no expiry). "Report a problem ↗" opens the mail app (a mailto), which is the Gmail welcome tour on the emulator.
+- **About**: "View" opens the in-app Privacy policy. "zwipe.net ↗" opens a Chrome Custom Tab. The Scryfall, Fan Content Policy, zwipe.net and zwipe.net/privacy links all return 200.
+
+### Cleanup
+
+The temp deck is deleted (12 decks on the server, Droid test untouched). Server settings are unchanged (zenburn, dark, theme pips, chip, Universes Beyond shown with the same four exceptions), the maybeboard is empty, the network is back to full and airplane mode is off.
