@@ -128,25 +128,11 @@ body {
     }
 }
 
-/* On a wide window without a page head the `?` sits on its own line at
-   the page's end, at the right, so it never covers the last panel. */
-/* A screen with no page head (the swipe screens) keeps its `?` in the
-   window's top right corner, just under the nav, clear of the dock at the
-   bottom right. */
-.web-screen-hint {
-    position: fixed;
-    top: calc(var(--sheet-drawer-top, 5.4rem) - 0.4rem);
-    right: 1.5rem;
-    z-index: 4;
-    box-sizing: border-box;
-    height: 1.9rem;
-    margin: 0;
-    opacity: 0.55;
-}
-
-/* Below the breakpoint the folded nav carries the screen's `?`. */
+/* The screen's `?` in the bar's icon row on a wide window. Below the
+   breakpoint the folded nav's title carries it, so the menu's footer row
+   leaves it out. */
 @media (max-width: 899px) {
-    .web-screen-hint {
+    .web-nav-hint {
         display: none;
     }
 }
@@ -627,7 +613,7 @@ body {
        corner `?`, a sheet's or drawer's title-bar `?`, and a dialog's
        buttons. Color, border and opacity only: the corner buttons hold
        their place with a transform. */
-    :is(.info-button, .web-screen-hint, .drawer-sheet-hint, .deck-head-hint, .page-header-corner, .alert-dialog-cancel, .alert-dialog-action):not(:disabled, [aria-disabled="true"]):hover {
+    :is(.info-button, .drawer-sheet-hint, .deck-head-hint, .page-header-corner, .alert-dialog-cancel, .alert-dialog-action):not(:disabled, [aria-disabled="true"]):hover {
         opacity: 1;
         color: var(--accent-primary);
         border-color: var(--accent-primary);
@@ -836,10 +822,19 @@ body {
 
 /* ---- About ---- */
 
-/* About on a wide window: the rows and Credits side by side under the page
-   head, each as wide as its column with the columns' gap between, then the
-   Changelog panel and the release panels at the page's width. */
+/* About on a wide window: the Version and Privacy policy rows, then the
+   Changelog panel and the release panels, each at the page's width. The
+   footer carries the credits there, so the Credits panel shows only below
+   the breakpoint. */
 @media (min-width: 900px) {
+    .web-about > .web-columns {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .web-about .about-credits-column {
+        display: none;
+    }
+
     .changelog-screen.web-about {
         width: 100%;
         max-width: var(--web-page-max);
@@ -886,61 +881,6 @@ body {
 
     .sheet-form-drawer > .bottom-sheet.show {
         transform: translateX(0) !important;
-    }
-}
-
-/* ---- Page head ----
-
-   zite's page header on a wide window: a panel at the top of the page with
-   the screen's title, its `?` at the right end, and the description under
-   a rule. Below the breakpoint it hides and the title and `?` sit in the
-   header's middle (see the header below). */
-.web-page-head-wrap {
-    display: none;
-}
-
-@media (min-width: 900px) {
-    .web-page-head-wrap {
-        display: block;
-        width: 100%;
-        max-width: var(--web-page-max);
-        margin: 1rem auto var(--panel-gap);
-        padding: 0 1.5rem;
-        box-sizing: border-box;
-    }
-
-    /* The page's panels start one panel gap under the head, as they sit
-       one panel gap apart everywhere else. */
-    .web-page-head-wrap + .screen-content {
-        padding-top: 0;
-    }
-
-    .web-page-head {
-        width: 100%;
-        box-sizing: border-box;
-    }
-
-    .web-page-head-bar {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-
-    .web-page-head-line {
-        margin: 0;
-        color: var(--text-primary);
-    }
-}
-
-/* A page head drawn inside a column (the deck view's, beside the profile)
-   shows only on a wide window, as the page-level one does. */
-.web-column > .web-page-head {
-    display: none;
-}
-
-@media (min-width: 900px) {
-    .web-column > .web-page-head {
-        display: block;
     }
 }
 
@@ -2008,12 +1948,6 @@ body {
         padding: 1rem 1.5rem;
         box-sizing: border-box;
         overflow-y: auto;
-    }
-
-    /* The `?` sits in the top right corner over this page; the card and its
-       details start under it. */
-    .web-screen:has(> .web-screen-hint) .web-cards-swipe.screen-content {
-        padding-top: 3.25rem;
     }
 
     .web-cards-swipe-main {

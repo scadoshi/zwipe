@@ -41,7 +41,7 @@ use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::media::use_wide;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::router::Route;
-use crate::inbound::shell::{HeadPlace, ScreenFrame};
+use crate::inbound::shell::{ScreenFrame, WideHint};
 
 /// The screen's title, in the tab and the folded nav.
 const TITLE: &str = "Deck";
@@ -228,7 +228,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     rsx! {
         ScreenFrame {
             title: TITLE,
-            head_place: HeadPlace::Content,
+            wide_hint: WideHint::Screen,
             on_hint,
             div { class: "screen-content",
                 match loaded_profile {

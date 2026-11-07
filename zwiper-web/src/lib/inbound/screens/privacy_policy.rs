@@ -17,7 +17,6 @@ pub fn PrivacyPolicy() -> Element {
 
     rsx! {
         ScreenFrame { title: "Privacy policy",
-            description: Some("What data Zwipe collects, how it's used, and your rights".to_string()),
             div { class: "screen-content content-enter",
                 div { class: "web-privacy",
                     div { class: "privacy-content",
