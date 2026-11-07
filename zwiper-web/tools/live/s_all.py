@@ -8,11 +8,11 @@ pub = [wait(6), shot('login')] + [js("history.pushState({},'','/register'); disp
   js("history.pushState({},'','/forgot-password'); dispatchEvent(new PopStateEvent('popstate')); true"), wait(2), shot('forgot-password'),
   js("history.pushState({},'','/login'); dispatchEvent(new PopStateEvent('popstate')); true"), wait(2)]
 screens = {
- 'home': '/', 'activity': '/activity', 'playstyle': '/deck/suggested-commanders', 'deck-view': f'/deck/get/{g}',
- 'account': '/user', 'config': '/config', 'privacy': '/privacy', 'changelog': '/changelog', 'decks': '/deck',
- 'create': '/deck/create', 'edit': f'/deck/update/{g}', 'import': f'/deck/card/import/{g}', 'export': f'/deck/card/export/{g}',
- 'maybeboard': '/deck/commander-maybeboard', 'add': f'/deck/card/add/{g}', 'deck-cards': f'/deck/card/view/{g}',
- 'remove': f'/deck/card/remove/{g}', 'not-found': '/nope/nowhere',
+ 'home': '/', 'activity': '/activity', 'playstyle': '/playstyle', 'deck-view': f'/decks/{g}',
+ 'account': '/account', 'config': '/settings', 'privacy': '/privacy', 'changelog': '/changelog', 'decks': '/decks',
+ 'create': '/decks/new', 'edit': f'/decks/{g}/edit', 'import': f'/decks/{g}/import', 'export': f'/decks/{g}/export',
+ 'maybeboard': '/maybeboard', 'add': f'/decks/{g}/add', 'deck-cards': f'/decks/{g}/cards',
+ 'remove': f'/decks/{g}/remove', 'not-found': '/nope/nowhere',
 }
 pick = list(screens) if which == 'all' else which.split(',')
 steps = (pub if which == 'all' or 'login' in pick else [wait(6)]) + login[1:]

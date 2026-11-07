@@ -1,4 +1,5 @@
-//! Every route, at the app's paths, so a link means the same screen in both.
+//! Every route, at resource paths: a deck lives under `/decks/:deck_id`,
+//! and its screens under it.
 
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -70,7 +71,7 @@ pub enum Route {
         #[route("/")]
         Home {},
         /// Username, email, password, log out, delete account.
-        #[route("/user")]
+        #[route("/account")]
         Account {},
         /// Settings: theme, pips and Universes Beyond. The old `/config`
         /// redirects here.
@@ -80,38 +81,37 @@ pub enum Route {
         #[route("/activity")]
         Activity {},
         /// Every deck the user has.
-        #[route("/deck")]
+        #[route("/decks")]
         DeckList {},
         /// Commanders saved for later from commander search.
-        #[route("/deck/commander-maybeboard")]
+        #[route("/maybeboard")]
         CommanderMaybeboard {},
-        /// What the user builds, with suggested commanders. The path is the
-        /// app's.
-        #[route("/deck/suggested-commanders")]
+        /// What the user builds, with suggested commanders.
+        #[route("/playstyle")]
         Playstyle {},
         /// A new deck.
-        #[route("/deck/create")]
+        #[route("/decks/new")]
         CreateDeck {},
         /// A deck's profile.
-        #[route("/deck/update/:deck_id")]
+        #[route("/decks/:deck_id/edit")]
         EditDeck { deck_id: Uuid },
         /// A deck: profile, sections and stats.
-        #[route("/deck/get/:deck_id")]
+        #[route("/decks/:deck_id")]
         ViewDeck { deck_id: Uuid },
         /// Cards from a pasted list.
-        #[route("/deck/card/import/:deck_id")]
+        #[route("/decks/:deck_id/import")]
         ImportDeck { deck_id: Uuid },
         /// The deck as a text list.
-        #[route("/deck/card/export/:deck_id")]
+        #[route("/decks/:deck_id/export")]
         ExportDeck { deck_id: Uuid },
         /// Swipe to add cards.
-        #[route("/deck/card/add/:deck_id")]
+        #[route("/decks/:deck_id/add")]
         AddDeckCard { deck_id: Uuid },
         /// Every card in the deck.
-        #[route("/deck/card/view/:deck_id")]
+        #[route("/decks/:deck_id/cards")]
         ViewDeckCard { deck_id: Uuid },
         /// Swipe to remove cards.
-        #[route("/deck/card/remove/:deck_id")]
+        #[route("/decks/:deck_id/remove")]
         RemoveDeckCard { deck_id: Uuid },
     #[end_layout]
     #[end_layout]
@@ -122,4 +122,65 @@ pub enum Route {
         /// Any path no route matches.
         #[route("/:..segments")]
         NotFound { segments: Vec<String> },
+}
+
+#[cfg(test)]
+mod tests {
+    use std::str::FromStr;
+
+    use super::*;
+
+    fn id() -> Uuid {
+        Uuid::from_u128(0x0123_4567_89ab_cdef_0123_4567_89ab_cdef)
+    }
+
+    #[test]
+    fn every_route_prints_and_parses_at_its_path() {
+        let d = "01234567-89ab-cdef-0123-456789abcdef";
+        let deck_id = id();
+        let routes = [
+            (Route::Login {}, "/login".to_string()),
+            (Route::Register {}, "/register".to_string()),
+            (Route::ForgotPassword {}, "/forgot-password".to_string()),
+            (Route::PrivacyPolicy {}, "/privacy".to_string()),
+            (Route::About {}, "/about".to_string()),
+            (Route::Home {}, "/".to_string()),
+            (Route::Account {}, "/account".to_string()),
+            (Route::Config {}, "/settings".to_string()),
+            (Route::Activity {}, "/activity".to_string()),
+            (Route::DeckList {}, "/decks".to_string()),
+            (Route::CommanderMaybeboard {}, "/maybeboard".to_string()),
+            (Route::Playstyle {}, "/playstyle".to_string()),
+            (Route::CreateDeck {}, "/decks/new".to_string()),
+            (Route::ViewDeck { deck_id }, format!("/decks/{d}")),
+            (Route::EditDeck { deck_id }, format!("/decks/{d}/edit")),
+            (Route::ViewDeckCard { deck_id }, format!("/decks/{d}/cards")),
+            (Route::AddDeckCard { deck_id }, format!("/decks/{d}/add")),
+            (
+                Route::RemoveDeckCard { deck_id },
+                format!("/decks/{d}/remove"),
+            ),
+            (Route::ImportDeck { deck_id }, format!("/decks/{d}/import")),
+            (Route::ExportDeck { deck_id }, format!("/decks/{d}/export")),
+        ];
+        for (route, path) in routes {
+            assert_eq!(route.to_string(), path);
+            assert_eq!(Route::from_str(&path).ok(), Some(route), "{path}");
+        }
+    }
+
+    #[test]
+    fn the_old_action_paths_are_not_found() {
+        for old in [
+            "/user",
+            "/deck",
+            "/deck/create",
+            "/deck/suggested-commanders",
+        ] {
+            assert!(
+                matches!(Route::from_str(old), Ok(Route::NotFound { .. })),
+                "{old}"
+            );
+        }
+    }
 }
