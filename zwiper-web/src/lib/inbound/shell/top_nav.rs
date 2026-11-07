@@ -11,6 +11,7 @@ use dioxus::prelude::*;
 use zwipe_core::domain::logo;
 
 use crate::inbound::chrome::back_arrow::BackArrow;
+use crate::inbound::chrome::leave_guard::LeaveDialog;
 use crate::inbound::router::Route;
 use crate::inbound::shell::menu_footer::MenuFooter;
 use crate::inbound::shell::nav::{Back, MenuOpen, Section, route_of, section_of};
@@ -46,6 +47,7 @@ pub fn Shell() -> Element {
 
     rsx! {
         div { class: "web-shell",
+            LeaveDialog {}
             div { class: "web-app-nav",
                 NavBar {
                     open,
