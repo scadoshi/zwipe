@@ -3,6 +3,8 @@
 use components::ColorBarsGhost;
 use dioxus::prelude::*;
 
+use super::collapsible_section::{HEADER_STYLE, TITLE_GROUP_STYLE, card_style};
+
 /// One bordered "settings-list"-shaped skeleton with `rows` row placeholders inside.
 #[component]
 fn SkeletonInfoList(rows: usize) -> Element {
@@ -37,27 +39,49 @@ pub(crate) fn DeckStatsSkeleton() -> Element {
     }
 }
 
-/// The suggested commanders' profile sections while the first load is in
-/// flight, in the deck view's skeleton grammar: the Colors section open on
-/// its ghost bars, then Summary and the two chart sections collapsed to
-/// their headers.
+/// A [`CollapsibleSection`](super::collapsible_section::CollapsibleSection)
+/// while its screen loads: the same card and header, the title a ghost bar
+/// `chars` wide inside the title's own text line, the "?" a ghost of the
+/// button when `hint`, and `children` under the rule when `open`. Built from
+/// the section's own styles, so the swap to the live section stays in place.
 #[component]
-pub(crate) fn BuilderProfileSkeleton() -> Element {
+pub(crate) fn SectionGhost(chars: u8, open: bool, hint: bool, children: Element) -> Element {
     rsx! {
-        div { class: "skeleton-stats",
-            div { class: "skeleton-info-list",
-                div { class: "skeleton-card-header card-group-header-with-hint",
-                    div { class: "skeleton-bar skeleton-section-label" }
-                    div { class: "skeleton-bar skeleton-chip skeleton-info-button" }
+        div { style: card_style("var(--border-secondary)"), "aria-hidden": "true",
+            div { style: HEADER_STYLE,
+                div { style: TITLE_GROUP_STYLE,
+                    span { class: "card-row-arrow ghost-box", "▸" }
+                    span { class: "settings-list-title",
+                        span { class: "skeleton-bar ghost-text", style: "width: {chars}ch;" }
+                    }
                 }
-                ColorBarsGhost {}
+                if hint {
+                    span { class: "info-button ghost-box", style: if open { "" } else { "visibility:hidden;" }, "?" }
+                }
             }
-            for i in 0..3 {
-                div { key: "{i}", class: "skeleton-chart-box",
-                    div { class: "skeleton-bar skeleton-section-label" }
+            if open {
+                div { class: "collapsible open",
+                    div { class: "collapsible-inner",
+                        hr { class: "collapsible-section-rule" }
+                        div { class: "collapsible-section-body", {children} }
+                    }
                 }
             }
         }
+    }
+}
+
+/// The suggested commanders' profile sections while the first load is in
+/// flight: Colors open on its ghost bars, then Summary and the two chart
+/// sections closed, each the live section's box with its title and "?" as
+/// ghosts.
+#[component]
+pub(crate) fn BuilderProfileSkeleton() -> Element {
+    rsx! {
+        SectionGhost { chars: 6, open: true, hint: true, ColorBarsGhost {} }
+        SectionGhost { chars: 7, open: false, hint: false }
+        SectionGhost { chars: 10, open: false, hint: true }
+        SectionGhost { chars: 11, open: false, hint: true }
     }
 }
 
@@ -90,19 +114,6 @@ pub(crate) fn QuickAddSkeleton() -> Element {
         div { class: "chip-row",
             div { class: "skeleton-bar skeleton-chip skeleton-chip-lg stat-chip-p1 skeleton-tinted" }
             div { class: "skeleton-input-compact" }
-        }
-    }
-}
-
-/// The suggested commanders' Show row while the first load is in flight, atop
-/// the list section's ghost rows and inset like the live row.
-#[component]
-pub(crate) fn ShowChipRowSkeleton() -> Element {
-    rsx! {
-        ChipRowSkeleton {
-            label: "sm",
-            chips: vec!["sm", "sm", "md", "md", "sm"],
-            style: "padding:0 0.75rem;margin-bottom:0;",
         }
     }
 }

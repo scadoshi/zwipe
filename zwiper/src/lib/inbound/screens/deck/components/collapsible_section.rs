@@ -5,6 +5,21 @@
 
 use dioxus::prelude::*;
 
+/// The card's style around `border`, shared with the loading ghost so the two
+/// are the same box.
+pub(crate) fn card_style(border: &str) -> String {
+    format!(
+        "width:100%;background:var(--bg-primary);box-shadow:var(--shadow-sm);border:1px solid {border};border-radius:0.5rem;padding:0.75rem 0;display:flex;flex-direction:column;cursor:pointer;user-select:none;"
+    )
+}
+
+/// The header row's style: the title group, then the accessory.
+pub(crate) const HEADER_STYLE: &str = "display:flex;align-items:center;gap:0.5rem;padding:0 1rem;";
+
+/// The title group's style: the arrow, the title and the badge.
+pub(crate) const TITLE_GROUP_STYLE: &str =
+    "display:flex;align-items:center;gap:0.5rem;flex:1;min-width:0;";
+
 #[component]
 pub(crate) fn CollapsibleSection(
     title: String,
@@ -35,7 +50,7 @@ pub(crate) fn CollapsibleSection(
         // divider can span edge-to-edge; the collapsible clip would otherwise
         // cut off a negative-margin full-bleed rule.
         div {
-            style: format!("width:100%;background:var(--bg-primary);box-shadow:var(--shadow-sm);border:1px solid {border};border-radius:0.5rem;padding:0.75rem 0;display:flex;flex-direction:column;cursor:pointer;user-select:none;"),
+            style: card_style(border),
             // The whole card is the toggle hit area: including the padded fill
             // above and below the header, and (when collapsed) the strip where the
             // hidden controls sit. The body and the header accessory stop
@@ -48,9 +63,9 @@ pub(crate) fn CollapsibleSection(
                 }
             },
             div {
-                style: "display:flex;align-items:center;gap:0.5rem;padding:0 1rem;",
+                style: HEADER_STYLE,
                 div {
-                    style: "display:flex;align-items:center;gap:0.5rem;flex:1;min-width:0;",
+                    style: TITLE_GROUP_STYLE,
                     span {
                         class: "card-row-arrow",
                         style: if is_open { "transform:rotate(90deg);" } else { "transform:rotate(0deg);" },

@@ -254,6 +254,26 @@
     animation: skeleton-enter 250ms ease;
 }
 
+/* A ghost of a line of text, inside the element that holds the text so the
+   line keeps its height; its width is set inline, in ch. */
+.skeleton-bar.ghost-text {
+    display: inline-block;
+    height: 0.8em;
+    vertical-align: middle;
+}
+
+/* A ghost of a control: the control's own box, pulsing like the bars, with
+   its label, pips or icon kept for their size and drawn invisible. */
+.ghost-box {
+    pointer-events: none;
+    color: transparent;
+    animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.ghost-box > * {
+    visibility: hidden;
+}
+
 /* The stack's slot: .swipe-stack-card's padding and centering. */
 .skeleton-stack {
     flex: 1;

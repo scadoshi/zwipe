@@ -54,7 +54,7 @@ use zwipe_ui::screens::playstyle::{
 
 use super::components::collapsible_section::CollapsibleSection;
 use super::components::danger_zone::DangerZoneAction;
-use super::components::skeletons::{BuilderProfileSkeleton, ShowChipRowSkeleton};
+use super::components::skeletons::BuilderProfileSkeleton;
 use super::components::swipe_select::{SuggestedPile, SwipeMode, SwipeSelect};
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::catalog_cache::CatalogCache;
@@ -146,6 +146,59 @@ pub(crate) fn ShowIdentityChips(
                 }
             }
             {children}
+        }
+    }
+}
+
+/// The two-color identities [`ShowIdentityChipsGhost`] stands in for, in the
+/// order the Show row sorts them.
+const GHOST_PAIRS: [[Color; 2]; 10] = [
+    [Color::White, Color::Blue],
+    [Color::Blue, Color::Black],
+    [Color::Black, Color::Red],
+    [Color::Red, Color::Green],
+    [Color::Green, Color::White],
+    [Color::White, Color::Black],
+    [Color::Blue, Color::Red],
+    [Color::Black, Color::Green],
+    [Color::Red, Color::White],
+    [Color::Green, Color::Blue],
+];
+
+/// [`ShowIdentityChips`] while the ranking loads: its label, All, a chip per
+/// color and per two-color pair, and Art, each the live chip's box with its
+/// contents hidden. The ranking holds `HELD_SIZE` commanders, which commonly
+/// cover the five colors and most pairs, so the ghost wraps to about as many
+/// lines as the live row.
+#[component]
+fn ShowIdentityChipsGhost() -> Element {
+    let singles = [
+        Color::White,
+        Color::Blue,
+        Color::Black,
+        Color::Red,
+        Color::Green,
+    ]
+    .map(|color| vec![color]);
+    let identities = singles
+        .into_iter()
+        .chain(GHOST_PAIRS.into_iter().map(Vec::from));
+    rsx! {
+        div { class: "chip-row", "aria-hidden": "true",
+            span { class: "stat-chip stat-chip-p1 chip-row-label ghost-box",
+                span { {model::SHOW} }
+            }
+            button { r#type: "button", class: "chip ghost-box", tabindex: "-1",
+                span { {model::ALL} }
+            }
+            for (i, identity) in identities.enumerate() {
+                button { key: "{i}", r#type: "button", class: "chip ghost-box", tabindex: "-1",
+                    IdentityPips { identity }
+                }
+            }
+            button { r#type: "button", class: "chip ghost-box", tabindex: "-1",
+                span { {model::ART} }
+            }
         }
     }
 }
@@ -930,7 +983,7 @@ pub fn SuggestedCommanders() -> Element {
                         // header title a bar.
                         div { style: "width:100%;display:flex;flex-direction:column;gap:var(--panel-gap);",
                             BuilderProfileSkeleton {}
-                            ShowChipRowSkeleton {}
+                            ShowIdentityChipsGhost {}
                             div { class: "maybeboard-list card-group row-enter",
                                 div { class: "card-group-header card-group-header-with-hint",
                                     div { class: "skeleton-bar skeleton-card-bar-header-wide" }
