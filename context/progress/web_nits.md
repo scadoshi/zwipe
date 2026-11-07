@@ -23,9 +23,9 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
-| 93 to 95, the docked panel: load jump, card pinned to center, panel default by space, no lift | halo | `nits/halo-93` |
+| 111, zwipe.net polish (93 to 95 in PR #234) | halo | `nits/halo-111` |
 | 98, 99, then 109, 110, chip row gaps, host extras, P/T contrast, hover previews | thinker | `nits/thinker-98`, `nits/thinker-109` |
-| 100 and 102, then 111, cover-flow edge fade and arrows, zwipe.net polish | scotland | `nits/scotland-100`, `nits/scotland-111` |
+| 100 and 102, cover-flow edge fade and arrows | scotland | `nits/scotland-100` |
 | 103 (waits on orangui #6), 105 to 108, then 112, price, picker hint focus, Dark Reader, copy, portfolio polish | laptop | `nits/laptop-103`, `nits/laptop-105`, portfolio `nits/laptop-112` |
 
 The loop is in [`../development/factory.md`](../development/factory.md).
