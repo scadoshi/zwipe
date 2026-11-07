@@ -62,8 +62,7 @@ use crate::inbound::cards::card_info::{CardDetailsSheet, CardInfoDisplay, CardSk
 use crate::inbound::cards::otag::{OtagExamplesOpen, use_describe_tag};
 use crate::inbound::cards::printing_sheet::PrintingSheet;
 use crate::inbound::cards::swipe_stack::{
-    EndUndoButton, Swipe, SwipeButtons, SwipeControl, SwipeStack, use_swipe_control,
-    use_swipe_keys_or_undo,
+    Swipe, SwipeControl, SwipeDock, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
 };
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::back_arrow::BackArrow;
@@ -656,18 +655,6 @@ fn SwipeSelectBody(
                         on_entered: move |()| stack.write().cancel_entering(),
                         on_swipe,
                     }
-                    SwipeButtons {
-                        control,
-                        buttons: [
-                            (Swipe::Left, "Skip"),
-                            (Swipe::Up, "Save"),
-                            (Swipe::Down, "Undo"),
-                            (Swipe::Right, "Pick"),
-                        ]
-                            .into_iter()
-                            .filter(|(swipe, _)| *swipe != Swipe::Up || mode.saves_up())
-                            .collect(),
-                    }
                     CardInfoDisplay { card }
                 } else if loading() || loading_more() {
                     CardSkeleton { is_loading: true }
@@ -677,7 +664,6 @@ fn SwipeSelectBody(
                     }
                 } else {
                     CardSkeleton {}
-                    EndUndoButton { label: "Undo", on_press: undo }
                 }
             }
             if let Some(card) = current.clone() {
@@ -732,6 +718,20 @@ fn SwipeSelectBody(
             }
             span { class: "action-dock-divider" }
             DockEye { eye, disabled: !has_card }
+        }
+        SwipeDock {
+            control,
+            buttons: [
+                (Swipe::Left, "Skip"),
+                (Swipe::Up, "Save"),
+                (Swipe::Down, "Undo"),
+                (Swipe::Right, "Pick"),
+            ]
+                .into_iter()
+                .filter(|(swipe, _)| *swipe != Swipe::Up || mode.saves_up())
+                .collect(),
+            card_on_top: has_card,
+            on_undo: move |()| undo.call(()),
         }
         if let Some(card) = current {
             CardDetailsSheet {

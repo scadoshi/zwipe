@@ -55,7 +55,7 @@ The root also mounts the kit's `ToastStack` (screens raise toasts with `dioxus_p
 
 - `cards::card_row`: `CardRow` over the kit's row, with `use_card_overlays()` and `CardOverlaysHost` for the `Image` preview and the printing sheet, `ShowRowArt` for the `Art` chip, and the image beside the cursor on a wide window.
 - `cards::otag`: `use_otag_reveals()` provides the tag description lookup and the `Examples` opener; `OtagExamplesHost` draws the examples over the screen.
-- `cards::swipe_stack`: the stack with mouse and touch drag, `SwipeButtons`, and `use_swipe_keys` for the arrows; keys and buttons go through `SwipeControl` so they animate like a drag. `cards::swipe_select` is Swipe select in suggested and commander modes.
+- `cards::swipe_stack`: the stack with mouse and touch drag, `SwipeDock` (the swipes as arrow buttons in a dock over the screen's own), and `use_swipe_keys` for the arrows; keys and the dock go through `SwipeControl` so they animate like a drag. `cards::swipe_select` is Swipe select in suggested and commander modes.
 - `cards::charts`: zwipe-ui bars as kit bars, the user's color map seed and counts, the map's ghost and empty line.
 - `cards::buy_links`: `Buy` as one link per retailer, as zite does it, for a card (`CardBuyLinks`); the deck view draws its own pair in its Budget panel. The URLs are zwipe-ui's `buy`.
 
