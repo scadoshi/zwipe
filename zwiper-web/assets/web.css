@@ -329,9 +329,23 @@ body {
         justify-content: center;
     }
 
+    /* The mark and the counters at zite's sizes, as the hero has them
+       from 480px. */
     .web-hero .home-hero .logo {
         grid-row: span 2;
-        font-size: 0.85rem;
+        font-size: clamp(0.45rem, min(2.1vw, 2.2vh), 1.1rem);
+    }
+
+    .web-hero .home-hero .stat {
+        padding: 0.7rem 0.35rem 0.6rem;
+    }
+
+    .web-hero .home-hero .stat-num {
+        font-size: clamp(0.9rem, 3.8vw, 1.5rem);
+    }
+
+    .web-hero .home-hero .stat-label {
+        font-size: clamp(0.6rem, 2.4vw, 0.75rem);
     }
 
 

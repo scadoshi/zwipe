@@ -1,4 +1,5 @@
-//! The three public counters in the hero.
+//! The three public counters in the hero, rounded as the app shows them
+//! (31.8k, 264.4k).
 //!
 //! `metrics.json` is zerver's answer as of the last deploy, refreshed by the
 //! deploy workflow before each build and baked into the prerender, so the page
@@ -60,6 +61,7 @@ pub fn StatsStrip() -> Element {
                 (count(|s| s.searches), "Searches run"),
                 (count(|s| s.cards_swiped), "Cards swiped"),
             ],
+            compact: true,
             // Where the numbers come from, as chips under the strip.
             source: rsx! {
                 span { class: "tag", "Everybody" }
