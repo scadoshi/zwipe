@@ -327,6 +327,7 @@ pub fn Nav() -> Element {
                 Link {
                     to: Route::Home {},
                     class: "nav-brand",
+                    aria_label: "Zwipe",
                     onclick: move |_| {
                         open.set(false);
                         // On the home page this runs the entrance again.
@@ -337,6 +338,7 @@ pub fn Nav() -> Element {
                     },
                     span {
                         class: "nav-logo",
+                        "aria-hidden": "true",
                         onmouseenter: move |_| hovering.set(true),
                         onmouseleave: move |_| hovering.set(false),
                         Decode { text: Z_LOGO, hover: hovering }
