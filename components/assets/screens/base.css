@@ -32,6 +32,70 @@ button {
 }
 
 /* ==================
+  toasts
+ ==================== */
+
+/* The stack sits bottom left, clear of the title bar's back button, and
+   reads up from the bottom: the newest at the bottom, the older ones
+   tucked above it, each rising in from below. A screen with a dock or a
+   bottom row keeps it above them. The kit's toast sheet loads after this
+   one, so each rule names the body to win. */
+body .toast-container {
+    top: auto;
+    right: auto;
+    bottom: calc(var(--toast-bottom, 1rem) + env(safe-area-inset-bottom, 0px));
+    left: 1rem;
+}
+
+body:has(.action-dock, .swipe-bottom-row) .toast-container {
+    --toast-bottom: 4.5rem;
+}
+
+body .toast-container ol {
+    flex-direction: column-reverse;
+}
+
+body .toast-container li {
+    margin-top: 0;
+    margin-bottom: -2.75rem;
+}
+
+body .toast-container li:first-child,
+body .toast-container.expanded li {
+    margin-bottom: 0;
+}
+
+body .toast-container.animating li {
+    transition: margin-bottom 0.2s ease;
+}
+
+body .toast-container [role="alertdialog"] {
+    animation-name: toast-rise-in;
+}
+
+@keyframes toast-rise-in {
+    from {
+        opacity: 0;
+        transform: translateY(1.5rem) scale(0.96);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body .toast-container [role="alertdialog"] {
+        animation: none;
+    }
+
+    body .toast-container.animating li {
+        transition: none;
+    }
+}
+
+/* ==================
   screen layout
  ==================== */
 

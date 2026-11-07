@@ -210,7 +210,7 @@ body {
         }
 
         .web-scroll-screen:has(> .swipe-bottom-row) > .web-site-footer {
-            view-timeline: --web-footer block;
+            view-timeline: --web-footer block, --web-toast-footer block;
         }
 
         .web-scroll-screen .web-swipe-details {
@@ -218,6 +218,37 @@ body {
             animation-timeline: --web-footer;
             animation-range: entry 0px entry 100vh;
         }
+    }
+}
+
+/* The toasts ride up with the footer the same way, pixel for pixel, so at
+   their lowest they sit above it. Their stack lives outside the screen's
+   scroller, so the footer's timeline for them is scoped to the body. */
+@supports (animation-timeline: view()) {
+    @media (min-width: 900px) {
+        body {
+            timeline-scope: --web-toast-footer;
+        }
+
+        .web-scroll-screen > .web-site-footer {
+            view-timeline: --web-toast-footer block;
+        }
+
+        body .toast-container {
+            animation: web-toast-footer-rise linear both;
+            animation-timeline: --web-toast-footer;
+            animation-range: entry 0px entry 100vh;
+        }
+    }
+}
+
+@keyframes web-toast-footer-rise {
+    from {
+        translate: 0 0;
+    }
+
+    to {
+        translate: 0 -100vh;
     }
 }
 
@@ -822,64 +853,24 @@ body {
 
 /* ---- Toasts ----
 
-   On a wide window the stack sits bottom left, clear of the nav, and reads
-   up from the bottom: the newest at the bottom, the older ones tucked above
-   it, each rising in from below. A swipe screen's pile chips hold the
-   bottom left, so there the stack sits above them. */
+   The stack is the screens' (components' base.css): bottom left, newest
+   at the bottom, above a screen's dock or bottom row. On a wide window a
+   dock sits far right of it, so only the swipe screens' pile chips lift
+   it; below the breakpoint the swipe screens' stacked docks lift it
+   further. */
 @media (min-width: 900px) {
-    .toast-container {
-        top: auto;
-        right: auto;
-        bottom: var(--web-toast-bottom, 1rem);
-        left: 1rem;
+    body:has(.action-dock) .toast-container {
+        --toast-bottom: 1rem;
     }
 
     body:has(.swipe-bottom-row) .toast-container {
-        --web-toast-bottom: 4.5rem;
-    }
-
-    .toast-container ol {
-        flex-direction: column-reverse;
-    }
-
-    .toast-container li {
-        margin-top: 0;
-        margin-bottom: -2.75rem;
-    }
-
-    .toast-container li:first-child,
-    .toast-container.expanded li {
-        margin-bottom: 0;
-    }
-
-    .toast-container.animating li {
-        transition: margin-bottom 0.2s ease;
-    }
-
-    .toast-container [role="alertdialog"] {
-        animation-name: web-toast-rise-in;
-    }
-
-    @keyframes web-toast-rise-in {
-        from {
-            opacity: 0;
-            transform: translateY(1.5rem) scale(0.96);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-        }
+        --toast-bottom: 4.5rem;
     }
 }
 
-@media (min-width: 900px) and (prefers-reduced-motion: reduce) {
-    .toast-container [role="alertdialog"] {
-        animation: none;
-    }
-
-    .toast-container.animating li {
-        transition: none;
+@media (max-width: 899px) {
+    body:has(.web-dock-pair) .toast-container {
+        --toast-bottom: 7.75rem;
     }
 }
 
@@ -1389,10 +1380,17 @@ body {
 
 /* Without room for both on one row the swipes' dock stacks over the other,
    the two one width with their buttons spread across it, and the screen
-   keeps room for both. The pile chips stay at the row's foot. */
+   keeps room for both. The pair takes one width on every swipe screen,
+   room for Add's labeled dock, and keeps 1rem off the right edge, where
+   the bottom row's padding puts it. The pile chips stay at the row's
+   foot. */
 @media (max-width: 899px) {
     .web-dock-pair {
+        --web-dock-stack-w: 23.5rem;
         flex-direction: column;
+        right: 1rem;
+        width: min(var(--web-dock-stack-w), calc(100vw - 2rem));
+        box-sizing: border-box;
     }
 
     /* The floating card details drawer rises over both docks: one more
@@ -1420,8 +1418,12 @@ body {
     }
 }
 
-/* A phone keeps the arrows only. */
+/* A phone keeps the arrows only, and the stacked pair narrows to them. */
 @media (max-width: 599px) {
+    .web-dock-pair {
+        --web-dock-stack-w: 12.5rem;
+    }
+
     .web-swipe-dock-label {
         display: none;
     }
@@ -2207,6 +2209,26 @@ body {
     }
 }
 
+/* Below the breakpoint the dictionary is the whole window, and its Search
+   box, letters and list fill its width; the letters keep one row that
+   scrolls sideways. */
+@media (max-width: 899px) {
+    .web-dict-browse {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        flex: 1 1 auto;
+        min-height: 0;
+        width: 100%;
+    }
+
+    .web-dict-browse .dict-controls,
+    .web-dict-browse .dict-list {
+        max-width: none;
+        box-sizing: border-box;
+    }
+}
+
 /* ---- Deck list ---- */
 
 /* The app's column below the breakpoint. The Tags fold chip and the tags it
@@ -2304,11 +2326,36 @@ body {
     color: var(--accent-primary);
 }
 
-/* The grid spans the sheet, so its scrollbar runs along the sheet's right
-   edge, and keeps its chips in the controls' column. */
+/* The controls and the chips fill the sheet's width, the grid's
+   scrollbar along its right edge. */
+.web-picker-body > .tag-controls,
 .web-picker-body > .tag-grid {
     max-width: none;
-    padding-inline: calc((100% - 22rem) / 2 + 1rem);
+    box-sizing: border-box;
+}
+
+/* A picker is a drawer down to a window that keeps some page beside it.
+   Narrower, the drawer takes the whole window over the grid backdrop, as
+   the app's phone pickers do. */
+.web-picker-body > .grid-cells {
+    display: none;
+}
+
+@media (max-width: 599px) {
+    .sheet-form-drawer > .bottom-sheet.web-picker-sheet.drawer-every-width {
+        width: 100%;
+        border-radius: 0;
+        border-left: none;
+        background-color: transparent;
+    }
+
+    .web-picker-sheet > .sheet-content {
+        background-color: transparent;
+    }
+
+    .web-picker-body > .grid-cells {
+        display: block;
+    }
 }
 
 /* ---- The oracle tag dictionary as the kit's modal ----
