@@ -37,11 +37,13 @@ pub fn DeckFields(form: DeckForm, on_enter: EventHandler<()>) -> Element {
 }
 
 /// Eases a field open and shut instead of popping it; the field stays
-/// mounted so its search keeps running.
+/// mounted so its search keeps running. A shut field is inert, so Tab and
+/// screen readers pass over it.
 #[component]
 fn Collapsible(show: bool, children: Element) -> Element {
     rsx! {
         div { class: if show { "collapsible open" } else { "collapsible" },
+            inert: (!show).then_some(true),
             div { class: "collapsible-inner", {children} }
         }
     }
