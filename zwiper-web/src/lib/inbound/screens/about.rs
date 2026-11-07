@@ -107,7 +107,7 @@ pub fn About() -> Element {
                                 span { {about::version_label(APP_VERSION)} }
                             }
                         }
-                        div { class: "settings-row",
+                        div { class: "settings-row web-about-privacy",
                             span { class: "settings-row-label", {Row::PrivacyPolicy.label()} }
                             div { class: "settings-row-value",
                                 Button {
