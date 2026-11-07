@@ -23,6 +23,8 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
+| 68, About drops Privacy policy on wide | halo | `nits/halo-68` |
+| 69, the app's About changelog pages by five | thinker | `nits/thinker-69` |
 | 65, 67, cover-flow printing picker, the phone picker's bottom row (PR #207, waiting on Scotty's eye) | scotland | `nits/scotland-65` |
 | cycle-trk-mission description, held until scotland's 2026-11-07 sync confirms its cards | halo | `otags/cycle-trk-mission` (PR #178) |
 
@@ -105,6 +107,8 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 65. **The web's printing picker becomes a cover-flow modal on a wide window.** A large modal with the printings as a stacked, fanned carousel (selected large in the middle, ~10 each side shrinking behind it) that glides left and right as you scroll, arrow, drag or click; Enter or a click selects. Phones keep today's picker.
 66. **Home's hero matches across the two sites** (Scotty to thinker directly). app.zwipe.net takes zwipe.net's larger mark, figures and labels on a wide window; zwipe.net takes the app's rounded counters (31.8k) and its pre-hydration roll keeps that shape. PR #206.
 67. **The phone printing picker floats its pager and prices mid-sheet.** The dots and price chips hug the sheet's bottom, and the ✓ sits on the prices' row instead of in its own dock.
+68. **The web's About repeats the footer's Privacy policy.** On a wide window the row goes; Version stays. Phones keep it.
+69. **The app's About changelog scrolls forever on a year.** It pages by five with Show more, as the web and zwipe.net do. App change, 1.18.1 entry.
 
 ## Done
 
