@@ -1505,6 +1505,13 @@ body {
         flex-direction: column;
     }
 
+    /* The floating card details drawer rises over both docks: one more
+       dock's height and the pair's gap above where the kit's single dock
+       would put it. */
+    body:has(.web-dock-pair) .sheet-form-drawer > .bottom-sheet.drawer-every-width {
+        bottom: calc(env(safe-area-inset-bottom, 0px) / 2 + 0.6rem + 2 * 3.125rem + 0.5rem + var(--drawer-float-gap));
+    }
+
     .web-dock-pair > .action-dock {
         width: auto;
         justify-content: space-around;
