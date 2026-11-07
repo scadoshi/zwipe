@@ -52,6 +52,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "A swipe card's shadow shows all the way round, no longer cut off at its top and bottom",
         "Card rows match the card details, with their colors, price and P/T in the row",
         "The card filter's Oracle tags hint explains include, exclude and the Dictionary",
+        "The deck page's tag hints and the Oathbreaker field's hint are written for where they open, and other hints read tighter",
     ],
 }];
 

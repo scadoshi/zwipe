@@ -29,10 +29,14 @@ pub enum HintTopic {
     Website,
     /// The version row.
     Version,
-    /// A deck's tags.
+    /// A deck's tags, on the deck form and its picker.
     DeckTags,
-    /// A deck's oracle tags.
+    /// A deck's tags, on the deck view.
+    DeckViewDeckTags,
+    /// A deck's oracle tags, on the deck form and its picker.
     OracleTags,
+    /// A deck's oracle tags, on the deck view.
+    DeckViewOracleTags,
     /// The card filter's Oracle tags section: which cards its picks keep
     /// and which they leave out.
     FilterOracleTags,
@@ -42,6 +46,9 @@ pub enum HintTopic {
     Format,
     /// The commander field.
     Commander,
+    /// The commander field in a format with a signature spell, which
+    /// names it the oathbreaker.
+    Oathbreaker,
     /// The partner field.
     Partner,
     /// The background field.
@@ -100,7 +107,7 @@ pub enum HintTopic {
 
 impl HintTopic {
     /// Every topic, in the app's order.
-    pub const ALL: [Self; 42] = [
+    pub const ALL: [Self; 45] = [
         Self::Password,
         Self::Email,
         Self::Verification,
@@ -111,11 +118,14 @@ impl HintTopic {
         Self::Website,
         Self::Version,
         Self::DeckTags,
+        Self::DeckViewDeckTags,
         Self::OracleTags,
+        Self::DeckViewOracleTags,
         Self::FilterOracleTags,
         Self::DeckName,
         Self::Format,
         Self::Commander,
+        Self::Oathbreaker,
         Self::Partner,
         Self::Background,
         Self::SignatureSpell,
@@ -158,8 +168,9 @@ impl HintTopic {
             Self::UniversesBeyond => "Universes Beyond",
             Self::Website => "Website",
             Self::Version => "Version",
-            Self::DeckTags => "Deck tags",
+            Self::DeckTags | Self::DeckViewDeckTags => "Deck tags",
             Self::OracleTags
+            | Self::DeckViewOracleTags
             | Self::FilterOracleTags
             | Self::OracleTagChart
             | Self::SuggestionTagChart
@@ -167,6 +178,7 @@ impl HintTopic {
             Self::DeckName => "Deck name",
             Self::Format => "Format",
             Self::Commander => "Commander",
+            Self::Oathbreaker => "Oathbreaker",
             Self::Partner => "Partner",
             Self::Background => "Background",
             Self::SignatureSpell => "Signature spell",
@@ -220,11 +232,7 @@ impl HintTopic {
                 ]),
             ],
             Self::DeckTags => vec![
-                bullet(vec![
-                    text("The "),
-                    emph("archetypes", Role::Secondary),
-                    text(" the deck is built around, like Aristocrats or Voltron"),
-                ]),
+                archetypes(),
                 bullet(vec![
                     text("Picking one pre-selects the "),
                     emph("oracle tags", Role::Tertiary),
@@ -234,6 +242,10 @@ impl HintTopic {
                     text("Up to "),
                     emph(&MAX_DECK_TAGS.to_string(), Role::Primary),
                 ]),
+            ],
+            Self::DeckViewDeckTags => vec![
+                archetypes(),
+                bullet(vec![text("Edit the deck to change them")]),
             ],
             Self::Email => vec![line(vec![text(
                 "Where password resets and verification go",
@@ -266,22 +278,16 @@ impl HintTopic {
             Self::Version => vec![line(vec![text(
                 "The build you are on. What changed in each release is listed below",
             )])],
-            Self::OracleTags => vec![
-                bullet(vec![
-                    text("The "),
-                    emph("specific", Role::Tertiary),
-                    text(" things the deck does, like spot removal, ramp or reanimation"),
-                ]),
-                bullet(vec![
-                    text("They "),
-                    emph("shape which cards we suggest", Role::Secondary),
-                ]),
-                bullet(vec![
+            Self::OracleTags => {
+                let mut blocks = oracle_tags();
+                blocks.push(bullet(vec![
                     text("Your "),
                     emph("deck tags", Role::Primary),
                     text(" pre-pick a starter set from about 4,500. Fine to leave as is"),
-                ]),
-            ],
+                ]));
+                blocks
+            }
+            Self::DeckViewOracleTags => oracle_tags(),
             Self::FilterOracleTags => vec![
                 bullet(vec![
                     text("Under "),
@@ -313,25 +319,22 @@ impl HintTopic {
                     "Changing it clears the commander and signature spell",
                 )]),
             ],
-            Self::Commander => vec![
-                bullet(vec![
-                    text("With "),
-                    key_in("Filter", Role::Warning),
-                    text(
-                        " lit, search shows only cards that can lead this format. Turn it off to set any card as the commander",
-                    ),
-                ]),
-                bullet(vec![key("Swipe"), text(" picks one by swiping")]),
+            Self::Commander => commander("commander"),
+            Self::Oathbreaker => commander("oathbreaker"),
+            Self::Partner => vec![
+                bullet(vec![text("Shows when the commander allows a partner")]),
+                works_as("Commander"),
             ],
-            Self::Partner => vec![line(vec![text(
-                "Shows when the commander allows a partner",
-            )])],
-            Self::Background => vec![line(vec![text(
-                "Shows when the commander can take a background",
-            )])],
-            Self::SignatureSpell => vec![line(vec![text(
-                "Oathbreaker only: the instant or sorcery that starts in the command zone",
-            )])],
+            Self::Background => vec![
+                bullet(vec![text("Shows when the commander can take a background")]),
+                works_as("Commander"),
+            ],
+            Self::SignatureSpell => vec![
+                bullet(vec![text(
+                    "Oathbreaker only: the instant or sorcery that starts in the command zone",
+                )]),
+                works_as("Oathbreaker"),
+            ],
             Self::PowerLevel => vec![line(vec![text(
                 "The Commander bracket the deck aims for, 1 to 5",
             )])],
@@ -473,6 +476,11 @@ impl HintTopic {
                 bullet(vec![text(
                     "The tags where your share stands out most from other players', with your own share",
                 )]),
+                bullet(vec![
+                    text("Pick what to show under "),
+                    key("Show"),
+                    text("; it switches both charts"),
+                ]),
                 bullet(vec![text(
                     "A tag everyone passes on shows only after a lot of skips. Tap a tag to see what it means",
                 )]),
@@ -500,6 +508,56 @@ impl HintTopic {
             blocks: self.blocks(),
         }
     }
+}
+
+/// The archetype line the deck tags topics open with.
+fn archetypes() -> Block {
+    bullet(vec![
+        text("The "),
+        emph("archetypes", Role::Secondary),
+        text(" the deck is built around, like Aristocrats or Voltron"),
+    ])
+}
+
+/// The oracle tags topics' opening lines: what the tags are and what they
+/// change.
+fn oracle_tags() -> Vec<Block> {
+    vec![
+        bullet(vec![
+            text("The "),
+            emph("specific", Role::Tertiary),
+            text(" things the deck does, like spot removal, ramp or reanimation"),
+        ]),
+        bullet(vec![
+            text("They "),
+            emph("shape which cards we suggest", Role::Secondary),
+        ]),
+    ]
+}
+
+/// The commander field's copy, the card it sets called `noun`.
+fn commander(noun: &str) -> Vec<Block> {
+    vec![
+        bullet(vec![
+            text("With "),
+            key_in("Filter", Role::Warning),
+            text(&format!(
+                " lit, search shows only cards that can lead this format. Turn it off to set any card as the {noun}"
+            )),
+        ]),
+        bullet(vec![key("Swipe"), text(" picks one by swiping")]),
+    ]
+}
+
+/// The line a command-zone field ends on: its Filter and Swipe chips work
+/// as they do on the `field` field.
+fn works_as(field: &str) -> Block {
+    bullet(vec![
+        key_in("Filter", Role::Warning),
+        text(" and "),
+        key("Swipe"),
+        text(&format!(" work as on {field}")),
+    ])
 }
 
 /// A light or dark mode key chip: its icon, then its label.

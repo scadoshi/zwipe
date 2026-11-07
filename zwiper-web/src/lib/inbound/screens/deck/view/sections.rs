@@ -253,14 +253,14 @@ pub fn TagsBody(profile: DeckProfile) -> Element {
                 if !profile.tags.is_empty() {
                     TagRow {
                         label: "Deck tags",
-                        topic: HintTopic::DeckTags,
+                        topic: HintTopic::DeckViewDeckTags,
                         chips: profile.tags.iter().map(|t| deck_tag_label(t)).collect::<Vec<_>>(),
                     }
                 }
                 if !profile.oracle_tags.is_empty() {
                     TagRow {
                         label: "Oracle tags",
-                        topic: HintTopic::OracleTags,
+                        topic: HintTopic::DeckViewOracleTags,
                         chips: profile.oracle_tags.clone(),
                     }
                 }

@@ -319,12 +319,13 @@ fn SlotField(
     let results = state.results(slot);
     let display = state.display(slot).to_owned();
     let has_query = state.has_query(slot);
+    let topic = state.hint(slot);
     drop(state);
-    let (topic, id) = match slot {
-        Slot::Commander => (HintTopic::Commander, "commander"),
-        Slot::Partner => (HintTopic::Partner, "partner_commander"),
-        Slot::Background => (HintTopic::Background, "background"),
-        Slot::SignatureSpell => (HintTopic::SignatureSpell, "signature_spell"),
+    let id = match slot {
+        Slot::Commander => "commander",
+        Slot::Partner => "partner_commander",
+        Slot::Background => "background",
+        Slot::SignatureSpell => "signature_spell",
     };
 
     rsx! {

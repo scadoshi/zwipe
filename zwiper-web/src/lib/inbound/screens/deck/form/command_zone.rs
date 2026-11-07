@@ -18,18 +18,8 @@ use zwipe_ui::timing::COMMAND_ZONE_SEARCH_DEBOUNCE;
 
 use super::DeckForm;
 use crate::inbound::chrome::authed::{Authed, use_authed};
-use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
+use crate::inbound::chrome::hint_topic::InfoButton;
 use crate::outbound::timer;
-
-/// The `?` topic beside `slot`'s label.
-fn topic(slot: Slot) -> HintTopic {
-    match slot {
-        Slot::Commander => HintTopic::Commander,
-        Slot::Partner => HintTopic::Partner,
-        Slot::Background => HintTopic::Background,
-        Slot::SignatureSpell => HintTopic::SignatureSpell,
-    }
-}
 
 /// The input's id, for the label.
 fn input_id(slot: Slot) -> &'static str {
@@ -164,7 +154,7 @@ pub fn CommandZoneField(form: DeckForm, slot: Slot, label: String) -> Element {
         div {
             div { class: "label-row",
                 label { class: "label", r#for: input_id(slot), "{label}" }
-                InfoButton { topic: topic(slot) }
+                InfoButton { topic: slot.hint((form.format)()) }
                 div {
                     class: if filter_on() { "chip-xs selected" } else { "chip-xs" },
                     onclick: move |_| filter_on.toggle(),

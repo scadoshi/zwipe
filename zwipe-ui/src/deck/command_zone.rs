@@ -5,6 +5,8 @@ use zwipe_core::domain::deck::{DeckProfile, Format};
 use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
 use zwipe_core::http::helpers::Patch;
 
+use crate::hint::HintTopic;
+
 /// One of the four command-zone slots, on the deck form and in the deck cards view's command zone.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Slot {
@@ -54,6 +56,19 @@ impl Slot {
             Self::Partner => "partner",
             Self::Background => "background",
             Self::SignatureSpell => "signature spell",
+        }
+    }
+
+    /// The `?` topic beside the slot's field: the commander's is
+    /// [`HintTopic::Oathbreaker`] in a format with a signature spell.
+    #[must_use]
+    pub fn hint(self, format: Option<Format>) -> HintTopic {
+        match self {
+            Self::Commander if is_oathbreaker(format) => HintTopic::Oathbreaker,
+            Self::Commander => HintTopic::Commander,
+            Self::Partner => HintTopic::Partner,
+            Self::Background => HintTopic::Background,
+            Self::SignatureSpell => HintTopic::SignatureSpell,
         }
     }
 

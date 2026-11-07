@@ -35,7 +35,9 @@ fn building_a_deck() -> Vec<Block> {
             emph("Tags", Role::Tertiary),
             text(" what it does"),
         ]),
-        bullet(vec![text("Tags shape which cards we suggest")]),
+        bullet(vec![text(
+            "Deck tags and oracle tags shape which cards we suggest",
+        )]),
         bullet(vec![
             text("Tap a field's "),
             key_in("?", Role::Palette6),
@@ -246,7 +248,9 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
                         " is Synergy: on starts with cards that work with your commander, then cards like your deck. Off shows every legal card",
                     ),
                 ]),
-                line(vec![text("Sort only reorders. It never hides cards")]),
+                line(vec![text(
+                    "The filter's Sort only reorders. It never hides cards",
+                )]),
             ],
         ),
         OneTimeHint::RemoveDeckCards => content(

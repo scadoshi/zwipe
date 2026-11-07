@@ -7,7 +7,7 @@
 //! site's guides draw their `[[icon]]` tokens through [`KeyGlyph`] too, so an
 //! icon looks the same in the app's hint and on the web.
 //!
-//! [`guide_for_screen`] and [`guide_for_one_time`] are the "See guide ↗"
+//! [`guide_for_screen`], [`guide_for_one_time`] and [`guide_for_swipe_select`] are the "See guide ↗"
 //! action a screen's main hint offers when zwipe.net has a guide that goes
 //! deeper: the one-time hint a screen opens with, or its header hint. A
 //! panel's or field's `?` answers its own quick question and offers no guide.
@@ -25,7 +25,7 @@ use orangui::{
     DialogAction, HintBullet, HintBullets, HintDialog, HintKey, HintLine, ModeIcon, PaletteIcon,
 };
 use zwipe_core::domain::user::hints::OneTimeHint;
-use zwipe_ui::hint::{Block, HintContent, HintTopic, KeyIcon, Span, guide};
+use zwipe_ui::hint::{Block, HintContent, HintTopic, KeyIcon, Span, SwipeSelectMode, guide};
 
 /// A run of blocks as drawn: consecutive bullets share one list.
 enum Group<'blocks> {
@@ -169,6 +169,13 @@ pub fn guide_for_one_time(key: &str) -> Vec<DialogAction> {
     guide_action(OneTimeHint::from_key(key).and_then(guide::one_time_slug))
 }
 
+/// The guide action for the Swipe select hint, whose guide changes with
+/// its overlay `mode`.
+#[must_use]
+pub fn guide_for_swipe_select(mode: SwipeSelectMode) -> Vec<DialogAction> {
+    guide_action(Some(guide::swipe_select_slug(mode)))
+}
+
 /// A link to the guide named `slug`, or nothing without one.
 fn guide_action(slug: Option<&'static str>) -> Vec<DialogAction> {
     slug.map(|slug| DialogAction::Link {
@@ -213,5 +220,13 @@ mod tests {
         );
         assert_eq!(guide_for_one_time(OneTimeHint::Config.key()), Vec::new());
         assert_eq!(guide_for_one_time("not-a-hint"), Vec::new());
+    }
+
+    #[test]
+    fn swipe_select_links_by_its_overlay() {
+        assert!(matches!(
+            guide_for_swipe_select(SwipeSelectMode::Suggested { has_filter: false }).as_slice(),
+            [DialogAction::Link { href, .. }] if href == "https://zwipe.net/guides/playstyle"
+        ));
     }
 }
