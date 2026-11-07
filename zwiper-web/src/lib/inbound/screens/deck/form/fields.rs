@@ -11,6 +11,7 @@ use zwipe_core::domain::deck::{
     DeckOtherTag, MAX_DECK_ORACLE_TAGS, MAX_DECK_TAGS, PowerLevel, deck_tag_label,
 };
 use zwipe_ui::deck::form::{self, Slot, Step};
+use zwipe_ui::text::sentence_case;
 
 use super::DeckForm;
 use super::command_zone::CommandZoneField;
@@ -82,7 +83,7 @@ fn ProfileFields(form: DeckForm, on_enter: EventHandler<()>) -> Element {
                         value: form.name,
                         id: DECK_NAME_ID,
                         placeholder: "Not set",
-                        error: (form.name_error)(),
+                        error: (form.name_error)().as_deref().map(sentence_case),
                         on_clear: |()| {},
                     }
                 }

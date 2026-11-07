@@ -7,6 +7,7 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::http::contracts::auth::HttpChangeUsername;
 use zwipe_ui::account;
+use zwipe_ui::text::sentence_case;
 
 use crate::inbound::chrome::authed::use_authed;
 
@@ -111,7 +112,7 @@ pub(super) fn ChangeUsernameSheet(mut open: Signal<bool>) -> Element {
                         id: "new_username",
                         label: "New username",
                         placeholder: "New username",
-                        error: username_error,
+                        error: username_error.as_deref().map(sentence_case),
                     }
                     TextInput {
                         value: password,
@@ -119,7 +120,7 @@ pub(super) fn ChangeUsernameSheet(mut open: Signal<bool>) -> Element {
                         label: "Password",
                         placeholder: "Password",
                         input_type: "password",
-                        error: password_error,
+                        error: password_error.as_deref().map(sentence_case),
                     }
                     button { r#type: "submit", hidden: true }
                 }
