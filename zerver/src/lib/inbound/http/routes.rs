@@ -115,10 +115,10 @@ fn rate_limit_copy(wait_secs: u64) -> String {
 /// `Cache-Control: public, max-age=3600` for successful responses on the
 /// public read endpoints (card catalogs, marketing stats, changelog), so the
 /// CF edge (whose cache rules respect origin TTL) holds one copy per hour
-/// instead of falling back to its daily default. One simple number
-/// everywhere; only featured-flavor needs more (its content flips ON the hour,
-/// so its handler counts down to the boundary, and `if_not_present` lets that
-/// header win).
+/// instead of falling back to its daily default. Two handlers set their own,
+/// which `if_not_present` lets win: featured-flavor counts down to the hour
+/// its content flips on, and the marketing stats keep the edge within five
+/// minutes of the origin.
 ///
 /// Success-only, so a 429 or error body is never browser-cacheable.
 fn hourly_public_cache(response: &Response<Body>) -> Option<HeaderValue> {
