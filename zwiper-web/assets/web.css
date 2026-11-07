@@ -94,8 +94,8 @@ body {
    A screen under the nav scrolls as one column. Its content grows to fill
    the window and ends with a little room; a screen with a floating dock or a
    swipe screen's bottom row leaves enough to scroll its last row clear of
-   it, the kit's soft 5rem. There is no bar at a screen's end and no site
-   footer. */
+   it, the kit's soft 5rem. There is no bar at a screen's end; a wide
+   window ends every screen with the site footer (see Footer). */
 .web-main > .web-scroll-screen {
     overflow-x: hidden;
     overflow-y: auto;
@@ -156,6 +156,13 @@ body {
 
     .web-scroll-screen:has(> .web-site-footer) > .screen-content > :not(.action-dock) {
         padding-bottom: 0;
+    }
+
+    /* A swipe screen's pile chips and docks stay fixed at the window's
+       foot, so its footer runs on under them far enough for its lines to
+       scroll clear of the row. */
+    .web-scroll-screen:has(> .swipe-bottom-row) > .web-site-footer {
+        padding-bottom: 5.5rem;
     }
 }
 
@@ -2315,6 +2322,12 @@ body {
         padding: 1rem 1.5rem;
         box-sizing: border-box;
         overflow-y: auto;
+    }
+
+    /* The swipe area fills the window, so the page's footer starts below
+       the fold and the docks float over the swipe area as before. */
+    .web-scroll-screen > .web-cards-swipe.screen-content {
+        min-height: 100%;
     }
 
     .web-cards-swipe-main {
