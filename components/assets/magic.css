@@ -1678,6 +1678,16 @@ i.ms.ms-cost.ms-gp {
     left: 0.45rem;
 }
 
+/* ---- DrawerSheet (components::DrawerSheet): a page's docks step aside ----
+   While a drawer is open its own dock sits at the bottom right, where the
+   page's floating dock is, which would show behind it as a second rounded
+   square. The page's docks hide until the drawer closes. */
+@media (min-width: 60rem) {
+    body:has(.sheet-form-drawer > .bottom-sheet.show) .action-dock:not(.sheet-dock) {
+        visibility: hidden;
+    }
+}
+
 /* ---- The ghosts the Home panels draw while they load: bars, chips and
    the "?" button's ghost ---- */
 
