@@ -1678,6 +1678,12 @@ body {
         padding: 0.75rem 0;
     }
 
+    /* A fold of info rows (Summary) is spaced by the rows' own padding, as a
+       panel of rows is; a chart or a table keeps the body's room. */
+    .web-playstyle-fold-body:has(> .flex-col > .settings-row) {
+        padding: 0;
+    }
+
     .web-playstyle-summary-hero { order: 1; }
     .web-playstyle-colors { order: 2; }
     .web-playstyle-roles { order: 3; }
