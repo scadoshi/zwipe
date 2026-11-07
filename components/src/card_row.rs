@@ -6,7 +6,7 @@
 //! printing, star, move-to-board); a read-only page like zite's shared deck
 //! passes only what it supports (e.g. `on_image`). Every action is an
 //! `Option`; `None` simply omits the control. Under a screen's
-//! [`HoverStack`] the row shows a mouse its card's image there.
+//! [`HoverStack`] a collapsed row shows a mouse its card's image there.
 
 use std::cell::Cell;
 use std::rc::Rc;
@@ -89,8 +89,8 @@ pub fn CardRow(
 ) -> Element {
     let card_id = card.scryfall_data.id;
     let is_expanded = expanded_card() == Some(card_id);
-    // The screen's hover stack: the row pushes the face it shows while the
-    // cursor is on it, lets go on leave or unmount, and flashes a flipped face.
+    // The screen's hover preview: a collapsed row shows the face it shows
+    // while the cursor is on it, and lets go on leave, expand or unmount.
     let hover_stack = try_use_context::<HoverStack>();
     let held: HeldEntry = use_hook(|| Rc::new(Cell::new(None)));
     let shown_face: Rc<Cell<usize>> = use_hook(|| Rc::new(Cell::new(0)));
@@ -101,18 +101,13 @@ pub fn CardRow(
         }
     });
     let held_on_enter = Rc::clone(&held);
+    let held_on_click = Rc::clone(&held);
     let held_on_leave = held;
     let face_on_enter = Rc::clone(&shown_face);
     let face_on_flip = shown_face;
     let sd_on_enter = card.scryfall_data.clone();
-    let sd_on_flip = card.scryfall_data.clone();
     let face_change = EventHandler::new(move |face: usize| {
         face_on_flip.set(face);
-        if let Some(stack) = hover_stack
-            && let Some(url) = sd_on_flip.face_image_url(face, ImageSize::Normal)
-        {
-            stack.flash(url.to_string());
-        }
         if let Some(handler) = on_face_change {
             handler.call(face);
         }
@@ -185,6 +180,7 @@ pub fn CardRow(
                 class: "card-row-compact",
                 onmouseenter: move |_| {
                     if let Some(stack) = hover_stack
+                        && expanded_card() != Some(card_id)
                         && let Some(url) = sd_on_enter.face_image_url(face_on_enter.get(), ImageSize::Normal)
                         && let Some(stale) = held_on_enter.replace(Some(stack.enter(url.to_string())))
                     {
@@ -206,6 +202,9 @@ pub fn CardRow(
                     if expanded_card() == Some(card_id) {
                         expanded_card.set(None);
                     } else {
+                        if let (Some(stack), Some(id)) = (hover_stack, held_on_click.take()) {
+                            stack.leave(id);
+                        }
                         expanded_card.set(Some(card_id));
                     }
                 },

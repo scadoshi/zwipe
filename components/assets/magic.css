@@ -280,11 +280,12 @@
     border-color: color-mix(in srgb, var(--color-money) 35%, transparent);
 }
 
-/* P/T (creatures) and loyalty (planeswalkers): a number, slot 5. */
+/* P/T (creatures) and loyalty (planeswalkers): a number in the theme's stat
+   color, as legible as the price beside it. */
 .card-row-stat {
-    color: var(--palette-5);
-    background-color: color-mix(in srgb, var(--palette-5) 12%, transparent);
-    border-color: color-mix(in srgb, var(--palette-5) 35%, transparent);
+    color: var(--color-stat, var(--palette-5));
+    background-color: color-mix(in srgb, var(--color-stat, var(--palette-5)) 12%, transparent);
+    border-color: color-mix(in srgb, var(--color-stat, var(--palette-5)) 35%, transparent);
 }
 
 .card-row-colors {
@@ -420,10 +421,9 @@
 }
 
 /* ---- HoverStack (components::HoverStackHost) ----
-   The hovered rows' cards, up to five, pinned in the top left corner and
+   The hovered row's card, one at a time, pinned in the top left corner and
    gliding to the right one (.pin-right) while the cursor works the
-   window's left half: a transform, so the move animates. Newest on top,
-   each older card peeking out under the one above it. Hidden below
+   window's left half: a transform, so the move animates. Hidden below
    1100px, where the corners hold no room beside the content. */
 
 .hover-stack {
@@ -780,9 +780,9 @@ i.ms.ms-cost.ms-gp {
 }
 
 .detail-chip-pt {
-    color: var(--palette-5);
-    background-color: color-mix(in srgb, var(--palette-5) 15%, transparent);
-    border-color: color-mix(in srgb, var(--palette-5) 40%, transparent);
+    color: var(--color-stat, var(--palette-5));
+    background-color: color-mix(in srgb, var(--color-stat, var(--palette-5)) 15%, transparent);
+    border-color: color-mix(in srgb, var(--color-stat, var(--palette-5)) 40%, transparent);
     font-weight: 700;
 }
 

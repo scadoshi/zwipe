@@ -57,6 +57,8 @@ pub const UPCOMING: &[Release] = &[Release {
         "An expanded card shows its own details first, with what the screen adds to it in its own section at the bottom",
         "A card's price and the deck's total follow the printing you chose, with no price when that printing has none",
         "Enter closes a picker's ? hint on the web, and the hint no longer reopens on the next Enter",
+        "Hovering a card row shows one preview at a time, gone once the pointer leaves the row",
+        "A card's P/T reads as clearly as its price in every light theme",
     ],
 }];
 
