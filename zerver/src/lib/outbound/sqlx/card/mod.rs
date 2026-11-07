@@ -238,53 +238,80 @@ const SELECT_SIGNAL_JOIN: &str = "LEFT JOIN (SELECT commander_oracle_id AS sel_o
 const IMPORTABLE_PRINTING: &str = "layout NOT IN ('art_series', 'token', 'double_faced_token', 'emblem') \
      AND set_type NOT IN ('memorabilia', 'token')";
 
+/// The printing a search shows when its filters match a card by any of its
+/// printings rather than the view's pick.
+#[derive(Debug, Clone, Copy, Default)]
+struct WantedPrinting<'q> {
+    /// The Set filter: the printing is in one of these sets.
+    set_names: Option<&'q [String]>,
+    /// Is promo: Yes. The printing is a promo.
+    promo: bool,
+}
+
+impl WantedPrinting<'_> {
+    /// Whether the search asks for a printing other than the view's pick.
+    fn is_any(&self) -> bool {
+        self.set_names.is_some() || self.promo
+    }
+
+    /// Whether `printing` already is the one wanted.
+    fn fits(&self, printing: &ScryfallData) -> bool {
+        self.set_names
+            .is_none_or(|sets| sets.contains(&printing.set_name))
+            && (!self.promo || printing.promo)
+    }
+}
+
 impl MyPostgres {
-    /// `cards` with each card whose printing sits outside `set_names` swapped
-    /// for its printing in one of them, in order. Among several, the view's
-    /// own preferences pick: paper, non-promo, regular size, no content
-    /// warning, English, a normal layout, then the newest. A card with no
-    /// such printing keeps its own.
-    async fn swap_to_set_printings(
+    /// `cards` with each card whose printing isn't the `wanted` one swapped
+    /// for one that is, in order. Among several, the view's own preferences
+    /// pick: paper, non-promo, regular size, no content warning, English, a
+    /// normal layout, then the newest. A card with no such printing keeps its
+    /// own.
+    async fn swap_to_wanted_printings(
         &self,
         cards: Vec<ScryfallData>,
-        set_names: &[String],
+        wanted: WantedPrinting<'_>,
     ) -> Result<Vec<ScryfallData>, SearchScryfallDataError> {
-        let outside: Vec<uuid::Uuid> = cards
+        let unfit: Vec<uuid::Uuid> = cards
             .iter()
-            .filter(|card| !set_names.contains(&card.set_name))
+            .filter(|card| !wanted.fits(card))
             .filter_map(|card| card.oracle_id)
             .collect();
-        if outside.is_empty() {
+        if unfit.is_empty() {
             return Ok(cards);
         }
         let db_rows: Vec<DatabaseScryfallData> = query_as(
             "SELECT DISTINCT ON (sd.oracle_id) sd.* FROM scryfall_data sd \
              JOIN card_profiles cp ON sd.id = cp.scryfall_data_id \
-             WHERE sd.oracle_id = ANY($1) AND sd.set_name = ANY($2) \
+             WHERE sd.oracle_id = ANY($1) \
+               AND ($2::text[] IS NULL OR sd.set_name = ANY($2)) \
+               AND (NOT $3 OR sd.promo) \
              ORDER BY sd.oracle_id, sd.digital, sd.promo, sd.oversized, \
                       COALESCE(sd.content_warning, false), \
                       (sd.lang IS DISTINCT FROM 'en'), \
                       (sd.layout = 'reversible_card'), \
                       sd.released_at DESC, sd.collector_number, sd.id",
         )
-        .bind(&outside)
-        .bind(set_names)
+        .bind(&unfit)
+        .bind(wanted.set_names)
+        .bind(wanted.promo)
         .fetch_all(&self.pool)
         .await?;
-        let mut in_set: HashMap<uuid::Uuid, ScryfallData> = HashMap::new();
+        let mut swaps: HashMap<uuid::Uuid, ScryfallData> = HashMap::new();
         for row in db_rows {
             let printing =
                 ScryfallData::try_from(row).map_err(SearchScryfallDataError::Database)?;
             if let Some(oracle_id) = printing.oracle_id {
-                in_set.insert(oracle_id, printing);
+                swaps.insert(oracle_id, printing);
             }
         }
         Ok(cards
             .into_iter()
             .map(|card| {
                 card.oracle_id
-                    .filter(|_| !set_names.contains(&card.set_name))
-                    .and_then(|oracle_id| in_set.remove(&oracle_id))
+                    .filter(|_| !wanted.fits(&card))
+                    .and_then(|oracle_id| swaps.remove(&oracle_id))
                     .unwrap_or(card)
             })
             .collect())
@@ -1096,9 +1123,27 @@ impl CardRepository for MyPostgres {
             sep.push_bind_unseparated(is_oversized);
         }
 
-        if let Some(is_promo) = criteria.promo() {
-            sep.push("latest_cards.promo = ");
-            sep.push_bind_unseparated(is_promo);
+        match criteria.promo() {
+            // Printing-aware: a card with any promo printing (in a filtered
+            // set, when the Set filter is on, so the one shown is both).
+            Some(true) => {
+                sep.push(
+                    "EXISTS (SELECT 1 FROM scryfall_data p \
+                     JOIN card_profiles pp ON p.id = pp.scryfall_data_id \
+                     WHERE p.oracle_id = latest_cards.oracle_id AND p.promo",
+                );
+                if let Some(sets) = criteria.set_equals_any() {
+                    sep.push_unseparated(" AND p.set_name = ANY(");
+                    sep.push_bind_unseparated(sets);
+                    sep.push_unseparated(")");
+                }
+                sep.push_unseparated(")");
+            }
+            // The view picks a non-promo printing whenever the card has one.
+            Some(false) => {
+                sep.push("latest_cards.promo = false");
+            }
+            None => {}
         }
 
         if let Some(has_warning) = criteria.content_warning() {
@@ -1517,10 +1562,14 @@ impl CardRepository for MyPostgres {
             }
         }
 
-        // The Set filter matches a card by any of its printings; show the
-        // printing from a filtered set rather than the view's pick.
-        if let Some(sets) = criteria.set_equals_any() {
-            scryfall_data = self.swap_to_set_printings(scryfall_data, sets).await?;
+        // The Set filter and Is promo: Yes match a card by any of its
+        // printings; show the printing they matched rather than the view's pick.
+        let wanted = WantedPrinting {
+            set_names: criteria.set_equals_any(),
+            promo: criteria.promo() == Some(true),
+        };
+        if wanted.is_any() {
+            scryfall_data = self.swap_to_wanted_printings(scryfall_data, wanted).await?;
         }
         Ok(scryfall_data)
     }

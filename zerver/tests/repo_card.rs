@@ -637,6 +637,84 @@ async fn set_filters_are_printing_aware(pool: sqlx::PgPool) {
     );
 }
 
+/// Is promo: Yes is printing-aware like the Set filter: it matches a card with
+/// any promo printing and shows that printing, and with a Set filter on it
+/// needs a promo printing in a filtered set.
+#[sqlx::test]
+async fn promo_filter_is_printing_aware(pool: sqlx::PgPool) {
+    let twin = Uuid::from_u128(0x0a1);
+    let split = Uuid::from_u128(0x0a2);
+    let twin_promo = card("Promo Twin")
+        .oracle(Some(twin))
+        .set("ppls", "Planeshift Promos")
+        .promo(true);
+    seed_cards(
+        &pool,
+        &[
+            card("Promo Twin")
+                .oracle(Some(twin))
+                .set("pls", "Planeshift"),
+            twin_promo.clone(),
+            card("Only Promo").promo(true),
+            card("Never Promo"),
+            // A promo in one set and a plain printing in another.
+            card("Split Card")
+                .oracle(Some(split))
+                .set("aaa", "Set A")
+                .promo(true),
+            card("Split Card").oracle(Some(split)).set("bbb", "Set B"),
+        ],
+    )
+    .await;
+    let repo = Postgres::from_pool(pool.clone());
+
+    let mut b = CardQueryBuilder::new();
+    // Promo alone is config, not a query; every fixture is a creature.
+    b.set_type_line_contains("Creature").set_promo(true);
+    let served = repo
+        .search_scryfall_data(&b.build().unwrap())
+        .await
+        .unwrap();
+    let mut shown: Vec<(&str, bool)> = served.iter().map(|s| (s.name.as_str(), s.promo)).collect();
+    shown.sort_unstable();
+    assert_eq!(
+        shown,
+        vec![
+            ("Only Promo", true),
+            ("Promo Twin", true),
+            ("Split Card", true)
+        ],
+        "every card with a promo printing, each shown as that promo"
+    );
+    let twin_shown = served.iter().find(|s| s.name == "Promo Twin").unwrap();
+    assert_eq!(twin_shown.id, twin_promo.id());
+
+    // Set B has only the plain printing of Split Card: no promo to show.
+    let mut b = CardQueryBuilder::new();
+    // Promo alone is config, not a query; every fixture is a creature.
+    b.set_type_line_contains("Creature").set_promo(true);
+    b.set_set_equals_any(vec!["Set B"]);
+    let served = repo
+        .search_scryfall_data(&b.build().unwrap())
+        .await
+        .unwrap();
+    assert!(served.is_empty(), "no promo printing in Set B: {served:?}");
+
+    let mut b = CardQueryBuilder::new();
+    // Promo alone is config, not a query; every fixture is a creature.
+    b.set_type_line_contains("Creature").set_promo(true);
+    b.set_set_equals_any(vec!["Set A"]);
+    let served = repo
+        .search_scryfall_data(&b.build().unwrap())
+        .await
+        .unwrap();
+    let shown: Vec<(&str, &str, bool)> = served
+        .iter()
+        .map(|s| (s.name.as_str(), s.set_name.as_str(), s.promo))
+        .collect();
+    assert_eq!(shown, vec![("Split Card", "Set A", true)]);
+}
+
 /// The Universes Beyond serve setting: exclusion hides cards with no
 /// in-universe printing, the franchise whitelist lets its cards back through,
 /// and a card with any in-universe printing is never touched.
