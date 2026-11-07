@@ -48,6 +48,28 @@ html {
     background-color: var(--page-edge, var(--bg-primary));
 }
 
+/* A double tap is two taps, not a zoom, and a tap lands without the
+   browser's wait for a second one; pinch zoom stays. */
+html,
+body {
+    touch-action: manipulation;
+}
+
+/* On a swipe screen a pull down is the card's undo, never the browser's
+   pull-to-refresh, which would reload the page and lose the swipes. Every
+   other screen keeps the page's own overscroll. */
+html:has(.card-swipe),
+html:has(.card-swipe) body,
+.web-scroll-screen:has(.card-swipe) {
+    overscroll-behavior-y: contain;
+}
+
+/* The empty end's ghost card is a swipe surface too: a drag on it is a
+   swipe, not a scroll. */
+.card-swipe .skeleton-card {
+    touch-action: none;
+}
+
 body {
     background-color: var(--page-sink, var(--bg-sink));
     color: var(--text-primary);
@@ -1026,11 +1048,13 @@ body {
     border-color: var(--border-warning);
 }
 
+/* The head's inset is the body rows' and the Profile card's, so an
+   accessory's right edge lines up with theirs, as the app's head does. */
 .web-section-head {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0 0.75rem;
+    padding: 0 1rem;
 }
 
 .web-section-title {
@@ -1945,65 +1969,6 @@ body {
     }
 }
 
-/* Swipe select's reasons scroll with the card's body, docked on a wide
-   window or in the phone's details drawer, and the body fades out at an
-   edge with more to scroll past it instead of cutting a row in half: the
-   top fade grows in as the body leaves its top and the bottom one goes as
-   it reaches its end. A body that fits does not fade. */
-@supports (animation-timeline: scroll()) {
-    :is(.web-swipe-select-details, .card-details-drawer) .card-details-panel > .panel-body {
-        -webkit-mask-image: linear-gradient(
-            to bottom,
-            transparent 0,
-            #000 var(--web-fade-top),
-            #000 calc(100% - var(--web-fade-bottom)),
-            transparent 100%
-        );
-        mask-image: linear-gradient(
-            to bottom,
-            transparent 0,
-            #000 var(--web-fade-top),
-            #000 calc(100% - var(--web-fade-bottom)),
-            transparent 100%
-        );
-        animation: web-scroll-fade linear both;
-        animation-timeline: scroll(self);
-    }
-}
-
-/* The scroll-edge fade's two depths, animated by a body's own scroll. */
-@property --web-fade-top {
-    syntax: "<length>";
-    inherits: false;
-    initial-value: 0px;
-}
-
-@property --web-fade-bottom {
-    syntax: "<length>";
-    inherits: false;
-    initial-value: 0px;
-}
-
-@keyframes web-scroll-fade {
-    0% {
-        --web-fade-top: 0px;
-        --web-fade-bottom: 1rem;
-    }
-
-    8% {
-        --web-fade-top: 1rem;
-    }
-
-    92% {
-        --web-fade-bottom: 1rem;
-    }
-
-    100% {
-        --web-fade-top: 1rem;
-        --web-fade-bottom: 0px;
-    }
-}
-
 /* ---- Swipe screens on a wide window ----
 
    Swipe select sits under the nav as Add does: the nav names it, carries
@@ -2234,6 +2199,14 @@ body {
     }
 }
 
+/* The dictionary as the kit's modal: its list runs down to the modal's own
+   border, so it is cut there with no fade; it still fades in under the
+   letters, which have no rule under them. */
+.web-dict-sheet .dict-list {
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 1rem);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 1rem);
+}
+
 /* Below the breakpoint the dictionary is the whole window, and its Search
    box, letters and list fill its width; the letters keep one row that
    scrolls sideways. */
@@ -2391,6 +2364,13 @@ body {
 
     .web-picker-body > .grid-cells {
         display: block;
+    }
+
+    /* The checkmark floats a dock gap in from the corner, as a screen's
+       dock does: the dock's own right margin is that gap. */
+    .sheet-form-drawer > .bottom-sheet.web-picker-sheet.drawer-every-width .sheet-dock {
+        right: 0;
+        bottom: var(--dock-gap);
     }
 }
 

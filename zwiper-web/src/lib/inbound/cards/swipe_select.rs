@@ -677,7 +677,7 @@ fn SwipeSelectBody(
             on_hint: move |()| hint_again.set(true),
         }
         div { class: "screen-content card-swipe content-enter web-swipe-select-body {eye.body_class()}",
-            SwipeScreenChips { title, tone: Role::Success, confirm }
+            SwipeScreenChips { title, tone: Role::Success, confirm, at_end: !has_card }
             div { class: "form-container web-swipe-select-card",
                 if current.is_some() {
                     SwipeStack {

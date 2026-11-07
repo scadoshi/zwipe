@@ -901,7 +901,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             title: add_cards::TITLE,
             on_hint: move |()| hint_open.set(true),
             div { class: "screen-content card-swipe content-enter web-cards-swipe {eye.body_class()}",
-                SwipeScreenChips { title: add_cards::TITLE, tone: Role::Success, confirm }
+                SwipeScreenChips { title: add_cards::TITLE, tone: Role::Success, confirm, at_end: current.is_none() }
                 div { class: "web-cards-swipe-main",
                     div { class: "form-container",
                         if current.is_some() {
