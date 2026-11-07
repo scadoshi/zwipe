@@ -8,7 +8,7 @@
 //! back and say so when something changed; the checkmark keeps the change
 //! and stays off while nothing has. `/` focuses the search.
 
-use components::hint::{ContentHintDialog, HintBody};
+use components::hint::{ContentHintDialog, HintBody, guide_for_screen};
 use components::icons::CHECK;
 use components::{
     Button, ButtonVariant, ClearWrap, DialogAction, DockAction, DrawerSheet, HintDialog,
@@ -23,14 +23,15 @@ use zwipe_core::domain::deck::{
     DeckTagView, Format, MAX_DECK_ORACLE_TAGS, MAX_DECK_TAGS, seed_oracle_tags_from_catalog,
 };
 use zwipe_ui::deck::form::{format_details, reseed_oracle_tags};
+use zwipe_ui::deck::pickers::{
+    DECK_TAG_BAR_EMPTY, FORMAT_BAR_EMPTY, ORACLE_TAG_BAR_EMPTY, ORACLE_TAG_NO_DESCRIPTION,
+    PICKER_BAR_HINT, Picker,
+};
 use zwipe_ui::filter::fields::same_set;
+use zwipe_ui::hint::HintTopic;
 use zwipe_ui::timing::ORACLE_TAG_PICKER_LIMIT;
 
 use super::DeckForm;
-use crate::domain::deck::{
-    self, DECK_TAG_BAR_EMPTY, FORMAT_BAR_EMPTY, ORACLE_TAG_BAR_EMPTY, ORACLE_TAG_NO_DESCRIPTION,
-    PICKER_BAR_HINT,
-};
 use crate::inbound::catalog::CatalogCache;
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::page_keys::{focus_by_id, use_page_keys};
@@ -218,7 +219,11 @@ pub fn FormatPicker(form: DeckForm) -> Element {
                 }
             }
         }
-        ContentHintDialog { open: hint_open, content: deck::format_picker_hint() }
+        ContentHintDialog {
+            open: hint_open,
+            content: Picker::Format.hint(),
+            actions: guide_for_screen(HintTopic::Format),
+        }
     }
 }
 
@@ -336,7 +341,11 @@ pub fn DeckTagPicker(form: DeckForm) -> Element {
                 }
             }
         }
-        ContentHintDialog { open: hint_open, content: deck::deck_tag_picker_hint() }
+        ContentHintDialog {
+            open: hint_open,
+            content: Picker::DeckTags.hint(),
+            actions: guide_for_screen(HintTopic::DeckTags),
+        }
     }
 }
 
@@ -451,7 +460,7 @@ pub fn OracleTagPicker(form: DeckForm) -> Element {
         ranked
     };
     drop(catalog);
-    let content = deck::oracle_tag_picker_hint();
+    let content = Picker::OracleTags.hint();
     rsx! {
         PickerSheet {
             open,
@@ -512,13 +521,13 @@ pub fn OracleTagPicker(form: DeckForm) -> Element {
         HintDialog {
             open: hint_open,
             title: content.title,
-            actions: vec![
-                DialogAction::Confirm {
-                    label: "Dictionary".into(),
-                    danger: false,
-                    on_confirm: Callback::new(move |()| dictionary_open.set(true)),
-                },
-            ],
+            actions: std::iter::once(DialogAction::Confirm {
+                label: "Dictionary".into(),
+                danger: false,
+                on_confirm: Callback::new(move |()| dictionary_open.set(true)),
+            })
+            .chain(guide_for_screen(HintTopic::OracleTags))
+            .collect::<Vec<_>>(),
             HintBody { blocks: content.blocks }
         }
         if dictionary_open() {

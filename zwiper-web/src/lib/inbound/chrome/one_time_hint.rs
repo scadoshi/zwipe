@@ -7,7 +7,7 @@
 //! open once more later. A screen's header `?` reopens it on demand without
 //! recording it again. The hints are zwipe-core's and their copy zwipe-ui's.
 
-use components::hint::ContentHintDialog;
+use components::hint::{ContentHintDialog, guide_for_one_time};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
@@ -72,7 +72,7 @@ pub fn OneTimeHintDialog(hint: OneTimeHint, open: Signal<bool>) -> Element {
         return rsx! {};
     };
     rsx! {
-        ContentHintDialog { open, content }
+        ContentHintDialog { open, content, actions: guide_for_one_time(hint.key()) }
     }
 }
 
@@ -80,6 +80,10 @@ pub fn OneTimeHintDialog(hint: OneTimeHint, open: Signal<bool>) -> Element {
 #[component]
 pub fn SwipeSelectHint(open: Signal<bool>, mode: SwipeSelectMode) -> Element {
     rsx! {
-        ContentHintDialog { open, content: one_time::swipe_select(mode) }
+        ContentHintDialog {
+            open,
+            content: one_time::swipe_select(mode),
+            actions: guide_for_one_time(OneTimeHint::SwipeSelect.key()),
+        }
     }
 }

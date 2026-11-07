@@ -51,6 +51,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Empty lists and empty Activity panels say so in a centered gray chip",
         "A swipe card's shadow shows all the way round, no longer cut off at its top and bottom",
         "Card rows match the card details, with their colors, price and P/T in the row",
+        "The card filter's Oracle tags hint explains include, exclude and the Dictionary",
     ],
 }];
 

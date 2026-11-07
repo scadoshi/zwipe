@@ -166,10 +166,30 @@ fn GuideGallery(shots: Vec<(&'static str, &'static str, Option<&'static str>)>) 
     }
 }
 
+/// A section heading's id, so a link can land on it: the heading in
+/// lowercase, its letters and digits kept and every run of anything else a
+/// single `-`, with none at either end.
+fn heading_anchor(heading: &str) -> String {
+    let mut id = String::new();
+    let mut dash = false;
+    for c in heading.chars() {
+        if c.is_alphanumeric() {
+            if dash && !id.is_empty() {
+                id.push('-');
+            }
+            dash = false;
+            id.extend(c.to_lowercase());
+        } else {
+            dash = true;
+        }
+    }
+    id
+}
+
 fn render_block(b: &'static Block) -> Element {
     match b {
         Block::Lead(t) => rsx! { p { class: "guide-lead", {inline(t)} } },
-        Block::H2(t) => rsx! { h2 { class: "guide-h2", "{t}" } },
+        Block::H2(t) => rsx! { h2 { class: "guide-h2", id: heading_anchor(t), "{t}" } },
         Block::P(t) => rsx! { p { class: "guide-p", {inline(t)} } },
         Block::Steps(items) => rsx! {
             ol { class: "guide-steps",
@@ -520,6 +540,17 @@ pub fn GuidePage(slug: String) -> Element {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_heading_anchor_is_its_words_joined_by_dashes() {
+        assert_eq!(heading_anchor("A skip lasts a week"), "a-skip-lasts-a-week");
+        assert_eq!(
+            heading_anchor("Profile, Budget & Tags"),
+            "profile-budget-tags"
+        );
+        assert_eq!(heading_anchor("  Drilling down! "), "drilling-down");
+        assert_eq!(heading_anchor("Mana (and lands)"), "mana-and-lands");
+    }
 
     #[test]
     fn a_line_splits_into_text_keywords_and_icons() {

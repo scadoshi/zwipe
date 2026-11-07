@@ -66,7 +66,7 @@ pub fn CardFilterPanel(
             on_hint: move |()| hint_open.set(true),
             on_first_open: move |()| open_and_record_hint(OneTimeHint::Filter, session, client, hint_open),
             oracle_tags_info: rsx! {
-                InfoButton { topic: HintTopic::OracleTags }
+                InfoButton { topic: HintTopic::FilterOracleTags }
             },
             hint: rsx! {
                 OneTimeHintDialog { hint: OneTimeHint::Filter, open: hint_open }
