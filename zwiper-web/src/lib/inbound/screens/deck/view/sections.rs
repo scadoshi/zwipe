@@ -305,11 +305,13 @@ pub fn DistributionsBody(metrics: DeckMetrics) -> Element {
         DeckCharts {
             type_bars: metrics.type_bars(),
             category_bars: metrics.card_role_bars(),
+            oracle_tag_bars: metrics.oracle_tag_bars(),
             role_tags: metrics.card_role_tags.clone(),
             describe_tag,
             on_examples,
             type_hint: rsx! { InfoButton { topic: HintTopic::TypeChart } },
             role_hint: rsx! { InfoButton { topic: HintTopic::RoleChart } },
+            oracle_tag_hint: rsx! { InfoButton { topic: HintTopic::OracleTagChart } },
         }
     }
 }
