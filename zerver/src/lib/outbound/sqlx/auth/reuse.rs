@@ -8,7 +8,7 @@
 //! `context/plans/refresh_reuse_window.md`.
 
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex, PoisonError};
+use std::sync::{Arc, Mutex};
 
 use chrono::{DateTime, Duration, Utc};
 use zwipe_core::domain::auth::models::refresh_token::Sha256Hash;
@@ -60,27 +60,31 @@ impl RefreshReuse {
     }
 
     /// Remembers that the token hashed `consumed` was rotated into `rotated`
-    /// at `now`, and drops entries past the window.
+    /// at `now`, and drops entries past the window. A poisoned map (a thread
+    /// panicked holding it) is logged and left alone: nothing is remembered,
+    /// so a racing second presentation takes the ordinary replay path.
     pub fn remember(&self, consumed: String, rotated: RotatedRefreshToken, now: DateTime<Utc>) {
         if self.window <= Duration::zero() {
             return;
         }
-        let mut successors = self
-            .successors
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner);
+        let Ok(mut successors) = self.successors.lock() else {
+            tracing::error!("refresh reuse map is poisoned; rotation not remembered");
+            return;
+        };
         successors.retain(|_, r| now.signed_duration_since(r.at) <= self.window);
         successors.insert(consumed, Remembered { rotated, at: now });
     }
 
     /// The newest successor of the token hashed `consumed` inside the window,
     /// following the chain when that successor was itself rotated, or `None`.
+    /// A poisoned map is logged and recalls nothing, so the caller treats the
+    /// token as a replay rather than trusting a map a panic left behind.
     #[must_use]
     pub fn recall(&self, consumed: &str, now: DateTime<Utc>) -> Option<RotatedRefreshToken> {
-        let successors = self
-            .successors
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner);
+        let Ok(successors) = self.successors.lock() else {
+            tracing::error!("refresh reuse map is poisoned; treating the token as a replay");
+            return None;
+        };
         let live = |hash: &str| {
             successors
                 .get(hash)
@@ -169,6 +173,23 @@ mod tests {
             value(reuse.recall(&h("a"), now + Duration::seconds(10))),
             Some("c".to_string())
         );
+    }
+
+    #[test]
+    fn a_poisoned_map_recalls_nothing_and_remembers_nothing() {
+        let reuse = RefreshReuse::default();
+        let now = Utc::now();
+        reuse.remember(h("old"), rotated("next"), now);
+        let poisoner = reuse.clone();
+        let _ = std::thread::spawn(move || {
+            let _held = poisoner.successors.lock().unwrap();
+            panic!("poison the map");
+        })
+        .join();
+        assert!(reuse.successors.is_poisoned());
+        assert_eq!(reuse.recall(&h("old"), now), None, "falls back to a replay");
+        reuse.remember(h("x"), rotated("y"), now);
+        assert_eq!(reuse.recall(&h("x"), now), None);
     }
 
     #[test]
