@@ -1,21 +1,18 @@
-//! Shared card-detail body: the reordered rules panel (head, type/rarity, oracle
-//! text, stats, then whole-card keywords + card roles) with elegant MDFC handling
-//! and an owned Flip control, plus a bottom action bar.
+//! A card's details in two shapes that share their pieces: the chip row of
+//! the shown face's kind (mana cost, type line, rarity), its rules text, the
+//! Keywords and Card roles rows, and the chip row of its facts (set, prices,
+//! power and toughness). A multi-faced card shows one face at a time behind
+//! Flip.
 //!
-//! One engine for every surface so they never drift: the expanded [`CardRow`],
-//! zite's shared-deck row (via `CardRow`), and zwiper's swipe eyeball dialog all
-//! render this. Only the action bar differs: the component owns the always-on
-//! actions (Flip for multi-faced cards, Image when art + a handler are present)
-//! and appends whatever the host passes via `actions`.
-//!
-//! [`CardDetailsPanel`] is the same card as a pane of its own: a kit panel
-//! titled with the name, a chip row of labeled facts with the mana cost and
-//! the prices, the rules text in its body and the analysis in its foot. The
-//! swipe surfaces draw it beside the card and in their details drawer.
+//! [`CardDetails`] is an expanded [`CardRow`]'s body, on every client: no
+//! title (the row's head names the card), the kind with the cost, the rules
+//! text, the tag rows, then the facts, with an action bar under a rule.
+//! [`CardDetailsPanel`] is the same card as a pane of its own, the swipe
+//! surfaces' beside the card and in their details drawer: a kit panel titled
+//! with the name and cost, the kind, the rules text, the facts, then the tag
+//! rows, with Flip, Image and Printings in its foot.
 //!
 //! [`CardRow`]: crate::CardRow
-
-use std::collections::BTreeMap;
 
 use dioxus::prelude::*;
 use zwipe_core::domain::card::Card;
@@ -25,7 +22,7 @@ use crate::{CardRoleChips, KeywordChips, OracleText, Panel};
 
 /// One card face's rules text, extracted for display. Single-faced cards yield
 /// one of these; multi-faced cards (DFCs, split, etc.) yield one per face.
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 struct FaceRules {
     type_line: String,
     mana_cost: String,
@@ -107,189 +104,183 @@ pub fn card_face_count(card: &Card) -> usize {
     build_rules(card).map_or(0, |f| f.len())
 }
 
-/// The shared card-detail body + action bar.
+/// A face's kind as a chip row: its mana cost's pips when `cost` is given,
+/// then its type line and the card's rarity.
+#[component]
+fn KindChips(type_line: String, rarity: String, #[props(default)] cost: Option<String>) -> Element {
+    rsx! {
+        div { class: "card-details-keys",
+            if let Some(cost) = cost.filter(|c| !c.is_empty()) {
+                OracleText { text: cost, class: "card-details-cost".to_string() }
+            }
+            if !type_line.is_empty() {
+                span { class: "detail-chip detail-chip-type", "{type_line}" }
+            }
+            span { class: "detail-chip detail-chip-rarity", "{rarity}" }
+        }
+    }
+}
+
+/// The card's facts as a chip row: its set, its prices, then the face's
+/// power and toughness, loyalty or defense.
+#[component]
+fn FactsChips(set_name: String, prices: Vec<String>, stats: Option<String>) -> Element {
+    rsx! {
+        div { class: "card-details-facts",
+            span { class: "detail-chip detail-chip-set", "{set_name}" }
+            for price in prices {
+                span { key: "{price}", class: "card-row-price card-price-chip", "{price}" }
+            }
+            if let Some(stats) = stats {
+                span { class: "detail-chip detail-chip-pt", "{stats}" }
+            }
+        }
+    }
+}
+
+/// The card's Keywords row, then its Card roles row with their oracle tags
+/// when `show_classification`, each a label chip and the tags as chips.
+#[component]
+fn TagRows(
+    card: Card,
+    show_classification: bool,
+    describe_tag: Option<Callback<String, Option<String>>>,
+    on_examples: Option<Callback<String>>,
+) -> Element {
+    let keywords = card.scryfall_data.keywords.clone().unwrap_or_default();
+    let profile = &card.card_profile;
+    let has_roles = show_classification
+        && !(profile.card_roles.is_empty() && profile.other_oracle_tags.is_empty());
+    rsx! {
+        if !keywords.is_empty() {
+            div { class: "card-details-analysis",
+                KeywordChips { keywords }
+            }
+        }
+        if has_roles {
+            div { class: "card-details-analysis",
+                CardRoleChips {
+                    roles: profile.card_roles.clone(),
+                    tags_by_role: profile.oracle_tags_by_role.clone(),
+                    other_tags: profile.other_oracle_tags.clone(),
+                    describe_tag,
+                    on_examples,
+                }
+            }
+        }
+    }
+}
+
+/// An expanded card row's body and its action bar, in [`CardDetailsPanel`]'s
+/// grammar without a title (the row's head names the card).
 ///
-/// Renders the current face's type line, oracle text, and stats (reordered so the
-/// text reads before the numbers), then the whole-card keyword and card-role
-/// clusters. Multi-faced cards show one face at a time behind a Flip control whose
-/// `face` state this component owns, so a long two-face card never overflows a
-/// non-scrolling host. The action bar carries Flip (multi-faced only) and Image
-/// (when art + `on_image` are present), then the host's own `actions`.
+/// The body is a chip row of the shown face's mana cost, type line and the
+/// card's rarity, the face's rules text, the Keywords and Card roles rows
+/// (roles when `show_classification`), the host's `footer`, then a chip row
+/// of the set, the prices and the face's stats. Under a rule, the action bar
+/// holds Flip for a multi-faced card, Image when the card has art and
+/// `on_image` is given, then the host's `actions` in the same row, and the
+/// host's `action_rows` under it. A multi-faced card shows one face at a
+/// time behind Flip.
 #[component]
 pub fn CardDetails(
     card: Card,
-    /// Show the card name in the detail head. Off for hosts that show the name
-    /// elsewhere (the eyeball sheet's title).
-    #[props(default = true)]
-    show_name: bool,
-    /// Show the mana cost in the detail head. Off for hosts that show it
-    /// elsewhere.
-    #[props(default = true)]
-    show_cost: bool,
-    /// Render the card-role classification (roles + grouped oracle tags) below the
-    /// keywords. Off by default so read-only embeds (e.g. the portfolio) opt in.
+    /// Show the card roles and their oracle tags. Off by default so a
+    /// read-only embed (the portfolio) opts in.
     #[props(default)]
     show_classification: bool,
-    /// Add the printing's release date and artist to the type, rarity and set
-    /// chips. Off by default; the app's swipe details sheet turns it on, since
-    /// its swipe screens no longer show them under the card.
-    #[props(default)]
-    show_printing: bool,
-    /// Image action: renders a default bar button when the card has art and a
-    /// handler is supplied; what "view image" means is the host's business.
+    /// Image action: an Image button when the card has art; what "view image"
+    /// means is the host's business.
     on_image: Option<EventHandler<()>>,
-    /// Fires with the new face index whenever the card is flipped, so a host can
-    /// mirror the shown side elsewhere (e.g. zite's image preview + hover stack).
+    /// Fires with the new face index whenever Flip turns the card, so a host
+    /// can mirror the shown side elsewhere (zite's image overlay).
     on_face_change: Option<EventHandler<usize>>,
-    /// Controlled shown-face index. When `Some`, the host owns the face state so
-    /// it can drive Flip from its own chrome (e.g. a sheet footer); when `None`,
-    /// this component owns it internally. Pair with `show_flip: false`.
-    #[props(default)]
-    face: Option<Signal<usize>>,
-    /// Render the built-in Flip control in the action bar for multi-faced cards.
-    /// Off for hosts that place Flip elsewhere (and pass `face` to drive it).
-    #[props(default = true)]
-    show_flip: bool,
-    /// Whether `actions` carries any buttons, so the bar renders to hold them.
-    /// (The slot itself can't be introspected.)
+    /// Whether `actions` or `action_rows` carry any buttons, so the bar
+    /// renders to hold them. (A slot can't be introspected.)
     #[props(default)]
     has_actions: bool,
-    /// Host buttons appended to the action bar (qty stepper, printing, star,
-    /// move-to). Build them with the shared `card-action-btn`/`card-action-row`
-    /// styling so they match the defaults.
+    /// Host buttons in the bar's row after Flip and Image (the quantity
+    /// stepper, Printing, Star), built as `card-action-btn`s.
     #[props(default)]
     actions: Option<Element>,
-    /// Resolve an oracle tag's description, making exposed tags tappable-to-reveal
-    /// in the card-role cluster. Forwarded to [`CardRoleChips`]; see there.
+    /// Host rows under the bar's row (the board moves), each a
+    /// `card-action-row`.
+    #[props(default)]
+    action_rows: Option<Element>,
+    /// Resolve an oracle tag's description. Forwarded to [`CardRoleChips`].
     #[props(default)]
     describe_tag: Option<Callback<String, Option<String>>>,
     /// Open the example-cards browse for a tag slug. Forwarded to [`CardRoleChips`].
     #[props(default)]
     on_examples: Option<Callback<String>>,
-    /// Host content rendered after the role chips and before the action bar
-    /// (the suggested commanders screen's reasons block), with no rule of its
-    /// own: a host that wants one draws it. `None` renders nothing.
+    /// Host content after the Card roles row and before the facts (the
+    /// suggested commanders' reasons, a staple's deck share). `None` renders
+    /// nothing.
     #[props(default)]
     footer: Option<Element>,
 ) -> Element {
     let sd = &card.scryfall_data;
-    let name = sd.name.clone();
-    let rarity_name = sd.rarity.to_long_name();
+    let rarity = sd.rarity.to_long_name();
     let set_name = sd.set_name.clone();
-    let released_at = sd.released_at.to_string();
-    let artist = sd.artist.clone().filter(|a| !a.is_empty());
-    let keywords = sd.keywords.clone().unwrap_or_default();
+    let prices = zwipe_ui::card::info::prices(sd);
     let has_image = sd.primary_image_url(ImageSize::Large).is_some();
 
-    // Card roles (with their grouped oracle tags) render below the keywords, but
-    // only when the host opts in via `show_classification`.
-    let (roles, tags_by_role, other_tags) = if show_classification {
-        (
-            card.card_profile.card_roles.clone(),
-            card.card_profile.oracle_tags_by_role.clone(),
-            card.card_profile.other_oracle_tags.clone(),
-        )
-    } else {
-        (Vec::new(), BTreeMap::default(), Vec::new())
-    };
-
     let faces = build_rules(&card);
-    // Multi-faced cards (DFCs) show one face at a time with a Flip control, so a
-    // long two-face card can't overflow a non-scrolling host.
+    // A multi-faced card shows one face at a time behind Flip, so a long
+    // two-face card can't overflow a non-scrolling host.
     let face_count = faces.as_ref().map_or(0, Vec::len);
-    // Host-controlled face state when `face` is passed, else an internal signal
-    // (the hook always runs so the call order stays stable across renders).
-    let internal_face = use_signal(|| 0usize);
-    let mut face_idx = face.unwrap_or(internal_face);
+    let mut face_idx = use_signal(|| 0usize);
     let cur = face_idx().min(face_count.saturating_sub(1));
     let current_face = faces.as_ref().and_then(|f| f.get(cur)).cloned();
-    let cost = current_face
-        .as_ref()
-        .map(|f| f.mana_cost.clone())
-        .unwrap_or_default();
+    let stats = current_face.as_ref().and_then(|f| f.stats.clone());
 
-    let show_flip_btn = face_count > 1 && show_flip;
+    let show_flip_btn = face_count > 1;
     let show_image = has_image && on_image.is_some();
-    let has_defaults = show_flip_btn || show_image;
-    let show_bar = has_defaults || has_actions;
+    let show_bar = show_flip_btn || show_image || has_actions;
 
     rsx! {
-        div { class: "card-row-detail",
-            if show_name || (show_cost && !cost.is_empty()) {
-                div { class: "card-detail-head",
-                    if show_name {
-                        p { class: "card-detail-name", "{name}" }
-                    }
-                    if show_cost && !cost.is_empty() {
-                        OracleText { text: cost, class: "card-detail-cost".to_string() }
-                    }
-                }
-            }
+        div { class: "card-row-detail card-details-row",
             if let Some(face) = current_face {
-                div { class: "card-detail-meta",
-                    if !face.type_line.is_empty() {
-                        span { class: "detail-chip detail-chip-type", "{face.type_line}" }
-                    }
-                    span { class: "detail-chip detail-chip-rarity", "{rarity_name}" }
-                    span { class: "detail-chip detail-chip-set", "{set_name}" }
-                    if show_printing {
-                        span { class: "detail-chip detail-chip-date", "{released_at}" }
-                        if let Some(artist) = artist {
-                            span { class: "detail-chip detail-chip-artist", "{artist}" }
-                        }
-                    }
-                }
+                KindChips { type_line: face.type_line, rarity, cost: Some(face.mana_cost) }
                 if !face.oracle.is_empty() {
-                    OracleText { text: face.oracle, class: "card-detail-oracle".to_string() }
-                }
-                if let Some(stats) = face.stats {
-                    div { class: "card-detail-stats",
-                        span { class: "detail-chip detail-chip-pt", "{stats}" }
-                    }
+                    OracleText { text: face.oracle, class: "card-detail-oracle card-details-oracle".to_string() }
                 }
             }
-            // Analysis cluster below the face: all keywords and (opt-in) all card
-            // roles for the whole card, shown once.
-            if !keywords.is_empty() {
-                KeywordChips { keywords }
-            }
-            if show_classification {
-                CardRoleChips { roles, tags_by_role, other_tags, describe_tag, on_examples }
-            }
+            TagRows { card: card.clone(), show_classification, describe_tag, on_examples }
             {footer}
+            FactsChips { set_name, prices, stats }
         }
         if show_bar {
             hr { class: "card-row-rule card-row-rule-muted" }
             div { class: "card-row-actions",
-                if has_defaults {
-                    div { class: "card-action-row",
-                        if show_flip_btn {
-                            button {
-                                class: "card-action-btn",
-                                onclick: move |evt| {
-                                    evt.stop_propagation();
-                                    let next = (cur + 1) % face_count;
-                                    face_idx.set(next);
-                                    if let Some(handler) = on_face_change {
-                                        handler.call(next);
-                                    }
-                                },
-                                "Flip"
-                            }
-                        }
-                        if let (true, Some(handler)) = (show_image, on_image) {
-                            button {
-                                class: "card-action-btn",
-                                onclick: move |evt| {
-                                    evt.stop_propagation();
-                                    handler.call(());
-                                },
-                                "Image"
-                            }
+                div { class: "card-action-row",
+                    if show_flip_btn {
+                        button {
+                            class: "card-action-btn",
+                            onclick: move |evt| {
+                                evt.stop_propagation();
+                                let next = cur.saturating_add(1).checked_rem(face_count).unwrap_or(0);
+                                face_idx.set(next);
+                                if let Some(handler) = on_face_change {
+                                    handler.call(next);
+                                }
+                            },
+                            "Flip"
                         }
                     }
+                    if let (true, Some(handler)) = (show_image, on_image) {
+                        button {
+                            class: "card-action-btn",
+                            onclick: move |evt| {
+                                evt.stop_propagation();
+                                handler.call(());
+                            },
+                            "Image"
+                        }
+                    }
+                    {actions}
                 }
-                {actions}
+                {action_rows}
             }
         }
     }
@@ -349,22 +340,12 @@ pub fn CardDetailsPanel(
     let name = sd.name.clone();
     let rarity = sd.rarity.to_long_name();
     let set_name = sd.set_name.clone();
-    let keywords = sd.keywords.clone().unwrap_or_default();
     let prices = if show_prices {
         zwipe_ui::card::info::prices(sd)
     } else {
         Vec::new()
     };
     let has_image = sd.primary_image_url(ImageSize::Large).is_some();
-    let (roles, tags_by_role, other_tags) = if show_classification {
-        (
-            card.card_profile.card_roles.clone(),
-            card.card_profile.oracle_tags_by_role.clone(),
-            card.card_profile.other_oracle_tags.clone(),
-        )
-    } else {
-        (Vec::new(), BTreeMap::default(), Vec::new())
-    };
 
     let faces = build_rules(&card);
     let face_count = faces.as_ref().map_or(0, Vec::len);
@@ -435,34 +416,15 @@ pub fn CardDetailsPanel(
                     }
                 }
             }),
-            div { class: "card-details-keys",
-                if let Some(face) = current_face.as_ref().filter(|f| !f.type_line.is_empty()) {
-                    span { class: "detail-chip detail-chip-type", "{face.type_line}" }
-                }
-                span { class: "detail-chip detail-chip-rarity", "{rarity}" }
+            KindChips {
+                type_line: current_face.as_ref().map(|f| f.type_line.clone()).unwrap_or_default(),
+                rarity,
             }
             if let Some(face) = current_face.filter(|f| !f.oracle.is_empty()) {
                 OracleText { text: face.oracle, class: "card-detail-oracle card-details-oracle".to_string() }
             }
-            div { class: "card-details-facts",
-                span { class: "detail-chip detail-chip-set", "{set_name}" }
-                for price in prices {
-                    span { key: "{price}", class: "card-row-price card-price-chip", "{price}" }
-                }
-                if let Some(stats) = stats {
-                    span { class: "detail-chip detail-chip-pt", "{stats}" }
-                }
-            }
-            if !keywords.is_empty() {
-                div { class: "card-details-analysis",
-                    KeywordChips { keywords }
-                }
-            }
-            if show_classification && !(roles.is_empty() && other_tags.is_empty()) {
-                div { class: "card-details-analysis",
-                    CardRoleChips { roles, tags_by_role, other_tags, describe_tag, on_examples }
-                }
-            }
+            FactsChips { set_name, prices, stats }
+            TagRows { card: card.clone(), show_classification, describe_tag, on_examples }
         }
     }
 }

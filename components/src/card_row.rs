@@ -133,7 +133,18 @@ pub fn CardRow(
     // `None` (no price in that currency) omits the tag entirely.
     let price_display =
         deck_metrics::card_price(sd, price_currency).map(|p| price_currency.format_amount(p));
-    let pt_display = match (&sd.power, &sd.toughness) {
+    // A multi-faced card keeps its stats on its faces; the row shows the
+    // front face's, as its detail opens on it.
+    let front = sd.card_faces.as_ref().and_then(|faces| faces.first());
+    let power = sd
+        .power
+        .as_ref()
+        .or_else(|| front.and_then(|f| f.power.as_ref()));
+    let toughness = sd
+        .toughness
+        .as_ref()
+        .or_else(|| front.and_then(|f| f.toughness.as_ref()));
+    let pt_display = match (power, toughness) {
         (Some(p), Some(t)) => format!("{p}/{t}"),
         _ => String::new(),
     };
@@ -145,7 +156,11 @@ pub fn CardRow(
         .iter()
         .map(|c| c.to_short_name().to_lowercase())
         .collect::<Vec<_>>();
-    let loyalty_display = sd.loyalty.clone().unwrap_or_default();
+    let loyalty_display = sd
+        .loyalty
+        .clone()
+        .or_else(|| front.and_then(|f| f.loyalty.clone()))
+        .unwrap_or_default();
     // The `actions` slot the shared detail hangs its bar on: qty stepper,
     // printing, star, move-to. Image is a `CardDetails` default, not part of it.
     let has_slot_actions = on_qty_change.is_some()
@@ -223,21 +238,22 @@ pub fn CardRow(
                             "{name}"
                         }
                     }
+                    // The color identity, the price, then the stat: P/T
+                    // (always slashed, e.g. 4/5) for a creature, else a bare
+                    // loyalty number for a planeswalker.
                     div { class: "card-row-tags",
-                        // Card-stat tag: P/T (always slashed, e.g. 4/5) for creatures,
-                        // else a bare loyalty number for planeswalkers.
-                        if !pt_display.is_empty() {
-                            span { class: "card-row-stat", "{pt_display}" }
-                        } else if !loyalty_display.is_empty() {
-                            span { class: "card-row-stat", "{loyalty_display}" }
-                        }
-                        if let Some(price) = price_display {
-                            span { class: "card-row-price", "{price}" }
-                        }
                         span { class: "card-row-colors",
                             for code in color_codes.iter() {
                                 i { key: "{code}", class: "ms ms-{code} ms-cost ms-shadow" }
                             }
+                        }
+                        if let Some(price) = price_display {
+                            span { class: "card-row-price", "{price}" }
+                        }
+                        if !pt_display.is_empty() {
+                            span { class: "card-row-stat", "{pt_display}" }
+                        } else if !loyalty_display.is_empty() {
+                            span { class: "card-row-stat", "{loyalty_display}" }
                         }
                     }
                 }
@@ -256,7 +272,21 @@ pub fn CardRow(
                     footer,
                     has_actions: has_slot_actions,
                     actions: rsx! {
-                        div { class: "card-action-row",
+                            if let Some(handler) = on_printing {
+                                {
+                                    let card_clone = card.clone();
+                                    rsx! {
+                                        button {
+                                            class: "card-action-btn",
+                                            onclick: move |evt| {
+                                                evt.stop_propagation();
+                                                handler.call(card_clone.clone());
+                                            },
+                                            "Printings"
+                                        }
+                                    }
+                                }
+                            }
                             if let Some(handler) = on_qty_change {
                                 button {
                                     class: "card-action-btn",
@@ -276,21 +306,6 @@ pub fn CardRow(
                                     "+"
                                 }
                             }
-                            if let Some(handler) = on_printing {
-                                {
-                                    let card_clone = card.clone();
-                                    rsx! {
-                                        button {
-                                            class: "card-action-btn",
-                                            onclick: move |evt| {
-                                                evt.stop_propagation();
-                                                handler.call(card_clone.clone());
-                                            },
-                                            "Printing"
-                                        }
-                                    }
-                                }
-                            }
                             if let (Some(is_mvp), Some(handler)) = (mvp, on_toggle_mvp) {
                                 button {
                                     class: "card-action-btn",
@@ -302,7 +317,8 @@ pub fn CardRow(
                                 }
                             }
                             {extra_actions}
-                        }
+                    },
+                    action_rows: rsx! {
                         if let Some(handler) = on_move_to {
                             div { class: "card-action-row",
                                 match current_board.unwrap_or(Board::Deck) {
