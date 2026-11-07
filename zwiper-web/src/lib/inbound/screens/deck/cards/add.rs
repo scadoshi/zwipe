@@ -36,7 +36,7 @@ use zwipe_ui::hint::Role;
 use zwipe_ui::screens::add_cards;
 use zwipe_ui::stack::{
     AddAction, CARDS_WARNING_THRESHOLD, CardStack, MAX_CARDS_IN_STACK, MaybeboardAction,
-    STACK_WARNING_EVERY, StackAction,
+    NO_CARDS_LEFT, STACK_WARNING_EVERY, StackAction,
 };
 use zwipe_ui::stores::filters::FilterScope;
 use zwipe_ui::stores::in_flight::AddOutcome;
@@ -373,6 +373,13 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                     .collect();
                 if fresh.is_empty() {
                     exhausted.set(true);
+                    // The cursor waits past the last card: the stack has run out.
+                    if stack.peek().index() >= stack.peek().len() {
+                        toast.info(
+                            NO_CARDS_LEFT.to_owned(),
+                            ToastOptions::default().duration(TOAST_QUICK),
+                        );
+                    }
                 } else {
                     stack.write().append(fresh);
                 }
@@ -382,7 +389,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
     });
 
     // Moves past the swiped card and returns what that says: the stack
-    // nearing its cap, or the end of the results.
+    // nearing its cap, or that it ran out.
     let advance = use_callback(move |()| {
         let mut said = Vec::new();
         let total = stack.peek().len();
@@ -399,7 +406,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             ));
         }
         if index >= total && *exhausted.peek() {
-            said.push((Level::Warning, "End of results".to_string()));
+            said.push((Level::Info, NO_CARDS_LEFT.to_owned()));
         } else if total > 0 && index.saturating_add(1) >= total.saturating_sub(LOAD_MORE_AT) {
             load_more.call(());
         }
@@ -700,6 +707,12 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                 }
             }
             mb_stack.write().remove_current();
+            let mut line = OneLine::default();
+            line.confirm(true, "Moved to deck");
+            if mb_stack.peek().is_empty() {
+                line.ran_out();
+            }
+            line.raise(confirm, toast);
             spawn_forever(async move {
                 let to_deck =
                     HttpPatchDeckCard::new(None, Some(Board::Deck.display_name().to_owned()));
@@ -720,7 +733,6 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                     );
                 }
             });
-            confirm.success("Moved to deck");
         }
         Swipe::Left => {
             mb_stack.write().record(MaybeboardAction::Skip);
@@ -907,7 +919,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                             }
                         } else if end_of_pile {
                             if loading_more() {
-                                CardSkeleton { is_loading: true }
+                                CardSkeleton {}
                             } else {
                                 div {
                                     class: "web-pile-end",
@@ -929,7 +941,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                                 }
                             }
                         } else if at == AddSource::Search && loading_cards() {
-                            CardSkeleton { is_loading: true }
+                            CardSkeleton {}
                         } else {
                             CardSkeleton {}
                         }

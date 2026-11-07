@@ -19,7 +19,7 @@ use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCa
 
 use crate::deck_signals::{self, Crossing, Level};
 use crate::generation::{Generation, Ticket};
-use crate::stack::{CardStack, Direction, RemoveAction, StackAction};
+use crate::stack::{CardStack, Direction, NO_CARDS_LEFT, RemoveAction, StackAction};
 use crate::stores::undo::{self, UndoAction};
 use crate::toast::{Line, Toast, ToastKind, keep_one};
 
@@ -73,9 +73,6 @@ pub const ALREADY_CHANGED: &str = "Already changed";
 
 /// The toast for Refresh.
 pub const STACK_REFRESHED: &str = "Stack refreshed";
-
-/// The toast when the last card is swiped, in place of that swipe's own.
-pub const NOTHING_LEFT: &str = "Nothing left to remove";
 
 /// What a swipe says of itself, which the run-out toast replaces.
 const SWIPE_LINES: [&str; 4] = [KEPT, REMOVED, MOVED_TO_MAYBEBOARD, MOVED_TO_MAIN];
@@ -460,7 +457,7 @@ impl State {
                 effects.retain(|effect| {
                     !matches!(effect, Effect::Toast(toast) | Effect::Confirm(toast) if SWIPE_LINES.contains(&toast.text.as_str()))
                 });
-                NOTHING_LEFT
+                NO_CARDS_LEFT
             } else if self.filter.is_empty() {
                 NO_CARDS_ON_BOARDS
             } else {
@@ -1015,18 +1012,6 @@ impl State {
     #[must_use]
     pub fn can_undo(&self) -> bool {
         self.stack.has_history()
-    }
-
-    /// What an empty stack says in its place: that the swipes reached the end, or why nothing showed.
-    #[must_use]
-    pub fn empty_line(&self) -> &'static str {
-        if self.can_undo() {
-            NOTHING_LEFT
-        } else if self.filter.is_empty() {
-            NO_CARDS_ON_BOARDS
-        } else {
-            NO_MATCHES
-        }
     }
 
     /// The card the details sheet and the card info describe, wrapping round the stack; `None` only when it is empty.

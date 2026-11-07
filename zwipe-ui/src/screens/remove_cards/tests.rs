@@ -389,7 +389,7 @@ fn move_toggles_between_main_and_maybeboard() {
         let ticket = ticket_of(&effects);
         // The last move empties the pile, whose toast stands in for its own.
         let said = if at == 2 {
-            Effect::Toast(Toast::quick(ToastKind::Info, NOTHING_LEFT))
+            Effect::Toast(Toast::quick(ToastKind::Info, NO_CARDS_LEFT))
         } else {
             Effect::Confirm(Toast::quick(ToastKind::Info, message))
         };
@@ -497,7 +497,7 @@ fn an_emptied_pile_says_why_once() {
     );
     assert_eq!(
         toasts(&state.update(Action::Remove)),
-        [Toast::quick(ToastKind::Info, NOTHING_LEFT)],
+        [Toast::quick(ToastKind::Info, NO_CARDS_LEFT)],
         "the run-out toast stands in for Removed from deck"
     );
     assert_eq!(state.status(), Status::Empty);
@@ -600,7 +600,6 @@ fn undo_at_the_end_of_the_stack_while_the_last_remove_is_out_waits_then_restores
     let remove = ticket_of(&state.update(Action::Remove));
     assert_eq!(state.status(), Status::Empty);
     assert!(state.can_undo(), "the end of the stack can still undo");
-    assert_eq!(state.empty_line(), NOTHING_LEFT);
 
     // The delete has not landed: nothing races it, the card is back at once.
     assert_eq!(
@@ -663,18 +662,6 @@ fn an_undo_held_on_a_remove_that_fails_puts_the_entry_back_with_no_request() {
         "the card never left the deck"
     );
     assert_eq!(top(&state).as_deref(), Some("Opt"));
-}
-
-#[test]
-fn an_empty_stack_says_why() {
-    let mut state = loaded(deck_of(&[]));
-    assert_eq!(state.status(), Status::Empty);
-    assert!(!state.can_undo());
-    assert_eq!(state.empty_line(), NO_CARDS_ON_BOARDS);
-    let mut filtered = CardQueryBuilder::default();
-    filtered.set_name_contains("zzz");
-    let _ = state.update(Action::Filter(filtered));
-    assert_eq!(state.empty_line(), NO_MATCHES);
 }
 
 #[test]

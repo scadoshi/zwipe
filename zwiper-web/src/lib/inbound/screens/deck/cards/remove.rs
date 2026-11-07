@@ -414,6 +414,9 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                 for signal in crossings(&before) {
                     line.signal(signal);
                 }
+                if stack.peek().is_empty() {
+                    line.ran_out();
+                }
                 line.raise(confirm, toast);
             }
             Swipe::Up => {
@@ -466,6 +469,9 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                 line.confirm(false, message);
                 for signal in crossings(&before) {
                     line.signal(signal);
+                }
+                if stack.peek().is_empty() {
+                    line.ran_out();
                 }
                 line.raise(confirm, toast);
             }
@@ -550,7 +556,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                                 on_swipe: move |pair: (Swipe, Card)| on_swipe(pair),
                             }
                         } else {
-                            CardSkeleton { is_loading: !loaded() }
+                            CardSkeleton {}
                         }
                     }
                 }

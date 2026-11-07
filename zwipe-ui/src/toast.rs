@@ -130,14 +130,14 @@ mod keep_one_tests {
         let mut effects = vec![
             Effect::Confirm(Toast::quick(ToastKind::Success, "Removed from deck")),
             Effect::Fetch,
-            Effect::Toast(Toast::quick(ToastKind::Info, "Nothing left to remove")),
+            Effect::Toast(Toast::quick(ToastKind::Info, "No cards left")),
         ];
         keep_one(&mut effects, line);
         assert_eq!(
             effects,
             [
                 Effect::Fetch,
-                Effect::Toast(Toast::quick(ToastKind::Info, "Nothing left to remove"))
+                Effect::Toast(Toast::quick(ToastKind::Info, "No cards left"))
             ]
         );
     }

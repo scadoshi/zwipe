@@ -21,7 +21,7 @@ use zwipe_core::http::contracts::suggestions::{HttpCommanderSuggestion, HttpSugg
 use crate::commander::swipe_select;
 use crate::generation::{Generation, Ticket};
 use crate::playstyle;
-use crate::stack::{CardStack, Direction, StackAction};
+use crate::stack::{CardStack, Direction, NO_CARDS_LEFT, StackAction};
 use crate::timing::{LOAD_MORE_AT, MAYBEBOARD_TOAST, PAGE_SIZE};
 use crate::toast::{Line, Toast, ToastKind, keep_one};
 
@@ -358,7 +358,7 @@ impl State {
             let line = if self.stack.is_empty() {
                 format!("No {noun}s match your filters")
             } else {
-                format!("No more {noun}s")
+                NO_CARDS_LEFT.to_owned()
             };
             effects.push(Effect::Toast(Toast::quick(ToastKind::Info, line)));
         }
