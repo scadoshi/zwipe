@@ -1,6 +1,6 @@
 //! The deck form's three pickers, format, deck tags and oracle tags, as the app has them: the draft each opens on, what its grid lists, the bar's words before a tap, its `?` dialog, every toast it raises, and the partner autofill a commander pick starts.
 //!
-//! A picker edits the form's value in place and keeps a [`Draft`] of what it opened on. Save stays off while the value matches the draft. Back puts the draft back, saying "{X} unchanged" when that throws a change away.
+//! A picker edits the form's value in place and keeps a [`Draft`] of what it opened on. Save stays off while the value matches the draft. Back puts the draft back, asking first ([`Picker::discard_title`]) when that throws a change away.
 
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
@@ -28,6 +28,15 @@ pub const ORACLE_TAG_BAR_EMPTY: &str =
 
 /// The oracle tag picker's bar for a tag the catalog has no description for.
 pub const ORACLE_TAG_NO_DESCRIPTION: &str = "No description for this tag.";
+
+/// The discard dialog's body, under [`Picker::discard_title`].
+pub const DISCARD_BODY: &str = "The form goes back to how it was when you opened this.";
+
+/// The discard dialog's button that keeps the picks and the picker open.
+pub const KEEP: &str = "Keep";
+
+/// The discard dialog's button that puts back what the picker opened on.
+pub const DISCARD: &str = "Discard";
 
 /// One of the deck form's pickers.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -61,10 +70,13 @@ impl Picker {
         }
     }
 
-    /// The toast Back raises when it throws a change away: `Format unchanged`, `Deck tags unchanged` or `Oracle tags unchanged`, info, up for [`QUICK`](crate::toast::QUICK).
+    /// The title of the dialog Back opens when it would throw a change away, with [`KEEP`] and [`DISCARD`].
     #[must_use]
-    pub fn unchanged_toast(self) -> Toast {
-        Toast::quick(ToastKind::Info, format!("{} unchanged", self.title()))
+    pub fn discard_title(self) -> &'static str {
+        match self {
+            Self::Format => "Discard format change?",
+            Self::DeckTags | Self::OracleTags => "Discard tag changes?",
+        }
     }
 
     /// The picker's `?` dialog. The deck tag and oracle tag pickers open with the field's explainer ([`HintTopic::DeckTags`], [`HintTopic::OracleTags`]); the deck tag picker then says how its chips work. The oracle tag dialog's `Dictionary` action is the client's to add.
@@ -229,12 +241,6 @@ impl<T: Selection> Draft<T> {
     pub fn is_unchanged(&self, current: &T) -> bool {
         current.same(&self.snapshot)
     }
-
-    /// The toast Back raises with `current` in the form: [`Picker::unchanged_toast`] when Back throws a change away, nothing when there is none.
-    #[must_use]
-    pub fn back_toast(&self, current: &T) -> Option<Toast> {
-        (!self.is_unchanged(current)).then(|| self.picker.unchanged_toast())
-    }
 }
 
 /// The formats whose names hold `query`, ignoring case, in [`Format::all`]'s order. An empty query lists every format.
@@ -388,17 +394,12 @@ mod tests {
         let draft = Draft::tags(TagPicker::OracleTags, opened.clone());
         let mut picked = opened;
         assert!(draft.is_unchanged(&picked), "just opened");
-        assert_eq!(draft.back_toast(&picked), None, "Back with no change");
 
         assert_eq!(
             TagPicker::OracleTags.toggle(&mut picked, "draw"),
             Tapped::Added
         );
         assert!(!draft.is_unchanged(&picked));
-        assert_eq!(
-            draft.back_toast(&picked),
-            Some(Toast::new(ToastKind::Info, "Oracle tags unchanged", QUICK)),
-        );
 
         assert_eq!(
             TagPicker::OracleTags.toggle(&mut picked, "draw"),
@@ -419,27 +420,16 @@ mod tests {
     fn a_format_draft_compares_the_format_alone() {
         let draft = Draft::format(Some(Format::Commander));
         assert!(draft.is_unchanged(&Some(Format::Commander)));
-        assert_eq!(
-            draft.back_toast(&None),
-            Some(Toast::new(ToastKind::Info, "Format unchanged", QUICK)),
-        );
-        assert_eq!(
-            draft.back_toast(&Some(Format::Modern)).map(|t| t.text),
-            Some("Format unchanged".to_owned()),
-        );
+        assert!(!draft.is_unchanged(&None));
+        assert!(!draft.is_unchanged(&Some(Format::Modern)));
         assert_eq!(draft.into_snapshot(), Some(Format::Commander));
     }
 
     #[test]
-    fn every_picker_names_itself_in_its_back_toast() {
-        assert_eq!(
-            Picker::DeckTags.unchanged_toast().text,
-            "Deck tags unchanged"
-        );
-        assert_eq!(
-            Picker::OracleTags.unchanged_toast().text,
-            "Oracle tags unchanged"
-        );
+    fn the_tag_pickers_ask_about_tags_and_the_format_picker_about_its_format() {
+        assert_eq!(Picker::DeckTags.discard_title(), "Discard tag changes?");
+        assert_eq!(Picker::OracleTags.discard_title(), "Discard tag changes?");
+        assert_eq!(Picker::Format.discard_title(), "Discard format change?");
     }
 
     #[test]

@@ -7,7 +7,7 @@
 //! # Session Creation Flow
 //!
 //! 1. Validate user exists and is active
-//! 2. Enforce session maximum (delete oldest if > 5 sessions)
+//! 2. Enforce session maximum (delete oldest past `MAXIMUM_SESSION_COUNT`)
 //! 3. Generate JWT access token with user claims
 //! 4. Create refresh token with 14-day expiry
 //! 5. Store refresh token hash in database

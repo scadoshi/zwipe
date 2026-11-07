@@ -105,8 +105,11 @@
     box-shadow: var(--shadow-sm);
 }
 
+/* `position: relative` after `all: unset` keeps the touch target's tap box
+   on the ×. */
 .chip-remove {
     all: unset;
+    position: relative;
     cursor: pointer;
     font-size: 1rem;
     line-height: 1;
@@ -167,8 +170,11 @@
     border-color: var(--color-error);
 }
 
+/* `position: relative` after `all: unset` keeps the touch target's tap box
+   on the button. */
 .clear-btn {
     all: unset;
+    position: relative;
     cursor: pointer;
     font-size: 0.85rem;
     line-height: 1;

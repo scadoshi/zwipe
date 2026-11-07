@@ -16,7 +16,7 @@ use crate::domain::user::models::settings::UserSettings;
 /// Maximum number of concurrent sessions allowed per user.
 ///
 /// When this limit is exceeded, the oldest session is automatically revoked.
-pub const MAXIMUM_SESSION_COUNT: u8 = 5;
+pub const MAXIMUM_SESSION_COUNT: u8 = 10;
 
 /// A successful authentication response containing user data and tokens.
 ///

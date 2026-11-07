@@ -28,10 +28,11 @@ use zwipe_core::domain::card::search_card::cards::Cards;
 use zwipe_core::domain::deck::{Board, DeckEntry};
 use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard};
 use zwipe_ui::add::{AddDeck, no_results_message, normalized, related_ids};
-use zwipe_ui::deck_signals::{Crossing, budget_crossing, land_crossing, price_of};
+use zwipe_ui::deck_signals::{Crossing, Level, budget_crossing, land_crossing, price_of};
 use zwipe_ui::filter::AddContext;
 use zwipe_ui::filter::draft::{ResetRule, SheetConfig};
 use zwipe_ui::generation::Generation;
+use zwipe_ui::hint::Role;
 use zwipe_ui::screens::add_cards;
 use zwipe_ui::stack::{
     AddAction, CARDS_WARNING_THRESHOLD, CardStack, MAX_CARDS_IN_STACK, MaybeboardAction,
@@ -43,7 +44,7 @@ use zwipe_ui::stores::parked::ParkedStack;
 use zwipe_ui::stores::undo::UndoAction;
 use zwipe_ui::timing::LOAD_MORE_AT;
 
-use super::{SwipeDetails, flip_top_card, signal_toast};
+use super::{OneLine, SwipeDetails, flip_top_card};
 use crate::inbound::card_filter::CardFilterPanel;
 use crate::inbound::card_stores::CardStores;
 use crate::inbound::cards::card_info::{CardDetailsSheet, CardSkeleton};
@@ -380,25 +381,29 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         });
     });
 
+    // Moves past the swiped card and returns what that says: the stack
+    // nearing its cap, or the end of the results.
     let advance = use_callback(move |()| {
+        let mut said = Vec::new();
         let total = stack.peek().len();
         if !stack.write().advance() {
-            return;
+            return said;
         }
         let index = stack.peek().index();
         if (CARDS_WARNING_THRESHOLD..MAX_CARDS_IN_STACK).contains(&total)
             && total.checked_rem(STACK_WARNING_EVERY) == Some(0)
         {
-            toast.info(
+            said.push((
+                Level::Info,
                 "Approaching the card stack limit, refresh your search to continue".to_string(),
-                ToastOptions::default().duration(TOAST_QUICK),
-            );
+            ));
         }
         if index >= total && *exhausted.peek() {
-            toast.warning("End of results".to_string(), ToastOptions::default());
+            said.push((Level::Warning, "End of results".to_string()));
         } else if total > 0 && index.saturating_add(1) >= total.saturating_sub(LOAD_MORE_AT) {
             load_more.call(());
         }
+        said
     });
 
     // Sends one copy to the main deck or the maybeboard. The answer can
@@ -443,8 +448,8 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         });
     });
 
-    // The running land count and price after an add or its undo, with the
-    // upward crossings' toasts.
+    // The running land count and price after an add or its undo, returning
+    // the upward crossings' signals.
     let mut count_add = move |card: &Card, sign: i32| {
         let mut signals = Vec::new();
         if let Some(d) = deck.write().as_mut() {
@@ -469,9 +474,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                 }
             }
         }
-        for signal in signals {
-            signal_toast(toast, signal);
-        }
+        signals
     };
 
     let undo_search = use_callback(move |()| {
@@ -641,9 +644,15 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         Swipe::Right => {
             stack.write().record(AddAction::Add);
             add_card.call((card.clone(), false));
-            confirm.success("Added to deck");
-            count_add(&card, 1);
-            advance.call(());
+            let mut line = OneLine::default();
+            line.confirm(true, "Added to deck");
+            for signal in count_add(&card, 1) {
+                line.signal(signal);
+            }
+            for said in advance.call(()) {
+                line.signal(Some(said));
+            }
+            line.raise(confirm, toast);
         }
         Swipe::Left => {
             if let Some(oracle_id) = card.scryfall_data.oracle_id {
@@ -656,14 +665,22 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                 });
             }
             stack.write().record(AddAction::Skip);
-            confirm.info("Skipped");
-            advance.call(());
+            let mut line = OneLine::default();
+            line.confirm(false, "Skipped");
+            for said in advance.call(()) {
+                line.signal(Some(said));
+            }
+            line.raise(confirm, toast);
         }
         Swipe::Up => {
             stack.write().record(AddAction::Maybe);
             add_card.call((card, true));
-            confirm.info("Added to maybeboard");
-            advance.call(());
+            let mut line = OneLine::default();
+            line.confirm(false, "Added to maybeboard");
+            for said in advance.call(()) {
+                line.signal(Some(said));
+            }
+            line.raise(confirm, toast);
         }
         Swipe::Down => undo_search.call(()),
     };
@@ -870,7 +887,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             title: add_cards::TITLE,
             on_hint: move |()| hint_open.set(true),
             div { class: "screen-content card-swipe content-enter web-cards-swipe {eye.body_class()}",
-                SwipeScreenChips { title: add_cards::TITLE, confirm }
+                SwipeScreenChips { title: add_cards::TITLE, tone: Role::Success, confirm }
                 div { class: "web-cards-swipe-main",
                     div { class: "form-container",
                         if current.is_some() {

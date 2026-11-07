@@ -21,7 +21,7 @@ use crate::deck_signals::{self, Crossing, Level};
 use crate::generation::{Generation, Ticket};
 use crate::stack::{CardStack, Direction, RemoveAction, StackAction};
 use crate::stores::undo::{self, UndoAction};
-use crate::toast::{Toast, ToastKind};
+use crate::toast::{Line, Toast, ToastKind, keep_one};
 
 /// The screen's title.
 pub const TITLE: &str = "Remove";
@@ -337,6 +337,15 @@ pub enum Effect {
     Confirm(Toast),
 }
 
+/// Which of an action's effects raise a toast, for [`keep_one`].
+fn toast_line(effect: &Effect) -> Option<Line<'_>> {
+    match effect {
+        Effect::Toast(toast) => Some(Line::Toast(toast)),
+        Effect::Confirm(toast) => Some(Line::Confirm(toast)),
+        _ => None,
+    }
+}
+
 /// The create request that puts `quantity` copies of `card` back on `board`.
 #[must_use]
 pub fn restore_request(card: &Card, board: Board, quantity: i32) -> HttpCreateDeckCard {
@@ -459,6 +468,7 @@ impl State {
             };
             effects.push(Effect::Toast(Toast::quick(ToastKind::Info, line)));
         }
+        keep_one(&mut effects, toast_line);
         effects
     }
 

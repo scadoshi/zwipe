@@ -8,6 +8,11 @@
 //!
 //! Stay drops the move and leaves every layer on the screen as it was.
 //! Leave disarms the guard and makes the move.
+//!
+//! It always lets go: only the mounted screen that owns it can arm it, so a
+//! reply that lands after the screen has gone changes nothing; a move made
+//! from any route but the one it armed on disarms it; and with no dialog
+//! mounted to ask, a move goes through rather than vanishing.
 
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
@@ -53,6 +58,14 @@ pub struct LeaveCopy {
 struct Guard {
     /// The armed screen's copy; `None` while disarmed.
     copy: Cell<Option<LeaveCopy>>,
+    /// The route the guard armed on; a move from any other disarms it.
+    route: RefCell<Option<String>>,
+    /// The mounted screen that owns the guard, `0` for none.
+    owner: Cell<u64>,
+    /// The last owner handed out.
+    owners: Cell<u64>,
+    /// The router's history, under [`GuardedHistory`], for the route.
+    inner: RefCell<Option<Rc<dyn History>>>,
     /// The move waiting on the dialog.
     held: RefCell<Option<Held>>,
     /// The dialog's open state, from the mounted [`LeaveDialog`].
@@ -63,24 +76,72 @@ thread_local! {
     static GUARD: Guard = Guard::default();
 }
 
-/// Holds `held` and opens the dialog while the guard is armed. Returns
-/// whether it held it.
+/// Holds `held` and opens the dialog while the guard is armed on the route
+/// on view and a dialog is mounted to ask. Returns whether it held it; a
+/// guard armed on another route disarms instead.
 fn hold(held: Held) -> bool {
     GUARD.with(|g| {
         if g.copy.get().is_none() {
             return false;
         }
-        *g.held.borrow_mut() = Some(held);
-        if let Some(mut asking) = g.asking.get() {
-            asking.set(true);
+        let here = g.inner.borrow().as_ref().map(|inner| inner.current_route());
+        let moved =
+            matches!((&here, &*g.route.borrow()), (Some(here), Some(armed)) if here != armed);
+        if moved {
+            g.copy.set(None);
+            *g.route.borrow_mut() = None;
+            return false;
         }
+        let Some(mut asking) = g.asking.get() else {
+            return false;
+        };
+        *g.held.borrow_mut() = Some(held);
+        asking.set(true);
         true
     })
 }
 
-/// Arms the guard with `copy`, or disarms it with `None`.
+/// Arms the guard with `copy`, recording the route on view, or disarms it
+/// with `None`.
 fn arm(copy: Option<LeaveCopy>) {
-    GUARD.with(|g| g.copy.set(copy));
+    GUARD.with(|g| {
+        if copy.is_some() && g.copy.get().is_none() {
+            *g.route.borrow_mut() = g.inner.borrow().as_ref().map(|inner| inner.current_route());
+        }
+        if copy.is_none() {
+            *g.route.borrow_mut() = None;
+        }
+        g.copy.set(copy);
+    });
+}
+
+/// Hands out a new owner and makes it the guard's.
+fn take_ownership() -> u64 {
+    GUARD.with(|g| {
+        let owner = g.owners.get().wrapping_add(1).max(1);
+        g.owners.set(owner);
+        g.owner.set(owner);
+        owner
+    })
+}
+
+/// Arms or disarms the guard for `owner`, if it still owns it.
+fn arm_for(owner: u64, copy: Option<LeaveCopy>) {
+    if GUARD.with(|g| g.owner.get()) == owner {
+        arm(copy);
+    }
+}
+
+/// Lets `owner`'s hold go, disarming the guard, if it still owns it.
+fn release(owner: u64) {
+    GUARD.with(|g| {
+        if g.owner.get() == owner {
+            g.owner.set(0);
+        }
+    });
+    if GUARD.with(|g| g.owner.get()) == 0 {
+        arm(None);
+    }
 }
 
 /// The app's in-memory history with the guard in front: while a screen is
@@ -99,9 +160,9 @@ impl GuardedHistory {
     /// Provides the guard in front of the platform's history to the calling
     /// component and everything under it. Call it once above the router.
     pub fn provide() {
-        let guarded: Rc<dyn History> = Rc::new(Self {
-            inner: dioxus::history::history(),
-        });
+        let inner = dioxus::history::history();
+        GUARD.with(|g| *g.inner.borrow_mut() = Some(Rc::clone(&inner)));
+        let guarded: Rc<dyn History> = Rc::new(Self { inner });
         provide_context(guarded);
     }
 }
@@ -164,21 +225,25 @@ impl History for GuardedHistory {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct LeaveGuard {
     copy: LeaveCopy,
+    owner: u64,
 }
 
 impl LeaveGuard {
     /// Arms the guard when `changed`, and disarms it otherwise. A screen
     /// calls it after every change to its model and before it performs the
-    /// moves that change asks for, so a save's own move goes through.
+    /// moves that change asks for, so a save's own move goes through. A
+    /// screen that no longer owns the guard changes nothing.
     pub fn set(self, changed: bool) {
-        arm(changed.then_some(self.copy));
+        arm_for(self.owner, changed.then_some(self.copy));
     }
 }
 
-/// The guard for a screen that says `copy`, disarmed when the screen goes.
+/// The guard for a screen that says `copy`, owned while the screen is
+/// mounted and disarmed when it goes.
 pub fn use_leave_guard(copy: LeaveCopy) -> LeaveGuard {
-    use_drop(|| arm(None));
-    LeaveGuard { copy }
+    let owner = use_hook(take_ownership);
+    use_drop(move || release(owner));
+    LeaveGuard { copy, owner }
 }
 
 /// The dialog the guard asks through, over every layer a screen can have
@@ -271,29 +336,147 @@ mod tests {
         leave: "l",
     };
 
+    /// A history whose route the test sets.
+    struct Fixed(RefCell<String>);
+
+    impl History for Fixed {
+        fn current_route(&self) -> String {
+            self.0.borrow().clone()
+        }
+        fn go_back(&self) {}
+        fn go_forward(&self) {}
+        fn push(&self, route: String) {
+            *self.0.borrow_mut() = route;
+        }
+        fn replace(&self, path: String) {
+            *self.0.borrow_mut() = path;
+        }
+    }
+
+    /// A guard on `route` with a dialog mounted, as the app has it.
+    fn on(route: &str) -> Rc<Fixed> {
+        let history = Rc::new(Fixed(RefCell::new(route.to_owned())));
+        let inner: Rc<dyn History> = Rc::<Fixed>::clone(&history);
+        GUARD.with(|g| {
+            *g.inner.borrow_mut() = Some(inner);
+            g.asking
+                .set(Some(Signal::new_in_scope(false, ScopeId::ROOT)));
+        });
+        arm(None);
+        history
+    }
+
+    fn with_runtime(test: impl FnOnce()) {
+        let mut dom = VirtualDom::new(|| rsx! {});
+        dom.rebuild_in_place();
+        dom.in_runtime(test);
+    }
+
     #[test]
     fn a_disarmed_guard_holds_nothing() {
-        arm(None);
-        assert!(!hold(Held::Back));
-        assert!(!hold(Held::Push("/decks".to_string())));
+        with_runtime(|| {
+            let _ = on("/decks/1/edit");
+            assert!(!hold(Held::Back));
+            assert!(!hold(Held::Push("/decks".to_string())));
+        });
     }
 
     #[test]
     fn an_armed_guard_holds_the_move_until_disarmed() {
-        arm(Some(COPY));
-        assert!(hold(Held::Back), "back waits on the dialog");
-        assert_eq!(GUARD.with(|g| g.held.borrow().clone()), Some(Held::Back));
-        assert!(hold(Held::Push("/decks".to_string())), "a link waits too");
-        assert_eq!(
-            GUARD.with(|g| g.held.borrow().clone()),
-            Some(Held::Push("/decks".to_string())),
-            "the latest move waits"
-        );
-        let guard = LeaveGuard { copy: COPY };
-        guard.set(false);
-        assert!(!hold(Held::Back), "a saved form lets every move through");
-        guard.set(true);
-        assert!(hold(Held::Replace("/".to_string())));
-        arm(None);
+        with_runtime(|| {
+            let _ = on("/decks/1/edit");
+            let guard = LeaveGuard {
+                copy: COPY,
+                owner: take_ownership(),
+            };
+            guard.set(true);
+            assert!(hold(Held::Back), "back waits on the dialog");
+            assert!(hold(Held::Push("/decks".to_string())), "a link waits too");
+            assert_eq!(
+                GUARD.with(|g| g.held.borrow().clone()),
+                Some(Held::Push("/decks".to_string())),
+                "the latest move waits"
+            );
+            guard.set(false);
+            assert!(!hold(Held::Back), "a saved form lets every move through");
+            release(guard.owner);
+        });
+    }
+
+    #[test]
+    fn a_screen_that_has_gone_cannot_arm_it() {
+        with_runtime(|| {
+            let _ = on("/decks/1/edit");
+            let form = LeaveGuard {
+                copy: COPY,
+                owner: take_ownership(),
+            };
+            form.set(true);
+            release(form.owner);
+            assert!(!hold(Held::Back), "the form going disarms it");
+            form.set(true);
+            assert!(
+                !hold(Held::Push("/decks".to_string())),
+                "a late reply from the gone form arms nothing"
+            );
+        });
+    }
+
+    #[test]
+    fn a_new_screen_takes_the_guard_from_an_old_one() {
+        with_runtime(|| {
+            let _ = on("/decks/1/edit");
+            let old = LeaveGuard {
+                copy: COPY,
+                owner: take_ownership(),
+            };
+            let new = LeaveGuard {
+                copy: COPY,
+                owner: take_ownership(),
+            };
+            old.set(true);
+            assert!(!hold(Held::Back), "only the owner arms it");
+            new.set(true);
+            release(old.owner);
+            assert!(
+                hold(Held::Back),
+                "the old screen going leaves the new one's guard armed"
+            );
+            release(new.owner);
+        });
+    }
+
+    #[test]
+    fn a_move_from_another_route_disarms_it() {
+        with_runtime(|| {
+            let history = on("/decks/1/edit");
+            let guard = LeaveGuard {
+                copy: COPY,
+                owner: take_ownership(),
+            };
+            guard.set(true);
+            history.push("/decks/1".to_owned());
+            assert!(
+                !hold(Held::Push("/decks".to_string())),
+                "armed on the form, not here"
+            );
+            assert!(!hold(Held::Back), "and it stays disarmed");
+            release(guard.owner);
+        });
+    }
+
+    #[test]
+    fn with_no_dialog_to_ask_the_move_goes_through() {
+        with_runtime(|| {
+            let _ = on("/decks/1/edit");
+            GUARD.with(|g| g.asking.set(None));
+            let guard = LeaveGuard {
+                copy: COPY,
+                owner: take_ownership(),
+            };
+            guard.set(true);
+            assert!(!hold(Held::Back));
+            release(guard.owner);
+        });
     }
 }
