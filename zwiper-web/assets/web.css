@@ -1988,9 +1988,18 @@ body {
 
     /* The decklist runs to the window's foot, under the page head, the
        chips and its panel's header. */
-    .web-export-body textarea {
+    .web-export-body textarea,
+    .web-export-body .skeleton-export-textarea {
         min-height: calc(100vh - 26rem) !important;
     }
+}
+
+/* The decklist's ghost sits in its line as the textarea does, so the
+   panel keeps the textarea's height. */
+.web-export-body .skeleton-export-textarea {
+    display: inline-block;
+    width: 100%;
+    vertical-align: baseline;
 }
 
 /* A panel's ghost while its screen loads: the title bar centered, as the
