@@ -50,20 +50,62 @@ fn main() -> anyhow::Result<()> {
 // Either way the config rides in as root context for `spawn_upkeeper`.
 #[cfg(any(feature = "desktop", feature = "mobile"))]
 fn launch_app(config: Config) {
-    #[cfg(feature = "desktop")]
-    use dioxus::desktop::Config as WebviewConfig;
-    #[cfg(all(feature = "mobile", not(feature = "desktop")))]
-    use dioxus::mobile::Config as WebviewConfig;
-
     dioxus::LaunchBuilder::new()
         .with_context(config)
-        .with_cfg(
-            WebviewConfig::new()
-                .with_background_color(components::BOOT_BG)
-                .with_custom_head(components::BOOT_HEAD.to_string()),
-        )
+        .with_cfg(webview_config())
         .launch(App);
 }
+
+/// The webview's launch config: dark before any HTML paints, `#main` hidden
+/// until the styles are in. A rebuilt window takes the same.
+#[cfg(feature = "desktop")]
+fn webview_config() -> dioxus::desktop::Config {
+    dioxus::desktop::Config::new()
+        .with_background_color(components::BOOT_BG)
+        .with_custom_head(components::BOOT_HEAD.to_string())
+}
+
+/// The webview's launch config: dark before any HTML paints, `#main` hidden
+/// until the styles are in. A rebuilt window takes the same.
+#[cfg(all(feature = "mobile", not(feature = "desktop")))]
+fn webview_config() -> dioxus::mobile::Config {
+    dioxus::mobile::Config::new()
+        .with_background_color(components::BOOT_BG)
+        .with_custom_head(components::BOOT_HEAD.to_string())
+}
+
+/// Rebuilds the app in a new window when iOS killed its page, then closes the
+/// dead one. The new window comes first, since closing the last window ends
+/// the app.
+#[cfg(any(feature = "desktop", feature = "mobile"))]
+fn use_rebuild() -> Callback<()> {
+    #[cfg(feature = "desktop")]
+    use dioxus::desktop::window;
+    #[cfg(all(feature = "mobile", not(feature = "desktop")))]
+    use dioxus::mobile::window;
+
+    let config: Config = use_context();
+    use_callback(move |()| {
+        tracing::warn!("the page was killed; rebuilding the app in a new window");
+        let dead = window();
+        let dom = VirtualDom::new(App).with_root_context(config.clone());
+        let _ = dead.new_window(dom, webview_config());
+        spawn(async move {
+            tokio::time::sleep(REBUILD_HANDOVER).await;
+            dead.close();
+        });
+    })
+}
+
+/// No windows to rebuild in a browser.
+#[cfg(not(any(feature = "desktop", feature = "mobile")))]
+fn use_rebuild() -> Callback<()> {
+    use_callback(|()| {})
+}
+
+/// How long the dead window stays up behind the new one before it closes.
+#[cfg(any(feature = "desktop", feature = "mobile"))]
+const REBUILD_HANDOVER: std::time::Duration = std::time::Duration::from_secs(2);
 
 #[cfg(not(any(feature = "desktop", feature = "mobile")))]
 fn launch_app(config: Config) {
@@ -116,6 +158,12 @@ fn App() -> Element {
     // unsaved changes is left.
     use_hook(GuardedHistory::provide);
 
+    // A page iOS killed comes back in a rebuilt window.
+    components::use_page_kill_recovery(
+        "Zwipe",
+        zwiper::inbound::components::navigation::back_handler::webview,
+        use_rebuild(),
+    );
     // Before the upkeep, which reacts to each return to the foreground.
     zwiper::inbound::components::lifecycle::use_lifecycle_root();
     let upgrade_required = session_upkeep::spawn_upkeeper();

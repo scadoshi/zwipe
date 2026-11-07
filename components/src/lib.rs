@@ -110,7 +110,7 @@ pub use orangui::{
     ThemeConfig, ThemePicker, ThemeSheet, heat_span, icons, peak_indices, status_uses,
     use_app_lifecycle, use_app_lifecycle_root, use_dialog_host, use_heat_pick, use_on_resume,
     use_os_back, use_overlay_back, use_overlay_back_action, use_overlay_back_stack,
-    use_persisted_theme, use_theme_follow, use_theme_wipe, with_separators,
+    use_page_kill_recovery, use_persisted_theme, use_theme_follow, use_theme_wipe, with_separators,
 };
 #[cfg(feature = "links")]
 pub use orangui::{OpenUrlError, open_url, use_in_app_links};
