@@ -2079,6 +2079,17 @@ html.keyboard-up .web-dock-pair {
     margin-bottom: 0;
 }
 
+/* The bars sit as far under the header and over the panel's foot as the
+   Decks tiles do: the rows' own spacing around a track plus this padding
+   comes to the tiles' 0.75rem above and 1rem below. */
+.home-colors > .color-bars {
+    padding-top: 0.35rem;
+}
+
+.home-flavor.home-colors {
+    padding-bottom: 0.6rem;
+}
+
 .home-colors > .settings-list-header .btn-action {
     padding: 0.3rem 0.6rem;
 }
