@@ -294,7 +294,8 @@ pub fn FeaturedCard(
 
 /// The rows over the cards: the host's `leading` row, Group by, the host's
 /// `boards` row and Show. The host holds every signal; `show_tokens`
-/// is `None` for a list with no tokens, and `on_change` fires when a row
+/// is `None` for a list with no tokens, `show_zone` is `None` for a deck
+/// with no command zone, and `on_change` fires when a row
 /// changes what the list shows. With `on_fold_all` the Show row ends in the
 /// fold-all button, which shuts every group, or opens every group once
 /// `all_folded`.
@@ -304,7 +305,7 @@ pub fn DeckControls(
     #[props(default)] all_folded: bool,
     #[props(default)] on_fold_all: Option<Callback<()>>,
     #[props(default)] show_tokens: Option<Signal<bool>>,
-    mut show_zone: Signal<bool>,
+    #[props(default)] show_zone: Option<Signal<bool>>,
     mut show_art: Signal<bool>,
     #[props(default)] on_change: Option<Callback<()>>,
     #[props(default)] leading: Option<Element>,
@@ -345,10 +346,12 @@ pub fn DeckControls(
                     "Tokens"
                 }
             }
-            Chip {
-                selected: show_zone(),
-                onclick: move |_| show_zone.toggle(),
-                "Command zone"
+            if let Some(mut zone) = show_zone {
+                Chip {
+                    selected: zone(),
+                    onclick: move |_| zone.toggle(),
+                    "Command zone"
+                }
             }
             Chip {
                 selected: show_art(),

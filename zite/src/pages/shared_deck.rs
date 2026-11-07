@@ -626,7 +626,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                         all_folded,
                         on_fold_all: fold_all,
                         show_tokens: (!deck.tokens.is_empty()).then_some(show_tokens),
-                        show_zone,
+                        show_zone: zone.offers_chip(deck.format).then_some(show_zone),
                         show_art: show_row_art,
                     }
                 },

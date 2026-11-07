@@ -1,4 +1,4 @@
-//! The deck view's dialogs: Clone, Share with Copy and Stop share, Clear
+//! The deck view's dialogs: Clone, Share with Copy and Stop sharing, Clear
 //! skips and Delete. The profile header's icons and the Danger zone panel
 //! open them; an action in a dialog closes it, as the app does.
 
@@ -7,6 +7,7 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
 use zwipe_core::http::contracts::deck::HttpCloneDeck;
+use zwipe_ui::screens::deck_view;
 
 use crate::domain::deck::share_link;
 use crate::inbound::chrome::authed::use_authed;
@@ -38,7 +39,7 @@ pub fn use_deck_dialogs() -> DeckDialogs {
 }
 
 /// The dialogs for `deck_id`. `share_token` is the deck's live link, which
-/// Share and Stop share update in place.
+/// Share and Stop sharing update in place.
 #[component]
 pub fn DeckDialogsHost(
     deck_id: Uuid,
@@ -142,7 +143,7 @@ pub fn DeckDialogsHost(
                     on_confirm: copy_shared,
                 },
                 DialogAction::Confirm {
-                    label: "Stop share".into(),
+                    label: deck_view::STOP_SHARE.into(),
                     danger: true,
                     on_confirm: stop_share,
                 },

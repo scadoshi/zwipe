@@ -561,7 +561,7 @@ Full warning texts from `validate_deck.rs` (for reference), each with its first 
 
 ### 5.7 State seeding
 
-- `share_token` is seeded from the loaded profile and updated in place by Share / Stop share.
+- `share_token` is seeded from the loaded profile and updated in place by Share / Stop sharing.
 - `has_cards` = metrics exist (any active entry or command-zone card).
 - `tcg_url` / `ck_url` exist once `fetch_deck` has loaded (built from active **and sideboard** entries; maybeboard excluded).
 
@@ -601,9 +601,9 @@ Title "Share deck". One dialog covers the whole lifecycle, and stopping acts dir
 
 - Not shared (`share_token` None): body "Anyone with the link can view this deck. You can stop sharing at any time." Actions: "Close", "Create link".
   - "Create link": closes the More sheet; `share_deck(&self, deck_id: Uuid, session: &Session) -> Result<HttpDeckShareToken { share_token: Uuid }, ClientError>` (`run_at(MORE_BUTTONS, "share_deck")`). Success: store the token, copy the link, info toast "Share link copied" (`TOAST_QUICK`).
-- Shared: body "Anyone with the link can view this deck. Stop sharing disables the link; sharing again creates a new one." Actions: "Close", "Copy link", "Stop share" (danger).
+- Shared: body "Anyone with the link can view this deck. Stop sharing disables the link; sharing again creates a new one." Actions: "Close", "Copy link", "Stop sharing" (danger).
   - "Copy link": closes the More sheet, copies the current link, toast "Share link copied".
-  - "Stop share": closes the More sheet; `unshare_deck(&self, deck_id: Uuid, session: &Session) -> Result<(), ClientError>` (`run_at(MORE_BUTTONS, "unshare_deck")`). Success: token = None, info toast "Link disabled" (`TOAST_QUICK`).
+  - "Stop sharing": closes the More sheet; `unshare_deck(&self, deck_id: Uuid, session: &Session) -> Result<(), ClientError>` (`run_at(MORE_BUTTONS, "unshare_deck")`). Success: token = None, info toast "Link disabled" (`TOAST_QUICK`).
 - Link: `format!("{WEB_BASE}/deck/{token}")`. `zwipe_core::domain::site::WEB_BASE` is "http://localhost:8080" in debug builds and "https://zwipe.net" in release builds (no trailing slash). Copied with `navigator.clipboard.writeText` in the app.
 - Re-sharing after Stop creates a new token; old links die.
 
@@ -664,7 +664,7 @@ Deck view
 18. Warnings: messages only. Missing every fix action: "Add cards" / "Import" for the below-minimum warning, "Fix to {n}" (`update_deck_card`), "Clear" (commander, `update_deck_profile`), "Remove" (`delete_deck_card`), their toasts and the reload.
 19. Profile: uses `commander_name`, not a fetched card (same visible result). "Cards" matches.
 20. No action bar equivalents for Edit or Cards (Cards → the card list/add/remove screens belong to other specs; the TUI's `s` jumps straight to swiping).
-21. No More sheet: Import, Export, Buy (URL builder and opening a browser), Clone (dialog with prefilled name, busy state), Share/Copy/Stop share (token state, WEB_BASE link, clipboard), Clear skips (flush then `clear_deck_suppressions`), Delete (confirm, then back to the list).
+21. No More sheet: Import, Export, Buy (URL builder and opening a browser), Clone (dialog with prefilled name, busy state), Share/Copy/Stop sharing (token state, WEB_BASE link, clipboard), Clear skips (flush then `clear_deck_suppressions`), Delete (confirm, then back to the list).
 22. No first-deck hint ("Welcome to your deck") and no one-time hint recording anywhere on these screens.
 23. No toast system: the TUI has a single status line (`app.status`). Every toast in this spec needs a home, with kind (info/success/warning/error) and a timeout.
 24. The TUI fetches only `fetch_deck` (profile comes with it); the app also calls `fetch_deck_profile`. Not a visible difference.

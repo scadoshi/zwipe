@@ -86,7 +86,7 @@ pub const SHARE_UNSHARED: &str =
 pub const COPY_LINK: &str = "Copy link";
 
 /// The Share dialog's button that disables the link.
-pub const STOP_SHARE: &str = "Stop share";
+pub const STOP_SHARE: &str = "Stop sharing";
 
 /// The Share dialog's button that creates a link.
 pub const CREATE_LINK: &str = "Create link";
@@ -697,7 +697,7 @@ impl State {
 
     /// Applies `action` and returns what the client must do, in order.
     ///
-    /// The currency follows the first profile's price target currency, once per visit, and the user's pick after that. The share link follows every profile that lands, and Share and Stop share after that. The hint is offered once per visit, on the first [`Action::Load`].
+    /// The currency follows the first profile's price target currency, once per visit, and the user's pick after that. The share link follows every profile that lands, and Share and Stop sharing after that. The hint is offered once per visit, on the first [`Action::Load`].
     #[must_use = "the client performs the effects"]
     pub fn update(&mut self, action: Action) -> Vec<Effect> {
         let mut effects = self.dispatch(action);

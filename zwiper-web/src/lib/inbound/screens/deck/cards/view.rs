@@ -187,6 +187,7 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
     let filter_on = !applied.is_empty();
     let dot = filter::shows_dot(&applied);
     let has_zone = !zone_rows.is_empty();
+    let offers_zone = zone.read().offers_chip(format);
     let has_partner = zone_rows.iter().any(|(slot, _)| *slot == Slot::Partner);
 
     rsx! {
@@ -273,7 +274,9 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
                         div { class: "chip-row",
                             span { class: "stat-chip stat-chip-p1 chip-row-label", "Show" }
                             Chip { selected: show_tokens(), onclick: move |_| show_tokens.toggle(), "Tokens" }
-                            Chip { selected: show_zone(), onclick: move |_| show_zone.toggle(), "Command zone" }
+                            if offers_zone {
+                                Chip { selected: show_zone(), onclick: move |_| show_zone.toggle(), "Command zone" }
+                            }
                             Chip { selected: show_art(), onclick: move |_| show_art.toggle(), "Art" }
                         }
                     } else {

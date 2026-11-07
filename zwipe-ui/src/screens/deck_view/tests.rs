@@ -862,7 +862,7 @@ fn the_copy_matches_the_app() {
     );
     assert_eq!(
         [COPY_LINK, STOP_SHARE, CREATE_LINK],
-        ["Copy link", "Stop share", "Create link"]
+        ["Copy link", "Stop sharing", "Create link"]
     );
     assert_eq!(
         CLEAR_SKIPS_BODY,

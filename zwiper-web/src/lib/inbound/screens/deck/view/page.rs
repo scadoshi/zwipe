@@ -393,7 +393,7 @@ pub fn DeckWidePage(
                     DeckControls {
                         group_by,
                         show_tokens: tokens().is_some_and(|t| !t.is_empty()).then_some(show_tokens),
-                        show_zone,
+                        show_zone: zone.read().offers_chip(format).then_some(show_zone),
                         show_art,
                         all_folded,
                         on_fold_all: fold_all,

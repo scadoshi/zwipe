@@ -10,7 +10,7 @@ use zwipe_core::domain::card::search_card::cards::{Cards, sort_deck_entries};
 use zwipe_core::domain::card::search_card::group_cards::{CardGroup, GroupByOption, GroupCards};
 use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
 use zwipe_core::domain::deck::validate_deck::{DeckCommandZone, validate_deck};
-use zwipe_core::domain::deck::{Board, DeckEntry, DeckProfile, DeckWarning};
+use zwipe_core::domain::deck::{Board, DeckEntry, DeckProfile, DeckWarning, Format};
 
 use crate::deck::form::Slot;
 use crate::stores::undo::UndoAction;
@@ -68,6 +68,13 @@ impl Zone {
     pub fn strip(&self, entries: &mut Vec<DeckEntry>) {
         let oracles = self.oracles();
         entries.retain(|e| !oracles.contains(&e.deck_card.oracle_id));
+    }
+
+    /// Whether the Show row offers the Command zone chip: the deck's `format` has a command zone,
+    /// or this zone holds a card anyway.
+    #[must_use]
+    pub fn offers_chip(&self, format: Option<Format>) -> bool {
+        format.is_some_and(|f| f.has_commander()) || !self.cards().is_empty()
     }
 
     /// The oracle IDs of the zone's cards.
@@ -526,6 +533,23 @@ mod tests {
         live.retain(|e| e.card.scryfall_data.name != "Ant" && e.card.scryfall_data.name != "Bee");
         let after_remove = zone.live_metrics(&fetched, &live, &zone_cards).unwrap();
         assert_eq!(after_remove.total_cards, as_fetched.total_cards - 1);
+    }
+
+    #[test]
+    fn the_command_zone_chip_shows_where_there_is_a_zone() {
+        let empty = Zone::default();
+        assert!(!empty.offers_chip(Some(Format::Modern)));
+        assert!(!empty.offers_chip(None));
+        assert!(empty.offers_chip(Some(Format::Commander)));
+        assert!(empty.offers_chip(Some(Format::Oathbreaker)));
+        let held = Zone {
+            commander: Some(card("Boss")),
+            ..Zone::default()
+        };
+        assert!(
+            held.offers_chip(Some(Format::Modern)),
+            "a card in the zone keeps it"
+        );
     }
 
     #[test]

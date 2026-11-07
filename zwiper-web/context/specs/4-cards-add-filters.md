@@ -633,7 +633,7 @@ Hint: once `deck_entries` becomes non-empty for the first time, `open_and_record
    - **QuickAdd** (see 3.6).
    - **Group by** row: label chip "Group by", chips "Type", "Mana value", "Color", "Card role" (`GroupByOption::all()`, single select). Tap → set collapse flag, set the option (the pass reruns).
    - **Boards** row: label "Boards", chips "Main", "Maybe", "Side" (multi-select). Each tap toggles; if all three would be off, "Main" snaps back on. Set the collapse flag, bump the counter. "Maybe" is disabled when the deck has no maybeboard cards and it is not already on; same for "Side" with the sideboard.
-   - **Show** row: label "Show", chips "Tokens" (toggle `show_tokens`), "Command zone" (toggle `show_command_zone`), "Art" (toggle row art thumbnails).
+   - **Show** row: label "Show", chips "Tokens" (toggle `show_tokens`), "Command zone" (toggle `show_command_zone`; only where the format has a command zone or the zone holds a card, `Zone::offers_chip`), "Art" (toggle row art thumbnails).
 5. **Sections**, in this order:
    1. **Tokens** (if `show_tokens` and the token list is loaded and non-empty): collapsible group "Tokens ({n})", rows sorted by the builder's sort or Name. Token rows are plain (qty 1, no actions besides the defaults Flip/Image). The filter does not apply to tokens.
    2. **Maybeboard** (if `show_maybe` and non-empty after the filter): entries on the maybeboard, filtered with the builder's criteria when non-empty, sorted with `cards::sort_deck_entries(key or Name, direction)`; group "Maybeboard ({count})" (count = rows). Rows: qty, qty stepper, move buttons for `current_board = Maybeboard`, Printing. No star.

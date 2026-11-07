@@ -573,7 +573,7 @@ pub(crate) static GUIDES: &[Guide] = &[
             ),
             Block::H2("The Commander maybeboard screen"),
             Block::P(
-                "Open Commander maybeboard from the menu. Saves show newest first as card rows with art (the Art chip hides it). Expand a row for details and three actions:",
+                "Open Commander maybeboard from the menu. Saves show newest first as card rows with art (the Art chip hides it). Expand a row for details and four actions:",
             ),
             Block::Image {
                 file: "commander-maybeboard/02-saved-commanders.webp",
@@ -581,13 +581,14 @@ pub(crate) static GUIDES: &[Guide] = &[
                 caption: None,
             },
             Block::Bullets(&[
+                "`Image` shows the card full size.",
+                "`Printings` swaps the printing, and your pick carries into Create deck.",
                 "`Create deck` starts a new deck with that commander already in the command zone and the format set to Commander.",
-                "`Printing` swaps the printing, and your pick carries into Create deck.",
                 "`Remove` takes it off the list.",
             ]),
             Block::Image {
                 file: "commander-maybeboard/03-expanded-row.webp",
-                alt: "A saved commander expanded, with Printing, Create deck, and Remove",
+                alt: "A saved commander expanded, with Image, Printings, Create deck, and Remove",
                 caption: None,
             },
             Block::H2("Add without swiping"),
@@ -599,10 +600,16 @@ pub(crate) static GUIDES: &[Guide] = &[
                 alt: "The Commander maybeboard hint: Swipe, Quick add, and Create deck",
                 caption: None,
             },
-            Block::H2("Swipe right from the list"),
+            Block::H2("Swipe from the list"),
             Block::P(
-                "The Swipe button deals commanders you haven't saved. Right starts a new deck with the pick; up saves it.",
+                "The Swipe button sits on the Commanders panel, even with nothing saved yet, and deals commanders you haven't saved, most played first:",
             ),
+            Block::Swipe(&[
+                ("left", "skip it"),
+                ("up", "save it to your commander maybeboard"),
+                ("right", "start a new deck with it"),
+                ("down", "undo your last swipe"),
+            ]),
             Block::Note(
                 "Clear the whole list from the Danger zone panel: tap `Clear` beside Clear maybeboard. It asks first; there's no undo.",
             ),
@@ -1003,11 +1010,11 @@ pub(crate) static GUIDES: &[Guide] = &[
             ),
             Block::H2("Stop sharing"),
             Block::P(
-                "Same dialog, Stop share. The link stops working right away, and sharing again makes a new one.",
+                "Same dialog, Stop sharing. The link stops working right away, and sharing again makes a new one.",
             ),
             Block::Image {
                 file: "share-your-deck/03-stop-share.webp",
-                alt: "The dialog once shared, offering Copy link and Stop share",
+                alt: "The dialog once shared, offering Copy link and Stop sharing",
                 caption: None,
             },
         ],
