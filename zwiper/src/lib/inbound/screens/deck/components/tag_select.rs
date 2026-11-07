@@ -7,12 +7,12 @@
 //! at the top, so users learn what a tag does while picking it. The search box
 //! filters the grid by name for quick jumps.
 
-use components::{DockAction, HintBullet, HintBullets, HintDialog, icons, use_overlay_back_action};
+use components::hint::ContentHintDialog;
+use components::{DockAction, icons, use_overlay_back_action};
 use dioxus::prelude::*;
 use zwipe_core::domain::deck::{DeckTagView, MAX_DECK_TAGS};
 use zwipe_ui::deck::pickers::{self, Picker};
 
-use crate::inbound::components::concept_explainers::DeckTagsExplainer;
 use crate::inbound::components::screen_header::ScreenHeader;
 
 /// In-place tag picker, up while `open`, over the server-delivered `catalog` (`GET /api/deck/tags`), so a new deck tag is selectable without a client release. `selected` holds the deck's tag slugs; a chip tap goes to `on_toggle` and the × to `on_clear`. The dock's checkmark (`on_save`) stays off while `unchanged`; the header's back arrow (`on_back`) and the OS back gesture put back the tags it opened on.
@@ -137,14 +137,10 @@ pub(crate) fn TagSelect(
                     }
                 }
 
-                HintDialog {
+                ContentHintDialog {
                     open: hint_open,
+                    content: Picker::DeckTags.hint(),
                     actions: components::hint::guide_for_screen(zwipe_ui::hint::HintTopic::DeckTags),
-                    title: Picker::DeckTags.title(),
-                    DeckTagsExplainer {}
-                    HintBullets {
-                        HintBullet { "Tap a tag to add or remove it. The bar up top shows what it means" }
-                    }
                 }
             }
         }

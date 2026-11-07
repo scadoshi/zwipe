@@ -23,6 +23,14 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
+| 100, the cover-flow's edges fade out (queued after 97) | scotland | `nits/scotland-100` |
+| 98, 99, chip row gaps, the row's host extras at the bottom of the body (queued after 96) | thinker | `nits/thinker-98` |
+| 97, the swipe screens' footer loses its extra legroom (queued after 90) | scotland | `nits/scotland-97` |
+| 96, the details panel's footer pinned, header hides on scroll | thinker | `nits/thinker-96` |
+| 93 to 95, the docked panel's jump, the card pinned to center, panel default by space, no lift on the docked panel (queued after 88) | halo | `nits/halo-93` |
+| 92, the web's URLs name resources, not actions (queued after 91) | laptop | `nits/laptop-92` |
+| 91, a live session skips the login page | laptop | `nits/laptop-91` |
+| 90, no white flash before the wasm loads | scotland | `nits/scotland-90` |
 | 88, hint copy and context fixes from the app hint audit | halo | `nits/halo-88` |
 | 89, app hint plumbing: pickers through the shared copy, no duplicate explainers, the web deck view's Oracle tags chart | thinker | `nits/thinker-89` |
 
@@ -127,6 +135,17 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 87. **Swipe select doesn't match Add.** The card sits off center and the details are a big middle element. Center the card, dock the details as 81's side panel, and match Add's docks and pile chip.
 88. **Hint copy that doesn't fit its screen** (app hint audit, 2026-11-06). The deck view reuses the form's Deck tags and Oracle tags hints ("Fine to leave as is"); the Commander hint says Commander on an Oathbreaker deck; Partner, Background and Signature spell skip their Filter and Swipe chips; swipe select's guide link ignores its mode; "Tags shape suggestions" contradicts Other tags; TagRates skips Show; Add's hint names a Sort that isn't on the screen; a few UI words should be key chips, a few terms disagree, four lines are clunky.
 89. **The app's hint plumbing drifts from the web's.** Its pickers flatten the shared hint copy (losing key chips), a hand-kept explainer file duplicates two topics, and the Exceptions `?` is hand-rolled; the web's deck view is missing the Oracle tags chart the app has.
+90. **The web app flashes white while the wasm loads.** No splash or animation; a first-paint script and inline CSS in index.html paint the saved theme's background (and the grid's static look if cheap) on the first frame.
+91. **Log in with a live session still shows the login form.** On load the web checks its cookie session once; signed in → Home (replacing /login), otherwise the form, with no flash of the form first.
+92. **The web's URLs carry verbs** (`/deck/get/:id`). Rename to resource paths: /decks, /decks/:id, /decks/:id/cards, /decks/:id/add, /playstyle, /maybeboard, /account and so on. No redirects from the old paths.
+93. **The docked details panel jumps on load.** On Add it first sits low, then snaps up under the nav when the screen finishes loading. It must paint in its final place from the first frame.
+94. **The swipe card shifts when the details panel toggles.** The card stays pinned to the window's center; on a narrow window the panel overlays it; the panel starts open when there's room and closed when it would touch the card, the eye lit while it shows.
+95. **The docked panel's hover lifts its content but not its frame.** Docked panels and drawers don't lift; any hover lights the one frame.
+96. **The docked details panel scrolls its footer away.** When it scrolls, the footer (Printings) stays pinned at the bottom and the header slides away on scroll down, back on scroll up, like the app's header.
+97. **The swipe screens' footer has a big empty band.** 80 padded it so the fixed docks clear its text. Drop the padding; the docks and pile chips stop above the footer when it scrolls into view.
+98. **Wrapped chip rows touch.** A chip row that wraps has no row gap (Staples' Card roles), and the staple share chip ("5 of 14 decks") wraps into the roles. Row gap equals column gap everywhere; host footer chips get their own row.
+99. **The expanded row's host extras interrupt the card's content.** Card content first (chips, text, Keywords, Card roles, set/price/P/T), then "Why this commander?" or the staple share at the bottom of the body, one rule, then the action buttons.
+100. **The cover-flow's outer cards stop at a hard edge.** A horizontal fade mask on the carousel melts them out at both sides.
 
 ## Done
 
