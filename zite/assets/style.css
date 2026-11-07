@@ -1918,12 +1918,12 @@ code {
 }
 
 /* Scoped so it outranks components.css's .detail-chip (equal specificity,
-   loads later) — matches the .shared-deck .keyword-chip rule below. */
+   loads later), as the tag chips' rule below does. */
 .shared-deck .detail-chip {
     font-size: 0.7rem;
 }
 
-.shared-deck .keyword-chip {
+.shared-deck :is(.keyword-chips, .card-detail-otags) :is(.chip, .stat-chip) {
     font-size: 0.7rem;
 }
 

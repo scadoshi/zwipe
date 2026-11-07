@@ -67,7 +67,7 @@ pub fn RoleTags(
                         rsx! {
                             button {
                                 key: "{tag}",
-                                class: if open.as_deref() == Some(tag.as_str()) { "keyword-chip active" } else { "keyword-chip" },
+                                class: if open.as_deref() == Some(tag.as_str()) { "chip selected" } else { "chip" },
                                 onclick: move |evt| {
                                     evt.stop_propagation();
                                     if open_tag().as_deref() == Some(slug.as_str()) {

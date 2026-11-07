@@ -338,10 +338,10 @@ fn HardPassRow(
             on_printing: move |c: Card| on_printing.call(c),
             footer: rsx! {
                 if !commanders.is_empty() {
-                    span { class: "chips-label", {model::SKIPPED_UNDER} }
                     div { class: "keyword-chips",
+                        span { class: "stat-chip stat-chip-p1 chip-row-label", {model::SKIPPED_UNDER} }
                         for name in commanders {
-                            span { key: "{name}", class: "detail-chip detail-chip-pt", "{name}" }
+                            span { key: "{name}", class: "stat-chip", "{name}" }
                         }
                     }
                 }

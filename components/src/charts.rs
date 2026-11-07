@@ -117,9 +117,9 @@ fn reveal_at<'k>(selected: Option<&'k str>, shown: Option<&'k str>) -> Option<Re
 /// With `on_bar` set, each label is tappable and reports its bar's key, and
 /// the bar whose key is `selected` is the open one. A vertical chart tints
 /// that label in the accent color. A horizontal chart draws each label as a
-/// `.keyword-chip`, active when open, and eases `reveal`'s content open
-/// directly under the open row, one row at a time. A bar that is not
-/// [`Bar::revealable`] draws a grey chip there and reports no tap.
+/// `.chip`, selected when open, and eases `reveal`'s content open directly
+/// under the open row, one row at a time. A bar that is not
+/// [`Bar::revealable`] draws a muted static chip there and reports no tap.
 ///
 /// With `fold` set, a horizontal chart shows its first [`FOLD_AT`] rows and
 /// folds the rest behind a [`SeeMore`] chip; the fold's state is this chart's
@@ -217,9 +217,9 @@ pub fn BarChart(
     };
     let chip_class = |bar: &Bar| {
         if selected.as_deref() == Some(bar.key.as_str()) {
-            "keyword-chip active"
+            "chip selected"
         } else {
-            "keyword-chip"
+            "chip"
         }
     };
     let reveal_at_bar = |bar: &Bar| reveal_row.filter(|at| at.key == bar.key);
@@ -258,7 +258,7 @@ pub fn BarChart(
                         "{chip_label(bar)}"
                     }
                 } else {
-                    span { class: "keyword-chip static muted", "{chip_label(bar)}" }
+                    span { class: "stat-chip stat-chip-muted", "{chip_label(bar)}" }
                 }
             }
             div { class: "chart-track",

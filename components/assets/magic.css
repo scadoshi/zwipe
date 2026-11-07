@@ -33,49 +33,16 @@
 .keyword-chips {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     gap: 0.5rem;
 }
 
-/* Tappable keyword chip — accent-bordered to read as interactive next to the
-   plain info chips. */
-.keyword-chip {
-    padding: 0.15rem 0.5rem;
-    border: 1px solid var(--palette-1);
-    border-radius: 0.4rem;
-    font-size: 0.75rem;
-    color: var(--palette-1);
-    background-color: var(--bg-primary);
-    cursor: pointer;
-    transition:
-        background-color 0.15s ease,
-        color 0.15s ease,
-        transform 0.15s ease;
-}
-
-/* Hover-capable pointers only, so touch devices never keep a stuck grown
-   state. A slight scale-up signals the chip is clickable. */
-@media (hover: hover) {
-    .keyword-chip:hover {
-        transform: scale(1.06);
-    }
-}
-
-/* Same colors without the tap affordances, for a chip that only labels. */
-.keyword-chip.static,
-.keyword-chip.static:hover {
-    cursor: default;
-    transform: none;
-}
-
-/* Grey, for a chip in a row of tappable ones that has nothing to open. */
-.keyword-chip.muted {
-    border-color: var(--border-muted);
-    color: var(--text-muted);
-}
-
-.keyword-chip.active {
-    color: var(--bg-primary);
-    background-color: var(--accent-secondary);
+/* A tag row's label (Keywords, Card roles, Skipped under) is the kit's
+   row label chip at the row's head; the tags after it are the kit's chips,
+   selected while open, and a tag with nothing to open is a stat chip. */
+.keyword-chips > .chip-row-label {
+    font-weight: 600;
+    white-space: nowrap;
 }
 
 /* Inline reminder reveal below the chip row — eases open via the grid-rows
@@ -1028,24 +995,24 @@ i.ms.ms-cost.ms-gp {
     width: 60%;
 }
 
-/* A tag group's ghost at the loaded group's sizes: the label's bar on the
-   label's own line, then tag chips as tall as a .keyword-chip. */
+/* A tag row's ghost at the loaded row's sizes: the label chip, then tag
+   chips, each as tall as the kit's chip. */
 .card-details-ghost .card-details-ghost-label {
     display: inline-block;
-    width: 4.5rem;
-    height: 0.6rem;
-    vertical-align: middle;
+    width: 5.25rem;
+    height: 1.725rem;
+    border-radius: 0.4rem;
 }
 
 .card-details-ghost .card-details-ghost-tag {
     display: inline-block;
-    width: 3.75rem;
-    height: 1.425rem;
+    width: 4rem;
+    height: 1.725rem;
     border-radius: 0.4rem;
 }
 
 .card-details-ghost .card-details-ghost-tag-wide {
-    width: 5.5rem;
+    width: 5.25rem;
 }
 
 /* The foot's buttons' ghosts at a .card-action-btn's size: Flip, then the
@@ -1064,7 +1031,7 @@ i.ms.ms-cost.ms-gp {
 /* ---- CardDetails footer ----
    Host content under the chip clusters (the suggested commanders screen's
    "Why this commander?" block): a heading over a bullet list whose items hold
-   plain text or a row of static `.keyword-chip`s. */
+   plain text or a row of tag chips. */
 .card-detail-footer {
     margin: 0.5rem 0;
 }

@@ -318,10 +318,10 @@ fn HardPassRow(pass: HttpHardPass, expanded_card: Signal<Option<Uuid>>) -> Eleme
             expanded_card,
             footer: rsx! {
                 if !commanders.is_empty() {
-                    span { class: "chips-label", "Skipped under" }
                     div { class: "keyword-chips",
+                        span { class: "stat-chip stat-chip-p1 chip-row-label", "Skipped under" }
                         for name in commanders {
-                            span { key: "{name}", class: "detail-chip detail-chip-pt", "{name}" }
+                            span { key: "{name}", class: "stat-chip", "{name}" }
                         }
                     }
                 }
