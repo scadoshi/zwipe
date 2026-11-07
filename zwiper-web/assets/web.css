@@ -1026,11 +1026,13 @@ body {
     border-color: var(--border-warning);
 }
 
+/* The head's inset is the body rows' and the Profile card's, so an
+   accessory's right edge lines up with theirs, as the app's head does. */
 .web-section-head {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0 0.75rem;
+    padding: 0 1rem;
 }
 
 .web-section-title {
@@ -2380,6 +2382,13 @@ body {
 
     .web-picker-body > .grid-cells {
         display: block;
+    }
+
+    /* The checkmark floats a dock gap in from the corner, as a screen's
+       dock does: the dock's own right margin is that gap. */
+    .sheet-form-drawer > .bottom-sheet.web-picker-sheet.drawer-every-width .sheet-dock {
+        right: 0;
+        bottom: var(--dock-gap);
     }
 }
 
