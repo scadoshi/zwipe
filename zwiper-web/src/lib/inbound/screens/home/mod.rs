@@ -18,11 +18,12 @@ use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use dioxus_primitives::toast::{Toasts, use_toast};
 use zwipe_client::ZwipeClient;
+use zwipe_client::call::Dated;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::user::models::settings::PipStyle;
 use zwipe_ui::generation::Ticket;
-use zwipe_ui::home::Figures;
+use zwipe_ui::home::{CountsTag, Figures};
 use zwipe_ui::screens::home::{
     self, Action, Age, Cached, CachedFigures, DeckTile, Destination, Effect, Flavor, FlavorCard,
     State,
@@ -74,6 +75,7 @@ impl Caches {
             } else {
                 Age::Fresh
             },
+            made_at: c.made_at,
         });
         let mine = self
             .my_counts
@@ -87,6 +89,7 @@ impl Caches {
                 } else {
                     Age::Stale
                 },
+                made_at: None,
             });
         let play_style = self
             .play_style
@@ -223,12 +226,19 @@ impl Driver {
         let mut counts = self.caches.counts;
         spawn(async move {
             let http = client.peek().clone();
-            match http.public_metrics().await {
-                Ok(metrics) => {
+            match http.public_metrics_dated().await {
+                Ok(Dated {
+                    value: metrics,
+                    made_at,
+                }) => {
                     CountsStore::browser().save(&metrics);
                     let figures = Figures::from(&metrics);
-                    counts.set(Some(CachedCounts::fetched(metrics, Utc::now())));
-                    self.dispatch(Action::CountsLoaded { ticket, figures });
+                    counts.set(Some(CachedCounts::fetched(metrics, Utc::now(), made_at)));
+                    self.dispatch(Action::CountsLoaded {
+                        ticket,
+                        figures,
+                        made_at,
+                    });
                 }
                 Err(e) => tracing::warn!("public counters not refreshed: {e}"),
             }
@@ -406,7 +416,7 @@ pub fn Home() -> Element {
 
     let state = driver.model.read();
     let figures = state.figures();
-    let live = state.live();
+    let tag = state.counts_tag(Utc::now()).map(CountsTag::label);
     let scope = state.scope();
     let decks = state.decks();
     let play_style = state.play_style();
@@ -421,7 +431,7 @@ pub fn Home() -> Element {
                     div { class: "web-hero",
                         HomeHeroScoped {
                             figures,
-                            live,
+                            tag,
                             scope,
                             ontoggle: move |()| {
                                 let mine_fresh = caches.mine_fresh(session.peek().as_ref(), Utc::now());

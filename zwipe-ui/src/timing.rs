@@ -45,6 +45,10 @@ pub const UPKEEP_INTERVAL: Duration = Duration::from_secs(60);
 /// them again.
 pub const COUNTS_FRESH: Duration = Duration::from_secs(60);
 
+/// How old a copy of everybody's counters may be and still read `Live`; an
+/// older one, as an edge cache serves, reads "as of" its time.
+pub const COUNTS_LIVE: Duration = Duration::from_mins(5);
+
 /// How long Activity's heatmap keeps a picked day's readout before letting
 /// it go: orangui's heat pick, [`orangui_core::heat::PICK_MS`], so every
 /// client releases the pick at the same moment.

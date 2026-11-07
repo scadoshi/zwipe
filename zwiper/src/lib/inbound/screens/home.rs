@@ -12,11 +12,12 @@ use components::{ThemeConfig, Toasts, use_toast};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use zwipe_client::ZwipeClient;
+use zwipe_client::call::Dated;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_core::domain::user::settings::PipStyle;
 use zwipe_ui::generation::Ticket;
-use zwipe_ui::home::{Figures, Scope};
+use zwipe_ui::home::{CountsTag, Figures, Scope};
 use zwipe_ui::screens::home::{
     self, Action, Age, Cached, CachedFigures, DeckTile, Destination, Effect, State,
 };
@@ -64,6 +65,7 @@ impl Caches {
             } else {
                 Age::Fresh
             },
+            made_at: c.made_at,
         });
         let mine = self
             .my_counts
@@ -73,6 +75,7 @@ impl Caches {
             .map(|c| CachedFigures {
                 figures: Figures::from(&c.metrics),
                 age: if c.is_stale() { Age::Stale } else { Age::Fresh },
+                made_at: None,
             });
         let play_style = self
             .play_style
@@ -220,15 +223,23 @@ impl Driver {
         let client = self.client;
         let mut counts = self.caches.counts;
         spawn(async move {
-            match client().public_metrics().await {
-                Ok(metrics) => {
+            match client().public_metrics_dated().await {
+                Ok(Dated {
+                    value: metrics,
+                    made_at,
+                }) => {
                     metrics.infallible_save();
                     let figures = Figures::from(&metrics);
                     counts.set(Some(CachedCounts {
                         metrics,
                         fetched_at: Some(Instant::now()),
+                        made_at,
                     }));
-                    self.dispatch(Action::CountsLoaded { ticket, figures });
+                    self.dispatch(Action::CountsLoaded {
+                        ticket,
+                        figures,
+                        made_at,
+                    });
                 }
                 Err(e) => tracing::warn!("public counters not refreshed: {e}"),
             }
@@ -428,7 +439,7 @@ pub fn Home() -> Element {
     // Snapshot the model once per render.
     let state = driver.model.read();
     let figures = state.figures();
-    let live = state.live();
+    let tag = state.counts_tag(Utc::now()).map(CountsTag::label);
     let scope = state.scope();
     let decks = state.decks();
     let play_style = state.play_style();
@@ -442,7 +453,7 @@ pub fn Home() -> Element {
                 div { class: "screen-content home-content",
                 HomeHeroScoped {
                     figures,
-                    live,
+                    tag,
                     scope,
                     ontoggle: move |()| {
                         let mine_fresh = caches.mine_fresh(session.peek().as_ref());

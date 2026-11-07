@@ -265,6 +265,9 @@ pub fn build_router(
                     Method::DELETE,
                 ])
                 .allow_headers([header::CONTENT_TYPE, header::AUTHORIZATION])
+                // The edge cache's `Age` says how old a cached copy is; the
+                // browser hides it from a page unless it is exposed.
+                .expose_headers([header::AGE])
                 // The browser's session routes carry the refresh cookie. Sound
                 // only because the origins are an explicit list, never `*`.
                 .allow_credentials(true),

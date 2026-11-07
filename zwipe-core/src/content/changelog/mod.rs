@@ -66,6 +66,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Every list of cards folds from its header, the Commander group and Suggested commanders included",
         "Coming back to the app refreshes your session, Home's figures and your settings",
         "Your latest Light or Dark choice stays put after the app opens, with no flip back",
+        "The counters on Home and the sign-in screen read Live only while their copy is under five minutes old, otherwise as of its time",
     ],
 }];
 
