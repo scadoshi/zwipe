@@ -8,11 +8,8 @@ pub mod accordion;
 pub mod auth;
 /// App-wide cache of slow-changing filter catalogs (artists, sets, oracle tags…).
 pub mod catalog_cache;
-/// Canonical concept explainers (Deck tags, Oracle tags, Card roles).
-pub mod concept_explainers;
 /// Generation counter that keeps a stale async reply from landing over a newer one.
 pub mod generation;
-/// The "See guide" action a hint dialog offers when zwipe.net has a guide for it.
 /// One-time hint dialogs (per-account, tracked via `hints_shown`).
 pub mod hint_dialog;
 /// App-root receiver that renders on-demand "?" hint dialogs (sender/receiver).
