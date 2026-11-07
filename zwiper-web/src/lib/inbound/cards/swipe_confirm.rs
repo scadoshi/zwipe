@@ -52,6 +52,21 @@ impl SwipeConfirm {
         self.say(true, text.into(), lasting);
     }
 
+    /// Updates the chip with `text` in chip mode, and raises no toast in any
+    /// mode: for a swipe whose own toast gives way to another one.
+    pub fn quietly(self, text: impl Into<String>) {
+        let chip = self
+            .session
+            .peek()
+            .as_ref()
+            .is_some_and(|s| s.settings.swipe_confirmations == SwipeConfirmations::Chip);
+        if chip {
+            let mut said = self.said;
+            let count = said.peek().as_ref().map_or(0, |(n, _)| n.wrapping_add(1));
+            said.set(Some((count, chip_word(&text.into()).to_owned())));
+        }
+    }
+
     fn say(self, success: bool, text: String, lasting: Duration) {
         let setting = self
             .session

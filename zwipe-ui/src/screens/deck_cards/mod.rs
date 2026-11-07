@@ -30,7 +30,7 @@ use crate::deck_signals::{self, Crossing, Level};
 use crate::generation::{Generation, Ticket};
 use crate::stores::undo::{UndoAction, create_board_field};
 use crate::timing;
-use crate::toast::{Toast, ToastKind};
+use crate::toast::{Line, Toast, ToastKind, keep_one};
 
 /// The screen's title.
 pub const TITLE: &str = "Cards";
@@ -536,6 +536,14 @@ pub enum Effect {
     Toast(Toast),
 }
 
+/// Which of an action's effects raise a toast, for [`keep_one`].
+fn toast_line(effect: &Effect) -> Option<Line<'_>> {
+    match effect {
+        Effect::Toast(toast) => Some(Line::Toast(toast)),
+        _ => None,
+    }
+}
+
 /// A burst of quantity taps on one card, waiting out its debounce.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct Burst {
@@ -695,6 +703,7 @@ impl State {
             self.hint = HintOffer::Offered;
             effects.push(Effect::OfferHint(OneTimeHint::DeckCards));
         }
+        keep_one(&mut effects, toast_line);
         effects
     }
 
