@@ -333,7 +333,7 @@ pub fn Guides() -> Element {
         PageMeta {
             title: "Guides",
             description: "How-to guides for the Zwipe Magic: The Gathering deck builder: swiping, filtering, budgeting, commanders, stats, and more.",
-            path: "/guides",
+            path: "/guides/",
         }
         Nav {}
         div { class: "page content-enter",
@@ -435,7 +435,7 @@ pub fn GuidePage(slug: String) -> Element {
             PageMeta {
                 title: "Guide not found",
                 description: "That guide doesn't exist. Browse all Zwipe guides.",
-                path: "/guides",
+                path: "/guides/",
             }
             Nav {}
             div { class: "page content-enter",
@@ -464,7 +464,7 @@ pub fn GuidePage(slug: String) -> Element {
         "headline": g.title,
         "description": g.summary,
         "articleSection": primary,
-        "url": format!("{WEB_BASE}/guides/{}", g.slug),
+        "url": format!("{WEB_BASE}/guides/{}/", g.slug),
         "publisher": {
             "@type": "Organization",
             "name": "Zwipe",
@@ -474,7 +474,7 @@ pub fn GuidePage(slug: String) -> Element {
     .to_string();
 
     rsx! {
-        PageMeta { title: "{g.title}", description: "{g.summary}", path: "/guides/{g.slug}" }
+        PageMeta { title: "{g.title}", description: "{g.summary}", path: "/guides/{g.slug}/" }
         document::Script { r#type: "application/ld+json", "{json_ld}" }
         Nav {}
         div { class: "page content-enter guide-page",

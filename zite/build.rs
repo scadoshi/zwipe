@@ -14,21 +14,22 @@ const WEB_BASE: &str = "https://zwipe.net";
 /// Every prerendered, indexable route with its sitemap hints. Kept here as the
 /// single source of truth so `public/sitemap.xml` can't drift from the routes
 /// the way a hand-edited file does. Dynamic routes (`/verify/:token`, `/confirm-email/:token`,
-/// `/reset/:token`) are excluded: robots.txt `Disallow`s them.
+/// `/reset/:token`) are excluded: robots.txt `Disallow`s them. Each path ends in `/`, the form the host serves
+/// a prerendered page at.
 /// `(path, changefreq, priority)`.
 const ROUTES: &[(&str, &str, &str)] = &[
     ("/", "weekly", "1.0"),
-    ("/download/ios", "weekly", "0.9"),
-    ("/download/android", "weekly", "0.9"),
-    ("/guides", "weekly", "0.8"),
-    ("/changelog", "weekly", "0.6"),
-    ("/about", "monthly", "0.7"),
-    ("/contribute", "monthly", "0.6"),
-    ("/community", "monthly", "0.5"),
-    ("/privacy", "yearly", "0.3"),
+    ("/download/ios/", "weekly", "0.9"),
+    ("/download/android/", "weekly", "0.9"),
+    ("/guides/", "weekly", "0.8"),
+    ("/changelog/", "weekly", "0.6"),
+    ("/about/", "monthly", "0.7"),
+    ("/contribute/", "monthly", "0.6"),
+    ("/community/", "monthly", "0.5"),
+    ("/privacy/", "yearly", "0.3"),
 ];
 
-/// Guide article slugs, each rendered at `/guides/<slug>` by `GuidePage`.
+/// Guide article slugs, each rendered at `/guides/<slug>/` by `GuidePage`.
 /// Checked against `GUIDES` in `src/pages/guides/content.rs` at build time by
 /// [`assert_guide_slugs_match`], so a new guide can't quietly miss the sitemap.
 const GUIDE_SLUGS: &[&str] = &[
@@ -109,7 +110,7 @@ fn generate_sitemap() {
     for slug in GUIDE_SLUGS {
         write!(
             xml,
-            "  <url>\n    <loc>{WEB_BASE}/guides/{slug}</loc>\n    \
+            "  <url>\n    <loc>{WEB_BASE}/guides/{slug}/</loc>\n    \
              <changefreq>monthly</changefreq>\n    \
              <priority>0.6</priority>\n  </url>\n",
         )

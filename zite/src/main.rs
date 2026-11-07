@@ -68,26 +68,26 @@ const GOOGLE_PLAY: &str = "M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 0 1-.61
 enum Route {
     #[route("/")]
     Home {},
-    #[route("/guides")]
+    #[route("/guides/")]
     Guides {},
-    #[route("/guides/:slug")]
+    #[route("/guides/:slug/")]
     GuidePage { slug: String },
     // The Playstyle guide's first slug, linked before the rename.
     #[redirect("/guides/suggested-commanders", || Route::GuidePage { slug: "playstyle".to_string() })]
-    #[route("/about")]
+    #[route("/about/")]
     About {},
-    #[route("/changelog")]
+    #[route("/changelog/")]
     Changelog {},
-    #[route("/contribute")]
+    #[route("/contribute/")]
     Contribute {},
-    #[route("/community")]
+    #[route("/community/")]
     Community {},
     #[redirect("/discord", || Route::Community {})]
-    #[route("/download/android")]
+    #[route("/download/android/")]
     Android {},
-    #[route("/download/ios")]
+    #[route("/download/ios/")]
     Ios {},
-    #[route("/privacy")]
+    #[route("/privacy/")]
     Privacy {},
     #[route("/deck/:token")]
     SharedDeck { token: String },
@@ -176,7 +176,7 @@ async fn static_routes() -> ServerFnResult<Vec<String>> {
         .iter()
         .map(ToString::to_string)
         .collect();
-    routes.extend(pages::guide_slugs().map(|slug| format!("/guides/{slug}")));
+    routes.extend(pages::guide_slugs().map(|slug| format!("/guides/{slug}/")));
     Ok(routes)
 }
 
@@ -414,14 +414,34 @@ mod tests {
 
     #[test]
     fn the_old_suggested_commanders_slug_redirects_to_playstyle() {
-        let route: Route = "/guides/suggested-commanders".parse().unwrap();
-        assert!(
-            route
-                == Route::GuidePage {
-                    slug: "playstyle".to_string()
-                },
-            "went to {route}"
+        for path in [
+            "/guides/suggested-commanders",
+            "/guides/suggested-commanders/",
+        ] {
+            let route: Route = path.parse().unwrap();
+            assert!(
+                route
+                    == Route::GuidePage {
+                        slug: "playstyle".to_string()
+                    },
+                "{path} went to {route}"
+            );
+        }
+    }
+
+    #[test]
+    fn prerendered_pages_link_to_the_slashed_path_the_host_serves() {
+        assert_eq!(Route::Guides {}.to_string(), "/guides/");
+        assert_eq!(
+            Route::GuidePage {
+                slug: "filtering".to_string()
+            }
+            .to_string(),
+            "/guides/filtering/"
         );
+        assert_eq!(Route::Home {}.to_string(), "/");
+        let route: Route = "/about".parse().unwrap();
+        assert!(route == Route::About {}, "/about went to {route}");
     }
 
     #[test]

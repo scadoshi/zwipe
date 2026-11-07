@@ -25,7 +25,7 @@ pub fn Android() -> Element {
         PageMeta {
             title: "Download for Android",
             description: "Zwipe on Google Play: a swipe-based Magic: The Gathering deck builder.",
-            path: "/download/android",
+            path: "/download/android/",
         }
         document::Meta { http_equiv: "refresh", content: "0; url={PLAY_STORE_URL}" }
         Nav {}

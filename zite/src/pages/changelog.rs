@@ -44,7 +44,7 @@ pub fn Changelog() -> Element {
         PageMeta {
             title: "Changelog",
             description: "Every Zwipe release, newest first: what changed in each version of the app.",
-            path: "/changelog",
+            path: "/changelog/",
         }
         Nav {}
         div { class: "page content-enter",

@@ -6,152 +6,152 @@
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://zwipe.net/download/ios</loc>
+    <loc>https://zwipe.net/download/ios/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://zwipe.net/download/android</loc>
+    <loc>https://zwipe.net/download/android/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://zwipe.net/guides</loc>
+    <loc>https://zwipe.net/guides/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://zwipe.net/changelog</loc>
+    <loc>https://zwipe.net/changelog/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://zwipe.net/about</loc>
+    <loc>https://zwipe.net/about/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://zwipe.net/contribute</loc>
+    <loc>https://zwipe.net/contribute/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://zwipe.net/community</loc>
+    <loc>https://zwipe.net/community/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://zwipe.net/privacy</loc>
+    <loc>https://zwipe.net/privacy/</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://zwipe.net/guides/getting-started</loc>
+    <loc>https://zwipe.net/guides/getting-started/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://zwipe.net/guides/swipe-to-build</loc>
+    <loc>https://zwipe.net/guides/swipe-to-build/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://zwipe.net/guides/remove-cards</loc>
+    <loc>https://zwipe.net/guides/remove-cards/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://zwipe.net/guides/swipe-memory</loc>
+    <loc>https://zwipe.net/guides/swipe-memory/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://zwipe.net/guides/filtering</loc>
+    <loc>https://zwipe.net/guides/filtering/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://zwipe.net/guides/organize-and-browse</loc>
+    <loc>https://zwipe.net/guides/organize-and-browse/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://zwipe.net/guides/synergy</loc>
+    <loc>https://zwipe.net/guides/synergy/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://zwipe.net/guides/commander-and-formats</loc>
+    <loc>https://zwipe.net/guides/commander-and-formats/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://zwipe.net/guides/commander-maybeboard</loc>
+    <loc>https://zwipe.net/guides/commander-maybeboard/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://zwipe.net/guides/playstyle</loc>
+    <loc>https://zwipe.net/guides/playstyle/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://zwipe.net/guides/activity</loc>
+    <loc>https://zwipe.net/guides/activity/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://zwipe.net/guides/budgeting</loc>
+    <loc>https://zwipe.net/guides/budgeting/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://zwipe.net/guides/land-targets</loc>
+    <loc>https://zwipe.net/guides/land-targets/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://zwipe.net/guides/deck-tags</loc>
+    <loc>https://zwipe.net/guides/deck-tags/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://zwipe.net/guides/oracle-tags</loc>
+    <loc>https://zwipe.net/guides/oracle-tags/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://zwipe.net/guides/oracle-tag-dictionary</loc>
+    <loc>https://zwipe.net/guides/oracle-tag-dictionary/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://zwipe.net/guides/card-roles</loc>
+    <loc>https://zwipe.net/guides/card-roles/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://zwipe.net/guides/tags-roles-and-oracle-tags</loc>
+    <loc>https://zwipe.net/guides/tags-roles-and-oracle-tags/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://zwipe.net/guides/deck-mvps</loc>
+    <loc>https://zwipe.net/guides/deck-mvps/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://zwipe.net/guides/share-your-deck</loc>
+    <loc>https://zwipe.net/guides/share-your-deck/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://zwipe.net/guides/deck-stats</loc>
+    <loc>https://zwipe.net/guides/deck-stats/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://zwipe.net/guides/import-export</loc>
+    <loc>https://zwipe.net/guides/import-export/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>

@@ -10,7 +10,7 @@ pub fn Community() -> Element {
         PageMeta {
             title: "Community",
             description: "Get help with Zwipe, report bugs, suggest features, and follow updates on Discord or by email.",
-            path: "/community",
+            path: "/community/",
         }
         Nav {}
         div { class: "page content-enter",
