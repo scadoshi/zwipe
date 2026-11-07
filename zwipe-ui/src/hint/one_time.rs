@@ -137,6 +137,8 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
                 bullet(vec![
                     key("Decks"),
                     text(" lists your latest decks. "),
+                    key("Create a deck"),
+                    text(" starts one, and once you have decks "),
                     key("All decks"),
                     text(" opens the list"),
                 ]),
@@ -150,7 +152,9 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
                     key("Account"),
                     text(", the "),
                     icon_key(KeyIcon::Person),
-                    text(" in the menu's footer, has your email, password and log out"),
+                    text(
+                        " in the menu's footer (the top bar on a wide window), has your email, password and log out",
+                    ),
                 ]),
                 bullet(vec![
                     key("Settings"),
@@ -538,18 +542,23 @@ pub fn swipe_select(mode: SwipeSelectMode) -> HintContent {
             ]),
         ],
     };
-    blocks.extend([
-        bullet(vec![
+    // Up saves only where the pile holds commanders: not for a background
+    // or a signature spell.
+    if !matches!(
+        mode,
+        SwipeSelectMode::Picking("background" | "signature spell")
+    ) {
+        blocks.push(bullet(vec![
             text("Swipe "),
             emph("up", Role::Warning),
             text(" saves it to your commander maybeboard"),
-        ]),
-        bullet(vec![
-            text("Swipe "),
-            emph("down", Role::Tertiary),
-            text(" undoes the last swipe"),
-        ]),
-    ]);
+        ]));
+    }
+    blocks.extend([bullet(vec![
+        text("Swipe "),
+        emph("down", Role::Tertiary),
+        text(" undoes the last swipe"),
+    ])]);
     let title = match mode {
         SwipeSelectMode::Suggested { has_filter } => {
             blocks.push(line(vec![
@@ -611,10 +620,30 @@ mod tests {
             bullet(vec![
                 key("Decks"),
                 text(" lists your latest decks. "),
+                key("Create a deck"),
+                text(" starts one, and once you have decks "),
                 key("All decks"),
                 text(" opens the list"),
             ])
         );
+    }
+
+    #[test]
+    fn up_saves_only_where_the_pile_holds_commanders() {
+        let says_up = |mode| {
+            swipe_select(mode)
+                .blocks
+                .iter()
+                .any(|b| b.plain().starts_with("Swipe up"))
+        };
+        assert!(says_up(SwipeSelectMode::Picking(Slot::Partner.noun(None))));
+        assert!(says_up(SwipeSelectMode::Suggested { has_filter: false }));
+        assert!(!says_up(SwipeSelectMode::Picking(
+            Slot::Background.noun(None)
+        )));
+        assert!(!says_up(SwipeSelectMode::Picking(
+            Slot::SignatureSpell.noun(None)
+        )));
     }
 
     #[test]
