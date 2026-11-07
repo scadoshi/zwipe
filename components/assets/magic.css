@@ -991,10 +991,22 @@ i.ms.ms-cost.ms-gp {
     flex: none;
 }
 
+/* The body scrolls edge to edge between the two rules: it reaches out
+   through the panel's side padding and the rules' 1rem spacing, and takes
+   that spacing back as its own padding, so its rows scroll right up to the
+   lines and its scrollbar runs along the panel's edge. With no foot it
+   reaches the panel's bottom edge the same way. */
 .card-details-panel > .panel-body {
     min-height: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
+    margin: -1rem -1.5rem;
+    padding: 1rem 1.5rem;
+}
+
+.card-details-panel > .panel-body:last-child {
+    margin-bottom: -1.5rem;
+    padding-bottom: 1.5rem;
 }
 
 /* Scrolling the body down folds the head away (HEAD_HIDE_JS marks the
