@@ -23,6 +23,7 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
+| 93, the docked details panel jumps up once the screen loads (queued after 88) | halo | `nits/halo-93` |
 | 92, the web's URLs name resources, not actions (queued after 91) | laptop | `nits/laptop-92` |
 | 91, a live session skips the login page | laptop | `nits/laptop-91` |
 | 90, no white flash before the wasm loads | scotland | `nits/scotland-90` |
@@ -133,6 +134,7 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 90. **The web app flashes white while the wasm loads.** No splash or animation; a first-paint script and inline CSS in index.html paint the saved theme's background (and the grid's static look if cheap) on the first frame.
 91. **Log in with a live session still shows the login form.** On load the web checks its cookie session once; signed in → Home (replacing /login), otherwise the form, with no flash of the form first.
 92. **The web's URLs carry verbs** (`/deck/get/:id`). Rename to resource paths: /decks, /decks/:id, /decks/:id/cards, /decks/:id/add, /playstyle, /maybeboard, /account and so on. No redirects from the old paths.
+93. **The docked details panel jumps on load.** On Add it first sits low, then snaps up under the nav when the screen finishes loading. It must paint in its final place from the first frame.
 
 ## Done
 
