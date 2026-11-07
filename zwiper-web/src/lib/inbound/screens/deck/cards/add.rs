@@ -32,6 +32,7 @@ use zwipe_ui::deck_signals::{Crossing, Level, budget_crossing, land_crossing, pr
 use zwipe_ui::filter::AddContext;
 use zwipe_ui::filter::draft::{ResetRule, SheetConfig};
 use zwipe_ui::generation::Generation;
+use zwipe_ui::hint::Role;
 use zwipe_ui::screens::add_cards;
 use zwipe_ui::stack::{
     AddAction, CARDS_WARNING_THRESHOLD, CardStack, MAX_CARDS_IN_STACK, MaybeboardAction,
@@ -886,7 +887,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             title: add_cards::TITLE,
             on_hint: move |()| hint_open.set(true),
             div { class: "screen-content card-swipe content-enter web-cards-swipe {eye.body_class()}",
-                SwipeScreenChips { title: add_cards::TITLE, confirm }
+                SwipeScreenChips { title: add_cards::TITLE, tone: Role::Success, confirm }
                 div { class: "web-cards-swipe-main",
                     div { class: "form-container",
                         if current.is_some() {
