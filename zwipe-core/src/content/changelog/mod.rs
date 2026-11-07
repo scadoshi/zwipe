@@ -47,6 +47,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Keywords, card roles and oracle tags use the app's regular chips, each group named by a label chip",
         "About's changelog shows five releases at a time, with Show more for the rest",
         "The error under a field on the deck, sign-in and account forms starts with a capital letter",
+        "A swipe card's shadow shows all the way round, no longer cut off at its top and bottom",
     ],
 }];
 
