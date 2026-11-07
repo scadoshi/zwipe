@@ -1138,12 +1138,23 @@ body {
     max-height: 92vh;
 }
 
-/* An entrance animation that holds its end state makes its block the
-   containing block of the preview's fixed layers. While a preview is open
-   the block's finished entrance stops holding (its end state is the
-   block's own), so the preview fills the window. */
+/* On a phone the open card runs edge to edge, a 1rem gutter each side as
+   the app's does, or as tall as the window allows: a set width, so the
+   size never rests on how a browser resolves the image's own size. */
+@media (max-width: 599px) {
+    .image-preview-container .flippable-card-wrapper.card-image img {
+        width: min(calc(100vw - 2rem), calc(92dvh * 63 / 88));
+        max-width: none;
+        height: auto;
+    }
+}
+
+/* An entrance animation, running or holding its end state, makes its
+   block the containing block of the preview's fixed layers. While a
+   preview is open the block has no animation, so the preview fills the
+   window. */
 :is(.content-enter, .content-enter-delayed, .row-enter):has(.image-preview-container) {
-    animation-fill-mode: backwards;
+    animation: none;
 }
 
 /* ---- Printing sheet ---- */
