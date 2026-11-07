@@ -131,7 +131,7 @@ pub struct Postgres {
 impl Postgres {
     /// The adapter over an open `pool`, with the default refresh reuse window.
     #[must_use]
-    pub fn with_pool(pool: sqlx::PgPool) -> Self {
+    pub fn from_pool(pool: sqlx::PgPool) -> Self {
         Self {
             pool,
             refresh_reuse: RefreshReuse::default(),
@@ -179,6 +179,6 @@ impl Postgres {
             }
         };
 
-        Ok(Self::with_pool(pool))
+        Ok(Self::from_pool(pool))
     }
 }

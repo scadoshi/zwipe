@@ -40,7 +40,7 @@ use crate::inbound::chrome::hint_topic::HintTopic;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, open_and_record_hint};
 use crate::inbound::chrome::toast::raise;
 use crate::inbound::router::Route;
-use crate::inbound::session::settings_sync::sync_settings;
+use crate::inbound::session::settings_sync;
 use crate::inbound::shell::ScreenFrame;
 use crate::outbound::counts_store::CountsStore;
 use crate::outbound::scope_store::ScopeStore;
@@ -217,7 +217,7 @@ impl Driver {
 
     /// Applies fresh settings (see `session::settings_sync`).
     fn fetch_settings(self) {
-        sync_settings(self.session, self.client, self.theme, self.pip_style);
+        settings_sync::sync_settings(self.session, self.client, self.theme, self.pip_style);
     }
 
     /// Fetches everybody's counters into the cache and browser storage.
@@ -226,7 +226,7 @@ impl Driver {
         let mut counts = self.caches.counts;
         spawn(async move {
             let http = client.peek().clone();
-            match http.public_metrics_dated().await {
+            match http.fetch_public_metrics_dated().await {
                 Ok(Dated {
                     value: metrics,
                     made_at,

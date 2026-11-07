@@ -75,6 +75,17 @@ impl RefreshReuse {
         successors.insert(consumed, Remembered { rotated, at: now });
     }
 
+    /// Drops what [`remember`](Self::remember) holds for the token hashed
+    /// `consumed`, for a rotation that never committed. A poisoned map is
+    /// logged and left alone.
+    pub fn forget(&self, consumed: &str) {
+        let Ok(mut successors) = self.successors.lock() else {
+            tracing::error!("refresh reuse map is poisoned; rotation not forgotten");
+            return;
+        };
+        successors.remove(consumed);
+    }
+
     /// The newest successor of the token hashed `consumed` inside the window,
     /// following the chain when that successor was itself rotated, or `None`.
     /// A poisoned map is logged and recalls nothing, so the caller treats the
@@ -139,6 +150,15 @@ mod tests {
 
     fn value(r: Option<RotatedRefreshToken>) -> Option<String> {
         r.map(|r| r.refresh_token.value)
+    }
+
+    #[test]
+    fn a_forgotten_rotation_is_recalled_no_more() {
+        let reuse = RefreshReuse::default();
+        let now = Utc::now();
+        reuse.remember(h("old"), rotated("next"), now);
+        reuse.forget(&h("old"));
+        assert_eq!(value(reuse.recall(&h("old"), now)), None);
     }
 
     #[test]

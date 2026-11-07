@@ -15,9 +15,36 @@ pub fn sentence_case(message: &str) -> String {
     }
 }
 
+/// [`sentence_case`] for an owned message, in place when its first letter
+/// is ASCII.
+#[must_use]
+pub fn into_sentence_case(mut message: String) -> String {
+    match message.chars().next() {
+        Some(first) if first.is_ascii() => {
+            if let Some(head) = message.get_mut(..1) {
+                head.make_ascii_uppercase();
+            }
+            message
+        }
+        Some(_) => sentence_case(&message),
+        None => message,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_owned_form_matches_the_borrowed_one() {
+        for message in ["", "username taken", "Already", "élan vital", "1 card"] {
+            assert_eq!(
+                into_sentence_case(message.to_owned()),
+                sentence_case(message),
+                "{message:?}"
+            );
+        }
+    }
 
     #[test]
     fn uppercases_only_the_first_character() {

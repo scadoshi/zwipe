@@ -36,16 +36,15 @@ pub async fn update_settings(
     State(state): State<AppState>,
     Json(body): Json<HttpUpdateSettings>,
 ) -> Result<(StatusCode, Json<UserSettings>), ApiError> {
-    let request = UpdateSettings::new(
-        user.id,
-        body.theme.as_deref(),
-        body.dark_mode,
-        body.exclude_universes_beyond,
-        body.universes_beyond_exceptions,
-        body.pip_style,
-        body.swipe_confirmations,
-    )
-    .map_err(ApiError::from)?;
+    let request = UpdateSettings::builder(user.id)
+        .theme(body.theme.as_deref())
+        .dark_mode(body.dark_mode)
+        .exclude_universes_beyond(body.exclude_universes_beyond)
+        .universes_beyond_exceptions(body.universes_beyond_exceptions)
+        .pip_style(body.pip_style)
+        .swipe_confirmations(body.swipe_confirmations)
+        .build()
+        .map_err(ApiError::from)?;
 
     state
         .user_service

@@ -15,7 +15,7 @@ impl ZwipeClient {
     ///
     /// Returns a [`ClientError`] when the request fails to complete, the server answers with an
     /// error status, or the reply doesn't decode.
-    pub async fn public_metrics(&self) -> Result<HttpPublicMetrics, ClientError> {
+    pub async fn fetch_public_metrics(&self) -> Result<HttpPublicMetrics, ClientError> {
         self.call(PublicMetrics, None).await
     }
 
@@ -24,8 +24,10 @@ impl ZwipeClient {
     ///
     /// # Errors
     ///
-    /// As [`Self::public_metrics`].
-    pub async fn public_metrics_dated(&self) -> Result<Dated<HttpPublicMetrics>, ClientError> {
+    /// As [`Self::fetch_public_metrics`].
+    pub async fn fetch_public_metrics_dated(
+        &self,
+    ) -> Result<Dated<HttpPublicMetrics>, ClientError> {
         self.call_dated(PublicMetrics, None).await
     }
 }

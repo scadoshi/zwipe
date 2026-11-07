@@ -60,7 +60,6 @@ pub fn use_overlay_nav(
     // The page's own title, held while the overlay has the nav.
     let held = use_hook(|| Rc::new(RefCell::new(None::<Option<PageTitle>>)));
     let on_drop = Rc::clone(&held);
-    let ours = title.clone();
     let mine = title.clone();
     use_effect(move || {
         let Some(mut page) = page else {
@@ -76,7 +75,7 @@ pub fn use_overlay_nav(
                 }));
             }
         } else if let Some(previous) = held.borrow_mut().take()
-            && shows_overlay(page.peek().as_ref(), &ours)
+            && shows_overlay(page.peek().as_ref(), &title)
         {
             page.set(previous);
         }

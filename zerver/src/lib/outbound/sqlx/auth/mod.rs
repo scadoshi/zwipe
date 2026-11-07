@@ -338,10 +338,14 @@ impl AuthRepository for Postgres {
             platform: carried,
         };
         // Remembered before the commit, so a racing loser that wakes once it
-        // lands always finds the successor.
-        self.refresh_reuse.remember(consumed, rotated.clone(), now);
+        // lands always finds the successor; a commit that fails takes it back.
+        self.refresh_reuse
+            .remember(consumed.clone(), rotated.clone(), now);
 
-        tx.commit().await?;
+        if let Err(e) = tx.commit().await {
+            self.refresh_reuse.forget(&consumed);
+            return Err(e.into());
+        }
 
         Ok(rotated)
     }

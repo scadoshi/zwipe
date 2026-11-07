@@ -9,6 +9,7 @@ use zwipe_core::domain::user::hints::OneTimeHint;
 use super::{
     Block, HintContent, KeyIcon, Role, bullet, emph, icon_key, icon_key_in, key, key_in, line, text,
 };
+use crate::deck::form::Slot;
 
 /// Which overlay the Swipe select hint opens over; its copy changes with it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -49,13 +50,21 @@ fn building_a_deck() -> Vec<Block> {
     ]
 }
 
-/// The first-deck hint for the deck page's layout. Narrow (the app, and the
-/// web below its breakpoint), the Profile card carries the pencil, clone
-/// and share, and the `Cards` pill floats in the dock. Wide, one dock holds
-/// add and remove, the filter and undo, then edit, clone and share.
+/// Which deck page the first-deck hint describes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum DeckLayout {
+    /// The app, and the web below its breakpoint: the Profile card carries
+    /// the pencil, clone and share, and the `Cards` pill floats in the dock.
+    Narrow,
+    /// The wide web page: one dock holds add and remove, the filter and
+    /// undo, then edit, clone and share.
+    Wide,
+}
+
+/// The first-deck hint for the deck page's `layout`.
 #[must_use]
-pub fn first_deck(wide: bool) -> HintContent {
-    let mut blocks = if wide {
+pub fn first_deck(layout: DeckLayout) -> HintContent {
+    let mut blocks = if layout == DeckLayout::Wide {
         vec![
             bullet(vec![
                 icon_key(KeyIcon::Plus),
@@ -219,7 +228,7 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
                 ]),
             ],
         ),
-        OneTimeHint::FirstDeck => first_deck(false),
+        OneTimeHint::FirstDeck => first_deck(DeckLayout::Narrow),
         OneTimeHint::DeckCards => content(
             "Browsing your deck",
             vec![
@@ -561,21 +570,19 @@ pub fn swipe_select(mode: SwipeSelectMode) -> HintContent {
     };
     // Up saves only where the pile holds commanders: not for a background
     // or a signature spell.
-    if !matches!(
-        mode,
-        SwipeSelectMode::Picking("background" | "signature spell")
-    ) {
+    let no_commanders = [Slot::Background, Slot::SignatureSpell].map(|slot| slot.noun(None));
+    if !matches!(mode, SwipeSelectMode::Picking(noun) if no_commanders.contains(&noun)) {
         blocks.push(bullet(vec![
             text("Swipe "),
             emph("up", Role::Warning),
             text(" saves it to your commander maybeboard"),
         ]));
     }
-    blocks.extend([bullet(vec![
+    blocks.push(bullet(vec![
         text("Swipe "),
         emph("down", Role::Tertiary),
         text(" undoes the last swipe"),
-    ])]);
+    ]));
     let title = match mode {
         SwipeSelectMode::Suggested { has_filter } => {
             blocks.push(line(vec![
@@ -658,7 +665,7 @@ mod tests {
     #[test]
     fn the_deck_hint_names_the_clear_button_as_drawn() {
         assert!(
-            first_deck(false)
+            first_deck(DeckLayout::Narrow)
                 .blocks
                 .iter()
                 .any(|b| b.spans().contains(&key("Clear")))
@@ -719,7 +726,7 @@ mod tests {
 
     #[test]
     fn the_wide_deck_hint_shows_the_docks_icons_and_no_cards_pill() {
-        let wide = first_deck(true);
+        let wide = first_deck(DeckLayout::Wide);
         assert_eq!(
             wide.blocks[0].plain(),
             "plus adds cards and minus removes them"
@@ -732,7 +739,7 @@ mod tests {
                 .all(|b| !b.spans().contains(&key("Cards"))),
             "the wide page has no Cards pill"
         );
-        let narrow = first_deck(false);
+        let narrow = first_deck(DeckLayout::Narrow);
         assert_eq!(narrow.blocks[0].spans()[0], key("Cards"));
         assert_eq!(content_for(OneTimeHint::FirstDeck), Some(narrow));
     }

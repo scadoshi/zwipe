@@ -28,7 +28,7 @@ pub enum Landing {
 /// The landing for a load with a session `stored` (unexpired) or not, given
 /// how its refresh went. No stored session shows the form at once.
 #[must_use]
-pub fn landing(stored: bool, refresh: Refresh) -> Landing {
+pub fn decide(stored: bool, refresh: Refresh) -> Landing {
     if !stored {
         return Landing::Form;
     }
@@ -51,23 +51,23 @@ mod tests {
             Refresh::Rejected,
             Refresh::Failed,
         ] {
-            assert_eq!(landing(false, refresh), Landing::Form);
+            assert_eq!(decide(false, refresh), Landing::Form);
         }
     }
 
     #[test]
     fn a_stored_session_waits_for_its_refresh() {
-        assert_eq!(landing(true, Refresh::Pending), Landing::Checking);
+        assert_eq!(decide(true, Refresh::Pending), Landing::Checking);
     }
 
     #[test]
     fn a_live_session_goes_home() {
-        assert_eq!(landing(true, Refresh::Live), Landing::Home);
+        assert_eq!(decide(true, Refresh::Live), Landing::Home);
     }
 
     #[test]
     fn a_rejected_or_failed_refresh_shows_the_form() {
-        assert_eq!(landing(true, Refresh::Rejected), Landing::Form);
-        assert_eq!(landing(true, Refresh::Failed), Landing::Form);
+        assert_eq!(decide(true, Refresh::Rejected), Landing::Form);
+        assert_eq!(decide(true, Refresh::Failed), Landing::Form);
     }
 }

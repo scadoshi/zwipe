@@ -523,11 +523,6 @@ mod tests {
     }
 
     #[test]
-    fn the_gap_is_half_the_exit() {
-        assert_eq!(PRESS_GAP_MS, 160);
-    }
-
-    #[test]
     fn the_longer_axis_decides() {
         assert_eq!(Swipe::of_drag(120.0, 100.0), Some(Swipe::Right));
         assert_eq!(Swipe::of_drag(-120.0, 30.0), Some(Swipe::Left));

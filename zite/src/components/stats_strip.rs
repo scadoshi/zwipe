@@ -38,7 +38,7 @@ pub fn StatsStrip() -> Element {
         if !cfg!(target_arch = "wasm32") {
             return None;
         }
-        api::client().public_metrics_dated().await.ok()
+        api::client().fetch_public_metrics_dated().await.ok()
     });
 
     let value = stats.read();

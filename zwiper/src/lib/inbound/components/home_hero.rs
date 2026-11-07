@@ -91,8 +91,8 @@ impl CachedMyCounts {
 }
 
 /// `fetched_at` moved back by `COUNTS_FRESH`, so it reads as stale. The
-/// monotonic clock stops while the device sleeps, so a copy fetched before a
-/// night asleep still reads as a minute old without this.
+/// monotonic clock stops while the device sleeps, so the time elapsed since
+/// a fetch undercounts a night asleep.
 fn backdated(fetched_at: Instant) -> Instant {
     fetched_at.checked_sub(COUNTS_FRESH).unwrap_or(fetched_at)
 }
@@ -109,7 +109,7 @@ fn use_public_counts() -> (Option<HttpPublicMetrics>, Option<String>) {
             return;
         }
         spawn(async move {
-            match client().public_metrics_dated().await {
+            match client().fetch_public_metrics_dated().await {
                 Ok(Dated {
                     value: metrics,
                     made_at,

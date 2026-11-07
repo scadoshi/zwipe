@@ -74,7 +74,7 @@ async fn signature_spell_pool_reads_the_front_face(pool: sqlx::PgPool) {
     ];
     seed_cards(&pool, &universe).await;
 
-    let repo = Postgres::with_pool(pool.clone());
+    let repo = Postgres::from_pool(pool.clone());
     let criteria = json!({ "is_signature_spell": true, "limit": 250 });
     let found: Vec<Card> = repo
         .search_cards(&serde_json::from_value::<CardQuery>(criteria).unwrap())
