@@ -1,16 +1,16 @@
-//! The hover preview a card list shows a mouse: a stack of up to
-//! [`HOVER_STACK_CAP`] full-art cards pinned to a top corner, newest on top.
+//! The hover preview a card list shows a mouse: one full-art card pinned to
+//! a top corner.
 //!
-//! Hovering a [`CardRow`](crate::CardRow) pushes the face it shows onto the
-//! stack and holds it there while the cursor stays on the row. Leaving the
-//! row starts that card's life: `PREVIEW_LIFE_MS` later it fades out over
-//! `PREVIEW_FADE_MS` and drops off, each card on its own timer. Flipping a
-//! row's face pushes the new face with its life already running. The stack
-//! sits in the corner away from the cursor.
+//! Hovering a collapsed [`CardRow`](crate::CardRow) shows the face it shows
+//! and holds it while the cursor stays on the row. Entering another row
+//! swaps the card at once; leaving the row fades it out over
+//! `PREVIEW_FADE_MS`, and a row that scrolls out from under a still cursor
+//! counts as left. An expanded row shows none. The card sits in the corner
+//! away from the cursor.
 //!
 //! A screen calls [`use_hover_stack`], mounts [`HoverStackHost`] outside
 //! any transformed ancestor and calls [`HoverStack::track`] from its page's
-//! `onmousemove`; its rows find the stack by context. The stack is
+//! `onmousemove`; its rows find the stack by context. The preview is
 //! hover-only, so off the browser nothing in it is timed: a card that is
 //! let go drops at once.
 
@@ -21,36 +21,49 @@ use std::rc::Rc;
 use dioxus::core::Runtime;
 use dioxus::prelude::*;
 
-/// The most cards the stack holds; a push past it drops the oldest.
-const HOVER_STACK_CAP: usize = 5;
-
-/// How long a card stays up once its row is left or flipped.
-#[cfg(target_arch = "wasm32")]
-const PREVIEW_LIFE_MS: u32 = 2000;
-
 /// A card's fade out, the `hover-stack-out` animation in `magic.css`.
 #[cfg(target_arch = "wasm32")]
 const PREVIEW_FADE_MS: u32 = 400;
 
-/// How far each older card sits under the one above it, in rem.
-const HOVER_STACK_STEP_REM: f64 = 2.6;
+/// Sends a hovered row a `mouseleave` when a scroll moves it out from under
+/// a still cursor, which the browser does not do itself. Installed once per
+/// page; the row's own `onmouseleave` then lets its card go.
+const SCROLL_LEAVE_JS: &str = r"
+if (!window.__zwipeHoverScroll) {
+    window.__zwipeHoverScroll = true;
+    let x = 0, y = 0, row = null, queued = false;
+    const rowOf = (el) => (el instanceof Element ? el.closest('.card-row-compact') : null);
+    document.addEventListener('mousemove', (event) => {
+        x = event.clientX; y = event.clientY; row = rowOf(event.target);
+    }, { capture: true, passive: true });
+    document.addEventListener('scroll', () => {
+        if (!row || queued) return;
+        queued = true;
+        requestAnimationFrame(() => {
+            queued = false;
+            const under = rowOf(document.elementFromPoint(x, y));
+            if (row && under !== row) {
+                const left = row; row = under;
+                left.dispatchEvent(new MouseEvent('mouseleave', { clientX: x, clientY: y }));
+            }
+        });
+    }, { capture: true, passive: true });
+}
+";
 
-/// Where a card is in its life.
+/// Where the card is in its life.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum HoverPhase {
-    /// The cursor is still on the row that pushed it; its life has not
-    /// started.
+    /// The cursor is still on the row that showed it.
     Held,
-    /// Let go, counting down its life (`PREVIEW_LIFE_MS`).
-    Living,
-    /// Its life is over and it is fading out (`PREVIEW_FADE_MS`).
+    /// Let go and fading out (`PREVIEW_FADE_MS`).
     Leaving,
 }
 
-/// One card in the stack.
+/// The card on show.
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct HoverEntry {
-    /// Unique per push, so a card hovered twice stacks twice.
+    /// Unique per hover, so a late leave or fade never touches a newer card.
     id: u64,
     /// The image the card shows.
     url: String,
@@ -58,50 +71,35 @@ struct HoverEntry {
     phase: HoverPhase,
 }
 
-/// Puts `entry` on top of the stack and drops what falls past the cap.
-fn push(entries: &mut Vec<HoverEntry>, entry: HoverEntry) {
-    entries.insert(0, entry);
-    entries.truncate(HOVER_STACK_CAP);
-}
-
-/// Lets go of a held entry, true when `id` was held (and is still in the
-/// stack), so its life starts once.
-fn release(entries: &mut [HoverEntry], id: u64) -> bool {
-    match entries
-        .iter_mut()
-        .find(|e| e.id == id && e.phase == HoverPhase::Held)
-    {
-        Some(entry) => {
-            entry.phase = HoverPhase::Living;
+/// Lets go of the held card `id`, true when it was the one held, so its fade
+/// starts once.
+fn release(entry: &mut Option<HoverEntry>, id: u64) -> bool {
+    match entry {
+        Some(e) if e.id == id && e.phase == HoverPhase::Held => {
+            e.phase = HoverPhase::Leaving;
             true
         }
-        None => false,
+        _ => false,
     }
 }
 
-/// Starts an entry's fade out.
-#[cfg(any(target_arch = "wasm32", test))]
-fn mark_leaving(entries: &mut [HoverEntry], id: u64) {
-    if let Some(entry) = entries.iter_mut().find(|e| e.id == id) {
-        entry.phase = HoverPhase::Leaving;
+/// Drops the card when it is still `id`.
+fn remove(entry: &mut Option<HoverEntry>, id: u64) {
+    if entry.as_ref().is_some_and(|e| e.id == id) {
+        *entry = None;
     }
 }
 
-/// Drops an entry.
-fn remove(entries: &mut Vec<HoverEntry>, id: u64) {
-    entries.retain(|e| e.id != id);
-}
-
-/// Whether the stack belongs in the right corner: while the cursor works
+/// Whether the card belongs in the right corner: while the cursor works
 /// the window's left half. `None` before the window's width is known.
 fn pins_right(x: f64, width: f64) -> Option<bool> {
     (width > 0.0).then_some(x < width / 2.0)
 }
 
-/// A screen's hover stack. `Copy`; from [`use_hover_stack`].
+/// A screen's hover preview. `Copy`; from [`use_hover_stack`].
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct HoverStack {
-    entries: Signal<Vec<HoverEntry>>,
+    entry: Signal<Option<HoverEntry>>,
     next_id: Signal<u64>,
     on_right: Signal<bool>,
     width: Signal<f64>,
@@ -109,61 +107,42 @@ pub struct HoverStack {
 }
 
 impl HoverStack {
-    /// Pushes a hovered row's image, held until [`Self::leave`] with the id
-    /// it returns.
+    /// Shows a hovered row's image in place of any card on show, held until
+    /// [`Self::leave`] with the id it returns.
     pub(crate) fn enter(self, url: String) -> u64 {
         let id = self.take_id();
-        let mut entries = self.entries;
-        push(
-            &mut entries.write(),
-            HoverEntry {
-                id,
-                url,
-                phase: HoverPhase::Held,
-            },
-        );
+        let mut entry = self.entry;
+        entry.set(Some(HoverEntry {
+            id,
+            url,
+            phase: HoverPhase::Held,
+        }));
         id
     }
 
-    /// Starts the life of the held card `id`; nothing if it is not held.
+    /// Fades out the held card `id`; nothing if it is not the one held.
     pub(crate) fn leave(self, id: u64) {
-        let mut entries = self.entries;
-        let released = entries.try_write().is_ok_and(|mut e| release(&mut e, id));
+        let mut entry = self.entry;
+        let released = entry.try_write().is_ok_and(|mut e| release(&mut e, id));
         if released {
             self.retire(id);
         }
     }
 
-    /// Starts the life of every held card, as when a row starts to drag.
+    /// Fades out the held card, as when a row starts to drag.
     pub fn leave_held(self) {
-        let held: Vec<u64> = self
-            .entries
+        let held = self
+            .entry
             .peek()
-            .iter()
+            .as_ref()
             .filter(|e| e.phase == HoverPhase::Held)
-            .map(|e| e.id)
-            .collect();
-        for id in held {
+            .map(|e| e.id);
+        if let Some(id) = held {
             self.leave(id);
         }
     }
 
-    /// Pushes an image with its life already running, as for a flipped face.
-    pub(crate) fn flash(self, url: String) {
-        let id = self.take_id();
-        let mut entries = self.entries;
-        push(
-            &mut entries.write(),
-            HoverEntry {
-                id,
-                url,
-                phase: HoverPhase::Living,
-            },
-        );
-        self.retire(id);
-    }
-
-    /// Moves the stack away from the cursor at window x `x`, writing only
+    /// Moves the card away from the cursor at window x `x`, writing only
     /// on a change.
     pub fn track(self, x: f64) {
         let Some(right) = pins_right(x, *self.width.peek()) else {
@@ -183,19 +162,14 @@ impl HoverStack {
         id
     }
 
-    /// Runs out the life of `id`, then its fade, then drops it. The timers
-    /// run in the host's scope, so a row that unmounts meanwhile still
-    /// clears its card.
+    /// Drops `id` once its fade has run. The timer runs in the host's scope,
+    /// so a row that unmounts meanwhile still clears its card.
     #[cfg(target_arch = "wasm32")]
     fn retire(self, id: u64) {
-        let mut entries = self.entries;
+        let mut entry = self.entry;
         Runtime::current().spawn(self.host, async move {
-            gloo_timers::future::TimeoutFuture::new(PREVIEW_LIFE_MS).await;
-            if let Ok(mut e) = entries.try_write() {
-                mark_leaving(&mut e, id);
-            }
             gloo_timers::future::TimeoutFuture::new(PREVIEW_FADE_MS).await;
-            if let Ok(mut e) = entries.try_write() {
+            if let Ok(mut e) = entry.try_write() {
                 remove(&mut e, id);
             }
         });
@@ -204,25 +178,29 @@ impl HoverStack {
     /// Off the browser nothing is timed: the card drops at once.
     #[cfg(not(target_arch = "wasm32"))]
     fn retire(self, id: u64) {
-        let mut entries = self.entries;
-        if let Ok(mut e) = entries.try_write() {
+        let mut entry = self.entry;
+        if let Ok(mut e) = entry.try_write() {
             remove(&mut e, id);
         }
     }
 }
 
-/// Creates the screen's hover stack and provides it to its rows. On the
-/// browser it reads the window's width once, for [`HoverStack::track`].
+/// Creates the screen's hover preview and provides it to its rows. On the
+/// browser it reads the window's width once, for [`HoverStack::track`], and
+/// installs the scroll check that lets a card go when its row scrolls away.
 pub fn use_hover_stack() -> HoverStack {
     let width = use_signal(|| 0.0_f64);
     let host = use_hook(dioxus::core::current_scope_id);
     let stack = HoverStack {
-        entries: use_signal(Vec::new),
+        entry: use_signal(|| None),
         next_id: use_signal(|| 0),
         on_right: use_signal(|| false),
         width,
         host,
     };
+    use_hook(|| {
+        document::eval(SCROLL_LEAVE_JS);
+    });
     use_future(move || async move {
         #[cfg(target_arch = "wasm32")]
         {
@@ -238,23 +216,19 @@ pub fn use_hover_stack() -> HoverStack {
     use_context_provider(|| stack)
 }
 
-/// The stack's cards, newest on top. Mount it outside any transformed
-/// ancestor, where `position: fixed` means the window.
+/// The card on show. Mount it outside any transformed ancestor, where
+/// `position: fixed` means the window.
 #[component]
 pub fn HoverStackHost(stack: HoverStack) -> Element {
-    let entries = (stack.entries)();
-    if entries.is_empty() {
+    let Some(entry) = (stack.entry)() else {
         return rsx! {};
-    }
+    };
     rsx! {
         div { class: if (stack.on_right)() { "hover-stack pin-right" } else { "hover-stack" },
-            for (i, entry) in entries.into_iter().enumerate() {
-                div {
-                    key: "{entry.id}",
-                    class: if entry.phase == HoverPhase::Leaving { "hover-stack-card leaving" } else { "hover-stack-card" },
-                    style: "top: calc({i} * {HOVER_STACK_STEP_REM}rem); z-index: {200_usize.saturating_sub(i)};",
-                    img { src: "{entry.url}", alt: "Card preview" }
-                }
+            div {
+                key: "{entry.id}",
+                class: if entry.phase == HoverPhase::Leaving { "hover-stack-card leaving" } else { "hover-stack-card" },
+                img { src: "{entry.url}", alt: "Card preview" }
             }
         }
     }
@@ -268,7 +242,7 @@ pub(crate) type HeldEntry = Rc<Cell<Option<u64>>>;
 mod tests {
     use super::*;
 
-    fn entry(id: u64) -> HoverEntry {
+    fn held(id: u64) -> HoverEntry {
         HoverEntry {
             id,
             url: format!("card-{id}"),
@@ -276,73 +250,35 @@ mod tests {
         }
     }
 
-    fn ids(entries: &[HoverEntry]) -> Vec<u64> {
-        entries.iter().map(|e| e.id).collect()
-    }
-
-    #[test]
-    fn the_newest_card_goes_on_top() {
-        let mut entries = Vec::new();
-        push(&mut entries, entry(0));
-        push(&mut entries, entry(1));
-        push(&mut entries, entry(2));
-        assert_eq!(ids(&entries), vec![2, 1, 0]);
-    }
-
-    #[test]
-    fn the_stack_holds_five_and_drops_the_oldest() {
-        let mut entries = Vec::new();
-        for id in 0..7 {
-            push(&mut entries, entry(id));
-        }
-        assert_eq!(entries.len(), HOVER_STACK_CAP);
-        assert_eq!(ids(&entries), vec![6, 5, 4, 3, 2]);
-    }
-
-    #[test]
-    fn the_same_card_hovered_twice_stacks_twice() {
-        let mut entries = Vec::new();
-        push(
-            &mut entries,
-            HoverEntry {
-                url: "same".into(),
-                ..entry(0)
-            },
-        );
-        push(
-            &mut entries,
-            HoverEntry {
-                url: "same".into(),
-                ..entry(1)
-            },
-        );
-        assert_eq!(ids(&entries), vec![1, 0]);
-    }
-
     #[test]
     fn a_held_card_is_let_go_once() {
-        let mut entries = vec![entry(3)];
-        assert!(release(&mut entries, 3));
-        assert!(entries.iter().all(|e| e.phase == HoverPhase::Living));
-        assert!(!release(&mut entries, 3));
-        assert!(!release(&mut entries, 9));
+        let mut entry = Some(held(3));
+        assert!(release(&mut entry, 3));
+        assert_eq!(entry.as_ref().map(|e| e.phase), Some(HoverPhase::Leaving));
+        assert!(!release(&mut entry, 3));
     }
 
     #[test]
-    fn a_card_fades_then_drops() {
-        let mut entries = vec![entry(1), entry(0)];
-        mark_leaving(&mut entries, 0);
-        assert!(
-            entries
-                .iter()
-                .any(|e| e.id == 0 && e.phase == HoverPhase::Leaving)
+    fn a_late_leave_never_touches_a_newer_card() {
+        let mut entry = Some(held(4));
+        assert!(!release(&mut entry, 3));
+        remove(&mut entry, 3);
+        assert_eq!(
+            entry.as_ref().map(|e| (e.id, e.phase)),
+            Some((4, HoverPhase::Held))
         );
-        remove(&mut entries, 0);
-        assert_eq!(ids(&entries), vec![1]);
     }
 
     #[test]
-    fn the_stack_dodges_to_the_side_the_cursor_is_not_on() {
+    fn a_faded_card_drops() {
+        let mut entry = Some(held(0));
+        assert!(release(&mut entry, 0));
+        remove(&mut entry, 0);
+        assert!(entry.is_none());
+    }
+
+    #[test]
+    fn the_card_dodges_to_the_side_the_cursor_is_not_on() {
         assert_eq!(pins_right(100.0, 1000.0), Some(true));
         assert_eq!(pins_right(900.0, 1000.0), Some(false));
         assert_eq!(pins_right(100.0, 0.0), None);

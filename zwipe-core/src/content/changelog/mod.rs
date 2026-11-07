@@ -54,6 +54,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "The card filter's Oracle tags hint explains include, exclude and the Dictionary",
         "The Format, Deck tags and Oracle tags pickers' ? hints match the website's",
         "The deck page's tag hints and the Oathbreaker field's hint are written for where they open, and other hints read tighter",
+        "Hovering a card row shows one preview at a time, gone once the pointer leaves the row",
     ],
 }];
 
