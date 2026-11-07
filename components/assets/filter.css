@@ -1,6 +1,366 @@
 /* The drawer sheet (components::DrawerSheet) and the card filter panel
    (components::CardFilterPanel). */
 
+/* ---- From the screens' sheet: the label rows, the compact and narrow boxes,
+   the stepper, the picker's floating results, the small chips, the clear
+   buttons and the layout helpers the panel's rows use ---- */
+
+.flex {
+    display: flex;
+}
+
+.flex-row {
+    display: flex;
+    flex-direction: row;
+}
+
+.flex-center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.flex-wrap {
+    flex-wrap: wrap;
+}
+
+.gap-1 {
+    gap: 0.5rem;
+}
+
+.mb-1 {
+    margin-bottom: 0.5rem;
+}
+
+.mt-2 {
+    margin-top: 1rem;
+}
+
+.text-muted {
+    color: var(--text-muted);
+}
+
+.chip-xs {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.4rem;
+    font-size: 0.7rem;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-color: var(--bg-primary);
+    box-shadow: var(--shadow-sm);
+}
+
+.chip-unselected {
+    display: inline-block;
+    padding: 0.3rem 0.6rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-muted);
+    border-radius: 0.6rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-sm);
+}
+
+.chip-remove {
+    all: unset;
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    margin-left: 0.3rem;
+}
+
+.input-compact {
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+    border-radius: 0.5rem;
+}
+
+/* A compact field in the kit's clear wrap keeps the compact spacing under
+   it. */
+.input-clear-wrap:has(> .input-compact) {
+    margin-bottom: 0.5rem;
+}
+
+.label-xs {
+    font-size: 0.875rem;
+    margin-bottom: 0.25rem;
+    color: var(--accent-tertiary);
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    text-align: center;
+    /* No width:100% — the label shrinks to its text so any toggle/clear controls
+       sit inline beside it, and the centered .label-row keeps the group centered
+       (label just shifts left a touch). Label-only rows still center fine. */
+}
+
+.gap-half {
+    gap: 0.5rem;
+}
+
+.label-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    width: 100%;
+    /* Breathing room so chips that wrap below a long label (e.g. "Signature
+       spell") don't sit flush against the input beneath them. */
+    margin-bottom: 0.4rem;
+}
+
+/* Filter sheet labels: each group already sits a flex gap plus its chips'
+   bottom margin below the last, so a small lead keeps the groups snug. */
+.label-row.mt-2 {
+    margin-top: 0.25rem;
+    margin-bottom: 0.25rem;
+}
+
+/* The kit's × beside a field in the app's clear red, as its label-row clears are. */
+.input-clear-btn {
+    color: var(--color-error);
+    border-color: var(--color-error);
+}
+
+.clear-btn {
+    all: unset;
+    cursor: pointer;
+    font-size: 0.85rem;
+    line-height: 1;
+    color: var(--color-error);
+    padding: 0.2rem 0.45rem;
+    margin-left: 0.25rem;
+    border: 1px solid var(--color-error);
+    border-radius: 0.4rem;
+    /* Opaque fill so the page grid doesn't show through the button. */
+    background-color: var(--bg-primary);
+    transition: all 0.2s ease;
+}
+
+/* ── Floating type-to-search results ─────────────────────────────────────
+   Shared by every type-to-search picker (deck-cards quick add, the filter
+   sheet's artist/set/type/keyword/oracle-word/otag fields, the deck form's
+   command-zone pickers). Result chips float in a layer above the input, out
+   of document flow, so the screen never reflows under the user while they
+   type. The anchor is a zero-height in-flow marker placed where the old
+   in-flow row sat (directly above the input); the results hang upward from
+   it. Not a back-aware overlay (see the overlay z-index registry) — just a
+   popover: above base content (swipe stack is 100), below the modal band
+   (200). Chips are opaque pills, so they read fine over whatever's behind.
+   The deck-cards quick add additionally measures overflow past the
+   scrollport top and grows its anchor's inline height by the deficit (see
+   QUICK_ADD_FIT_JS), so its results overlay in most cases and take real
+   space only when they'd run under the screen header — hence the height
+   transition below. */
+.search-float-anchor {
+    position: relative;
+    height: 0;
+    transition: height 0.2s ease;
+}
+
+.search-float-results {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin-bottom: 0.5rem;
+    z-index: 150;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    justify-content: center;
+}
+
+/* Entrance float-up (staggered per chip via inline animation-delay), then a
+   soft idle drift so the layer reads as hovering rather than parked. */
+.search-float-chip {
+    animation:
+        search-float-in 0.25s ease-out both,
+        search-float-drift 3.2s ease-in-out 0.25s infinite;
+}
+
+.stepper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+}
+
+.stepper-value {
+    width: 2rem;
+    text-align: center;
+    font-size: 0.85rem;
+}
+
+/* Narrow input for CMC */
+.input-narrow {
+    width: 5rem;
+    text-align: center;
+    display: block;
+    margin: 0 auto;
+}
+
+@keyframes search-float-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes search-float-drift {
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-2px);
+    }
+}
+
+/* ---- The accordion the sections fold in ---- */
+
+/* Animation for accordion opening (element is newly inserted into DOM) */
+@keyframes accordion-open {
+  from {
+    grid-template-rows: 0fr;
+  }
+
+  to {
+    grid-template-rows: 1fr;
+  }
+}
+
+/* Accordion trigger - simple button-like style */
+.accordion-trigger {
+  display: flex;
+  width: 100%;
+  box-sizing: border-box;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-primary);
+  background-color: var(--bg-primary);
+  box-shadow: var(--shadow-sm);
+  color: var(--text-primary);
+  outline: none;
+  text-align: center;
+  border-radius: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 400;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin: 0;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Selected/open state — subtle highlight, no color inversion */
+.accordion-item[data-open="true"] .accordion-trigger {
+  background-color: var(--border-muted);
+  color: var(--text-primary);
+  border-color: var(--accent-primary);
+  font-weight: 400;
+  transform: none;
+}
+
+.accordion-content {
+  display: grid;
+  grid-template-rows: 0fr;
+  width: 100%;
+  overflow: hidden;
+  transition: grid-template-rows 300ms ease;
+}
+
+.accordion-content[data-open="true"] {
+  grid-template-rows: 1fr;
+  /* Visible at steady state so floating search results (.search-float-results)
+     can escape the panel; the open keyframes pin overflow to hidden for the
+     animation's 300ms (both endpoints hold the same discrete value), and the
+     closed base rule clips the collapse transition. */
+  overflow: visible;
+  padding-bottom: 0.5rem;
+  animation: accordion-open 300ms ease;
+}
+
+/* Inner wrapper needed for grid animation */
+.accordion-content > * {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.accordion-content[data-open="true"] > * {
+  overflow: visible;
+  animation: accordion-open-guard 300ms ease;
+}
+
+/* Keeps the inner wrapper clipped while the open animation runs, then hands
+   over to the steady-state `overflow: visible` above. */
+@keyframes accordion-open-guard {
+  from {
+    overflow: hidden;
+  }
+
+  to {
+    overflow: hidden;
+  }
+}
+
+/* Full width content within flex containers */
+.accordion-content .flex-col {
+  width: 85%;
+  margin: 0 auto;
+}
+
+.accordion-item {
+  /* overflow: hidden; */
+  box-sizing: border-box;
+  /* border-bottom: 1px solid #333; */
+  margin-top: 0.5rem;
+  width: 100%;
+}
+
+.accordion-item:first-child {
+  margin-top: 0;
+}
+
+.accordion-item:last-child {
+  border-bottom: none;
+}
+
+/* Active filter indicator — trigger contains a clear button */
+.accordion-trigger:has(.clear-btn) {
+  border-color: var(--accent-primary);
+}
+
+.accordion-expand-icon {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: var(--text-primary);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+  transition: rotate 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.accordion-item[data-open="true"] .accordion-expand-icon {
+  stroke: var(--text-primary);
+  rotate: 180deg;
+}
+
+/* ---- The sheet and the panel's own ---- */
+
 /* The sheet's `?`, in the header's right corner at the title's height,
    faded like a hint button. */
 .drawer-sheet-hint {
