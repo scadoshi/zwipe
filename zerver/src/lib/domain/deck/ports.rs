@@ -48,7 +48,7 @@ use crate::domain::deck::models::deck::update_deck_profile::UpdateDeckProfileErr
 use crate::domain::deck::models::deck_card::create_deck_card::CreateDeckCardError;
 use crate::domain::deck::models::deck_card::delete_deck_card::DeleteDeckCardError;
 use crate::domain::deck::models::deck_card::get_deck_card::GetDeckCardError;
-use crate::domain::deck::models::deck_card::import_deck_cards::ImportDeckCardsError;
+use crate::domain::deck::models::deck_card::import_deck_cards::{ImportDeckCardsError, ImportRow};
 use crate::domain::deck::models::deck_card::update_deck_card::UpdateDeckCardError;
 
 /// Database port for deck building operations.
@@ -148,13 +148,15 @@ pub trait DeckRepository: Clone + Send + Sync + 'static {
     /// the same deck, closing the limit-check TOCTOU. `card_limit` is resolved
     /// by the domain (policy stays there); `email_verified` picks
     /// `LimitReached` vs `UnverifiedLimitReached`. Bulk deletes do NOT
-    /// suppress; importing a new list isn't a per-card rejection.
+    /// suppress; importing a new list isn't a per-card rejection. A row whose
+    /// printing the import named moves a card already in the deck to that
+    /// printing; a default-printing row leaves the deck's printing alone.
     fn apply_import_batch(
         &self,
         user_id: uuid::Uuid,
         deck_id: uuid::Uuid,
         mode: zwipe_core::domain::deck::ImportMode,
-        batch: &[(uuid::Uuid, uuid::Uuid, i32, String)],
+        batch: &[ImportRow],
         card_limit: i64,
         email_verified: bool,
     ) -> impl Future<Output = Result<Vec<DeckCard>, ImportDeckCardsError>> + Send;
