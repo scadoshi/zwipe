@@ -43,7 +43,7 @@ use crate::inbound::screens::deck::card::filter::card_filter_sheet::{
 use crate::inbound::screens::deck::card::filter::deck_cards::DeckCards;
 use crate::inbound::screens::deck::components::featured_cards::FeaturedCards;
 use crate::inbound::screens::deck::components::skeletons::{
-    ChipRowSkeleton, DeckCardListSkeleton, QuickAddSkeleton,
+    ChipGhost, ChipRowGhost, DeckCardListSkeleton, QuickAddSkeleton,
 };
 use crate::inbound::screens::deck::missing_deck;
 use crate::inbound::screens::oracle_tag_examples::OracleTagExamples;
@@ -894,10 +894,23 @@ pub fn View(deck_id: Uuid) -> Element {
                             }
                         }
                     } else {
-                        QuickAddSkeleton {}
-                        ChipRowSkeleton { label: "md", chips: vec!["sm", "lg", "md", "lg"] }
-                        ChipRowSkeleton { label: "md", chips: vec!["sm", "md", "sm"] }
-                        ChipRowSkeleton { label: "sm", chips: vec!["md", "lg", "sm"] }
+                        QuickAddSkeleton { label: deck_cards::QUICK_ADD }
+                        ChipRowGhost {
+                            label: deck_cards::GROUP_BY,
+                            chips: GroupByOption::all().into_iter().map(|words| ChipGhost::Text(words.to_string())).collect::<Vec<_>>(),
+                        }
+                        ChipRowGhost {
+                            label: deck_cards::BOARDS,
+                            chips: [Board::Deck, Board::Maybeboard, Board::Sideboard]
+                                .map(|board| ChipGhost::Text(deck_cards::board_label(board).to_string()))
+                                .to_vec(),
+                        }
+                        ChipRowGhost {
+                            label: deck_cards::SHOW,
+                            chips: [deck_cards::TOKENS, deck_cards::COMMAND_ZONE, deck_cards::ART]
+                                .map(|words| ChipGhost::Text(words.to_string()))
+                                .to_vec(),
+                        }
                         DeckCardListSkeleton {}
                     }
 

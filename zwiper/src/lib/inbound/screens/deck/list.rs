@@ -11,6 +11,8 @@
 //! What the screen knows and does is `zwipe_ui::screens::deck_list`; this
 //! file draws its state and performs its effects.
 
+use std::iter;
+
 use components::icons::{self};
 use components::{Chip, DockAction, LoadFailed};
 use dioxus::prelude::*;
@@ -32,7 +34,9 @@ use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen};
 use crate::inbound::components::{hint_dialog, ui_toast};
 use crate::inbound::router::Router;
-use crate::inbound::screens::deck::components::skeletons::{ChipRowSkeleton, DeckListSkeleton};
+use crate::inbound::screens::deck::components::skeletons::{
+    ChipGhost, ChipRowGhost, DeckListSkeleton,
+};
 
 /// The deck list's model with the handles that perform its effects. Copy,
 /// so every handler and task holds its own.
@@ -303,8 +307,17 @@ pub fn DeckList() -> Element {
                     // deck-derived tags fold behind the Tags chip.
                     if loading {
                         // Group by, then Show: All, the five pips, Tags.
-                        ChipRowSkeleton { label: "md", chips: vec!["sm", "md", "sm", "sm"] }
-                        ChipRowSkeleton { label: "sm", chips: vec!["sm", "sm", "sm", "sm", "sm", "sm", "md"] }
+                        ChipRowGhost {
+                            label: deck_list::GROUP_BY,
+                            chips: GroupBy::ALL.map(|option| ChipGhost::Text(option.label().to_string())).to_vec(),
+                        }
+                        ChipRowGhost {
+                            label: deck_list::SHOW,
+                            chips: iter::once(ChipGhost::Text(deck_list::SHOW_ALL.to_string()))
+                                .chain(Color::all().into_iter().map(ChipGhost::Pip))
+                                .chain(iter::once(ChipGhost::Fold(deck_list::TAGS.to_owned())))
+                                .collect::<Vec<_>>(),
+                        }
                     } else if show_rows {
                         div { class: "chip-row",
                             span { class: "stat-chip stat-chip-p1 chip-row-label", {deck_list::GROUP_BY} }

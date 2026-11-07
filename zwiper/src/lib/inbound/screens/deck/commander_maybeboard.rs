@@ -19,6 +19,7 @@
 //! performs its effects.
 
 use std::collections::HashSet;
+use std::iter;
 
 use components::{
     AlertDialog, Button, ButtonVariant, CardListFold, Chip, ClearWrap, DialogAction, Toasts,
@@ -42,7 +43,7 @@ use zwipe_ui::screens::commander_maybeboard::{
 };
 
 use super::components::danger_zone::DangerZoneAction;
-use super::components::skeletons::{ChipRowSkeleton, QuickAddSkeleton};
+use super::components::skeletons::{ChipGhost, ChipRowGhost, QuickAddSkeleton};
 use super::components::swipe_select::{SwipeMode, SwipeSelect};
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::catalog_cache::CatalogCache;
@@ -396,8 +397,14 @@ pub fn CommanderMaybeboard() -> Element {
                     // The whole page ghosts on the first load: the Quick add and Show
                     // rows as their shapes, the list with its header title as a bar.
                     if is_loading {
-                        QuickAddSkeleton {}
-                        ChipRowSkeleton { label: "sm", chips: vec!["sm", "sm", "sm", "sm", "sm", "sm", "sm"] }
+                        QuickAddSkeleton { label: model::QUICK_ADD }
+                        ChipRowGhost {
+                            label: model::SHOW,
+                            chips: iter::once(ChipGhost::Text(model::SHOW_ALL.to_string()))
+                                .chain(Color::all().into_iter().map(ChipGhost::Pip))
+                                .chain(iter::once(ChipGhost::Text(model::ART.to_string())))
+                                .collect::<Vec<_>>(),
+                        }
                         div { class: "maybeboard-list card-group row-enter",
                             div { class: "card-group-header",
                                 div { class: "skeleton-bar skeleton-card-bar-header" }

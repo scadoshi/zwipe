@@ -672,12 +672,6 @@
     cursor: default;
 }
 
-/* The header's arrow and "All" as one bar. */
-.skeleton-deck-list-header-title {
-    width: 2.5rem;
-    margin: 0.2rem 0;
-}
-
 /* Stands in for the command zone art (matches .deck-row-art-img). */
 .skeleton-deck-list-art {
     flex: 0 0 auto;

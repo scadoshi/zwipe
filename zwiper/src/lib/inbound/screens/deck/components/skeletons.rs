@@ -2,6 +2,7 @@
 
 use components::ColorBarsGhost;
 use dioxus::prelude::*;
+use zwipe_core::domain::card::scryfall_data::colors::Color;
 
 use super::collapsible_section::{HEADER_STYLE, TITLE_GROUP_STYLE, card_style};
 
@@ -85,34 +86,56 @@ pub(crate) fn BuilderProfileSkeleton() -> Element {
     }
 }
 
-/// A `chip-row` while its screen loads: the label as a bare chip in the
-/// label's p1 tint, then one bare chip per entry of `chips`. `label` and each
-/// chip name a `skeleton-chip-*` width (`sm`, `md`, `lg`, `xl`) close to the
-/// real text's, so the swap to the live row doesn't jump. `style` carries the
-/// live row's inline style, when it has one.
+/// One chip in a [`ChipRowGhost`]: a chip of words, a fold chip (the
+/// disclosure arrow, then words), or a chip holding one color's pip.
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) enum ChipGhost {
+    /// A chip whose label is these words.
+    Text(String),
+    /// A fold chip whose label is these words.
+    Fold(String),
+    /// A chip holding this color's pip.
+    Pip(Color),
+}
+
+/// A `chip-row` with fixed labels while its screen loads: the label chip in
+/// its p1 tint, then each of `chips`. Every chip is the live chip's own box
+/// with its words or pip kept for their size and drawn invisible, so the
+/// ghost row is the live row's size and its chips are empty.
 #[component]
-pub(crate) fn ChipRowSkeleton(
-    label: &'static str,
-    chips: Vec<&'static str>,
-    #[props(default)] style: String,
-) -> Element {
+pub(crate) fn ChipRowGhost(label: &'static str, chips: Vec<ChipGhost>) -> Element {
     rsx! {
-        div { class: "chip-row", style: "{style}",
-            div { class: "skeleton-bar skeleton-chip skeleton-chip-{label} stat-chip-p1 skeleton-tinted" }
-            for (i , size) in chips.iter().enumerate() {
-                div { key: "{i}", class: "skeleton-bar skeleton-chip skeleton-chip-{size}" }
+        div { class: "chip-row", "aria-hidden": "true",
+            span { class: "stat-chip stat-chip-p1 chip-row-label ghost-box",
+                span { {label} }
+            }
+            for (i , chip) in chips.into_iter().enumerate() {
+                button { key: "{i}", r#type: "button", class: "chip ghost-box", tabindex: "-1",
+                    match chip {
+                        ChipGhost::Text(words) => rsx! { span { {words} } },
+                        ChipGhost::Fold(words) => rsx! {
+                            span { class: "chip-fold-arrow", "\u{25b8}" }
+                            span { {words} }
+                        },
+                        ChipGhost::Pip(color) => rsx! {
+                            i { class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost" }
+                        },
+                    }
+                }
             }
         }
     }
 }
 
-/// The Quick add row while its screen loads: the label as a tinted bare chip
-/// and the compact input as an empty bordered box.
+/// The Quick add row while its screen loads: the label chip, empty at its
+/// live size, and the compact input as an empty bordered box.
 #[component]
-pub(crate) fn QuickAddSkeleton() -> Element {
+pub(crate) fn QuickAddSkeleton(label: &'static str) -> Element {
     rsx! {
         div { class: "chip-row",
-            div { class: "skeleton-bar skeleton-chip skeleton-chip-lg stat-chip-p1 skeleton-tinted" }
+            span { class: "stat-chip stat-chip-p1 chip-row-label ghost-box",
+                span { {label} }
+            }
             div { class: "skeleton-input-compact" }
         }
     }
@@ -269,11 +292,13 @@ pub(crate) fn DeckListSkeleton() -> Element {
         // collapsible header, and deck rows inside, built from the live
         // classes (`card-group`, `card-group-header`, `collapsible`,
         // `card-row`, `deck-list-row`) rather than skeleton lookalikes, so the
-        // two can't drift apart. The header's arrow and "All" ghost as one
-        // short bar, and the console above ghosts in the list screen.
+        // two can't drift apart. The header is its live box with the arrow
+        // and "All" drawn invisible, and the console above ghosts in the
+        // list screen.
         div { class: "card-group deck-group",
-            div { class: "card-group-header group-collapsible expanded skeleton-deck-list-header",
-                div { class: "skeleton-bar skeleton-deck-list-header-title" }
+            div { class: "card-group-header group-collapsible expanded skeleton-deck-list-header ghost-box",
+                span { class: "card-row-arrow", "\u{25b8}" }
+                span { "All (0)" }
             }
             div { class: "collapsible open",
                 div { class: "collapsible-inner",
