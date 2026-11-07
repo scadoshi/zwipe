@@ -421,7 +421,7 @@ pub fn undo_message(action: &UndoAction) -> String {
 #[cfg(test)]
 mod tests {
     use chrono::{Duration, Utc};
-    use zwipe_core::domain::deck::Format;
+    use zwipe_core::domain::deck::{Format, Quantity};
 
     use super::*;
     use crate::test_support::{card, deck, deck_profile};
@@ -550,6 +550,39 @@ mod tests {
         let after = counts(zone.live_warnings(&profile, &fetched, &live));
         assert_eq!(after.len(), 1, "{after:?}");
         assert!(after[0].starts_with("Deck has 4 cards"), "{after:?}");
+    }
+
+    #[test]
+    fn live_warnings_follow_a_quantity_change_and_a_move_to_the_sideboard() {
+        let mut profile = deck_profile("D");
+        profile.format = Some(Format::Commander);
+        let mut fetched = entries();
+        fetched.retain(|e| e.deck_card.board == Board::Deck);
+        let mut live = fetched.clone();
+        let zone = Zone::default();
+        let says = |live: &[DeckEntry], words: &str| {
+            zone.live_warnings(&profile, &fetched, live)
+                .iter()
+                .any(|w| w.to_string().contains(words))
+        };
+        assert!(!says(&live, "copies"));
+        assert!(!says(&live, "sideboards"));
+
+        let zebra = live
+            .iter_mut()
+            .find(|e| e.card.scryfall_data.name == "Zebra")
+            .unwrap();
+        zebra.deck_card.quantity = Quantity::new(2).unwrap();
+        assert!(
+            says(&live, "Zebra has 2 copies") || says(&live, "copy limit"),
+            "+ raises the copy limit"
+        );
+
+        live[0].deck_card.board = Board::Sideboard;
+        assert!(
+            says(&live, "sideboards"),
+            "To sideboard raises the no-sideboard warning"
+        );
     }
 
     #[test]
