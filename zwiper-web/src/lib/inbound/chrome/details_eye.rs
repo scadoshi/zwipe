@@ -1,12 +1,15 @@
 //! The swipe surfaces' eye (card details) button. Below the breakpoint it
 //! opens the details sheet, as in the app. On a wide window the details sit
 //! beside the card, and the eye hides and shows that panel instead, lit
-//! while the panel shows.
+//! while the panel shows. The panel starts shown when the window has room
+//! for it beside the card and hidden when it would touch the card, decided
+//! once as the screen opens.
 
 use components::icons::EyeIcon;
 use dioxus::prelude::*;
 
 use crate::inbound::chrome::media::use_wide;
+use crate::outbound::browser;
 
 /// The class a swipe surface's body takes while its beside-the-card
 /// details are hidden.
@@ -35,6 +38,56 @@ impl EyePress {
 #[must_use]
 pub fn eye_lit(wide: bool, beside_hidden: bool) -> bool {
     wide && !beside_hidden
+}
+
+/// Where a swipe surface draws its card and docks its panel.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Surface {
+    /// The whole window: Add, Remove and swipe select.
+    Window,
+    /// The large modal the examples open in on a wide window.
+    LargeModal,
+}
+
+/// The root font size the stylesheet's rems resolve against, in pixels.
+const REM: f64 = 16.0;
+
+impl Surface {
+    /// The surface's width in a window `window_w` wide: the window, or the
+    /// large modal's `max(2rem, 50vw - 38rem)` inset on each side.
+    fn width(self, window_w: f64) -> f64 {
+        match self {
+            Self::Window => window_w,
+            Self::LargeModal => window_w - 2.0 * (2.0 * REM).max(window_w / 2.0 - 38.0 * REM),
+        }
+    }
+}
+
+/// The card's drawn width in a window `window_h` tall, as web.css sizes it:
+/// its height the stack's `min(68vh, 42rem)` less the stack card's 3.25rem,
+/// its width following at a card's 63:88, at most the 26rem the stack's
+/// 30rem column leaves it.
+fn card_width(window_h: f64) -> f64 {
+    let height = (0.68 * window_h).min(42.0 * REM) - 3.25 * REM;
+    (height * 63.0 / 88.0).min(26.0 * REM)
+}
+
+/// Whether the details panel fits beside the card on `surface` in a window
+/// `window_w` by `window_h`: the card centered in the surface, the panel
+/// `min(24rem, 100vw - 2rem)` wide and 1rem in from the right, not
+/// touching it.
+#[must_use]
+pub fn beside_fits(surface: Surface, window_w: f64, window_h: f64) -> bool {
+    let width = surface.width(window_w);
+    let panel = (24.0 * REM).min(window_w - 2.0 * REM);
+    let card_right = width / 2.0 + card_width(window_h) / 2.0;
+    card_right < width - REM - panel
+}
+
+/// Whether the panel starts hidden on `surface` in the current window, or
+/// shown off the browser.
+fn starts_hidden(surface: Surface) -> bool {
+    browser::window_size().is_some_and(|(w, h)| !beside_fits(surface, w, h))
 }
 
 /// One surface's eye: the window's width, the surface's details sheet and
@@ -85,11 +138,12 @@ impl DetailsEye {
     }
 }
 
-/// The eye for a surface whose details sheet opens on `sheet`. The beside
-/// panel starts shown.
-pub fn use_details_eye(sheet: Signal<bool>) -> DetailsEye {
+/// The eye for `surface`, whose details sheet opens on `sheet`. The beside
+/// panel starts shown where it fits beside the card (see [`beside_fits`]);
+/// later resizes leave the eye as it is.
+pub fn use_details_eye(sheet: Signal<bool>, surface: Surface) -> DetailsEye {
     let wide = use_wide();
-    let beside_hidden = use_signal(|| false);
+    let beside_hidden = use_signal(|| starts_hidden(surface));
     DetailsEye {
         wide,
         sheet,
@@ -134,6 +188,27 @@ mod tests {
     fn the_eye_lights_on_a_wide_window_while_the_panel_shows() {
         assert!(eye_lit(true, false));
         assert!(!eye_lit(true, true));
+    }
+
+    #[test]
+    fn the_panel_starts_shown_where_it_clears_the_card() {
+        assert!(beside_fits(Surface::Window, 1280.0, 900.0));
+        assert!(beside_fits(Surface::Window, 1600.0, 900.0));
+        assert!(!beside_fits(Surface::Window, 1000.0, 900.0));
+        assert!(!beside_fits(Surface::Window, 1000.0, 700.0));
+    }
+
+    #[test]
+    fn the_large_modal_measures_from_its_own_width() {
+        assert!(beside_fits(Surface::LargeModal, 1600.0, 900.0));
+        assert!(!beside_fits(Surface::LargeModal, 1000.0, 900.0));
+        assert!(!beside_fits(Surface::LargeModal, 1600.0, 1200.0));
+    }
+
+    #[test]
+    fn the_card_follows_the_window_height_up_to_its_column() {
+        assert!((card_width(900.0) - 401.0).abs() < 1.0);
+        assert!((card_width(2000.0) - 416.0).abs() < f64::EPSILON);
     }
 
     #[test]

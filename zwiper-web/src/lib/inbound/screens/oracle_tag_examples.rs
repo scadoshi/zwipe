@@ -25,7 +25,7 @@ use crate::inbound::cards::swipe_stack::{
 };
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::back_arrow::BackArrow;
-use crate::inbound::chrome::details_eye::{DockEye, use_details_eye};
+use crate::inbound::chrome::details_eye::{DockEye, Surface, use_details_eye};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 
 /// A step forward through the examples. It leaves to the left, so a step
@@ -57,7 +57,7 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
     let mut loading = use_signal(|| true);
     let mut exhausted = use_signal(|| false);
     let show_details = use_signal(|| false);
-    let eye = use_details_eye(show_details);
+    let eye = use_details_eye(show_details, Surface::LargeModal);
     let mut printing_open = use_signal(|| false);
     let control = use_swipe_control();
 
