@@ -137,6 +137,15 @@
     border-bottom: none;
 }
 
+/* A row that only says why the list is empty, in the list's own panel:
+   its words, muted and centered, at a row's height. */
+.card-row.card-row-note {
+    padding: 0.75rem 1rem;
+    color: var(--ink-text-muted, var(--text-muted));
+    font-size: 0.9rem;
+    text-align: center;
+}
+
 /* Emphasis (scale + shadow + tint) marks the expanded row; its own border
    drops so the closing rule isn't doubled. */
 .card-row.expanded {

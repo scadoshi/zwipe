@@ -340,7 +340,7 @@ pub fn CommanderMaybeboard() -> Element {
     let mut filters_overlay_open = use_signal(|| false);
     let mut show_clear_dialog = use_signal(|| false);
 
-    // Tells the model when the Swipe overlay closes: its up-swipes saved
+    // Tells the model when the Swipe overlay closes: its up swipes saved
     // entries, so the list fetches again.
     let mut swipe_was_open = use_signal(|| false);
     use_effect(move || {
@@ -495,37 +495,35 @@ pub fn CommanderMaybeboard() -> Element {
                             }
                         }
 
-                        if let Some(message) = message {
-                            div { class: "message-empty",
-                                span { class: "chip-note", {message} }
+                        // Same bordered container the deck cards list wraps
+                        // its rows in, there whether or not anything is saved.
+                        // Swipe sits in the list's header, so it says what gets
+                        // swiped; with nothing to list, one row says why.
+                        CardListFold {
+                            title: model::LIST_TITLE,
+                            actions: rsx! {
+                                Button {
+                                    variant: ButtonVariant::Action,
+                                    onclick: move |_| swipe_open.set(true),
+                                    {model::SWIPE}
+                                }
+                            },
+                            if let Some(message) = message {
+                                div { class: "card-row card-row-note", {message} }
                             }
-                        } else {
-                            // Same bordered container the deck cards list wraps
-                            // its rows in. Swipe sits in the list's header, so
-                            // it says what gets swiped.
-                            CardListFold {
-                                title: model::LIST_TITLE,
-                                actions: rsx! {
-                                    Button {
-                                        variant: ButtonVariant::Action,
-                                        onclick: move |_| swipe_open.set(true),
-                                        {model::SWIPE}
-                                    }
-                                },
-                                for card in filtered {
-                                    MaybeboardRow {
-                                        key: "{card.scryfall_data.id}",
-                                        card,
-                                        expanded_card,
-                                        preview_card,
-                                        preview_dismissing,
-                                        on_create,
-                                        on_remove,
-                                        on_printing: move |c: Card| {
-                                            printing_card.set(Some(c));
-                                            printing_open.set(true);
-                                        },
-                                    }
+                            for card in filtered {
+                                MaybeboardRow {
+                                    key: "{card.scryfall_data.id}",
+                                    card,
+                                    expanded_card,
+                                    preview_card,
+                                    preview_dismissing,
+                                    on_create,
+                                    on_remove,
+                                    on_printing: move |c: Card| {
+                                        printing_card.set(Some(c));
+                                        printing_open.set(true);
+                                    },
                                 }
                             }
                         }
@@ -574,9 +572,8 @@ pub fn CommanderMaybeboard() -> Element {
                 },
             }
 
-            // In-place commander swiping: up-swipes save here (the shared
-            // overlay's maybeboard wiring), right-swipe seeds a new deck with
-            // the pick and jumps to the create screen.
+            // Commanders not saved yet: up saves one here, right starts a
+            // deck with it and goes to the create screen.
             SwipeSelect {
                 host_screen: screen::COMMANDER_MAYBEBOARD,
                 open: swipe_open,

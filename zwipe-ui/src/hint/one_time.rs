@@ -436,7 +436,9 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
                 ]),
                 bullet(vec![
                     key("Swipe"),
-                    text(" deals commanders: right starts a deck, up saves one"),
+                    text(
+                        " deals commanders you haven't saved: left skips, up saves, right starts a deck",
+                    ),
                 ]),
                 bullet(vec![key("Quick add"), text(" searches by name")]),
                 bullet(vec![
@@ -527,6 +529,15 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
     })
 }
 
+/// The Swipe select bullet for an up swipe, which saves to the commander maybeboard.
+fn up_saves() -> Block {
+    bullet(vec![
+        text("Swipe "),
+        emph("up", Role::Warning),
+        text(" saves it to your commander maybeboard"),
+    ])
+}
+
 /// The Swipe select hint, which changes with its overlay.
 #[must_use]
 pub fn swipe_select(mode: SwipeSelectMode) -> HintContent {
@@ -546,13 +557,14 @@ pub fn swipe_select(mode: SwipeSelectMode) -> HintContent {
         SwipeSelectMode::StartsDeck => vec![
             bullet(vec![
                 text("Swipe "),
-                emph("right", Role::Success),
-                text(" starts a new deck with that commander"),
-            ]),
-            bullet(vec![
-                text("Swipe "),
                 emph("left", Role::Error),
                 text(" skips it"),
+            ]),
+            up_saves(),
+            bullet(vec![
+                text("Swipe "),
+                emph("right", Role::Success),
+                text(" starts a new deck with that commander"),
             ]),
         ],
         SwipeSelectMode::Picking(noun) => vec![
@@ -569,14 +581,16 @@ pub fn swipe_select(mode: SwipeSelectMode) -> HintContent {
         ],
     };
     // Up saves only where the pile holds commanders: not for a background
-    // or a signature spell.
+    // or a signature spell. From the maybeboard it already sits between
+    // left and right.
     let no_commanders = [Slot::Background, Slot::SignatureSpell].map(|slot| slot.noun(None));
-    if !matches!(mode, SwipeSelectMode::Picking(noun) if no_commanders.contains(&noun)) {
-        blocks.push(bullet(vec![
-            text("Swipe "),
-            emph("up", Role::Warning),
-            text(" saves it to your commander maybeboard"),
-        ]));
+    let up_listed = match mode {
+        SwipeSelectMode::Picking(noun) => no_commanders.contains(&noun),
+        SwipeSelectMode::StartsDeck => true,
+        SwipeSelectMode::Suggested { .. } => false,
+    };
+    if !up_listed {
+        blocks.push(up_saves());
     }
     blocks.push(bullet(vec![
         text("Swipe "),
@@ -653,12 +667,18 @@ mod tests {
     }
 
     #[test]
-    fn from_the_maybeboard_a_pick_starts_a_new_deck() {
+    fn from_the_maybeboard_left_skips_up_saves_and_right_starts_a_deck() {
         let hint = swipe_select(SwipeSelectMode::StartsDeck);
         assert_eq!(hint.title, "Swipe select");
+        let lines: Vec<String> = hint.blocks.iter().take(4).map(Block::plain).collect();
         assert_eq!(
-            hint.blocks[0].plain(),
-            "Swipe right starts a new deck with that commander"
+            lines,
+            [
+                "Swipe left skips it",
+                "Swipe up saves it to your commander maybeboard",
+                "Swipe right starts a new deck with that commander",
+                "Swipe down undoes the last swipe",
+            ],
         );
     }
 
