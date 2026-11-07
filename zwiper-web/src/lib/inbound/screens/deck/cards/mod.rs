@@ -16,6 +16,7 @@ use zwipe_core::domain::card::Card;
 use zwipe_ui::deck_signals::Level;
 
 use crate::inbound::cards::otag::use_describe_tag;
+use crate::inbound::cards::swipe_confirm::SwipeConfirm;
 
 /// Raises a land or budget signal from zwipe-ui as the app's toast: info or
 /// warning, up for the normal band.
@@ -27,6 +28,50 @@ fn signal_toast(toast: Toasts, signal: Option<(Level, String)>) {
     match level {
         Level::Info => toast.info(message, options),
         Level::Warning => toast.warning(message, options),
+    }
+}
+
+/// What one swipe raised, held so it reaches the user as one toast: a land,
+/// budget or pile signal over the swipe's own confirmation, the warning over
+/// the info, then the first. In chip mode the confirmation still updates the
+/// chip.
+#[derive(Debug, Default)]
+pub(crate) struct OneLine {
+    said: Option<(bool, String)>,
+    signals: Vec<(Level, String)>,
+}
+
+impl OneLine {
+    /// The swipe's own confirmation: a change to the deck when `success`.
+    pub(crate) fn confirm(&mut self, success: bool, text: impl Into<String>) {
+        self.said = Some((success, text.into()));
+    }
+
+    /// A signal the swipe set off, if any.
+    pub(crate) fn signal(&mut self, signal: Option<(Level, String)>) {
+        self.signals.extend(signal);
+    }
+
+    /// Raises the one line that wins.
+    pub(crate) fn raise(self, confirm: SwipeConfirm, toast: Toasts) {
+        let warning = self
+            .signals
+            .iter()
+            .position(|(level, _)| matches!(level, Level::Warning));
+        let winner = warning
+            .or_else(|| (!self.signals.is_empty()).then_some(0))
+            .and_then(|at| self.signals.into_iter().nth(at));
+        match (winner, self.said) {
+            (Some(signal), said) => {
+                if let Some((_, text)) = said {
+                    confirm.quietly(text);
+                }
+                signal_toast(toast, Some(signal));
+            }
+            (None, Some((true, text))) => confirm.success(text),
+            (None, Some((false, text))) => confirm.info(text),
+            (None, None) => {}
+        }
     }
 }
 

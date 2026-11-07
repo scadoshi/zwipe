@@ -458,12 +458,12 @@
 
 .chip-xs.selected {
     border-color: var(--accent-secondary);
-    color: var(--accent-secondary);
+    color: var(--ink-accent-secondary, var(--accent-secondary));
 }
 
 .chip-xs.chip-primary {
     border-color: var(--palette-2);
-    color: var(--palette-2);
+    color: var(--ink-palette-2, var(--palette-2));
 }
 
 /* An empty swipe stack's note at full strength, with a chip's edge and the

@@ -23,7 +23,7 @@ use crate::generation::{Generation, Ticket};
 use crate::playstyle;
 use crate::stack::{CardStack, Direction, StackAction};
 use crate::timing::{LOAD_MORE_AT, MAYBEBOARD_TOAST, PAGE_SIZE};
-use crate::toast::{Toast, ToastKind};
+use crate::toast::{Line, Toast, ToastKind, keep_one};
 
 /// The overlay's title in every mode but [`Mode::Suggested`].
 pub const TITLE: &str = "Swipe select";
@@ -255,6 +255,15 @@ pub enum Effect {
     Confirm(Toast),
 }
 
+/// Which of an action's effects raise a toast, for [`keep_one`].
+fn toast_line(effect: &Effect) -> Option<Line<'_>> {
+    match effect {
+        Effect::Toast(toast) => Some(Line::Toast(toast)),
+        Effect::Confirm(toast) => Some(Line::Confirm(toast)),
+        _ => None,
+    }
+}
+
 /// Whether the Filter button's dot lights for the client's `filter`: any user filter or explicit sort, since popularity order with no sort is the default.
 #[must_use]
 pub fn filter_lit(filter: &CardQueryBuilder) -> bool {
@@ -353,6 +362,7 @@ impl State {
             };
             effects.push(Effect::Toast(Toast::quick(ToastKind::Info, line)));
         }
+        keep_one(&mut effects, toast_line);
         effects
     }
 

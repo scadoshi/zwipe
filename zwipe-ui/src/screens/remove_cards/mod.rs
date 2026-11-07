@@ -21,7 +21,7 @@ use crate::deck_signals::{self, Crossing, Level};
 use crate::generation::{Generation, Ticket};
 use crate::stack::{CardStack, Direction, RemoveAction, StackAction};
 use crate::stores::undo::{self, UndoAction};
-use crate::toast::{Toast, ToastKind};
+use crate::toast::{Line, Toast, ToastKind, keep_one};
 
 /// The screen's title.
 pub const TITLE: &str = "Remove";
@@ -40,6 +40,9 @@ pub const FILTER: &str = "Filter";
 
 /// The button that brings the stack back to its first card.
 pub const REFRESH: &str = "Refresh";
+
+/// The dock's undo button, which does what a down swipe does.
+pub const UNDO: &str = "Undo";
 
 /// The toast for a left swipe.
 pub const KEPT: &str = "Kept";
@@ -334,6 +337,15 @@ pub enum Effect {
     Confirm(Toast),
 }
 
+/// Which of an action's effects raise a toast, for [`keep_one`].
+fn toast_line(effect: &Effect) -> Option<Line<'_>> {
+    match effect {
+        Effect::Toast(toast) => Some(Line::Toast(toast)),
+        Effect::Confirm(toast) => Some(Line::Confirm(toast)),
+        _ => None,
+    }
+}
+
 /// The create request that puts `quantity` copies of `card` back on `board`.
 #[must_use]
 pub fn restore_request(card: &Card, board: Board, quantity: i32) -> HttpCreateDeckCard {
@@ -372,8 +384,12 @@ enum Fetch {
 enum Pending {
     /// The deck's fetch.
     Load,
-    /// A remove. The entry, when the deck held it, goes on the undo log once it lands.
-    Remove { entry: Option<Box<DeckEntry>> },
+    /// A remove of `card_id`. The entry, when the deck held it, goes on the undo log once it lands. `undo` holds an undo asked for while the request was out: the card's restore goes out once the remove lands, so it never races the delete.
+    Remove {
+        card_id: Uuid,
+        entry: Option<Box<DeckEntry>>,
+        undo: Option<HeldUndo>,
+    },
     /// A move. The board it left, when the deck held it, goes on the undo log once it lands.
     Move {
         card_id: Uuid,
@@ -393,6 +409,14 @@ enum Pending {
         from: Board,
         taken: Option<UndoAction>,
     },
+}
+
+/// An undone remove waiting on its own delete: what the restore puts back.
+#[derive(Debug, Clone, PartialEq)]
+struct HeldUndo {
+    card: Box<Card>,
+    board: Board,
+    quantity: i32,
 }
 
 /// Remove cards for one visit. Starts loading with no card; send [`Action::Load`] with the deck.
@@ -444,6 +468,7 @@ impl State {
             };
             effects.push(Effect::Toast(Toast::quick(ToastKind::Info, line)));
         }
+        keep_one(&mut effects, toast_line);
         effects
     }
 
@@ -536,6 +561,21 @@ impl State {
                 self.fetch = Fetch::Failed;
                 Vec::new()
             }
+            // The delete failed, so the card never left the deck: an undo held
+            // on it only puts the entry back.
+            Some(Pending::Remove {
+                entry,
+                undo: Some(_),
+                ..
+            }) => {
+                if let Some(entry) = entry {
+                    self.entries.push(*entry);
+                }
+                vec![Effect::Confirm(Toast::quick(
+                    ToastKind::Success,
+                    UNDID_REMOVE,
+                ))]
+            }
             Some(
                 Pending::UndoRemove {
                     taken: Some(action),
@@ -605,7 +645,9 @@ impl State {
             quantity,
         });
         let ticket = self.wait(Pending::Remove {
+            card_id,
             entry: entry.map(Box::new),
+            undo: None,
         });
         let mut effects = vec![
             Effect::DeleteDeckCard {
@@ -697,9 +739,25 @@ impl State {
                     Effect::Confirm(Toast::quick(ToastKind::Info, UNDID_KEEP)),
                 ];
             }
-            RemoveAction::Remove { card, .. } => UndoClaim::Removed {
-                card_id: card.scryfall_data.id,
-            },
+            RemoveAction::Remove {
+                card,
+                board,
+                quantity,
+            } => {
+                let card_id = card.scryfall_data.id;
+                if let Some(held) = self.held_remove(card_id) {
+                    // The delete is still out: the card comes back now and its
+                    // restore waits for the delete to land.
+                    *held = Some(HeldUndo {
+                        card: card.clone(),
+                        board: *board,
+                        quantity: *quantity,
+                    });
+                    self.stack.insert_current((**card).clone());
+                    return vec![Effect::Enter(action.exited())];
+                }
+                UndoClaim::Removed { card_id }
+            }
             RemoveAction::MoveBoard { card, from, .. } => UndoClaim::MovedBoard {
                 card_id: card.scryfall_data.id,
                 from: *from,
@@ -782,7 +840,29 @@ impl State {
             return Vec::new();
         };
         match self.take(ticket) {
-            Some(Pending::Remove { entry: Some(entry) }) => {
+            Some(Pending::Remove {
+                undo: Some(held), ..
+            }) => {
+                let HeldUndo {
+                    card,
+                    board,
+                    quantity,
+                } = held;
+                let ticket = self.wait(Pending::UndoRemove {
+                    card: card.clone(),
+                    taken: None,
+                });
+                vec![Effect::RestoreDeckCard {
+                    ticket,
+                    deck_id,
+                    card,
+                    board,
+                    quantity,
+                }]
+            }
+            Some(Pending::Remove {
+                entry: Some(entry), ..
+            }) => {
                 let baseline = *entry.deck_card.quantity;
                 vec![Effect::RecordUndo {
                     deck_id,
@@ -869,6 +949,21 @@ impl State {
         ticket
     }
 
+    /// The held-undo slot of a remove of `card_id` still out with no undo held yet, if there is one.
+    fn held_remove(&mut self, card_id: Uuid) -> Option<&mut Option<HeldUndo>> {
+        self.waiting
+            .iter_mut()
+            .rev()
+            .find_map(|(_, pending)| match pending {
+                Pending::Remove {
+                    card_id: id,
+                    undo: undo @ None,
+                    ..
+                } if *id == card_id => Some(undo),
+                _ => None,
+            })
+    }
+
     /// Takes the request holding `ticket` off the waiting list, if it is there.
     fn take(&mut self, ticket: Ticket) -> Option<Pending> {
         let at = self.waiting.iter().position(|(t, _)| *t == ticket)?;
@@ -914,6 +1009,24 @@ impl State {
     #[must_use]
     pub fn is_empty(&self) -> bool {
         self.stack.is_empty()
+    }
+
+    /// Whether a swipe this visit can still be undone.
+    #[must_use]
+    pub fn can_undo(&self) -> bool {
+        self.stack.has_history()
+    }
+
+    /// What an empty stack says in its place: that the swipes reached the end, or why nothing showed.
+    #[must_use]
+    pub fn empty_line(&self) -> &'static str {
+        if self.can_undo() {
+            NOTHING_LEFT
+        } else if self.filter.is_empty() {
+            NO_CARDS_ON_BOARDS
+        } else {
+            NO_MATCHES
+        }
     }
 
     /// The card the details sheet and the card info describe, wrapping round the stack; `None` only when it is empty.

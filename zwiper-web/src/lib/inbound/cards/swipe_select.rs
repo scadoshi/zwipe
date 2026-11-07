@@ -10,6 +10,7 @@
 //!     open: swipe_open,
 //!     mode: SwipeMode::Commander(Format::Commander),
 //!     exclude_oracle_ids: saved_ids,     // a ReadSignal<HashSet<Uuid>>
+//!     starts_deck: true,                 // the hint says a pick starts a deck
 //!     on_select: move |card: Card| { swipe_open.set(false); create_with(card); },
 //!     on_close: move |()| swipe_open.set(false),
 //! }
@@ -202,6 +203,7 @@ pub fn SwipeSelect(
     #[props(default)] suggested_pile: Option<ReadSignal<SuggestedPile>>,
     #[props(default)] suggested_filter: Option<Element>,
     #[props(default)] commander: Option<Card>,
+    #[props(default)] starts_deck: bool,
 ) -> Element {
     use_overlay_back(open);
     let session: Signal<Option<Session>> = use_context();
@@ -413,6 +415,7 @@ pub fn SwipeSelect(
         SwipeMode::Suggested => SwipeSelectMode::Suggested {
             has_filter: suggested_filter.is_some(),
         },
+        _ if starts_deck => SwipeSelectMode::StartsDeck,
         SwipeMode::Commander(_)
         | SwipeMode::Partner
         | SwipeMode::Background
