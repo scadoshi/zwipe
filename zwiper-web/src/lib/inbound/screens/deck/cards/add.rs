@@ -36,7 +36,7 @@ use zwipe_ui::hint::Role;
 use zwipe_ui::screens::add_cards;
 use zwipe_ui::stack::{
     AddAction, CARDS_WARNING_THRESHOLD, CardStack, MAX_CARDS_IN_STACK, MaybeboardAction,
-    NO_CARDS_LEFT, STACK_WARNING_EVERY, StackAction,
+    NO_CARDS_LEFT, NO_CARDS_MATCH, STACK_WARNING_EVERY, StackAction,
 };
 use zwipe_ui::stores::filters::FilterScope;
 use zwipe_ui::stores::in_flight::AddOutcome;
@@ -889,6 +889,22 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             (s.window().to_vec(), s.entering(), false)
         }
     };
+    // The ghost says why when the filter leaves nothing to deal: a search
+    // that came back empty, or maybeboard cards none of which match.
+    let ghost_note = match at {
+        AddSource::Search => {
+            (!loading_cards() && last_search.read().is_some() && stack.read().is_empty())
+                .then_some(NO_CARDS_MATCH)
+        }
+        AddSource::Maybeboard => {
+            let has_maybe = deck
+                .read()
+                .as_ref()
+                .is_some_and(|d| !d.maybeboard.is_empty());
+            (has_maybe && !filter.read().is_empty() && mb_stack.read().is_empty())
+                .then_some(NO_CARDS_MATCH)
+        }
+    };
     let buttons = vec![
         (Swipe::Left, "Skip"),
         (Swipe::Up, "Maybeboard"),
@@ -945,7 +961,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                         } else if at == AddSource::Search && loading_cards() {
                             CardSkeleton {}
                         } else {
-                            CardSkeleton {}
+                            CardSkeleton { note: ghost_note }
                         }
                     }
                 }

@@ -26,7 +26,7 @@ use crate::filter::{self, AddContext};
 use crate::generation::{Generation, Ticket};
 use crate::stack::{
     AddAction, CARDS_WARNING_THRESHOLD, CardStack, Direction, MAX_CARDS_IN_STACK, MaybeboardAction,
-    NO_CARDS_LEFT, STACK_WARNING_EVERY, StackAction,
+    NO_CARDS_LEFT, NO_CARDS_MATCH, STACK_WARNING_EVERY, StackAction,
 };
 use crate::stores::in_flight::{AddOutcome, InFlightAdds};
 use crate::stores::parked::ParkedStack;
@@ -1511,6 +1511,24 @@ impl State {
     #[must_use]
     pub fn validates_apply(&self) -> bool {
         self.source == Source::Search
+    }
+
+    /// The note the ghost card carries: [`NO_CARDS_MATCH`] when the filter left nothing to deal, a
+    /// search that came back empty or a maybeboard with cards none of which match. `None` while
+    /// cards show, while a search runs and for an empty maybeboard.
+    #[must_use]
+    pub fn ghost_note(&self) -> Option<&'static str> {
+        if self.pile() != Pile::Empty {
+            return None;
+        }
+        let matched_none = match self.source {
+            Source::Search => self.last_search.is_some(),
+            Source::Maybeboard => {
+                !self.filter.is_empty()
+                    && self.deck.as_ref().is_some_and(|d| !d.maybeboard.is_empty())
+            }
+        };
+        matched_none.then_some(NO_CARDS_MATCH)
     }
 
     /// What the pile area draws.
