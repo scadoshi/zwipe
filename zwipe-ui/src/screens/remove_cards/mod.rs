@@ -328,6 +328,10 @@ pub enum Effect {
     Replace(Destination),
     /// Raises this toast.
     Toast(Toast),
+    /// Confirms what a swipe or its undo just did, as the user's swipe
+    /// confirmations setting says: this toast's words in the screen's chip,
+    /// the toast itself, or nothing.
+    Confirm(Toast),
 }
 
 /// The create request that puts `quantity` copies of `card` back on `board`.
@@ -430,7 +434,7 @@ impl State {
         if before != Status::Empty && self.status() == Status::Empty {
             let line = if swiped {
                 effects.retain(|effect| {
-                    !matches!(effect, Effect::Toast(toast) if SWIPE_LINES.contains(&toast.text.as_str()))
+                    !matches!(effect, Effect::Toast(toast) | Effect::Confirm(toast) if SWIPE_LINES.contains(&toast.text.as_str()))
                 });
                 NOTHING_LEFT
             } else if self.filter.is_empty() {
@@ -579,7 +583,7 @@ impl State {
         }
         self.stack.record(RemoveAction::Keep);
         self.stack.advance_wrapping();
-        vec![Effect::Toast(Toast::quick(ToastKind::Info, KEPT))]
+        vec![Effect::Confirm(Toast::quick(ToastKind::Info, KEPT))]
     }
 
     /// Removes every copy of the top card from the stack and the entries, and asks the server to.
@@ -609,7 +613,7 @@ impl State {
                 deck_id,
                 card_id,
             },
-            Effect::Toast(Toast::quick(ToastKind::Success, REMOVED)),
+            Effect::Confirm(Toast::quick(ToastKind::Success, REMOVED)),
         ];
         let (lands, price) = (self.land_count(), self.price());
         self.entries.retain(|e| e.card.scryfall_data.id != card_id);
@@ -657,7 +661,7 @@ impl State {
                 card_id,
                 to,
             },
-            Effect::Toast(Toast::quick(ToastKind::Info, message)),
+            Effect::Confirm(Toast::quick(ToastKind::Info, message)),
         ];
         let (lands, price) = (self.land_count(), self.price());
         if let Some(entry) = self
@@ -690,7 +694,7 @@ impl State {
                 }
                 return vec![
                     Effect::Enter(action.exited()),
-                    Effect::Toast(Toast::quick(ToastKind::Info, UNDID_KEEP)),
+                    Effect::Confirm(Toast::quick(ToastKind::Info, UNDID_KEEP)),
                 ];
             }
             RemoveAction::Remove { card, .. } => UndoClaim::Removed {
@@ -805,7 +809,10 @@ impl State {
                 {
                     entry.deck_card.board = from;
                 }
-                vec![Effect::Toast(Toast::quick(ToastKind::Success, UNDID_MOVE))]
+                vec![Effect::Confirm(Toast::quick(
+                    ToastKind::Success,
+                    UNDID_MOVE,
+                ))]
             }
             _ => Vec::new(),
         }
@@ -820,7 +827,7 @@ impl State {
             card: *card,
             deck_card,
         });
-        vec![Effect::Toast(Toast::quick(
+        vec![Effect::Confirm(Toast::quick(
             ToastKind::Success,
             UNDID_REMOVE,
         ))]

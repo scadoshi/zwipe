@@ -1284,3 +1284,42 @@
 .deck-warning-row button {
     white-space: nowrap;
 }
+
+/* =========================
+  swipe confirmations
+ =========================== */
+
+/* The app's swipe screens: the last swipe's words at the top left, in the
+   quiet chip, holding its place and swapping its words. It takes no click. */
+.swipe-confirm {
+    position: absolute;
+    top: 0.5rem;
+    left: 1rem;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.chip-note.swipe-confirm-chip {
+    display: inline-block;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    animation: swipe-confirm-in 0.2s ease-out both;
+}
+
+@keyframes swipe-confirm-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .chip-note.swipe-confirm-chip {
+        animation: none;
+    }
+}
+

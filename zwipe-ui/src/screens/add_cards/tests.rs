@@ -69,7 +69,7 @@ fn toasts(effects: &[Effect]) -> Vec<Toast> {
     effects
         .iter()
         .filter_map(|e| match e {
-            Effect::Toast(toast) => Some(toast.clone()),
+            Effect::Toast(toast) | Effect::Confirm(toast) => Some(toast.clone()),
             _ => None,
         })
         .collect()
@@ -580,7 +580,7 @@ fn undoing_a_skip_brings_the_card_back_from_the_left() {
                 from: Direction::Left
             },
             Effect::UnskipCard { .. },
-            Effect::Toast(_),
+            Effect::Confirm(_),
         ]
     ));
     assert_eq!(
@@ -832,7 +832,7 @@ fn the_maybeboard_source_cycles_promotes_and_undoes() {
         Effect::PromoteCard {
             ticket, card_id, ..
         },
-        Effect::Toast(toast),
+        Effect::Confirm(toast),
     ] = effects.as_slice()
     else {
         panic!("{effects:?}");

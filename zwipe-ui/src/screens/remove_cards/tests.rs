@@ -72,7 +72,7 @@ fn toasts(effects: &[Effect]) -> Vec<Toast> {
     effects
         .iter()
         .filter_map(|e| match e {
-            Effect::Toast(toast) => Some(toast.clone()),
+            Effect::Toast(toast) | Effect::Confirm(toast) => Some(toast.clone()),
             _ => None,
         })
         .collect()
@@ -296,7 +296,7 @@ fn keep_cycles_past_the_card_and_wraps() {
     let effects = state.update(Action::Keep);
     assert_eq!(
         effects,
-        [Effect::Toast(Toast::quick(ToastKind::Info, KEPT))]
+        [Effect::Confirm(Toast::quick(ToastKind::Info, KEPT))]
     );
     assert_eq!(top(&state).as_deref(), Some("Shock"));
     let _ = state.update(Action::Keep);
@@ -328,7 +328,7 @@ fn remove_drops_the_card_and_records_undo_once_it_lands() {
                 deck_id: built.deck_profile.id,
                 card_id: opt.card.scryfall_data.id,
             },
-            Effect::Toast(Toast::quick(ToastKind::Success, REMOVED)),
+            Effect::Confirm(Toast::quick(ToastKind::Success, REMOVED)),
         ]
     );
     assert_eq!(names(&state), ["Shock"]);
@@ -388,7 +388,11 @@ fn move_toggles_between_main_and_maybeboard() {
         let effects = state.update(Action::Move);
         let ticket = ticket_of(&effects);
         // The last move empties the pile, whose toast stands in for its own.
-        let message = if at == 2 { NOTHING_LEFT } else { message };
+        let said = if at == 2 {
+            Effect::Toast(Toast::quick(ToastKind::Info, NOTHING_LEFT))
+        } else {
+            Effect::Confirm(Toast::quick(ToastKind::Info, message))
+        };
         assert_eq!(
             effects[..2],
             [
@@ -398,7 +402,7 @@ fn move_toggles_between_main_and_maybeboard() {
                     card_id: ids[at],
                     to,
                 },
-                Effect::Toast(Toast::quick(ToastKind::Info, message)),
+                said,
             ],
             "card {at}"
         );
@@ -524,7 +528,7 @@ fn undo_steps_back_over_a_keep() {
         state.update(Action::Undo),
         [
             Effect::Enter(Direction::Left),
-            Effect::Toast(Toast::new(ToastKind::Info, UNDID_KEEP, QUICK)),
+            Effect::Confirm(Toast::new(ToastKind::Info, UNDID_KEEP, QUICK)),
         ]
     );
     assert_eq!(top(&state).as_deref(), Some("Opt"));
@@ -579,7 +583,7 @@ fn undo_puts_a_removed_card_back() {
             ticket,
             deck_card: Box::new(opt.deck_card.clone()),
         }),
-        [Effect::Toast(Toast::quick(
+        [Effect::Confirm(Toast::quick(
             ToastKind::Success,
             UNDID_REMOVE
         ))]
@@ -692,7 +696,10 @@ fn undo_moves_a_card_back() {
     assert_eq!(top(&state).as_deref(), Some("Opt"));
     assert_eq!(
         state.update(Action::Landed { ticket }),
-        [Effect::Toast(Toast::quick(ToastKind::Success, UNDID_MOVE))]
+        [Effect::Confirm(Toast::quick(
+            ToastKind::Success,
+            UNDID_MOVE
+        ))]
     );
     assert_eq!(state.entries()[0].deck_card.board, Board::Deck);
 }

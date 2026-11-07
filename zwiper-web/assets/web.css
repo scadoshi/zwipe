@@ -179,7 +179,7 @@ body {
     padding-bottom: 1rem;
 }
 
-.web-scroll-screen:has(> .web-site-footer) > .screen-content > :not(.action-dock, .web-screen-chip) {
+.web-scroll-screen:has(> .web-site-footer) > .screen-content > :not(.action-dock, .web-screen-chips) {
     padding-bottom: 0;
 }
 
@@ -2031,8 +2031,45 @@ body {
    card in the middle, the details panel at the right and the pile chips
    at the bottom. Below the breakpoint the title bar or the folded nav
    names the screen. */
+/* A swipe screen's top left: its title chip on a wide window, then the last
+   swipe confirmation in the same quiet chip, which stays put and swaps its
+   words. Neither takes a click. */
+.web-screen-chips {
+    position: absolute;
+    top: 0.5rem;
+    left: 1rem;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    pointer-events: none;
+}
+
 .web-screen-chip {
     display: none;
+}
+
+.chip-note.web-swipe-confirm {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    animation: web-swipe-confirm-in 0.2s ease-out both;
+}
+
+@keyframes web-swipe-confirm-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .chip-note.web-swipe-confirm {
+        animation: none;
+    }
 }
 
 @media (min-width: 900px) {
@@ -2051,16 +2088,16 @@ body {
         position: static;
     }
 
-    .chip-note.web-screen-chip {
-        display: inline-block;
-        position: absolute;
+    .web-screen-chips {
         top: 1rem;
         left: 1.5rem;
-        z-index: 1;
+    }
+
+    .chip-note.web-screen-chip {
+        display: inline-block;
         padding: 0.3rem 0.6rem;
         font-size: 0.75rem;
         line-height: 1.4;
-        pointer-events: none;
     }
 }
 

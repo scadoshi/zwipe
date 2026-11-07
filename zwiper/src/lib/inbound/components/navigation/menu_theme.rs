@@ -81,6 +81,7 @@ impl Driver {
             | Effect::FetchSettings(_)
             | Effect::ShowPips(_)
             | Effect::PipsSaved(_)
+            | Effect::SwipeConfirmationsSaved(_)
             | Effect::OpenSheet(Sheet::Exceptions)
             | Effect::CloseSheet(Sheet::Exceptions)
             | Effect::Navigate(_) => {}

@@ -585,6 +585,59 @@ async fn settings_responses_parse_as_shipped_clients_read_them(pool: sqlx::PgPoo
 }
 
 #[sqlx::test]
+async fn swipe_confirmations_setting_round_trips(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, _) = app.register("swipeuser").await;
+
+    // Default: the chip.
+    let (status, settings) = app.get(SETTINGS_ROUTE, Some(&token)).await;
+    assert_eq!(status, StatusCode::OK, "get settings: {settings}");
+    assert_eq!(settings["swipe_confirmations"], "chip");
+
+    for value in ["toasts", "off", "chip", "toasts"] {
+        let (status, updated) = app
+            .patch(
+                SETTINGS_ROUTE,
+                json!({ "swipe_confirmations": value }),
+                Some(&token),
+            )
+            .await;
+        assert_eq!(status, StatusCode::OK, "update {value}: {updated}");
+        assert_eq!(updated["swipe_confirmations"], value);
+    }
+
+    // A payload from a client before the field leaves it alone.
+    let (status, updated) = app
+        .patch(
+            SETTINGS_ROUTE,
+            json!({ "theme": "dracula", "dark_mode": false, "pip_style": "natural" }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "older payload: {updated}");
+    assert_eq!(updated["swipe_confirmations"], "toasts");
+
+    let (status, settings) = app.get(SETTINGS_ROUTE, Some(&token)).await;
+    assert_eq!(status, StatusCode::OK, "get settings: {settings}");
+    assert_eq!(settings["swipe_confirmations"], "toasts");
+    let stored: String = sqlx::query_scalar("SELECT swipe_confirmations FROM user_settings")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(stored, "toasts");
+
+    // A value that does not exist is rejected.
+    let (status, body) = app
+        .patch(
+            SETTINGS_ROUTE,
+            json!({ "swipe_confirmations": "bogus" }),
+            Some(&token),
+        )
+        .await;
+    assert!(status.is_client_error(), "unknown value: {status} {body}");
+}
+
+#[sqlx::test]
 async fn pip_style_setting_round_trips(pool: sqlx::PgPool) {
     let app = TestApp::new(pool.clone());
     let (token, _) = app.register("pipuser").await;

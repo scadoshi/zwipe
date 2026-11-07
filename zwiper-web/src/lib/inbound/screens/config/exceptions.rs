@@ -67,6 +67,7 @@ pub(super) fn ExceptionsSheet(
             exclude_universes_beyond: None,
             universes_beyond_exceptions: Some(draft()),
             pip_style: None,
+            swipe_confirmations: None,
         };
         open.set(false);
         spawn(async move {

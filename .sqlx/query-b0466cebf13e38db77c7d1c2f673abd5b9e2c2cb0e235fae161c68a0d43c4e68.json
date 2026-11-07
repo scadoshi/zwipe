@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT user_id, theme, dark_mode, exclude_universes_beyond, universes_beyond_exceptions, pip_style FROM user_settings WHERE user_id = $1",
+  "query": "SELECT user_id, theme, dark_mode, exclude_universes_beyond, universes_beyond_exceptions, pip_style, swipe_confirmations FROM user_settings WHERE user_id = $1",
   "describe": {
     "columns": [
       {
@@ -68,6 +68,17 @@
             "name": "pip_style"
           }
         }
+      },
+      {
+        "ordinal": 6,
+        "name": "swipe_confirmations",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "user_settings",
+            "name": "swipe_confirmations"
+          }
+        }
       }
     ],
     "parameters": {
@@ -81,8 +92,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "7f0d216da04266dd38db1a2f9b96f8033243426544cdd55dbfbf9e456a25ecc5"
+  "hash": "b0466cebf13e38db77c7d1c2f673abd5b9e2c2cb0e235fae161c68a0d43c4e68"
 }

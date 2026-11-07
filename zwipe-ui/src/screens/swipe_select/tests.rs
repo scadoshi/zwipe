@@ -131,7 +131,7 @@ fn suggested(pile: SuggestedPile) -> State {
 
 fn toast(effect: &Effect) -> &Toast {
     match effect {
-        Effect::Toast(toast) => toast,
+        Effect::Toast(toast) | Effect::Confirm(toast) => toast,
         other => panic!("not a toast: {other:?}"),
     }
 }
@@ -490,7 +490,7 @@ fn a_left_swipe_skips() {
     let mut state = loaded(&full_page());
     assert_eq!(
         state.update(Action::Skip),
-        vec![Effect::Toast(Toast::quick(ToastKind::Info, SKIPPED))]
+        vec![Effect::Confirm(Toast::quick(ToastKind::Info, SKIPPED))]
     );
     assert_eq!(state.window()[0].scryfall_data.name, "Commander 1");
 }
@@ -502,7 +502,7 @@ fn a_right_swipe_toasts_and_hands_the_card_over() {
     assert_eq!(
         state.update(Action::Choose),
         vec![
-            Effect::Toast(Toast::quick(ToastKind::Success, "Commander selected")),
+            Effect::Confirm(Toast::quick(ToastKind::Success, "Commander selected")),
             Effect::Pick(Box::new(pile[0].clone())),
         ]
     );
@@ -534,7 +534,7 @@ fn an_up_swipe_saves_and_toasts_once_it_lands() {
     );
     assert_eq!(
         state.update(Action::Landed { ticket: *ticket }),
-        vec![Effect::Toast(Toast::new(
+        vec![Effect::Confirm(Toast::new(
             ToastKind::Success,
             SAVED,
             MAYBEBOARD_TOAST
@@ -582,7 +582,7 @@ fn an_up_swipe_without_an_oracle_id_saves_nothing_and_moves_on() {
         state.update(Action::Undo),
         vec![
             Effect::Enter(Direction::Left),
-            Effect::Toast(Toast::quick(ToastKind::Info, UNDID_SKIP)),
+            Effect::Confirm(Toast::quick(ToastKind::Info, UNDID_SKIP)),
         ],
         "undo treats it as a skip"
     );
@@ -620,7 +620,7 @@ fn undo_brings_a_skipped_card_back_from_the_left() {
         state.update(Action::Undo),
         vec![
             Effect::Enter(Direction::Left),
-            Effect::Toast(Toast::quick(ToastKind::Info, UNDID_SKIP)),
+            Effect::Confirm(Toast::quick(ToastKind::Info, UNDID_SKIP)),
         ]
     );
     assert_eq!(state.window()[0].scryfall_data.name, "Commander 0");
@@ -642,7 +642,7 @@ fn undoing_a_save_removes_it_and_toasts_once_it_lands() {
     assert_eq!(Some(*oracle_id), pile[0].scryfall_data.oracle_id);
     assert_eq!(
         state.update(Action::Landed { ticket: *ticket }),
-        vec![Effect::Toast(Toast::quick(ToastKind::Info, UNSAVED))]
+        vec![Effect::Confirm(Toast::quick(ToastKind::Info, UNSAVED))]
     );
 }
 
@@ -684,7 +684,7 @@ fn a_suggested_left_swipe_dismisses_and_undo_lifts_it() {
         state.update(Action::Skip),
         vec![
             Effect::DismissCommander(oracle_id),
-            Effect::Toast(Toast::quick(ToastKind::Info, SKIPPED)),
+            Effect::Confirm(Toast::quick(ToastKind::Info, SKIPPED)),
         ],
         "a dealt pile never loads more"
     );
@@ -693,7 +693,7 @@ fn a_suggested_left_swipe_dismisses_and_undo_lifts_it() {
         vec![
             Effect::Enter(Direction::Left),
             Effect::UndismissCommander(oracle_id),
-            Effect::Toast(Toast::quick(ToastKind::Info, UNDID_SKIP)),
+            Effect::Confirm(Toast::quick(ToastKind::Info, UNDID_SKIP)),
         ]
     );
 }

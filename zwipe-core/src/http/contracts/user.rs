@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::domain::user::settings::PipStyle;
+use crate::domain::user::settings::{PipStyle, SwipeConfirmations};
 
 /// HTTP request body for updating settings.
 ///
@@ -25,6 +25,10 @@ pub struct HttpUpdateSettings {
     /// from clients that predate the field.
     #[serde(default)]
     pub pip_style: Option<PipStyle>,
+    /// Swipe confirmations, or absent to leave unchanged. serde defaults keep
+    /// payloads from clients that predate the field.
+    #[serde(default)]
+    pub swipe_confirmations: Option<SwipeConfirmations>,
 }
 
 /// HTTP request body for marking a one-time UI hint as shown.

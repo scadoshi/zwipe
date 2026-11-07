@@ -43,6 +43,7 @@ pub async fn update_settings(
         body.exclude_universes_beyond,
         body.universes_beyond_exceptions,
         body.pip_style,
+        body.swipe_confirmations,
     )
     .map_err(ApiError::from)?;
 

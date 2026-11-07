@@ -21,6 +21,8 @@ pub enum HintTopic {
     Theme,
     /// How mana symbols are colored.
     Pips,
+    /// What the swipe screens say after a swipe.
+    SwipeConfirmations,
     /// The app icon picker, which only the app has.
     AppIcon,
     /// The Universes Beyond setting.
@@ -107,12 +109,13 @@ pub enum HintTopic {
 
 impl HintTopic {
     /// Every topic, in the app's order.
-    pub const ALL: [Self; 45] = [
+    pub const ALL: [Self; 46] = [
         Self::Password,
         Self::Email,
         Self::Verification,
         Self::Theme,
         Self::Pips,
+        Self::SwipeConfirmations,
         Self::AppIcon,
         Self::UniversesBeyond,
         Self::Website,
@@ -164,6 +167,7 @@ impl HintTopic {
             Self::Verification => "Verification",
             Self::Theme => "Theme",
             Self::Pips => "Pips",
+            Self::SwipeConfirmations => "Swipe confirmations",
             Self::AppIcon => "App icon",
             Self::UniversesBeyond => "Universes Beyond",
             Self::Website => "Website",
@@ -254,6 +258,17 @@ impl HintTopic {
                 key("Resend"),
                 text(" if it never came"),
             ])],
+            Self::SwipeConfirmations => vec![
+                bullet(vec![
+                    key("Chip"),
+                    text(" shows your last swipe in a small chip at the top left"),
+                ]),
+                bullet(vec![
+                    key("Toasts"),
+                    text(" pops up a message for each swipe"),
+                ]),
+                bullet(vec![key("Off"), text(" says nothing")]),
+            ],
             Self::Pips => vec![
                 bullet(vec![
                     key("Themed"),

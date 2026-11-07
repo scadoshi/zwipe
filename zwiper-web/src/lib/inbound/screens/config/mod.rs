@@ -10,7 +10,9 @@ use components::{Button, ButtonVariant, DarkModeButton, PaletteIcon, TOAST_NORMA
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::domain::user::models::settings::{self as user_settings, PipStyle};
+use zwipe_core::domain::user::models::settings::{
+    self as user_settings, PipStyle, SwipeConfirmations,
+};
 use zwipe_core::http::contracts::user::HttpUpdateSettings;
 use zwipe_ui::screens::config;
 
@@ -31,6 +33,7 @@ fn update(edit: impl FnOnce(&mut HttpUpdateSettings)) -> HttpUpdateSettings {
         exclude_universes_beyond: None,
         universes_beyond_exceptions: None,
         pip_style: None,
+        swipe_confirmations: None,
     };
     edit(&mut request);
     request
@@ -63,6 +66,13 @@ pub fn Config() -> Element {
     let mut ub_hide = use_signal(|| false);
     let mut ub_exceptions: Signal<Vec<String>> = use_signal(Vec::new);
     let mut ub_loaded = use_signal(|| false);
+    let mut swipe_confirmations = use_signal(|| {
+        session
+            .peek()
+            .as_ref()
+            .map(|s| s.settings.swipe_confirmations)
+            .unwrap_or_default()
+    });
 
     use_hook(move || {
         spawn(async move {
@@ -76,6 +86,7 @@ pub fn Config() -> Element {
                 ub_exceptions.set(loaded.universes_beyond_exceptions);
                 ub_loaded.set(true);
                 pip_style.set(loaded.pip_style);
+                swipe_confirmations.set(loaded.swipe_confirmations);
             }
         });
     });
@@ -145,6 +156,41 @@ pub fn Config() -> Element {
         });
     };
 
+    let mut swipe_seq = use_signal(RequestSeq::default);
+    let cycle_swipe_confirmations = move |_| {
+        let prev = *swipe_confirmations.peek();
+        let next = prev.next();
+        swipe_confirmations.set(next);
+        let mine = swipe_seq.write().begin();
+        let request = update(|r| r.swipe_confirmations = Some(next));
+        spawn(async move {
+            let saved = authed
+                .try_run("update_preferences", |c, s| async move {
+                    c.update_settings(request, &s).await
+                })
+                .await
+                .ok()
+                .map(|r| r.swipe_confirmations);
+            let Some(shown) = settings::settle(*swipe_seq.peek(), mine, saved, prev) else {
+                return;
+            };
+            swipe_confirmations.set(shown);
+            if saved.is_some() {
+                let latest = session.peek().clone();
+                if let Some(mut latest) = latest {
+                    latest.settings.swipe_confirmations = shown;
+                    SessionStore::browser().infallible_save(&latest);
+                    session.set(Some(latest));
+                }
+                said.call(match shown {
+                    SwipeConfirmations::Chip => "Swipes confirmed in a chip",
+                    SwipeConfirmations::Toasts => "Swipes confirmed in toasts",
+                    SwipeConfirmations::Off => "Swipe confirmations off",
+                });
+            }
+        });
+    };
+
     let names = settings::exception_names(&ub_exceptions());
 
     rsx! {
@@ -191,6 +237,16 @@ pub fn Config() -> Element {
                     div { class: "settings-list",
                         div { class: "settings-list-header",
                             span { class: "settings-list-title", "Cards" }
+                        }
+                        div { class: "settings-row",
+                            RowLabel { label: config::SWIPE_CONFIRMATIONS, topic: HintTopic::SwipeConfirmations }
+                            div { class: "settings-row-value",
+                                Button {
+                                    variant: ButtonVariant::Action,
+                                    onclick: cycle_swipe_confirmations,
+                                    {config::swipe_confirmations_label(swipe_confirmations())}
+                                }
+                            }
                         }
                         div { class: "settings-row",
                             RowLabel { label: "Universes Beyond", topic: HintTopic::UniversesBeyond }

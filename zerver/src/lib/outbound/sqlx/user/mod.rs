@@ -9,7 +9,8 @@ use zwipe_core::domain::Email;
 use zwipe_core::domain::user::User;
 use zwipe_core::domain::user::models::hints::MarkHintShown;
 use zwipe_core::domain::user::settings::{
-    ParsePipStyleError, PipStyle, UpdateSettings, UserSettings,
+    ParsePipStyleError, ParseSwipeConfirmationsError, PipStyle, SwipeConfirmations, UpdateSettings,
+    UserSettings,
 };
 
 use crate::domain::user::models::get_user::GetUserError;
@@ -32,10 +33,22 @@ struct DatabaseUserSettings {
     exclude_universes_beyond: bool,
     universes_beyond_exceptions: Vec<String>,
     pip_style: String,
+    swipe_confirmations: String,
+}
+
+/// A settings row holding a value the domain does not know.
+#[derive(Debug, thiserror::Error)]
+enum SettingsRowError {
+    /// The pip style.
+    #[error(transparent)]
+    PipStyle(#[from] ParsePipStyleError),
+    /// The swipe confirmations.
+    #[error(transparent)]
+    SwipeConfirmations(#[from] ParseSwipeConfirmationsError),
 }
 
 impl TryFrom<DatabaseUserSettings> for UserSettings {
-    type Error = ParsePipStyleError;
+    type Error = SettingsRowError;
 
     fn try_from(db: DatabaseUserSettings) -> Result<Self, Self::Error> {
         Ok(Self {
@@ -44,6 +57,7 @@ impl TryFrom<DatabaseUserSettings> for UserSettings {
             exclude_universes_beyond: db.exclude_universes_beyond,
             universes_beyond_exceptions: db.universes_beyond_exceptions,
             pip_style: db.pip_style.parse()?,
+            swipe_confirmations: db.swipe_confirmations.parse()?,
         })
     }
 }
@@ -104,7 +118,7 @@ impl UserRepository for Postgres {
         let result = query_as!(
             DatabaseUserSettings,
             "SELECT user_id, theme, dark_mode, exclude_universes_beyond, universes_beyond_exceptions, \
-             pip_style FROM user_settings WHERE user_id = $1",
+             pip_style, swipe_confirmations FROM user_settings WHERE user_id = $1",
             user_id
         )
         .fetch_optional(&self.pool)
@@ -132,10 +146,11 @@ impl UserRepository for Postgres {
             DatabaseUserSettings,
             r#"INSERT INTO user_settings
                    (user_id, theme, dark_mode, exclude_universes_beyond,
-                    universes_beyond_exceptions, pip_style, updated_at)
+                    universes_beyond_exceptions, pip_style, swipe_confirmations,
+                    updated_at)
                VALUES ($1, COALESCE($2, 'zwipe'), COALESCE($3, true),
                        COALESCE($4, false), COALESCE($5::text[], '{}'::text[]),
-                       COALESCE($6, 'themed'), NOW())
+                       COALESCE($6, 'themed'), COALESCE($7, 'chip'), NOW())
                ON CONFLICT (user_id)
                DO UPDATE SET
                    theme = COALESCE($2, user_settings.theme),
@@ -145,15 +160,18 @@ impl UserRepository for Postgres {
                    universes_beyond_exceptions =
                        COALESCE($5::text[], user_settings.universes_beyond_exceptions),
                    pip_style = COALESCE($6, user_settings.pip_style),
+                   swipe_confirmations =
+                       COALESCE($7, user_settings.swipe_confirmations),
                    updated_at = NOW()
                RETURNING user_id, theme, dark_mode, exclude_universes_beyond,
-                         universes_beyond_exceptions, pip_style"#,
+                         universes_beyond_exceptions, pip_style, swipe_confirmations"#,
             request.user_id,
             request.theme,
             request.dark_mode,
             request.exclude_universes_beyond,
             request.universes_beyond_exceptions.as_deref(),
-            request.pip_style.map(PipStyle::as_str)
+            request.pip_style.map(PipStyle::as_str),
+            request.swipe_confirmations.map(SwipeConfirmations::as_str)
         )
         .fetch_one(&mut *tx)
         .await
@@ -165,6 +183,6 @@ impl UserRepository for Postgres {
 
         result
             .try_into()
-            .map_err(|e: ParsePipStyleError| UpdateSettingsError::Database(e.into()))
+            .map_err(|e: SettingsRowError| UpdateSettingsError::Database(e.into()))
     }
 }

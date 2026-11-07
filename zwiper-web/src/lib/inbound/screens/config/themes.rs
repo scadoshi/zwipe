@@ -39,6 +39,7 @@ pub(crate) fn use_toggle_dark_mode() -> Callback<()> {
             exclude_universes_beyond: None,
             universes_beyond_exceptions: None,
             pip_style: None,
+            swipe_confirmations: None,
         };
         spawn(async move {
             let reply = authed
@@ -83,6 +84,7 @@ pub(crate) fn ThemesSheet(open: Signal<bool>) -> Element {
             exclude_universes_beyond: None,
             universes_beyond_exceptions: None,
             pip_style: None,
+            swipe_confirmations: None,
         };
         spawn(async move {
             if let Some(settings) = authed

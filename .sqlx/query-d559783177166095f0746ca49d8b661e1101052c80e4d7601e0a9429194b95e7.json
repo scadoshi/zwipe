@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO user_settings\n                   (user_id, theme, dark_mode, exclude_universes_beyond,\n                    universes_beyond_exceptions, pip_style, updated_at)\n               VALUES ($1, COALESCE($2, 'zwipe'), COALESCE($3, true),\n                       COALESCE($4, false), COALESCE($5::text[], '{}'::text[]),\n                       COALESCE($6, 'themed'), NOW())\n               ON CONFLICT (user_id)\n               DO UPDATE SET\n                   theme = COALESCE($2, user_settings.theme),\n                   dark_mode = COALESCE($3, user_settings.dark_mode),\n                   exclude_universes_beyond =\n                       COALESCE($4, user_settings.exclude_universes_beyond),\n                   universes_beyond_exceptions =\n                       COALESCE($5::text[], user_settings.universes_beyond_exceptions),\n                   pip_style = COALESCE($6, user_settings.pip_style),\n                   updated_at = NOW()\n               RETURNING user_id, theme, dark_mode, exclude_universes_beyond,\n                         universes_beyond_exceptions, pip_style",
+  "query": "INSERT INTO user_settings\n                   (user_id, theme, dark_mode, exclude_universes_beyond,\n                    universes_beyond_exceptions, pip_style, swipe_confirmations,\n                    updated_at)\n               VALUES ($1, COALESCE($2, 'zwipe'), COALESCE($3, true),\n                       COALESCE($4, false), COALESCE($5::text[], '{}'::text[]),\n                       COALESCE($6, 'themed'), COALESCE($7, 'chip'), NOW())\n               ON CONFLICT (user_id)\n               DO UPDATE SET\n                   theme = COALESCE($2, user_settings.theme),\n                   dark_mode = COALESCE($3, user_settings.dark_mode),\n                   exclude_universes_beyond =\n                       COALESCE($4, user_settings.exclude_universes_beyond),\n                   universes_beyond_exceptions =\n                       COALESCE($5::text[], user_settings.universes_beyond_exceptions),\n                   pip_style = COALESCE($6, user_settings.pip_style),\n                   swipe_confirmations =\n                       COALESCE($7, user_settings.swipe_confirmations),\n                   updated_at = NOW()\n               RETURNING user_id, theme, dark_mode, exclude_universes_beyond,\n                         universes_beyond_exceptions, pip_style, swipe_confirmations",
   "describe": {
     "columns": [
       {
@@ -68,6 +68,17 @@
             "name": "pip_style"
           }
         }
+      },
+      {
+        "ordinal": 6,
+        "name": "swipe_confirmations",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "user_settings",
+            "name": "swipe_confirmations"
+          }
+        }
       }
     ],
     "parameters": {
@@ -77,6 +88,7 @@
         "Bool",
         "Bool",
         "TextArray",
+        "Text",
         "Text"
       ]
     },
@@ -86,8 +98,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "a2ebfd33c3605abd2ec4c5fd4be3bdeacfa3bc1031cbd2a438b8ea330d1f6856"
+  "hash": "d559783177166095f0746ca49d8b661e1101052c80e4d7601e0a9429194b95e7"
 }

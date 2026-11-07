@@ -68,6 +68,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Your latest Light or Dark choice stays put after the app opens, with no flip back",
         "The counters on Home and the sign-in screen read Live only while their copy is under five minutes old, otherwise as of its time",
         "The Pips setting's options read Themed and Classic",
+        "Swipe screens confirm each swipe in a quiet chip at the top left, with a Swipe confirmations setting for toasts or nothing instead",
     ],
 }];
 

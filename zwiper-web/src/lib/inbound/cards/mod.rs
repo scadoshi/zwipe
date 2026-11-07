@@ -9,5 +9,6 @@ pub mod charts;
 pub mod image_preview;
 pub mod otag;
 pub mod printing_sheet;
+pub mod swipe_confirm;
 pub mod swipe_select;
 pub mod swipe_stack;
