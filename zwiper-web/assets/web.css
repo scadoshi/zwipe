@@ -1997,12 +1997,12 @@ body {
 
    Swipe select sits under the nav as Add does: the nav names it, carries
    its `?` and closes it from the back arrow, so its own header goes. Each
-   swipe screen names itself in a quiet chip at its top left, clear of the
+   swipe screen names itself in a tag at its top left, clear of the
    card in the middle, the details panel at the right and the pile chips
    at the bottom. Below the breakpoint the title bar or the folded nav
    names the screen. */
-/* A swipe screen's top left: its title chip on a wide window, then the last
-   swipe confirmation in the same quiet chip, which stays put and swaps its
+/* A swipe screen's top left: its title tag on a wide window, then the last
+   swipe confirmation in the quiet chip, which stays put and swaps its
    words. Neither takes a click. */
 .web-screen-chips {
     position: absolute;
@@ -2063,17 +2063,15 @@ body {
         left: 1.5rem;
     }
 
-    /* A tag, not a button: the screen's action color tinted over the page
-       with its ink on it, and no edge, lift or pointer. */
-    .chip-note.web-screen-chip {
+    /* A tag, not a button: the card details' colored chip (.detail-chip's
+       box, a tint and a 1px outline in its own color) in the screen's action
+       color, with its ink on a fill made opaque over the page, and no lift
+       or pointer. */
+    .detail-chip.web-screen-chip {
         display: inline-block;
-        padding: 0.3rem 0.6rem;
-        font-size: 0.75rem;
-        line-height: 1.4;
         color: var(--chip-ink);
         background-color: color-mix(in srgb, var(--chip-tone) 12%, var(--bg-primary));
-        border-color: transparent;
-        box-shadow: none;
+        border-color: color-mix(in srgb, var(--chip-tone) 35%, transparent);
         cursor: default;
     }
 }

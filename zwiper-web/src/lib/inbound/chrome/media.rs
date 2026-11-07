@@ -8,6 +8,9 @@ use uuid::Uuid;
 /// breakpoint.
 pub const WIDE_PX: u32 = 900;
 
+/// The width, 60rem, from which the kit draws a sheet form as a modal.
+pub const KIT_MODAL_PX: u32 = 960;
+
 /// True while the window is wide, as [`use_min_width`] with [`WIDE_PX`].
 pub fn use_wide() -> Signal<bool> {
     use_min_width(WIDE_PX)

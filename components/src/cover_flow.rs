@@ -7,6 +7,7 @@
 //! stage; a tap on a side card brings it to the middle. The host keeps the
 //! selection in `index`, so its own keys and Save read the same one.
 
+use dioxus::html::geometry::WheelDelta;
 use dioxus::prelude::*;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ImageSize;
@@ -18,6 +19,64 @@ const WHEEL_STEP_PX: f64 = 60.0;
 
 /// How far a drag or swipe runs, in pixels, to move one printing.
 const DRAG_STEP_PX: f64 = 50.0;
+
+/// One wheel line, in pixels: a mouse wheel that scrolls three lines a
+/// notch moves one printing a notch, as a pixel wheel's notch does.
+const WHEEL_LINE_PX: f64 = 20.0;
+
+/// One wheel page, in pixels.
+const WHEEL_PAGE_PX: f64 = 400.0;
+
+/// Which way a step through the printings goes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Step {
+    /// To the printing before.
+    Back,
+    /// To the printing after.
+    Forward,
+}
+
+/// A wheel movement along its longer axis, in pixels, whatever unit it
+/// came in.
+fn wheel_px(delta: &WheelDelta) -> f64 {
+    let scale = match delta {
+        WheelDelta::Pixels(_) => 1.0,
+        WheelDelta::Lines(_) => WHEEL_LINE_PX,
+        WheelDelta::Pages(_) => WHEEL_PAGE_PX,
+    };
+    let moved = delta.strip_units();
+    let along = if moved.x.abs() > moved.y.abs() {
+        moved.x
+    } else {
+        moved.y
+    };
+    along * scale
+}
+
+/// The steps a wheel movement of `px` makes from the `carried` pixels
+/// toward the next one, at most `limit`, and what it leaves carried: one
+/// step for each [`WHEEL_STEP_PX`], forward when positive. A movement that
+/// is not finite makes none and leaves the carry as it was.
+fn wheel_steps(carried: f64, px: f64, limit: usize) -> (Option<Step>, usize, f64) {
+    if !px.is_finite() {
+        return (None, 0, carried);
+    }
+    let mut rest = carried + px;
+    let way = if rest >= WHEEL_STEP_PX {
+        Step::Forward
+    } else if rest <= -WHEEL_STEP_PX {
+        Step::Back
+    } else {
+        return (None, 0, rest);
+    };
+    let mut steps = 0_usize;
+    while rest.abs() >= WHEEL_STEP_PX && steps < limit {
+        steps = steps.saturating_add(1);
+        rest -= WHEEL_STEP_PX.copysign(rest);
+    }
+    // Past the limit, what is left is less than a step.
+    (Some(way), steps, rest % WHEEL_STEP_PX)
+}
 
 /// The printings in a cover flow, the one at `index` in the middle. A tap
 /// on the middle card calls `on_pick`, when given (a host that only shows
@@ -39,12 +98,11 @@ pub fn CoverFlow(
             index.set(next.min(count.saturating_sub(1)));
         }
     };
-    let mut step = move |forward: bool| {
+    let mut step = move |way: Step| {
         let current = *index.peek();
-        go(if forward {
-            current.saturating_add(1)
-        } else {
-            current.saturating_sub(1)
+        go(match way {
+            Step::Forward => current.saturating_add(1),
+            Step::Back => current.saturating_sub(1),
         });
     };
     let cards = flow_window(at, count)
@@ -59,7 +117,7 @@ pub fn CoverFlow(
                     class: "btn-action btn-icon cover-flow-step",
                     disabled: at == 0,
                     "aria-label": "Previous printing",
-                    onclick: move |_| step(false),
+                    onclick: move |_| step(Step::Back),
                     // Enter presses the button and stays off the host's pick.
                     onkeydown: move |e: Event<KeyboardData>| {
                         if e.key() == Key::Enter {
@@ -72,18 +130,13 @@ pub fn CoverFlow(
             div {
                 class: "cover-flow-stage",
                 onwheel: move |e: Event<WheelData>| {
-                    let delta = e.delta().strip_units();
-                    let along = if delta.x.abs() > delta.y.abs() { delta.x } else { delta.y };
-                    let mut sum = *wheel.peek() + along;
-                    while sum >= WHEEL_STEP_PX {
-                        step(true);
-                        sum -= WHEEL_STEP_PX;
+                    let (way, steps, rest) = wheel_steps(*wheel.peek(), wheel_px(&e.delta()), count);
+                    if let Some(way) = way {
+                        for _ in 0..steps {
+                            step(way);
+                        }
                     }
-                    while sum <= -WHEEL_STEP_PX {
-                        step(false);
-                        sum += WHEEL_STEP_PX;
-                    }
-                    wheel.set(sum);
+                    wheel.set(rest);
                 },
                 onpointerdown: move |e: Event<PointerData>| {
                     drag_from.set(Some(e.client_coordinates().x));
@@ -97,7 +150,7 @@ pub fn CoverFlow(
                     let run = x - from;
                     if run.abs() >= DRAG_STEP_PX {
                         // Dragging left brings the next printing in.
-                        step(run < 0.0);
+                        step(if run < 0.0 { Step::Forward } else { Step::Back });
                         drag_from.set(Some(x));
                         dragged.set(true);
                     }
@@ -141,7 +194,7 @@ pub fn CoverFlow(
                     class: "btn-action btn-icon cover-flow-step",
                     disabled: at.saturating_add(1) >= count,
                     "aria-label": "Next printing",
-                    onclick: move |_| step(true),
+                    onclick: move |_| step(Step::Forward),
                     onkeydown: move |e: Event<KeyboardData>| {
                         if e.key() == Key::Enter {
                             e.stop_propagation();
@@ -267,7 +320,40 @@ fn flow_window(selected: usize, count: usize) -> Vec<(usize, i32)> {
 
 #[cfg(test)]
 mod tests {
+    use dioxus::html::geometry::LinesVector;
+
     use super::*;
+
+    #[test]
+    fn a_line_wheel_notch_steps_one_printing() {
+        let notch = WheelDelta::Lines(LinesVector::new(0.0, 3.0, 0.0));
+        let (way, steps, rest) = wheel_steps(0.0, wheel_px(&notch), 10);
+        assert_eq!((way, steps), (Some(Step::Forward), 1));
+        assert!(rest.abs() < f64::EPSILON, "{rest}");
+    }
+
+    #[test]
+    fn a_small_scroll_carries_until_it_makes_a_step() {
+        assert_eq!(wheel_steps(0.0, 40.0, 10), (None, 0, 40.0));
+        let (way, steps, rest) = wheel_steps(40.0, 30.0, 10);
+        assert_eq!((way, steps), (Some(Step::Forward), 1));
+        assert!((rest - 10.0).abs() < f64::EPSILON, "{rest}");
+        let (way, steps, _) = wheel_steps(0.0, -130.0, 10);
+        assert_eq!((way, steps), (Some(Step::Back), 2));
+    }
+
+    #[test]
+    fn a_huge_scroll_steps_at_most_the_limit_and_keeps_less_than_a_step() {
+        let (way, steps, rest) = wheel_steps(0.0, 1.0e12, 5);
+        assert_eq!((way, steps), (Some(Step::Forward), 5));
+        assert!(rest.abs() < WHEEL_STEP_PX, "{rest}");
+    }
+
+    #[test]
+    fn a_scroll_that_is_not_finite_changes_nothing() {
+        assert_eq!(wheel_steps(12.0, f64::NAN, 10), (None, 0, 12.0));
+        assert_eq!(wheel_steps(12.0, f64::INFINITY, 10), (None, 0, 12.0));
+    }
 
     fn near(a: f64, b: f64) -> bool {
         (a - b).abs() < 1e-9

@@ -58,20 +58,16 @@ pub fn CardDetailsSheet(
     }
 }
 
-/// A swipe card's ghost while its cards load: the image block, with "No
-/// cards" in it once a finished search came back empty.
+/// A swipe card's ghost: the image block, while cards load and where the
+/// stack has run out.
 #[component]
-pub fn CardSkeleton(#[props(default)] is_loading: bool) -> Element {
+pub fn CardSkeleton() -> Element {
     rsx! {
         div { class: "skeleton-card",
             // The stack's slot, the card's ghost centered in it as the real
             // card is.
             div { class: "skeleton-stack",
-                div { class: "skeleton-image",
-                    if !is_loading {
-                        span { class: "chip-note", "No cards" }
-                    }
-                }
+                div { class: "skeleton-image" }
             }
         }
     }

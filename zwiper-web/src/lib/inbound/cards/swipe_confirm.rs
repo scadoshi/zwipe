@@ -12,6 +12,15 @@ use zwipe_core::domain::user::settings::SwipeConfirmations;
 use zwipe_ui::confirm::chip_word;
 use zwipe_ui::hint::Role;
 
+/// What a confirmation says of its swipe, which sets its toast's color.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Tone {
+    /// A neutral action: skipped, kept, moved, undone.
+    Info,
+    /// An action that changed the deck: added, removed, picked.
+    Success,
+}
+
 /// A swipe screen's confirmations. `Copy`; from [`use_swipe_confirm`].
 #[derive(Clone, Copy)]
 pub struct SwipeConfirm {
@@ -39,18 +48,18 @@ impl PartialEq for SwipeConfirm {
 impl SwipeConfirm {
     /// Confirms a neutral action: skipped, kept, moved, undone.
     pub fn info(self, text: impl Into<String>) {
-        self.say(false, text.into(), TOAST_QUICK);
+        self.say(Tone::Info, text.into(), TOAST_QUICK);
     }
 
     /// Confirms an action that changed the deck: added, removed, picked.
     pub fn success(self, text: impl Into<String>) {
-        self.say(true, text.into(), TOAST_QUICK);
+        self.say(Tone::Success, text.into(), TOAST_QUICK);
     }
 
     /// [`Self::success`], its toast up for `lasting` rather than the quick
     /// band.
     pub fn success_for(self, text: impl Into<String>, lasting: Duration) {
-        self.say(true, text.into(), lasting);
+        self.say(Tone::Success, text.into(), lasting);
     }
 
     /// Updates the chip with `text` in chip mode, and raises no toast in any
@@ -62,13 +71,18 @@ impl SwipeConfirm {
             .as_ref()
             .is_some_and(|s| s.settings.swipe_confirmations == SwipeConfirmations::Chip);
         if chip {
-            let mut said = self.said;
-            let count = said.peek().as_ref().map_or(0, |(n, _)| n.wrapping_add(1));
-            said.set(Some((count, chip_word(&text.into()).to_owned())));
+            self.set_chip(&text.into());
         }
     }
 
-    fn say(self, success: bool, text: String, lasting: Duration) {
+    /// Shows `text`'s chip word, easing in again even when it repeats.
+    fn set_chip(self, text: &str) {
+        let mut said = self.said;
+        let count = said.peek().as_ref().map_or(0, |(n, _)| n.wrapping_add(1));
+        said.set(Some((count, chip_word(text).to_owned())));
+    }
+
+    fn say(self, tone: Tone, text: String, lasting: Duration) {
         let setting = self
             .session
             .peek()
@@ -76,17 +90,12 @@ impl SwipeConfirm {
             .map(|s| s.settings.swipe_confirmations)
             .unwrap_or_default();
         match setting {
-            SwipeConfirmations::Chip => {
-                let mut said = self.said;
-                let count = said.peek().as_ref().map_or(0, |(n, _)| n.wrapping_add(1));
-                said.set(Some((count, chip_word(&text).to_owned())));
-            }
+            SwipeConfirmations::Chip => self.set_chip(&text),
             SwipeConfirmations::Toasts => {
                 let options = ToastOptions::default().duration(lasting);
-                if success {
-                    self.toast.success(text, options);
-                } else {
-                    self.toast.info(text, options);
+                match tone {
+                    Tone::Success => self.toast.success(text, options),
+                    Tone::Info => self.toast.info(text, options),
                 }
             }
             SwipeConfirmations::Off => {}
@@ -118,7 +127,7 @@ pub fn SwipeScreenChips(
     let paint = format!("--chip-tone: var({var}); --chip-ink: var(--ink-{name}, var({var}));");
     rsx! {
         div { class: "web-screen-chips",
-            span { class: "chip-note web-screen-chip", style: "{paint}", "{title}" }
+            span { class: "detail-chip web-screen-chip", style: "{paint}", "{title}" }
             if let Some((count, text)) = said {
                 span { key: "{count}", class: "chip-note web-swipe-confirm", "{text}" }
             }

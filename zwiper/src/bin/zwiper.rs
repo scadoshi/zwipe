@@ -75,37 +75,31 @@ fn webview_config() -> dioxus::mobile::Config {
 }
 
 /// Rebuilds the app in a new window when iOS killed its page, then closes the
-/// dead one. The new window comes first, since closing the last window ends
-/// the app.
+/// dead one. orangui calls it on the main thread outside the app's runtime,
+/// so it takes the window and the config now. The event loop opens the new
+/// window before it closes this one, so the app never runs out of windows.
 #[cfg(any(feature = "desktop", feature = "mobile"))]
-fn use_rebuild() -> Callback<()> {
+fn use_rebuild() -> impl Fn() + 'static {
     #[cfg(feature = "desktop")]
     use dioxus::desktop::window;
     #[cfg(all(feature = "mobile", not(feature = "desktop")))]
     use dioxus::mobile::window;
 
     let config: Config = use_context();
-    use_callback(move |()| {
+    let dead = window();
+    move || {
         tracing::warn!("the page was killed; rebuilding the app in a new window");
-        let dead = window();
         let dom = VirtualDom::new(App).with_root_context(config.clone());
         let _ = dead.new_window(dom, webview_config());
-        spawn(async move {
-            tokio::time::sleep(REBUILD_HANDOVER).await;
-            dead.close();
-        });
-    })
+        dead.close();
+    }
 }
 
 /// No windows to rebuild in a browser.
 #[cfg(not(any(feature = "desktop", feature = "mobile")))]
-fn use_rebuild() -> Callback<()> {
-    use_callback(|()| {})
+fn use_rebuild() -> impl Fn() + 'static {
+    || {}
 }
-
-/// How long the dead window stays up behind the new one before it closes.
-#[cfg(any(feature = "desktop", feature = "mobile"))]
-const REBUILD_HANDOVER: std::time::Duration = std::time::Duration::from_secs(2);
 
 #[cfg(not(any(feature = "desktop", feature = "mobile")))]
 fn launch_app(config: Config) {
@@ -188,11 +182,9 @@ fn App() -> Element {
         document::Style { {components::MAGIC_CSS} }
         document::Style { {components::APP_CSS} }
         document::Style { {components::SCREENS_CSS} }
+        document::Style { {components::FILTER_CSS} }
         document::Link { rel: "stylesheet", href: MAIN_CSS }
-        document::Style { {components::FILTER_CSS} }
         document::Style { {components::TOAST_CSS} }
-        // The drawer the card details open in.
-        document::Style { {components::FILTER_CSS} }
         // Drives the edge fades on sideways scrollers where CSS scroll
         // timelines are missing (the dictionary's letter rail).
         document::Script { {components::SCROLL_FADE_JS} }

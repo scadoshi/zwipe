@@ -184,7 +184,7 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
                         }
                     } else if past_end {
                         if loading_more() {
-                            CardSkeleton { is_loading: true }
+                            CardSkeleton {}
                         } else {
                             div { class: "flex-col flex-center", style: "flex: 1; min-height: 0; width: 100%;",
                                 div { class: "dict-empty",
@@ -193,7 +193,7 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
                             }
                         }
                     } else if loading() || (empty && loading_more()) {
-                        CardSkeleton { is_loading: true }
+                        CardSkeleton {}
                     } else {
                         div { class: "dict-empty",
                             span { class: "chip-note", "No example cards for this tag yet." }

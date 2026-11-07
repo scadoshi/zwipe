@@ -7,27 +7,12 @@ use dioxus::prelude::*;
 
 use crate::inbound::cards::buy_links::GhostBuyLink;
 use crate::inbound::chrome::ghost::{
-    GhostActionRow, GhostChip, GhostFold, GhostIconButton, GhostInfoRow, GhostList, GhostSection,
-    GhostText,
+    GhostActionRow, GhostChip, GhostChipRow, GhostFold, GhostIconButton, GhostInfoRow, GhostList,
+    GhostSection, GhostText,
 };
 
 /// Ghost rows in each band, the Commander band's one then a full group.
 const BAND_ROWS: [usize; 2] = [1, 5];
-
-/// A chip row: its tinted label `label` wide, then chips whose labels are
-/// `chips` wide, then `trailing`.
-#[component]
-fn GhostChipRow(label: u8, chips: Vec<u8>, #[props(default)] trailing: Option<Element>) -> Element {
-    rsx! {
-        div { class: "chip-row",
-            span { class: "stat-chip stat-chip-p1 chip-row-label web-ghost-chip", GhostText { chars: label } }
-            for (i, chars) in chips.into_iter().enumerate() {
-                GhostChip { key: "{i}", chars, button: true }
-            }
-            {trailing}
-        }
-    }
-}
 
 /// The deck's icons: edit, clone, share and, on a wide window, the `?`.
 #[component]

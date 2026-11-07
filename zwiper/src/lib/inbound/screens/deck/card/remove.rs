@@ -18,7 +18,7 @@ use zwipe_core::domain::deck::Board;
 use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_ui::generation::Ticket;
 use zwipe_ui::screens::remove_cards::{
-    self, Action, BoardFilter, Destination, Effect, State, Status, UndoClaim,
+    self, Action, BoardFilter, Destination, Effect, State, UndoClaim,
 };
 use zwipe_ui::stack;
 use zwipe_ui::stores::undo as shared_undo;
@@ -29,9 +29,9 @@ use super::components::printing_sheet::PrintingSheet;
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::auth::ensure_session::EnsureFresh;
 use crate::inbound::components::hint_dialog::{self, OneTimeHintDialog};
-use crate::inbound::components::interactions::swipe::SwipeStack;
 use crate::inbound::components::interactions::swipe::config::SwipeConfig;
 use crate::inbound::components::interactions::swipe::direction::Direction;
+use crate::inbound::components::interactions::swipe::{SwipeDownArea, SwipeStack};
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::swipe_confirm::{self, Said, SwipeConfirmChip};
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
@@ -499,13 +499,17 @@ pub fn Remove(deck_id: Uuid) -> Element {
         SWIPE_DISTANCE_PX,
         SWIPE_SPEED_PX_PER_MS,
     );
+    // The empty end takes only the down swipe, which undoes.
+    let down_config = SwipeConfig::new(
+        vec![Direction::Down],
+        SWIPE_DISTANCE_PX,
+        SWIPE_SPEED_PX_PER_MS,
+    );
 
     // Snapshot the model once per render.
     let state = driver.model.read();
     let stack_empty = state.is_empty();
-    let status = state.status();
     let can_undo = state.can_undo();
-    let empty_line = state.empty_line();
     let window = state.window().to_vec();
     let current = state.current().cloned();
     let board_filter = state.board();
@@ -517,7 +521,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 ScreenHeader { title: remove_cards::TITLE, hint: swipe_hint_open, back: move |()| driver.dispatch(Action::Back) }
 
                 div { class: "screen-content card-swipe content-enter",
-                SwipeConfirmChip { said: driver.said }
+                SwipeConfirmChip { said: driver.said, at_end: stack_empty }
 
                 div { class: "form-container",
                     if !stack_empty {
@@ -545,11 +549,16 @@ pub fn Remove(deck_id: Uuid) -> Element {
                             },
                         }
 
-                    } else if status == Status::Empty {
-                        // The end of the stack, or nothing to show: says which,
-                        // and the dock's undo still brings the last swipe back.
-                        div { class: "dict-empty",
-                            span { class: "chip-note", {empty_line} }
+                    } else if can_undo {
+                        // The end of the stack: a down swipe on the ghost
+                        // card undoes the last swipe, as on a card.
+                        SwipeDownArea {
+                            config: down_config,
+                            on_down: move |()| {
+                                usage_buffer().record_swipe(Direction::Down);
+                                driver.dispatch(Action::Undo);
+                            },
+                            CardSkeleton {}
                         }
                     } else {
                         CardSkeleton {}

@@ -16,7 +16,8 @@ use super::form::fields::DeckFields;
 use super::form::overlays::DeckFormOverlays;
 use super::form::{DECK_LEAVE, use_deck_form};
 use super::skeletons::EditDeckSkeleton;
-use crate::domain::deck::{FormStart, FormValues, has_unsaved_changes, update_request};
+use crate::domain;
+use crate::domain::deck::{FormStart, FormValues};
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::leave_guard::use_leave_guard;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
@@ -90,8 +91,9 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
 
     // Save shows, and leaving asks first, while the form differs from the
     // deck as loaded.
-    let changed =
-        use_memo(move || has_unsaved_changes(FormStart::Saved(&original()), &form.values()));
+    let changed = use_memo(move || {
+        domain::deck::has_unsaved_changes(FormStart::Saved(&original()), &form.values())
+    });
     let guard = use_leave_guard(changed, DECK_LEAVE);
     let has_changes = changed();
 
@@ -104,7 +106,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             error.set(Some(e.to_string()));
             return;
         }
-        let Some(request) = update_request(&original.peek(), &form.values()) else {
+        let Some(request) = domain::deck::update_request(&original.peek(), &form.values()) else {
             toast.error(
                 InvalidUpdateDeckProfile::NoUpdates.to_string(),
                 ToastOptions::default().duration(TOAST_NORMAL),

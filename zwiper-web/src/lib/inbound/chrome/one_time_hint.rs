@@ -72,7 +72,7 @@ pub fn OneTimeHintDialog(hint: OneTimeHint, open: Signal<bool>) -> Element {
         return rsx! {};
     };
     rsx! {
-        ContentHintDialog { open, content, actions: guide_for_one_time(hint.key()) }
+        ContentHintDialog { open, content, actions: guide_for_one_time(hint) }
     }
 }
 
@@ -83,8 +83,8 @@ pub fn FirstDeckHintDialog(open: Signal<bool>, wide: bool) -> Element {
     rsx! {
         ContentHintDialog {
             open,
-            content: one_time::first_deck(wide),
-            actions: guide_for_one_time(OneTimeHint::FirstDeck.key()),
+            content: one_time::first_deck(if wide { one_time::DeckLayout::Wide } else { one_time::DeckLayout::Narrow }),
+            actions: guide_for_one_time(OneTimeHint::FirstDeck),
         }
     }
 }

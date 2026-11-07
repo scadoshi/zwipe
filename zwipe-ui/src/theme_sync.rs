@@ -10,7 +10,7 @@ use orangui_core::theme::ThemeConfig;
 
 /// What to do with the server's theme once it is fetched.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Sync {
+pub enum ThemeSync {
     /// The client already shows it; nothing moves.
     Keep,
     /// The server's copy is the newer choice: show it.
@@ -27,13 +27,13 @@ pub fn reconcile(
     shown: &ThemeConfig,
     last_seen: Option<&ThemeConfig>,
     fetched: &ThemeConfig,
-) -> Sync {
+) -> ThemeSync {
     if shown == fetched {
-        return Sync::Keep;
+        return ThemeSync::Keep;
     }
     match last_seen {
-        Some(seen) if seen == fetched => Sync::Push(shown.clone()),
-        _ => Sync::Apply(fetched.clone()),
+        Some(seen) if seen == fetched => ThemeSync::Push(shown.clone()),
+        _ => ThemeSync::Apply(fetched.clone()),
     }
 }
 
@@ -51,8 +51,8 @@ mod tests {
     #[test]
     fn the_server_agreeing_moves_nothing() {
         let light = theme("gruvbox", false);
-        assert_eq!(reconcile(&light, Some(&light), &light), Sync::Keep);
-        assert_eq!(reconcile(&light, None, &light), Sync::Keep);
+        assert_eq!(reconcile(&light, Some(&light), &light), ThemeSync::Keep);
+        assert_eq!(reconcile(&light, None, &light), ThemeSync::Keep);
     }
 
     #[test]
@@ -61,7 +61,10 @@ mod tests {
         // before the save landed. The server still has dark, as last seen.
         let dark = theme("gruvbox", true);
         let light = theme("gruvbox", false);
-        assert_eq!(reconcile(&light, Some(&dark), &dark), Sync::Push(light));
+        assert_eq!(
+            reconcile(&light, Some(&dark), &dark),
+            ThemeSync::Push(light)
+        );
     }
 
     #[test]
@@ -70,7 +73,10 @@ mod tests {
         // light, chosen elsewhere since.
         let dark = theme("gruvbox", true);
         let light = theme("gruvbox", false);
-        assert_eq!(reconcile(&dark, Some(&dark), &light), Sync::Apply(light));
+        assert_eq!(
+            reconcile(&dark, Some(&dark), &light),
+            ThemeSync::Apply(light)
+        );
     }
 
     #[test]
@@ -82,7 +88,7 @@ mod tests {
         let fetched = theme("nord", true);
         assert_eq!(
             reconcile(&shown, Some(&seen), &fetched),
-            Sync::Apply(fetched)
+            ThemeSync::Apply(fetched)
         );
     }
 
@@ -90,6 +96,6 @@ mod tests {
     fn with_no_record_of_the_server_its_copy_wins() {
         let shown = theme("flexoki", false);
         let fetched = theme("nord", true);
-        assert_eq!(reconcile(&shown, None, &fetched), Sync::Apply(fetched));
+        assert_eq!(reconcile(&shown, None, &fetched), ThemeSync::Apply(fetched));
     }
 }

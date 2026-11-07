@@ -30,16 +30,13 @@ use zwipe_ui::dictionary;
 use crate::inbound::catalog::CatalogCache;
 use crate::inbound::chrome::back_arrow::BackArrow;
 use crate::inbound::chrome::ghost::{GhostChip, GhostText, GhostWords};
-use crate::inbound::chrome::media::use_min_width;
+use crate::inbound::chrome::media::{KIT_MODAL_PX, use_min_width};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::chrome::page_keys::{focus_by_id, use_page_keys};
 use crate::inbound::screens::oracle_tag_examples::OracleTagExamples;
 
 /// The search input's id, for `/`.
 const SEARCH_ID: &str = "oracle-tag-dictionary-search";
-
-/// The width, 60rem, from which the kit draws a sheet form as a modal.
-const KIT_MODAL_PX: u32 = 960;
 
 /// The dictionary over its host while `open`. `on_use` takes the slug of
 /// the row whose `Use` was pressed.

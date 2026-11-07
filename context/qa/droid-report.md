@@ -259,3 +259,37 @@ Left as is by Scotty: 29, 32, 36.
 ### Cleanup
 
 The Droid test deck is back to Edgar Markov, Lightning-Rig Crew and Vampire of the Dire Moon (I added 5 cards for 175, then removed them). Pass 3 added a few skips and removals on Add and Remove. The theme is Gruvbox dark and swipe confirmations are on Chip, both confirmed on the server. The network throttle is off and the screen size is reset. The clone's target is 10 GB.
+
+## Pass 4
+
+Build: origin/main at 3e72d3344 (release 3e72d3344, live on prod), debug APK from ~/Developer/droid/zwipe, the same emulator and account. Shots are in ~/Developer/droid/shots/pass4-<n>.png.
+
+The emulator ran out of room for both the zwipe and Cairn APKs, so I wiped its data (`-wipe-data`) and installed zwipe fresh. No logouts this pass: still signed in across several force-stops, a fresh install login, and airplane mode on and off.
+
+### Rechecks
+
+| # | Status | What I saw | Shot |
+|---|---|---|---|
+| 175 | mostly fixed | Remove now has an Undo in its dock (disabled until the first swipe). Dock Undo mid-stack brings the card back (chip "Undone"). A fast remove-then-swipe-down, sent back to back, ended with all 6 cards in the UI and on the server. At the end, an empty-state chip reads "Nothing left to remove", and the dock Undo brings the last card back. Swipe-down at the end still does nothing, though the dock button covers that. New nit: with Undo added, the dock is 193 px wide and overlaps the "All" board chip by 9 px (All 179..218, dock from 209). The chip still takes taps at its centre. | pass4-7, pass4-8 |
+| 177 | fixed | The chip draws below the header at 16,53: "Skipped", "Added", "Removed", "Undone". | pass4-6 |
+| 178 | fixed | Format picker, deselect Commander, system Back: "Discard format change?" (Keep/Discard). Discard, then Back leaves Edit deck, and the menu and header Back work. Deselect, ✓, Back: "Leave without saving?" (Stay/Leave). Leave works, and navigation stays alive. Odd: Back from Commander maybeboard after Leave went to Decks, not Deck. | pass4-10, pass4-11 |
+| 179 | fixed | All three clear buttons have a 44x44 hit box now. Taps on empty space beside Mana value, by Produces and right of Color identity leave every filter in place. | pass4-12 |
+| 171 | not reached | On GSM, the save landed within 0.3 s, before the force-stop. With airplane mode on, the toggle doesn't apply at all: the theme stays and a "Connection error" toast shows, so there's no pending change to resend. I couldn't make a change that's applied locally but not yet saved. | pass4-17 |
+| 170 | fixed | With a pending change, Back or the header Back in the Format picker asks "Discard format change?". Reopening the picker shows the "Tap a format" hint, not the last format. | pass4-13, pass4-14 |
+| 172 | partly | Remove's empty end shows "Nothing left to remove" twice: as the empty-state chip and as a toast. Elsewhere I saw one message per action. | pass4-8 |
+| 169 | fixed | The toast close button is 32x32 with a 44x44 hit box. | pass4-8, pass4-17 |
+| 165 | fixed | Nord light (theme class swapped locally): the warning row's Add cards and Import, and Data's Import and Export, all pass. The Nord light nav title and panel titles are still 3.17:1 (Cairn's sweep shows the same across many light themes). | pass4-15 |
+| D5 | fixed | Deck tile art skeletons are 111x111. | pass4-2 |
+| D6 | fixed | Playstyle's skeleton has the loaded page's chip rows, and Suggested commanders starts at the same height (about 2235 device px skeleton, 2241 loaded). | pass4-4, pass4-5 |
+| D7 | fixed | Skeleton color rows are 27 px apart, like the loaded rows. | pass4-2 |
+| D9 | fixed | Home's Colors is 8 px under the header and 13 px above the bottom. Home skeleton panels are within 2 px of loaded (Decks 246/244, Colors 227/226). The hero grows 5 px and Featured flavor 13 px on load. | pass4-2, pass4-3 |
+| 176 | fixed | The welcome hint's chip now reads "Clear", matching the button. Every line matches the phone. | pass4-16 |
+
+### New
+
+1. **The connection error toast is cut off** (nit). "Connection error, check your network and try again" is clamped at two lines, so it ends at "network‥". Shot: pass4-17.
+2. **The dock overlaps the "All" board chip on Remove** (nit). See 175.
+
+### Cleanup
+
+The Droid test deck is back to Edgar Markov, Lightning-Rig Crew and Vampire of the Dire Moon (2 entries on the server). I added 4 cards and removed them again, which leaves a few skips and removals. The theme is Gruvbox dark and swipe confirmations are on Chip, both confirmed on the server. The throttle and airplane mode are off. The clone's target is 11 GB.

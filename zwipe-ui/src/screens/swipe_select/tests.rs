@@ -805,9 +805,6 @@ fn swiping_the_last_card_says_the_pile_is_spent() {
     assert_eq!(state.status(), Status::Empty);
     assert_eq!(
         effects,
-        [Effect::Toast(Toast::quick(
-            ToastKind::Info,
-            "No more commanders"
-        ))]
+        [Effect::Toast(Toast::quick(ToastKind::Info, NO_CARDS_LEFT))]
     );
 }

@@ -10,7 +10,7 @@ use zwipe_core::domain::user::models::settings::PipStyle;
 
 use crate::inbound::chrome::hint_topic::{HintHost, HintTopic};
 use crate::inbound::chrome::leave_guard::GuardedHistory;
-use crate::inbound::chrome::splash::splash_plays_this_load;
+use crate::inbound::chrome::splash;
 use crate::inbound::router::Route;
 use crate::inbound::screens::auth::login::LoginPrefill;
 use crate::inbound::screens::update_required::UpdateRequired;
@@ -60,7 +60,7 @@ pub fn App() -> Element {
     // The splash plays once a tab session. While it plays the gate is
     // closed until it starts to fade, and the entrances wait on it; a load
     // that skips it opens the gate at once.
-    let splash = use_hook(splash_plays_this_load);
+    let splash = use_hook(splash::splash_plays_this_load);
     use_context_provider(|| components::SplashGate(Signal::new(!splash)));
     // The main menu's open state, above the router so it carries across
     // screens.

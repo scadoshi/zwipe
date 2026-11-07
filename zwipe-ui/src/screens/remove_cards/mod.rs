@@ -19,7 +19,7 @@ use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCa
 
 use crate::deck_signals::{self, Crossing, Level};
 use crate::generation::{Generation, Ticket};
-use crate::stack::{CardStack, Direction, RemoveAction, StackAction};
+use crate::stack::{CardStack, Direction, NO_CARDS_LEFT, RemoveAction, StackAction};
 use crate::stores::undo::{self, UndoAction};
 use crate::toast::{Line, Toast, ToastKind, keep_one};
 
@@ -73,12 +73,6 @@ pub const ALREADY_CHANGED: &str = "Already changed";
 
 /// The toast for Refresh.
 pub const STACK_REFRESHED: &str = "Stack refreshed";
-
-/// The toast when the last card is swiped, in place of that swipe's own.
-pub const NOTHING_LEFT: &str = "Nothing left to remove";
-
-/// What a swipe says of itself, which the run-out toast replaces.
-const SWIPE_LINES: [&str; 4] = [KEPT, REMOVED, MOVED_TO_MAYBEBOARD, MOVED_TO_MAIN];
 
 /// The toast when the picked boards hold no cards.
 pub const NO_CARDS_ON_BOARDS: &str = "No cards on these boards";
@@ -456,11 +450,10 @@ impl State {
         let before = self.status();
         let mut effects = self.apply(action);
         if before != Status::Empty && self.status() == Status::Empty {
+            // The run-out toast outranks the swipe's own confirmation in
+            // `keep_one`, so the swipe says only that.
             let line = if swiped {
-                effects.retain(|effect| {
-                    !matches!(effect, Effect::Toast(toast) | Effect::Confirm(toast) if SWIPE_LINES.contains(&toast.text.as_str()))
-                });
-                NOTHING_LEFT
+                NO_CARDS_LEFT
             } else if self.filter.is_empty() {
                 NO_CARDS_ON_BOARDS
             } else {
@@ -635,6 +628,23 @@ impl State {
             return Vec::new();
         };
         let card_id = card.scryfall_data.id;
+        // An undo held on this card's own delete, still out: removing it
+        // again drops the undo, so that delete stands and nothing new goes
+        // out to race the restore.
+        if let Some(HeldUndo {
+            card,
+            board,
+            quantity,
+        }) = self.take_held_undo(card_id)
+        {
+            self.stack.record(RemoveAction::Remove {
+                card,
+                board,
+                quantity,
+            });
+            self.stack.remove_current();
+            return vec![Effect::Confirm(Toast::quick(ToastKind::Success, REMOVED))];
+        }
         let entry = self.entry(card_id).cloned();
         let (board, quantity) = entry.as_ref().map_or((Board::Deck, 1), |e| {
             (e.deck_card.board, *e.deck_card.quantity)
@@ -729,6 +739,30 @@ impl State {
                 NOTHING_TO_UNDO,
             ))];
         };
+        if let RemoveAction::Remove { card, .. } = &action
+            && self.held_remove(card.scryfall_data.id).is_some()
+        {
+            // The delete is still out: the card comes back now and its
+            // restore waits for the delete to land.
+            let entered = action.exited();
+            let RemoveAction::Remove {
+                card,
+                board,
+                quantity,
+            } = action
+            else {
+                return Vec::new();
+            };
+            self.stack.insert_current((*card).clone());
+            if let Some(held) = self.held_remove(card.scryfall_data.id) {
+                *held = Some(HeldUndo {
+                    card,
+                    board,
+                    quantity,
+                });
+            }
+            return vec![Effect::Enter(entered)];
+        }
         let claim = match &action {
             RemoveAction::Keep => {
                 if !self.stack.retreat_wrapping() {
@@ -739,25 +773,9 @@ impl State {
                     Effect::Confirm(Toast::quick(ToastKind::Info, UNDID_KEEP)),
                 ];
             }
-            RemoveAction::Remove {
-                card,
-                board,
-                quantity,
-            } => {
-                let card_id = card.scryfall_data.id;
-                if let Some(held) = self.held_remove(card_id) {
-                    // The delete is still out: the card comes back now and its
-                    // restore waits for the delete to land.
-                    *held = Some(HeldUndo {
-                        card: card.clone(),
-                        board: *board,
-                        quantity: *quantity,
-                    });
-                    self.stack.insert_current((**card).clone());
-                    return vec![Effect::Enter(action.exited())];
-                }
-                UndoClaim::Removed { card_id }
-            }
+            RemoveAction::Remove { card, .. } => UndoClaim::Removed {
+                card_id: card.scryfall_data.id,
+            },
             RemoveAction::MoveBoard { card, from, .. } => UndoClaim::MovedBoard {
                 card_id: card.scryfall_data.id,
                 from: *from,
@@ -964,6 +982,21 @@ impl State {
             })
     }
 
+    /// Takes back the undo held on a remove of `card_id` still out, leaving that remove to land as a plain one.
+    fn take_held_undo(&mut self, card_id: Uuid) -> Option<HeldUndo> {
+        self.waiting
+            .iter_mut()
+            .rev()
+            .find_map(|(_, pending)| match pending {
+                Pending::Remove {
+                    card_id: id,
+                    undo: undo @ Some(_),
+                    ..
+                } if *id == card_id => undo.take(),
+                _ => None,
+            })
+    }
+
     /// Takes the request holding `ticket` off the waiting list, if it is there.
     fn take(&mut self, ticket: Ticket) -> Option<Pending> {
         let at = self.waiting.iter().position(|(t, _)| *t == ticket)?;
@@ -1015,18 +1048,6 @@ impl State {
     #[must_use]
     pub fn can_undo(&self) -> bool {
         self.stack.has_history()
-    }
-
-    /// What an empty stack says in its place: that the swipes reached the end, or why nothing showed.
-    #[must_use]
-    pub fn empty_line(&self) -> &'static str {
-        if self.can_undo() {
-            NOTHING_LEFT
-        } else if self.filter.is_empty() {
-            NO_CARDS_ON_BOARDS
-        } else {
-            NO_MATCHES
-        }
     }
 
     /// The card the details sheet and the card info describe, wrapping round the stack; `None` only when it is empty.

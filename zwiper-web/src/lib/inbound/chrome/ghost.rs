@@ -250,10 +250,15 @@ pub fn GhostShowRow(
 }
 
 /// A chip row: its tinted label `label` wide, then the kit's chips whose
-/// labels are `chips` wide, with the loaded row's `class` beside
-/// `chip-row`.
+/// labels are `chips` wide, then `trailing`, with the loaded row's `class`
+/// beside `chip-row`.
 #[component]
-pub fn GhostChipRow(label: u8, chips: Vec<u8>, #[props(default)] class: Option<String>) -> Element {
+pub fn GhostChipRow(
+    label: u8,
+    chips: Vec<u8>,
+    #[props(default)] class: Option<String>,
+    #[props(default)] trailing: Option<Element>,
+) -> Element {
     let class = class.map_or_else(|| "chip-row".to_owned(), |c| format!("chip-row {c}"));
     rsx! {
         div { class,
@@ -261,6 +266,7 @@ pub fn GhostChipRow(label: u8, chips: Vec<u8>, #[props(default)] class: Option<S
             for (i, chars) in chips.into_iter().enumerate() {
                 GhostChip { key: "{i}", chars, button: true }
             }
+            {trailing}
         }
     }
 }

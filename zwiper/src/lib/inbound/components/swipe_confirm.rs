@@ -39,12 +39,14 @@ pub(crate) fn confirm(
 }
 
 /// The last confirmation at the swipe screen's top left, in the quiet chip.
-/// It takes no click and draws nothing until a swipe says something.
+/// It takes no click and draws nothing until a swipe says something, nor
+/// while `at_end`: the pile has run out, and the end's toast replaces the
+/// last swipe's line, so the chip would only repeat the swipe before it.
 #[component]
-pub(crate) fn SwipeConfirmChip(said: Said) -> Element {
+pub(crate) fn SwipeConfirmChip(said: Said, #[props(default)] at_end: bool) -> Element {
     rsx! {
         div { class: "swipe-confirm",
-            if let Some((count, text)) = said() {
+            if let (false, Some((count, text))) = (at_end, said()) {
                 span { key: "{count}", class: "chip-note swipe-confirm-chip", "{text}" }
             }
         }

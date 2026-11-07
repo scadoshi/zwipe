@@ -182,8 +182,8 @@ pub fn SharedDeck(token: String) -> Element {
     // The nav's pip toggle shows while the deck on screen has any card.
     let mut shows_pips = use_context::<ShowsPips>().0;
     use_effect(move || {
-        let has_cards = matches!(&*result.read(), Some(Ok(deck)) if has_cards(deck));
-        shows_pips.set(has_cards);
+        let any = matches!(&*result.read(), Some(Ok(deck)) if has_cards(deck));
+        shows_pips.set(any);
     });
     use_drop(move || shows_pips.set(false));
 
@@ -417,7 +417,8 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
     let builder = card_filter();
     let filter_on = !builder.is_empty();
     let dot = filter::shows_dot(&builder);
-    let sources = Sources::deck(&mainboard.iter().map(|e| e.card.clone()).collect::<Vec<_>>());
+    let deck_cards: Vec<Card> = mainboard.iter().map(|e| e.card.clone()).collect();
+    let sources = Sources::deck(&deck_cards);
     let listed_zone = if show_zone() {
         zone.clone()
     } else {
