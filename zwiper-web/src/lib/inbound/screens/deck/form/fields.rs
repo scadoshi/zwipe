@@ -1,7 +1,7 @@
 //! The form's fields in the app's order: `Profile` (name, format, the
 //! command zone, power level), `Budget` (land and price targets) and `Tags`
-//! (deck, oracle and other tags). A wide window puts `Profile` in the left
-//! column and the other two in the right.
+//! (deck, oracle and other tags). A wide window puts `Profile` and `Budget`
+//! in the left column and `Tags` in the right.
 
 use components::{ClearWrap, TextInput};
 use dioxus::prelude::*;
@@ -27,9 +27,9 @@ pub fn DeckFields(form: DeckForm, on_enter: EventHandler<()>) -> Element {
         div { class: "container-sm web-deck-form",
             div { class: "flex-col text-center web-deck-form-column",
                 ProfileFields { form, on_enter }
+                BudgetFields { form }
             }
             div { class: "flex-col text-center web-deck-form-column",
-                BudgetFields { form }
                 TagFields { form }
             }
         }
