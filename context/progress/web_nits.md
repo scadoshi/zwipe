@@ -203,6 +203,14 @@ From Surfer's Part 5 (narrowest, 504px), triaged with Scotty:
 143. **Settings' Pips button reads "Theme" under the Theme row.** [S50] Scotty's call: rename the value itself, `Theme` to `Themed`, wire included, following `pip_color_wire.md`: Phase 1 renames everywhere and reads both while the wire still writes `theme`; the floor rises; Phase 4 writes `themed` only. Plan in `context/plans/pip_themed_wire.md`, row in `wire_changes.md`.
 144. **Light/dark can flip a few seconds after load.** [S51] The local copy and the server's race: a Settings toggle sometimes doesn't write localStorage, and on load the server's older copy overwrites the newer local one. The latest choice wins everywhere, with no flip after load.
 
+From Droid's Android pass 1 (`target/droid/report.md`, items D1 to D38), the confident ones:
+
+145. **The app's keyboard and load states.** Login's keyboard covers the password field (D1, broken); the keyboard lifts the Cards dock over Group by and Boards (D20); load errors offer no Retry (D4); the filter's Mana value placeholder clips (D23); the section header's tiny × clear sits inside the toggle (D21).
+146. **The app's spacing sweep.** One side gutter on every screen (D12); collapsible sections start and space like the rest (D15); the deck form's field gaps even (D18); and the few-pixel nits D9, D11, D13, D14, D22, D24, D27, D34.
+147. **The app's copy and contrast.** Draw odds' − disabled at turn 0 (D16); Remove's help points at where the board chips are (D25); the first warning row and its buttons get room (D26); row buttons don't wrap (D30); labels reach 4.5:1 (D31); hint text uses the dialog's width (D35); a tapped format chip stays put while its details open (D10).
+Extended to the app: D2 into 132 (toasts), D5 to D8 into 123 (skeletons), D17 into 136, D19 into 135, D33 into 140 (tap targets).
+Open with Scotty: D3, D28, D29, D32, D36, D37, D38.
+
 Skipped with Scotty: S44 (the About diagram scrolls under its arrows; fine as is).
 
 Skipped with Scotty: S35 (old /deck paths 404; old paths don't reroute), S37 (overscroll shade, 104 as designed).
