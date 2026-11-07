@@ -23,6 +23,8 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
+| 79, card row redesigned like card details (queued after 77) | thinker | `nits/thinker-79` |
+| 80, a footer on every web page, swipe screens included (queued after 78) | scotland | `nits/scotland-80` |
 | 78, empty prompts as centered gray chips | scotland | `nits/scotland-78` |
 | 77, Enter closes a hint dialog | thinker | `nits/thinker-77` |
 | 71, 72, errors in sentence case, deck form Profile+Budget left, Tags right | halo | `nits/halo-71-72` |
@@ -123,6 +125,8 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 76. **Drawer search boxes lack the shared clear ×.** Every drawer search uses `components::ClearWrap`, its × easing in as text is typed.
 77. **Enter doesn't close a hint dialog.** Enter dismisses a Got-it hint like Escape or a click outside, without triggering anything under it; dialogs with a real primary action keep theirs.
 78. **"No cards" on the deck cards screen is left-aligned plain text.** Every empty or no-results prompt is a centered gray chip.
+79. **The card row takes card details' shape, every client.** Collapsed: caret, quantity, name, color identity, price, P/T. Expanded: the mana pips, type line and rarity in the first chip row; the oracle text; Keywords and Card roles as label-chip rows; the set, all prices and P/T at the bottom; Image and Printings side by side under the rule. P/T and price repeat on purpose.
+80. **Every web page gets the footer,** Add and Remove included, below the fold on swipe screens.
 
 ## Done
 
