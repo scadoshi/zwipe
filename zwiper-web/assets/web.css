@@ -822,10 +822,19 @@ body {
 
 /* ---- About ---- */
 
-/* About on a wide window: the rows and Credits side by side, each as
-   wide as its column with the columns' gap between, then the Changelog
-   panel and the release panels at the page's width. */
+/* About on a wide window: the Version and Privacy policy rows, then the
+   Changelog panel and the release panels, each at the page's width. The
+   footer carries the credits there, so the Credits panel shows only below
+   the breakpoint. */
 @media (min-width: 900px) {
+    .web-about > .web-columns {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .web-about .about-credits-column {
+        display: none;
+    }
+
     .changelog-screen.web-about {
         width: 100%;
         max-width: var(--web-page-max);

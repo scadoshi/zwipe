@@ -119,7 +119,7 @@ pub fn About() -> Element {
                         }
                     }
                     }
-                    div { class: "web-column",
+                    div { class: "web-column about-credits-column",
                     div { class: "settings-list about-panel",
                         div { class: "settings-list-header",
                             span { class: "settings-list-title", {about::CREDITS} }
