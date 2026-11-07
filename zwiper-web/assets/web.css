@@ -59,7 +59,29 @@ body {
 }
 
 /* Below the breakpoint scrollbars hide, as in the app, which signals a
-   scroller with edge fades; a wide window shows the browser's. */
+   scroller with edge fades; a wide window draws them thin, the thumb in
+   the theme's border color. */
+@media (min-width: 900px) {
+    * {
+        scrollbar-width: thin;
+        scrollbar-color: var(--border-secondary) transparent;
+    }
+
+    *::-webkit-scrollbar {
+        width: 0.5rem;
+        height: 0.5rem;
+    }
+
+    *::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    *::-webkit-scrollbar-thumb {
+        background-color: var(--border-secondary);
+        border-radius: 0.25rem;
+    }
+}
+
 @media (max-width: 899px) {
     *::-webkit-scrollbar {
         width: 0;
@@ -889,6 +911,13 @@ body {
 @media (min-width: 900px) {
     :root {
         --sheet-drawer-top: 5.4rem;
+    }
+
+    /* The dock sits as far left of the scrollbar along the drawer's right
+       edge as it sits above the drawer's bottom. */
+    .sheet-form-drawer > .bottom-sheet .sheet-dock.action-dock {
+        right: calc(1rem + 0.7rem);
+        margin-right: 0;
     }
 }
 
@@ -2069,6 +2098,13 @@ body {
     align-items: center;
     flex: 1 1 auto;
     min-height: 0;
+}
+
+/* The grid spans the sheet, so its scrollbar runs along the sheet's right
+   edge, and keeps its chips in the controls' column. */
+.web-picker-body > .tag-grid {
+    max-width: none;
+    padding-inline: calc((100% - 22rem) / 2 + 1rem);
 }
 
 /* ---- The oracle tag dictionary as the kit's modal ----
