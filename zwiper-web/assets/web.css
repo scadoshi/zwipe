@@ -39,16 +39,17 @@
     }
 }
 
-/* The theme class rides on html as well as the shell, so the page color
-   under everything is the theme's and not the launch color. The page
-   scrolls as one document. */
+/* html wears the theme's page color, the footer's, so a rubber-band
+   overscroll past the footer shows the footer's color; body wears the sink
+   the grid's layer paints. The root copies both from the themed shell
+   (`--page-edge`, `--page-sink`). The page scrolls as one document. */
 html {
     overflow: auto;
-    background-color: var(--bg-primary);
+    background-color: var(--page-edge, var(--bg-primary));
 }
 
 body {
-    background-color: var(--bg-primary);
+    background-color: var(--page-sink, var(--bg-sink));
     color: var(--text-primary);
     font-family: "JetBrains Mono", monospace;
     font-weight: 400;
@@ -180,11 +181,47 @@ body {
         padding-bottom: 0;
     }
 
-    /* A swipe screen's pile chips and docks stay fixed at the window's
-       foot, so its footer runs on under them far enough for its lines to
-       scroll clear of the row. */
-    .web-scroll-screen:has(> .swipe-bottom-row) > .web-site-footer {
-        padding-bottom: 5.5rem;
+    /* A swipe screen's pile chips and docks ride at the window's foot over
+       the swipe area, and once the footer scrolls in they stop on their own
+       line right above it. */
+    .web-scroll-screen > .swipe-bottom-row {
+        --row-gap: calc(env(safe-area-inset-bottom, 0px) + 0.4rem);
+        position: sticky;
+        order: 1;
+        flex: 0 0 auto;
+        bottom: var(--row-gap);
+        margin-bottom: var(--row-gap);
+    }
+}
+
+/* The docked details panel shrinks from its foot as the footer scrolls in,
+   pixel for pixel with the rising row, so it keeps ending above the docks
+   and clear of the footer. */
+@supports (animation-timeline: view()) {
+    @media (min-width: 900px) {
+        .web-scroll-screen:has(> .swipe-bottom-row) {
+            timeline-scope: --web-footer;
+        }
+
+        .web-scroll-screen:has(> .swipe-bottom-row) > .web-site-footer {
+            view-timeline: --web-footer block;
+        }
+
+        .web-scroll-screen .web-swipe-details {
+            animation: web-dock-panel-rise linear both;
+            animation-timeline: --web-footer;
+            animation-range: entry 0px entry 100vh;
+        }
+    }
+}
+
+@keyframes web-dock-panel-rise {
+    from {
+        max-height: calc(100dvh - var(--web-dock-panel-top) - var(--web-dock-panel-bottom));
+    }
+
+    to {
+        max-height: calc(100dvh - var(--web-dock-panel-top) - var(--web-dock-panel-bottom) - 100vh);
     }
 }
 
@@ -275,10 +312,11 @@ body {
         max-width: 30rem;
     }
 
-    /* The chip row stays inside the panel, under the form's column,
-       instead of spanning the window as the app's does. */
+    /* The chip row is the panel's footer: its rule runs to the panel's
+       edges, as the header's does, instead of spanning the window as the
+       app's does. */
     .web-form-panel > .form-links {
-        margin: 1rem 0 0;
+        margin: 1.5rem -1.5rem -1.5rem;
     }
 
     /* A public screen: the hero at the page's width, then the form in the
@@ -1557,6 +1595,18 @@ body {
 @media (hover: hover) and (prefers-reduced-motion: reduce) {
     .home-deck-tile:hover > .home-deck-tile-art > img {
         transform: none;
+    }
+}
+
+/* ---- The docked card details' scroll ----
+
+   The docked details bound their panel to their own height, so a tall card
+   scrolls the panel's body between its head and foot rather than scrolling
+   the whole panel. */
+@media (min-width: 900px) {
+    :is(.web-swipe-details, .web-examples-details):has(> .card-details-panel) {
+        display: flex;
+        flex-direction: column;
     }
 }
 

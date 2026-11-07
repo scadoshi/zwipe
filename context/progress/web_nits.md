@@ -23,18 +23,10 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
-| 103, rounded SVG arrows in the swipe dock | laptop | `nits/laptop-103` |
-| 101, the sign-in panels' footer rule runs edge to edge | laptop | `nits/laptop-101` |
-| 100, 102, the cover-flow's edges fade, arrow buttons (queued after 97) | scotland | `nits/scotland-100` |
-| 98, 99, chip row gaps, the row's host extras at the bottom of the body (queued after 96) | thinker | `nits/thinker-98` |
-| 97, the swipe screens' footer loses its extra legroom (queued after 90) | scotland | `nits/scotland-97` |
-| 96, the details panel's footer pinned, header hides on scroll | thinker | `nits/thinker-96` |
-| 93 to 95, the docked panel's jump, the card pinned to center, panel default by space, no lift on the docked panel (queued after 88) | halo | `nits/halo-93` |
-| 92, the web's URLs name resources, not actions (queued after 91) | laptop | `nits/laptop-92` |
-| 91, a live session skips the login page | laptop | `nits/laptop-91` |
-| 90, no white flash before the wasm loads | scotland | `nits/scotland-90` |
-| 88, hint copy and context fixes from the app hint audit | halo | `nits/halo-88` |
-| 89, app hint plumbing: pickers through the shared copy, no duplicate explainers, the web deck view's Oracle tags chart | thinker | `nits/thinker-89` |
+| 111, zwipe.net polish (93 to 95 in PR #234) | halo | `nits/halo-111` |
+| 98, 99, then 109, 110, chip row gaps, host extras, P/T contrast, hover previews | thinker | `nits/thinker-98`, `nits/thinker-109` |
+| 100 and 102, then 113, cover-flow edge fade and arrows, stats and OG cards | scotland | `nits/scotland-100`, `nits/scotland-113` |
+| 103 (waits on orangui #6), 105 to 108, then 112, price, picker hint focus, Dark Reader, copy, portfolio polish | laptop | `nits/laptop-103`, `nits/laptop-105`, portfolio `nits/laptop-112` |
 
 The loop is in [`../development/factory.md`](../development/factory.md).
 
@@ -151,9 +143,26 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 101. **The sign-in panels' rule stops short of the edges.** Login, Register and Forgot password draw the rule above their secondary links inside the form's padding; the links move into the panel's footer with a full-width rule.
 102. **The cover-flow needs arrow buttons.** Squircle icon buttons with the dock's thick arrows on either side; disabled at the ends.
 103. **The swipe dock's arrows are sharp text glyphs.** They become rounded SVG arrow icons like the dock's others; the cover-flow's arrow buttons (102) reuse them.
+104. **Overscrolling past the footer exposes a darker strip.** The root takes the footer/nav color and the body the field color, so the rubber band shows matching color at both ends.
+
+From Surfer's QA pass (2026-11-06), triaged with Scotty item by item. Surfer's item numbers are in brackets; the report and screenshots are `~/Developer/surfer-report.md` and `~/Developer/surfer-shots/` on halo.
+
+105. **A deck's price ignores the chosen printing when it has no USD price.** [S2] With Edgar Markov on Judge Gift Cards 2021 (no USD), the collapsed row still shows $112.50 and the app's total is $187.19, while the details show no USD chip and zwipe.net's shared page totals $74.69. Every price (collapsed row, details chips, app total, shared total) follows the chosen printing, and a printing with no USD price counts as no price.
+106. **Enter on a picker drawer's `?` hint closes and reopens it.** [S3] Focus stays on the `?`, so Enter clicks it again. Enter closes the hint and focus lands somewhere harmless, as on page hints. Surfer once lost a Commander pick after Enter and ✓ ("Format unchanged"); check whether it's the same focus leak.
+107. **Dark Reader repaints the app.** [S1, unconfirmed on a second pass] Add `<meta name="darkreader-lock">` to the app's index.html, as zwipe.net has.
+108. **Copy:** deck warnings start with a capital [S9]; "Deck name is required" replaces "Deck name minimum length is 1 character" [S10]; a field's error clears when the field is emptied [S11]; the Version hint ends with a period [S13].
+109. **The P/T chip is faint in light themes.** [S14] Light orange on peach on the deck page rows; give it the price chip's contrast.
+110. **Hover previews misbehave on the deck page.** No preview while a row is expanded, since it covers the row's text [S8]; after a scroll the preview sticks on one card and several briefly stack [S28].
+111. **zwipe.net polish:** the filter drawer's scrollbar is wide and white [S5]; sitemap, canonical and internal links use the slashed URL the server serves, so nothing redirects [S15]; the ASCII-art h1 gets an accessible name with no visible label [S16]; `scrollbar-gutter: stable` and the app's thin themed scrollbars [S17]; Community in two columns [S18]; no empty space under the testimonials, if Surfer's screenshot shows it [S19]; Free and No ads chips readable in light and their text centered [S20, S30]; /download/ios out of the sitemap [S21].
+112. **scottyfermo.com polish:** slashed URLs everywhere so nothing redirects [S22]; Escape closes the nav dropdowns [S24]; the Projects intro names its four sections [S25]; "Finished products" becomes "Shipped products", keeping each card's Doing badge [S26]; the Tooling meta description under 160 characters [S27]; the hidden h1 name, the stable gutter and themed scrollbars as in 111; Open Graph images match the current site. Copy stays short, plain and in Scotty's voice.
+
+113. **Stats snapshots and OG cards are stale, and app.zwipe.net has no OG image.** Refresh zite's metrics.json and its OG card, and the portfolio's stats.json and OG card (folded into 112). Give app.zwipe.net its own OG card and tags.
+
+Skipped with Scotty: S7 (no Image in the swipe screens' details, intended), S23 (Cloudflare's email obfuscation). Rechecked after the next deploy, since `release` may already fix them: S4 (picker ✓ over chips), S6 (swipe select page head). Open: S12 (the pip toggle labeled Theme on zwipe.net).
 
 ## Done
 
+- Merged into `release` after `b0d713965`: 64, 65, 67, 60, 66, 68 to 72, 73 to 76, 77, 78, 79, 80, 81, 82, 85, 86, 87, 88, 89, 90, 91, 92, 96, 97, 101 (PRs #207 to #232).
 - 46, a compact footer on both sites: PR #190. 48, zwipe.net's manifest icons: PR #191. 49, inputs through `ClearWrap`: PR #192.
 - 50, the deck head's `?`: PR #193. 53, the app's Quick add: PR #194. 21 phase 5, zwipe.net's full filter: PR #195. 51, swiping twice as fast: PR #196. 55, testimonial rating inline: PR #197.
 - 45, 47, no page heads, the page's `?` in the nav, About drops Credits on wide: PR #198. 52, swipe buttons in the dock: PR #199.

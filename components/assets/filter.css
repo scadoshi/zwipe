@@ -397,6 +397,13 @@
 
 /* ---- The sheet and the panel's own ---- */
 
+/* The card details drawer bounds its panel to the sheet's content, so a
+   tall card scrolls the panel's body between its head and foot rather than
+   the whole sheet. */
+.bottom-sheet.card-details-drawer > .sheet-content {
+    overflow: hidden;
+}
+
 /* The sheet's `?`, in the header's right corner at the title's height,
    faded like a hint button. */
 .drawer-sheet-hint {

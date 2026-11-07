@@ -154,6 +154,33 @@ mod tests {
             }
         }
 
+        // html in the page color, the footer's, and body in the sink, mixed
+        // as themes.css mixes each mode's.
+        let style = between(INDEX_HTML, "<style>", "</style>");
+        let rule = |selector: &str| {
+            between(style, &format!("{selector} {{"), "}")
+                .trim()
+                .to_owned()
+        };
+        assert_eq!(
+            rule(":where(html)"),
+            "background-color: var(--first-paint-bg, #282828);"
+        );
+        let dark_sink = rule(":where(body)");
+        let light_sink = rule(":where(html.first-paint-light body)");
+        assert!(
+            dark_sink.contains("color-mix(in srgb, var(--first-paint-bg, #282828), #000 15%)")
+                && components::THEMES_CSS
+                    .contains("--bg-sink: color-mix(in srgb, var(--bg-primary), #000 15%);"),
+            "the dark first paint's sink differs from themes.css: {dark_sink}"
+        );
+        assert!(
+            light_sink.contains("color-mix(in srgb, var(--first-paint-bg), #fff 35%)")
+                && components::THEMES_CSS
+                    .contains("--bg-sink: color-mix(in srgb, var(--bg-primary), #fff 35%);"),
+            "the light first paint's sink differs from themes.css: {light_sink}"
+        );
+
         // The retired slugs, as the store reads them.
         for (from, to) in components::RETIRED_THEMES {
             assert!(
