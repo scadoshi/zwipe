@@ -20,6 +20,7 @@ mod common;
 use axum::http::StatusCode;
 use common::TestApp;
 use serde_json::json;
+use zwipe_core::domain::auth::models::session::MAXIMUM_SESSION_COUNT;
 
 #[sqlx::test]
 async fn verify_email_via_captured_token(pool: sqlx::PgPool) {
@@ -271,8 +272,11 @@ async fn session_insert_prunes_expired_and_caps(pool: sqlx::PgPool) {
     let (_, uid) = app.register("hoarder").await;
     let user_id = uuid::Uuid::parse_str(&uid).unwrap();
 
-    // Plant 3 expired tokens (a dormant user's leftovers) and 6 live ones,
-    // staggered so the prune's newest-first ordering is deterministic.
+    // Plant 3 expired tokens (a dormant user's leftovers) and one live token
+    // past the cap, staggered so the prune's newest-first ordering is
+    // deterministic. With register's and login's rows, three live tokens are
+    // over the cap.
+    let cap = i32::from(MAXIMUM_SESSION_COUNT);
     for i in 0..3i32 {
         sqlx::query(
             "INSERT INTO refresh_tokens (user_id, value_hash, expires_at, created_at)
@@ -285,7 +289,7 @@ async fn session_insert_prunes_expired_and_caps(pool: sqlx::PgPool) {
         .await
         .unwrap();
     }
-    for i in 0..6i32 {
+    for i in 0..=cap {
         sqlx::query(
             "INSERT INTO refresh_tokens (user_id, value_hash, expires_at, created_at)
              VALUES ($1, $2, NOW() + INTERVAL '14 days', NOW() - make_interval(mins => $3))",
@@ -322,14 +326,20 @@ async fn session_insert_prunes_expired_and_caps(pool: sqlx::PgPool) {
         .fetch_one(&pool)
         .await
         .unwrap();
-    assert_eq!(total, 5, "live tokens capped at the session maximum");
+    assert_eq!(
+        total,
+        i64::from(MAXIMUM_SESSION_COUNT),
+        "live tokens capped at the session maximum"
+    );
 
-    // Newest-first survivors: the two login rows and live-0..2; the
-    // three oldest planted live tokens are the cap's casualties.
+    // Newest-first survivors: the two login rows and every planted token
+    // but the three oldest, which are the cap's casualties.
+    let oldest: Vec<String> = (cap - 2..=cap).map(|i| format!("live-{i}")).collect();
     let casualties: i64 = sqlx::query_scalar(
-        "SELECT COUNT(*) FROM refresh_tokens WHERE user_id = $1 AND value_hash IN ('live-3', 'live-4', 'live-5')",
+        "SELECT COUNT(*) FROM refresh_tokens WHERE user_id = $1 AND value_hash = ANY($2)",
     )
     .bind(user_id)
+    .bind(&oldest)
     .fetch_one(&pool)
     .await
     .unwrap();
