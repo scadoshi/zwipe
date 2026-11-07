@@ -223,7 +223,7 @@ fn TagTable(rows: Vec<TagRow>) -> Element {
             for row in rows.iter() {
                 div { class: "tag-table-tag",
                     button {
-                        class: if is_open(&row.slug) { "keyword-chip active" } else { "keyword-chip" },
+                        class: if is_open(&row.slug) { "chip selected" } else { "chip" },
                         onclick: tap(row.slug.clone()),
                         "{row.slug}"
                     }

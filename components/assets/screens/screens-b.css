@@ -344,7 +344,7 @@
 /* A long slug wraps inside its chip, the way the deck charts' tag chips do,
    so every tag reads in full; a wrapped row is simply taller. Tapping the
    chip still reveals the tag's description. */
-.tag-table-tag .keyword-chip {
+.tag-table-tag .chip {
     max-width: 100%;
     text-align: center;
     white-space: normal;

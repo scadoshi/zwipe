@@ -470,8 +470,8 @@ pub fn CardDetailsPanel(
 /// The ghost of a [`CardDetailsPanel`] while its card loads, in the panel's
 /// own order and shapes: the title bar, the type and rarity chips, the rules
 /// text's lines, the set, price and stats chips, the Keywords and Card roles
-/// groups (each a label over two tags), then the foot's rule and the Flip and
-/// Printings buttons.
+/// rows (each a label chip and two tags), then the foot's rule and the Flip
+/// and Printings buttons.
 #[component]
 pub fn CardDetailsPanelSkeleton() -> Element {
     rsx! {
@@ -496,10 +496,8 @@ pub fn CardDetailsPanelSkeleton() -> Element {
                 for group in ["keyword-section", "card-roles"] {
                     div { key: "{group}", class: "card-details-analysis",
                         div { class: "{group}",
-                            span { class: "chips-label",
-                                span { class: "skeleton-bar card-details-ghost-label" }
-                            }
                             div { class: "keyword-chips",
+                                span { class: "skeleton-bar card-details-ghost-label" }
                                 span { class: "skeleton-bar card-details-ghost-tag" }
                                 span { class: "skeleton-bar card-details-ghost-tag card-details-ghost-tag-wide" }
                             }

@@ -66,15 +66,19 @@ pub fn KeywordChips(keywords: Vec<String>) -> Element {
 
     rsx! {
         div { class: "keyword-section",
-            span { class: "chips-label", "Keywords" }
             div { class: "keyword-chips",
+                span { class: "stat-chip stat-chip-p1 chip-row-label", "Keywords" }
                 for (i , (name , reminder)) in items.iter().enumerate() {
                     // A chip with nothing to reveal stays inert rather than
                     // opening an empty panel. Only reachable when a host
                     // serves the catalog and it omits this keyword.
                     button {
                         key: "{i}",
-                        class: if open_idx == Some(i) { "keyword-chip active" } else { "keyword-chip" },
+                        class: match (open_idx == Some(i), reminder.is_empty()) {
+                            (_, true) => "chip disabled",
+                            (true, false) => "chip selected",
+                            (false, false) => "chip",
+                        },
                         disabled: reminder.is_empty(),
                         onclick: move |evt| {
                             evt.stop_propagation();
