@@ -1145,30 +1145,87 @@ body {
     animation-duration: var(--web-swipe-exit);
 }
 
-/* The swipes' dock sits one dock height over the surface's own, at the
-   bottom right, in the kit's dock style. Over a bottom row it lines up
-   with the row's dock, at the row's inset. */
-.action-dock.web-swipe-dock {
-    bottom: calc(var(--dock-gap) + var(--keyboard-inset, 0px) + 3.6rem);
+/* The swipes' dock and the surface's own, side by side at the bottom
+   right: in the bottom row beside the pile chips, or on their own over the
+   screen. The swipes' buttons carry the action's name beside the arrow. */
+.web-dock-pair {
+    --pair-gap: calc(env(safe-area-inset-bottom, 0px) / 2 + 0.6rem);
+    position: fixed;
+    right: var(--pair-gap);
+    bottom: calc(var(--pair-gap) + var(--keyboard-inset, 0px));
+    z-index: 50;
+    display: flex;
+    align-items: stretch;
+    gap: 0.5rem;
 }
 
-.screen:has(> .swipe-bottom-row) > .action-dock.web-swipe-dock {
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 0.4rem + var(--keyboard-inset, 0px) + 3.6rem);
-    margin-right: 1rem;
+.swipe-bottom-row > .web-dock-pair {
+    position: static;
 }
 
-/* The screen keeps room for both docks under its content. */
-.screen:has(> .web-swipe-dock) > .screen-content {
-    --content-pad-bottom: 8.6rem;
-}
-
-.web-scroll-screen:has(> .web-swipe-dock) > .screen-content {
-    padding-bottom: 8.6rem;
+.web-dock-pair > .action-dock {
+    position: static;
+    margin: 0;
 }
 
 .web-swipe-dock-btn {
+    width: auto;
+    gap: 0.35rem;
+    padding: 0 0.7rem;
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+.web-swipe-arrow {
     font-size: 1.05rem;
     font-weight: 700;
+}
+
+/* The screen keeps room for the docks under its content. */
+.screen:has(> .web-dock-pair) > .screen-content {
+    --content-pad-bottom: 5rem;
+}
+
+.web-scroll-screen:has(> .web-dock-pair) > .screen-content {
+    padding-bottom: 5rem;
+}
+
+/* Without room for both on one row the swipes' dock stacks over the other,
+   the two one width with their buttons spread across it, and the screen
+   keeps room for both. The pile chips stay at the row's foot. */
+@media (max-width: 899px) {
+    .web-dock-pair {
+        flex-direction: column;
+    }
+
+    .web-dock-pair > .action-dock {
+        width: auto;
+        justify-content: space-around;
+    }
+
+    .swipe-bottom-row:has(> .web-dock-pair) {
+        align-items: flex-end;
+    }
+
+    .screen:has(.web-dock-pair) > .screen-content {
+        --content-pad-bottom: 8.6rem;
+    }
+
+    .web-scroll-screen:has(.web-dock-pair) > .screen-content {
+        padding-bottom: 8.6rem;
+    }
+}
+
+/* A phone keeps the arrows only. */
+@media (max-width: 599px) {
+    .web-swipe-dock-label {
+        display: none;
+    }
+
+    .web-swipe-dock-btn {
+        width: 2.4rem;
+        padding: 0;
+    }
 }
 
 /* ---- Large overlays (Oracle tag examples, the dictionary) ---- */

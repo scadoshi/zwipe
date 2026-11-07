@@ -938,42 +938,42 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                         "{at.label()}"
                     }
                 }
-                div { class: "action-dock",
-                    // Synergy on or off: constrains the stack to the commander's
-                    // synergy pool, then sorts within it. Lit while on.
-                    if at == AddSource::Search && has_commander {
-                        button {
-                            class: if synergy_on { "action-dock-btn action-dock-on" } else { "action-dock-btn" },
-                            "aria-label": "Synergy",
-                            "aria-pressed": "{synergy_on}",
-                            onclick: move |_| {
-                                let on = !filter.peek().synergy();
-                                filter.write().set_synergy(on);
-                                bump();
-                            },
-                            BoltIcon {}
+                SwipeDock {
+                    control,
+                    buttons,
+                    card_on_top: has_current,
+                    on_undo: move |()| undo_now.call(()),
+                    div { class: "action-dock",
+                        // Synergy on or off: constrains the stack to the commander's
+                        // synergy pool, then sorts within it. Lit while on.
+                        if at == AddSource::Search && has_commander {
+                            button {
+                                class: if synergy_on { "action-dock-btn action-dock-on" } else { "action-dock-btn" },
+                                "aria-label": "Synergy",
+                                "aria-pressed": "{synergy_on}",
+                                onclick: move |_| {
+                                    let on = !filter.peek().synergy();
+                                    filter.write().set_synergy(on);
+                                    bump();
+                                },
+                                BoltIcon {}
+                            }
                         }
+                        DockFilter {
+                            label: "Filter",
+                            dot,
+                            onclick: move |()| filter_open.set(true),
+                        }
+                        button {
+                            class: "action-dock-btn",
+                            "aria-label": "Refresh",
+                            onclick: move |_| refresh.call(()),
+                            DockIcon { path: REFRESH }
+                        }
+                        span { class: "action-dock-divider" }
+                        DockEye { eye, disabled: !has_current }
                     }
-                    DockFilter {
-                        label: "Filter",
-                        dot,
-                        onclick: move |()| filter_open.set(true),
-                    }
-                    button {
-                        class: "action-dock-btn",
-                        "aria-label": "Refresh",
-                        onclick: move |_| refresh.call(()),
-                        DockIcon { path: REFRESH }
-                    }
-                    span { class: "action-dock-divider" }
-                    DockEye { eye, disabled: !has_current }
                 }
-            }
-            SwipeDock {
-                control,
-                buttons,
-                card_on_top: has_current,
-                on_undo: move |()| undo_now.call(()),
             }
         }
         if let Some(card) = current {
