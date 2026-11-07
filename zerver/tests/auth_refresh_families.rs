@@ -137,6 +137,58 @@ async fn a_second_presentation_inside_the_window_gets_the_same_successor(pool: s
 }
 
 #[sqlx::test]
+async fn a_lost_response_then_the_old_token_again_gets_the_newest_successor(pool: sqlx::PgPool) {
+    // One tab, full page loads: a refresh rotates on the server but the page
+    // unloads before the browser applies the reply, so the next load sends
+    // the old token again.
+    let app = TestApp::new(pool);
+    let (user_id, first) = login(&app, "reloader").await;
+
+    let (status, lost) = refresh(&app, &user_id, &first).await;
+    assert_eq!(
+        status,
+        StatusCode::OK,
+        "the rotation whose reply is lost: {lost}"
+    );
+    let second = refresh_value(&lost);
+
+    // The next load presents the old token: it gets that same successor,
+    // twice over if that reply is lost too.
+    for _ in 0..2 {
+        let (status, again) = refresh(&app, &user_id, &first).await;
+        assert_eq!(
+            status,
+            StatusCode::OK,
+            "the old token inside the window: {again}"
+        );
+        assert_eq!(refresh_value(&again), second, "the same successor");
+    }
+
+    // A load that kept the successor rotates it, and that reply is lost too;
+    // the oldest token still lands on the family's newest one.
+    let (status, rotated) = refresh(&app, &user_id, &second).await;
+    assert_eq!(status, StatusCode::OK, "the successor rotates: {rotated}");
+    let third = refresh_value(&rotated);
+    let (status, again) = refresh(&app, &user_id, &second).await;
+    assert_eq!(status, StatusCode::OK, "the lost successor again: {again}");
+    assert_eq!(refresh_value(&again), third);
+    let (status, again) = refresh(&app, &user_id, &first).await;
+    assert_eq!(status, StatusCode::OK, "the oldest token again: {again}");
+    assert_eq!(
+        refresh_value(&again),
+        third,
+        "the newest successor, following the chain"
+    );
+
+    // The family lives, with one live head, and that head rotates.
+    let rows = rows(&app, &user_id).await;
+    let live = rows.iter().filter(|(_, replaced)| !*replaced).count();
+    assert_eq!(live, 2, "the register session and the one head: {rows:?}");
+    let (status, _) = refresh(&app, &user_id, &third).await;
+    assert_eq!(status, StatusCode::OK, "the head rotates");
+}
+
+#[sqlx::test]
 async fn replay_past_the_window_kills_the_family(pool: sqlx::PgPool) {
     let app = TestApp::new(pool);
     let (user_id, token) = login(&app, "replayed").await;

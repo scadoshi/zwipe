@@ -18,6 +18,14 @@ Both tabs hold the same HttpOnly refresh cookie. When their access tokens go sta
 
 Why tabs race so readily: the web's session store keeps no access token (`SessionStore` writes a placeholder JWT that expired in 1970), so **every tab refreshes as it loads**. Two tabs opened together, a reload while another tab refreshes, or a browser restoring its tabs at startup all send the same cookie at once. The app (one process, bearer refresh) has an in-process single flight and rarely races itself. The web had one only per tab, and a tab can't see another tab's mutex.
 
+## One tab is enough: a lost reply
+
+Surfer was logged out again after about a minute and a half of full page loads in a single tab. Production logged `token_refresh_failure reason="revoked"` for the test account at 07:44:45Z on 2026-11-07 (read-only check of `/var/log/zwipe/zerver.2026-11-07.log`; successful rotations aren't logged). Each load refreshes, so a load that unloads with a refresh in flight lets the server rotate while the browser never applies the reply. The next load sends the old cookie, which was a replay.
+
+The window covers it: an old token presented again within 30 seconds of its rotation gets the family's newest token, following the chain if the successor was itself rotated meanwhile. `a_lost_response_then_the_old_token_again_gets_the_newest_successor` runs that sequence. It only fails if one token's replies keep getting lost for longer than the window, which then logs out as today.
+
+**Open question: a refresh on every load.** The web refreshes on every full page load even with a valid access token, by design: `SessionStore` never writes a token where page script can read it (`localStorage`), so a reload has no access token. Not refreshing on load means either keeping the access token in script-readable storage (undoing that XSS hardening, a 15-minute token), or authenticating API calls with an HttpOnly access cookie (a wire and CSRF change). Both are Scotty's call. With the window and the lock, the per-load refresh is safe, just a rotation per load.
+
 ## Other ways a session ends (Scotty's Firefox, Surfer's login tab)
 
 Scotty's own session keeps dropping in Firefox, and Surfer's Chrome had another tab sitting on the login page. Checked whether a signed-out screen ends the live session:
