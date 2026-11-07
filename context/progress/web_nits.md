@@ -24,7 +24,7 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 | Items | Machine | Branch |
 | --- | --- | --- |
 | 101, the sign-in panels' footer rule runs edge to edge | laptop | `nits/laptop-101` |
-| 100, the cover-flow's edges fade out (queued after 97) | scotland | `nits/scotland-100` |
+| 100, 102, the cover-flow's edges fade, arrow buttons (queued after 97) | scotland | `nits/scotland-100` |
 | 98, 99, chip row gaps, the row's host extras at the bottom of the body (queued after 96) | thinker | `nits/thinker-98` |
 | 97, the swipe screens' footer loses its extra legroom (queued after 90) | scotland | `nits/scotland-97` |
 | 96, the details panel's footer pinned, header hides on scroll | thinker | `nits/thinker-96` |
@@ -148,6 +148,7 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 99. **The expanded row's host extras interrupt the card's content.** Card content first (chips, text, Keywords, Card roles, set/price/P/T), then "Why this commander?" or the staple share at the bottom of the body, one rule, then the action buttons.
 100. **The cover-flow's outer cards stop at a hard edge.** A horizontal fade mask on the carousel melts them out at both sides.
 101. **The sign-in panels' rule stops short of the edges.** Login, Register and Forgot password draw the rule above their secondary links inside the form's padding; the links move into the panel's footer with a full-width rule.
+102. **The cover-flow needs arrow buttons.** Squircle icon buttons with the dock's thick arrows on either side; disabled at the ends.
 
 ## Done
 
