@@ -278,8 +278,14 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
                         }
                     } else {
                         div { class: "chip-row",
-                            div { class: "skeleton-bar skeleton-chip skeleton-chip-lg stat-chip-p1 skeleton-tinted" }
-                            div { class: "skeleton-input-compact" }
+                            span { class: "stat-chip stat-chip-p1 chip-row-label web-ghost-chip", GhostText { chars: 9 } }
+                            div { class: "input-clear-wrap web-ghost-field",
+                                div {
+                                    class: "input input-compact input-placeholder",
+                                    style: "line-height: normal;",
+                                    GhostText { chars: 20 }
+                                }
+                            }
                         }
                         ChipRowSkeleton { label: "md", chips: vec!["sm", "lg", "md", "lg"] }
                         ChipRowSkeleton { label: "md", chips: vec!["sm", "md", "sm"] }
@@ -328,8 +334,12 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
                     if has_zone {
                         for (slot, card) in zone_rows.clone() {
                             if slot != Slot::Partner || !zone_rows.iter().any(|(s, _)| *s == Slot::Commander) {
-                                div { key: "{slot:?}", class: "card-group row-enter",
-                                    div { class: "card-group-header", "{slot.group_header(format, has_partner)}" }
+                                CardGroup {
+                                    key: "{slot:?}",
+                                    title: slot.group_header(format, has_partner).to_string(),
+                                    section_key: slot.group_key().to_owned(),
+                                    collapsed,
+                                    on_drop,
                                     {row_view(&ed, cur, &row_meta, RowInfo { card, qty: 1, kind: RowKind::Zone(slot) })}
                                     if slot == Slot::Commander {
                                         for (partner_slot, partner) in zone_rows.iter().filter(|(s, _)| *s == Slot::Partner).cloned() {
@@ -443,7 +453,9 @@ fn DeckCardListGhost() -> Element {
     rsx! {
         for (i, (title, rows)) in [(9u8, 1usize), (13, 6)].into_iter().enumerate() {
             div { key: "{i}", class: "card-group",
-                div { class: "card-group-header", GhostText { chars: title } }
+                div { class: "card-group-header",
+                    span { GhostText { chars: title } }
+                }
                 for r in 0..rows {
                     div { key: "{r}", class: "skeleton-card-row web-ghost-card-row",
                         div { class: "skeleton-bar skeleton-card-thumb" }

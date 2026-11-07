@@ -67,6 +67,11 @@ const DEFAULT_LABEL_WIDTH: &str = "5ch";
 /// keeps room on a phone.
 const CHIP_LABEL_MAX_WIDTH: &str = "50%";
 
+/// The fewest columns a vertical chart lays out: a chart with fewer bars
+/// draws them at this many columns' width, centered, so one bar reads as a
+/// bar and not a slab.
+const VERTICAL_MIN_SLOTS: usize = 4;
+
 /// A horizontal row's count cell.
 const COUNT_CELL_STYLE: &str = "font-size:0.7rem;color:var(--text-primary);opacity:0.85;width:3ch;text-align:right;flex-shrink:0;";
 
@@ -172,6 +177,10 @@ pub fn BarChart(
         LabelCase::Upper => "text-transform:uppercase;",
         LabelCase::AsIs => "",
     };
+    // A vertical chart's column: an equal share of at least
+    // `VERTICAL_MIN_SLOTS` columns, its 0.25rem gaps taken out first.
+    let slots = bars.len().max(VERTICAL_MIN_SLOTS);
+    let column = format!("flex:0 0 calc((100% - {slots} * 0.25rem + 0.25rem) / {slots});");
     // The label's base style is the deck charts' exact string; a tappable
     // label adds the pointer, and the selected one the accent, after it.
     let horizontal_label = format!(
@@ -180,7 +189,7 @@ pub fn BarChart(
     let label_style = |bar: &Bar| {
         let base = match orientation {
             BarOrientation::Vertical => format!(
-                "flex:1;text-align:center;font-size:0.65rem;color:var(--text-primary);opacity:0.85;{upper}"
+                "{column}text-align:center;font-size:0.65rem;color:var(--text-primary);opacity:0.85;{upper}"
             ),
             BarOrientation::Horizontal => horizontal_label.clone(),
         };
@@ -283,9 +292,9 @@ pub fn BarChart(
             }
             match layout {
                 Layout::Vertical => rsx! {
-                    div { style: "display:flex;align-items:flex-end;gap:0.25rem;height:6rem;",
+                    div { style: "display:flex;justify-content:center;align-items:flex-end;gap:0.25rem;height:6rem;",
                         for bar in bars.iter() {
-                            div { style: "flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:0.15rem;",
+                            div { style: "{column}display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:0.15rem;",
                                 if bar.count > 0 {
                                     span { style: "font-size:0.6rem;color:var(--text-primary);opacity:0.85;line-height:1;", "{bar.count}{count_suffix}" }
                                 }
@@ -293,7 +302,7 @@ pub fn BarChart(
                             }
                         }
                     }
-                    div { style: "display:flex;gap:0.25rem;",
+                    div { style: "display:flex;justify-content:center;gap:0.25rem;",
                         for bar in bars.iter() {
                             span { style: label_style(bar), onclick: tap(bar.key.clone()), "{bar.label}" }
                         }
@@ -569,9 +578,10 @@ pub fn DrawOdds(
             div { style: "display:flex;align-items:center;justify-content:center;gap:0.6rem;",
                 // Reuse the combat-filter stepper button: solid background gives
                 // native press feedback and suppresses WKWebView's focus ring.
-                // The onclick guards no-op at the bounds; no gray-out.
+                // Each step is off at its bound, turn 0 or the last turn.
                 button {
                     class: "stepper-btn",
+                    disabled: turn() == 0,
                     onclick: move |_| { let t = turn(); if t > 0 { turn.set(t - 1); } },
                     "-"
                 }
@@ -581,6 +591,7 @@ pub fn DrawOdds(
                 }
                 button {
                     class: "stepper-btn",
+                    disabled: turn() >= MAX_TURN,
                     onclick: move |_| { let t = turn(); if t < MAX_TURN { turn.set(t + 1); } },
                     "+"
                 }

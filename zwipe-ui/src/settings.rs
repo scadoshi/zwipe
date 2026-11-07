@@ -102,37 +102,36 @@ impl SettingChange {
     }
 
     /// The words the app says once the server takes the change, read from
-    /// `saved`, the settings it answered with.
+    /// `saved`, the settings it answered with. A theme pick and the dark
+    /// mode toggle say nothing: the screen repaints, which says it.
     #[must_use]
-    pub fn saved_message(&self, saved: &UserSettings) -> &'static str {
+    pub fn saved_message(&self, saved: &UserSettings) -> Option<&'static str> {
         match self {
-            Self::Theme { .. } => "Theme saved",
-            Self::DarkMode { .. } if saved.dark_mode => "Dark mode on",
-            Self::DarkMode { .. } => "Dark mode off",
-            Self::Pips(_) => match saved.pip_style {
+            Self::Theme { .. } | Self::DarkMode { .. } => None,
+            Self::Pips(_) => Some(match saved.pip_style {
                 PipStyle::Theme => "Pips in theme colors",
                 PipStyle::Classic => "Pips in classic colors",
-            },
+            }),
             Self::HideUniversesBeyond(_) if saved.exclude_universes_beyond => {
-                "Universes Beyond hidden"
+                Some("Universes Beyond hidden")
             }
-            Self::HideUniversesBeyond(_) => "Universes Beyond shown",
-            Self::Exceptions(_) => "Exceptions saved",
+            Self::HideUniversesBeyond(_) => Some("Universes Beyond shown"),
+            Self::Exceptions(_) => Some("Exceptions saved"),
         }
     }
 
-    /// The toast once the server takes the change: success, with
-    /// [`saved_message`](Self::saved_message)'s words. A sheet's save is up
-    /// for [`QUICK`](crate::toast::QUICK); a toggle's is up for
+    /// The toast once the server takes the change, when it says anything
+    /// (see [`saved_message`](Self::saved_message)): success. A sheet's save
+    /// is up for [`QUICK`](crate::toast::QUICK); a toggle's is up for
     /// [`NORMAL`](crate::toast::NORMAL), since it changes something Config
     /// cannot show.
     #[must_use]
-    pub fn saved_toast(&self, saved: &UserSettings) -> Toast {
-        let message = self.saved_message(saved);
-        match self.toggle() {
+    pub fn saved_toast(&self, saved: &UserSettings) -> Option<Toast> {
+        let message = self.saved_message(saved)?;
+        Some(match self.toggle() {
             Some(_) => Toast::normal(ToastKind::Success, message),
             None => Toast::quick(ToastKind::Success, message),
-        }
+        })
     }
 }
 
@@ -374,10 +373,10 @@ mod tests {
         let pips = SettingChange::Pips(PipStyle::Theme);
         let universes = SettingChange::HideUniversesBeyond(true);
         let exceptions = SettingChange::Exceptions(Vec::new());
-        let cases: [(&SettingChange, &UserSettings, &str, Duration); 9] = [
-            (&theme, &on, "Theme saved", QUICK),
-            (&dark, &on, "Dark mode on", NORMAL),
-            (&dark, &off, "Dark mode off", NORMAL),
+        for (change, saved) in [(&theme, &on), (&dark, &on), (&dark, &off)] {
+            assert_eq!(change.saved_toast(saved), None, "{change:?}");
+        }
+        let cases: [(&SettingChange, &UserSettings, &str, Duration); 6] = [
             (&pips, &on, "Pips in theme colors", NORMAL),
             (&pips, &off, "Pips in classic colors", NORMAL),
             (&universes, &on, "Universes Beyond hidden", NORMAL),
@@ -388,7 +387,7 @@ mod tests {
         for (change, saved, words, band) in cases {
             assert_eq!(
                 change.saved_toast(saved),
-                Toast::new(ToastKind::Success, words, band),
+                Some(Toast::new(ToastKind::Success, words, band)),
                 "{change:?}"
             );
         }
@@ -397,12 +396,12 @@ mod tests {
     #[test]
     fn the_saved_words_follow_the_reply_not_the_request() {
         let mut saved = settings();
-        saved.dark_mode = false;
-        let asked_for_dark = SettingChange::DarkMode {
-            theme: "gruvbox".to_owned(),
-            dark_mode: true,
-        };
-        assert_eq!(asked_for_dark.saved_message(&saved), "Dark mode off");
+        saved.exclude_universes_beyond = false;
+        let asked_to_hide = SettingChange::HideUniversesBeyond(true);
+        assert_eq!(
+            asked_to_hide.saved_message(&saved),
+            Some("Universes Beyond shown")
+        );
     }
 
     #[test]

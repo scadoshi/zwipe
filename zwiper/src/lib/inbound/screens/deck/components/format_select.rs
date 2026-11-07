@@ -75,7 +75,7 @@ pub(crate) fn FormatSelect(
                             oninput: move |event| query.set(event.value()),
                         }
 
-                        div { class: "tag-def-bar",
+                        div { class: "tag-def-bar format-def-bar",
                             if let Some(fmt) = focused() {
                                 div { class: "tag-def-name", "{fmt.display_name()}" }
                                 ul { class: "tag-def-list",

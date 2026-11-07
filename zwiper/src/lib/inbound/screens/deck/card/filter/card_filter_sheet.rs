@@ -255,15 +255,16 @@ pub(crate) fn CardFilterSheet(
                         },
                         AccordionTrigger {
                             {Section::Name.title()}
-                            if active.contains(&Section::Name) {
-                                button {
-                                    class: "clear-btn",
-                                    onclick: move |evt| {
-                                        evt.stop_propagation();
-                                        driver.dispatch(Action::ClearSection(Section::Name));
-                                    },
-                                    "\u{00d7}"
-                                }
+                        }
+                        if active.contains(&Section::Name) {
+                            button {
+                                class: "clear-btn section-clear",
+                                "aria-label": "Clear",
+                                onclick: move |evt| {
+                                    evt.stop_propagation();
+                                    driver.dispatch(Action::ClearSection(Section::Name));
+                                },
+                                "\u{00d7}"
                             }
                         }
                         AccordionContent { Name {} }
@@ -275,15 +276,16 @@ pub(crate) fn CardFilterSheet(
                         },
                         AccordionTrigger {
                             {Section::OracleText.title()}
-                            if active.contains(&Section::OracleText) {
-                                button {
-                                    class: "clear-btn",
-                                    onclick: move |evt| {
-                                        evt.stop_propagation();
-                                        driver.dispatch(Action::ClearSection(Section::OracleText));
-                                    },
-                                    "\u{00d7}"
-                                }
+                        }
+                        if active.contains(&Section::OracleText) {
+                            button {
+                                class: "clear-btn section-clear",
+                                "aria-label": "Clear",
+                                onclick: move |evt| {
+                                    evt.stop_propagation();
+                                    driver.dispatch(Action::ClearSection(Section::OracleText));
+                                },
+                                "\u{00d7}"
                             }
                         }
                         AccordionContent { OracleText {} }
@@ -295,15 +297,16 @@ pub(crate) fn CardFilterSheet(
                         },
                         AccordionTrigger {
                             {Section::Types.title()}
-                            if active.contains(&Section::Types) {
-                                button {
-                                    class: "clear-btn",
-                                    onclick: move |evt| {
-                                        evt.stop_propagation();
-                                        driver.dispatch(Action::ClearSection(Section::Types));
-                                    },
-                                    "\u{00d7}"
-                                }
+                        }
+                        if active.contains(&Section::Types) {
+                            button {
+                                class: "clear-btn section-clear",
+                                "aria-label": "Clear",
+                                onclick: move |evt| {
+                                    evt.stop_propagation();
+                                    driver.dispatch(Action::ClearSection(Section::Types));
+                                },
+                                "\u{00d7}"
                             }
                         }
                         AccordionContent { Types {} }
@@ -315,15 +318,16 @@ pub(crate) fn CardFilterSheet(
                         },
                         AccordionTrigger {
                             {Section::Mana.title()}
-                            if active.contains(&Section::Mana) {
-                                button {
-                                    class: "clear-btn",
-                                    onclick: move |evt| {
-                                        evt.stop_propagation();
-                                        driver.dispatch(Action::ClearSection(Section::Mana));
-                                    },
-                                    "\u{00d7}"
-                                }
+                        }
+                        if active.contains(&Section::Mana) {
+                            button {
+                                class: "clear-btn section-clear",
+                                "aria-label": "Clear",
+                                onclick: move |evt| {
+                                    evt.stop_propagation();
+                                    driver.dispatch(Action::ClearSection(Section::Mana));
+                                },
+                                "\u{00d7}"
                             }
                         }
                         AccordionContent { Mana {} }
@@ -335,15 +339,16 @@ pub(crate) fn CardFilterSheet(
                         },
                         AccordionTrigger {
                             {Section::Combat.title()}
-                            if active.contains(&Section::Combat) {
-                                button {
-                                    class: "clear-btn",
-                                    onclick: move |evt| {
-                                        evt.stop_propagation();
-                                        driver.dispatch(Action::ClearSection(Section::Combat));
-                                    },
-                                    "\u{00d7}"
-                                }
+                        }
+                        if active.contains(&Section::Combat) {
+                            button {
+                                class: "clear-btn section-clear",
+                                "aria-label": "Clear",
+                                onclick: move |evt| {
+                                    evt.stop_propagation();
+                                    driver.dispatch(Action::ClearSection(Section::Combat));
+                                },
+                                "\u{00d7}"
                             }
                         }
                         AccordionContent { Combat {} }
@@ -355,15 +360,16 @@ pub(crate) fn CardFilterSheet(
                         },
                         AccordionTrigger {
                             {Section::FlavorText.title()}
-                            if active.contains(&Section::FlavorText) {
-                                button {
-                                    class: "clear-btn",
-                                    onclick: move |evt| {
-                                        evt.stop_propagation();
-                                        driver.dispatch(Action::ClearSection(Section::FlavorText));
-                                    },
-                                    "\u{00d7}"
-                                }
+                        }
+                        if active.contains(&Section::FlavorText) {
+                            button {
+                                class: "clear-btn section-clear",
+                                "aria-label": "Clear",
+                                onclick: move |evt| {
+                                    evt.stop_propagation();
+                                    driver.dispatch(Action::ClearSection(Section::FlavorText));
+                                },
+                                "\u{00d7}"
                             }
                         }
                         AccordionContent { FlavorText {} }
@@ -375,15 +381,16 @@ pub(crate) fn CardFilterSheet(
                         },
                         AccordionTrigger {
                             {Section::Artist.title()}
-                            if active.contains(&Section::Artist) {
-                                button {
-                                    class: "clear-btn",
-                                    onclick: move |evt| {
-                                        evt.stop_propagation();
-                                        driver.dispatch(Action::ClearSection(Section::Artist));
-                                    },
-                                    "\u{00d7}"
-                                }
+                        }
+                        if active.contains(&Section::Artist) {
+                            button {
+                                class: "clear-btn section-clear",
+                                "aria-label": "Clear",
+                                onclick: move |evt| {
+                                    evt.stop_propagation();
+                                    driver.dispatch(Action::ClearSection(Section::Artist));
+                                },
+                                "\u{00d7}"
                             }
                         }
                         AccordionContent { Artist {} }
@@ -395,15 +402,16 @@ pub(crate) fn CardFilterSheet(
                         },
                         AccordionTrigger {
                             {Section::Rarity.title()}
-                            if active.contains(&Section::Rarity) {
-                                button {
-                                    class: "clear-btn",
-                                    onclick: move |evt| {
-                                        evt.stop_propagation();
-                                        driver.dispatch(Action::ClearSection(Section::Rarity));
-                                    },
-                                    "\u{00d7}"
-                                }
+                        }
+                        if active.contains(&Section::Rarity) {
+                            button {
+                                class: "clear-btn section-clear",
+                                "aria-label": "Clear",
+                                onclick: move |evt| {
+                                    evt.stop_propagation();
+                                    driver.dispatch(Action::ClearSection(Section::Rarity));
+                                },
+                                "\u{00d7}"
                             }
                         }
                         AccordionContent { Rarity {} }
@@ -415,15 +423,16 @@ pub(crate) fn CardFilterSheet(
                         },
                         AccordionTrigger {
                             {Section::CardRoles.title()}
-                            if active.contains(&Section::CardRoles) {
-                                button {
-                                    class: "clear-btn",
-                                    onclick: move |evt| {
-                                        evt.stop_propagation();
-                                        driver.dispatch(Action::ClearSection(Section::CardRoles));
-                                    },
-                                    "\u{00d7}"
-                                }
+                        }
+                        if active.contains(&Section::CardRoles) {
+                            button {
+                                class: "clear-btn section-clear",
+                                "aria-label": "Clear",
+                                onclick: move |evt| {
+                                    evt.stop_propagation();
+                                    driver.dispatch(Action::ClearSection(Section::CardRoles));
+                                },
+                                "\u{00d7}"
                             }
                         }
                         AccordionContent { CardRole {} }
@@ -436,15 +445,16 @@ pub(crate) fn CardFilterSheet(
                         AccordionTrigger {
                             {Section::OracleTags.title()}
                             InfoButton { topic: HintTopic::FilterOracleTags }
-                            if active.contains(&Section::OracleTags) {
-                                button {
-                                    class: "clear-btn",
-                                    onclick: move |evt| {
-                                        evt.stop_propagation();
-                                        driver.dispatch(Action::ClearSection(Section::OracleTags));
-                                    },
-                                    "\u{00d7}"
-                                }
+                        }
+                        if active.contains(&Section::OracleTags) {
+                            button {
+                                class: "clear-btn section-clear",
+                                "aria-label": "Clear",
+                                onclick: move |evt| {
+                                    evt.stop_propagation();
+                                    driver.dispatch(Action::ClearSection(Section::OracleTags));
+                                },
+                                "\u{00d7}"
                             }
                         }
                         AccordionContent {
@@ -462,15 +472,16 @@ pub(crate) fn CardFilterSheet(
                         },
                         AccordionTrigger {
                             {Section::Set.title()}
-                            if active.contains(&Section::Set) {
-                                button {
-                                    class: "clear-btn",
-                                    onclick: move |evt| {
-                                        evt.stop_propagation();
-                                        driver.dispatch(Action::ClearSection(Section::Set));
-                                    },
-                                    "\u{00d7}"
-                                }
+                        }
+                        if active.contains(&Section::Set) {
+                            button {
+                                class: "clear-btn section-clear",
+                                "aria-label": "Clear",
+                                onclick: move |evt| {
+                                    evt.stop_propagation();
+                                    driver.dispatch(Action::ClearSection(Section::Set));
+                                },
+                                "\u{00d7}"
                             }
                         }
                         AccordionContent { Set {} }
@@ -483,15 +494,16 @@ pub(crate) fn CardFilterSheet(
                             },
                             AccordionTrigger {
                                 {Section::Format.title()}
-                                if active.contains(&Section::Format) {
-                                    button {
-                                        class: "clear-btn",
-                                        onclick: move |evt| {
-                                            evt.stop_propagation();
-                                            driver.dispatch(Action::ClearSection(Section::Format));
-                                        },
-                                        "\u{00d7}"
-                                    }
+                            }
+                            if active.contains(&Section::Format) {
+                                button {
+                                    class: "clear-btn section-clear",
+                                    "aria-label": "Clear",
+                                    onclick: move |evt| {
+                                        evt.stop_propagation();
+                                        driver.dispatch(Action::ClearSection(Section::Format));
+                                    },
+                                    "\u{00d7}"
                                 }
                             }
                             AccordionContent { FormatFilter {} }
@@ -507,15 +519,16 @@ pub(crate) fn CardFilterSheet(
                         },
                         AccordionTrigger {
                             {Section::Price.title()}
-                            if active.contains(&Section::Price) {
-                                button {
-                                    class: "clear-btn",
-                                    onclick: move |evt| {
-                                        evt.stop_propagation();
-                                        driver.dispatch(Action::ClearSection(Section::Price));
-                                    },
-                                    "\u{00d7}"
-                                }
+                        }
+                        if active.contains(&Section::Price) {
+                            button {
+                                class: "clear-btn section-clear",
+                                "aria-label": "Clear",
+                                onclick: move |evt| {
+                                    evt.stop_propagation();
+                                    driver.dispatch(Action::ClearSection(Section::Price));
+                                },
+                                "\u{00d7}"
                             }
                         }
                         AccordionContent { PriceFilter {} }
@@ -530,15 +543,16 @@ pub(crate) fn CardFilterSheet(
                         },
                         AccordionTrigger {
                             {Section::Sort.title()}
-                            if active.contains(&Section::Sort) {
-                                button {
-                                    class: "clear-btn",
-                                    onclick: move |evt| {
-                                        evt.stop_propagation();
-                                        driver.dispatch(Action::ClearSection(Section::Sort));
-                                    },
-                                    "\u{00d7}"
-                                }
+                        }
+                        if active.contains(&Section::Sort) {
+                            button {
+                                class: "clear-btn section-clear",
+                                "aria-label": "Clear",
+                                onclick: move |evt| {
+                                    evt.stop_propagation();
+                                    driver.dispatch(Action::ClearSection(Section::Sort));
+                                },
+                                "\u{00d7}"
                             }
                         }
                         AccordionContent { Sort {} }
@@ -553,15 +567,16 @@ pub(crate) fn CardFilterSheet(
                         },
                         AccordionTrigger {
                             {Section::Config.title()}
-                            if active.contains(&Section::Config) {
-                                button {
-                                    class: "clear-btn",
-                                    onclick: move |evt| {
-                                        evt.stop_propagation();
-                                        driver.dispatch(Action::ClearSection(Section::Config));
-                                    },
-                                    "\u{00d7}"
-                                }
+                        }
+                        if active.contains(&Section::Config) {
+                            button {
+                                class: "clear-btn section-clear",
+                                "aria-label": "Clear",
+                                onclick: move |evt| {
+                                    evt.stop_propagation();
+                                    driver.dispatch(Action::ClearSection(Section::Config));
+                                },
+                                "\u{00d7}"
                             }
                         }
                         AccordionContent { Config {} }

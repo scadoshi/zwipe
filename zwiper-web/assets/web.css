@@ -161,94 +161,60 @@ body {
 
 /* ---- Footer ----
 
-   zwipe.net's footer closes the page on a wide window: a bar the window's
-   width, 1rem under the last panel. The screen's content keeps that 1rem
-   and its wrappers none of their own, so the panels end where zwipe.net's
-   page does. Below the breakpoint, as in the app, there is none. */
+   zwipe.net's footer closes every scrolling screen at every width: a bar
+   the window's width, 1rem under the last panel. The screen's content keeps
+   that 1rem and its wrappers none of their own, so the panels end where
+   zwipe.net's page does. A phone's swipe screen fills the window without
+   scrolling, so it has none. */
 .web-site-footer {
-    display: none;
+    display: block;
+    order: 2;
+    flex: 0 0 auto;
+    width: 100%;
+    margin: 0;
+    box-sizing: border-box;
 }
 
-@media (min-width: 900px) {
-    .web-site-footer {
-        display: block;
-        order: 2;
-        flex: 0 0 auto;
-        width: 100%;
-        margin: 0;
-        box-sizing: border-box;
-    }
+.web-scroll-screen:has(> .web-site-footer) > .screen-content {
+    padding-bottom: 1rem;
+}
 
-    .web-scroll-screen:has(> .web-site-footer) > .screen-content {
-        padding-bottom: 1rem;
-    }
+.web-scroll-screen:has(> .web-site-footer) > .screen-content > :not(.action-dock, .web-screen-chip) {
+    padding-bottom: 0;
+}
 
-    .web-scroll-screen:has(> .web-site-footer) > .screen-content > :not(.action-dock, .web-screen-chip) {
-        padding-bottom: 0;
-    }
+/* A screen with a floating dock ends its content a dock's height above the
+   footer, so at the page's end the dock rests between the two. */
+.web-scroll-screen:has(> .web-site-footer):has(.action-dock:not(:is(.swipe-bottom-row, .web-dock-pair, .bottom-sheet, .screen .screen) *), .web-dock-pair:not(:is(.swipe-bottom-row, .screen .screen) *)) > .screen-content {
+    padding-bottom: 5rem;
+}
 
-    /* A swipe screen's pile chips and docks ride at the window's foot over
-       the swipe area, and once the footer scrolls in they stop on their own
-       line right above it. */
-    .web-scroll-screen > .swipe-bottom-row {
-        --row-gap: calc(env(safe-area-inset-bottom, 0px) + 0.4rem);
-        position: sticky;
-        order: 1;
-        flex: 0 0 auto;
-        bottom: var(--row-gap);
-        margin-bottom: var(--row-gap);
+@media (max-width: 899px) {
+    .web-scroll-screen:has(> .swipe-bottom-row) > .web-site-footer {
+        display: none;
     }
 }
 
-/* The docked details panel shrinks from its foot as the footer scrolls in,
-   pixel for pixel with the rising row, so it keeps ending above the docks
-   and clear of the footer. */
+/* The floating controls a scroll screen holds stop above the footer as it
+   scrolls in (magic.css's footer rise): the action docks, the swipes' dock
+   pair and a swipe screen's bottom row, but not the ones inside them, a
+   sheet or an overlay screen, and the toast stack at the bottom left. The
+   docked details panel shrinks from its foot by as much, so it keeps ending
+   above the docks. */
 @supports (animation-timeline: view()) {
+    .web-scroll-screen :is(.action-dock, .web-dock-pair, .swipe-bottom-row):not(:is(.swipe-bottom-row, .web-dock-pair, .bottom-sheet, .screen .screen) *),
+    .toast-container {
+        animation: footer-rise linear both;
+        animation-timeline: --site-footer;
+        animation-range: entry 0px entry 100vh;
+    }
+
     @media (min-width: 900px) {
-        .web-scroll-screen:has(> .swipe-bottom-row) {
-            timeline-scope: --web-footer;
-        }
-
-        .web-scroll-screen:has(> .swipe-bottom-row) > .web-site-footer {
-            view-timeline: --web-footer block, --web-toast-footer block;
-        }
-
         .web-scroll-screen .web-swipe-details {
             animation: web-dock-panel-rise linear both;
-            animation-timeline: --web-footer;
+            animation-timeline: --site-footer;
             animation-range: entry 0px entry 100vh;
         }
-    }
-}
-
-/* The toasts ride up with the footer the same way, pixel for pixel, so at
-   their lowest they sit above it. Their stack lives outside the screen's
-   scroller, so the footer's timeline for them is scoped to the body. */
-@supports (animation-timeline: view()) {
-    @media (min-width: 900px) {
-        body {
-            timeline-scope: --web-toast-footer;
-        }
-
-        .web-scroll-screen > .web-site-footer {
-            view-timeline: --web-toast-footer block;
-        }
-
-        body .toast-container {
-            animation: web-toast-footer-rise linear both;
-            animation-timeline: --web-toast-footer;
-            animation-range: entry 0px entry 100vh;
-        }
-    }
-}
-
-@keyframes web-toast-footer-rise {
-    from {
-        translate: 0 0;
-    }
-
-    to {
-        translate: 0 -100vh;
     }
 }
 
@@ -1629,6 +1595,10 @@ body {
         width: 100% !important;
         height: auto;
     }
+
+    .web-activity-heat .activity-days {
+        display: none;
+    }
 }
 
 /* ---- Playstyle ---- */
@@ -1803,6 +1773,30 @@ body {
     pointer-events: none;
 }
 
+/* A ghost chip or button is empty: what stands in for its label, pip or
+   icon keeps the box at the loaded one's size and draws nothing. */
+.web-ghost-chip > * {
+    visibility: hidden;
+}
+
+/* A sized chip ghost at the loaded chip's height. */
+.skeleton-bar.skeleton-chip:is(.skeleton-chip-sm, .skeleton-chip-md, .skeleton-chip-lg, .skeleton-chip-xl) {
+    height: 1.725rem;
+}
+
+/* A Totals column label's ghost, centered on the label's own text line. */
+.web-activity-ghost-label {
+    flex: 1;
+    text-align: center;
+    font-size: 0.65rem;
+}
+
+/* A chip chart's ghost track at the loaded track's height. */
+.skeleton-bar.chart-track {
+    height: 0.9rem;
+    border-radius: 0.15rem;
+}
+
 /* A featured card's ghost fills the card's 5:7 slot with its corners. */
 .skeleton-bar.web-ghost-card {
     width: 100%;
@@ -1814,10 +1808,11 @@ body {
     line-height: normal;
 }
 
-/* A card row's ghost at a live row's height, the art crop's. */
+/* A card row's ghost at a live row's height: the art crop's, and the pixel
+   its mana pips add. */
 .skeleton-card-row.web-ghost-card-row {
     box-sizing: border-box;
-    min-height: 3.9rem;
+    min-height: calc(3.9rem + 1px);
 }
 
 .skeleton-bar.web-ghost-pip {
@@ -1840,13 +1835,6 @@ body {
     height: 0.6em;
 }
 
-.skeleton-bar.web-ghost-keyword-chip {
-    display: inline-block;
-    width: 3.375rem;
-    height: 1.425rem;
-    vertical-align: middle;
-    border-radius: 0.5rem;
-}
 
 .skeleton-bar.web-ghost-count {
     width: 1.5ch;
@@ -1855,7 +1843,7 @@ body {
 
 .skeleton-bar.skeleton-chip.web-ghost-count-chip {
     display: inline-block;
-    width: 1.675rem;
+    width: 2.1rem;
     height: 1.725rem;
     vertical-align: middle;
 }
@@ -1939,31 +1927,6 @@ body {
         max-height: calc(100% - var(--web-dock-panel-top) - var(--web-dock-panel-bottom));
     }
 
-    /* Swipe select's reasons scroll with the card's body, which fades out
-       at an edge with more to scroll past it instead of cutting a row in
-       half: the top fade grows in as the body leaves its top and the bottom
-       one goes as it reaches its end. A body that fits does not fade. */
-    @supports (animation-timeline: scroll()) {
-        .web-swipe-select-details .card-details-panel > .panel-body {
-            -webkit-mask-image: linear-gradient(
-                to bottom,
-                transparent 0,
-                #000 var(--web-fade-top),
-                #000 calc(100% - var(--web-fade-bottom)),
-                transparent 100%
-            );
-            mask-image: linear-gradient(
-                to bottom,
-                transparent 0,
-                #000 var(--web-fade-top),
-                #000 calc(100% - var(--web-fade-bottom)),
-                transparent 100%
-            );
-            animation: web-scroll-fade linear both;
-            animation-timeline: scroll(self);
-        }
-    }
-
     .web-details-hidden :is(.web-swipe-details, .web-examples-details) {
         transform: translateX(calc(100% + 1rem));
         visibility: hidden;
@@ -1998,6 +1961,32 @@ body {
     .web-swipe-select-body,
     .web-examples-body {
         grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* Swipe select's reasons scroll with the card's body, docked on a wide
+   window or in the phone's details drawer, and the body fades out at an
+   edge with more to scroll past it instead of cutting a row in half: the
+   top fade grows in as the body leaves its top and the bottom one goes as
+   it reaches its end. A body that fits does not fade. */
+@supports (animation-timeline: scroll()) {
+    :is(.web-swipe-select-details, .card-details-drawer) .card-details-panel > .panel-body {
+        -webkit-mask-image: linear-gradient(
+            to bottom,
+            transparent 0,
+            #000 var(--web-fade-top),
+            #000 calc(100% - var(--web-fade-bottom)),
+            transparent 100%
+        );
+        mask-image: linear-gradient(
+            to bottom,
+            transparent 0,
+            #000 var(--web-fade-top),
+            #000 calc(100% - var(--web-fade-bottom)),
+            transparent 100%
+        );
+        animation: web-scroll-fade linear both;
+        animation-timeline: scroll(self);
     }
 }
 
@@ -2347,6 +2336,14 @@ body {
     box-sizing: border-box;
 }
 
+/* The chips fade out above the band the dock sits in, as they fade in
+   under the controls, instead of a row cut through mid-chip. The grid's
+   own bottom padding scrolls the last row clear of the fade. */
+.web-picker-body > .tag-grid {
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 1rem, #000 calc(100% - 1rem), transparent);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 1rem, #000 calc(100% - 1rem), transparent);
+}
+
 /* A picker is a drawer down to a window that keeps some page beside it.
    Narrower, the drawer takes the whole window over the grid backdrop, as
    the app's phone pickers do. */
@@ -2430,8 +2427,10 @@ body {
         box-sizing: border-box;
     }
 
+    /* The explainer over the input panel one panel gap apart. */
     .web-import.screen-content {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+        row-gap: var(--panel-gap);
     }
 
     .web-import > .import-controls,
@@ -2529,7 +2528,7 @@ body {
         gap: var(--panel-gap);
         width: 100%;
         max-width: none;
-        padding: 0.75rem 0 6rem;
+        padding: var(--panel-gap) 0 6rem;
     }
 
     .web-import > .import-scroll,
@@ -2544,7 +2543,7 @@ body {
 /* Below the breakpoint the page is the app's one stack. */
 @media (max-width: 899px) {
     .web-deck-view {
-        width: calc(100% - 4rem);
+        width: calc(100% - 2rem);
         max-width: 40rem;
         display: flex;
         flex-direction: column;

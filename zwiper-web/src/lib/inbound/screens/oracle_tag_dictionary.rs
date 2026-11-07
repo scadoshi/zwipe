@@ -29,6 +29,7 @@ use zwipe_ui::dictionary;
 
 use crate::inbound::catalog::CatalogCache;
 use crate::inbound::chrome::back_arrow::BackArrow;
+use crate::inbound::chrome::ghost::{GhostChip, GhostText, GhostWords};
 use crate::inbound::chrome::media::use_min_width;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::chrome::page_keys::{focus_by_id, use_page_keys};
@@ -274,8 +275,9 @@ fn DictionaryRow(
     }
 }
 
-/// The dictionary while the catalog loads: the search box, a rail of letter
-/// ghosts and seven ghost rows.
+/// The dictionary while the catalog loads: the search box, a rail of empty
+/// letter chips and seven rows, each a slug and its description in the
+/// loaded row's own elements.
 #[component]
 fn DictionarySkeleton() -> Element {
     rsx! {
@@ -287,15 +289,15 @@ fn DictionarySkeleton() -> Element {
                 div { class: "skeleton-bar dict-skeleton-search" }
                 div { class: "dict-letter-rail scroll-fade-x",
                     for i in 0..12 {
-                        div { key: "{i}", class: "skeleton-bar dict-skeleton-letter" }
+                        GhostChip { key: "{i}", chars: 1, button: true }
                     }
                 }
             }
             div { class: "dict-list",
-                for i in 0..7 {
+                for (i, (slug, desc)) in [(14, 70), (9, 52), (18, 88), (11, 61), (16, 47), (8, 79), (13, 58)].into_iter().enumerate() {
                     div { key: "{i}", class: "dict-row",
-                        div { class: "skeleton-bar dict-skeleton-slug" }
-                        div { class: "skeleton-bar dict-skeleton-desc" }
+                        div { class: "dict-slug", GhostText { chars: slug } }
+                        div { class: "dict-desc", GhostWords { chars: desc } }
                     }
                 }
             }

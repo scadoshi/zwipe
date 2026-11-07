@@ -6,8 +6,8 @@
 //! `zwipe_ui::activity`; this module draws them.
 
 use components::{
-    BarChart, BarOrientation, ChartTip, Chip, HEAT_CELL, HEAT_ROWS, HeatCell, HeatGrid, HeatHit,
-    HeatReadout, LabelCase, OtagDef, RoleTags, use_heat_pick,
+    BarChart, BarOrientation, CardListFold, ChartTip, Chip, HEAT_CELL, HEAT_ROWS, HeatCell,
+    HeatGrid, HeatHit, HeatReadout, LabelCase, OtagDef, RoleTags, use_heat_pick,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -80,6 +80,28 @@ fn ActivityHeatmap(layout: HeatLayout, rest: Vec<String>, label: String) -> Elem
                 class: "activity-plot",
                 style: "width:{width}px;",
                 onmouseleave: move |_| hover.set(None),
+                // The weekday names again, pinned at the scroller's left
+                // over the grid's own, so they stay in view as the year
+                // scrolls under them.
+                div {
+                    class: "activity-days",
+                    style: "width:{LEFT}px;height:{height}px;margin-bottom:-{height}px;",
+                    "aria-hidden": "true",
+                    svg {
+                        width: "{LEFT}",
+                        height: "{height}",
+                        view_box: "0 0 {LEFT} {height}",
+                        for (row, name) in WEEKDAY_LABELS {
+                            text {
+                                key: "p{row}",
+                                class: "heat-label",
+                                x: "0",
+                                y: "{TOP + components::heat_span(row) + HEAT_CELL - 2.0}",
+                                "{name}"
+                            }
+                        }
+                    }
+                }
                 svg {
                     class: "heat-grid",
                     style: "width:{width}px;",
@@ -371,11 +393,11 @@ pub(crate) fn HardPassesPanel(
     on_printing: EventHandler<Card>,
 ) -> Element {
     rsx! {
-        div { class: "maybeboard-list card-group row-enter",
-            div { class: "card-group-header card-group-header-with-hint",
-                span { {model::PASSES_TITLE} }
+        CardListFold {
+            title: model::PASSES_TITLE,
+            actions: rsx! {
                 InfoButton { topic: HintTopic::HardPasses }
-            }
+            },
             if let Some(line) = line {
                 div { class: "activity-total activity-total-group",
                     span { class: "chip-note", "{line}" }

@@ -30,6 +30,28 @@ The handoff for the composer session: where the factory stands, so a fresh or co
 | surfer | Part 6: checking 115 to 127 on the live deploy, at full width and then narrower as Scotty resizes | |
 | droid | Idle after pass 1. It rechecks on Android once 145 to 147 merge. | |
 
+## Overnight, 2026-11-06 into 11-07 (Scotty asleep: "keep the factory running")
+
+- Deployed `release` to `main` at `60d705459` (web, zerver and portfolio green; zite was finishing). Droid is on pass 2 against that build, and Surfer on Part 7, a fix check at whatever width its window has.
+- The composer keeps reviewing and merging worker PRs into `release`, copies each QA report into `context/qa/` with a row in its README, and commits. No more deploys to `main` until Scotty says.
+- Scotty's later word (before sleep, 2026-11-07): "anything that gets reported back that you're like 90% confident you can fix, just fix it." So 157 to 160 went out from Surfer's and Droid's findings. Anything less certain waits for his morning triage.
+- Overnight queues: halo has 156 (the auth logout, a PR left open for Scotty), then 159. Thinker has 135/136, then 158 (counts), 143, 153. Scotland has 146, then 157 and 160 (portfolio). Laptop has 151 (A: orangui, zwipe, Cairn on a branch), then 145.
+
+## PR #259 (156, the auth logout): composer review notes for Scotty
+
+Left open as agreed. The design is sound: a rotated token presented again within 30s gets the same successor (kept in memory per process), so racing tabs and a refresh lost to a page unload stop revoking the family. Past the window, a replay still revokes. The web adds a Web Lock so tabs refresh one at a time. The ownership check (Forbidden) runs before the reuse path. Points to decide or fix before merging:
+- `reuse.rs` recovers a poisoned lock with `PoisonError::into_inner`, which the Rust rules forbid ("a poisoned lock is an error the caller sees"). It should return an error, which on the refresh path means falling back to the replay branch.
+- The successor is remembered before the transaction commits. If the commit then fails, a racing loser is handed a token the database never stored, and its next refresh fails as NotFound. That's rare and fails safe (a logout), but `remember` after the commit, with losers re-reading, would be tighter.
+- The tradeoff: anyone holding a stolen token can redeem it within 30s of a legitimate rotation. That's the standard reuse-interval tradeoff (Auth0 and others do the same). The window is configurable.
+- The map is per process, so a restart or a second zerver instance forgets the window, and the race falls back to today's revoke. That's safe.
+- Halo flagged without changing it: the web refreshes on every tab load because it stores no access token, and the 5-session cap may evict an idle Firefox session. Either could still explain Scotty's Firefox drops.
+
+## Waiting on Scotty (as of 23:30)
+
+- Go on Surfer's Part 6 follow-ups for halo: 125 (the portfolio sweep, still two), 118 regressed in the phone details drawer (720 and 504), 52 (picker chip list fade), 53 (zwipe.net stats stuck while labeled Live), 54 (the deploy logged Chrome out; diagnose only).
+- A deploy of `release` to `main`. Nothing goes to Cairn's `main` and nothing is filed with Dioxus without him.
+- Halo, Surfer and Droid are idle and waiting.
+
 ## Rules learned tonight
 
 - Surfer's and Droid's findings get reviewed with Scotty before anything is built. Scotty's own nits I log and send straight out.
@@ -37,6 +59,7 @@ The handoff for the composer session: where the factory stands, so a fresh or co
 - Workers stop and ask the composer before any wire change. The composer plans it per `context/development/api_evolution.md` (template `context/plans/pip_color_wire.md`, tracker `context/plans/wire_changes.md`) and checks it before it ships.
 - Clean the laptop's Rust target folders once one passes about 100 GB, only while nothing is building, keeping `target/scotty-shots`.
 - Portfolio copy stays short and plain (the human skill).
+- Every agent reports back when it finishes or stops (`herdr --machine laptop agent prompt composer ...`). A `/clear` drops a pane's herdr name, so rename it after (`herdr agent rename wV:p1 laptop`).
 
 ## Open threads
 

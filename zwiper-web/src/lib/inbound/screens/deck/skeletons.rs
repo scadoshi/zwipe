@@ -19,8 +19,9 @@ pub fn ChipRowSkeleton(label: &'static str, chips: Vec<&'static str>) -> Element
     }
 }
 
-/// The deck list while it loads: the `All` group with three ghost rows of
-/// mixed widths, in the live list's own classes.
+/// The deck list while it loads: the `All` group's header as an empty chip
+/// at the loaded one's size, then three ghost rows of mixed widths, in the
+/// live list's own classes.
 #[component]
 pub fn DeckListSkeleton() -> Element {
     const TILES: &[&[&str]] = &[
@@ -30,8 +31,9 @@ pub fn DeckListSkeleton() -> Element {
     ];
     rsx! {
         div { class: "card-group deck-group",
-            div { class: "card-group-header group-collapsible expanded skeleton-deck-list-header",
-                div { class: "skeleton-bar skeleton-deck-list-header-title" }
+            div { class: "card-group-header group-collapsible expanded skeleton-deck-list-header web-ghost-chip",
+                span { class: "card-row-arrow", "\u{25b8}" }
+                span { "All (0)" }
             }
             div { class: "collapsible open",
                 div { class: "collapsible-inner",

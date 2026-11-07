@@ -456,14 +456,20 @@ pub fn Home() -> Element {
                     onopen: move |()| driver.dispatch(Action::Decks),
                     ondeck: move |id| driver.dispatch(Action::OpenDeck(id)),
                     oncreate: move |()| driver.dispatch(Action::CreateDeck),
+                    onretry: move |()| driver.dispatch(Action::RetryDecks),
                 }
 
                 HomePlayStyle {
                     play_style,
                     onplaystyle: move |()| driver.dispatch(Action::Playstyle),
+                    onretry: move |()| driver.dispatch(Action::RetryPlayStyle),
                 }
 
-                FlavorPanel { flavor, card: flavor_card }
+                FlavorPanel {
+                    flavor,
+                    card: flavor_card,
+                    on_retry: move |()| driver.dispatch(Action::RetryFlavor),
+                }
             }
             OneTimeHintDialog { open: first_login_hint_open, hint: OneTimeHint::FirstLogin }
             }

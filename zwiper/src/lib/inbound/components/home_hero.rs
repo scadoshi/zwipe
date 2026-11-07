@@ -214,10 +214,10 @@ pub fn HomeHero() -> Element {
             figures: public_figures(metrics.as_ref()),
             roll_key: "all",
             source: rsx! {
-                span { class: "stat-chip", "{CountScope::AllUsers.label()}" }
                 if live {
                     span { class: "stat-chip", "Live" }
                 }
+                span { class: "stat-chip", "{CountScope::AllUsers.label()}" }
             },
         }
     }

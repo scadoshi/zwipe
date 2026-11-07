@@ -5,9 +5,10 @@
 
 use dioxus::prelude::*;
 
+use crate::inbound::cards::buy_links::GhostBuyLink;
 use crate::inbound::chrome::ghost::{
-    GhostActionRow, GhostButton, GhostChip, GhostFold, GhostIconButton, GhostInfoRow, GhostList,
-    GhostSection, GhostText,
+    GhostActionRow, GhostChip, GhostFold, GhostIconButton, GhostInfoRow, GhostList, GhostSection,
+    GhostText,
 };
 
 /// Ghost rows in each band, the Commander band's one then a full group.
@@ -40,17 +41,14 @@ fn GhostActions(count: usize) -> Element {
     }
 }
 
-/// The head: the name with the icons at its end, the facts as tinted
-/// chips, then one featured card with its name and role chips.
+/// The head: the facts as tinted chips, then one featured card with its
+/// name and role chips. The name sits in the page head and the icons in
+/// the dock, so the head has no title row.
 #[component]
 pub fn DeckHeadGhost() -> Element {
     rsx! {
         div { class: "deck-head",
             div { class: "deck-head-text",
-                div { class: "deck-head-title-row",
-                    h1 { class: "deck-head-title", GhostText { chars: 12 } }
-                    div { class: "deck-head-actions", GhostActions { count: 4 } }
-                }
                 div { class: "deck-head-meta",
                     for (i, (tone, chars)) in [("p5", 8), ("p3", 9), ("p3", 15), ("money", 7)].into_iter().enumerate() {
                         span { key: "{i}", class: "stat-chip stat-chip-{tone} web-ghost-chip", GhostText { chars } }
@@ -179,9 +177,10 @@ pub fn StatsSectionsGhost() -> Element {
     }
 }
 
-/// The phone's page while the deck loads: Profile with its icons and rows,
-/// Budget open with its currency chips and Buy row, the shut stats, then
-/// Data and the Danger zone.
+/// The phone's page while the deck loads: Profile with its icons and five
+/// rows (name, cards, format, commander, power level), Budget open with its
+/// currency chips and Buy row, the shut stats, then Data and the Danger
+/// zone.
 #[component]
 pub fn DeckViewGhost() -> Element {
     rsx! {
@@ -191,6 +190,7 @@ pub fn DeckViewGhost() -> Element {
                 GhostInfoRow { label: 5, value: 2 }
                 GhostInfoRow { label: 6, value: 9 }
                 GhostInfoRow { label: 9, value: 15 }
+                GhostInfoRow { label: 11, value: 13 }
             }
             GhostSection {
                 chars: 6,
@@ -201,8 +201,8 @@ pub fn DeckViewGhost() -> Element {
                     GhostInfoRow { label: 18, value: 6 }
                     div { class: "deck-buy-row",
                         span { class: "stat-chip stat-chip-p1 chip-row-label web-ghost-chip", GhostText { chars: 3 } }
-                        GhostButton { chars: 11 }
-                        GhostButton { chars: 14 }
+                        GhostBuyLink { label: "TCGplayer", button: "btn-action" }
+                        GhostBuyLink { label: "Card Kingdom", button: "btn-action" }
                     }
                 }
             }

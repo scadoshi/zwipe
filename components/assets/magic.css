@@ -185,6 +185,23 @@
     display: contents;
 }
 
+/* On a phone the colors, price and stat take their own line under the
+   name, so rows of one list share a shape whatever the name's length. */
+@media (max-width: 899px) {
+    .card-row-tags {
+        display: flex;
+        flex: 1 0 100%;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.3rem 0.4rem;
+        min-width: 0;
+    }
+
+    .card-row-tags:not(:has(> :not(:empty))) {
+        display: none;
+    }
+}
+
 /* Opt-in art-crop thumbnail at the far left of the row (CardRow `show_art`).
    Art crops vary in aspect card to card, so a fixed box with cover-fit keeps
    every row's thumb identical. Lazy-loaded by the img attribute. The
@@ -1035,21 +1052,27 @@ i.ms.ms-cost.ms-gp {
 
 /* The pane's ghost: the title's bar and the rules text's lines. */
 .card-details-ghost .card-details-ghost-title {
+    display: inline-block;
     width: 12rem;
     height: 1.1rem;
+    vertical-align: middle;
 }
 
-.card-details-ghost .card-details-ghost-line {
-    height: 0.85rem;
-    margin-top: 0.6rem;
+/* The kind and facts chips' ghosts are the loaded chips, empty: their
+   labels hold the size and draw nothing. */
+.card-details-ghost :is(.detail-chip, .card-row-price) > span {
+    visibility: hidden;
 }
 
-.card-details-ghost .card-details-ghost-line:nth-child(5) {
-    width: 60%;
+/* A rules text word's ghost, on the text's own line. */
+.card-details-ghost .card-details-ghost-word {
+    display: inline-block;
+    height: 0.8em;
+    vertical-align: middle;
 }
 
 /* A tag row's ghost at the loaded row's sizes: the label chip, then tag
-   chips, each as tall as the kit's chip. */
+   chips, each an empty chip as tall as the kit's chip. */
 .card-details-ghost .card-details-ghost-label {
     display: inline-block;
     width: 5.25rem;
@@ -1068,8 +1091,8 @@ i.ms.ms-cost.ms-gp {
     width: 5.25rem;
 }
 
-/* The foot's buttons' ghosts at a .card-action-btn's size: Flip, then the
-   wider Printings. */
+/* The foot's buttons' ghosts, empty, at a .card-action-btn's size: Flip,
+   then the wider Printings. */
 .card-details-ghost .card-details-ghost-button {
     display: inline-block;
     width: 3.325rem;
@@ -1520,11 +1543,12 @@ i.ms.ms-cost.ms-gp {
 /* ---- ColorBars (components::ColorBars) ---- */
 
 /* The pips and fills read `--mana-white` through `--mana-green`, so the bars
-   follow the pip style like every other pip. */
+   follow the pip style like every other pip. The panel's own padding is the
+   room above and below them. */
 .color-bars {
     display: flex;
     flex-direction: column;
-    padding: 0.5rem 1rem 0.9rem;
+    padding: 0 1rem;
 }
 
 /* A deck chart of color rows: the label over the rows, in the Mana section's
@@ -1663,6 +1687,14 @@ i.ms.ms-cost.ms-gp {
     letter-spacing: 0.1em;
 }
 
+/* A failed load: its chip, then Retry under it, the pair centered. The
+   button is a control, not a note, so the block's fade lifts. */
+.message-empty.load-failed {
+    flex-direction: column;
+    gap: 0.6rem;
+    opacity: 1;
+}
+
 /* ---- DockFilter (components::DockFilter): the dot that marks a live
    filter on the funnel and on a filter button ---- */
 
@@ -1685,6 +1717,14 @@ i.ms.ms-cost.ms-gp {
     position: absolute;
     top: 0.35rem;
     left: 0.45rem;
+}
+
+/* ---- The on-screen keyboard (KEYBOARD_JS) ----
+   While the keyboard is up the floating docks step aside instead of riding
+   up over the content above it; they come back as it closes. */
+html.keyboard-up .action-dock,
+html.keyboard-up .web-dock-pair {
+    visibility: hidden;
 }
 
 /* ---- CoverFlow (components::CoverFlow) ----
@@ -1730,6 +1770,11 @@ i.ms.ms-cost.ms-gp {
     touch-action: pan-y;
     -webkit-mask-image: var(--flow-fade);
     mask-image: var(--flow-fade);
+    /* Clips the cards' 3D transforms too, which WebKit lets past
+       `overflow: hidden` into the sheet's scroll width; the sheet itself
+       never scrolls sideways. */
+    overflow: clip;
+    contain: paint;
 }
 
 .cover-flow-stage:active {
@@ -2089,6 +2134,12 @@ i.ms.ms-cost.ms-gp {
     color: var(--color-error);
 }
 
+/* Under an empty list's note, the Danger zone keeps the panel gap a list
+   would leave above it. */
+.message-empty + .danger-zone {
+    margin-top: var(--panel-gap);
+}
+
 /* ---- Note chip (.chip-note) ----
    Every empty or error line, on every client: a gray chip that does not
    act, centered by whatever holds it (.message-empty, .deck-empty,
@@ -2403,6 +2454,38 @@ i.ms.ms-cost.ms-gp {
     border: 0;
 }
 
+/* ---- Floating controls stop above the footer ----
+   The site footer carries a view timeline the whole page can see. A
+   floating control that runs `footer-rise` on it moves up pixel for pixel
+   as the footer scrolls in, so it keeps its gap above the footer instead of
+   covering it. Each site names its floating controls and gives them:
+
+     animation: footer-rise linear both;
+     animation-timeline: --site-footer;
+     animation-range: entry 0px entry 100vh;
+
+   inside `@supports (animation-timeline: view())`. Without scroll-driven
+   animations the controls stay at the window's foot. */
+@supports (animation-timeline: view()) {
+    :root {
+        timeline-scope: --site-footer;
+    }
+
+    footer.site-footer {
+        view-timeline: --site-footer block;
+    }
+}
+
+@keyframes footer-rise {
+    from {
+        translate: 0 0;
+    }
+
+    to {
+        translate: 0 -100vh;
+    }
+}
+
 /* ---- Site footer (SiteFooter) ----
    zwipe.net's footer, which the web app draws too: the copyright and the
    host's links as pills in one centered row, then the notes as one
@@ -2473,4 +2556,16 @@ footer.site-footer .site-footer-note {
     color: var(--palette-1);
     text-decoration: underline;
     text-underline-offset: 3px;
+}
+
+/* A stepper's button at its bound is off: faded on a dark theme, its text
+   muted on a light one, as the kit's buttons are. */
+.stepper-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+[class*="theme-"][class*="-light"] .stepper-btn:disabled {
+    opacity: 1;
+    color: var(--text-muted);
 }

@@ -188,7 +188,7 @@ pub fn FormatPicker(form: DeckForm) -> Element {
                     label { class: "tag-search-label", r#for: "format-search", "Search" }
                 }
                 PickerSearch { id: "format-search", placeholder: "Search formats", query }
-                div { class: "tag-def-bar",
+                div { class: "tag-def-bar format-def-bar",
                     if let Some(format) = focused() {
                         div { class: "tag-def-name", "{format.display_name()}" }
                         ul { class: "tag-def-list",

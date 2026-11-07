@@ -21,7 +21,8 @@
 use std::collections::HashSet;
 
 use components::{
-    AlertDialog, Button, ButtonVariant, Chip, ClearWrap, DialogAction, Toasts, use_toast,
+    AlertDialog, Button, ButtonVariant, CardListFold, Chip, ClearWrap, DialogAction, Toasts,
+    use_toast,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -370,6 +371,7 @@ pub fn CommanderMaybeboard() -> Element {
     let builder = filter_builder.peek().clone();
     let view = driver.model.read();
     let is_loading = view.status() == Status::Loading;
+    let nothing_saved = view.status() == Status::Empty;
     let query = view.query().to_owned();
     let quick_add = view.quick_add();
     let all_on = view.shows_all();
@@ -492,18 +494,17 @@ pub fn CommanderMaybeboard() -> Element {
                             }
                         } else {
                             // Same bordered container the deck cards list wraps
-                            // its rows in.
-                            div { class: "maybeboard-list card-group row-enter",
-                                // Swipe sits in the list's header, so it says
-                                // what gets swiped.
-                                div { class: "card-group-header card-group-header-with-hint",
-                                    span { {model::LIST_TITLE} }
+                            // its rows in. Swipe sits in the list's header, so
+                            // it says what gets swiped.
+                            CardListFold {
+                                title: model::LIST_TITLE,
+                                actions: rsx! {
                                     Button {
                                         variant: ButtonVariant::Action,
                                         onclick: move |_| swipe_open.set(true),
                                         {model::SWIPE}
                                     }
-                                }
+                                },
                                 for card in filtered {
                                     MaybeboardRow {
                                         key: "{card.scryfall_data.id}",
@@ -524,6 +525,7 @@ pub fn CommanderMaybeboard() -> Element {
                         DangerZoneAction {
                             label: model::CLEAR_MAYBEBOARD,
                             button: model::CLEAR,
+                            disabled: nothing_saved,
                             onclick: move |()| show_clear_dialog.set(true),
                         }
                     }

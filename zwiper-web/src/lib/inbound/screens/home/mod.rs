@@ -13,7 +13,7 @@ pub mod hero;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use chrono::{DateTime, Utc};
-use components::{HomeColors, HomeDecks, ThemeConfig};
+use components::{HomeColors, HomeDecks, LoadFailed, ThemeConfig};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use dioxus_primitives::toast::{Toasts, use_toast};
@@ -31,9 +31,10 @@ use zwipe_ui::screens::home::{
 use self::hero::HomeHeroScoped;
 use crate::domain::counts::CachedCounts;
 use crate::inbound::caches::{CachedDecks, CachedMyCounts, CachedPlayStyle};
-use crate::inbound::cards::buy_links::CardBuyLinks;
+use crate::inbound::cards::buy_links::{CardBuyLinks, GhostBuyLink};
 use crate::inbound::cards::image_preview::ImagePreview;
 use crate::inbound::chrome::authed::{Authed, use_authed};
+use crate::inbound::chrome::ghost::{GhostText, GhostWords};
 use crate::inbound::chrome::hint_topic::HintTopic;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, open_and_record_hint};
 use crate::inbound::chrome::toast::raise;
@@ -437,6 +438,7 @@ pub fn Home() -> Element {
                                 onopen: move |()| driver.dispatch(Action::Decks),
                                 ondeck: move |id| driver.dispatch(Action::OpenDeck(id)),
                                 oncreate: move |()| driver.dispatch(Action::CreateDeck),
+                                onretry: move |()| driver.dispatch(Action::RetryDecks),
                             }
                         }
                         div { class: "web-column",
@@ -444,6 +446,7 @@ pub fn Home() -> Element {
                                 play_style,
                                 onplaystyle: move |()| driver.dispatch(Action::Playstyle),
                                 oninfo: move |()| hint.set(Some(HintTopic::HomeColors)),
+                                onretry: move |()| driver.dispatch(Action::RetryPlayStyle),
                             }
                         }
                     }
@@ -451,6 +454,7 @@ pub fn Home() -> Element {
                         flavor,
                         card,
                         on_image: move |sd: ScryfallData| preview.set(Some((sd, 0))),
+                        on_retry: move |()| driver.dispatch(Action::RetryFlavor),
                     }
                 }
             }
@@ -470,6 +474,7 @@ pub(crate) fn FlavorPanel(
     flavor: Flavor,
     card: Option<ScryfallData>,
     on_image: EventHandler<ScryfallData>,
+    #[props(default)] on_retry: Option<EventHandler>,
 ) -> Element {
     let body = match (flavor, card) {
         (Flavor::Quote(quote), Some(sd)) => {
@@ -496,20 +501,31 @@ pub(crate) fn FlavorPanel(
             }
         }
         (Flavor::Blank | Flavor::Quote(_), _) => rsx! {},
+        (Flavor::Failed, _) => rsx! {
+            div { class: "settings-list-header", style: "justify-content: center;",
+                span { class: "settings-list-title", {home::FEATURED_FLAVOR} }
+            }
+            if let Some(on_retry) = on_retry {
+                LoadFailed { message: home::FLAVOR_FAILED, on_retry, class: "home-flavor-line" }
+            }
+        },
         (Flavor::Loading, _) => rsx! {
-            div { class: "skeleton-card-header", style: "display: flex; justify-content: center;",
-                div { class: "skeleton-bar skeleton-section-label", style: "width: 45%; margin-bottom: 0;" }
+            div { class: "settings-list-header", style: "justify-content: center;",
+                span { class: "settings-list-title", GhostText { chars: 15 } }
             }
-            div { class: "skeleton-flavor", style: "padding: 1rem;",
-                div { class: "skeleton-bar skeleton-flavor-line skeleton-flavor-line-1" }
-                div { class: "skeleton-bar skeleton-flavor-line skeleton-flavor-line-2" }
-                div { class: "skeleton-bar skeleton-flavor-line skeleton-flavor-line-3" }
-            }
+            div { class: "flavor-quote", style: "padding: 1rem;", GhostWords { chars: 130 } }
             div { class: "flavor-buy-row",
-                div { class: "skeleton-bar skeleton-chip skeleton-chip-lg" }
-                for i in 0..3 {
-                    div { key: "{i}", class: "skeleton-bar skeleton-chip skeleton-chip-md" }
+                span { class: "flavor-name web-ghost-chip",
+                    span { "Card name" }
                 }
+                span { class: "flavor-price web-ghost-chip",
+                    span { "$0.00" }
+                }
+                span { class: "card-action-btn web-ghost-chip",
+                    span { {home::IMAGE} }
+                }
+                GhostBuyLink { label: "TCGplayer" }
+                GhostBuyLink { label: "Card Kingdom" }
             }
         },
     };
