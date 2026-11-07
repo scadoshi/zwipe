@@ -10,6 +10,8 @@ pub mod auth;
 pub mod catalog_cache;
 /// Generation counter that keeps a stale async reply from landing over a newer one.
 pub mod generation;
+/// A full-screen picker's backdrop, mounted only while it shows.
+pub mod held_open;
 /// One-time hint dialogs (per-account, tracked via `hints_shown`).
 pub mod hint_dialog;
 /// App-root receiver that renders on-demand "?" hint dialogs (sender/receiver).
