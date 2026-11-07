@@ -17,4 +17,4 @@ Each finding was triaged with Scotty. What became work is in [`../progress/web_n
 | 2026-11-06 | Droid | Pass 1 | release | 38 issues; into 145 to 147, plus extensions |
 | 2026-11-06 | Surfer | Part 6, fix check | main `811c3bbbe` | Most landed; 125 and 118-narrow open; 52 to 54 new |
 | 2026-11-06 | Droid | Pass 2, recheck | main `60d705459` | running |
-| 2026-11-06 | Surfer | Part 7, fix check | main `60d705459` | starting after the deploy |
+| 2026-11-07 | Surfer | Part 7, fix check, 1450 only | main `60d705459` | 122, 133 (wide), 144 (reload), 147 (hero), 150, 152 fixed. Blocked by #55: a second app tab logged both tabs out. #56: the login page counters differ from Home and zwipe.net. |
