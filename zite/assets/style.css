@@ -2262,8 +2262,8 @@ html.js:not(.splash-skip).splash-over .splash {
     /* The toast clips what leaves it, so its close takes the 44px corner
        inside it, from the toast's top right edge. */
     .banner .banner-dismiss::after {
-        top: -0.5rem;
-        right: -0.7rem;
+        top: -0.25rem;
+        right: -0.35rem;
         left: auto;
         width: 44px;
         height: 44px;

@@ -23,7 +23,7 @@ zwipe-ui = { path = "../zwipe-ui" }
 # Everything here that is not Magic is a re-export of it, pinned to a
 # commit, on the same source as zwipe-ui's orangui-core so Cargo.lock holds
 # one copy.
-orangui = { git = "https://github.com/scadoshi/orangui", branch = "main" }
+orangui = { git = "https://github.com/scadoshi/orangui", branch = "fix/dismiss-target" }
 
 # The hover stack's life and fade timers, the browser's setTimeout as a
 # future. Off the browser the stack times nothing.
