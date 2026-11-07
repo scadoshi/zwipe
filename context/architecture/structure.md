@@ -240,7 +240,7 @@ zerver/src/
 | `decks` | Deck profiles (name, format, commander_id, partner_commander_id, background_id, signature_spell_id) |
 | `deck_cards` | Deck-card join (quantity, board, mvp_at) |
 | `oracle_tags` / `card_oracle_tags` | Oracle tag catalog and card-to-tag join |
-| `refresh_tokens` | Rotating refresh tokens (SHA-256 hashed, max 5 live/user, grouped in families by `family_id`; rotated rows keep `replaced_at` for a week) |
+| `refresh_tokens` | Rotating refresh tokens (SHA-256 hashed, max 10 live/user, grouped in families by `family_id`; rotated rows keep `replaced_at` for a week) |
 | `email_verification_tokens` | One-time email verification |
 | `password_reset_tokens` | One-time password reset |
 | `zervice_metrics` | Sync job audit trail |
@@ -429,7 +429,7 @@ zort/                       (future crate)
 
 **Database adapter pattern:** Domain types never have SQLx derives. `Database*` wrapper structs with primitive fields convert to domain types via `TryFrom`. See `decisions.md`.
 
-**Session auth:** JWT access tokens (`ACCESS_TOKEN_MINUTES`, default 24h) + rotating refresh tokens (14d each, SHA-256 hashed, max 5 live per user). A login starts a family that rotation carries; a replayed token kills its family, and a family ends 30 days after its login.
+**Session auth:** JWT access tokens (`ACCESS_TOKEN_MINUTES`, default 24h) + rotating refresh tokens (14d each, SHA-256 hashed, max 10 live per user). A login starts a family that rotation carries; a replayed token kills its family, and a family ends 30 days after its login.
 
 **Card filtering:** 30+ filter fields with builder pattern. Backend uses SQLx QueryBuilder with PostgreSQL jsonb/array operators. Frontend has modular filter screens synced via Dioxus signals.
 

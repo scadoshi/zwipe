@@ -452,14 +452,10 @@ fn adds_toast_the_land_target_and_the_budget_bands() {
         page: page(vec![forest, land("Swamp")]),
     });
     let effects = state.update(Action::Swipe(Direction::Right));
-    let raised = toasts(&effects);
     assert_eq!(
-        raised[1],
-        Toast::normal(ToastKind::Info, "Land target reached (1)")
-    );
-    assert_eq!(
-        raised[2],
-        Toast::normal(ToastKind::Info, "Deck at 53.33% of your $0.30 budget")
+        toasts(&effects),
+        [Toast::normal(ToastKind::Info, "Land target reached (1)")],
+        "one toast per action: the first of two equal bands, in place of the swipe's own line"
     );
     let effects = state.update(Action::Swipe(Direction::Right));
     assert!(

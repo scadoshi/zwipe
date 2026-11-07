@@ -17,6 +17,9 @@ pub enum SwipeSelectMode {
     /// [`crate::deck::form::Slot::noun`]: `commander`, `oathbreaker`,
     /// `partner`, `background` or `signature spell`.
     Picking(&'static str),
+    /// Swiping through commanders from the Commander maybeboard, where a pick
+    /// starts a new deck with it.
+    StartsDeck,
     /// Swiping through Playstyle's suggested commanders.
     Suggested {
         /// Whether the overlay has a filter, which adds a line about it.
@@ -46,6 +49,77 @@ fn building_a_deck() -> Vec<Block> {
     ]
 }
 
+/// The first-deck hint for the deck page's layout. Narrow (the app, and the
+/// web below its breakpoint), the Profile card carries the pencil, clone
+/// and share, and the `Cards` pill floats in the dock. Wide, one dock holds
+/// add and remove, the filter and undo, then edit, clone and share.
+#[must_use]
+pub fn first_deck(wide: bool) -> HintContent {
+    let mut blocks = if wide {
+        vec![
+            bullet(vec![
+                icon_key(KeyIcon::Plus),
+                text(" adds cards and "),
+                icon_key(KeyIcon::Minus),
+                text(" removes them"),
+            ]),
+            bullet(vec![
+                icon_key(KeyIcon::Funnel),
+                text(" filters the cards (its "),
+                key("\u{d7}"),
+                text(" resets the filter), and "),
+                icon_key(KeyIcon::Undo),
+                text(" undoes"),
+            ]),
+            bullet(vec![
+                icon_key(KeyIcon::Edit),
+                text(" changes the name, format, command zone, tags and targets"),
+            ]),
+            bullet(vec![
+                icon_key(KeyIcon::Clone),
+                text(" clones the deck and "),
+                icon_key(KeyIcon::Share),
+                text(" shares a link to it"),
+            ]),
+        ]
+    } else {
+        vec![
+            bullet(vec![key("Cards"), text(" browses, adds and removes cards")]),
+            bullet(vec![
+                text("The "),
+                icon_key(KeyIcon::Edit),
+                text(" by "),
+                key("Profile"),
+                text(" changes the name, format, command zone, tags and targets"),
+            ]),
+            bullet(vec![
+                text("Beside it, "),
+                icon_key(KeyIcon::Clone),
+                text(" clones the deck and "),
+                icon_key(KeyIcon::Share),
+                text(" shares a link to it"),
+            ]),
+        ]
+    };
+    blocks.extend([
+        bullet(vec![text(
+            "Import, export and delete are at the bottom of the page",
+        )]),
+        bullet(vec![
+            text("Skipped and removed cards stay out of the add stack. "),
+            key("Clear"),
+            text(" at the bottom brings them back"),
+        ]),
+        bullet(vec![text(
+            "Stats fill in as the deck grows. Tap a section to expand it",
+        )]),
+        bullet(vec![text(
+            "Warnings flag rule problems, each with a one-tap fix",
+        )]),
+    ]);
+    content("Welcome to your deck", blocks)
+}
+
 /// A dialog's content from its title and body.
 fn content(title: &str, blocks: Vec<Block>) -> HintContent {
     HintContent {
@@ -66,6 +140,8 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
                 bullet(vec![
                     key("Decks"),
                     text(" lists your latest decks. "),
+                    key("Create a deck"),
+                    text(" starts one, and once you have decks "),
                     key("All decks"),
                     text(" opens the list"),
                 ]),
@@ -79,7 +155,9 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
                     key("Account"),
                     text(", the "),
                     icon_key(KeyIcon::Person),
-                    text(" in the menu's footer, has your email, password and log out"),
+                    text(
+                        " in the menu's footer (the top bar on a wide window), has your email, password and log out",
+                    ),
                 ]),
                 bullet(vec![
                     key("Settings"),
@@ -141,40 +219,7 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
                 ]),
             ],
         ),
-        OneTimeHint::FirstDeck => content(
-            "Welcome to your deck",
-            vec![
-                bullet(vec![key("Cards"), text(" browses, adds and removes cards")]),
-                bullet(vec![
-                    text("The "),
-                    icon_key(KeyIcon::Edit),
-                    text(" by "),
-                    key("Profile"),
-                    text(" changes the name, format, command zone, tags and targets"),
-                ]),
-                bullet(vec![
-                    text("Beside it, "),
-                    icon_key(KeyIcon::Clone),
-                    text(" clones the deck and "),
-                    icon_key(KeyIcon::Share),
-                    text(" shares a link to it"),
-                ]),
-                bullet(vec![text(
-                    "Import, export and delete are at the bottom of the page",
-                )]),
-                bullet(vec![
-                    text("Skipped and removed cards stay out of the add stack. "),
-                    key("Clear skips"),
-                    text(" at the bottom brings them back"),
-                ]),
-                bullet(vec![text(
-                    "Stats fill in as the deck grows. Tap a section to expand it",
-                )]),
-                bullet(vec![text(
-                    "Warnings flag rule problems, each with a one-tap fix",
-                )]),
-            ],
-        ),
+        OneTimeHint::FirstDeck => first_deck(false),
         OneTimeHint::DeckCards => content(
             "Browsing your deck",
             vec![
@@ -276,7 +321,9 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
                 bullet(vec![
                     text("Swipe "),
                     emph("down", Role::Tertiary),
-                    text(" undoes the last swipe"),
+                    text(" or "),
+                    icon_key(KeyIcon::Undo),
+                    text(" undoes the last swipe, even at the end of the stack"),
                 ]),
                 line(vec![text(
                     "The board chips at the bottom left pick which board you are trimming",
@@ -487,6 +534,18 @@ pub fn swipe_select(mode: SwipeSelectMode) -> HintContent {
                 text(" skips it for a week"),
             ]),
         ],
+        SwipeSelectMode::StartsDeck => vec![
+            bullet(vec![
+                text("Swipe "),
+                emph("right", Role::Success),
+                text(" starts a new deck with that commander"),
+            ]),
+            bullet(vec![
+                text("Swipe "),
+                emph("left", Role::Error),
+                text(" skips it"),
+            ]),
+        ],
         SwipeSelectMode::Picking(noun) => vec![
             bullet(vec![
                 text("Swipe "),
@@ -500,18 +559,23 @@ pub fn swipe_select(mode: SwipeSelectMode) -> HintContent {
             ]),
         ],
     };
-    blocks.extend([
-        bullet(vec![
+    // Up saves only where the pile holds commanders: not for a background
+    // or a signature spell.
+    if !matches!(
+        mode,
+        SwipeSelectMode::Picking("background" | "signature spell")
+    ) {
+        blocks.push(bullet(vec![
             text("Swipe "),
             emph("up", Role::Warning),
             text(" saves it to your commander maybeboard"),
-        ]),
-        bullet(vec![
-            text("Swipe "),
-            emph("down", Role::Tertiary),
-            text(" undoes the last swipe"),
-        ]),
-    ]);
+        ]));
+    }
+    blocks.extend([bullet(vec![
+        text("Swipe "),
+        emph("down", Role::Tertiary),
+        text(" undoes the last swipe"),
+    ])]);
     let title = match mode {
         SwipeSelectMode::Suggested { has_filter } => {
             blocks.push(line(vec![
@@ -527,7 +591,7 @@ pub fn swipe_select(mode: SwipeSelectMode) -> HintContent {
             }
             "Suggested commanders"
         }
-        SwipeSelectMode::Picking(_) => {
+        SwipeSelectMode::Picking(_) | SwipeSelectMode::StartsDeck => {
             blocks.push(line(vec![
                 text("Most-played first. "),
                 icon_key(KeyIcon::Funnel),
@@ -573,10 +637,50 @@ mod tests {
             bullet(vec![
                 key("Decks"),
                 text(" lists your latest decks. "),
+                key("Create a deck"),
+                text(" starts one, and once you have decks "),
                 key("All decks"),
                 text(" opens the list"),
             ])
         );
+    }
+
+    #[test]
+    fn from_the_maybeboard_a_pick_starts_a_new_deck() {
+        let hint = swipe_select(SwipeSelectMode::StartsDeck);
+        assert_eq!(hint.title, "Swipe select");
+        assert_eq!(
+            hint.blocks[0].plain(),
+            "Swipe right starts a new deck with that commander"
+        );
+    }
+
+    #[test]
+    fn the_deck_hint_names_the_clear_button_as_drawn() {
+        assert!(
+            first_deck(false)
+                .blocks
+                .iter()
+                .any(|b| b.spans().contains(&key("Clear")))
+        );
+    }
+
+    #[test]
+    fn up_saves_only_where_the_pile_holds_commanders() {
+        let says_up = |mode| {
+            swipe_select(mode)
+                .blocks
+                .iter()
+                .any(|b| b.plain().starts_with("Swipe up"))
+        };
+        assert!(says_up(SwipeSelectMode::Picking(Slot::Partner.noun(None))));
+        assert!(says_up(SwipeSelectMode::Suggested { has_filter: false }));
+        assert!(!says_up(SwipeSelectMode::Picking(
+            Slot::Background.noun(None)
+        )));
+        assert!(!says_up(SwipeSelectMode::Picking(
+            Slot::SignatureSpell.noun(None)
+        )));
     }
 
     #[test]
@@ -611,6 +715,26 @@ mod tests {
             account.blocks[1].plain(),
             "Danger zone at the bottom logs you out or deletes your account"
         );
+    }
+
+    #[test]
+    fn the_wide_deck_hint_shows_the_docks_icons_and_no_cards_pill() {
+        let wide = first_deck(true);
+        assert_eq!(
+            wide.blocks[0].plain(),
+            "plus adds cards and minus removes them"
+        );
+        assert_eq!(wide.blocks[0].spans()[0], icon_key(KeyIcon::Plus));
+        assert_eq!(wide.blocks[0].spans()[2], icon_key(KeyIcon::Minus));
+        assert!(
+            wide.blocks
+                .iter()
+                .all(|b| !b.spans().contains(&key("Cards"))),
+            "the wide page has no Cards pill"
+        );
+        let narrow = first_deck(false);
+        assert_eq!(narrow.blocks[0].spans()[0], key("Cards"));
+        assert_eq!(content_for(OneTimeHint::FirstDeck), Some(narrow));
     }
 
     #[test]

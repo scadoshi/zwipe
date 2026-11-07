@@ -438,3 +438,73 @@ Logouts: **none this pass.** I was signed in from 00:00 to 00:08 across five ful
 4. **Toast covers the field it describes.** After confirming a deck tag, "Oracle tags derived from your deck tags" sits bottom-left directly over the Oracle tags chip row it's talking about (720 × 725, Tags section scrolled into view). Small, since it times out.
 
 Not done: the 133 full-screen branch below 600 and 142 below 560 (window can't be resized), 144 cross-tab.
+
+## Part 9, release 48e5f81b9 (2026-11-07, 08:13–08:31)
+
+The window is 1450 × 815 and still can't be resized by the tool. For phone widths: the app refuses to load in a frame (correct, its framing protection), so I opened it in a popup sized from script (390 × 777, and 720 × 725 for Printings). I can't screenshot that popup, so the app results at 390 are **DOM measurements only, no shots**. zwipe.net and the portfolio allow same-origin frames, so they have screenshots at 375, 390 and 430.
+
+### 1. Rechecks
+
+| Item | Result |
+|---|---|
+| S125 portfolio single sweep (wide) | **Fixed.** The theme drawer's layer now uses a clip edge that runs from viewport x 0 to 1439 over the same 400ms curve as the page (0 to 1450), so the page and drawer wipe as one edge. They differ by at most about 8px where they overlap |
+| Printings at 720 × 725 | **Fixed.** The sheet content is 518/518, nothing to scroll. Save at y 657–695, prices end at y 690, inside the viewport |
+| Browser-back crash (161) | **Fixed.** Back from Swipe select at 1450 and at 390: no freeze, no console errors. At 1450 back goes from Swipe select straight to the deck page (it skips Edit), at 390 it went to the previous page. Fine, just noting it |
+| Escape closes dropdowns | **App: fixed** (theme sheet, filter, card details, Printings, Format/Deck tags pickers, nav menu at 390). **Portfolio: fixed** (Products dropdown at wide, theme panel, phone menu at 375). **zwipe.net: not fixed.** Escape leaves the theme panel open (`aria-expanded` stays true). Its bundle was `zite-dxh762c74b1eefc6afb.js` all morning, so the zwipe.net deploy may not have landed yet |
+| Live counter labels | zwipe.net's chip now reads "as of 08:20" with "Everybody" (it said "Live" at 08:15). On the portfolio, "Counted by Heron · Cached in Steller · Live / as of 2026-11-07" is consistent. The numbers scramble for about 1.1s on load, then settle. **Odd:** the portfolio's live Commits value was 7,711 on two loads and 7,632 on two others, while "Live" both times |
+| Scrollbars | App and zwipe.net: page and panels use `scrollbar-color` from the theme (thin). Heatmap scrollbar themed at 720 and 390. **Portfolio's root page scrollbar isn't themed**: `html` is thin but `scrollbar-color: auto`, and only `.theme-wrapper *` gets the theme color (p9-2). Minor |
+| Chip text contrast across themes | **Dark: mostly fine.** I audited every bordered chip or button on the deck page across all 50 themes. Worst: muted chips (Maybe, Side, the "?" buttons) at 2.6 on Material and 2.7 on Bluloco, red danger buttons at 3.05 on Nord, 3.25 on Solarized, 3.61 on Rustbox. **Light: still weak.** Most light themes have chips at 2–3:1. Worst: "Add cards" / "Import" in Warnings at **1.35 on Nord light** (pale yellow on light gray, p9-1), 1.87 Ayu, 1.91 Everforest, 2.04 Kanagawa. Power/toughness chips (4/4) at 2.2–2.8 on about 20 light themes, set and price chips at 2.5–2.9, rarity chips at 2.7. Theme restored to Gruvbox dark |
+
+### 2. Session (156)
+
+**No logouts.** Signed in 08:13–08:31 with two app tabs open the whole time, plus a third app window for about 10 minutes. About 16 full page loads, including both tabs reloading together. `zwiper-web.session` never dropped in any of them. Before, a second tab logged both out at once, so this looks fixed.
+
+### 3. Phone widths
+
+**App at 390 × 777 (DOM only).** No page overflows sideways: Home, Decks, Playstyle, Activity, Maybeboard, deck page, Edit, Add all have scrollWidth 390. Docks are icon-only at x 180–380. Card details drawer at x 38–380, with a fade on its panel body. Theme sheet full width and opaque. Heatmap days stay pinned. Filter sheet full width, scrolls (586/963).
+- **New: Format and Deck tags pickers at 390 are cut off on the left.** The picker drawer is `width: 390px` (the whole viewport) but keeps its 9.6px right inset, so it sits at x −9.6 to 380. The left border and corner are off-screen, and the content has a 6px left gutter against about 26 on the right. That's also not the full-screen selector 133 describes below 600.
+- **118 changed:** in Swipe select the details panel body is still an inner scroller (372px holding 441) but now has a fade mask, so it no longer looks cut off.
+- Tap targets: header icons 34 × 27, the "?" buttons 24 × 24, filter chips 27 tall. Small but consistent everywhere, so I'm flagging it once, not per page.
+
+**zwipe.net at 390 and 430.** Home, Guides (8 guide pages), About, Changelog, Community, Privacy, Contribute: no sideways overflow, and Community and About are one column (p9-3, p9-4). The "1.18.0 is out" toast's ✕ is 13px tall, a small target.
+
+**Portfolio at 375 and 430.** Home and 13 of 16 project pages are fine (p9-5).
+- **New: long URLs overflow at 375.** `/projects/upsee/` (page width 452), `/projects/sharpmas/` (404) and `/projects/rustmas/` (394) scroll sideways because bare URLs in the text (`https://huggingface.co/qualcomm/Movenet`, `https://github.com/fornwall/advent-of-code`, `https://github.com/sonos/tract`) don't wrap: `overflow-wrap: normal` on the `a` inside `p` (p9-6). `overflow-wrap: anywhere` on prose links would fix it. At 430 rustmas happens to wrap at a hyphen.
+
+### Part 9 addendum: 156 logout after all (08:44:15)
+
+Both tabs were signed in at 08:31:05: tab A reloaded /decks at 08:31:05, tab B reloaded Home at 08:31:02. Both then sat idle. At 08:46 I opened the deck page for the 175 repro and both tabs were on /login, with `zwiper-web.session` gone. Tab B's console:
+- 08:31:02 `POST /api/auth/cookie/refresh` → "refreshed session"
+- 08:44:15 `POST /api/auth/cookie/refresh` → WARN `ensure_fresh.rs:76 refresh rejected; clearing session: invalid refresh token`
+
+Tab A's console was cleared by my navigation, so I can't see whether it refreshed just before 08:44:15. The likely cause is two tabs' idle refresh timers (started 3s apart) firing close together and racing on the rotating refresh token, so the loser is told its token is invalid and clears the shared session. That fits the "two tabs" half of 156: reloads are now fine, but idle multi-tab refresh is not. The 175 repro is blocked until someone signs in.
+
+## Part 10, nit 175 repro: Remove to the end (08:48–08:51, live 48e5f81b9)
+
+**Width: 720 × 759, not wide.** The window was at 720 when Scotty signed me back in, and the tool can't resize it. At 720 the details panel is a modal drawer, not the docked panel Scotty had, so this didn't run in his exact setup. One app tab open, signed in throughout.
+
+Deck: Surfer test (commander Edgar Markov plus 5 Main creatures: Drana, Welcoming Vampire, Bloodthirsty Conqueror, Charismatic Conqueror, Clavileño). Cards › − opens `/decks/…/remove` on Main (p10-1).
+
+What happened:
+- **Swipes with details open:** at 720 the drawer dims the docks, and → / ↓ do nothing while it's open (no request). Closed it to swipe. That's expected for the modal drawer.
+- **Remove (→):** each swipe sent `DELETE /api/deck/{id}/card/{card}` → 204 and showed a "Removed" chip top-left.
+- **Undo mid-stack (after card 2):** Welcoming Vampire came back on top, "Undone" chip, `POST /api/deck/{id}/card` → 201 (p10-2).
+- **Stack runs out:** after the last remove the stack shows an **empty placeholder card labeled "No cards"**. Keep/Move/Remove and the details button go dimmed, Undo stays active. **No toast** ("No more cards" or anything else). The details drawer can't open (its button is disabled), so it can't show a stale card (p10-3).
+- **Undo at the end:** works. Clavileño came back, `POST …/card` → 201 (p10-4).
+- **Keep (←) at the end:** on the last card Keep shows a "Kept" chip, but **the same card stays on the stack**. The stack never reaches the end via Keep; Keep seems to put the card back at the bottom, which with one card is the same card. Undo after it shows "Undone" and the same card.
+- **Deck page afterwards:** Cards = 2 (Edgar Markov plus Clavileño), Creatures (1), budget $0.83. The removes really saved, and the two undone cards came back (p10-5).
+- **Console and network:** every request logged and succeeded (5 DELETEs, 2 POSTs, all 2xx), no errors or warnings, no failed calls.
+
+So at 720 I couldn't reproduce Scotty's report: the empty state exists ("No cards", if faint), and Undo works both mid-stack and at the end. What's left to check is the wide layout, with the docked details panel visible while swiping. That's the one difference from his setup. The missing toast at the end is real.
+
+Deck state left behind: Main is down to Clavileño (Drana, Welcoming Vampire, Bloodthirsty Conqueror and Charismatic Conqueror removed). I can re-add them with Quick add if the deck should be restored.
+
+### Part 10b, 175 rerun at wide (1450 × 759, details panel docked, 09:00–09:01)
+
+Same deck, Remove on Main, details panel docked on the right and showing the top card. **Still not reproduced.**
+- **Mid-stack:** removed Drana and Welcoming Vampire (DELETE each), then Undo: Welcoming Vampire came back, "Undone" chip, details panel switched to it, `POST /card` (p10-6).
+- **To the end:** after the last remove the stack shows the **"No cards" placeholder**. Keep, Move, Remove and Card details are `disabled` at opacity 0.35, while Undo, Filter and Refresh stay live. **The details panel unmounts** rather than showing the last card. **No toast** (p10-7).
+- **Undo at the end:** Charismatic Conqueror came back, the details panel came back showing it, docks re-enabled, `POST /card` (p10-8). The same thing happened again using mouse clicks on the dock (Remove, then Undo) instead of keys.
+- **Console:** 6 DELETEs, 2 POSTs logged, no errors or warnings.
+
+Differences from Scotty's shot (blank stack, docks live, stale details, dead Undo): none of them showed up on web for me, with keys or clicks. It may be timing (swiping faster than the throttle), a deck where some cards were kept and cycled, or Android-only. droid's repro is on Android.

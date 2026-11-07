@@ -76,6 +76,19 @@ pub fn OneTimeHintDialog(hint: OneTimeHint, open: Signal<bool>) -> Element {
     }
 }
 
+/// The first-deck hint for the deck page's layout: the wide page's dock or
+/// the narrow stack's Profile card and `Cards` pill.
+#[component]
+pub fn FirstDeckHintDialog(open: Signal<bool>, wide: bool) -> Element {
+    rsx! {
+        ContentHintDialog {
+            open,
+            content: one_time::first_deck(wide),
+            actions: guide_for_one_time(OneTimeHint::FirstDeck.key()),
+        }
+    }
+}
+
 /// The `swipe_select` hint for the overlay's `mode`.
 #[component]
 pub fn SwipeSelectHint(open: Signal<bool>, mode: SwipeSelectMode) -> Element {

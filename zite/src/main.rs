@@ -191,6 +191,11 @@ pub struct SiteSplash(pub Signal<bool>);
 #[derive(Debug, Clone, Copy)]
 pub struct ShowsPips(pub Signal<bool>);
 
+/// Sends `true` on every Escape, for the root to close the top sheet. While
+/// a kit dialog is open its own listener takes Escape, so this one steps
+/// aside.
+const ESCAPE_JS: &str = "document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !document.querySelector('.alert-dialog[data-state=\"open\"]')) dioxus.send(true); });";
+
 #[component]
 fn App() -> Element {
     // The picked theme, remembered in localStorage. It starts at the default
@@ -204,6 +209,17 @@ fn App() -> Element {
     use_context_provider(|| pip_style);
     use_context_provider(|| ShowsPips(Signal::new(false)));
     use_context_provider(|| Replay(Signal::new(0u32)));
+    // Sheets register here, so Escape closes the top one.
+    let mut overlay_back_stack = ::components::use_overlay_back_stack();
+    use_context_provider(|| overlay_back_stack);
+    use_effect(move || {
+        spawn(async move {
+            let mut escapes = document::eval(ESCAPE_JS);
+            while escapes.recv::<bool>().await.is_ok() {
+                overlay_back_stack.close_top();
+            }
+        });
+    });
     // Closed until the splash starts to fade, so the hero's entrances run as
     // it leaves. index.html decides before first paint whether this load gets
     // the splash (the first landing on the home page in a session) and marks

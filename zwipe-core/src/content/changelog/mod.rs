@@ -42,6 +42,7 @@ pub const UPCOMING: &[Release] = &[Release {
     date: None,
     entries: &[
         "A deck's commander and MVPs show their names in chips beside their role",
+        "Buttons, links and menu items read clearly in every light theme",
         "Quick add on a deck's cards and on the Commander maybeboard clears with the same x as the filter's fields",
         "Card details slide in from the right as a panel titled with the card and its cost, the prices included",
         "Keywords, card roles and oracle tags use the app's regular chips, each group named by a label chip",
@@ -69,6 +70,8 @@ pub const UPCOMING: &[Release] = &[Release {
         "The counters on Home and the sign-in screen read Live only while their copy is under five minutes old, otherwise as of its time",
         "The Pips setting's options read Themed and Classic",
         "Swipe screens confirm each swipe in a quiet chip at the top left, with a Swipe confirmations setting for toasts or nothing instead",
+        "You stay signed in on up to ten devices and browsers at once, up from five",
+        "On a wide window the deck page's card count, price and charts follow each card you add, remove, move or undo, with no reload",
         "Closing the Format, Deck tags or Oracle tags picker with changed picks asks Keep or Discard first",
     ],
 }];

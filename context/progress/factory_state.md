@@ -44,6 +44,13 @@ Scotty approved #259 (156, auth) on 2026-11-07 and it merged into release. Next:
 143 (#269), composer review: Phase 1 matches the `pip_color_wire.md` precedent. The wire still writes `theme`, both spellings are read, and a test proves PATCH, GET, login and refresh stay parseable by 1.15 to 1.18. Phase 4 sits on `server/pip-themed` with no PR. One deploy note: the migration narrows the CHECK to ('themed', 'classic'), so while the old zerver binary overlaps the migration it could write 'theme' and fail. That's the same brief window the `classic` migration had. Deploy at a quiet hour.
 For Scotty's triage: the picker × discarding live picks; a toast over the filter's Oracle tags row (720); Droid P2-4 (theme lost after a force-stop); the Synergy selection highlight (p7-11).
 
+## 2026-11-07, daytime (Scotty awake)
+
+- Deployed `release` to `main` at `48e5f81b9` (zerver, web, zite green). Since then merged into `release`: #271 (162), #272 (163, with orangui #12), #273 (167), #274 (164), #275 (169, orangui #13), #276 (173), #277 and #278 (176 hints), #279 (165, orangui #14), #281 (175 Remove/Undo), #282 (177 chip under the header), #283 (172 one toast per action). Portfolio #10 (160) and #11 (166, 168) are live.
+- Scotty's calls: login cap 5 to 10 (#280, test fix pending at halo); both QA agents keep sharing `test`; Cairn `fix/app-lifecycle` merged to Cairn main (`f777c35`) with its portfolio changelog; 158A option 1 approved (thinker, after the skeleton follow-up); the WebView crash fallback approved (laptop, spike first). The Dioxus bug is already dioxus#5885 (fix PRs #5886, #5890); a comment draft for Scotty is at `~/Developer/zwipe/target/dioxus-webview-terminate-issue.md`. Nothing filed.
+- In flight: halo 280 test fix, 181, then 170, 171; scotland 178 (priority), 179, 174; thinker skeletons (D5 D6 D7 D9), then 158A; laptop the WebView fallback.
+- Next deploy after this batch, with Scotty's go.
+
 ## PR #259 (156, the auth logout): composer review notes for Scotty
 
 Left open as agreed. The design is sound: a rotated token presented again within 30s gets the same successor (kept in memory per process), so racing tabs and a refresh lost to a page unload stop revoking the family. Past the window, a replay still revokes. The web adds a Web Lock so tabs refresh one at a time. The ownership check (Forbidden) runs before the reuse path. Points to decide or fix before merging:
