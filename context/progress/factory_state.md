@@ -39,7 +39,7 @@ The handoff for the composer session: where the factory stands, so a fresh or co
 
 ## Overnight progress log (2026-11-07)
 
-Merged into `release` after the `60d705459` deploy: #256 (134/139/148/149), #257 (123), #258 (154/155), #260 (146), #261 (151b, with orangui #10), #262 (159), #263 (135/136), #264 (145), #265 (122b), #266 (161, the browser-back crash). Portfolio #9 (138) is live.
+Merged into `release` after the `60d705459` deploy: #256 (134/139/148/149), #257 (123), #258 (154/155), #260 (146), #261 (151b, with orangui #10), #262 (159), #263 (135/136), #264 (145), #265 (122b), #266 (161, the browser-back crash), #267 (158B, honest Live labels), #268 (157, with orangui #11's per-theme ink colors), #269 (143 Phase 1, Themed), #270 (153, Swipe confirmations: Chip by default). Portfolio #9 (138) is live.
 Open for Scotty: #259 (156, auth). The Cairn branch `fix/app-lifecycle` and the portfolio branch `changelog/cairn-day-rollover` wait on his review. Thinker's 158 (A), lifetime totals that never drop, is parked in `context/plans/lifetime_totals.md`.
 143 (#269), composer review: Phase 1 matches the `pip_color_wire.md` precedent. The wire still writes `theme`, both spellings are read, and a test proves PATCH, GET, login and refresh stay parseable by 1.15 to 1.18. Phase 4 sits on `server/pip-themed` with no PR. One deploy note: the migration narrows the CHECK to ('themed', 'classic'), so while the old zerver binary overlaps the migration it could write 'theme' and fail. That's the same brief window the `classic` migration had. Deploy at a quiet hour.
 For Scotty's triage: the picker × discarding live picks; a toast over the filter's Oracle tags row (720); Droid P2-4 (theme lost after a force-stop); the Synergy selection highlight (p7-11).
