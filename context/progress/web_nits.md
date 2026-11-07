@@ -24,9 +24,9 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 | Items | Machine | Branch |
 | --- | --- | --- |
 | 93 to 95, the docked panel: load jump, card pinned to center, panel default by space, no lift | halo | `nits/halo-93` |
-| 98, 99, chip row gaps, the row's host extras at the bottom | thinker | `nits/thinker-98` |
-| 97, then 100 and 102, footer legroom, cover-flow edge fade and arrows | scotland | `nits/scotland-97`, `nits/scotland-100` |
-| 103, then 104, rounded dock arrows, overscroll color | laptop | `nits/laptop-103`, `nits/laptop-104` |
+| 98, 99, then 109, 110, chip row gaps, host extras, P/T contrast, hover previews | thinker | `nits/thinker-98`, `nits/thinker-109` |
+| 100 and 102, then 111, cover-flow edge fade and arrows, zwipe.net polish | scotland | `nits/scotland-100`, `nits/scotland-111` |
+| 103 (waits on orangui #6), 105 to 108, then 112, price, picker hint focus, Dark Reader, copy, portfolio polish | laptop | `nits/laptop-103`, `nits/laptop-105`, portfolio `nits/laptop-112` |
 
 The loop is in [`../development/factory.md`](../development/factory.md).
 
@@ -145,9 +145,22 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 103. **The swipe dock's arrows are sharp text glyphs.** They become rounded SVG arrow icons like the dock's others; the cover-flow's arrow buttons (102) reuse them.
 104. **Overscrolling past the footer exposes a darker strip.** The root takes the footer/nav color and the body the field color, so the rubber band shows matching color at both ends.
 
+From Surfer's QA pass (2026-11-06), triaged with Scotty item by item. Surfer's item numbers are in brackets; the report and screenshots are `~/Developer/surfer-report.md` and `~/Developer/surfer-shots/` on halo.
+
+105. **A deck's price ignores the chosen printing when it has no USD price.** [S2] With Edgar Markov on Judge Gift Cards 2021 (no USD), the collapsed row still shows $112.50 and the app's total is $187.19, while the details show no USD chip and zwipe.net's shared page totals $74.69. Every price (collapsed row, details chips, app total, shared total) follows the chosen printing, and a printing with no USD price counts as no price.
+106. **Enter on a picker drawer's `?` hint closes and reopens it.** [S3] Focus stays on the `?`, so Enter clicks it again. Enter closes the hint and focus lands somewhere harmless, as on page hints. Surfer once lost a Commander pick after Enter and ✓ ("Format unchanged"); check whether it's the same focus leak.
+107. **Dark Reader repaints the app.** [S1, unconfirmed on a second pass] Add `<meta name="darkreader-lock">` to the app's index.html, as zwipe.net has.
+108. **Copy:** deck warnings start with a capital [S9]; "Deck name is required" replaces "Deck name minimum length is 1 character" [S10]; a field's error clears when the field is emptied [S11]; the Version hint ends with a period [S13].
+109. **The P/T chip is faint in light themes.** [S14] Light orange on peach on the deck page rows; give it the price chip's contrast.
+110. **Hover previews misbehave on the deck page.** No preview while a row is expanded, since it covers the row's text [S8]; after a scroll the preview sticks on one card and several briefly stack [S28].
+111. **zwipe.net polish:** the filter drawer's scrollbar is wide and white [S5]; sitemap, canonical and internal links use the slashed URL the server serves, so nothing redirects [S15]; the ASCII-art h1 gets an accessible name with no visible label [S16]; `scrollbar-gutter: stable` and the app's thin themed scrollbars [S17]; Community in two columns [S18]; no empty space under the testimonials, if Surfer's screenshot shows it [S19]; Free and No ads chips readable in light and their text centered [S20, S30]; /download/ios out of the sitemap [S21]; Open Graph images match the current site.
+112. **scottyfermo.com polish:** slashed URLs everywhere so nothing redirects [S22]; Escape closes the nav dropdowns [S24]; the Projects intro names its four sections [S25]; "Finished products" becomes "Shipped products", keeping each card's Doing badge [S26]; the Tooling meta description under 160 characters [S27]; the hidden h1 name, the stable gutter and themed scrollbars as in 111; Open Graph images match the current site. Copy stays short, plain and in Scotty's voice.
+
+Skipped with Scotty: S7 (no Image in the swipe screens' details, intended), S23 (Cloudflare's email obfuscation). Rechecked after the next deploy, since `release` may already fix them: S4 (picker ✓ over chips), S6 (swipe select page head). Open: S12 (the pip toggle labeled Theme on zwipe.net).
+
 ## Done
 
-- Merged into `release` after `b0d713965`: 64, 65, 67, 60, 66, 68 to 72, 73 to 76, 77, 78, 79, 80, 81, 82, 85, 86, 87, 88, 89, 90, 91, 92, 96, 101 (PRs #207 to #230).
+- Merged into `release` after `b0d713965`: 64, 65, 67, 60, 66, 68 to 72, 73 to 76, 77, 78, 79, 80, 81, 82, 85, 86, 87, 88, 89, 90, 91, 92, 96, 97, 101 (PRs #207 to #232).
 - 46, a compact footer on both sites: PR #190. 48, zwipe.net's manifest icons: PR #191. 49, inputs through `ClearWrap`: PR #192.
 - 50, the deck head's `?`: PR #193. 53, the app's Quick add: PR #194. 21 phase 5, zwipe.net's full filter: PR #195. 51, swiping twice as fast: PR #196. 55, testimonial rating inline: PR #197.
 - 45, 47, no page heads, the page's `?` in the nav, About drops Credits on wide: PR #198. 52, swipe buttons in the dock: PR #199.
