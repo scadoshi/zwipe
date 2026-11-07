@@ -2,7 +2,7 @@
 //! title, with its name, price, Image and Buy on the row beneath. Home draws
 //! it from its model; the public screens draw it over the cached card.
 
-use components::{AlertDialog, DialogAction};
+use components::{AlertDialog, DialogAction, LoadFailed};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::Card;
@@ -13,10 +13,15 @@ use crate::inbound::components::auth::session_upkeep::FlavorCard;
 use crate::inbound::screens::deck::card::components::image_preview::ImagePreview;
 
 /// The panel for `flavor`, `card` being the one quoted: a card without
-/// flavor text leaves the panel empty, and before any card it ghosts. Image
+/// flavor text leaves the panel empty, before any card it ghosts, and after a
+/// failed fetch it says so with Retry when the host passes `on_retry`. Image
 /// opens the card's preview and Buy the retailer dialog, both owned here.
 #[component]
-pub fn FlavorPanel(flavor: Flavor, card: Option<Card>) -> Element {
+pub fn FlavorPanel(
+    flavor: Flavor,
+    card: Option<Card>,
+    #[props(default)] on_retry: Option<EventHandler>,
+) -> Element {
     let mut preview_card: Signal<Option<(ScryfallData, usize)>> = use_signal(|| None);
     let preview_dismissing: Signal<bool> = use_signal(|| false);
     let mut show_buy_sheet = use_signal(|| false);
@@ -72,6 +77,14 @@ pub fn FlavorPanel(flavor: Flavor, card: Option<Card>) -> Element {
                     }
                 }
                 Flavor::Blank => rsx! {},
+                Flavor::Failed => rsx! {
+                    div { class: "settings-list-header", style: "justify-content: center;",
+                        span { class: "settings-list-title", {home::FEATURED_FLAVOR} }
+                    }
+                    if let Some(on_retry) = on_retry {
+                        LoadFailed { message: home::FLAVOR_FAILED, on_retry, class: "home-flavor-line" }
+                    }
+                },
                 Flavor::Loading => rsx! {
                     // Mirror the loaded card: a "Featured flavor" title
                     // bar + divider, the quote lines, then a chip

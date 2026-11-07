@@ -25,13 +25,18 @@ pub struct CachedPlayStyle {
 /// The shared Colors panel, its "?" posting the Colors hint to the app's
 /// host.
 #[component]
-pub fn HomePlayStyle(play_style: PlayStyle, onplaystyle: EventHandler) -> Element {
+pub fn HomePlayStyle(
+    play_style: PlayStyle,
+    onplaystyle: EventHandler,
+    onretry: EventHandler,
+) -> Element {
     let mut hint: Signal<Option<HintTopic>> = use_context();
     rsx! {
         HomeColors {
             play_style,
             onplaystyle,
             oninfo: move |()| hint.set(Some(HintTopic::HomeColors)),
+            onretry,
         }
     }
 }
