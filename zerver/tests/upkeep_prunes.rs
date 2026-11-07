@@ -1,6 +1,6 @@
 //! Upkeep (nightly maintenance) prune behavior against real rows, which a
 //! zervice run on empty tables can't show. Constructs
-//! `Postgres { pool }` and calls `UpkeepRepository` methods directly.
+//! `Postgres::with_pool(pool)` and calls `UpkeepRepository` methods directly.
 //!
 //! Requires `DATABASE_URL`: `set -a; source zerver/.env; set +a`.
 
@@ -42,7 +42,7 @@ async fn seed_crash(pool: &sqlx::PgPool, days: i32) {
 
 #[sqlx::test]
 async fn diagnostic_prunes_kill_old_and_spare_fresh(pool: sqlx::PgPool) {
-    let repo = Postgres { pool: pool.clone() };
+    let repo = Postgres::with_pool(pool.clone());
 
     // One row just past the window, one comfortably inside it, per table.
     seed_client_error(&pool, DIAGNOSTIC_RETENTION_DAYS + 1).await;
@@ -74,7 +74,7 @@ async fn diagnostic_prunes_kill_old_and_spare_fresh(pool: sqlx::PgPool) {
 
 #[sqlx::test]
 async fn session_prune_kills_expired_across_users(pool: sqlx::PgPool) {
-    let repo = Postgres { pool: pool.clone() };
+    let repo = Postgres::with_pool(pool.clone());
 
     // Two dormant users, expired + live tokens each: the global sweep case
     // the insert-time drive-by never reaches.
@@ -116,7 +116,7 @@ async fn session_prune_kills_expired_across_users(pool: sqlx::PgPool) {
 
 #[sqlx::test]
 async fn session_prune_kills_replaced_rows_past_grace(pool: sqlx::PgPool) {
-    let repo = Postgres { pool: pool.clone() };
+    let repo = Postgres::with_pool(pool.clone());
 
     let user_id: uuid::Uuid = sqlx::query_scalar(
         "INSERT INTO users (username, email, password_hash)
@@ -164,7 +164,7 @@ async fn session_prune_kills_replaced_rows_past_grace(pool: sqlx::PgPool) {
 
 #[sqlx::test]
 async fn email_change_prune_kills_expired_and_spares_live(pool: sqlx::PgPool) {
-    let repo = Postgres { pool: pool.clone() };
+    let repo = Postgres::with_pool(pool.clone());
 
     // One user per request: the table keys on user_id.
     for (who, offset_hours) in [("lapsed", -1), ("waiting", 1)] {

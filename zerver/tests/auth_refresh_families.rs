@@ -1,9 +1,11 @@
 //! Refresh token families through the real router: a rotation keeps the old
-//! row as replay evidence and carries the family forward, a replay past the
-//! grace window deletes the whole family (the fresh token from that rotation
-//! dies with it), a family older than the absolute lifespan cannot rotate,
-//! concurrent refreshes of one token still yield one winner whose token works,
-//! and a replaced row outlives its own expiry so a late replay is still caught.
+//! row as replay evidence and carries the family forward, a token presented
+//! again inside the reuse window gets the same successor (two tabs racing),
+//! a replay past the window deletes the whole family (the fresh token from
+//! that rotation dies with it), a family older than the absolute lifespan
+//! cannot rotate, concurrent refreshes of one token all succeed with one
+//! shared successor, and a replaced row outlives its own expiry so a late
+//! replay is still caught.
 //!
 //! Requires `DATABASE_URL`: `set -a; source zerver/.env; set +a`.
 
@@ -72,6 +74,18 @@ async fn rows(app: &TestApp, user_id: &str) -> Vec<(Uuid, bool)> {
     .unwrap()
 }
 
+/// Ages every replaced row of the user past the reuse window.
+async fn age_replaced_rows(app: &TestApp, user_id: &str) {
+    let uid = Uuid::parse_str(user_id).unwrap();
+    sqlx::query(
+        "UPDATE refresh_tokens SET replaced_at = replaced_at - INTERVAL '1 minute' WHERE user_id = $1 AND replaced_at IS NOT NULL",
+    )
+    .bind(uid)
+    .execute(&app.pool)
+    .await
+    .unwrap();
+}
+
 #[sqlx::test]
 async fn rotation_keeps_replaced_row_in_the_same_family(pool: sqlx::PgPool) {
     let app = TestApp::new(pool);
@@ -94,7 +108,36 @@ async fn rotation_keeps_replaced_row_in_the_same_family(pool: sqlx::PgPool) {
 }
 
 #[sqlx::test]
-async fn replay_kills_the_family(pool: sqlx::PgPool) {
+async fn a_second_presentation_inside_the_window_gets_the_same_successor(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool);
+    let (user_id, token) = login(&app, "second-tab").await;
+
+    let (status, first) = refresh(&app, &user_id, &token).await;
+    assert_eq!(status, StatusCode::OK, "first refresh: {first}");
+    let (status, second) = refresh(&app, &user_id, &token).await;
+    assert_eq!(status, StatusCode::OK, "the racing second tab: {second}");
+    let successor = refresh_value(&first);
+    assert_eq!(
+        refresh_value(&second),
+        successor,
+        "both tabs hold one token, so the family keeps one head"
+    );
+
+    // The family lives: register, the rotated login row and one successor.
+    let rows = rows(&app, &user_id).await;
+    assert_eq!(
+        rows.len(),
+        3,
+        "nothing was revoked or minted twice: {rows:?}"
+    );
+
+    // The shared successor rotates as any token does.
+    let (status, next) = refresh(&app, &user_id, &successor).await;
+    assert_eq!(status, StatusCode::OK, "the successor rotates: {next}");
+}
+
+#[sqlx::test]
+async fn replay_past_the_window_kills_the_family(pool: sqlx::PgPool) {
     let app = TestApp::new(pool);
     let (user_id, token) = login(&app, "replayed").await;
 
@@ -102,8 +145,8 @@ async fn replay_kills_the_family(pool: sqlx::PgPool) {
     assert_eq!(status, StatusCode::OK, "first refresh: {rotated}");
     let fresh = refresh_value(&rotated);
 
-    // Straight away, with no ageing: there is no grace window a replay can
-    // hide inside.
+    // A minute later: past the reuse window, the old token is a replay.
+    age_replaced_rows(&app, &user_id).await;
     let (status, _) = refresh(&app, &user_id, &token).await;
     assert_eq!(status, StatusCode::UNAUTHORIZED, "the replay is refused");
 
@@ -146,7 +189,7 @@ async fn family_past_absolute_lifespan_cannot_rotate(pool: sqlx::PgPool) {
 }
 
 #[sqlx::test]
-async fn concurrent_refreshes_leave_one_valid_survivor(pool: sqlx::PgPool) {
+async fn concurrent_refreshes_share_one_successor(pool: sqlx::PgPool) {
     let app = TestApp::new(pool);
     let (user_id, token) = login(&app, "racer").await;
 
@@ -157,31 +200,28 @@ async fn concurrent_refreshes_leave_one_valid_survivor(pool: sqlx::PgPool) {
         refresh(&app, &user_id, &token),
     );
     let results = [a, b, c, d];
-    let winners: Vec<&Value> = results
-        .iter()
-        .filter(|(status, _)| *status == StatusCode::OK)
-        .map(|(_, body)| body)
-        .collect();
-    let losers = results
-        .iter()
-        .filter(|(status, _)| *status == StatusCode::UNAUTHORIZED)
-        .count();
-    assert_eq!(winners.len(), 1, "exactly one refresh wins: {results:?}");
-    assert_eq!(losers, 3, "the other three are 401: {results:?}");
-
-    // Each loser presented an already-rotated token, which is a replay: the
-    // family is gone, the winner's token with it, and the device logs in
-    // again. The client refreshes single-flight, so this only happens when
-    // a token has a second holder.
-    let survivor = refresh_value(winners[0]);
-    let (status, _) = refresh(&app, &user_id, &survivor).await;
-    assert_eq!(
-        status,
-        StatusCode::UNAUTHORIZED,
-        "the winner's token died with the family"
+    assert!(
+        results.iter().all(|(status, _)| *status == StatusCode::OK),
+        "every racing refresh succeeds: {results:?}"
+    );
+    // One rotation won; the others, inside the reuse window, got its
+    // successor rather than a second branch, so the family has one head.
+    let survivor = refresh_value(&results[0].1);
+    assert!(
+        results
+            .iter()
+            .all(|(_, body)| refresh_value(body) == survivor),
+        "all four share one successor: {results:?}"
     );
     let rows = rows(&app, &user_id).await;
-    assert_eq!(rows.len(), 1, "only the register session remains: {rows:?}");
+    let live = rows.iter().filter(|(_, replaced)| !*replaced).count();
+    assert_eq!(
+        live, 2,
+        "the register session and the one successor: {rows:?}"
+    );
+
+    let (status, _) = refresh(&app, &user_id, &survivor).await;
+    assert_eq!(status, StatusCode::OK, "the shared successor rotates");
 }
 
 #[sqlx::test]
@@ -208,7 +248,7 @@ async fn replaced_row_outlives_its_expiry_as_replay_evidence(pool: sqlx::PgPool)
     .unwrap();
 
     // The nightly sweep, then the insert-time prune that a fresh login runs.
-    let repo = Postgres { pool: pool.clone() };
+    let repo = Postgres::with_pool(pool.clone());
     let pruned = repo
         .prune_expired_sessions(REPLACED_TOKEN_RETENTION_DAYS)
         .await

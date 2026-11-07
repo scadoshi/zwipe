@@ -147,7 +147,13 @@ async fn refresh_token_is_single_use(pool: sqlx::PgPool) {
         .await;
     assert_eq!(status, StatusCode::OK, "first refresh: {rotated}");
 
-    // reusing the now-rotated token must fail
+    // reusing the now-rotated token past the reuse window must fail
+    sqlx::query(
+        "UPDATE refresh_tokens SET replaced_at = replaced_at - INTERVAL '1 minute' WHERE replaced_at IS NOT NULL",
+    )
+    .execute(&app.pool)
+    .await
+    .unwrap();
     let (status, _) = app
         .post(
             REFRESH_SESSION_ROUTE,

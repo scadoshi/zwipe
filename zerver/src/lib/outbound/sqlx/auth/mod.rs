@@ -3,6 +3,7 @@
 pub mod error;
 pub mod helpers;
 pub mod models;
+pub mod reuse;
 
 use chrono::{DateTime, Utc};
 use sqlx::{Acquire, query, query_as, query_scalar};
@@ -231,10 +232,13 @@ impl AuthRepository for Postgres {
     /// the two lifespans, marks the row replaced, and inserts its successor in
     /// the same family.
     ///
-    /// A token that was already replaced longer than `REFRESH_REPLAY_GRACE`
-    /// ago is a replay: the whole family is deleted, so whoever holds the
-    /// current token loses it too and the real device signs in again. A family
-    /// older than [`REFRESH_ABSOLUTE_LIFESPAN`] is deleted the same way.
+    /// A token already replaced, presented again inside the reuse window,
+    /// gets the successor its rotation minted (two tabs racing), so both
+    /// holders share one token and a later replay is still caught. Past the
+    /// window, or with no successor remembered, it is a replay: the whole
+    /// family is deleted, so whoever holds the current token loses it too and
+    /// the real device signs in again. A family older than
+    /// [`REFRESH_ABSOLUTE_LIFESPAN`] is deleted the same way.
     async fn use_refresh_token(
         &self,
         request: &RefreshSession,
@@ -242,12 +246,14 @@ impl AuthRepository for Postgres {
         let mut tx = self.pool.begin().await?;
 
         // FOR UPDATE serializes concurrent refreshes on the row: the winner
-        // marks it replaced; losers block, re-read after commit, see
-        // replaced_at and are handled as replays below.
+        // marks it replaced and remembers its successor before committing;
+        // losers block, re-read after commit, see replaced_at and get that
+        // successor inside the window.
+        let consumed = request.refresh_token.sha256_hash();
         let existing = query_as!(
             DatabaseRefreshToken,
             "SELECT id, user_id, expires_at, family_id, login_at, replaced_at, platform, client_version FROM refresh_tokens WHERE value_hash = $1 FOR UPDATE",
-            request.refresh_token.sha256_hash()
+            consumed
         )
         .fetch_one(&mut *tx)
         .await
@@ -262,11 +268,17 @@ impl AuthRepository for Postgres {
 
         let now = Utc::now();
 
-        // A rotated token presented again is a replay, whoever sends it and
-        // however soon. The client refreshes single-flight, so two requests
-        // on one token mean a second holder; the whole family dies and the
-        // real device logs in again.
-        if existing.replaced_at.is_some() {
+        // A rotated token presented again inside the window is the loser of
+        // a race: it gets the winner's successor, so the family keeps one
+        // head. Otherwise it is a replay, whoever sends it: the whole family
+        // dies and the real device logs in again.
+        if let Some(replaced_at) = existing.replaced_at {
+            if self.refresh_reuse.within(replaced_at, now)
+                && let Some(rotated) = self.refresh_reuse.recall(&consumed, now)
+            {
+                tx.commit().await?;
+                return Ok(rotated);
+            }
             query!(
                 "DELETE FROM refresh_tokens WHERE family_id = $1",
                 existing.family_id
@@ -321,13 +333,17 @@ impl AuthRepository for Postgres {
         let refresh_token = tx
             .create_refresh_token(request.user_id, family, carried, client_version)
             .await?;
+        let rotated = RotatedRefreshToken {
+            refresh_token,
+            platform: carried,
+        };
+        // Remembered before the commit, so a racing loser that wakes once it
+        // lands always finds the successor.
+        self.refresh_reuse.remember(consumed, rotated.clone(), now);
 
         tx.commit().await?;
 
-        Ok(RotatedRefreshToken {
-            refresh_token,
-            platform: carried,
-        })
+        Ok(rotated)
     }
     // == delete ==
     async fn delete_user(&self, request: &DeleteUser) -> Result<(), DeleteUserError> {

@@ -1,4 +1,5 @@
-//! A session fit for an authed call, refreshed at most once at a time.
+//! A session fit for an authed call, refreshed at most once at a time, in
+//! this tab and across the browser's tabs.
 
 use std::sync::{Arc, OnceLock};
 
@@ -9,6 +10,7 @@ use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_ui::session::{self, Freshness};
 
+use crate::inbound::session::cross_tab::CrossTabLock;
 use crate::outbound::session_store::SessionStore;
 
 /// The single-flight lock: at most one refresh request out. A caller that
@@ -25,7 +27,9 @@ fn refresh_lock() -> Arc<Mutex<()>> {
 ///
 /// The refresh runs in a task of its own, so a caller dropped mid-flight
 /// never loses a token rotation; the new session is stored before the signal
-/// changes.
+/// changes. It holds the browser-wide [`CrossTabLock`], so tabs take turns:
+/// the store keeps no access token, so every tab refreshes as it loads, and
+/// each one in turn sends the cookie the one before it rotated.
 ///
 /// # Errors
 ///
@@ -56,6 +60,7 @@ pub async fn ensure_fresh(
     let (tx, rx) = oneshot::channel();
     dioxus::core::spawn_forever(async move {
         let _guard = guard;
+        let lock = CrossTabLock::acquire().await;
         // The refresh token rides in the HttpOnly cookie, which the browser
         // sends on its own.
         let http = client.peek().clone();
@@ -77,6 +82,7 @@ pub async fn ensure_fresh(
                 Err(e)
             }
         };
+        lock.release();
         let _ = tx.send(result);
     });
 

@@ -208,7 +208,7 @@ async fn sql_and_predicate_agree_on_every_criterion(pool: sqlx::PgPool) {
     let expected_universe = universe.len();
     seed_cards(&pool, &universe).await;
 
-    let repo = Postgres { pool: pool.clone() };
+    let repo = Postgres::with_pool(pool.clone());
     let all: Vec<Card> = repo.search_cards(&query(json!({}))).await.unwrap();
     assert_eq!(
         all.len(),
@@ -462,7 +462,7 @@ async fn accented_text_matches_with_or_without_accents(pool: sqlx::PgPool) {
             .oracle_text("Lightning Bolt deals 3 damage to any target."),
     ];
     seed_cards(&pool, &universe).await;
-    let repo = Postgres { pool: pool.clone() };
+    let repo = Postgres::with_pool(pool.clone());
     let all: Vec<Card> = repo.search_cards(&query(json!({}))).await.unwrap();
 
     // The app's CardQueryBuilder folds and strips the typed value before it

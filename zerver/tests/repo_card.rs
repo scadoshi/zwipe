@@ -1,5 +1,5 @@
 //! Repo-level card tests: the SQL whose logic doesn't surface cleanly through
-//! HTTP. Constructs `Postgres { pool }` and calls `CardRepository` methods
+//! HTTP. Constructs `Postgres::with_pool(pool)` and calls `CardRepository` methods
 //! directly (no router). Covers the default synergy ordering, the
 //! `card_signal_rollup` math, and the deck-aware serve's NULL-`oracle_id`
 //! handling (`NULL || seed` must not null the shuffle key).
@@ -107,7 +107,7 @@ async fn synergy_ordering_scored_before_unscored(pool: sqlx::PgPool) {
 
     // keys are LOWER(name); Zeta is absent so it takes the anchor.
     let scores = json!({ "alpha card": 5.0, "bravo card": 1.0 });
-    let repo = Postgres { pool: pool.clone() };
+    let repo = Postgres::with_pool(pool.clone());
 
     let served = repo
         .search_scryfall_data_deck_aware(
@@ -133,7 +133,7 @@ async fn deck_aware_serve_excludes_oracle_ids(pool: sqlx::PgPool) {
     seed_cards(&pool, &[keep, drop]).await;
 
     let scores = json!({});
-    let repo = Postgres { pool: pool.clone() };
+    let repo = Postgres::with_pool(pool.clone());
     let served = repo
         .search_scryfall_data_deck_aware(
             &default_query(),
@@ -174,7 +174,7 @@ async fn null_oracle_card_survives_deck_aware_shuffle(pool: sqlx::PgPool) {
 
     let scores = json!({});
     let deck = Uuid::from_u128(0xdec0);
-    let repo = Postgres { pool: pool.clone() };
+    let repo = Postgres::with_pool(pool.clone());
     let q = default_query();
 
     let first = repo
@@ -235,7 +235,7 @@ async fn deck_oracle_tags_lift_matching_cards(pool: sqlx::PgPool) {
     // Empty score map: both cards take the unscored anchor, so base + signal are
     // equal and the otag term alone decides the order.
     let scores = json!({});
-    let repo = Postgres { pool: pool.clone() };
+    let repo = Postgres::with_pool(pool.clone());
 
     // With the deck's selected otag, the matching card is lifted to the front,
     // overriding the alphabetical tiebreak.
@@ -300,7 +300,7 @@ async fn deck_oracle_tags_lift_matching_cards_in_banded_serve(pool: sqlx::PgPool
     // Empty score map => every card takes the unscored anchor, so the otag term
     // is the only thing that moves a card between bands.
     let scores = json!({});
-    let repo = Postgres { pool: pool.clone() };
+    let repo = Postgres::with_pool(pool.clone());
     let deck = Uuid::from_u128(0xb4_0004);
     let q = default_query();
 
@@ -396,7 +396,7 @@ async fn mvp_card_roles_are_mainboard_stars_deduped(pool: sqlx::PgPool) {
         .unwrap();
     }
 
-    let repo = Postgres { pool: pool.clone() };
+    let repo = Postgres::with_pool(pool.clone());
     let request = GetDeckProfile { user_id, deck_id };
     let mut roles = repo.fetch_mvp_card_roles(&request).await.unwrap();
     roles.sort();
@@ -424,7 +424,7 @@ async fn mvp_roles_lift_matching_cards(pool: sqlx::PgPool) {
     .await;
 
     let scores = json!({});
-    let repo = Postgres { pool: pool.clone() };
+    let repo = Postgres::with_pool(pool.clone());
 
     // Deck whose MVPs are ramp: the ramp card overtakes the alphabetical lead.
     let served = repo
@@ -470,7 +470,7 @@ async fn mvp_roles_lift_matching_cards(pool: sqlx::PgPool) {
 /// on the next run.
 #[sqlx::test]
 async fn oou_sets_overlay_syncs_table_to_const(pool: sqlx::PgPool) {
-    let repo = Postgres { pool: pool.clone() };
+    let repo = Postgres::with_pool(pool.clone());
 
     // Drift the seeded table both ways: a code the const doesn't carry, and a
     // real code gone missing.
@@ -500,7 +500,7 @@ async fn oou_sets_overlay_syncs_table_to_const(pool: sqlx::PgPool) {
 /// only conflicts with writers.
 #[sqlx::test]
 async fn refresh_latest_cards_runs_while_a_reader_holds_the_view(pool: sqlx::PgPool) {
-    let repo = Postgres { pool: pool.clone() };
+    let repo = Postgres::with_pool(pool.clone());
     seed_cards(&pool, &[card("Lightning Bolt")]).await;
 
     let mut reader = pool.begin().await.unwrap();
@@ -595,7 +595,7 @@ async fn set_filters_are_printing_aware(pool: sqlx::PgPool) {
         ],
     )
     .await;
-    let repo = Postgres { pool: pool.clone() };
+    let repo = Postgres::with_pool(pool.clone());
 
     // Include: the staple's pick is Test Set, but its spm printing must match.
     let mut b = CardQueryBuilder::new();
@@ -655,7 +655,7 @@ async fn universes_beyond_setting_filters_serve(pool: sqlx::PgPool) {
         ],
     )
     .await;
-    let repo = Postgres { pool: pool.clone() };
+    let repo = Postgres::with_pool(pool.clone());
     let q = default_query();
 
     // Setting off: everything serves.
@@ -724,7 +724,7 @@ async fn secret_lair_exception_rescues_lair_only_ub_cards(pool: sqlx::PgPool) {
         ],
     )
     .await;
-    let repo = Postgres { pool: pool.clone() };
+    let repo = Postgres::with_pool(pool.clone());
     let q = default_query();
 
     // Exclusion on, no exceptions: only the triangle Lair card vanishes.
