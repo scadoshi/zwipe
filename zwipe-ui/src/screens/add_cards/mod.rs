@@ -107,6 +107,12 @@ pub const END_OF_RESULTS: &str = "End of results";
 /// The toast when Search has nothing to serve without a filter.
 pub const TRY_A_FILTER: &str = "Try a filter to start swiping";
 
+/// The toast when the Synergy toggle turns synergy on.
+pub const SYNERGY_ON: &str = "Synergy on";
+
+/// The toast when the Synergy toggle turns synergy off.
+pub const SYNERGY_OFF: &str = "Synergy off";
+
 /// The toast when the search falls back to the full pool while synergy warms up.
 pub const SYNERGY_WARMING: &str = "Synergy warming up; showing all cards for now";
 
@@ -592,7 +598,12 @@ impl State {
             Action::ToggleSynergy => {
                 let on = !self.filter.synergy();
                 self.filter.set_synergy(on);
-                vec![Effect::SetFilter(self.filter.clone()), Effect::Rerun]
+                let said = if on { SYNERGY_ON } else { SYNERGY_OFF };
+                vec![
+                    Effect::SetFilter(self.filter.clone()),
+                    Effect::Rerun,
+                    Effect::Toast(Toast::quick(ToastKind::Info, said)),
+                ]
             }
             Action::Swipe(direction) => self.swipe(direction),
             Action::Undo => match self.source {
