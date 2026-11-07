@@ -1,41 +1,32 @@
 //! The printing sheet: every printing of a card, one at a time, to pick one
 //! or only to look.
 //!
-//! The app pages through printings with a swipe carousel. From the kit's
-//! modal width the printings are a cover flow in a large modal: the
-//! selected one large in the middle and up to ten on each side stacked
-//! behind it, moved by the wheel or a trackpad's sideways scroll, the
-//! arrows, a drag or a click on a side card, with Enter, a click on the
-//! middle card or `Select` picking it. Below that width `Previous` and
-//! `Next` (and the arrows) step through them one at a time, in a centered
-//! modal down to the breakpoint and the app's bottom sheet under it, with
-//! the dots and the prices at its bottom and Save at the prices' right. It
-//! closes from its title bar's ×, a backdrop tap, a drag down or Esc.
+//! The printings are components' cover flow, as in the app: the selected
+//! one large in the middle and up to ten on each side stacked behind it,
+//! moved by the arrows, a sideways scroll, a drag or swipe, or a tap on a
+//! side card. From the kit's modal width it fills a large modal, with Enter,
+//! a click on the middle card or `Select` picking it. Below that width it
+//! sits in a centered modal down to the breakpoint and the app's bottom
+//! sheet under it, with the prices at its bottom and Save at their right.
+//! It closes from its title bar's ×, a backdrop tap, a drag down or Esc.
 
-use components::icons::{ARROW_LEFT, ARROW_RIGHT, CHECK, DockIcon};
+use components::icons::{CHECK, DockIcon};
 use components::{
-    BottomSheet, Button, ButtonVariant, SheetFrame, SheetWide, TOAST_QUICK, use_overlay_back_action,
+    BottomSheet, Button, ButtonVariant, CoverFlow, SheetFrame, SheetWide, TOAST_QUICK,
+    use_overlay_back_action,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::scryfall_data::ImageSize;
 use zwipe_ui::card::info;
 
 use crate::inbound::cards::card_info::{CardInfoDisplay, PrintingSheetSkeleton};
-use crate::inbound::cards::cover_flow::{flow_slot, flow_window};
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::media::use_min_width;
 
 /// The width, 60rem, from which the kit draws a sheet form as a modal, and
 /// the picker is the cover flow.
 const KIT_MODAL_PX: u32 = 960;
-
-/// How far a wheel or trackpad scrolls, in pixels, to move one printing.
-const WHEEL_STEP_PX: f64 = 60.0;
-
-/// How far a drag runs, in pixels, to move one printing.
-const DRAG_STEP_PX: f64 = 70.0;
 
 /// The printings of `card`, opening on the one shown. `on_save` takes the
 /// picked printing and toasts `saved_message`; `read_only` hides the dock.
@@ -163,39 +154,11 @@ pub fn PrintingSheet(
                     if loading() {
                         PrintingSheetSkeleton {}
                     } else if let Some(card) = visible {
-                        div { class: "web-printing-stage",
-                            if count > 1 {
-                                button {
-                                    class: "card-action-btn web-printing-step",
-                                    disabled: at == 0,
-                                    "aria-label": "Previous printing",
-                                    onclick: move |_| step(false),
-                                    DockIcon { path: ARROW_LEFT }
-                                }
-                            }
-                            components::FlippableCardImage {
-                                key: "{card.scryfall_data.id}",
-                                sd: card.scryfall_data.clone(),
-                                size: ImageSize::Large,
-                                class: "carousel-card-image".to_string(),
-                            }
-                            if count > 1 {
-                                button {
-                                    class: "card-action-btn web-printing-step",
-                                    disabled: at.saturating_add(1) >= count,
-                                    "aria-label": "Next printing",
-                                    onclick: move |_| step(true),
-                                    DockIcon { path: ARROW_RIGHT }
-                                }
-                            }
-                        }
-                        // The dots, then the prices with Save at their
-                        // right, at the sheet's bottom. Save is grayed
-                        // until a different printing shows.
+                        CoverFlow { printings: all, index }
+                        // The prices with Save at their right, at the
+                        // sheet's bottom. Save is grayed until a different
+                        // printing shows.
                         div { class: "web-printing-foot",
-                            if count > 1 {
-                                CarouselDots { current: at, total: count }
-                            }
                             div { class: "web-printing-foot-row",
                                 CardInfoDisplay { card }
                                 if !read_only {
@@ -212,30 +175,6 @@ pub fn PrintingSheet(
                             }
                         }
                     }
-                }
-            }
-        }
-    }
-}
-
-/// Distance between dot centers in rem: a 0.5rem dot plus a 0.375rem gap.
-const DOT_PITCH_REM: f64 = 0.875;
-/// Center of the first dot from the strip's left edge in rem: half a dot.
-const FIRST_DOT_CENTER_REM: f64 = 0.25;
-
-/// The app's page dots under the printing, the strip sliding so the current
-/// one stays centered.
-#[component]
-fn CarouselDots(current: usize, total: usize) -> Element {
-    let index = f64::from(u32::try_from(current).unwrap_or(u32::MAX));
-    let offset_rem = index * DOT_PITCH_REM + FIRST_DOT_CENTER_REM;
-    rsx! {
-        div { class: "carousel-dots",
-            div {
-                class: "carousel-dots-track",
-                style: "margin-left: 50%; transform: translateX(-{offset_rem}rem);",
-                for i in 0..total {
-                    div { key: "{i}", class: if i == current { "carousel-dot active" } else { "carousel-dot" } }
                 }
             }
         }
@@ -260,9 +199,6 @@ fn CoverFlowSheet(
     on_select: Callback<()>,
 ) -> Element {
     use_overlay_back_action(open.into(), on_leave);
-    let mut wheel = use_signal(|| 0.0_f64);
-    let mut drag_from: Signal<Option<f64>> = use_signal(|| None);
-    let mut dragged = use_signal(|| false);
     let count = printings.len();
     let at = index().min(count.saturating_sub(1));
     let selected = printings.get(at).cloned();
@@ -276,23 +212,16 @@ fn CoverFlowSheet(
         }
     });
 
-    let mut go = move |next: usize| {
-        if count > 0 {
-            index.set(next.min(count.saturating_sub(1)));
-        }
-    };
+    // The arrow keys step as the flow's buttons do.
     let mut step = move |forward: bool| {
         let current = *index.peek();
-        go(if forward {
+        let next = if forward {
             current.saturating_add(1)
         } else {
             current.saturating_sub(1)
-        });
+        };
+        index.set(next.min(count.saturating_sub(1)));
     };
-
-    let cards = flow_window(at, count)
-        .into_iter()
-        .filter_map(|(i, offset)| printings.get(i).map(|card| (i, offset, card.clone())));
     let prices = selected
         .as_ref()
         .map(|c| info::prices(&c.scryfall_data))
@@ -333,99 +262,10 @@ fn CoverFlowSheet(
                         if loading {
                             PrintingSheetSkeleton {}
                         } else {
-                            div { class: "web-flow-row",
-                                button {
-                                    class: "btn-action btn-icon web-flow-step",
-                                    disabled: at == 0,
-                                    "aria-label": "Previous printing",
-                                    onclick: move |_| step(false),
-                                    // Enter presses the button and stays off the body's Select.
-                                    onkeydown: move |e: Event<KeyboardData>| {
-                                        if e.key() == Key::Enter {
-                                            e.stop_propagation();
-                                        }
-                                    },
-                                    DockIcon { path: ARROW_LEFT }
-                                }
-                                div {
-                                    class: "web-flow-stage",
-                                    onwheel: move |e: Event<WheelData>| {
-                                        let delta = e.delta().strip_units();
-                                        let along = if delta.x.abs() > delta.y.abs() { delta.x } else { delta.y };
-                                        let mut sum = *wheel.peek() + along;
-                                        while sum >= WHEEL_STEP_PX {
-                                            step(true);
-                                            sum -= WHEEL_STEP_PX;
-                                        }
-                                        while sum <= -WHEEL_STEP_PX {
-                                            step(false);
-                                            sum += WHEEL_STEP_PX;
-                                        }
-                                        wheel.set(sum);
-                                    },
-                                    onmousedown: move |e: Event<MouseData>| {
-                                        e.prevent_default();
-                                        drag_from.set(Some(e.client_coordinates().x));
-                                        dragged.set(false);
-                                    },
-                                    onmousemove: move |e: Event<MouseData>| {
-                                        let Some(from) = *drag_from.peek() else {
-                                            return;
-                                        };
-                                        let x = e.client_coordinates().x;
-                                        let run = x - from;
-                                        if run.abs() >= DRAG_STEP_PX {
-                                            // Dragging left brings the next printing in.
-                                            step(run < 0.0);
-                                            drag_from.set(Some(x));
-                                            dragged.set(true);
-                                        }
-                                    },
-                                    onmouseup: move |_| drag_from.set(None),
-                                    onmouseleave: move |_| drag_from.set(None),
-                                    for (i, offset, card) in cards {
-                                        div {
-                                            key: "{card.scryfall_data.id}",
-                                            class: if offset == 0 { "web-flow-card selected" } else { "web-flow-card" },
-                                            style: flow_slot(offset).style(),
-                                            onclick: move |_| {
-                                                if *dragged.peek() {
-                                                    return;
-                                                }
-                                                if offset == 0 {
-                                                    if !read_only {
-                                                        on_select.call(());
-                                                    }
-                                                } else {
-                                                    go(i);
-                                                }
-                                            },
-                                            if let Some(url) = card.scryfall_data.primary_image_url(ImageSize::Large) {
-                                                img {
-                                                    src: "{url}",
-                                                    alt: "{card.scryfall_data.name}, {card.scryfall_data.set_name}",
-                                                    loading: "lazy",
-                                                    draggable: false,
-                                                }
-                                            } else {
-                                                div { class: "web-flow-missing", "{card.scryfall_data.set_name}" }
-                                            }
-                                        }
-                                    }
-                                }
-                                button {
-                                    class: "btn-action btn-icon web-flow-step",
-                                    disabled: at.saturating_add(1) >= count,
-                                    "aria-label": "Next printing",
-                                    onclick: move |_| step(true),
-                                    // Enter presses the button and stays off the body's Select.
-                                    onkeydown: move |e: Event<KeyboardData>| {
-                                        if e.key() == Key::Enter {
-                                            e.stop_propagation();
-                                        }
-                                    },
-                                    DockIcon { path: ARROW_RIGHT }
-                                }
+                            CoverFlow {
+                                printings,
+                                index,
+                                on_pick: (!read_only).then(|| EventHandler::new(move |()| on_select.call(()))),
                             }
                             if let Some(card) = selected {
                                 div { class: "web-flow-info",
