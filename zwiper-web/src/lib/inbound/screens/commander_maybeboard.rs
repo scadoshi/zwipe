@@ -508,38 +508,33 @@ pub fn CommanderMaybeboard() -> Element {
                                 "Art"
                             }
                         }
-                        if load_failed() {
-                            div { class: "message-empty",
-                                span { class: "chip-note", "Could not load your commander maybeboard" }
+                        // Swipe sits in the list's header, so it says
+                        // what gets swiped. The panel is there whether or
+                        // not anything is saved; with nothing to list, one
+                        // row says why.
+                        CardListFold {
+                            title: "Commanders",
+                            actions: rsx! {
+                                Button {
+                                    variant: ButtonVariant::Action,
+                                    onclick: move |_| swipe_open.set(true),
+                                    "Swipe"
+                                }
+                            },
+                            if load_failed() {
+                                div { class: "card-row card-row-note", "Could not load your commander maybeboard" }
+                            } else if !has_entries {
+                                div { class: "card-row card-row-note", "No commanders" }
+                            } else if filtered.is_empty() {
+                                div { class: "card-row card-row-note", "No commanders match" }
                             }
-                        } else if !has_entries {
-                            div { class: "message-empty",
-                                span { class: "chip-note", "No commanders" }
-                            }
-                        } else if filtered.is_empty() {
-                            div { class: "message-empty",
-                                span { class: "chip-note", "No commanders match" }
-                            }
-                        } else {
-                            // Swipe sits in the list's header, so it says
-                            // what gets swiped.
-                            CardListFold {
-                                title: "Commanders",
-                                actions: rsx! {
-                                    Button {
-                                        variant: ButtonVariant::Action,
-                                        onclick: move |_| swipe_open.set(true),
-                                        "Swipe"
-                                    }
-                                },
-                                for card in filtered {
-                                    MaybeboardRow {
-                                        key: "{card.scryfall_data.id}",
-                                        card,
-                                        expanded_card,
-                                        on_create: create_with,
-                                        on_remove,
-                                    }
+                            for card in filtered {
+                                MaybeboardRow {
+                                    key: "{card.scryfall_data.id}",
+                                    card,
+                                    expanded_card,
+                                    on_create: create_with,
+                                    on_remove,
                                 }
                             }
                         }
@@ -585,16 +580,12 @@ pub fn CommanderMaybeboard() -> Element {
             quiet_reset: true,
             on_apply: move |applied: CardQueryBuilder| filter.set(applied),
         }
+        // Commanders to collect: a right swipe saves one here and the
+        // swiping goes on. Saved ones stay out of the pile.
         SwipeSelect {
             open: swipe_open,
-            mode: SwipeMode::Commander(Format::Commander),
+            mode: SwipeMode::Maybeboard,
             exclude_oracle_ids: Some(saved_oracles.into()),
-            starts_deck: true,
-            on_select: move |card: Card| {
-                swipe_open.set(false);
-                list.refetch();
-                create_with.call(card);
-            },
             on_close: move |()| {
                 swipe_open.set(false);
                 list.refetch();

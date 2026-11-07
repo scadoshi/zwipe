@@ -1,6 +1,6 @@
 //! The commander maybeboard: the user's saved commanders narrowed by the Show pips and the card filter, Quick add by name, Create deck through the create gate, Remove, Clear maybeboard and the screen's one-time hint.
 //!
-//! The client keeps a [`State`] while the screen is up and sends [`Action::Load`] when it opens. The pip and Quick add rules come from [`crate::commander::maybeboard`] and the Create check from [`crate::deck::create_gate`]. The Swipe overlay stays the client's: its up swipes save on their own, and the client sends [`Action::SwipeClosed`] when it closes and [`Action::Create`] for a right swipe. The card filter sheet, the Art chip, the expanded row and whether the Clear dialog is up stay in the client too.
+//! The client keeps a [`State`] while the screen is up and sends [`Action::Load`] when it opens. The pip and Quick add rules come from [`crate::commander::maybeboard`] and the Create check from [`crate::deck::create_gate`]. The Swipe overlay stays the client's: its right swipes save on their own, and the client sends [`Action::SwipeClosed`] when it closes. The card filter sheet, the Art chip, the expanded row and whether the Clear dialog is up stay in the client too.
 
 #[cfg(test)]
 mod tests;
@@ -181,7 +181,7 @@ pub enum Action {
     ShowAll,
     /// Picks or unpicks a Show color.
     ToggleColor(Color),
-    /// Starts a deck with this commander, through the create gate: a row's Create deck or a right swipe.
+    /// Starts a deck with this commander, through the create gate: a row's Create deck.
     Create {
         /// The commander, in the printing on screen.
         card: Box<Card>,
@@ -204,7 +204,7 @@ pub enum Action {
     },
     /// Swaps in a printing picked from a row, on the entry sharing its oracle id. A card with no oracle id changes nothing. The client keeps the row expanded under the new printing's id.
     PickPrinting(Box<Card>),
-    /// The Swipe overlay closed. Its up swipes may have saved commanders, so the list fetches again.
+    /// The Swipe overlay closed. Its right swipes may have saved commanders, so the list fetches again.
     SwipeClosed,
     /// Goes back to the deck list.
     Back,

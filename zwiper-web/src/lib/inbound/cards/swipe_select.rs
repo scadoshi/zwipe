@@ -8,10 +8,8 @@
 //! ```ignore
 //! SwipeSelect {
 //!     open: swipe_open,
-//!     mode: SwipeMode::Commander(Format::Commander),
+//!     mode: SwipeMode::Maybeboard,
 //!     exclude_oracle_ids: saved_ids,     // a ReadSignal<HashSet<Uuid>>
-//!     starts_deck: true,                 // the hint says a pick starts a deck
-//!     on_select: move |card: Card| { swipe_open.set(false); create_with(card); },
 //!     on_close: move |()| swipe_open.set(false),
 //! }
 //! ```
@@ -27,7 +25,9 @@
 //!
 //! Right picks (`on_select`), left skips (a week's dismissal in suggested
 //! mode), up saves to the commander maybeboard (not for a background or a
-//! signature spell), down undoes. The card drags,
+//! signature spell), down undoes. [`SwipeMode::Maybeboard`] deals as
+//! [`SwipeMode::Commander`] does for Commander, and there right saves to the
+//! maybeboard in place of a pick, with no up. The card drags,
 //! the arrow keys swipe, and four buttons under the card do the same.
 
 use std::collections::HashSet;
@@ -92,6 +92,9 @@ pub enum SwipeMode {
     SignatureSpell,
     /// The host's suggested commanders, a fixed ranking.
     Suggested,
+    /// Commanders to collect from the commander maybeboard: right saves one
+    /// to it and the swiping goes on.
+    Maybeboard,
 }
 
 impl SwipeMode {
@@ -100,6 +103,7 @@ impl SwipeMode {
     fn slot(self) -> Option<(Slot, Option<Format>)> {
         match self {
             Self::Commander(format) => Some((Slot::Commander, Some(format))),
+            Self::Maybeboard => Some((Slot::Commander, Some(Format::Commander))),
             Self::Partner => Some((Slot::Partner, None)),
             Self::Background => Some((Slot::Background, None)),
             Self::SignatureSpell => Some((Slot::SignatureSpell, None)),
@@ -116,9 +120,17 @@ impl SwipeMode {
     }
 
     /// Whether up saves to the commander maybeboard: commanders and
-    /// partners, which can lead a deck.
+    /// partners, which can lead a deck, where right does not already save.
     fn saves_up(self) -> bool {
-        !matches!(self, Self::Background | Self::SignatureSpell)
+        !matches!(
+            self,
+            Self::Background | Self::SignatureSpell | Self::Maybeboard
+        )
+    }
+
+    /// Whether right saves to the commander maybeboard in place of a pick.
+    fn right_saves(self) -> bool {
+        self == Self::Maybeboard
     }
 }
 
@@ -197,13 +209,12 @@ struct Pile {
 pub fn SwipeSelect(
     open: Signal<bool>,
     mode: SwipeMode,
-    on_select: EventHandler<Card>,
+    #[props(default)] on_select: EventHandler<Card>,
     on_close: EventHandler<()>,
     #[props(default)] exclude_oracle_ids: Option<ReadSignal<HashSet<Uuid>>>,
     #[props(default)] suggested_pile: Option<ReadSignal<SuggestedPile>>,
     #[props(default)] suggested_filter: Option<Element>,
     #[props(default)] commander: Option<Card>,
-    #[props(default)] starts_deck: bool,
 ) -> Element {
     use_overlay_back(open);
     let session: Signal<Option<Session>> = use_context();
@@ -427,7 +438,7 @@ pub fn SwipeSelect(
         SwipeMode::Suggested => SwipeSelectMode::Suggested {
             has_filter: suggested_filter.is_some(),
         },
-        _ if starts_deck => SwipeSelectMode::StartsDeck,
+        SwipeMode::Maybeboard => SwipeSelectMode::SavesToMaybeboard,
         SwipeMode::Commander(_)
         | SwipeMode::Partner
         | SwipeMode::Background
@@ -583,6 +594,40 @@ fn SwipeSelectBody(
         undo,
     );
 
+    // Saves the card on top to the commander maybeboard and moves on: up, or
+    // right where right saves.
+    let mut save = move |card: Card| {
+        let Some(oracle_id) = card.scryfall_data.oracle_id else {
+            stack.write().record(SelectSwipe::Skip);
+            advance();
+            toast.error(
+                "This card can't be saved".to_string(),
+                ToastOptions::default(),
+            );
+            return;
+        };
+        stack.write().record(SelectSwipe::Maybe(oracle_id));
+        let last = advance();
+        if last {
+            ran_out();
+        }
+        spawn(async move {
+            if authed
+                .try_run("add_commander_maybeboard", |c, s| async move {
+                    c.add_commander_maybeboard_card(oracle_id, &s).await
+                })
+                .await
+                .is_ok()
+            {
+                if last {
+                    confirm.quietly("Added to your commander maybeboard");
+                } else {
+                    confirm.success_for("Added to your commander maybeboard", MAYBEBOARD_TOAST);
+                }
+            }
+        });
+    };
+
     let on_swipe = move |(swipe, card): (Swipe, Card)| match swipe {
         Swipe::Left => {
             let action = match (suggested, card.scryfall_data.oracle_id) {
@@ -608,6 +653,7 @@ fn SwipeSelectBody(
                 confirm.info("Skipped");
             }
         }
+        Swipe::Right if mode.right_saves() => save(card),
         Swipe::Right => {
             let mut label = mode.noun().to_string();
             if let Some(first) = label.get_mut(..1) {
@@ -616,37 +662,7 @@ fn SwipeSelectBody(
             confirm.success(format!("{label} selected"));
             on_select.call(card);
         }
-        Swipe::Up => {
-            let Some(oracle_id) = card.scryfall_data.oracle_id else {
-                stack.write().record(SelectSwipe::Skip);
-                advance();
-                toast.error(
-                    "This card can't be saved".to_string(),
-                    ToastOptions::default(),
-                );
-                return;
-            };
-            stack.write().record(SelectSwipe::Maybe(oracle_id));
-            let last = advance();
-            if last {
-                ran_out();
-            }
-            spawn(async move {
-                if authed
-                    .try_run("add_commander_maybeboard", |c, s| async move {
-                        c.add_commander_maybeboard_card(oracle_id, &s).await
-                    })
-                    .await
-                    .is_ok()
-                {
-                    if last {
-                        confirm.quietly("Added to your commander maybeboard");
-                    } else {
-                        confirm.success_for("Added to your commander maybeboard", MAYBEBOARD_TOAST);
-                    }
-                }
-            });
-        }
+        Swipe::Up => save(card),
         Swipe::Down => undo.call(()),
     };
 
@@ -730,7 +746,7 @@ fn SwipeSelectBody(
                 (Swipe::Left, "Skip"),
                 (Swipe::Up, "Save"),
                 (Swipe::Down, "Undo"),
-                (Swipe::Right, "Pick"),
+                (Swipe::Right, if mode.right_saves() { "Save" } else { "Pick" }),
             ]
                 .into_iter()
                 .filter(|(swipe, _)| *swipe != Swipe::Up || mode.saves_up())

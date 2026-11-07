@@ -18,9 +18,9 @@ pub enum SwipeSelectMode {
     /// [`crate::deck::form::Slot::noun`]: `commander`, `oathbreaker`,
     /// `partner`, `background` or `signature spell`.
     Picking(&'static str),
-    /// Swiping through commanders from the Commander maybeboard, where a pick
-    /// starts a new deck with it.
-    StartsDeck,
+    /// Swiping through commanders from the Commander maybeboard, where right
+    /// saves one to it.
+    SavesToMaybeboard,
     /// Swiping through Playstyle's suggested commanders.
     Suggested {
         /// Whether the overlay has a filter, which adds a line about it.
@@ -436,7 +436,7 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
                 ]),
                 bullet(vec![
                     key("Swipe"),
-                    text(" deals commanders: right starts a deck, up saves one"),
+                    text(" deals commanders: right saves one here, left skips it"),
                 ]),
                 bullet(vec![key("Quick add"), text(" searches by name")]),
                 bullet(vec![
@@ -543,11 +543,11 @@ pub fn swipe_select(mode: SwipeSelectMode) -> HintContent {
                 text(" skips it for a week"),
             ]),
         ],
-        SwipeSelectMode::StartsDeck => vec![
+        SwipeSelectMode::SavesToMaybeboard => vec![
             bullet(vec![
                 text("Swipe "),
                 emph("right", Role::Success),
-                text(" starts a new deck with that commander"),
+                text(" saves that commander to your commander maybeboard"),
             ]),
             bullet(vec![
                 text("Swipe "),
@@ -568,10 +568,16 @@ pub fn swipe_select(mode: SwipeSelectMode) -> HintContent {
             ]),
         ],
     };
-    // Up saves only where the pile holds commanders: not for a background
-    // or a signature spell.
+    // Up saves only where the pile holds commanders and right does not
+    // already save: not for a background or a signature spell, nor from the
+    // maybeboard.
     let no_commanders = [Slot::Background, Slot::SignatureSpell].map(|slot| slot.noun(None));
-    if !matches!(mode, SwipeSelectMode::Picking(noun) if no_commanders.contains(&noun)) {
+    let up_saves = match mode {
+        SwipeSelectMode::Picking(noun) => !no_commanders.contains(&noun),
+        SwipeSelectMode::SavesToMaybeboard => false,
+        SwipeSelectMode::Suggested { .. } => true,
+    };
+    if up_saves {
         blocks.push(bullet(vec![
             text("Swipe "),
             emph("up", Role::Warning),
@@ -598,7 +604,7 @@ pub fn swipe_select(mode: SwipeSelectMode) -> HintContent {
             }
             "Suggested commanders"
         }
-        SwipeSelectMode::Picking(_) | SwipeSelectMode::StartsDeck => {
+        SwipeSelectMode::Picking(_) | SwipeSelectMode::SavesToMaybeboard => {
             blocks.push(line(vec![
                 text("Most-played first. "),
                 icon_key(KeyIcon::Funnel),
@@ -653,12 +659,16 @@ mod tests {
     }
 
     #[test]
-    fn from_the_maybeboard_a_pick_starts_a_new_deck() {
-        let hint = swipe_select(SwipeSelectMode::StartsDeck);
+    fn from_the_maybeboard_right_saves_and_up_says_nothing() {
+        let hint = swipe_select(SwipeSelectMode::SavesToMaybeboard);
         assert_eq!(hint.title, "Swipe select");
         assert_eq!(
             hint.blocks[0].plain(),
-            "Swipe right starts a new deck with that commander"
+            "Swipe right saves that commander to your commander maybeboard"
+        );
+        assert!(
+            !hint.blocks.iter().any(|b| b.plain().contains("Swipe up")),
+            "up has nothing to do from the maybeboard"
         );
     }
 
