@@ -30,3 +30,7 @@ Herdr agents by name. Remote ones need `herdr --machine <m>`. Each queue item is
 ## Open questions for Scotty
 
 None pending. Recent decisions: no URL redirects for the renamed routes (92); keep two columns on Decks; dragging modals is fine; guides stay on zwipe.net (todo logged).
+
+## Next Surfer passes (Scotty, 2026-11-06)
+
+Once this round lands, Surfer reruns everything it has checked so far at about half window width, then as narrow as it can go, to cover the phone layout from a laptop. On the first pass, Chrome on halo wouldn't resize below about 1420px, so Scotty is setting up the window, or Surfer uses DevTools device emulation.
