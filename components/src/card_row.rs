@@ -129,7 +129,7 @@ pub fn CardRow(
     } else {
         "card-row-art art-hidden"
     };
-    // Compact-row price in the deck's chosen currency (nonfoil→foil fallback);
+    // Compact-row price: the printing's own price in the deck's currency;
     // `None` (no price in that currency) omits the tag entirely.
     let price_display =
         deck_metrics::card_price(sd, price_currency).map(|p| price_currency.format_amount(p));
