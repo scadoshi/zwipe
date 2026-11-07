@@ -82,6 +82,6 @@ pub fn OneTimeHintDialog(open: Signal<bool>, hint: OneTimeHint) -> Element {
         return rsx! {};
     };
     rsx! {
-        ContentHintDialog { open, content, actions: components::hint::guide_for_one_time(hint.key()) }
+        ContentHintDialog { open, content, actions: components::hint::guide_for_one_time(hint) }
     }
 }

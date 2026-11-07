@@ -229,7 +229,7 @@ pub fn CardDetails(
     // A multi-faced card shows one face at a time behind Flip, so a long
     // two-face card can't overflow a non-scrolling host.
     let face_count = faces.as_ref().map_or(0, Vec::len);
-    let mut face_idx = use_signal(|| 0usize);
+    let face_idx = use_signal(|| 0usize);
     let cur = face_idx().min(face_count.saturating_sub(1));
     let current_face = faces.as_ref().and_then(|f| f.get(cur)).cloned();
     let stats = current_face.as_ref().and_then(|f| f.stats.clone());
@@ -246,7 +246,7 @@ pub fn CardDetails(
                     OracleText { text: face.oracle, class: "card-detail-oracle card-details-oracle".to_string() }
                 }
             }
-            TagRows { card: card.clone(), show_classification, describe_tag, on_examples }
+            TagRows { card, show_classification, describe_tag, on_examples }
             FactsChips { set_name, prices, stats }
             if footer.is_some() {
                 div { class: "card-details-host", {footer} }
@@ -257,28 +257,10 @@ pub fn CardDetails(
             div { class: "card-row-actions",
                 div { class: "card-action-row",
                     if show_flip_btn {
-                        button {
-                            class: "card-action-btn",
-                            onclick: move |evt| {
-                                evt.stop_propagation();
-                                let next = cur.saturating_add(1).checked_rem(face_count).unwrap_or(0);
-                                face_idx.set(next);
-                                if let Some(handler) = on_face_change {
-                                    handler.call(next);
-                                }
-                            },
-                            "Flip"
-                        }
+                        FlipButton { face_idx, current: cur, face_count, on_face_change }
                     }
                     if let (true, Some(handler)) = (show_image, on_image) {
-                        button {
-                            class: "card-action-btn",
-                            onclick: move |evt| {
-                                evt.stop_propagation();
-                                handler.call(());
-                            },
-                            "Image"
-                        }
+                        FootButton { label: "Image", on_click: handler }
                     }
                     {actions}
                 }
@@ -307,7 +289,8 @@ pub fn CardDetailsPanel(
     /// Show the card's prices after its set.
     #[props(default = true)]
     show_prices: bool,
-    /// Show the card roles and their oracle tags in the foot.
+    /// Show the card roles and their oracle tags in the body, after the
+    /// card's facts.
     #[props(default = true)]
     show_classification: bool,
     /// Resolve an oracle tag's description. Forwarded to [`CardRoleChips`].
@@ -332,7 +315,7 @@ pub fn CardDetailsPanel(
     /// Draw Flip in the foot for a multi-faced card.
     #[props(default = true)]
     show_flip: bool,
-    /// Host content in the foot, after the roles.
+    /// Host content in the foot, before its buttons.
     #[props(default)]
     footer: Option<Element>,
     /// Host content at the body's end, after the roles, which scrolls with
@@ -357,7 +340,7 @@ pub fn CardDetailsPanel(
     let faces = build_rules(&card);
     let face_count = faces.as_ref().map_or(0, Vec::len);
     let internal_face = use_signal(|| 0usize);
-    let mut face_idx = face.unwrap_or(internal_face);
+    let face_idx = face.unwrap_or(internal_face);
     let cur = face_idx().min(face_count.saturating_sub(1));
     let current_face = faces.as_ref().and_then(|f| f.get(cur)).cloned();
     let cost = current_face
@@ -392,38 +375,13 @@ pub fn CardDetailsPanel(
                     if show_flip_btn || show_image || on_printings.is_some() {
                         div { class: "card-action-row",
                             if show_flip_btn {
-                                button {
-                                    class: "card-action-btn",
-                                    onclick: move |evt| {
-                                        evt.stop_propagation();
-                                        let next = cur.saturating_add(1).checked_rem(face_count).unwrap_or(0);
-                                        face_idx.set(next);
-                                        if let Some(handler) = on_face_change {
-                                            handler.call(next);
-                                        }
-                                    },
-                                    "Flip"
-                                }
+                                FlipButton { face_idx, current: cur, face_count, on_face_change }
                             }
                             if let (true, Some(handler)) = (show_image, on_image) {
-                                button {
-                                    class: "card-action-btn",
-                                    onclick: move |evt| {
-                                        evt.stop_propagation();
-                                        handler.call(());
-                                    },
-                                    "Image"
-                                }
+                                FootButton { label: "Image", on_click: handler }
                             }
                             if let Some(handler) = on_printings {
-                                button {
-                                    class: "card-action-btn",
-                                    onclick: move |evt| {
-                                        evt.stop_propagation();
-                                        handler.call(());
-                                    },
-                                    "Printings"
-                                }
+                                FootButton { label: "Printings", on_click: handler }
                             }
                         }
                     }
@@ -437,7 +395,7 @@ pub fn CardDetailsPanel(
                 OracleText { text: face.oracle, class: "card-detail-oracle card-details-oracle".to_string() }
             }
             FactsChips { set_name, prices, stats }
-            TagRows { card: card.clone(), show_classification, describe_tag, on_examples }
+            TagRows { card, show_classification, describe_tag, on_examples }
             if let Some(end) = body_end {
                 div { class: "card-details-body-end", {end} }
             }
@@ -494,6 +452,47 @@ if (!window.__zwipeDetailsHead) {
 const GHOST_ORACLE_WORDS: [u8; 26] = [
     8, 4, 3, 6, 2, 5, 7, 3, 4, 6, 9, 2, 5, 4, 7, 3, 6, 5, 2, 8, 4, 6, 3, 7, 5, 4,
 ];
+
+/// The Flip button: shows the face after `current` of `face_count` and
+/// hands its index to `on_face_change`, keeping the tap off the row.
+#[component]
+fn FlipButton(
+    mut face_idx: Signal<usize>,
+    current: usize,
+    face_count: usize,
+    on_face_change: Option<EventHandler<usize>>,
+) -> Element {
+    rsx! {
+        button {
+            class: "card-action-btn",
+            onclick: move |evt| {
+                evt.stop_propagation();
+                let next = current.saturating_add(1).checked_rem(face_count).unwrap_or(0);
+                face_idx.set(next);
+                if let Some(handler) = on_face_change {
+                    handler.call(next);
+                }
+            },
+            "Flip"
+        }
+    }
+}
+
+/// A foot button labeled `label` that calls `on_click`, keeping the tap off
+/// the row.
+#[component]
+fn FootButton(label: &'static str, on_click: EventHandler<()>) -> Element {
+    rsx! {
+        button {
+            class: "card-action-btn",
+            onclick: move |evt| {
+                evt.stop_propagation();
+                on_click.call(());
+            },
+            "{label}"
+        }
+    }
+}
 
 /// The ghost of a [`CardDetailsPanel`] while its card loads, in the panel's
 /// own order and shapes: the title bar, the type and rarity chips, the rules
