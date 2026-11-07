@@ -380,23 +380,6 @@
     padding: 0.5rem 1rem 0.25rem;
 }
 
-/* Name + mana cost header inside an expanded card row. */
-.card-detail-head {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 0.5rem;
-    margin-bottom: 0.35rem;
-}
-
-.card-detail-name {
-    margin: 0;
-    font-size: 0.9rem;
-    color: var(--palette-3);
-    word-break: break-word;
-    white-space: normal;
-}
-
 .card-detail-cost {
     margin: 0;
     margin-left: auto;
@@ -750,14 +733,6 @@ i.ms.ms-cost.ms-gp {
     gap: 0.5rem;
     margin-bottom: 0.5rem;
     color: var(--text-muted);
-}
-
-/* Power/toughness (or planeswalker loyalty) pinned bottom-right of the detail,
-   echoing the card's own P/T corner. Uses the muted .detail-chip look. */
-.card-detail-stats {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 0.5rem;
 }
 
 /* Non-interactive info chip (type line, rarity, set) in an expanded card row. */
@@ -1900,6 +1875,22 @@ i.ms.ms-cost.ms-gp {
    the danger color. Compound selector so it outranks orangui's title color. */
 .settings-list-title.danger-zone-title {
     color: var(--color-error);
+}
+
+/* ---- Note chip (.chip-note) ----
+   Every empty or error line, on every client: a gray chip that does not
+   act, centered by whatever holds it (.message-empty, .deck-empty,
+   .activity-total, .dict-empty). Same face as .chip-unselected, minus the
+   pointer. */
+.chip-note {
+    display: inline-block;
+    padding: 0.3rem 0.6rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-muted);
+    border-radius: 0.6rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    box-shadow: var(--shadow-sm);
 }
 
 /* ---- DeckPage (components::DeckPage) ---- */

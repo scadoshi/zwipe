@@ -187,13 +187,17 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
                             CardSkeleton { is_loading: true }
                         } else {
                             div { class: "flex-col flex-center", style: "flex: 1; min-height: 0; width: 100%;",
-                                div { class: "dict-empty", "No more cards. Swipe down to go back." }
+                                div { class: "dict-empty",
+                                    span { class: "chip-note", "No more cards. Swipe down to go back." }
+                                }
                             }
                         }
                     } else if loading() || (empty && loading_more()) {
                         CardSkeleton { is_loading: true }
                     } else {
-                        div { class: "dict-empty", "No example cards for this tag yet." }
+                        div { class: "dict-empty",
+                            span { class: "chip-note", "No example cards for this tag yet." }
+                        }
                     }
                 }
                 if let Some(card) = current.clone() {

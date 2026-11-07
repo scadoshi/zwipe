@@ -179,7 +179,9 @@ pub fn DeckPage(
                 div { class: "deck-controls", {controls} }
             }
             if empty {
-                p { class: "deck-empty", {NO_CARDS} }
+                p { class: "deck-empty",
+                    span { class: "chip-note", {NO_CARDS} }
+                }
             }
             div { class: "deck-bands", {bands} }
             if let Some(stats) = stats {

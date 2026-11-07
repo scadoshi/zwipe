@@ -404,11 +404,14 @@
 
 /* Inside the swipe stack the image is bound to the padded card layer's
    height, not the viewport, so it can't spill into the chip row above or
-   the details below on short screens. */
+   the details below on short screens. The wrapper is then the image's
+   height, so it lets the image's shadow out past its top and bottom; the
+   image rounds its own corners. */
 .swipe-stack-card .flippable-card-wrapper.card-image {
     height: 100%;
     width: 100%;
     min-height: 0;
+    overflow: visible;
 }
 
 .swipe-stack-card .flippable-card-wrapper.card-image img {
@@ -504,20 +507,6 @@
 .chip-xs.chip-primary {
     border-color: var(--palette-2);
     color: var(--palette-2);
-}
-
-/* Non-interactive note chip: the empty/error states that used to be bare
-   text against the background grid (deck list, commander maybeboard). Same
-   face as .chip-unselected, minus the pointer. */
-.chip-note {
-    display: inline-block;
-    padding: 0.3rem 0.6rem;
-    background-color: var(--bg-primary);
-    border: 1px solid var(--border-muted);
-    border-radius: 0.6rem;
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    box-shadow: var(--shadow-sm);
 }
 
 /* An empty swipe stack's note at full strength, with a chip's edge and the

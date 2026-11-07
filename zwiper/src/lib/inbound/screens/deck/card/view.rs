@@ -1093,7 +1093,9 @@ pub fn View(deck_id: Uuid) -> Element {
                     }
 
                     if no_cards {
-                        p { class: "text-muted", "{deck_cards::NO_CARDS}" }
+                        p { class: "deck-empty",
+                            span { class: "chip-note", "{deck_cards::NO_CARDS}" }
+                        }
                     }
 
                 }
