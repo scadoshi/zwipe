@@ -48,7 +48,7 @@ pub(crate) fn CollapsibleSection(
                 }
             },
             div {
-                style: "display:flex;align-items:center;gap:0.5rem;padding:0 0.75rem;",
+                style: "display:flex;align-items:center;gap:0.5rem;padding:0 1rem;",
                 div {
                     style: "display:flex;align-items:center;gap:0.5rem;flex:1;min-width:0;",
                     span {
@@ -82,8 +82,8 @@ pub(crate) fn CollapsibleSection(
                 style: "cursor:default;",
                 onclick: move |evt| evt.stop_propagation(),
                 div { class: "collapsible-inner",
-                    hr { style: "border:none;border-top:1px solid var(--border-secondary);margin:0.5rem 0 0.6rem 0;" }
-                    div { style: "display:flex;flex-direction:column;gap:0.75rem;", {children} }
+                    hr { class: "collapsible-section-rule" }
+                    div { class: "collapsible-section-body", {children} }
                 }
             }
         }

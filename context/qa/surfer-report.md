@@ -408,3 +408,33 @@ Theme state left: the app was left on **Gruvbox light** (I toggled to light for 
 - **132 (toasts bottom-left, clear of docks): holds at wide.** "Synergy off" toast at x 16–178, y 518–579, above the From/Search pile chips (y 606–633) and well left of the docks (x 848–1423) (p7-11).
 - **Unconfirmed: page-wide highlight after the Synergy toggle.** After clicking the Synergy bolt on Add, all page text (details panel, docks, footer, nav Log out) was painted as if selected, yet `getSelection()` was an empty Range. Clicking elsewhere didn't clear it; a reload did. I didn't get to retry before standing by, so it may be a one-off paint artifact. Worth a quick repro: on Add, toggle the bolt and look for selection highlight across the page (p7-11).
 - 118 wide recheck and 144 cross-tab: not done (stood down until the session fix, 156, ships).
+
+## Part 8, narrow pass (720 × 725, live main 60d705459, zwiper-web v1.18.0)
+
+Width: 720 × 725 viewport. The old tab still read 1450 (a different window), so I closed it and worked in a fresh tab at 720.
+
+Logouts: **none this pass.** I was signed in from 00:00 to 00:08 across five full page loads (Add, reload after crash ×2, Add again) plus one zwipe.net round trip, and `zwiper-web.session` never dropped. I didn't need the credentials file and didn't open it.
+
+| # | Check | Result at 720 |
+|---|---|---|
+| 122 | Unsaved-changes guard | **Holds.** Picked a deck tag, confirmed the picker, pressed back: "Leave without saving?" with Stay / Leave (p8-10). Leave discarded it; the deck still has only Tribal. See the note on picker × below |
+| 128, 129 | Card details float in from the right, inset, rounded, Printings pill | **Fixed.** Drawer at x 294–710, y 54–598 (10px right inset), 16px radius, Printings as a text pill at the bottom (p8-4) |
+| 130 | Printings is the cover flow | **Fixed** (p8-5). New issue below: at 725 tall the sheet doesn't fit |
+| 132 | Toasts bottom-left, clear of docks | **Holds.** "Synergy off" at x 16–178, y 540–601; docks start at x 328, From/Search chips at y 691 (p8-20). No page-wide highlight this time (`getSelection` empty, nothing painted), so the Part 7 highlight looks like a one-off |
+| 133 | Format / Deck tags / Oracle tags: side drawer 600–900 | **Holds for Format and Deck tags.** Both open as the right side drawer (x 294–710) (p8-7, p8-8). The Oracle tags *dictionary* (from the filter) opens full-screen at 720, list below, and its A–Z row scrolls (1009px in 688, `overflow-x: auto`) (p8-11). If the dictionary is meant to be a side drawer at 720 too, it isn't |
+| 137 | Stacked docks one width | **Fixed.** Both docks x 328–704, 376 wide (p8-3). Same on Swipe select |
+| 141 | Activity heatmap themed scrollbar, days pinned | **Fixed.** Scrolls 737 in 670, `scrollbar-width: thin`, themed color; Mon/Wed/Fri stay pinned while months fade under them (p8-14, p8-15) |
+| 142 | zwipe.net Community and About two columns at 720 | **Fixed.** Community: Discord and Email side by side. About: both crate card grids are two columns (x 24 and 363) (p8-1, p8-2). Couldn't check the 560 breakpoint (no resize) |
+| 147 narrow | Panel titles, warnings rows, hint dialog width | **Holds.** Deck page titles all 16px. Warnings rows read cleanly with Add cards / Import aligned (p8-12). Hint dialog 448px wide, centered, long body scrolls under a fade (p8-13) |
+| 150 | Theme sheet opaque | **Holds.** rgb(40,40,40), opacity 1 over Home (p8-16) |
+| 152 | No toast on theme pick | **Holds.** Darcula → Gruvbox, no toast; theme restored to Gruvbox |
+| 118 | Swipe select details scroll as one | **Still there (known, 159).** Commander swipe select, Fire Lord Azula: `.panel-body` is a 320px inner box (y 190–510) holding 388px, no mask, bottom cut with no fade (p8-17) |
+
+### New
+
+1. **Crash: browser back from Swipe select kills the app.** On Edit deck, tap Commander › Swipe, then press browser back (or `history.back()`). The URL goes to the deck page but the view stays on loading placeholders with "Edit deck" still in the header and tab title. The app is dead from then on: further back/forward changes the URL but nothing renders until a reload. Console shows two `RuntimeError: unreachable` traps from the wasm (func 4019, via a wasm_bindgen closure), no panic text. Reproduced twice (00:07:26 and 00:07:54). Plain back from Edit deck *without* Swipe select open is fine. Untested at wide, so it may not be narrow-only (p8-18, p8-19).
+2. **Printings sheet doesn't fit at 725 tall.** The sheet's content is 657px in a 542px box: the centered printing's bottom runs past the viewport on open, and the price chips and the ✓ select button sit 115px below the fold, so you have to scroll inside the sheet to pick a printing (p8-6).
+3. **Picker × discards without asking.** In the Deck tags picker the form behind updates live as you tap tags, but × throws the picks away with only a "Deck tags unchanged" toast. Probably by design (× = cancel, ✓ = keep), but the live preview makes it look already applied (p8-9). Also, the hint box kept the last tapped tag's text (Aggro) after reopening.
+4. **Toast covers the field it describes.** After confirming a deck tag, "Oracle tags derived from your deck tags" sits bottom-left directly over the Oracle tags chip row it's talking about (720 × 725, Tags section scrolled into view). Small, since it times out.
+
+Not done: the 133 full-screen branch below 600 and 142 below 560 (window can't be resized), 144 cross-tab.

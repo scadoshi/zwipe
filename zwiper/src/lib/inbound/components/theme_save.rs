@@ -17,7 +17,7 @@ use zwipe_ui::screens::config::{Action, SaveTicket, Theme};
 use zwipe_ui::settings::SettingChange;
 
 use crate::inbound::components::auth::authed::Authed;
-use crate::outbound::app_icon;
+use crate::outbound::{app_icon, theme_store};
 
 /// The app's theme value for a theme the model names.
 pub fn theme_config_of(theme: Theme) -> ThemeConfig {
@@ -76,6 +76,7 @@ pub fn save(
 /// the icon follows the theme.
 pub fn saved(mut theme_config: Signal<ThemeConfig>, theme: Theme) {
     let theme = theme_config_of(theme).resolve().unwrap_or_default();
+    theme_store::save_server_seen(&theme);
     app_icon::follow(&theme);
     theme_config.set(theme);
 }

@@ -7,9 +7,9 @@
 use std::time::Duration;
 
 use chrono::{DateTime, Utc};
-use components::{KeywordReminders, ThemeConfig, use_overlay_back_stack};
+use components::{KeywordReminders, ThemeConfig, use_on_resume, use_overlay_back_stack};
 use dioxus::prelude::*;
-use tokio::time;
+use tokio::time::{self, MissedTickBehavior};
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
@@ -20,11 +20,12 @@ pub use zwipe_ui::changelog::ChangelogCache;
 
 use crate::config::Config;
 use crate::inbound::components::auth::ensure_session::EnsureFresh;
-use crate::inbound::components::catalog_cache::use_catalog_cache;
+use crate::inbound::components::catalog_cache::{CatalogCache, use_catalog_cache};
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::home_decks::CachedDecks;
 use crate::inbound::components::home_hero::{CachedCounts, CachedMyCounts};
 use crate::inbound::components::home_play_style::CachedPlayStyle;
+use crate::inbound::components::settings_sync;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::{anonymous, flush_loop};
 use crate::inbound::screens::auth::login::LoginPrefill;
@@ -129,7 +130,9 @@ pub fn spawn_upkeeper() -> UpgradeRequired {
     use_server_catalogs(session, client);
     use_theme_and_pips(session);
     use_usage_telemetry(session, client);
-    use_version_gate(session, client)
+    let upgrade_required = use_version_gate(session, client);
+    use_resume_upkeep(session, client, upgrade_required);
+    upgrade_required
 }
 
 /// Provides the root-owned session and API client signals.
@@ -278,15 +281,18 @@ fn use_server_catalogs(session: Signal<Option<Session>>, client: Signal<ZwipeCli
 
 /// Provides the theme and pip style, seeded from the stored session.
 fn use_theme_and_pips(session: Signal<Option<Session>>) {
-    // Theme: a live session's settings win (freshest for this account),
-    // else the last-used theme cached locally (so pre-auth screens render in it
-    // even logged out / after a device-to-device change), else the default.
+    // Theme: the one this device last showed, else a live session's
+    // settings, else the default. The session's copy is from the last login
+    // or refresh, older than a toggle made since; the settings sync then
+    // settles it against the server (see settings_sync).
     let theme = use_signal(|| {
-        session
-            .peek()
-            .as_ref()
-            .map(|s| components::theme_from_settings(&s.settings))
-            .or_else(ThemeConfig::infallible_load)
+        ThemeConfig::infallible_load()
+            .or_else(|| {
+                session
+                    .peek()
+                    .as_ref()
+                    .map(|s| components::theme_from_settings(&s.settings))
+            })
             .unwrap_or_default()
     });
     use_context_provider(|| theme);
@@ -315,17 +321,17 @@ fn use_theme_and_pips(session: Signal<Option<Session>>) {
 /// event and the pending crash report send.
 fn use_usage_telemetry(session: Signal<Option<Session>>, client: Signal<ZwipeClient>) {
     // Usage telemetry buffer (swipe / search counters + suggestion signals).
-    // Flushed by two tasks sharing this one buffer: a 30s timer, and a
-    // visibility flush that fires the instant the app backgrounds (so a
-    // swipe-to-close doesn't lose the last unflushed window).
+    // Flushed two ways from this one buffer: a 30s timer, and a flush the
+    // instant the app backgrounds (so a swipe-to-close doesn't lose the last
+    // unflushed window).
     // use_hook: spawn exactly once; a plain call here would leak a new flush
     // loop every time the root component re-renders.
     let usage_buffer = use_signal(UsageBuffer::new);
     use_context_provider(|| usage_buffer);
     flush_loop::use_clear_on_logout(usage_buffer, session);
+    flush_loop::use_background_flush(usage_buffer.peek().clone(), client, session);
     use_hook(|| {
         flush_loop::spawn_usage_flusher(usage_buffer.peek().clone(), client, session);
-        flush_loop::spawn_visibility_flusher(usage_buffer.peek().clone(), client, session);
 
         // Pre-auth funnel: a logged-out launch is the top of the register
         // funnel. Logged-in launches are already covered by last_active_at.
@@ -360,7 +366,7 @@ fn use_version_gate(
 ) -> UpgradeRequired {
     // Min-version gate: flipped true when the server says this build is too
     // old. Provided as context (newtyped) so any screen can read it if needed.
-    let mut upgrade_required = use_signal(|| false);
+    let upgrade_required = use_signal(|| false);
     use_context_provider(|| UpgradeRequired(upgrade_required));
 
     // use_future (not bare spawn) for the same once-only reason as above,
@@ -368,30 +374,71 @@ fn use_version_gate(
     use_future(move || async move {
         // first tick fires immediately; this is the cold-start refresh
         let mut interval = time::interval(UPKEEP_INTERVAL);
+        // Ticks missed in the background come back as one, not a burst.
+        interval.set_missed_tick_behavior(MissedTickBehavior::Delay);
         loop {
             interval.tick().await;
-            // single-flight: free of races with any in-flight user action
-            let _ = session.ensure_fresh(client).await;
-
-            // Min-version gate check. Fails open: only a successful response
-            // can flip the gate; a network hiccup never locks anyone out.
-            let http = client.peek().clone();
-            if let Ok(min) = http.fetch_min_client_version().await {
-                let required = !version::version_at_least(APP_VERSION, &min.min_version);
-                if required != *upgrade_required.peek() {
-                    tracing::info!(
-                        app = APP_VERSION,
-                        min = %min.min_version,
-                        required,
-                        "min-version gate changed"
-                    );
-                    upgrade_required.set(required);
-                }
-            }
+            upkeep_once(session, client, upgrade_required).await;
         }
     });
 
     UpgradeRequired(upgrade_required)
+}
+
+/// Refreshes the session and rechecks the server minimum, once.
+async fn upkeep_once(
+    session: Signal<Option<Session>>,
+    client: Signal<ZwipeClient>,
+    mut upgrade_required: Signal<bool>,
+) {
+    // single-flight: free of races with any in-flight user action
+    let _ = session.ensure_fresh(client).await;
+
+    // Min-version gate check. Fails open: only a successful response
+    // can flip the gate; a network hiccup never locks anyone out.
+    let http = client.peek().clone();
+    if let Ok(min) = http.fetch_min_client_version().await {
+        let required = !version::version_at_least(APP_VERSION, &min.min_version);
+        if required != *upgrade_required.peek() {
+            tracing::info!(
+                app = APP_VERSION,
+                min = %min.min_version,
+                required,
+                "min-version gate changed"
+            );
+            upgrade_required.set(required);
+        }
+    }
+}
+
+/// On each return to the foreground: the session upkeep at once, the
+/// counters marked stale, the catalogs rechecked against their day and the
+/// settings synced, so a long stay in the background leaves nothing stale.
+fn use_resume_upkeep(
+    session: Signal<Option<Session>>,
+    client: Signal<ZwipeClient>,
+    upgrade_required: UpgradeRequired,
+) {
+    let catalog_cache: CatalogCache = use_context();
+    let mut counts: Signal<Option<CachedCounts>> = use_context();
+    let mut my_counts: Signal<Option<CachedMyCounts>> = use_context();
+    let theme: Signal<ThemeConfig> = use_context();
+    let pip_style: Signal<PipStyle> = use_context();
+    use_on_resume(move || {
+        tracing::debug!("app resumed");
+        spawn(upkeep_once(session, client, upgrade_required.0));
+        if let Some(c) = counts.write().as_mut() {
+            c.expire();
+        }
+        if let Some(c) = my_counts.write().as_mut() {
+            c.expire();
+        }
+        catalog_cache.prefetch_public(client);
+        if let Some(current) = session.peek().clone() {
+            catalog_cache.ensure_deck_tags(client, current);
+        }
+        settings_sync::sync_settings(session, client, theme, pip_style);
+    });
 }
 
 #[cfg(test)]

@@ -640,12 +640,57 @@ fn a_cold_load_and_its_first_check_fetch_the_card_once() {
 }
 
 #[test]
-fn a_failed_flavor_fetch_keeps_the_ghost() {
+fn a_failed_flavor_fetch_says_so_and_retry_fetches_again() {
     let (mut state, effects) = load(cold());
     let ticket = ticket_of(&effects, flavor_ticket);
     let effects = state.update(Action::FlavorFailed { ticket });
-    assert!(effects.is_empty(), "a failure only logs: {effects:?}");
-    assert_eq!(state.flavor(), Flavor::Loading);
+    assert!(effects.is_empty(), "the client reports it: {effects:?}");
+    assert_eq!(state.flavor(), Flavor::Failed);
+
+    let effects = state.update(Action::RetryFlavor);
+    let retry = ticket_of(&effects, flavor_ticket);
+    assert_eq!(state.flavor(), Flavor::Loading, "ghosts while it refetches");
+    assert!(
+        state.update(Action::RetryFlavor).is_empty(),
+        "a second Retry while one is out"
+    );
+    let _ = state.update(Action::FlavorLoaded {
+        ticket: retry,
+        flavor: Box::new(flavor("Back", Some("Again"))),
+    });
+    assert!(matches!(state.flavor(), Flavor::Quote(_)));
+}
+
+#[test]
+fn retry_refetches_the_decks_and_the_summary_after_a_failure() {
+    let (mut state, effects) = load(cold());
+    let decks = ticket_of(&effects, decks_ticket);
+    let summary = ticket_of(&effects, play_style_ticket);
+    let _ = state.update(Action::DecksFailed { ticket: decks });
+    let _ = state.update(Action::PlayStyleFailed { ticket: summary });
+
+    let effects = state.update(Action::RetryDecks);
+    let decks_retry = ticket_of(&effects, decks_ticket);
+    assert_eq!(state.decks(), Decks::Loading);
+    let effects = state.update(Action::RetryPlayStyle);
+    let summary_retry = ticket_of(&effects, play_style_ticket);
+    assert_eq!(state.play_style(), PlayStyle::Loading);
+
+    // The failed fetches' late replies change nothing.
+    let _ = state.update(Action::DecksLoaded {
+        ticket: decks,
+        decks: vec![deck(9, "Stale")],
+    });
+    assert_eq!(state.decks(), Decks::Loading);
+    let _ = state.update(Action::DecksLoaded {
+        ticket: decks_retry,
+        decks: vec![deck(1, "Elves")],
+    });
+    assert!(matches!(state.decks(), Decks::Loaded(_)));
+    let _ = state.update(Action::PlayStyleFailed {
+        ticket: summary_retry,
+    });
+    assert_eq!(state.play_style(), PlayStyle::Failed);
 }
 
 #[test]
