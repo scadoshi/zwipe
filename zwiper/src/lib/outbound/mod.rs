@@ -25,6 +25,8 @@ pub mod crash_store;
 pub mod keyring_entry;
 /// Open a URL with the OS default handler (browser, mail app, etc.).
 pub mod open_url;
+/// Settings changes sent with no reply yet, resent on the next launch.
+pub mod pending_settings_store;
 /// User session and authentication state management.
 pub mod session;
 /// Turns off iOS's shake-to-undo prompt.

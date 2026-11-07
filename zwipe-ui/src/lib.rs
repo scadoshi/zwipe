@@ -25,6 +25,7 @@ pub mod filter;
 pub mod generation;
 pub mod hint;
 pub mod home;
+pub mod pending_settings;
 pub mod playstyle;
 pub mod screens;
 pub mod session;
