@@ -83,7 +83,9 @@ pub trait MetricsRepository: Clone + Send + Sync + 'static {
         deck_id: Uuid,
     ) -> impl Future<Output = Result<bool, MetricsError>> + Send;
 
-    /// Aggregates lifetime counters across every user. Used for public stats.
+    /// Aggregates lifetime counters across every user, deleted accounts' folded
+    /// in from `retired_lifetime_counters`, so the totals never drop. Used for
+    /// public stats.
     fn public_metrics(&self) -> impl Future<Output = Result<PublicMetrics, MetricsError>> + Send;
 
     /// Stamps `users.last_active_at` to now.
