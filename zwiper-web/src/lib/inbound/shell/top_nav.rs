@@ -24,17 +24,11 @@ pub(super) struct PageTitle {
     pub(super) title: String,
     /// Opens the screen's hint, when it has one.
     pub(super) on_hint: Option<Callback<()>>,
-    /// Whether a wide window's nav carries the `?`; false where the screen
-    /// draws its own.
-    pub(super) hint_in_nav: bool,
 }
 
 /// The `?` a wide window's nav carries for the screen on view, if any.
 fn nav_hint(page: Signal<Option<PageTitle>>) -> Option<Callback<()>> {
-    page.read()
-        .as_ref()
-        .filter(|p| p.hint_in_nav)
-        .and_then(|p| p.on_hint)
+    page.read().as_ref().and_then(|p| p.on_hint)
 }
 
 /// The nav for a signed-in user over the matched screen: the app's menu at
@@ -158,7 +152,7 @@ fn NavLink(to: Route, label: &'static str, current: bool, mut open: Signal<bool>
 /// The screen's title and `?`, in the middle of the folded nav.
 #[component]
 fn NavTitle(page: Signal<Option<PageTitle>>) -> Element {
-    let Some(PageTitle { title, on_hint, .. }) = page() else {
+    let Some(PageTitle { title, on_hint }) = page() else {
         return rsx! {};
     };
     rsx! {

@@ -42,40 +42,26 @@ pub fn OpenFrame() -> Element {
     }
 }
 
-/// Where a screen's `?` sits on a wide window.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub enum WideHint {
-    /// In the top nav's icon row, before Log out.
-    #[default]
-    Nav,
-    /// Drawn by the screen itself, as the deck page draws its own beside
-    /// Edit, Clone and Share.
-    Screen,
-}
-
 /// A screen under the top nav. `title` names the screen for assistive tech,
 /// the browser tab and the folded nav. Below the breakpoint the title and
 /// the `?` (`on_hint`) sit centered in the folded nav; on a wide window the
-/// `?` sits in the nav's icon row unless `wide_hint` is
-/// [`WideHint::Screen`]. The screen scrolls as one column; a wide window
+/// `?` sits in the nav's icon row. The screen scrolls as one column; a wide window
 /// ends it with zwipe.net's footer unless `footer` is false, for a screen
 /// whose layout holds the window's height.
 #[component]
 pub fn ScreenFrame(
     title: String,
     #[props(default)] on_hint: Option<Callback<()>>,
-    #[props(default)] wide_hint: WideHint,
     #[props(default = true)] footer: bool,
     children: Element,
 ) -> Element {
     let page = try_use_context::<Signal<Option<PageTitle>>>();
     let nav_title = title.clone();
-    use_effect(use_reactive!(|nav_title, on_hint, wide_hint| {
+    use_effect(use_reactive!(|nav_title, on_hint| {
         if let Some(mut page) = page {
             page.set(Some(PageTitle {
                 title: nav_title,
                 on_hint,
-                hint_in_nav: wide_hint == WideHint::Nav,
             }));
         }
     }));

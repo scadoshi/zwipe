@@ -8,6 +8,6 @@ mod menu_theme;
 pub mod nav;
 mod top_nav;
 
-pub use frame::{OpenFrame, PublicFrame, ScreenFrame, WideHint};
+pub use frame::{OpenFrame, PublicFrame, ScreenFrame};
 pub use nav::MenuOpen;
 pub use top_nav::Shell;

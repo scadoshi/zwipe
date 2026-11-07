@@ -38,15 +38,10 @@ fn InfoRow(label: String, value: String) -> Element {
 }
 
 /// Edit, Clone and Share as icons, the actions on the deck as a whole, in
-/// the Profile card's header on the phone and the deck page's head on a
-/// wide window, where `on_hint` adds the page's `?` after them as one more
-/// button of the same box.
+/// the Profile card's header below the breakpoint. A wide window's deck
+/// page holds them in its action dock.
 #[component]
-pub fn ProfileActions(
-    deck_id: Uuid,
-    dialogs: DeckDialogs,
-    #[props(default)] on_hint: Option<Callback<()>>,
-) -> Element {
+pub fn ProfileActions(deck_id: Uuid, dialogs: DeckDialogs) -> Element {
     let navigator = use_navigator();
     let DeckDialogs {
         mut clone,
@@ -77,15 +72,6 @@ pub fn ProfileActions(
                 onclick: move |_| share.set(true),
                 ShareIcon {}
                 span { class: "sr-only", {MoreItem::ShareDeck.short_label()} }
-            }
-            if let Some(open) = on_hint {
-                Button {
-                    variant: ButtonVariant::Action,
-                    class: "btn-icon deck-head-hint",
-                    onclick: move |_| open.call(()),
-                    span { aria_hidden: "true", "?" }
-                    span { class: "sr-only", "What is this?" }
-                }
             }
         }
     }
