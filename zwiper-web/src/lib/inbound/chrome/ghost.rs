@@ -14,6 +14,30 @@ pub fn GhostText(chars: u8) -> Element {
     }
 }
 
+/// The word widths, in ch, a [`GhostWords`] cycles through.
+const GHOST_WORD_CHARS: [u8; 9] = [5, 3, 7, 4, 6, 2, 8, 4, 5];
+
+/// Running text about `chars` characters long, as word-sized bars that wrap
+/// where the text's words would.
+#[component]
+pub fn GhostWords(chars: u16) -> Element {
+    let mut words = Vec::new();
+    let mut total = 0u16;
+    for width in GHOST_WORD_CHARS.iter().copied().cycle() {
+        if total >= chars {
+            break;
+        }
+        words.push(width);
+        total = total.saturating_add(u16::from(width)).saturating_add(1);
+    }
+    rsx! {
+        for (i, chars) in words.into_iter().enumerate() {
+            GhostText { key: "{i}", chars }
+            " "
+        }
+    }
+}
+
 /// The `?` beside a title or a column head.
 #[component]
 pub fn GhostHint() -> Element {
@@ -103,19 +127,24 @@ pub fn GhostFold(
     }
 }
 
-/// A bar chart whose rows lead with a chip (a card role, an oracle tag):
-/// `rows` rows of a chip, its bar and its count, in the chart's own grid.
+/// A bar chart whose rows lead with a chip (a card role, an oracle tag), in
+/// `BarChart`'s chip grid: per row an empty chip whose label is that row's
+/// `chips` wide, the track and the count, `suffixed` when the count carries
+/// a `%`.
 #[component]
-pub fn GhostChipBars(rows: usize) -> Element {
+pub fn GhostChipBars(chips: Vec<u8>, #[props(default)] suffixed: bool) -> Element {
+    let count = if suffixed { "width:4ch;" } else { "width:3ch;" };
     rsx! {
         div { style: "display:flex;flex-direction:column;gap:0.35rem;padding:0 0.75rem;",
             div { style: "display:grid;grid-template-columns:fit-content(50%) minmax(0,1fr) auto;column-gap:0.5rem;align-items:center;",
-                for _ in 0..rows {
-                    div { style: "padding:0.175rem 0;text-align:right;",
-                        span { class: "skeleton-bar web-ghost-keyword-chip" }
+                for (i, chars) in chips.into_iter().enumerate() {
+                    div { key: "{i}", style: "padding:0.175rem 0;text-align:right;",
+                        GhostChip { chars, button: true }
                     }
                     div { class: "skeleton-bar chart-track" }
-                    span { class: "skeleton-bar web-ghost-count" }
+                    span { style: "{count}font-size:0.7rem;text-align:right;",
+                        GhostText { chars: 2 }
+                    }
                 }
             }
         }
@@ -198,15 +227,19 @@ pub fn GhostPipChip() -> Element {
     }
 }
 
-/// A `Show` row over color identities: its tinted label, `All`, five pip
-/// chips, then `Art` when `art`.
+/// A row over colors: its tinted label `label` wide (`Show` by default),
+/// `All`, `pips` pip chips (five by default), then `Art` when `art`.
 #[component]
-pub fn GhostShowRow(#[props(default = true)] art: bool) -> Element {
+pub fn GhostShowRow(
+    #[props(default = 4)] label: u8,
+    #[props(default = 5)] pips: usize,
+    #[props(default = true)] art: bool,
+) -> Element {
     rsx! {
         div { class: "chip-row",
-            span { class: "stat-chip stat-chip-p1 chip-row-label web-ghost-chip", GhostText { chars: 4 } }
+            span { class: "stat-chip stat-chip-p1 chip-row-label web-ghost-chip", GhostText { chars: label } }
             GhostChip { chars: 3, button: true }
-            for i in 0..5 {
+            for i in 0..pips {
                 GhostPipChip { key: "{i}" }
             }
             if art {
@@ -217,11 +250,13 @@ pub fn GhostShowRow(#[props(default = true)] art: bool) -> Element {
 }
 
 /// A chip row: its tinted label `label` wide, then the kit's chips whose
-/// labels are `chips` wide.
+/// labels are `chips` wide, with the loaded row's `class` beside
+/// `chip-row`.
 #[component]
-pub fn GhostChipRow(label: u8, chips: Vec<u8>) -> Element {
+pub fn GhostChipRow(label: u8, chips: Vec<u8>, #[props(default)] class: Option<String>) -> Element {
+    let class = class.map_or_else(|| "chip-row".to_owned(), |c| format!("chip-row {c}"));
     rsx! {
-        div { class: "chip-row",
+        div { class,
             span { class: "stat-chip stat-chip-p1 chip-row-label web-ghost-chip", GhostText { chars: label } }
             for (i, chars) in chips.into_iter().enumerate() {
                 GhostChip { key: "{i}", chars, button: true }

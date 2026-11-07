@@ -21,11 +21,17 @@ use self::sections::{ACTIVITY_TITLE, ActivityRates, ActivityYear, HardPassesPane
 use crate::inbound::cards::card_row::{CardOverlaysHost, ShowRowArt, use_card_overlays};
 use crate::inbound::cards::otag::{OtagExamplesHost, use_otag_reveals};
 use crate::inbound::chrome::authed::use_authed;
-use crate::inbound::chrome::ghost::{GhostChipBars, GhostHint, GhostSection, GhostText};
+use crate::inbound::chrome::ghost::{
+    GhostChipBars, GhostChipRow, GhostHint, GhostSection, GhostText,
+};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
-use crate::inbound::screens::deck::skeletons::ChipRowSkeleton;
 use crate::inbound::screens::home::hero::MyCountsPanel;
 use crate::inbound::shell::ScreenFrame;
+
+/// The Card roles chart's ghost chips, as wide as the roles' short labels.
+const ROLE_CHIPS: [u8; 6] = [4, 4, 5, 5, 5, 5];
+/// The Oracle tags chart's ghost chips, as wide as typical tag slugs.
+const TAG_CHIPS: [u8; 6] = [6, 9, 12, 8, 15, 7];
 
 /// Activity while it loads, in the loaded screen's layout: the Activity
 /// section (the heatmap, its three tags, the Totals chart) at the page's
@@ -50,7 +56,9 @@ fn ActivitySkeleton() -> Element {
                     }
                     hr { class: "card-row-rule card-row-rule-muted activity-rule" }
                     div { class: "activity-outcomes activity-ghost-chart",
-                        div { class: "skeleton-bar skeleton-chip activity-ghost-title" }
+                        span { class: "chart-label",
+                            span { class: "stat-chip chart-label-chip web-ghost-chip", GhostText { chars: 6 } }
+                        }
                         div { class: "activity-ghost-bars",
                             for (i, pct) in [70, 100, 20, 35].into_iter().enumerate() {
                                 div { key: "{i}", class: "activity-ghost-column",
@@ -59,8 +67,8 @@ fn ActivitySkeleton() -> Element {
                             }
                         }
                         div { class: "activity-ghost-labels",
-                            for i in 0..4 {
-                                div { key: "{i}", class: "skeleton-bar activity-ghost-label" }
+                            for (i, chars) in [5, 7, 10, 7].into_iter().enumerate() {
+                                span { key: "{i}", class: "web-activity-ghost-label", GhostText { chars } }
                             }
                         }
                     }
@@ -71,11 +79,11 @@ fn ActivitySkeleton() -> Element {
             div { class: "web-column",
                 div { class: "maybeboard-list card-group row-enter",
                     div { class: "card-group-header card-group-header-with-hint",
-                        GhostText { chars: 12 }
+                        span { GhostText { chars: 12 } }
                         GhostHint {}
                     }
                     for i in 0..10 {
-                        div { key: "{i}", class: "skeleton-card-row",
+                        div { key: "{i}", class: "skeleton-card-row web-ghost-card-row",
                             div { class: "skeleton-bar skeleton-card-thumb" }
                             div { class: "skeleton-bar skeleton-card-bar-row" }
                         }
@@ -84,11 +92,15 @@ fn ActivitySkeleton() -> Element {
             }
             div { class: "web-column",
                 div { class: "web-activity-rates",
-                    for (i, chars) in [10, 11].into_iter().enumerate() {
+                    for (i, (chars, chips)) in [(10, ROLE_CHIPS), (11, TAG_CHIPS)].into_iter().enumerate() {
                         GhostSection { key: "{i}", chars, open: false,
                             div { class: "activity-rates",
-                                ChipRowSkeleton { label: "sm", chips: vec!["md", "md", "lg", "md"] }
-                                GhostChipBars { rows: 6 }
+                                GhostChipRow {
+                                    label: 4,
+                                    chips: vec![5, 7, 10, 7],
+                                    class: "activity-rate-chips",
+                                }
+                                GhostChipBars { chips: chips.to_vec(), suffixed: true }
                             }
                         }
                     }

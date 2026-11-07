@@ -1035,21 +1035,27 @@ i.ms.ms-cost.ms-gp {
 
 /* The pane's ghost: the title's bar and the rules text's lines. */
 .card-details-ghost .card-details-ghost-title {
+    display: inline-block;
     width: 12rem;
     height: 1.1rem;
+    vertical-align: middle;
 }
 
-.card-details-ghost .card-details-ghost-line {
-    height: 0.85rem;
-    margin-top: 0.6rem;
+/* The kind and facts chips' ghosts are the loaded chips, empty: their
+   labels hold the size and draw nothing. */
+.card-details-ghost :is(.detail-chip, .card-row-price) > span {
+    visibility: hidden;
 }
 
-.card-details-ghost .card-details-ghost-line:nth-child(5) {
-    width: 60%;
+/* A rules text word's ghost, on the text's own line. */
+.card-details-ghost .card-details-ghost-word {
+    display: inline-block;
+    height: 0.8em;
+    vertical-align: middle;
 }
 
 /* A tag row's ghost at the loaded row's sizes: the label chip, then tag
-   chips, each as tall as the kit's chip. */
+   chips, each an empty chip as tall as the kit's chip. */
 .card-details-ghost .card-details-ghost-label {
     display: inline-block;
     width: 5.25rem;
@@ -1068,8 +1074,8 @@ i.ms.ms-cost.ms-gp {
     width: 5.25rem;
 }
 
-/* The foot's buttons' ghosts at a .card-action-btn's size: Flip, then the
-   wider Printings. */
+/* The foot's buttons' ghosts, empty, at a .card-action-btn's size: Flip,
+   then the wider Printings. */
 .card-details-ghost .card-details-ghost-button {
     display: inline-block;
     width: 3.325rem;
