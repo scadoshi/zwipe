@@ -24,7 +24,7 @@ pub fn CardInfoDisplay(card: Card) -> Element {
 
 /// The card's details as a drawer from the right edge, at every width,
 /// behind the eye button: the card as a [`CardDetailsPanel`] with the host's
-/// `footer` in its foot. It closes from its title bar's ×, a backdrop tap,
+/// `footer` in its foot, the panel's title the drawer's only title. It closes from its title bar's ×, a backdrop tap,
 /// Escape or the back gesture. Its dock, there only when it has something to
 /// hold, has `Flip` for a multi-faced card and `Printings` when the host
 /// passes `on_printings`. Mount it at the screen root beside the printing
@@ -58,7 +58,6 @@ pub fn CardDetailsSheet(
     rsx! {
         DrawerSheet {
             open,
-            title: DETAILS_TITLE,
             on_close: move |()| {
                 let mut open = open;
                 open.set(false);
@@ -76,9 +75,6 @@ pub fn CardDetailsSheet(
         }
     }
 }
-
-/// The details drawer's title; the panel inside it carries the card's name.
-const DETAILS_TITLE: &str = "Card details";
 
 /// A swipe card's ghost while its cards load: the image block, with "No
 /// cards" in it once a finished search came back empty.

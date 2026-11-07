@@ -8,7 +8,9 @@ use dioxus::prelude::*;
 
 use crate::{ActionDock, Button, ButtonVariant, DockPlace, SheetFrame, SheetWide};
 
-/// The sheet, shown while `open`. The title bar's × and a backdrop tap call
+/// The sheet, shown while `open`. Its title bar holds the ×, then `title`
+/// unless it is empty (a sheet whose content titles itself). The × and a
+/// backdrop tap call
 /// `on_close`; `on_hint`, when given, puts a `?` in the title bar's right
 /// corner. `class` joins the sheet's own classes. `children` mount only
 /// while open; `dock`, when given, holds the dock's actions. With
@@ -18,7 +20,7 @@ use crate::{ActionDock, Button, ButtonVariant, DockPlace, SheetFrame, SheetWide}
 #[component]
 pub fn DrawerSheet(
     open: ReadSignal<bool>,
-    #[props(into)] title: String,
+    #[props(into, default)] title: String,
     on_close: EventHandler<()>,
     #[props(default)] on_hint: Option<EventHandler<()>>,
     #[props(default)] class: &'static str,
@@ -46,7 +48,9 @@ pub fn DrawerSheet(
                         onclick: move |_| on_close.call(()),
                         "\u{00d7}"
                     }
-                    span { class: "sheet-title", "{title}" }
+                    if !title.is_empty() {
+                        span { class: "sheet-title", "{title}" }
+                    }
                     if let Some(on_hint) = on_hint {
                         Button {
                             variant: ButtonVariant::Action,

@@ -41,8 +41,8 @@ pub(crate) fn use_describe_tag() -> Callback<String, Option<String>> {
 }
 
 /// A card's full details as a drawer from the right edge, behind the swipe
-/// dock's eye: the card as a [`CardDetailsPanel`] with its release date and
-/// the host's `footer` in its foot. The host opens it through the shared
+/// dock's eye: the card as a [`CardDetailsPanel`] with the host's `footer`
+/// in its foot, the panel's title the drawer's only title. The host opens it through the shared
 /// `open` signal. It closes from its title bar's ×, a backdrop tap or the
 /// back gesture. Its dock, pinned at its bottom right and present only when
 /// there is something to hold, has Flip for a multi-faced card (it leaves
@@ -89,7 +89,6 @@ pub(crate) fn CardDetailsSheet(
     rsx! {
         DrawerSheet {
             open,
-            title: DETAILS_TITLE,
             on_close: move |()| {
                 let mut open = open;
                 open.set(false);
@@ -99,7 +98,6 @@ pub(crate) fn CardDetailsSheet(
             dock,
             CardDetailsPanel {
                 card,
-                show_printing: true,
                 show_flip: false,
                 face: Some(face),
                 describe_tag: Some(describe_tag),
@@ -108,9 +106,6 @@ pub(crate) fn CardDetailsSheet(
         }
     }
 }
-
-/// The details drawer's title; the panel inside it carries the card's name.
-const DETAILS_TITLE: &str = "Card details";
 
 /// Skeleton placeholder for the printing sheet (carousel + info rows).
 #[component]

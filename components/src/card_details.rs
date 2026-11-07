@@ -295,36 +295,22 @@ pub fn CardDetails(
     }
 }
 
-/// One labeled fact in the pane's chip row: the key as a row label chip and
-/// the value in its color-coded detail chip, kept together as they wrap.
-#[component]
-fn KeyChip(key_label: &'static str, value: String, value_class: &'static str) -> Element {
-    rsx! {
-        span { class: "card-details-pair",
-            span { class: "stat-chip stat-chip-p1 chip-row-label", "{key_label}" }
-            span { class: "detail-chip {value_class}", "{value}" }
-        }
-    }
-}
-
-/// The card as a pane: a kit [`Panel`] titled with the card's name.
+/// The card as a pane: a kit [`Panel`] titled with the card's name, the
+/// shown face's mana cost right after it.
 ///
-/// Under the title a chip row holds the shown face's mana cost and the card's
-/// facts as labeled chips (Type, Rarity, Set, Artist, with Released when
-/// `show_printing`), then its prices when `show_prices`. The body is the
-/// shown face's rules text with its power and toughness, loyalty or defense
-/// after it. The panel's foot holds the keywords, the card roles and their
-/// oracle tags when `show_classification`, the host's `footer`, and the Flip
-/// and Image buttons. A multi-faced card shows one face at a time, as in
-/// [`CardDetails`]: `face` lets the host own the shown face (pair it with
-/// `show_flip: false` to put Flip in its own chrome).
+/// Under the title a chip row holds the shown face's type line and the
+/// card's rarity. The body is the shown face's rules text, then the set and,
+/// when `show_prices`, the prices as chips. The panel's foot holds the
+/// keywords, the card roles and their oracle tags when `show_classification`,
+/// the host's `footer`, the Flip and Image buttons, and the face's power and
+/// toughness, loyalty or defense at its bottom right. A multi-faced card
+/// shows one face at a time, as in [`CardDetails`]: `face` lets the host own
+/// the shown face (pair it with `show_flip: false` to put Flip in its own
+/// chrome).
 #[component]
 pub fn CardDetailsPanel(
     card: Card,
-    /// Add the printing's release date to the chip row.
-    #[props(default)]
-    show_printing: bool,
-    /// Show the card's prices in the chip row.
+    /// Show the card's prices after its set.
     #[props(default = true)]
     show_prices: bool,
     /// Show the card roles and their oracle tags in the foot.
@@ -348,7 +334,7 @@ pub fn CardDetailsPanel(
     /// Draw Flip in the foot for a multi-faced card.
     #[props(default = true)]
     show_flip: bool,
-    /// Host content at the end of the foot.
+    /// Host content in the foot, after the roles.
     #[props(default)]
     footer: Option<Element>,
     /// Extra classes on the panel.
@@ -359,8 +345,6 @@ pub fn CardDetailsPanel(
     let name = sd.name.clone();
     let rarity = sd.rarity.to_long_name();
     let set_name = sd.set_name.clone();
-    let released_at = sd.released_at.to_string();
-    let artist = sd.artist.clone().filter(|a| !a.is_empty());
     let keywords = sd.keywords.clone().unwrap_or_default();
     let prices = if show_prices {
         zwipe_ui::card::info::prices(sd)
@@ -384,13 +368,19 @@ pub fn CardDetailsPanel(
     let mut face_idx = face.unwrap_or(internal_face);
     let cur = face_idx().min(face_count.saturating_sub(1));
     let current_face = faces.as_ref().and_then(|f| f.get(cur)).cloned();
+    let cost = current_face
+        .as_ref()
+        .map(|f| f.mana_cost.clone())
+        .unwrap_or_default();
+    let stats = current_face.as_ref().and_then(|f| f.stats.clone());
     let show_flip_btn = face_count > 1 && show_flip;
     let show_image = has_image && on_image.is_some();
     let has_foot = !keywords.is_empty()
         || (show_classification && !(roles.is_empty() && other_tags.is_empty()))
         || footer.is_some()
         || show_flip_btn
-        || show_image;
+        || show_image
+        || stats.is_some();
     let class = match class {
         Some(extra) => format!("card-details-panel {extra}"),
         None => "card-details-panel".to_string(),
@@ -399,6 +389,9 @@ pub fn CardDetailsPanel(
     rsx! {
         Panel {
             title: name,
+            title_trailing: (!cost.is_empty()).then(|| rsx! {
+                OracleText { text: cost, class: "card-details-cost".to_string() }
+            }),
             class,
             actions: has_foot.then(|| rsx! {
                 div { class: "card-details-foot",
@@ -437,40 +430,26 @@ pub fn CardDetailsPanel(
                             }
                         }
                     }
-                }
-            }),
-            div { class: "card-details-keys",
-                if let Some(face) = current_face.as_ref().filter(|f| !f.mana_cost.is_empty()) {
-                    OracleText { text: face.mana_cost.clone(), class: "card-details-cost".to_string() }
-                }
-                if let Some(face) = current_face.as_ref().filter(|f| !f.type_line.is_empty()) {
-                    KeyChip { key_label: "Type", value: face.type_line.clone(), value_class: "detail-chip-type" }
-                }
-                KeyChip { key_label: "Rarity", value: rarity, value_class: "detail-chip-rarity" }
-                KeyChip { key_label: "Set", value: set_name, value_class: "detail-chip-set" }
-                if let Some(artist) = artist {
-                    KeyChip { key_label: "Artist", value: artist, value_class: "detail-chip-artist" }
-                }
-                if show_printing {
-                    KeyChip { key_label: "Released", value: released_at, value_class: "detail-chip-date" }
-                }
-                if !prices.is_empty() {
-                    span { class: "card-details-pair",
-                        span { class: "stat-chip stat-chip-p1 chip-row-label", "Price" }
-                        for price in prices {
-                            span { key: "{price}", class: "card-row-price card-price-chip", "{price}" }
+                    if let Some(stats) = stats {
+                        div { class: "card-details-stats",
+                            span { class: "detail-chip detail-chip-pt", "{stats}" }
                         }
                     }
                 }
-            }
-            if let Some(face) = current_face {
-                if !face.oracle.is_empty() {
-                    OracleText { text: face.oracle, class: "card-detail-oracle card-details-oracle".to_string() }
+            }),
+            div { class: "card-details-keys",
+                if let Some(face) = current_face.as_ref().filter(|f| !f.type_line.is_empty()) {
+                    span { class: "detail-chip detail-chip-type", "{face.type_line}" }
                 }
-                if let Some(stats) = face.stats {
-                    div { class: "card-detail-stats",
-                        span { class: "detail-chip detail-chip-pt", "{stats}" }
-                    }
+                span { class: "detail-chip detail-chip-rarity", "{rarity}" }
+            }
+            if let Some(face) = current_face.filter(|f| !f.oracle.is_empty()) {
+                OracleText { text: face.oracle, class: "card-detail-oracle card-details-oracle".to_string() }
+            }
+            div { class: "card-details-facts",
+                span { class: "detail-chip detail-chip-set", "{set_name}" }
+                for price in prices {
+                    span { key: "{price}", class: "card-row-price card-price-chip", "{price}" }
                 }
             }
         }
@@ -478,7 +457,8 @@ pub fn CardDetailsPanel(
 }
 
 /// The ghost of a [`CardDetailsPanel`] while its card loads: the panel with
-/// a title bar, a row of label and value chip pairs and the rules text's lines.
+/// its title bar, the type and rarity chips, the rules text's lines and the
+/// set and price chips.
 #[component]
 pub fn CardDetailsPanelSkeleton() -> Element {
     rsx! {
@@ -489,15 +469,16 @@ pub fn CardDetailsPanelSkeleton() -> Element {
             hr { class: "panel-rule" }
             div { class: "panel-body",
                 div { class: "card-details-keys",
-                    for i in 0..4 {
-                        span { key: "{i}", class: "card-details-pair",
-                            span { class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
-                            span { class: "skeleton-bar skeleton-chip skeleton-chip-md" }
-                        }
-                    }
+                    span { class: "skeleton-bar skeleton-chip skeleton-chip-lg" }
+                    span { class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
                 }
                 for i in 0..4 {
                     div { key: "{i}", class: "skeleton-bar card-details-ghost-line" }
+                }
+                div { class: "card-details-facts",
+                    for i in 0..3 {
+                        span { key: "{i}", class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
+                    }
                 }
             }
         }

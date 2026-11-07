@@ -959,26 +959,16 @@ i.ms.ms-cost.ms-gp {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.4rem 0.6rem;
+    gap: 0.4rem 0.5rem;
     margin-bottom: 0.9rem;
 }
 
-.card-details-pair {
-    display: inline-flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.3rem;
-    max-width: 100%;
-    min-width: 0;
-}
-
-.card-details-pair > .detail-chip {
-    overflow-wrap: anywhere;
-}
-
-.card-details-cost {
-    margin: 0;
+/* The cost's pips right after the name, on the title's line. */
+.card-details-panel .panel-title .card-details-cost {
+    display: inline-block;
+    margin: 0 0 0 0.5rem;
     white-space: nowrap;
+    vertical-align: middle;
 }
 
 .card-details-cost .ms {
@@ -993,6 +983,23 @@ i.ms.ms-cost.ms-gp {
 .card-details-panel .card-details-oracle {
     margin-bottom: 0;
     font-size: 0.85rem;
+}
+
+/* The set and the prices after the rules text. */
+.card-details-facts {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem 0.5rem;
+    margin-top: 0.9rem;
+}
+
+/* The face's power and toughness, loyalty or defense at the foot's bottom
+   right, where the card prints it. */
+.card-details-stats {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 0.5rem;
 }
 
 /* The foot is the analysis, not a button row: blocks stacked at the
@@ -1016,7 +1023,7 @@ i.ms.ms-cost.ms-gp {
     margin-top: 0.6rem;
 }
 
-.card-details-ghost-line:last-child {
+.card-details-ghost-line:nth-child(5) {
     width: 60%;
 }
 
