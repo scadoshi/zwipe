@@ -23,6 +23,8 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
+| 62, the nav's ? spaced evenly and bolder | scotland | `nits/scotland-62` |
+| 63, the arrow dock gets labels and sits left of the other dock | laptop | `nits/laptop-63` |
 | 57, 58, footer pills in the nav's style, every panel hovers | laptop | `nits/laptop-57-58` |
 | 56, the web's deck page head goes too | scotland | `nits/scotland-56` |
 | 28, the skeleton pass, Playstyle first | halo | `nits/halo-28` |
@@ -110,6 +112,9 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 58. **Every panel on the web hovers**, forms included; panels that can't take a transform (they hold fixed overlays) get the shadow and border without the lift.
 59. **The deck form's pickers become the side drawer on phones too** (the every-width drawer from 54), for one side-sheet story across the app.
 60. **Dialog links open in the same tab on the web.** orangui's AlertDialog hardcodes `target="_blank"` on its link actions; the app needs it (its link hook hands `_blank` https links to the system browser), so only the wasm build drops it. Affects the web's support dialog and the hint dialogs' guide links. Kit change plus pin bumps in zwipe, cairn and portfolio.
+61. **The card details skeleton lacks the footer rule** the loaded panel has (folded into 54).
+62. **The nav's `?` sits apart.** Equal spacing across every icon button and Log out; the `?` glyph heavier.
+63. **The swipe arrow dock needs labels and a place beside the other dock.** "← Skip / ↑ Maybeboard / ↓ Undo / → Add" text on the buttons, and the arrow dock to the left of the existing dock on the same row.
 
 ## Done
 
