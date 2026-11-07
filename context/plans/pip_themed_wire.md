@@ -1,6 +1,6 @@
 # Pip style on the wire: `theme` to `themed`
 
-**Status: Phase 1 on `nits/thinker-143`, 2026-11-07, riding 1.18.1. Phase 4 built on `server/pip-themed`, not merged. Phases 2 and 3 not started.**
+**Status: Phase 1 on `nits/thinker-143`, 2026-11-07, riding 1.18.1. Phase 4 built on `server/pip-themed` (`ad0cffd5a`), not merged. Phases 2 and 3 not started.**
 
 **One sentence:** the pip setting's first value is renamed from `theme` to `themed`; the database stores `themed` now, the wire keeps writing `theme` because 1.15.0 through 1.18.0 can only parse that, and once the client floor is past a release that reads both, the server writes `themed` and stops accepting `theme`.
 
@@ -41,7 +41,7 @@ The settings' own `theme` field (the color theme's name) is a different field an
 - `as_str` is `themed` (the database name) and `FromStr` reads `themed` or `theme`.
 - Migration `20261107120000_pip_style_themed.sql` rewrites stored `theme` rows to `themed`, sets the column default to `themed` and narrows the CHECK to `('themed', 'classic')`.
 - zite: `pip_store` reads the stored JSON through serde, so `"theme"` and `"themed"` both load; `index.html` only acts on the Classic value, and Themed draws nothing, so it needs no change. zwiper-web's stored session reads through the same serde.
-- Tests: `themed_stores_as_themed_and_reads_either_name` and `the_wire_writes_the_names_shipped_clients_parse` in core; in zerver, `pip_style_setting_round_trips` checks that a `theme` PATCH lands, the row stores `themed` and the response says `theme`, and `settings_responses_parse_as_shipped_clients_read_them` parses every settings response with a copy of the 1.15.0 to 1.18.0 enum.
+- Tests: `themed_stores_as_themed_and_reads_either_name`, `every_settings_value_parses_as_shipped_clients_read_it` (a copy of the 1.15.0 to 1.18.0 enum reads every value the settings serialize to) and `the_wire_writes_the_name_shipped_clients_parse` in core; in zerver, `pip_style_setting_round_trips` checks that a `theme` PATCH lands, the row stores `themed` and the response says `theme`, and `settings_responses_parse_as_shipped_clients_read_them` parses every settings response with a copy of the 1.15.0 to 1.18.0 enum.
 
 The field keeps its name, `pip_style`, on the wire and in the column.
 
@@ -59,12 +59,14 @@ This floor also covers [`pip_color_wire.md`](pip_color_wire.md)'s Phase 4, which
 
 ## Phase 4: `themed` only. BUILT on `server/pip-themed`
 
-Built 2026-11-07 on top of Phase 1, not merged. Merge after Phase 3 is quiet:
+Built 2026-11-07 on top of Phase 1 (`ad0cffd5a`), not merged. Merge after Phase 3 is quiet:
 
 - `Themed` is plain `Themed` under `rename_all = "lowercase"`, with no rename and no alias, so the wire writes and reads `themed`.
 - `FromStr` drops the `theme` arm. The database has held only `themed` since Phase 1, so no migration.
 - `PATCH` with `theme` is a 422.
 - A session stored on a device before the update that still says `theme` no longer parses, and the app treats that as signed out (`zwiper/src/lib/outbound/session.rs`). That is accepted, as it was for `natural`. A zite visitor whose localStorage says `"theme"` falls back to the default, Themed, which is the same look.
+- Tests: `themed_stores_and_writes_as_themed` and `the_earlier_theme_name_no_longer_reads` in core, and the zerver round trip PATCHes `themed`, expects `themed` back and expects `theme` to be refused. The shipped-client parse tests go, since breaking those clients is what the floor is for.
+- Grep gate holds: `"theme"` as a pip value appears only in the tests that assert it is refused.
 - If `server/pip-color-classic` merges first, rebase this branch on it; the two touch the same enum.
 
 Access token claims carry no settings (`user_id`, `username`, `email`, `exp`, `iat`), so tokens are not a concern.
