@@ -161,94 +161,60 @@ body {
 
 /* ---- Footer ----
 
-   zwipe.net's footer closes the page on a wide window: a bar the window's
-   width, 1rem under the last panel. The screen's content keeps that 1rem
-   and its wrappers none of their own, so the panels end where zwipe.net's
-   page does. Below the breakpoint, as in the app, there is none. */
+   zwipe.net's footer closes every scrolling screen at every width: a bar
+   the window's width, 1rem under the last panel. The screen's content keeps
+   that 1rem and its wrappers none of their own, so the panels end where
+   zwipe.net's page does. A phone's swipe screen fills the window without
+   scrolling, so it has none. */
 .web-site-footer {
-    display: none;
+    display: block;
+    order: 2;
+    flex: 0 0 auto;
+    width: 100%;
+    margin: 0;
+    box-sizing: border-box;
 }
 
-@media (min-width: 900px) {
-    .web-site-footer {
-        display: block;
-        order: 2;
-        flex: 0 0 auto;
-        width: 100%;
-        margin: 0;
-        box-sizing: border-box;
-    }
+.web-scroll-screen:has(> .web-site-footer) > .screen-content {
+    padding-bottom: 1rem;
+}
 
-    .web-scroll-screen:has(> .web-site-footer) > .screen-content {
-        padding-bottom: 1rem;
-    }
+.web-scroll-screen:has(> .web-site-footer) > .screen-content > :not(.action-dock, .web-screen-chip) {
+    padding-bottom: 0;
+}
 
-    .web-scroll-screen:has(> .web-site-footer) > .screen-content > :not(.action-dock, .web-screen-chip) {
-        padding-bottom: 0;
-    }
+/* A screen with a floating dock ends its content a dock's height above the
+   footer, so at the page's end the dock rests between the two. */
+.web-scroll-screen:has(> .web-site-footer):has(.action-dock:not(:is(.swipe-bottom-row, .web-dock-pair, .bottom-sheet, .screen .screen) *), .web-dock-pair:not(:is(.swipe-bottom-row, .screen .screen) *)) > .screen-content {
+    padding-bottom: 5rem;
+}
 
-    /* A swipe screen's pile chips and docks ride at the window's foot over
-       the swipe area, and once the footer scrolls in they stop on their own
-       line right above it. */
-    .web-scroll-screen > .swipe-bottom-row {
-        --row-gap: calc(env(safe-area-inset-bottom, 0px) + 0.4rem);
-        position: sticky;
-        order: 1;
-        flex: 0 0 auto;
-        bottom: var(--row-gap);
-        margin-bottom: var(--row-gap);
+@media (max-width: 899px) {
+    .web-scroll-screen:has(> .swipe-bottom-row) > .web-site-footer {
+        display: none;
     }
 }
 
-/* The docked details panel shrinks from its foot as the footer scrolls in,
-   pixel for pixel with the rising row, so it keeps ending above the docks
-   and clear of the footer. */
+/* The floating controls a scroll screen holds stop above the footer as it
+   scrolls in (magic.css's footer rise): the action docks, the swipes' dock
+   pair and a swipe screen's bottom row, but not the ones inside them, a
+   sheet or an overlay screen, and the toast stack at the bottom left. The
+   docked details panel shrinks from its foot by as much, so it keeps ending
+   above the docks. */
 @supports (animation-timeline: view()) {
+    .web-scroll-screen :is(.action-dock, .web-dock-pair, .swipe-bottom-row):not(:is(.swipe-bottom-row, .web-dock-pair, .bottom-sheet, .screen .screen) *),
+    .toast-container {
+        animation: footer-rise linear both;
+        animation-timeline: --site-footer;
+        animation-range: entry 0px entry 100vh;
+    }
+
     @media (min-width: 900px) {
-        .web-scroll-screen:has(> .swipe-bottom-row) {
-            timeline-scope: --web-footer;
-        }
-
-        .web-scroll-screen:has(> .swipe-bottom-row) > .web-site-footer {
-            view-timeline: --web-footer block, --web-toast-footer block;
-        }
-
         .web-scroll-screen .web-swipe-details {
             animation: web-dock-panel-rise linear both;
-            animation-timeline: --web-footer;
+            animation-timeline: --site-footer;
             animation-range: entry 0px entry 100vh;
         }
-    }
-}
-
-/* The toasts ride up with the footer the same way, pixel for pixel, so at
-   their lowest they sit above it. Their stack lives outside the screen's
-   scroller, so the footer's timeline for them is scoped to the body. */
-@supports (animation-timeline: view()) {
-    @media (min-width: 900px) {
-        body {
-            timeline-scope: --web-toast-footer;
-        }
-
-        .web-scroll-screen > .web-site-footer {
-            view-timeline: --web-toast-footer block;
-        }
-
-        body .toast-container {
-            animation: web-toast-footer-rise linear both;
-            animation-timeline: --web-toast-footer;
-            animation-range: entry 0px entry 100vh;
-        }
-    }
-}
-
-@keyframes web-toast-footer-rise {
-    from {
-        translate: 0 0;
-    }
-
-    to {
-        translate: 0 -100vh;
     }
 }
 
@@ -2434,8 +2400,10 @@ body {
         box-sizing: border-box;
     }
 
+    /* The explainer over the input panel one panel gap apart. */
     .web-import.screen-content {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+        row-gap: var(--panel-gap);
     }
 
     .web-import > .import-controls,
@@ -2533,7 +2501,7 @@ body {
         gap: var(--panel-gap);
         width: 100%;
         max-width: none;
-        padding: 0.75rem 0 6rem;
+        padding: var(--panel-gap) 0 6rem;
     }
 
     .web-import > .import-scroll,
