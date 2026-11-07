@@ -22,6 +22,8 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 ## In progress
 
 | 115, the dictionary list's bottom clip | scotland | `nits/scotland-115` |
+| 116 to 119, swipe screens: no head, title chip, panel scroll, eye remembered | halo | `nits/halo-116` |
+| 120, 121, picker ✓ room and zwipe.net ghost, focus after a hint | laptop | `nits/laptop-120` |
 
 The loop is in [`../development/factory.md`](../development/factory.md).
 
@@ -156,6 +158,17 @@ From Surfer's QA pass (2026-11-06), triaged with Scotty item by item. Surfer's i
 114. **Clicking off a drawer flashes its backdrop dark.** [S31] In orangui, the wide `.sheet-form-drawer > .sheet-backdrop.show` sets opacity 0.4 with no transition, so on close it snaps to 1 for a frame. The 0.4 moves to the backdrop itself. Zwipe, zite and the portfolio repin after.
 
 115. **The Oracle tags dictionary's list is cut by a hard line above the modal's foot.** [S32] `.dict-list` ends at the sheet content's 24px bottom padding, so the last entry clips mid-text over an empty band while the top fades. The list runs to the sheet's edge (the padding moves inside it) with a bottom fade matching the top.
+
+From Surfer's Part 3 (2026-11-06), triaged with Scotty:
+
+116. **Swipe select keeps a page head and no nav.** [S6] Playstyle → Swipe (Suggested commanders) and the deck form's Commander → Swipe show a title bar with ‹ and ?, and no app nav. On a wide window they match Add: the nav, ? in its icon row, no title bar. Phones keep their head.
+117. **A wide swipe screen doesn't say which screen it is.** Add, Remove, both swipe selects and any other full-screen swipe or picker screen get a quiet title chip in the top left, under the nav, in the muted chip style ("No commanders"). It names the screen ("Add cards", "Suggested commanders") and isn't a heading. Wide only, since phones show their title bar.
+118. **Swipe select's details panel scrolls in a 259px box.** [S33] The set/price/P/T row is cut hard under "Why this commander?". The host section scrolls with the rest of the panel body, with a soft fade at the scroll edges.
+119. **The details panel forgets the eye.** [S34] Closing it with the eye sticks across reloads (stored per browser). Where the panel doesn't fit beside the card it still starts closed.
+120. **The picker ✓ covers the last chips, and zwipe.net ghosts its page dock behind it.** [S4] Room under the picker list so the ✓ never covers a chip; zwipe.net's shared deck hides its page dock while the filter drawer is open, as the app now does.
+121. **After Enter closes a hint, focus jumps to the nav logo.** [S36] A second Enter then leaves the form. Focus stays in the drawer or form the hint was opened from.
+
+Skipped with Scotty: S35 (old /deck paths 404; old paths don't reroute), S37 (overscroll shade, 104 as designed).
 
 Skipped with Scotty: S7 (no Image in the swipe screens' details, intended), S23 (Cloudflare's email obfuscation). Rechecked after the next deploy, since `release` may already fix them: S4 (picker ✓ over chips), S6 (swipe select page head). S12 (the pip toggle labeled Theme on zwipe.net) becomes Pips, folded into 111.
 
