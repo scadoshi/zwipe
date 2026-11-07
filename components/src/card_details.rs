@@ -325,6 +325,11 @@ pub fn CardDetailsPanel(
     /// Extra classes on the panel.
     #[props(default)]
     class: Option<String>,
+    /// Leave out the panel's own title band, for a host that shows the
+    /// card's name and [`CardDetailsCost`] in its own title bar, such as the
+    /// drawer: the body then runs from the panel's top.
+    #[props(default)]
+    headless: bool,
 ) -> Element {
     let sd = &card.scryfall_data;
     let name = sd.name.clone();
@@ -356,16 +361,10 @@ pub fn CardDetailsPanel(
         None => "card-details-panel".to_string(),
     };
 
-    // A tall pane scrolls its body between its head and foot; scrolling
-    // down hides the head and scrolling up brings it back.
-    use_hook(|| {
-        document::eval(HEAD_HIDE_JS);
-    });
-
     rsx! {
         Panel {
-            title: name,
-            title_trailing: (!cost.is_empty()).then(|| rsx! {
+            title: (!headless).then_some(name),
+            title_trailing: (!headless && !cost.is_empty()).then(|| rsx! {
                 OracleText { text: cost, class: "card-details-cost".to_string() }
             }),
             class,
@@ -403,49 +402,25 @@ pub fn CardDetailsPanel(
     }
 }
 
-/// The pane's head follows its body's scroll: scrolling down past the first
-/// few pixels marks the panel `card-details-head-hidden`, which folds the
-/// title away, and scrolling up or reaching the top brings it back. One
-/// listener, in the capture phase since scroll events do not bubble, serves
-/// every pane; it guards itself so a second mount does nothing. The head
-/// folds only when the body overflows by more than the fold frees, so the
-/// fold never makes the pane fit and snap back. The bounce past an edge is
-/// not scrolling, and a toggle waits out the fold's own motion so the
-/// body's change in height never reads as a scroll. With reduced motion the
-/// head stays.
-const HEAD_HIDE_JS: &str = r"
-if (!window.__zwipeDetailsHead) {
-    window.__zwipeDetailsHead = true;
-    const still = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const last = new WeakMap();
-    const settled = new WeakMap();
-    document.addEventListener('scroll', (event) => {
-        const body = event.target;
-        if (!(body instanceof Element) || !body.matches('.card-details-panel > .panel-body')) return;
-        const panel = body.parentElement;
-        const top = Math.max(0, body.scrollTop);
-        const bottom = body.scrollHeight - body.clientHeight;
-        const previous = last.has(body) ? last.get(body) : top;
-        last.set(body, top);
-        if (still.matches) return;
-        if (performance.now() < (settled.get(panel) || 0)) return;
-        if (top <= 0) {
-            panel.classList.remove('card-details-head-hidden');
-            return;
+/// The mana cost of `card`'s shown face (`face`), drawn as the panel's head
+/// draws it, for a host that titles the card in its own bar beside the name.
+/// Nothing for a card without a cost.
+#[component]
+pub fn CardDetailsCost(card: Card, face: Signal<usize>) -> Element {
+    let faces = build_rules(&card);
+    let face_count = faces.as_ref().map_or(0, Vec::len);
+    let cur = face().min(face_count.saturating_sub(1));
+    let cost = faces
+        .as_ref()
+        .and_then(|f| f.get(cur))
+        .map(|f| f.mana_cost.clone())
+        .unwrap_or_default();
+    rsx! {
+        if !cost.is_empty() {
+            OracleText { text: cost, class: "card-details-cost".to_string() }
         }
-        if (top > bottom || previous > bottom) return;
-        const hidden = panel.classList.contains('card-details-head-hidden');
-        const head = panel.querySelector(':scope > .panel-head');
-        const frees = head ? head.offsetHeight + 48 : 0;
-        const toggle = (hide) => {
-            panel.classList.toggle('card-details-head-hidden', hide);
-            settled.set(panel, performance.now() + 250);
-        };
-        if (!hidden && top > previous + 2 && top > 8 && bottom > frees) toggle(true);
-        else if (hidden && top < previous - 2 && top < bottom - 2) toggle(false);
-    }, { capture: true, passive: true });
+    }
 }
-";
 
 /// The ghost rules text's words, in ch: a short card's rules, wrapping as
 /// the text does.
