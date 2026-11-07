@@ -11,10 +11,10 @@ use super::{HintTopic, SwipeSelectMode};
 /// Where zite serves its guides; a slug goes on the end.
 pub const GUIDE_BASE: &str = "https://zwipe.net/guides/";
 
-/// The address of the guide named `slug`.
+/// The address of the guide named `slug`, slashed as zite serves it.
 #[must_use]
 pub fn url(slug: &str) -> String {
-    format!("{GUIDE_BASE}{slug}")
+    format!("{GUIDE_BASE}{slug}/")
 }
 
 impl HintTopic {
@@ -267,6 +267,6 @@ mod tests {
 
     #[test]
     fn the_url_is_the_base_and_the_slug() {
-        assert_eq!(url("deck-stats"), "https://zwipe.net/guides/deck-stats");
+        assert_eq!(url("deck-stats"), "https://zwipe.net/guides/deck-stats/");
     }
 }

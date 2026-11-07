@@ -68,6 +68,31 @@
 html {
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
+    /* Room for the scrollbar on every page, so a page too short to scroll
+       sits where the others do. */
+    scrollbar-gutter: stable;
+}
+
+/* The app's scrollbars: thin, the thumb in the theme's border color on a
+   clear track, the page's and every scroller's inside it (the filter
+   drawer's included). */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-secondary) transparent;
+}
+
+*::-webkit-scrollbar {
+    width: 0.5rem;
+    height: 0.5rem;
+}
+
+*::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+    background-color: var(--border-secondary);
+    border-radius: 0.25rem;
 }
 
 html,
@@ -625,6 +650,11 @@ code {
     margin-top: 2.5rem;
 }
 
+/* A grid of two cards fills its row in two columns. */
+.card-grid.card-grid-2 {
+    grid-template-columns: 1fr 1fr;
+}
+
 @media (max-width: 75rem) {
     .features-grid {
         grid-template-columns: 1fr 1fr;
@@ -639,6 +669,7 @@ code {
 
 @media (max-width: 30rem) {
     .card-grid,
+    .card-grid.card-grid-2,
     .features-grid {
         grid-template-columns: 1fr;
     }
@@ -1472,6 +1503,10 @@ code {
    panel-action buttons. Renamed from `.chip`
    so the interactive `.chip` in the shared components.css doesn't collide. */
 .hero-chip {
+    /* Stretched to the store buttons' height, with its text centered as
+       theirs is. */
+    display: inline-flex;
+    align-items: center;
     padding: 0.2rem 0.6rem;
     border-radius: 0.6rem;
     font-family: "JetBrains Mono", monospace;
@@ -1487,6 +1522,20 @@ code {
         transparent
     );
     border-color: color-mix(in srgb, var(--palette-5) 40%, transparent);
+}
+
+/* A light theme's palette-5 is too pale to read on its own tint: the text
+   leans to the theme's text color and the tint thins, at least 4.5:1 in
+   every light theme. */
+body[class$="-light"] .chip-value {
+    color: color-mix(in srgb, var(--palette-5) 30%, var(--text-primary));
+    background-color: color-mix(in srgb, var(--palette-5) 8%, transparent);
+}
+
+/* A few dark themes' palette-5 is too dim on its tint: a quarter of the
+   theme's text color lifts it to at least 4.5:1 in every dark theme. */
+body[class$="-dark"] .chip-value {
+    color: color-mix(in srgb, var(--palette-5) 75%, var(--text-primary));
 }
 
 /* ==================

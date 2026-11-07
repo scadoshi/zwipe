@@ -247,7 +247,7 @@ pub fn Home() -> Element {
         // `position: fixed` covers the viewport (see the flavor overlay).
         if splash() {
             Splash { pace: 67, prerendered: true,
-                div { class: "logo", Decode { text: LOGO_ASCII } }
+                div { class: "logo", "aria-hidden": "true", Decode { text: LOGO_ASCII } }
             }
         }
         Nav {}
@@ -259,7 +259,8 @@ pub fn Home() -> Element {
         }
         div { class: "hero",
             // Semantic page heading for crawlers and screen readers; the ASCII
-            // logo is the visual title, so this is visually hidden.
+            // logo is the visual title, so this is visually hidden and the
+            // logo is hidden from screen readers.
             h1 { class: "sr-only", "Zwipe, the Magic: The Gathering deck builder built for mobile" }
             // Keyed on the replay count so the spacing animation runs again
             // with the decode.
@@ -268,7 +269,7 @@ pub fn Home() -> Element {
                 // under both.
                 div { class: "hero-head",
                     for run in [use_context::<Replay>().0()] {
-                        div { key: "logo{run}", class: "logo", Decode { text: LOGO_ASCII } }
+                        div { key: "logo{run}", class: "logo", "aria-hidden": "true", Decode { text: LOGO_ASCII } }
                     }
                     StatsStrip {}
                 }

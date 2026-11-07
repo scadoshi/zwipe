@@ -17,7 +17,7 @@ pub fn Contribute() -> Element {
         PageMeta {
             title: "Contribute",
             description: "Support Zwipe via Stripe, Buy Me a Coffee, or GitHub Sponsors. It goes to server costs and development.",
-            path: "/contribute",
+            path: "/contribute/",
         }
         Nav {}
         div { class: "page content-enter",

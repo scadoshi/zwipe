@@ -29,7 +29,7 @@ pub fn About() -> Element {
         PageMeta {
             title: "About",
             description: "How Zwipe is built: an open-source, full-stack Rust app, and the architecture behind it.",
-            path: "/about",
+            path: "/about/",
         }
         Nav {}
         div { class: "page content-enter",

@@ -24,7 +24,7 @@ pub fn Privacy() -> Element {
         PageMeta {
             title: "Privacy policy",
             description: "Zwipe privacy policy: what data is collected, how it's used, and your rights.",
-            path: "/privacy",
+            path: "/privacy/",
         }
         Nav {}
         div { class: "page content-enter",

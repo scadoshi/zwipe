@@ -29,7 +29,7 @@ use zwipe_ui::filter::picker::Sources;
 use zwipe_ui::stores::catalog::{Catalog, Kind};
 
 use crate::components::{OVERLAY_EXIT_MS, PageMeta, sleep_ms};
-use crate::{Footer, Nav, api};
+use crate::{Footer, Nav, ShowsPips, api};
 
 /// Shortest the retry spinner shows, so an instant failure still reads as a click.
 const RETRY_SPINNER_MIN_MS: u32 = 500;
@@ -138,6 +138,15 @@ fn SharedDeckSkeleton() -> Element {
     }
 }
 
+/// Whether the shared deck has any card: an entry or a command-zone card.
+fn has_cards(deck: &HttpSharedDeck) -> bool {
+    !deck.entries.is_empty()
+        || deck.commander.is_some()
+        || deck.partner_commander.is_some()
+        || deck.background.is_some()
+        || deck.signature_spell.is_some()
+}
+
 #[component]
 pub fn SharedDeck(token: String) -> Element {
     let mut result: Resource<Result<HttpSharedDeck, FetchError>> = use_resource(move || {
@@ -158,6 +167,14 @@ pub fn SharedDeck(token: String) -> Element {
                 })
         }
     });
+
+    // The nav's pip toggle shows while the deck on screen has any card.
+    let mut shows_pips = use_context::<ShowsPips>().0;
+    use_effect(move || {
+        let has_cards = matches!(&*result.read(), Some(Ok(deck)) if has_cards(deck));
+        shows_pips.set(has_cards);
+    });
+    use_drop(move || shows_pips.set(false));
 
     // Drives the Retry button's transient "Retrying…" state so a click is
     // legible even when the refetch fails again instantly (held for a minimum

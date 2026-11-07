@@ -68,26 +68,26 @@ const GOOGLE_PLAY: &str = "M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 0 1-.61
 enum Route {
     #[route("/")]
     Home {},
-    #[route("/guides")]
+    #[route("/guides/")]
     Guides {},
-    #[route("/guides/:slug")]
+    #[route("/guides/:slug/")]
     GuidePage { slug: String },
     // The Playstyle guide's first slug, linked before the rename.
     #[redirect("/guides/suggested-commanders", || Route::GuidePage { slug: "playstyle".to_string() })]
-    #[route("/about")]
+    #[route("/about/")]
     About {},
-    #[route("/changelog")]
+    #[route("/changelog/")]
     Changelog {},
-    #[route("/contribute")]
+    #[route("/contribute/")]
     Contribute {},
-    #[route("/community")]
+    #[route("/community/")]
     Community {},
     #[redirect("/discord", || Route::Community {})]
-    #[route("/download/android")]
+    #[route("/download/android/")]
     Android {},
-    #[route("/download/ios")]
+    #[route("/download/ios/")]
     Ios {},
-    #[route("/privacy")]
+    #[route("/privacy/")]
     Privacy {},
     #[route("/deck/:token")]
     SharedDeck { token: String },
@@ -176,7 +176,7 @@ async fn static_routes() -> ServerFnResult<Vec<String>> {
         .iter()
         .map(ToString::to_string)
         .collect();
-    routes.extend(pages::guide_slugs().map(|slug| format!("/guides/{slug}")));
+    routes.extend(pages::guide_slugs().map(|slug| format!("/guides/{slug}/")));
     Ok(routes)
 }
 
@@ -185,6 +185,11 @@ async fn static_routes() -> ServerFnResult<Vec<String>> {
 /// that skips it, so coming back to the home page never plays it again.
 #[derive(Debug, Clone, Copy)]
 pub struct SiteSplash(pub Signal<bool>);
+
+/// Whether the page shows cards, and so pips: true while a shared deck
+/// with any card is on screen. The nav's pip toggle shows only then.
+#[derive(Debug, Clone, Copy)]
+pub struct ShowsPips(pub Signal<bool>);
 
 #[component]
 fn App() -> Element {
@@ -197,6 +202,7 @@ fn App() -> Element {
     // The pip style, kept the same way under its own key.
     let pip_style = pip_store::use_persisted_pip_style();
     use_context_provider(|| pip_style);
+    use_context_provider(|| ShowsPips(Signal::new(false)));
     use_context_provider(|| Replay(Signal::new(0u32)));
     // Closed until the splash starts to fade, so the hero's entrances run as
     // it leaves. index.html decides before first paint whether this load gets
@@ -315,8 +321,10 @@ fn App() -> Element {
 pub fn Nav() -> Element {
     let (theme, shown) = use_theme_wipe(use_context::<Signal<ThemeConfig>>(), "body");
     let pip_style = use_context::<Signal<PipStyle>>();
-    // The pip style only shows on a shared deck, the one page that draws pips.
+    // The pip style only shows on a shared deck with cards, the one page
+    // that draws pips.
     let on_shared_deck = matches!(use_route::<Route>(), Route::SharedDeck { .. });
+    let shows_pips = use_context::<ShowsPips>().0;
     let mut open = use_signal(|| false);
     let mut replay = use_context::<Replay>().0;
     let mut hovering = use_signal(|| false);
@@ -327,6 +335,7 @@ pub fn Nav() -> Element {
                 Link {
                     to: Route::Home {},
                     class: "nav-brand",
+                    aria_label: "Zwipe",
                     onclick: move |_| {
                         open.set(false);
                         // On the home page this runs the entrance again.
@@ -337,6 +346,7 @@ pub fn Nav() -> Element {
                     },
                     span {
                         class: "nav-logo",
+                        "aria-hidden": "true",
                         onmouseenter: move |_| hovering.set(true),
                         onmouseleave: move |_| hovering.set(false),
                         Decode { text: Z_LOGO, hover: hovering }
@@ -386,7 +396,7 @@ pub fn Nav() -> Element {
             trailing: rsx! {
                 div { class: "theme-controls",
                     ThemePicker { theme, shown }
-                    if on_shared_deck {
+                    if on_shared_deck && shows_pips() {
                         components::PipToggle { style: pip_style }
                     }
                 }
@@ -414,14 +424,34 @@ mod tests {
 
     #[test]
     fn the_old_suggested_commanders_slug_redirects_to_playstyle() {
-        let route: Route = "/guides/suggested-commanders".parse().unwrap();
-        assert!(
-            route
-                == Route::GuidePage {
-                    slug: "playstyle".to_string()
-                },
-            "went to {route}"
+        for path in [
+            "/guides/suggested-commanders",
+            "/guides/suggested-commanders/",
+        ] {
+            let route: Route = path.parse().unwrap();
+            assert!(
+                route
+                    == Route::GuidePage {
+                        slug: "playstyle".to_string()
+                    },
+                "{path} went to {route}"
+            );
+        }
+    }
+
+    #[test]
+    fn prerendered_pages_link_to_the_slashed_path_the_host_serves() {
+        assert_eq!(Route::Guides {}.to_string(), "/guides/");
+        assert_eq!(
+            Route::GuidePage {
+                slug: "filtering".to_string()
+            }
+            .to_string(),
+            "/guides/filtering/"
         );
+        assert_eq!(Route::Home {}.to_string(), "/");
+        let route: Route = "/about".parse().unwrap();
+        assert!(route == Route::About {}, "/about went to {route}");
     }
 
     #[test]

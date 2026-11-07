@@ -197,7 +197,7 @@ mod tests {
             matches!(
                 actions.as_slice(),
                 [DialogAction::Link { label, href }]
-                    if label == SEE_GUIDE && href == "https://zwipe.net/guides/land-targets"
+                    if label == SEE_GUIDE && href == "https://zwipe.net/guides/land-targets/"
             ),
             "actions {actions:?}"
         );
@@ -214,7 +214,7 @@ mod tests {
         assert!(
             matches!(
                 guide_for_one_time(key).as_slice(),
-                [DialogAction::Link { href, .. }] if href == "https://zwipe.net/guides/filtering"
+                [DialogAction::Link { href, .. }] if href == "https://zwipe.net/guides/filtering/"
             ),
             "key {key}"
         );
@@ -226,7 +226,7 @@ mod tests {
     fn swipe_select_links_by_its_overlay() {
         assert!(matches!(
             guide_for_swipe_select(SwipeSelectMode::Suggested { has_filter: false }).as_slice(),
-            [DialogAction::Link { href, .. }] if href == "https://zwipe.net/guides/playstyle"
+            [DialogAction::Link { href, .. }] if href == "https://zwipe.net/guides/playstyle/"
         ));
     }
 }
