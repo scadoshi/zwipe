@@ -318,10 +318,18 @@
     animation: none;
     padding: 1rem;
     box-sizing: border-box;
+    flex-direction: column;
+    gap: 0.75rem;
     text-align: center;
     color: var(--text-primary);
     font-size: 1.2rem;
     font-weight: 700;
+}
+
+/* The Synergy line under it, smaller but still large bold text
+   (18.7px), so it keeps the same 3:1. */
+.skeleton-note-detail {
+    font-size: 1.17rem;
 }
 
 /* Deck stats + chart skeleton (deck view) */

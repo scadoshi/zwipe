@@ -236,7 +236,7 @@ fn a_search_serves_cards_the_deck_does_not_hold() {
 }
 
 #[test]
-fn an_empty_search_says_why() {
+fn an_empty_search_says_why_on_the_ghost_alone() {
     let (mut state, _) = with_deck(&commander_deck(&[]));
     let effects = state.update(Action::Filter(state.filter().clone()));
     let ticket = ticket_of(&effects);
@@ -252,18 +252,20 @@ fn an_empty_search_says_why() {
             ..
         }
     )));
-    assert_eq!(
-        toasts(&effects),
-        [Toast::normal(
-            ToastKind::Warning,
-            "No results for this filter; Synergy is on, turn it off to search everything"
-        )]
+    assert!(
+        toasts(&effects).is_empty(),
+        "the ghost says it, not a toast: {effects:?}"
     );
     assert_eq!(state.pile(), Pile::Empty);
     assert_eq!(
         state.ghost_note(),
         Some(NO_CARDS_MATCH),
         "the ghost says why"
+    );
+    assert_eq!(
+        state.ghost_synergy_note(),
+        Some("Synergy is on, turn it off to search everything"),
+        "and that Synergy may be the reason"
     );
 
     let effects = state.update(Action::Filter(state.filter().clone()));

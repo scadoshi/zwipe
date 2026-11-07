@@ -773,15 +773,12 @@ impl State {
                 let mut effects = Vec::new();
                 if explains_empty && served.is_empty() {
                     let synergy = snapshot.synergy();
+                    // The ghost card says No cards match, so no toast repeats it.
                     effects.push(Effect::PileEnd {
                         deck_id,
                         kind: PileEndKind::Empty,
                         synergy,
                     });
-                    effects.push(Effect::Toast(Toast::normal(
-                        ToastKind::Warning,
-                        add::no_results_message(synergy, warming),
-                    )));
                 }
                 self.stack.replace(served);
                 self.last_search = Some(*snapshot);
@@ -1529,6 +1526,20 @@ impl State {
             }
         };
         matched_none.then_some(NO_CARDS_MATCH)
+    }
+
+    /// The line under [`Self::ghost_note`] after an empty search with Synergy on, from
+    /// [`add::synergy_note`].
+    #[must_use]
+    pub fn ghost_synergy_note(&self) -> Option<&'static str> {
+        if self.source != Source::Search || self.ghost_note().is_none() {
+            return None;
+        }
+        let synergy = self
+            .last_search
+            .as_ref()
+            .is_some_and(CardQueryBuilder::synergy);
+        add::synergy_note(synergy, self.warming)
     }
 
     /// What the pile area draws.

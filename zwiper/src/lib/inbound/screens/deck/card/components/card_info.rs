@@ -114,16 +114,25 @@ pub(crate) fn PrintingSheetSkeleton() -> Element {
 }
 
 /// Skeleton placeholder for when no card is loaded. A pile that ran out is said with a toast, so
-/// the ghost carries text only as `note`: why a filter left nothing to deal.
+/// the ghost carries text only as `note`, why a filter left nothing to deal, and `detail` under
+/// it, whether Synergy may be the reason.
 #[component]
-pub(crate) fn CardSkeleton(#[props(default)] note: Option<&'static str>) -> Element {
+pub(crate) fn CardSkeleton(
+    #[props(default)] note: Option<&'static str>,
+    #[props(default)] detail: Option<&'static str>,
+) -> Element {
     rsx! {
         div { class: "skeleton-card",
             // The stack's slot, the card's ghost centered in it as the real
             // card is.
             div { class: "skeleton-stack",
                 if let Some(note) = note {
-                    div { class: "skeleton-image skeleton-note", {note} }
+                    div { class: "skeleton-image skeleton-note",
+                        span { {note} }
+                        if let Some(detail) = detail {
+                            span { class: "skeleton-note-detail", {detail} }
+                        }
+                    }
                 } else {
                     div { class: "skeleton-image" }
                 }
