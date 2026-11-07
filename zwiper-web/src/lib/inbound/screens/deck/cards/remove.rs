@@ -533,27 +533,27 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                         }
                     }
                 }
-                div { class: "action-dock",
-                    DockFilter {
-                        label: "Filter",
-                        dot,
-                        onclick: move |()| filter_open.set(true),
+                SwipeDock {
+                    control,
+                    buttons,
+                    card_on_top: current.is_some(),
+                    on_undo: move |()| undo_last.call(()),
+                    div { class: "action-dock",
+                        DockFilter {
+                            label: "Filter",
+                            dot,
+                            onclick: move |()| filter_open.set(true),
+                        }
+                        button {
+                            class: "action-dock-btn",
+                            "aria-label": "Refresh",
+                            onclick: move |_| refresh.call(()),
+                            DockIcon { path: REFRESH }
+                        }
+                        span { class: "action-dock-divider" }
+                        DockEye { eye, disabled: current.is_none() }
                     }
-                    button {
-                        class: "action-dock-btn",
-                        "aria-label": "Refresh",
-                        onclick: move |_| refresh.call(()),
-                        DockIcon { path: REFRESH }
-                    }
-                    span { class: "action-dock-divider" }
-                    DockEye { eye, disabled: current.is_none() }
                 }
-            }
-            SwipeDock {
-                control,
-                buttons,
-                card_on_top: current.is_some(),
-                on_undo: move |()| undo_last.call(()),
             }
         }
         if let Some(card) = current {

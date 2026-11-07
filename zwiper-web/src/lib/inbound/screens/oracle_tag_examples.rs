@@ -209,14 +209,14 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
                 }
             }
             // Card details as the action dock; Back is the header's arrow.
-            div { class: "action-dock action-dock-right",
-                DockEye { eye, disabled: !has_card }
-            }
             SwipeDock {
                 control,
                 buttons: vec![(Swipe::Left, "Next"), (Swipe::Down, "Back one")],
                 card_on_top: has_card,
                 on_undo: move |()| go_back.call(()),
+                div { class: "action-dock action-dock-right",
+                    DockEye { eye, disabled: !has_card }
+                }
             }
             OneTimeHintDialog { hint: OneTimeHint::OtagExamples, open: hint_open }
             if let Some(card) = current {

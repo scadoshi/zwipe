@@ -344,40 +344,47 @@ fn ExitingCard(gone: Exiting, on_end: EventHandler<Uuid>) -> Element {
     }
 }
 
-/// The swipes as an action dock at the bottom right, stacked over the
-/// surface's own dock: one button per direction in `buttons`, each with its
-/// arrow, named for the action it takes. They route as the arrow keys do
-/// ([`SwipeRoute::of`]): through `control` while `card_on_top`, else down
-/// calls `on_undo` and the rest are off.
+/// The swipes as an action dock beside the surface's own dock, which comes
+/// in as `children`: one button per direction in `buttons`, each with its
+/// arrow and the action's name, the name hiding below the breakpoint. The
+/// two docks sit side by side at the bottom right on a wide window and the
+/// swipes' stack over the other below it. The buttons route as the arrow
+/// keys do ([`SwipeRoute::of`]): through `control` while `card_on_top`,
+/// else down calls `on_undo` and the rest are off.
 #[component]
 pub fn SwipeDock(
     control: SwipeControl,
     buttons: Vec<(Swipe, &'static str)>,
     card_on_top: bool,
     on_undo: EventHandler<()>,
+    children: Element,
 ) -> Element {
     rsx! {
-        div { class: "action-dock action-dock-right web-swipe-dock",
-            for (swipe, label) in buttons {
-                {
-                    let route = SwipeRoute::of(swipe, card_on_top);
-                    rsx! {
-                        button {
-                            key: "{label}",
-                            class: "action-dock-btn web-swipe-dock-btn",
-                            "aria-label": label,
-                            title: label,
-                            disabled: route == SwipeRoute::Ignore,
-                            onclick: move |_| match route {
-                                SwipeRoute::Stack => control.press(swipe),
-                                SwipeRoute::Undo => on_undo.call(()),
-                                SwipeRoute::Ignore => {}
-                            },
-                            "{swipe.arrow()}"
+        div { class: "web-dock-pair",
+            div { class: "action-dock web-swipe-dock",
+                for (swipe, label) in buttons {
+                    {
+                        let route = SwipeRoute::of(swipe, card_on_top);
+                        rsx! {
+                            button {
+                                key: "{label}",
+                                class: "action-dock-btn web-swipe-dock-btn",
+                                "aria-label": label,
+                                title: label,
+                                disabled: route == SwipeRoute::Ignore,
+                                onclick: move |_| match route {
+                                    SwipeRoute::Stack => control.press(swipe),
+                                    SwipeRoute::Undo => on_undo.call(()),
+                                    SwipeRoute::Ignore => {}
+                                },
+                                span { class: "web-swipe-arrow", "{swipe.arrow()}" }
+                                span { class: "web-swipe-dock-label", "{label}" }
+                            }
                         }
                     }
                 }
             }
+            {children}
         }
     }
 }
