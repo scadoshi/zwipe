@@ -55,6 +55,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "The Format, Deck tags and Oracle tags pickers' ? hints match the website's",
         "The deck page's tag hints and the Oathbreaker field's hint are written for where they open, and other hints read tighter",
         "Hovering a card row shows one preview at a time, gone once the pointer leaves the row",
+        "A card's P/T reads as clearly as its price in every light theme",
     ],
 }];
 

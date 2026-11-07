@@ -280,11 +280,12 @@
     border-color: color-mix(in srgb, var(--color-money) 35%, transparent);
 }
 
-/* P/T (creatures) and loyalty (planeswalkers): a number, slot 5. */
+/* P/T (creatures) and loyalty (planeswalkers): a number in the theme's stat
+   color, as legible as the price beside it. */
 .card-row-stat {
-    color: var(--palette-5);
-    background-color: color-mix(in srgb, var(--palette-5) 12%, transparent);
-    border-color: color-mix(in srgb, var(--palette-5) 35%, transparent);
+    color: var(--color-stat, var(--palette-5));
+    background-color: color-mix(in srgb, var(--color-stat, var(--palette-5)) 12%, transparent);
+    border-color: color-mix(in srgb, var(--color-stat, var(--palette-5)) 35%, transparent);
 }
 
 .card-row-colors {
@@ -779,9 +780,9 @@ i.ms.ms-cost.ms-gp {
 }
 
 .detail-chip-pt {
-    color: var(--palette-5);
-    background-color: color-mix(in srgb, var(--palette-5) 15%, transparent);
-    border-color: color-mix(in srgb, var(--palette-5) 40%, transparent);
+    color: var(--color-stat, var(--palette-5));
+    background-color: color-mix(in srgb, var(--color-stat, var(--palette-5)) 15%, transparent);
+    border-color: color-mix(in srgb, var(--color-stat, var(--palette-5)) 40%, transparent);
     font-weight: 700;
 }
 
