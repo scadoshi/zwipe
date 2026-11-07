@@ -128,13 +128,11 @@ pub const SCREENS_CSS: &str = concat!(
     include_str!("../assets/screens/screens-b.css"),
 );
 
-/// The filter accordion's rules. zwiper loads it after its own `main.css`
-/// and zwiper-web after [`SCREENS_CSS`], each before `TOAST_CSS`; zite
-/// does not load it.
-pub const ACCORDION_CSS: &str = include_str!("../assets/accordion.css");
-
-/// The rules of [`DrawerSheet`] and [`CardFilterPanel`]: the title bar's
-/// `?`, the Oracle tags trigger's focus ring, the chips' wrappers and the
-/// picker's highlighted result. A host that draws either loads it after its
-/// other shared sheets and before its own stylesheet.
+/// The card filter's rules, for the app's filter sheet and for
+/// [`DrawerSheet`] and [`CardFilterPanel`]: the label rows, compact boxes,
+/// stepper, floating picker results, small chips and clear buttons, the
+/// layout helpers its rows use, the section accordion, and the sheet's own
+/// `?`, focus ring, chip wrappers and highlighted result. Every host that
+/// draws the filter loads it after [`SCREENS_CSS`] (zite, which has none,
+/// after `SITE_CSS`) and before its own stylesheet.
 pub const FILTER_CSS: &str = include_str!("../assets/filter.css");

@@ -6,7 +6,7 @@
 //! deliberate. ↑ and ↓ move through the results and Enter adds the
 //! highlighted one; `/` focuses the box.
 
-use components::TOAST_QUICK;
+use components::{ClearWrap, TOAST_QUICK};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
@@ -145,51 +145,48 @@ pub(crate) fn QuickAdd(
             }
             div { class: "chip-row",
                 span { class: "stat-chip stat-chip-p1 chip-row-label", "Quick add" }
-                input {
-                    class: "input input-compact",
-                    style: "flex: 1; margin-bottom: 0;",
-                    id: QUICK_ADD_ID,
-                    r#type: "text",
-                    placeholder: "Search a card to add",
-                    value: "{query}",
-                    autocapitalize: "none",
-                    autocorrect: "off",
-                    spellcheck: "false",
-                    onfocus: move |_| {
-                        document::eval(
-                            "const el = document.querySelector('.web-deck-cards-controls'); if (el) el.scrollTo({ top: 0, behavior: 'smooth' });",
-                        );
+                ClearWrap {
+                    filled: !query().is_empty(),
+                    on_clear: move |()| {
+                        query.set(String::new());
+                        results.set(Vec::new());
+                        show.set(false);
                     },
-                    oninput: move |e| query.set(e.value()),
-                    onkeydown: move |e: Event<KeyboardData>| match e.key() {
-                        Key::ArrowDown => {
-                            e.prevent_default();
-                            highlight.set(lit.saturating_add(1).min(keyed.len().saturating_sub(1)));
-                        }
-                        Key::ArrowUp => {
-                            e.prevent_default();
-                            highlight.set(lit.saturating_sub(1));
-                        }
-                        Key::Enter => {
-                            if let Some(card) = keyed.get(lit).cloned()
-                                && !searching()
-                            {
-                                e.prevent_default();
-                                add(card);
-                            }
-                        }
-                        _ => {}
-                    },
-                }
-                if !query().is_empty() {
-                    button {
-                        class: "clear-btn",
-                        onclick: move |_| {
-                            query.set(String::new());
-                            results.set(Vec::new());
-                            show.set(false);
+                    label: "Clear the search".to_string(),
+                    input {
+                        class: "input input-compact",
+                        id: QUICK_ADD_ID,
+                        r#type: "text",
+                        placeholder: "Search a card to add",
+                        value: "{query}",
+                        autocapitalize: "none",
+                        autocorrect: "off",
+                        spellcheck: "false",
+                        onfocus: move |_| {
+                            document::eval(
+                                "const el = document.querySelector('.web-deck-cards-controls'); if (el) el.scrollTo({ top: 0, behavior: 'smooth' });",
+                            );
                         },
-                        "\u{00d7}"
+                        oninput: move |e| query.set(e.value()),
+                        onkeydown: move |e: Event<KeyboardData>| match e.key() {
+                            Key::ArrowDown => {
+                                e.prevent_default();
+                                highlight.set(lit.saturating_add(1).min(keyed.len().saturating_sub(1)));
+                            }
+                            Key::ArrowUp => {
+                                e.prevent_default();
+                                highlight.set(lit.saturating_sub(1));
+                            }
+                            Key::Enter => {
+                                if let Some(card) = keyed.get(lit).cloned()
+                                    && !searching()
+                                {
+                                    e.prevent_default();
+                                    add(card);
+                                }
+                            }
+                            _ => {}
+                        },
                     }
                 }
             }

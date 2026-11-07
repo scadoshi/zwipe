@@ -134,7 +134,7 @@ fn App() -> Element {
         document::Style { {components::APP_CSS} }
         document::Style { {components::SCREENS_CSS} }
         document::Link { rel: "stylesheet", href: MAIN_CSS }
-        document::Style { {components::ACCORDION_CSS} }
+        document::Style { {components::FILTER_CSS} }
         document::Style { {components::TOAST_CSS} }
         // The drawer the card details open in.
         document::Style { {components::FILTER_CSS} }

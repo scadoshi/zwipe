@@ -93,17 +93,19 @@ fn Testimonials() -> Element {
     ];
     rsx! {
         section { class: "testimonials",
-            // One Reviews Panel holding everything: the live App Store rating
-            // as a clickable share-screen-style tag, then the auto-scrolling
-            // review track nested inside its body.
-            Panel { title: "Deck builder testimonials",
-                a {
-                    class: "rating-tag",
-                    href: APP_STORE_URL,
-                    "aria-label": "4.8 out of 5 stars on the App Store",
-                    span { class: "rating-stars", "★★★★★" }
-                    span { class: "rating-score", "4.8" }
-                }
+            // One Reviews Panel: the App Store rating as a clickable tag beside
+            // the title, then the auto-scrolling review track in its body.
+            Panel {
+                title: "Deck builder testimonials",
+                title_trailing: rsx! {
+                    a {
+                        class: "rating-tag",
+                        href: APP_STORE_URL,
+                        "aria-label": "4.8 out of 5 stars on the App Store",
+                        span { class: "rating-stars", "★★★★★" }
+                        span { class: "rating-score", "4.8" }
+                    }
+                },
                 div { class: "testimonials-viewport",
                     div { class: "testimonials-track",
                         for dup in [false, true] {

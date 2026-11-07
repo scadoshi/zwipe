@@ -64,7 +64,6 @@ pub fn Account() -> Element {
     rsx! {
         ScreenFrame {
             title: "Account",
-            description: Some("Your username, email and password, and your email's verification".to_string()),
             on_hint: move |()| {
                 let mut hint_open = hint_open;
                 hint_open.set(true);

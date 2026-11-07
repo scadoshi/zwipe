@@ -21,7 +21,7 @@ use crate::inbound::cards::card_info::{CardDetailsSheet, CardSkeleton};
 use crate::inbound::cards::otag::use_describe_tag;
 use crate::inbound::cards::printing_sheet::PrintingSheet;
 use crate::inbound::cards::swipe_stack::{
-    EndUndoButton, Swipe, SwipeButtons, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
+    Swipe, SwipeDock, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
 };
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::back_arrow::BackArrow;
@@ -182,17 +182,12 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
                             on_entered: move |()| stack.write().cancel_entering(),
                             on_swipe,
                         }
-                        SwipeButtons {
-                            control,
-                            buttons: vec![(Swipe::Left, "Next"), (Swipe::Down, "Back one")],
-                        }
                     } else if past_end {
                         if loading_more() {
                             CardSkeleton { is_loading: true }
                         } else {
                             div { class: "flex-col flex-center", style: "flex: 1; min-height: 0; width: 100%;",
                                 div { class: "dict-empty", "No more cards. Swipe down to go back." }
-                                EndUndoButton { label: "Back one", on_press: go_back }
                             }
                         }
                     } else if loading() || (empty && loading_more()) {
@@ -218,6 +213,12 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
             // Card details as the action dock; Back is the header's arrow.
             div { class: "action-dock action-dock-right",
                 DockEye { eye, disabled: !has_card }
+            }
+            SwipeDock {
+                control,
+                buttons: vec![(Swipe::Left, "Next"), (Swipe::Down, "Back one")],
+                card_on_top: has_card,
+                on_undo: move |()| go_back.call(()),
             }
             OneTimeHintDialog { hint: OneTimeHint::OtagExamples, open: hint_open }
             if let Some(card) = current {

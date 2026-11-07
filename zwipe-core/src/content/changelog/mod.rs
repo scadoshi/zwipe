@@ -42,6 +42,7 @@ pub const UPCOMING: &[Release] = &[Release {
     date: None,
     entries: &[
         "A deck's commander and MVPs show their names in chips beside their role",
+        "Quick add on a deck's cards and on the Commander maybeboard clears with the same x as the filter's fields",
         "Card details slide in from the right as a panel with labeled facts, the prices included",
     ],
 }];

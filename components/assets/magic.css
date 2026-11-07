@@ -2234,6 +2234,21 @@ footer.site-footer {
     margin: 0;
 }
 
+/* The footer's links are pills in the nav's colors: the text color at
+   rest, the accent under a mouse. */
+.footer-links > .nav-cta,
+.footer-links > .nav-cta:visited {
+    color: var(--text-primary);
+}
+
+@media (hover: hover) {
+    .footer-links > .nav-cta:hover,
+    .footer-links > .nav-cta:visited:hover {
+        color: var(--accent-primary);
+        border-color: var(--accent-primary);
+    }
+}
+
 footer.site-footer .site-footer-note {
     max-width: none;
     margin: 0.75rem 0 0;

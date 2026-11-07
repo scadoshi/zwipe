@@ -57,7 +57,6 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
     rsx! {
         ScreenFrame {
             title: "Export",
-            description: Some("Copy the deck as a text decklist, board by board".to_owned()),
             on_hint,
             div { class: "screen-content content-enter web-export",
                 div { class: "import-controls",

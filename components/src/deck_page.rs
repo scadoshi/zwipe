@@ -192,13 +192,15 @@ pub fn DeckPage(
     }
 }
 
-/// The head: the name over the facts as chips, with the host's `actions`
+/// The head: the `name` over the facts as chips, with the host's `actions`
 /// at the name's right end, then the featured cards (`children`,
-/// [`FeaturedCard`]s) in a centered row under them. `featured_class` joins
-/// the featured row's classes, for a host's entrance.
+/// [`FeaturedCard`]s) in a centered row under them. Without a name or
+/// actions the head opens on the chips, for a host that names the deck and
+/// holds its actions elsewhere. `featured_class` joins the featured row's
+/// classes, for a host's entrance.
 #[component]
 pub fn DeckHead(
-    name: String,
+    #[props(default)] name: Option<String>,
     facts: DeckFacts,
     #[props(default)] actions: Option<Element>,
     #[props(default)] featured_class: Option<String>,
@@ -212,10 +214,14 @@ pub fn DeckHead(
     rsx! {
         div { class: "deck-head",
             div { class: "deck-head-text",
-                div { class: "deck-head-title-row",
-                    h1 { class: "deck-head-title", "{name}" }
-                    if let Some(actions) = actions {
-                        div { class: "deck-head-actions", {actions} }
+                if name.is_some() || actions.is_some() {
+                    div { class: "deck-head-title-row",
+                        if let Some(name) = name {
+                            h1 { class: "deck-head-title", "{name}" }
+                        }
+                        if let Some(actions) = actions {
+                            div { class: "deck-head-actions", {actions} }
+                        }
                     }
                 }
                 div { class: "deck-head-meta",

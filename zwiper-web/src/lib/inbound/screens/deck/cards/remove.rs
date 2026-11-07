@@ -37,7 +37,7 @@ use crate::inbound::card_stores::CardStores;
 use crate::inbound::cards::card_info::{CardDetailsSheet, CardSkeleton};
 use crate::inbound::cards::printing_sheet::PrintingSheet;
 use crate::inbound::cards::swipe_stack::{
-    Swipe, SwipeButtons, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
+    Swipe, SwipeDock, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
 };
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::details_eye::{DockEye, use_details_eye};
@@ -503,7 +503,6 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                                 on_entered: move |()| stack.write().cancel_entering(),
                                 on_swipe: move |pair: (Swipe, Card)| on_swipe(pair),
                             }
-                            SwipeButtons { control, buttons }
                         } else {
                             CardSkeleton {}
                         }
@@ -548,6 +547,12 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                     span { class: "action-dock-divider" }
                     DockEye { eye, disabled: current.is_none() }
                 }
+            }
+            SwipeDock {
+                control,
+                buttons,
+                card_on_top: current.is_some(),
+                on_undo: move |()| undo_last.call(()),
             }
         }
         if let Some(card) = current {

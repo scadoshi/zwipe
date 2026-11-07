@@ -49,7 +49,7 @@ use crate::inbound::card_stores::CardStores;
 use crate::inbound::cards::card_info::{CardDetailsSheet, CardSkeleton};
 use crate::inbound::cards::printing_sheet::PrintingSheet;
 use crate::inbound::cards::swipe_stack::{
-    EndUndoButton, Swipe, SwipeButtons, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
+    Swipe, SwipeDock, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
 };
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::details_eye::{DockEye, use_details_eye};
@@ -892,7 +892,6 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                                     AddSource::Maybeboard => on_maybeboard_swipe(pair),
                                 },
                             }
-                            SwipeButtons { control, buttons }
                         } else if end_of_pile {
                             if loading_more() {
                                 CardSkeleton { is_loading: true }
@@ -915,7 +914,6 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                                     },
                                     CardSkeleton {}
                                 }
-                                EndUndoButton { label: "Undo", on_press: undo_search }
                             }
                         } else if at == AddSource::Search && loading_cards() {
                             CardSkeleton { is_loading: true }
@@ -972,6 +970,12 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                     span { class: "action-dock-divider" }
                     DockEye { eye, disabled: !has_current }
                 }
+            }
+            SwipeDock {
+                control,
+                buttons,
+                card_on_top: has_current,
+                on_undo: move |()| undo_now.call(()),
             }
         }
         if let Some(card) = current {
