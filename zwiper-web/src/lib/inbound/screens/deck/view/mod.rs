@@ -8,6 +8,7 @@
 
 pub mod cards;
 pub mod dialogs;
+mod ghost;
 pub mod page;
 pub mod panels;
 pub mod sections;
@@ -28,12 +29,12 @@ use zwipe_ui::deck::form::Slot;
 use zwipe_ui::screens::deck_view::CARDS;
 
 use self::dialogs::{DeckDialogsHost, use_deck_dialogs};
+use self::ghost::{DeckViewGhost, StatsSectionsGhost};
 use self::page::DeckWidePage;
 use self::panels::{DangerZonePanel, DataPanel};
 use self::sections::{
     BudgetSection, ProfileCard, StatsSections, TagsSection, WarningFixes, WarningsSection,
 };
-use super::skeletons::{DeckProfileSkeleton, DeckStatsSkeleton};
 use crate::domain::deck::{has_budget, metrics_possible, tag_count};
 use crate::inbound::cards::card_row::{CardOverlaysHost, use_card_overlays};
 use crate::inbound::cards::otag::{OtagExamplesHost, use_otag_reveals};
@@ -262,7 +263,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                     TagsSection { profile: p.clone(), open_section }
                                 }
                                 if metrics.is_none() && deck_loading && metrics_possible(&p) {
-                                    DeckStatsSkeleton {}
+                                    StatsSectionsGhost {}
                                 } else {
                                     StatsSections { metrics: metrics.clone(), land_target: p.land_target, open_section }
                                 }
@@ -278,10 +279,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                         p { class: "text-muted", "Could not load deck" }
                     },
                     None => rsx! {
-                        div { class: "content-enter web-deck-view",
-                            DeckProfileSkeleton {}
-                            DeckStatsSkeleton {}
-                        }
+                        DeckViewGhost {}
                     },
                 }
             }

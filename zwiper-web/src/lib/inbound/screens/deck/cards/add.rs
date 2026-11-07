@@ -129,7 +129,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
     let mut related: Signal<HashSet<Uuid>> = use_signal(HashSet::new);
     let mut related_announced = use_signal(|| false);
     let mut exhausted = use_signal(|| false);
-    let mut loading_cards = use_signal(|| false);
+    let mut loading_cards = use_signal(|| true);
     let mut loading_more = use_signal(|| false);
     let mut searches = use_signal(Generation::default);
     let mut first_run = use_signal(|| true);
@@ -225,7 +225,8 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             }
         }
         let ticket = searches.write().next_ticket();
-        loading_cards.set(false);
+        // Until the deck lands the search can't run, and the stack ghosts.
+        loading_cards.set(deck.peek().is_none());
         stack.write().reset();
         reset_image_ease();
         last_search.set(None);

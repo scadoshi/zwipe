@@ -504,7 +504,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                                 on_swipe: move |pair: (Swipe, Card)| on_swipe(pair),
                             }
                         } else {
-                            CardSkeleton {}
+                            CardSkeleton { is_loading: !loaded() }
                         }
                     }
                 }

@@ -13,6 +13,7 @@
 mod chips;
 mod profile;
 mod rows;
+mod skeleton;
 
 use std::collections::HashSet;
 
@@ -34,11 +35,10 @@ use zwipe_ui::generation::Generation;
 use zwipe_ui::playstyle::{HELD_SIZE, LIST_SIZE, empty_identity_line, of_identity, shown};
 
 pub use self::chips::{IdentityPips, ShowIdentityChips};
-use self::profile::{
-    BuilderProfileSections, BuilderProfileSkeleton, ProfileSummary, ShowChipRowSkeleton,
-};
+use self::profile::{BuilderProfileSections, ProfileSummary};
 pub use self::rows::SuggestionReasons;
 use self::rows::{StaplesPanel, SuggestionRow};
+use self::skeleton::PlaystyleSkeleton;
 use crate::inbound::caches::CreateDeckSeed;
 use crate::inbound::cards::card_row::{CardOverlaysHost, ShowRowArt, use_card_overlays};
 use crate::inbound::cards::otag::{OtagExamplesHost, use_otag_reveals};
@@ -48,7 +48,6 @@ use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
 use crate::inbound::chrome::media::use_wide;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::router::Route;
-use crate::inbound::screens::deck::skeletons::SkeletonInfoList;
 use crate::inbound::shell::ScreenFrame;
 
 /// The suggestions list's title.
@@ -292,31 +291,7 @@ pub fn Playstyle() -> Element {
                 class: "screen-content",
                 onmousemove: move |e| hover_stack.track(e.client_coordinates().x),
                 if is_loading() {
-                    div { class: "web-playstyle web-page",
-                        div { class: "web-hero web-playstyle-summary-hero",
-                            SkeletonInfoList { rows: 3 }
-                        }
-                        div { class: "web-columns",
-                            div { class: "web-playstyle-profile",
-                                BuilderProfileSkeleton {}
-                            }
-                            div { class: "web-playstyle-list",
-                                ShowChipRowSkeleton {}
-                                div { class: "maybeboard-list card-group row-enter",
-                                    div { class: "card-group-header card-group-header-with-hint",
-                                        div { class: "skeleton-bar skeleton-card-bar-header-wide" }
-                                        div { class: "skeleton-bar skeleton-chip skeleton-info-button" }
-                                    }
-                                    for i in 0..6 {
-                                        div { key: "{i}", class: "skeleton-card-row",
-                                            div { class: "skeleton-bar skeleton-card-thumb" }
-                                            div { class: "skeleton-bar skeleton-card-bar-row" }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    PlaystyleSkeleton { wide: wide() }
                 } else if load_failed() {
                     div { class: "message-empty",
                         span { class: "chip-note", "Could not load your suggestions" }

@@ -20,9 +20,10 @@ use zwipe_ui::deck::list::{self, GroupBy, Show};
 use zwipe_ui::deck::{card_count, cards_label, command_zone, count_fits};
 
 use crate::inbound::chrome::authed::use_authed;
+use crate::inbound::chrome::ghost::{GhostChipRow, GhostShowRow};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, open_and_record_hint};
 use crate::inbound::router::Route;
-use crate::inbound::screens::deck::skeletons::{ChipRowSkeleton, DeckListSkeleton};
+use crate::inbound::screens::deck::skeletons::DeckListSkeleton;
 use crate::inbound::shell::ScreenFrame;
 use crate::outbound::session_store::SessionStore;
 
@@ -125,8 +126,8 @@ pub fn DeckList() -> Element {
             div { class: "screen-content",
                 div { class: "flex-col web-deck-list deck-list-stack",
                     if loading {
-                        ChipRowSkeleton { label: "md", chips: vec!["sm", "md", "sm", "sm"] }
-                        ChipRowSkeleton { label: "sm", chips: vec!["sm", "sm", "sm", "sm", "sm", "sm", "md"] }
+                        GhostChipRow { label: 8, chips: vec![4, 6, 5, 3] }
+                        GhostShowRow { art: false }
                     } else if show_rows {
                         div { class: "chip-row",
                             span { class: "stat-chip stat-chip-p1 chip-row-label", "Group by" }

@@ -14,14 +14,6 @@
     --web-sticky-max: calc(100dvh - 10rem);
 }
 
-/* A clearable field in a chip row fills the rest of the row, level with
-   the row's label chip. */
-.chip-row > .input-clear-wrap {
-    flex: 1 1 auto;
-    min-width: 0;
-    margin-bottom: 0;
-}
-
 /* A text field on a wide page stops at a field's width, left-aligned
    beside or under its label. */
 @media (min-width: 900px) {
@@ -30,6 +22,7 @@
     }
 
     .input-clear-wrap:has(> #quick-add),
+    .input-clear-wrap.web-ghost-field,
     .input-clear-wrap:has(> #commander-maybeboard-search),
     #import-url,
     #oracle-tag-dictionary-search {
@@ -1544,6 +1537,132 @@ body {
     }
 }
 
+/* ---- Loading ghosts ----
+
+   A ghost of a line of text sits in the element that holds the text, so
+   the line keeps its height; its width is the text's, in ch. The rest
+   stand in for one control each at its size. */
+.skeleton-bar.web-ghost-text {
+    display: inline-block;
+    height: 0.8em;
+    vertical-align: middle;
+}
+
+/* A color bar ghost's count (a 0.65rem bar) holds the count's text line,
+   0.85rem at the page's 1.6 line height, so a ghost row is as tall as a
+   real one. */
+.color-bar-row > .color-bar-count-ghost {
+    margin-top: calc((0.85rem * 1.6 - 0.65rem) / 2);
+    margin-bottom: calc((0.85rem * 1.6 - 0.65rem) / 2);
+}
+
+/* Home's deck tile ghost keeps the tile's square (the bar's own height
+   would flatten it to a strip), and under it the name and format chips'
+   two lines at the chips' height. */
+.skeleton-bar.home-deck-tile-art {
+    height: auto;
+}
+
+.home-deck-tile-chips > .home-deck-skeleton-chip {
+    height: 1.525rem;
+}
+
+.home-deck-tile-chips:has(> .home-deck-skeleton-chip)::after {
+    content: "";
+    width: 55%;
+    height: 1.525rem;
+    box-sizing: border-box;
+    border: 1px solid var(--border-secondary);
+    border-radius: 0.5rem;
+    background-color: var(--bg-primary);
+    animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Home's Colors ghost header at the live header's height, whose action
+   chip sits outside its flow. */
+.home-colors > .skeleton-card-header {
+    min-height: 2.8625rem;
+    box-sizing: border-box;
+}
+
+.skeleton-bar.web-ghost-box {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.skeleton-bar.skeleton-chip.web-ghost-stepper {
+    width: 1.75rem;
+    height: 1.75rem;
+}
+
+.web-ghost-chip {
+    pointer-events: none;
+}
+
+/* A featured card's ghost fills the card's 5:7 slot with its corners. */
+.skeleton-bar.web-ghost-card {
+    width: 100%;
+    height: 100%;
+    border-radius: 4.75% / 3.5%;
+}
+
+.web-ghost-chip.web-ghost-button {
+    line-height: normal;
+}
+
+/* A card row's ghost at a live row's height, the art crop's. */
+.skeleton-card-row.web-ghost-card-row {
+    box-sizing: border-box;
+    min-height: 3.9rem;
+}
+
+.skeleton-bar.web-ghost-pip {
+    display: inline-block;
+    width: 1.43rem;
+    height: 1.43rem;
+    border-radius: 50%;
+    vertical-align: middle;
+}
+
+.skeleton-bar.web-ghost-icon {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    vertical-align: middle;
+}
+
+.skeleton-bar.web-ghost-arrow {
+    width: 0.6em;
+    height: 0.6em;
+}
+
+.skeleton-bar.web-ghost-keyword-chip {
+    display: inline-block;
+    width: 3.375rem;
+    height: 1.425rem;
+    vertical-align: middle;
+    border-radius: 0.5rem;
+}
+
+.skeleton-bar.web-ghost-count {
+    width: 1.5ch;
+    height: 0.8em;
+}
+
+.skeleton-bar.skeleton-chip.web-ghost-count-chip {
+    display: inline-block;
+    width: 1.675rem;
+    height: 1.725rem;
+    vertical-align: middle;
+}
+
+.skeleton-bar.skeleton-chip.web-ghost-action {
+    display: inline-block;
+    width: 4.125rem;
+    height: 1.9875rem;
+    vertical-align: middle;
+}
+
 /* ---- Swipe select ---- */
 
 /* Hidden while closed and click-through, as in the app; it cross-fades on
@@ -1890,9 +2009,18 @@ body {
 
     /* The decklist runs to the window's foot, under the page head, the
        chips and its panel's header. */
-    .web-export-body textarea {
+    .web-export-body textarea,
+    .web-export-body .skeleton-export-textarea {
         min-height: calc(100vh - 26rem) !important;
     }
+}
+
+/* The decklist's ghost sits in its line as the textarea does, so the
+   panel keeps the textarea's height. */
+.web-export-body .skeleton-export-textarea {
+    display: inline-block;
+    width: 100%;
+    vertical-align: baseline;
 }
 
 /* A panel's ghost while its screen loads: the title bar centered, as the

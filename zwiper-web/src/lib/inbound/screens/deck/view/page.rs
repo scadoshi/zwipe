@@ -28,6 +28,9 @@ use zwipe_ui::screens::deck_view::{EDIT, MoreItem};
 use zwipe_ui::{buy, deck_cards, filter};
 
 use super::dialogs::DeckDialogs;
+use super::ghost::{
+    DeckBandsGhost, DeckControlsGhost, DeckFootGhost, DeckHeadGhost, DeckStatsGhost,
+};
 use super::panels::{DangerZonePanel, DataPanel};
 use super::sections::{
     BudgetBody, CurrencyChips, DistributionsBody, DrawOddsStepper, ManaBody, TagsBody,
@@ -46,7 +49,6 @@ use crate::inbound::screens::deck::cards::editor::{
     Editor, Listed, RowInfo, RowKind, main_row_of, row_view, use_deck_editor,
 };
 use crate::inbound::screens::deck::cards::quick_add::QuickAdd;
-use crate::inbound::screens::deck::skeletons::DeckCardsSkeleton;
 
 /// The stat panels' fold keys, shut when the page opens.
 const FOLDED_STATS: [&str; 5] = ["Budget", "Tags", "Distributions", "Mana", "Draw odds"];
@@ -385,10 +387,14 @@ pub fn DeckWidePage(
                             }
                         }
                     }
+                } else {
+                    DeckHeadGhost {}
                 }
             },
             controls: rsx! {
-                if loaded() {
+                if !loaded() {
+                    DeckControlsGhost {}
+                } else {
                     DeckControls {
                         group_by,
                         show_tokens: tokens().is_some_and(|t| !t.is_empty()).then_some(show_tokens),
@@ -435,7 +441,7 @@ pub fn DeckWidePage(
             empty,
             bands: rsx! {
                 if !loaded() {
-                    DeckCardsSkeleton {}
+                    DeckBandsGhost {}
                 }
                 for (section, rows, drop_to) in sections {
                     DeckBand {
@@ -451,6 +457,9 @@ pub fn DeckWidePage(
                 }
             },
             stats: rsx! {
+                if !loaded() {
+                    DeckStatsGhost {}
+                }
                 if let Some(p) = held_profile {
                     if has_budget(&p, has_cards) {
                         DeckFold {
@@ -488,6 +497,9 @@ pub fn DeckWidePage(
                 }
             },
             foot: rsx! {
+                if !loaded() {
+                    DeckFootGhost {}
+                } else {
                 div { class: "web-column",
                     if !warnings.is_empty() {
                         div { class: "web-section open warn web-deck-warnings",
@@ -504,6 +516,7 @@ pub fn DeckWidePage(
                     DataPanel { deck_id, has_cards }
                 }
                 DangerZonePanel { dialogs }
+                }
             },
             }
         }
