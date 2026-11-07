@@ -214,6 +214,8 @@ Open with Scotty: none.
 149. **Toasts and floating buttons land on the footer.** On Export the "Copied to clipboard" toast and the copy button sit over the footer; toasts, like docks (134), stop above the footer at their lowest.
 150. **On Scotty's iPhone in light mode, Home's theme sheet is see-through.** Home's hero, stats and deck tiles show through it, faded; the same sheet on other screens, and Home in the simulator, are opaque. Investigate first: whether the sheet renders inside Home's animated content (an opacity animation that holds or stalls on a device), a compositing layer above it, or a translucent light background; then fix.
 
+151. **Both apps degrade when left open a long time.** In zwipe and Cairn, after hours open (or backgrounded and resumed): screens go see-through (150), taps stop landing (Cairn's counters), or data goes stale (Cairn shows yesterday's count until a relaunch). Likely shared: timers, listeners or layers piling up (orangui's grid rain, polls), and app lifecycle (no refresh on foreground or day rollover, WKWebView's content process killed in the background). Investigate across both apps and orangui, then fix at the shared root.
+
 Scotty on Droid's open items: D3 toasts "Nothing left to remove" (no way back needed; into 145); D29 leave the Art toggle; D32 a follow-up in todo; D36 fine as an outline; D37 hero chips in the logged-in order everywhere (into 147); D38 list rows wrap their chips as the rendered layout intends, consistently (into 146). D28: card-row panels (Suggested commanders, Staples, Most skipped) keep their pink title color, but take the other panel titles' size, weight, letter spacing and inset (into 147).
 
 Skipped with Scotty: S44 (the About diagram scrolls under its arrows; fine as is).
