@@ -424,3 +424,31 @@ System Back on the same edits shows the prompt (pass 7), and so does the web's h
 ### Cleanup
 
 The temp deck is deleted (12 decks on the server, Droid test untouched). Server settings are unchanged (zenburn, dark, theme pips, chip, Universes Beyond shown with the same four exceptions), the maybeboard is empty, the network is back to full and airplane mode is off.
+
+## Pass 9
+
+Build: debug APK from origin/release, app only, against production (api.zwipe.net), on the Pixel_9a emulator, installed with `-r` so `test` stayed signed in. First build a0cb6c918; I rebuilt at 1cb240dd0 once #346 (210) landed. Shots are in ~/Developer/droid/shots/pass9-<n>.png. One throwaway Modern deck, deleted at the end.
+
+Production still runs the main-branch server, so fixes that changed zerver or the shared warning code can't show yet: 200's import, 201, and 208's copy. 209 has no commit in release.
+
+| # | Status | What I saw | Shots |
+|---|---|---|---|
+| 197 | fixed (app) | After +, Fix to 4, To sideboard, Quick add and To mainboard, the Deck page's card count and Warnings matched each change on return, with no reload. Fix to 4 toasts "Quantity set to 4", and count and warnings change at once. I didn't reach a "Fix to 1" case (Modern offers Fix to 4). | pass9-1, pass9-3 |
+| 198 | fixed | `.tag-grid` has no mask in the Format or Oracle tags picker. Scrolled chips cut at the hint box's edge. | pass9-13, pass9-14 |
+| 199 | fixed | "Edgar, Ancient Bloodlord": the × ends at x 89, the title starts at 97 and wraps to two lines with its pips centred under it. | pass9-12 |
+| 200 | export fixed, import needs a server deploy | Export now writes set and number, e.g. "4 Lightning Bolt (SLC) 83" and "1 Snapcaster Mage (INR) 478". Import on production still maps "(ISD) 90" to "Bloodline Keeper // Bloodline Keeper" (Innistrad Remastered Art Series) and "(ISD) 78" to Snapcaster Mage from Innistrad Remastered. 8116af609 changed zerver. | |
+| 201 | needs a server deploy | Set: Innistrad shows Silent Departure and the rest as the Innistrad Remastered printing (zerver change f69990dba). | pass9-8 |
+| 202 | not fixed in the app | The Set typeahead pills float above the input, covering the Oracle tags and Set headers. After picking "Innistrad" they stay open over the picked chip until the text is cleared. The Cards page's Quick add pills do the same: after a pick they stay up over the header and cover its ‹, so Back can't be tapped until the field is cleared. 548e33d2d may be web only. | pass9-5 to pass9-7 |
+| 203 | fixed (with a double message) | A filter with no results shows "No cards match" inside the ghost card, plus a "No results for this filter" toast. "Is promo: Yes" still matches nothing, even with Name "Sol Ring". | pass9-9 |
+| 204 | not fixed in the app | Mana value typed with the real keyboard ("4") and left 2s in focus: the section's × doesn't appear, and Apply while still focused applies no filter (no dot on the funnel) and leaves a bare ghost with no message. Blurring the field commits it. 8121e7a68 may be web only. | pass9-10, pass9-11 |
+| 208 | needs a server deploy | Warnings still read "Deck has 7 cards, modern requires at least 60", "Bloodline keeper // bloodline keeper is not legal in modern" and "Lightning bolt exceeds copy limit (5/4)". | pass9-2 |
+| 209 | not in release | The share dialog still says "Stop share", and the Cards page shows a Command zone chip on a Modern deck. | pass9-5 |
+| 210 | fixed (1cb240dd0) | Header ‹ on Edit deck asks "Leave without saving?" for (a) rename only, (b) format only and (c) Commander format plus Edgar Markov picked in Swipe select. Stay keeps the edits in the form; Leave discards them (the deck stays Modern with its name). | |
+
+### New
+
+1. **Quick add doesn't offer the exact match** (nit). Typing "Mountain" lists Call the Mountain Chocobo, Celebrate the Mountain-king, Cori Mountain Monastery, Cori Mountain Stalwart and Goblin Mountaineer, but not the basic Mountain. Shot: pass9-4.
+
+### Cleanup
+
+The temp deck is deleted (12 decks, Droid test untouched). Server settings are unchanged (zenburn, dark, theme pips, chip, Universes Beyond shown with the same four exceptions), and the maybeboard is empty. The emulator now runs the 1cb240dd0 debug build, still signed in.
