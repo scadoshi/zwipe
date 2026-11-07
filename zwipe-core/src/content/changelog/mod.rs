@@ -70,6 +70,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "The counters on Home and the sign-in screen read Live only while their copy is under five minutes old, otherwise as of its time",
         "The Pips setting's options read Themed and Classic",
         "Swipe screens confirm each swipe in a quiet chip at the top left, with a Swipe confirmations setting for toasts or nothing instead",
+        "You stay signed in on up to ten devices and browsers at once, up from five",
     ],
 }];
 
