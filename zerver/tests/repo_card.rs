@@ -573,8 +573,9 @@ async fn latest_cards_pick_prefers_in_universe_printing(pool: sqlx::PgPool) {
 }
 
 /// Array-semantics set filters: include matches any printing's set (not just
-/// the pick), and exclude only hides a card when EVERY printing's set is
-/// excluded (the Sol Ring / Secret Lair Drop shadowing bug).
+/// the pick) and shows that set's printing, and exclude only hides a card when
+/// EVERY printing's set is excluded (the Sol Ring / Secret Lair Drop shadowing
+/// bug).
 #[sqlx::test]
 async fn set_filters_are_printing_aware(pool: sqlx::PgPool) {
     let oracle = Uuid::from_u128(0x0002);
@@ -610,6 +611,14 @@ async fn set_filters_are_printing_aware(pool: sqlx::PgPool) {
         names,
         vec!["Beyond Only", "Universal Staple"],
         "include must match any printing's set"
+    );
+    let staple = served
+        .iter()
+        .find(|s| s.name == "Universal Staple")
+        .unwrap();
+    assert_eq!(
+        staple.set_name, "Marvel's Spider-Man",
+        "include shows the filtered set's printing, not the view's pick"
     );
 
     // Exclude: the staple survives (it also exists in Test Set); the
