@@ -1283,6 +1283,36 @@ body {
     max-height: calc(var(--web-swipe-h) - 3.25rem);
 }
 
+/* Below the breakpoint the card is the largest that fits, as the app's is:
+   the width its wrapper leaves (the window less the app's gutters), and the
+   stack's height (from under the screen's chips to above the docks) less
+   the layer's padding, at the card's own ratio. Each layer is a size
+   container, so the height cap is the layer's own box, not a guess at the
+   viewport, which a phone browser's toolbars make taller than what shows.
+   The top padding keeps the card clear of the swipe's confirmation chip
+   over the stack. */
+@media (max-width: 899px) {
+    .web-swipe-stack .swipe-stack-card {
+        container-type: size;
+        padding-top: 2.75rem;
+    }
+
+    .web-swipe-stack .swipe-stack-card .flippable-card-wrapper.card-image img {
+        max-width: 100%;
+        max-height: 100cqh;
+    }
+
+    /* The card's ghost, the same size in the same room. */
+    .skeleton-card > .skeleton-stack {
+        container-type: size;
+        padding-top: 2.75rem;
+    }
+
+    .skeleton-card > .skeleton-stack > .skeleton-image {
+        width: min(calc(100% - 2rem), calc(100cqh * 63 / 88));
+    }
+}
+
 .web-swipe-stack .swipe-stack-card.top {
     touch-action: none;
     cursor: grab;
