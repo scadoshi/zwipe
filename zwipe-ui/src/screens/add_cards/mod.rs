@@ -1528,6 +1528,20 @@ impl State {
         matched_none.then_some(NO_CARDS_MATCH)
     }
 
+    /// The line under [`Self::ghost_note`] after an empty search with Synergy on, from
+    /// [`add::synergy_note`].
+    #[must_use]
+    pub fn ghost_synergy_note(&self) -> Option<&'static str> {
+        if self.source != Source::Search || self.ghost_note().is_none() {
+            return None;
+        }
+        let synergy = self
+            .last_search
+            .as_ref()
+            .is_some_and(CardQueryBuilder::synergy);
+        add::synergy_note(synergy, self.warming)
+    }
+
     /// What the pile area draws.
     #[must_use]
     pub fn pile(&self) -> Pile {

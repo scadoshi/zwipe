@@ -647,6 +647,7 @@ pub fn Add(deck_id: Uuid) -> Element {
         source,
         pile,
         ghost_note,
+        ghost_detail,
         window,
         current,
         printing_card,
@@ -659,6 +660,7 @@ pub fn Add(deck_id: Uuid) -> Element {
             model.source(),
             model.pile(),
             model.ghost_note(),
+            model.ghost_synergy_note(),
             model.window().to_vec(),
             model.current().cloned(),
             model.printing_card().cloned(),
@@ -733,7 +735,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 CardSkeleton {}
                             }
                         } else {
-                            CardSkeleton { note: ghost_note }
+                            CardSkeleton { note: ghost_note, detail: ghost_detail }
                         }
                     } else {
                         // Maybeboard mode
@@ -749,7 +751,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                             }
 
                         } else {
-                            CardSkeleton { note: ghost_note }
+                            CardSkeleton { note: ghost_note, detail: ghost_detail }
                         }
                     }
 

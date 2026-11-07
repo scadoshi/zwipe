@@ -167,7 +167,7 @@ Builder = filter clone with `set_is_token(false)`, `set_limit(25)`, `set_offset(
    - `synergy_warming = !synergy_applied`.
    - `related_ids` = printing ids (`card_profile.scryfall_data_id`) of `cards[related_from..]`; `related_announced = false`.
    - Drop cards whose oracle id is in `deck_cards_ids`.
-   - If nothing is left: telemetry `record_pile_end(deck_id, PileEndKind::Empty, synergy)`, and the ghost card reads "No cards match" (`NO_CARDS_MATCH`). No toast.
+   - If nothing is left: telemetry `record_pile_end(deck_id, PileEndKind::Empty, synergy)`, and the ghost card reads "No cards match" (`NO_CARDS_MATCH`), with a line under it when Synergy was on (`add::synergy_note`): "Synergy is on, turn it off to search everything", or "Synergy is warming up, so all cards were searched" while it warms. No toast.
    - `stack.replace(served)`, `last_search_filter = snapshot`, `is_loading_cards = false`.
    - On Err: `is_loading_cards = false` (the facade already toasted the error).
 

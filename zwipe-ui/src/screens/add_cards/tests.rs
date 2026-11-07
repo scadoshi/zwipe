@@ -262,6 +262,11 @@ fn an_empty_search_says_why_on_the_ghost_alone() {
         Some(NO_CARDS_MATCH),
         "the ghost says why"
     );
+    assert_eq!(
+        state.ghost_synergy_note(),
+        Some("Synergy is on, turn it off to search everything"),
+        "and that Synergy may be the reason"
+    );
 
     let effects = state.update(Action::Filter(state.filter().clone()));
     assert_eq!(state.pile(), Pile::Loading);

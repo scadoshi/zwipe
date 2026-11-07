@@ -27,7 +27,7 @@ use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilde
 use zwipe_core::domain::card::search_card::cards::Cards;
 use zwipe_core::domain::deck::{Board, DeckEntry};
 use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard};
-use zwipe_ui::add::{AddDeck, normalized, related_ids};
+use zwipe_ui::add::{AddDeck, normalized, related_ids, synergy_note};
 use zwipe_ui::deck_signals::{Crossing, Level, budget_crossing, land_crossing, price_of};
 use zwipe_ui::filter::AddContext;
 use zwipe_ui::filter::draft::{ResetRule, SheetConfig};
@@ -901,6 +901,17 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                 .then_some(NO_CARDS_MATCH)
         }
     };
+    // Under it, after an empty search with Synergy on, whether Synergy may
+    // be the reason.
+    let ghost_detail = if at == AddSource::Search && ghost_note.is_some() {
+        let synergy = last_search
+            .read()
+            .as_ref()
+            .is_some_and(CardQueryBuilder::synergy);
+        synergy_note(synergy, warming())
+    } else {
+        None
+    };
     let buttons = vec![
         (Swipe::Left, "Skip"),
         (Swipe::Up, "Maybeboard"),
@@ -957,7 +968,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                         } else if at == AddSource::Search && loading_cards() {
                             CardSkeleton {}
                         } else {
-                            CardSkeleton { note: ghost_note }
+                            CardSkeleton { note: ghost_note, detail: ghost_detail }
                         }
                     }
                 }

@@ -168,6 +168,17 @@ pub fn related_ids(page: &HttpDeckCardSearch) -> HashSet<Uuid> {
         .collect()
 }
 
+/// The line under an empty search's "No cards match" when Synergy was on: why Synergy may be
+/// the reason. `warming` is a search that ran without Synergy because its scores are not ready.
+#[must_use]
+pub fn synergy_note(synergy: bool, warming: bool) -> Option<&'static str> {
+    match (synergy, warming) {
+        (false, _) => None,
+        (true, true) => Some("Synergy is warming up, so all cards were searched"),
+        (true, false) => Some("Synergy is on, turn it off to search everything"),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use zwipe_core::domain::card::search_card::card_type::CardType;
@@ -264,6 +275,19 @@ mod tests {
                 ..page
             })
             .is_empty()
+        );
+    }
+
+    #[test]
+    fn the_synergy_note_says_why_synergy_found_nothing() {
+        assert_eq!(synergy_note(false, true), None);
+        assert_eq!(
+            synergy_note(true, false),
+            Some("Synergy is on, turn it off to search everything")
+        );
+        assert_eq!(
+            synergy_note(true, true),
+            Some("Synergy is warming up, so all cards were searched")
         );
     }
 
