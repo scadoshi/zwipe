@@ -822,58 +822,71 @@ body {
 
 /* ---- Toasts ----
 
-   On a wide window the stack sits bottom left, clear of the nav, and reads
-   up from the bottom: the newest at the bottom, the older ones tucked above
-   it, each rising in from below. A swipe screen's pile chips hold the
-   bottom left, so there the stack sits above them. */
-@media (min-width: 900px) {
-    .toast-container {
-        top: auto;
-        right: auto;
-        bottom: var(--web-toast-bottom, 1rem);
-        left: 1rem;
-    }
+   The stack sits bottom left at every width, clear of the nav and the
+   title bar, and reads up from the bottom: the newest at the bottom, the
+   older ones tucked above it, each rising in from below. On a wide window
+   a swipe screen's pile chips hold the bottom left, so there the stack
+   sits above them. Below the breakpoint the docks reach across from the
+   right, so the stack sits above a dock and above the swipe screens'
+   stacked pair. */
+.toast-container {
+    top: auto;
+    right: auto;
+    bottom: calc(var(--web-toast-bottom, 1rem) + env(safe-area-inset-bottom, 0px));
+    left: 1rem;
+}
 
+@media (min-width: 900px) {
     body:has(.swipe-bottom-row) .toast-container {
         --web-toast-bottom: 4.5rem;
     }
+}
 
-    .toast-container ol {
-        flex-direction: column-reverse;
+@media (max-width: 899px) {
+    body:has(.action-dock) .toast-container {
+        --web-toast-bottom: 4.5rem;
     }
 
-    .toast-container li {
-        margin-top: 0;
-        margin-bottom: -2.75rem;
-    }
-
-    .toast-container li:first-child,
-    .toast-container.expanded li {
-        margin-bottom: 0;
-    }
-
-    .toast-container.animating li {
-        transition: margin-bottom 0.2s ease;
-    }
-
-    .toast-container [role="alertdialog"] {
-        animation-name: web-toast-rise-in;
-    }
-
-    @keyframes web-toast-rise-in {
-        from {
-            opacity: 0;
-            transform: translateY(1.5rem) scale(0.96);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-        }
+    body:has(.web-dock-pair) .toast-container {
+        --web-toast-bottom: 7.75rem;
     }
 }
 
-@media (min-width: 900px) and (prefers-reduced-motion: reduce) {
+.toast-container ol {
+    flex-direction: column-reverse;
+}
+
+.toast-container li {
+    margin-top: 0;
+    margin-bottom: -2.75rem;
+}
+
+.toast-container li:first-child,
+.toast-container.expanded li {
+    margin-bottom: 0;
+}
+
+.toast-container.animating li {
+    transition: margin-bottom 0.2s ease;
+}
+
+.toast-container [role="alertdialog"] {
+    animation-name: web-toast-rise-in;
+}
+
+@keyframes web-toast-rise-in {
+    from {
+        opacity: 0;
+        transform: translateY(1.5rem) scale(0.96);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
     .toast-container [role="alertdialog"] {
         animation: none;
     }
