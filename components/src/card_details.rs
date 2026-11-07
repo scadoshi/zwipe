@@ -299,11 +299,11 @@ pub fn CardDetails(
 /// shown face's mana cost right after it.
 ///
 /// Under the title a chip row holds the shown face's type line and the
-/// card's rarity. The body is the shown face's rules text, then the set and,
-/// when `show_prices`, the prices as chips. The panel's foot holds the
-/// keywords, the card roles and their oracle tags when `show_classification`,
-/// the host's `footer`, the Flip and Image buttons, and the face's power and
-/// toughness, loyalty or defense at its bottom right. A multi-faced card
+/// card's rarity. The body is the shown face's rules text, a chip row of the
+/// set, the prices when `show_prices` and last the face's power and
+/// toughness, loyalty or defense, then the keywords and the card roles and
+/// their oracle tags when `show_classification`. The panel's foot holds the
+/// host's `footer` and the Flip and Image buttons. A multi-faced card
 /// shows one face at a time, as in [`CardDetails`]: `face` lets the host own
 /// the shown face (pair it with `show_flip: false` to put Flip in its own
 /// chrome).
@@ -375,12 +375,7 @@ pub fn CardDetailsPanel(
     let stats = current_face.as_ref().and_then(|f| f.stats.clone());
     let show_flip_btn = face_count > 1 && show_flip;
     let show_image = has_image && on_image.is_some();
-    let has_foot = !keywords.is_empty()
-        || (show_classification && !(roles.is_empty() && other_tags.is_empty()))
-        || footer.is_some()
-        || show_flip_btn
-        || show_image
-        || stats.is_some();
+    let has_foot = footer.is_some() || show_flip_btn || show_image;
     let class = match class {
         Some(extra) => format!("card-details-panel {extra}"),
         None => "card-details-panel".to_string(),
@@ -395,12 +390,6 @@ pub fn CardDetailsPanel(
             class,
             actions: has_foot.then(|| rsx! {
                 div { class: "card-details-foot",
-                    if !keywords.is_empty() {
-                        KeywordChips { keywords }
-                    }
-                    if show_classification {
-                        CardRoleChips { roles, tags_by_role, other_tags, describe_tag, on_examples }
-                    }
                     {footer}
                     if show_flip_btn || show_image {
                         div { class: "card-action-row",
@@ -430,11 +419,6 @@ pub fn CardDetailsPanel(
                             }
                         }
                     }
-                    if let Some(stats) = stats {
-                        div { class: "card-details-stats",
-                            span { class: "detail-chip detail-chip-pt", "{stats}" }
-                        }
-                    }
                 }
             }),
             div { class: "card-details-keys",
@@ -451,14 +435,28 @@ pub fn CardDetailsPanel(
                 for price in prices {
                     span { key: "{price}", class: "card-row-price card-price-chip", "{price}" }
                 }
+                if let Some(stats) = stats {
+                    span { class: "detail-chip detail-chip-pt", "{stats}" }
+                }
+            }
+            if !keywords.is_empty() {
+                div { class: "card-details-analysis",
+                    KeywordChips { keywords }
+                }
+            }
+            if show_classification && !(roles.is_empty() && other_tags.is_empty()) {
+                div { class: "card-details-analysis",
+                    CardRoleChips { roles, tags_by_role, other_tags, describe_tag, on_examples }
+                }
             }
         }
     }
 }
 
-/// The ghost of a [`CardDetailsPanel`] while its card loads: the panel with
-/// its title bar, the type and rarity chips, the rules text's lines and the
-/// set and price chips.
+/// The ghost of a [`CardDetailsPanel`] while its card loads, in the panel's
+/// own order: the title bar, the type and rarity chips, the rules text's
+/// lines, the set, price and stats chips, a card role's chip, then the foot's
+/// rule and the Flip button.
 #[component]
 pub fn CardDetailsPanelSkeleton() -> Element {
     rsx! {
@@ -476,8 +474,19 @@ pub fn CardDetailsPanelSkeleton() -> Element {
                     div { key: "{i}", class: "skeleton-bar card-details-ghost-line" }
                 }
                 div { class: "card-details-facts",
-                    for i in 0..3 {
+                    for i in 0..4 {
                         span { key: "{i}", class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
+                    }
+                }
+                div { class: "card-details-analysis card-details-facts",
+                    span { class: "skeleton-bar skeleton-chip skeleton-chip-md" }
+                }
+            }
+            hr { class: "panel-rule" }
+            div { class: "panel-actions",
+                div { class: "card-details-foot",
+                    div { class: "card-action-row",
+                        span { class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
                     }
                 }
             }

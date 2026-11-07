@@ -985,7 +985,7 @@ i.ms.ms-cost.ms-gp {
     font-size: 0.85rem;
 }
 
-/* The set and the prices after the rules text. */
+/* The set, the prices and the face's stats after the rules text. */
 .card-details-facts {
     display: flex;
     flex-wrap: wrap;
@@ -994,16 +994,17 @@ i.ms.ms-cost.ms-gp {
     margin-top: 0.9rem;
 }
 
-/* The face's power and toughness, loyalty or defense at the foot's bottom
-   right, where the card prints it. */
-.card-details-stats {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 0.5rem;
+/* The keywords and the card roles after the set and prices. */
+.card-details-analysis {
+    margin-top: 0.9rem;
 }
 
-/* The foot is the analysis, not a button row: blocks stacked at the
-   panel's left. */
+.card-details-analysis > :last-child {
+    margin-bottom: 0;
+}
+
+/* The foot stacks the host's content over the Flip and Image row at the
+   panel's left, not as one button row. */
 .card-details-panel > .panel-actions {
     display: block;
 }
