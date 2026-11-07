@@ -506,7 +506,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                             SwipeButtons { control, buttons }
                             CardInfoDisplay { card }
                         } else {
-                            CardSkeleton {}
+                            CardSkeleton { is_loading: !loaded() }
                         }
                     }
                 }
