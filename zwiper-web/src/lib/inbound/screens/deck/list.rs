@@ -316,43 +316,46 @@ fn DeckRow(profile: DeckProfile) -> Element {
                 h3 { class: "font-light text-base tracking-wide deck-list-name",
                     "{profile.name}"
                 }
-                if !pips.is_empty() {
-                    span { class: "identity-pips",
-                        for color in pips {
-                            i {
-                                key: "{color.to_short_name()}",
-                                class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
+                // The pips, the count and the chips take the line under the name.
+                div { class: "deck-row-chips",
+                    if !pips.is_empty() {
+                        span { class: "identity-pips",
+                            for color in pips {
+                                i {
+                                    key: "{color.to_short_name()}",
+                                    class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
+                                }
                             }
                         }
                     }
-                }
-                // "1 card" for one, "{count} cards" otherwise.
-                span {
-                    class: if count_bad { "stat-chip stat-chip-warning" } else { "stat-chip" },
-                    {cards_label(count)}
-                }
-                if let Some(format) = profile.format {
-                    span { class: "stat-chip stat-chip-p3", "{format.display_name()}" }
-                }
-                if let Some(power) = profile.power_level {
-                    span { class: "stat-chip stat-chip-p5", "{power.display_name()}" }
-                }
-                for name in [
-                    profile.commander_name.clone(),
-                    profile.partner_commander_name.clone(),
-                    profile.background_name.clone(),
-                    profile.signature_spell_name.clone(),
-                ]
-                    .into_iter()
-                    .flatten()
-                {
-                    span { class: "stat-chip stat-chip-p3", "{name}" }
-                }
-                for tag in profile.tags.iter() {
-                    span { key: "{tag}", class: "stat-chip stat-chip-muted", "{deck_tag_label(tag)}" }
-                }
-                for tag in profile.other_tags.iter() {
-                    span { key: "{tag}", class: "stat-chip stat-chip-p5", "{tag.display_name()}" }
+                    // "1 card" for one, "{count} cards" otherwise.
+                    span {
+                        class: if count_bad { "stat-chip stat-chip-warning" } else { "stat-chip" },
+                        {cards_label(count)}
+                    }
+                    if let Some(format) = profile.format {
+                        span { class: "stat-chip stat-chip-p3", "{format.display_name()}" }
+                    }
+                    if let Some(power) = profile.power_level {
+                        span { class: "stat-chip stat-chip-p5", "{power.display_name()}" }
+                    }
+                    for name in [
+                        profile.commander_name.clone(),
+                        profile.partner_commander_name.clone(),
+                        profile.background_name.clone(),
+                        profile.signature_spell_name.clone(),
+                    ]
+                        .into_iter()
+                        .flatten()
+                    {
+                        span { class: "stat-chip stat-chip-p3", "{name}" }
+                    }
+                    for tag in profile.tags.iter() {
+                        span { key: "{tag}", class: "stat-chip stat-chip-muted", "{deck_tag_label(tag)}" }
+                    }
+                    for tag in profile.other_tags.iter() {
+                        span { key: "{tag}", class: "stat-chip stat-chip-p5", "{tag.display_name()}" }
+                    }
                 }
             }
         }

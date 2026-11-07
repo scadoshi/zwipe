@@ -185,6 +185,23 @@
     display: contents;
 }
 
+/* On a phone the colors, price and stat take their own line under the
+   name, so rows of one list share a shape whatever the name's length. */
+@media (max-width: 899px) {
+    .card-row-tags {
+        display: flex;
+        flex: 1 0 100%;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.3rem 0.4rem;
+        min-width: 0;
+    }
+
+    .card-row-tags:not(:has(> :not(:empty))) {
+        display: none;
+    }
+}
+
 /* Opt-in art-crop thumbnail at the far left of the row (CardRow `show_art`).
    Art crops vary in aspect card to card, so a fixed box with cover-fit keeps
    every row's thumb identical. Lazy-loaded by the img attribute. The
@@ -1526,11 +1543,12 @@ i.ms.ms-cost.ms-gp {
 /* ---- ColorBars (components::ColorBars) ---- */
 
 /* The pips and fills read `--mana-white` through `--mana-green`, so the bars
-   follow the pip style like every other pip. */
+   follow the pip style like every other pip. The panel's own padding is the
+   room above and below them. */
 .color-bars {
     display: flex;
     flex-direction: column;
-    padding: 0.5rem 1rem 0.9rem;
+    padding: 0 1rem;
 }
 
 /* A deck chart of color rows: the label over the rows, in the Mana section's
@@ -2098,6 +2116,12 @@ i.ms.ms-cost.ms-gp {
    the danger color. Compound selector so it outranks orangui's title color. */
 .settings-list-title.danger-zone-title {
     color: var(--color-error);
+}
+
+/* Under an empty list's note, the Danger zone keeps the panel gap a list
+   would leave above it. */
+.message-empty + .danger-zone {
+    margin-top: var(--panel-gap);
 }
 
 /* ---- Note chip (.chip-note) ----
