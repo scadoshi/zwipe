@@ -23,6 +23,7 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
+| 104, overscroll shows the footer's color, not a darker strip (queued after 103) | laptop | `nits/laptop-104` |
 | 103, rounded SVG arrows in the swipe dock | laptop | `nits/laptop-103` |
 | 101, the sign-in panels' footer rule runs edge to edge | laptop | `nits/laptop-101` |
 | 100, 102, the cover-flow's edges fade, arrow buttons (queued after 97) | scotland | `nits/scotland-100` |
@@ -151,6 +152,7 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 101. **The sign-in panels' rule stops short of the edges.** Login, Register and Forgot password draw the rule above their secondary links inside the form's padding; the links move into the panel's footer with a full-width rule.
 102. **The cover-flow needs arrow buttons.** Squircle icon buttons with the dock's thick arrows on either side; disabled at the ends.
 103. **The swipe dock's arrows are sharp text glyphs.** They become rounded SVG arrow icons like the dock's others; the cover-flow's arrow buttons (102) reuse them.
+104. **Overscrolling past the footer exposes a darker strip.** The root takes the footer/nav color and the body the field color, so the rubber band shows matching color at both ends.
 
 ## Done
 
