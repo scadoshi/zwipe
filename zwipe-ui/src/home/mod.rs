@@ -2,7 +2,7 @@
 //! buy links live in [`crate::buy`] and the Colors panel's bars in
 //! [`crate::colors`].
 
-use chrono::{DateTime, Timelike, Utc};
+use chrono::{DateTime, Local, TimeDelta, Timelike, Utc};
 use zwipe_core::domain::user::User;
 use zwipe_core::http::contracts::metrics::{HttpLifetimeCounters, HttpPublicMetrics};
 
@@ -18,6 +18,38 @@ pub struct Figures {
     pub searches: Option<u64>,
     /// Cards swiped, every direction together.
     pub cards_swiped: Option<u64>,
+}
+
+/// What the tag under the counters says about how new they are.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum CountsTag {
+    /// Made under [`COUNTS_LIVE`](crate::timing::COUNTS_LIVE) ago.
+    Live,
+    /// Made longer ago, at this time.
+    AsOf(DateTime<Utc>),
+}
+
+impl CountsTag {
+    /// The tag for a copy made at `made_at`, seen at `now`. A copy that does
+    /// not say when it was made came straight from the server and is live.
+    #[must_use]
+    pub fn at(made_at: Option<DateTime<Utc>>, now: DateTime<Utc>) -> Self {
+        let window = TimeDelta::from_std(crate::timing::COUNTS_LIVE).unwrap_or(TimeDelta::MAX);
+        match made_at {
+            Some(made) if now.signed_duration_since(made) >= window => Self::AsOf(made),
+            _ => Self::Live,
+        }
+    }
+
+    /// `Live`, or "as of" the copy's time in the device's time zone, as
+    /// `as of 14:05`.
+    #[must_use]
+    pub fn label(self) -> String {
+        match self {
+            Self::Live => crate::screens::home::LIVE.to_owned(),
+            Self::AsOf(made) => format!("as of {}", made.with_timezone(&Local).format("%H:%M")),
+        }
+    }
 }
 
 /// A count the server keeps signed, never below zero.
@@ -192,6 +224,28 @@ mod tests {
     use uuid::Uuid;
 
     use super::*;
+
+    #[test]
+    fn a_copy_reads_live_for_five_minutes_then_as_of_its_time() {
+        let made = Utc.with_ymd_and_hms(2026, 11, 7, 8, 0, 0).unwrap();
+        let after = |secs: i64| made + TimeDelta::seconds(secs);
+        assert_eq!(CountsTag::at(Some(made), after(0)), CountsTag::Live);
+        assert_eq!(CountsTag::at(Some(made), after(299)), CountsTag::Live);
+        assert_eq!(CountsTag::at(Some(made), after(300)), CountsTag::AsOf(made));
+        assert_eq!(
+            CountsTag::at(Some(made), after(7200)),
+            CountsTag::AsOf(made)
+        );
+        assert_eq!(CountsTag::at(None, after(7200)), CountsTag::Live);
+    }
+
+    #[test]
+    fn the_tag_reads_live_or_as_of_the_local_time() {
+        assert_eq!(CountsTag::Live.label(), "Live");
+        let made = Utc.with_ymd_and_hms(2026, 11, 7, 8, 5, 0).unwrap();
+        let local = made.with_timezone(&Local).format("%H:%M").to_string();
+        assert_eq!(CountsTag::AsOf(made).label(), format!("as of {local}"));
+    }
 
     fn mine(swipes_right: i64) -> HttpLifetimeCounters {
         HttpLifetimeCounters {

@@ -91,6 +91,7 @@ pub fn App() -> Element {
         document::Link { rel: "stylesheet", href: WEB_CSS }
         document::Script { {components::SCROLL_FADE_JS} }
         document::Script { {HEADER_HIDE_JS} }
+        document::Script { {components::KEYBOARD_JS} }
         document::Meta { name: "viewport", content: "width=device-width, initial-scale=1.0" }
 
         ThemeShell { splash,

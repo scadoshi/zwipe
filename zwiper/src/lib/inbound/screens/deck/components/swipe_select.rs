@@ -47,7 +47,7 @@ use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::swipe_confirm::{self, Said, SwipeConfirmChip};
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::component;
-use crate::inbound::components::{hint_dialog, ui_toast};
+use crate::inbound::components::{held_open, hint_dialog, ui_toast};
 use crate::inbound::screens::deck::card::components::card_info::{
     CardDetailsSheet, CardSkeleton, use_describe_tag,
 };
@@ -369,6 +369,7 @@ pub(crate) fn SwipeSelect(
     // The screen stays mounted and fades via CSS (`.show`). The inner content is
     // unmounted whenever closed so a just-committed card can't snap back to
     // center mid-fade; the solid screen simply fades out, easing the form in.
+    let backdrop = held_open::use_held_open(open.into());
     let screen_class = if open() {
         "screen swipe-select-screen show"
     } else {
@@ -420,7 +421,9 @@ pub(crate) fn SwipeSelect(
         div { class: "{screen_class}",
             // A screen over another paints its own backdrop, since .screen is
             // clear and the one beneath would show through.
-            ::components::GridCells { still: true }
+            if backdrop {
+                ::components::GridCells { still: true }
+            }
             if open() {
                 ScreenHeader { title, hint: hint_open, back: move |()| driver.dispatch(Action::Back) }
 

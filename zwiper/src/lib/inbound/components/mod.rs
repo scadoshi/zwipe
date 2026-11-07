@@ -10,6 +10,8 @@ pub mod auth;
 pub mod catalog_cache;
 /// Generation counter that keeps a stale async reply from landing over a newer one.
 pub mod generation;
+/// A full-screen picker's backdrop, mounted only while it shows.
+pub mod held_open;
 /// One-time hint dialogs (per-account, tracked via `hints_shown`).
 pub mod hint_dialog;
 /// App-root receiver that renders on-demand "?" hint dialogs (sender/receiver).
@@ -26,6 +28,8 @@ pub mod home_play_style;
 pub mod info_button;
 /// Interactive components (buttons, links, etc.).
 pub mod interactions;
+/// The app's lifecycle, fed by the native shell's window events.
+pub mod lifecycle;
 /// Logout confirmation dialog.
 pub mod logout_dialog;
 /// Navigation plumbing (OS back-intent bridge).
@@ -34,6 +38,8 @@ pub mod navigation;
 pub mod on_bump;
 /// Shared screen header (centered title + optional "?" hint trigger).
 pub mod screen_header;
+/// The account's settings fetched and applied, the theme by the latest choice.
+pub mod settings_sync;
 /// Global floating help/support button + bottom sheet.
 pub mod support;
 /// Raises zwipe-ui's toasts through the app's toaster.

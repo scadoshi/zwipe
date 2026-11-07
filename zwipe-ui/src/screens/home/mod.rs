@@ -20,7 +20,7 @@ use zwipe_core::http::contracts::suggestions::HttpPlayStyleSummary;
 use crate::buy;
 use crate::colors::{Bar, ColorCounts};
 use crate::generation::{Generation, Ticket};
-use crate::home::{self, Figures, Scope, UserSource};
+use crate::home::{self, CountsTag, Figures, Scope, UserSource};
 use crate::toast::Toast;
 
 /// The screen's title.
@@ -58,6 +58,9 @@ pub const NO_PLAY_STYLE: &str = "Your playstyle shows here";
 
 /// The Colors panel's line when the summary failed to load and none is held.
 pub const PLAY_STYLE_FAILED: &str = "Could not load your playstyle";
+
+/// The featured flavor panel's line when the card failed to load and none is held.
+pub const FLAVOR_FAILED: &str = "Could not load the featured flavor";
 
 /// The featured flavor panel's title.
 pub const FEATURED_FLAVOR: &str = "Featured flavor";
@@ -119,6 +122,9 @@ pub struct CachedFigures {
     pub figures: Figures,
     /// How old they are.
     pub age: Age,
+    /// When the server's copy was made, which an edge cache can put well
+    /// before the fetch; `None` when it did not say.
+    pub made_at: Option<DateTime<Utc>>,
 }
 
 /// The featured flavor card a client holds, with when the server picks the next one.
@@ -197,6 +203,8 @@ pub enum Action {
         ticket: Ticket,
         /// Everybody's counters.
         figures: Figures,
+        /// When the server's copy was made, `None` when it did not say.
+        made_at: Option<DateTime<Utc>>,
     },
     /// The user's own counters arrived for the fetch holding `ticket`. A failed fetch keeps the figures waiting, so the client sends nothing.
     MyCountsLoaded {
@@ -246,6 +254,12 @@ pub enum Action {
         /// The ticket from the [`Effect::FetchFlavor`] this answers.
         ticket: Ticket,
     },
+    /// Fetches the decks again after a failed load, from the panel's Retry.
+    RetryDecks,
+    /// Fetches the playstyle summary again after a failed load, from the panel's Retry.
+    RetryPlayStyle,
+    /// Fetches the flavor card again after a failed load, from the panel's Retry.
+    RetryFlavor,
     /// Switches the hero between everybody's counters and the user's own.
     ToggleScope {
         /// Whether the client holds the user's own counters from under [`COUNTS_FRESH`](crate::timing::COUNTS_FRESH) ago, so switching to them asks for none.
@@ -278,7 +292,7 @@ pub enum Effect {
     FetchPlayStyle(Ticket),
     /// Fetches the user's decks, stores them, and answers with [`Action::DecksLoaded`] or [`Action::DecksFailed`] carrying this ticket. A failure is reported without a toast.
     FetchDecks(Ticket),
-    /// Fetches the featured flavor card, stores it, and answers with [`Action::FlavorLoaded`] or [`Action::FlavorFailed`] carrying this ticket. A failure only logs.
+    /// Fetches the featured flavor card, stores it, and answers with [`Action::FlavorLoaded`] or [`Action::FlavorFailed`] carrying this ticket; a failure with no card held shows [`FLAVOR_FAILED`] and Retry.
     FetchFlavor(Ticket),
     /// Opens this one-time hint if the user hasn't seen it, and records it as seen.
     OfferHint(OneTimeHint),
@@ -403,6 +417,8 @@ pub enum Flavor {
     Blank,
     /// The quote, then the name, price, Image and Buy row.
     Quote(Quote),
+    /// No card is held and the fetch failed: the panel says so and offers Retry.
+    Failed,
 }
 
 /// A retailer link in the Buy dialog.
@@ -425,6 +441,18 @@ struct Generations {
     decks: Generation,
 }
 
+/// Where the flavor card's fetch stands.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+enum FlavorFetch {
+    /// None is out and the last one, if any, did not fail.
+    #[default]
+    Idle,
+    /// One is out.
+    Out,
+    /// The last one failed.
+    Failed,
+}
+
 /// Home for one visit. Starts with nothing held and nothing out; send [`Action::Load`] with what the client holds.
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct State {
@@ -435,7 +463,7 @@ pub struct State {
     play_style: Option<HttpPlayStyleSummary>,
     play_style_failed: bool,
     flavor: Option<FlavorCard>,
-    flavor_out: bool,
+    flavor_fetch: FlavorFetch,
     decks: Option<Vec<DeckTile>>,
     decks_failed: bool,
     generations: Generations,
@@ -504,11 +532,16 @@ impl State {
                     return greet(cached.as_deref(), UserSource::Cached, greeted);
                 }
             }
-            Action::CountsLoaded { ticket, figures } => {
+            Action::CountsLoaded {
+                ticket,
+                figures,
+                made_at,
+            } => {
                 if self.generations.counts.is_current(ticket) {
                     self.everybody = Some(CachedFigures {
                         figures,
                         age: Age::Fresh,
+                        made_at,
                     });
                 }
             }
@@ -543,13 +576,16 @@ impl State {
             Action::FlavorLoaded { ticket, flavor } => {
                 if self.generations.flavor.is_current(ticket) {
                     self.flavor = Some(*flavor);
-                    self.flavor_out = false;
+                    self.flavor_fetch = FlavorFetch::Idle;
                 }
             }
             Action::FlavorFailed { ticket } => {
                 if self.generations.flavor.is_current(ticket) {
-                    self.flavor_out = false;
+                    self.flavor_fetch = FlavorFetch::Failed;
                 }
+            }
+            Action::RetryDecks | Action::RetryPlayStyle | Action::RetryFlavor => {
+                return self.retry(&action).into_iter().collect();
             }
             Action::ToggleScope { mine_fresh } => {
                 self.scope = self.scope.toggled();
@@ -589,7 +625,7 @@ impl State {
         self.play_style = play_style;
         self.play_style_failed = false;
         self.flavor = flavor;
-        self.flavor_out = false;
+        self.flavor_fetch = FlavorFetch::Idle;
         self.decks = decks;
         self.decks_failed = false;
 
@@ -624,11 +660,37 @@ impl State {
     /// Asks for the flavor card when none is held or it expired by `now`, unless a fetch is out.
     fn check_flavor(&mut self, now: DateTime<Utc>) -> Option<Effect> {
         let stale = self.flavor.as_ref().is_none_or(|f| f.is_expired(now));
-        if !stale || self.flavor_out {
+        if !stale || self.flavor_fetch == FlavorFetch::Out {
             return None;
         }
-        self.flavor_out = true;
-        Some(Effect::FetchFlavor(self.generations.flavor.next_ticket()))
+        Some(self.fetch_flavor())
+    }
+
+    /// Sends the flavor card's fetch.
+    fn fetch_flavor(&mut self) -> Effect {
+        self.flavor_fetch = FlavorFetch::Out;
+        Effect::FetchFlavor(self.generations.flavor.next_ticket())
+    }
+
+    /// A panel's Retry: fetches its part again, the decks and the summary only
+    /// with a user, the flavor card unless a fetch is out.
+    fn retry(&mut self, action: &Action) -> Option<Effect> {
+        match action {
+            Action::RetryDecks if self.user.is_some() => {
+                self.decks_failed = false;
+                Some(Effect::FetchDecks(self.generations.decks.next_ticket()))
+            }
+            Action::RetryPlayStyle if self.user.is_some() => {
+                self.play_style_failed = false;
+                Some(Effect::FetchPlayStyle(
+                    self.generations.play_style.next_ticket(),
+                ))
+            }
+            Action::RetryFlavor if self.flavor_fetch != FlavorFetch::Out => {
+                Some(self.fetch_flavor())
+            }
+            _ => None,
+        }
     }
 
     /// Whose counters the hero shows.
@@ -645,6 +707,21 @@ impl State {
             Scope::OnlyMe => self.mine,
         }
         .unwrap_or_default()
+    }
+
+    /// The tag under the hero's figures at `now`: everybody's, once fetched
+    /// this launch, `Live` while the server's copy is new and "as of" its time
+    /// after; the user's own, never edge-cached, `Live` once any copy is held.
+    /// `None` before then.
+    #[must_use]
+    pub fn counts_tag(&self, now: DateTime<Utc>) -> Option<CountsTag> {
+        match self.scope {
+            Scope::Everybody => self
+                .everybody
+                .filter(|e| e.age != Age::Restored)
+                .map(|e| CountsTag::at(e.made_at, now)),
+            Scope::OnlyMe => self.mine.map(|_| CountsTag::Live),
+        }
     }
 
     /// Whether the hero tags its figures [`LIVE`]: everybody's once fetched this launch, the user's own once any copy is held.
@@ -692,10 +769,14 @@ impl State {
         self.flavor.as_ref().map(|f| &f.card)
     }
 
-    /// What the featured flavor panel draws: [`quote`] of the card held, `Loading` with none.
+    /// What the featured flavor panel draws: [`quote`] of the card held, else `Failed` after a failed fetch, else `Loading`.
     #[must_use]
     pub fn flavor(&self) -> Flavor {
-        self.flavor_card().map_or(Flavor::Loading, quote)
+        match self.flavor_card() {
+            Some(card) => quote(card),
+            None if self.flavor_fetch == FlavorFetch::Failed => Flavor::Failed,
+            None => Flavor::Loading,
+        }
     }
 
     /// The Buy dialog's retailer links for the flavor card held, [`buy_links`] of it. Empty with no card.

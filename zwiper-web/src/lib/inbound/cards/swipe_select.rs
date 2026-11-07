@@ -734,7 +734,7 @@ fn SwipeSelectBody(
                 open: show_details,
                 card: card.clone(),
                 on_printings: move |()| printing_open.set(true),
-                footer: reasons.map(|reasons| rsx! {
+                body_end: reasons.map(|reasons| rsx! {
                     SuggestionReasons { reasons, deck_count: deck_count(), describe_tag, on_examples }
                 }),
             }

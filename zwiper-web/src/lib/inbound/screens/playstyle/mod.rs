@@ -18,8 +18,8 @@ mod skeleton;
 use std::collections::HashSet;
 
 use components::{
-    AlertDialog, Button, ButtonVariant, Chip, DangerZoneAction, DialogAction, HoverStackHost,
-    TOAST_LONG, TOAST_QUICK, use_hover_stack,
+    AlertDialog, Button, ButtonVariant, CardListFold, Chip, DangerZoneAction, DialogAction,
+    HoverStackHost, TOAST_LONG, TOAST_QUICK, use_hover_stack,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -318,20 +318,18 @@ pub fn Playstyle() -> Element {
                                     if wide() {
                                         div { class: "deck-controls", {show_chips.clone()} }
                                     }
-                                    div { class: "maybeboard-list card-group row-enter",
-                                        // Swipe sits in the list's header, so it
-                                        // says what gets swiped.
-                                        div { class: "card-group-header card-group-header-with-hint",
-                                            span { "{LIST_TITLE}" }
-                                            div { class: "card-group-header-actions",
-                                                Button {
-                                                    variant: ButtonVariant::Action,
-                                                    onclick: move |_| swipe_open.set(true),
-                                                    "Swipe"
-                                                }
-                                                InfoButton { topic: HintTopic::SuggestionList }
+                                    // Swipe sits in the list's header, so it says
+                                    // what gets swiped.
+                                    CardListFold {
+                                        title: LIST_TITLE,
+                                        actions: rsx! {
+                                            Button {
+                                                variant: ButtonVariant::Action,
+                                                onclick: move |_| swipe_open.set(true),
+                                                "Swipe"
                                             }
-                                        }
+                                            InfoButton { topic: HintTopic::SuggestionList }
+                                        },
                                         if !wide() {
                                             div { class: "web-card-group-filters", {show_chips} }
                                         }

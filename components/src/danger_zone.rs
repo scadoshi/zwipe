@@ -5,12 +5,14 @@ use orangui::{Button, ButtonVariant};
 use zwipe_ui::screens::deck_view::DANGER_ZONE;
 
 /// The Danger zone panel with a single row: `label`, then a red `button`
-/// that calls `onclick`, which opens the action's confirmation.
+/// that calls `onclick`, which opens the action's confirmation. `disabled`
+/// turns the button off while there is nothing for it to act on.
 #[component]
 pub fn DangerZoneAction(
     label: &'static str,
     button: &'static str,
     onclick: EventHandler<()>,
+    #[props(default)] disabled: bool,
 ) -> Element {
     rsx! {
         div { class: "settings-list danger-zone",
@@ -23,6 +25,7 @@ pub fn DangerZoneAction(
                     Button {
                         variant: ButtonVariant::Action,
                         danger: true,
+                        disabled,
                         onclick: move |_| onclick.call(()),
                         {button}
                     }

@@ -73,6 +73,12 @@ body {
     padding: 1rem;
 }
 
+/* A field's label sits as far above its box as a label row's does, the deck
+   name's included. */
+.form-panel-fields .label-hint {
+    margin-bottom: 0.4rem;
+}
+
 .form-panel + .form-panel {
     margin-top: var(--panel-gap);
 }
@@ -324,6 +330,12 @@ body {
    content's padding, so the carousel's pages are the viewport wide. */
 .printing-sheet-body {
     margin: 0 -1.5rem;
+}
+
+/* The cover flow's step buttons keep the screen's gutter inside that full
+   width. */
+.printing-sheet-body > .cover-flow {
+    padding-inline: 1rem;
 }
 
 /* =========================

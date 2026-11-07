@@ -8,6 +8,7 @@ use zwipe_core::domain::user::settings::PipStyle;
 use zwiper::config::Config;
 use zwiper::inbound::components::auth::session_upkeep;
 use zwiper::inbound::components::hint_host::HintHost;
+use zwiper::inbound::components::navigation::leave_guard::GuardedHistory;
 use zwiper::inbound::components::navigation::menu::MenuOpen;
 use zwiper::inbound::components::update_required::UpdateRequired;
 use zwiper::inbound::router::Router;
@@ -111,6 +112,12 @@ fn App() -> Element {
     // Unclaimed link clicks open in the in-app browser, not Safari.
     components::use_in_app_links();
 
+    // The router's history, with the guard that asks before a screen with
+    // unsaved changes is left.
+    use_hook(GuardedHistory::provide);
+
+    // Before the upkeep, which reacts to each return to the foreground.
+    zwiper::inbound::components::lifecycle::use_lifecycle_root();
     let upgrade_required = session_upkeep::spawn_upkeeper();
     let dialogs = use_dialog_host();
     use_context_provider(|| dialogs);
@@ -143,6 +150,7 @@ fn App() -> Element {
         document::Script { {components::SCROLL_FADE_JS} }
         document::Script { {HEADER_HIDE_JS} }
         document::Script { {components::KEYBOARD_INSET_JS} }
+        document::Script { {components::KEYBOARD_JS} }
         document::Meta {
             name: "viewport",
             content: "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"

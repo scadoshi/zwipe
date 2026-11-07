@@ -13,6 +13,7 @@ use dioxus::prelude::*;
 use zwipe_core::domain::deck::{DeckTagView, MAX_DECK_TAGS};
 use zwipe_ui::deck::pickers::{self, Picker};
 
+use crate::inbound::components::held_open;
 use crate::inbound::components::screen_header::ScreenHeader;
 
 /// In-place tag picker, up while `open`, over the server-delivered `catalog` (`GET /api/deck/tags`), so a new deck tag is selectable without a client release. `selected` holds the deck's tag slugs; a chip tap goes to `on_toggle` and the × to `on_clear`. The dock's checkmark (`on_save`) stays off while `unchanged`; the header's back arrow (`on_back`) and the OS back gesture put back the tags it opened on.
@@ -36,6 +37,7 @@ pub(crate) fn TagSelect(
     let back = use_callback(move |(): ()| on_back.call(()));
     use_overlay_back_action(open, back);
 
+    let backdrop = held_open::use_held_open(open);
     let screen_class = if open() {
         "screen swipe-select-screen show"
     } else {
@@ -55,7 +57,9 @@ pub(crate) fn TagSelect(
         div { class: "{screen_class}",
             // A screen over another paints its own backdrop, since .screen is
             // clear and the one beneath would show through.
-            ::components::GridCells { still: true }
+            if backdrop {
+                ::components::GridCells { still: true }
+            }
             if open() {
                 ScreenHeader { title: Picker::DeckTags.title(), hint: hint_open, back: move |()| back.call(()) }
 

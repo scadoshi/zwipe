@@ -23,6 +23,7 @@ fn held(n: u64, age: Age) -> CachedFigures {
     CachedFigures {
         figures: figures(n),
         age,
+        made_at: None,
     }
 }
 
@@ -242,9 +243,31 @@ fn restored_counts_show_without_live_and_are_asked_for_again() {
     let _ = state.update(Action::CountsLoaded {
         ticket,
         figures: figures(6),
+        made_at: None,
     });
     assert_eq!(state.figures(), figures(6));
     assert!(state.live());
+}
+
+#[test]
+fn an_edge_cached_copy_reads_as_of_its_time() {
+    let (mut state, effects) = load(Cached {
+        everybody: Some(held(5, Age::Restored)),
+        ..warm()
+    });
+    assert_eq!(state.counts_tag(noon()), None, "a restored copy has no tag");
+    let ticket = ticket_of(&effects, counts_ticket);
+    let made = noon() - Duration::hours(1);
+    let _ = state.update(Action::CountsLoaded {
+        ticket,
+        figures: figures(6),
+        made_at: Some(made),
+    });
+    assert_eq!(state.counts_tag(noon()), Some(CountsTag::AsOf(made)));
+    assert_eq!(
+        state.counts_tag(made + Duration::minutes(2)),
+        Some(CountsTag::Live)
+    );
 }
 
 #[test]
@@ -327,6 +350,7 @@ fn a_late_counts_reply_is_ignored() {
     let _ = state.update(Action::CountsLoaded {
         ticket: older,
         figures: figures(1),
+        made_at: None,
     });
     assert_eq!(state.figures(), Figures::default(), "a stale reply landed");
 }
@@ -616,12 +640,57 @@ fn a_cold_load_and_its_first_check_fetch_the_card_once() {
 }
 
 #[test]
-fn a_failed_flavor_fetch_keeps_the_ghost() {
+fn a_failed_flavor_fetch_says_so_and_retry_fetches_again() {
     let (mut state, effects) = load(cold());
     let ticket = ticket_of(&effects, flavor_ticket);
     let effects = state.update(Action::FlavorFailed { ticket });
-    assert!(effects.is_empty(), "a failure only logs: {effects:?}");
-    assert_eq!(state.flavor(), Flavor::Loading);
+    assert!(effects.is_empty(), "the client reports it: {effects:?}");
+    assert_eq!(state.flavor(), Flavor::Failed);
+
+    let effects = state.update(Action::RetryFlavor);
+    let retry = ticket_of(&effects, flavor_ticket);
+    assert_eq!(state.flavor(), Flavor::Loading, "ghosts while it refetches");
+    assert!(
+        state.update(Action::RetryFlavor).is_empty(),
+        "a second Retry while one is out"
+    );
+    let _ = state.update(Action::FlavorLoaded {
+        ticket: retry,
+        flavor: Box::new(flavor("Back", Some("Again"))),
+    });
+    assert!(matches!(state.flavor(), Flavor::Quote(_)));
+}
+
+#[test]
+fn retry_refetches_the_decks_and_the_summary_after_a_failure() {
+    let (mut state, effects) = load(cold());
+    let decks = ticket_of(&effects, decks_ticket);
+    let summary = ticket_of(&effects, play_style_ticket);
+    let _ = state.update(Action::DecksFailed { ticket: decks });
+    let _ = state.update(Action::PlayStyleFailed { ticket: summary });
+
+    let effects = state.update(Action::RetryDecks);
+    let decks_retry = ticket_of(&effects, decks_ticket);
+    assert_eq!(state.decks(), Decks::Loading);
+    let effects = state.update(Action::RetryPlayStyle);
+    let summary_retry = ticket_of(&effects, play_style_ticket);
+    assert_eq!(state.play_style(), PlayStyle::Loading);
+
+    // The failed fetches' late replies change nothing.
+    let _ = state.update(Action::DecksLoaded {
+        ticket: decks,
+        decks: vec![deck(9, "Stale")],
+    });
+    assert_eq!(state.decks(), Decks::Loading);
+    let _ = state.update(Action::DecksLoaded {
+        ticket: decks_retry,
+        decks: vec![deck(1, "Elves")],
+    });
+    assert!(matches!(state.decks(), Decks::Loaded(_)));
+    let _ = state.update(Action::PlayStyleFailed {
+        ticket: summary_retry,
+    });
+    assert_eq!(state.play_style(), PlayStyle::Failed);
 }
 
 #[test]

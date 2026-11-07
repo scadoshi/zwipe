@@ -37,6 +37,13 @@ The handoff for the composer session: where the factory stands, so a fresh or co
 - Scotty's later word (before sleep, 2026-11-07): "anything that gets reported back that you're like 90% confident you can fix, just fix it." So 157 to 160 went out from Surfer's and Droid's findings. Anything less certain waits for his morning triage.
 - Overnight queues: halo has 156 (the auth logout, a PR left open for Scotty), then 159. Thinker has 135/136, then 158 (counts), 143, 153. Scotland has 146, then 157 and 160 (portfolio). Laptop has 151 (A: orangui, zwipe, Cairn on a branch), then 145.
 
+## Overnight progress log (2026-11-07)
+
+Merged into `release` after the `60d705459` deploy: #256 (134/139/148/149), #257 (123), #258 (154/155), #260 (146), #261 (151b, with orangui #10), #262 (159), #263 (135/136), #264 (145), #265 (122b), #266 (161, the browser-back crash). Portfolio #9 (138) is live.
+Open for Scotty: #259 (156, auth). The Cairn branch `fix/app-lifecycle` and the portfolio branch `changelog/cairn-day-rollover` wait on his review. Thinker's 158 (A), lifetime totals that never drop, is parked in `context/plans/lifetime_totals.md`.
+143 (#269), composer review: Phase 1 matches the `pip_color_wire.md` precedent. The wire still writes `theme`, both spellings are read, and a test proves PATCH, GET, login and refresh stay parseable by 1.15 to 1.18. Phase 4 sits on `server/pip-themed` with no PR. One deploy note: the migration narrows the CHECK to ('themed', 'classic'), so while the old zerver binary overlaps the migration it could write 'theme' and fail. That's the same brief window the `classic` migration had. Deploy at a quiet hour.
+For Scotty's triage: the picker × discarding live picks; a toast over the filter's Oracle tags row (720); Droid P2-4 (theme lost after a force-stop); the Synergy selection highlight (p7-11).
+
 ## PR #259 (156, the auth logout): composer review notes for Scotty
 
 Left open as agreed. The design is sound: a rotated token presented again within 30s gets the same successor (kept in memory per process), so racing tabs and a refresh lost to a page unload stop revoking the family. Past the window, a replay still revokes. The web adds a Web Lock so tabs refresh one at a time. The ownership check (Forbidden) runs before the reuse path. Points to decide or fix before merging:

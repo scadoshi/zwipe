@@ -614,3 +614,28 @@
         overflow: hidden;
     }
 }
+
+/* An open deck page section spaces like a settings list: the rule 0.75rem
+   under the title, as a list header's border sits, and its rows stacked on
+   their own borders with no gap between them. A chart or a block that opens
+   the section or follows a row keeps 0.75rem of room. */
+.collapsible-section-rule {
+    border: none;
+    border-top: 1px solid var(--border-secondary);
+    margin: 0.75rem 0 0;
+}
+
+.collapsible-section-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding-top: 0.75rem;
+}
+
+.collapsible-section-body:has(> .settings-row:first-child) {
+    padding-top: 0;
+}
+
+.collapsible-section-body > .settings-row + .settings-row {
+    margin-top: -0.75rem;
+}

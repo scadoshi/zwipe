@@ -1927,31 +1927,6 @@ body {
         max-height: calc(100% - var(--web-dock-panel-top) - var(--web-dock-panel-bottom));
     }
 
-    /* Swipe select's reasons scroll with the card's body, which fades out
-       at an edge with more to scroll past it instead of cutting a row in
-       half: the top fade grows in as the body leaves its top and the bottom
-       one goes as it reaches its end. A body that fits does not fade. */
-    @supports (animation-timeline: scroll()) {
-        .web-swipe-select-details .card-details-panel > .panel-body {
-            -webkit-mask-image: linear-gradient(
-                to bottom,
-                transparent 0,
-                #000 var(--web-fade-top),
-                #000 calc(100% - var(--web-fade-bottom)),
-                transparent 100%
-            );
-            mask-image: linear-gradient(
-                to bottom,
-                transparent 0,
-                #000 var(--web-fade-top),
-                #000 calc(100% - var(--web-fade-bottom)),
-                transparent 100%
-            );
-            animation: web-scroll-fade linear both;
-            animation-timeline: scroll(self);
-        }
-    }
-
     .web-details-hidden :is(.web-swipe-details, .web-examples-details) {
         transform: translateX(calc(100% + 1rem));
         visibility: hidden;
@@ -1986,6 +1961,32 @@ body {
     .web-swipe-select-body,
     .web-examples-body {
         grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* Swipe select's reasons scroll with the card's body, docked on a wide
+   window or in the phone's details drawer, and the body fades out at an
+   edge with more to scroll past it instead of cutting a row in half: the
+   top fade grows in as the body leaves its top and the bottom one goes as
+   it reaches its end. A body that fits does not fade. */
+@supports (animation-timeline: scroll()) {
+    :is(.web-swipe-select-details, .card-details-drawer) .card-details-panel > .panel-body {
+        -webkit-mask-image: linear-gradient(
+            to bottom,
+            transparent 0,
+            #000 var(--web-fade-top),
+            #000 calc(100% - var(--web-fade-bottom)),
+            transparent 100%
+        );
+        mask-image: linear-gradient(
+            to bottom,
+            transparent 0,
+            #000 var(--web-fade-top),
+            #000 calc(100% - var(--web-fade-bottom)),
+            transparent 100%
+        );
+        animation: web-scroll-fade linear both;
+        animation-timeline: scroll(self);
     }
 }
 
@@ -2372,6 +2373,14 @@ body {
     box-sizing: border-box;
 }
 
+/* The chips fade out above the band the dock sits in, as they fade in
+   under the controls, instead of a row cut through mid-chip. The grid's
+   own bottom padding scrolls the last row clear of the fade. */
+.web-picker-body > .tag-grid {
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 1rem, #000 calc(100% - 1rem), transparent);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 1rem, #000 calc(100% - 1rem), transparent);
+}
+
 /* A picker is a drawer down to a window that keeps some page beside it.
    Narrower, the drawer takes the whole window over the grid backdrop, as
    the app's phone pickers do. */
@@ -2571,7 +2580,7 @@ body {
 /* Below the breakpoint the page is the app's one stack. */
 @media (max-width: 899px) {
     .web-deck-view {
-        width: calc(100% - 4rem);
+        width: calc(100% - 2rem);
         max-width: 40rem;
         display: flex;
         flex-direction: column;

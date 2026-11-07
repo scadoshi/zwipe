@@ -27,6 +27,7 @@ use super::swipe_select::{SwipeMode, SwipeSelect};
 use super::tag_select::TagSelect;
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::catalog_cache::CatalogCache;
+use crate::inbound::components::navigation::leave_guard::{LeaveCopy, LeaveGuard, use_leave_guard};
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen, component, screen};
@@ -47,6 +48,8 @@ struct Driver {
     client: Signal<ZwipeClient>,
     usage_buffer: Signal<UsageBuffer>,
     hint_open: Signal<bool>,
+    /// Asks before the form is left with changes not yet saved.
+    leave: LeaveGuard,
 }
 
 impl Driver {
@@ -55,6 +58,9 @@ impl Driver {
         let mut model = self.model;
         let effects = model.write().update(action);
         self.sync_name();
+        // Armed or not before the moves are made, so a save's own move to
+        // the deck goes through and a Back with changes asks.
+        self.leave.set(model.peek().has_unsaved_changes());
         for effect in effects {
             self.perform(effect);
         }
@@ -280,7 +286,16 @@ pub(crate) fn DeckForm(open: Open) -> Element {
         client,
         usage_buffer: use_context(),
         hint_open: use_signal(|| false),
+        leave: use_leave_guard(LeaveCopy {
+            title: model::LEAVE_TITLE,
+            body: model::LEAVE_BODY,
+            stay: model::STAY,
+            leave: model::LEAVE,
+        }),
     };
+    // A change that reaches the model some other way arms the guard too.
+    let leave = driver.leave;
+    use_effect(move || leave.set(model.read().has_unsaved_changes()));
     let hint_open = driver.hint_open;
     use_hook(move || {
         for effect in opening {
