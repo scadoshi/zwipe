@@ -388,7 +388,11 @@ fn move_toggles_between_main_and_maybeboard() {
         let effects = state.update(Action::Move);
         let ticket = ticket_of(&effects);
         // The last move empties the pile, whose toast stands in for its own.
-        let message = if at == 2 { NOTHING_LEFT } else { message };
+        let said = if at == 2 {
+            Effect::Toast(Toast::quick(ToastKind::Info, NOTHING_LEFT))
+        } else {
+            Effect::Confirm(Toast::quick(ToastKind::Info, message))
+        };
         assert_eq!(
             effects[..2],
             [
@@ -398,7 +402,7 @@ fn move_toggles_between_main_and_maybeboard() {
                     card_id: ids[at],
                     to,
                 },
-                Effect::Confirm(Toast::quick(ToastKind::Info, message)),
+                said,
             ],
             "card {at}"
         );

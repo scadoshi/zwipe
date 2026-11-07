@@ -434,7 +434,7 @@ impl State {
         if before != Status::Empty && self.status() == Status::Empty {
             let line = if swiped {
                 effects.retain(|effect| {
-                    !matches!(effect, Effect::Toast(toast) if SWIPE_LINES.contains(&toast.text.as_str()))
+                    !matches!(effect, Effect::Toast(toast) | Effect::Confirm(toast) if SWIPE_LINES.contains(&toast.text.as_str()))
                 });
                 NOTHING_LEFT
             } else if self.filter.is_empty() {
