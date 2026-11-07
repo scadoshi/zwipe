@@ -48,6 +48,7 @@ mod card_row;
 mod changelog;
 mod charts;
 mod color_bars;
+mod cover_flow;
 mod danger_zone;
 mod deck_page;
 mod drawer_sheet;
@@ -78,6 +79,7 @@ pub use charts::{
     ManaCurve, ManaFulfillment,
 };
 pub use color_bars::{ColorBars, ColorBarsGhost};
+pub use cover_flow::CoverFlow;
 pub use danger_zone::DangerZoneAction;
 pub use deck_page::{
     DeckBand, DeckControls, DeckFacts, DeckFilter, DeckFold, DeckHead, DeckPage, DeckSection,

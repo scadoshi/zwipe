@@ -667,9 +667,16 @@ code {
     }
 }
 
-@media (max-width: 30rem) {
+/* Under about 560px two cards side by side wrap every few words, so a
+   card grid takes one column. */
+@media (max-width: 35rem) {
     .card-grid,
-    .card-grid.card-grid-2,
+    .card-grid.card-grid-2 {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 30rem) {
     .features-grid {
         grid-template-columns: 1fr;
     }
@@ -1844,6 +1851,17 @@ body[class$="-dark"] .chip-value {
     }
 }
 
+/* The shared deck's funnel stops above the footer as it scrolls in, by
+   magic.css's footer rise. A dock inside a sheet stays where the sheet puts
+   it. */
+@supports (animation-timeline: view()) {
+    .action-dock:not(.bottom-sheet *) {
+        animation: footer-rise linear both;
+        animation-timeline: --site-footer;
+        animation-range: entry 0px entry 100vh;
+    }
+}
+
 /* The deck page's chips and the stat panels' tag rows tint over the page
    background, so the page grid never shows through them. */
 .info-row-tags {
@@ -2199,4 +2217,43 @@ html.js:not(.splash-skip).splash-over .splash {
 .splash-mark {
     display: flex;
     justify-content: center;
+}
+
+/* ---- Touch targets ----
+
+   On a touch screen every control answers a tap 44px across, however
+   small it draws: a box centered on it, at least 44px each way, takes the
+   tap without changing how it looks (the store and theme icons, the
+   hamburger, the toast's close, chips and buttons). `:where` keeps a
+   control that sets its own position where it is. The expanded row's -
+   and + stand apart, so a tap meant for one never lands on the other. */
+@media (pointer: coarse) {
+    :where(button, [role="button"], .chip, .chip-xs, .sd-chip, a.nav-cta, a.panel-action, a.nav-brand) {
+        position: relative;
+    }
+
+    :is(button, [role="button"], .chip, .chip-xs, .sd-chip, a.nav-cta, a.panel-action, a.nav-brand)::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: max(100%, 44px);
+        height: max(100%, 44px);
+        transform: translate(-50%, -50%);
+    }
+
+    .card-action-count {
+        margin-inline: 0.75rem;
+    }
+
+    /* The toast clips what leaves it, so its close takes the 44px corner
+       inside it, from the toast's top right edge. */
+    .banner .banner-dismiss::after {
+        top: -0.5rem;
+        right: -0.7rem;
+        left: auto;
+        width: 44px;
+        height: 44px;
+        transform: none;
+    }
 }

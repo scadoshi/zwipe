@@ -37,9 +37,10 @@ use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::page_keys::{focus_by_id, use_page_keys};
 use crate::inbound::screens::oracle_tag_dictionary::OracleTagDictionary;
 
-/// The picker's sheet, components' [`DrawerSheet`] as the card filter draws
-/// it: the kit's drawer on a wide window and its bottom sheet below the
-/// breakpoint, sliding in on `open`. The
+/// The picker's sheet, components' [`DrawerSheet`] as a drawer at every
+/// width, sliding in from the right on `open`: the kit's drawer on a wide
+/// window, the window's height along the right edge below it, and the whole
+/// window over the grid backdrop where a drawer no longer fits. The
 /// title bar's × and a backdrop tap call `on_back`; the dock's checkmark
 /// calls `on_save` and stays off while `unchanged`. The body mounts only
 /// while open, so its keys never answer under a closed picker.
@@ -61,6 +62,7 @@ fn PickerSheet(
             on_close: move |()| on_back.call(()),
             on_hint: move |()| hint_open.set(true),
             class: "web-picker-sheet",
+            every_width: true,
             dock: rsx! {
                 DockAction {
                     label: "Save",
@@ -83,7 +85,10 @@ fn PickerBody(search_id: &'static str, children: Element) -> Element {
         }
     }));
     rsx! {
-        div { class: "web-picker-body", {children} }
+        div { class: "web-picker-body",
+            components::GridCells { still: true }
+            {children}
+        }
     }
 }
 
@@ -183,7 +188,7 @@ pub fn FormatPicker(form: DeckForm) -> Element {
                     label { class: "tag-search-label", r#for: "format-search", "Search" }
                 }
                 PickerSearch { id: "format-search", placeholder: "Search formats", query }
-                div { class: "tag-def-bar",
+                div { class: "tag-def-bar format-def-bar",
                     if let Some(format) = focused() {
                         div { class: "tag-def-name", "{format.display_name()}" }
                         ul { class: "tag-def-list",

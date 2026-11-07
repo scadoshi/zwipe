@@ -1,36 +1,65 @@
 # Factory state
 
-A handoff for the composer session: where the factory stands, so a fresh or compacted composer can pick it up. The rules are in [`../development/factory.md`](../development/factory.md); the nit list and board are in [`web_nits.md`](web_nits.md). Update this file when the queue changes shape.
+The handoff for the composer session: where the factory stands, so a fresh or compacted composer can pick it up. The rules are in [`../development/factory.md`](../development/factory.md). Every nit, with its scope, is in [`web_nits.md`](web_nits.md). Update this file whenever the queue changes shape.
 
-## As of 2026-11-06, evening
+## As of 2026-11-06, late night
 
-- `main` is at `b0d713965` (deployed: web, zite, zerver, all green). `release` is 37 commits ahead with everything merged since.
-- Scotty's call for this round: when every queued item below has merged into `release`, push `release` to `main` (`git push origin origin/release:main`, a fast-forward; never switch the laptop's shared checkout) and watch the four deploys. Then he tests.
+- `main` is at `811c3bbbe`, deployed and green (web, zite, zerver). `release` holds everything merged since. Scotty says when to push `release` to `main` (`git push origin origin/release:main`, a fast-forward; never switch the laptop's shared checkout). Then I watch the deploys and send Surfer to check the fixes.
+- scottyfermo.com (the portfolio) and orangui deploy from their own `main`. Scotty has pre-approved merging green worker PRs into both.
 
-## Workers and their queues
+## Agents
 
-Herdr agents by name. Remote ones need `herdr --machine <m>`. Each queue item is already sent to the worker as a "NEXT PLAN, start after X" prompt, so they run on their own.
-
-| Machine | Working on | Then |
+| Agent | Where | Role |
 |---|---|---|
-| halo | 93 to 95, the docked details panel: load jump, card pinned to center, panel default by space, no lift (`nits/halo-93`) | nothing queued |
-| thinker | 98, 99, chip row gaps, the row's host extras at the bottom (`nits/thinker-98`), including Activity's Skipped under | nothing queued |
-| scotland | 97, the swipe screens' footer legroom: docks stop above the footer (`nits/scotland-97`) | 100 and 102, the cover-flow's edge fade and arrow buttons (`nits/scotland-100`; reuse laptop's ARROW_* icons from 103) |
-| laptop | 103, rounded SVG arrows in the swipe dock (`nits/laptop-103`) | 104, overscroll shows footer/nav color (`nits/laptop-104`; edits the 90 first-paint CSS in zwiper-web/index.html and its drift test) |
-| surfer (halo, `wS:p1`) | a read-only QA pass of both sites, if its Chrome extension connects; it has been blocked twice. Low stakes. | report at `~/Developer/surfer-report.md` on halo |
+| composer | laptop `wZ:p1` | Triages, plans, reviews and merges. That's me. |
+| laptop | laptop `wV:p1`, `~/Developer/zwipe` | Worker. Owns the app, the simulator and the portfolio. |
+| halo | `herdr --machine halo`, worktree `~/Developer/zwipe-halo` only | Worker. Scotty builds to his phone from `~/Developer/zwipe` on halo, which stays on `main` and clean. |
+| thinker | `herdr --machine thinker` | Worker. |
+| scotland | `herdr --machine scotland` | Worker. |
+| surfer | halo `wS:p1` | QA for the three websites in Chrome. Its report is `~/Developer/surfer-report.md` on halo, with shots in `~/Developer/surfer-shots`. Parts 1 to 6 so far. |
+| droid | laptop `w0:p1` (unnamed in herdr; address it by pane) | QA for the Android app on the Pixel_9a emulator, against production as user `test`. It builds from its own clone, `~/Developer/droid/zwipe` on `origin/release`. Runbook: `~/Developer/droid/RUNBOOK.md`. Report: `~/Developer/droid/report.md`. |
+
+## Queues (each item is already sent to its worker)
+
+| Worker | Now | Then |
+|---|---|---|
+| laptop | 131 (deck page top gap, finishing PR #248 with 128 to 130) | **150 and 151 first**: the see-through sheet and long-running app degradation, an investigation. Diagnosis goes to me before any fix. Then 144 (the light/dark race; ask before any wire change), then 145 (keyboard, Retry, D3). |
+| halo | 132 (toasts bottom left, stopping above the footer, app too), 133 (tag selectors: drawer or full screen), 137 (dock width) | 140 (44px tap targets, app and portfolio too), 142 (zwipe.net one column) |
+| scotland | 122 (the unsaved-changes guard) | 134 and 139 (docks stop above the footer; footer at every width), with 148 and 149 on that branch; 138 (portfolio chart labels, Escape); 146 (the app spacing sweep, D38 included) |
+| thinker | 123 (the skeleton audit, web and app) | 135 and 136 (fold carets everywhere; the Types chart); 141 (Activity heatmap); 143 (the `Theme` to `Themed` wire rename: Phase 1 in a PR, Phase 4 on `server/pip-themed` with no PR, a plan in `context/plans/pip_themed_wire.md`); 147 (copy and contrast, D28 and D37) |
+| surfer | Part 6: checking 115 to 127 on the live deploy, at full width and then narrower as Scotty resizes | |
+| droid | Idle after pass 1. It rechecks on Android once 145 to 147 merge. | |
+
+## Overnight, 2026-11-06 into 11-07 (Scotty asleep: "keep the factory running")
+
+- Deployed `release` to `main` at `60d705459` (web, zerver and portfolio green; zite was finishing). Droid is on pass 2 against that build, and Surfer on Part 7, a fix check at whatever width its window has.
+- The composer keeps reviewing and merging worker PRs into `release`, copies each QA report into `context/qa/` with a row in its README, and commits. No more deploys to `main` until Scotty says.
+- QA findings wait for Scotty's triage in the morning, so nothing from them gets built overnight.
+
+## Waiting on Scotty (as of 23:30)
+
+- Go on Surfer's Part 6 follow-ups for halo: 125 (the portfolio sweep, still two), 118 regressed in the phone details drawer (720 and 504), 52 (picker chip list fade), 53 (zwipe.net stats stuck while labeled Live), 54 (the deploy logged Chrome out; diagnose only).
+- A deploy of `release` to `main`. Nothing goes to Cairn's `main` and nothing is filed with Dioxus without him.
+- Halo, Surfer and Droid are idle and waiting.
+
+## Rules learned tonight
+
+- Surfer's and Droid's findings get reviewed with Scotty before anything is built. Scotty's own nits I log and send straight out.
+- A worker stuck on a permission prompt: press Esc, remove the cause (files go in the repo's `target/`), and re-prompt. Never approve a settings change.
+- Workers stop and ask the composer before any wire change. The composer plans it per `context/development/api_evolution.md` (template `context/plans/pip_color_wire.md`, tracker `context/plans/wire_changes.md`) and checks it before it ships.
+- Clean the laptop's Rust target folders once one passes about 100 GB, only while nothing is building, keeping `target/scotty-shots`.
+- Portfolio copy stays short and plain (the human skill).
+- Every agent reports back when it finishes or stops (`herdr --machine laptop agent prompt composer ...`). A `/clear` drops a pane's herdr name, so rename it after (`herdr agent rename wV:p1 laptop`).
+
+## Open threads
+
+- Wire migrations waiting on a floor: `natural` to `classic` (pip color) and `/preferences` to `/settings` are in `wire_changes.md`. `theme` to `themed` joins them once 143's Phase 1 merges.
+- Android status and nav bars don't follow the theme: a todo (D32).
+- Cairn: anything 151 finds for Cairn goes to Scotty, not straight to Cairn's `main`.
 
 ## How the composer runs the loop
 
-- Plans and the shared preamble (`rules2.md`) live in the composer's job folder, `~/.claude/jobs/dfa7e2c1/tmp/plans/`. The composer's own clone of zwipe (for board commits and conflict merges) is `~/.claude/jobs/dfa7e2c1/tmp/composer`.
-- Review each PR against scadoshi-rust and the repo rules, then merge into `release` once CI is green (`gh pr merge <n> --merge`). Workers never merge.
-- The common conflict is `zwipe-core/src/content/changelog/mod.rs` (two PRs adding 1.18.1 entries). Resolve by merging `origin/release` into the PR branch in the composer clone and keeping both entries: `~/.claude/jobs/dfa7e2c1/tmp/resolve_changelog.py` does it. Then push the branch (a normal merge commit, never a force-push) and merge.
-- Board edits (`web_nits.md`) go on `release` from the composer clone.
-- Merging cairn or portfolio PRs (they deploy from `main`) needs Scotty's explicit word each time.
-
-## Open questions for Scotty
-
-None pending. Recent decisions: no URL redirects for the renamed routes (92); keep two columns on Decks; dragging modals is fine; guides stay on zwipe.net (todo logged).
-
-## Next Surfer passes (Scotty, 2026-11-06)
-
-Once this round lands, Surfer reruns everything it has checked so far at about half window width, then as narrow as it can go, to cover the phone layout from a laptop. On the first pass, Chrome on halo wouldn't resize below about 1420px, so Scotty is setting up the window, or Surfer uses DevTools device emulation.
+- Plans and the worker preamble (`rules2.md`) live in `~/.claude/jobs/dfa7e2c1/tmp/plans/`. The composer's zwipe clone, used for board commits and conflict merges, is `~/.claude/jobs/dfa7e2c1/tmp/composer`.
+- Review each PR against scadoshi-rust and the repo rules, then merge into `release` once CI is green (`gh pr merge <n> -R scadoshi/zwipe --merge`). Workers never merge.
+- Conflicts are usually `zwipe-core/src/content/changelog/mod.rs`. Merge `origin/release` into the branch in the composer clone, run `~/.claude/jobs/dfa7e2c1/tmp/resolve_changelog.py` (it keeps both entries), and push. Never force-push. For a `Cargo.lock` conflict, take release's copy and `cargo update -p` the changed git dependencies.
+- After an orangui merge, the zwipe and portfolio PRs repin orangui to `main` before they merge.
