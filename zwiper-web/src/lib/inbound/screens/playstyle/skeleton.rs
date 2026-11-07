@@ -4,6 +4,7 @@
 
 use dioxus::prelude::*;
 
+use crate::inbound::chrome::ghost::{GhostChipBars, GhostFold, GhostHint, GhostSection, GhostText};
 use crate::inbound::screens::deck::skeletons::ChipRowSkeleton;
 
 /// Ghost rows in the Card roles chart.
@@ -12,23 +13,6 @@ const ROLE_ROWS: usize = 10;
 const TAG_ROWS: usize = 10;
 /// Ghost rows in each card list.
 const LIST_ROWS: usize = 6;
-
-/// A line of text `chars` characters wide, as a bar inside the element
-/// that holds the text, so the line keeps its height.
-#[component]
-fn GhostText(chars: u8) -> Element {
-    rsx! {
-        span { class: "skeleton-bar web-ghost-text", style: "width: {chars}ch;" }
-    }
-}
-
-/// The `?` beside a title or a column head.
-#[component]
-fn GhostHint() -> Element {
-    rsx! {
-        span { class: "skeleton-bar skeleton-chip skeleton-info-button web-ghost-box" }
-    }
-}
 
 /// One profile panel: a fold on a wide window, all open, else a section of
 /// the accordion, open when `open`. Its title is `chars` wide, with a `?`
@@ -43,44 +27,13 @@ fn GhostPanel(
 ) -> Element {
     if wide {
         rsx! {
-            div { class: "deck-fold",
-                div { class: "deck-fold-head",
-                    span { class: "card-row-arrow",
-                        span { class: "skeleton-bar web-ghost-text web-ghost-arrow" }
-                    }
-                    GhostText { chars }
-                    if hint {
-                        div { class: "deck-fold-accessory", GhostHint {} }
-                    }
-                }
-                div { class: "deck-fold-body",
-                    div { class: "deck-fold-inner",
-                        div { class: "web-playstyle-fold-body", {children} }
-                    }
-                }
+            GhostFold { chars, hint,
+                div { class: "web-playstyle-fold-body", {children} }
             }
         }
     } else {
         rsx! {
-            div { class: if open { "web-section open" } else { "web-section" },
-                div { class: "web-section-head",
-                    div { class: "web-section-title",
-                        span { class: "card-row-arrow web-section-arrow",
-                            span { class: "skeleton-bar web-ghost-text web-ghost-arrow" }
-                        }
-                        span { class: "settings-list-title", GhostText { chars } }
-                    }
-                    if hint {
-                        div { class: "web-section-accessory", GhostHint {} }
-                    }
-                }
-                div { class: if open { "collapsible open" } else { "collapsible" },
-                    div { class: "collapsible-inner",
-                        hr { class: "web-section-rule" }
-                        div { class: "web-section-body", {children} }
-                    }
-                }
-            }
+            GhostSection { chars, open, hint, {children} }
         }
     }
 }
@@ -94,25 +47,6 @@ fn SummaryGhost() -> Element {
                 div { key: "{i}", class: "settings-row",
                     span { class: "settings-row-label", GhostText { chars: label } }
                     span { class: "info-row-value", GhostText { chars: value } }
-                }
-            }
-        }
-    }
-}
-
-/// The Card roles chart: a role chip, its bar and its count per row, in the
-/// chart's own grid.
-#[component]
-fn RolesGhost() -> Element {
-    rsx! {
-        div { style: "display:flex;flex-direction:column;gap:0.35rem;padding:0 0.75rem;",
-            div { style: "display:grid;grid-template-columns:fit-content(50%) minmax(0,1fr) auto;column-gap:0.5rem;align-items:center;",
-                for _ in 0..ROLE_ROWS {
-                    div { style: "padding:0.175rem 0;text-align:right;",
-                        span { class: "skeleton-bar web-ghost-keyword-chip" }
-                    }
-                    div { class: "skeleton-bar chart-track" }
-                    span { class: "skeleton-bar web-ghost-count" }
                 }
             }
         }
@@ -205,7 +139,7 @@ pub fn PlaystyleSkeleton(wide: bool) -> Element {
                         GhostPanel { wide, chars: 7, open: false, hint: false, SummaryGhost {} }
                     }
                     div { class: "web-playstyle-cell web-playstyle-roles",
-                        GhostPanel { wide, chars: 10, open: false, RolesGhost {} }
+                        GhostPanel { wide, chars: 10, open: false, GhostChipBars { rows: ROLE_ROWS } }
                     }
                     div { class: "web-playstyle-cell web-playstyle-tags",
                         GhostPanel { wide, chars: 11, open: false, TagTableGhost {} }

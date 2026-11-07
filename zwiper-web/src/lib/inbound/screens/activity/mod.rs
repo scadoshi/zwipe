@@ -21,26 +21,24 @@ use self::sections::{ACTIVITY_TITLE, ActivityRates, ActivityYear, HardPassesPane
 use crate::inbound::cards::card_row::{CardOverlaysHost, ShowRowArt, use_card_overlays};
 use crate::inbound::cards::otag::{OtagExamplesHost, use_otag_reveals};
 use crate::inbound::chrome::authed::use_authed;
+use crate::inbound::chrome::ghost::{GhostChipBars, GhostHint, GhostSection, GhostText};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
+use crate::inbound::screens::deck::skeletons::ChipRowSkeleton;
 use crate::inbound::screens::home::hero::MyCountsPanel;
 use crate::inbound::shell::{ScreenFrame, page_description};
 
-/// The screen while its fetch is out, in the loaded layout: the Activity
-/// section open on its loaded shape (the grid's height as empty space,
-/// three tags, a rule, the Totals title over four bars and labels) over the
-/// Most skipped group as a header and ten rows, then Card roles and Oracle
-/// tags as collapsed headers.
+/// Activity while it loads, in the loaded screen's layout: the Activity
+/// section (the heatmap, its three tags, the Totals chart) at the page's
+/// width, then Most skipped beside Card roles and Oracle tags, each with
+/// its `Show` row and bars. On a wide window every section is open, below
+/// it only Activity.
 #[component]
 fn ActivitySkeleton() -> Element {
     rsx! {
-        div { class: "web-columns",
-            div { class: "web-column",
-                div { class: "skeleton-info-list",
-                    div { class: "skeleton-card-header card-group-header-with-hint",
-                        div { class: "skeleton-bar skeleton-section-label" }
-                        div { class: "skeleton-bar skeleton-chip skeleton-info-button" }
-                    }
-                    div { class: "activity-ghost-body",
+        div { class: "web-activity-year",
+            GhostSection { chars: 8, open: true,
+                div { class: "web-activity-year-body",
+                    div { class: "web-activity-heat",
                         HeatGhost {}
                         div { class: "heat-readout",
                             div { class: "heat-readout-row",
@@ -49,28 +47,32 @@ fn ActivitySkeleton() -> Element {
                                 }
                             }
                         }
-                        hr { class: "card-row-rule card-row-rule-muted activity-rule" }
-                        div { class: "activity-outcomes activity-ghost-chart",
-                            div { class: "skeleton-bar skeleton-chip activity-ghost-title" }
-                            div { class: "activity-ghost-bars",
-                                for (i, pct) in [70, 100, 20, 35].into_iter().enumerate() {
-                                    div { key: "{i}", class: "activity-ghost-column",
-                                        div { class: "skeleton-bar activity-ghost-bar", style: "height:{pct}%;" }
-                                    }
+                    }
+                    hr { class: "card-row-rule card-row-rule-muted activity-rule" }
+                    div { class: "activity-outcomes activity-ghost-chart",
+                        div { class: "skeleton-bar skeleton-chip activity-ghost-title" }
+                        div { class: "activity-ghost-bars",
+                            for (i, pct) in [70, 100, 20, 35].into_iter().enumerate() {
+                                div { key: "{i}", class: "activity-ghost-column",
+                                    div { class: "skeleton-bar activity-ghost-bar", style: "height:{pct}%;" }
                                 }
                             }
-                            div { class: "activity-ghost-labels",
-                                for i in 0..4 {
-                                    div { key: "{i}", class: "skeleton-bar activity-ghost-label" }
-                                }
+                        }
+                        div { class: "activity-ghost-labels",
+                            for i in 0..4 {
+                                div { key: "{i}", class: "skeleton-bar activity-ghost-label" }
                             }
                         }
                     }
                 }
+            }
+        }
+        div { class: "web-columns",
+            div { class: "web-column",
                 div { class: "maybeboard-list card-group row-enter",
                     div { class: "card-group-header card-group-header-with-hint",
-                        div { class: "skeleton-bar skeleton-card-bar-header-wide" }
-                        div { class: "skeleton-bar skeleton-chip skeleton-info-button" }
+                        GhostText { chars: 12 }
+                        GhostHint {}
                     }
                     for i in 0..10 {
                         div { key: "{i}", class: "skeleton-card-row",
@@ -81,9 +83,14 @@ fn ActivitySkeleton() -> Element {
                 }
             }
             div { class: "web-column",
-                for i in 0..2 {
-                    div { key: "{i}", class: "skeleton-chart-box",
-                        div { class: "skeleton-bar skeleton-section-label" }
+                div { class: "web-activity-rates",
+                    for (i, chars) in [10, 11].into_iter().enumerate() {
+                        GhostSection { key: "{i}", chars, open: false,
+                            div { class: "activity-rates",
+                                ChipRowSkeleton { label: "sm", chips: vec!["md", "md", "lg", "md"] }
+                                GhostChipBars { rows: 6 }
+                            }
+                        }
                     }
                 }
             }

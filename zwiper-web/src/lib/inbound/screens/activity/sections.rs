@@ -33,6 +33,8 @@ const PASSES_TITLE: &str = "Most skipped";
 const LEFT: f64 = 24.0;
 /// Room above the grid for the month labels, in grid units.
 const TOP: f64 = 14.0;
+/// A year's week columns, the heatmap's width while it loads.
+const GHOST_COLUMNS: usize = 54;
 
 /// The year as a heatmap: weekday labels down the left, month labels over
 /// the top, a cell per day in the kit's [`HeatGrid`], opening scrolled to
@@ -122,14 +124,16 @@ fn ActivityHeatmap(through: NaiveDate, days: Vec<HttpActivityDay>) -> Element {
     }
 }
 
-/// The heatmap while the screen loads: empty space at the loaded grid's
-/// height, so nothing under it moves when the grid lands.
+/// The heatmap while the screen loads: empty space in a year's grid's
+/// shape, at its width on a phone and scaled to the column on a wide
+/// window as the grid is, so nothing under it moves when the grid lands.
 #[component]
 pub fn HeatGhost() -> Element {
+    let width = LEFT + components::heat_span(GHOST_COLUMNS);
     let height = TOP + components::heat_span(HEAT_ROWS);
     rsx! {
         div { class: "chart-scroll activity-scroll",
-            div { class: "activity-plot", style: "height:{height}px;" }
+            div { class: "activity-plot", style: "width:{width}px;aspect-ratio:{width} / {height};" }
         }
     }
 }
