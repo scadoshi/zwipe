@@ -278,8 +278,14 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
                         }
                     } else {
                         div { class: "chip-row",
-                            div { class: "skeleton-bar skeleton-chip skeleton-chip-lg stat-chip-p1 skeleton-tinted" }
-                            div { class: "skeleton-input-compact" }
+                            span { class: "stat-chip stat-chip-p1 chip-row-label web-ghost-chip", GhostText { chars: 9 } }
+                            div { class: "input-clear-wrap web-ghost-field",
+                                div {
+                                    class: "input input-compact input-placeholder",
+                                    style: "line-height: normal;",
+                                    GhostText { chars: 20 }
+                                }
+                            }
                         }
                         ChipRowSkeleton { label: "md", chips: vec!["sm", "lg", "md", "lg"] }
                         ChipRowSkeleton { label: "md", chips: vec!["sm", "md", "sm"] }
@@ -447,7 +453,9 @@ fn DeckCardListGhost() -> Element {
     rsx! {
         for (i, (title, rows)) in [(9u8, 1usize), (13, 6)].into_iter().enumerate() {
             div { key: "{i}", class: "card-group",
-                div { class: "card-group-header", GhostText { chars: title } }
+                div { class: "card-group-header",
+                    span { GhostText { chars: title } }
+                }
                 for r in 0..rows {
                     div { key: "{r}", class: "skeleton-card-row web-ghost-card-row",
                         div { class: "skeleton-bar skeleton-card-thumb" }

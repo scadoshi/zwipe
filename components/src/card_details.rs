@@ -489,39 +489,63 @@ if (!window.__zwipeDetailsHead) {
 }
 ";
 
+/// The ghost rules text's words, in ch: a short card's rules, wrapping as
+/// the text does.
+const GHOST_ORACLE_WORDS: [u8; 26] = [
+    8, 4, 3, 6, 2, 5, 7, 3, 4, 6, 9, 2, 5, 4, 7, 3, 6, 5, 2, 8, 4, 6, 3, 7, 5, 4,
+];
+
 /// The ghost of a [`CardDetailsPanel`] while its card loads, in the panel's
 /// own order and shapes: the title bar, the type and rarity chips, the rules
-/// text's lines, the set, price and stats chips, the Keywords and Card roles
-/// rows (each a label chip and two tags), then the foot's rule and the Flip
-/// and Printings buttons.
+/// text's lines, the set and price chips, the Keywords and Card roles rows
+/// (each a label chip and two tags), then the foot's rule and the Flip and
+/// Printings buttons. Every chip and button is empty.
 #[component]
 pub fn CardDetailsPanelSkeleton() -> Element {
     rsx! {
         div { class: "panel-card card-details-panel card-details-ghost",
             div { class: "panel-head",
-                div { class: "skeleton-bar card-details-ghost-title" }
+                h3 { class: "panel-title",
+                    span { class: "skeleton-bar card-details-ghost-title" }
+                }
             }
             hr { class: "panel-rule" }
             div { class: "panel-body",
                 div { class: "card-details-keys",
-                    span { class: "skeleton-bar skeleton-chip skeleton-chip-lg" }
-                    span { class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
+                    span { class: "detail-chip detail-chip-type skeleton-tinted",
+                        span { "Creature \u{2014} Human" }
+                    }
+                    span { class: "detail-chip detail-chip-rarity skeleton-tinted",
+                        span { "Common" }
+                    }
                 }
-                for i in 0..4 {
-                    div { key: "{i}", class: "skeleton-bar card-details-ghost-line" }
+                div { class: "card-detail-oracle card-details-oracle",
+                    for (i, chars) in GHOST_ORACLE_WORDS.into_iter().enumerate() {
+                        span {
+                            key: "{i}",
+                            class: "skeleton-bar card-details-ghost-word",
+                            style: "width: {chars}ch;",
+                        }
+                        " "
+                    }
                 }
                 div { class: "card-details-facts",
-                    for i in 0..4 {
-                        span { key: "{i}", class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
+                    span { class: "detail-chip detail-chip-set skeleton-tinted",
+                        span { "Core Set 2015" }
+                    }
+                    for price in ["$0.10", "\u{20ac}0.10", "0.02 TIX"] {
+                        span { key: "{price}", class: "card-row-price card-price-chip skeleton-tinted",
+                            span { "{price}" }
+                        }
                     }
                 }
                 for group in ["keyword-section", "card-roles"] {
                     div { key: "{group}", class: "card-details-analysis",
                         div { class: "{group}",
                             div { class: "keyword-chips",
-                                span { class: "skeleton-bar card-details-ghost-label" }
-                                span { class: "skeleton-bar card-details-ghost-tag" }
-                                span { class: "skeleton-bar card-details-ghost-tag card-details-ghost-tag-wide" }
+                                span { class: "skeleton-bar skeleton-chip skeleton-tinted stat-chip-p1 card-details-ghost-label" }
+                                span { class: "skeleton-bar skeleton-chip card-details-ghost-tag" }
+                                span { class: "skeleton-bar skeleton-chip card-details-ghost-tag card-details-ghost-tag-wide" }
                             }
                         }
                     }
@@ -531,8 +555,8 @@ pub fn CardDetailsPanelSkeleton() -> Element {
             div { class: "panel-actions",
                 div { class: "card-details-foot",
                     div { class: "card-action-row",
-                        span { class: "skeleton-bar card-details-ghost-button" }
-                        span { class: "skeleton-bar card-details-ghost-button card-details-ghost-button-wide" }
+                        span { class: "skeleton-bar skeleton-chip card-details-ghost-button" }
+                        span { class: "skeleton-bar skeleton-chip card-details-ghost-button card-details-ghost-button-wide" }
                     }
                 }
             }

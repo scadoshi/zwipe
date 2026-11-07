@@ -106,3 +106,78 @@ The "Droid test" deck now has format Commander, commander Edgar Markov, and Ligh
 One write outside the deck: in commander Swipe select I skipped Fire Lord Azula, and that skip is per account. Undoing it means Playstyle's "Clear skips", which clears every commander skip on the account, so I left it for you to decide.
 
 The theme is back on Gruvbox dark, no account settings were changed, the network throttle is off, and the clone's target is 7.4 GB.
+
+## Pass 2
+
+Build: origin/main at 60d705459, debug APK from ~/Developer/droid/zwipe, the same emulator and account. I recorded the status of all 38 items, ran the new phone pieces, and noted new issues. Shots are in ~/Developer/droid/shots/pass2-<n>.png.
+
+One housekeeping note: a scripting slip overwrote pass1-2 to pass1-5 with pass-2 frames, which I moved to pass2-2 to pass2-5. Items 5 and 9 above cite pass1-3 and pass1-2, and pass2-33 and pass2-1 show the same things now.
+
+Install note: `adb install -r` failed with INSUFFICIENT_STORAGE because /data was 73% full. Uninstalling first fixed it (log in again afterwards). I've added that to the runbook.
+
+### Scheduled for this build
+
+| # | Status | What I saw | Shot |
+|---|---|---|---|
+| 2 | fixed | Toasts sit bottom left at 16,713 (122x61), above From/Search and the dock. A tap on Back reaches Back. | pass2-14 |
+| 10 | changed | The chips hold still now. But the details card is a fixed 176 px, and Commander's details are 236 px, so 62 px ("OK)" and "Commander damage: 21") sit behind an inner scroll. The text is cut mid-line at the card's bottom edge with no fade, so nothing shows there's more. Brawl overflows by 15 px. | pass2-8, pass2-9, pass2-10 |
+| 16 | fixed | "−" is disabled at turn 0 (opacity 0.5). | pass2-4 |
+| 25 | fixed | The help reads "The board chips at the bottom left pick which board you are trimming". | pass2-22 |
+| 26 | fixed | Warning text gets the full 314 px, with "Add cards" (92x30, one line) and "Import" below it. | pass2-5 |
+| 28 | fixed | "Suggested commanders", "Staples" and Activity's "Most skipped" are 16 px with 1.6 px spacing, still pink. | pass2-25, pass2-26 |
+| 30 | fixed | Email and Theme put the label on its own line, then the value and buttons on one row. Every button ends 32 px from the right, and Dark and Change are both 34 px tall. | pass2-27, pass2-28 |
+| 31 | partly | Row labels pass in both themes (no hits on Settings or the deck page). Still under 4.5:1 in Gruvbox light: the hero stats at 3.48 (20 px, weight under 700) and the selected "USD" chip at 3.33 (12 px). | pass2-30, pass2-31 |
+| 33 | fixed | The `::after` hit box is live (pointer: coarse). On Home, Decks, the deck page and Cards, every small control takes a tap 21 px out from its centre in all four directions. The only exceptions are where a closer neighbor's box wins (chip rows 12 px apart), a FAB sits on top, or the control is inside a collapsed section. | pass2-1, pass2-2, pass2-3, pass2-12 |
+| 35 | fixed | The hint text column is 295 px (was 235). | pass2-32 |
+| 37 | fixed | Logged out, the hero reads "Live · Everybody". | pass2-37 |
+
+### Not yet built (all still there)
+
+| # | Rechecked | Shot |
+|---|---|---|
+| 1 | The focused password field sits at 486 to 533 in a 499 px viewport. | pass2-38 |
+| 3 | Partly changed. The empty stack now shows a ghost card and a "No more cards" toast, where it was blank. Swipe-down undo still does nothing, and the Cards Undo restores both cards. Also new: kept cards cycle back into the stack, so keeping alone never empties it. Is that intended? | pass2-23 |
+| 4 | Errors arrive after about 10 s on GSM, still with no retry. | pass2-34 |
+| 5 | Deck tile art skeleton is 111x10. | pass2-33 |
+| 6 | Playstyle's skeleton has one chip row. | pass2-36 |
+| 7 | Skeleton color rows are 24 px apart. | pass2-33 |
+| 8 | Decks Show-row skeleton chips are 42x27. | pass2-35 |
+| 9 | Colors ends 34 px below its bars, the other panels 17. | pass2-1 |
+| 11 | Hint card to chips is still tight. | pass2-8 |
+| 12 | Gutters: deck page 32, Dictionary 30. | pass2-3, pass2-20 |
+| 13 | TIX ends at 366.7 against the 362.7 column. | pass2-3 |
+| 14 | The Buy label is 27 px next to 32 px links. | pass2-3 |
+| 15 | Mana's rows are still spaced as before. | pass2-6 |
+| 17 | The single bar is still labeled "CREAT". | pass2-7 |
+| 18 | The Commander field is still 32 px from Power level. | pass2-11 |
+| 19 | The Commander group title is at x 33 with no chevron. It now uses the panel title type. | pass2-12 |
+| 20 | The dock rides the keyboard over Group by and Boards, and the result pill covers the commander chips. | pass2-13 |
+| 21 | Changed. The "×" still draws at 24x22, but its 44 px hit box now covers 44 of the header's 47 px height, so a tap meant for the header near the × now clears the filter across a wider area. | pass2-15 |
+| 22 | The first label still touches the open header. | pass2-15 |
+| 23 | Still "Mana val" (80 px input, needs 84). | pass2-15 |
+| 24 | The Examples card top is at 213, Add's at 173. | pass2-21 |
+| 27 | "No commanders" to Danger zone is 0 px, and Clear is enabled. | pass2-24 |
+| 34 | Decks FAB is 9/9 from the edges, the Add dock 16/6. | pass2-2, pass2-14 |
+| 38 | Row chips still wrap by name length. | pass2-25 |
+
+Left as is by Scotty: 29, 32, 36.
+
+### New phone pieces
+
+- **Card details:** this works. It floats in from the right, inset 38 px left, 9 px right, 10 px under the header (top 54) and 69 px above the bottom, clear of the docks. It has 16 px corners and a shadow, and no card inside a card (the only bordered children are two panel rules). Nit: the × sits alone in a 50 px header band, and the Printings pill is pinned to the bottom under a tall empty gap. Shot: pass2-16.
+- **Printings pill:** this works. It's a 94x22 text pill whose hit test passes 4/4. Shot: pass2-16.
+- **Cover flow:** this works. Neighbors show at the sides, the arrows step, a swipe steps, and Next is disabled at the last printing (opacity 0.5). Nit: the arrows sit flush on the screen edges (left 0 and right 0) and overlap the neighbor cards. A printing with no prices drops its price row, and the sheet's height shifts. Shots: pass2-17, pass2-18, pass2-19.
+- **Deck page gap under the header:** fixed. The Profile panel starts 16 px under the header, like Account and Decks. Shot: pass2-3.
+- **Theme toast:** gone. No toast on light or dark, from Settings or the menu.
+
+### New issues
+
+1. **Stat chips sit just under 4.5:1 in dark** (nit). On Home, "Live", the deck count and the deck tile names are 4.49, and the muted "Commander" chip is 4.36. On Decks, the "Group by" and "Show" labels are 4.49. Settings' Exceptions chips are 4.36. Shot: pass2-1.
+2. **Format details are clipped with no cue** (ugly). This is the leftover from item 10 above: the fixed 176 px card cuts Commander's details mid-line. A fade, or a card that fits its tallest format, would fix it. Shot: pass2-10.
+3. **Cover flow arrows touch the screen edges** (nit). The 36x36 arrows sit at left 0 and right 0 over the neighbor cards. Shot: pass2-17.
+4. **Theme lost once, not reproduced** (watch). I set Gruvbox light from Settings, then dark from the menu toggle, then within about a minute throttled the network to GSM and force-stopped the app. After logging out and back in, the account came back light. Two retries without the throttle (menu toggle, then a force-stop under 1 s, then logging out and in) both kept the choice. So it's probably a save that didn't finish on the slow link.
+5. **Two toasts at once when the stack runs out** (nit). Removing the last card shows "No more cards" and "Removed from deck" together. Shot: pass2-23.
+
+### Cleanup
+
+The Droid test deck is back to Edgar Markov, Lightning-Rig Crew and Vampire of the Dire Moon. I removed both main-board cards to recheck item 3 and restored them with Undo. Pass 2 added a few skips to the deck. The theme is Gruvbox dark, confirmed after a relaunch. The network throttle is off. The clone's target is 8.4 GB.

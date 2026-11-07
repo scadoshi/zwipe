@@ -26,6 +26,7 @@ use zwipe_ui::changelog::ChangelogCache;
 use zwipe_ui::screens::about::{self, Action, Destination, Effect, Row, State, Status};
 
 use crate::config::APP_VERSION;
+use crate::inbound::chrome::ghost::{GhostChip, GhostText, GhostWords};
 use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
 use crate::inbound::router::Route;
 use crate::inbound::shell::ScreenFrame;
@@ -38,8 +39,11 @@ const CHANGELOG_PAGE_SIZE: usize = 5;
 /// Bullet bars per skeleton row, roughly a real release's.
 const SKELETON_BULLETS: [usize; 3] = [5, 3, 4];
 
-/// Skeleton chips standing in for the filter row.
-const SKELETON_CHIPS: usize = 8;
+/// The filter row's ghost chips, as wide as the loaded `Latest` and year.
+const SKELETON_CHIPS: [u8; 2] = [6, 4];
+
+/// A ghost bullet's length in characters, by its place in the release.
+const SKELETON_BULLET_CHARS: [u16; 5] = [88, 64, 102, 57, 76];
 
 /// The screen's model with the handles that perform its effects.
 #[derive(Clone, Copy)]
@@ -171,36 +175,38 @@ fn RowLabel(label: &'static str, topic: HintTopic) -> Element {
     }
 }
 
-/// The chips' ghost while the visit's fetch is out: one row of chip-sized
-/// bars in the Changelog panel.
+/// The chips' ghost while the visit's fetch is out: the loaded row's empty
+/// chips in the Changelog panel.
 #[component]
 fn ChangelogSkeletonChips() -> Element {
     rsx! {
         div { class: "settings-row changelog-filters-row",
-            div { class: "changelog-skeleton-chips",
-                for i in 0..SKELETON_CHIPS {
-                    div { key: "{i}", class: "skeleton-bar changelog-skeleton-chip" }
+            div { class: "changelog-filter",
+                for (i, chars) in SKELETON_CHIPS.into_iter().enumerate() {
+                    GhostChip { key: "{i}", chars, button: true }
                 }
             }
         }
     }
 }
 
-/// The releases' ghost while the fetch is out: a panel per release, its
-/// header a version and a date, its body the bullets.
+/// The releases' ghost while the fetch is out: a panel per release in the
+/// loaded panel's elements, its header the version, the date and the
+/// status tag, its body the bullets.
 #[component]
 fn ChangelogSkeletonPanels() -> Element {
     rsx! {
         div { class: "changelog-panels",
             for (c , bullets) in SKELETON_BULLETS.into_iter().enumerate() {
                 div { key: "{c}", class: "settings-list changelog-panel",
-                    div { class: "settings-list-header changelog-skeleton-row",
-                        div { class: "skeleton-bar changelog-skeleton-version" }
-                        div { class: "skeleton-bar changelog-skeleton-date" }
+                    div { class: "settings-list-header changelog-version-row",
+                        h2 { class: "changelog-version", GhostText { chars: 6 } }
+                        span { class: "changelog-date", GhostText { chars: 11 } }
+                        span { class: "status-tag web-ghost-chip", GhostText { chars: 6 } }
                     }
-                    div { class: "changelog-skeleton-bullets changelog-panel-body",
-                        for b in 0..bullets {
-                            div { key: "{b}", class: "skeleton-bar changelog-skeleton-bullet" }
+                    ul { class: "changelog-bullets changelog-panel-body",
+                        for chars in SKELETON_BULLET_CHARS.into_iter().take(bullets) {
+                            li { key: "{chars}", GhostWords { chars } }
                         }
                     }
                 }

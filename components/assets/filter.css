@@ -343,6 +343,13 @@
   animation: accordion-open-guard 300ms ease;
 }
 
+/* An open section's first row sits as far under its header as the next
+   header sits under the section. Inside the clipped wrapper, so it eases in
+   with the section. */
+.accordion-content > * > :first-child {
+  margin-top: 1rem;
+}
+
 /* Keeps the inner wrapper clipped while the open animation runs, then hands
    over to the steady-state `overflow: visible` above. */
 @keyframes accordion-open-guard {
@@ -358,7 +365,7 @@
 /* Full width content within flex containers */
 .accordion-content .flex-col {
   width: 85%;
-  margin: 0 auto;
+  margin-inline: auto;
 }
 
 .accordion-item {

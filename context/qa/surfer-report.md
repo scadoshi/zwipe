@@ -361,3 +361,50 @@ New at 504: none.
 - **Not landed:** 125 (the portfolio theme change is still two sweeps).
 - **Regression:** 118 is fixed in the wide docked panel but **still there in the new phone details drawer** at 720 and 504 (swipe select's 261px inner box with no fade).
 - **New:** #52 (picker chip list hard-cuts at the ✓ band, nit), #53 (zwipe.net stats stale, ugly), #54 (deploy logged the app out, question).
+
+---
+
+# Part 7: fix check, deploy 60d705459 (2026-11-06/07)
+
+**Width: 1450 × 759 only** (DPR 2, `pointer: fine`). Scotty is in bed, and `resize_window` is refused ("Bounds must be at least 50% within visible screen space"), so every narrow-only item is untested: 128, 129, 130, 133's full-screen branch, 137 (stacked docks are narrow-only), 142 (504px). 140 needs a coarse pointer, and this desktop Chrome reports `pointer: fine`, so it doesn't apply here. Hard-refreshed the app and zwipe.net. Gruvbox dark, with a Darcula pick and back, and a dark → light → (left light) toggle (see the end). Writes: none saved. The "Surfer test x" rename was discarded with Leave both times, and the deck is still "Surfer test". Screenshots are `p7-*`.
+
+**Blocker partway through: the app logged out.** I opened a second app tab (for 144's cross-tab check), and that tab landed on /login. The first tab was then logged out too: `zwiper-web.session` was gone from localStorage in both. See #55. Everything after that point that needs a session is untested: 141, 147 (panel titles, warnings, contrast), 132, 118 wide recheck, and 144's cross-tab half.
+
+## Results at 1450
+
+| # | Check | Result |
+|---|---|---|
+| 122 | Leave-without-saving guard | **Fixed.** No changes → nav leaves with no dialog. After renaming to "Surfer test x": Decks nav, logo, and the in-app ‹ back each show "Leave without saving? Your changes to this deck will be lost. Stay / Leave" (p7-1). Browser back (in-app history, `history.back()`) with the Deck tags drawer open shows the dialog **above the drawer** (p7-2). **Stay** keeps the drawer open, the edited name, the URL (/edit) and the title (p7-3). **Leave** discards (the name stayed "Surfer test"). **Changed:** with a drawer open, clicking a nav link only closes the drawer (backdrop click) and doesn't navigate or show the dialog. A second click then shows it. Fine if intended, but the dialog-above-drawer case only happens through browser back. Also, during the browser-back guard the tab title briefly switches to the destination's ("Surfer test \| Zwipe") before Stay puts back "Edit deck \| Zwipe" |
+| 133 | Format, Deck tags, Oracle tags are side drawers on wide | **Fixed at 1450.** Oracle tags opens as `bottom-sheet show drawer-every-width web-picker-sheet` docked right (x 1050–1434) (p7-4), and Deck tags is a side drawer too. The dictionary's A–Z row is one row (27 letters at y=207) with `overflow-x: auto` (p7-5). The narrow full-screen branch is untested |
+| 150 | Theme sheet over Home is opaque | **Fixed.** `.bottom-sheet` background rgb(40,40,40), opacity 1, nothing showing through (p7-6) |
+| 152 | No toast on a theme pick or the light/dark toggle | **Fixed.** A MutationObserver saw no toast nodes for Darcula → Gruvbox or the dark → light toggle |
+| 144 | Toggle, reload, no flip; cross-tab | **Half checked.** Toggled dark → light, then reloaded: sampled every 250ms for 5s, light the whole time, no flip. localStorage now stores `{name, is_dark, server:{…}}`. **Cross-tab untested** because opening the second tab logged the account out (#55) |
+| 147 | Hero chip order | **Fixed on zwipe.net**: "Live, Everybody", the same order as the app (p7-7). Panel title sizes, warnings rows and contrast are untested (logged out) |
+| 127 | (spot check) | Still "for phone and web" in the zwipe.net tab title and hero |
+| 132, 141, 118 | Toasts bottom-left, Activity heatmap, wide panel | **Untested** (logged out) |
+| 128, 129, 130, 137, 142 | Narrow-only | **Untested** (window stuck at 1450) |
+| 140 | Coarse-pointer tap areas | Doesn't apply (`pointer: fine` in desktop Chrome) |
+
+## New
+
+55. **Opening a second app tab logs the account out (both tabs).** Steps: signed in at app.zwipe.net in tab 1 (Home, working), open a new tab and load app.zwipe.net/settings. Tab 2 lands on /login, and tab 1 is then logged out on its next navigation (/decks → /login). `zwiper-web.session` is gone from localStorage in both tabs. My guess: both tabs refresh the stored refresh token at about the same time, the server treats the second use as a replay, and the "any replay kills the family" rule (from the session refresh fix) revokes the whole family. That would also explain #54 (logged out after a deploy reload). Expected: tabs share one refresh (a cross-tab lock, or BroadcastChannel/storage-event coordination, or a short reuse window for the same client), so a second tab never logs you out. Severity: **broken** (anyone who opens the app in two tabs gets signed out).
+56. **#53 update: the counters may not be stale, there may be two.** Signed in, the app's Home shows 2,269 / 31.8k / 264.6k (same as zwipe.net). The 3,125 / 43.8k / 364.5k I saw in Part 6 was on the **logged-out Login page**. So the login page's counters come from a different source (or include something the others don't) than signed-in Home and zwipe.net. Severity: question.
+
+Theme state left: the app was left on **Gruvbox light** (I toggled to light for the 144 reload check, then got logged out before switching back). It's stored server-side, so Scotty's next sign-in will show light. Needs flipping back to dark.
+
+## Part 7, after Scotty signed back in (1450 × 759, one tab only)
+
+| # | Check | Result |
+|---|---|---|
+| 141 | Activity heatmap themed scrollbar, Mon/Wed/Fri pinned | **Fixed at wide.** `.chart-scroll.activity-scroll` has `scrollbar-width: thin; scrollbar-color: rgb(60,56,54) transparent`. At 1450 the full year fits, so there's no scroll, and Mon/Wed/Fri show at the left (p7-8). Pinning while it scrolls is narrow-only, untested |
+| 147 | Panel titles, pink on card-row panels, warnings rows | **Fixed at wide.** Panel titles are all 16px (Activity, Card roles, Oracle tags, Warnings, Data, Danger zone). "Most skipped", a card-row panel, keeps the pink (rgb 211,134,155) while the others are aqua (p7-9). The deck page's Warnings rows read cleanly: capitalized, Add cards / Import buttons aligned (p7-10) |
+| 144 | Theme state | Found already back on **dark** at sign-in (server and local agree), so the light left from earlier was reverted |
+| 132, 118 wide | Toasts bottom-left; wide panel | **Untested**: logged out again before I got to them |
+
+**#55 revised: the session drops without a second tab.** After Scotty signed in, I used one tab only: Settings → Activity → deck page → Add, each a full page load (`navigate`), over about 1.5 minutes. On the load of /add the app landed on /login, and `zwiper-web.session` was gone again (07:44:56Z). So the second tab wasn't the cause, or at least not the only one. A theory that fits all three logouts (deploy reload, second tab, plain navigations): when a page load triggers a token refresh and the page is unloaded (a new full navigation) before the response is stored, the server has rotated the refresh token, but the client still holds the old one. The next load sends the old token, it's seen as a replay, and the family is revoked. That would hit real users on reloads, back/forward to the site, or link clicks during a refresh. Worth checking zerver's logs for replay-revocations from the test account between 07:40 and 07:45Z. Severity: **broken**.
+
+## Part 7, last checks before standing by (1450, signed in)
+
+- **132 (toasts bottom-left, clear of docks): holds at wide.** "Synergy off" toast at x 16–178, y 518–579, above the From/Search pile chips (y 606–633) and well left of the docks (x 848–1423) (p7-11).
+- **Unconfirmed: page-wide highlight after the Synergy toggle.** After clicking the Synergy bolt on Add, all page text (details panel, docks, footer, nav Log out) was painted as if selected, yet `getSelection()` was an empty Range. Clicking elsewhere didn't clear it; a reload did. I didn't get to retry before standing by, so it may be a one-off paint artifact. Worth a quick repro: on Add, toggle the bolt and look for selection highlight across the page (p7-11).
+- 118 wide recheck and 144 cross-tab: not done (stood down until the session fix, 156, ships).

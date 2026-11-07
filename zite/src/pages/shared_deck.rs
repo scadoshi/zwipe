@@ -99,7 +99,11 @@ fn SharedDeckSkeleton() -> Element {
             div { class: "deck-page",
                 div { class: "deck-head",
                     div { class: "deck-head-text",
-                        div { class: "sk sk-title" }
+                        div { class: "deck-head-title-row",
+                            h1 { class: "deck-head-title",
+                                span { class: "sk sk-title" }
+                            }
+                        }
                         div { class: "deck-head-meta",
                             for i in 0..4 {
                                 div { key: "{i}", class: "sk sk-chip" }
@@ -116,14 +120,21 @@ fn SharedDeckSkeleton() -> Element {
                         }
                     }
                 }
+                // Group by with its four groupings, then Show with its two
+                // chips and the fold-all button.
                 div { class: "deck-controls",
-                    for (row, chips) in [3usize, 2, 7].into_iter().enumerate() {
-                        div { key: "{row}", class: "chip-row",
-                            div { class: "sk sk-chip sk-chip-label" }
-                            for i in 0..chips {
-                                div { key: "{i}", class: "sk sk-chip" }
-                            }
+                    div { class: "chip-row",
+                        div { class: "sk sk-chip sk-chip-label" }
+                        for i in 0..4 {
+                            div { key: "{i}", class: "sk sk-chip" }
                         }
+                    }
+                    div { class: "chip-row",
+                        div { class: "sk sk-chip sk-chip-label sk-chip-label-short" }
+                        for i in 0..2 {
+                            div { key: "{i}", class: "sk sk-chip" }
+                        }
+                        div { class: "sk sk-chip sk-chip-icon" }
                     }
                 }
                 div { class: "deck-bands",

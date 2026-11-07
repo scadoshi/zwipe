@@ -31,9 +31,10 @@ use zwipe_ui::screens::home::{
 use self::hero::HomeHeroScoped;
 use crate::domain::counts::CachedCounts;
 use crate::inbound::caches::{CachedDecks, CachedMyCounts, CachedPlayStyle};
-use crate::inbound::cards::buy_links::CardBuyLinks;
+use crate::inbound::cards::buy_links::{CardBuyLinks, GhostBuyLink};
 use crate::inbound::cards::image_preview::ImagePreview;
 use crate::inbound::chrome::authed::{Authed, use_authed};
+use crate::inbound::chrome::ghost::{GhostText, GhostWords};
 use crate::inbound::chrome::hint_topic::HintTopic;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, open_and_record_hint};
 use crate::inbound::chrome::toast::raise;
@@ -497,19 +498,22 @@ pub(crate) fn FlavorPanel(
         }
         (Flavor::Blank | Flavor::Quote(_), _) => rsx! {},
         (Flavor::Loading, _) => rsx! {
-            div { class: "skeleton-card-header", style: "display: flex; justify-content: center;",
-                div { class: "skeleton-bar skeleton-section-label", style: "width: 45%; margin-bottom: 0;" }
+            div { class: "settings-list-header", style: "justify-content: center;",
+                span { class: "settings-list-title", GhostText { chars: 15 } }
             }
-            div { class: "skeleton-flavor", style: "padding: 1rem;",
-                div { class: "skeleton-bar skeleton-flavor-line skeleton-flavor-line-1" }
-                div { class: "skeleton-bar skeleton-flavor-line skeleton-flavor-line-2" }
-                div { class: "skeleton-bar skeleton-flavor-line skeleton-flavor-line-3" }
-            }
+            div { class: "flavor-quote", style: "padding: 1rem;", GhostWords { chars: 130 } }
             div { class: "flavor-buy-row",
-                div { class: "skeleton-bar skeleton-chip skeleton-chip-lg" }
-                for i in 0..3 {
-                    div { key: "{i}", class: "skeleton-bar skeleton-chip skeleton-chip-md" }
+                span { class: "flavor-name web-ghost-chip",
+                    span { "Card name" }
                 }
+                span { class: "flavor-price web-ghost-chip",
+                    span { "$0.00" }
+                }
+                span { class: "card-action-btn web-ghost-chip",
+                    span { {home::IMAGE} }
+                }
+                GhostBuyLink { label: "TCGplayer" }
+                GhostBuyLink { label: "Card Kingdom" }
             }
         },
     };
