@@ -2369,12 +2369,12 @@ body {
     box-sizing: border-box;
 }
 
-/* The chips fade out above the band the dock sits in, as they fade in
-   under the controls, instead of a row cut through mid-chip. The grid's
-   own bottom padding scrolls the last row clear of the fade. */
+/* The chips are cut at the definition bar's bottom border, where the grid
+   starts, and fade out above the band the dock sits in, which has no rule.
+   The grid's own bottom padding scrolls the last row clear of the fade. */
 .web-picker-body > .tag-grid {
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 1rem, #000 calc(100% - 1rem), transparent);
-    mask-image: linear-gradient(to bottom, transparent 0, #000 1rem, #000 calc(100% - 1rem), transparent);
+    -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 1rem), transparent);
+    mask-image: linear-gradient(to bottom, #000 calc(100% - 1rem), transparent);
 }
 
 /* A picker is a drawer down to a window that keeps some page beside it.
