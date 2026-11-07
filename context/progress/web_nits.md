@@ -23,6 +23,7 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
+| 82, the synergy toggle toasts its mode (queued after 80) | scotland | `nits/scotland-82` |
 | 81, the swipe screens' details as a docked panel with its own scroll (queued after 71-72) | halo | `nits/halo-81` |
 | 79, card row redesigned like card details (queued after 77) | thinker | `nits/thinker-79` |
 | 80, a footer on every web page, swipe screens included (queued after 78) | scotland | `nits/scotland-80` |
@@ -129,6 +130,7 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 79. **The card row takes card details' shape, every client.** Collapsed: caret, quantity, name, color identity, price, P/T. Expanded: the mana pips, type line and rarity in the first chip row; the oracle text; Keywords and Card roles as label-chip rows; the set, all prices and P/T at the bottom; Image and Printings side by side under the rule. P/T and price repeat on purpose.
 80. **Every web page gets the footer,** Add and Remove included, below the fold on swipe screens.
 81. **The swipe screens' card details become a docked side panel.** On a wide window the panel beside the card is fixed at the right like an always-open drawer, height capped to the window, scrolling inside itself, so expanding roles or a long card never grows the page. The eye slides it out and in.
+82. **Toggling synergy while swiping says so.** A quick toast, "Synergy on" or "Synergy off", on every client.
 
 ## Done
 
