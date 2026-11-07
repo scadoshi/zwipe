@@ -30,6 +30,12 @@ The handoff for the composer session: where the factory stands, so a fresh or co
 | surfer | Part 6: checking 115 to 127 on the live deploy, at full width and then narrower as Scotty resizes | |
 | droid | Idle after pass 1. It rechecks on Android once 145 to 147 merge. | |
 
+## Overnight, 2026-11-06 into 11-07 (Scotty asleep: "keep the factory running")
+
+- Deployed `release` to `main` at `60d705459` (web, zerver and portfolio green; zite was finishing). Droid is on pass 2 against that build, and Surfer on Part 7, a fix check at whatever width its window has.
+- The composer keeps reviewing and merging worker PRs into `release`, copies each QA report into `context/qa/` with a row in its README, and commits. No more deploys to `main` until Scotty says.
+- QA findings wait for Scotty's triage in the morning, so nothing from them gets built overnight.
+
 ## Waiting on Scotty (as of 23:30)
 
 - Go on Surfer's Part 6 follow-ups for halo: 125 (the portfolio sweep, still two), 118 regressed in the phone details drawer (720 and 504), 52 (picker chip list fade), 53 (zwipe.net stats stuck while labeled Live), 54 (the deploy logged Chrome out; diagnose only).
