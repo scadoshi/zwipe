@@ -65,13 +65,15 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
             vec![
                 bullet(vec![
                     key("Decks"),
-                    text(" lists your latest decks; All decks opens the list"),
+                    text(" lists your latest decks. "),
+                    key("All decks"),
+                    text(" opens the list"),
                 ]),
                 bullet(vec![
                     key("Colors"),
-                    text(
-                        " counts your decks' cards by color. Tap Playstyle for suggested commanders",
-                    ),
+                    text(" counts your decks' cards by color. Tap "),
+                    key("Playstyle"),
+                    text(" for suggested commanders"),
                 ]),
                 bullet(vec![
                     key("Account"),
@@ -128,7 +130,7 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
                 bullet(vec![text("Tap a deck to open it")]),
                 bullet(vec![
                     key("Group by"),
-                    text(" folds the list into sections, "),
+                    text(" groups the list by format, color or tag, "),
                     key("Show"),
                     text(" narrows it by color or tag"),
                 ]),
@@ -186,7 +188,7 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
                 ]),
                 bullet(vec![
                     key("Group by"),
-                    text(" sorts by type, mana value, color or role"),
+                    text(" groups by type, mana value, color or role"),
                 ]),
                 bullet(vec![key("Boards"), text(" picks main, maybe or side")]),
                 bullet(vec![
@@ -285,9 +287,9 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
             "Filters",
             vec![
                 bullet(vec![
-                    text("Picks which cards show: the ones served to "),
+                    text("Picks which cards show: the ones dealt to "),
                     emph("swipe", Role::Primary),
-                    text(", or which of the deck's cards list"),
+                    text(", or the deck's cards in the list"),
                 ]),
                 bullet(vec![
                     text("Open a section to set name, mana, type, color, "),
@@ -397,6 +399,9 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
                 line(vec![text(
                     "Your colors, card roles and top oracle tags from every deck you own in any format",
                 )]),
+                line(vec![text(
+                    "Below them, your top 10 commanders ranked against all your decks, best fit first",
+                )]),
                 bullet(vec![
                     key("Create deck"),
                     text(" begins a deck with that commander"),
@@ -423,17 +428,11 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
                     key("Show"),
                     text(" narrows the list to one color identity"),
                 ]),
-                line(vec![text(
-                    "Below them, your top 10 commanders ranked against all your decks, best fit first. Swipe keeps going down the same ranking",
-                )]),
             ],
         ),
         OneTimeHint::Activity => content(
             "Activity",
             vec![
-                line(vec![text(
-                    "Your swipes and searches over the last year, with the card roles, oracle tags and cards you skip most",
-                )]),
                 bullet(vec![
                     key("Activity"),
                     text(
@@ -444,7 +443,15 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
                     key("Card roles"),
                     text(" and "),
                     key("Oracle tags"),
-                    text(" show how often you add, skip, save or remove each one"),
+                    text(" show each one's "),
+                    key("Added"),
+                    text(", "),
+                    key("Skipped"),
+                    text(", "),
+                    key("Maybeboard"),
+                    text(" and "),
+                    key("Removed"),
+                    text(" shares"),
                 ]),
                 bullet(vec![
                     key("Most skipped"),
@@ -565,7 +572,9 @@ mod tests {
             welcome.blocks[0],
             bullet(vec![
                 key("Decks"),
-                text(" lists your latest decks; All decks opens the list")
+                text(" lists your latest decks. "),
+                key("All decks"),
+                text(" opens the list"),
             ])
         );
     }

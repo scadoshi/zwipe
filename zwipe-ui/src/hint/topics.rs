@@ -65,7 +65,7 @@ pub enum HintTopic {
     OtherTags,
     /// The deck view's Types chart.
     TypeChart,
-    /// The deck view's Roles chart.
+    /// The deck view's Card roles chart.
     RoleChart,
     /// The deck view's Oracle tags chart.
     OracleTagChart,
@@ -187,12 +187,11 @@ impl HintTopic {
             Self::PriceTarget => "Price target",
             Self::OtherTags => "Other tags",
             Self::TypeChart => "Types",
-            Self::RoleChart => "Roles",
             Self::ColorChart | Self::HomeColors | Self::Colors => "Colors",
             Self::ManaCurve => "Mana curve",
             Self::ManaFulfillment => "Mana cost fulfillment",
             Self::DrawOdds => "Draw odds",
-            Self::SuggestionRoleChart | Self::RoleRates => "Card roles",
+            Self::RoleChart | Self::SuggestionRoleChart | Self::RoleRates => "Card roles",
             Self::SuggestionTagDecks => "Decks",
             Self::SuggestionTagCards => "Cards",
             Self::SuggestionTagImpact => "Impact",
@@ -227,7 +226,7 @@ impl HintTopic {
                     "The icon on your home screen, in any theme's colors",
                 )]),
                 bullet(vec![
-                    key("Match theme"),
+                    key("Matches theme"),
                     text(" keeps it in your theme as you change it"),
                 ]),
             ],
@@ -270,7 +269,10 @@ impl HintTopic {
                     key("Hide"),
                     text(" keeps crossover cards out of searches and commander picks"),
                 ]),
-                bullet(vec![text("Exceptions keeps chosen franchises showing")]),
+                bullet(vec![
+                    key("Exceptions"),
+                    text(" keeps chosen franchises showing"),
+                ]),
             ],
             Self::Website => vec![line(vec![text(
                 "Guides, the changelog and news, in your browser",
@@ -340,7 +342,7 @@ impl HintTopic {
             )])],
             Self::LandTarget => vec![
                 bullet(vec![text(
-                    "How many lands the deck should run. Fewer warns on the deck",
+                    "How many lands the deck should run. Running fewer warns on the deck",
                 )]),
                 bullet(vec![text("Not set uses the format's usual count")]),
             ],
@@ -390,7 +392,7 @@ impl HintTopic {
                 bullet(vec![text(
                     "A card counts once per deck it is in, and a two-color card counts for both colors",
                 )]),
-                bullet(vec![text("Playstyle has the full picture")]),
+                bullet(vec![key("Playstyle"), text(" has the full picture")]),
             ],
             Self::Colors => vec![
                 bullet(vec![text(

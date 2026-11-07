@@ -437,7 +437,7 @@ pub fn DeckCharts(
             if !cat_bars.is_empty() {
                 if let Some(role_tags) = role_tags.as_ref() {
                     BarChart {
-                        label: "Roles",
+                        label: "Card roles",
                         bars: role_bars(cat_bars, role_tags),
                         hint: role_hint,
                         orientation: BarOrientation::Horizontal,
@@ -448,7 +448,7 @@ pub fn DeckCharts(
                     }
                 } else {
                     BarChart {
-                        label: "Roles",
+                        label: "Card roles",
                         bars: tuple_bars(cat_bars),
                         hint: role_hint,
                         orientation: BarOrientation::Horizontal,
