@@ -9,10 +9,10 @@
      public counters, a rule, the tagline, the chips with the rating last, and the
      domain. Tokens are copied from orangui/assets/themes.css
      .theme-gruvbox-dark, and the colors play the roles zite gives them: the
-     counters in palette-5, the tagline's link in palette-1, a bright
-     gruvbox color per chip (Free yellow, No ads red, iOS blue, Android green,
-     the rating orange)
-     and the domain in palette-6 aqua. The counters are a snapshot of the
+     counters in palette-5, the tagline in text-primary with its link in
+     palette-1, Free, No ads and the rating in palette-5 as the hero's value
+     chips and the reviews' rating tag, iOS and Android as the hero's plain
+     store pills, and the domain in palette-6 aqua. The counters are a snapshot of the
      live numbers at render time; refresh them when regenerating. The
      block-glyph wordmark needs the app's self-hosted JetBrains Mono (the CDN
      fontsource subset drops U+2580-U+259F), so the font is loaded from
@@ -46,11 +46,6 @@
   --palette-1: #83a598;
   --palette-5: #fabd2f;
   --palette-6: #8ec07c;
-  --red: #fb4934;
-  --green: #b8bb26;
-  --blue: #83a598;
-  --yellow: #fabd2f;
-  --orange: #fe8019;
   --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
   --grid-line: rgba(235, 219, 162, 0.04);
@@ -147,14 +142,18 @@ body {
   align-items: center;
   gap: 18px;
   font-size: 24px;
-  color: var(--text-muted);
+  color: var(--text-primary);
   white-space: nowrap;
 }
-.link { color: var(--palette-1); font-weight: 700; }
-.hl { color: var(--text-primary); font-weight: 700; }
+.link {
+  color: var(--palette-1);
+  text-decoration: underline;
+  text-underline-offset: 5px;
+}
 .stars { letter-spacing: 3px; margin-right: 10px; }
 
-/* A bright gruvbox color per chip; the --c each sets is its text, tint and border. */
+/* The hero's chips: a value chip's --c is its text, tint and border; a store
+   pill is plain text on the panel. */
 .tags {
   display: flex;
   gap: 14px;
@@ -170,11 +169,13 @@ body {
   background-color: color-mix(in srgb, var(--c) 12%, transparent);
   border: 1px solid color-mix(in srgb, var(--c) 40%, transparent);
 }
-.tag-yellow { --c: var(--yellow); }
-.tag-red { --c: var(--red); }
-.tag-blue { --c: var(--blue); }
-.tag-green { --c: var(--green); }
-.tag-orange { --c: var(--orange); }
+.tag-value { --c: var(--palette-5); }
+.tag-store {
+  font-weight: 400;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+  border-color: color-mix(in srgb, var(--text-primary) 35%, transparent);
+}
 
 .site {
   margin-top: 24px;
@@ -225,21 +226,21 @@ body {
                                   ▎▎▉▉
                                    ▎▎▉▉</pre>
       <div class="stats">
-        <div class="stat"><span class="stat-num">2,258</span><span class="stat-label">Decks created</span></div>
-        <div class="stat"><span class="stat-num">31,778</span><span class="stat-label">Searches run</span></div>
-        <div class="stat"><span class="stat-num">264,470</span><span class="stat-label">Cards swiped</span></div>
+        <div class="stat"><span class="stat-num">2,268</span><span class="stat-label">Decks created</span></div>
+        <div class="stat"><span class="stat-num">31,838</span><span class="stat-label">Searches run</span></div>
+        <div class="stat"><span class="stat-num">264,666</span><span class="stat-label">Cards swiped</span></div>
       </div>
     </div>
     <hr class="rule" />
     <div class="tagline">
-      <span>The <span class="link">Magic: The Gathering</span> deck builder built for <span class="hl">mobile</span></span>
+      <span>The <span class="link">Magic: The Gathering</span> deck builder built for mobile</span>
     </div>
     <div class="tags">
-      <span class="tag tag-yellow">Free</span>
-      <span class="tag tag-red">No ads</span>
-      <span class="tag tag-blue">iOS</span>
-      <span class="tag tag-green">Android</span>
-      <span class="tag tag-orange"><span class="stars">★★★★★</span>4.8</span>
+      <span class="tag tag-value">Free</span>
+      <span class="tag tag-value">No ads</span>
+      <span class="tag tag-store">iOS</span>
+      <span class="tag tag-store">Android</span>
+      <span class="tag tag-value"><span class="stars">★★★★★</span>4.8</span>
     </div>
     <div class="site">zwipe.net</div>
   </div>

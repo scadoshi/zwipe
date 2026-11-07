@@ -10,6 +10,7 @@
 //! two exits overlap at most by half.
 
 use chrono::{DateTime, Utc};
+use components::icons::{ARROW_DOWN, ARROW_LEFT, ARROW_RIGHT, ARROW_UP, DockIcon};
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
@@ -54,13 +55,13 @@ impl Swipe {
         }
     }
 
-    /// The arrow glyph its dock button shows.
+    /// The arrow icon its dock button shows, a path for [`DockIcon`].
     pub fn arrow(self) -> &'static str {
         match self {
-            Self::Left => "\u{2190}",
-            Self::Right => "\u{2192}",
-            Self::Up => "\u{2191}",
-            Self::Down => "\u{2193}",
+            Self::Left => ARROW_LEFT,
+            Self::Right => ARROW_RIGHT,
+            Self::Up => ARROW_UP,
+            Self::Down => ARROW_DOWN,
         }
     }
 
@@ -377,7 +378,7 @@ pub fn SwipeDock(
                                     SwipeRoute::Undo => on_undo.call(()),
                                     SwipeRoute::Ignore => {}
                                 },
-                                span { class: "web-swipe-arrow", "{swipe.arrow()}" }
+                                span { class: "web-swipe-arrow", DockIcon { path: swipe.arrow() } }
                                 span { class: "web-swipe-dock-label", "{label}" }
                             }
                         }

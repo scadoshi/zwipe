@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<!-- app.zwipe.net's social-share / link-unfurl card (Open Graph + Twitter), 1200x630.
+     Referenced by zwiper-web/index.html as https://app.zwipe.net/assets/og-app.png.
+     og_default.html's family for the app: the same backdrop of shaded 28px
+     squares on --bg-sink, and on it one panel holding the Zwipe wordmark, a
+     rule, one line about the app and the domain. Tokens are copied from
+     orangui/assets/themes.css .theme-gruvbox-dark, the app's default theme:
+     the line in text-primary with Magic: The Gathering in palette-1, and the
+     domain in palette-6 aqua. The block-glyph wordmark needs the app's
+     self-hosted JetBrains Mono, loaded from ../../zwiper/assets/fonts.
+     Rendered into zwiper-web/public/ (served verbatim at /assets/og-app.png,
+     NOT zwiper-web/assets/, whose files dx content-hashes). Regenerate with:
+       "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless \
+         --disable-gpu --hide-scrollbars --force-device-scale-factor=1 \
+         --allow-file-access-from-files --window-size=1200,630 \
+         --screenshot=../../zwiper-web/public/assets/og-app.png "file://$PWD/og_app.html" -->
+<style>
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-weight: 400;
+  font-display: block;
+  src: url('../../zwiper/assets/fonts/jetbrains-mono-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-weight: 700;
+  font-display: block;
+  src: url('../../zwiper/assets/fonts/jetbrains-mono-700.woff2') format('woff2');
+}
+
+:root {
+  --bg-primary: #282828;
+  --text-primary: #ebdba2;
+  --text-muted: #a89984;
+  --border-secondary: #3c3836;
+  --accent-primary: #83a598;
+  --palette-1: #83a598;
+  --palette-5: #fabd2f;
+  --palette-6: #8ec07c;
+  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --grid-line: rgba(235, 219, 162, 0.04);
+  --grid-size: 28px;
+  --bg-sink: #222222;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body { width: 100%; height: 100%; }
+
+body {
+  min-height: 100vh;
+  background-color: var(--bg-sink);
+  color: var(--text-primary);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  -webkit-font-smoothing: antialiased;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 1080px;
+  padding: 32px 48px;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-secondary);
+  border-radius: 24px;
+  box-shadow: var(--shadow-md);
+}
+
+.head {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  padding-top: 16px;
+}
+
+.wordmark {
+  white-space: pre;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 22px;
+  line-height: 0.82;
+  color: var(--text-primary);
+  filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.6));
+  flex-shrink: 0;
+}
+
+
+.rule {
+  width: calc(100% + 96px);
+  border: none;
+  border-top: 1px solid var(--border-secondary);
+  margin: 24px 0;
+}
+
+.tagline {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  font-size: 26px;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+.link {
+  color: var(--palette-1);
+  text-decoration: underline;
+  text-underline-offset: 5px;
+}
+
+
+.site {
+  margin-top: 30px;
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: 6px;
+  color: var(--palette-6);
+}
+</style>
+</head>
+<body>
+<!-- The backdrop the sites draw now: shaded squares on the sink in place of
+     grid lines, brightest at the top and fading out down the card, drawn
+     once the way orangui's grid-cells.js draws its settled field. -->
+<canvas id="field" width="1200" height="630" style="position:fixed;inset:0;z-index:-1"></canvas>
+<script>
+(() => {
+  const c = document.getElementById("field"), ctx = c.getContext("2d");
+  const cell = 28, shades = [0.015, 0.03, 0.05, 0.075, 0.1];
+  let seed = 0x9e3779b9;
+  const next = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed >>> 8; };
+  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--bg-sink").trim();
+  ctx.fillRect(0, 0, c.width, c.height);
+  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--text-primary").trim();
+  const w = cell - 2, r = w * 0.18;
+  for (let row = 0; row * cell < c.height; row++) {
+    const y = row * cell, t = y / c.height;
+    // the sites' mask: full to 0.45 at 45% of the height, then out
+    const fade = t < 0.45 ? 1 - (t / 0.45) * 0.55 : 0.45 * (1 - (t - 0.45) / 0.55);
+    for (let col = 0; col * cell < c.width; col++) {
+      ctx.globalAlpha = shades[next() % 5] * fade;
+      ctx.beginPath(); ctx.roundRect(col * cell + 1, y + 1, w, w, r); ctx.fill();
+    }
+  }
+})();
+</script>
+  <div class="hero">
+    <div class="head">
+      <pre class="wordmark">▎▎▉▉▉▉▉▉▉            ▎▎▉▉
+ ▎▎▉▉▉▉▉▉▉▎▎▉▉    ▎▎▉▉▎▎▉▉▎▎▉▉▉▉▉▉ ▎▎▉▉▉▉▉▉▉
+      ▎▎▉▉ ▎▎▉▉    ▎▎▉▉    ▎▎▉▉▉▉▉▉▉▎▎▉▉ ▎▎▉▉
+     ▎▎▉▉   ▎▎▉▉▎▎▉▉▎▎▉▉▎▎▉▉▎▎▉▉ ▎▎▉▉▎▎▉▉▉▉▉▉▉
+    ▎▎▉▉     ▎▎▉▉▎▎▉▉▎▎▉▉▎▎▉▉▎▎▉▉ ▎▎▉▉▎▎▉▉
+   ▎▎▉▉▉▉▉▉▉▉ ▎▎▉▉▉▉▉▉▉▉  ▎▎▉▉▎▎▉▉▉▉▉▉ ▎▎▉▉  ▎▎▉▉
+    ▎▎▉▉▉▉▉▉▉▉ ▎▎▉▉▎▎▉▉    ▎▎▉▉▎▎▉▉▉▉   ▎▎▉▉▉▉▉▉
+                                ▎▎▉▉
+                                 ▎▎▉▉
+                                  ▎▎▉▉
+                                   ▎▎▉▉</pre>
+    </div>
+    <hr class="rule" />
+    <div class="tagline">
+      <span>Build <span class="link">Magic: The Gathering</span> decks by swiping, in your browser</span>
+    </div>
+    <div class="site">app.zwipe.net</div>
+  </div>
+</body>
+</html>
