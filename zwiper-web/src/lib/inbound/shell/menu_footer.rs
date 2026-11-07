@@ -1,7 +1,8 @@
 //! The folded menu's footer below the breakpoint, the app's: the `!` for
 //! Help and feedback, the icons for Home, Account, Settings and About, the
 //! theme pair, and a small Log out that asks first. Signed out it keeps the
-//! `!`, About and the theme pair.
+//! `!`, About and the theme pair. On a wide window, where it sits in the
+//! bar, the screen's `?` ends the icons.
 
 use components::icons::DockIcon;
 use components::{AlertDialog, DialogAction};
@@ -24,9 +25,15 @@ const PLATFORM: &str = "Web";
 
 /// The footer, for the nav's `trailing` slot, at every width: in the bar on
 /// a wide window, under the folded list below the breakpoint. Signed out it
-/// holds the `!`, About and the theme pair.
+/// holds the `!`, About and the theme pair. `hint` opens the screen's hint
+/// from a `?` after the icons on a wide window; below the breakpoint the
+/// folded nav's title carries it instead.
 #[component]
-pub fn MenuFooter(open: Signal<bool>, signed_in: bool) -> Element {
+pub fn MenuFooter(
+    open: Signal<bool>,
+    signed_in: bool,
+    #[props(default)] hint: Option<Callback<()>>,
+) -> Element {
     let route: Route = use_route();
     let current = section_of(&route);
     let mut confirm = use_signal(|| false);
@@ -47,6 +54,14 @@ pub fn MenuFooter(open: Signal<bool>, signed_in: bool) -> Element {
                     MenuIcon { section: Section::About, current: current == Some(Section::About), open }
                 }
                 MenuTheme { open }
+                if let Some(hint) = hint {
+                    button {
+                        class: "btn-action app-nav-support web-nav-hint",
+                        "aria-label": "About this screen",
+                        onclick: move |_| hint.call(()),
+                        "?"
+                    }
+                }
             }
             if signed_in {
                 button {

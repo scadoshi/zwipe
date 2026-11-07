@@ -111,7 +111,6 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
     rsx! {
         ScreenFrame {
             title: "Import",
-            description: Some("Add cards from a pasted decklist or an Archidekt deck link".to_owned()),
             on_hint,
             div {
                 class: "screen-content content-enter web-import",

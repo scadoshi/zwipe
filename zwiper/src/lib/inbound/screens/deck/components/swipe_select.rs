@@ -49,7 +49,7 @@ use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::component;
 use crate::inbound::components::{guide_link, hint_dialog, ui_toast};
 use crate::inbound::screens::deck::card::components::card_info::{
-    CardDetailsSheet, CardInfoDisplay, CardSkeleton, use_describe_tag,
+    CardDetailsSheet, CardSkeleton, use_describe_tag,
 };
 use crate::inbound::screens::deck::card::components::card_row::OtagExamplesOpen;
 use crate::inbound::screens::deck::card::components::printing_sheet::PrintingSheet;
@@ -446,9 +446,6 @@ pub(crate) fn SwipeSelect(
                                 usage_buffer().record_swipe(Direction::Down);
                                 driver.dispatch(Action::Undo);
                             },
-                        }
-                        if let Some(card) = current_card.clone() {
-                            CardInfoDisplay { card }
                         }
                     } else if let Some(line) = empty_line {
                         div { class: "message-empty",

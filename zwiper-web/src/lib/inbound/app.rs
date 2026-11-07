@@ -80,7 +80,6 @@ pub fn App() -> Element {
         document::Style { {components::MAGIC_CSS} }
         document::Style { {components::APP_CSS} }
         document::Style { {components::SCREENS_CSS} }
-        document::Style { {components::ACCORDION_CSS} }
         document::Style { {components::TOAST_CSS} }
         document::Style { {components::FILTER_CSS} }
         document::Link { rel: "stylesheet", href: WEB_CSS }

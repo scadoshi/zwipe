@@ -5,8 +5,8 @@
 //! back. A committed card flies off on the app's exit keyframes while the
 //! host's handler runs at once, so the next card takes a drag right away. A
 //! down swipe never moves the card: it is the host's undo. The keys and the
-//! buttons go through [`SwipeControl`], so they animate the same way a drag
-//! does, and a press before the last card is half way out is dropped, so
+//! dock's buttons ([`SwipeDock`]) go through [`SwipeControl`], so they
+//! animate the same way a drag does, and a press before the last card is half way out is dropped, so
 //! two exits overlap at most by half.
 
 use chrono::{DateTime, Utc};
@@ -54,7 +54,7 @@ impl Swipe {
         }
     }
 
-    /// The arrow glyph a button shows before its label.
+    /// The arrow glyph its dock button shows.
     pub fn arrow(self) -> &'static str {
         match self {
             Self::Left => "\u{2190}",
@@ -344,37 +344,47 @@ fn ExitingCard(gone: Exiting, on_end: EventHandler<Uuid>) -> Element {
     }
 }
 
-/// One button under the card per direction in `buttons`, each with its
-/// arrow and the app's action name for it, in the order given.
+/// The swipes as an action dock beside the surface's own dock, which comes
+/// in as `children`: one button per direction in `buttons`, each with its
+/// arrow and the action's name, the name hiding below the breakpoint. The
+/// two docks sit side by side at the bottom right on a wide window and the
+/// swipes' stack over the other below it. The buttons route as the arrow
+/// keys do ([`SwipeRoute::of`]): through `control` while `card_on_top`,
+/// else down calls `on_undo` and the rest are off.
 #[component]
-pub fn SwipeButtons(control: SwipeControl, buttons: Vec<(Swipe, &'static str)>) -> Element {
+pub fn SwipeDock(
+    control: SwipeControl,
+    buttons: Vec<(Swipe, &'static str)>,
+    card_on_top: bool,
+    on_undo: EventHandler<()>,
+    children: Element,
+) -> Element {
     rsx! {
-        div { class: "web-swipe-buttons",
-            for (swipe, label) in buttons {
-                button {
-                    key: "{label}",
-                    class: "card-action-btn web-swipe-button",
-                    onclick: move |_| control.press(swipe),
-                    span { class: "web-swipe-arrow", "{swipe.arrow()}" }
-                    " {label}"
+        div { class: "web-dock-pair",
+            div { class: "action-dock web-swipe-dock",
+                for (swipe, label) in buttons {
+                    {
+                        let route = SwipeRoute::of(swipe, card_on_top);
+                        rsx! {
+                            button {
+                                key: "{label}",
+                                class: "action-dock-btn web-swipe-dock-btn",
+                                "aria-label": label,
+                                title: label,
+                                disabled: route == SwipeRoute::Ignore,
+                                onclick: move |_| match route {
+                                    SwipeRoute::Stack => control.press(swipe),
+                                    SwipeRoute::Undo => on_undo.call(()),
+                                    SwipeRoute::Ignore => {}
+                                },
+                                span { class: "web-swipe-arrow", "{swipe.arrow()}" }
+                                span { class: "web-swipe-dock-label", "{label}" }
+                            }
+                        }
+                    }
                 }
             }
-        }
-    }
-}
-
-/// The lone down button under an empty pile, named `label`. It calls
-/// `on_press` itself, since there is no card for [`SwipeControl`] to swipe.
-#[component]
-pub fn EndUndoButton(label: &'static str, on_press: EventHandler<()>) -> Element {
-    rsx! {
-        div { class: "web-swipe-buttons",
-            button {
-                class: "card-action-btn web-swipe-button",
-                onclick: move |_| on_press.call(()),
-                span { class: "web-swipe-arrow", "{Swipe::Down.arrow()}" }
-                " {label}"
-            }
+            {children}
         }
     }
 }

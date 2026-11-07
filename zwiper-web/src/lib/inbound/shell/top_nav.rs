@@ -16,7 +16,8 @@ use crate::inbound::shell::menu_footer::MenuFooter;
 use crate::inbound::shell::nav::{Back, MenuOpen, Section, route_of, section_of};
 
 /// The screen on view's title and its `?`, which the folded nav shows
-/// between the corners. A screen with a page head sets it.
+/// between the corners and a wide window's nav shows in its icon row. The
+/// screen's frame sets it.
 #[derive(Clone, PartialEq)]
 pub(super) struct PageTitle {
     /// The screen's title.
@@ -25,10 +26,16 @@ pub(super) struct PageTitle {
     pub(super) on_hint: Option<Callback<()>>,
 }
 
+/// The `?` a wide window's nav carries for the screen on view, if any.
+fn nav_hint(page: Signal<Option<PageTitle>>) -> Option<Callback<()>> {
+    page.read().as_ref().and_then(|p| p.on_hint)
+}
+
 /// The nav for a signed-in user over the matched screen: the app's menu at
 /// every width. A wide window shows Decks, Playstyle, Activity and
 /// Commander maybeboard as pills, the current one lit, then the footer's
-/// icons and Log out in the bar, with the mark the way Home. Below the
+/// icons, the screen's `?` and Log out in the bar, with the mark the way
+/// Home. Below the
 /// breakpoint the same list folds behind the hamburger over the footer row.
 #[component]
 pub fn Shell() -> Element {
@@ -57,7 +64,7 @@ pub fn Shell() -> Element {
                         }
                     },
                     trailing: rsx! {
-                        MenuFooter { open, signed_in: true }
+                        MenuFooter { open, signed_in: true, hint: nav_hint(page) }
                     },
                 }
             }
@@ -101,7 +108,7 @@ pub fn PublicNav() -> Element {
                     }
                 },
                 trailing: rsx! {
-                    MenuFooter { open, signed_in: false }
+                    MenuFooter { open, signed_in: false, hint: nav_hint(page) }
                 },
             }
         }

@@ -34,10 +34,10 @@ use zwipe_ui::stores::undo::{UndoAction, create_board_field};
 use super::{SwipeDetails, flip_top_card, signal_toast};
 use crate::inbound::card_filter::CardFilterPanel;
 use crate::inbound::card_stores::CardStores;
-use crate::inbound::cards::card_info::{CardDetailsSheet, CardInfoDisplay, CardSkeleton};
+use crate::inbound::cards::card_info::{CardDetailsSheet, CardSkeleton};
 use crate::inbound::cards::printing_sheet::PrintingSheet;
 use crate::inbound::cards::swipe_stack::{
-    Swipe, SwipeButtons, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
+    Swipe, SwipeDock, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
 };
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::details_eye::{DockEye, use_details_eye};
@@ -494,7 +494,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
             div { class: "screen-content card-swipe content-enter web-cards-swipe {eye.body_class()}",
                 div { class: "web-cards-swipe-main",
                     div { class: "form-container",
-                        if let Some(card) = current.clone() {
+                        if current.is_some() {
                             SwipeStack {
                                 cards: window,
                                 allowed: ALL_SWIPES.to_vec(),
@@ -503,14 +503,15 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                                 on_entered: move |()| stack.write().cancel_entering(),
                                 on_swipe: move |pair: (Swipe, Card)| on_swipe(pair),
                             }
-                            SwipeButtons { control, buttons }
-                            CardInfoDisplay { card }
                         } else {
                             CardSkeleton { is_loading: !loaded() }
                         }
                     }
                 }
-                SwipeDetails { card: current.clone() }
+                SwipeDetails {
+                    card: current.clone(),
+                    on_printings: move |()| printing_open.set(true),
+                }
             }
             // The bottom row: the board chips on the left, the action dock
             // (filter, refresh, card details) on the right. Back is the
@@ -534,20 +535,26 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                         }
                     }
                 }
-                div { class: "action-dock",
-                    DockFilter {
-                        label: "Filter",
-                        dot,
-                        onclick: move |()| filter_open.set(true),
+                SwipeDock {
+                    control,
+                    buttons,
+                    card_on_top: current.is_some(),
+                    on_undo: move |()| undo_last.call(()),
+                    div { class: "action-dock",
+                        DockFilter {
+                            label: "Filter",
+                            dot,
+                            onclick: move |()| filter_open.set(true),
+                        }
+                        button {
+                            class: "action-dock-btn",
+                            "aria-label": "Refresh",
+                            onclick: move |_| refresh.call(()),
+                            DockIcon { path: REFRESH }
+                        }
+                        span { class: "action-dock-divider" }
+                        DockEye { eye, disabled: current.is_none() }
                     }
-                    button {
-                        class: "action-dock-btn",
-                        "aria-label": "Refresh",
-                        onclick: move |_| refresh.call(()),
-                        DockIcon { path: REFRESH }
-                    }
-                    span { class: "action-dock-divider" }
-                    DockEye { eye, disabled: current.is_none() }
                 }
             }
         }

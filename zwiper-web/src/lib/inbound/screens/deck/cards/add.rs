@@ -46,10 +46,10 @@ use zwipe_ui::timing::LOAD_MORE_AT;
 use super::{SwipeDetails, flip_top_card, signal_toast};
 use crate::inbound::card_filter::CardFilterPanel;
 use crate::inbound::card_stores::CardStores;
-use crate::inbound::cards::card_info::{CardDetailsSheet, CardInfoDisplay, CardSkeleton};
+use crate::inbound::cards::card_info::{CardDetailsSheet, CardSkeleton};
 use crate::inbound::cards::printing_sheet::PrintingSheet;
 use crate::inbound::cards::swipe_stack::{
-    EndUndoButton, Swipe, SwipeButtons, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
+    Swipe, SwipeDock, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
 };
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::details_eye::{DockEye, use_details_eye};
@@ -878,7 +878,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             div { class: "screen-content card-swipe content-enter web-cards-swipe {eye.body_class()}",
                 div { class: "web-cards-swipe-main",
                     div { class: "form-container",
-                        if let Some(card) = current.clone() {
+                        if current.is_some() {
                             SwipeStack {
                                 cards: window,
                                 allowed: ALL_SWIPES.to_vec(),
@@ -893,8 +893,6 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                                     AddSource::Maybeboard => on_maybeboard_swipe(pair),
                                 },
                             }
-                            SwipeButtons { control, buttons }
-                            CardInfoDisplay { card }
                         } else if end_of_pile {
                             if loading_more() {
                                 CardSkeleton { is_loading: true }
@@ -917,7 +915,6 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                                     },
                                     CardSkeleton {}
                                 }
-                                EndUndoButton { label: "Undo", on_press: undo_search }
                             }
                         } else if at == AddSource::Search && loading_cards() {
                             CardSkeleton { is_loading: true }
@@ -926,7 +923,11 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                         }
                     }
                 }
-                SwipeDetails { card: current.clone() }
+                SwipeDetails {
+                    card: current.clone(),
+                    on_printings: (at == AddSource::Search).then(|| EventHandler::new(move |()| printing_open.set(true))),
+                    loading: (end_of_pile && loading_more()) || (at == AddSource::Search && loading_cards()),
+                }
             }
             // The bottom row: From and the chip naming the current source on
             // the left, a tap switching to the other; the action dock (synergy,
@@ -941,35 +942,41 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                         "{at.label()}"
                     }
                 }
-                div { class: "action-dock",
-                    // Synergy on or off: constrains the stack to the commander's
-                    // synergy pool, then sorts within it. Lit while on.
-                    if at == AddSource::Search && has_commander {
-                        button {
-                            class: if synergy_on { "action-dock-btn action-dock-on" } else { "action-dock-btn" },
-                            "aria-label": "Synergy",
-                            "aria-pressed": "{synergy_on}",
-                            onclick: move |_| {
-                                let on = !filter.peek().synergy();
-                                filter.write().set_synergy(on);
-                                bump();
-                            },
-                            BoltIcon {}
+                SwipeDock {
+                    control,
+                    buttons,
+                    card_on_top: has_current,
+                    on_undo: move |()| undo_now.call(()),
+                    div { class: "action-dock",
+                        // Synergy on or off: constrains the stack to the commander's
+                        // synergy pool, then sorts within it. Lit while on.
+                        if at == AddSource::Search && has_commander {
+                            button {
+                                class: if synergy_on { "action-dock-btn action-dock-on" } else { "action-dock-btn" },
+                                "aria-label": "Synergy",
+                                "aria-pressed": "{synergy_on}",
+                                onclick: move |_| {
+                                    let on = !filter.peek().synergy();
+                                    filter.write().set_synergy(on);
+                                    bump();
+                                },
+                                BoltIcon {}
+                            }
                         }
+                        DockFilter {
+                            label: "Filter",
+                            dot,
+                            onclick: move |()| filter_open.set(true),
+                        }
+                        button {
+                            class: "action-dock-btn",
+                            "aria-label": "Refresh",
+                            onclick: move |_| refresh.call(()),
+                            DockIcon { path: REFRESH }
+                        }
+                        span { class: "action-dock-divider" }
+                        DockEye { eye, disabled: !has_current }
                     }
-                    DockFilter {
-                        label: "Filter",
-                        dot,
-                        onclick: move |()| filter_open.set(true),
-                    }
-                    button {
-                        class: "action-dock-btn",
-                        "aria-label": "Refresh",
-                        onclick: move |_| refresh.call(()),
-                        DockIcon { path: REFRESH }
-                    }
-                    span { class: "action-dock-divider" }
-                    DockEye { eye, disabled: !has_current }
                 }
             }
         }

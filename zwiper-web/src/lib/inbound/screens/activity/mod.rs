@@ -25,7 +25,7 @@ use crate::inbound::chrome::ghost::{GhostChipBars, GhostHint, GhostSection, Ghos
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::screens::deck::skeletons::ChipRowSkeleton;
 use crate::inbound::screens::home::hero::MyCountsPanel;
-use crate::inbound::shell::{ScreenFrame, page_description};
+use crate::inbound::shell::ScreenFrame;
 
 /// Activity while it loads, in the loaded screen's layout: the Activity
 /// section (the heatmap, its three tags, the Totals chart) at the page's
@@ -132,7 +132,6 @@ pub fn Activity() -> Element {
     rsx! {
         ScreenFrame {
             title: "Activity",
-            description: page_description(OneTimeHint::Activity),
             on_hint: move |()| hint_again.set(true),
             div {
                 class: "screen-content",

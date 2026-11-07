@@ -20,7 +20,7 @@ use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::screens::config::exceptions::ExceptionsSheet;
 pub(crate) use crate::inbound::screens::config::themes::{ThemesSheet, use_toggle_dark_mode};
-use crate::inbound::shell::{ScreenFrame, page_description};
+use crate::inbound::shell::ScreenFrame;
 use crate::outbound::session_store::SessionStore;
 
 /// The update that changes only what `edit` sets.
@@ -150,7 +150,6 @@ pub fn Config() -> Element {
     rsx! {
         ScreenFrame {
             title: config::TITLE,
-            description: page_description(OneTimeHint::Config),
             on_hint: move |()| {
                 let mut hint_open = hint_open;
                 hint_open.set(true);

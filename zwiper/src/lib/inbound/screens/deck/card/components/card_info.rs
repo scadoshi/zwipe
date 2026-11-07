@@ -1,5 +1,5 @@
 use components::icons::{FLIP, LAYERS};
-use components::{ActionDock, BottomSheet, CardDetails, DockAction, DockPlace};
+use components::{CardDetailsPanel, DockAction, DrawerSheet, use_overlay_back};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::Card;
@@ -7,10 +7,9 @@ use zwipe_ui::card::info;
 
 use crate::inbound::components::catalog_cache::CatalogCache;
 
-/// The swipe card's prices as money chips on one line under the card: USD,
-/// EUR then TIX, whichever it has. The line keeps its height with none, so the
-/// card never jumps. Everything else (set, release date, artist, rules) is in
-/// [`CardDetailsSheet`], opened from the dock's eye.
+/// A card's prices as money chips on one line: USD, EUR then TIX, whichever
+/// it has, under a printing in the printing sheet. A swipe card's prices are
+/// in [`CardDetailsSheet`], with its other details.
 #[component]
 pub(crate) fn CardInfoDisplay(card: Card) -> Element {
     let prices = info::prices(&card.scryfall_data);
@@ -41,81 +40,68 @@ pub(crate) fn use_describe_tag() -> Callback<String, Option<String>> {
     })
 }
 
-/// Bottom sheet showing a card's full details (type, oracle text, stats,
-/// keywords, card roles), for printings whose image is text-light (Secret
-/// Lair, full-art, foreign-language). The host opens it through the shared
-/// `open` signal. The body is the shared
-/// [`CardDetails`], opening on the shown face's mana cost since the sheet's
-/// title holds only text. The details and the host's `footer` share one
-/// panel, so nothing lies straight on the sheet's grid. The sheet closes
-/// from its title bar's × or a drag down; its dock, pinned at its bottom
-/// right and present only when there is something to hold, has Flip for a
-/// multi-faced card (it leaves the sheet open) and an optional Printings.
+/// A card's full details as a drawer from the right edge, behind the swipe
+/// dock's eye: the card as a [`CardDetailsPanel`] with the host's `footer`
+/// in its foot, the panel's title the drawer's only title. The host opens it through the shared
+/// `open` signal. It closes from its title bar's ×, a backdrop tap or the
+/// back gesture. Its dock, pinned at its bottom right and present only when
+/// there is something to hold, has Flip for a multi-faced card (it leaves
+/// the drawer open) and an optional Printings.
 ///
-/// Printings leaves this sheet open: the host's printing sheet draws over it,
-/// and the host closes this one too when a printing is saved. Mount it at the
-/// screen root, beside the printing sheet, so the sheet covers the screen's
-/// buttons.
+/// Printings leaves this drawer open: the host's printing sheet draws over
+/// it, and the host closes this one too when a printing is saved. Mount it
+/// at the screen root, beside the printing sheet, so the drawer covers the
+/// screen's buttons.
 #[component]
 pub(crate) fn CardDetailsSheet(
     open: Signal<bool>,
     card: Card,
     /// Opens the printings sheet. When set, a "Printings" button shows in the
-    /// sheet footer (mirrors the deck-view expand-row → Printing button).
+    /// drawer's dock (mirrors the deck-view expand-row → Printing button).
     #[props(default)]
     on_printings: Option<EventHandler<()>>,
-    /// Host content shown under the details.
+    /// Host content shown in the panel's foot.
     #[props(default)]
     footer: Option<Element>,
 ) -> Element {
-    let name = card.scryfall_data.name.clone();
-    // Face state lives here so Flip can sit in the footer; the body reads it
+    // Face state lives here so Flip can sit in the dock; the panel reads it
     // through the controlled `face` prop.
     let face_count = components::card_face_count(&card);
     let mut face = use_signal(|| 0usize);
     let describe_tag = use_describe_tag();
-    // Flip and Printings as the sheet's dock, pinned at its bottom right.
+    use_overlay_back(open);
+    // Flip and Printings as the drawer's dock, pinned at its bottom right.
     let dock = (face_count > 1 || on_printings.is_some()).then(|| {
         rsx! {
-            ActionDock { place: DockPlace::Sheet,
-                if face_count > 1 {
-                    DockAction {
-                        label: "Flip",
-                        icon: FLIP,
-                        onclick: move |()| face.set((face() + 1) % face_count),
-                    }
+            if face_count > 1 {
+                DockAction {
+                    label: "Flip",
+                    icon: FLIP,
+                    onclick: move |()| face.set((face() + 1) % face_count),
                 }
-                if let Some(handler) = on_printings {
-                    DockAction { label: "Printings", icon: LAYERS, onclick: move |()| handler.call(()) }
-                }
+            }
+            if let Some(handler) = on_printings {
+                DockAction { label: "Printings", icon: LAYERS, onclick: move |()| handler.call(()) }
             }
         }
     });
 
     rsx! {
-        BottomSheet {
+        DrawerSheet {
             open,
-            title: name,
-            closable: true,
-            // The sheet's content is the scroll container and the surface;
-            // `card-rules` only styles the text.
-            div { class: "card-rules",
-                CardDetails {
-                    card,
-                    show_name: false,
-                    show_cost: true,
-                    show_classification: true,
-                    show_printing: true,
-                    show_flip: false,
-                    face: Some(face),
-                    describe_tag: Some(describe_tag),
-                }
-                if let Some(footer) = footer {
-                    {footer}
-                }
-            }
-            if let Some(dock) = dock {
-                {dock}
+            on_close: move |()| {
+                let mut open = open;
+                open.set(false);
+            },
+            every_width: true,
+            class: "card-details-drawer",
+            dock,
+            CardDetailsPanel {
+                card,
+                show_flip: false,
+                face: Some(face),
+                describe_tag: Some(describe_tag),
+                footer,
             }
         }
     }
@@ -151,11 +137,6 @@ pub(crate) fn CardSkeleton() -> Element {
             // card is.
             div { class: "skeleton-stack",
                 div { class: "skeleton-image" }
-            }
-            // The price line's ghost: two chip-sized pills, centered.
-            div { class: "card-prices",
-                div { class: "skeleton-bar skeleton-price-chip" }
-                div { class: "skeleton-bar skeleton-price-chip" }
             }
         }
     }
