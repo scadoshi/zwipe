@@ -63,11 +63,15 @@
                         entries.push({ node: t, real: t.data, last: t.data, logo: el.classList.contains("logo") });
                     });
                     var glyphs = "\u2591\u2592\u2593\u258e\u258d";
+                    // A rolled figure keeps the real one's shape, its digits
+                    // random and the first never 0: "31.8k" rolls as "57.2k".
                     var rolled = function (real) {
-                        var count = (real.replace(/\D/g, "") || "1234").length, n = "";
-                        for (var d = 0; d < count; d++) n += Math.floor(Math.random() * 10);
-                        n = n.replace(/^0+(?=\d)/, "");
-                        return n.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                        var first = true;
+                        return (/\d/.test(real) ? real : "1,234").replace(/\d/g, function () {
+                            var d = first ? 1 + Math.floor(Math.random() * 9) : Math.floor(Math.random() * 10);
+                            first = false;
+                            return d;
+                        });
                     };
                     var shimmer = function (real, tick) {
                         var lines = real.split("\n"), width = 0;
