@@ -44,7 +44,9 @@ use crate::domain::deck::models::deck::update_deck_profile::UpdateDeckProfileErr
 use crate::domain::deck::models::deck_card::create_deck_card::CreateDeckCardError;
 use crate::domain::deck::models::deck_card::delete_deck_card::DeleteDeckCardError;
 use crate::domain::deck::models::deck_card::get_deck_card::GetDeckCardError;
-use crate::domain::deck::models::deck_card::import_deck_cards::ImportDeckCardsError;
+use crate::domain::deck::models::deck_card::import_deck_cards::{
+    ImportDeckCardsError, ImportRow, RowPrinting,
+};
 use crate::domain::deck::models::deck_card::update_deck_card::UpdateDeckCardError;
 use crate::domain::deck::ports::DeckRepository;
 use crate::outbound::sqlx::deck::error::{IntoDeckCardError, IntoDeckProfileError};
@@ -1234,7 +1236,7 @@ impl DeckRepository for Postgres {
         user_id: uuid::Uuid,
         deck_id: uuid::Uuid,
         mode: zwipe_core::domain::deck::ImportMode,
-        batch: &[(uuid::Uuid, uuid::Uuid, i32, String)],
+        batch: &[ImportRow],
         card_limit: i64,
         email_verified: bool,
     ) -> Result<Vec<DeckCard>, ImportDeckCardsError> {
@@ -1275,14 +1277,14 @@ impl DeckRepository for Postgres {
         // Post-import total: in replace mode a deck board present in the import
         // becomes exactly the imported list; in add mode the upsert replaces
         // quantities for re-imported oracle_ids, so subtract that overlap.
-        let import_total: i64 = batch.iter().map(|(_, _, qty, _)| i64::from(*qty)).sum();
+        let import_total: i64 = batch.iter().map(|row| i64::from(row.quantity)).sum();
         let post_import_total: Option<i64> = if mode.is_replace() {
-            if batch.iter().any(|(_, _, _, board)| board == "deck") {
+            if batch.iter().any(|row| row.board == Board::Deck) {
                 Some(
                     batch
                         .iter()
-                        .filter(|(_, _, _, board)| board == "deck")
-                        .map(|(_, _, qty, _)| i64::from(*qty))
+                        .filter(|row| row.board == Board::Deck)
+                        .map(|row| i64::from(row.quantity))
                         .sum(),
                 )
             } else {
@@ -1290,7 +1292,7 @@ impl DeckRepository for Postgres {
             }
         } else {
             let import_oracle_ids: Vec<uuid::Uuid> =
-                batch.iter().map(|(_, oid, _, _)| *oid).collect();
+                batch.iter().map(|row| row.oracle_id).collect();
             let overlap_qty = sqlx::query_scalar!(
                 "SELECT COALESCE(SUM(quantity), 0) FROM deck_cards WHERE deck_id = $1 AND oracle_id = ANY($2) AND board = 'deck'",
                 deck_id,
@@ -1314,22 +1316,29 @@ impl DeckRepository for Postgres {
         let mut qb: QueryBuilder<sqlx::Postgres> = QueryBuilder::new(
             "INSERT INTO deck_cards (deck_id, scryfall_data_id, oracle_id, quantity, board) ",
         );
-        qb.push_values(
-            batch,
-            |mut b, (scryfall_data_id, oracle_id, quantity, board)| {
-                b.push_bind(deck_id)
-                    .push_bind(scryfall_data_id)
-                    .push_bind(oracle_id)
-                    .push_bind(quantity)
-                    .push_bind(board);
-            },
-        );
+        qb.push_values(batch, |mut b, row| {
+            b.push_bind(deck_id)
+                .push_bind(row.scryfall_data_id)
+                .push_bind(row.oracle_id)
+                .push_bind(row.quantity)
+                .push_bind(row.board.display_name());
+        });
+        let named_printings: Vec<uuid::Uuid> = batch
+            .iter()
+            .filter(|row| row.printing == RowPrinting::Named)
+            .map(|row| row.scryfall_data_id)
+            .collect();
+        // `mvp_at` must follow the board: an import that moves a starred card
+        // off the mainboard has to drop the star, or it strands an MVP the
+        // podium cap can't see (the cap counts mainboard stars only). A CHECK
+        // constraint backs this up. A card already in the deck takes the
+        // imported printing only when the import named it.
         qb.push(
-                        // `mvp_at` must follow the board: an import that moves a starred
-            // card off the mainboard has to drop the star, or it strands an MVP
-            // the podium cap can't see (the cap counts mainboard stars only).
-            // A CHECK constraint backs this up.
-            " ON CONFLICT (deck_id, oracle_id) DO UPDATE SET quantity = EXCLUDED.quantity, board = EXCLUDED.board, mvp_at = CASE WHEN EXCLUDED.board = 'deck' THEN deck_cards.mvp_at ELSE NULL END RETURNING deck_id::TEXT, scryfall_data_id::TEXT, oracle_id::TEXT, quantity, board, mvp_at",
+            " ON CONFLICT (deck_id, oracle_id) DO UPDATE SET quantity = EXCLUDED.quantity, board = EXCLUDED.board, mvp_at = CASE WHEN EXCLUDED.board = 'deck' THEN deck_cards.mvp_at ELSE NULL END, scryfall_data_id = CASE WHEN EXCLUDED.scryfall_data_id = ANY(",
+        );
+        qb.push_bind(named_printings);
+        qb.push(
+            ") THEN EXCLUDED.scryfall_data_id ELSE deck_cards.scryfall_data_id END RETURNING deck_id::TEXT, scryfall_data_id::TEXT, oracle_id::TEXT, quantity, board, mvp_at",
         );
         let rows: Vec<DatabaseDeckCard> =
             qb.build_query_as().fetch_all(&mut *tx).await.map_err(db)?;
@@ -1345,21 +1354,19 @@ impl DeckRepository for Postgres {
         // imported list. Boards absent from the import are untouched. Bulk
         // deletes intentionally don't suppress.
         if mode.is_replace() {
-            let boards: std::collections::HashSet<&str> = batch
-                .iter()
-                .map(|(_, _, _, board)| board.as_str())
-                .collect();
+            let boards: std::collections::HashSet<Board> =
+                batch.iter().map(|row| row.board).collect();
             for board in boards {
                 let keep: Vec<uuid::Uuid> = batch
                     .iter()
-                    .filter(|(_, _, _, b)| b == board)
-                    .map(|(_, oid, _, _)| *oid)
+                    .filter(|row| row.board == board)
+                    .map(|row| row.oracle_id)
                     .collect();
                 sqlx::query(
                     "DELETE FROM deck_cards WHERE deck_id = $1 AND board = $2 AND NOT (oracle_id = ANY($3))",
                 )
                 .bind(deck_id)
-                .bind(board)
+                .bind(board.display_name())
                 .bind(&keep)
                 .execute(&mut *tx)
                 .await

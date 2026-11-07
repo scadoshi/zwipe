@@ -285,6 +285,16 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         names: &[String],
     ) -> impl Future<Output = Result<Vec<Card>, SearchCardsError>> + Send;
 
+    /// Every printing of the cards `oracle_ids` in the sets `set_codes`
+    /// (lowercase Scryfall set codes), English first, then paper before
+    /// digital, then non-promo, then by collector number. Import resolves a
+    /// decklist's `(SET) number` from these.
+    fn fetch_printings_in_sets(
+        &self,
+        oracle_ids: &[uuid::Uuid],
+        set_codes: &[String],
+    ) -> impl Future<Output = Result<Vec<ScryfallData>, SearchCardsError>> + Send;
+
     /// `search_cards` with deck awareness: rows whose `oracle_id` is in
     /// `exclude_oracle_ids` are omitted, the deck's suppression set (skipped
     /// / removed cards) is filtered out when `deck_id` is given, and when

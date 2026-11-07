@@ -230,6 +230,14 @@ const POPULARITY_JOIN: &str = "LEFT JOIN (SELECT oracle_id AS pop_oracle_id, dec
 /// data-accrues behavior (`context/archive/commander_select_signal.md` §3).
 const SELECT_SIGNAL_JOIN: &str = "LEFT JOIN (SELECT commander_oracle_id AS sel_oid, shown AS sel_shown FROM commander_select_signal) sel ON sel.sel_oid = latest_cards.oracle_id";
 
+/// A printing a decklist import may resolve to: never an Art Series card
+/// (named `"A // A"`, so its front face would match `"A"`), a token, an emblem,
+/// or a memorabilia printing (gold-bordered World Championship cards and the
+/// like). Unqualified columns, so it reads against `latest_cards` and
+/// `scryfall_data` alike.
+const IMPORTABLE_PRINTING: &str = "layout NOT IN ('art_series', 'token', 'double_faced_token', 'emblem') \
+     AND set_type NOT IN ('memorabilia', 'token')";
+
 impl MyPostgres {
     /// `cards` with each card whose printing sits outside `set_names` swapped
     /// for its printing in one of them, in order. Among several, the view's
@@ -1846,16 +1854,19 @@ impl CardRepository for MyPostgres {
         let lowered: Vec<String> = lowered.into_iter().collect();
         // ORDER BY makes the row order stable, so when an entry is ambiguous
         // (two double-faced cards share a front face) resolution is deterministic.
-        let db_rows: Vec<DatabaseScryfallData> = query_as(
+        let sql = format!(
             "SELECT * FROM latest_cards \
-             WHERE LOWER(name) = ANY($1) \
-                OR LOWER(split_part(name, ' // ', 1)) = ANY($1) \
-             ORDER BY name",
-        )
-        .bind(&lowered)
-        .fetch_all(&self.pool)
-        .await
-        .map_err(|e| SearchScryfallDataError::Database(e.into()))?;
+             WHERE (LOWER(name) = ANY($1) \
+                OR LOWER(split_part(name, ' // ', 1)) = ANY($1)) \
+               AND {IMPORTABLE_PRINTING} \
+             ORDER BY name"
+        );
+        // Built from string constants only; every value is bound.
+        let db_rows: Vec<DatabaseScryfallData> = query_as(sqlx::AssertSqlSafe(sql))
+            .bind(&lowered)
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|e| SearchScryfallDataError::Database(e.into()))?;
         let scryfall_data: Vec<ScryfallData> = db_rows
             .into_iter()
             .map(ScryfallData::try_from)
@@ -1868,6 +1879,37 @@ impl CardRepository for MyPostgres {
         let card_profiles = self.fetch_card_profiles(&scryfall_data_ids).await?;
         let cards = card_profiles.sleeve(scryfall_data);
         Ok(cards)
+    }
+
+    async fn fetch_printings_in_sets(
+        &self,
+        oracle_ids: &[uuid::Uuid],
+        set_codes: &[String],
+    ) -> Result<Vec<ScryfallData>, SearchCardsError> {
+        if oracle_ids.is_empty() || set_codes.is_empty() {
+            return Ok(vec![]);
+        }
+        let sql = format!(
+            "SELECT sd.* FROM scryfall_data sd \
+             JOIN card_profiles cp ON sd.id = cp.scryfall_data_id \
+             WHERE sd.oracle_id = ANY($1) AND LOWER(sd.set) = ANY($2) \
+               AND {IMPORTABLE_PRINTING} \
+             ORDER BY (sd.lang IS DISTINCT FROM 'en'), sd.digital, sd.promo, \
+                      sd.collector_number, sd.id"
+        );
+        // Built from string constants only; every value is bound.
+        let db_rows: Vec<DatabaseScryfallData> = query_as(sqlx::AssertSqlSafe(sql))
+            .bind(oracle_ids)
+            .bind(set_codes)
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|e| SearchScryfallDataError::Database(e.into()))?;
+        let printings: Vec<ScryfallData> = db_rows
+            .into_iter()
+            .map(ScryfallData::try_from)
+            .collect::<Result<_, _>>()
+            .map_err(SearchScryfallDataError::Database)?;
+        Ok(printings)
     }
 
     async fn search_cards_deck_aware(
