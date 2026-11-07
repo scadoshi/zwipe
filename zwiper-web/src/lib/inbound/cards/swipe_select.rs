@@ -671,6 +671,7 @@ fn SwipeSelectBody(
                         key: "{card.scryfall_data.id}",
                         card,
                         describe_tag: Some(describe_tag),
+                        on_printings: move |()| printing_open.set(true),
                         footer: reasons.clone().map(|reasons| rsx! {
                             SuggestionReasons {
                                 reasons,

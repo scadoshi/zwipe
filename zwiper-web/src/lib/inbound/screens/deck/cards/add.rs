@@ -924,6 +924,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                 }
                 SwipeDetails {
                     card: current.clone(),
+                    on_printings: (at == AddSource::Search).then(|| EventHandler::new(move |()| printing_open.set(true))),
                     loading: (end_of_pile && loading_more()) || (at == AddSource::Search && loading_cards()),
                 }
             }

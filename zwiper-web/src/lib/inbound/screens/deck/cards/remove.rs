@@ -508,7 +508,10 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                         }
                     }
                 }
-                SwipeDetails { card: current.clone() }
+                SwipeDetails {
+                    card: current.clone(),
+                    on_printings: move |()| printing_open.set(true),
+                }
             }
             // The bottom row: the board chips on the left, the action dock
             // (filter, refresh, card details) on the right. Back is the

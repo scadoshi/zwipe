@@ -1014,18 +1014,51 @@ i.ms.ms-cost.ms-gp {
 }
 
 /* The pane's ghost: the title's bar and the rules text's lines. */
-.card-details-ghost-title {
+.card-details-ghost .card-details-ghost-title {
     width: 12rem;
     height: 1.1rem;
 }
 
-.card-details-ghost-line {
+.card-details-ghost .card-details-ghost-line {
     height: 0.85rem;
     margin-top: 0.6rem;
 }
 
-.card-details-ghost-line:nth-child(5) {
+.card-details-ghost .card-details-ghost-line:nth-child(5) {
     width: 60%;
+}
+
+/* A tag group's ghost at the loaded group's sizes: the label's bar on the
+   label's own line, then tag chips as tall as a .keyword-chip. */
+.card-details-ghost .card-details-ghost-label {
+    display: inline-block;
+    width: 4.5rem;
+    height: 0.6rem;
+    vertical-align: middle;
+}
+
+.card-details-ghost .card-details-ghost-tag {
+    display: inline-block;
+    width: 3.75rem;
+    height: 1.425rem;
+    border-radius: 0.4rem;
+}
+
+.card-details-ghost .card-details-ghost-tag-wide {
+    width: 5.5rem;
+}
+
+/* The foot's buttons' ghosts at a .card-action-btn's size: Flip, then the
+   wider Printings. */
+.card-details-ghost .card-details-ghost-button {
+    display: inline-block;
+    width: 3.325rem;
+    height: 1.375rem;
+    border-radius: 0.4rem;
+}
+
+.card-details-ghost .card-details-ghost-button-wide {
+    width: 5.825rem;
 }
 
 /* ---- CardDetails footer ----

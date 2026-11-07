@@ -202,6 +202,7 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
                             key: "{card.scryfall_data.id}",
                             card,
                             describe_tag: Some(describe_tag),
+                            on_printings: move |()| printing_open.set(true),
                         }
                     }
                 } else if loading() || (empty && loading_more()) {

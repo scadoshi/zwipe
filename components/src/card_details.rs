@@ -303,7 +303,7 @@ pub fn CardDetails(
 /// set, the prices when `show_prices` and last the face's power and
 /// toughness, loyalty or defense, then the keywords and the card roles and
 /// their oracle tags when `show_classification`. The panel's foot holds the
-/// host's `footer` and the Flip and Image buttons. A multi-faced card
+/// host's `footer` and the Flip, Image and Printings buttons. A multi-faced card
 /// shows one face at a time, as in [`CardDetails`]: `face` lets the host own
 /// the shown face (pair it with `show_flip: false` to put Flip in its own
 /// chrome).
@@ -325,6 +325,10 @@ pub fn CardDetailsPanel(
     /// Image action: an Image button in the foot when the card has art.
     #[props(default)]
     on_image: Option<EventHandler<()>>,
+    /// Printings action: a Printings button in the foot, opening the host's
+    /// printing sheet.
+    #[props(default)]
+    on_printings: Option<EventHandler<()>>,
     /// Fires with the new face index when Flip turns the card.
     #[props(default)]
     on_face_change: Option<EventHandler<usize>>,
@@ -375,7 +379,7 @@ pub fn CardDetailsPanel(
     let stats = current_face.as_ref().and_then(|f| f.stats.clone());
     let show_flip_btn = face_count > 1 && show_flip;
     let show_image = has_image && on_image.is_some();
-    let has_foot = footer.is_some() || show_flip_btn || show_image;
+    let has_foot = footer.is_some() || show_flip_btn || show_image || on_printings.is_some();
     let class = match class {
         Some(extra) => format!("card-details-panel {extra}"),
         None => "card-details-panel".to_string(),
@@ -391,7 +395,7 @@ pub fn CardDetailsPanel(
             actions: has_foot.then(|| rsx! {
                 div { class: "card-details-foot",
                     {footer}
-                    if show_flip_btn || show_image {
+                    if show_flip_btn || show_image || on_printings.is_some() {
                         div { class: "card-action-row",
                             if show_flip_btn {
                                 button {
@@ -415,6 +419,16 @@ pub fn CardDetailsPanel(
                                         handler.call(());
                                     },
                                     "Image"
+                                }
+                            }
+                            if let Some(handler) = on_printings {
+                                button {
+                                    class: "card-action-btn",
+                                    onclick: move |evt| {
+                                        evt.stop_propagation();
+                                        handler.call(());
+                                    },
+                                    "Printings"
                                 }
                             }
                         }
@@ -454,9 +468,10 @@ pub fn CardDetailsPanel(
 }
 
 /// The ghost of a [`CardDetailsPanel`] while its card loads, in the panel's
-/// own order: the title bar, the type and rarity chips, the rules text's
-/// lines, the set, price and stats chips, a card role's chip, then the foot's
-/// rule and the Flip button.
+/// own order and shapes: the title bar, the type and rarity chips, the rules
+/// text's lines, the set, price and stats chips, the Keywords and Card roles
+/// groups (each a label over two tags), then the foot's rule and the Flip and
+/// Printings buttons.
 #[component]
 pub fn CardDetailsPanelSkeleton() -> Element {
     rsx! {
@@ -478,15 +493,26 @@ pub fn CardDetailsPanelSkeleton() -> Element {
                         span { key: "{i}", class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
                     }
                 }
-                div { class: "card-details-analysis card-details-facts",
-                    span { class: "skeleton-bar skeleton-chip skeleton-chip-md" }
+                for group in ["keyword-section", "card-roles"] {
+                    div { key: "{group}", class: "card-details-analysis",
+                        div { class: "{group}",
+                            span { class: "chips-label",
+                                span { class: "skeleton-bar card-details-ghost-label" }
+                            }
+                            div { class: "keyword-chips",
+                                span { class: "skeleton-bar card-details-ghost-tag" }
+                                span { class: "skeleton-bar card-details-ghost-tag card-details-ghost-tag-wide" }
+                            }
+                        }
+                    }
                 }
             }
             hr { class: "panel-rule" }
             div { class: "panel-actions",
                 div { class: "card-details-foot",
                     div { class: "card-action-row",
-                        span { class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
+                        span { class: "skeleton-bar card-details-ghost-button" }
+                        span { class: "skeleton-bar card-details-ghost-button card-details-ghost-button-wide" }
                     }
                 }
             }

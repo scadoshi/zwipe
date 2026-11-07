@@ -38,9 +38,14 @@ fn flip_top_card() {
 }
 
 /// The top card's details beside it on a wide window, what the phone keeps
-/// behind the eye button, or their ghost while the cards load.
+/// behind the eye button, or their ghost while the cards load. With
+/// `on_printings` the pane offers Printings, as the drawer does.
 #[component]
-fn SwipeDetails(card: Option<Card>, #[props(default)] loading: bool) -> Element {
+fn SwipeDetails(
+    card: Option<Card>,
+    #[props(default)] loading: bool,
+    #[props(default)] on_printings: Option<EventHandler<()>>,
+) -> Element {
     let describe_tag = use_describe_tag();
     rsx! {
         div { class: "web-swipe-details",
@@ -49,6 +54,7 @@ fn SwipeDetails(card: Option<Card>, #[props(default)] loading: bool) -> Element 
                     key: "{card.scryfall_data.id}",
                     card,
                     describe_tag: Some(describe_tag),
+                    on_printings,
                 }
             } else if loading {
                 CardDetailsPanelSkeleton {}
