@@ -362,15 +362,15 @@ body {
 
 /* ---- Panel lift ----
 
-   zwipe.net's: under a mouse a panel rises 3px with the medium shadow. The
-   .web-main prefix outranks the kit's `transition: border-color`, and an
-   entrance animation fills backwards only, so its end transform lets go of
-   the lift. A panel in a sheet, a dialog or a screen over the page holds
-   still, and so does one holding card rows, a sheet, a picker screen, a
-   preview, a dock, a heatmap (its floating tip) or a grid backdrop: a
+   zwipe.net's: under a mouse a panel takes the medium shadow and the
+   accent border, and rises 3px. The .web-main prefix outranks the kit's
+   `transition: border-color`, and an entrance animation fills backwards
+   only, so its end transform lets go of the lift. A panel in a sheet, a
+   dialog or a screen over the page holds still. One holding card rows, a
+   sheet, a picker screen, a preview, a dock, a heatmap (its floating tip)
+   or a grid backdrop takes the shadow and border but does not rise: a
    transform makes the panel the containing block of the fixed overlays
-   inside it, and a card list's rows carry their own hover. Any width with
-   a mouse. */
+   inside it. Any width with a mouse. */
 @media (hover: hover) {
     .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold, .web-details-panel) {
         transition:
@@ -384,8 +384,9 @@ body {
         animation-fill-mode: backwards;
     }
 
-    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold, .web-details-panel):hover:not(:is(.screen .screen, .bottom-sheet, .alert-dialog) *):not(:has(.card-row, .bottom-sheet, .screen, .image-preview-container, .action-dock, .heat-grid, .grid-cells, .swipe-bottom-row)) {
+    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold, .web-details-panel):hover:not(:is(.screen .screen, .bottom-sheet, .alert-dialog) *) {
         box-shadow: var(--shadow-md);
+        border-color: var(--accent-primary);
     }
 }
 
