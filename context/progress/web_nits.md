@@ -184,6 +184,18 @@ From Surfer's Part 3 (2026-11-06), triaged with Scotty:
 
 131. **The app's deck page leaves a wider gap under the header than other screens.** The Profile panel sits further below the title bar than panels do elsewhere in the app; align it to the app's usual top gap.
 
+From Surfer's Part 4 (half width, 720px), triaged with Scotty:
+
+132. **Toasts land on the title bar's back button at narrow widths.** [S38] On the web, toasts sit at the bottom left at every width, clear of the docks and pile chips, newest at the bottom.
+133. **Tag selectors become squeezed bottom sheets at narrow widths.** [S39] Deck tags, Oracle tags and Format: a side drawer (no grid backdrop) wherever one fits, and below that a full-screen selector with the grid backdrop, never a bottom sheet. Their content fills the width they get (no 320 to 384px column inside a wider sheet), and the dictionary's A to Z row stays one row, scrolling sideways within the width.
+134. **Floating docks run over the footer.** [S40] Every sticky or floating action dock and button (filter funnel, +, ✓, the swipe docks, every screen) stops above the footer when it scrolls in, on the web app and zwipe.net.
+135. **Card groups don't all fold.** [S41] Every card row group everywhere gets the fold caret: the Commander group, Suggested commanders, Staples, Most skipped and any other card list, in the app and on the web.
+136. **A one-type deck's Types chart is a solid slab.** [S42] A single type draws as a normal bar.
+137. **Stacked docks differ in width.** [S46] Swipe select's are 335px against Add's 374px; one width everywhere.
+138. **scottyfermo.com's charts lose their labels when scrolled.** [S43] On a narrow window the commit area chart's counts and the heatmap's Mon/Wed/Fri stay pinned at the left while the charts scroll and fade under them; the scroller starts where both read. Escape closes the phone menu [S45].
+
+Skipped with Scotty: S44 (the About diagram scrolls under its arrows; fine as is).
+
 Skipped with Scotty: S35 (old /deck paths 404; old paths don't reroute), S37 (overscroll shade, 104 as designed).
 
 Skipped with Scotty: S7 (no Image in the swipe screens' details, intended), S23 (Cloudflare's email obfuscation). Rechecked after the next deploy, since `release` may already fix them: S4 (picker ✓ over chips), S6 (swipe select page head). S12 (the pip toggle labeled Theme on zwipe.net) becomes Pips, folded into 111.
