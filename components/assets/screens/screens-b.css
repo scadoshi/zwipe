@@ -647,13 +647,19 @@
 }
 
 /* The letter rail is the horizontal scroll container itself: the ancestor
-   .screen-content sets overflow-x: hidden, so scrolling must live here. */
+   .screen-content sets overflow-x: hidden, so scrolling must live here. It
+   scrolls sideways only. Its padding holds the chips' borders and shadow
+   inside the clip, and the negative margin gives that room back so the rail
+   sits where its chips would. */
 .dict-letter-rail {
     display: flex;
     flex-wrap: nowrap;
     overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-y: none;
     gap: 0.35rem;
-    padding-bottom: 0.25rem;
+    padding: 0.25rem;
+    margin: -0.25rem -0.25rem 0;
     -webkit-overflow-scrolling: touch;
     /* The edge fade is the kit's scroll-fade-x, which lifts at the edge the
        rail is scrolled to, so A is whole at rest. */

@@ -2184,6 +2184,13 @@ body {
     margin-bottom: 0;
 }
 
+/* The dictionary's controls sit as close under its header as a picker's
+   do under the drawer's: their own top padding, with none from the page
+   (the header already sits below the status bar). */
+.web-dictionary > .screen-content {
+    padding-top: 0;
+}
+
 @media (min-width: 900px) {
     .web-dictionary > .screen-content {
         align-items: stretch;
