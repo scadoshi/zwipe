@@ -434,7 +434,7 @@ pub(crate) fn SwipeSelect(
                 ScreenHeader { title, hint: hint_open, back: move |()| driver.dispatch(Action::Back) }
 
                 div { class: "screen-content card-swipe content-enter",
-                    SwipeConfirmChip { said: driver.said }
+                    SwipeConfirmChip { said: driver.said, at_end: status == Status::Empty }
                     if has_cards {
                         SwipeStack {
                             cards: window,

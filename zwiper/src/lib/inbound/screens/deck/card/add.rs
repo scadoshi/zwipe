@@ -670,7 +670,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                 ScreenHeader { title: add_cards::TITLE, hint: driver.hint_open, back: move |()| driver.dispatch(Action::Back) }
 
                 div { class: "screen-content card-swipe content-enter",
-                SwipeConfirmChip { said: driver.said }
+                SwipeConfirmChip { said: driver.said, at_end: pile == Pile::End }
 
                 div { class : "form-container",
                     if source == Source::Search {
