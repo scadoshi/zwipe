@@ -670,3 +670,38 @@ The popup boots the real wasm signed out. None of the guards fired (0 blocked wr
 10. **A deep link signed out probably loses its target.** A signed-out deck link redirects to plain `/login`, with no `?next=` and nothing in localStorage or sessionStorage. So after signing in you'd likely land on Home, not the deck. I can't confirm the after-sign-in step without signing in.
 11. **Login's counters keep "as of Nov 7" after fetching live stats.** They settle on the live 2,270 / 31.8k / 264.7k, but the tag still says "as of Nov 7". Home (signed in) says "Live" once fresh (195).
 12. **Portfolio stats don't say what they count.** "14 repos · 88 stars" reads as the whole GitHub account (40 repos, 128 stars). "Counted by Heron" is there, but not that it covers showcased repos only. Wording question for Scotty.
+
+## Part 16, deck page in depth, plus Home and Decks order (2026-11-07, live f699acc37, wide 1450)
+
+Signed in throughout, **no logouts**. I cloned isshin (101 cards, not mine) into a temp deck and did everything on the clone, then deleted it. isshin itself was only read. Surfer test, settings and theme untouched. Decks reads 13 because Droid added a long-named deck during the pass.
+
+### Works
+
+| Area | Check | Result |
+|---|---|---|
+| Price totals | Sum of qty × row price vs header and Budget | **Exact:** $568.94 in all three over 83 rows / 101 cards. Changing a printing (Boros Charm → OTJ Commander $4.99) updated the row, header and Budget live to $573.93. The dock's Undo restored the old printing ("Boros Charm printing restored") and $568.94. Sideboard cards are left out of the total (moving Chaos Warp to Side dropped it $0.76) |
+| Row actions | Image, Printings (arrow keys, Select), −, +, Star, To maybeboard / To sideboard | All work. Star adds ★ to the row and puts the card in the deck head as an "MVP" card, and the button becomes Unstar. +/− change the count and header live. To sideboard moves the card and the header live |
+| Group by | Type, Mana value, Color, Card role | Type and Mana value add up to 100 (+1 commander = 101). Color adds up to 100 (W 10, B 4, R 13, WB 5, WR 13, BR 3, WBR 5, UBR 1, colorless 8, lands 38). Card role adds up to 221, since cards carry several roles |
+| Stats | Types chart, mana curve | Types match the Type groups. The curve (5/18/19/10/7/3) matches the Mana value groups. The Card roles chart reads 1–2 higher than the Card role groups (AGGRO 35 vs 33, RAMP 17 vs 16, SACRF 9 vs 8), probably because the chart counts the commander. Worth labeling |
+| Sort | Filter → Sort → Price (USD), Descending | Rows within each group come out by price, high to low (46.85, 28.74, 12.25…). See 7 for unpriced cards |
+| Large deck | 101 cards, 83 rows | Rows render ~0.8s after navigation. ~6,900 DOM nodes, 44 MB heap, 82 of 84 images lazy-loaded |
+| Long names | 64-character deck name | Accepted at 64 exactly. Home's deck tile cuts it off with an ellipsis. Decks wraps it (see 9) |
+| Decks order | List | Alphabetical, ignoring case (big fat chud … Surfer test, test, WWWW…). No sort control |
+| Home order | Decks panel | The three most recently changed decks (the new clone first) |
+
+### Findings
+
+1. **Card rows can't be used from the keyboard.** A row (`div.web-card-row`) and its head have no tabindex or role, so Tab never lands on a row and nothing expands it from the keyboard. Group headers (`div.deck-fold-head`) are the same. On a phone or with a mouse that's fine. For keyboard users it's a dead end.
+2. **…and collapsed rows still own over a thousand tab stops.** Every collapsed row keeps its chips and its Image / Printings / − / + / Star / To maybeboard / To sideboard buttons at tabindex 0 inside a 0-height, opacity-0 wrapper (`card-row-collapse`). On this deck that's **1,017 of the page's 1,056 tab stops**, all invisible. Real Tab presses from Quick add go: Group by chips, Boards, Show, "Shut every group", then hidden "Aggression", "Image", "Printings", "−", "+"… An Enter there changes the deck unseen. The page dock (+ − filter undo edit clone share) comes after all of them. The fix is `inert` (or tabindex -1) on collapsed content, plus a focusable row head with `aria-expanded`.
+3. **Warnings don't follow +, − or board moves** (adds to Part 13's To mainboard and Part 14's Fix to 1).
+    - **+** took Chaos Warp to 2 in a Commander deck. The header went 101 → 102, but the Warnings count stayed at 2 with no copy-limit line.
+    - **To sideboard** dropped the header to 100, but Warnings still said "Deck has 101 cards" and had no "Commander does not use sideboards".
+    - After a reload both are right: "Crackling doom exceeds copy limit (2/1)" and the sideboard warning show up.
+4. **Hover preview covers the row actions.** The floating card preview opens over the list itself, on whichever side has more room, so it sits on the expanded row above. In p16-1 the pointer is on Chaos Warp, and its preview hides Boros Charm's details and its Image and Printings buttons. Moving to those buttons means passing other rows, which swaps the preview.
+5. **Drag between boards does nothing.** All 82 rows are `draggable="true"`, but a real mouse drag onto the Sideboard group and a synthetic dragstart/dragover/drop both did nothing (no data set, no drop highlight). If drag isn't a feature, `draggable` should go. Moving with the row buttons works.
+6. **Deck name length isn't limited in the field.** The clone (and probably the create/edit) name input has no `maxlength`. A 98-character name only fails on Save with the raw server message "Invalid deck name: deck name maximum length is 64 characters" in a toast. A maxlength of 64, or a counter, would stop it at the field.
+7. **Unpriced cards: the total silently excludes them, and they sort first.** 11 of the 101 cards have no USD price on their chosen printing (Phyrexian Arena, Boros Charm FDN, Sword of the Animist, Mountain…). The total and "Average card price" ($7.39 = $568.94 / 77 priced cards) leave them out with no note. Sorting by Price (USD) Descending puts these unpriced cards **first** in each group, ahead of $46.85.
+8. **Card names lowercased in warnings, badly.** "Nicol bolas, the ravager // nicol bolas, the arisen is outside commander's color identity", "Crackling doom exceeds copy limit". Same root as Part 14's "Lightning bolt".
+9. **A long name drops below the art on Decks.** Short names sit beside the thumbnail. The 64-character one wraps onto its own lines under it, so that card's layout differs from its neighbors (p16-2).
+10. **Color groups are icon-only.** Group by Color headers show just mana symbols and "(10)", with no text or aria-label, so a screen reader hears "(10)".
+11. **No sort on Decks or Home.** Decks is alphabetical only. Home shows recent. There's no way to sort by size, price, format or last changed. That's a feature question, not a bug.
