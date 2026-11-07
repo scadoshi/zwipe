@@ -23,6 +23,7 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
+| 78, empty prompts as centered gray chips | scotland | `nits/scotland-78` |
 | 77, Enter closes a hint dialog | thinker | `nits/thinker-77` |
 | 71, 72, errors in sentence case, deck form Profile+Budget left, Tags right | halo | `nits/halo-71-72` |
 | 73 to 76, drawer dock inset, themed scrollbars, lists clip at the edge, Search label in accent one, drawer searches through ClearWrap | laptop | `nits/laptop-73-75` |
@@ -121,6 +122,7 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 75. **The drawers' "Search" label** takes accent one, the panel titles' color.
 76. **Drawer search boxes lack the shared clear ×.** Every drawer search uses `components::ClearWrap`, its × easing in as text is typed.
 77. **Enter doesn't close a hint dialog.** Enter dismisses a Got-it hint like Escape or a click outside, without triggering anything under it; dialogs with a real primary action keep theirs.
+78. **"No cards" on the deck cards screen is left-aligned plain text.** Every empty or no-results prompt is a centered gray chip.
 
 ## Done
 
