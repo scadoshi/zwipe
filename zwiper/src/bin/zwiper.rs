@@ -111,6 +111,8 @@ fn App() -> Element {
     // Unclaimed link clicks open in the in-app browser, not Safari.
     components::use_in_app_links();
 
+    // Before the upkeep, which reacts to each return to the foreground.
+    zwiper::inbound::components::lifecycle::use_lifecycle_root();
     let upgrade_required = session_upkeep::spawn_upkeeper();
     let dialogs = use_dialog_host();
     use_context_provider(|| dialogs);

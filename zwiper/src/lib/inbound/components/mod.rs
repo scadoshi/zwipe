@@ -26,6 +26,8 @@ pub mod home_play_style;
 pub mod info_button;
 /// Interactive components (buttons, links, etc.).
 pub mod interactions;
+/// The app's lifecycle, fed by the native shell's window events.
+pub mod lifecycle;
 /// Logout confirmation dialog.
 pub mod logout_dialog;
 /// Navigation plumbing (OS back-intent bridge).
@@ -34,6 +36,8 @@ pub mod navigation;
 pub mod on_bump;
 /// Shared screen header (centered title + optional "?" hint trigger).
 pub mod screen_header;
+/// The account's settings fetched and applied, the theme by the latest choice.
+pub mod settings_sync;
 /// Global floating help/support button + bottom sheet.
 pub mod support;
 /// Usage telemetry buffer + flush loop.
