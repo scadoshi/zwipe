@@ -114,12 +114,16 @@ pub fn use_swipe_confirm() -> SwipeConfirm {
 
 /// The swipe screen's top left: its title chip, shown on a wide window and
 /// tinted in `tone`, the screen's own action color, then the last
-/// confirmation in the quiet chip. Neither takes a click.
+/// confirmation in the quiet chip. Neither takes a click. The quiet chip
+/// draws nothing while `at_end`: the pile has run out, and the end's toast
+/// replaces the last swipe's line, so the chip would only repeat the swipe
+/// before it.
 #[component]
 pub fn SwipeScreenChips(
     #[props(into)] title: String,
     tone: Role,
     confirm: SwipeConfirm,
+    #[props(default)] at_end: bool,
 ) -> Element {
     let said = (confirm.said)();
     let var = tone.css_var();
@@ -128,7 +132,7 @@ pub fn SwipeScreenChips(
     rsx! {
         div { class: "web-screen-chips",
             span { class: "detail-chip web-screen-chip", style: "{paint}", "{title}" }
-            if let Some((count, text)) = said {
+            if let (false, Some((count, text))) = (at_end, said) {
                 span { key: "{count}", class: "chip-note web-swipe-confirm", "{text}" }
             }
         }
