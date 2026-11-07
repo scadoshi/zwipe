@@ -232,14 +232,18 @@ pub fn ActivityRates(activity: HttpActivity, open_section: Signal<Option<String>
                 open_section,
                 header_accessory: rsx! { InfoButton { topic: HintTopic::RoleRates } },
                 if activity.roles.is_empty() {
-                    div { class: "activity-total", "{ROLES_EMPTY}" }
+                    div { class: "activity-total",
+                        span { class: "chip-note", "{ROLES_EMPTY}" }
+                    }
                 } else {
                     div { class: "activity-rates",
                         RateChips { kind }
                         for rate in [kind().label()] {
                             div { key: "{rate}",
                                 if role_bars.is_empty() {
-                                    div { class: "activity-total", "{NONE_REMOVED}" }
+                                    div { class: "activity-total",
+                                        span { class: "chip-note", "{NONE_REMOVED}" }
+                                    }
                                 } else {
                                     BarChart {
                                         bars: role_bars.clone(),
@@ -260,14 +264,18 @@ pub fn ActivityRates(activity: HttpActivity, open_section: Signal<Option<String>
                 open_section,
                 header_accessory: rsx! { InfoButton { topic: HintTopic::TagRates } },
                 if activity.tags.is_empty() {
-                    div { class: "activity-total", "{TAGS_EMPTY}" }
+                    div { class: "activity-total",
+                        span { class: "chip-note", "{TAGS_EMPTY}" }
+                    }
                 } else {
                     div { class: "activity-rates",
                         RateChips { kind }
                         for rate in [kind().label()] {
                             div { key: "{rate}",
                                 if tag_bars.is_empty() {
-                                    div { class: "activity-total", "{tag_empty}" }
+                                    div { class: "activity-total",
+                                        span { class: "chip-note", "{tag_empty}" }
+                                    }
                                 } else {
                                     BarChart {
                                         bars: tag_bars.clone(),
@@ -346,7 +354,9 @@ pub fn HardPassesPanel(passes: Vec<HttpHardPass>, expanded_card: Signal<Option<U
                 InfoButton { topic: HintTopic::HardPasses }
             }
             if passes.is_empty() {
-                div { class: "activity-total activity-total-group", "{PASSES_EMPTY}" }
+                div { class: "activity-total activity-total-group",
+                    span { class: "chip-note", "{PASSES_EMPTY}" }
+                }
             }
             for pass in passes {
                 HardPassRow { key: "{pass.card.scryfall_data.id}", pass, expanded_card }
