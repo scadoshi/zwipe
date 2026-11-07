@@ -11,12 +11,12 @@ use zwipe_core::domain::site::WEB_BASE;
 // page until the public listing exists).
 
 #[cfg(target_os = "android")]
-const STORE_PATH: &str = "/download/android";
+const STORE_PATH: &str = "/download/android/";
 #[cfg(target_os = "android")]
 const STORE_LABEL: &str = "Open Play Store";
 
 #[cfg(not(target_os = "android"))]
-const STORE_PATH: &str = "/download/ios";
+const STORE_PATH: &str = "/download/ios/";
 #[cfg(not(target_os = "android"))]
 const STORE_LABEL: &str = "Open App Store";
 
