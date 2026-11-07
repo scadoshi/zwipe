@@ -30,6 +30,12 @@ The handoff for the composer session: where the factory stands, so a fresh or co
 | surfer | Part 6: checking 115 to 127 on the live deploy, at full width and then narrower as Scotty resizes | |
 | droid | Idle after pass 1. It rechecks on Android once 145 to 147 merge. | |
 
+## Waiting on Scotty (as of 23:30)
+
+- Go on Surfer's Part 6 follow-ups for halo: 125 (the portfolio sweep, still two), 118 regressed in the phone details drawer (720 and 504), 52 (picker chip list fade), 53 (zwipe.net stats stuck while labeled Live), 54 (the deploy logged Chrome out; diagnose only).
+- A deploy of `release` to `main`. Nothing goes to Cairn's `main` and nothing is filed with Dioxus without him.
+- Halo, Surfer and Droid are idle and waiting.
+
 ## Rules learned tonight
 
 - Surfer's and Droid's findings get reviewed with Scotty before anything is built. Scotty's own nits I log and send straight out.
@@ -37,6 +43,7 @@ The handoff for the composer session: where the factory stands, so a fresh or co
 - Workers stop and ask the composer before any wire change. The composer plans it per `context/development/api_evolution.md` (template `context/plans/pip_color_wire.md`, tracker `context/plans/wire_changes.md`) and checks it before it ships.
 - Clean the laptop's Rust target folders once one passes about 100 GB, only while nothing is building, keeping `target/scotty-shots`.
 - Portfolio copy stays short and plain (the human skill).
+- Every agent reports back when it finishes or stops (`herdr --machine laptop agent prompt composer ...`). A `/clear` drops a pane's herdr name, so rename it after (`herdr agent rename wV:p1 laptop`).
 
 ## Open threads
 
