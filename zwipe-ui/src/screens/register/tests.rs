@@ -47,7 +47,7 @@ fn a_new_screen_shows_no_lines_and_is_idle() {
 }
 
 #[test]
-fn a_field_shows_its_line_once_it_has_held_something() {
+fn a_field_shows_its_line_while_it_holds_text() {
     let mut state = State::new();
     type_in(&mut state, Field::Username, "ab");
     assert_eq!(
@@ -61,10 +61,16 @@ fn a_field_shows_its_line_once_it_has_held_something() {
         Some("Missing @ symbol")
     );
     type_in(&mut state, Field::Username, "");
+    type_in(&mut state, Field::Email, "");
     assert_eq!(
-        state.error(Field::Username).as_deref(),
-        Some("Must be at least 3 characters long"),
-        "an emptied field stays judged"
+        state.error(Field::Username),
+        None,
+        "an emptied field waits for a submit"
+    );
+    assert_eq!(
+        state.error(Field::Email),
+        None,
+        "an emptied field waits for a submit"
     );
 }
 

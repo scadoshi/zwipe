@@ -5,6 +5,8 @@ use std::ops::Deref;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use crate::text::sentence_case;
+
 /// Suggested fix action for a deck warning.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum WarningAction {
@@ -16,7 +18,8 @@ pub enum WarningAction {
     ClearCommander,
 }
 
-/// A deck-building warning message (informational, not blocking).
+/// A deck-building warning message (informational, not blocking), in
+/// sentence case: the constructors capitalize its first letter.
 ///
 /// Card-specific warnings carry a `scryfall_data_id` so the client
 /// can offer a "remove" action for the offending card.
@@ -32,7 +35,7 @@ impl DeckWarning {
     /// Creates a deck-level warning (no specific card).
     pub fn new(message: impl Into<String>) -> Self {
         Self {
-            message: message.into(),
+            message: sentence_case(&message.into()),
             scryfall_data_id: None,
             action: None,
         }
@@ -41,7 +44,7 @@ impl DeckWarning {
     /// Creates a card-specific warning with the offending card's ID.
     pub fn with_card(message: impl Into<String>, scryfall_data_id: Uuid) -> Self {
         Self {
-            message: message.into(),
+            message: sentence_case(&message.into()),
             scryfall_data_id: Some(scryfall_data_id),
             action: None,
         }
@@ -54,7 +57,7 @@ impl DeckWarning {
         action: WarningAction,
     ) -> Self {
         Self {
-            message: message.into(),
+            message: sentence_case(&message.into()),
             scryfall_data_id: Some(scryfall_data_id),
             action: Some(action),
         }
@@ -81,5 +84,27 @@ impl Deref for DeckWarning {
 impl std::fmt::Display for DeckWarning {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.message)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_warning_starts_with_a_capital() {
+        let id = Uuid::nil();
+        assert_eq!(
+            DeckWarning::new("deck has 6 cards, commander requires at least 100").to_string(),
+            "Deck has 6 cards, commander requires at least 100"
+        );
+        assert_eq!(
+            &*DeckWarning::with_card("the card is banned", id),
+            "The card is banned"
+        );
+        assert_eq!(
+            &*DeckWarning::with_action("too many copies", id, WarningAction::Remove),
+            "Too many copies"
+        );
     }
 }

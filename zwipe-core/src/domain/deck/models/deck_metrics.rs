@@ -391,23 +391,15 @@ impl DeckMetrics {
                 toughness_copies += qty_f;
             }
 
-            // Price: prefer nonfoil → foil → etched
-            let prices = &card.scryfall_data.prices;
-            if let Some(p) = parse_price(prices.usd.as_deref())
-                .or_else(|| parse_price(prices.usd_foil.as_deref()))
-                .or_else(|| parse_price(prices.usd_etched.as_deref()))
-            {
+            if let Some(p) = card_price(&card.scryfall_data, PriceCurrency::Usd) {
                 usd_sum += p * qty_f;
                 usd_copies += qty_f;
             }
-            if let Some(p) = parse_price(prices.eur.as_deref())
-                .or_else(|| parse_price(prices.eur_foil.as_deref()))
-                .or_else(|| parse_price(prices.eur_etched.as_deref()))
-            {
+            if let Some(p) = card_price(&card.scryfall_data, PriceCurrency::Eur) {
                 eur_sum += p * qty_f;
                 eur_copies += qty_f;
             }
-            if let Some(p) = parse_price(prices.tix.as_deref()) {
+            if let Some(p) = card_price(&card.scryfall_data, PriceCurrency::Tix) {
                 tix_sum += p * qty_f;
                 tix_copies += qty_f;
             }
@@ -695,17 +687,14 @@ fn parse_price(price: Option<&str>) -> Option<f64> {
     price.and_then(|s| s.parse::<f64>().ok())
 }
 
-/// Price of a single card in the given currency, preferring nonfoil → foil →
-/// etched (USD/EUR); TIX is nonfoil only. `None` when no price is available.
+/// Price of a single card in the given currency: the printing's own nonfoil
+/// price, the one its details show. `None` when the printing has no price in
+/// that currency; its foil and etched prices never stand in.
 pub fn card_price(scryfall_data: &ScryfallData, currency: PriceCurrency) -> Option<f64> {
     let prices = &scryfall_data.prices;
     match currency {
-        PriceCurrency::Usd => parse_price(prices.usd.as_deref())
-            .or_else(|| parse_price(prices.usd_foil.as_deref()))
-            .or_else(|| parse_price(prices.usd_etched.as_deref())),
-        PriceCurrency::Eur => parse_price(prices.eur.as_deref())
-            .or_else(|| parse_price(prices.eur_foil.as_deref()))
-            .or_else(|| parse_price(prices.eur_etched.as_deref())),
+        PriceCurrency::Usd => parse_price(prices.usd.as_deref()),
+        PriceCurrency::Eur => parse_price(prices.eur.as_deref()),
         PriceCurrency::Tix => parse_price(prices.tix.as_deref()),
     }
 }
@@ -1182,13 +1171,18 @@ mod tests {
     }
 
     #[test]
-    fn price_foil_fallback() {
+    fn a_foil_only_printing_has_no_price() {
         let mut entry = make_entry("Foil Only", 1);
         entry.card.scryfall_data.prices.usd = None;
         entry.card.scryfall_data.prices.usd_foil = Some("5.00".to_string());
+        entry.card.scryfall_data.prices.usd_etched = Some("4.00".to_string());
 
+        assert_eq!(
+            card_price(&entry.card.scryfall_data, PriceCurrency::Usd),
+            None
+        );
         let metrics = DeckMetrics::from_entries(&[entry]);
-        assert!((metrics.total_price_usd.unwrap() - 5.00).abs() < f64::EPSILON);
+        assert_eq!(metrics.total_price_usd, None);
     }
 
     #[test]

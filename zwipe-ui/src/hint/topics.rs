@@ -278,7 +278,7 @@ impl HintTopic {
                 "Guides, the changelog and news, in your browser",
             )])],
             Self::Version => vec![line(vec![text(
-                "The build you are on. What changed in each release is listed below",
+                "The build you are on. What changed in each release is listed below.",
             )])],
             Self::OracleTags => {
                 let mut blocks = oracle_tags();
@@ -605,7 +605,7 @@ mod tests {
         assert_eq!(
             HintTopic::Version.blocks()[0],
             line(vec![text(
-                "The build you are on. What changed in each release is listed below",
+                "The build you are on. What changed in each release is listed below.",
             )])
         );
     }

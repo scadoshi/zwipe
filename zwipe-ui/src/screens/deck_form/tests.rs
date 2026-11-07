@@ -263,20 +263,14 @@ fn the_name_error_shows_once_the_name_held_text() {
     let _ = state.update(Action::SetName("Burn".to_owned()));
     assert_eq!(state.name_error(), None);
     let _ = state.update(Action::SetName(String::new()));
-    assert_eq!(
-        state.name_error(),
-        Some("Deck name minimum length is 1 character")
-    );
+    assert_eq!(state.name_error(), Some("Deck name is required"));
 }
 
 #[test]
 fn save_refuses_a_bad_name_inline() {
     let mut state = create();
     assert!(state.update(Action::Save).is_empty());
-    assert_eq!(
-        state.name_error(),
-        Some("Deck name minimum length is 1 character")
-    );
+    assert_eq!(state.name_error(), Some("Deck name is required"));
     assert!(!state.is_saving());
 }
 

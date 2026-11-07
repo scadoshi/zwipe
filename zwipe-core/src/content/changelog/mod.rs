@@ -55,6 +55,8 @@ pub const UPCOMING: &[Release] = &[Release {
         "The Format, Deck tags and Oracle tags pickers' ? hints match the website's",
         "The deck page's tag hints and the Oathbreaker field's hint are written for where they open, and other hints read tighter",
         "An expanded card shows its own details first, with what the screen adds to it in its own section at the bottom",
+        "A card's price and the deck's total follow the printing you chose, with no price when that printing has none",
+        "Enter closes a picker's ? hint on the web, and the hint no longer reopens on the next Enter",
     ],
 }];
 

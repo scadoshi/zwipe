@@ -337,7 +337,19 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
         featured_loaded.set(loaded.saturating_add(1));
     };
 
-    let price = deck_metrics::mainboard_total_price(&deck.entries, PriceCurrency::Usd);
+    // The app's total: the main board plus the command zone, each card at
+    // its chosen printing's price.
+    let zone_cards: Vec<Card> = [
+        &deck.commander,
+        &deck.partner_commander,
+        &deck.background,
+        &deck.signature_spell,
+    ]
+    .into_iter()
+    .flatten()
+    .cloned()
+    .collect();
+    let price = deck_metrics::deck_price(&deck.entries, &zone_cards, PriceCurrency::Usd);
 
     // Card count mirrors the app's deck-list tile: mainboard sum plus each
     // present command-zone slot (commander only when the format uses one).
