@@ -1512,10 +1512,17 @@ body {
 
 /* Without room for both on one row the swipes' dock stacks over the other,
    the two one width with their buttons spread across it, and the screen
-   keeps room for both. The pile chips stay at the row's foot. */
+   keeps room for both. The pair takes one width on every swipe screen,
+   room for Add's labeled dock, and keeps 1rem off the right edge, where
+   the bottom row's padding puts it. The pile chips stay at the row's
+   foot. */
 @media (max-width: 899px) {
     .web-dock-pair {
+        --web-dock-stack-w: 23.5rem;
         flex-direction: column;
+        right: 1rem;
+        width: min(var(--web-dock-stack-w), calc(100vw - 2rem));
+        box-sizing: border-box;
     }
 
     .web-dock-pair > .action-dock {
@@ -1536,8 +1543,12 @@ body {
     }
 }
 
-/* A phone keeps the arrows only. */
+/* A phone keeps the arrows only, and the stacked pair narrows to them. */
 @media (max-width: 599px) {
+    .web-dock-pair {
+        --web-dock-stack-w: 12.5rem;
+    }
+
     .web-swipe-dock-label {
         display: none;
     }
