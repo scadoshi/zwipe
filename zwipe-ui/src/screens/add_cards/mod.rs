@@ -461,6 +461,10 @@ pub enum Effect {
     Replace(Destination),
     /// Raises this toast.
     Toast(Toast),
+    /// Confirms what a swipe or its undo just did, as the user's swipe
+    /// confirmations setting says: this toast's words in the screen's chip,
+    /// the toast itself, or nothing.
+    Confirm(Toast),
 }
 
 /// The create request that adds one copy of `card` to `board`.
@@ -869,10 +873,10 @@ impl State {
                             .maybeboard
                             .retain(|e| e.card.scryfall_data.id != card_id);
                     }
-                    vec![quick(ToastKind::Success, UNDID_MAYBEBOARD)]
+                    vec![confirm(ToastKind::Success, UNDID_MAYBEBOARD)]
                 } else {
                     self.rewind_counts(&card);
-                    vec![quick(ToastKind::Success, UNDID_ADD)]
+                    vec![confirm(ToastKind::Success, UNDID_ADD)]
                 }
             }
             Some(Pending::UndoPromote { card, .. }) => {
@@ -894,7 +898,7 @@ impl State {
                         },
                     });
                 }
-                vec![quick(ToastKind::Success, UNDID_MOVE_TO_DECK)]
+                vec![confirm(ToastKind::Success, UNDID_MOVE_TO_DECK)]
             }
             _ => Vec::new(),
         }
@@ -908,7 +912,7 @@ impl State {
         match self.take(ticket) {
             Some(Pending::ClaimAdd { card, board }) => {
                 if taken.is_none() && !self.holds(&card) {
-                    return vec![quick(ToastKind::Success, undid_add(board))];
+                    return vec![confirm(ToastKind::Success, undid_add(board))];
                 }
                 let card_id = card.scryfall_data.id;
                 let ticket = self.wait(Pending::UndoAdd { card, board, taken });
@@ -1083,11 +1087,11 @@ impl State {
                 }
                 self.maybeboard.record(MaybeboardAction::Skip);
                 self.maybeboard.advance_wrapping();
-                vec![quick(ToastKind::Info, SKIPPED)]
+                vec![confirm(ToastKind::Info, SKIPPED)]
             }
             (Source::Maybeboard, Direction::Right) => self.promote(),
             (Source::Maybeboard, Direction::Up) => {
-                vec![quick(ToastKind::Info, ALREADY_ON_MAYBEBOARD)]
+                vec![confirm(ToastKind::Info, ALREADY_ON_MAYBEBOARD)]
             }
         }
     }
@@ -1102,7 +1106,7 @@ impl State {
             effects.push(Effect::SkipCard { deck_id, oracle_id });
         }
         self.stack.record(AddAction::Skip);
-        effects.push(quick(ToastKind::Info, SKIPPED));
+        effects.push(confirm(ToastKind::Info, SKIPPED));
         effects.extend(self.advance());
         effects
     }
@@ -1132,9 +1136,9 @@ impl State {
             board,
         }];
         if board.is_maybeboard() {
-            effects.push(quick(ToastKind::Info, ADDED_TO_MAYBEBOARD));
+            effects.push(confirm(ToastKind::Info, ADDED_TO_MAYBEBOARD));
         } else {
-            effects.push(quick(ToastKind::Success, ADDED_TO_DECK));
+            effects.push(confirm(ToastKind::Success, ADDED_TO_DECK));
             effects.extend(self.count_add(&card));
         }
         effects.extend(self.advance());
@@ -1272,7 +1276,7 @@ impl State {
                 deck_id,
                 card_id,
             },
-            quick(ToastKind::Success, MOVED_TO_DECK),
+            confirm(ToastKind::Success, MOVED_TO_DECK),
         ]
     }
 
@@ -1307,7 +1311,7 @@ impl State {
                 if let Some(oracle_id) = card.scryfall_data.oracle_id {
                     effects.push(Effect::UnskipCard { deck_id, oracle_id });
                 }
-                effects.push(quick(ToastKind::Info, UNDID_SKIP));
+                effects.push(confirm(ToastKind::Info, UNDID_SKIP));
                 return effects;
             }
             AddAction::Add => Board::Deck,
@@ -1318,7 +1322,7 @@ impl State {
             if !board.is_maybeboard() {
                 self.rewind_counts(&card);
             }
-            effects.push(quick(ToastKind::Success, undid_add(board)));
+            effects.push(confirm(ToastKind::Success, undid_add(board)));
             return effects;
         }
         let ticket = self.wait(Pending::ClaimAdd {
@@ -1353,7 +1357,7 @@ impl State {
                 if !self.maybeboard.retreat_wrapping() {
                     return vec![enter, Effect::StopEnter(Source::Maybeboard)];
                 }
-                vec![enter, quick(ToastKind::Info, UNDID_SKIP)]
+                vec![enter, confirm(ToastKind::Info, UNDID_SKIP)]
             }
             MaybeboardAction::Promote { card } => {
                 let card_id = card.scryfall_data.id;
@@ -1557,6 +1561,11 @@ impl State {
 /// A quick toast.
 fn quick(kind: ToastKind, text: &str) -> Effect {
     Effect::Toast(Toast::quick(kind, text))
+}
+
+/// A swipe's confirmation, in a quick toast's words and kind.
+fn confirm(kind: ToastKind, text: &str) -> Effect {
+    Effect::Confirm(Toast::quick(kind, text))
 }
 
 /// The toast for an undone add to `board`.

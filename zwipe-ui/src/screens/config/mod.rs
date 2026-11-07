@@ -10,7 +10,7 @@ mod tests;
 use std::mem;
 
 use zwipe_core::domain::user::hints::OneTimeHint;
-use zwipe_core::domain::user::settings::{PipStyle, UserSettings};
+use zwipe_core::domain::user::settings::{PipStyle, SwipeConfirmations, UserSettings};
 
 use crate::filter::fields;
 use crate::generation::{Generation, Ticket};
@@ -52,6 +52,19 @@ pub const BACK: &str = "Back";
 
 /// The Exceptions sheet's button that saves the draft.
 pub const SAVE: &str = "Save";
+
+/// The Swipe confirmations row's label.
+pub const SWIPE_CONFIRMATIONS: &str = "Swipe confirmations";
+
+/// The Swipe confirmations button's text for `value`.
+#[must_use]
+pub fn swipe_confirmations_label(value: SwipeConfirmations) -> &'static str {
+    match value {
+        SwipeConfirmations::Chip => "Chip",
+        SwipeConfirmations::Toasts => "Toasts",
+        SwipeConfirmations::Off => "Off",
+    }
+}
 
 /// The Pips button's text for `style`.
 #[must_use]
@@ -150,6 +163,8 @@ pub enum Action {
         /// The pip style the client draws in now.
         shown: PipStyle,
     },
+    /// Presses the Swipe confirmations button: Chip, then Toasts, then Off. Does nothing until the settings load.
+    CycleSwipeConfirmations,
     /// Presses the Universes Beyond button. Does nothing until the settings load.
     ToggleUniversesBeyond,
     /// Presses the Exceptions row's Change, seeding the draft from the saved list. Does nothing unless the settings loaded and Universes Beyond is hidden.
@@ -200,6 +215,8 @@ pub enum Effect {
     ThemeSaved(Theme),
     /// The server holds this pip style: draw in it and keep it with the stored session, so the next launch opens with it.
     PipsSaved(PipStyle),
+    /// The server took this swipe confirmations value: keep it where the swipe screens read it.
+    SwipeConfirmationsSaved(SwipeConfirmations),
     /// Opens this sheet.
     OpenSheet(Sheet),
     /// Closes this sheet.
@@ -240,6 +257,7 @@ struct Waiting {
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct State {
     load: Load,
+    swipe_confirmations: SwipeConfirmations,
     hide_universes_beyond: bool,
     exceptions: Vec<String>,
     /// The Exceptions sheet's picks: the open sheet's, or the ones it closed on.
@@ -295,6 +313,7 @@ impl State {
                     ),
                 ]
             }
+            Action::CycleSwipeConfirmations => self.cycle_swipe_confirmations(),
             Action::ToggleUniversesBeyond => self.toggle_universes_beyond(),
             Action::OpenExceptions => self.open_exceptions(),
             Action::ToggleException(slug) => {
@@ -330,6 +349,18 @@ impl State {
     /// Whether the Universes Beyond button can be pressed: once the settings loaded.
     #[must_use]
     pub fn universes_beyond_enabled(&self) -> bool {
+        self.load == Load::Loaded
+    }
+
+    /// What the Swipe confirmations button shows.
+    #[must_use]
+    pub fn swipe_confirmations(&self) -> SwipeConfirmations {
+        self.swipe_confirmations
+    }
+
+    /// Whether the Swipe confirmations button works: once the settings loaded.
+    #[must_use]
+    pub fn swipe_confirmations_enabled(&self) -> bool {
         self.load == Load::Loaded
     }
 
@@ -423,6 +454,7 @@ impl State {
             return Vec::new();
         }
         self.load = Load::Loaded;
+        self.swipe_confirmations = settings.swipe_confirmations;
         self.hide_universes_beyond = settings.exclude_universes_beyond;
         self.exceptions = settings.universes_beyond_exceptions;
         vec![Effect::ShowPips(settings.pip_style)]
@@ -446,6 +478,21 @@ impl State {
             Effect::ShowTheme(next),
             self.send(Slot::Toggle(Toggle::DarkMode), change, undo),
         ]
+    }
+
+    /// Moves Swipe confirmations to the next value at once and saves it, once
+    /// the settings loaded.
+    fn cycle_swipe_confirmations(&mut self) -> Vec<Effect> {
+        if self.load != Load::Loaded {
+            return Vec::new();
+        }
+        let shown = self.swipe_confirmations;
+        self.swipe_confirmations = shown.next();
+        vec![self.send(
+            Slot::Toggle(Toggle::SwipeConfirmations),
+            SettingChange::SwipeConfirmations(shown.next()),
+            SettingChange::SwipeConfirmations(shown),
+        )]
     }
 
     /// Flips Universes Beyond at once and saves it, once the settings loaded.
@@ -569,6 +616,10 @@ impl State {
             } else {
                 Effect::ShowPips(style)
             }),
+            SettingChange::SwipeConfirmations(value) => {
+                self.swipe_confirmations = value;
+                saved.then_some(Effect::SwipeConfirmationsSaved(value))
+            }
             SettingChange::HideUniversesBeyond(hide) => {
                 self.hide_universes_beyond = hide;
                 None

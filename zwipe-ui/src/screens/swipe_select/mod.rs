@@ -249,6 +249,10 @@ pub enum Effect {
     Navigate(Destination),
     /// Raises this toast.
     Toast(Toast),
+    /// Confirms what a swipe or its undo just did, as the user's swipe
+    /// confirmations setting says: this toast's words in the screen's chip,
+    /// the toast itself, or nothing.
+    Confirm(Toast),
 }
 
 /// Whether the Filter button's dot lights for the client's `filter`: any user filter or explicit sort, since popularity order with no sort is the default.
@@ -385,13 +389,13 @@ impl State {
                 Vec::new()
             }
             Action::Landed { ticket } => match self.take(ticket) {
-                Some(Pending::Save) => vec![Effect::Toast(Toast::new(
+                Some(Pending::Save) => vec![Effect::Confirm(Toast::new(
                     ToastKind::Success,
                     SAVED,
                     MAYBEBOARD_TOAST,
                 ))],
                 Some(Pending::Unsave) => {
-                    vec![Effect::Toast(Toast::quick(ToastKind::Info, UNSAVED))]
+                    vec![Effect::Confirm(Toast::quick(ToastKind::Info, UNSAVED))]
                 }
                 _ => Vec::new(),
             },
@@ -590,7 +594,7 @@ impl State {
             }
             _ => self.stack.record(Swipe::Skip),
         }
-        effects.push(Effect::Toast(Toast::quick(ToastKind::Info, SKIPPED)));
+        effects.push(Effect::Confirm(Toast::quick(ToastKind::Info, SKIPPED)));
         effects
     }
 
@@ -600,7 +604,7 @@ impl State {
             return Vec::new();
         };
         vec![
-            Effect::Toast(Toast::quick(ToastKind::Success, self.selected())),
+            Effect::Confirm(Toast::quick(ToastKind::Success, self.selected())),
             Effect::Pick(Box::new(card.clone())),
         ]
     }
@@ -644,10 +648,10 @@ impl State {
             }
             Swipe::Dismiss(oracle_id) => {
                 effects.push(Effect::UndismissCommander(oracle_id));
-                effects.push(Effect::Toast(Toast::quick(ToastKind::Info, UNDID_SKIP)));
+                effects.push(Effect::Confirm(Toast::quick(ToastKind::Info, UNDID_SKIP)));
             }
             Swipe::Skip => {
-                effects.push(Effect::Toast(Toast::quick(ToastKind::Info, UNDID_SKIP)));
+                effects.push(Effect::Confirm(Toast::quick(ToastKind::Info, UNDID_SKIP)));
             }
         }
         effects

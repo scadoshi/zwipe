@@ -61,6 +61,7 @@ use crate::inbound::card_filter::CardFilterPanel;
 use crate::inbound::cards::card_info::{CardDetailsSheet, CardSkeleton};
 use crate::inbound::cards::otag::{OtagExamplesOpen, use_describe_tag};
 use crate::inbound::cards::printing_sheet::PrintingSheet;
+use crate::inbound::cards::swipe_confirm::{SwipeScreenChips, use_swipe_confirm};
 use crate::inbound::cards::swipe_stack::{
     Swipe, SwipeControl, SwipeDock, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
 };
@@ -467,6 +468,7 @@ fn SwipeSelectBody(
     user_filter: Signal<CardQueryBuilder>,
 ) -> Element {
     let toast = use_toast();
+    let confirm = use_swipe_confirm();
     let authed = use_authed();
     let describe_tag = use_describe_tag();
     let on_examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
@@ -528,10 +530,7 @@ fn SwipeSelectBody(
                         .await
                         .is_ok()
                     {
-                        toast.info(
-                            "Removed from your commander maybeboard".to_string(),
-                            ToastOptions::default().duration(TOAST_QUICK),
-                        );
+                        confirm.info("Removed from your commander maybeboard");
                     }
                 });
             }
@@ -543,16 +542,10 @@ fn SwipeSelectBody(
                         })
                         .await;
                 });
-                toast.info(
-                    "Undid skip".to_string(),
-                    ToastOptions::default().duration(TOAST_QUICK),
-                );
+                confirm.info("Undid skip");
             }
             SelectSwipe::Skip => {
-                toast.info(
-                    "Undid skip".to_string(),
-                    ToastOptions::default().duration(TOAST_QUICK),
-                );
+                confirm.info("Undid skip");
             }
         }
     });
@@ -582,20 +575,14 @@ fn SwipeSelectBody(
             };
             stack.write().record(action);
             advance();
-            toast.info(
-                "Skipped".to_string(),
-                ToastOptions::default().duration(TOAST_QUICK),
-            );
+            confirm.info("Skipped");
         }
         Swipe::Right => {
             let mut label = mode.noun().to_string();
             if let Some(first) = label.get_mut(..1) {
                 first.make_ascii_uppercase();
             }
-            toast.success(
-                format!("{label} selected"),
-                ToastOptions::default().duration(TOAST_QUICK),
-            );
+            confirm.success(format!("{label} selected"));
             on_select.call(card);
         }
         Swipe::Up => {
@@ -618,10 +605,7 @@ fn SwipeSelectBody(
                     .await
                     .is_ok()
                 {
-                    toast.success(
-                        "Added to your commander maybeboard".to_string(),
-                        ToastOptions::default().duration(MAYBEBOARD_TOAST),
-                    );
+                    confirm.success_for("Added to your commander maybeboard", MAYBEBOARD_TOAST);
                 }
             });
         }
@@ -655,7 +639,7 @@ fn SwipeSelectBody(
             on_hint: move |()| hint_again.set(true),
         }
         div { class: "screen-content card-swipe content-enter web-swipe-select-body {eye.body_class()}",
-            span { class: "chip-note web-screen-chip", "{title}" }
+            SwipeScreenChips { title, confirm }
             div { class: "form-container web-swipe-select-card",
                 if current.is_some() {
                     SwipeStack {

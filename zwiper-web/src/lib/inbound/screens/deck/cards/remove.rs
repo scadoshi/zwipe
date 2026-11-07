@@ -36,6 +36,7 @@ use crate::inbound::card_filter::CardFilterPanel;
 use crate::inbound::card_stores::CardStores;
 use crate::inbound::cards::card_info::{CardDetailsSheet, CardSkeleton};
 use crate::inbound::cards::printing_sheet::PrintingSheet;
+use crate::inbound::cards::swipe_confirm::{SwipeScreenChips, use_swipe_confirm};
 use crate::inbound::cards::swipe_stack::{
     Swipe, SwipeDock, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
 };
@@ -78,6 +79,7 @@ const ALL_SWIPES: [Swipe; 4] = [Swipe::Left, Swipe::Right, Swipe::Up, Swipe::Dow
 #[component]
 pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
     let toast = use_toast();
+    let confirm = use_swipe_confirm();
     let authed = use_authed();
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
@@ -212,7 +214,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                 if !stack.write().retreat_wrapping() {
                     stack.write().cancel_entering();
                 }
-                toast.info("Undid keep".to_string(), quick);
+                confirm.info("Undid keep");
             }
             RemoveAction::Remove {
                 card,
@@ -255,7 +257,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                     match http.create_deck_card(deck_id, &request, &fresh).await {
                         Ok(deck_card) => {
                             entries.write().push(DeckEntry { card, deck_card });
-                            toast.success("Undid remove".to_string(), quick);
+                            confirm.success("Undid remove");
                         }
                         Err(e) => {
                             toast.error(format!("Failed to undo: {e}"), ToastOptions::default());
@@ -309,7 +311,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                             {
                                 e.deck_card.board = from;
                             }
-                            toast.success("Undid move".to_string(), quick);
+                            confirm.success("Undid move");
                         }
                         Err(e) => {
                             toast.error(format!("Failed to undo: {e}"), ToastOptions::default());
@@ -324,7 +326,6 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
     });
 
     let mut on_swipe = move |(swipe, card): (Swipe, Card)| {
-        let quick = ToastOptions::default().duration(TOAST_QUICK);
         let card_id = card.scryfall_data.id;
         let entry = entries
             .peek()
@@ -334,7 +335,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
         match swipe {
             Swipe::Left => {
                 stack.write().record(RemoveAction::Keep);
-                toast.info("Kept".to_string(), quick);
+                confirm.info("Kept");
                 stack.write().advance_wrapping();
             }
             Swipe::Right => {
@@ -366,7 +367,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                         }
                     });
                 }
-                toast.success("Removed from deck".to_string(), quick);
+                confirm.success("Removed from deck");
                 let before = entries.peek().clone();
                 entries
                     .write()
@@ -411,7 +412,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                 } else {
                     "Moved to maybeboard"
                 };
-                toast.info(message.to_string(), quick);
+                confirm.info(message);
                 let before = entries.peek().clone();
                 if let Some(e) = entries
                     .write()
@@ -491,7 +492,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
             title: remove_cards::TITLE,
             on_hint: move |()| hint_open.set(true),
             div { class: "screen-content card-swipe content-enter web-cards-swipe {eye.body_class()}",
-                span { class: "chip-note web-screen-chip", "{remove_cards::TITLE}" }
+                SwipeScreenChips { title: remove_cards::TITLE, confirm }
                 div { class: "web-cards-swipe-main",
                     div { class: "form-container",
                         if current.is_some() {

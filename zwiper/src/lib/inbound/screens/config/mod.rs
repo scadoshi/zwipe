@@ -123,6 +123,15 @@ impl Driver {
                     session.set(Some(current));
                 }
             }
+            Effect::SwipeConfirmationsSaved(value) => {
+                // The stored session keeps it, where the swipe screens read it.
+                let current = session.peek().clone();
+                if let Some(mut current) = current {
+                    current.settings.swipe_confirmations = value;
+                    current.infallible_save();
+                    session.set(Some(current));
+                }
+            }
             Effect::OpenSheet(sheet) => self.show_sheet(sheet, /* open */ true),
             Effect::CloseSheet(sheet) => self.show_sheet(sheet, /* open */ false),
             Effect::Navigate(Destination::Previous) => navigator.go_back(),
@@ -207,6 +216,8 @@ pub fn Config() -> Element {
 
     // Snapshot the model once per render.
     let state = driver.model.read();
+    let swipe_enabled = state.swipe_confirmations_enabled();
+    let swipe_value = state.swipe_confirmations();
     let ub_enabled = state.universes_beyond_enabled();
     let ub_label = state.universes_beyond_label();
     let exceptions_enabled = state.exceptions_enabled();
@@ -306,6 +317,22 @@ pub fn Config() -> Element {
 
                             div { class: "settings-list-header",
                                 span { class: "settings-list-title", {model::CARDS} }
+                            }
+
+                            div {
+                                class: "settings-row",
+                                span { style: "display:flex;align-items:center;",
+                                    span { class: "settings-row-label", {model::SWIPE_CONFIRMATIONS} }
+                                    InfoButton { topic: HintTopic::SwipeConfirmations }
+                                }
+                                div { class: "settings-row-value",
+                                    Button {
+                                        variant: ButtonVariant::Action,
+                                        disabled: !swipe_enabled,
+                                        onclick: move |_| driver.dispatch(Action::CycleSwipeConfirmations),
+                                        {model::swipe_confirmations_label(swipe_value)}
+                                    }
+                                }
                             }
 
                             div {

@@ -48,6 +48,7 @@ use crate::inbound::card_filter::CardFilterPanel;
 use crate::inbound::card_stores::CardStores;
 use crate::inbound::cards::card_info::{CardDetailsSheet, CardSkeleton};
 use crate::inbound::cards::printing_sheet::PrintingSheet;
+use crate::inbound::cards::swipe_confirm::{SwipeScreenChips, use_swipe_confirm};
 use crate::inbound::cards::swipe_stack::{
     Swipe, SwipeDock, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
 };
@@ -105,6 +106,7 @@ const ALL_SWIPES: [Swipe; 4] = [Swipe::Left, Swipe::Right, Swipe::Up, Swipe::Dow
 #[component]
 pub fn AddDeckCard(deck_id: Uuid) -> Element {
     let toast = use_toast();
+    let confirm = use_swipe_confirm();
     let authed = use_authed();
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
@@ -490,7 +492,6 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             return;
         };
         let card_id = card.scryfall_data.id;
-        let quick = ToastOptions::default().duration(TOAST_QUICK);
         if action == AddAction::Skip {
             if let Some(oracle_id) = card.scryfall_data.oracle_id {
                 spawn(async move {
@@ -501,7 +502,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                         .await;
                 });
             }
-            toast.info("Undid skip".to_string(), quick);
+            confirm.info("Undid skip");
             return;
         }
         let maybe = action == AddAction::Maybe;
@@ -514,7 +515,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             if !maybe {
                 count_add(&card, -1);
             }
-            toast.success(message.to_string(), quick);
+            confirm.success(message);
             return;
         }
         let taken = undo.write().take_newest(
@@ -522,7 +523,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             |a| matches!(a, UndoAction::Added { card_id: id, .. } if *id == card_id),
         );
         if taken.is_none() && !holds(&card) {
-            toast.success(message.to_string(), quick);
+            confirm.success(message);
             return;
         }
         spawn(async move {
@@ -552,7 +553,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                     if !maybe {
                         count_add(&card, -1);
                     }
-                    toast.success(message.to_string(), quick);
+                    confirm.success(message);
                 }
                 Err(e) => {
                     toast.error(format!("Failed to undo: {e}"), ToastOptions::default());
@@ -577,7 +578,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                 mb_stack.write().cancel_entering();
                 return;
             }
-            toast.info("Undid skip".to_string(), quick);
+            confirm.info("Undid skip");
             return;
         };
         let card = *card;
@@ -619,7 +620,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                         }
                         d.maybeboard.push(DeckEntry { card, deck_card });
                     }
-                    toast.success("Undid move to deck".to_string(), quick);
+                    confirm.success("Undid move to deck");
                 }
                 Err(e) => {
                     toast.error(format!("Failed to undo: {e}"), ToastOptions::default());
@@ -636,89 +637,83 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         AddSource::Maybeboard => undo_maybeboard.call(()),
     });
 
-    let mut on_search_swipe = move |(swipe, card): (Swipe, Card)| {
-        let quick = ToastOptions::default().duration(TOAST_QUICK);
-        match swipe {
-            Swipe::Right => {
-                stack.write().record(AddAction::Add);
-                add_card.call((card.clone(), false));
-                toast.success("Added to deck".to_string(), quick);
-                count_add(&card, 1);
-                advance.call(());
-            }
-            Swipe::Left => {
-                if let Some(oracle_id) = card.scryfall_data.oracle_id {
-                    spawn_forever(async move {
-                        authed
-                            .run_quiet("skip_card", |c, s| async move {
-                                c.skip_deck_card(deck_id, oracle_id, &s).await
-                            })
-                            .await;
-                    });
-                }
-                stack.write().record(AddAction::Skip);
-                toast.info("Skipped".to_string(), quick);
-                advance.call(());
-            }
-            Swipe::Up => {
-                stack.write().record(AddAction::Maybe);
-                add_card.call((card, true));
-                toast.info("Added to maybeboard".to_string(), quick);
-                advance.call(());
-            }
-            Swipe::Down => undo_search.call(()),
+    let mut on_search_swipe = move |(swipe, card): (Swipe, Card)| match swipe {
+        Swipe::Right => {
+            stack.write().record(AddAction::Add);
+            add_card.call((card.clone(), false));
+            confirm.success("Added to deck");
+            count_add(&card, 1);
+            advance.call(());
         }
+        Swipe::Left => {
+            if let Some(oracle_id) = card.scryfall_data.oracle_id {
+                spawn_forever(async move {
+                    authed
+                        .run_quiet("skip_card", |c, s| async move {
+                            c.skip_deck_card(deck_id, oracle_id, &s).await
+                        })
+                        .await;
+                });
+            }
+            stack.write().record(AddAction::Skip);
+            confirm.info("Skipped");
+            advance.call(());
+        }
+        Swipe::Up => {
+            stack.write().record(AddAction::Maybe);
+            add_card.call((card, true));
+            confirm.info("Added to maybeboard");
+            advance.call(());
+        }
+        Swipe::Down => undo_search.call(()),
     };
 
-    let mut on_maybeboard_swipe = move |(swipe, card): (Swipe, Card)| {
-        let quick = ToastOptions::default().duration(TOAST_QUICK);
-        match swipe {
-            Swipe::Right => {
-                let card_id = card.scryfall_data.id;
-                let card_name = card.scryfall_data.name.clone();
-                mb_stack.write().record(MaybeboardAction::Promote {
-                    card: Box::new(card.clone()),
-                });
-                if let Some(d) = deck.write().as_mut() {
-                    d.maybeboard
-                        .retain(|e| e.deck_card.scryfall_data_id != card_id);
-                    if let Some(oracle_id) = card.scryfall_data.oracle_id {
-                        d.in_deck.insert(oracle_id);
-                    }
+    let mut on_maybeboard_swipe = move |(swipe, card): (Swipe, Card)| match swipe {
+        Swipe::Right => {
+            let card_id = card.scryfall_data.id;
+            let card_name = card.scryfall_data.name.clone();
+            mb_stack.write().record(MaybeboardAction::Promote {
+                card: Box::new(card.clone()),
+            });
+            if let Some(d) = deck.write().as_mut() {
+                d.maybeboard
+                    .retain(|e| e.deck_card.scryfall_data_id != card_id);
+                if let Some(oracle_id) = card.scryfall_data.oracle_id {
+                    d.in_deck.insert(oracle_id);
                 }
-                mb_stack.write().remove_current();
-                spawn_forever(async move {
-                    let to_deck =
-                        HttpPatchDeckCard::new(None, Some(Board::Deck.display_name().to_owned()));
-                    if authed
-                        .run("promote_maybeboard", |c, s| async move {
-                            c.update_deck_card(deck_id, card_id, &to_deck, &s).await
-                        })
-                        .await
-                        .is_some()
-                    {
-                        undo.write().push(
-                            deck_id,
-                            UndoAction::MovedBoard {
-                                card_id,
-                                card_name,
-                                from: Board::Maybeboard,
-                            },
-                        );
-                    }
-                });
-                toast.success("Moved to deck".to_string(), quick);
             }
-            Swipe::Left => {
-                mb_stack.write().record(MaybeboardAction::Skip);
-                toast.info("Skipped".to_string(), quick);
-                mb_stack.write().advance_wrapping();
-            }
-            Swipe::Up => {
-                toast.info("Already on maybeboard".to_string(), quick);
-            }
-            Swipe::Down => undo_maybeboard.call(()),
+            mb_stack.write().remove_current();
+            spawn_forever(async move {
+                let to_deck =
+                    HttpPatchDeckCard::new(None, Some(Board::Deck.display_name().to_owned()));
+                if authed
+                    .run("promote_maybeboard", |c, s| async move {
+                        c.update_deck_card(deck_id, card_id, &to_deck, &s).await
+                    })
+                    .await
+                    .is_some()
+                {
+                    undo.write().push(
+                        deck_id,
+                        UndoAction::MovedBoard {
+                            card_id,
+                            card_name,
+                            from: Board::Maybeboard,
+                        },
+                    );
+                }
+            });
+            confirm.success("Moved to deck");
         }
+        Swipe::Left => {
+            mb_stack.write().record(MaybeboardAction::Skip);
+            confirm.info("Skipped");
+            mb_stack.write().advance_wrapping();
+        }
+        Swipe::Up => {
+            confirm.info("Already on maybeboard");
+        }
+        Swipe::Down => undo_maybeboard.call(()),
     };
 
     let mut switch_source = move |to: AddSource| {
@@ -875,7 +870,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             title: add_cards::TITLE,
             on_hint: move |()| hint_open.set(true),
             div { class: "screen-content card-swipe content-enter web-cards-swipe {eye.body_class()}",
-                span { class: "chip-note web-screen-chip", "{add_cards::TITLE}" }
+                SwipeScreenChips { title: add_cards::TITLE, confirm }
                 div { class: "web-cards-swipe-main",
                     div { class: "form-container",
                         if current.is_some() {

@@ -44,6 +44,7 @@ use crate::inbound::components::interactions::swipe::SwipeStack;
 use crate::inbound::components::interactions::swipe::config::SwipeConfig;
 use crate::inbound::components::interactions::swipe::direction::Direction;
 use crate::inbound::components::screen_header::ScreenHeader;
+use crate::inbound::components::swipe_confirm::{self, Said, SwipeConfirmChip};
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::component;
 use crate::inbound::components::{hint_dialog, ui_toast};
@@ -74,6 +75,8 @@ struct Driver {
     host_screen: &'static str,
     on_select: EventHandler<Card>,
     on_close: EventHandler<()>,
+    /// The swipe confirmations chip's words.
+    said: Said,
 }
 
 impl Driver {
@@ -177,6 +180,9 @@ impl Driver {
             Effect::Pick(card) => self.on_select.call(*card),
             Effect::Navigate(Destination::Previous) => self.on_close.call(()),
             Effect::Toast(toast) => ui_toast::raise(self.toast, toast),
+            Effect::Confirm(toast) => {
+                swipe_confirm::confirm(self.session, self.toast, self.said, toast);
+            }
         }
     }
 
@@ -271,6 +277,7 @@ pub(crate) fn SwipeSelect(
         host_screen,
         on_select,
         on_close,
+        said: use_signal(|| None),
     };
     let hint_open = driver.hint_open;
     let entering = driver.entering;
@@ -418,6 +425,7 @@ pub(crate) fn SwipeSelect(
                 ScreenHeader { title, hint: hint_open, back: move |()| driver.dispatch(Action::Back) }
 
                 div { class: "screen-content card-swipe content-enter",
+                    SwipeConfirmChip { said: driver.said }
                     if has_cards {
                         SwipeStack {
                             cards: window,

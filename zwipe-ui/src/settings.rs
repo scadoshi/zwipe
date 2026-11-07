@@ -3,15 +3,15 @@
 //! back on failure, the Universes Beyond exception chips, and every toast
 //! Config raises, in the app's words, kinds and bands.
 //!
-//! Three Config buttons are optimistic toggles: Dark/Light, pips and
-//! Universes Beyond. Each shows its new value at once and sends it. Every
+//! Four Config buttons are optimistic toggles: Dark/Light, pips, swipe
+//! confirmations and Universes Beyond. Each shows its new value at once and sends it. Every
 //! tap takes a [`Ticket`] from that toggle's own [`Generation`]; when the
 //! reply lands, [`settle`] says what the toggle shows, or that a newer tap
 //! has overtaken it. The Themes and Exceptions sheets save without the
 //! guard and change nothing until the server answers.
 
 use zwipe_core::domain::card::scryfall_data::universe;
-use zwipe_core::domain::user::settings::{PipStyle, UserSettings};
+use zwipe_core::domain::user::settings::{PipStyle, SwipeConfirmations, UserSettings};
 use zwipe_core::http::contracts::user::HttpUpdateSettings;
 
 use crate::generation::{Generation, Ticket};
@@ -36,6 +36,8 @@ pub enum SettingChange {
     },
     /// The Pips button.
     Pips(PipStyle),
+    /// The Swipe confirmations button.
+    SwipeConfirmations(SwipeConfirmations),
     /// The Universes Beyond button: `true` hides them.
     HideUniversesBeyond(bool),
     /// The Exceptions sheet's Save: the whole list of franchise slugs.
@@ -52,6 +54,7 @@ impl SettingChange {
                 settings.dark_mode = *dark_mode;
             }
             Self::Pips(style) => settings.pip_style = *style,
+            Self::SwipeConfirmations(value) => settings.swipe_confirmations = *value,
             Self::HideUniversesBeyond(hide) => settings.exclude_universes_beyond = *hide,
             Self::Exceptions(slugs) => settings.universes_beyond_exceptions.clone_from(slugs),
         }
@@ -82,6 +85,7 @@ impl SettingChange {
                 dark_mode: settings.dark_mode,
             },
             Self::Pips(_) => Self::Pips(settings.pip_style),
+            Self::SwipeConfirmations(_) => Self::SwipeConfirmations(settings.swipe_confirmations),
             Self::HideUniversesBeyond(_) => {
                 Self::HideUniversesBeyond(settings.exclude_universes_beyond)
             }
@@ -96,6 +100,7 @@ impl SettingChange {
         match self {
             Self::DarkMode { .. } => Some(Toggle::DarkMode),
             Self::Pips(_) => Some(Toggle::Pips),
+            Self::SwipeConfirmations(_) => Some(Toggle::SwipeConfirmations),
             Self::HideUniversesBeyond(_) => Some(Toggle::UniversesBeyond),
             Self::Theme { .. } | Self::Exceptions(_) => None,
         }
@@ -111,6 +116,11 @@ impl SettingChange {
             Self::Pips(_) => Some(match saved.pip_style {
                 PipStyle::Themed => "Pips in themed colors",
                 PipStyle::Classic => "Pips in classic colors",
+            }),
+            Self::SwipeConfirmations(_) => Some(match saved.swipe_confirmations {
+                SwipeConfirmations::Chip => "Swipes confirmed in a chip",
+                SwipeConfirmations::Toasts => "Swipes confirmed in toasts",
+                SwipeConfirmations::Off => "Swipe confirmations off",
             }),
             Self::HideUniversesBeyond(_) if saved.exclude_universes_beyond => {
                 Some("Universes Beyond hidden")
@@ -145,6 +155,7 @@ impl From<SettingChange> for HttpUpdateSettings {
             exclude_universes_beyond: None,
             universes_beyond_exceptions: None,
             pip_style: None,
+            swipe_confirmations: None,
         };
         match change {
             SettingChange::Theme { theme, dark_mode }
@@ -153,6 +164,7 @@ impl From<SettingChange> for HttpUpdateSettings {
                 request.dark_mode = Some(dark_mode);
             }
             SettingChange::Pips(style) => request.pip_style = Some(style),
+            SettingChange::SwipeConfirmations(value) => request.swipe_confirmations = Some(value),
             SettingChange::HideUniversesBeyond(hide) => {
                 request.exclude_universes_beyond = Some(hide);
             }
@@ -171,6 +183,8 @@ pub enum Toggle {
     DarkMode,
     /// The Pips button.
     Pips,
+    /// The Swipe confirmations button.
+    SwipeConfirmations,
     /// The Universes Beyond Show/Hide button.
     UniversesBeyond,
 }
@@ -181,6 +195,7 @@ pub enum Toggle {
 pub struct Toggles {
     dark_mode: Generation,
     pips: Generation,
+    swipe_confirmations: Generation,
     universes_beyond: Generation,
 }
 
@@ -191,6 +206,7 @@ impl Toggles {
         match toggle {
             Toggle::DarkMode => self.dark_mode,
             Toggle::Pips => self.pips,
+            Toggle::SwipeConfirmations => self.swipe_confirmations,
             Toggle::UniversesBeyond => self.universes_beyond,
         }
     }
@@ -200,6 +216,7 @@ impl Toggles {
         match toggle {
             Toggle::DarkMode => self.dark_mode.next_ticket(),
             Toggle::Pips => self.pips.next_ticket(),
+            Toggle::SwipeConfirmations => self.swipe_confirmations.next_ticket(),
             Toggle::UniversesBeyond => self.universes_beyond.next_ticket(),
         }
     }
@@ -255,6 +272,7 @@ mod tests {
             exclude_universes_beyond: false,
             universes_beyond_exceptions: vec!["a".to_owned()],
             pip_style: PipStyle::Themed,
+            swipe_confirmations: SwipeConfirmations::Chip,
         }
     }
 

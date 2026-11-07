@@ -54,6 +54,7 @@ impl HintTopic {
             | Self::Verification
             | Self::Theme
             | Self::Pips
+            | Self::SwipeConfirmations
             | Self::AppIcon
             | Self::UniversesBeyond
             | Self::Website
@@ -115,12 +116,13 @@ mod tests {
             .collect()
     }
 
-    const TOPICS: [HintTopic; 45] = [
+    const TOPICS: [HintTopic; 46] = [
         HintTopic::Password,
         HintTopic::Email,
         HintTopic::Verification,
         HintTopic::Theme,
         HintTopic::Pips,
+        HintTopic::SwipeConfirmations,
         HintTopic::AppIcon,
         HintTopic::UniversesBeyond,
         HintTopic::Website,

@@ -20,6 +20,7 @@ fn account() -> UserSettings {
         exclude_universes_beyond: true,
         universes_beyond_exceptions: slugs(&["a"]),
         pip_style: PipStyle::Themed,
+        swipe_confirmations: SwipeConfirmations::Chip,
     }
 }
 
@@ -590,4 +591,46 @@ fn the_copy_matches_the_app() {
     assert_eq!(pips_label(PipStyle::Themed), "Themed");
     assert_eq!(pips_label(PipStyle::Classic), "Classic");
     assert_eq!(selected_line(3), "3 selected");
+}
+
+#[test]
+fn swipe_confirmations_cycle_save_and_keep_the_saved_value() {
+    let (mut idle, _) = loading();
+    assert_eq!(
+        idle.update(Action::CycleSwipeConfirmations),
+        [],
+        "nothing to cycle before the settings load"
+    );
+
+    let mut state = loaded(account());
+    assert_eq!(state.swipe_confirmations(), SwipeConfirmations::Chip);
+    let effects = state.update(Action::CycleSwipeConfirmations);
+    let (ticket, change) = save_in(&effects);
+    assert_eq!(
+        change,
+        SettingChange::SwipeConfirmations(SwipeConfirmations::Toasts)
+    );
+    assert_eq!(state.swipe_confirmations(), SwipeConfirmations::Toasts);
+
+    let mut saved = account();
+    saved.swipe_confirmations = SwipeConfirmations::Toasts;
+    let effects = state.update(Action::Saved {
+        ticket,
+        settings: Box::new(saved),
+    });
+    assert!(effects.contains(&Effect::SwipeConfirmationsSaved(SwipeConfirmations::Toasts)));
+    assert_eq!(config_label(&state), "Toasts");
+}
+
+#[test]
+fn a_failed_swipe_confirmations_save_puts_the_value_back() {
+    let mut state = loaded(account());
+    let (ticket, _) = save_in(&state.update(Action::CycleSwipeConfirmations));
+    let _ = state.update(Action::SaveFailed { ticket });
+    assert_eq!(state.swipe_confirmations(), SwipeConfirmations::Chip);
+}
+
+/// The Swipe confirmations button's text in `state`.
+fn config_label(state: &State) -> &'static str {
+    swipe_confirmations_label(state.swipe_confirmations())
 }

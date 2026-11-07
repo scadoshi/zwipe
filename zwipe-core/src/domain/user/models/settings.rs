@@ -168,6 +168,66 @@ impl FromStr for PipStyle {
     }
 }
 
+/// What the swipe screens say after a swipe.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum SwipeConfirmations {
+    /// A quiet chip at the top left that holds the last action.
+    #[default]
+    Chip,
+    /// A toast for each action.
+    Toasts,
+    /// Nothing.
+    Off,
+}
+
+impl SwipeConfirmations {
+    /// Every value, in the order the setting offers them.
+    pub const ALL: [Self; 3] = [Self::Chip, Self::Toasts, Self::Off];
+
+    /// The next value, for a button that cycles through them.
+    #[must_use]
+    pub const fn next(self) -> Self {
+        match self {
+            Self::Chip => Self::Toasts,
+            Self::Toasts => Self::Off,
+            Self::Off => Self::Chip,
+        }
+    }
+
+    /// The stored and wire name: `chip`, `toasts` or `off`.
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Chip => "chip",
+            Self::Toasts => "toasts",
+            Self::Off => "off",
+        }
+    }
+}
+
+impl fmt::Display for SwipeConfirmations {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+/// A swipe confirmations name that is none of `chip`, `toasts` or `off`.
+#[derive(Debug, Clone, PartialEq, Eq, Error)]
+#[error("unknown swipe confirmations")]
+pub struct ParseSwipeConfirmationsError;
+
+impl FromStr for SwipeConfirmations {
+    type Err = ParseSwipeConfirmationsError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::ALL
+            .into_iter()
+            .find(|value| value.as_str() == s)
+            .ok_or(ParseSwipeConfirmationsError)
+    }
+}
+
 /// User display settings.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct UserSettings {
@@ -189,6 +249,11 @@ pub struct UserSettings {
     /// as [`PipStyle::Themed`].
     #[serde(default)]
     pub pip_style: PipStyle,
+    /// What the swipe screens say after a swipe. Claims and payloads without
+    /// the field, every client before 1.18.1 and every row before the
+    /// column, read as [`SwipeConfirmations::Chip`].
+    #[serde(default)]
+    pub swipe_confirmations: SwipeConfirmations,
 }
 
 impl Default for UserSettings {
@@ -199,6 +264,7 @@ impl Default for UserSettings {
             exclude_universes_beyond: false,
             universes_beyond_exceptions: Vec::new(),
             pip_style: PipStyle::Themed,
+            swipe_confirmations: SwipeConfirmations::Chip,
         }
     }
 }
@@ -221,6 +287,8 @@ pub struct UpdateSettings {
     pub universes_beyond_exceptions: Option<Vec<String>>,
     /// New pip colors, or `None` to leave unchanged.
     pub pip_style: Option<PipStyle>,
+    /// New swipe confirmations, or `None` to leave unchanged.
+    pub swipe_confirmations: Option<SwipeConfirmations>,
 }
 
 impl UpdateSettings {
@@ -240,6 +308,7 @@ impl UpdateSettings {
         exclude_universes_beyond: Option<bool>,
         universes_beyond_exceptions: Option<Vec<String>>,
         pip_style: Option<PipStyle>,
+        swipe_confirmations: Option<SwipeConfirmations>,
     ) -> Result<Self, InvalidUpdateSettings> {
         let theme = theme.map(|t| {
             RENAMED_THEMES
@@ -266,6 +335,7 @@ impl UpdateSettings {
             exclude_universes_beyond,
             universes_beyond_exceptions,
             pip_style,
+            swipe_confirmations,
         })
     }
 }
@@ -386,14 +456,22 @@ mod tests {
     fn accepts_all_allowed_themes() {
         let id = Uuid::new_v4();
         for theme in ALLOWED_THEMES {
-            let result = UpdateSettings::new(id, Some(theme), Some(true), None, None, None);
+            let result = UpdateSettings::new(id, Some(theme), Some(true), None, None, None, None);
             assert!(result.is_ok(), "should accept theme: {theme}");
         }
     }
 
     #[test]
     fn an_old_slug_updates_to_its_current_theme() {
-        let result = UpdateSettings::new(Uuid::new_v4(), Some("ristretto"), None, None, None, None);
+        let result = UpdateSettings::new(
+            Uuid::new_v4(),
+            Some("ristretto"),
+            None,
+            None,
+            None,
+            None,
+            None,
+        );
         assert_eq!(
             result.unwrap().theme.as_deref(),
             Some("monokai-pro-ristretto")
@@ -405,6 +483,7 @@ mod tests {
         let result = UpdateSettings::new(
             Uuid::new_v4(),
             Some("visual-studio"),
+            None,
             None,
             None,
             None,
@@ -422,13 +501,15 @@ mod tests {
             None,
             None,
             None,
+            None,
         );
         assert!(matches!(result, Err(InvalidUpdateSettings::InvalidTheme)));
     }
 
     #[test]
     fn rejects_empty_theme() {
-        let result = UpdateSettings::new(Uuid::new_v4(), Some(""), Some(true), None, None, None);
+        let result =
+            UpdateSettings::new(Uuid::new_v4(), Some(""), Some(true), None, None, None, None);
         assert!(matches!(result, Err(InvalidUpdateSettings::InvalidTheme)));
     }
 
@@ -437,22 +518,31 @@ mod tests {
     #[test]
     fn none_theme_passes_through() {
         let result =
-            UpdateSettings::new(Uuid::new_v4(), None, Some(false), None, None, None).unwrap();
+            UpdateSettings::new(Uuid::new_v4(), None, Some(false), None, None, None, None).unwrap();
         assert!(result.theme.is_none());
         assert_eq!(result.dark_mode, Some(false));
     }
 
     #[test]
     fn none_dark_mode_passes_through() {
-        let result =
-            UpdateSettings::new(Uuid::new_v4(), Some("dracula"), None, None, None, None).unwrap();
+        let result = UpdateSettings::new(
+            Uuid::new_v4(),
+            Some("dracula"),
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
+        .unwrap();
         assert_eq!(result.theme.as_deref(), Some("dracula"));
         assert!(result.dark_mode.is_none());
     }
 
     #[test]
     fn both_none_is_valid() {
-        let result = UpdateSettings::new(Uuid::new_v4(), None, None, None, None, None).unwrap();
+        let result =
+            UpdateSettings::new(Uuid::new_v4(), None, None, None, None, None, None).unwrap();
         assert!(result.theme.is_none());
         assert!(result.dark_mode.is_none());
     }
@@ -470,6 +560,7 @@ mod tests {
                 "middle-earth".to_string(),
                 "final-fantasy".to_string(),
             ]),
+            None,
             None,
         )
         .unwrap();
@@ -491,6 +582,7 @@ mod tests {
             None,
             Some(true),
             Some(vec!["not-a-franchise".to_string()]),
+            None,
             None,
         );
         assert!(matches!(
@@ -588,6 +680,33 @@ mod tests {
         );
     }
 
+    // == swipe confirmations ==
+
+    #[test]
+    fn a_payload_without_swipe_confirmations_reads_as_chip() {
+        let settings: UserSettings =
+            serde_json::from_str(r#"{"theme":"gruvbox","dark_mode":true,"pip_style":"theme"}"#)
+                .unwrap();
+        assert_eq!(settings.swipe_confirmations, SwipeConfirmations::Chip);
+    }
+
+    #[test]
+    fn swipe_confirmations_round_trip_through_their_names() {
+        for value in SwipeConfirmations::ALL {
+            assert_eq!(value.as_str().parse::<SwipeConfirmations>(), Ok(value));
+            let json = serde_json::to_string(&value).unwrap();
+            assert_eq!(json, format!("\"{}\"", value.as_str()));
+            assert_eq!(
+                serde_json::from_str::<SwipeConfirmations>(&json).unwrap(),
+                value
+            );
+        }
+        assert_eq!(
+            "bogus".parse::<SwipeConfirmations>(),
+            Err(ParseSwipeConfirmationsError)
+        );
+    }
+
     #[test]
     fn pip_style_toggles_between_the_two() {
         assert_eq!(PipStyle::Themed.toggled(), PipStyle::Classic);
@@ -603,6 +722,7 @@ mod tests {
             None,
             None,
             Some(PipStyle::Classic),
+            None,
         )
         .unwrap();
         assert_eq!(result.pip_style, Some(PipStyle::Classic));

@@ -63,6 +63,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Printings show as a cover flow, the neighbors at the sides, stepped by the arrows or a swipe",
         "Loading placeholders match the screen they stand in for, with every chip drawn empty",
         "The Pips setting's options read Themed and Classic",
+        "Swipe screens confirm each swipe in a quiet chip at the top left, with a Swipe confirmations setting for toasts or nothing instead",
     ],
 }];
 

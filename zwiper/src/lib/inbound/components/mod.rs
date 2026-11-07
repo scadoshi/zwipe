@@ -36,6 +36,8 @@ pub mod on_bump;
 pub mod screen_header;
 /// Global floating help/support button + bottom sheet.
 pub mod support;
+/// Raises zwipe-ui's toasts through the app's toaster.
+pub mod swipe_confirm;
 /// Usage telemetry buffer + flush loop.
 pub mod telemetry;
 /// Saving the theme to the account, shared by Settings and the main menu.
@@ -46,7 +48,6 @@ pub mod theme_save;
     reason = "TriToggle's generated props derive PartialEq over its fn pointer props, which always hold the same fn items"
 )]
 pub mod tri_toggle;
-/// Raises zwipe-ui's toasts through the app's toaster.
 pub mod ui_toast;
 /// Blocking "Update required" screen (min-version gate).
 pub mod update_required;

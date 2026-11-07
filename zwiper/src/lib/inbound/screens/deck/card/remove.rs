@@ -33,6 +33,7 @@ use crate::inbound::components::interactions::swipe::SwipeStack;
 use crate::inbound::components::interactions::swipe::config::SwipeConfig;
 use crate::inbound::components::interactions::swipe::direction::Direction;
 use crate::inbound::components::screen_header::ScreenHeader;
+use crate::inbound::components::swipe_confirm::{self, Said, SwipeConfirmChip};
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen, component, screen};
 use crate::inbound::components::ui_toast;
@@ -67,6 +68,8 @@ struct Driver {
     deck_cards_for_filter: Signal<Vec<Card>>,
     /// Bumped to rerun the filter; the filter sheet's sections reset on it.
     filter_reset_counter: Signal<u32>,
+    /// The swipe confirmations chip's words.
+    said: Said,
 }
 
 impl Driver {
@@ -175,6 +178,7 @@ impl Driver {
                 navigator.replace(Router::DeckList {});
             }
             Effect::Toast(raised) => ui_toast::raise(toast, raised),
+            Effect::Confirm(said) => swipe_confirm::confirm(self.session, toast, self.said, said),
         }
     }
 
@@ -463,6 +467,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
         hint_open: use_signal(|| false),
         deck_cards_for_filter,
         filter_reset_counter,
+        said: use_signal(|| None),
     };
     let swipe_hint_open = driver.hint_open;
     let usage_buffer = driver.usage_buffer;
@@ -509,6 +514,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 ScreenHeader { title: remove_cards::TITLE, hint: swipe_hint_open, back: move |()| driver.dispatch(Action::Back) }
 
                 div { class: "screen-content card-swipe content-enter",
+                SwipeConfirmChip { said: driver.said }
 
                 div { class: "form-container",
                     if !stack_empty {

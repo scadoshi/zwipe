@@ -61,6 +61,7 @@ pub fn sync_settings(
                     exclude_universes_beyond: None,
                     universes_beyond_exceptions: None,
                     pip_style: None,
+                    swipe_confirmations: None,
                 };
                 match http.update_settings(request, &current).await {
                     Ok(saved) => store.save_synced(&components::theme_from_settings(&saved)),

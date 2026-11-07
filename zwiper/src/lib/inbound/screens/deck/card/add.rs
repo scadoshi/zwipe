@@ -33,6 +33,7 @@ use crate::inbound::components::interactions::swipe::config::SwipeConfig;
 use crate::inbound::components::interactions::swipe::direction::Direction;
 use crate::inbound::components::on_bump::use_on_bump;
 use crate::inbound::components::screen_header::ScreenHeader;
+use crate::inbound::components::swipe_confirm::{self, Said, SwipeConfirmChip};
 use crate::inbound::components::telemetry::flush_loop;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen, component, screen};
@@ -79,6 +80,8 @@ struct Driver {
     /// The same for the maybeboard pile.
     maybeboard_entering: Signal<Option<Direction>>,
     hint_open: Signal<bool>,
+    /// The swipe confirmations chip's words.
+    said: Said,
 }
 
 impl Driver {
@@ -189,6 +192,7 @@ impl Driver {
                 navigator.replace(Router::DeckList {});
             }
             Effect::Toast(raised) => ui_toast::raise(toast, raised),
+            Effect::Confirm(said) => swipe_confirm::confirm(session, toast, self.said, said),
         }
     }
 
@@ -579,6 +583,7 @@ pub fn Add(deck_id: Uuid) -> Element {
         search_entering: use_signal(|| None),
         maybeboard_entering: use_signal(|| None),
         hint_open: use_signal(|| false),
+        said: use_signal(|| None),
     };
 
     // Load runs in the first render so the hint opens with the screen.
@@ -665,6 +670,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                 ScreenHeader { title: add_cards::TITLE, hint: driver.hint_open, back: move |()| driver.dispatch(Action::Back) }
 
                 div { class: "screen-content card-swipe content-enter",
+                SwipeConfirmChip { said: driver.said }
 
                 div { class : "form-container",
                     if source == Source::Search {
