@@ -12,7 +12,6 @@ use zwipe_core::domain::deck::format::Format;
 use zwipe_ui::deck::form;
 use zwipe_ui::deck::pickers::{self, Picker};
 
-use crate::inbound::components::guide_link;
 use crate::inbound::components::screen_header::ScreenHeader;
 
 /// In-place format picker, up while `open`. A chip tap goes to `on_tap`, which picks the format or clears it when it is the one picked, with the command-zone knock-on clears. The dock's checkmark (`on_save`) stays off while `unchanged`; the header's back arrow (`on_back`) and the OS back gesture put the format and command zone back as they were when the picker opened.
@@ -117,7 +116,7 @@ pub(crate) fn FormatSelect(
 
                 HintDialog {
                     open: hint_open,
-                    actions: guide_link::screen(zwipe_ui::hint::HintTopic::Format),
+                    actions: components::hint::guide_for_screen(zwipe_ui::hint::HintTopic::Format),
                     title: Picker::Format.title(),
                     HintBullets {
                         for block in Picker::Format.hint().blocks {

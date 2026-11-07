@@ -7,7 +7,6 @@ use zwipe_core::domain::deck::{DeckOtherTag, DeckProfile, Format, PowerLevel};
 use zwipe_core::http::contracts::deck::{HttpCreateDeckProfile, HttpUpdateDeckProfile};
 use zwipe_core::http::helpers::Patch;
 use zwipe_ui::deck::form::{parse_price, price_text};
-use zwipe_ui::hint::{Block, HintContent, HintTopic, Span};
 
 /// What the deck form holds, as Create sends it and Edit compares it. The
 /// command zone is each card's printing id.
@@ -176,67 +175,6 @@ pub fn update_request(
             .oracle_tags(oracle_tags)
             .build()
     })
-}
-
-// Belongs in zwipe-ui
-/// The pickers' definition bar before a tap.
-pub const PICKER_BAR_HINT: &str = "Hint";
-
-// Belongs in zwipe-ui
-/// The format picker's bar before a tap.
-pub const FORMAT_BAR_EMPTY: &str = "Tap a format to see its details here.";
-
-// Belongs in zwipe-ui
-/// The deck tag picker's bar before a tap.
-pub const DECK_TAG_BAR_EMPTY: &str = "Tap a tag to see its definition here.";
-
-// Belongs in zwipe-ui
-/// The oracle tag picker's bar before a tap.
-pub const ORACLE_TAG_BAR_EMPTY: &str =
-    "Tap a tag to see what it means. Picking a deck tag pre-selects some of these for you.";
-
-// Belongs in zwipe-ui
-/// The oracle tag picker's bar for a tag with no description.
-pub const ORACLE_TAG_NO_DESCRIPTION: &str = "No description for this tag.";
-
-fn bullet(text: &str) -> Block {
-    Block::Bullet(vec![Span::Text(text.to_owned())])
-}
-
-// Belongs in zwipe-ui
-/// The format picker's `?`.
-pub fn format_picker_hint() -> HintContent {
-    HintContent {
-        title: "Format".to_owned(),
-        blocks: vec![
-            bullet("Tap the picked format again to clear it"),
-            bullet("Changing the format clears the commander and signature spell"),
-        ],
-    }
-}
-
-// Belongs in zwipe-ui
-/// The deck tag picker's `?`: the deck tags explainer, then how the picker
-/// works.
-pub fn deck_tag_picker_hint() -> HintContent {
-    let mut blocks = HintTopic::DeckTags.blocks();
-    blocks.push(bullet(
-        "Tap a tag to add or remove it. The bar up top shows what it means",
-    ));
-    HintContent {
-        title: "Deck tags".to_owned(),
-        blocks,
-    }
-}
-
-// Belongs in zwipe-ui
-/// The oracle tag picker's `?`, the oracle tags explainer. Its dialog adds a
-/// `Dictionary` action.
-pub fn oracle_tag_picker_hint() -> HintContent {
-    HintContent {
-        title: "Oracle tags".to_owned(),
-        blocks: HintTopic::OracleTags.blocks(),
-    }
 }
 
 // Belongs in zwipe-ui

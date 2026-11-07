@@ -15,7 +15,6 @@ use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_ui::hint::one_time;
 
 use crate::inbound::components::auth::ensure_session::EnsureFresh;
-use crate::inbound::components::guide_link;
 use crate::outbound::session::Persist;
 
 /// Opens the returned signal once per account for the given hint key, and
@@ -83,6 +82,6 @@ pub fn OneTimeHintDialog(open: Signal<bool>, hint: OneTimeHint) -> Element {
         return rsx! {};
     };
     rsx! {
-        ContentHintDialog { open, content, actions: guide_link::one_time(hint.key()) }
+        ContentHintDialog { open, content, actions: components::hint::guide_for_one_time(hint.key()) }
     }
 }

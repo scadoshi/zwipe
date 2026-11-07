@@ -18,7 +18,6 @@ use zwipe_ui::deck::pickers::{self, Picker};
 
 use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::concept_explainers::OracleTagsExplainer;
-use crate::inbound::components::guide_link;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::screens::oracle_tag_dictionary::OracleTagDictionary;
 
@@ -181,7 +180,7 @@ pub(crate) fn OracleTagSelect(
                         on_confirm: open_dictionary,
                     }]
                     .into_iter()
-                    .chain(guide_link::screen(zwipe_ui::hint::HintTopic::OracleTags))
+                    .chain(components::hint::guide_for_screen(zwipe_ui::hint::HintTopic::OracleTags))
                     .collect(),
                     OracleTagsExplainer {}
                 }

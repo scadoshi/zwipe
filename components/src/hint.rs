@@ -6,6 +6,15 @@
 //! [`ContentHintDialog`] is a whole [`HintContent`] in a `HintDialog`. The
 //! site's guides draw their `[[icon]]` tokens through [`KeyGlyph`] too, so an
 //! icon looks the same in the app's hint and on the web.
+//!
+//! [`guide_for_screen`] and [`guide_for_one_time`] are the "See guide ↗"
+//! action a screen's main hint offers when zwipe.net has a guide that goes
+//! deeper: the one-time hint a screen opens with, or its header hint. A
+//! panel's or field's `?` answers its own quick question and offers no guide.
+//! Which guide goes with which hint is `zwipe-ui`'s
+//! [`guide`] map. The action is a
+//! [`DialogAction::Link`]: the app opens it in its in-app browser, the web
+//! in the same tab.
 
 use dioxus::prelude::*;
 use orangui::icons::{
@@ -15,7 +24,8 @@ use orangui::icons::{
 use orangui::{
     DialogAction, HintBullet, HintBullets, HintDialog, HintKey, HintLine, ModeIcon, PaletteIcon,
 };
-use zwipe_ui::hint::{Block, HintContent, KeyIcon, Span};
+use zwipe_core::domain::user::hints::OneTimeHint;
+use zwipe_ui::hint::{Block, HintContent, HintTopic, KeyIcon, Span, guide};
 
 /// A run of blocks as drawn: consecutive bullets share one list.
 enum Group<'blocks> {
@@ -139,5 +149,69 @@ pub fn ContentHintDialog(
         HintDialog { open, title: content.title.clone(), actions,
             HintBody { blocks: content.blocks }
         }
+    }
+}
+
+/// The guide action's label.
+pub const SEE_GUIDE: &str = "See guide \u{2197}";
+
+/// The guide action for a screen's header hint, by the `?` topic that
+/// explains the same thing, empty when the topic has no guide.
+#[must_use]
+pub fn guide_for_screen(topic: HintTopic) -> Vec<DialogAction> {
+    guide_action(topic.guide_slug())
+}
+
+/// The guide action for a one-time hint, by the key it is recorded under,
+/// empty when the hint has no guide.
+#[must_use]
+pub fn guide_for_one_time(key: &str) -> Vec<DialogAction> {
+    guide_action(OneTimeHint::from_key(key).and_then(guide::one_time_slug))
+}
+
+/// A link to the guide named `slug`, or nothing without one.
+fn guide_action(slug: Option<&'static str>) -> Vec<DialogAction> {
+    slug.map(|slug| DialogAction::Link {
+        label: SEE_GUIDE.to_string(),
+        href: guide::url(slug),
+    })
+    .into_iter()
+    .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_topic_with_a_guide_links_to_it() {
+        let actions = guide_for_screen(HintTopic::LandTarget);
+        assert!(
+            matches!(
+                actions.as_slice(),
+                [DialogAction::Link { label, href }]
+                    if label == SEE_GUIDE && href == "https://zwipe.net/guides/land-targets"
+            ),
+            "actions {actions:?}"
+        );
+    }
+
+    #[test]
+    fn a_topic_without_a_guide_has_no_action() {
+        assert_eq!(guide_for_screen(HintTopic::Password), Vec::new());
+    }
+
+    #[test]
+    fn a_one_time_hint_links_by_its_key() {
+        let key = OneTimeHint::Filter.key();
+        assert!(
+            matches!(
+                guide_for_one_time(key).as_slice(),
+                [DialogAction::Link { href, .. }] if href == "https://zwipe.net/guides/filtering"
+            ),
+            "key {key}"
+        );
+        assert_eq!(guide_for_one_time(OneTimeHint::Config.key()), Vec::new());
+        assert_eq!(guide_for_one_time("not-a-hint"), Vec::new());
     }
 }

@@ -47,7 +47,7 @@ use crate::inbound::components::interactions::swipe::direction::Direction;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::component;
-use crate::inbound::components::{guide_link, hint_dialog, ui_toast};
+use crate::inbound::components::{hint_dialog, ui_toast};
 use crate::inbound::screens::deck::card::components::card_info::{
     CardDetailsSheet, CardSkeleton, use_describe_tag,
 };
@@ -547,7 +547,7 @@ pub(crate) fn SwipeSelect(
 
                 ContentHintDialog {
                     open: hint_open,
-                    actions: guide_link::one_time(HINT_SWIPE_SELECT),
+                    actions: components::hint::guide_for_one_time(HINT_SWIPE_SELECT),
                     content: one_time::swipe_select(hint_mode),
                 }
             }

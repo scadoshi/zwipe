@@ -13,7 +13,6 @@ use zwipe_core::domain::deck::{DeckTagView, MAX_DECK_TAGS};
 use zwipe_ui::deck::pickers::{self, Picker};
 
 use crate::inbound::components::concept_explainers::DeckTagsExplainer;
-use crate::inbound::components::guide_link;
 use crate::inbound::components::screen_header::ScreenHeader;
 
 /// In-place tag picker, up while `open`, over the server-delivered `catalog` (`GET /api/deck/tags`), so a new deck tag is selectable without a client release. `selected` holds the deck's tag slugs; a chip tap goes to `on_toggle` and the × to `on_clear`. The dock's checkmark (`on_save`) stays off while `unchanged`; the header's back arrow (`on_back`) and the OS back gesture put back the tags it opened on.
@@ -140,7 +139,7 @@ pub(crate) fn TagSelect(
 
                 HintDialog {
                     open: hint_open,
-                    actions: guide_link::screen(zwipe_ui::hint::HintTopic::DeckTags),
+                    actions: components::hint::guide_for_screen(zwipe_ui::hint::HintTopic::DeckTags),
                     title: Picker::DeckTags.title(),
                     DeckTagsExplainer {}
                     HintBullets {

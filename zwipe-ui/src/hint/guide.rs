@@ -31,8 +31,8 @@ impl HintTopic {
             | Self::SignatureSpell => Some("commander-and-formats"),
             Self::LandTarget => Some("land-targets"),
             Self::PriceTarget => Some("budgeting"),
+            Self::RoleChart | Self::SuggestionRoleChart | Self::RoleRates => Some("card-roles"),
             Self::TypeChart
-            | Self::RoleChart
             | Self::OracleTagChart
             | Self::ColorChart
             | Self::ManaCurve
@@ -40,16 +40,13 @@ impl HintTopic {
             | Self::DrawOdds => Some("deck-stats"),
             Self::HomeColors
             | Self::Colors
-            | Self::SuggestionRoleChart
             | Self::SuggestionTagChart
             | Self::SuggestionTagDecks
             | Self::SuggestionTagCards
             | Self::SuggestionTagImpact
             | Self::SuggestionList
             | Self::SuggestionStaples => Some("playstyle"),
-            Self::Activity | Self::RoleRates | Self::TagRates | Self::HardPasses => {
-                Some("activity")
-            }
+            Self::Activity | Self::TagRates | Self::HardPasses => Some("activity"),
             Self::Password
             | Self::Email
             | Self::Verification
@@ -217,6 +214,17 @@ mod tests {
         assert_eq!(HintTopic::DrawOdds.guide_slug(), Some("deck-stats"));
         assert_eq!(HintTopic::SuggestionStaples.guide_slug(), Some("playstyle"));
         assert_eq!(one_time_slug(OneTimeHint::Export), Some("import-export"));
+    }
+
+    #[test]
+    fn the_role_charts_link_the_card_roles_guide() {
+        for topic in [
+            HintTopic::RoleChart,
+            HintTopic::SuggestionRoleChart,
+            HintTopic::RoleRates,
+        ] {
+            assert_eq!(topic.guide_slug(), Some("card-roles"), "{topic:?}");
+        }
     }
 
     #[test]
