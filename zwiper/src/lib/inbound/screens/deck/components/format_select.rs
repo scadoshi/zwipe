@@ -6,7 +6,8 @@
 //! and clearing are reported through callbacks so the form can run its
 //! command-zone cascade (clearing commander and signature spell on a change).
 
-use components::{DockAction, HintBullet, HintBullets, HintDialog, icons, use_overlay_back_action};
+use components::hint::ContentHintDialog;
+use components::{DockAction, icons, use_overlay_back_action};
 use dioxus::prelude::*;
 use zwipe_core::domain::deck::format::Format;
 use zwipe_ui::deck::form;
@@ -114,15 +115,10 @@ pub(crate) fn FormatSelect(
                     }
                 }
 
-                HintDialog {
+                ContentHintDialog {
                     open: hint_open,
+                    content: Picker::Format.hint(),
                     actions: components::hint::guide_for_screen(zwipe_ui::hint::HintTopic::Format),
-                    title: Picker::Format.title(),
-                    HintBullets {
-                        for block in Picker::Format.hint().blocks {
-                            HintBullet { "{block.plain()}" }
-                        }
-                    }
                 }
             }
         }
