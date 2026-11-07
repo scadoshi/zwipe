@@ -129,6 +129,12 @@ document.addEventListener('keydown', (e) => {
 }, true);
 "#;
 
+/// Copies the shell's page color and sink onto html as `--page-edge` and
+/// `--page-sink`, which html and body paint: html sits above the themed
+/// shell, and themes.css's `:root` defaults outweigh a theme class there, so
+/// it reads the theme's colors from the shell.
+const ROOT_THEME_JS: &str = "(() => { const shell = document.querySelector('.app-shell'); if (!shell) return; const css = getComputedStyle(shell); const root = document.documentElement.style; root.setProperty('--page-edge', css.getPropertyValue('--bg-primary').trim()); root.setProperty('--page-sink', css.getPropertyValue('--bg-sink').trim()); })()";
+
 /// The themed element every screen sits in. A theme change wipes over it.
 /// `splash` opens it on the splash.
 #[component]
@@ -136,6 +142,10 @@ fn ThemeShell(splash: bool, children: Element) -> Element {
     let follow = components::use_theme_follow(use_context::<Signal<ThemeConfig>>(), ".app-shell");
     use_context_provider(|| follow);
     let class = follow.shown.read().css_class();
+    use_effect(move || {
+        let _shown = follow.shown.read();
+        document::eval(ROOT_THEME_JS);
+    });
     let pips = components::pip_style_class(use_context::<Signal<PipStyle>>()());
     rsx! {
         div { class: "app-shell {class} {pips}",
