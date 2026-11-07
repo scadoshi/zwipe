@@ -12,14 +12,14 @@ fn gruvbox(dark_mode: bool) -> Theme {
     }
 }
 
-/// The account's settings: gruvbox dark, theme pips, Universes Beyond hidden with one exception.
+/// The account's settings: gruvbox dark, themed pips, Universes Beyond hidden with one exception.
 fn account() -> UserSettings {
     UserSettings {
         theme: "gruvbox".to_owned(),
         dark_mode: true,
         exclude_universes_beyond: true,
         universes_beyond_exceptions: slugs(&["a"]),
-        pip_style: PipStyle::Theme,
+        pip_style: PipStyle::Themed,
     }
 }
 
@@ -249,7 +249,7 @@ fn a_dark_mode_reply_overtaken_by_a_newer_tap_is_ignored() {
 fn pips_show_at_once_and_save_the_other_style() {
     let mut state = State::new();
     let effects = state.update(Action::TogglePips {
-        shown: PipStyle::Theme,
+        shown: PipStyle::Themed,
     });
     assert_eq!(effects.first(), Some(&Effect::ShowPips(PipStyle::Classic)));
     let (ticket, change) = save_in(&effects);
@@ -285,7 +285,7 @@ fn a_failed_pips_save_puts_back_the_style_before_the_tap() {
 fn a_pips_reply_overtaken_by_a_newer_tap_is_ignored() {
     let mut state = State::new();
     let (first, _) = save_in(&state.update(Action::TogglePips {
-        shown: PipStyle::Theme,
+        shown: PipStyle::Themed,
     }));
     let _ = state.update(Action::TogglePips {
         shown: PipStyle::Classic,
@@ -359,7 +359,7 @@ fn a_universes_beyond_reply_overtaken_by_a_newer_tap_is_ignored() {
 fn a_tap_on_one_toggle_leaves_anothers_reply_current() {
     let mut state = loaded(account());
     let (pips, _) = save_in(&state.update(Action::TogglePips {
-        shown: PipStyle::Theme,
+        shown: PipStyle::Themed,
     }));
     let _ = state.update(Action::ToggleUniversesBeyond);
     let _ = state.update(Action::ToggleDarkMode {
@@ -367,7 +367,7 @@ fn a_tap_on_one_toggle_leaves_anothers_reply_current() {
     });
     assert_eq!(
         state.update(Action::SaveFailed { ticket: pips }),
-        [Effect::ShowPips(PipStyle::Theme)]
+        [Effect::ShowPips(PipStyle::Themed)]
     );
 }
 
@@ -375,7 +375,7 @@ fn a_tap_on_one_toggle_leaves_anothers_reply_current() {
 fn a_reply_lands_once() {
     let mut state = State::new();
     let (ticket, _) = save_in(&state.update(Action::TogglePips {
-        shown: PipStyle::Theme,
+        shown: PipStyle::Themed,
     }));
     let _ = state.update(Action::SaveFailed { ticket });
     assert_eq!(saved(&mut state, ticket, account()), []);
@@ -587,7 +587,7 @@ fn the_copy_matches_the_app() {
     assert_eq!(SHOW, "Show");
     assert_eq!(BACK, "Back");
     assert_eq!(SAVE, "Save");
-    assert_eq!(pips_label(PipStyle::Theme), "Theme");
+    assert_eq!(pips_label(PipStyle::Themed), "Themed");
     assert_eq!(pips_label(PipStyle::Classic), "Classic");
     assert_eq!(selected_line(3), "3 selected");
 }

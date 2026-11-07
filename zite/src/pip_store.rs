@@ -4,7 +4,7 @@
 //!
 //! Storage exists only in the browser, so off wasm (the server build, the
 //! prerender) loading finds nothing and saving does nothing: the page renders
-//! [`PipStyle::Theme`] and the browser adopts the stored style after
+//! [`PipStyle::Themed`] and the browser adopts the stored style after
 //! hydration. `index.html` reads the same key before first paint, so the
 //! classic pips show without a flash.
 

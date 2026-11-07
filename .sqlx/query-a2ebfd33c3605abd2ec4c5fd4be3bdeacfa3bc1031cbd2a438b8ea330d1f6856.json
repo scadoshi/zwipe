@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO user_settings\n                   (user_id, theme, dark_mode, exclude_universes_beyond,\n                    universes_beyond_exceptions, pip_style, updated_at)\n               VALUES ($1, COALESCE($2, 'zwipe'), COALESCE($3, true),\n                       COALESCE($4, false), COALESCE($5::text[], '{}'::text[]),\n                       COALESCE($6, 'theme'), NOW())\n               ON CONFLICT (user_id)\n               DO UPDATE SET\n                   theme = COALESCE($2, user_settings.theme),\n                   dark_mode = COALESCE($3, user_settings.dark_mode),\n                   exclude_universes_beyond =\n                       COALESCE($4, user_settings.exclude_universes_beyond),\n                   universes_beyond_exceptions =\n                       COALESCE($5::text[], user_settings.universes_beyond_exceptions),\n                   pip_style = COALESCE($6, user_settings.pip_style),\n                   updated_at = NOW()\n               RETURNING user_id, theme, dark_mode, exclude_universes_beyond,\n                         universes_beyond_exceptions, pip_style",
+  "query": "INSERT INTO user_settings\n                   (user_id, theme, dark_mode, exclude_universes_beyond,\n                    universes_beyond_exceptions, pip_style, updated_at)\n               VALUES ($1, COALESCE($2, 'zwipe'), COALESCE($3, true),\n                       COALESCE($4, false), COALESCE($5::text[], '{}'::text[]),\n                       COALESCE($6, 'themed'), NOW())\n               ON CONFLICT (user_id)\n               DO UPDATE SET\n                   theme = COALESCE($2, user_settings.theme),\n                   dark_mode = COALESCE($3, user_settings.dark_mode),\n                   exclude_universes_beyond =\n                       COALESCE($4, user_settings.exclude_universes_beyond),\n                   universes_beyond_exceptions =\n                       COALESCE($5::text[], user_settings.universes_beyond_exceptions),\n                   pip_style = COALESCE($6, user_settings.pip_style),\n                   updated_at = NOW()\n               RETURNING user_id, theme, dark_mode, exclude_universes_beyond,\n                         universes_beyond_exceptions, pip_style",
   "describe": {
     "columns": [
       {
@@ -89,5 +89,5 @@
       false
     ]
   },
-  "hash": "0d53e0b4f5f66b4925361fc4883d1b64af8089c8b228db1c58dac25c2925eac7"
+  "hash": "a2ebfd33c3605abd2ec4c5fd4be3bdeacfa3bc1031cbd2a438b8ea330d1f6856"
 }

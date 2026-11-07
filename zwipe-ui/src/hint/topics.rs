@@ -256,7 +256,7 @@ impl HintTopic {
             ])],
             Self::Pips => vec![
                 bullet(vec![
-                    key("Theme"),
+                    key("Themed"),
                     text(" draws mana symbols in your theme's colors"),
                 ]),
                 bullet(vec![

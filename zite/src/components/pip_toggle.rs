@@ -16,8 +16,8 @@ pub fn PipToggle(style: Signal<PipStyle>) -> Element {
         button {
             class: "mode-toggle pip-toggle",
             title: match current {
-                PipStyle::Theme => "Switch to classic pips",
-                PipStyle::Classic => "Switch to theme pips",
+                PipStyle::Themed => "Switch to classic pips",
+                PipStyle::Classic => "Switch to themed pips",
             },
             onclick: move |_| style.set(current.toggled()),
             span { class: "mode-label",

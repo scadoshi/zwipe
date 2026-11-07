@@ -111,9 +111,12 @@ pub fn display_theme_name(slug: &str) -> String {
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum PipStyle {
-    /// Pips in the current theme's own five mana colors.
+    /// Pips in the current theme's own five mana colors. Stored as
+    /// `themed`; the wire still writes `theme`, the name 1.15.0 to 1.18.0
+    /// parse, and reads both.
     #[default]
-    Theme,
+    #[serde(rename = "theme", alias = "themed")]
+    Themed,
     /// Pips in Magic's classic fills, the same on every theme. Stored as
     /// `classic`; the wire still writes `natural`, the name 1.15.0 to 1.17.0 parse,
     /// and reads both.
@@ -122,11 +125,11 @@ pub enum PipStyle {
 }
 
 impl PipStyle {
-    /// The stored name: `theme` or `classic`.
+    /// The stored name: `themed` or `classic`.
     #[must_use]
     pub const fn as_str(self) -> &'static str {
         match self {
-            Self::Theme => "theme",
+            Self::Themed => "themed",
             Self::Classic => "classic",
         }
     }
@@ -135,8 +138,8 @@ impl PipStyle {
     #[must_use]
     pub const fn toggled(self) -> Self {
         match self {
-            Self::Theme => Self::Classic,
-            Self::Classic => Self::Theme,
+            Self::Themed => Self::Classic,
+            Self::Classic => Self::Themed,
         }
     }
 }
@@ -147,8 +150,8 @@ impl fmt::Display for PipStyle {
     }
 }
 
-/// A pip color name that is none of `theme`, `classic` or the earlier
-/// `natural`.
+/// A pip color name that is none of `themed`, `classic` or the earlier
+/// `theme` and `natural`.
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
 #[error("unknown pip color")]
 pub struct ParsePipStyleError;
@@ -158,7 +161,7 @@ impl FromStr for PipStyle {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "theme" => Ok(Self::Theme),
+            "themed" | "theme" => Ok(Self::Themed),
             "classic" | "natural" => Ok(Self::Classic),
             _ => Err(ParsePipStyleError),
         }
@@ -183,7 +186,7 @@ pub struct UserSettings {
     #[serde(default)]
     pub universes_beyond_exceptions: Vec<String>,
     /// How mana pips are colored. Claims and payloads without the field read
-    /// as [`PipStyle::Theme`].
+    /// as [`PipStyle::Themed`].
     #[serde(default)]
     pub pip_style: PipStyle,
 }
@@ -195,7 +198,7 @@ impl Default for UserSettings {
             dark_mode: true,
             exclude_universes_beyond: false,
             universes_beyond_exceptions: Vec::new(),
-            pip_style: PipStyle::Theme,
+            pip_style: PipStyle::Themed,
         }
     }
 }
@@ -503,14 +506,14 @@ mod tests {
             serde_json::from_str(r#"{"theme":"gruvbox","dark_mode":true}"#).unwrap();
         assert!(!settings.exclude_universes_beyond);
         assert_eq!(settings.universes_beyond_exceptions, Vec::<String>::new());
-        assert_eq!(settings.pip_style, PipStyle::Theme);
+        assert_eq!(settings.pip_style, PipStyle::Themed);
     }
 
     // == pip color ==
 
     #[test]
     fn pip_style_round_trips_through_its_name() {
-        for color in [PipStyle::Theme, PipStyle::Classic] {
+        for color in [PipStyle::Themed, PipStyle::Classic] {
             assert_eq!(color.as_str().parse::<PipStyle>(), Ok(color));
             let json = serde_json::to_string(&color).unwrap();
             assert_eq!(serde_json::from_str::<PipStyle>(&json).unwrap(), color);
@@ -531,21 +534,64 @@ mod tests {
     }
 
     #[test]
+    fn themed_stores_as_themed_and_reads_either_name() {
+        assert_eq!(PipStyle::Themed.as_str(), "themed");
+        for name in ["themed", "theme"] {
+            assert_eq!(name.parse::<PipStyle>(), Ok(PipStyle::Themed));
+            assert_eq!(
+                serde_json::from_str::<PipStyle>(&format!("\"{name}\"")).unwrap(),
+                PipStyle::Themed
+            );
+        }
+    }
+
+    /// The pip enum as 1.15.0 to 1.17.0 carry it: `theme` and `natural`
+    /// only. 1.17.1 to 1.18.0 read those two and `classic`.
+    #[derive(Debug, PartialEq, Deserialize)]
+    #[serde(rename_all = "lowercase")]
+    enum ShippedPipStyle {
+        Theme,
+        Natural,
+    }
+
+    /// The settings as 1.15.0 to 1.18.0 read them.
+    #[derive(Deserialize)]
+    struct ShippedSettings {
+        pip_style: ShippedPipStyle,
+    }
+
+    #[test]
+    fn every_settings_value_parses_as_shipped_clients_read_it() {
+        for (style, shipped) in [
+            (PipStyle::Themed, ShippedPipStyle::Theme),
+            (PipStyle::Classic, ShippedPipStyle::Natural),
+        ] {
+            let settings = UserSettings {
+                pip_style: style,
+                ..UserSettings::default()
+            };
+            let json = serde_json::to_string(&settings).unwrap();
+            let read: ShippedSettings = serde_json::from_str(&json).unwrap();
+            assert_eq!(read.pip_style, shipped, "{json}");
+        }
+    }
+
+    #[test]
     fn the_wire_writes_the_name_shipped_clients_parse() {
         assert_eq!(
             serde_json::to_string(&PipStyle::Classic).unwrap(),
             "\"natural\""
         );
         assert_eq!(
-            serde_json::to_string(&PipStyle::Theme).unwrap(),
+            serde_json::to_string(&PipStyle::Themed).unwrap(),
             "\"theme\""
         );
     }
 
     #[test]
     fn pip_style_toggles_between_the_two() {
-        assert_eq!(PipStyle::Theme.toggled(), PipStyle::Classic);
-        assert_eq!(PipStyle::Classic.toggled(), PipStyle::Theme);
+        assert_eq!(PipStyle::Themed.toggled(), PipStyle::Classic);
+        assert_eq!(PipStyle::Classic.toggled(), PipStyle::Themed);
     }
 
     #[test]
