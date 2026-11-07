@@ -17,13 +17,18 @@ const FADE_OUT: Duration = Duration::from_millis(250);
 /// fade out once closed.
 pub fn use_held_open(open: ReadSignal<bool>) -> bool {
     let mut held = use_signal(|| *open.peek());
+    // Each close's number: a timer lets the backdrop go only when no later
+    // close has started its own fade.
+    let mut closes = use_signal(|| 0_u32);
     use_effect(move || {
         if open() {
             held.set(true);
         } else if *held.peek() {
+            let close = closes.peek().wrapping_add(1);
+            closes.set(close);
             spawn(async move {
                 time::sleep(FADE_OUT).await;
-                if !*open.peek() {
+                if !*open.peek() && *closes.peek() == close {
                     held.set(false);
                 }
             });

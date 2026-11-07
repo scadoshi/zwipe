@@ -11,7 +11,7 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user::models::settings::PipStyle;
 use zwipe_core::http::contracts::user::HttpUpdateSettings;
 
-use crate::domain::theme::{self, Sync};
+use crate::domain::theme::{self, ThemeSync};
 use crate::inbound::session::ensure_fresh::ensure_fresh;
 use crate::outbound::theme_store::ThemeStore;
 
@@ -49,12 +49,12 @@ pub fn sync_settings(
         let fetched = components::theme_from_settings(&settings);
         let shown = theme.peek().clone();
         match theme::reconcile(&shown, store.load_server().as_ref(), &fetched) {
-            Sync::Keep => store.save_synced(&fetched),
-            Sync::Apply(newer) => {
+            ThemeSync::Keep => store.save_synced(&fetched),
+            ThemeSync::Apply(newer) => {
                 store.save_synced(&newer);
                 theme.set(newer);
             }
-            Sync::Push(newer) => {
+            ThemeSync::Push(newer) => {
                 let request = HttpUpdateSettings {
                     theme: Some(newer.name.clone()),
                     dark_mode: Some(newer.is_dark),

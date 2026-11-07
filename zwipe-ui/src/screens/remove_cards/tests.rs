@@ -645,6 +645,43 @@ fn undo_at_the_end_of_the_stack_while_the_last_remove_is_out_waits_then_restores
 }
 
 #[test]
+fn removing_a_card_again_while_its_undo_is_held_sends_no_second_delete() {
+    let built = deck_of(&["Opt", "Shock"]);
+    let deck_id = built.deck_profile.id;
+    let opt = built.entries[0].clone();
+    let mut state = loaded(built);
+    let remove = ticket_of(&state.update(Action::Remove));
+    assert_eq!(
+        state.update(Action::Undo),
+        [Effect::Enter(Direction::Right)]
+    );
+    assert_eq!(top(&state).as_deref(), Some("Opt"));
+
+    // The first delete is still out, holding the undo: this remove drops it.
+    assert_eq!(
+        state.update(Action::Remove),
+        [Effect::Confirm(Toast::quick(ToastKind::Success, REMOVED))],
+        "no second delete goes out"
+    );
+    assert_eq!(top(&state).as_deref(), Some("Shock"));
+    assert!(!state.entries().contains(&opt));
+
+    // The first delete lands as a plain remove: its undo entry is logged,
+    // with the board and count the deck held, and no restore goes out.
+    let baseline = *opt.deck_card.quantity;
+    assert_eq!(
+        state.update(Action::Landed { ticket: remove }),
+        [Effect::RecordUndo {
+            deck_id,
+            action: UndoAction::Removed {
+                entry: Box::new(opt),
+                baseline,
+            },
+        }]
+    );
+}
+
+#[test]
 fn an_undo_held_on_a_remove_that_fails_puts_the_entry_back_with_no_request() {
     let built = deck_of(&["Opt", "Shock"]);
     let opt = built.entries[0].clone();

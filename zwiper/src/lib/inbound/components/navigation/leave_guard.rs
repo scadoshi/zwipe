@@ -268,7 +268,12 @@ pub fn LeaveDialog() -> Element {
         let held = GUARD.with(|g| g.held.borrow_mut().take());
         arm(None);
         asking.set(false);
-        let to_route = |path: &str| Router::from_str(path).unwrap_or(Router::Home {});
+        let to_route = |path: &str| {
+            Router::from_str(path).unwrap_or_else(|e| {
+                tracing::warn!(%path, "held route unparsable; going home: {e}");
+                Router::Home {}
+            })
+        };
         match held {
             Some(Held::Push(path)) => {
                 navigator.push(to_route(&path));
