@@ -2334,6 +2334,26 @@ body {
     }
 }
 
+/* Below the breakpoint the dictionary is the whole window, and its Search
+   box, letters and list fill its width; the letters keep one row that
+   scrolls sideways. */
+@media (max-width: 899px) {
+    .web-dict-browse {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        flex: 1 1 auto;
+        min-height: 0;
+        width: 100%;
+    }
+
+    .web-dict-browse .dict-controls,
+    .web-dict-browse .dict-list {
+        max-width: none;
+        box-sizing: border-box;
+    }
+}
+
 /* ---- Deck list ---- */
 
 /* The app's column below the breakpoint. The Tags fold chip and the tags it
@@ -2431,11 +2451,36 @@ body {
     color: var(--accent-primary);
 }
 
-/* The grid spans the sheet, so its scrollbar runs along the sheet's right
-   edge, and keeps its chips in the controls' column. */
+/* The controls and the chips fill the sheet's width, the grid's
+   scrollbar along its right edge. */
+.web-picker-body > .tag-controls,
 .web-picker-body > .tag-grid {
     max-width: none;
-    padding-inline: calc((100% - 22rem) / 2 + 1rem);
+    box-sizing: border-box;
+}
+
+/* A picker is a drawer down to a window that keeps some page beside it.
+   Narrower, the drawer takes the whole window over the grid backdrop, as
+   the app's phone pickers do. */
+.web-picker-body > .grid-cells {
+    display: none;
+}
+
+@media (max-width: 599px) {
+    .sheet-form-drawer > .bottom-sheet.web-picker-sheet.drawer-every-width {
+        width: 100%;
+        border-radius: 0;
+        border-left: none;
+        background-color: transparent;
+    }
+
+    .web-picker-sheet > .sheet-content {
+        background-color: transparent;
+    }
+
+    .web-picker-body > .grid-cells {
+        display: block;
+    }
 }
 
 /* ---- The oracle tag dictionary as the kit's modal ----
