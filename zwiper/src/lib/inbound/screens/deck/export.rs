@@ -19,7 +19,7 @@ use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen};
 use crate::inbound::components::{hint_dialog, ui_toast};
 use crate::inbound::router::Router;
-use crate::inbound::screens::deck::components::skeletons::ChipRowSkeleton;
+use crate::inbound::screens::deck::components::skeletons::{ChipGhost, ChipRowGhost};
 use crate::inbound::screens::deck::missing_deck;
 
 /// Export's model with the handles that perform its effects. Copy, so every
@@ -141,7 +141,10 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                     div { class: "import-controls",
                         // The Export row ghosts with the decklist until the deck lands.
                         if status == Status::Loading {
-                            ChipRowSkeleton { label: "md", chips: vec!["sm", "md", "sm"] }
+                            ChipRowGhost {
+                                label: deck_export::BOARDS,
+                                chips: Board::ALL.map(|board| ChipGhost::Text(board.label().to_string())).to_vec(),
+                            }
                         } else {
                             div { class: "chip-row",
                                 span { class: "stat-chip stat-chip-p1 chip-row-label", "{deck_export::BOARDS}" }
