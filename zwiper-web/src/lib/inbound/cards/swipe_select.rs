@@ -69,6 +69,7 @@ use crate::inbound::chrome::back_arrow::BackArrow;
 use crate::inbound::chrome::details_eye::{DockEye, Surface, use_details_eye};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, SwipeSelectHint, open_and_record_hint};
 use crate::inbound::screens::playstyle::SuggestionReasons;
+use crate::inbound::shell::use_overlay_nav;
 
 /// Pages of commanders the search keeps pulling when the host's exclusions
 /// empty a page, before it waits for the next swipe.
@@ -398,6 +399,15 @@ pub fn SwipeSelect(
     } else {
         "Swipe select"
     };
+    // On a wide window the overlay sits under the nav, which names it, opens
+    // its hint and closes it from the back arrow.
+    let mut hint_from_nav = hint_open;
+    use_overlay_nav(
+        open,
+        title.to_owned(),
+        Callback::new(move |()| hint_from_nav.set(true)),
+        Callback::new(move |()| on_close.call(())),
+    );
     let hint_mode = match mode {
         SwipeMode::Suggested => SwipeSelectMode::Suggested {
             has_filter: suggested_filter.is_some(),

@@ -10,4 +10,4 @@ mod top_nav;
 
 pub use frame::{OpenFrame, PublicFrame, ScreenFrame};
 pub use nav::MenuOpen;
-pub use top_nav::Shell;
+pub use top_nav::{Shell, use_overlay_nav};

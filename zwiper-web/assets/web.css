@@ -2029,10 +2029,9 @@ body {
         transition: transform 0.3s ease;
     }
 
-    /* Swipe select and the examples cover the bar with their own header,
-       so the panel starts under that. The examples' modal is the panel's
-       containing block, so its height is capped to the modal's. */
-    .web-swipe-select,
+    /* The examples cover the bar with their own header, so the panel
+       starts under that. The examples' modal is the panel's containing
+       block, so its height is capped to the modal's. */
     .web-examples {
         --web-dock-panel-top: 4.7rem;
     }
@@ -2075,6 +2074,22 @@ body {
     .web-swipe-select-body,
     .web-examples-body {
         grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* ---- Swipe select on a wide window ----
+
+   Swipe select sits under the nav as Add does: the nav names it, carries
+   its `?` and closes it from the back arrow, so its own header goes. Below
+   the breakpoint it keeps its title bar. */
+@media (min-width: 900px) {
+    .screen.web-swipe-select,
+    .web-swipe-select > .grid-cells {
+        top: var(--web-nav-h, 4.7rem);
+    }
+
+    .web-swipe-select > .page-header {
+        display: none;
     }
 }
 
