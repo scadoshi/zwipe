@@ -216,6 +216,8 @@ Open with Scotty: none.
 
 151. **Both apps degrade when left open a long time.** In zwipe and Cairn, after hours open (or backgrounded and resumed): screens go see-through (150), taps stop landing (Cairn's counters), or data goes stale (Cairn shows yesterday's count until a relaunch). Likely shared: timers, listeners or layers piling up (orangui's grid rain, polls), and app lifecycle (no refresh on foreground or day rollover, WKWebView's content process killed in the background). Investigate across both apps and orangui, then fix at the shared root.
 
+152. **Toasts for changes the screen already shows.** Theme picks and light/dark toggles ("Dark mode off", the theme name) stop toasting, in the app and on the web. Errors, account changes (password, email, delete), results out of view (copy, share) and Synergy's toggle keep theirs.
+
 Scotty on Droid's open items: D3 toasts "Nothing left to remove" (no way back needed; into 145); D29 leave the Art toggle; D32 a follow-up in todo; D36 fine as an outline; D37 hero chips in the logged-in order everywhere (into 147); D38 list rows wrap their chips as the rendered layout intends, consistently (into 146). D28: card-row panels (Suggested commanders, Staples, Most skipped) keep their pink title color, but take the other panel titles' size, weight, letter spacing and inset (into 147).
 
 Skipped with Scotty: S44 (the About diagram scrolls under its arrows; fine as is).
