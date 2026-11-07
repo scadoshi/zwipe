@@ -17,6 +17,9 @@ pub enum SwipeSelectMode {
     /// [`crate::deck::form::Slot::noun`]: `commander`, `oathbreaker`,
     /// `partner`, `background` or `signature spell`.
     Picking(&'static str),
+    /// Swiping through commanders from the Commander maybeboard, where a pick
+    /// starts a new deck with it.
+    StartsDeck,
     /// Swiping through Playstyle's suggested commanders.
     Suggested {
         /// Whether the overlay has a filter, which adds a line about it.
@@ -104,7 +107,7 @@ pub fn first_deck(wide: bool) -> HintContent {
         )]),
         bullet(vec![
             text("Skipped and removed cards stay out of the add stack. "),
-            key("Clear skips"),
+            key("Clear"),
             text(" at the bottom brings them back"),
         ]),
         bullet(vec![text(
@@ -529,6 +532,18 @@ pub fn swipe_select(mode: SwipeSelectMode) -> HintContent {
                 text(" skips it for a week"),
             ]),
         ],
+        SwipeSelectMode::StartsDeck => vec![
+            bullet(vec![
+                text("Swipe "),
+                emph("right", Role::Success),
+                text(" starts a new deck with that commander"),
+            ]),
+            bullet(vec![
+                text("Swipe "),
+                emph("left", Role::Error),
+                text(" skips it"),
+            ]),
+        ],
         SwipeSelectMode::Picking(noun) => vec![
             bullet(vec![
                 text("Swipe "),
@@ -574,7 +589,7 @@ pub fn swipe_select(mode: SwipeSelectMode) -> HintContent {
             }
             "Suggested commanders"
         }
-        SwipeSelectMode::Picking(_) => {
+        SwipeSelectMode::Picking(_) | SwipeSelectMode::StartsDeck => {
             blocks.push(line(vec![
                 text("Most-played first. "),
                 icon_key(KeyIcon::Funnel),
@@ -625,6 +640,26 @@ mod tests {
                 key("All decks"),
                 text(" opens the list"),
             ])
+        );
+    }
+
+    #[test]
+    fn from_the_maybeboard_a_pick_starts_a_new_deck() {
+        let hint = swipe_select(SwipeSelectMode::StartsDeck);
+        assert_eq!(hint.title, "Swipe select");
+        assert_eq!(
+            hint.blocks[0].plain(),
+            "Swipe right starts a new deck with that commander"
+        );
+    }
+
+    #[test]
+    fn the_deck_hint_names_the_clear_button_as_drawn() {
+        assert!(
+            first_deck(false)
+                .blocks
+                .iter()
+                .any(|b| b.spans().contains(&key("Clear")))
         );
     }
 

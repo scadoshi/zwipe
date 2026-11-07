@@ -262,6 +262,10 @@ pub(crate) fn SwipeSelect(
     /// state that narrows `suggested_pile`. Without it there is no Filter.
     #[props(default)]
     suggested_filter: Option<Element>,
+    /// Whether a pick starts a new deck, as from the commander maybeboard,
+    /// which the hint then says.
+    #[props(default)]
+    starts_deck: bool,
 ) -> Element {
     // OS back gesture closes this overlay before touching the router.
     use_overlay_back(open);
@@ -408,6 +412,8 @@ pub(crate) fn SwipeSelect(
         SwipeSelectMode::Suggested {
             has_filter: has_suggested_filter,
         }
+    } else if starts_deck {
+        SwipeSelectMode::StartsDeck
     } else {
         SwipeSelectMode::Picking(noun)
     };

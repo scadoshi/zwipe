@@ -589,6 +589,7 @@ pub fn CommanderMaybeboard() -> Element {
             open: swipe_open,
             mode: SwipeMode::Commander(Format::Commander),
             exclude_oracle_ids: Some(saved_oracles.into()),
+            starts_deck: true,
             on_select: move |card: Card| {
                 swipe_open.set(false);
                 list.refetch();
