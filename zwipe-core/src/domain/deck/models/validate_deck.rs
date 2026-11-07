@@ -596,6 +596,16 @@ mod tests {
             "{lines:?}"
         );
 
+        let mut bolas = make_entry("Nicol Bolas, the Ravager // Nicol Bolas, the Arisen", 1);
+        bolas.card.scryfall_data.legalities.oathbreaker = Some(LegalityKind::NotLegal);
+        let warnings = validate_deck(&profile, &[bolas], &empty_command_zone());
+        let lines: Vec<String> = warnings.iter().map(ToString::to_string).collect();
+        assert!(
+            lines.iter().any(|l| l
+                == "Nicol Bolas, the Ravager // Nicol Bolas, the Arisen is not legal in Oathbreaker"),
+            "each face keeps its casing: {lines:?}"
+        );
+
         let commander = test_profile(Some(Format::Commander));
         let warnings = validate_deck(&commander, &[], &empty_command_zone());
         let lines: Vec<String> = warnings.iter().map(ToString::to_string).collect();
