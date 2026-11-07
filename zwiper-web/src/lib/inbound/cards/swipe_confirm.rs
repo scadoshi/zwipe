@@ -10,6 +10,7 @@ use dioxus_primitives::toast::{ToastOptions, Toasts, use_toast};
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user::settings::SwipeConfirmations;
 use zwipe_ui::confirm::chip_word;
+use zwipe_ui::hint::Role;
 
 /// A swipe screen's confirmations. `Copy`; from [`use_swipe_confirm`].
 #[derive(Clone, Copy)]
@@ -102,14 +103,22 @@ pub fn use_swipe_confirm() -> SwipeConfirm {
     }
 }
 
-/// The swipe screen's top left: its title chip, shown on a wide window, then
-/// the last confirmation in the same quiet chip. Neither takes a click.
+/// The swipe screen's top left: its title chip, shown on a wide window and
+/// tinted in `tone`, the screen's own action color, then the last
+/// confirmation in the quiet chip. Neither takes a click.
 #[component]
-pub fn SwipeScreenChips(#[props(into)] title: String, confirm: SwipeConfirm) -> Element {
+pub fn SwipeScreenChips(
+    #[props(into)] title: String,
+    tone: Role,
+    confirm: SwipeConfirm,
+) -> Element {
     let said = (confirm.said)();
+    let var = tone.css_var();
+    let name = var.strip_prefix("--").unwrap_or(var);
+    let paint = format!("--chip-tone: var({var}); --chip-ink: var(--ink-{name}, var({var}));");
     rsx! {
         div { class: "web-screen-chips",
-            span { class: "chip-note web-screen-chip", "{title}" }
+            span { class: "chip-note web-screen-chip", style: "{paint}", "{title}" }
             if let Some((count, text)) = said {
                 span { key: "{count}", class: "chip-note web-swipe-confirm", "{text}" }
             }

@@ -52,7 +52,7 @@ use zwipe_ui::deck::form::{self, Slot};
 use zwipe_ui::filter;
 use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::generation::Generation;
-use zwipe_ui::hint::SwipeSelectMode;
+use zwipe_ui::hint::{Role, SwipeSelectMode};
 use zwipe_ui::playstyle::empty_identity_line;
 use zwipe_ui::stack::{CardStack, Direction, StackAction};
 use zwipe_ui::timing::{LOAD_MORE_AT, MAYBEBOARD_TOAST, PAGE_SIZE};
@@ -642,7 +642,7 @@ fn SwipeSelectBody(
             on_hint: move |()| hint_again.set(true),
         }
         div { class: "screen-content card-swipe content-enter web-swipe-select-body {eye.body_class()}",
-            SwipeScreenChips { title, confirm }
+            SwipeScreenChips { title, tone: Role::Success, confirm }
             div { class: "form-container web-swipe-select-card",
                 if current.is_some() {
                     SwipeStack {

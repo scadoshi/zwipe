@@ -28,6 +28,7 @@ use zwipe_ui::deck_signals::{Crossing, budget_crossing, land_count, land_crossin
 use zwipe_ui::filter;
 use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::filter::picker::Sources;
+use zwipe_ui::hint::Role;
 use zwipe_ui::screens::remove_cards;
 use zwipe_ui::stack::{CardStack, RemoveAction, StackAction};
 use zwipe_ui::stores::filters::FilterScope;
@@ -536,7 +537,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
             title: remove_cards::TITLE,
             on_hint: move |()| hint_open.set(true),
             div { class: "screen-content card-swipe content-enter web-cards-swipe {eye.body_class()}",
-                SwipeScreenChips { title: remove_cards::TITLE, confirm }
+                SwipeScreenChips { title: remove_cards::TITLE, tone: Role::Error, confirm }
                 div { class: "web-cards-swipe-main",
                     div { class: "form-container",
                         if current.is_some() {
