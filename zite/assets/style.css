@@ -73,6 +73,28 @@ html {
     scrollbar-gutter: stable;
 }
 
+/* The app's scrollbars: thin, the thumb in the theme's border color on a
+   clear track, the page's and every scroller's inside it (the filter
+   drawer's included). */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-secondary) transparent;
+}
+
+*::-webkit-scrollbar {
+    width: 0.5rem;
+    height: 0.5rem;
+}
+
+*::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+    background-color: var(--border-secondary);
+    border-radius: 0.25rem;
+}
+
 html,
 body {
     background-color: var(--bg-primary);
