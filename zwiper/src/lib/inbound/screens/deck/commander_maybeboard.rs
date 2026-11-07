@@ -370,6 +370,7 @@ pub fn CommanderMaybeboard() -> Element {
     let builder = filter_builder.peek().clone();
     let view = driver.model.read();
     let is_loading = view.status() == Status::Loading;
+    let nothing_saved = view.status() == Status::Empty;
     let query = view.query().to_owned();
     let quick_add = view.quick_add();
     let all_on = view.shows_all();
@@ -524,6 +525,7 @@ pub fn CommanderMaybeboard() -> Element {
                         DangerZoneAction {
                             label: model::CLEAR_MAYBEBOARD,
                             button: model::CLEAR,
+                            disabled: nothing_saved,
                             onclick: move |()| show_clear_dialog.set(true),
                         }
                     }

@@ -2516,7 +2516,7 @@ body {
 /* Below the breakpoint the page is the app's one stack. */
 @media (max-width: 899px) {
     .web-deck-view {
-        width: calc(100% - 4rem);
+        width: calc(100% - 2rem);
         max-width: 40rem;
         display: flex;
         flex-direction: column;
