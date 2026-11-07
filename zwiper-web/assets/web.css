@@ -2285,10 +2285,10 @@ body {
 }
 
 /* A picker's body in its sheet: the controls on top and the chip grid
-   under them, the grid scrolling on its own down to the sheet's bottom
-   edge, its trailing padding scrolling the last row clear of the dock. */
+   under them, the grid scrolling on its own and ending above a band at
+   the sheet's foot that holds the dock, so the dock never covers a chip. */
 .bottom-sheet.web-picker-sheet:has(.sheet-dock) > .sheet-content {
-    padding: 0;
+    padding: 0 0 calc(5rem + env(safe-area-inset-bottom, 0px));
 }
 
 .web-picker-body {
@@ -2308,7 +2308,6 @@ body {
 .web-picker-body > .tag-grid {
     max-width: none;
     padding-inline: calc((100% - 22rem) / 2 + 1rem);
-    padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
 }
 
 /* ---- The oracle tag dictionary as the kit's modal ----
