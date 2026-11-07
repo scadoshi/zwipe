@@ -182,6 +182,8 @@ From Surfer's Part 3 (2026-11-06), triaged with Scotty:
 129. **The details' Printings action is an icon.** It reads "Printings" as a text pill, as on the web.
 130. **The app's printing picker shows one card at a time.** The phone gets the web's cover flow: neighbors visible at the sides, animating in, edge fade and arrows.
 
+131. **The app's deck page leaves a wider gap under the header than other screens.** The Profile panel sits further below the title bar than panels do elsewhere in the app; align it to the app's usual top gap.
+
 Skipped with Scotty: S35 (old /deck paths 404; old paths don't reroute), S37 (overscroll shade, 104 as designed).
 
 Skipped with Scotty: S7 (no Image in the swipe screens' details, intended), S23 (Cloudflare's email obfuscation). Rechecked after the next deploy, since `release` may already fix them: S4 (picker ✓ over chips), S6 (swipe select page head). S12 (the pip toggle labeled Theme on zwipe.net) becomes Pips, folded into 111.
