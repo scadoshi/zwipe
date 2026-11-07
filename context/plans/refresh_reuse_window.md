@@ -24,7 +24,10 @@ Surfer was logged out again after about a minute and a half of full page loads i
 
 The window covers it: an old token presented again within 30 seconds of its rotation gets the family's newest token, following the chain if the successor was itself rotated meanwhile. `a_lost_response_then_the_old_token_again_gets_the_newest_successor` runs that sequence. It only fails if one token's replies keep getting lost for longer than the window, which then logs out as today.
 
-**Open question: a refresh on every load.** The web refreshes on every full page load even with a valid access token, by design: `SessionStore` never writes a token where page script can read it (`localStorage`), so a reload has no access token. Not refreshing on load means either keeping the access token in script-readable storage (undoing that XSS hardening, a 15-minute token), or authenticating API calls with an HttpOnly access cookie (a wire and CSRF change). Both are Scotty's call. With the window and the lock, the per-load refresh is safe, just a rotation per load.
+**Decision (composer, 2026-11-07): keep the refresh on every load.** The web refreshes on every full page load even with a valid access token, by design: `SessionStore` never writes a token where page script can read it (`localStorage`), so a reload has no access token. With the reuse window and the cross-tab lock that refresh is safe, just one rotation per load. Two alternatives were considered and not taken, for Scotty to revisit:
+
+- Keep the access token in `localStorage` or `sessionStorage`. That saves the refresh, but any script on the origin could read a live 15-minute token, which undoes the hardening.
+- Authenticate API calls with an HttpOnly access-token cookie as well. No script can read it and a reload needs no refresh, but every authed route would take a cookie instead of a bearer header (a wire change for the web client), and cookie auth needs CSRF protection on every mutating route.
 
 ## Other ways a session ends (Scotty's Firefox, Surfer's login tab)
 
