@@ -531,8 +531,9 @@
 }
 
 /* The search box sits as close above the definition bar as the bar sits
-   above the chips. */
+   above the chips, the × wrap around it included. */
 .tag-controls > .input,
+.tag-controls > .input-clear-wrap,
 .tag-controls > .input-clear-wrap > .input {
     margin-bottom: 0;
 }
