@@ -967,7 +967,7 @@ body {
 }
 
 .web-dead-end .panel-title {
-    color: var(--color-error);
+    color: var(--ink-color-error, var(--color-error));
     letter-spacing: 0.08em;
     text-transform: uppercase;
     text-align: center;
@@ -1248,7 +1248,7 @@ body {
     }
 
     .web-flow-count {
-        color: var(--text-muted);
+        color: var(--ink-text-muted, var(--text-muted));
         font-size: 0.8rem;
     }
 }
@@ -2152,7 +2152,7 @@ body {
 /* The Quick add result the arrow keys point at. */
 .web-float-highlight {
     border-color: var(--accent-primary);
-    color: var(--accent-primary);
+    color: var(--ink-accent-primary, var(--accent-primary));
 }
 
 /* ---- Leave guard ----
@@ -2339,7 +2339,7 @@ body {
 }
 
 .web-picker-body .tag-search-label {
-    color: var(--accent-primary);
+    color: var(--ink-accent-primary, var(--accent-primary));
 }
 
 /* The controls and the chips fill the sheet's width, the grid's
@@ -2680,7 +2680,7 @@ body {
 
 /* A row being dragged onto a board's header. */
 .card-group-header.web-drop-over {
-    color: var(--accent-primary);
+    color: var(--ink-accent-primary, var(--accent-primary));
     outline: 1px dashed var(--accent-primary);
     outline-offset: 2px;
 }

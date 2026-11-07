@@ -74,7 +74,7 @@
     background-color: var(--bg-primary);
     font-size: 0.75rem;
     line-height: 1.4;
-    color: var(--accent-tertiary);
+    color: var(--ink-accent-tertiary, var(--accent-tertiary));
 }
 
 /* ---- Fold (components::Fold, components::SeeMore) ----
@@ -140,6 +140,9 @@
 /* Emphasis (scale + shadow + tint) marks the expanded row; its own border
    drops so the closing rule isn't doubled. */
 .card-row.expanded {
+    /* The chips inside tint over the panel's own background, not this row's
+       accent tint, so their text reads as their inks are made for. */
+    --tone-base: var(--bg-primary);
     position: relative;
     z-index: 2;
     border-bottom: none;
@@ -240,7 +243,7 @@
     justify-content: center;
     width: 1.2rem;
     height: 1.2rem;
-    color: var(--text-muted);
+    color: var(--ink-text-muted, var(--text-muted));
     font-size: 1.2rem;
     line-height: 1;
     transform-origin: center;
@@ -262,7 +265,7 @@
 
 .card-row-mvp {
     display: inline-block;
-    color: var(--palette-6);
+    color: var(--ink-palette-6, var(--palette-6));
     font-size: 1.1rem;
     margin-right: 0.3rem;
     line-height: 1;
@@ -271,7 +274,7 @@
 
 .card-row-qty {
     text-align: center;
-    color: var(--text-muted);
+    color: var(--ink-text-muted, var(--text-muted));
     font-size: 0.75rem;
 }
 
@@ -292,17 +295,17 @@
 /* Price is money: each theme picks its own money color. */
 .card-row-price {
     font-variant-numeric: tabular-nums;
-    color: var(--color-money);
-    background-color: color-mix(in srgb, var(--color-money) 12%, transparent);
-    border-color: color-mix(in srgb, var(--color-money) 35%, transparent);
+    color: var(--ink-color-money, var(--color-money));
+    background-color: color-mix(in srgb, var(--color-money) 12%, var(--tone-base, transparent));
+    border-color: color-mix(in srgb, var(--color-money) 35%, var(--tone-base, transparent));
 }
 
 /* P/T (creatures) and loyalty (planeswalkers): a number in the theme's stat
-   color, as legible as the price beside it. */
+   color, as legible as the price beside it: palette-5's tint under its ink. */
 .card-row-stat {
-    color: var(--color-stat, var(--palette-5));
-    background-color: color-mix(in srgb, var(--color-stat, var(--palette-5)) 12%, transparent);
-    border-color: color-mix(in srgb, var(--color-stat, var(--palette-5)) 35%, transparent);
+    color: var(--ink-palette-5, var(--color-stat, var(--palette-5)));
+    background-color: color-mix(in srgb, var(--palette-5) 12%, var(--tone-base, transparent));
+    border-color: color-mix(in srgb, var(--palette-5) 35%, var(--tone-base, transparent));
 }
 
 .card-row-colors {
@@ -310,7 +313,7 @@
     display: inline-flex;
     align-items: center;
     font-size: 0.75rem;
-    color: var(--text-muted);
+    color: var(--ink-text-muted, var(--text-muted));
     white-space: nowrap;
 }
 
@@ -333,7 +336,7 @@
     --card-row-detail-pad-x: 1rem;
     padding: 0.5rem var(--card-row-detail-pad-x) 0.25rem;
     font-size: 0.75rem;
-    color: var(--text-muted);
+    color: var(--ink-text-muted, var(--text-muted));
     max-width: 100%;
 }
 
@@ -749,7 +752,7 @@ i.ms.ms-cost.ms-gp {
     flex-wrap: wrap;
     gap: 0.5rem;
     margin-bottom: 0.5rem;
-    color: var(--text-muted);
+    color: var(--ink-text-muted, var(--text-muted));
 }
 
 /* Non-interactive info chip (type line, rarity, set) in an expanded card row. */
@@ -759,47 +762,47 @@ i.ms.ms-cost.ms-gp {
     border: 1px solid var(--border-primary);
     border-radius: 0.4rem;
     font-size: 0.75rem;
-    color: var(--text-muted);
+    color: var(--ink-text-muted, var(--text-muted));
     background-color: var(--bg-primary);
 }
 
 /* Color-coded meta chips, consistent with the no-image card: type = accent-1,
    rarity = accent-3, set = success-green, P/T-or-loyalty = warning-yellow. */
 .detail-chip-type {
-    color: var(--palette-1);
-    background-color: color-mix(in srgb, var(--palette-1) 12%, transparent);
-    border-color: color-mix(in srgb, var(--palette-1) 35%, transparent);
+    color: var(--ink-palette-1, var(--palette-1));
+    background-color: color-mix(in srgb, var(--palette-1) 12%, var(--tone-base, transparent));
+    border-color: color-mix(in srgb, var(--palette-1) 35%, var(--tone-base, transparent));
 }
 
 .detail-chip-rarity {
-    color: var(--palette-4);
-    background-color: color-mix(in srgb, var(--palette-4) 12%, transparent);
-    border-color: color-mix(in srgb, var(--palette-4) 35%, transparent);
+    color: var(--ink-palette-4, var(--palette-4));
+    background-color: color-mix(in srgb, var(--palette-4) 12%, var(--tone-base, transparent));
+    border-color: color-mix(in srgb, var(--palette-4) 35%, var(--tone-base, transparent));
 }
 
 .detail-chip-set {
-    color: var(--palette-3);
-    background-color: color-mix(in srgb, var(--palette-3) 12%, transparent);
-    border-color: color-mix(in srgb, var(--palette-3) 35%, transparent);
+    color: var(--ink-palette-3, var(--palette-3));
+    background-color: color-mix(in srgb, var(--palette-3) 12%, var(--tone-base, transparent));
+    border-color: color-mix(in srgb, var(--palette-3) 35%, var(--tone-base, transparent));
 }
 
 /* The printing's release date and artist, shown by hosts that ask for them. */
 .detail-chip-date {
-    color: var(--palette-1);
-    background-color: color-mix(in srgb, var(--palette-1) 12%, transparent);
-    border-color: color-mix(in srgb, var(--palette-1) 35%, transparent);
+    color: var(--ink-palette-1, var(--palette-1));
+    background-color: color-mix(in srgb, var(--palette-1) 12%, var(--tone-base, transparent));
+    border-color: color-mix(in srgb, var(--palette-1) 35%, var(--tone-base, transparent));
 }
 
 .detail-chip-artist {
-    color: var(--palette-6);
-    background-color: color-mix(in srgb, var(--palette-6) 12%, transparent);
-    border-color: color-mix(in srgb, var(--palette-6) 35%, transparent);
+    color: var(--ink-palette-6, var(--palette-6));
+    background-color: color-mix(in srgb, var(--palette-6) 12%, var(--tone-base, transparent));
+    border-color: color-mix(in srgb, var(--palette-6) 35%, var(--tone-base, transparent));
 }
 
 .detail-chip-pt {
-    color: var(--color-stat, var(--palette-5));
-    background-color: color-mix(in srgb, var(--color-stat, var(--palette-5)) 15%, transparent);
-    border-color: color-mix(in srgb, var(--color-stat, var(--palette-5)) 40%, transparent);
+    color: var(--ink-palette-5, var(--color-stat, var(--palette-5)));
+    background-color: color-mix(in srgb, var(--palette-5) 12%, var(--tone-base, transparent));
+    border-color: color-mix(in srgb, var(--palette-5) 35%, var(--tone-base, transparent));
     font-weight: 700;
 }
 
@@ -845,7 +848,7 @@ i.ms.ms-cost.ms-gp {
 
 .card-detail-otags .detail-chip {
     border-color: var(--palette-1);
-    color: var(--palette-1);
+    color: var(--ink-palette-1, var(--palette-1));
 }
 
 /* Block-quote frame for a role's exposed otags, echoing .keyword-reveal-text. */
@@ -906,7 +909,7 @@ i.ms.ms-cost.ms-gp {
     display: block;
     margin-bottom: 0.25rem;
     font-size: 0.7rem;
-    color: var(--accent-tertiary);
+    color: var(--ink-accent-tertiary, var(--accent-tertiary));
 }
 
 /* ---- CardDetailsPanel (components::CardDetailsPanel) ----
@@ -1136,7 +1139,7 @@ i.ms.ms-cost.ms-gp {
     margin-bottom: 0.35rem;
     font-size: 0.75rem;
     line-height: 1.4;
-    color: var(--text-muted);
+    color: var(--ink-text-muted, var(--text-muted));
 }
 
 .card-detail-bullets li:last-child {
@@ -1147,7 +1150,7 @@ i.ms.ms-cost.ms-gp {
     content: "\2022";
     position: absolute;
     left: 0;
-    color: var(--accent-primary);
+    color: var(--ink-accent-primary, var(--accent-primary));
 }
 
 .card-detail-bullets .keyword-chips {
@@ -1245,7 +1248,7 @@ i.ms.ms-cost.ms-gp {
     line-height: 1.25;
     letter-spacing: 0.3px;
     word-break: break-word;
-    color: var(--palette-3);
+    color: var(--ink-palette-3, var(--palette-3));
 }
 
 /* Hairline divider between card sections, full-bleed to the card edges (negative
@@ -1269,7 +1272,7 @@ i.ms.ms-cost.ms-gp {
 }
 
 .nic-noart {
-    color: var(--text-muted);
+    color: var(--ink-text-muted, var(--text-muted));
     font-size: 0.8rem;
     letter-spacing: 2px;
     text-transform: uppercase;
@@ -1290,24 +1293,24 @@ i.ms.ms-cost.ms-gp {
     background-color: var(--bg-primary);
     font-size: 0.7rem;
     line-height: 1.25;
-    color: var(--text-muted);
+    color: var(--ink-text-muted, var(--text-muted));
 }
 
 /* Type / rarity / set chips, each tinted with its own accent. */
 .nic-chip-type {
-    color: var(--palette-1);
+    color: var(--ink-palette-1, var(--palette-1));
     background-color: color-mix(in srgb, var(--palette-1) 12%, transparent);
     border-color: color-mix(in srgb, var(--palette-1) 35%, transparent);
 }
 
 .nic-chip-rarity {
-    color: var(--palette-4);
+    color: var(--ink-palette-4, var(--palette-4));
     background-color: color-mix(in srgb, var(--palette-4) 12%, transparent);
     border-color: color-mix(in srgb, var(--palette-4) 35%, transparent);
 }
 
 .nic-chip-set {
-    color: var(--palette-3);
+    color: var(--ink-palette-3, var(--palette-3));
     background-color: color-mix(in srgb, var(--palette-3) 12%, transparent);
     border-color: color-mix(in srgb, var(--palette-3) 35%, transparent);
 }
@@ -1320,7 +1323,7 @@ i.ms.ms-cost.ms-gp {
     right: 0.6rem;
     bottom: 0.6rem;
     font-weight: 700;
-    color: var(--palette-5);
+    color: var(--ink-palette-5, var(--palette-5));
     background-color: color-mix(in srgb, var(--palette-5) 18%, var(--bg-primary));
     border-color: color-mix(in srgb, var(--palette-5) 40%, var(--border-primary));
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
@@ -1362,7 +1365,7 @@ i.ms.ms-cost.ms-gp {
     font-size: 0.8rem;
     line-height: 1.35;
     font-style: italic;
-    color: var(--text-muted);
+    color: var(--ink-text-muted, var(--text-muted));
     white-space: pre-wrap;
 }
 
@@ -1470,13 +1473,13 @@ i.ms.ms-cost.ms-gp {
 
 .changelog-version {
     font-size: 1.1rem;
-    color: var(--accent-primary);
+    color: var(--ink-accent-primary, var(--accent-primary));
     font-weight: 700;
     margin: 0;
 }
 
 .changelog-date {
-    color: var(--text-muted);
+    color: var(--ink-text-muted, var(--text-muted));
     font-size: 0.8rem;
 }
 
@@ -1503,7 +1506,7 @@ i.ms.ms-cost.ms-gp {
     content: "\203A";
     position: absolute;
     left: 0;
-    color: var(--accent-primary);
+    color: var(--ink-accent-primary, var(--accent-primary));
 }
 
 /* The panels look (ChangelogLook::App): the chip rows are a settings-row of
@@ -1846,7 +1849,7 @@ html.keyboard-up .web-dock-pair {
     text-align: center;
     background: var(--bg-primary);
     border: 1px solid var(--border-secondary);
-    color: var(--text-muted);
+    color: var(--ink-text-muted, var(--text-muted));
 }
 
 @media (min-width: 60rem) {
@@ -2220,7 +2223,7 @@ html.keyboard-up .web-dock-pair {
 /* The Danger zone panels, Account's and the deck view's, under a title in
    the danger color. Compound selector so it outranks orangui's title color. */
 .settings-list-title.danger-zone-title {
-    color: var(--color-error);
+    color: var(--ink-color-error, var(--color-error));
 }
 
 /* Under an empty list's note, the Danger zone keeps the panel gap a list
@@ -2241,7 +2244,7 @@ html.keyboard-up .web-dock-pair {
     border: 1px solid var(--border-muted);
     border-radius: 0.6rem;
     font-size: 0.75rem;
-    color: var(--text-muted);
+    color: var(--ink-text-muted, var(--text-muted));
     box-shadow: var(--shadow-sm);
 }
 
@@ -2405,7 +2408,7 @@ html.keyboard-up .web-dock-pair {
 
 /* A header taking a dragged row. */
 .deck-fold-head.deck-drop-over {
-    color: var(--accent-primary);
+    color: var(--ink-accent-primary, var(--accent-primary));
     outline: 1px dashed var(--accent-primary);
     outline-offset: -2px;
 }
@@ -2414,7 +2417,7 @@ html.keyboard-up .web-dock-pair {
     margin: 0;
     padding: 1rem;
     text-align: center;
-    color: var(--text-muted);
+    color: var(--ink-text-muted, var(--text-muted));
 }
 
 /* A folding panel: the header's arrow points down while open and sideways
@@ -2433,7 +2436,7 @@ html.keyboard-up .web-dock-pair {
     gap: 0.4rem;
     padding: 0.6rem 1rem;
     border-bottom: 1px solid var(--border-secondary);
-    color: var(--accent-tertiary);
+    color: var(--ink-accent-tertiary, var(--accent-tertiary));
     font-size: 0.85rem;
     font-weight: 600;
     cursor: pointer;
@@ -2590,7 +2593,7 @@ footer.site-footer {
     border-top: 1px solid var(--accent-primary);
     box-shadow: var(--shadow-md);
     text-align: center;
-    color: var(--text-muted);
+    color: var(--ink-text-muted, var(--text-muted));
     font-size: 0.78rem;
 }
 

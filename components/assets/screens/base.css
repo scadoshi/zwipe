@@ -394,7 +394,7 @@ body .toast-container [role="alertdialog"] {
     font-weight: 400;
     letter-spacing: 0.1em;
     margin: 0;
-    color: var(--accent-primary);
+    color: var(--ink-accent-primary, var(--accent-primary));
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -558,15 +558,15 @@ body .toast-container [role="alertdialog"] {
 }
 
 .text-gray {
-    color: var(--text-muted);
+    color: var(--ink-text-muted, var(--text-muted));
 }
 
 .text-error {
-    color: var(--color-error);
+    color: var(--ink-color-error, var(--color-error));
 }
 
 .text-success {
-    color: var(--color-success);
+    color: var(--ink-color-success, var(--color-success));
 }
 
 .opacity-50 {
@@ -636,7 +636,7 @@ body .toast-container [role="alertdialog"] {
 }
 
 .hl-key {
-    color: var(--accent-tertiary);
+    color: var(--ink-accent-tertiary, var(--accent-tertiary));
     font-weight: 500;
 }
 
