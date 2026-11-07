@@ -1,0 +1,37 @@
+/* The kit's app-sheet rules the card filter's boxes and columns draw with.
+   The apps load them in orangui's APP_CSS, which zite does not; zite takes
+   them here for the filter's sheet alone, before FILTER_CSS, so the
+   filter's compact and narrow boxes still adjust them as in the apps. */
+
+:where(.card-filter-sheet) .flex-col {
+    display: flex;
+    flex-direction: column;
+}
+
+:where(.card-filter-sheet) .input {
+    width: 100%;
+    text-align: left;
+    padding: 0.75rem 1rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 0.4rem;
+    color: var(--text-primary);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 1rem;
+    font-weight: 400;
+    transition: all 0.2s ease;
+    margin-bottom: 1rem;
+    box-shadow: var(--shadow-sm);
+}
+
+:where(.card-filter-sheet) .input:focus {
+    outline: none;
+    background-color: var(--border-muted);
+    color: var(--text-primary);
+    border-color: var(--accent-primary);
+}
+
+:where(.card-filter-sheet) .input::placeholder {
+    color: var(--text-muted);
+    font-weight: 400;
+}

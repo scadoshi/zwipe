@@ -4,18 +4,6 @@
   label row with clear button
 =========================== */
 
-.label-row {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 0.25rem;
-    width: 100%;
-    /* Breathing room so chips that wrap below a long label (e.g. "Signature
-       spell") don't sit flush against the input beneath them. */
-    margin-bottom: 0.4rem;
-}
-
 /* Chips on the label's own line, a step after its "?", wrapping under it
    as one group when the line is short. */
 .label-row-chips {
@@ -28,37 +16,9 @@
     margin-bottom: 0;
 }
 
-/* Filter sheet labels: each group already sits a flex gap plus its chips'
-   bottom margin below the last, so a small lead keeps the groups snug. */
-.label-row.mt-2 {
-    margin-top: 0.25rem;
-    margin-bottom: 0.25rem;
-}
-
 .label-row .info-button {
     margin-left: 0;
     margin-right: 0.35rem;
-}
-
-/* The kit's × beside a field in the app's clear red, as its label-row clears are. */
-.input-clear-btn {
-    color: var(--color-error);
-    border-color: var(--color-error);
-}
-
-.clear-btn {
-    all: unset;
-    cursor: pointer;
-    font-size: 0.85rem;
-    line-height: 1;
-    color: var(--color-error);
-    padding: 0.2rem 0.45rem;
-    margin-left: 0.25rem;
-    border: 1px solid var(--color-error);
-    border-radius: 0.4rem;
-    /* Opaque fill so the page grid doesn't show through the button. */
-    background-color: var(--bg-primary);
-    transition: all 0.2s ease;
 }
 
 /* Home's panels center while they fit and scroll from the top once they
@@ -112,40 +72,6 @@
     animation: row-enter 0.25s ease-out both;
 }
 
-/* ── Floating type-to-search results ─────────────────────────────────────
-   Shared by every type-to-search picker (deck-cards quick add, the filter
-   sheet's artist/set/type/keyword/oracle-word/otag fields, the deck form's
-   command-zone pickers). Result chips float in a layer above the input, out
-   of document flow, so the screen never reflows under the user while they
-   type. The anchor is a zero-height in-flow marker placed where the old
-   in-flow row sat (directly above the input); the results hang upward from
-   it. Not a back-aware overlay (see the overlay z-index registry) — just a
-   popover: above base content (swipe stack is 100), below the modal band
-   (200). Chips are opaque pills, so they read fine over whatever's behind.
-   The deck-cards quick add additionally measures overflow past the
-   scrollport top and grows its anchor's inline height by the deficit (see
-   QUICK_ADD_FIT_JS), so its results overlay in most cases and take real
-   space only when they'd run under the screen header — hence the height
-   transition below. */
-.search-float-anchor {
-    position: relative;
-    height: 0;
-    transition: height 0.2s ease;
-}
-
-.search-float-results {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    margin-bottom: 0.5rem;
-    z-index: 150;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.25rem;
-    justify-content: center;
-}
-
 /* Downward variant: the commander maybeboard's search bar sits at the very
    top of the page, so its results hang below the anchor instead, floating
    over the Show row and the list. */
@@ -154,35 +80,6 @@
     top: 0;
     margin-bottom: 0;
     margin-top: 0.5rem;
-}
-
-/* Entrance float-up (staggered per chip via inline animation-delay), then a
-   soft idle drift so the layer reads as hovering rather than parked. */
-.search-float-chip {
-    animation:
-        search-float-in 0.25s ease-out both,
-        search-float-drift 3.2s ease-in-out 0.25s infinite;
-}
-
-@keyframes search-float-in {
-    from {
-        opacity: 0;
-        transform: translateY(8px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-@keyframes search-float-drift {
-    0%,
-    100% {
-        transform: translateY(0);
-    }
-    50% {
-        transform: translateY(-2px);
-    }
 }
 
 /* Card name and price tags, then the Image and Buy buttons, centered on
@@ -247,29 +144,8 @@
   stepper for integer inputs
 =========================== */
 
-.stepper {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.3rem;
-}
-
 /* .stepper-btn is in orangui's components.css; the DrawOdds component that
    uses it is in the components crate. */
-
-.stepper-value {
-    width: 2rem;
-    text-align: center;
-    font-size: 0.85rem;
-}
-
-/* Narrow input for CMC */
-.input-narrow {
-    width: 5rem;
-    text-align: center;
-    display: block;
-    margin: 0 auto;
-}
 
 /* =========================
   browse screen

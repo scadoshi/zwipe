@@ -9,7 +9,7 @@ use dioxus_primitives::accordion::{
 #[component]
 pub fn Accordion(props: AccordionProps) -> Element {
     rsx! {
-        // components::ACCORDION_CSS loads once at the app root, in zwiper/src/bin/zwiper.rs.
+        // components::FILTER_CSS loads once at the app root, in zwiper/src/bin/zwiper.rs.
         accordion::Accordion {
             class: "accordion",
             width: "100%",
