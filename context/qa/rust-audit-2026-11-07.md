@@ -1,6 +1,6 @@
 # Rust audit, 2026-11-07
 
-A scadoshi-rust review of every Rust line changed in the 24 hours from 2026-11-06 12:00 (Pacific): zwipe `origin/release` from `74cd82f8d` (PRs #159 to #290, 252 files, about 11,900 lines added), orangui `main` from `7a9a9ee` (#6 to #15, about 1,000 lines) and Cairn `main` from `29d5982` (the day rollover, lifecycle and Android work, about 230 lines). CSS-only and markdown-only changes are skipped, and so are the open PRs (#289, #291). Cairn's backup and import haven't landed yet, so they get a follow-up pass.
+A scadoshi-rust review of every Rust line changed in the 24 hours from 2026-11-06 12:00 (Pacific): zwipe `origin/release` from `74cd82f8d` (PRs #159 to #290, 252 files, about 11,900 lines added), orangui `main` from `7a9a9ee` (#6 to #15, about 1,000 lines) and Cairn `main` from `29d5982` (the day rollover, lifecycle and Android work, about 230 lines). CSS-only and markdown-only changes are skipped, and so are the open PRs (#289, #291). Cairn's backup and import (`179e25f`, `aaca8b1`) and its page-kill recovery (`18e31c7`) landed later and were added in a second pass, as #65 to #67.
 
 Library or application: zwipe-core, zwipe-ui, zwipe-client, components and orangui are libraries and get the API rules strictly. zerver, zwiper, zwiper-web, zite and Cairn are applications.
 
@@ -15,8 +15,8 @@ Paths are in the zwipe repo unless they start with `orangui:` or `cairn:`. Sever
 | panic / unsafe / behavior | 11 |
 | docs | 8 |
 | naming | 12 |
-| style | 33 |
-| total | 64 |
+| style | 36 |
+| total | 67 |
 
 Not counted: every new zwiper-web, zwiper and components file opens with `use dioxus::prelude::*`, a glob import (§7). That's the convention across all three crates (85 files at the base in zwiper-web alone), so it's a crate-wide decision rather than a finding against these changes.
 
@@ -103,6 +103,9 @@ Not counted: every new zwiper-web, zwiper and components file opens with `use di
 | 62 | `zwipe-ui/src/screens/home/mod.rs:588`, `:677` | §5 API shape | `retry(&mut self, action: &Action)` rematches the whole enum, with an unreachable `_ => None`. | A private `Panel` enum. |
 | 63 | `zwiper/src/lib/inbound/components/navigation/leave_guard.rs:271` | review: don't throw away the cause | A held route that fails to parse silently goes Home and logs nothing. | Log the path and the error. |
 | 64 | `zwiper/src/lib/inbound/screens/deck/card/filter/card_filter_sheet.rs:261-573` | §9 repetition | The same 9-line section clear button is written out 15 times. | A `SectionClear` component. |
+| 65 | `cairn:src/lib/outbound/sqlite/mod.rs` (restore), `cairn:src/lib/outbound/paths.rs` (`backup_file`) | §9 named constants | The restore and the backup's file name write `"%Y-%m-%d"` and `"%Y-%m-%dT%H:%M:%S"` as literals beside `backup.rs`'s private `DAY_FORMAT` and `AT_FORMAT`. | Make the two consts public and use them. The store's older copies predate the window and are left for a pass of their own. |
+| 66 | `cairn:src/lib/outbound/sqlite/mod.rs` (restore) | §7 types imported | `std::collections::BTreeSet` is written in full. | Import it. |
+| 67 | `cairn:src/lib/domain/counter/backup.rs` (`validate`, `BackupError::Shape`); `cairn:src/lib/inbound/ui/screens/config.rs` (`write_backup`, `read_backup`) | §6 errors | Errors are carried as `String`, and `Shape` drops serde's error as its source. In an application that's a trade-off: `BackupError` derives `Clone` and `Eq` for its tests, which `serde_json::Error` can't. | Considered, not changed. |
 
 ## What's already good
 
@@ -111,6 +114,20 @@ Not counted: every new zwiper-web, zwiper and components file opens with `use di
 - `RefreshReuse` redacts credentials in `Debug`, bounds its chain walk, and has tests for the window edges, chains and poison.
 - The new `Http*` and settings types derive the std traits, and `SwipeConfirmations` has `FromStr`, `Display` and `as_str` round-tripped in tests.
 - The screen models (`deck_form`, `pending_settings`, `remove_cards`) keep the logic testable outside the UI, and most of the new behavior lands with tests.
+
+## Where the fixes landed
+
+| PR | Scope | Findings |
+|---|---|---|
+| zwipe #294 | zwipe-core, zwipe-client, zerver | #5, #11, #13, #20, #31 to #35 |
+| zwipe #297 | zwipe-ui, zwiper | #1, #7, #8, #17, #18, #21, #22, #58 to #64 |
+| zwipe #299 | zwiper-web | #19, #23 to #26, #29, #40 to #48 |
+| zwipe #300 | components, zite | #6, #14 to #16, #27, #28, #30, #49 to #57 |
+| orangui #17 | lifecycle, os_back | #2, #9, #37, #38 |
+| zwipe #302 | repin orangui after #17 | `flush_loop.rs` reads `use_app_lifecycle`'s `Option` |
+| Cairn `main` `7ef3481`, `dd05a70` | Cairn | #4, #10, #39, #65, #66 |
+
+Not fixed here: #3, #12 and #36 (`page_kill.rs`) went to orangui #16, which rewrote the file. #67 is a trade-off, left as it is.
 
 ## Fix plan (step 2, after the composer's go)
 
