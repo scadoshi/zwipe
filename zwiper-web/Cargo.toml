@@ -35,6 +35,8 @@ dioxus-primitives = { git = "https://github.com/DioxusLabs/components", rev = "0
 chrono = { workspace = true }
 # For `Url`, which the client takes its base address as.
 reqwest = { version = "0.12.23", default-features = false }
+# The theme store's record (theme shown, server copy seen).
+serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
