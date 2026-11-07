@@ -118,7 +118,7 @@ pub fn SwipeScreenChips(
     let paint = format!("--chip-tone: var({var}); --chip-ink: var(--ink-{name}, var({var}));");
     rsx! {
         div { class: "web-screen-chips",
-            span { class: "chip-note web-screen-chip", style: "{paint}", "{title}" }
+            span { class: "detail-chip web-screen-chip", style: "{paint}", "{title}" }
             if let Some((count, text)) = said {
                 span { key: "{count}", class: "chip-note web-swipe-confirm", "{text}" }
             }
