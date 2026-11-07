@@ -209,12 +209,12 @@ From Droid's Android pass 1 (`target/droid/report.md`, items D1 to D38), the con
 146. **The app's spacing sweep.** One side gutter on every screen (D12); collapsible sections start and space like the rest (D15); the deck form's field gaps even (D18); and the few-pixel nits D9, D11, D13, D14, D22, D24, D27, D34.
 147. **The app's copy and contrast.** Draw odds' − disabled at turn 0 (D16); Remove's help points at where the board chips are (D25); the first warning row and its buttons get room (D26); row buttons don't wrap (D30); labels reach 4.5:1 (D31); hint text uses the dialog's width (D35); a tapped format chip stays put while its details open (D10).
 Extended to the app: D2 into 132 (toasts), D5 to D8 into 123 (skeletons), D17 into 136, D19 into 135, D33 into 140 (tap targets).
-Open with Scotty: D28.
+Open with Scotty: none.
 148. **The import screen's panels touch.** The mode description panel sits flush on the Paste decklist panel; the usual panel gap between them, and the chip rows above spaced like the rest.
 149. **Toasts and floating buttons land on the footer.** On Export the "Copied to clipboard" toast and the copy button sit over the footer; toasts, like docks (134), stop above the footer at their lowest.
 150. **On Scotty's iPhone in light mode, Home's theme sheet is see-through.** Home's hero, stats and deck tiles show through it, faded; the same sheet on other screens, and Home in the simulator, are opaque. Investigate first: whether the sheet renders inside Home's animated content (an opacity animation that holds or stalls on a device), a compositing layer above it, or a translucent light background; then fix.
 
-Scotty on Droid's open items: D3 toasts "Nothing left to remove" (no way back needed; into 145); D29 leave the Art toggle; D32 a follow-up in todo; D36 fine as an outline; D37 hero chips in the logged-in order everywhere (into 147); D38 list rows wrap their chips as the rendered layout intends, consistently (into 146). D28 waits on Scotty.
+Scotty on Droid's open items: D3 toasts "Nothing left to remove" (no way back needed; into 145); D29 leave the Art toggle; D32 a follow-up in todo; D36 fine as an outline; D37 hero chips in the logged-in order everywhere (into 147); D38 list rows wrap their chips as the rendered layout intends, consistently (into 146). D28: card-row panels (Suggested commanders, Staples, Most skipped) keep their pink title color, but take the other panel titles' size, weight, letter spacing and inset (into 147).
 
 Skipped with Scotty: S44 (the About diagram scrolls under its arrows; fine as is).
 
