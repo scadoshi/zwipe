@@ -13,6 +13,7 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::http::contracts::auth::{HttpChangePassword, HttpRequestPasswordReset};
 use zwipe_ui::account;
 use zwipe_ui::screens::account::{FORGOT_PASSWORD, RESET_LINK_SENT};
+use zwipe_ui::text::sentence_case;
 
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::hint_topic::{self, HintTopic};
@@ -173,7 +174,7 @@ pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
                         label: "New password",
                         placeholder: "New password",
                         input_type: "password",
-                        error: password_error,
+                        error: password_error.as_deref().map(sentence_case),
                         on_info: hint_topic::open_topic(HintTopic::Password),
                     }
                     TextInput {

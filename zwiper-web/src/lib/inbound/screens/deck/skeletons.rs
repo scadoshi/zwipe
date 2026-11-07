@@ -107,9 +107,9 @@ fn GhostChips(chips: Vec<u8>) -> Element {
 }
 
 /// Edit deck while the deck loads, in the form's own panels: Profile (the
-/// name, format and commander boxes and the power levels), then Budget
-/// (the land stepper and the price) and Tags (the two tag boxes and the
-/// other tags), on a wide window in its two columns.
+/// name, format and commander boxes and the power levels) and Budget (the
+/// land stepper and the price), then Tags (the two tag boxes and the other
+/// tags), on a wide window in its two columns.
 #[component]
 pub fn EditDeckSkeleton() -> Element {
     rsx! {
@@ -153,8 +153,6 @@ pub fn EditDeckSkeleton() -> Element {
                         GhostChips { chips: vec![14, 8, 12, 13, 8] }
                     }
                 }
-            }
-            div { class: "flex-col text-center web-deck-form-column",
                 GhostFormPanel { chars: 6,
                     div { style: "margin-top: 1rem;",
                         GhostLabelRow { chars: 11 }
@@ -180,6 +178,8 @@ pub fn EditDeckSkeleton() -> Element {
                         GhostBox { chars: 7, input: true }
                     }
                 }
+            }
+            div { class: "flex-col text-center web-deck-form-column",
                 GhostFormPanel { chars: 4,
                     for (i, chars) in [9, 11].into_iter().enumerate() {
                         div { key: "{i}", style: "margin-top: 1rem;",

@@ -3,6 +3,7 @@
 use components::{ActionDock, BottomSheet, DockAction, DockPlace, TextInput, icons};
 use dioxus::prelude::*;
 use zwipe_ui::screens::account::{Action, Field, Sheet};
+use zwipe_ui::text::sentence_case;
 
 use super::driver::{Driver, use_field_sync};
 
@@ -34,7 +35,7 @@ pub fn ChangeUsernameSheet(open: Signal<bool>) -> Element {
                     id: "new_username",
                     label: Field::NewUsername.label(),
                     placeholder: Field::NewUsername.placeholder(),
-                    error: username_error,
+                    error: username_error.as_deref().map(sentence_case),
                 }
 
                 TextInput {
@@ -43,7 +44,7 @@ pub fn ChangeUsernameSheet(open: Signal<bool>) -> Element {
                     label: Field::Password.label(),
                     placeholder: Field::Password.placeholder(),
                     input_type: "password",
-                    error: password_error,
+                    error: password_error.as_deref().map(sentence_case),
                 }
             }
             // Save floats at the sheet's bottom right.
