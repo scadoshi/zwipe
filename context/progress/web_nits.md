@@ -23,6 +23,7 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
+| 90, no white flash before the wasm loads | scotland | `nits/scotland-90` |
 | 88, hint copy and context fixes from the app hint audit | halo | `nits/halo-88` |
 | 89, app hint plumbing: pickers through the shared copy, no duplicate explainers, the web deck view's Oracle tags chart | thinker | `nits/thinker-89` |
 
@@ -127,6 +128,7 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 87. **Swipe select doesn't match Add.** The card sits off center and the details are a big middle element. Center the card, dock the details as 81's side panel, and match Add's docks and pile chip.
 88. **Hint copy that doesn't fit its screen** (app hint audit, 2026-11-06). The deck view reuses the form's Deck tags and Oracle tags hints ("Fine to leave as is"); the Commander hint says Commander on an Oathbreaker deck; Partner, Background and Signature spell skip their Filter and Swipe chips; swipe select's guide link ignores its mode; "Tags shape suggestions" contradicts Other tags; TagRates skips Show; Add's hint names a Sort that isn't on the screen; a few UI words should be key chips, a few terms disagree, four lines are clunky.
 89. **The app's hint plumbing drifts from the web's.** Its pickers flatten the shared hint copy (losing key chips), a hand-kept explainer file duplicates two topics, and the Exceptions `?` is hand-rolled; the web's deck view is missing the Oracle tags chart the app has.
+90. **The web app flashes white while the wasm loads.** No splash or animation; a first-paint script and inline CSS in index.html paint the saved theme's background (and the grid's static look if cheap) on the first frame.
 
 ## Done
 
