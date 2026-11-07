@@ -7,24 +7,16 @@
 //! the app root, hands the topic's dialog to orangui's dialog host. A single
 //! `Option` means only one hint shows at a time. The copy is zwipe-ui's
 //! [`HintTopic::blocks`](zwipe_ui::hint::HintTopic::blocks), drawn by
-//! [`HintBody`](components::hint::HintBody); the two concept topics render
-//! their explainers instead.
+//! [`HintBody`](components::hint::HintBody) for every topic.
 
 use components::hint::HintBody;
 use components::{AlertDialog, DialogAction};
 use dioxus::prelude::*;
 pub use zwipe_ui::hint::HintTopic;
 
-use crate::inbound::components::concept_explainers::{DeckTagsExplainer, OracleTagsExplainer};
-
-/// The dialog body for `topic`: the concept explainers for Deck tags and
-/// Oracle tags, the model's copy for every other topic.
+/// The dialog body for `topic`: the model's copy.
 fn body(topic: HintTopic) -> Element {
-    match topic {
-        HintTopic::DeckTags => rsx! { DeckTagsExplainer {} },
-        HintTopic::OracleTags => rsx! { OracleTagsExplainer {} },
-        topic => rsx! { HintBody { blocks: topic.blocks() } },
-    }
+    rsx! { HintBody { blocks: topic.blocks() } }
 }
 
 /// The receiver: reads the hint channel and describes the current topic's dialog

@@ -328,15 +328,7 @@ pub fn Config() -> Element {
                                 class: if exceptions_muted { "settings-row ub-exceptions-row ub-chips-disabled" } else { "settings-row ub-exceptions-row" },
                                 span { style: "display:flex;align-items:center;",
                                     span { class: "settings-row-label", {model::EXCEPTIONS} }
-                                    button {
-                                        class: "info-button",
-                                        r#type: "button",
-                                        onclick: move |evt| {
-                                            evt.stop_propagation();
-                                            ub_hint_open.set(true);
-                                        },
-                                        "?"
-                                    }
+                                    components::InfoButton { onclick: move |_| ub_hint_open.set(true) }
                                 }
                                 div { class: "settings-row-value",
                                     Button {

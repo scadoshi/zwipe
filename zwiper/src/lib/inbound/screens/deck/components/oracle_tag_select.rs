@@ -7,9 +7,8 @@
 //! reveals its definition in the pinned bar. Picking a Deck Tag pre-seeds some of
 //! these (handled by the host screen); here the user tunes the set.
 
-use components::{
-    Button, ButtonVariant, DialogAction, DockAction, HintDialog, icons, use_overlay_back_action,
-};
+use components::hint::ContentHintDialog;
+use components::{Button, ButtonVariant, DialogAction, DockAction, icons, use_overlay_back_action};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::oracle_tag::OracleTag;
@@ -17,7 +16,6 @@ use zwipe_core::domain::deck::MAX_DECK_ORACLE_TAGS;
 use zwipe_ui::deck::pickers::{self, Picker};
 
 use crate::inbound::components::catalog_cache::CatalogCache;
-use crate::inbound::components::concept_explainers::OracleTagsExplainer;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::screens::oracle_tag_dictionary::OracleTagDictionary;
 
@@ -171,9 +169,9 @@ pub(crate) fn OracleTagSelect(
                     }
                 }
 
-                HintDialog {
+                ContentHintDialog {
                     open: hint_open,
-                    title: Picker::OracleTags.title(),
+                    content: Picker::OracleTags.hint(),
                     actions: [DialogAction::Confirm {
                         label: "Dictionary".into(),
                         danger: false,
@@ -182,7 +180,6 @@ pub(crate) fn OracleTagSelect(
                     .into_iter()
                     .chain(components::hint::guide_for_screen(zwipe_ui::hint::HintTopic::OracleTags))
                     .collect(),
-                    OracleTagsExplainer {}
                 }
 
                 if dict_open() {
