@@ -589,6 +589,7 @@
 /* The bare stat-chip's tone, at zero specificity so any tone class wins. */
 :where(.skeleton-tinted) {
     --tone: var(--accent-primary);
+    --tone-ink: var(--ink-accent-primary, var(--accent-primary));
 }
 
 .skeleton-chip.skeleton-tinted {
