@@ -868,10 +868,13 @@ impl MetricsRepository for Postgres {
     async fn public_metrics(&self) -> Result<PublicMetrics, MetricsError> {
         let row = sqlx::query!(
             r#"SELECT
-                   COALESCE(SUM(swipes_right + swipes_left + swipes_up + swipes_down), 0)::BIGINT AS "cards_swiped!",
-                   COALESCE(SUM(searches), 0)::BIGINT AS "searches!",
-                   COALESCE(SUM(decks_created), 0)::BIGINT AS "decks_created!"
-               FROM user_lifetime_counters"#
+                   (COALESCE(SUM(u.swipes_right + u.swipes_left + u.swipes_up + u.swipes_down), 0)
+                       + r.swipes_right + r.swipes_left + r.swipes_up + r.swipes_down)::BIGINT AS "cards_swiped!",
+                   (COALESCE(SUM(u.searches), 0) + r.searches)::BIGINT AS "searches!",
+                   (COALESCE(SUM(u.decks_created), 0) + r.decks_created)::BIGINT AS "decks_created!"
+               FROM retired_lifetime_counters r
+               LEFT JOIN user_lifetime_counters u ON TRUE
+               GROUP BY r.id"#
         )
         .fetch_one(&self.pool)
         .await

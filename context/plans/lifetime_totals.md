@@ -1,6 +1,6 @@
 # Lifetime totals that never drop
 
-**Status: parked, 2026-11-07, waiting on Scotty. Not built.** It changes what the public numbers mean, so it needs his call first. Nit 158 shipped the other half: the "Live" tag now tells the truth about an edge-cached copy.
+**Status: option 1 approved by Scotty and built, 2026-11-07** (migration `20261107140000_retired_lifetime_counters.sql`, the `public_metrics` query, and the `public_totals_keep_a_deleted_accounts_activity` test in `zerver/tests/metrics_flows.rs`). Nit 158 shipped the other half: the "Live" tag tells the truth about an edge-cached copy.
 
 ## What happened
 

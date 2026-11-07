@@ -1,0 +1,35 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n                   (COALESCE(SUM(u.swipes_right + u.swipes_left + u.swipes_up + u.swipes_down), 0)\n                       + r.swipes_right + r.swipes_left + r.swipes_up + r.swipes_down)::BIGINT AS \"cards_swiped!\",\n                   (COALESCE(SUM(u.searches), 0) + r.searches)::BIGINT AS \"searches!\",\n                   (COALESCE(SUM(u.decks_created), 0) + r.decks_created)::BIGINT AS \"decks_created!\"\n               FROM retired_lifetime_counters r\n               LEFT JOIN user_lifetime_counters u ON TRUE\n               GROUP BY r.id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "cards_swiped!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "searches!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "decks_created!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "3e0961f88ff6620cfb2a057adfd9ed06face6eafc1942b6e442f9717e7ab8b00"
+}
