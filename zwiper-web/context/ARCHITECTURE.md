@@ -19,7 +19,7 @@ src/
         ├── chrome/         the authed-call facade, the ? hints, one-time hints, collapsible sections, page keys and Ctrl+Z, the window width, sheet forms, the back arrow
         ├── root_signal.rs  signals owned by the root scope, for state root tasks write
         ├── router.rs       Route, one variant per screen at the app's path
-        ├── session/        ensure_fresh, the upkeep loop, the auth gate, logout, the funnel events
+        ├── session/        ensure_fresh, the upkeep loop, the auth and signed-out gates, logout, the funnel events
         ├── shell/          the top nav Shell (the app's header and menu below the breakpoint, with menu_footer and menu_theme), PublicFrame, ScreenFrame, nav
         └── screens/        one module per screen (the deck screens share `deck/`, the card screens are `deck/cards/`), plus not_found.rs
 ```
@@ -35,7 +35,7 @@ State a root task writes (a `spawn_forever` that outlives the screen that starte
 - `Signal<ThemeConfig>` (the session's settings, else the stored theme, else the default) and `Signal<PipStyle>`. Every theme change is stored, so Login opens in the last one.
 - `UpgradeRequired`, the min-version gate. While it is true the root draws `UpdateRequired` in place of the router.
 
-The upkeep loop runs `ensure_fresh` and then the min-version check, at once and every 60 s after. `ensure_fresh` is the only way to an authed call: it refreshes a token that expires within two minutes, one refresh at a time, stores the new session before setting the signal, and clears the session when the server rejects the refresh. `AuthGate` sends the user to Login the moment the session is gone, with no message, as the app does.
+The upkeep loop runs `ensure_fresh` and then the min-version check, at once and every 60 s after. `ensure_fresh` is the only way to an authed call: it refreshes a token that expires within two minutes, one refresh at a time, stores the new session before setting the signal, and clears the session when the server rejects the refresh. `AuthGate` sends the user to Login the moment the session is gone, with no message, as the app does. `SignedOutGate`, over Login, Register and Forgot password, waits on that same refresh when a session is stored and sends a live one to Home in place of the route, drawing nothing but the themed background until it knows; without a stored session it shows the form at once.
 
 `use_root_caches` provides what screens share without fetching again: everybody's counters for the public heroes (one copy, refetched by a hero that mounts when it is a minute old, stored for the next visit), the changelog (fetched once per visit, `Loading`, `Loaded` or `Failed`) and the Universes Beyond franchises. `LoginPrefill` carries the username from Register back to Login.
 
