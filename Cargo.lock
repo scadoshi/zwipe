@@ -4884,7 +4884,7 @@ checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
 [[package]]
 name = "orangui"
 version = "0.0.0"
-source = "git+https://github.com/scadoshi/orangui?branch=fix%2Fdialog-links-same-tab#5adf5f514e48cc687d3acb8ab92a6fcb5132d28c"
+source = "git+https://github.com/scadoshi/orangui?branch=main#71350baf44266d2e47da151da04fd629e689113d"
 dependencies = [
  "dioxus",
  "dioxus-primitives",
@@ -4904,7 +4904,7 @@ dependencies = [
 [[package]]
 name = "orangui-core"
 version = "0.0.0"
-source = "git+https://github.com/scadoshi/orangui?branch=fix%2Fdialog-links-same-tab#5adf5f514e48cc687d3acb8ab92a6fcb5132d28c"
+source = "git+https://github.com/scadoshi/orangui?branch=main#71350baf44266d2e47da151da04fd629e689113d"
 dependencies = [
  "serde",
 ]
