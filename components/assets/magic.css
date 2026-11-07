@@ -2403,6 +2403,38 @@ i.ms.ms-cost.ms-gp {
     border: 0;
 }
 
+/* ---- Floating controls stop above the footer ----
+   The site footer carries a view timeline the whole page can see. A
+   floating control that runs `footer-rise` on it moves up pixel for pixel
+   as the footer scrolls in, so it keeps its gap above the footer instead of
+   covering it. Each site names its floating controls and gives them:
+
+     animation: footer-rise linear both;
+     animation-timeline: --site-footer;
+     animation-range: entry 0px entry 100vh;
+
+   inside `@supports (animation-timeline: view())`. Without scroll-driven
+   animations the controls stay at the window's foot. */
+@supports (animation-timeline: view()) {
+    :root {
+        timeline-scope: --site-footer;
+    }
+
+    footer.site-footer {
+        view-timeline: --site-footer block;
+    }
+}
+
+@keyframes footer-rise {
+    from {
+        translate: 0 0;
+    }
+
+    to {
+        translate: 0 -100vh;
+    }
+}
+
 /* ---- Site footer (SiteFooter) ----
    zwipe.net's footer, which the web app draws too: the copyright and the
    host's links as pills in one centered row, then the notes as one

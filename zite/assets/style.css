@@ -1851,6 +1851,17 @@ body[class$="-dark"] .chip-value {
     }
 }
 
+/* The shared deck's funnel stops above the footer as it scrolls in, by
+   magic.css's footer rise. A dock inside a sheet stays where the sheet puts
+   it. */
+@supports (animation-timeline: view()) {
+    .action-dock:not(.bottom-sheet *) {
+        animation: footer-rise linear both;
+        animation-timeline: --site-footer;
+        animation-range: entry 0px entry 100vh;
+    }
+}
+
 /* The deck page's chips and the stat panels' tag rows tint over the page
    background, so the page grid never shows through them. */
 .info-row-tags {
