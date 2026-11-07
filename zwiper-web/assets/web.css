@@ -848,17 +848,23 @@ body {
 
 /* ---- About ---- */
 
-/* About on a wide window: the Version and Privacy policy rows, then the
-   Changelog panel and the release panels, each at the page's width. The
-   footer carries the credits there, so the Credits panel shows only below
-   the breakpoint. */
+/* About on a wide window: the Version row alone, then the Changelog panel
+   and the release panels, each at the page's width. The footer carries
+   the credits and the Privacy policy link there, so the Credits panel and
+   the Privacy policy row show only below the breakpoint. */
 @media (min-width: 900px) {
     .web-about > .web-columns {
         grid-template-columns: minmax(0, 1fr);
     }
 
-    .web-about .about-credits-column {
+    .web-about .about-credits-column,
+    .web-about .web-about-privacy {
         display: none;
+    }
+
+    /* With Privacy policy gone, Version is the panel's last row. */
+    .web-about .settings-row:has(+ .web-about-privacy) {
+        border-bottom: none;
     }
 
     .changelog-screen.web-about {
