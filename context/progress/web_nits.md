@@ -23,6 +23,7 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
+| 98, wrapping chip rows get a row gap, the staple share its own row (queued after 96) | thinker | `nits/thinker-98` |
 | 97, the swipe screens' footer loses its extra legroom (queued after 90) | scotland | `nits/scotland-97` |
 | 96, the details panel's footer pinned, header hides on scroll | thinker | `nits/thinker-96` |
 | 93 to 95, the docked panel's jump, the card pinned to center, panel default by space, no lift on the docked panel (queued after 88) | halo | `nits/halo-93` |
@@ -141,6 +142,7 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 95. **The docked panel's hover lifts its content but not its frame.** Docked panels and drawers don't lift; any hover lights the one frame.
 96. **The docked details panel scrolls its footer away.** When it scrolls, the footer (Printings) stays pinned at the bottom and the header slides away on scroll down, back on scroll up, like the app's header.
 97. **The swipe screens' footer has a big empty band.** 80 padded it so the fixed docks clear its text. Drop the padding; the docks and pile chips stop above the footer when it scrolls into view.
+98. **Wrapped chip rows touch.** A chip row that wraps has no row gap (Staples' Card roles), and the staple share chip ("5 of 14 decks") wraps into the roles. Row gap equals column gap everywhere; host footer chips get their own row.
 
 ## Done
 
