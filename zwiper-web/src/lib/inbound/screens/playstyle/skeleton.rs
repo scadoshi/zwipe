@@ -4,7 +4,9 @@
 
 use dioxus::prelude::*;
 
-use crate::inbound::chrome::ghost::{GhostChipBars, GhostFold, GhostHint, GhostSection, GhostText};
+use crate::inbound::chrome::ghost::{
+    GhostChipBars, GhostFold, GhostHint, GhostSection, GhostShowRow, GhostText,
+};
 use crate::inbound::screens::deck::skeletons::ChipRowSkeleton;
 
 /// Ghost rows in the Card roles chart.
@@ -119,7 +121,7 @@ fn ListGhost(title: u8, swipe: bool, filters: Option<Element>) -> Element {
 #[component]
 pub fn PlaystyleSkeleton(wide: bool) -> Element {
     let show = rsx! {
-        ChipRowSkeleton { label: "sm", chips: vec!["sm", "sm", "md"] }
+        GhostShowRow {}
     };
     let staples = rsx! {
         ChipRowSkeleton { label: "sm", chips: vec!["sm", "lg", "xl", "md", "md"] }

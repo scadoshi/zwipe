@@ -187,3 +187,29 @@ pub fn GhostList(
         }
     }
 }
+
+/// A chip holding a mana pip, in the kit's `Chip` box. It does nothing.
+#[component]
+pub fn GhostPipChip() -> Element {
+    rsx! {
+        div { class: "chip web-ghost-chip web-ghost-button",
+            span { class: "skeleton-bar web-ghost-pip" }
+        }
+    }
+}
+
+/// A `Show` row over color identities: its tinted label, `All`, five pip
+/// chips, then `Art`.
+#[component]
+pub fn GhostShowRow() -> Element {
+    rsx! {
+        div { class: "chip-row",
+            span { class: "stat-chip stat-chip-p1 chip-row-label web-ghost-chip", GhostText { chars: 4 } }
+            GhostChip { chars: 3, button: true }
+            for i in 0..5 {
+                GhostPipChip { key: "{i}" }
+            }
+            GhostChip { chars: 3, button: true }
+        }
+    }
+}

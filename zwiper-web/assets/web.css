@@ -1595,6 +1595,14 @@ body {
     min-height: 3.9rem;
 }
 
+.skeleton-bar.web-ghost-pip {
+    display: inline-block;
+    width: 1.43rem;
+    height: 1.43rem;
+    border-radius: 50%;
+    vertical-align: middle;
+}
+
 .skeleton-bar.web-ghost-icon {
     display: inline-block;
     width: 1rem;

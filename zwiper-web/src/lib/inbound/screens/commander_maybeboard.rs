@@ -36,6 +36,9 @@ use crate::inbound::cards::card_row::{CardOverlaysHost, CardRow, ShowRowArt, use
 use crate::inbound::cards::otag::{OtagExamplesHost, use_otag_reveals};
 use crate::inbound::cards::swipe_select::{SwipeMode, SwipeSelect};
 use crate::inbound::chrome::authed::use_authed;
+use crate::inbound::chrome::ghost::{
+    GhostActionRow, GhostButton, GhostList, GhostShowRow, GhostText,
+};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::chrome::page_keys::{focus_by_id, use_page_keys};
 use crate::inbound::router::Route;
@@ -392,25 +395,30 @@ pub fn CommanderMaybeboard() -> Element {
                 div { class: "flex-col web-maybeboard",
                     if is_loading() {
                         div { class: "chip-row",
-                            div { class: "skeleton-bar skeleton-chip skeleton-chip-lg stat-chip-p1 skeleton-tinted" }
-                            div { class: "skeleton-input-compact" }
-                        }
-                        div { class: "chip-row",
-                            div { class: "skeleton-bar skeleton-chip skeleton-chip-sm stat-chip-p1 skeleton-tinted" }
-                            for i in 0..7 {
-                                div { key: "{i}", class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
+                            span { class: "stat-chip stat-chip-p1 chip-row-label web-ghost-chip", GhostText { chars: 9 } }
+                            div { class: "input-clear-wrap",
+                                div {
+                                    class: "input input-compact input-placeholder",
+                                    style: "line-height: normal;",
+                                    GhostText { chars: 25 }
+                                }
                             }
                         }
+                        GhostShowRow {}
                         div { class: "maybeboard-list card-group row-enter",
-                            div { class: "card-group-header",
-                                div { class: "skeleton-bar skeleton-card-bar-header" }
+                            div { class: "card-group-header card-group-header-with-hint",
+                                GhostText { chars: 10 }
+                                GhostButton { chars: 5 }
                             }
-                            for i in 0..6 {
-                                div { key: "{i}", class: "skeleton-card-row",
+                            for i in 0..3 {
+                                div { key: "{i}", class: "skeleton-card-row web-ghost-card-row",
                                     div { class: "skeleton-bar skeleton-card-thumb" }
                                     div { class: "skeleton-bar skeleton-card-bar-row" }
                                 }
                             }
+                        }
+                        GhostList { chars: 11, class: "danger-zone",
+                            GhostActionRow { label: 16, button: 5 }
                         }
                     } else {
                         div { class: "chip-row",
