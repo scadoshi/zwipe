@@ -27,8 +27,8 @@
 //! file draws its state and performs its effects.
 
 use components::{
-    AlertDialog, Bar, BarChart, BarOrientation, Button, ButtonVariant, CardRoleChips, Chip,
-    ColorBars, DialogAction, OtagDef, RoleTags, Toasts, use_toast,
+    AlertDialog, Bar, BarChart, BarOrientation, Button, ButtonVariant, CardListFold, CardRoleChips,
+    Chip, ColorBars, DialogAction, OtagDef, RoleTags, Toasts, use_toast,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -383,11 +383,11 @@ fn StaplesPanel(
                 span { class: "chip-note", {message} }
             }
         } else {
-            div { class: "maybeboard-list card-group row-enter",
-                div { class: "card-group-header card-group-header-with-hint",
-                    span { {model::STAPLES_TITLE} }
+            CardListFold {
+                title: model::STAPLES_TITLE,
+                actions: rsx! {
                     InfoButton { topic: HintTopic::SuggestionStaples }
-                }
+                },
                 for staple in rows {
                     StapleRow {
                         key: "{staple.card.scryfall_data.id}",
@@ -978,22 +978,20 @@ pub fn SuggestedCommanders() -> Element {
                                     span { class: "chip-note", {line} }
                                 }
                             } else {
-                                div { class: "maybeboard-list card-group row-enter",
-                                    // Swipe sits in the list's header, so it
-                                    // says what gets swiped.
-                                    div { class: "card-group-header card-group-header-with-hint",
-                                        span { {model::LIST_TITLE} }
-                                        div { class: "card-group-header-actions",
-                                            if shows_swipe {
-                                                Button {
-                                                    variant: ButtonVariant::Action,
-                                                    onclick: move |_| swipe_open.set(true),
-                                                    {model::SWIPE}
-                                                }
+                                // Swipe sits in the list's header, so it says
+                                // what gets swiped.
+                                CardListFold {
+                                    title: model::LIST_TITLE,
+                                    actions: rsx! {
+                                        if shows_swipe {
+                                            Button {
+                                                variant: ButtonVariant::Action,
+                                                onclick: move |_| swipe_open.set(true),
+                                                {model::SWIPE}
                                             }
-                                            InfoButton { topic: HintTopic::SuggestionList }
                                         }
-                                    }
+                                        InfoButton { topic: HintTopic::SuggestionList }
+                                    },
                                     for suggestion in rows {
                                         SuggestionRow {
                                             key: "{suggestion.card.scryfall_data.id}",

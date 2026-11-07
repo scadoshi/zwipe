@@ -10,8 +10,9 @@
 use std::collections::HashSet;
 
 use components::{
-    ActionDock, AlertDialog, Button, ButtonVariant, Chip, ClearWrap, DangerZoneAction,
-    DialogAction, DockFilter, HoverStackHost, TOAST_LONG, TOAST_QUICK, use_hover_stack,
+    ActionDock, AlertDialog, Button, ButtonVariant, CardListFold, Chip, ClearWrap,
+    DangerZoneAction, DialogAction, DockFilter, HoverStackHost, TOAST_LONG, TOAST_QUICK,
+    use_hover_stack,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -520,17 +521,17 @@ pub fn CommanderMaybeboard() -> Element {
                                 span { class: "chip-note", "No commanders match" }
                             }
                         } else {
-                            div { class: "maybeboard-list card-group row-enter",
-                                // Swipe sits in the list's header, so it says
-                                // what gets swiped.
-                                div { class: "card-group-header card-group-header-with-hint",
-                                    span { "Commanders" }
+                            // Swipe sits in the list's header, so it says
+                            // what gets swiped.
+                            CardListFold {
+                                title: "Commanders",
+                                actions: rsx! {
                                     Button {
                                         variant: ButtonVariant::Action,
                                         onclick: move |_| swipe_open.set(true),
                                         "Swipe"
                                     }
-                                }
+                                },
                                 for card in filtered {
                                     MaybeboardRow {
                                         key: "{card.scryfall_data.id}",

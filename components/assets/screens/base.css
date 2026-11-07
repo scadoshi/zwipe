@@ -152,7 +152,7 @@ body .toast-container [role="alertdialog"] {
 /* Width wrapper for the shared changelog (screen-content centers full-width
    children, so the content needs its own inset like the privacy screen). */
 .changelog-screen {
-    width: calc(100% - 4rem);
+    width: calc(100% - 2rem);
     max-width: 40rem;
     padding-bottom: 1rem;
     text-align: left;
@@ -212,19 +212,22 @@ body .toast-container [role="alertdialog"] {
 
 /* A swipe screen's bottom row: its pile chips on the left, compact, and the
    action dock on the right, so no chip row costs the card height up top. The
-   row floats where a dock would and lifts over the keyboard the same way. */
+   row floats where a dock would, its dock the kit's dock gap from the right
+   and bottom edges as a lone dock sits, and lifts over the keyboard the same
+   way. The chips keep the screen's gutter on the left. */
 .swipe-bottom-row {
+    --row-gap: calc(env(safe-area-inset-bottom, 0px) / 2 + 0.6rem);
     position: fixed;
     left: 0;
     right: 0;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 0.4rem + var(--keyboard-inset, 0px));
+    bottom: calc(var(--row-gap) + var(--keyboard-inset, 0px));
     z-index: 50;
     transition: bottom 0.25s ease;
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 0.5rem;
-    padding: 0 1rem;
+    padding: 0 var(--row-gap) 0 1rem;
     box-sizing: border-box;
     pointer-events: none;
 }
@@ -301,6 +304,13 @@ body .toast-container [role="alertdialog"] {
     gap: 0.4rem;
     padding: 0.75rem 0.5rem;
     border-top: 1px solid var(--border-secondary);
+}
+
+/* The Buy chip stands as tall as the links beside it. */
+.deck-buy-row > .chip-row-label {
+    align-self: stretch;
+    display: inline-flex;
+    align-items: center;
 }
 
 /* Compact enough that the chip and both links share one line on a phone. */

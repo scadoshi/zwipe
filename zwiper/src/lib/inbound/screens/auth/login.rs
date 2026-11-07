@@ -19,8 +19,8 @@ use crate::inbound::components::home_hero::HomeHero;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::ui_toast;
 use crate::inbound::router::Router;
-use crate::outbound::app_icon;
 use crate::outbound::session::Persist;
+use crate::outbound::{app_icon, theme_store};
 
 /// An identifier for the login form to fill in once, set by a screen that
 /// sends the user here (Create profile's username, Forgot password's email).
@@ -93,6 +93,7 @@ impl Driver {
             Effect::SignedIn(new_session) => {
                 new_session.infallible_save();
                 let picked = components::theme_from_settings(&new_session.settings);
+                theme_store::save_server_seen(&picked);
                 app_icon::follow(&picked);
                 theme.set(picked);
                 pip_style.set(new_session.settings.pip_style);

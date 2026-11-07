@@ -2,8 +2,9 @@
 
 use std::time::Duration;
 
-use dioxus::prelude::{ReadableExt, Signal, document, spawn, use_effect};
-use tokio::time;
+use components::{AppPhase, use_app_lifecycle};
+use dioxus::prelude::{ReadableExt, Signal, spawn, use_effect};
+use tokio::time::{self, MissedTickBehavior};
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 
@@ -23,6 +24,8 @@ pub fn spawn_usage_flusher(
 ) {
     spawn(async move {
         let mut tick = time::interval(Duration::from_secs(FLUSH_INTERVAL_SECS));
+        // Ticks missed in the background come back as one, not a burst.
+        tick.set_missed_tick_behavior(MissedTickBehavior::Delay);
         loop {
             tick.tick().await;
             flush_once(&buffer, &client, &session).await;
@@ -30,27 +33,21 @@ pub fn spawn_usage_flusher(
     });
 }
 
-/// Spawns a task that flushes whenever the app is **backgrounded**; the JS
-/// `visibilitychange → hidden` / `pagehide` events. Backgrounding precedes a
-/// swipe-to-kill, so this captures the last unflushed window (especially the
-/// suggestion signal) that the 30s timer would otherwise lose. A true instant
-/// foreground kill is unrecoverable in any framework; this covers the rest.
-pub fn spawn_visibility_flusher(
+/// Flushes whenever the app goes into the **background**, as the app's
+/// lifecycle reports it. Backgrounding precedes a swipe-to-kill, so this
+/// captures the last unflushed window (especially the suggestion signal)
+/// that the 30s timer would otherwise lose. A true instant foreground kill is
+/// unrecoverable in any framework; this covers the rest.
+pub fn use_background_flush(
     buffer: UsageBuffer,
     client: Signal<ZwipeClient>,
     session: Signal<Option<Session>>,
 ) {
-    spawn(async move {
-        let mut eval = document::eval(
-            "document.addEventListener('visibilitychange', () => { \
-                 if (document.visibilityState === 'hidden') dioxus.send(true); \
-             }); \
-             window.addEventListener('pagehide', () => dioxus.send(true));",
-        );
-        // Each hide event sends a message; flush on every one until the eval
-        // channel closes (app teardown).
-        while eval.recv::<bool>().await.is_ok() {
-            flush_once(&buffer, &client, &session).await;
+    let life = use_app_lifecycle();
+    use_effect(move || {
+        if life.phase() == AppPhase::Background {
+            let buffer = buffer.clone();
+            spawn(async move { flush_once(&buffer, &client, &session).await });
         }
     });
 }

@@ -3,6 +3,7 @@
 
 use chrono::{DateTime, Duration, Utc};
 use zwipe_core::http::contracts::metrics::HttpPublicMetrics;
+use zwipe_ui::home::CountsTag;
 use zwipe_ui::timing::COUNTS_FRESH;
 
 /// The counters as last known, held above the router so every hero shares
@@ -14,6 +15,9 @@ pub struct CachedCounts {
     /// When it answered during this visit; `None` for the copy stored by an
     /// earlier visit, which shows until a fetch replaces it.
     pub fetched_at: Option<DateTime<Utc>>,
+    /// When the server's copy was made, which an edge cache can put well
+    /// before `fetched_at`; `None` when it did not say.
+    pub made_at: Option<DateTime<Utc>>,
 }
 
 impl CachedCounts {
@@ -22,14 +26,20 @@ impl CachedCounts {
         Self {
             metrics,
             fetched_at: None,
+            made_at: None,
         }
     }
 
-    /// A copy fetched at `at`.
-    pub fn fetched(metrics: HttpPublicMetrics, at: DateTime<Utc>) -> Self {
+    /// A copy fetched at `at`, made by the server at `made_at`.
+    pub fn fetched(
+        metrics: HttpPublicMetrics,
+        at: DateTime<Utc>,
+        made_at: Option<DateTime<Utc>>,
+    ) -> Self {
         Self {
             metrics,
             fetched_at: Some(at),
+            made_at,
         }
     }
 
@@ -41,9 +51,15 @@ impl CachedCounts {
             .is_none_or(|at| now.signed_duration_since(at) >= fresh)
     }
 
-    /// Fetched during this visit, which the hero tags `Live`.
+    /// Fetched during this visit, so the hero tags it.
     pub fn is_live(&self) -> bool {
         self.fetched_at.is_some()
+    }
+
+    /// The hero's tag at `now`: `Live` while the server's copy is new, "as
+    /// of" its time after; `None` for a copy from an earlier visit.
+    pub fn tag(&self, now: DateTime<Utc>) -> Option<CountsTag> {
+        self.is_live().then(|| CountsTag::at(self.made_at, now))
     }
 }
 
@@ -69,7 +85,7 @@ mod tests {
     #[test]
     fn a_fresh_copy_serves_for_a_minute() {
         let at = Utc::now();
-        let cached = CachedCounts::fetched(metrics(), at);
+        let cached = CachedCounts::fetched(metrics(), at, None);
         assert!(cached.is_live());
         assert!(!cached.is_stale(at + Duration::seconds(59)));
         assert!(cached.is_stale(at + Duration::seconds(60)));

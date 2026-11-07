@@ -189,16 +189,18 @@ pub fn FormatPicker(form: DeckForm) -> Element {
                 }
                 PickerSearch { id: "format-search", placeholder: "Search formats", query }
                 div { class: "tag-def-bar format-def-bar",
-                    if let Some(format) = focused() {
-                        div { class: "tag-def-name", "{format.display_name()}" }
-                        ul { class: "tag-def-list",
-                            for line in format_details(format) {
-                                li { "{line}" }
+                    div { class: "format-def-scroll scroll-fade-y",
+                        if let Some(format) = focused() {
+                            div { class: "tag-def-name", "{format.display_name()}" }
+                            ul { class: "tag-def-list",
+                                for line in format_details(format) {
+                                    li { "{line}" }
+                                }
                             }
+                        } else {
+                            div { class: "tag-def-name", "{PICKER_BAR_HINT}" }
+                            div { class: "tag-def-text", "{FORMAT_BAR_EMPTY}" }
                         }
-                    } else {
-                        div { class: "tag-def-name", "{PICKER_BAR_HINT}" }
-                        div { class: "tag-def-text", "{FORMAT_BAR_EMPTY}" }
                     }
                 }
             }

@@ -16,6 +16,7 @@ use zwipe_core::domain::deck::MAX_DECK_ORACLE_TAGS;
 use zwipe_ui::deck::pickers::{self, Picker};
 
 use crate::inbound::components::catalog_cache::CatalogCache;
+use crate::inbound::components::held_open;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::screens::oracle_tag_dictionary::OracleTagDictionary;
 
@@ -52,6 +53,7 @@ pub(crate) fn OracleTagSelect(
     });
     let cell = cache.oracle_tags.cell();
 
+    let backdrop = held_open::use_held_open(open);
     let screen_class = if open() {
         "screen swipe-select-screen show"
     } else {
@@ -75,7 +77,9 @@ pub(crate) fn OracleTagSelect(
         div { class: "{screen_class}",
             // A screen over another paints its own backdrop, since .screen is
             // clear and the one beneath would show through.
-            ::components::GridCells { still: true }
+            if backdrop {
+                ::components::GridCells { still: true }
+            }
             if open() {
                 ScreenHeader { title: Picker::OracleTags.title(), hint: hint_open, back: move |()| back.call(()) }
 

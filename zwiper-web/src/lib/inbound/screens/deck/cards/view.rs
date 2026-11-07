@@ -334,8 +334,12 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
                     if has_zone {
                         for (slot, card) in zone_rows.clone() {
                             if slot != Slot::Partner || !zone_rows.iter().any(|(s, _)| *s == Slot::Commander) {
-                                div { key: "{slot:?}", class: "card-group row-enter",
-                                    div { class: "card-group-header", "{slot.group_header(format, has_partner)}" }
+                                CardGroup {
+                                    key: "{slot:?}",
+                                    title: slot.group_header(format, has_partner).to_string(),
+                                    section_key: slot.group_key().to_owned(),
+                                    collapsed,
+                                    on_drop,
                                     {row_view(&ed, cur, &row_meta, RowInfo { card, qty: 1, kind: RowKind::Zone(slot) })}
                                     if slot == Slot::Commander {
                                         for (partner_slot, partner) in zone_rows.iter().filter(|(s, _)| *s == Slot::Partner).cloned() {
