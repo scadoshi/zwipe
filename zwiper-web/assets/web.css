@@ -48,6 +48,28 @@ html {
     background-color: var(--page-edge, var(--bg-primary));
 }
 
+/* A double tap is two taps, not a zoom, and a tap lands without the
+   browser's wait for a second one; pinch zoom stays. */
+html,
+body {
+    touch-action: manipulation;
+}
+
+/* On a swipe screen a pull down is the card's undo, never the browser's
+   pull-to-refresh, which would reload the page and lose the swipes. Every
+   other screen keeps the page's own overscroll. */
+html:has(.card-swipe),
+html:has(.card-swipe) body,
+.web-scroll-screen:has(.card-swipe) {
+    overscroll-behavior-y: contain;
+}
+
+/* The empty end's ghost card is a swipe surface too: a drag on it is a
+   swipe, not a scroll. */
+.card-swipe .skeleton-card {
+    touch-action: none;
+}
+
 body {
     background-color: var(--page-sink, var(--bg-sink));
     color: var(--text-primary);
