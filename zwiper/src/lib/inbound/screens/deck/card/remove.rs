@@ -29,9 +29,9 @@ use super::components::printing_sheet::PrintingSheet;
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::auth::ensure_session::EnsureFresh;
 use crate::inbound::components::hint_dialog::{self, OneTimeHintDialog};
-use crate::inbound::components::interactions::swipe::SwipeStack;
 use crate::inbound::components::interactions::swipe::config::SwipeConfig;
 use crate::inbound::components::interactions::swipe::direction::Direction;
+use crate::inbound::components::interactions::swipe::{SwipeDownArea, SwipeStack};
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::swipe_confirm::{self, Said, SwipeConfirmChip};
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
@@ -499,6 +499,12 @@ pub fn Remove(deck_id: Uuid) -> Element {
         SWIPE_DISTANCE_PX,
         SWIPE_SPEED_PX_PER_MS,
     );
+    // The empty end takes only the down swipe, which undoes.
+    let down_config = SwipeConfig::new(
+        vec![Direction::Down],
+        SWIPE_DISTANCE_PX,
+        SWIPE_SPEED_PX_PER_MS,
+    );
 
     // Snapshot the model once per render.
     let state = driver.model.read();
@@ -543,6 +549,17 @@ pub fn Remove(deck_id: Uuid) -> Element {
                             },
                         }
 
+                    } else if can_undo {
+                        // The end of the stack: a down swipe on the ghost
+                        // card undoes the last swipe, as on a card.
+                        SwipeDownArea {
+                            config: down_config,
+                            on_down: move |()| {
+                                usage_buffer().record_swipe(Direction::Down);
+                                driver.dispatch(Action::Undo);
+                            },
+                            CardSkeleton {}
+                        }
                     } else {
                         CardSkeleton {}
                     }

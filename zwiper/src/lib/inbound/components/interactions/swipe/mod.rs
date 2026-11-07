@@ -13,6 +13,8 @@ pub mod axis;
 pub mod config;
 /// Swipe direction enum (Left, Right, Up, Down).
 pub mod direction;
+/// A surface that answers a down swipe, for a stack's empty end.
+pub mod down_area;
 /// Mouse event handlers for desktop swipe emulation.
 pub mod onmouse;
 /// Core swipe event processing shared by touch and mouse handlers.
@@ -26,4 +28,5 @@ pub mod state;
 /// Timestamped point for velocity calculations.
 pub mod time_point;
 
+pub use down_area::SwipeDownArea;
 pub use stack::{STACK_DEPTH, SwipeStack};
