@@ -934,6 +934,19 @@ i.ms.ms-cost.ms-gp {
     margin-bottom: 0.9rem;
 }
 
+/* The drawer's header keeps the title clear of the ×: an inset on both
+   sides as wide as the button and its gap, so the title stays centered and
+   a long name wraps inside it, breaking a word only when it can't fit. */
+.card-details-drawer > .sheet-header {
+    padding-inline: 3.6rem;
+}
+
+.card-details-drawer > .sheet-header > .sheet-title {
+    min-width: 0;
+    text-align: center;
+    overflow-wrap: anywhere;
+}
+
 /* The cost's pips right after the name, on the title's line. */
 .card-details-panel .panel-title .card-details-cost,
 .card-details-drawer .sheet-title .card-details-cost {
