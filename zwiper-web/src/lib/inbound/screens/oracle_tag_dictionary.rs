@@ -131,9 +131,13 @@ pub fn OracleTagDictionary(mut open: Signal<bool>, on_use: EventHandler<String>)
                 div { class: "dict-list",
                     if rows.is_empty() {
                         if searching {
-                            div { class: "dict-empty", "No tags match \u{201c}{q}\u{201d}." }
+                            div { class: "dict-empty",
+                                span { class: "chip-note", "No tags match \u{201c}{q}\u{201d}." }
+                            }
                         } else {
-                            div { class: "dict-empty", "No tags start with {letter.to_ascii_uppercase()}." }
+                            div { class: "dict-empty",
+                                span { class: "chip-note", "No tags start with {letter.to_ascii_uppercase()}." }
+                            }
                         }
                     } else {
                         for t in rows {
@@ -153,7 +157,9 @@ pub fn OracleTagDictionary(mut open: Signal<bool>, on_use: EventHandler<String>)
         }
     } else if slot.is_failed() {
         rsx! {
-            div { class: "dict-empty", "Couldn't load the dictionary. Pull back and try again." }
+            div { class: "dict-empty",
+                span { class: "chip-note", "Couldn't load the dictionary. Pull back and try again." }
+            }
         }
     } else {
         rsx! { DictionarySkeleton {} }

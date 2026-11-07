@@ -48,6 +48,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "About's changelog shows five releases at a time, with Show more for the rest",
         "The error under a field on the deck, sign-in and account forms starts with a capital letter",
         "Add says Synergy on or Synergy off when you tap the bolt",
+        "Empty lists and empty Activity panels say so in a centered gray chip",
     ],
 }];
 

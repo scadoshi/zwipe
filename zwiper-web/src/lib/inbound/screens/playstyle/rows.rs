@@ -188,7 +188,9 @@ pub fn StaplesPanel(
                     div { class: "web-card-group-filters", {filters} }
                 }
                 if rows.is_empty() {
-                    div { class: "activity-total activity-total-group", "No staples match" }
+                    div { class: "activity-total activity-total-group",
+                        span { class: "chip-note", "No staples match" }
+                    }
                 }
                 for staple in rows {
                     StapleRow {

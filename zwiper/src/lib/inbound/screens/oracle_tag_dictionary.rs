@@ -141,7 +141,9 @@ pub fn OracleTagDictionary(open: Signal<bool>, on_use: EventHandler<String>) -> 
                 match body {
                     Body::Loading => rsx! { DictionarySkeleton {} },
                     Body::Failed(line) => rsx! {
-                        div { class: "dict-empty", "{line}" }
+                        div { class: "dict-empty",
+                            span { class: "chip-note", "{line}" }
+                        }
                     },
                     // Switching letters / searching changes every row's key, so
                     // Dioxus remounts the rows and their entrance animation replays
@@ -178,7 +180,9 @@ pub fn OracleTagDictionary(open: Signal<bool>, on_use: EventHandler<String>) -> 
                         div { class: "dict-list",
                             match list {
                                 List::Empty(line) => rsx! {
-                                    div { class: "dict-empty", "{line}" }
+                                    div { class: "dict-empty",
+                                        span { class: "chip-note", "{line}" }
+                                    }
                                 },
                                 List::Rows(rows) => rsx! {
                                     for t in rows {

@@ -87,7 +87,7 @@ pub fn CardSkeleton(#[props(default)] is_loading: bool) -> Element {
             div { class: "skeleton-stack",
                 div { class: "skeleton-image",
                     if !is_loading {
-                        "No cards"
+                        span { class: "chip-note", "No cards" }
                     }
                 }
             }

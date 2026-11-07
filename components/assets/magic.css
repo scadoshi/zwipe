@@ -1902,6 +1902,22 @@ i.ms.ms-cost.ms-gp {
     color: var(--color-error);
 }
 
+/* ---- Note chip (.chip-note) ----
+   Every empty or error line, on every client: a gray chip that does not
+   act, centered by whatever holds it (.message-empty, .deck-empty,
+   .activity-total, .dict-empty). Same face as .chip-unselected, minus the
+   pointer. */
+.chip-note {
+    display: inline-block;
+    padding: 0.3rem 0.6rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-muted);
+    border-radius: 0.6rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    box-shadow: var(--shadow-sm);
+}
+
 /* ---- DeckPage (components::DeckPage) ---- */
 
 /* The page: its parts one panel gap apart, each the page's width. */

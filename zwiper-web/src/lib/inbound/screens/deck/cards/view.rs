@@ -367,7 +367,9 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
                         }
                     }
                     if shown_boards.main && main_groups.is_empty() && main_lands.is_empty() && loaded() {
-                        p { class: "text-muted", "No cards" }
+                        p { class: "deck-empty",
+                            span { class: "chip-note", "No cards" }
+                        }
                     }
                 }
             }
