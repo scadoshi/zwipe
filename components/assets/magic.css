@@ -901,7 +901,7 @@ i.ms.ms-cost.ms-gp {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.4rem 0.5rem;
+    gap: 0.5rem;
     margin-bottom: 0.9rem;
 }
 
@@ -932,7 +932,7 @@ i.ms.ms-cost.ms-gp {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.4rem 0.5rem;
+    gap: 0.5rem;
     margin-top: 0.9rem;
 }
 
@@ -942,6 +942,20 @@ i.ms.ms-cost.ms-gp {
 }
 
 .card-details-analysis > :last-child {
+    margin-bottom: 0;
+}
+
+/* The host's rows (a staple's deck share, the suggestion reasons, Skipped
+   under) as their own section, spaced like the tag rows. */
+.card-details-host {
+    margin-top: 0.9rem;
+}
+
+.card-details-host > :first-child {
+    margin-top: 0;
+}
+
+.card-details-host > :last-child {
     margin-bottom: 0;
 }
 

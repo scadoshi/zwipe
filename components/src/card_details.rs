@@ -247,7 +247,9 @@ pub fn CardDetails(
                 }
             }
             TagRows { card: card.clone(), show_classification, describe_tag, on_examples }
-            {footer}
+            if footer.is_some() {
+                div { class: "card-details-host", {footer} }
+            }
             FactsChips { set_name, prices, stats }
         }
         if show_bar {
