@@ -1849,18 +1849,85 @@ body {
     }
 }
 
-/* ---- The eye on a wide window ----
+/* ---- The card's details on a wide window ----
 
-   The dock's eye hides the card's details beside it and shows them again.
-   Hidden, Add and Remove keep the card in their middle column; swipe select
-   and the examples go to one column with the card centered in it. */
+   On Add, Remove, swipe select and the examples the card's details are a
+   panel docked at the right like an always-open drawer: the drawer's inset
+   under the bar and from the edge, its width and corners, ending above the
+   docks at the bottom right, as tall as its content up to the room there
+   and scrolling inside itself, so the page, the card and the docks never
+   move. The dock's eye slides it out to the right and back in with the
+   drawer's motion; the card is centered in what the panel leaves, or in
+   the whole width while the panel is out. */
 @media (min-width: 900px) {
-    .web-details-hidden :is(.web-swipe-details, .web-examples-details) {
-        display: none;
+    :root {
+        --web-dock-panel-width: min(24rem, calc(100vw - 2rem));
+        --web-dock-panel-top: var(--sheet-drawer-top, 5.4rem);
+        --web-dock-panel-bottom: 4.75rem;
     }
 
-    :is(.web-swipe-select-body, .web-examples-body).web-details-hidden {
+    .web-swipe-details,
+    .web-examples-details {
+        position: fixed;
+        top: var(--web-dock-panel-top);
+        right: 1rem;
+        z-index: 40;
+        width: var(--web-dock-panel-width);
+        max-height: calc(100dvh - var(--web-dock-panel-top) - var(--web-dock-panel-bottom));
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        border-radius: 1rem;
+        box-sizing: border-box;
+        transform: translateX(0);
+        transition: transform 0.3s ease;
+    }
+
+    /* Swipe select and the examples cover the bar with their own header,
+       so the panel starts under that. The examples' modal is the panel's
+       containing block, so its height is capped to the modal's. */
+    .web-swipe-select,
+    .web-examples {
+        --web-dock-panel-top: 4.7rem;
+    }
+
+    .web-examples .web-examples-details {
+        max-height: calc(100% - var(--web-dock-panel-top) - var(--web-dock-panel-bottom));
+    }
+
+    .web-details-hidden :is(.web-swipe-details, .web-examples-details) {
+        transform: translateX(calc(100% + 1rem));
+        visibility: hidden;
+        transition: transform 0.3s ease, visibility 0s linear 0.3s;
+    }
+
+    /* A finished entrance that holds its end state makes its block the
+       panel's containing block; it lets go, so the panel docks to the
+       window. */
+    :is(.content-enter, .content-enter-delayed):has(> :is(.web-swipe-details, .web-examples-details)) {
+        animation-fill-mode: backwards;
+    }
+
+    /* The card takes one centered column, clear of the panel while it is
+       in. */
+    .web-main .web-cards-swipe.screen-content,
+    .web-swipe-select-body,
+    .web-examples-body {
         grid-template-columns: minmax(0, 1fr);
+        padding-right: calc(var(--web-dock-panel-width) + 2.5rem);
+    }
+
+    .web-main .web-cards-swipe.screen-content.web-details-hidden,
+    .web-swipe-select-body.web-details-hidden,
+    .web-examples-body.web-details-hidden {
+        padding-right: 1.5rem;
+    }
+}
+
+@media (min-width: 900px) and (prefers-reduced-motion: reduce) {
+    .web-swipe-details,
+    .web-examples-details,
+    .web-details-hidden :is(.web-swipe-details, .web-examples-details) {
+        transition: none;
     }
 }
 
@@ -2301,11 +2368,10 @@ body {
 }
 
 @media (min-width: 900px) {
-    /* The card in the middle of the page, as on the phone, its details in
-       the column to its right and the left column empty to balance it. */
+    /* The card in the middle of the page, as on the phone; its details dock
+       at the right (see the card's details on a wide window). */
     .web-cards-swipe.screen-content {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) minmax(20rem, 30rem) minmax(0, 1fr);
         align-items: start;
         align-content: start;
         gap: 1.5rem;
@@ -2318,8 +2384,10 @@ body {
     }
 
     .web-cards-swipe-main {
-        grid-column: 2;
+        grid-column: 1;
+        justify-self: center;
         width: 100%;
+        max-width: 30rem;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -2328,11 +2396,7 @@ body {
     }
 
     .web-swipe-details {
-        grid-column: 3;
         display: block;
-        min-width: 0;
-        position: sticky;
-        top: var(--web-sticky-top);
     }
 
     /* The app sizes the card's ghost to the phone's width; in a column it
