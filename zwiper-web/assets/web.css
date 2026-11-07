@@ -1560,6 +1560,18 @@ body {
     }
 }
 
+/* ---- The docked card details' scroll ----
+
+   The docked details bound their panel to their own height, so a tall card
+   scrolls the panel's body between its head and foot rather than scrolling
+   the whole panel. */
+@media (min-width: 900px) {
+    :is(.web-swipe-details, .web-examples-details):has(> .card-details-panel) {
+        display: flex;
+        flex-direction: column;
+    }
+}
+
 /* ---- Buy links ---- */
 
 /* A retailer link drawn as the action buttons beside it, with zite's

@@ -366,6 +366,12 @@ pub fn CardDetailsPanel(
         None => "card-details-panel".to_string(),
     };
 
+    // A tall pane scrolls its body between its head and foot; scrolling
+    // down hides the head and scrolling up brings it back.
+    use_hook(|| {
+        document::eval(HEAD_HIDE_JS);
+    });
+
     rsx! {
         Panel {
             title: name,
@@ -428,6 +434,50 @@ pub fn CardDetailsPanel(
         }
     }
 }
+
+/// The pane's head follows its body's scroll: scrolling down past the first
+/// few pixels marks the panel `card-details-head-hidden`, which folds the
+/// title away, and scrolling up or reaching the top brings it back. One
+/// listener, in the capture phase since scroll events do not bubble, serves
+/// every pane; it guards itself so a second mount does nothing. The head
+/// folds only when the body overflows by more than the fold frees, so the
+/// fold never makes the pane fit and snap back. The bounce past an edge is
+/// not scrolling, and a toggle waits out the fold's own motion so the
+/// body's change in height never reads as a scroll. With reduced motion the
+/// head stays.
+const HEAD_HIDE_JS: &str = r"
+if (!window.__zwipeDetailsHead) {
+    window.__zwipeDetailsHead = true;
+    const still = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const last = new WeakMap();
+    const settled = new WeakMap();
+    document.addEventListener('scroll', (event) => {
+        const body = event.target;
+        if (!(body instanceof Element) || !body.matches('.card-details-panel > .panel-body')) return;
+        const panel = body.parentElement;
+        const top = Math.max(0, body.scrollTop);
+        const bottom = body.scrollHeight - body.clientHeight;
+        const previous = last.has(body) ? last.get(body) : top;
+        last.set(body, top);
+        if (still.matches) return;
+        if (performance.now() < (settled.get(panel) || 0)) return;
+        if (top <= 0) {
+            panel.classList.remove('card-details-head-hidden');
+            return;
+        }
+        if (top > bottom || previous > bottom) return;
+        const hidden = panel.classList.contains('card-details-head-hidden');
+        const head = panel.querySelector(':scope > .panel-head');
+        const frees = head ? head.offsetHeight + 48 : 0;
+        const toggle = (hide) => {
+            panel.classList.toggle('card-details-head-hidden', hide);
+            settled.set(panel, performance.now() + 250);
+        };
+        if (!hidden && top > previous + 2 && top > 8 && bottom > frees) toggle(true);
+        else if (hidden && top < previous - 2 && top < bottom - 2) toggle(false);
+    }, { capture: true, passive: true });
+}
+";
 
 /// The ghost of a [`CardDetailsPanel`] while its card loads, in the panel's
 /// own order and shapes: the title bar, the type and rarity chips, the rules
