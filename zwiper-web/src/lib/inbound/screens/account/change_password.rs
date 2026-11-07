@@ -35,7 +35,6 @@ pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
     let mut current = use_signal(String::new);
     let mut new_password = use_signal(String::new);
     let mut confirm = use_signal(String::new);
-    let mut touched = use_signal(|| false);
     let mut submit_attempted = use_signal(|| false);
     let mut show_confirm = use_signal(|| false);
     let mut is_loading = use_signal(|| false);
@@ -48,13 +47,7 @@ pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
     use_effect(move || {
         if open() {
             clear();
-            touched.set(false);
             submit_attempted.set(false);
-        }
-    });
-    use_effect(move || {
-        if !new_password().is_empty() || !confirm().is_empty() {
-            touched.set(true);
         }
     });
 
@@ -67,7 +60,9 @@ pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
         )
     };
     let attempted = submit_attempted();
-    let password_error = (touched() || attempted)
+    // The line is judged while either box holds text, and once a submit was
+    // tried.
+    let password_error = (!new_password().is_empty() || !confirm().is_empty() || attempted)
         .then(|| account::change_password_error(&current(), &new_password(), &confirm(), attempted))
         .flatten();
 

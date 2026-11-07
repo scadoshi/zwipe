@@ -26,15 +26,11 @@ fn a_new_screen_shows_the_form_with_no_line() {
 }
 
 #[test]
-fn the_line_shows_once_the_field_has_held_something() {
+fn the_line_shows_while_the_field_holds_text() {
     let mut state = typed("nope");
     assert_eq!(state.error().as_deref(), Some(INVALID_RESET_EMAIL));
     assert_eq!(state.update(Action::EditEmail(String::new())), []);
-    assert_eq!(
-        state.error().as_deref(),
-        Some(INVALID_RESET_EMAIL),
-        "an emptied field stays judged"
-    );
+    assert_eq!(state.error(), None, "an emptied field waits for a send");
     assert_eq!(state.update(Action::EditEmail("a@b.co".to_owned())), []);
     assert_eq!(state.error(), None);
 }

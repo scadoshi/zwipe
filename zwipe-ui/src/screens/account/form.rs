@@ -1,6 +1,6 @@
 //! The Account screen's three change sheets: their fields, the words on them, and what each field shows under it as the user types and saves.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 use std::fmt::{self, Debug, Formatter};
 
 use zwipe_core::domain::user::User;
@@ -103,11 +103,10 @@ impl Field {
     }
 }
 
-/// One sheet's fields as typed, which have held something, and whether a save was tried.
+/// One sheet's fields as typed, and whether a save was tried.
 #[derive(Default, Clone, PartialEq, Eq)]
 pub(super) struct Form {
     values: BTreeMap<Field, String>,
-    touched: BTreeSet<Field>,
     attempted: bool,
 }
 
@@ -128,7 +127,6 @@ impl Debug for Form {
             .collect();
         f.debug_struct("Form")
             .field("values", &values)
-            .field("touched", &self.touched)
             .field("attempted", &self.attempted)
             .finish()
     }
@@ -140,11 +138,8 @@ impl Form {
         self.values.get(&field).map_or("", String::as_str)
     }
 
-    /// Sets `field` to `value`. A field that has held something is judged from then on, even once emptied.
+    /// Sets `field` to `value`.
     pub(super) fn edit(&mut self, field: Field, value: String) {
-        if !value.is_empty() {
-            self.touched.insert(field);
-        }
         self.values.insert(field, value);
     }
 
@@ -153,14 +148,14 @@ impl Form {
         self.attempted = true;
     }
 
-    /// The line under `field` on `sheet`, once the field has held something or a save was tried. Change password's one line sits under the new password and covers the confirmation. `current` is the signed-in user, whose username and email a change may not repeat.
+    /// The line under `field` on `sheet`, while the field holds text or once a save was tried; an emptied field shows none until then. Change password's one line sits under the new password and covers the confirmation. `current` is the signed-in user, whose username and email a change may not repeat.
     pub(super) fn error(
         &self,
         sheet: Sheet,
         field: Field,
         current: Option<&User>,
     ) -> Option<String> {
-        let judged = |f: Field| self.attempted || self.touched.contains(&f);
+        let judged = |f: Field| self.attempted || !self.value(f).is_empty();
         match (sheet, field) {
             (Sheet::Username, Field::NewUsername) if judged(field) => match current {
                 Some(user) => {

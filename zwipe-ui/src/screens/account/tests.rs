@@ -331,7 +331,7 @@ fn a_stray_tick_changes_nothing() {
 }
 
 #[test]
-fn the_username_sheet_judges_each_field_once_it_has_held_something() {
+fn the_username_sheet_judges_each_field_while_it_holds_text() {
     let mut state = opened();
     assert_eq!(
         state.update(Action::OpenSheet(Sheet::Username)),
@@ -349,9 +349,10 @@ fn the_username_sheet_judges_each_field_once_it_has_held_something() {
         "an untouched field waits for Save"
     );
     edit(&mut state, Sheet::Username, Field::NewUsername, "");
-    assert!(
-        state.error(Sheet::Username, Field::NewUsername).is_some(),
-        "an emptied field stays judged"
+    assert_eq!(
+        state.error(Sheet::Username, Field::NewUsername),
+        None,
+        "an emptied field waits for Save"
     );
 }
 
