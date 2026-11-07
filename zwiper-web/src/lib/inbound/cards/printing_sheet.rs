@@ -244,7 +244,8 @@ fn CarouselDots(current: usize, total: usize) -> Element {
 
 /// The printings as a cover flow in the kit's modal: the one at `index`
 /// large and centered, up to ten on each side behind it, every card gliding
-/// to its new place as the selection moves. `on_select` picks the centered
+/// to its new place as the selection moves, and an arrow button at each
+/// side steps one printing. `on_select` picks the centered
 /// printing; it does nothing while it is the one the sheet opened on, as
 /// the `Select` button shows. `read_only` leaves out `Select`.
 #[component]
@@ -332,70 +333,98 @@ fn CoverFlowSheet(
                         if loading {
                             PrintingSheetSkeleton {}
                         } else {
-                            div {
-                                class: "web-flow-stage",
-                                onwheel: move |e: Event<WheelData>| {
-                                    let delta = e.delta().strip_units();
-                                    let along = if delta.x.abs() > delta.y.abs() { delta.x } else { delta.y };
-                                    let mut sum = *wheel.peek() + along;
-                                    while sum >= WHEEL_STEP_PX {
-                                        step(true);
-                                        sum -= WHEEL_STEP_PX;
-                                    }
-                                    while sum <= -WHEEL_STEP_PX {
-                                        step(false);
-                                        sum += WHEEL_STEP_PX;
-                                    }
-                                    wheel.set(sum);
-                                },
-                                onmousedown: move |e: Event<MouseData>| {
-                                    e.prevent_default();
-                                    drag_from.set(Some(e.client_coordinates().x));
-                                    dragged.set(false);
-                                },
-                                onmousemove: move |e: Event<MouseData>| {
-                                    let Some(from) = *drag_from.peek() else {
-                                        return;
-                                    };
-                                    let x = e.client_coordinates().x;
-                                    let run = x - from;
-                                    if run.abs() >= DRAG_STEP_PX {
-                                        // Dragging left brings the next printing in.
-                                        step(run < 0.0);
-                                        drag_from.set(Some(x));
-                                        dragged.set(true);
-                                    }
-                                },
-                                onmouseup: move |_| drag_from.set(None),
-                                onmouseleave: move |_| drag_from.set(None),
-                                for (i, offset, card) in cards {
-                                    div {
-                                        key: "{card.scryfall_data.id}",
-                                        class: if offset == 0 { "web-flow-card selected" } else { "web-flow-card" },
-                                        style: flow_slot(offset).style(),
-                                        onclick: move |_| {
-                                            if *dragged.peek() {
-                                                return;
-                                            }
-                                            if offset == 0 {
-                                                if !read_only {
-                                                    on_select.call(());
+                            div { class: "web-flow-row",
+                                button {
+                                    class: "btn-action btn-icon web-flow-step",
+                                    disabled: at == 0,
+                                    "aria-label": "Previous printing",
+                                    onclick: move |_| step(false),
+                                    // Enter presses the button and stays off the body's Select.
+                                    onkeydown: move |e: Event<KeyboardData>| {
+                                        if e.key() == Key::Enter {
+                                            e.stop_propagation();
+                                        }
+                                    },
+                                    DockIcon { path: ARROW_LEFT }
+                                }
+                                div {
+                                    class: "web-flow-stage",
+                                    onwheel: move |e: Event<WheelData>| {
+                                        let delta = e.delta().strip_units();
+                                        let along = if delta.x.abs() > delta.y.abs() { delta.x } else { delta.y };
+                                        let mut sum = *wheel.peek() + along;
+                                        while sum >= WHEEL_STEP_PX {
+                                            step(true);
+                                            sum -= WHEEL_STEP_PX;
+                                        }
+                                        while sum <= -WHEEL_STEP_PX {
+                                            step(false);
+                                            sum += WHEEL_STEP_PX;
+                                        }
+                                        wheel.set(sum);
+                                    },
+                                    onmousedown: move |e: Event<MouseData>| {
+                                        e.prevent_default();
+                                        drag_from.set(Some(e.client_coordinates().x));
+                                        dragged.set(false);
+                                    },
+                                    onmousemove: move |e: Event<MouseData>| {
+                                        let Some(from) = *drag_from.peek() else {
+                                            return;
+                                        };
+                                        let x = e.client_coordinates().x;
+                                        let run = x - from;
+                                        if run.abs() >= DRAG_STEP_PX {
+                                            // Dragging left brings the next printing in.
+                                            step(run < 0.0);
+                                            drag_from.set(Some(x));
+                                            dragged.set(true);
+                                        }
+                                    },
+                                    onmouseup: move |_| drag_from.set(None),
+                                    onmouseleave: move |_| drag_from.set(None),
+                                    for (i, offset, card) in cards {
+                                        div {
+                                            key: "{card.scryfall_data.id}",
+                                            class: if offset == 0 { "web-flow-card selected" } else { "web-flow-card" },
+                                            style: flow_slot(offset).style(),
+                                            onclick: move |_| {
+                                                if *dragged.peek() {
+                                                    return;
+                                                }
+                                                if offset == 0 {
+                                                    if !read_only {
+                                                        on_select.call(());
+                                                    }
+                                                } else {
+                                                    go(i);
+                                                }
+                                            },
+                                            if let Some(url) = card.scryfall_data.primary_image_url(ImageSize::Large) {
+                                                img {
+                                                    src: "{url}",
+                                                    alt: "{card.scryfall_data.name}, {card.scryfall_data.set_name}",
+                                                    loading: "lazy",
+                                                    draggable: false,
                                                 }
                                             } else {
-                                                go(i);
+                                                div { class: "web-flow-missing", "{card.scryfall_data.set_name}" }
                                             }
-                                        },
-                                        if let Some(url) = card.scryfall_data.primary_image_url(ImageSize::Large) {
-                                            img {
-                                                src: "{url}",
-                                                alt: "{card.scryfall_data.name}, {card.scryfall_data.set_name}",
-                                                loading: "lazy",
-                                                draggable: false,
-                                            }
-                                        } else {
-                                            div { class: "web-flow-missing", "{card.scryfall_data.set_name}" }
                                         }
                                     }
+                                }
+                                button {
+                                    class: "btn-action btn-icon web-flow-step",
+                                    disabled: at.saturating_add(1) >= count,
+                                    "aria-label": "Next printing",
+                                    onclick: move |_| step(true),
+                                    // Enter presses the button and stays off the body's Select.
+                                    onkeydown: move |e: Event<KeyboardData>| {
+                                        if e.key() == Key::Enter {
+                                            e.stop_propagation();
+                                        }
+                                    },
+                                    DockIcon { path: ARROW_RIGHT }
                                 }
                             }
                             if let Some(card) = selected {
