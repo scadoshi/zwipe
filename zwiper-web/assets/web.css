@@ -1140,14 +1140,6 @@ body {
     max-height: 92vh;
 }
 
-/* An entrance animation that holds its end state makes its block the
-   containing block of the preview's fixed layers. While a preview is open
-   the block's finished entrance stops holding (its end state is the
-   block's own), so the preview fills the window. */
-:is(.content-enter, .content-enter-delayed, .row-enter):has(.image-preview-container) {
-    animation-fill-mode: backwards;
-}
-
 /* ---- Printing sheet ---- */
 
 /* The cover flow, then the foot under it. The reserve is the sheet's
