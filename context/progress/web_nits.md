@@ -21,12 +21,7 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 ## In progress
 
-| Items | Machine | Branch |
-| --- | --- | --- |
-| 111, zwipe.net polish (93 to 95 in PR #234) | halo | `nits/halo-111` |
-| 98, 99, then 109, 110, chip row gaps, host extras, P/T contrast, hover previews | thinker | `nits/thinker-98`, `nits/thinker-109` |
-| 100 and 102, then 113, cover-flow edge fade and arrows, stats and OG cards | scotland | `nits/scotland-100`, `nits/scotland-113` |
-| 103 (waits on orangui #6), 105 to 108, then 112, price, picker hint focus, Dark Reader, copy, portfolio polish | laptop | `nits/laptop-103`, `nits/laptop-105`, portfolio `nits/laptop-112` |
+Nothing. Everything through 114 is in `release`, waiting on the push to `main`.
 
 The loop is in [`../development/factory.md`](../development/factory.md).
 
@@ -164,7 +159,7 @@ Skipped with Scotty: S7 (no Image in the swipe screens' details, intended), S23 
 
 ## Done
 
-- Merged into `release` after `b0d713965`: 64, 65, 67, 60, 66, 68 to 72, 73 to 76, 77, 78, 79, 80, 81, 82, 85, 86, 87, 88, 89, 90, 91, 92, 96, 97, 101 (PRs #207 to #232).
+- Merged into `release` after `b0d713965`: 64, 65, 67, 60, 66, 68 to 72, 73 to 76, 77, 78, 79, 80, 81, 82, 85, 86, 87, 88, 89, 90, 91 to 114 (PRs #207 to #242), with orangui #6 to #8 and portfolio #4 and #5.
 - 46, a compact footer on both sites: PR #190. 48, zwipe.net's manifest icons: PR #191. 49, inputs through `ClearWrap`: PR #192.
 - 50, the deck head's `?`: PR #193. 53, the app's Quick add: PR #194. 21 phase 5, zwipe.net's full filter: PR #195. 51, swiping twice as fast: PR #196. 55, testimonial rating inline: PR #197.
 - 45, 47, no page heads, the page's `?` in the nav, About drops Credits on wide: PR #198. 52, swipe buttons in the dock: PR #199.
