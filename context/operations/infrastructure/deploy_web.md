@@ -30,6 +30,21 @@ GitHub → Actions tab → **Deploy zite** → Run workflow → Run workflow
 4. Writes `CNAME` (`zwipe.net`) into the build output
 5. Copies `index.html` → `404.html` (SPA routing, GitHub Pages serves 404.html for unknown paths, Dioxus Router takes over)
 6. Uploads build output as a GitHub Pages artifact and deploys
+7. `deploy-cloudflare` takes the same artifact, drops `404.html` and `CNAME`, and uploads it from `zite/` with `wrangler pages deploy` to the Cloudflare Pages project `zwipe-site`, creating the project on its first run. Running from `zite/` bundles `zite/functions` with it
+
+---
+
+## Cloudflare Pages and the share page's preview tags
+
+`zite/functions/deck/[token].js` is a Pages Function for `/deck/:token`. It reads the deck from the public `GET /api/share/deck/:token` and serves the site shell with the deck's own title, description, image and canonical link, so link previews show the deck. An unknown, revoked or malformed token gets the generic tags with a 404, and a failing API gets the generic page with a 200. Every other path is a static file, with `index.html` and a 200 for an app route, since there is no `404.html`. `zite/tests/og_function.rs` keeps the Function's format names and commander formats matched to zwipe-core.
+
+Both deploys run on every push until zwipe.net moves. Until then the Cloudflare copy serves at `zwipe-site.pages.dev`, where the preview tags can be checked with `curl`. The app there can't load a deck in the browser, since the API's CORS list doesn't include that origin. Secrets: `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, the same as `deploy-web.yml`.
+
+Cutover (Scotty, in the dashboard):
+
+1. Workers & Pages → `zwipe-site` → Custom domains: add `zwipe.net` and `www.zwipe.net`. Cloudflare replaces the GitHub A records and the `www` CNAME with its own.
+2. Check that `curl -sI https://zwipe.net/deck/<a live token>` answers `200` with `server: cloudflare`.
+3. Repository Settings → Pages: unpublish the site, then remove the `deploy` job and the CNAME and 404.html steps from `deploy-zite.yml`.
 
 ---
 
