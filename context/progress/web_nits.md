@@ -23,6 +23,7 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
+| 97, the swipe screens' footer loses its extra legroom (queued after 90) | scotland | `nits/scotland-97` |
 | 96, the details panel's footer pinned, header hides on scroll | thinker | `nits/thinker-96` |
 | 93 to 95, the docked panel's jump, the card pinned to center, panel default by space, no lift on the docked panel (queued after 88) | halo | `nits/halo-93` |
 | 92, the web's URLs name resources, not actions (queued after 91) | laptop | `nits/laptop-92` |
@@ -139,6 +140,7 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 94. **The swipe card shifts when the details panel toggles.** The card stays pinned to the window's center; on a narrow window the panel overlays it; the panel starts open when there's room and closed when it would touch the card, the eye lit while it shows.
 95. **The docked panel's hover lifts its content but not its frame.** Docked panels and drawers don't lift; any hover lights the one frame.
 96. **The docked details panel scrolls its footer away.** When it scrolls, the footer (Printings) stays pinned at the bottom and the header slides away on scroll down, back on scroll up, like the app's header.
+97. **The swipe screens' footer has a big empty band.** 80 padded it so the fixed docks clear its text. Drop the padding; the docks and pile chips stop above the footer when it scrolls into view.
 
 ## Done
 
