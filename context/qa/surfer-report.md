@@ -744,3 +744,85 @@ Username / Email / Password rows each open a drawer. Change username shows "Must
 9. **Heading order:** on Decks, the h1 is followed by h3 deck names with no h2.
 10. **Cards hidden from Add after an undo.** Elenda, the Dusk Rose (skipped, then undone, which deleted the suppression with 204) and Sorin, Imperious Bloodlord (sent to the maybeboard, then undone) no longer show in Add even when searched by exact name, with Synergy off. Indulgent Aristocrat (added, then undone) does show again. Possibly swipe memory counting an undone swipe. Worth a look, but I'm not calling it a bug.
 11. **Small:** each toast is a focusable `role="alertdialog"` (tabindex 0) wrapping a `role="alert"`. For an info toast, alert alone is enough. A focusable dialog per toast adds tab stops.
+
+## Part 18, copy proofread, read-only (2026-11-07, live f699acc37, zwipe.net, main at the time)
+
+**Sources:**
+- The rendered text of 15 signed-in screens, plus all 51 distinct `?` hints opened on them (captured from the DOM).
+- The string literals in `components`, `zwipe-ui`, `zwiper-web` and `zite` on `origin/main` (about 2,500 strings), for toasts and errors I couldn't trigger safely.
+- The 22 live guides on zwipe.net.
+- The changelog's upcoming 1.18.1 and the 10 releases before it (from `/api/changelog`).
+
+I changed nothing. Card rules text and keyword reminder text from Scryfall are out of scope. Strings from source are marked (src) when I didn't see them on screen.
+
+### Across the app (terms and patterns)
+
+1. **"Oracle tags" vs "oracle tags".** Capitalized as a name in 31 mid-sentence places, lowercase in 76, sometimes side by side:
+    - Activity's empty states: "Swipe more cards to see your **Oracle tags**" next to "Swipe more cards to see your **card roles**".
+    - 1.18.1: "Keywords, card roles and **oracle tags** use the app's regular chips" two lines above "The card filter's **Oracle tags** hint".
+    - Suggest one rule: capitalized only as a field or section name ("the Oracle tags picker"), lowercase in prose. Card roles and deck tags already follow it.
+2. **Maybeboard naming.** The same pile is "Maybeboard" (chip, button, toast), "Maybe" (Boards chips, 1.18.0 "Add switches between Search and Maybe"), and "**your Maybe pile**" (Add's "Swipe to build" hint: "The chip after From switches between Search and your Maybe pile"). The mainboard is "mainboard" (To mainboard button, hints), "main" (Remove hint "moves it between main and maybeboard", toast "Moved to main"), and "deck" (toast "**Moved to deck**" right after tapping "To mainboard", "Undid move to deck"). "Sideboard" is consistent. "maybe board" and "side board" spelled apart: none.
+3. **Sign-in naming.** The screen is "Login" (tab title, header), the button "Log in", the chip back from Forgot password "**Back to login**", the loading label "Logging in...", and the changelog says "sign-in screen"/"sign-in forms". Registration is "Create profile" on screen but "register" in 1.13.0 and in the 1.10-era changelog. Pick one noun for the screen ("Log in") and use it in the back chip.
+4. **Empty and end states are worded six ways:** "No cards left", "No cards found", "No cards match your filters", "No more cards. Swipe down to go back." (the only one with a period), "No results", and "No results for this filter". "Could not load …" (decks, deck, activity, changelog, featured flavor, commander maybeboard, suggestions) sits beside "**Couldn't** load the dictionary. **Pull back and try again.**" and "Couldn't load the oracle-tag dictionary" (src). "Pull back" is a phone gesture with no meaning on the web. "oracle-tag dictionary" is hyphenated where everything else says "the dictionary" or "Oracle tags dictionary".
+5. **Email errors in four voices:**
+    - Create profile: "Missing @ symbol" (shown even when the field is empty).
+    - Forgot password and Account: "Please enter a valid email address".
+    - (src): "Email is not valid: use a@b.c".
+    - (src): raw validator messages, also reachable through Create profile, e.g. "Domain must have at least one dot", "Empty part in domain", "Domain literal not supported", "Display name not supported", "Unbalanced quotes in email", "Text before @ is too long".
+    - Suggest one plain line, "Enter a valid email address", for every case.
+6. **"Please"** appears only in "Please enter a valid email address", "Please wait a moment" and "Card stack limit reached, please refresh your search to continue". Elsewhere the voice is plain ("Approaching the card stack limit, refresh your search to continue"). Both stack-limit lines are comma splices; a period or semicolon would fix them.
+7. **Punctuation at the end of short UI lines is mixed.** Most hints, toasts and empty states have no final period, but these do:
+    - "Version: The build you are on. What changed in each release is listed below."
+    - "Tap a format to see its details here." and "Tap a tag to see its definition here."
+    - "No description for this tag.", "No example cards for this tag yet.", "No tags match "…"."
+    - "Update to keep building."
+    - "Changing your password will log you out on all other devices."
+    - "This will permanently delete your account… This cannot be undone."
+8. **"can't" vs "cannot":** "This can't be undone." (clear skips, src) vs "This cannot be undone." (delete account).
+9. **Server wording shown raw:**
+    - "Invalid deck name: deck name maximum length is 64 characters" (Part 16).
+    - "Deck name minimum length is 1 character" (src).
+    - "Universes Beyond franchises not fetched: {e}" (src, puts an error object in front of users).
+    - "Password change successful" (src), where nearby lines read "Username changed to {name}".
+10. **Card and format names lowercased in Warnings** (Parts 14 and 16, more examples from src):
+    - "Opt is not a valid commander for **commander**" (the format name, and "commander" twice).
+    - "Deck has 28 cards, **modern** requires at least 60".
+    - "The format, **commander**, requires a commander".
+    - "Lightning bolt" and "Nicol bolas, the ravager // nicol bolas, the arisen".
+11. **Chart abbreviations read oddly:** ANTHM, CSPEL, PROTC, SACRF, LIFGN, EVASN, CADV, PLNSW, INSTN, SORCR, ENCHN, ARTIF (Distributions, Draw odds, Activity). They're vowel-dropped codes rather than words. The full role names fit in most of those rows at wide.
+12. **Numbers:** "Verify your email to create more than **1** deck" (src), where "one" reads better. "Deck at {pct:.2}% of your {} budget" (src) prints two decimals ("Deck at 87.53% of your $100 budget").
+13. **Symbols:** the changelog uses both "x" ("Sheets close from an x in their corner", "an x on the filter resets it") and "×" ("a × beside the box"). The UI draws ×.
+
+### Screen by screen
+
+| Screen | Copy notes |
+|---|---|
+| Home | Fine. "Live" / "as of Nov 7", "Everybody" / "Only me", "Hello, test!" toast. |
+| Decks | Hint "Your decks: Tap a deck to open it…" fine. The `+` is shown as the icon (good). |
+| Deck page | Welcome hint uses icons for + − filter undo edit clone share (good). Warnings, see 10. Toasts "Moved to deck" vs button "To mainboard", see 2. "Draw odds: … turn 0 is the opening hand" reads well. |
+| Add | "Swipe to build" hint: "your Maybe pile" (2). "Swipe left skips it for a week" vs Swipe select's plain "skips it": fine, but they mean different durations, so maybe say so on Swipe select too. "No results for this filter; Synergy is on, turn it off to search everything" is another comma splice, same as 6. |
+| Remove | "Swipe to trim" hint: "moves it between main and maybeboard" (2). "even at the end of the stack" is good. |
+| Swipe select | Fine. "Nothing to undo" toast fine. 1.18.0 lowercases it as "swipe select". |
+| Import / Export | Placeholder is a Commander list on any format (Part 14). "Removes all existing cards in the mainboard, replacing with imported cards." would read better as "…mainboard and replaces them with the imported cards". |
+| Create / Edit deck | Hints are tight and consistent. "Tap a format to see its details here." vs Oracle tags picker "Tap a tag to see what it means. Picking a deck tag pre-selects some of these for you." (two phrasings of one pattern, see 7). "You may only choose up to {N} oracle tags" / "…{N} tags" (src) is stiff; "Up to {N} oracle tags" would match the "Up to 5" hint. |
+| Playstyle | Hints good. "Remove hides it for a week" matches Add. |
+| Activity | Readout before any tap shows "0 swipes, 0 searches, Feb 23", an arbitrary empty day. A prompt like "Tap a square" would read better. Empty-state casing (1). |
+| Commander maybeboard | Hint good, covers 194's Swipe. |
+| Settings | **Theme hint is wrong:** "The last four are color blind modes". The group lists Achromatopsia, Deuteranopia, GitHub High Contrast, Modus, Protanopia, Tritanopia, so the last four include GitHub High Contrast and Modus, and two of the color-blind modes come first. Suggest "Achromatopsia, Deuteranopia, Protanopia and Tritanopia are color blind modes". "Swipe confirmations: … Off says nothing" fine. |
+| Account | "Your account: … Danger zone at the bottom logs you out or deletes your account" fine. "Email: Where password resets and verification go" fine. "New email must be different from your current email" etc. are consistent. |
+| About | "Version" hint has periods (7). |
+| Login / Create profile / Forgot password | 3, 5, "Logging in..." uses three dots where the rest of the copy has no ellipsis at all. |
+
+### zwipe.net guides (22, live)
+
+- **Icon rule:** "Save commanders for later" says "The color pips and **the Filter button** narrow the list of saves". That's the funnel icon, which other guides draw as the icon ("Tap the [funnel]").
+- **Out of date:** the same guide says an expanded row has "three actions". The app shows four (Image, Printings, Create deck, Remove). It does now mention the maybeboard's Swipe button (194).
+- Board names ("Main, Maybe, Side, or All", "Boards is three independent toggles") match the chips. No raw `[[icon]]` tokens or backticks leak into the rendered text. No British spellings.
+
+### Changelog (1.18.1 upcoming, 1.18.0 back to 1.12.1)
+
+- **Spelling:** "grey chips" (1.17.0) vs "gray chip" (1.18.1); "all the way **round**" (1.18.1), US English would be "around".
+- **Casing:** "swipe select" (1.18.0); "oracle tags" vs "Oracle tags" (1).
+- **Anachronism:** 1.16.1 "**Settings** names the theme's mode Dark or Light", but the screen was still "Config" until 1.18.0 ("Config is now called Settings").
+- **Claim vs behavior:** 1.18.1 "the deck page's card count, price and charts follow each card you add, remove, move or undo, with no reload". True for those, but the Warnings panel on the same page doesn't follow (Parts 13, 14, 16), so a reader may expect it to.
+- **"x" vs "×"** (13). "Maybe" for the maybeboard chip (2).
