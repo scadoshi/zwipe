@@ -49,6 +49,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "The error under a field on the deck, sign-in and account forms starts with a capital letter",
         "Add says Synergy on or Synergy off when you tap the bolt",
         "Empty lists and empty Activity panels say so in a centered gray chip",
+        "A swipe card's shadow shows all the way round, no longer cut off at its top and bottom",
     ],
 }];
 
