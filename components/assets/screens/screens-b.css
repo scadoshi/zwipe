@@ -1072,9 +1072,28 @@
 =========================== */
 
 /* The year scrolls sideways inside its section, faded at an edge with more
-   past it, and opens on the latest week. */
+   past it, and opens on the latest week. Its scrollbar takes the theme's
+   colors. Mon, Wed and Fri stay pinned at its left, on the panel's color,
+   while the weeks scroll under them; the left fade starts past them. */
 .activity-scroll {
+    --heat-gutter: calc(0.75rem + 24px);
     padding: 0.25rem 0.75rem 0;
+    scrollbar-color: var(--border-secondary) transparent;
+    -webkit-mask-image: linear-gradient(to right, #000 var(--heat-gutter), transparent var(--heat-gutter), #000 calc(var(--heat-gutter) + var(--fade-left, 0px)), #000 calc(100% - var(--fade-right, 0px)), transparent);
+    mask-image: linear-gradient(to right, #000 var(--heat-gutter), transparent var(--heat-gutter), #000 calc(var(--heat-gutter) + var(--fade-left, 0px)), #000 calc(100% - var(--fade-right, 0px)), transparent);
+}
+
+.activity-days {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background-color: var(--bg-primary);
+    /* The scroller's left padding, in the panel's color too. */
+    box-shadow: -0.75rem 0 0 var(--bg-primary);
+}
+
+.activity-days > svg {
+    display: block;
 }
 
 /* The grid at its own size, so a cell keeps its pitch on any phone, and the
