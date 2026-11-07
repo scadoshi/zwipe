@@ -6,8 +6,8 @@
 //! `zwipe_core::legal`, then a Changelog panel holds the shared
 //! [`components::ChangelogFilters`] as a row, with each release a panel of
 //! its own under it ([`components::ChangelogReleases`]), the same history the
-//! website shows: the
-//! version filter first, then a release per row.
+//! website shows: the version filter first, then a release per row, five at
+//! a time behind "Show more".
 //!
 //! The changelog is fetched once in the background at startup and cached for
 //! the session (see [`crate::inbound::components::auth::session_upkeep`]).
@@ -36,6 +36,10 @@ use crate::outbound::open_url;
 
 /// App version, baked at compile time.
 const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
+
+/// How many releases the Changelog shows before its "Show more" button, and
+/// how many more each tap reveals, as the website pages it.
+const CHANGELOG_PAGE_SIZE: usize = 5;
 
 /// The screen's model with the handles that perform its effects.
 #[derive(Clone, Copy)]
@@ -154,7 +158,7 @@ pub fn About() -> Element {
                     }
                     match (status, data) {
                         (Status::Loaded, Some(data)) => rsx! {
-                            ChangelogReleases { data, selection, look: ChangelogLook::App }
+                            ChangelogReleases { data, selection, look: ChangelogLook::App, page_size: CHANGELOG_PAGE_SIZE }
                         },
                         (Status::Failed, _) => rsx! {},
                         (Status::Loading | Status::Loaded, _) => rsx! { ChangelogSkeletonPanels {} },
