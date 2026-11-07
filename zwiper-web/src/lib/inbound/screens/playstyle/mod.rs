@@ -336,10 +336,14 @@ pub fn Playstyle() -> Element {
                                             div { class: "web-card-group-filters", {show_chips} }
                                         }
                                         if !has_entries {
-                                            div { class: "activity-total activity-total-group", "No suggestions right now" }
+                                            div { class: "activity-total activity-total-group",
+                                                span { class: "chip-note", "No suggestions right now" }
+                                            }
                                         } else if rows.is_empty() {
                                             div { class: "activity-total activity-total-group",
-                                                {empty_identity_line(&active_identity().unwrap_or_default())}
+                                                span { class: "chip-note",
+                                                    {empty_identity_line(&active_identity().unwrap_or_default())}
+                                                }
                                             }
                                         }
                                         for suggestion in rows {
