@@ -25,7 +25,7 @@
     .input-clear-wrap.web-ghost-field,
     .input-clear-wrap:has(> #commander-maybeboard-search),
     #import-url,
-    #oracle-tag-dictionary-search {
+    .input-clear-wrap:has(> #oracle-tag-dictionary-search) {
         max-width: var(--web-field-max);
     }
 
@@ -59,7 +59,29 @@ body {
 }
 
 /* Below the breakpoint scrollbars hide, as in the app, which signals a
-   scroller with edge fades; a wide window shows the browser's. */
+   scroller with edge fades; a wide window draws them thin, the thumb in
+   the theme's border color. */
+@media (min-width: 900px) {
+    * {
+        scrollbar-width: thin;
+        scrollbar-color: var(--border-secondary) transparent;
+    }
+
+    *::-webkit-scrollbar {
+        width: 0.5rem;
+        height: 0.5rem;
+    }
+
+    *::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    *::-webkit-scrollbar-thumb {
+        background-color: var(--border-secondary);
+        border-radius: 0.25rem;
+    }
+}
+
 @media (max-width: 899px) {
     *::-webkit-scrollbar {
         width: 0;
@@ -892,6 +914,13 @@ body {
 @media (min-width: 900px) {
     :root {
         --sheet-drawer-top: 5.4rem;
+    }
+
+    /* The dock sits as far left of the scrollbar along the drawer's right
+       edge as it sits above the drawer's bottom. */
+    .sheet-form-drawer > .bottom-sheet .sheet-dock.action-dock {
+        right: calc(1rem + 0.7rem);
+        margin-right: 0;
     }
 }
 
@@ -1937,6 +1966,10 @@ body {
     display: contents;
 }
 
+.dict-controls > .input-clear-wrap {
+    margin-bottom: 0;
+}
+
 @media (min-width: 900px) {
     .web-dictionary > .screen-content {
         align-items: stretch;
@@ -2061,9 +2094,10 @@ body {
 }
 
 /* A picker's body in its sheet: the controls on top and the chip grid
-   under them, the grid scrolling on its own in the drawer's height. */
-.web-picker-sheet > .sheet-content {
-    padding: 0 0 1rem;
+   under them, the grid scrolling on its own down to the sheet's bottom
+   edge, its trailing padding scrolling the last row clear of the dock. */
+.bottom-sheet.web-picker-sheet:has(.sheet-dock) > .sheet-content {
+    padding: 0;
 }
 
 .web-picker-body {
@@ -2072,6 +2106,18 @@ body {
     align-items: center;
     flex: 1 1 auto;
     min-height: 0;
+}
+
+.web-picker-body .tag-search-label {
+    color: var(--accent-primary);
+}
+
+/* The grid spans the sheet, so its scrollbar runs along the sheet's right
+   edge, and keeps its chips in the controls' column. */
+.web-picker-body > .tag-grid {
+    max-width: none;
+    padding-inline: calc((100% - 22rem) / 2 + 1rem);
+    padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
 }
 
 /* ---- The oracle tag dictionary as the kit's modal ----
