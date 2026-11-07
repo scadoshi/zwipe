@@ -3,7 +3,7 @@
 //! orangui is the generic kit: themes, panels, nav, charts, the entrance
 //! effects and the app and site kits. This crate re-exports, by name, the
 //! orangui items `zwiper` (the app) and `zite` (the site) use, so they keep one
-//! import path, and adds what needs `zwipe-core`: [`CardDetails`], [`CardRow`],
+//! import path, and adds what needs `zwipe-core`: [`CardDetails`], [`CardRow`] and the [`CardListFold`] that holds a list of them,
 //! [`CardRoleChips`], [`RoleTags`], [`OtagDef`], [`KeywordChips`],
 //! [`OracleText`], [`FlippableCardImage`], [`ChangelogFilters`] and
 //! [`ChangelogReleases`], the deck charts ([`BarChart`], [`DeckCharts`], [`ColorChart`], [`ManaCurve`], [`ManaFulfillment`],
@@ -43,6 +43,7 @@
 mod architecture;
 mod card_details;
 mod card_filter;
+mod card_list_fold;
 mod card_role_chips;
 mod card_row;
 mod changelog;
@@ -68,6 +69,7 @@ mod theme;
 pub use architecture::ZwipeArchitecture;
 pub use card_details::{CardDetails, CardDetailsPanel, CardDetailsPanelSkeleton, card_face_count};
 pub use card_filter::{CardFilterPanel, DictionarySlot};
+pub use card_list_fold::CardListFold;
 pub use card_role_chips::CardRoleChips;
 pub use card_row::CardRow;
 pub use changelog::{

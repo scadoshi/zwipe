@@ -278,6 +278,14 @@
     transform: rotate(90deg);
 }
 
+/* A card list panel's arrow and title, held together at the header's
+   start so its actions keep the end. */
+.card-list-fold-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
 /* Collapsed: the header's rule fades out in step with the closing body,
    since nothing sits under it once shut. */
 .card-group.collapsed .card-group-header {

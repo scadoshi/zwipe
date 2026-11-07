@@ -21,7 +21,8 @@
 use std::collections::HashSet;
 
 use components::{
-    AlertDialog, Button, ButtonVariant, Chip, ClearWrap, DialogAction, Toasts, use_toast,
+    AlertDialog, Button, ButtonVariant, CardListFold, Chip, ClearWrap, DialogAction, Toasts,
+    use_toast,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -493,18 +494,17 @@ pub fn CommanderMaybeboard() -> Element {
                             }
                         } else {
                             // Same bordered container the deck cards list wraps
-                            // its rows in.
-                            div { class: "maybeboard-list card-group row-enter",
-                                // Swipe sits in the list's header, so it says
-                                // what gets swiped.
-                                div { class: "card-group-header card-group-header-with-hint",
-                                    span { {model::LIST_TITLE} }
+                            // its rows in. Swipe sits in the list's header, so
+                            // it says what gets swiped.
+                            CardListFold {
+                                title: model::LIST_TITLE,
+                                actions: rsx! {
                                     Button {
                                         variant: ButtonVariant::Action,
                                         onclick: move |_| swipe_open.set(true),
                                         {model::SWIPE}
                                     }
-                                }
+                                },
                                 for card in filtered {
                                     MaybeboardRow {
                                         key: "{card.scryfall_data.id}",

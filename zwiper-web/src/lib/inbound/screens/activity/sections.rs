@@ -4,8 +4,8 @@
 
 use chrono::NaiveDate;
 use components::{
-    BarChart, BarOrientation, ChartTip, Chip, HEAT_CELL, HEAT_ROWS, HeatCell, HeatGrid, HeatHit,
-    HeatReadout, LabelCase, OtagDef, RoleTags, use_heat_pick,
+    BarChart, BarOrientation, CardListFold, ChartTip, Chip, HEAT_CELL, HEAT_ROWS, HeatCell,
+    HeatGrid, HeatHit, HeatReadout, LabelCase, OtagDef, RoleTags, use_heat_pick,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -365,16 +365,16 @@ fn HardPassRow(pass: HttpHardPass, expanded_card: Signal<Option<Uuid>>) -> Eleme
 }
 
 /// The cards the user keeps passing on, in the server's order (most skipped
-/// against other players first). Without any, the header over a line saying
-/// what fills it.
+/// against other players first), in a list that folds. Without any, the
+/// header over a line saying what fills it.
 #[component]
 pub fn HardPassesPanel(passes: Vec<HttpHardPass>, expanded_card: Signal<Option<Uuid>>) -> Element {
     rsx! {
-        div { class: "maybeboard-list card-group row-enter",
-            div { class: "card-group-header card-group-header-with-hint",
-                span { "{PASSES_TITLE}" }
+        CardListFold {
+            title: PASSES_TITLE,
+            actions: rsx! {
                 InfoButton { topic: HintTopic::HardPasses }
-            }
+            },
             if passes.is_empty() {
                 div { class: "activity-total activity-total-group",
                     span { class: "chip-note", "{PASSES_EMPTY}" }

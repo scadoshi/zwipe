@@ -96,6 +96,18 @@ impl Slot {
         }
     }
 
+    /// The collapse key of the group the slot sits in on the deck cards list:
+    /// one key for the commander and the partner, as they share a group, and
+    /// apart from every grouping's keys.
+    #[must_use]
+    pub fn group_key(self) -> &'static str {
+        match self {
+            Self::Commander | Self::Partner => "zone:commander",
+            Self::Background => "zone:background",
+            Self::SignatureSpell => "zone:signature-spell",
+        }
+    }
+
     /// The sparse deck profile update that puts the printing `id` in this slot, or clears the slot when `id` is `None`. Every other field stays unchanged.
     #[must_use]
     pub fn update_request(self, id: Option<Uuid>) -> HttpUpdateDeckProfile {
@@ -178,6 +190,16 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn each_zone_group_folds_by_its_own_key() {
+        assert_eq!(Slot::Commander.group_key(), Slot::Partner.group_key());
+        let keys = [Slot::Commander, Slot::Background, Slot::SignatureSpell].map(Slot::group_key);
+        assert!(keys.iter().all(|k| k.starts_with("zone:")));
+        assert_ne!(keys[0], keys[1]);
+        assert_ne!(keys[1], keys[2]);
+        assert_ne!(keys[0], keys[2]);
     }
 
     #[test]
