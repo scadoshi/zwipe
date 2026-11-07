@@ -8,6 +8,7 @@ use zwipe_core::domain::user::settings::PipStyle;
 use zwiper::config::Config;
 use zwiper::inbound::components::auth::session_upkeep;
 use zwiper::inbound::components::hint_host::HintHost;
+use zwiper::inbound::components::navigation::leave_guard::GuardedHistory;
 use zwiper::inbound::components::navigation::menu::MenuOpen;
 use zwiper::inbound::components::update_required::UpdateRequired;
 use zwiper::inbound::router::Router;
@@ -110,6 +111,10 @@ fn App() -> Element {
     use_hook(zwiper::outbound::shake_to_edit::disable);
     // Unclaimed link clicks open in the in-app browser, not Safari.
     components::use_in_app_links();
+
+    // The router's history, with the guard that asks before a screen with
+    // unsaved changes is left.
+    use_hook(GuardedHistory::provide);
 
     // Before the upkeep, which reacts to each return to the foreground.
     zwiper::inbound::components::lifecycle::use_lifecycle_root();
