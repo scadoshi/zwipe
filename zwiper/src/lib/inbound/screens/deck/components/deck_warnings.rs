@@ -18,14 +18,12 @@ pub(crate) fn DeckWarnings(
     rsx! {
         div { style: "display:flex;flex-direction:column;",
             for warning in warnings.iter() {
-                div { class: "settings-row",
-                    style: "justify-content: space-between; gap: 0.5rem;",
+                div { class: "settings-row deck-warning-row",
                     span { class: "text-muted", "{warning}" }
                     // The below-minimum warning's two fixes sit together;
                     // every other warning has one.
                     if warning::fix(warning) == Some(Fix::BelowMinimum) {
-                        span {
-                            style: "display: flex; gap: 0.5rem;",
+                        span { class: "deck-warning-fixes",
                             for (label, action) in deck_view::fix_buttons(warning) {
                                 Button {
                                     variant: ButtonVariant::Small,

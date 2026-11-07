@@ -89,6 +89,28 @@ fn ActivityHeatmap(through: NaiveDate, days: Vec<HttpActivityDay>) -> Element {
                 class: "activity-plot",
                 style: "width:{width}px;",
                 onmouseleave: move |_| hover.set(None),
+                // The weekday names again, pinned at the scroller's left
+                // over the grid's own, so they stay in view as the year
+                // scrolls under them.
+                div {
+                    class: "activity-days",
+                    style: "width:{LEFT}px;height:{height}px;margin-bottom:-{height}px;",
+                    "aria-hidden": "true",
+                    svg {
+                        width: "{LEFT}",
+                        height: "{height}",
+                        view_box: "0 0 {LEFT} {height}",
+                        for (row, name) in WEEKDAY_LABELS {
+                            text {
+                                key: "p{row}",
+                                class: "heat-label",
+                                x: "0",
+                                y: "{TOP + components::heat_span(row) + HEAT_CELL - 2.0}",
+                                "{name}"
+                            }
+                        }
+                    }
+                }
                 svg {
                     class: "heat-grid",
                     style: "width:{width}px;",

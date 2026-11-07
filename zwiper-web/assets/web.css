@@ -1629,6 +1629,10 @@ body {
         width: 100% !important;
         height: auto;
     }
+
+    .web-activity-heat .activity-days {
+        display: none;
+    }
 }
 
 /* ---- Playstyle ---- */
