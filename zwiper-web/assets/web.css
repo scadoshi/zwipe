@@ -1948,8 +1948,9 @@ body {
    docks at the bottom right, as tall as its content up to the room there
    and scrolling inside itself, so the page, the card and the docks never
    move. The dock's eye slides it out to the right and back in with the
-   drawer's motion; the card is centered in what the panel leaves, or in
-   the whole width while the panel is out. */
+   drawer's motion. The card stays centered in the whole width whether the
+   panel is in or out; where the window is too narrow for both, the panel
+   lies over the card. */
 @media (min-width: 900px) {
     :root {
         --web-dock-panel-width: min(24rem, calc(100vw - 2rem));
@@ -2014,19 +2015,11 @@ body {
         }
     }
 
-    /* The card takes one centered column, clear of the panel while it is
-       in. */
+    /* The card takes one column, centered in the whole width. */
     .web-main .web-cards-swipe.screen-content,
     .web-swipe-select-body,
     .web-examples-body {
         grid-template-columns: minmax(0, 1fr);
-        padding-right: calc(var(--web-dock-panel-width) + 2.5rem);
-    }
-
-    .web-main .web-cards-swipe.screen-content.web-details-hidden,
-    .web-swipe-select-body.web-details-hidden,
-    .web-examples-body.web-details-hidden {
-        padding-right: 1.5rem;
     }
 }
 
