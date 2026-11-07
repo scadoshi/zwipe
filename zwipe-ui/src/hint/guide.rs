@@ -97,7 +97,7 @@ pub const fn one_time_slug(hint: OneTimeHint) -> Option<&'static str> {
 pub const fn swipe_select_slug(mode: SwipeSelectMode) -> &'static str {
     match mode {
         SwipeSelectMode::Picking(_) => "commander-and-formats",
-        SwipeSelectMode::SavesToMaybeboard => "commander-maybeboard",
+        SwipeSelectMode::StartsDeck => "commander-maybeboard",
         SwipeSelectMode::Suggested { .. } => "playstyle",
     }
 }

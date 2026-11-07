@@ -1,6 +1,6 @@
 //! Swipe select: the overlay that swipes through cards to fill a command zone slot, or through the user's suggested commanders.
 //!
-//! Left skips the card on top, right picks it, up saves it to the commander maybeboard and down undoes the last swipe. A [`Mode`] decides the always-on constraint on the search: legal commanders for a format, partners, backgrounds, or signature spells within an identity. [`Mode::Suggested`] deals the host's ranking instead of searching, and there a left swipe dismisses the commander for a week. In [`Mode::Maybeboard`] right saves to the commander maybeboard in place of a pick, and up does nothing.
+//! Left skips the card on top, right picks it, up saves it to the commander maybeboard and down undoes the last swipe. A [`Mode`] decides the always-on constraint on the search: legal commanders for a format, partners, backgrounds, or signature spells within an identity. [`Mode::Suggested`] deals the host's ranking instead of searching, and there a left swipe dismisses the commander for a week.
 //!
 //! The overlay stays mounted while it is closed, so a reopen with the same mode keeps the pile and its place. The client sends [`Action::Open`] each time the overlay opens, [`Action::Filter`] when the card filter sheet applies, and [`Action::Redeal`] when the host's suggested pile changes while it is open. A right swipe hands the card to the host with [`Effect::Pick`], and Back goes to [`Destination::Previous`], which the host takes as the overlay closing. Gestures, the card's exit and entrance motion, the filter sheet's draft, the details and printings sheets and whether the overlay is up stay in the client.
 
@@ -87,10 +87,6 @@ pub enum Mode {
     SignatureSpell(Colors),
     /// The user's suggested commanders, a fixed ranking rather than a search.
     Suggested,
-    /// Commanders to collect from the Commander maybeboard: legal commanders
-    /// for Commander, where right saves the card to the maybeboard and the
-    /// swiping goes on.
-    Maybeboard,
 }
 
 impl Mode {
@@ -99,7 +95,7 @@ impl Mode {
     pub fn noun(&self) -> &'static str {
         match self {
             Self::Commander(format) if format.has_signature_spell() => "oathbreaker",
-            Self::Commander(_) | Self::Suggested | Self::Maybeboard => "commander",
+            Self::Commander(_) | Self::Suggested => "commander",
             Self::Partner => "partner",
             Self::Background => "background",
             Self::SignatureSpell(_) => "signature spell",
@@ -112,21 +108,11 @@ impl Mode {
         matches!(self, Self::Commander(_) | Self::Partner | Self::Suggested)
     }
 
-    /// Whether a right swipe saves to the commander maybeboard and moves on,
-    /// in place of picking the card for the host.
-    #[must_use]
-    pub fn right_saves(&self) -> bool {
-        matches!(self, Self::Maybeboard)
-    }
-
     /// Adds this mode's constraint to `builder`. The suggested pile never searches, so it adds none.
     fn apply(&self, builder: &mut CardQueryBuilder) {
         match self {
             Self::Commander(format) => {
                 builder.set_is_commander_in_format(*format);
-            }
-            Self::Maybeboard => {
-                builder.set_is_commander_in_format(Format::Commander);
             }
             Self::Partner => {
                 builder.set_is_partner(true);
@@ -359,8 +345,7 @@ impl State {
     /// A reply whose request is no longer waiting changes nothing.
     #[must_use = "the client performs the effects"]
     pub fn update(&mut self, action: Action) -> Vec<Effect> {
-        let picks = matches!(action, Action::Choose) && !self.right_saves();
-        let leaves = picks || matches!(action, Action::Back);
+        let leaves = matches!(action, Action::Choose | Action::Back);
         let before = self.status();
         let mut effects = self.apply(action);
         if !leaves
@@ -425,10 +410,8 @@ impl State {
                 _ => Vec::new(),
             },
             Action::Skip => self.skip(),
-            Action::Choose if self.right_saves() => self.save(),
             Action::Choose => self.choose(),
-            Action::Save if self.can_save() => self.save(),
-            Action::Save => Vec::new(),
+            Action::Save => self.save(),
             Action::Undo => self.undo(),
             Action::PickPrinting(card) => {
                 self.stack.replace_current(*card);
@@ -636,10 +619,11 @@ impl State {
         ]
     }
 
-    /// Saves the card on top to the commander maybeboard and moves past it:
-    /// an up swipe where the mode saves, a right swipe in
-    /// [`Mode::Maybeboard`].
+    /// Saves the card on top to the commander maybeboard and moves past it.
     fn save(&mut self) -> Vec<Effect> {
+        if !self.can_save() {
+            return Vec::new();
+        }
         let Some(oracle_id) = self.stack.current().map(|c| c.scryfall_data.oracle_id) else {
             return Vec::new();
         };
@@ -789,13 +773,6 @@ impl State {
     #[must_use]
     pub fn can_save(&self) -> bool {
         self.mode.as_ref().is_some_and(Mode::saves)
-    }
-
-    /// Whether a right swipe saves to the commander maybeboard rather than
-    /// picking: [`Mode::Maybeboard`].
-    #[must_use]
-    pub fn right_saves(&self) -> bool {
-        self.mode.as_ref().is_some_and(Mode::right_saves)
     }
 
     /// The cards a swipe stack draws: up to [`crate::stack::STACK_DEPTH`] from the top one.

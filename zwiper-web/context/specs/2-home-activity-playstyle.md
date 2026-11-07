@@ -507,7 +507,7 @@ Header title "Commander maybeboard" with "?" (hint `HINT_COMMANDER_MAYBEBOARD`).
 Title "Commander maybeboard". Line "Commanders you save land here". Bullets:
 
 - "Swipe " + colored warning "up" + " while picking a commander saves it here"
-- key "Swipe" + " deals commanders: right saves one here, left skips it"
+- key "Swipe" + " deals commanders you haven't saved: left skips, up saves, right starts a deck"
 - key "Quick add" + " searches by name"
 - key "Create deck" + " starts a deck with that commander"
 - key (`--color-error`) "Remove" + " takes it off the list"

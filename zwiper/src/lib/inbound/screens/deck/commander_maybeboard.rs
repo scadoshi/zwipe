@@ -34,6 +34,7 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
+use zwipe_core::domain::deck::format::Format;
 use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_ui::generation::Ticket;
 use zwipe_ui::screens::commander_maybeboard::{
@@ -320,7 +321,7 @@ pub fn CommanderMaybeboard() -> Element {
     let preview_card: Signal<Option<(ScryfallData, usize)>> = use_signal(|| None);
     let preview_dismissing = use_signal(|| false);
     let mut swipe_open = use_signal(|| false);
-    let swipe_mode = use_memo(|| Some(SwipeMode::Maybeboard));
+    let swipe_mode = use_memo(|| Some(SwipeMode::Commander(Format::Commander)));
     // Printing sheet target: the row whose Printing button was tapped. The
     // swap is display-local (the maybeboard is oracle-keyed; a refetch goes
     // back to the preferred printing), but a Create deck after swapping
@@ -338,7 +339,7 @@ pub fn CommanderMaybeboard() -> Element {
     let mut filters_overlay_open = use_signal(|| false);
     let mut show_clear_dialog = use_signal(|| false);
 
-    // Tells the model when the Swipe overlay closes: its right swipes saved
+    // Tells the model when the Swipe overlay closes: its up swipes saved
     // entries, so the list fetches again.
     let mut swipe_was_open = use_signal(|| false);
     use_effect(move || {
@@ -564,13 +565,18 @@ pub fn CommanderMaybeboard() -> Element {
                 },
             }
 
-            // Commanders to collect: a right swipe saves one here and the
-            // swiping goes on. Saved ones stay out of the pile.
+            // Commanders not saved yet: up saves one here, right starts a
+            // deck with it and goes to the create screen.
             SwipeSelect {
                 host_screen: screen::COMMANDER_MAYBEBOARD,
                 open: swipe_open,
                 mode: swipe_mode,
                 exclude_oracle_ids: Some(saved_oracles.into()),
+                starts_deck: true,
+                on_select: move |card: Card| {
+                    swipe_open.set(false);
+                    driver.create(card);
+                },
                 on_close: move |()| swipe_open.set(false),
             }
 

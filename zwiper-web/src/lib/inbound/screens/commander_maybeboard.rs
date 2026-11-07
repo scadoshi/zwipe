@@ -580,12 +580,18 @@ pub fn CommanderMaybeboard() -> Element {
             quiet_reset: true,
             on_apply: move |applied: CardQueryBuilder| filter.set(applied),
         }
-        // Commanders to collect: a right swipe saves one here and the
-        // swiping goes on. Saved ones stay out of the pile.
+        // Commanders not saved yet: up saves one here, right starts a deck
+        // with it.
         SwipeSelect {
             open: swipe_open,
-            mode: SwipeMode::Maybeboard,
+            mode: SwipeMode::Commander(Format::Commander),
             exclude_oracle_ids: Some(saved_oracles.into()),
+            starts_deck: true,
+            on_select: move |card: Card| {
+                swipe_open.set(false);
+                list.refetch();
+                create_with.call(card);
+            },
             on_close: move |()| {
                 swipe_open.set(false);
                 list.refetch();

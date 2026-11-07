@@ -8,8 +8,6 @@
 //! full [`CardFilterSheet`]. Swipe **left** to skip, **right** to choose,
 //! **down** to undo; **up** saves to the commander maybeboard (commander and
 //! partner modes only: the pile advances and selection continues).
-//! [`SwipeMode::Maybeboard`], from the commander maybeboard, saves on a
-//! **right** swipe instead and has no up.
 //!
 //! [`SwipeMode::Suggested`] deals a given ranking instead of a search: the
 //! host's held suggestions, read through `suggested_pile` each time the overlay
@@ -244,15 +242,15 @@ impl Driver {
 pub(crate) fn SwipeSelect(
     open: Signal<bool>,
     mode: ReadSignal<Option<SwipeMode>>,
-    #[props(default)] on_select: EventHandler<Card>,
+    on_select: EventHandler<Card>,
     on_close: EventHandler<()>,
     /// Host screen const for error-report breadcrumbs, passed through to the
     /// printing sheet (this overlay serves deck edit and deck create).
     host_screen: &'static str,
     /// Oracle ids kept out of the pile. The commander maybeboard passes its
-    /// own saves here (a saved commander is a wasted deal); deck create/edit
-    /// pass nothing, so saves still serve where the user goes to actually
-    /// pick one.
+    /// own saves here (its Swipe is discovery: a saved commander is a wasted
+    /// deal); deck create/edit pass nothing, so saves still serve where the
+    /// user goes to actually pick one.
     #[props(default)]
     exclude_oracle_ids: Option<ReadSignal<HashSet<Uuid>>>,
     /// The ranking the suggested mode deals, snapshotted on each open so the
@@ -264,6 +262,10 @@ pub(crate) fn SwipeSelect(
     /// state that narrows `suggested_pile`. Without it there is no Filter.
     #[props(default)]
     suggested_filter: Option<Element>,
+    /// Whether a pick starts a new deck, as from the commander maybeboard,
+    /// which the hint then says.
+    #[props(default)]
+    starts_deck: bool,
 ) -> Element {
     // OS back gesture closes this overlay before touching the router.
     use_overlay_back(open);
@@ -393,7 +395,6 @@ pub(crate) fn SwipeSelect(
     // Up-swipe = "maybe this commander" (per-user save), so it's only live in
     // the modes whose pool is commanders.
     let maybe_enabled = state.can_save();
-    let right_saves = state.right_saves();
     let title = state.title();
     let current_reasons = state.reasons().cloned();
     let deck_count = state.deck_count();
@@ -411,8 +412,8 @@ pub(crate) fn SwipeSelect(
         SwipeSelectMode::Suggested {
             has_filter: has_suggested_filter,
         }
-    } else if right_saves {
-        SwipeSelectMode::SavesToMaybeboard
+    } else if starts_deck {
+        SwipeSelectMode::StartsDeck
     } else {
         SwipeSelectMode::Picking(noun)
     };
