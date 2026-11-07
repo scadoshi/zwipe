@@ -404,27 +404,30 @@ body {
 }
 
 /* A deck on Decks is a card row, so the kit's row hover reaches it with
-   the expanded row's smaller corners and a larger scale. Under a mouse it
-   keeps its own corners, keeps the row hover's tint and grows a touch.
-   Its entrance fills backwards only, so its end transform lets go of the
-   hover. */
+   the expanded row's smaller corners and a scale. Under a mouse it keeps
+   its own corners and the row hover's tint and lifts as a panel does: the
+   medium shadow, and a 3px rise where motion is welcome, at the panel
+   lift's timing. Its entrance fills backwards only, so its end transform
+   lets go of the hover. */
 @media (hover: hover) {
     .card-row.deck-row {
         animation-fill-mode: backwards;
         transition:
             background-color 0.15s ease,
-            transform 0.15s ease;
+            transform 0.4s ease,
+            box-shadow 0.4s ease;
     }
 
     .card-row.deck-row:not(.expanded):hover {
         border-radius: 1rem;
-        transform: scale(1.012);
+        transform: none;
+        box-shadow: var(--shadow-md);
     }
 }
 
-@media (hover: hover) and (prefers-reduced-motion: reduce) {
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
     .card-row.deck-row:not(.expanded):hover {
-        transform: none;
+        transform: translateY(-3px);
     }
 }
 
