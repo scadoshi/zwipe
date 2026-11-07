@@ -1,6 +1,6 @@
 //! What a swipe screen says after a swipe, as the user's swipe
-//! confirmations setting has it: the last action in a quiet chip at the
-//! screen's top left, a toast for each, or nothing.
+//! confirmations setting has it: the last action's short word in a quiet
+//! chip at the screen's top left, a toast for each in full, or nothing.
 
 use std::time::Duration;
 
@@ -9,6 +9,7 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, Toasts, use_toast};
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user::settings::SwipeConfirmations;
+use zwipe_ui::confirm::chip_word;
 
 /// A swipe screen's confirmations. `Copy`; from [`use_swipe_confirm`].
 #[derive(Clone, Copy)]
@@ -62,7 +63,7 @@ impl SwipeConfirm {
             SwipeConfirmations::Chip => {
                 let mut said = self.said;
                 let count = said.peek().as_ref().map_or(0, |(n, _)| n.wrapping_add(1));
-                said.set(Some((count, text)));
+                said.set(Some((count, chip_word(&text).to_owned())));
             }
             SwipeConfirmations::Toasts => {
                 let options = ToastOptions::default().duration(lasting);

@@ -1,11 +1,12 @@
 //! What a swipe screen says after a swipe, as the user's swipe
-//! confirmations setting has it: the last action in a quiet chip at the
-//! screen's top left, a toast for each, or nothing.
+//! confirmations setting has it: the last action's short word in a quiet
+//! chip at the screen's top left, a toast for each in full, or nothing.
 
 use components::Toasts;
 use dioxus::prelude::*;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user::settings::SwipeConfirmations;
+use zwipe_ui::confirm::chip_word;
 use zwipe_ui::toast::Toast;
 
 use crate::inbound::components::ui_toast;
@@ -14,8 +15,8 @@ use crate::inbound::components::ui_toast;
 /// same words said twice ease in again.
 pub(crate) type Said = Signal<Option<(u32, String)>>;
 
-/// Confirms a swipe's `toast` as the session's setting says: its words in
-/// the screen's chip (`said`), the toast itself, or nothing.
+/// Confirms a swipe's `toast` as the session's setting says: its short word
+/// in the screen's chip (`said`), the toast itself, or nothing.
 pub(crate) fn confirm(
     session: Signal<Option<Session>>,
     toasts: Toasts,
@@ -30,7 +31,7 @@ pub(crate) fn confirm(
     match setting {
         SwipeConfirmations::Chip => {
             let count = said.peek().as_ref().map_or(0, |(n, _)| n.wrapping_add(1));
-            said.set(Some((count, toast.text)));
+            said.set(Some((count, chip_word(&toast.text).to_owned())));
         }
         SwipeConfirmations::Toasts => ui_toast::raise(toasts, toast),
         SwipeConfirmations::Off => {}
