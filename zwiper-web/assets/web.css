@@ -2152,6 +2152,19 @@ body {
     color: var(--accent-primary);
 }
 
+/* ---- Leave guard ----
+
+   The dialog that asks before a screen with unsaved changes is left: the
+   kit's alert dialog, a step above it, so it covers every layer a screen
+   can have open, a hint's dialog included. */
+.alert-dialog-overlay.web-leave-overlay {
+    z-index: 1002;
+}
+
+.alert-dialog.web-leave-dialog {
+    z-index: 1003;
+}
+
 /* ---- Oracle tag dictionary ---- */
 
 /* Below the breakpoint the browse wrapper adds no box, so the controls and

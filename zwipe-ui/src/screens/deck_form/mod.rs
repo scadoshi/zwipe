@@ -46,6 +46,18 @@ pub const SAVE: &str = "Save";
 /// The save button while the save is out.
 pub const SAVING: &str = "Saving...";
 
+/// The title of the dialog that asks before leaving the form with unsaved changes.
+pub const LEAVE_TITLE: &str = "Leave without saving?";
+
+/// The leave dialog's body.
+pub const LEAVE_BODY: &str = "Your changes to this deck will be lost.";
+
+/// The leave dialog's button that keeps the user on the form.
+pub const STAY: &str = "Stay";
+
+/// The leave dialog's button that goes on and drops the changes.
+pub const LEAVE: &str = "Leave";
+
 /// The first section's title: name, format, command zone and power level.
 pub const PROFILE: &str = "Profile";
 
@@ -494,7 +506,7 @@ pub struct State {
     mode: Mode,
     status: Status,
     values: FormValues,
-    /// Edit's values as saved; each command-zone card fills in as it arrives.
+    /// Edit's values as saved, each command-zone card filling in as it arrives; Create's as the form opened. A save that went through moves it to the values saved.
     saved: FormValues,
     searches: Searches,
     name_touched: bool,
@@ -599,6 +611,7 @@ impl State {
                 if self.take(ticket) != Some(Request::Save) {
                     return Vec::new();
                 }
+                self.saved = self.values.clone();
                 vec![Effect::Navigate(Destination::Deck(deck_id))]
             }
             Action::Updated { ticket } => {
@@ -606,6 +619,7 @@ impl State {
                     return Vec::new();
                 }
                 self.saving = false;
+                self.saved = self.values.clone();
                 match self.mode {
                     Mode::Edit(deck_id) => vec![Effect::Navigate(Destination::Deck(deck_id))],
                     Mode::Create => Vec::new(),
@@ -750,6 +764,19 @@ impl State {
         }
     }
 
+    /// Whether leaving now would lose something: the form differs from the deck as saved (Create: from the form as it opened), or the open picker holds a pick not yet kept. False while Edit's deck loads or failed to load, and once a save went through.
+    #[must_use]
+    pub fn has_unsaved_changes(&self) -> bool {
+        if self.status != Status::Ready {
+            return false;
+        }
+        let changed = match self.mode {
+            Mode::Create => self.values != self.saved,
+            Mode::Edit(_) => self.values.update_request(&self.saved).is_some(),
+        };
+        changed || !self.picker_unchanged()
+    }
+
     /// The save button's text, or `None` when it hides: Edit with nothing changed.
     #[must_use]
     pub fn save_label(&self) -> Option<&'static str> {
@@ -775,6 +802,7 @@ impl State {
                         .clone_from(&card.scryfall_data.name);
                     self.values.commander = Some(*card);
                 }
+                self.saved = self.values.clone();
                 vec![Effect::OfferHint(self.mode.hint())]
             }
             Open::Edit(deck_id) => {
