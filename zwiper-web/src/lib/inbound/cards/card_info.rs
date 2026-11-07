@@ -1,7 +1,7 @@
 //! A card's prices as chips, for the printing sheet, and a swipe card's
 //! full details in the drawer behind the dock's eye.
 
-use components::{CardDetailsPanel, DrawerSheet, use_overlay_back};
+use components::{CardDetailsCost, CardDetailsPanel, DrawerSheet, use_overlay_back};
 use dioxus::prelude::*;
 use zwipe_core::domain::card::Card;
 use zwipe_ui::card::info;
@@ -22,8 +22,10 @@ pub fn CardInfoDisplay(card: Card) -> Element {
 }
 
 /// The card's details as a drawer from the right edge, at every width,
-/// behind the eye button: the card as a [`CardDetailsPanel`] with the host's
-/// `footer` in its foot and `body_end` scrolling at its body's end, the panel's title the drawer's only title. It closes from its title bar's ×, a backdrop tap,
+/// behind the eye button: the card's name and mana cost in the drawer's
+/// title bar beside the ×, then the card as a headless [`CardDetailsPanel`]
+/// with the host's `footer` in its foot and `body_end` scrolling at its
+/// body's end, under the title bar. It closes from its title bar's ×, a backdrop tap,
 /// Escape or the back gesture. The panel's foot has `Flip` for a
 /// multi-faced card and a `Printings` pill when the host passes
 /// `on_printings`, as the wide pane does. Mount it at the screen root
@@ -38,9 +40,15 @@ pub fn CardDetailsSheet(
 ) -> Element {
     let describe_tag = use_describe_tag();
     use_overlay_back(open);
+    // The shown face, shared by the title bar's cost and the panel's Flip.
+    let face = use_signal(|| 0_usize);
+    let name = card.scryfall_data.name.clone();
+    let title_card = card.clone();
     rsx! {
         DrawerSheet {
             open,
+            title: name,
+            title_trailing: rsx! { CardDetailsCost { card: title_card, face } },
             on_close: move |()| {
                 let mut open = open;
                 open.set(false);
@@ -49,6 +57,8 @@ pub fn CardDetailsSheet(
             class: "card-details-drawer",
             CardDetailsPanel {
                 card,
+                headless: true,
+                face,
                 describe_tag: Some(describe_tag),
                 on_printings,
                 footer,

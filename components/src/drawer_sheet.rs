@@ -9,7 +9,8 @@ use dioxus::prelude::*;
 use crate::{ActionDock, Button, ButtonVariant, DockPlace, SheetFrame, SheetWide};
 
 /// The sheet, shown while `open`. Its title bar holds the ×, then `title`
-/// unless it is empty (a sheet whose content titles itself). The × and a
+/// unless it is empty (a sheet whose content titles itself), followed by
+/// `title_trailing` when given, such as a card's mana cost. The × and a
 /// backdrop tap call
 /// `on_close`; `on_hint`, when given, puts a `?` in the title bar's right
 /// corner. `class` joins the sheet's own classes. `children` mount only
@@ -21,6 +22,7 @@ use crate::{ActionDock, Button, ButtonVariant, DockPlace, SheetFrame, SheetWide}
 pub fn DrawerSheet(
     open: ReadSignal<bool>,
     #[props(into, default)] title: String,
+    #[props(default)] title_trailing: Option<Element>,
     on_close: EventHandler<()>,
     #[props(default)] on_hint: Option<EventHandler<()>>,
     #[props(default)] class: &'static str,
@@ -48,8 +50,8 @@ pub fn DrawerSheet(
                         onclick: move |_| on_close.call(()),
                         "\u{00d7}"
                     }
-                    if !title.is_empty() {
-                        span { class: "sheet-title", "{title}" }
+                    if !title.is_empty() || title_trailing.is_some() {
+                        span { class: "sheet-title", "{title}" {title_trailing} }
                     }
                     if let Some(on_hint) = on_hint {
                         Button {

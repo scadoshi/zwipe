@@ -1,4 +1,4 @@
-use components::{CardDetailsPanel, DrawerSheet, use_overlay_back};
+use components::{CardDetailsCost, CardDetailsPanel, DrawerSheet, use_overlay_back};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::Card;
@@ -40,8 +40,9 @@ pub(crate) fn use_describe_tag() -> Callback<String, Option<String>> {
 }
 
 /// A card's full details as a drawer from the right edge, behind the swipe
-/// dock's eye: the card as a [`CardDetailsPanel`] with the host's `footer`
-/// in its foot, the panel's title the drawer's only title. The host opens it through the shared
+/// dock's eye: the card's name and mana cost in the drawer's title bar
+/// beside the ×, then the card as a headless [`CardDetailsPanel`] with the
+/// host's `footer` in its foot, its body scrolling under the title bar. The host opens it through the shared
 /// `open` signal. It closes from its title bar's ×, a backdrop tap or the
 /// back gesture. The panel's foot has Flip for a multi-faced card and, with
 /// `on_printings`, a Printings pill, as the web's pane does.
@@ -64,9 +65,15 @@ pub(crate) fn CardDetailsSheet(
 ) -> Element {
     let describe_tag = use_describe_tag();
     use_overlay_back(open);
+    // The shown face, shared by the title bar's cost and the panel's Flip.
+    let face = use_signal(|| 0_usize);
+    let name = card.scryfall_data.name.clone();
+    let title_card = card.clone();
     rsx! {
         DrawerSheet {
             open,
+            title: name,
+            title_trailing: rsx! { CardDetailsCost { card: title_card, face } },
             on_close: move |()| {
                 let mut open = open;
                 open.set(false);
@@ -75,6 +82,8 @@ pub(crate) fn CardDetailsSheet(
             class: "card-details-drawer",
             CardDetailsPanel {
                 card,
+                headless: true,
+                face,
                 describe_tag: Some(describe_tag),
                 on_printings,
                 footer,

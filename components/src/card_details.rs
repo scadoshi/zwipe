@@ -325,6 +325,11 @@ pub fn CardDetailsPanel(
     /// Extra classes on the panel.
     #[props(default)]
     class: Option<String>,
+    /// Leave out the panel's own title band, for a host that shows the
+    /// card's name and [`CardDetailsCost`] in its own title bar, such as the
+    /// drawer: the body then runs from the panel's top.
+    #[props(default)]
+    headless: bool,
 ) -> Element {
     let sd = &card.scryfall_data;
     let name = sd.name.clone();
@@ -357,15 +362,18 @@ pub fn CardDetailsPanel(
     };
 
     // A tall pane scrolls its body between its head and foot; scrolling
-    // down hides the head and scrolling up brings it back.
+    // down hides the head and scrolling up brings it back. A headless pane
+    // has no head to fold.
     use_hook(|| {
-        document::eval(HEAD_HIDE_JS);
+        if !headless {
+            document::eval(HEAD_HIDE_JS);
+        }
     });
 
     rsx! {
         Panel {
-            title: name,
-            title_trailing: (!cost.is_empty()).then(|| rsx! {
+            title: (!headless).then_some(name),
+            title_trailing: (!headless && !cost.is_empty()).then(|| rsx! {
                 OracleText { text: cost, class: "card-details-cost".to_string() }
             }),
             class,
@@ -399,6 +407,26 @@ pub fn CardDetailsPanel(
             if let Some(end) = body_end {
                 div { class: "card-details-body-end", {end} }
             }
+        }
+    }
+}
+
+/// The mana cost of `card`'s shown face (`face`), drawn as the panel's head
+/// draws it, for a host that titles the card in its own bar beside the name.
+/// Nothing for a card without a cost.
+#[component]
+pub fn CardDetailsCost(card: Card, face: Signal<usize>) -> Element {
+    let faces = build_rules(&card);
+    let face_count = faces.as_ref().map_or(0, Vec::len);
+    let cur = face().min(face_count.saturating_sub(1));
+    let cost = faces
+        .as_ref()
+        .and_then(|f| f.get(cur))
+        .map(|f| f.mana_cost.clone())
+        .unwrap_or_default();
+    rsx! {
+        if !cost.is_empty() {
+            OracleText { text: cost, class: "card-details-cost".to_string() }
         }
     }
 }

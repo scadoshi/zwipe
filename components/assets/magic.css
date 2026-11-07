@@ -926,7 +926,8 @@ i.ms.ms-cost.ms-gp {
 }
 
 /* The cost's pips right after the name, on the title's line. */
-.card-details-panel .panel-title .card-details-cost {
+.card-details-panel .panel-title .card-details-cost,
+.card-details-drawer .sheet-title .card-details-cost {
     display: inline-block;
     margin: 0 0 0 0.5rem;
     white-space: nowrap;
@@ -1010,6 +1011,13 @@ i.ms.ms-cost.ms-gp {
 .card-details-panel > .panel-body:last-child {
     margin-bottom: -1.5rem;
     padding-bottom: 1.5rem;
+}
+
+/* A headless pane's body opens the panel, so it reaches the panel's top
+   edge the same way: a drawer's body scrolls right up to its title bar. */
+.card-details-panel > .panel-body:first-child {
+    margin-top: -1.5rem;
+    padding-top: 1.5rem;
 }
 
 /* Scrolling the body down folds the head away (HEAD_HIDE_JS marks the
