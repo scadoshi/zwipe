@@ -1326,3 +1326,15 @@
     }
 }
 
+/* =========================
+  overlays inside entrances
+ =========================== */
+
+/* An entrance animation that holds its end state keeps its block a
+   stacking context, which traps a fixed overlay mounted inside it under
+   the app's header and the status bar strip. While an overlay is open the
+   block's finished entrance stops holding (its end state is the block's
+   own), so the overlay's backdrop covers the whole window. */
+:is(.content-enter, .content-enter-delayed, .chip-in, .row-enter):has(.image-preview-container, .sheet-backdrop.show, .alert-dialog-overlay) {
+    animation-fill-mode: backwards;
+}
