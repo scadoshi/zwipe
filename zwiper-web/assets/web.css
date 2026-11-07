@@ -2334,7 +2334,9 @@ body {
         max-height: 92vh;
     }
 
-    .web-dict-sheet .sheet-content {
+    /* The list runs to the sheet's foot; the kit's last-child padding
+       moves inside it, so its last entry still scrolls clear. */
+    .web-dict-sheet .bottom-sheet > .sheet-content:last-child {
         overflow: hidden;
         padding: 0 1.5rem;
     }
@@ -2342,6 +2344,10 @@ body {
     .web-dict-sheet .web-dict-browse {
         max-width: none;
         padding: 0;
+    }
+
+    .web-dict-sheet .dict-list {
+        padding-bottom: 1.5rem;
     }
 }
 

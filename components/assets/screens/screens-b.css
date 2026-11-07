@@ -643,13 +643,14 @@
     width: 100%;
     max-width: 24rem;
     /* The entries fade in under the rail and run out under the dock to the
-       window's edge, the trailing padding scrolling the last one clear. */
+       list's foot, fading there too, the trailing padding scrolling the
+       last one clear of the fade. */
     padding: 0.75rem 1rem calc(var(--content-pad-bottom, 0px) + env(safe-area-inset-bottom, 0px) + 1rem);
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 1rem);
-    mask-image: linear-gradient(to bottom, transparent 0, #000 1rem);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 1rem, #000 calc(100% - 1rem), transparent);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 1rem, #000 calc(100% - 1rem), transparent);
 }
 
 .dict-overlay .screen-content {
