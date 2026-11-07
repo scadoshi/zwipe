@@ -357,7 +357,7 @@ async fn scoring_matches_the_reference_statement(pool: sqlx::PgPool) {
     assert_eq!(twins[0].0, twin_ids[1], "a tie falls back to name");
 
     // The repository method returns the statement's ranking and slugs.
-    let repo = Postgres::with_pool(pool.clone());
+    let repo = Postgres::from_pool(pool.clone());
     let scored = repo
         .score_commander_suggestions(user_id, &decks, &exclude, ROW_LIMIT)
         .await
@@ -425,7 +425,7 @@ async fn run_current(
         .collect::<BTreeSet<String>>()
         .into_iter()
         .collect();
-    let repo = Postgres::with_pool(pool.clone());
+    let repo = Postgres::from_pool(pool.clone());
     let tag_roles = repo.tag_roles(&slugs).await.unwrap();
     sqlx::query(SCORE_COMMANDER_SUGGESTIONS_SQL)
         .bind(decks)

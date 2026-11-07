@@ -300,7 +300,7 @@ async fn replaced_row_outlives_its_expiry_as_replay_evidence(pool: sqlx::PgPool)
     .unwrap();
 
     // The nightly sweep, then the insert-time prune that a fresh login runs.
-    let repo = Postgres::with_pool(pool.clone());
+    let repo = Postgres::from_pool(pool.clone());
     let pruned = repo
         .prune_expired_sessions(REPLACED_TOKEN_RETENTION_DAYS)
         .await

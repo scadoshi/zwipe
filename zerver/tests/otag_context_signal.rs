@@ -353,7 +353,7 @@ async fn rollup_refresh_computes_net_and_shown(pool: sqlx::PgPool) {
     assert_eq!(status, StatusCode::NO_CONTENT);
 
     // The same refresh zervice runs nightly.
-    let repo = Postgres::with_pool(pool.clone());
+    let repo = Postgres::from_pool(pool.clone());
     repo.refresh_otag_context_signal_rollup().await.unwrap();
 
     let (net, shown): (f64, f64) = sqlx::query_as(

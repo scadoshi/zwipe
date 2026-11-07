@@ -226,7 +226,7 @@ impl Driver {
         let mut counts = self.caches.counts;
         spawn(async move {
             let http = client.peek().clone();
-            match http.public_metrics_dated().await {
+            match http.fetch_public_metrics_dated().await {
                 Ok(Dated {
                     value: metrics,
                     made_at,

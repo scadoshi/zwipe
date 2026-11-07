@@ -4,7 +4,7 @@
 //! describe the call and hold no transport code.
 
 use chrono::{DateTime, TimeDelta, Utc};
-use reqwest::header::HeaderMap;
+use reqwest::header::{AGE, HeaderMap, HeaderName, LAST_MODIFIED};
 use tracing::info;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::http::endpoint::{Endpoint, Method};
@@ -105,15 +105,16 @@ pub struct Dated<T> {
 }
 
 /// When a response's copy was made, read at `now`: `Age` seconds before
-/// `now`, else `Last-Modified`.
+/// `now`, else `Last-Modified`. An `Age` that is not a whole number of
+/// seconds, a negative one included, is ignored.
 fn made_at(headers: &HeaderMap, now: DateTime<Utc>) -> Option<DateTime<Utc>> {
-    let text = |name: &str| headers.get(name).and_then(|v| v.to_str().ok());
-    let aged = text("age")
-        .and_then(|age| age.trim().parse::<i64>().ok())
-        .and_then(TimeDelta::try_seconds)
+    let text = |name: HeaderName| headers.get(name).and_then(|v| v.to_str().ok());
+    let aged = text(AGE)
+        .and_then(|age| age.trim().parse::<u32>().ok())
+        .and_then(|age| TimeDelta::try_seconds(i64::from(age)))
         .and_then(|age| now.checked_sub_signed(age));
     aged.or_else(|| {
-        text("last-modified")
+        text(LAST_MODIFIED)
             .and_then(|date| DateTime::parse_from_rfc2822(date).ok())
             .map(|date| date.with_timezone(&Utc))
     })
@@ -179,6 +180,18 @@ mod tests {
         );
         let now = at("2026-11-07T08:00:00Z");
         assert_eq!(made_at(&headers, now), Some(at("2026-11-07T07:50:00Z")));
+    }
+
+    #[test]
+    fn a_negative_age_is_ignored_for_the_last_modified() {
+        let mut headers = HeaderMap::new();
+        headers.insert("age", HeaderValue::from_static("-600"));
+        headers.insert(
+            "last-modified",
+            HeaderValue::from_static("Sat, 07 Nov 2026 07:00:00 GMT"),
+        );
+        let now = at("2026-11-07T08:00:00Z");
+        assert_eq!(made_at(&headers, now), Some(at("2026-11-07T07:00:00Z")));
     }
 
     #[test]
