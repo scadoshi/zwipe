@@ -13,6 +13,7 @@ use zwipe_core::domain::deck::format::Format;
 use zwipe_ui::deck::form;
 use zwipe_ui::deck::pickers::{self, Picker};
 
+use crate::inbound::components::held_open;
 use crate::inbound::components::screen_header::ScreenHeader;
 
 /// In-place format picker, up while `open`. A chip tap goes to `on_tap`, which picks the format or clears it when it is the one picked, with the command-zone knock-on clears. The dock's checkmark (`on_save`) stays off while `unchanged`; the header's back arrow (`on_back`) and the OS back gesture put the format and command zone back as they were when the picker opened.
@@ -34,6 +35,7 @@ pub(crate) fn FormatSelect(
     let mut focused = use_signal(|| Option::<Format>::None);
     let hint_open = use_signal(|| false);
 
+    let backdrop = held_open::use_held_open(open);
     let screen_class = if open() {
         "screen swipe-select-screen show"
     } else {
@@ -50,7 +52,9 @@ pub(crate) fn FormatSelect(
         div { class: "{screen_class}",
             // A screen over another paints its own backdrop, since .screen is
             // clear and the one beneath would show through.
-            ::components::GridCells { still: true }
+            if backdrop {
+                ::components::GridCells { still: true }
+            }
             if open() {
                 ScreenHeader { title: Picker::Format.title(), hint: hint_open, back: move |()| back.call(()) }
 

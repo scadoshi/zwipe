@@ -13,7 +13,7 @@ pub mod hero;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use chrono::{DateTime, Utc};
-use components::{HomeColors, HomeDecks, ThemeConfig};
+use components::{HomeColors, HomeDecks, LoadFailed, ThemeConfig};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use dioxus_primitives::toast::{Toasts, use_toast};
@@ -438,6 +438,7 @@ pub fn Home() -> Element {
                                 onopen: move |()| driver.dispatch(Action::Decks),
                                 ondeck: move |id| driver.dispatch(Action::OpenDeck(id)),
                                 oncreate: move |()| driver.dispatch(Action::CreateDeck),
+                                onretry: move |()| driver.dispatch(Action::RetryDecks),
                             }
                         }
                         div { class: "web-column",
@@ -445,6 +446,7 @@ pub fn Home() -> Element {
                                 play_style,
                                 onplaystyle: move |()| driver.dispatch(Action::Playstyle),
                                 oninfo: move |()| hint.set(Some(HintTopic::HomeColors)),
+                                onretry: move |()| driver.dispatch(Action::RetryPlayStyle),
                             }
                         }
                     }
@@ -452,6 +454,7 @@ pub fn Home() -> Element {
                         flavor,
                         card,
                         on_image: move |sd: ScryfallData| preview.set(Some((sd, 0))),
+                        on_retry: move |()| driver.dispatch(Action::RetryFlavor),
                     }
                 }
             }
@@ -471,6 +474,7 @@ pub(crate) fn FlavorPanel(
     flavor: Flavor,
     card: Option<ScryfallData>,
     on_image: EventHandler<ScryfallData>,
+    #[props(default)] on_retry: Option<EventHandler>,
 ) -> Element {
     let body = match (flavor, card) {
         (Flavor::Quote(quote), Some(sd)) => {
@@ -497,6 +501,14 @@ pub(crate) fn FlavorPanel(
             }
         }
         (Flavor::Blank | Flavor::Quote(_), _) => rsx! {},
+        (Flavor::Failed, _) => rsx! {
+            div { class: "settings-list-header", style: "justify-content: center;",
+                span { class: "settings-list-title", {home::FEATURED_FLAVOR} }
+            }
+            if let Some(on_retry) = on_retry {
+                LoadFailed { message: home::FLAVOR_FAILED, on_retry, class: "home-flavor-line" }
+            }
+        },
         (Flavor::Loading, _) => rsx! {
             div { class: "settings-list-header", style: "justify-content: center;",
                 span { class: "settings-list-title", GhostText { chars: 15 } }

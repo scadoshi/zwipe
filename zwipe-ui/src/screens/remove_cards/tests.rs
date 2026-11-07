@@ -387,6 +387,8 @@ fn move_toggles_between_main_and_maybeboard() {
     ] {
         let effects = state.update(Action::Move);
         let ticket = ticket_of(&effects);
+        // The last move empties the pile, whose toast stands in for its own.
+        let message = if at == 2 { NOTHING_LEFT } else { message };
         assert_eq!(
             effects[..2],
             [
@@ -471,13 +473,12 @@ fn moving_a_card_to_main_can_cross_the_budget() {
     assert_eq!(
         toasts(&effects),
         [
-            Toast::quick(ToastKind::Info, MOVED_TO_MAIN),
             Toast::new(
                 ToastKind::Warning,
                 "Deck at 105.00% of your $10.00 budget",
                 NORMAL
             ),
-            Toast::quick(ToastKind::Info, NO_MORE_CARDS),
+            Toast::quick(ToastKind::Info, NOTHING_LEFT),
         ]
     );
 }
@@ -492,10 +493,8 @@ fn an_emptied_pile_says_why_once() {
     );
     assert_eq!(
         toasts(&state.update(Action::Remove)),
-        [
-            Toast::quick(ToastKind::Success, REMOVED),
-            Toast::quick(ToastKind::Info, NO_MORE_CARDS),
-        ]
+        [Toast::quick(ToastKind::Info, NOTHING_LEFT)],
+        "the run-out toast stands in for Removed from deck"
     );
     assert_eq!(state.status(), Status::Empty);
     assert!(

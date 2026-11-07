@@ -50,6 +50,13 @@ impl CachedCounts {
         self.fetched_at
             .is_none_or(|fetched_at| fetched_at.elapsed() >= COUNTS_FRESH)
     }
+
+    /// Marks the copy stale, so the next screen asks again.
+    pub fn expire(&mut self) {
+        if let Some(fetched_at) = self.fetched_at.as_mut() {
+            *fetched_at = backdated(*fetched_at);
+        }
+    }
 }
 
 /// The user's own counters as last fetched, kept above the router (as
@@ -70,6 +77,18 @@ impl CachedMyCounts {
     pub fn is_stale(&self) -> bool {
         self.fetched_at.elapsed() >= COUNTS_FRESH
     }
+
+    /// Marks the copy stale, so the next screen asks again.
+    pub fn expire(&mut self) {
+        self.fetched_at = backdated(self.fetched_at);
+    }
+}
+
+/// `fetched_at` moved back by `COUNTS_FRESH`, so it reads as stale. The
+/// monotonic clock stops while the device sleeps, so a copy fetched before a
+/// night asleep still reads as a minute old without this.
+fn backdated(fetched_at: Instant) -> Instant {
+    fetched_at.checked_sub(COUNTS_FRESH).unwrap_or(fetched_at)
 }
 
 /// Everyone's counters from the cache above the router, refetched when

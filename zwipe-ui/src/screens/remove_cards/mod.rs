@@ -71,8 +71,11 @@ pub const ALREADY_CHANGED: &str = "Already changed";
 /// The toast for Refresh.
 pub const STACK_REFRESHED: &str = "Stack refreshed";
 
-/// The toast when the last card is swiped.
-pub const NO_MORE_CARDS: &str = "No more cards";
+/// The toast when the last card is swiped, in place of that swipe's own.
+pub const NOTHING_LEFT: &str = "Nothing left to remove";
+
+/// What a swipe says of itself, which the run-out toast replaces.
+const SWIPE_LINES: [&str; 4] = [KEPT, REMOVED, MOVED_TO_MAYBEBOARD, MOVED_TO_MAIN];
 
 /// The toast when the picked boards hold no cards.
 pub const NO_CARDS_ON_BOARDS: &str = "No cards on these boards";
@@ -416,7 +419,7 @@ impl State {
         Self::default()
     }
 
-    /// Applies `action` and returns what the client must do, in order. When the pile turns empty it says so with a toast.
+    /// Applies `action` and returns what the client must do, in order. When the pile turns empty it says so with a toast; a swipe that empties it says only that, not its own line.
     ///
     /// A reply whose request is no longer waiting changes nothing.
     #[must_use = "the client performs the effects"]
@@ -426,7 +429,10 @@ impl State {
         let mut effects = self.apply(action);
         if before != Status::Empty && self.status() == Status::Empty {
             let line = if swiped {
-                NO_MORE_CARDS
+                effects.retain(|effect| {
+                    !matches!(effect, Effect::Toast(toast) if SWIPE_LINES.contains(&toast.text.as_str()))
+                });
+                NOTHING_LEFT
             } else if self.filter.is_empty() {
                 NO_CARDS_ON_BOARDS
             } else {

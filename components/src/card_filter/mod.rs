@@ -241,22 +241,24 @@ pub fn CardFilterPanel(
                                 if let Some(info) = info {
                                     {info}
                                 }
-                                if active {
-                                    button {
-                                        class: "clear-btn",
-                                        onclick: move |e| {
-                                            e.stop_propagation();
-                                            section.clear(&mut draft.write().draft);
-                                            bump(epoch);
-                                        },
-                                        "\u{00d7}"
-                                    }
-                                }
                                 svg {
                                     class: "accordion-expand-icon",
                                     view_box: "0 0 24 24",
                                     xmlns: "http://www.w3.org/2000/svg",
                                     polyline { points: "6 9 12 15 18 9" }
+                                }
+                            }
+                            // Beside the trigger, not in it, so a tap on it never
+                            // toggles the section.
+                            if active {
+                                button {
+                                    class: "clear-btn section-clear",
+                                    "aria-label": "Clear",
+                                    onclick: move |_| {
+                                        section.clear(&mut draft.write().draft);
+                                        bump(epoch);
+                                    },
+                                    "\u{00d7}"
                                 }
                             }
                             div { class: "accordion-content", "data-open": "{is_open}",

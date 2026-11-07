@@ -312,7 +312,7 @@ fn NumberBox(
     let mut text = use_signal(|| field.text(&draft.peek().draft));
     rsx! {
         input {
-            class: "input input-compact input-narrow",
+            class: "input input-compact input-narrow input-number-single",
             placeholder: field.placeholder(),
             value: text(),
             r#type: "text",

@@ -12,7 +12,7 @@
 //! file draws its state and performs its effects.
 
 use components::icons::{self};
-use components::{Chip, DockAction};
+use components::{Chip, DockAction, LoadFailed};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use dioxus_primitives::toast::{Toasts, use_toast};
@@ -262,6 +262,7 @@ pub fn DeckList() -> Element {
     // Snapshot the model once per render.
     let state = driver.model.read();
     let loading = state.status() == Status::Loading;
+    let failed = state.status() == Status::Failed;
     // Hide the console when there is nothing it could act on: a
     // loaded-and-empty list, or a load error.
     let show_rows = state.chips_shown();
@@ -378,7 +379,9 @@ pub fn DeckList() -> Element {
                     if loading {
                         DeckListSkeleton {}
                     }
-                    if let Some(message) = message {
+                    if failed {
+                        LoadFailed { message: deck_list::LOAD_FAILED, on_retry: move |()| driver.dispatch(Action::Load) }
+                    } else if let Some(message) = message {
                         div { class: "message-empty",
                             span { class: "chip-note", {message} }
                         }

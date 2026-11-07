@@ -1687,6 +1687,14 @@ i.ms.ms-cost.ms-gp {
     letter-spacing: 0.1em;
 }
 
+/* A failed load: its chip, then Retry under it, the pair centered. The
+   button is a control, not a note, so the block's fade lifts. */
+.message-empty.load-failed {
+    flex-direction: column;
+    gap: 0.6rem;
+    opacity: 1;
+}
+
 /* ---- DockFilter (components::DockFilter): the dot that marks a live
    filter on the funnel and on a filter button ---- */
 
@@ -1709,6 +1717,14 @@ i.ms.ms-cost.ms-gp {
     position: absolute;
     top: 0.35rem;
     left: 0.45rem;
+}
+
+/* ---- The on-screen keyboard (KEYBOARD_JS) ----
+   While the keyboard is up the floating docks step aside instead of riding
+   up over the content above it; they come back as it closes. */
+html.keyboard-up .action-dock,
+html.keyboard-up .web-dock-pair {
+    visibility: hidden;
 }
 
 /* ---- CoverFlow (components::CoverFlow) ----

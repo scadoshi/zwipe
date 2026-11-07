@@ -127,14 +127,21 @@ impl DeckMetrics {
         })
     }
 
-    /// Chart-ready type distribution: `(abbreviated label, count, height pct)`.
+    /// Chart-ready type distribution: `(label, count, height pct)`, each
+    /// label abbreviated unless the deck has a single type, whose one bar has
+    /// the chart's width to itself.
     pub fn type_bars(&self) -> Vec<(&'static str, usize, u32)> {
         let max = self.type_counts.iter().map(|(_, c)| *c).max().unwrap_or(0);
+        let single = self.type_counts.len() == 1;
         self.type_counts
             .iter()
             .map(|(label, count)| {
                 (
-                    Self::abbreviate_type(label),
+                    if single {
+                        label
+                    } else {
+                        Self::abbreviate_type(label)
+                    },
                     *count,
                     Self::bar_pct(*count, max),
                 )
@@ -784,6 +791,20 @@ mod tests {
         assert_eq!(metrics.avg_price_tix, None);
         assert_eq!(metrics.avg_power, None);
         assert_eq!(metrics.avg_toughness, None);
+    }
+
+    #[test]
+    fn a_single_type_keeps_its_full_label() {
+        let one = DeckMetrics {
+            type_counts: vec![("creatures", 5)],
+            ..DeckMetrics::from_entries(&[])
+        };
+        assert_eq!(one.type_bars(), vec![("creatures", 5, 100)]);
+        let two = DeckMetrics {
+            type_counts: vec![("creatures", 4), ("lands", 2)],
+            ..DeckMetrics::from_entries(&[])
+        };
+        assert_eq!(two.type_bars(), vec![("creat", 4, 100), ("lands", 2, 50)]);
     }
 
     #[test]

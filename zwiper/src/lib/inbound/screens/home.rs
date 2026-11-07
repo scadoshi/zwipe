@@ -30,9 +30,8 @@ use crate::inbound::components::home_hero::{CachedCounts, CachedMyCounts, HomeHe
 use crate::inbound::components::home_play_style::{CachedPlayStyle, HomePlayStyle};
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::Screen;
-use crate::inbound::components::ui_toast;
+use crate::inbound::components::{settings_sync, ui_toast};
 use crate::inbound::router::Router;
-use crate::outbound::app_icon;
 use crate::outbound::count_scope_store::CountScope;
 use crate::outbound::counts_store::PersistCounts;
 
@@ -213,29 +212,7 @@ impl Driver {
 
     /// Applies fresh settings, so the theme stays current mid-session.
     fn fetch_settings(self) {
-        let Self {
-            session,
-            client,
-            mut theme_config,
-            mut pip_style,
-            ..
-        } = self;
-        let Some(s) = session.peek().clone() else {
-            return;
-        };
-        spawn(async move {
-            match client().fetch_settings(&s).await {
-                Ok(settings) => {
-                    let theme = components::theme_from_settings(&settings);
-                    app_icon::follow(&theme);
-                    theme_config.set(theme);
-                    pip_style.set(settings.pip_style);
-                }
-                Err(e) => {
-                    tracing::warn!("settings fetch failed: {e}");
-                }
-            }
-        });
+        settings_sync::sync_settings(self.session, self.client, self.theme_config, self.pip_style);
     }
 
     /// Fetches everybody's counters into the cache and the saved copy.
@@ -479,14 +456,20 @@ pub fn Home() -> Element {
                     onopen: move |()| driver.dispatch(Action::Decks),
                     ondeck: move |id| driver.dispatch(Action::OpenDeck(id)),
                     oncreate: move |()| driver.dispatch(Action::CreateDeck),
+                    onretry: move |()| driver.dispatch(Action::RetryDecks),
                 }
 
                 HomePlayStyle {
                     play_style,
                     onplaystyle: move |()| driver.dispatch(Action::Playstyle),
+                    onretry: move |()| driver.dispatch(Action::RetryPlayStyle),
                 }
 
-                FlavorPanel { flavor, card: flavor_card }
+                FlavorPanel {
+                    flavor,
+                    card: flavor_card,
+                    on_retry: move |()| driver.dispatch(Action::RetryFlavor),
+                }
             }
             OneTimeHintDialog { open: first_login_hint_open, hint: OneTimeHint::FirstLogin }
             }
