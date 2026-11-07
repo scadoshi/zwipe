@@ -404,11 +404,14 @@
 
 /* Inside the swipe stack the image is bound to the padded card layer's
    height, not the viewport, so it can't spill into the chip row above or
-   the details below on short screens. */
+   the details below on short screens. The wrapper is then the image's
+   height, so it lets the image's shadow out past its top and bottom; the
+   image rounds its own corners. */
 .swipe-stack-card .flippable-card-wrapper.card-image {
     height: 100%;
     width: 100%;
     min-height: 0;
+    overflow: visible;
 }
 
 .swipe-stack-card .flippable-card-wrapper.card-image img {
