@@ -2101,6 +2101,10 @@ body {
     min-height: 0;
 }
 
+.web-picker-body .tag-search-label {
+    color: var(--accent-primary);
+}
+
 /* The grid spans the sheet, so its scrollbar runs along the sheet's right
    edge, and keeps its chips in the controls' column. */
 .web-picker-body > .tag-grid {
