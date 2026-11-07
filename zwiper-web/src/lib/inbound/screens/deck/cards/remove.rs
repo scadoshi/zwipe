@@ -491,6 +491,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
             title: remove_cards::TITLE,
             on_hint: move |()| hint_open.set(true),
             div { class: "screen-content card-swipe content-enter web-cards-swipe {eye.body_class()}",
+                span { class: "chip-note web-screen-chip", "{remove_cards::TITLE}" }
                 div { class: "web-cards-swipe-main",
                     div { class: "form-container",
                         if current.is_some() {

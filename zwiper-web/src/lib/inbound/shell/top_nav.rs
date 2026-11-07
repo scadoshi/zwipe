@@ -6,6 +6,9 @@
 //! menu dropping from it. The header follows the scroll there
 //! (`assets/header_hide.js`).
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use components::{InfoButton, NavBar, use_overlay_back};
 use dioxus::prelude::*;
 use zwipe_core::domain::logo;
@@ -24,6 +27,60 @@ pub(super) struct PageTitle {
     pub(super) title: String,
     /// Opens the screen's hint, when it has one.
     pub(super) on_hint: Option<Callback<()>>,
+    /// What the back arrow does in place of leaving the screen: an overlay
+    /// screen under the nav closes itself.
+    pub(super) on_back: Option<Callback<()>>,
+}
+
+/// Keeps `--web-nav-h` on the root at the nav's height, which grows when
+/// its row wraps, for screens that sit under the nav while covering the
+/// page.
+const NAV_HEIGHT_JS: &str = r"
+const nav = document.querySelector('.web-shell > .web-app-nav');
+if (window.__zwipeNavHeight) window.__zwipeNavHeight.disconnect();
+if (nav) {
+    const set = () => document.documentElement.style.setProperty('--web-nav-h', nav.getBoundingClientRect().height + 'px');
+    window.__zwipeNavHeight = new ResizeObserver(set);
+    window.__zwipeNavHeight.observe(nav);
+    set();
+}
+";
+
+/// While `open`, an overlay screen that covers the page under the nav
+/// takes the nav's title and `?` (`title`, `on_hint`), and its back arrow
+/// calls `on_back`. Closing it gives the page's own back.
+pub fn use_overlay_nav(
+    open: Signal<bool>,
+    title: String,
+    on_hint: Callback<()>,
+    on_back: Callback<()>,
+) {
+    let page = try_use_context::<Signal<Option<PageTitle>>>();
+    // The page's own title, held while the overlay has the nav.
+    let held = use_hook(|| Rc::new(RefCell::new(None::<Option<PageTitle>>)));
+    let on_drop = Rc::clone(&held);
+    use_effect(move || {
+        let Some(mut page) = page else {
+            return;
+        };
+        if open() {
+            if held.borrow().is_none() {
+                *held.borrow_mut() = Some(page.peek().clone());
+                page.set(Some(PageTitle {
+                    title: title.clone(),
+                    on_hint: Some(on_hint),
+                    on_back: Some(on_back),
+                }));
+            }
+        } else if let Some(previous) = held.borrow_mut().take() {
+            page.set(previous);
+        }
+    });
+    use_drop(move || {
+        if let (Some(mut page), Some(previous)) = (page, on_drop.borrow_mut().take()) {
+            page.set(previous);
+        }
+    });
 }
 
 /// The `?` a wide window's nav carries for the screen on view, if any.
@@ -43,6 +100,9 @@ pub fn Shell() -> Element {
     let current = section_of(&route);
     let open = use_menu_open(&route);
     let page = use_context_provider(|| Signal::new(None::<PageTitle>));
+    use_effect(|| {
+        document::eval(NAV_HEIGHT_JS);
+    });
 
     rsx! {
         div { class: "web-shell",
@@ -51,7 +111,7 @@ pub fn Shell() -> Element {
                     open,
                     brand: rsx! {
                         NavMark { open }
-                        BackButton { back: Back::of(&route), open }
+                        BackButton { back: Back::of(&route), page, open }
                     },
                     persistent: rsx! {
                         NavTitle { page }
@@ -95,7 +155,7 @@ pub fn PublicNav() -> Element {
                 open,
                 brand: rsx! {
                     NavMark { open }
-                    BackButton { back: Back::of(&route), open }
+                    BackButton { back: Back::of(&route), page, open }
                 },
                 persistent: rsx! {
                     NavTitle { page }
@@ -152,7 +212,7 @@ fn NavLink(to: Route, label: &'static str, current: bool, mut open: Signal<bool>
 /// The screen's title and `?`, in the middle of the folded nav.
 #[component]
 fn NavTitle(page: Signal<Option<PageTitle>>) -> Element {
-    let Some(PageTitle { title, on_hint }) = page() else {
+    let Some(PageTitle { title, on_hint, .. }) = page() else {
         return rsx! {};
     };
     rsx! {
@@ -186,9 +246,26 @@ fn NavMark(open: Signal<bool>) -> Element {
 /// hamburger, on every screen but Home and the auth screens. It goes to
 /// the screen's fixed parent, or the screen before this one, or Home when
 /// the tab has no history.
+///
+/// While an overlay screen sits under the nav (see [`use_overlay_nav`]),
+/// the arrow closes it instead.
 #[component]
-fn BackButton(back: Option<Back>, mut open: Signal<bool>) -> Element {
+fn BackButton(
+    back: Option<Back>,
+    page: Signal<Option<PageTitle>>,
+    mut open: Signal<bool>,
+) -> Element {
     let navigator = use_navigator();
+    if let Some(close) = page.read().as_ref().and_then(|p| p.on_back) {
+        return rsx! {
+            BackArrow {
+                onclick: move |()| {
+                    open.set(false);
+                    close.call(());
+                },
+            }
+        };
+    }
     let Some(back) = back else {
         return rsx! {};
     };

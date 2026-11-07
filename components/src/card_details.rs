@@ -295,8 +295,9 @@ pub fn CardDetails(
 /// card's rarity. The body is the shown face's rules text, a chip row of the
 /// set, the prices when `show_prices` and last the face's power and
 /// toughness, loyalty or defense, then the keywords and the card roles and
-/// their oracle tags when `show_classification`. The panel's foot holds the
-/// host's `footer` and the Flip, Image and Printings buttons. A multi-faced card
+/// their oracle tags when `show_classification`, then the host's `body_end`.
+/// The panel's foot holds the host's `footer` and the Flip, Image and
+/// Printings buttons. A multi-faced card
 /// shows one face at a time, as in [`CardDetails`]: `face` lets the host own
 /// the shown face (pair it with `show_flip: false` to put Flip in its own
 /// chrome).
@@ -334,6 +335,10 @@ pub fn CardDetailsPanel(
     /// Host content in the foot, after the roles.
     #[props(default)]
     footer: Option<Element>,
+    /// Host content at the body's end, after the roles, which scrolls with
+    /// the body where `footer` stays in view.
+    #[props(default)]
+    body_end: Option<Element>,
     /// Extra classes on the panel.
     #[props(default)]
     class: Option<String>,
@@ -433,6 +438,9 @@ pub fn CardDetailsPanel(
             }
             FactsChips { set_name, prices, stats }
             TagRows { card: card.clone(), show_classification, describe_tag, on_examples }
+            if let Some(end) = body_end {
+                div { class: "card-details-body-end", {end} }
+            }
         }
     }
 }

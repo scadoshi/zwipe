@@ -1024,6 +1024,15 @@ i.ms.ms-cost.ms-gp {
     margin-bottom: 0;
 }
 
+/* The host's content at the body's end sits a gap under the roles. */
+.card-details-body-end {
+    margin-top: 1rem;
+}
+
+.card-details-body-end > :last-child {
+    margin-bottom: 0;
+}
+
 /* The pane's ghost: the title's bar and the rules text's lines. */
 .card-details-ghost .card-details-ghost-title {
     width: 12rem;
