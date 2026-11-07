@@ -260,6 +260,27 @@ fn an_empty_search_says_why() {
         )]
     );
     assert_eq!(state.pile(), Pile::Empty);
+    assert_eq!(
+        state.ghost_note(),
+        Some(NO_CARDS_MATCH),
+        "the ghost says why"
+    );
+
+    let effects = state.update(Action::Filter(state.filter().clone()));
+    assert_eq!(state.pile(), Pile::Loading);
+    assert_eq!(state.ghost_note(), None, "no note while the search runs");
+    let ticket = ticket_of(&effects);
+    let _ = state.update(Action::Searched {
+        ticket,
+        page: page(vec![card("Bear")]),
+    });
+    assert_eq!(state.ghost_note(), None, "cards on show");
+}
+
+#[test]
+fn the_ghost_has_no_note_before_a_search() {
+    let (state, _) = with_deck(&commander_deck(&[]));
+    assert_eq!(state.ghost_note(), None);
 }
 
 #[test]
