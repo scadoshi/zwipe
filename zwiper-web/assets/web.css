@@ -161,31 +161,26 @@ body {
 
 /* ---- Footer ----
 
-   zwipe.net's footer closes the page on a wide window: a bar the window's
-   width, 1rem under the last panel. The screen's content keeps that 1rem
-   and its wrappers none of their own, so the panels end where zwipe.net's
-   page does. Below the breakpoint, as in the app, there is none. */
+   zwipe.net's footer closes every scrolling screen at every width: a bar
+   the window's width, 1rem under the last panel. The screen's content keeps
+   that 1rem and its wrappers none of their own, so the panels end where
+   zwipe.net's page does. A phone's swipe screen fills the window without
+   scrolling, so it has none. */
 .web-site-footer {
-    display: none;
+    display: block;
+    order: 2;
+    flex: 0 0 auto;
+    width: 100%;
+    margin: 0;
+    box-sizing: border-box;
 }
 
-@media (min-width: 900px) {
-    .web-site-footer {
-        display: block;
-        order: 2;
-        flex: 0 0 auto;
-        width: 100%;
-        margin: 0;
-        box-sizing: border-box;
-    }
+.web-scroll-screen:has(> .web-site-footer) > .screen-content {
+    padding-bottom: 1rem;
+}
 
-    .web-scroll-screen:has(> .web-site-footer) > .screen-content {
-        padding-bottom: 1rem;
-    }
-
-    .web-scroll-screen:has(> .web-site-footer) > .screen-content > :not(.action-dock, .web-screen-chip) {
-        padding-bottom: 0;
-    }
+.web-scroll-screen:has(> .web-site-footer) > .screen-content > :not(.action-dock, .web-screen-chip) {
+    padding-bottom: 0;
 }
 
 /* A screen with a floating dock ends its content a dock's height above the
@@ -194,6 +189,11 @@ body {
     padding-bottom: 5rem;
 }
 
+@media (max-width: 899px) {
+    .web-scroll-screen:has(> .swipe-bottom-row) > .web-site-footer {
+        display: none;
+    }
+}
 
 /* The floating controls a scroll screen holds stop above the footer as it
    scrolls in (magic.css's footer rise): the action docks, the swipes' dock
