@@ -7,8 +7,7 @@ use zwipe_ui::deck::warning::{self, Fix};
 use zwipe_ui::screens::deck_view::{self, Action};
 
 /// The fix buttons' warning color.
-const FIX_STYLE: &str =
-    "color: var(--color-warning); border-color: var(--border-warning); margin-bottom: 0;";
+const FIX_STYLE: &str = "color: var(--ink-color-warning, var(--color-warning)); border-color: var(--border-warning); margin-bottom: 0;";
 
 #[component]
 pub(crate) fn DeckWarnings(

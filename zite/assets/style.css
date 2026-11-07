@@ -138,7 +138,7 @@ body {
 }
 
 a {
-    color: var(--palette-1);
+    color: var(--ink-palette-1, var(--palette-1));
     text-decoration: underline;
     text-underline-offset: 3px;
 }
@@ -184,7 +184,7 @@ a {
        Same lift vocabulary as the panels, scaled to chip size. */
     .chip:not(.disabled):not(.selected):hover {
         border-color: var(--accent-primary);
-        color: var(--accent-primary);
+        color: var(--ink-accent-primary, var(--accent-primary));
     }
 
     .chip:not(.disabled):hover {
@@ -195,7 +195,7 @@ a {
        take the same lift and accent here. */
     .sd-chip:not(.active):hover {
         border-color: var(--accent-primary);
-        color: var(--accent-primary);
+        color: var(--ink-accent-primary, var(--accent-primary));
     }
 
     .sd-chip:hover {
@@ -591,7 +591,7 @@ code {
 
 .store-btn {
     display: inline-block;
-    color: var(--accent-primary);
+    color: var(--ink-accent-primary, var(--accent-primary));
     background-color: var(--bg-primary);
     border: 1px solid var(--border-primary);
     padding: 0.625rem 1.75rem;
@@ -606,7 +606,7 @@ code {
 }
 
 .store-btn:hover {
-    color: var(--accent-primary);
+    color: var(--ink-accent-primary, var(--accent-primary));
     border-color: var(--accent-primary);
 }
 
@@ -725,7 +725,7 @@ code {
 
 .card-action {
     display: inline-block;
-    color: var(--accent-primary);
+    color: var(--ink-accent-primary, var(--accent-primary));
     text-decoration: none;
     font-size: 0.9rem;
     margin-top: 0.5rem;
@@ -733,7 +733,7 @@ code {
 }
 
 .card-action:hover {
-    color: var(--accent-primary);
+    color: var(--ink-accent-primary, var(--accent-primary));
 }
 
 /* ==================
@@ -1089,7 +1089,7 @@ code {
 .btn-primary {
     width: 100%;
     background-color: var(--bg-primary);
-    color: var(--accent-primary);
+    color: var(--ink-accent-primary, var(--accent-primary));
     border: 1px solid var(--accent-primary);
     font-family: "JetBrains Mono", monospace;
     font-weight: 400;
@@ -1106,7 +1106,7 @@ code {
 }
 
 .btn-primary:hover {
-    color: var(--accent-primary);
+    color: var(--ink-accent-primary, var(--accent-primary));
     border-color: var(--accent-primary);
 }
 
@@ -1218,7 +1218,7 @@ code {
     font-family: inherit;
     font-size: 0.85rem;
     line-height: 1;
-    color: var(--text-muted);
+    color: var(--ink-text-muted, var(--text-muted));
     padding: 0.3rem 0.5rem;
     border: 1px solid currentColor;
     border-radius: 0.4rem;
@@ -1344,7 +1344,7 @@ code {
     border-radius: 0.4rem;
     background-color: var(--bg-primary);
     box-shadow: var(--shadow-sm);
-    color: var(--palette-1);
+    color: var(--ink-palette-1, var(--palette-1));
     text-decoration: none;
     font-size: 0.85rem;
     transition:
