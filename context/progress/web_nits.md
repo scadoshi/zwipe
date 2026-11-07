@@ -176,6 +176,12 @@ From Surfer's Part 3 (2026-11-06), triaged with Scotty:
 
 125. **scottyfermo.com's theme drawer sweeps top to bottom inside the page's left-to-right sweep.** On a wide window a theme change is one left-to-right sweep across everything, the open side drawer included, as on zwipe.net and the app. Only the phone layout's bottom sheet sweeps top to bottom.
 
+126. **Enter on a form field's `?` submits the form.** The kit's info button has no `type="button"`, so inside a form it submits; on the deck form Enter on a field's `?` saves and leaves. Fixed in orangui, then zwipe and the portfolio repin.
+127. **zwipe.net says the app is for mobile.** The page title ("Magic: The Gathering Deck Builder for Mobile | Zwipe"), the hero tagline ("built for mobile"), the meta descriptions and the OG card name phones only; app.zwipe.net exists now, so they say phone and web.
+128. **The app's card details open as a full-height side drawer on a phone.** It touches the top and bottom and frames a card inside a sheet. On a phone it floats in from the right, inset from the top, bottom and edges with rounded corners, not a bottom sheet.
+129. **The details' Printings action is an icon.** It reads "Printings" as a text pill, as on the web.
+130. **The app's printing picker shows one card at a time.** The phone gets the web's cover flow: neighbors visible at the sides, animating in, edge fade and arrows.
+
 Skipped with Scotty: S35 (old /deck paths 404; old paths don't reroute), S37 (overscroll shade, 104 as designed).
 
 Skipped with Scotty: S7 (no Image in the swipe screens' details, intended), S23 (Cloudflare's email obfuscation). Rechecked after the next deploy, since `release` may already fix them: S4 (picker ✓ over chips), S6 (swipe select page head). S12 (the pip toggle labeled Theme on zwipe.net) becomes Pips, folded into 111.
