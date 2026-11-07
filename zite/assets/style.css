@@ -667,9 +667,16 @@ code {
     }
 }
 
-@media (max-width: 30rem) {
+/* Under about 560px two cards side by side wrap every few words, so a
+   card grid takes one column. */
+@media (max-width: 35rem) {
     .card-grid,
-    .card-grid.card-grid-2,
+    .card-grid.card-grid-2 {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 30rem) {
     .features-grid {
         grid-template-columns: 1fr;
     }
