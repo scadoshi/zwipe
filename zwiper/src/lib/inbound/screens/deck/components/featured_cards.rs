@@ -98,7 +98,7 @@ pub fn FeaturedCards(
     };
     rsx! {
         section { class: "{class}",
-            div { class: "deck-featured-row",
+            div { class: "deck-featured-row scroll-fade-x",
                 for (card, role) in cards {
                     FeaturedCard {
                         key: "{card.scryfall_data.id}",
