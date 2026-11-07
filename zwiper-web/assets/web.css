@@ -1114,6 +1114,129 @@ body {
     outline: none;
 }
 
+/* ---- Printing picker's cover flow ----
+
+   From the kit's modal width the printing picker is a large modal over a
+   dimmed page, layered over a details sheet as .sheet-over layers the
+   narrow picker. The stage holds the printings in perspective: each card's
+   left edge at the stage's middle, its inline transform placing it, and
+   one shared transition gliding every card as the selection moves. Under
+   the stage sit the selected printing's set, number and prices and Select. */
+.web-flow {
+    display: contents;
+}
+
+@media (min-width: 60rem) {
+    .web-flow .sheet-backdrop {
+        z-index: 204;
+    }
+
+    .web-flow .bottom-sheet.web-flow-sheet {
+        z-index: 205;
+        width: min(76rem, calc(100vw - 4rem));
+        height: 92vh;
+        max-height: 92vh;
+    }
+
+    .web-flow-body {
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        padding: 1rem 1.5rem 1.25rem;
+    }
+
+    .web-flow-body:focus {
+        outline: none;
+    }
+
+    .web-flow-stage {
+        position: relative;
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: hidden;
+        perspective: 1600px;
+        cursor: grab;
+        user-select: none;
+    }
+
+    .web-flow-stage:active {
+        cursor: grabbing;
+    }
+
+    .web-flow-card {
+        position: absolute;
+        top: 4%;
+        left: 50%;
+        height: 92%;
+        aspect-ratio: 488 / 680;
+        transform-origin: center center;
+        transition: transform 0.3s ease;
+        will-change: transform;
+        cursor: pointer;
+    }
+
+    /* A dark veil over each card, as dark as `--flow-dim` says: the
+       selected card's is clear, and each step out darker. */
+    .web-flow-card::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: 4.75% / 3.5%;
+        background: #000;
+        opacity: var(--flow-dim, 0);
+        transition: opacity 0.3s ease;
+        pointer-events: none;
+        z-index: 1;
+    }
+
+    .web-flow-card img,
+    .web-flow-missing {
+        display: block;
+        width: 100%;
+        height: 100%;
+        border-radius: 4.75% / 3.5%;
+        box-shadow: var(--shadow-md);
+    }
+
+    .web-flow-card img {
+        object-fit: contain;
+    }
+
+    .web-flow-missing {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        box-sizing: border-box;
+        text-align: center;
+        background: var(--bg-primary);
+        border: 1px solid var(--border-secondary);
+        color: var(--text-muted);
+    }
+
+    .web-flow-info {
+        flex: none;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding-top: 1rem;
+    }
+
+    .web-flow-count {
+        color: var(--text-muted);
+        font-size: 0.8rem;
+    }
+}
+
+@media (min-width: 60rem) and (prefers-reduced-motion: reduce) {
+    .web-flow-card,
+    .web-flow-card::after {
+        transition: none;
+    }
+}
+
 /* ---- Swipe surfaces ---- */
 
 /* The app's stack fills what its column leaves; a browser column may leave
