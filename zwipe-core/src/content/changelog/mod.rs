@@ -46,6 +46,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Card details slide in from the right as a panel titled with the card and its cost, the prices included",
         "Keywords, card roles and oracle tags use the app's regular chips, each group named by a label chip",
         "About's changelog shows five releases at a time, with Show more for the rest",
+        "Card rows match the card details, with their colors, price and P/T in the row",
     ],
 }];
 
