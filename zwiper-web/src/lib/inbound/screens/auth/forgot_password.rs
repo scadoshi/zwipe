@@ -18,6 +18,7 @@ use zwipe_core::http::contracts::auth::HttpRequestPasswordReset;
 use zwipe_ui::screens::forgot_password::{
     self, Action, BACK, CREATE_PROFILE, Destination, EMAIL, Effect, SEND, State,
 };
+use zwipe_ui::text::sentence_case;
 
 use crate::inbound::chrome::toast::raise;
 use crate::inbound::router::Route;
@@ -131,7 +132,7 @@ pub fn ForgotPassword() -> Element {
                                 id: "email",
                                 label: EMAIL,
                                 placeholder: EMAIL,
-                                error: email_error,
+                                error: email_error.as_deref().map(sentence_case),
                             }
                             if is_loading {
                                 div { class: "spinner" }
