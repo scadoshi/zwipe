@@ -562,10 +562,28 @@ body {
         margin-left: 0.75rem;
     }
 
+    /* One gap across the row: the icon group's own between its icons, and
+       the same between the group and Log out. */
     .web-shell .nav-trailing-row {
         padding-bottom: 0;
-        gap: 0.75rem;
+        gap: 0.4rem;
     }
+
+    /* The screen's `?` in the icons' box, its glyph bold to match the
+       weight of their strokes. */
+    .web-shell .nav-trailing-row .web-nav-hint {
+        width: 2.2rem;
+        height: 1.7rem;
+        padding: 0;
+        font-size: 1rem;
+        font-weight: 700;
+    }
+}
+
+/* The theme sheet's wrapper holds only the kit's sheet, fixed to the
+   window, so it takes no slot in the icon row it sits in. */
+.web-theme-sheet {
+    display: contents;
 }
 
 /* The bar's icons, the `!` and Log out answer a mouse as the pills beside
