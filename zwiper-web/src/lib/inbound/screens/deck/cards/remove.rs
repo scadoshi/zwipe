@@ -39,7 +39,7 @@ use crate::inbound::card_filter::CardFilterPanel;
 use crate::inbound::card_stores::CardStores;
 use crate::inbound::cards::card_info::{CardDetailsSheet, CardSkeleton};
 use crate::inbound::cards::printing_sheet::PrintingSheet;
-use crate::inbound::cards::swipe_confirm::{SwipeScreenChips, use_swipe_confirm};
+use crate::inbound::cards::swipe_confirm::{SwipeScreenChips, Tone, use_swipe_confirm};
 use crate::inbound::cards::swipe_stack::{
     Swipe, SwipeDock, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
 };
@@ -410,7 +410,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                     .retain(|e| e.deck_card.scryfall_data_id != card_id);
                 stack.write().remove_current();
                 let mut line = OneLine::default();
-                line.confirm(true, "Removed from deck");
+                line.confirm(Tone::Success, "Removed from deck");
                 for signal in crossings(&before) {
                     line.signal(signal);
                 }
@@ -463,7 +463,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                 }
                 stack.write().remove_current();
                 let mut line = OneLine::default();
-                line.confirm(false, message);
+                line.confirm(Tone::Info, message);
                 for signal in crossings(&before) {
                     line.signal(signal);
                 }

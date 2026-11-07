@@ -10,7 +10,7 @@
 
 use components::ThemeConfig;
 use zwipe_core::domain::user::models::settings::UserSettings;
-pub use zwipe_ui::theme_sync::{Sync, reconcile};
+pub use zwipe_ui::theme_sync::{ThemeSync, reconcile};
 
 /// The theme this browser last showed first, else a live session's
 /// settings, else the default. A retired slug in the settings moves to its

@@ -41,6 +41,27 @@ pub fn eye_lit(wide: bool, beside_hidden: bool) -> bool {
     wide && !beside_hidden
 }
 
+/// The large modal's least inset each side, web.css's `max(2rem, ..)`.
+const MODAL_INSET_MIN_REM: f64 = 2.0;
+/// Half the large modal's width, its `50vw - 38rem` inset.
+const MODAL_HALF_REM: f64 = 38.0;
+/// The swipe stack's height share of the window, `min(68vh, ..)`.
+const STACK_HEIGHT_VH: f64 = 0.68;
+/// The swipe stack's tallest, `min(.., 42rem)`.
+const STACK_MAX_REM: f64 = 42.0;
+/// What the stack card takes from the stack's height besides the card.
+const STACK_CARD_CHROME_REM: f64 = 3.25;
+/// A card's width to its height, 63:88.
+const CARD_WIDTH: f64 = 63.0;
+/// See [`CARD_WIDTH`].
+const CARD_HEIGHT: f64 = 88.0;
+/// The widest the card draws, what the stack's 30rem column leaves it.
+const CARD_MAX_REM: f64 = 26.0;
+/// The details panel's width, `min(24rem, ..)`.
+const PANEL_REM: f64 = 24.0;
+/// What the panel leaves of a narrow window, `min(.., 100vw - 2rem)`.
+const PANEL_GUTTER_REM: f64 = 2.0;
+
 /// Where a swipe surface draws its card and docks its panel.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Surface {
@@ -59,7 +80,10 @@ impl Surface {
     fn width(self, window_w: f64) -> f64 {
         match self {
             Self::Window => window_w,
-            Self::LargeModal => window_w - 2.0 * (2.0 * REM).max(window_w / 2.0 - 38.0 * REM),
+            Self::LargeModal => {
+                window_w
+                    - 2.0 * (MODAL_INSET_MIN_REM * REM).max(window_w / 2.0 - MODAL_HALF_REM * REM)
+            }
         }
     }
 }
@@ -69,8 +93,9 @@ impl Surface {
 /// its width following at a card's 63:88, at most the 26rem the stack's
 /// 30rem column leaves it.
 fn card_width(window_h: f64) -> f64 {
-    let height = (0.68 * window_h).min(42.0 * REM) - 3.25 * REM;
-    (height * 63.0 / 88.0).min(26.0 * REM)
+    let height =
+        (STACK_HEIGHT_VH * window_h).min(STACK_MAX_REM * REM) - STACK_CARD_CHROME_REM * REM;
+    (height * CARD_WIDTH / CARD_HEIGHT).min(CARD_MAX_REM * REM)
 }
 
 /// Whether the details panel fits beside the card on `surface` in a window
@@ -80,7 +105,7 @@ fn card_width(window_h: f64) -> f64 {
 #[must_use]
 pub fn beside_fits(surface: Surface, window_w: f64, window_h: f64) -> bool {
     let width = surface.width(window_w);
-    let panel = (24.0 * REM).min(window_w - 2.0 * REM);
+    let panel = (PANEL_REM * REM).min(window_w - PANEL_GUTTER_REM * REM);
     let card_right = width / 2.0 + card_width(window_h) / 2.0;
     card_right < width - REM - panel
 }

@@ -15,19 +15,23 @@ const HOLD_LIMIT_MS: u32 = 20_000;
 
 /// Requests the lock, says when it is held (or that there is none), then
 /// holds it until Rust sends anything or the limit passes.
-const LOCK_JS: &str = r"
-if (!navigator.locks) {
+fn lock_js() -> String {
+    format!(
+        r"
+if (!navigator.locks) {{
     dioxus.send(false);
-} else {
-    await navigator.locks.request('__NAME__', async () => {
+}} else {{
+    await navigator.locks.request('{LOCK_NAME}', async () => {{
         dioxus.send(true);
         await Promise.race([
             dioxus.recv(),
-            new Promise((resolve) => setTimeout(resolve, __LIMIT__)),
+            new Promise((resolve) => setTimeout(resolve, {HOLD_LIMIT_MS})),
         ]);
-    });
+    }});
+}}
+"
+    )
 }
-";
 
 /// The held lock; dropping it without [`release`](Self::release) leaves it
 /// to the time limit.
@@ -47,10 +51,7 @@ impl CrossTabLock {
     /// Waits for the browser-wide lock. Holds nothing where the browser has
     /// no Web Locks or the bridge fails.
     pub async fn acquire() -> Self {
-        let script = LOCK_JS
-            .replace("__NAME__", LOCK_NAME)
-            .replace("__LIMIT__", &HOLD_LIMIT_MS.to_string());
-        let mut eval = document::eval(&script);
+        let mut eval = document::eval(&lock_js());
         let held = matches!(eval.recv::<bool>().await, Ok(true));
         Self {
             held: held.then_some(eval),

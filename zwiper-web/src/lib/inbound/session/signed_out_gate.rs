@@ -36,7 +36,7 @@ pub fn SignedOutGate() -> Element {
         }
     });
 
-    let shown = landing::landing(stored, refresh());
+    let shown = landing::decide(stored, refresh());
     use_effect(use_reactive!(|shown| {
         if shown == Landing::Home {
             navigator.replace(Route::Home {});

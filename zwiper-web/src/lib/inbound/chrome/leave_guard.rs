@@ -43,13 +43,13 @@ enum Held {
 /// What the dialog says, from the screen that armed the guard.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct LeaveCopy {
-    /// The title.
+    /// The dialog's heading, the question it asks.
     pub title: &'static str,
-    /// The body.
+    /// The line under it: what leaving loses.
     pub body: &'static str,
-    /// The button that stays.
+    /// The label of the button that keeps the screen and its changes.
     pub stay: &'static str,
-    /// The button that leaves.
+    /// The label of the button that drops the changes and makes the move.
     pub leave: &'static str,
 }
 

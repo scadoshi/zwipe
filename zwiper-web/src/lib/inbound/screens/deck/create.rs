@@ -9,7 +9,8 @@ use zwipe_core::domain::deck::{DeckName, Format};
 use super::form::fields::DeckFields;
 use super::form::overlays::DeckFormOverlays;
 use super::form::{DECK_LEAVE, use_deck_form};
-use crate::domain::deck::{FormStart, create_request, has_unsaved_changes};
+use crate::domain;
+use crate::domain::deck::FormStart;
 use crate::inbound::caches::CreateDeckSeed;
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::leave_guard::use_leave_guard;
@@ -41,7 +42,9 @@ pub fn CreateDeck() -> Element {
 
     // Leaving asks first once the form differs from how it opened.
     let opened = use_hook(move || form.values());
-    let changed = use_memo(move || has_unsaved_changes(FormStart::Opened(&opened), &form.values()));
+    let changed = use_memo(move || {
+        domain::deck::has_unsaved_changes(FormStart::Opened(&opened), &form.values())
+    });
     let guard = use_leave_guard(changed, DECK_LEAVE);
 
     let submit = use_callback(move |(): ()| {
@@ -55,7 +58,7 @@ pub fn CreateDeck() -> Element {
             return;
         }
         saving.set(true);
-        let request = create_request(&values);
+        let request = domain::deck::create_request(&values);
         spawn(async move {
             match authed
                 .try_run("create_deck", |c, s| async move {
