@@ -23,22 +23,8 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
-| 86, Playstyle Summary's headroom (queued after 79) | thinker | `nits/thinker-86` |
-| 85, the swipe card's shadow is clipped top and bottom (queued after 82) | scotland | `nits/scotland-85` |
-| 83, 84, the web's hints link to guides, the filter gets its own hints (queued after 81) | halo | `nits/halo-83` |
-| 82, the synergy toggle toasts its mode (queued after 80) | scotland | `nits/scotland-82` |
-| 81, 87, the swipe screens' details as a docked panel, swipe select matching Add | halo | `nits/halo-81` |
-| 79, card row redesigned like card details (queued after 77) | thinker | `nits/thinker-79` |
-| 80, a footer on every web page, swipe screens included (queued after 78) | scotland | `nits/scotland-80` |
-| 78, empty prompts as centered gray chips | scotland | `nits/scotland-78` |
-| 77, Enter closes a hint dialog, an orangui fix (queued after 73-76) | laptop | `nits/laptop-77` |
-| 71, 72, errors in sentence case, deck form Profile+Budget left, Tags right | halo | `nits/halo-71-72` |
-| 73 to 76, drawer dock inset, themed scrollbars, lists clip at the edge, Search label in accent one, drawer searches through ClearWrap | laptop | `nits/laptop-73-75` |
-| 70, a deck entry lifts on hover like a panel | scotland | `nits/scotland-70` |
-| 68, About drops Privacy policy on wide | halo | `nits/halo-68` |
-| 69, the app's About changelog pages by five | thinker | `nits/thinker-69` |
-| 65, 67, cover-flow printing picker, the phone picker's bottom row (PR #207, waiting on Scotty's eye) | scotland | `nits/scotland-65` |
-| cycle-trk-mission description, held until scotland's 2026-11-07 sync confirms its cards | halo | `otags/cycle-trk-mission` (PR #178) |
+| 88, hint copy and context fixes from the app hint audit | halo | `nits/halo-88` |
+| 89, app hint plumbing: pickers through the shared copy, no duplicate explainers, the web deck view's Oracle tags chart | thinker | `nits/thinker-89` |
 
 The loop is in [`../development/factory.md`](../development/factory.md).
 
@@ -139,6 +125,8 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 85. **The swipe card's drop shadow is clipped** with a hard edge at the card's top and bottom on the web's swipe screens. Let it render fully without letting a leaving card paint over the docks.
 86. **Playstyle's Summary fold has too much headroom** above its first row: the fold body's padding stacks on the rows' own. Match other info lists.
 87. **Swipe select doesn't match Add.** The card sits off center and the details are a big middle element. Center the card, dock the details as 81's side panel, and match Add's docks and pile chip.
+88. **Hint copy that doesn't fit its screen** (app hint audit, 2026-11-06). The deck view reuses the form's Deck tags and Oracle tags hints ("Fine to leave as is"); the Commander hint says Commander on an Oathbreaker deck; Partner, Background and Signature spell skip their Filter and Swipe chips; swipe select's guide link ignores its mode; "Tags shape suggestions" contradicts Other tags; TagRates skips Show; Add's hint names a Sort that isn't on the screen; a few UI words should be key chips, a few terms disagree, four lines are clunky.
+89. **The app's hint plumbing drifts from the web's.** Its pickers flatten the shared hint copy (losing key chips), a hand-kept explainer file duplicates two topics, and the Exceptions `?` is hand-rolled; the web's deck view is missing the Oracle tags chart the app has.
 
 ## Done
 
