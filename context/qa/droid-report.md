@@ -338,3 +338,52 @@ Build: main at f699acc37 (live on app.zwipe.net and zwipe.net), debug APK from ~
 ### Cleanup
 
 Droid test is as Scotty left it, apart from skips on Add (app and web). The maybeboard is empty on the server. Throttle and airplane mode are off. The clone's target is 11 GB.
+
+## Pass 7
+
+Build: main at f699acc37 (prod), debug APK on the Pixel_9a emulator against production, then app.zwipe.net at 411px in the emulator's Chrome, both as `test`. Shots are in ~/Developer/droid/shots/pass7-<n>.png (app) and web7-<n>.png (web). No logouts.
+
+I made two throwaway decks ("Droid tmp" in the app, "Droid web tmp" on web) so swipes and imports didn't touch Droid test, and deleted both on web. Every setting I changed went back and I checked it on the server.
+
+### What works
+
+- **Deck create, edit, clone, delete** (app and web). Create with only a name, then Edit to set format, commander (Swipe select), power level, land target, price target, deck tag and other tag, and save. Clone opens "<name> (clone)" with a toast. Delete asks first and the list count drops.
+- **Import** (app and web). Text import in Add mode handles "2 Swamp", "1x Name", a "Sideboard" header (Bolt went to the side board) and reports "Notacard Fakename not found". Replace mode and an export round trip work: importing the export gives the same list.
+- **Export**. The Deck, Maybe and Side chips add their sections with "// Commander", "// Deck", "// Sideboard" headers, and copy toasts "Copied to clipboard".
+- **Share**. Create link copies it ("Share link copied") and Stop sharing disables it ("Link disabled").
+- **Filters on Add**: oracle text, flavor text, price max, mana value, artist (typeahead pick), Planeswalker plus Mythic, excluding Creature and Land plus the Removal role, legal in Pauper on its own, and sort by price. Every one returned cards that fit.
+- **Swipe select in each mode** (app): commander (right picks Edgar Markov), oathbreaker, signature spell, background (Wilson, Refined Grizzly, then Scion of Halaster) and partner. Each mode's hint names what right does. Maybeboard mode was covered in pass 6.
+- **Format changes** drop a command zone card that no longer fits (Edgar left when the deck became Oathbreaker), and the deck page warns about the new format: 60 cards, banned Sol Ring, no signature spell, no sideboards.
+- **Themes**: picking Bluloco and toggling light mode both apply at once and save. Zenburn dark is restored.
+- **Settings** (app and web): Pips (Themed and Classic), Swipe confirmations (Chip, Toasts, Off), Universes Beyond (Show and Hide, which enables Exceptions) all save at once with a toast. All restored.
+- **Hints**: every "?" I opened had text, and Add's "See guide ↗" points at zwipe.net/guides/swipe-to-build/ (200).
+- **About, Account, Help & feedback** open with sensible content (v1.18.0).
+- **Offline Home** shows the cached counters and decks. Decks offline shows "Could not load decks" with Retry, and Retry works once online (app and web).
+- **Rotation**: forcing landscape keeps the app in portrait, as the manifest locks it.
+
+### New
+
+1. **The app's header Back drops unsaved Edit deck changes without asking** (bug, app only). Rename the deck in Edit deck, then tap the header ‹: the Deck page opens and the rename is gone. System Back on the same edit shows "Leave without saving?", and so does the web's header Back. Pass 4 had the app's header Back asking (178), so this looks like a regression. Shots: pass7-25, pass7-26, web7-1.
+2. **A colorless commander is treated as five-color** (bug, app and web). Droid tmp with Arzakon (a colorless planeswalker) shows W U B R G pips on Decks, and the signature-spell Swipe select offers Negate, Chaos Warp and Nature's Lore. Shot: pass7-29.
+3. **The partner Swipe select offers the commander itself** (bug). With Tymna the Weaver as commander, the partner stack's second card is Tymna the Weaver.
+4. **Import with set and number picks an Art Series card** (bug, app and web). "1 Bloodline Keeper (ISD) 90" imports "Bloodline Keeper // Bloodline Keeper", Common, Innistrad Remastered Art Series, grouped under Other. The export then carries that name. Shots: pass7-11, pass7-13, pass7-14.
+5. **"Could not load deck" is a dead end** (bug, app and web). Opening a deck offline shows "Could not load deck" with no Retry, and it stays there after the network returns. Only leaving and coming back loads it. The same visit raises the connection toast twice. Shot: pass7-39.
+6. **More than one "Is legal in" format means any of them** (question). With the deck's Commander preselected, adding Pauper still shows Elenda and other rares; Pauper alone shows commons. If "legal in both" is meant, it should narrow.
+7. **Warnings lowercase card names** (nit): "Sol ring is banned in oathbreaker", "Bloodline keeper // bloodline keeper is not legal in oathbreaker".
+8. **Replace import doesn't confirm** (question). It clears the mainboard straight away.
+9. **The share dialog never shows the link** (nit). It offers Copy link and "Stop share" (the body says "Stop sharing"), but never the URL itself.
+10. **Create and Edit treat the commander rows differently** (nit). The app's Create deck shows Commander, Partner, Background and Signature spell rows with no format set; Edit hides them until a format is chosen. On web, Create leaves an empty gap where they hide. Shots: pass7-2, web7-3.
+11. **Switching to Oathbreaker keeps the 37 land target** (nit). It was set while the deck was Commander; a 60-card format may want its own default.
+12. **A toast covers the Exceptions sheet's chips** (nit). "Universes Beyond hidden" sits over the last row of the picker (Warhammer 40,000). Shot: pass7-35.
+13. **Lightning Bolt imports at $28.99** (question). With no set given, the printing chosen is a pricey one, which skews the deck total.
+14. **Back from a deck goes to Decks, not where I came from** (nit, app). Open Droid test from Home's tile, and the header Back lands on Decks.
+15. **Web's "See guide ↗" opens in the same tab** (question). The arrow suggests a new tab, but `target` is empty, so it leaves the app.
+
+### Not covered
+
+- The Universes Beyond exclusion's effect on Add results, the Archidekt import source and the Combat filter. I ran out of time on these.
+- Slow network: GSM was tried in pass 6 (Decks timed out). This pass only did offline.
+
+### Cleanup
+
+Both throwaway decks are deleted (12 decks on the server, Droid test untouched). Server settings: zenburn, dark, theme pips, chip confirmations, Universes Beyond shown with the same four exceptions. The maybeboard is empty, as the composer asked. Airplane mode is off and rotation is back to portrait. The clone's target is 10 GB.
