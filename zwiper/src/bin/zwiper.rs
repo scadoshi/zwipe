@@ -188,11 +188,9 @@ fn App() -> Element {
         document::Style { {components::MAGIC_CSS} }
         document::Style { {components::APP_CSS} }
         document::Style { {components::SCREENS_CSS} }
+        document::Style { {components::FILTER_CSS} }
         document::Link { rel: "stylesheet", href: MAIN_CSS }
-        document::Style { {components::FILTER_CSS} }
         document::Style { {components::TOAST_CSS} }
-        // The drawer the card details open in.
-        document::Style { {components::FILTER_CSS} }
         // Drives the edge fades on sideways scrollers where CSS scroll
         // timelines are missing (the dictionary's letter rail).
         document::Script { {components::SCROLL_FADE_JS} }
