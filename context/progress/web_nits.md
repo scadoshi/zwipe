@@ -23,6 +23,7 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
+| 65, the printing picker as a cover-flow modal on wide | scotland | `nits/scotland-65` |
 | 64, one chip grammar for tags, label chips for group names (queued after 54) | thinker | `nits/thinker-64` |
 | 62, the nav's ? spaced evenly and bolder | scotland | `nits/scotland-62` |
 | 63, the arrow dock gets labels and sits left of the other dock | laptop | `nits/laptop-63` |
@@ -117,6 +118,7 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 62. **The nav's `?` sits apart.** Equal spacing across every icon button and Log out; the `?` glyph heavier.
 63. **The swipe arrow dock needs labels and a place beside the other dock.** "← Skip / ↑ Maybeboard / ↓ Undo / → Add" text on the buttons, and the arrow dock to the left of the existing dock on the same row.
 64. **One chip grammar for tags, every client.** Keywords, card roles and oracle tags draw as a one-off outlined `.keyword-chip` under bare colored group names. They become the kit's regular clickable `Chip`s, with "Keywords", "Card roles" and "Oracle tags" as label chips leading their rows, as Show and Group by do. Shared components, so the app, the web and zwipe.net change together; a 1.18.1 changelog entry.
+65. **The web's printing picker becomes a cover-flow modal on a wide window.** A large modal with the printings as a stacked, fanned carousel (selected large in the middle, ~10 each side shrinking behind it) that glides left and right as you scroll, arrow, drag or click; Enter or a click selects. Phones keep today's picker.
 
 ## Done
 
