@@ -25,7 +25,7 @@
     .input-clear-wrap.web-ghost-field,
     .input-clear-wrap:has(> #commander-maybeboard-search),
     #import-url,
-    #oracle-tag-dictionary-search {
+    .input-clear-wrap:has(> #oracle-tag-dictionary-search) {
         max-width: var(--web-field-max);
     }
 
@@ -1961,6 +1961,10 @@ body {
    list sit in the screen's column as in the app. */
 .web-dict-browse {
     display: contents;
+}
+
+.dict-controls > .input-clear-wrap {
+    margin-bottom: 0;
 }
 
 @media (min-width: 900px) {
