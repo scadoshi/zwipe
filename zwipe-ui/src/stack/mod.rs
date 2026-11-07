@@ -156,6 +156,12 @@ impl<A> CardStack<A> {
         self.index
     }
 
+    /// Whether there is a swipe to undo.
+    #[must_use]
+    pub fn has_history(&self) -> bool {
+        !self.history.is_empty()
+    }
+
     /// The swipes so far, oldest first.
     #[cfg(test)]
     #[must_use]

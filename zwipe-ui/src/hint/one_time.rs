@@ -321,7 +321,9 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
                 bullet(vec![
                     text("Swipe "),
                     emph("down", Role::Tertiary),
-                    text(" undoes the last swipe"),
+                    text(" or "),
+                    icon_key(KeyIcon::Undo),
+                    text(" undoes the last swipe, even at the end of the stack"),
                 ]),
                 line(vec![text(
                     "The board chips at the bottom left pick which board you are trimming",

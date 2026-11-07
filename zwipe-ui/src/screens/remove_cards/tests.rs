@@ -592,6 +592,92 @@ fn undo_puts_a_removed_card_back() {
 }
 
 #[test]
+fn undo_at_the_end_of_the_stack_while_the_last_remove_is_out_waits_then_restores() {
+    let built = deck_of(&["Opt"]);
+    let deck_id = built.deck_profile.id;
+    let opt = built.entries[0].clone();
+    let mut state = loaded(built);
+    let remove = ticket_of(&state.update(Action::Remove));
+    assert_eq!(state.status(), Status::Empty);
+    assert!(state.can_undo(), "the end of the stack can still undo");
+    assert_eq!(state.empty_line(), NOTHING_LEFT);
+
+    // The delete has not landed: nothing races it, the card is back at once.
+    assert_eq!(
+        state.update(Action::Undo),
+        [Effect::Enter(Direction::Right)]
+    );
+    assert_eq!(top(&state).as_deref(), Some("Opt"));
+    assert_eq!(
+        state.update(Action::Undo),
+        [Effect::Toast(Toast::new(
+            ToastKind::Info,
+            NOTHING_TO_UNDO,
+            NORMAL
+        ))],
+        "the held undo used up the swipe"
+    );
+
+    // The delete lands: the restore goes out now, and no undo entry is logged.
+    let effects = state.update(Action::Landed { ticket: remove });
+    let restore = ticket_of(&effects);
+    assert_eq!(
+        effects,
+        [Effect::RestoreDeckCard {
+            ticket: restore,
+            deck_id,
+            card: Box::new(opt.card.clone()),
+            board: Board::Deck,
+            quantity: 1,
+        }]
+    );
+    assert_eq!(
+        state.update(Action::Restored {
+            ticket: restore,
+            deck_card: Box::new(opt.deck_card.clone()),
+        }),
+        [Effect::Confirm(Toast::quick(
+            ToastKind::Success,
+            UNDID_REMOVE
+        ))]
+    );
+    assert!(state.entries().contains(&opt));
+}
+
+#[test]
+fn an_undo_held_on_a_remove_that_fails_puts_the_entry_back_with_no_request() {
+    let built = deck_of(&["Opt", "Shock"]);
+    let opt = built.entries[0].clone();
+    let mut state = loaded(built);
+    let remove = ticket_of(&state.update(Action::Remove));
+    let _ = state.update(Action::Undo);
+    assert_eq!(
+        state.update(Action::Failed { ticket: remove }),
+        [Effect::Confirm(Toast::quick(
+            ToastKind::Success,
+            UNDID_REMOVE
+        ))]
+    );
+    assert!(
+        state.entries().contains(&opt),
+        "the card never left the deck"
+    );
+    assert_eq!(top(&state).as_deref(), Some("Opt"));
+}
+
+#[test]
+fn an_empty_stack_says_why() {
+    let mut state = loaded(deck_of(&[]));
+    assert_eq!(state.status(), Status::Empty);
+    assert!(!state.can_undo());
+    assert_eq!(state.empty_line(), NO_CARDS_ON_BOARDS);
+    let mut filtered = CardQueryBuilder::default();
+    filtered.set_name_contains("zzz");
+    let _ = state.update(Action::Filter(filtered));
+    assert_eq!(state.empty_line(), NO_MATCHES);
+}
+
+#[test]
 fn undo_of_a_remove_the_deck_cards_undo_reversed_sends_nothing() {
     let built = deck_of(&["Opt", "Shock"]);
     let opt = built.entries[0].clone();
