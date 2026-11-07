@@ -13,7 +13,7 @@
 use zwipe_core::http::paths::{
     CHANGE_EMAIL_ROUTE, CHANGE_PASSWORD_ROUTE, CHANGE_USERNAME_ROUTE, CONFIRM_EMAIL_CHANGE_ROUTE,
     DECK_ROUTE, DELETE_USER_ROUTE, GET_USER_ROUTE, LEGACY_SETTINGS_ROUTE, LOGIN_ROUTE,
-    RESEND_VERIFICATION_ROUTE, SETTINGS_ROUTE,
+    REFRESH_SESSION_ROUTE, RESEND_VERIFICATION_ROUTE, SETTINGS_ROUTE,
 };
 mod common;
 
@@ -525,6 +525,65 @@ async fn universes_beyond_setting_round_trips(pool: sqlx::PgPool) {
     );
 }
 
+/// Whether `pip_style` is a value every client from 1.15.0 to 1.18.0
+/// parses: their enum knows only `theme` and `natural`.
+fn shipped_clients_parse(pip_style: &serde_json::Value) -> bool {
+    matches!(pip_style.as_str(), Some("theme" | "natural"))
+}
+
+#[sqlx::test]
+async fn settings_responses_parse_as_shipped_clients_read_them(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool);
+    let (token, user_id) = app.register("shippeduser").await;
+    for sent in ["themed", "theme", "classic", "natural"] {
+        let (status, updated) = app
+            .patch(SETTINGS_ROUTE, json!({ "pip_style": sent }), Some(&token))
+            .await;
+        assert_eq!(status, StatusCode::OK, "patch {sent}: {updated}");
+        assert!(
+            shipped_clients_parse(&updated["pip_style"]),
+            "patch {sent}: {updated}"
+        );
+
+        let (status, settings) = app.get(SETTINGS_ROUTE, Some(&token)).await;
+        assert_eq!(status, StatusCode::OK, "get after {sent}: {settings}");
+        assert!(
+            shipped_clients_parse(&settings["pip_style"]),
+            "get after {sent}: {settings}"
+        );
+
+        let (status, session) = app
+            .post(
+                LOGIN_ROUTE,
+                json!({ "identifier": "shippeduser", "password": "TestPass123!" }),
+                None,
+            )
+            .await;
+        assert_eq!(status, StatusCode::OK, "login after {sent}: {session}");
+        assert!(
+            shipped_clients_parse(&session["settings"]["pip_style"]),
+            "login after {sent}: {session}"
+        );
+
+        let refresh = session["refresh_token"]["value"]
+            .as_str()
+            .unwrap()
+            .to_string();
+        let (status, refreshed) = app
+            .post(
+                REFRESH_SESSION_ROUTE,
+                json!({ "user_id": user_id, "refresh_token": refresh }),
+                None,
+            )
+            .await;
+        assert_eq!(status, StatusCode::OK, "refresh after {sent}: {refreshed}");
+        assert!(
+            shipped_clients_parse(&refreshed["settings"]["pip_style"]),
+            "refresh after {sent}: {refreshed}"
+        );
+    }
+}
+
 #[sqlx::test]
 async fn pip_style_setting_round_trips(pool: sqlx::PgPool) {
     let app = TestApp::new(pool.clone());
@@ -567,7 +626,7 @@ async fn pip_style_setting_round_trips(pool: sqlx::PgPool) {
         .unwrap();
     assert_eq!(stored, "classic");
 
-    // A 1.15.0 to 1.17.0 client sending the earlier name still lands on classic.
+    // A shipped client's `theme` lands, stores as `themed` and answers `theme`.
     let (status, updated) = app
         .patch(
             SETTINGS_ROUTE,
@@ -576,6 +635,25 @@ async fn pip_style_setting_round_trips(pool: sqlx::PgPool) {
         )
         .await;
     assert_eq!(status, StatusCode::OK, "reset: {updated}");
+    assert_eq!(updated["pip_style"], "theme");
+    let stored: String = sqlx::query_scalar("SELECT pip_style FROM user_settings")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(stored, "themed");
+
+    // The new name lands the same way.
+    let (status, updated) = app
+        .patch(
+            SETTINGS_ROUTE,
+            json!({ "pip_style": "themed" }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "new name: {updated}");
+    assert_eq!(updated["pip_style"], "theme");
+
+    // A 1.15.0 to 1.17.0 client sending the earlier name still lands on classic.
     let (status, updated) = app
         .patch(
             SETTINGS_ROUTE,

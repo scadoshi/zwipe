@@ -109,7 +109,7 @@ impl SettingChange {
         match self {
             Self::Theme { .. } | Self::DarkMode { .. } => None,
             Self::Pips(_) => Some(match saved.pip_style {
-                PipStyle::Theme => "Pips in theme colors",
+                PipStyle::Themed => "Pips in themed colors",
                 PipStyle::Classic => "Pips in classic colors",
             }),
             Self::HideUniversesBeyond(_) if saved.exclude_universes_beyond => {
@@ -254,7 +254,7 @@ mod tests {
             dark_mode: true,
             exclude_universes_beyond: false,
             universes_beyond_exceptions: vec!["a".to_owned()],
-            pip_style: PipStyle::Theme,
+            pip_style: PipStyle::Themed,
         }
     }
 
@@ -355,7 +355,7 @@ mod tests {
     fn each_saved_toast_has_the_apps_words_kind_and_band() {
         let mut on = settings();
         on.dark_mode = true;
-        on.pip_style = PipStyle::Theme;
+        on.pip_style = PipStyle::Themed;
         on.exclude_universes_beyond = true;
         let mut off = settings();
         off.dark_mode = false;
@@ -370,14 +370,14 @@ mod tests {
             theme: "gruvbox".to_owned(),
             dark_mode: true,
         };
-        let pips = SettingChange::Pips(PipStyle::Theme);
+        let pips = SettingChange::Pips(PipStyle::Themed);
         let universes = SettingChange::HideUniversesBeyond(true);
         let exceptions = SettingChange::Exceptions(Vec::new());
         for (change, saved) in [(&theme, &on), (&dark, &on), (&dark, &off)] {
             assert_eq!(change.saved_toast(saved), None, "{change:?}");
         }
         let cases: [(&SettingChange, &UserSettings, &str, Duration); 6] = [
-            (&pips, &on, "Pips in theme colors", NORMAL),
+            (&pips, &on, "Pips in themed colors", NORMAL),
             (&pips, &off, "Pips in classic colors", NORMAL),
             (&universes, &on, "Universes Beyond hidden", NORMAL),
             (&universes, &off, "Universes Beyond shown", NORMAL),

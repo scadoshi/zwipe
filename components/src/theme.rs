@@ -28,7 +28,7 @@ pub fn theme_from_settings(settings: &UserSettings) -> ThemeConfig {
 #[must_use]
 pub const fn pip_style_class(color: PipStyle) -> &'static str {
     match color {
-        PipStyle::Theme => "",
+        PipStyle::Themed => "",
         PipStyle::Classic => "pips-classic",
     }
 }
@@ -44,7 +44,7 @@ mod tests {
             crate::MAGIC_CSS.contains(&format!(".{class} {{")),
             "magic.css has no .{class} rule"
         );
-        assert_eq!(super::pip_style_class(core::PipStyle::Theme), "");
+        assert_eq!(super::pip_style_class(core::PipStyle::Themed), "");
     }
 
     #[test]

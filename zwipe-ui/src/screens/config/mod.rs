@@ -57,7 +57,7 @@ pub const SAVE: &str = "Save";
 #[must_use]
 pub fn pips_label(style: PipStyle) -> &'static str {
     match style {
-        PipStyle::Theme => "Theme",
+        PipStyle::Themed => "Themed",
         PipStyle::Classic => "Classic",
     }
 }

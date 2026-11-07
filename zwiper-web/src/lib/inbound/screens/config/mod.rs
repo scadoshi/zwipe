@@ -109,7 +109,7 @@ pub fn Config() -> Element {
                     session.set(Some(latest));
                 }
                 said.call(match shown {
-                    PipStyle::Theme => "Pips in theme colors",
+                    PipStyle::Themed => "Pips in themed colors",
                     PipStyle::Classic => "Pips in classic colors",
                 });
             }
@@ -181,7 +181,7 @@ pub fn Config() -> Element {
                                     variant: ButtonVariant::Action,
                                     onclick: toggle_pips,
                                     match pip_style() {
-                                        PipStyle::Theme => "Theme",
+                                        PipStyle::Themed => "Themed",
                                         PipStyle::Classic => "Classic",
                                     }
                                 }

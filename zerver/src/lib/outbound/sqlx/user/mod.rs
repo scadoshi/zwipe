@@ -135,7 +135,7 @@ impl UserRepository for Postgres {
                     universes_beyond_exceptions, pip_style, updated_at)
                VALUES ($1, COALESCE($2, 'zwipe'), COALESCE($3, true),
                        COALESCE($4, false), COALESCE($5::text[], '{}'::text[]),
-                       COALESCE($6, 'theme'), NOW())
+                       COALESCE($6, 'themed'), NOW())
                ON CONFLICT (user_id)
                DO UPDATE SET
                    theme = COALESCE($2, user_settings.theme),
