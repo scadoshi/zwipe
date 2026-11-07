@@ -1020,40 +1020,6 @@ i.ms.ms-cost.ms-gp {
     padding-top: 1.5rem;
 }
 
-/* Scrolling the body down folds the head away (HEAD_HIDE_JS marks the
-   panel), and scrolling up unfolds it: the title and its rule ease to
-   nothing, so the body takes their room. */
-.card-details-panel > .panel-head {
-    max-height: 6rem;
-    transition:
-        max-height 0.2s ease,
-        opacity 0.2s ease;
-}
-
-.card-details-panel > .panel-head + .panel-rule {
-    transition:
-        margin-top 0.2s ease,
-        opacity 0.2s ease;
-}
-
-.card-details-head-hidden > .panel-head {
-    max-height: 0;
-    opacity: 0;
-    overflow: hidden;
-}
-
-.card-details-head-hidden > .panel-head + .panel-rule {
-    margin-top: -1.5rem;
-    opacity: 0;
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .card-details-panel > .panel-head,
-    .card-details-panel > .panel-head + .panel-rule {
-        transition: none;
-    }
-}
-
 /* The foot stacks the host's content over the Flip and Image row at the
    panel's left, not as one button row. */
 .card-details-panel > .panel-actions {
