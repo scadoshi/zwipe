@@ -9,7 +9,8 @@ use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilde
 use zwipe_core::domain::card::search_card::cards::{Cards, sort_deck_entries};
 use zwipe_core::domain::card::search_card::group_cards::{CardGroup, GroupByOption, GroupCards};
 use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
-use zwipe_core::domain::deck::{Board, DeckEntry};
+use zwipe_core::domain::deck::validate_deck::{DeckCommandZone, validate_deck};
+use zwipe_core::domain::deck::{Board, DeckEntry, DeckProfile, DeckWarning};
 
 use crate::deck::form::Slot;
 use crate::stores::undo::UndoAction;
@@ -85,15 +86,53 @@ impl Zone {
         live: &[DeckEntry],
         zone_cards: &[Card],
     ) -> Option<DeckMetrics> {
+        let all = self.rejoin(fetched, live);
+        (!all.is_empty() || !zone_cards.is_empty())
+            .then(|| DeckMetrics::from_entries_and_command_zone(&all, zone_cards))
+    }
+
+    /// The deck's warnings as a fresh fetch would give them while the screen holds `live`, worked out as the server does: the entries rejoined as for [`Self::live_metrics`], `fetched_profile` counting the main board's copies as they stand, and the command zone as this zone holds it.
+    #[must_use]
+    pub fn live_warnings(
+        &self,
+        fetched_profile: &DeckProfile,
+        fetched: &[DeckEntry],
+        live: &[DeckEntry],
+    ) -> Vec<DeckWarning> {
+        let all = self.rejoin(fetched, live);
+        let card_count = all
+            .iter()
+            .filter(|e| e.deck_card.board == Board::Deck)
+            .map(|e| i64::from(*e.deck_card.quantity))
+            .fold(0i64, i64::saturating_add);
+        let id = |card: Option<&Card>| card.map(|c| c.scryfall_data.id);
+        let profile = DeckProfile {
+            card_count,
+            commander_id: id(self.commander.as_ref()),
+            partner_commander_id: id(self.partner.as_ref()),
+            background_id: id(self.background.as_ref()),
+            signature_spell_id: id(self.signature.as_ref()),
+            ..fetched_profile.clone()
+        };
+        let zone = DeckCommandZone {
+            commander: self.commander.as_ref(),
+            partner_commander: self.partner.as_ref(),
+            background: self.background.as_ref(),
+            signature_spell: self.signature.as_ref(),
+        };
+        validate_deck(&profile, &all, &zone)
+    }
+
+    /// `live` with the fetched entries [stripped](Self::strip) for this zone put back.
+    fn rejoin(&self, fetched: &[DeckEntry], live: &[DeckEntry]) -> Vec<DeckEntry> {
         let oracles = self.oracles();
-        let mut stripped: Vec<DeckEntry> = fetched
+        let mut all: Vec<DeckEntry> = fetched
             .iter()
             .filter(|e| oracles.contains(&e.deck_card.oracle_id))
             .cloned()
             .collect();
-        stripped.extend_from_slice(live);
-        (!stripped.is_empty() || !zone_cards.is_empty())
-            .then(|| DeckMetrics::from_entries_and_command_zone(&stripped, zone_cards))
+        all.extend_from_slice(live);
+        all
     }
 }
 
@@ -382,6 +421,7 @@ pub fn undo_message(action: &UndoAction) -> String {
 #[cfg(test)]
 mod tests {
     use chrono::{Duration, Utc};
+    use zwipe_core::domain::deck::Format;
 
     use super::*;
     use crate::test_support::{card, deck, deck_profile};
@@ -486,6 +526,32 @@ mod tests {
         live.retain(|e| e.card.scryfall_data.name != "Ant" && e.card.scryfall_data.name != "Bee");
         let after_remove = zone.live_metrics(&fetched, &live, &zone_cards).unwrap();
         assert_eq!(after_remove.total_cards, as_fetched.total_cards - 1);
+    }
+
+    #[test]
+    fn live_warnings_follow_a_card_moved_to_the_main_board() {
+        let mut profile = deck_profile("D");
+        profile.format = Some(Format::Modern);
+        let fetched = entries();
+        profile.card_count = 3;
+        let mut live = fetched.clone();
+        let zone = Zone::default();
+        let counts = |warnings: Vec<DeckWarning>| -> Vec<String> {
+            warnings
+                .into_iter()
+                .map(|w| w.to_string())
+                .filter(|m| m.contains(" cards, "))
+                .collect()
+        };
+        assert_eq!(
+            counts(zone.live_warnings(&profile, &fetched, &live)),
+            ["Deck has 3 cards, modern requires at least 60"],
+        );
+        live[3].deck_card.board = Board::Deck;
+        assert_eq!(
+            counts(zone.live_warnings(&profile, &fetched, &live)),
+            ["Deck has 4 cards, modern requires at least 60"],
+        );
     }
 
     #[test]
