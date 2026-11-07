@@ -7,6 +7,8 @@ use orangui::{Button, ButtonVariant};
 use uuid::Uuid;
 use zwipe_ui::screens::home::{self, DeckPanel, DeckTile, Decks, DecksAction, LATEST_DECKS};
 
+use crate::LoadFailed;
+
 /// The panel between the hero and the Colors panel, in the Colors panel's
 /// style: Decks and the count chip centered in its header with the All decks
 /// chip in the right corner, then the [`LATEST_DECKS`] most recently updated decks
@@ -17,13 +19,15 @@ use zwipe_ui::screens::home::{self, DeckPanel, DeckTile, Decks, DecksAction, LAT
 /// line under the All decks chip. Home's model decides which.
 ///
 /// `onopen` is the All decks chip, `ondeck` a tile's tap with the deck's id
-/// and `oncreate` the Create a deck chip; the host routes each.
+/// and `oncreate` the Create a deck chip; the host routes each. With
+/// `onretry` the failed line offers Retry.
 #[component]
 pub fn HomeDecks(
     decks: Decks,
     onopen: EventHandler,
     ondeck: EventHandler<Uuid>,
     oncreate: EventHandler,
+    #[props(default)] onretry: Option<EventHandler>,
 ) -> Element {
     let action = decks.action();
     let onaction = move |()| match action {
@@ -43,7 +47,11 @@ pub fn HomeDecks(
                 },
                 Decks::Failed => rsx! {
                     PanelHeader { count: None, action, onaction }
-                    div { class: "message-empty home-decks-line", {home::DECKS_FAILED} }
+                    if let Some(onretry) = onretry {
+                        LoadFailed { message: home::DECKS_FAILED, on_retry: onretry, class: "home-decks-line" }
+                    } else {
+                        div { class: "message-empty home-decks-line", {home::DECKS_FAILED} }
+                    }
                 },
                 Decks::Loading => rsx! {
                     PanelHeader { count: None, action, onaction }

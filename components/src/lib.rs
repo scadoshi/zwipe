@@ -58,6 +58,7 @@ mod home_colors;
 mod home_decks;
 mod hover_stack;
 mod keyword_chips;
+mod load_failed;
 mod menu_section;
 mod oracle_text;
 mod role_tags;
@@ -89,6 +90,7 @@ pub use home_colors::{ColorsEmpty, HomeColors};
 pub use home_decks::HomeDecks;
 pub use hover_stack::{HoverStack, HoverStackHost, use_hover_stack};
 pub use keyword_chips::{KeywordChips, KeywordReminders};
+pub use load_failed::{LoadFailed, RETRY};
 pub use menu_section::MenuSection;
 pub use oracle_text::OracleText;
 pub use orangui::{
