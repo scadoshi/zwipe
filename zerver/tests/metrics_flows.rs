@@ -10,13 +10,14 @@
     reason = "a test: helpers outside #[test] fns unwrap and index, and a panic is the failure report"
 )]
 
+use zwipe::inbound::http::handlers::metrics::get_public_metrics::PUBLIC_METRICS_CACHE;
 use zwipe_core::http::paths::{
     DECK_ROUTE, DELETE_USER_ROUTE, PUBLIC_METRICS_ROUTE, RECORD_ANONYMOUS_EVENT_ROUTE,
     RECORD_CRASH_ROUTE, RECORD_USAGE_ROUTE,
 };
 mod common;
 
-use axum::http::StatusCode;
+use axum::http::{Method, StatusCode, header};
 use common::{TestApp, card, seed_cards};
 use serde_json::json;
 use uuid::Uuid;
@@ -647,6 +648,22 @@ async fn set_counters(pool: &sqlx::PgPool, user_id: &str, n: i64) {
     .execute(pool)
     .await
     .unwrap();
+}
+
+#[sqlx::test]
+async fn public_totals_keep_the_edge_within_five_minutes(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool);
+    let (status, headers, body) = app
+        .send_raw(Method::GET, PUBLIC_METRICS_ROUTE, None, None, &[])
+        .await;
+    assert_eq!(status, StatusCode::OK, "stats: {body}");
+    assert_eq!(
+        headers
+            .get(header::CACHE_CONTROL)
+            .and_then(|v| v.to_str().ok()),
+        Some(PUBLIC_METRICS_CACHE),
+        "the stats' own header, not the hourly default"
+    );
 }
 
 #[sqlx::test]

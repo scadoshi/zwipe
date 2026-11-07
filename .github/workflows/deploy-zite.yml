@@ -113,6 +113,10 @@ jobs:
   build:
     needs: [test, lint] # blocked if tests or lints fail
     runs-on: ubuntu-latest
+    # actions: read lets the bake below see this commit's zerver deploy.
+    permissions:
+      contents: read
+      actions: read
     # Backstop: a normal run is well under 10 minutes. Without this a wedged
     # step burns the default job limit before anyone notices.
     timeout-minutes: 30
@@ -178,12 +182,30 @@ jobs:
         with:
           tool: dioxus-cli@0.7.10
 
+      - name: Wait for this commit's zerver deploy
+        # A push that changes zerver deploys it in parallel with this run, so
+        # the counters are baked once that deploy is over and come from the
+        # zerver this push ships. A push that leaves zerver alone has no
+        # zerver run and waits for nothing; at most 20 minutes either way.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for _ in $(seq 1 60); do
+            state=$(gh run list -R "$GITHUB_REPOSITORY" --workflow "Deploy zerver" --commit "$GITHUB_SHA" --json status -q '.[0].status // "none"')
+            case "$state" in
+              none|completed) echo "zerver deploy: $state"; exit 0 ;;
+            esac
+            sleep 20
+          done
+          echo "::warning::zerver deploy still running after 20 minutes; baking anyway"
+
       - name: Refresh the public counters from zerver
         # zite/src/metrics.json is committed, so the build has numbers whatever
         # happens here. The new answer replaces it only when all three counts
-        # came back as numbers.
+        # came back as numbers. The query string is this run's own, so no edge
+        # copy matches it and the answer comes from the origin.
         run: |
-          if curl -fsS --max-time 20 https://api.zwipe.net/api/marketing/stats -o metrics.new \
+          if curl -fsS --max-time 20 "https://api.zwipe.net/api/marketing/stats?bake=${GITHUB_RUN_ID}" -o metrics.new \
             && jq -e '(.cards_swiped|numbers) and (.searches|numbers) and (.decks_created|numbers)' metrics.new > /dev/null; then
             jq -n --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --slurpfile m metrics.new '{fetched_at:$at, metrics:$m[0]}' > zite/src/metrics.json
             rm metrics.new
