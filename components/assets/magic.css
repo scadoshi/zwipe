@@ -1876,10 +1876,34 @@ html.keyboard-up .web-dock-pair {
 /* ---- DrawerSheet (components::DrawerSheet): a page's docks step aside ----
    While a drawer is open its own dock sits at the bottom right, where the
    page's floating dock is, which would show behind it as a second rounded
-   square. The page's docks hide until the drawer closes. */
+   square. The page's docks slide down off the screen as they fade while
+   the drawer opens, and slide back up as it closes; with reduced motion
+   they only fade. They take no taps while away. */
 @media (min-width: 60rem) {
+    .action-dock:not(.sheet-dock) {
+        transition:
+            bottom 0.25s ease,
+            transform 0.3s ease,
+            opacity 0.3s ease,
+            visibility 0s linear 0s;
+    }
+
     body:has(.sheet-form-drawer > .bottom-sheet.show) .action-dock:not(.sheet-dock) {
+        transform: translateY(calc(100% + 2rem));
+        opacity: 0;
         visibility: hidden;
+        pointer-events: none;
+        transition:
+            bottom 0.25s ease,
+            transform 0.3s ease,
+            opacity 0.3s ease,
+            visibility 0s linear 0.3s;
+    }
+}
+
+@media (min-width: 60rem) and (prefers-reduced-motion: reduce) {
+    body:has(.sheet-form-drawer > .bottom-sheet.show) .action-dock:not(.sheet-dock) {
+        transform: none;
     }
 }
 
