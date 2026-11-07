@@ -6,6 +6,8 @@
 //! trimmed. The columns and the filter drawer follow Add; Ctrl+Z also
 //! undoes, F flips, P opens the printings to look at and R is `Refresh`.
 
+use std::collections::{HashMap, HashSet};
+
 use components::icons::{DockIcon, REFRESH};
 use components::{Chip, DockFilter, SheetFrame, SheetWide, TOAST_QUICK};
 use dioxus::core::spawn_forever;
@@ -100,6 +102,11 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
     let mut profile: Signal<Option<DeckProfile>> = use_signal(|| None);
     let mut loaded = use_signal(|| false);
     let mut stack: Signal<CardStack<RemoveAction>> = use_signal(CardStack::default);
+    // Removes whose delete is still out, and the undos asked for on them in
+    // the meantime: a held undo's restore goes out once its delete lands, so
+    // the two requests never race.
+    let mut deleting: Signal<HashSet<Uuid>> = use_signal(HashSet::new);
+    let mut held: Signal<HashMap<Uuid, (Card, Board, i32)>> = use_signal(HashMap::new);
     let mut board_filter = use_signal(|| BoardFilter::Deck);
     let mut counter = use_signal(|| 0u32);
     let show_details = use_signal(|| false);
@@ -201,6 +208,44 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
         );
     };
 
+    // Puts a removed card back on the server and in the entries; a failure
+    // gives `taken` back to the undo log.
+    let restore = use_callback(
+        move |(card, board, quantity, taken): (Card, Board, i32, Option<UndoAction>)| {
+            spawn(async move {
+                let fresh = match ensure_fresh(session, client).await {
+                    Ok(fresh) => fresh,
+                    Err(e) => {
+                        toast.error(e.to_user_message(), ToastOptions::default());
+                        stack.write().cancel_entering();
+                        if let Some(entry) = taken {
+                            undo.write().push(deck_id, entry);
+                        }
+                        return;
+                    }
+                };
+                let request = HttpCreateDeckCard::new(
+                    &card.scryfall_data,
+                    quantity,
+                    create_board_field(board),
+                );
+                let http = client.peek().clone();
+                match http.create_deck_card(deck_id, &request, &fresh).await {
+                    Ok(deck_card) => {
+                        entries.write().push(DeckEntry { card, deck_card });
+                        confirm.success("Undid remove");
+                    }
+                    Err(e) => {
+                        toast.error(format!("Failed to undo: {e}"), ToastOptions::default());
+                        if let Some(entry) = taken {
+                            undo.write().push(deck_id, entry);
+                        }
+                    }
+                }
+            });
+        },
+    );
+
     let undo_last = use_callback(move |()| {
         let popped = stack.write().pop_action();
         let Some(action) = popped else {
@@ -235,38 +280,15 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                     toast.info("Already changed".to_string(), quick);
                     return;
                 }
+                if deleting.peek().contains(&card_id) && !held.peek().contains_key(&card_id) {
+                    // Its delete is still out: the card comes back now and the
+                    // restore waits for the delete to land.
+                    stack.write().insert_current(card.clone());
+                    held.write().insert(card_id, (card, board, quantity));
+                    return;
+                }
                 stack.write().insert_current(card.clone());
-                spawn(async move {
-                    let fresh = match ensure_fresh(session, client).await {
-                        Ok(fresh) => fresh,
-                        Err(e) => {
-                            toast.error(e.to_user_message(), ToastOptions::default());
-                            stack.write().cancel_entering();
-                            if let Some(entry) = taken {
-                                undo.write().push(deck_id, entry);
-                            }
-                            return;
-                        }
-                    };
-                    let request = HttpCreateDeckCard::new(
-                        &card.scryfall_data,
-                        quantity,
-                        create_board_field(board),
-                    );
-                    let http = client.peek().clone();
-                    match http.create_deck_card(deck_id, &request, &fresh).await {
-                        Ok(deck_card) => {
-                            entries.write().push(DeckEntry { card, deck_card });
-                            confirm.success("Undid remove");
-                        }
-                        Err(e) => {
-                            toast.error(format!("Failed to undo: {e}"), ToastOptions::default());
-                            if let Some(entry) = taken {
-                                undo.write().push(deck_id, entry);
-                            }
-                        }
-                    }
-                });
+                restore.call((card, board, quantity, taken));
             }
             RemoveAction::MoveBoard { card, from, .. } => {
                 let card = *card;
@@ -348,22 +370,40 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                     quantity,
                 });
                 if let Some(entry) = entry {
+                    deleting.write().insert(card_id);
                     spawn_forever(async move {
-                        if authed
+                        let deleted = authed
                             .run("remove_card", |c, s| async move {
                                 c.delete_deck_card(deck_id, card_id, &s).await
                             })
                             .await
-                            .is_some()
-                        {
-                            let baseline = *entry.deck_card.quantity;
-                            undo.write().push(
-                                deck_id,
-                                UndoAction::Removed {
-                                    entry: Box::new(entry),
-                                    baseline,
-                                },
-                            );
+                            .is_some();
+                        if let Ok(mut out) = deleting.try_write() {
+                            out.remove(&card_id);
+                        }
+                        let waiting = held.try_write().ok().and_then(|mut h| h.remove(&card_id));
+                        match (waiting, deleted) {
+                            // Undone while out, and gone now: put it back.
+                            (Some((card, board, quantity)), true) => {
+                                restore.call((card, board, quantity, None));
+                            }
+                            // Undone while out, and never deleted: it is still
+                            // in the deck.
+                            (Some(_), false) => {
+                                entries.write().push(entry);
+                                confirm.success("Undid remove");
+                            }
+                            (None, true) => {
+                                let baseline = *entry.deck_card.quantity;
+                                undo.write().push(
+                                    deck_id,
+                                    UndoAction::Removed {
+                                        entry: Box::new(entry),
+                                        baseline,
+                                    },
+                                );
+                            }
+                            (None, false) => {}
                         }
                     });
                 }
