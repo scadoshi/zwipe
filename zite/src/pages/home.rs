@@ -39,7 +39,7 @@ const JSON_LD: &str = r#"{
   "applicationCategory": "GameApplication",
   "url": "https://zwipe.net",
   "downloadUrl": "https://apps.apple.com/us/app/zwipe-tcg/id6761341603",
-  "description": "A Magic: The Gathering deck builder built for mobile. Swipe to build Commander decks with synergy-ranked cards.",
+  "description": "A Magic: The Gathering deck builder for phone and web. Swipe to build Commander decks with synergy-ranked cards.",
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
   "aggregateRating": { "@type": "AggregateRating", "ratingValue": "4.8", "ratingCount": "4" }
 }"#;
@@ -238,8 +238,8 @@ pub fn Home() -> Element {
 
     rsx! {
         PageMeta {
-            title: "Magic: The Gathering Deck Builder for Mobile",
-            description: "Magic: The Gathering deck builder for mobile. Swipe right to add, left to skip. Commander-ready, with synergy-ranked cards.",
+            title: "Magic: The Gathering Deck Builder for Phone and Web",
+            description: "Magic: The Gathering deck builder for phone and web. Swipe right to add, left to skip. Commander-ready, with synergy-ranked cards.",
             path: "/",
         }
         HomeJsonLd {}
@@ -261,7 +261,7 @@ pub fn Home() -> Element {
             // Semantic page heading for crawlers and screen readers; the ASCII
             // logo is the visual title, so this is visually hidden and the
             // logo is hidden from screen readers.
-            h1 { class: "sr-only", "Zwipe, the Magic: The Gathering deck builder built for mobile" }
+            h1 { class: "sr-only", "Zwipe, the Magic: The Gathering deck builder for phone and web" }
             // Keyed on the replay count so the spacing animation runs again
             // with the decode.
             div { class: "hero-card",
@@ -277,7 +277,7 @@ pub fn Home() -> Element {
                 p { class: "tagline",
                     "The "
                     a { href: "https://magic.wizards.com/en", "Magic: The Gathering" }
-                    " deck builder built for mobile. Swipe through cards for any format, and pick a commander to get the best synergy first."
+                    " deck builder for phone and web. Swipe through cards for any format, and pick a commander to get the best synergy first."
                 }
                 div { class: "hero-chips",
                     span { class: "hero-chip chip-value", "Free" }
