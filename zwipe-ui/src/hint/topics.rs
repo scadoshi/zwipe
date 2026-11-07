@@ -219,9 +219,9 @@ impl HintTopic {
                 bullet(vec![text("The app's palette. Picks preview as you tap")]),
                 bullet(vec![text("The last four are color blind modes")]),
                 bullet(vec![
-                    mode_key("light", KeyIcon::Light),
+                    mode_key("Light", KeyIcon::Light),
                     text(" "),
-                    mode_key("dark", KeyIcon::Dark),
+                    mode_key("Dark", KeyIcon::Dark),
                     text(" switches between the theme's two palettes"),
                 ]),
             ],
@@ -230,7 +230,7 @@ impl HintTopic {
                     "The icon on your home screen, in any theme's colors",
                 )]),
                 bullet(vec![
-                    key("Matches theme"),
+                    key("Match theme"),
                     text(" keeps it in your theme as you change it"),
                 ]),
             ],
@@ -643,8 +643,8 @@ mod tests {
     fn the_theme_topic_draws_its_mode_icons_in_the_chips() {
         let blocks = HintTopic::Theme.blocks();
         let spans = blocks[2].spans();
-        assert_eq!(spans[0], mode_key("light", KeyIcon::Light));
-        assert_eq!(spans[2], mode_key("dark", KeyIcon::Dark));
+        assert_eq!(spans[0], mode_key("Light", KeyIcon::Light));
+        assert_eq!(spans[2], mode_key("Dark", KeyIcon::Dark));
         assert_eq!(HintTopic::AppIcon.title(), "App icon");
     }
 }

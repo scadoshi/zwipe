@@ -40,7 +40,7 @@ use crate::inbound::cards::card_row::{CardOverlaysHost, use_card_overlays};
 use crate::inbound::cards::otag::{OtagExamplesHost, use_otag_reveals};
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::media::use_wide;
-use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
+use crate::inbound::chrome::one_time_hint::{FirstDeckHintDialog, OneTimeHint, use_one_time_hint};
 use crate::inbound::router::Route;
 use crate::inbound::shell::ScreenFrame;
 
@@ -297,7 +297,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
             }
         }
         DeckDialogsHost { deck_id, dialogs, share_token, clone_name }
-        OneTimeHintDialog { hint: OneTimeHint::FirstDeck, open: hint_open }
+        FirstDeckHintDialog { open: hint_open, wide: wide() }
         CardOverlaysHost { overlays, on_printing_save: move |_: Card| {}, read_only: true }
         OtagExamplesHost { examples }
     }
