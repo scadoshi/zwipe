@@ -23,7 +23,7 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
-| 93, the docked details panel jumps up once the screen loads (queued after 88) | halo | `nits/halo-93` |
+| 93, 94, the docked panel's jump, the card pinned to center, panel default by space (queued after 88) | halo | `nits/halo-93` |
 | 92, the web's URLs name resources, not actions (queued after 91) | laptop | `nits/laptop-92` |
 | 91, a live session skips the login page | laptop | `nits/laptop-91` |
 | 90, no white flash before the wasm loads | scotland | `nits/scotland-90` |
@@ -135,6 +135,7 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 91. **Log in with a live session still shows the login form.** On load the web checks its cookie session once; signed in → Home (replacing /login), otherwise the form, with no flash of the form first.
 92. **The web's URLs carry verbs** (`/deck/get/:id`). Rename to resource paths: /decks, /decks/:id, /decks/:id/cards, /decks/:id/add, /playstyle, /maybeboard, /account and so on. No redirects from the old paths.
 93. **The docked details panel jumps on load.** On Add it first sits low, then snaps up under the nav when the screen finishes loading. It must paint in its final place from the first frame.
+94. **The swipe card shifts when the details panel toggles.** The card stays pinned to the window's center; on a narrow window the panel overlays it; the panel starts open when there's room and closed when it would touch the card, the eye lit while it shows.
 
 ## Done
 
