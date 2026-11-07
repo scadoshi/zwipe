@@ -23,25 +23,8 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
-| 65, 67, cover-flow picker on wide, the phone picker's bottom row (PR #207, waiting on Scotty's eye) | scotland | `nits/scotland-65` |
-| 65, the printing picker as a cover-flow modal on wide | scotland | `nits/scotland-65` |
-| 64, one chip grammar for tags, label chips for group names (queued after 54) | thinker | `nits/thinker-64` |
-| 62, the nav's ? spaced evenly and bolder | scotland | `nits/scotland-62` |
-| 63, the arrow dock gets labels and sits left of the other dock | laptop | `nits/laptop-63` |
-| 57, 58, footer pills in the nav's style, every panel hovers | laptop | `nits/laptop-57-58` |
-| 56, the web's deck page head goes too | scotland | `nits/scotland-56` |
-| 28, the skeleton pass, Playstyle first | halo | `nits/halo-28` |
-| 55, zwipe.net's testimonial rating inline with its title (queued after 53) | halo | `nits/halo-55` |
-| 54, card details pane redesign, prices move into it (queued after 50) | thinker | `nits/thinker-54` |
-| 53, the app's Quick add through ClearWrap | halo | `nits/halo-53` |
-| 52, the swipe buttons move into the action dock (queued after 51) | laptop | `nits/laptop-52` |
-| 51, swipe twice as fast, same animation speed | laptop | `nits/laptop-51` |
-| 50, the deck head's ? matches Edit, Clone and Share | thinker | `nits/thinker-50` |
-| 45, 47, no page heads, the page's ? in the nav, About drops Credits on wide (queued after 21) | scotland | `nits/scotland-45` |
-| 46, a compact footer on both sites (queued after 40) | halo | `nits/halo-46` |
-| 21, the card filter into components (plan phases 3 and 4) | laptop | `shared/card-filter` |
+| 65, 67, cover-flow printing picker, the phone picker's bottom row (PR #207, waiting on Scotty's eye) | scotland | `nits/scotland-65` |
 | cycle-trk-mission description, held until scotland's 2026-11-07 sync confirms its cards | halo | `otags/cycle-trk-mission` (PR #178) |
-| 38, the footer looks like zwipe.net's | scotland | `nits/scotland-footer-look` |
 
 The loop is in [`../development/factory.md`](../development/factory.md).
 
@@ -125,6 +108,12 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 
 ## Done
 
+- 46, a compact footer on both sites: PR #190. 48, zwipe.net's manifest icons: PR #191. 49, inputs through `ClearWrap`: PR #192.
+- 50, the deck head's `?`: PR #193. 53, the app's Quick add: PR #194. 21 phase 5, zwipe.net's full filter: PR #195. 51, swiping twice as fast: PR #196. 55, testimonial rating inline: PR #197.
+- 45, 47, no page heads, the page's `?` in the nav, About drops Credits on wide: PR #198. 52, swipe buttons in the dock: PR #199.
+- 54, 61, card details redesigned as a panel and a side drawer everywhere: PR #200. 56, the deck page head: PR #201. 57, 58, nav-style footer pills, every panel hovers: PR #202.
+- 62, the nav's `?` spaced evenly: PR #203. 63, the labeled arrow dock: PR #204. 28, the skeleton pass: PR #205. 66, the hero aligned across sites: PR #206. 64, one chip grammar for tags: PR #208.
+- Deployed to main 2026-11-06 at `e4466177c` (everything above through #206; #208 rides the next round).
 - 24, held arrow swipes once and the exit slows to 0.32s: PR #152 into `release`.
 - 13, 6, 3, changelog pages by five, privacy at page width, chart title gaps: PR #153 into `release`.
 - 18, 20, wide fields capped at 32rem, dictionary letters in one row: PR #154 into `release`.
