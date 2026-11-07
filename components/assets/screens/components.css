@@ -667,3 +667,41 @@
     background-color: var(--border-muted);
     animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
+
+/* A row's label reads at 4.5:1 or better in every theme: the text color
+   a fifth of the way to the panel on a dark theme, barely eased on a light
+   one, where the theme's own text sits near that bar. */
+.settings-row-label {
+    opacity: 1;
+    color: color-mix(in srgb, var(--text-primary) 80%, var(--bg-primary));
+}
+
+[class*="theme-"][class*="-light"] .settings-row-label {
+    color: color-mix(in srgb, var(--text-primary) 95%, var(--bg-primary));
+}
+
+/* A row whose value holds buttons keeps them on one line: where the
+   value does not fit beside the label it moves under it whole, at the
+   right, and its buttons share one height. */
+.settings-row:has(> .settings-row-value button) {
+    flex-wrap: wrap;
+}
+
+.settings-row-value:has(button) {
+    flex-wrap: nowrap;
+    margin-left: auto;
+}
+
+.settings-row-value > button {
+    align-self: stretch;
+    white-space: nowrap;
+}
+
+/* A hint's dialog on a phone takes the window's width, less a margin, so
+   its lines run long enough to read. */
+@media (max-width: 899px) {
+    .alert-dialog:has(.hint-line, .hint-bullets) {
+        width: calc(100% - 2rem);
+        max-width: 28rem;
+    }
+}

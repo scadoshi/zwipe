@@ -200,11 +200,14 @@
     box-shadow: var(--shadow-sm);
 }
 
+/* A card list's title in the panels' own title type (a settings list's:
+   size, weight, letter spacing and inset), in its own color. */
 .card-group-header {
-    font-size: 0.85rem;
-    font-weight: 600;
+    font-size: 1rem;
+    font-weight: 400;
+    letter-spacing: 0.1em;
     color: var(--accent-tertiary);
-    padding: 0.6rem 1rem;
+    padding: 0.75rem 1rem;
     border-bottom: 1px solid var(--border-secondary);
 }
 
@@ -559,6 +562,15 @@
     border-radius: 0.6rem;
     background-color: var(--bg-primary);
     box-shadow: var(--shadow-sm);
+}
+
+/* The format picker's bar holds its tallest details from the start, so a
+   tapped format's details never push the chips down under the finger; a
+   longer one scrolls inside. */
+.tag-def-bar.format-def-bar {
+    height: 11rem;
+    overflow-y: auto;
+    box-sizing: border-box;
 }
 
 .tag-def-name {
@@ -1200,4 +1212,35 @@
 /* The same note alone under a card group's header, spaced off the frame. */
 .activity-total-group {
     padding-bottom: 0.75rem;
+}
+
+/* =========================
+  Deck warnings
+=========================== */
+
+/* A warning's text keeps a readable width; where its fixes do not fit
+   beside it they move under it, at the right. A fix's label stays on one
+   line. */
+.deck-warning-row {
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.deck-warning-row > .text-muted {
+    flex: 1 1 12rem;
+}
+
+.deck-warning-fixes,
+.deck-warning-row > button {
+    margin-left: auto;
+}
+
+.deck-warning-fixes {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.deck-warning-row button {
+    white-space: nowrap;
 }

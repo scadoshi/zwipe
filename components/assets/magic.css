@@ -2474,3 +2474,15 @@ footer.site-footer .site-footer-note {
     text-decoration: underline;
     text-underline-offset: 3px;
 }
+
+/* A stepper's button at its bound is off: faded on a dark theme, its text
+   muted on a light one, as the kit's buttons are. */
+.stepper-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+[class*="theme-"][class*="-light"] .stepper-btn:disabled {
+    opacity: 1;
+    color: var(--text-muted);
+}

@@ -439,10 +439,10 @@ pub fn WarningsBody(deck_id: Uuid, warnings: Vec<DeckWarning>, fixes: WarningFix
     rsx! {
         div { style: "display:flex;flex-direction:column;",
                 for (i, item) in warnings.into_iter().enumerate() {
-                    div { key: "{i}", class: "settings-row", style: "justify-content: space-between; gap: 0.5rem;",
+                    div { key: "{i}", class: "settings-row deck-warning-row",
                         span { class: "text-muted", "{item}" }
                         if let Some(fix) = warning::fix(&item) {
-                            span { style: "display: flex; gap: 0.5rem;",
+                            span { class: "deck-warning-fixes",
                                 for (j, label) in warning::labels(fix).into_iter().enumerate() {
                                     Button {
                                         key: "{j}",

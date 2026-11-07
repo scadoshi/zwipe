@@ -279,7 +279,7 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
                     text(" undoes the last swipe"),
                 ]),
                 line(vec![text(
-                    "The board chips up top pick which board you are trimming",
+                    "The board chips at the bottom left pick which board you are trimming",
                 )]),
             ],
         ),

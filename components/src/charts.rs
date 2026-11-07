@@ -569,9 +569,10 @@ pub fn DrawOdds(
             div { style: "display:flex;align-items:center;justify-content:center;gap:0.6rem;",
                 // Reuse the combat-filter stepper button: solid background gives
                 // native press feedback and suppresses WKWebView's focus ring.
-                // The onclick guards no-op at the bounds; no gray-out.
+                // Each step is off at its bound, turn 0 or the last turn.
                 button {
                     class: "stepper-btn",
+                    disabled: turn() == 0,
                     onclick: move |_| { let t = turn(); if t > 0 { turn.set(t - 1); } },
                     "-"
                 }
@@ -581,6 +582,7 @@ pub fn DrawOdds(
                 }
                 button {
                     class: "stepper-btn",
+                    disabled: turn() >= MAX_TURN,
                     onclick: move |_| { let t = turn(); if t < MAX_TURN { turn.set(t + 1); } },
                     "+"
                 }
