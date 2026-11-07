@@ -59,6 +59,12 @@ body {
     user-select: text;
 }
 
+/* A drawer, form or the main column that takes focus back from a closed
+   hint draws no ring; it holds focus only so the keys stay there. */
+[tabindex="-1"]:focus {
+    outline: none;
+}
+
 /* Below the breakpoint scrollbars hide, as in the app, which signals a
    scroller with edge fades; a wide window draws them thin, the thumb in
    the theme's border color. */

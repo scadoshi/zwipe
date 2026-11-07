@@ -54,16 +54,6 @@ fn PickerSheet(
     on_save: EventHandler<()>,
     children: Element,
 ) -> Element {
-    // The hint takes focus as it opens, so Enter answers its own button
-    // rather than the drawer's `?` under it, and gives it up as it closes,
-    // so the `?` is not left focused to reopen it.
-    use_effect(move || {
-        document::eval(if hint_open() {
-            FOCUS_HINT_JS
-        } else {
-            RELEASE_HINT_JS
-        });
-    });
     rsx! {
         DrawerSheet {
             open,
@@ -83,12 +73,6 @@ fn PickerSheet(
         }
     }
 }
-
-/// Focuses the open hint's first button, its `Got it`, once it has drawn.
-const FOCUS_HINT_JS: &str = "setTimeout(() => document.querySelector('.alert-dialog[data-state=\"open\"] .alert-dialog-actions > button')?.focus(), 0)";
-
-/// Drops focus from the drawer's `?` or a closed hint's button, to the page.
-const RELEASE_HINT_JS: &str = "(() => { const a = document.activeElement; if (a && (a.closest('.drawer-sheet-hint') || a.closest('.alert-dialog'))) a.blur(); })()";
 
 /// The open picker's body, with `/` focusing its search.
 #[component]
