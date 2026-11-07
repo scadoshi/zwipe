@@ -5,8 +5,6 @@
 #[cfg(test)]
 mod tests;
 
-use std::collections::BTreeSet;
-
 use crate::account::{self, Password};
 use crate::generation::{Generation, Ticket};
 use crate::toast::{Toast, ToastKind};
@@ -146,8 +144,6 @@ pub struct State {
     email: String,
     password: Password,
     confirm: Password,
-    /// The fields that have held something. Typing in the confirmation marks [`Field::Password`], whose line covers both.
-    touched: BTreeSet<Field>,
     /// Whether Create profile was pressed.
     attempted: bool,
     sending: Option<Sending>,
@@ -168,22 +164,18 @@ impl State {
     pub fn update(&mut self, action: Action) -> Vec<Effect> {
         match action {
             Action::EditUsername(value) => {
-                self.touch(Field::Username, &value);
                 self.username = value;
                 Vec::new()
             }
             Action::EditEmail(value) => {
-                self.touch(Field::Email, &value);
                 self.email = value;
                 Vec::new()
             }
             Action::EditPassword(value) => {
-                self.touch(Field::Password, value.read());
                 self.password = value;
                 Vec::new()
             }
             Action::EditConfirm(value) => {
-                self.touch(Field::Password, value.read());
                 self.confirm = value;
                 Vec::new()
             }
@@ -206,10 +198,10 @@ impl State {
         }
     }
 
-    /// The line under `field`, once it has held something or a submit was tried. Only [`Field::Username`], [`Field::Email`] and [`Field::Password`] have one.
+    /// The line under `field`, while it holds text or once a submit was tried; an emptied field shows none until then. Only [`Field::Username`], [`Field::Email`] and [`Field::Password`] have one.
     #[must_use]
     pub fn error(&self, field: Field) -> Option<String> {
-        if !self.attempted && !self.touched.contains(&field) {
+        if !self.attempted && !self.holds_text(field) {
             return None;
         }
         match field {
@@ -238,10 +230,13 @@ impl State {
         }
     }
 
-    /// Marks `field` as having held something once `value` is not empty. An emptied field stays judged.
-    fn touch(&mut self, field: Field, value: &str) {
-        if !value.is_empty() {
-            self.touched.insert(field);
+    /// Whether `field` holds text now. [`Field::Password`]'s line covers the confirmation too.
+    fn holds_text(&self, field: Field) -> bool {
+        match field {
+            Field::Username => !self.username.is_empty(),
+            Field::Email => !self.email.is_empty(),
+            Field::Password => !self.password.read().is_empty() || !self.confirm.read().is_empty(),
+            Field::ConfirmPassword => false,
         }
     }
 

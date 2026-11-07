@@ -578,7 +578,7 @@ mod tests {
         profile.commander_id = Some(uuid::Uuid::new_v4());
         profile.partner_commander_id = Some(uuid::Uuid::new_v4());
         let warnings = validate_deck(&profile, &[], &empty_command_zone());
-        let want = format!("deck has {} cards, commander allows at most 100", i64::MAX);
+        let want = format!("Deck has {} cards, commander allows at most 100", i64::MAX);
         assert!(
             warnings.iter().any(|w| w.contains(&want)),
             "warnings {warnings:?}"

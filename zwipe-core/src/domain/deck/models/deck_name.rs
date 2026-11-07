@@ -13,8 +13,8 @@ use crate::domain::moderation::ContainsBadWord;
 /// Errors that occur when constructing an invalid deck name.
 #[derive(Debug, Error)]
 pub enum InvalidDeckname {
-    /// Deck name is empty (minimum 1 character required).
-    #[error("deck name minimum length is 1 character")]
+    /// Deck name is empty or only whitespace.
+    #[error("deck name is required")]
     TooShort,
     /// Deck name exceeds 64 characters.
     #[error("deck name maximum length is 64 characters")]

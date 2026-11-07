@@ -25,7 +25,7 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 | --- | --- | --- |
 | 111, zwipe.net polish (93 to 95 in PR #234) | halo | `nits/halo-111` |
 | 98, 99, then 109, 110, chip row gaps, host extras, P/T contrast, hover previews | thinker | `nits/thinker-98`, `nits/thinker-109` |
-| 100 and 102, cover-flow edge fade and arrows | scotland | `nits/scotland-100` |
+| 100 and 102, then 113, cover-flow edge fade and arrows, stats and OG cards | scotland | `nits/scotland-100`, `nits/scotland-113` |
 | 103 (waits on orangui #6), 105 to 108, then 112, price, picker hint focus, Dark Reader, copy, portfolio polish | laptop | `nits/laptop-103`, `nits/laptop-105`, portfolio `nits/laptop-112` |
 
 The loop is in [`../development/factory.md`](../development/factory.md).
@@ -153,10 +153,14 @@ From Surfer's QA pass (2026-11-06), triaged with Scotty item by item. Surfer's i
 108. **Copy:** deck warnings start with a capital [S9]; "Deck name is required" replaces "Deck name minimum length is 1 character" [S10]; a field's error clears when the field is emptied [S11]; the Version hint ends with a period [S13].
 109. **The P/T chip is faint in light themes.** [S14] Light orange on peach on the deck page rows; give it the price chip's contrast.
 110. **Hover previews misbehave on the deck page.** No preview while a row is expanded, since it covers the row's text [S8]; after a scroll the preview sticks on one card and several briefly stack [S28].
-111. **zwipe.net polish:** the filter drawer's scrollbar is wide and white [S5]; sitemap, canonical and internal links use the slashed URL the server serves, so nothing redirects [S15]; the ASCII-art h1 gets an accessible name with no visible label [S16]; `scrollbar-gutter: stable` and the app's thin themed scrollbars [S17]; Community in two columns [S18]; no empty space under the testimonials, if Surfer's screenshot shows it [S19]; Free and No ads chips readable in light and their text centered [S20, S30]; /download/ios out of the sitemap [S21]; Open Graph images match the current site.
+111. **zwipe.net polish:** the filter drawer's scrollbar is wide and white [S5]; sitemap, canonical and internal links use the slashed URL the server serves, so nothing redirects [S15]; the ASCII-art h1 gets an accessible name with no visible label [S16]; `scrollbar-gutter: stable` and the app's thin themed scrollbars [S17]; Community in two columns [S18]; no empty space under the testimonials, if Surfer's screenshot shows it [S19]; Free and No ads chips readable in light and their text centered [S20, S30]; /download/ios out of the sitemap [S21].
 112. **scottyfermo.com polish:** slashed URLs everywhere so nothing redirects [S22]; Escape closes the nav dropdowns [S24]; the Projects intro names its four sections [S25]; "Finished products" becomes "Shipped products", keeping each card's Doing badge [S26]; the Tooling meta description under 160 characters [S27]; the hidden h1 name, the stable gutter and themed scrollbars as in 111; Open Graph images match the current site. Copy stays short, plain and in Scotty's voice.
 
-Skipped with Scotty: S7 (no Image in the swipe screens' details, intended), S23 (Cloudflare's email obfuscation). Rechecked after the next deploy, since `release` may already fix them: S4 (picker ✓ over chips), S6 (swipe select page head). Open: S12 (the pip toggle labeled Theme on zwipe.net).
+113. **Stats snapshots and OG cards are stale, and app.zwipe.net has no OG image.** Refresh zite's metrics.json and its OG card, and the portfolio's stats.json and OG card (folded into 112). Give app.zwipe.net its own OG card and tags.
+
+114. **Clicking off a drawer flashes its backdrop dark.** [S31] In orangui, the wide `.sheet-form-drawer > .sheet-backdrop.show` sets opacity 0.4 with no transition, so on close it snaps to 1 for a frame. The 0.4 moves to the backdrop itself. Zwipe, zite and the portfolio repin after.
+
+Skipped with Scotty: S7 (no Image in the swipe screens' details, intended), S23 (Cloudflare's email obfuscation). Rechecked after the next deploy, since `release` may already fix them: S4 (picker ✓ over chips), S6 (swipe select page head). S12 (the pip toggle labeled Theme on zwipe.net) becomes Pips, folded into 111.
 
 ## Done
 

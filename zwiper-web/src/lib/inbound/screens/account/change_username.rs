@@ -22,8 +22,6 @@ pub(super) fn ChangeUsernameSheet(mut open: Signal<bool>) -> Element {
 
     let mut new_username = use_signal(String::new);
     let mut password = use_signal(String::new);
-    let mut username_touched = use_signal(|| false);
-    let mut password_touched = use_signal(|| false);
     let mut submit_attempted = use_signal(|| false);
     let mut is_loading = use_signal(|| false);
 
@@ -31,27 +29,17 @@ pub(super) fn ChangeUsernameSheet(mut open: Signal<bool>) -> Element {
         if open() {
             new_username.set(String::new());
             password.set(String::new());
-            username_touched.set(false);
-            password_touched.set(false);
             submit_attempted.set(false);
-        }
-    });
-    use_effect(move || {
-        if !new_username().is_empty() {
-            username_touched.set(true);
-        }
-    });
-    use_effect(move || {
-        if !password().is_empty() {
-            password_touched.set(true);
         }
     });
 
     let attempted = submit_attempted();
-    let username_error = (username_touched() || attempted)
+    // A field is judged while it holds text, and every field once a submit
+    // was tried.
+    let username_error = (!new_username().is_empty() || attempted)
         .then(|| account::username_error(&new_username()))
         .flatten();
-    let password_error = (password_touched() || attempted)
+    let password_error = (!password().is_empty() || attempted)
         .then(|| account::password_required(&password()))
         .flatten();
 

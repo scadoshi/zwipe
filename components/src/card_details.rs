@@ -176,11 +176,11 @@ fn TagRows(
 ///
 /// The body is a chip row of the shown face's mana cost, type line and the
 /// card's rarity, the face's rules text, the Keywords and Card roles rows
-/// (roles when `show_classification`), the host's `footer`, then a chip row
-/// of the set, the prices and the face's stats. Under a rule, the action bar
-/// holds Flip for a multi-faced card, Image when the card has art and
-/// `on_image` is given, then the host's `actions` in the same row, and the
-/// host's `action_rows` under it. A multi-faced card shows one face at a
+/// (roles when `show_classification`), a chip row of the set, the prices and
+/// the face's stats, then the host's `footer` in its own section. Under a
+/// rule, the action bar holds Flip for a multi-faced card, Image when the
+/// card has art and `on_image` is given, then the host's `actions` in the
+/// same row, and the host's `action_rows` under it. A multi-faced card shows one face at a
 /// time behind Flip.
 #[component]
 pub fn CardDetails(
@@ -213,9 +213,9 @@ pub fn CardDetails(
     /// Open the example-cards browse for a tag slug. Forwarded to [`CardRoleChips`].
     #[props(default)]
     on_examples: Option<Callback<String>>,
-    /// Host content after the Card roles row and before the facts (the
-    /// suggested commanders' reasons, a staple's deck share). `None` renders
-    /// nothing.
+    /// Host content in its own section at the body's foot, after the facts
+    /// (the suggested commanders' reasons, a staple's deck share). `None`
+    /// renders nothing.
     #[props(default)]
     footer: Option<Element>,
 ) -> Element {
@@ -247,8 +247,10 @@ pub fn CardDetails(
                 }
             }
             TagRows { card: card.clone(), show_classification, describe_tag, on_examples }
-            {footer}
             FactsChips { set_name, prices, stats }
+            if footer.is_some() {
+                div { class: "card-details-host", {footer} }
+            }
         }
         if show_bar {
             hr { class: "card-row-rule card-row-rule-muted" }

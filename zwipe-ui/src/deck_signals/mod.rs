@@ -155,4 +155,30 @@ mod tests {
         c.scryfall_data.prices.usd_etched = None;
         assert!(price_of(&c, PriceCurrency::Usd).abs() < f64::EPSILON);
     }
+
+    #[test]
+    fn a_printing_with_no_usd_price_counts_zero_and_shows_no_usd_chip() {
+        // A foil-only printing, as Judge Gift Cards' Edgar Markov: its foil
+        // price neither counts toward the deck nor shows as its price.
+        let mut edgar = card("Edgar Markov");
+        edgar.scryfall_data.prices.usd = None;
+        edgar.scryfall_data.prices.usd_foil = Some("112.50".to_owned());
+        edgar.scryfall_data.prices.eur = None;
+        edgar.scryfall_data.prices.tix = Some("6.81".to_owned());
+        let mut forest = card("Forest");
+        forest.scryfall_data.prices.usd = Some("0.25".to_owned());
+        let entries = deck(deck_profile("Surfer test"), vec![forest]).entries;
+
+        assert!(price_of(&edgar, PriceCurrency::Usd).abs() < f64::EPSILON);
+        let total = zwipe_core::domain::deck::deck_metrics::deck_price(
+            &entries,
+            std::slice::from_ref(&edgar),
+            PriceCurrency::Usd,
+        );
+        assert!((total - 0.25).abs() < f64::EPSILON);
+        assert_eq!(
+            crate::card::info::prices(&edgar.scryfall_data),
+            vec!["6.81 TIX".to_owned()]
+        );
+    }
 }

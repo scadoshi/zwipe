@@ -85,8 +85,8 @@ pub enum Effect {
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct State {
     email: String,
-    /// Whether the email shows its line: it has held something, or Send reset link was pressed.
-    judged: bool,
+    /// Whether Send reset link was pressed, after which the email shows its line even empty.
+    attempted: bool,
     /// Whether the spinner turns: set by a send, cleared by any reply.
     loading: bool,
     /// The requests out.
@@ -110,9 +110,6 @@ impl State {
     pub fn update(&mut self, action: Action) -> Vec<Effect> {
         match action {
             Action::EditEmail(value) => {
-                if !value.is_empty() {
-                    self.judged = true;
-                }
                 self.email = value;
                 Vec::new()
             }
@@ -137,10 +134,10 @@ impl State {
         }
     }
 
-    /// The line under the email, once it has held something or a send was tried.
+    /// The line under the email, while it holds text or once a send was tried; an emptied field shows none until then.
     #[must_use]
     pub fn error(&self) -> Option<String> {
-        if !self.judged {
+        if !self.attempted && self.email.is_empty() {
             return None;
         }
         account::reset_email_error(&self.email)
@@ -162,7 +159,7 @@ impl State {
         if self.sent {
             return Vec::new();
         }
-        self.judged = true;
+        self.attempted = true;
         if self.error().is_some() {
             return Vec::new();
         }

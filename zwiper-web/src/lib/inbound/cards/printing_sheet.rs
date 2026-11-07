@@ -12,7 +12,7 @@
 //! the dots and the prices at its bottom and Save at the prices' right. It
 //! closes from its title bar's ×, a backdrop tap, a drag down or Esc.
 
-use components::icons::{CHECK, DockIcon};
+use components::icons::{ARROW_LEFT, ARROW_RIGHT, CHECK, DockIcon};
 use components::{
     BottomSheet, Button, ButtonVariant, SheetFrame, SheetWide, TOAST_QUICK, use_overlay_back_action,
 };
@@ -170,7 +170,7 @@ pub fn PrintingSheet(
                                     disabled: at == 0,
                                     "aria-label": "Previous printing",
                                     onclick: move |_| step(false),
-                                    "\u{2190}"
+                                    DockIcon { path: ARROW_LEFT }
                                 }
                             }
                             components::FlippableCardImage {
@@ -185,7 +185,7 @@ pub fn PrintingSheet(
                                     disabled: at.saturating_add(1) >= count,
                                     "aria-label": "Next printing",
                                     onclick: move |_| step(true),
-                                    "\u{2192}"
+                                    DockIcon { path: ARROW_RIGHT }
                                 }
                             }
                         }
