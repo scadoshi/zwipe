@@ -193,6 +193,7 @@ From Surfer's Part 4 (half width, 720px), triaged with Scotty:
 136. **A one-type deck's Types chart is a solid slab.** [S42] A single type draws as a normal bar.
 137. **Stacked docks differ in width.** [S46] Swipe select's are 335px against Add's 374px; one width everywhere.
 138. **scottyfermo.com's charts lose their labels when scrolled.** [S43] On a narrow window the commit area chart's counts and the heatmap's Mon/Wed/Fri stay pinned at the left while the charts scroll and fade under them; the scroller starts where both read. Escape closes the phone menu [S45].
+139. **The web app has no footer below 900px.** The compact footer (attribution, Privacy, Community, Contribute) closes every scrolling page at every width, phones included, with the docks stopping above it (134).
 
 Skipped with Scotty: S44 (the About diagram scrolls under its arrows; fine as is).
 
