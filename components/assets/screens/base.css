@@ -241,9 +241,11 @@ body .toast-container [role="alertdialog"] {
     margin: 0;
 }
 
+/* The chips wrap to a second line where the dock leaves too little room,
+   rather than running under it. */
 .swipe-bottom-chips {
     display: flex;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     align-items: center;
     gap: 0.35rem;
     min-width: 0;
