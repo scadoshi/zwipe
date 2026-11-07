@@ -1,7 +1,7 @@
 //! Asks before a screen with unsaved changes is left: the app's copy of the
 //! web's guard (zwiper-web `chrome/leave_guard.rs`), with zwipe-ui's copy.
-//! A screen arms it while it holds changes ([`LeaveGuard::set`]); while it
-//! is armed, every router move waits on [`LeaveDialog`]: the header's back
+//! A screen arms it while it holds changes (`LeaveGuard::set`); while it
+//! is armed, every router move waits on `LeaveDialog`: the header's back
 //! arrow, the menu's links, any in-app link, a pushed route, and the OS back
 //! (the iOS edge swipe, Android's back), which reaches the router once no
 //! overlay is left to close.
