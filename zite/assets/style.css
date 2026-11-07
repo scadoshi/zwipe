@@ -650,6 +650,11 @@ code {
     margin-top: 2.5rem;
 }
 
+/* A grid of two cards fills its row in two columns. */
+.card-grid.card-grid-2 {
+    grid-template-columns: 1fr 1fr;
+}
+
 @media (max-width: 75rem) {
     .features-grid {
         grid-template-columns: 1fr 1fr;
@@ -664,6 +669,7 @@ code {
 
 @media (max-width: 30rem) {
     .card-grid,
+    .card-grid.card-grid-2,
     .features-grid {
         grid-template-columns: 1fr;
     }

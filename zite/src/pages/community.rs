@@ -21,7 +21,7 @@ pub fn Community() -> Element {
             }
 
             div { class: "section",
-                div { class: "card-grid",
+                div { class: "card-grid card-grid-2",
                     Panel {
                         eyebrow: "Chat",
                         title: "Discord",
