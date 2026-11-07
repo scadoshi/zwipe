@@ -138,3 +138,10 @@ pub const SCREENS_CSS: &str = concat!(
 /// draws the filter loads it after [`SCREENS_CSS`] (zite, which has none,
 /// after `SITE_CSS`) and before its own stylesheet.
 pub const FILTER_CSS: &str = include_str!("../assets/filter.css");
+
+/// The on-screen keyboard's helper for the apps and the web's phone layout:
+/// it keeps the focused field in view above the keyboard and marks the root
+/// `keyboard-up` while the keyboard shows, which hides the floating docks.
+/// Inline it once with `document::Script`, beside orangui's
+/// `KEYBOARD_INSET_JS`.
+pub const KEYBOARD_JS: &str = include_str!("../assets/keyboard.js");

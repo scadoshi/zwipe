@@ -1695,6 +1695,14 @@ i.ms.ms-cost.ms-gp {
     left: 0.45rem;
 }
 
+/* ---- The on-screen keyboard (KEYBOARD_JS) ----
+   While the keyboard is up the floating docks step aside instead of riding
+   up over the content above it; they come back as it closes. */
+html.keyboard-up .action-dock,
+html.keyboard-up .web-dock-pair {
+    visibility: hidden;
+}
+
 /* ---- DrawerSheet (components::DrawerSheet): a page's docks step aside ----
    While a drawer is open its own dock sits at the bottom right, where the
    page's floating dock is, which would show behind it as a second rounded

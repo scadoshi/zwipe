@@ -242,6 +242,13 @@
     margin: 0 auto;
 }
 
+/* A lone number box (Mana value) is as wide as its ten-character
+   placeholder, its padding and its border; a min and max pair keeps the
+   narrow width its Min and Max fit. */
+.input-narrow.input-number-single {
+    width: calc(10ch + 1rem + 2px);
+}
+
 @keyframes search-float-in {
     from {
         opacity: 0;
@@ -375,8 +382,34 @@
 }
 
 /* Active filter indicator — trigger contains a clear button */
-.accordion-trigger:has(.clear-btn) {
+.accordion-item:has(> .section-clear) > .accordion-trigger {
   border-color: var(--accent-primary);
+}
+
+/* A section's clear sits beside its trigger, not in it, over the trigger's
+   right end left of the chevron, so a tap on it never toggles the section.
+   Its box stays the small × chip; a transparent margin around it makes the
+   target 44px square. */
+.accordion-item {
+  position: relative;
+}
+
+.accordion-item > .section-clear {
+  position: absolute;
+  top: var(--section-clear-top, 1.5rem);
+  right: 3rem;
+  transform: translateY(-50%);
+  margin: 0;
+  z-index: 1;
+}
+
+.accordion-item > .section-clear::before {
+  content: "";
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
 }
 
 .accordion-expand-icon {
