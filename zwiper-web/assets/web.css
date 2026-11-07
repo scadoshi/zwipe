@@ -1266,7 +1266,11 @@ body {
         outline: none;
     }
 
+    /* The stack melts into the modal at its sides: the outermost cards fade
+       out over the stage's outer ninth on each side, short of the
+       selected card's neighbors. */
     .web-flow-stage {
+        --flow-fade: linear-gradient(to right, transparent, #000 11%, #000 89%, transparent);
         position: relative;
         flex: 1 1 auto;
         min-height: 0;
@@ -1274,6 +1278,8 @@ body {
         perspective: 1600px;
         cursor: grab;
         user-select: none;
+        -webkit-mask-image: var(--flow-fade);
+        mask-image: var(--flow-fade);
     }
 
     .web-flow-stage:active {
