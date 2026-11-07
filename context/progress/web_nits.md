@@ -222,6 +222,9 @@ Open with Scotty: none.
 
 122b. **The native app's deck form doesn't ask before leaving yet.** 122 (#252) built the web's guard and zwipe-ui's `has_unsaved_changes`; the app still needs the guard wired to its own navigation (back button, swipe back, nav). Unassigned.
 
+154. **The phone's Printings cover flow scrolls the sheet sideways.** The side cards overflow and the sheet scrolls horizontally; the flow is clipped to its stage, with only the flow's own swipe moving it.
+155. **The Cards screen's featured cards (command zone art row) run off the right edge with no way to scroll.** The row scrolls sideways within the page width with the edge fade, or fits; app and web phone layout.
+
 Scotty on Droid's open items: D3 toasts "Nothing left to remove" (no way back needed; into 145); D29 leave the Art toggle; D32 a follow-up in todo; D36 fine as an outline; D37 hero chips in the logged-in order everywhere (into 147); D38 list rows wrap their chips as the rendered layout intends, consistently (into 146). D28: card-row panels (Suggested commanders, Staples, Most skipped) keep their pink title color, but take the other panel titles' size, weight, letter spacing and inset (into 147).
 
 Skipped with Scotty: S44 (the About diagram scrolls under its arrows; fine as is).
