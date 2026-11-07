@@ -195,6 +195,14 @@ From Surfer's Part 4 (half width, 720px), triaged with Scotty:
 138. **scottyfermo.com's charts lose their labels when scrolled.** [S43] On a narrow window the commit area chart's counts and the heatmap's Mon/Wed/Fri stay pinned at the left while the charts scroll and fade under them; the scroller starts where both read. Escape closes the phone menu [S45].
 139. **The web app has no footer below 900px.** The compact footer (attribution, Privacy, Community, Contribute) closes every scrolling page at every width, phones included, with the docks stopping above it (134).
 
+From Surfer's Part 5 (narrowest, 504px), triaged with Scotty:
+
+140. **Tap targets are mostly under 44px.** [S47] On touch screens (`pointer: coarse`) every control's hit area reaches 44px without changing how it looks; the expanded row's − and + get room between them so a mis-tap can't remove a copy; zwipe.net's toast ✕ (10×13) gets a real target. Web app, zwipe.net, the portfolio.
+141. **Activity's heatmap scrollbar is white in dark.** [S48] Themed scrollbar, and Mon/Wed/Fri pinned at the left like the portfolio's (138).
+142. **zwipe.net's two-column grids stay two-up at 504px.** [S49] Community and About's crate cards go one column below about 560px.
+143. **Settings' Pips button reads "Theme" under the Theme row.** [S50] The label reads "Themed" (and "Classic"). Display only: the wire value stays `theme`, so no client split or server migration.
+144. **Light/dark can flip a few seconds after load.** [S51] The local copy and the server's race: a Settings toggle sometimes doesn't write localStorage, and on load the server's older copy overwrites the newer local one. The latest choice wins everywhere, with no flip after load.
+
 Skipped with Scotty: S44 (the About diagram scrolls under its arrows; fine as is).
 
 Skipped with Scotty: S35 (old /deck paths 404; old paths don't reroute), S37 (overscroll shade, 104 as designed).
