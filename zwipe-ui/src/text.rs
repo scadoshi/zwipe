@@ -2,16 +2,9 @@
 
 /// `text` with its first character uppercased, for an error whose
 /// `Display` is lowercase (the Rust convention) shown where the UI's
-/// messages read in sentence case. The rest of `text` is unchanged; a
-/// character that uppercases to several (`ß`) takes all of them.
-#[must_use]
-pub fn sentence_case(text: &str) -> String {
-    let mut chars = text.chars();
-    match chars.next() {
-        Some(first) => first.to_uppercase().chain(chars).collect(),
-        None => String::new(),
-    }
-}
+/// messages read in sentence case: zwipe-core's own, which the server's
+/// messages use too.
+pub use zwipe_core::text::sentence_case;
 
 #[cfg(test)]
 mod tests {

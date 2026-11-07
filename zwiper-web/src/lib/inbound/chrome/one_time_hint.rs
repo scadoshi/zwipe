@@ -83,7 +83,7 @@ pub fn FirstDeckHintDialog(open: Signal<bool>, wide: bool) -> Element {
     rsx! {
         ContentHintDialog {
             open,
-            content: one_time::first_deck(wide),
+            content: one_time::first_deck(if wide { one_time::DeckLayout::Wide } else { one_time::DeckLayout::Narrow }),
             actions: guide_for_one_time(OneTimeHint::FirstDeck.key()),
         }
     }

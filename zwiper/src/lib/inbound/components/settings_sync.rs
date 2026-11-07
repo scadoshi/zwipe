@@ -16,7 +16,7 @@ use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user::models::settings::PipStyle;
 use zwipe_core::http::contracts::user::HttpUpdateSettings;
-use zwipe_ui::theme_sync::{Sync, reconcile};
+use zwipe_ui::theme_sync::{ThemeSync, reconcile};
 
 use crate::inbound::components::auth::ensure_session::EnsureFresh;
 use crate::outbound::session::Persist;
@@ -86,13 +86,13 @@ pub fn sync_settings(
         let fetched = components::theme_from_settings(&settings);
         let shown = theme.peek().clone();
         match reconcile(&shown, theme_store::load_server_seen().as_ref(), &fetched) {
-            Sync::Keep => theme_store::save_server_seen(&fetched),
-            Sync::Apply(newer) => {
+            ThemeSync::Keep => theme_store::save_server_seen(&fetched),
+            ThemeSync::Apply(newer) => {
                 theme_store::save_server_seen(&newer);
                 app_icon::follow(&newer);
                 theme.set(newer);
             }
-            Sync::Push(newer) => {
+            ThemeSync::Push(newer) => {
                 let request = HttpUpdateSettings {
                     theme: Some(newer.name.clone()),
                     dark_mode: Some(newer.is_dark),

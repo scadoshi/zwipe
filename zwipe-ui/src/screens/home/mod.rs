@@ -442,6 +442,17 @@ struct Generations {
 }
 
 /// Where the flavor card's fetch stands.
+/// A panel with a Retry.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Panel {
+    /// Your decks.
+    Decks,
+    /// The playstyle summary.
+    PlayStyle,
+    /// The featured flavor card.
+    Flavor,
+}
+
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 enum FlavorFetch {
     /// None is out and the last one, if any, did not fail.
@@ -584,9 +595,9 @@ impl State {
                     self.flavor_fetch = FlavorFetch::Failed;
                 }
             }
-            Action::RetryDecks | Action::RetryPlayStyle | Action::RetryFlavor => {
-                return self.retry(&action).into_iter().collect();
-            }
+            Action::RetryDecks => return self.retry(Panel::Decks).into_iter().collect(),
+            Action::RetryPlayStyle => return self.retry(Panel::PlayStyle).into_iter().collect(),
+            Action::RetryFlavor => return self.retry(Panel::Flavor).into_iter().collect(),
             Action::ToggleScope { mine_fresh } => {
                 self.scope = self.scope.toggled();
                 let mut effects = vec![Effect::SaveScope(self.scope)];
@@ -674,21 +685,19 @@ impl State {
 
     /// A panel's Retry: fetches its part again, the decks and the summary only
     /// with a user, the flavor card unless a fetch is out.
-    fn retry(&mut self, action: &Action) -> Option<Effect> {
-        match action {
-            Action::RetryDecks if self.user.is_some() => {
+    fn retry(&mut self, panel: Panel) -> Option<Effect> {
+        match panel {
+            Panel::Decks if self.user.is_some() => {
                 self.decks_failed = false;
                 Some(Effect::FetchDecks(self.generations.decks.next_ticket()))
             }
-            Action::RetryPlayStyle if self.user.is_some() => {
+            Panel::PlayStyle if self.user.is_some() => {
                 self.play_style_failed = false;
                 Some(Effect::FetchPlayStyle(
                     self.generations.play_style.next_ticket(),
                 ))
             }
-            Action::RetryFlavor if self.flavor_fetch != FlavorFetch::Out => {
-                Some(self.fetch_flavor())
-            }
+            Panel::Flavor if self.flavor_fetch != FlavorFetch::Out => Some(self.fetch_flavor()),
             _ => None,
         }
     }
