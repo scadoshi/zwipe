@@ -217,7 +217,9 @@ impl HintTopic {
                 .collect(),
             Self::Theme => vec![
                 bullet(vec![text("The app's palette. Picks preview as you tap")]),
-                bullet(vec![text("The last four are color blind modes")]),
+                bullet(vec![text(
+                    "The last group holds the high contrast and color blind themes",
+                )]),
                 bullet(vec![
                     mode_key("Light", KeyIcon::Light),
                     text(" "),
