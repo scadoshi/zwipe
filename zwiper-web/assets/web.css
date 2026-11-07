@@ -1397,8 +1397,12 @@ body {
 }
 
 .web-swipe-arrow {
-    font-size: 1.05rem;
-    font-weight: 700;
+    display: inline-flex;
+}
+
+.web-swipe-arrow > .action-dock-icon {
+    width: 1.15rem;
+    height: 1.15rem;
 }
 
 /* The screen keeps room for the docks under its content. */
@@ -1445,6 +1449,11 @@ body {
     .web-swipe-dock-btn {
         width: 2.4rem;
         padding: 0;
+    }
+
+    .web-swipe-arrow > .action-dock-icon {
+        width: 1.3rem;
+        height: 1.3rem;
     }
 }
 
