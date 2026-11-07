@@ -1654,6 +1654,7 @@ i.ms.ms-cost.ms-gp {
 
 .chart-label-chip {
     --tone: var(--accent-tertiary);
+    --tone-ink: var(--ink-accent-tertiary, var(--accent-tertiary));
 }
 
 /* ---- Shared pieces the components emit: the narrow container, an icon
@@ -2225,13 +2226,13 @@ html.keyboard-up .web-dock-pair {
 
 /* Compound selectors so the role colors outrank the chip's own tone. */
 .stat-chip.deck-head-card-role-zone {
-    color: var(--palette-3);
+    color: var(--ink-palette-3, var(--palette-3));
     background-color: color-mix(in srgb, var(--palette-3) 12%, var(--bg-primary));
     border-color: color-mix(in srgb, var(--palette-3) 35%, var(--bg-primary));
 }
 
 .stat-chip.deck-head-card-role-mvp {
-    color: var(--palette-6);
+    color: var(--ink-palette-6, var(--palette-6));
     background-color: color-mix(in srgb, var(--palette-6) 12%, var(--bg-primary));
     border-color: color-mix(in srgb, var(--palette-6) 35%, var(--bg-primary));
 }

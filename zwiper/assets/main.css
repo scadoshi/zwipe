@@ -332,6 +332,12 @@ body {
     margin: 0 -1.5rem;
 }
 
+/* The cover flow's step buttons keep the screen's gutter inside that full
+   width. */
+.printing-sheet-body > .cover-flow {
+    padding-inline: 1rem;
+}
+
 /* =========================
   specific - info list (read-only card layout)
  =========================== */

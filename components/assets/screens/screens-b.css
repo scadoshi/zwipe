@@ -579,13 +579,21 @@
     box-shadow: var(--shadow-sm);
 }
 
-/* The format picker's bar holds its tallest details from the start, so a
-   tapped format's details never push the chips down under the finger; a
-   longer one scrolls inside. */
+/* The format picker's bar keeps one height, so a tapped format's details
+   never push the chips down under the finger. Details longer than the bar
+   scroll inside it and fade at the edge they run past. */
 .tag-def-bar.format-def-bar {
     height: 11rem;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     box-sizing: border-box;
+}
+
+.format-def-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
 }
 
 .tag-def-name {
@@ -1039,13 +1047,13 @@
 
 /* Compound selectors so the role colors outrank the chip's own tone. */
 .stat-chip.deck-featured-role-zone {
-    color: var(--palette-3);
+    color: var(--ink-palette-3, var(--palette-3));
     background-color: color-mix(in srgb, var(--palette-3) 12%, var(--bg-primary));
     border-color: color-mix(in srgb, var(--palette-3) 35%, var(--bg-primary));
 }
 
 .stat-chip.deck-featured-role-mvp {
-    color: var(--palette-6);
+    color: var(--ink-palette-6, var(--palette-6));
     background-color: color-mix(in srgb, var(--palette-6) 12%, var(--bg-primary));
     border-color: color-mix(in srgb, var(--palette-6) 35%, var(--bg-primary));
 }
