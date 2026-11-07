@@ -34,7 +34,8 @@ The handoff for the composer session: where the factory stands, so a fresh or co
 
 - Deployed `release` to `main` at `60d705459` (web, zerver and portfolio green; zite was finishing). Droid is on pass 2 against that build, and Surfer on Part 7, a fix check at whatever width its window has.
 - The composer keeps reviewing and merging worker PRs into `release`, copies each QA report into `context/qa/` with a row in its README, and commits. No more deploys to `main` until Scotty says.
-- QA findings wait for Scotty's triage in the morning, so nothing from them gets built overnight.
+- Scotty's later word (before sleep, 2026-11-07): "anything that gets reported back that you're like 90% confident you can fix, just fix it." So 157 to 160 went out from Surfer's and Droid's findings. Anything less certain waits for his morning triage.
+- Overnight queues: halo has 156 (the auth logout, a PR left open for Scotty), then 159. Thinker has 135/136, then 158 (counts), 143, 153. Scotland has 146, then 157 and 160 (portfolio). Laptop has 151 (A: orangui, zwipe, Cairn on a branch), then 145.
 
 ## Waiting on Scotty (as of 23:30)
 
