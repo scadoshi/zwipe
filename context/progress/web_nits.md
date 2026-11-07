@@ -158,6 +158,8 @@ From Surfer's QA pass (2026-11-06), triaged with Scotty item by item. Surfer's i
 
 113. **Stats snapshots and OG cards are stale, and app.zwipe.net has no OG image.** Refresh zite's metrics.json and its OG card, and the portfolio's stats.json and OG card (folded into 112). Give app.zwipe.net its own OG card and tags.
 
+114. **Clicking off a drawer flashes its backdrop dark.** [S31] In orangui, the wide `.sheet-form-drawer > .sheet-backdrop.show` sets opacity 0.4 with no transition, so on close it snaps to 1 for a frame. The 0.4 moves to the backdrop itself. Zwipe, zite and the portfolio repin after.
+
 Skipped with Scotty: S7 (no Image in the swipe screens' details, intended), S23 (Cloudflare's email obfuscation). Rechecked after the next deploy, since `release` may already fix them: S4 (picker ✓ over chips), S6 (swipe select page head). S12 (the pip toggle labeled Theme on zwipe.net) becomes Pips, folded into 111.
 
 ## Done
