@@ -1,4 +1,20 @@
-//! The browser window itself: leaving for another page, and the clipboard.
+//! The browser window itself: its size, leaving for another page, and the
+//! clipboard.
+
+/// The window's inner width and height in CSS pixels, or `None` off the
+/// browser.
+#[must_use]
+pub fn window_size() -> Option<(f64, f64)> {
+    #[cfg(target_arch = "wasm32")]
+    {
+        let window = web_sys::window()?;
+        let width = window.inner_width().ok()?.as_f64()?;
+        let height = window.inner_height().ok()?.as_f64()?;
+        Some((width, height))
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    None
+}
 
 /// Loads `url` in this tab, in place of the app. A refusal is only logged.
 pub fn open_here(url: &str) {

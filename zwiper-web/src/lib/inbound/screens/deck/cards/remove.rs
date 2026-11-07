@@ -40,7 +40,7 @@ use crate::inbound::cards::swipe_stack::{
     Swipe, SwipeDock, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
 };
 use crate::inbound::chrome::authed::use_authed;
-use crate::inbound::chrome::details_eye::{DockEye, use_details_eye};
+use crate::inbound::chrome::details_eye::{DockEye, Surface, use_details_eye};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::chrome::page_keys::{use_page_keys, use_undo_key};
 use crate::inbound::session::ensure_fresh::ensure_fresh;
@@ -101,7 +101,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
     let mut board_filter = use_signal(|| BoardFilter::Deck);
     let mut counter = use_signal(|| 0u32);
     let show_details = use_signal(|| false);
-    let eye = use_details_eye(show_details);
+    let eye = use_details_eye(show_details, Surface::Window);
     let mut printing_open = use_signal(|| false);
     let mut filter_open = use_signal(|| false);
     let mut hint_open = use_one_time_hint(OneTimeHint::RemoveDeckCards);

@@ -66,7 +66,7 @@ use crate::inbound::cards::swipe_stack::{
 };
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::back_arrow::BackArrow;
-use crate::inbound::chrome::details_eye::{DockEye, use_details_eye};
+use crate::inbound::chrome::details_eye::{DockEye, Surface, use_details_eye};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, SwipeSelectHint, open_and_record_hint};
 use crate::inbound::screens::playstyle::SuggestionReasons;
 
@@ -471,7 +471,7 @@ fn SwipeSelectBody(
     } = pile;
     let mut hint_again = hint_open;
     let show_details = use_signal(|| false);
-    let eye = use_details_eye(show_details);
+    let eye = use_details_eye(show_details, Surface::Window);
     let mut printing_open = use_signal(|| false);
     let mut filter_open = use_signal(|| false);
     let suggested = mode == SwipeMode::Suggested;

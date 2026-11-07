@@ -113,7 +113,6 @@ pub fn SuggestionRow(
             qty: 1,
             expanded_card,
             footer: rsx! {
-                hr { class: "card-row-rule card-row-rule-muted" }
                 SuggestionReasons { reasons: suggestion.reasons, deck_count, foldable: true }
             },
             extra_actions: rsx! {
