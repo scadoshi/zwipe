@@ -873,7 +873,6 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
     rsx! {
         ScreenFrame {
             title: add_cards::TITLE,
-            footer: false,
             on_hint: move |()| hint_open.set(true),
             div { class: "screen-content card-swipe content-enter web-cards-swipe {eye.body_class()}",
                 div { class: "web-cards-swipe-main",
@@ -959,6 +958,11 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                                     let on = !filter.peek().synergy();
                                     filter.write().set_synergy(on);
                                     bump();
+                                    let said = if on { add_cards::SYNERGY_ON } else { add_cards::SYNERGY_OFF };
+                                    toast.info(
+                                        said.to_string(),
+                                        ToastOptions::default().duration(TOAST_QUICK),
+                                    );
                                 },
                                 BoltIcon {}
                             }

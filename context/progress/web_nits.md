@@ -23,8 +23,15 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
+| 86, Playstyle Summary's headroom (queued after 79) | thinker | `nits/thinker-86` |
+| 85, the swipe card's shadow is clipped top and bottom (queued after 82) | scotland | `nits/scotland-85` |
+| 83, 84, the web's hints link to guides, the filter gets its own hints (queued after 81) | halo | `nits/halo-83` |
+| 82, the synergy toggle toasts its mode (queued after 80) | scotland | `nits/scotland-82` |
+| 81, 87, the swipe screens' details as a docked panel, swipe select matching Add | halo | `nits/halo-81` |
+| 79, card row redesigned like card details (queued after 77) | thinker | `nits/thinker-79` |
+| 80, a footer on every web page, swipe screens included (queued after 78) | scotland | `nits/scotland-80` |
 | 78, empty prompts as centered gray chips | scotland | `nits/scotland-78` |
-| 77, Enter closes a hint dialog | thinker | `nits/thinker-77` |
+| 77, Enter closes a hint dialog, an orangui fix (queued after 73-76) | laptop | `nits/laptop-77` |
 | 71, 72, errors in sentence case, deck form Profile+Budget left, Tags right | halo | `nits/halo-71-72` |
 | 73 to 76, drawer dock inset, themed scrollbars, lists clip at the edge, Search label in accent one, drawer searches through ClearWrap | laptop | `nits/laptop-73-75` |
 | 70, a deck entry lifts on hover like a panel | scotland | `nits/scotland-70` |
@@ -123,6 +130,15 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 76. **Drawer search boxes lack the shared clear ×.** Every drawer search uses `components::ClearWrap`, its × easing in as text is typed.
 77. **Enter doesn't close a hint dialog.** Enter dismisses a Got-it hint like Escape or a click outside, without triggering anything under it; dialogs with a real primary action keep theirs.
 78. **"No cards" on the deck cards screen is left-aligned plain text.** Every empty or no-results prompt is a centered gray chip.
+79. **The card row takes card details' shape, every client.** Collapsed: caret, quantity, name, color identity, price, P/T. Expanded: the mana pips, type line and rarity in the first chip row; the oracle text; Keywords and Card roles as label-chip rows; the set, all prices and P/T at the bottom; Image and Printings side by side under the rule. P/T and price repeat on purpose.
+80. **Every web page gets the footer,** Add and Remove included, below the fold on swipe screens.
+81. **The swipe screens' card details become a docked side panel.** On a wide window the panel beside the card is fixed at the right like an always-open drawer, height capped to the window, scrolling inside itself, so expanding roles or a long card never grows the page. The eye slides it out and in.
+82. **Toggling synergy while swiping says so.** A quick toast, "Synergy on" or "Synergy off", on every client.
+83. **The web's hints never link to guides.** The shared map (`zwipe-ui/src/hint/guide.rs`) already drives the app's "See guide ↗"; the web gets the same links on one-time hints and the three picker headers, through a shared helper in components. `card-roles` takes the role chart topics; zite's guide sections get anchor ids for later deep links.
+84. **The filter's hints borrow the deck form's copy.** Its Oracle tags `?` talks about the deck and "fine to leave as is". Each filter section that reuses a deck-form topic gets its own filter hint (what include and exclude do, the Dictionary), every client.
+85. **The swipe card's drop shadow is clipped** with a hard edge at the card's top and bottom on the web's swipe screens. Let it render fully without letting a leaving card paint over the docks.
+86. **Playstyle's Summary fold has too much headroom** above its first row: the fold body's padding stacks on the rows' own. Match other info lists.
+87. **Swipe select doesn't match Add.** The card sits off center and the details are a big middle element. Center the card, dock the details as 81's side panel, and match Add's docks and pile chip.
 
 ## Done
 

@@ -10,6 +10,7 @@ use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_ui::deck::form::{Slot, Step};
 use zwipe_ui::deck::pickers::{Picker, TagPicker};
 use zwipe_ui::screens::deck_form::{self as model, Action, Results, State};
+use zwipe_ui::text::sentence_case;
 
 use crate::inbound::components::hint_dialog::OneTimeHintDialog;
 use crate::inbound::components::hint_host::HintTopic;
@@ -50,7 +51,7 @@ pub(crate) fn DeckFields(
                     value: name,
                     id: "deck_name",
                     placeholder: model::NOT_SET,
-                    error: name_error,
+                    error: name_error.as_deref().map(sentence_case),
                     on_clear: |()| {},
                 }
 

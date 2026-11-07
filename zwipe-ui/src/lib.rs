@@ -32,6 +32,7 @@ pub mod stack;
 pub mod stores;
 pub mod support;
 pub mod telemetry;
+pub mod text;
 pub mod timing;
 pub mod toast;
 

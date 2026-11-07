@@ -957,13 +957,32 @@ fn switching_back_to_search_takes_its_fresh_default() {
 }
 
 #[test]
-fn synergy_toggles_and_reruns() {
+fn synergy_toggles_reruns_and_says_the_new_mode() {
     let (mut state, _) = with_deck(&commander_deck(&[]));
     let effects = state.update(Action::ToggleSynergy);
-    let [Effect::SetFilter(filter), Effect::Rerun] = effects.as_slice() else {
+    let [
+        Effect::SetFilter(filter),
+        Effect::Rerun,
+        Effect::Toast(said),
+    ] = effects.as_slice()
+    else {
         panic!("{effects:?}");
     };
     assert!(!filter.synergy());
+    assert_eq!(said.text, SYNERGY_OFF);
+    assert_eq!(said, &Toast::quick(ToastKind::Info, SYNERGY_OFF));
+
+    let effects = state.update(Action::ToggleSynergy);
+    let [
+        Effect::SetFilter(filter),
+        Effect::Rerun,
+        Effect::Toast(said),
+    ] = effects.as_slice()
+    else {
+        panic!("{effects:?}");
+    };
+    assert!(filter.synergy());
+    assert_eq!(said.text, SYNERGY_ON);
 }
 
 #[test]

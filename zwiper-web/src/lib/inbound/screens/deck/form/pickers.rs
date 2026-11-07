@@ -11,8 +11,8 @@
 use components::hint::{ContentHintDialog, HintBody};
 use components::icons::CHECK;
 use components::{
-    Button, ButtonVariant, DialogAction, DockAction, DrawerSheet, HintDialog, TOAST_NORMAL,
-    TOAST_QUICK, use_overlay_back_action,
+    Button, ButtonVariant, ClearWrap, DialogAction, DockAction, DrawerSheet, HintDialog,
+    TOAST_NORMAL, TOAST_QUICK, use_overlay_back_action,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -86,20 +86,25 @@ fn PickerBody(search_id: &'static str, children: Element) -> Element {
     }
 }
 
-/// The search input every picker leads with.
+/// The search input every picker leads with, its `×` easing in as text is
+/// typed.
 #[component]
 fn PickerSearch(id: &'static str, placeholder: &'static str, mut query: Signal<String>) -> Element {
     rsx! {
-        input {
-            class: "input",
-            id,
-            r#type: "text",
-            placeholder,
-            value: "{query}",
-            autocapitalize: "none",
-            autocorrect: "off",
-            spellcheck: "false",
-            oninput: move |event| query.set(event.value()),
+        ClearWrap {
+            filled: !query.read().is_empty(),
+            on_clear: move |()| query.set(String::new()),
+            input {
+                class: "input",
+                id,
+                r#type: "text",
+                placeholder,
+                value: "{query}",
+                autocapitalize: "none",
+                autocorrect: "off",
+                spellcheck: "false",
+                oninput: move |event| query.set(event.value()),
+            }
         }
     }
 }

@@ -8,6 +8,8 @@ Only open, actionable items live here. When something ships, its outcome moves t
 
 ## Next Up
 
+- [ ] **Guides stay on zwipe.net; the web app reads them in place (owner, 2026-11-06).** Guides belong on zwipe.net: static, prerendered, one canonical URL for search. A second copy in the app would split search ranking and drift. Since links now open in the same tab, a guide link from app.zwipe.net leaves the app. Later: move the guide content from `zite/src/pages/guides/content.rs` into shared code so zite keeps the public pages and the web app shows a guide in a drawer without leaving. Nothing else on zwipe.net needs to move into the app.
+
 - [ ] **1.18.0 ship list (2026-11-04).** Main at 995a918cc carries the unified UI, the pip bars in place of the color map, the changelog panels, the icon keys in hints and guides, the eraser reset, the palette on Settings' Change button and the 1rem menu footer icons. Still to do before the cut: Scotty's phone walk of the latest build (judging the footer icon size), store screenshots in the new look, the release-day guide edits, and retaking the guide screenshots on zwipe.net that still show the old Synergy chip and More sheet (the captions were reworded, the images were not).
 
 - [ ] **Settings rename, Phase 3 (after 1.18.0 is live and rolled out).** Set `MIN_CLIENT_VERSION` to 1.18.0, then delete `LEGACY_SETTINGS_ROUTE` (and its `FIXED_ROUTES` rows), `LEGACY_SETTINGS_SEGMENT`, the duplicate `preferences` field on `HttpSession` and the `SessionWire` fallback on `Session`. The files, the tests to drop and the order are in [`../plans/settings_rename_migration.md`](../plans/settings_rename_migration.md); the pip wire plan's Phase 4 rides the same floor.
