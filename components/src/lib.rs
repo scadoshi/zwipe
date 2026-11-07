@@ -65,7 +65,7 @@ mod site_footer;
 mod theme;
 
 pub use architecture::ZwipeArchitecture;
-pub use card_details::{CardDetails, card_face_count};
+pub use card_details::{CardDetails, CardDetailsPanel, CardDetailsPanelSkeleton, card_face_count};
 pub use card_filter::{CardFilterPanel, DictionarySlot};
 pub use card_role_chips::CardRoleChips;
 pub use card_row::CardRow;

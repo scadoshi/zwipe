@@ -33,8 +33,8 @@ use std::collections::HashSet;
 
 use components::icons::{DockIcon, REFRESH};
 use components::{
-    BottomSheet, CardDetails, DockFilter, PageHeader, SheetFrame, SheetWide, TOAST_QUICK,
-    use_overlay_back,
+    BottomSheet, CardDetailsPanel, CardDetailsPanelSkeleton, DockFilter, PageHeader, SheetFrame,
+    SheetWide, TOAST_QUICK, use_overlay_back,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -58,7 +58,7 @@ use zwipe_ui::timing::{LOAD_MORE_AT, MAYBEBOARD_TOAST, PAGE_SIZE};
 
 use crate::domain::swipe_select::{card_key, redeal};
 use crate::inbound::card_filter::CardFilterPanel;
-use crate::inbound::cards::card_info::{CardDetailsSheet, CardInfoDisplay, CardSkeleton};
+use crate::inbound::cards::card_info::{CardDetailsSheet, CardSkeleton};
 use crate::inbound::cards::otag::{OtagExamplesOpen, use_describe_tag};
 use crate::inbound::cards::printing_sheet::PrintingSheet;
 use crate::inbound::cards::swipe_stack::{
@@ -646,7 +646,7 @@ fn SwipeSelectBody(
         }
         div { class: "screen-content card-swipe content-enter web-swipe-select-body {eye.body_class()}",
             div { class: "form-container web-swipe-select-card",
-                if let Some(card) = current.clone() {
+                if current.is_some() {
                     SwipeStack {
                         cards: window,
                         allowed,
@@ -655,7 +655,6 @@ fn SwipeSelectBody(
                         on_entered: move |()| stack.write().cancel_entering(),
                         on_swipe,
                     }
-                    CardInfoDisplay { card }
                 } else if loading() || loading_more() {
                     CardSkeleton { is_loading: true }
                 } else if let Some(line) = empty_line {
@@ -668,22 +667,24 @@ fn SwipeSelectBody(
             }
             if let Some(card) = current.clone() {
                 div { class: "web-examples-details web-swipe-select-details",
-                    CardDetails {
+                    CardDetailsPanel {
                         key: "{card.scryfall_data.id}",
                         card,
-                        show_name: true,
-                        show_cost: true,
-                        show_classification: true,
                         describe_tag: Some(describe_tag),
+                        on_printings: move |()| printing_open.set(true),
+                        footer: reasons.clone().map(|reasons| rsx! {
+                            SuggestionReasons {
+                                reasons,
+                                deck_count: deck_count(),
+                                describe_tag,
+                                on_examples,
+                            }
+                        }),
                     }
-                    if let Some(reasons) = reasons.clone() {
-                        SuggestionReasons {
-                            reasons,
-                            deck_count: deck_count(),
-                            describe_tag,
-                            on_examples,
-                        }
-                    }
+                }
+            } else if loading() || loading_more() {
+                div { class: "web-examples-details web-swipe-select-details",
+                    CardDetailsPanelSkeleton {}
                 }
             }
         }

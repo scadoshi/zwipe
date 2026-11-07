@@ -23,7 +23,7 @@ use zwipe_ui::screens::add_cards::{
 use zwipe_ui::stack;
 use zwipe_ui::stores::parked;
 
-use super::components::card_info::{CardDetailsSheet, CardInfoDisplay, CardSkeleton};
+use super::components::card_info::{CardDetailsSheet, CardSkeleton};
 use super::components::printing_sheet::PrintingSheet;
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::auth::ensure_session::EnsureFresh;
@@ -679,9 +679,6 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 on_swipe_down: move |card: Card| on_swipe(Direction::Down, &card),
                             }
 
-                            if let Some(card) = current.clone() {
-                                CardInfoDisplay { card }
-                            }
                         } else if pile == Pile::End {
                             // Cursor sits one past the last card with nothing
                             // more coming: the skeleton stays down-swipeable so
@@ -734,9 +731,6 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 on_swipe_down: move |card: Card| on_swipe(Direction::Down, &card),
                             }
 
-                            if let Some(card) = current.clone() {
-                                CardInfoDisplay { card }
-                            }
                         } else {
                             CardSkeleton {}
                         }

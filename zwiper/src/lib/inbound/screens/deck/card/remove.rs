@@ -23,7 +23,7 @@ use zwipe_ui::screens::remove_cards::{
 use zwipe_ui::stack;
 use zwipe_ui::stores::undo as shared_undo;
 
-use super::components::card_info::{CardDetailsSheet, CardInfoDisplay, CardSkeleton};
+use super::components::card_info::{CardDetailsSheet, CardSkeleton};
 use super::components::filter_store::{FilterScope, FilterStore};
 use super::components::printing_sheet::PrintingSheet;
 use crate::inbound::components::auth::authed::{Authed, use_authed};
@@ -536,9 +536,6 @@ pub fn Remove(deck_id: Uuid) -> Element {
                             },
                         }
 
-                        if let Some(card) = current.clone() {
-                            CardInfoDisplay { card }
-                        }
                     } else {
                         CardSkeleton {}
                     }
