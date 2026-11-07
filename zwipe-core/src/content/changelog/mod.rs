@@ -54,6 +54,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "The card filter's Oracle tags hint explains include, exclude and the Dictionary",
         "The Format, Deck tags and Oracle tags pickers' ? hints match the website's",
         "The deck page's tag hints and the Oathbreaker field's hint are written for where they open, and other hints read tighter",
+        "An expanded card shows its own details first, with what the screen adds to it in its own section at the bottom",
     ],
 }];
 

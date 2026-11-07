@@ -616,7 +616,6 @@ fn SuggestionRow(
             preview_dismissing,
             on_printing: move |c: Card| on_printing.call(c),
             footer: rsx! {
-                hr { class: "card-row-rule card-row-rule-muted" }
                 SuggestionReasons { reasons: suggestion.reasons, deck_count, foldable: true }
             },
             extra_actions: rsx! {
