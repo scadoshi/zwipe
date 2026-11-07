@@ -1532,6 +1532,12 @@ body[class$="-light"] .chip-value {
     background-color: color-mix(in srgb, var(--palette-5) 8%, transparent);
 }
 
+/* A few dark themes' palette-5 is too dim on its tint: a quarter of the
+   theme's text color lifts it to at least 4.5:1 in every dark theme. */
+body[class$="-dark"] .chip-value {
+    color: color-mix(in srgb, var(--palette-5) 75%, var(--text-primary));
+}
+
 /* ==================
      testimonials
  ==================== */
