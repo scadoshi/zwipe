@@ -14,12 +14,12 @@ const WEB_BASE: &str = "https://zwipe.net";
 /// Every prerendered, indexable route with its sitemap hints. Kept here as the
 /// single source of truth so `public/sitemap.xml` can't drift from the routes
 /// the way a hand-edited file does. Dynamic routes (`/verify/:token`, `/confirm-email/:token`,
-/// `/reset/:token`) are excluded: robots.txt `Disallow`s them. Each path ends in `/`, the form the host serves
+/// `/reset/:token`) are excluded: robots.txt `Disallow`s them. So is `/download/ios`, which
+/// only sends the visitor on to the App Store. Each path ends in `/`, the form the host serves
 /// a prerendered page at.
 /// `(path, changefreq, priority)`.
 const ROUTES: &[(&str, &str, &str)] = &[
     ("/", "weekly", "1.0"),
-    ("/download/ios/", "weekly", "0.9"),
     ("/download/android/", "weekly", "0.9"),
     ("/guides/", "weekly", "0.8"),
     ("/changelog/", "weekly", "0.6"),
