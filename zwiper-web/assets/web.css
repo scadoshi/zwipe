@@ -439,11 +439,11 @@ body {
    accent border, and rises 3px. The .web-main prefix outranks the kit's
    `transition: border-color`, and an entrance animation fills backwards
    only, so its end transform lets go of the lift. A panel in a sheet, a
-   dialog or a screen over the page holds still. One holding card rows, a
-   sheet, a picker screen, a preview, a dock, a heatmap (its floating tip)
-   or a grid backdrop takes the shadow and border but does not rise: a
-   transform makes the panel the containing block of the fixed overlays
-   inside it. Any width with a mouse. */
+   dialog, a screen over the page or a docked details panel holds still.
+   One holding card rows, a sheet, a picker screen, a preview, a dock, a
+   heatmap (its floating tip) or a grid backdrop takes the shadow and
+   border but does not rise: a transform makes the panel the containing
+   block of the fixed overlays inside it. Any width with a mouse. */
 @media (hover: hover) {
     .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold) {
         transition:
@@ -457,14 +457,14 @@ body {
         animation-fill-mode: backwards;
     }
 
-    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold):hover:not(:is(.screen .screen, .bottom-sheet, .alert-dialog) *) {
+    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold):hover:not(:is(.screen .screen, .bottom-sheet, .alert-dialog, .web-swipe-details, .web-examples-details) *) {
         box-shadow: var(--shadow-md);
         border-color: var(--accent-primary);
     }
 }
 
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
-    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold):hover:not(:is(.screen .screen, .bottom-sheet, .alert-dialog) *):not(:has(.card-row, .bottom-sheet, .screen, .image-preview-container, .action-dock, .heat-grid, .grid-cells, .swipe-bottom-row)) {
+    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold):hover:not(:is(.screen .screen, .bottom-sheet, .alert-dialog, .web-swipe-details, .web-examples-details) *):not(:has(.card-row, .bottom-sheet, .screen, .image-preview-container, .action-dock, .heat-grid, .grid-cells, .swipe-bottom-row)) {
         transform: translateY(-3px);
     }
 }
