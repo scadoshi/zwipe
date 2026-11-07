@@ -19,7 +19,6 @@ use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
 use zwipe_core::domain::deck::{Board, deck_tag_label};
 use zwipe_ui::deck::form::Slot;
 use zwipe_ui::filter::draft::SheetConfig;
@@ -320,12 +319,13 @@ pub fn DeckWidePage(
         }
     };
 
-    // The owner's facts and stats from the deck as fetched.
+    // The owner's facts and stats follow the cards as edited here; the
+    // warnings and store links stay the deck's as fetched.
     let held_deck = deck();
-    let metrics = held_deck
-        .as_ref()
-        .filter(|d| !d.entries.is_empty() || !d.command_zone_cards.is_empty())
-        .map(|d| DeckMetrics::from_entries_and_command_zone(&d.entries, &d.command_zone_cards));
+    let metrics = held_deck.as_ref().and_then(|d| {
+        zone.read()
+            .live_metrics(&d.entries, &entries.read(), &d.command_zone_cards)
+    });
     let warnings = held_deck
         .as_ref()
         .map(|d| d.warnings.clone())

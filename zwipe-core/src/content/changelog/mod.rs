@@ -69,6 +69,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "The counters on Home and the sign-in screen read Live only while their copy is under five minutes old, otherwise as of its time",
         "The Pips setting's options read Themed and Classic",
         "Swipe screens confirm each swipe in a quiet chip at the top left, with a Swipe confirmations setting for toasts or nothing instead",
+        "On a wide window the deck page's card count, price and charts follow each card you add, remove, move or undo, with no reload",
     ],
 }];
 
