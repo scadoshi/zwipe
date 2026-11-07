@@ -293,3 +293,48 @@ The emulator ran out of room for both the zwipe and Cairn APKs, so I wiped its d
 ### Cleanup
 
 The Droid test deck is back to Edgar Markov, Lightning-Rig Crew and Vampire of the Dire Moon (2 entries on the server). I added 4 cards and removed them again, which leaves a few skips and removals. The theme is Gruvbox dark and swipe confirmations are on Chip, both confirmed on the server. The throttle and airplane mode are off. The clone's target is 11 GB.
+
+## Pass 6
+
+Build: main at f699acc37 (live on app.zwipe.net and zwipe.net), debug APK from ~/Developer/droid/zwipe on the Pixel_9a emulator against production, plus app.zwipe.net in the emulator's Chrome at 411px, both signed in as `test`. Shots are in ~/Developer/droid/shots/pass6-<n>.png (app) and web6-<n>.png (web). No logouts this pass.
+
+### Rechecks
+
+| # | App | Web | What I saw | Shots |
+|---|---|---|---|---|
+| 182 | n/a | not reached | The title tag only renders on a wide layout (`.web-screen-chip` is `display: none` below the breakpoint), so a phone width can't show it. | |
+| 183 | fixed | fixed | Format picker: search to hint 22px, hint to chips 23px. | pass6-29 |
+| 184 | fixed | fixed | The last skip leaves a plain ghost card, a "No cards left" toast and no chip. On web, ↓ on that ghost brings the last card back with no reload. Remaining: see New 3 and 4. | pass6-13, web6-15, web6-16 |
+| 186 | n/a | fixed, now larger than the app | Web preview is 379px wide with 16px gutters. The app's is 333px with 39px gutters, so the two still differ, the other way round now. | web6-2, pass6-5 |
+| 187 | fixed | fixed | The app's card preview dims the header too. The emulator's status bar is drawn by the system, so I couldn't judge it. | pass6-5 |
+| 188 | fixed | fixed | Decks and Cards skeletons under a slow network: every chip ghost is an empty box. Row titles still ghost as bars, which reads fine. | pass6-33-2, pass6-36-1 |
+| 189 | fixed | fixed | "Browsing your deck" scrolls clean to both rules, no mask on any element in the dialog. | pass6-30, pass6-31 |
+| 190 | n/a | fixed | `touch-action: manipulation` on html and body, viewport without `maximum-scale`. Quick double taps on the card and the dock never zoom (scale stays 1). A quick double tap on the dock's ← skips one card, not two (New 5). | web6-4 |
+| 191 | fixed | fixed (layout) | The letter rail is `overflow-y: hidden`. A vertical drag leaves it at scrollTop 0, a sideways drag scrolls 410px. Header to Search label is 77 device px, the same as the Format picker. On web the dictionary modal painted blank in the emulator (New 6), so I measured it through the DOM. | pass6-27, pass6-28 |
+| 192 | broken with long names | broken with long names | The title and cost now sit in the header beside the ×, and there's no head band or fold. But the title starts under the ×: with "Edgar, Ancient Bloodlord" the × box ends at x 89 and the title starts at 81 in the app (71 on web), so the "E" is covered. The × is absolutely positioned at left 16px and the header's padding-left is only 24px. Short names like Phyrexian Arena are centred and clear it. On web I put the long name into the title by script to check, so the overlap is measured, not seen on a real card. | pass6-9, web6-10-cdp |
+| 193 | n/a | fixed | Web swipe card is 347x484, the app's 348x483. | web6-3 |
+| 194 | works | works | The empty maybeboard keeps its panel and Swipe with one "No commanders" row. Swipe select's hint lists left skips, up saves, right starts a deck and down undoes, on both. App: left skipped, down undid, up saved Olivia, Crimson Bride (server count went 0 to 1 to 2 over two ups), right opened Create deck with Commander and Olivia, Opulent Outlaw filled in. Remove takes off the right row (server kept the other one). I removed my test saves, so the server is back to 0. | pass6-15 to pass6-22, pass6-42, web6-19 |
+| 195 | fixed | fixed | Home reads "as of Nov 7" on both. | pass6-1, web6-1 |
+| Light contrast | fixed | fixed | All 50 light themes swapped in locally (no account change). App Cards screen and web Cards: the only text under 4.5:1 is the disabled Maybe and Side board chips, in 7 themes. App details drawer: 0 of 50. | pass6-37 |
+
+### New
+
+1. **Long card titles slide under the drawer's ×** (bug, app and web). See 192.
+2. **The details drawer isn't centred** (question). The phone drawer sits at x 38 to 401 of 411, so the left gutter is 38px and the right 10px. Intended as a side drawer?
+3. **Re-entering a swipe screen whose filter has nothing left shows only the ghost card** (nit, app and web). With a name filter whose cards I'd already skipped, Add opened on a bare ghost card with no toast or words, so nothing says why it's empty. Shots: pass6-38, web6-12.
+4. **↓ on the ghost card does nothing when there's no history** (nit, web). After a filter change, the dock's ↓ toasts "Nothing to undo", but the same swipe on the ghost is silent. The dock's ↓ also looks enabled there. Shots: web6-14.
+5. **A quick double tap on a dock arrow counts once** (question, web). Two taps about 100ms apart on ← skipped one card. Fine if the fly-out locks input; otherwise the second tap is lost.
+6. **The web Oracle tags dictionary paints blank** (unclear, retest on a phone). Opened from Add's filter, Oracle tags, Dictionary, the modal is a flat grey fill in both the device screenshot and a CDP capture, even after scrolling. The DOM is complete (letter rail, rows, no opacity or visibility issue, nothing on top). The emulator's Chrome also cut off the details drawer's background, which a CDP capture showed was painted, so this may be the emulator. Shots: web6-22 to web6-24.
+7. **The app's ghost card is a little smaller than the card** (nit). The ghost image is 333x465 CSS px against the live card's 348x483. On web the ghost matches the card.
+8. **Back from Create deck, opened by a right swipe, leaves without asking** (question). The form arrives with Commander and a commander filled in. Back goes straight to the maybeboard, with no "Leave without saving?", which may be right since I hadn't typed anything.
+9. **Decks fails to load on GSM** (watch). With `speed gsm` and `delay gprs`, Decks showed "Could not load decks" with Retry. Retry worked once the speed was back to full. Shots: pass6-34.
+
+### Account notes
+
+- The account's theme is Zenburn dark on the server (`theme: zenburn, dark_mode: true`), not the Gruvbox dark I left after pass 5. I didn't touch the theme this pass, so someone changed it on another device. I left it.
+- The Commander maybeboard held Edgar Markov in the app at the start of the pass. Later the server and a fresh app start both showed it empty. My controlled test shows Remove deletes the right row, so the likely cause is a change from another device or a stale copy in the app. Unclear, retest. I didn't put Edgar back.
+- Azula's skip is untouched: I filtered Swipe select by name so Azula never came up for a swipe.
+
+### Cleanup
+
+Droid test is as Scotty left it, apart from skips on Add (app and web). The maybeboard is empty on the server. Throttle and airplane mode are off. The clone's target is 11 GB.
