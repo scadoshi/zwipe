@@ -1,5 +1,4 @@
-use components::icons::{FLIP, LAYERS};
-use components::{CardDetailsPanel, DockAction, DrawerSheet, use_overlay_back};
+use components::{CardDetailsPanel, DrawerSheet, use_overlay_back};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::Card;
@@ -44,9 +43,8 @@ pub(crate) fn use_describe_tag() -> Callback<String, Option<String>> {
 /// dock's eye: the card as a [`CardDetailsPanel`] with the host's `footer`
 /// in its foot, the panel's title the drawer's only title. The host opens it through the shared
 /// `open` signal. It closes from its title bar's ×, a backdrop tap or the
-/// back gesture. Its dock, pinned at its bottom right and present only when
-/// there is something to hold, has Flip for a multi-faced card (it leaves
-/// the drawer open) and an optional Printings.
+/// back gesture. The panel's foot has Flip for a multi-faced card and, with
+/// `on_printings`, a Printings pill, as the web's pane does.
 ///
 /// Printings leaves this drawer open: the host's printing sheet draws over
 /// it, and the host closes this one too when a printing is saved. Mount it
@@ -56,36 +54,16 @@ pub(crate) fn use_describe_tag() -> Callback<String, Option<String>> {
 pub(crate) fn CardDetailsSheet(
     open: Signal<bool>,
     card: Card,
-    /// Opens the printings sheet. When set, a "Printings" button shows in the
-    /// drawer's dock (mirrors the deck-view expand-row → Printing button).
+    /// Opens the printings sheet. When set, a "Printings" pill shows in the
+    /// panel's foot.
     #[props(default)]
     on_printings: Option<EventHandler<()>>,
     /// Host content shown in the panel's foot.
     #[props(default)]
     footer: Option<Element>,
 ) -> Element {
-    // Face state lives here so Flip can sit in the dock; the panel reads it
-    // through the controlled `face` prop.
-    let face_count = components::card_face_count(&card);
-    let mut face = use_signal(|| 0usize);
     let describe_tag = use_describe_tag();
     use_overlay_back(open);
-    // Flip and Printings as the drawer's dock, pinned at its bottom right.
-    let dock = (face_count > 1 || on_printings.is_some()).then(|| {
-        rsx! {
-            if face_count > 1 {
-                DockAction {
-                    label: "Flip",
-                    icon: FLIP,
-                    onclick: move |()| face.set((face() + 1) % face_count),
-                }
-            }
-            if let Some(handler) = on_printings {
-                DockAction { label: "Printings", icon: LAYERS, onclick: move |()| handler.call(()) }
-            }
-        }
-    });
-
     rsx! {
         DrawerSheet {
             open,
@@ -95,12 +73,10 @@ pub(crate) fn CardDetailsSheet(
             },
             every_width: true,
             class: "card-details-drawer",
-            dock,
             CardDetailsPanel {
                 card,
-                show_flip: false,
-                face: Some(face),
                 describe_tag: Some(describe_tag),
+                on_printings,
                 footer,
             }
         }

@@ -4,23 +4,22 @@
 //! out, a pick is kept on this device (the root stores every theme change)
 //! and a profile's theme takes over at login.
 
-use components::{SheetFrame, SheetWide, TOAST_NORMAL, TOAST_QUICK, ThemeConfig, ThemeSheet};
+use components::{SheetFrame, SheetWide, ThemeConfig, ThemeSheet};
 use dioxus::prelude::*;
-use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::http::contracts::user::HttpUpdateSettings;
 
 use crate::domain::settings::{self, RequestSeq};
 use crate::inbound::chrome::authed::use_authed;
+use crate::outbound::theme_store::ThemeStore;
 
-/// Flips Dark/Light at once and saves it, saying what it did; a failure
-/// puts back the mode from before the click, and a reply overtaken by a
-/// newer click is ignored.
+/// Flips Dark/Light at once and saves it, with no toast, since the page
+/// repaints; a failure puts back the mode from before the click, and a
+/// reply overtaken by a newer click is ignored.
 pub(crate) fn use_toggle_dark_mode() -> Callback<()> {
     let mut theme: Signal<ThemeConfig> = use_context();
     let session: Signal<Option<Session>> = use_context();
     let authed = use_authed();
-    let toast = use_toast();
     let mut dark_seq = use_signal(RequestSeq::default);
     use_callback(move |()| {
         let prev = theme.peek().clone();
@@ -28,12 +27,9 @@ pub(crate) fn use_toggle_dark_mode() -> Callback<()> {
             name: prev.name.clone(),
             is_dark: !prev.is_dark,
         };
+        ThemeStore::browser().save(&next);
         theme.set(next.clone());
         if !signed_in(session) {
-            toast.success(
-                dark_mode_note(next.is_dark).to_string(),
-                ToastOptions::default().duration(TOAST_NORMAL),
-            );
             return;
         }
         let mine = dark_seq.write().begin();
@@ -51,41 +47,34 @@ pub(crate) fn use_toggle_dark_mode() -> Callback<()> {
                 })
                 .await
                 .ok();
-            let saved_dark = reply.as_ref().map(|r| r.dark_mode);
+            let synced = reply.is_some();
             let saved = reply.map(|r| components::theme_from_settings(&r));
             let Some(shown) = settings::settle(*dark_seq.peek(), mine, saved, prev) else {
                 return;
             };
-            theme.set(shown);
-            if let Some(dark) = saved_dark {
-                toast.success(
-                    dark_mode_note(dark).to_string(),
-                    ToastOptions::default().duration(TOAST_NORMAL),
-                );
+            if synced {
+                ThemeStore::browser().save_synced(&shown);
             }
+            theme.set(shown);
         });
     })
 }
 
 /// The kit's theme sheet, saving a kept pick to the account. A click
 /// previews a row, the arrow keys move the preview (see the root's keys),
-/// Enter is `Save` and Esc is `Back`. A failed save toasts and leaves the
-/// preview applied, as the app does; a discarded pick wipes back out and
-/// then says `Theme unchanged`.
+/// Enter is `Save` and Esc is `Back`. A kept pick says nothing, since the
+/// page already shows it; a failed save toasts and leaves the preview
+/// applied, as the app does, and a discarded pick wipes back out.
 #[component]
 pub(crate) fn ThemesSheet(open: Signal<bool>) -> Element {
     let mut theme: Signal<ThemeConfig> = use_context();
     let session: Signal<Option<Session>> = use_context();
-    let toast = use_toast();
     let authed = use_authed();
 
     let save = move |picked: ThemeConfig| {
+        ThemeStore::browser().save(&picked);
         if !signed_in(session) {
             theme.set(picked);
-            toast.success(
-                "Theme saved".to_string(),
-                ToastOptions::default().duration(TOAST_QUICK),
-            );
             return;
         }
         let request = HttpUpdateSettings {
@@ -102,11 +91,9 @@ pub(crate) fn ThemesSheet(open: Signal<bool>) -> Element {
                 })
                 .await
             {
-                theme.set(components::theme_from_settings(&settings));
-                toast.success(
-                    "Theme saved".to_string(),
-                    ToastOptions::default().duration(TOAST_QUICK),
-                );
+                let saved = components::theme_from_settings(&settings);
+                ThemeStore::browser().save_synced(&saved);
+                theme.set(saved);
             }
         });
     };
@@ -123,13 +110,4 @@ pub(crate) fn ThemesSheet(open: Signal<bool>) -> Element {
 /// Whether a live session is on, so a theme pick saves to the profile.
 fn signed_in(session: Signal<Option<Session>>) -> bool {
     session.peek().as_ref().is_some_and(|s| !s.is_expired())
-}
-
-/// What the toast says after the mode flips.
-fn dark_mode_note(dark: bool) -> &'static str {
-    if dark {
-        "Dark mode on"
-    } else {
-        "Dark mode off"
-    }
 }

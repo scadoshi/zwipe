@@ -2,21 +2,24 @@
    (components::CardFilterPanel). */
 
 /* A drawer at every width (DrawerSheet's `every_width`). Above the kit's
-   breakpoint it is the kit's drawer. Below it the drawer runs the window's
-   height along the right edge, most of its width, leaving a sliver of the
-   dimmed page, and slides in from the right as the wide one does. */
+   breakpoint it is the kit's drawer. Below it the drawer floats along the
+   right edge: under the status bar and the header (the kit's --app-nav-h),
+   above the docks at the bottom (their gap from the edge plus their
+   height), one dock gap in from the right, with the panel's corners, border
+   and shadow, and slides in from the right as the wide one does. */
 @media (max-width: 59.99rem) {
     .sheet-form-drawer > .bottom-sheet.drawer-every-width {
-        top: 0;
-        bottom: 0;
+        --drawer-float-gap: 0.6rem;
+        top: calc(env(safe-area-inset-top, 0px) + var(--app-nav-h, 2.75rem) + var(--drawer-float-gap));
+        bottom: calc(env(safe-area-inset-bottom, 0px) / 2 + 0.6rem + 3.125rem + var(--drawer-float-gap));
         left: auto;
-        right: 0;
-        width: min(88vw, 26rem);
+        right: var(--drawer-float-gap);
+        width: min(calc(100vw - 3rem), 26rem);
         max-height: none;
-        border-radius: 1rem 0 0 1rem;
-        border-left: 1px solid var(--border-secondary);
-        padding-top: env(safe-area-inset-top, 0px);
-        transform: translateX(100%);
+        border-radius: 1rem;
+        border: 1px solid var(--border-secondary);
+        box-shadow: var(--shadow-md);
+        transform: translateX(calc(100% + var(--drawer-float-gap) + 1px));
     }
 
     .sheet-form-drawer > .bottom-sheet.drawer-every-width.show {
@@ -26,7 +29,7 @@
     .sheet-form-drawer > .bottom-sheet.drawer-every-width .sheet-dock {
         position: absolute;
         right: 1rem;
-        bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+        bottom: 1rem;
     }
 }
 
@@ -399,9 +402,20 @@
 
 /* The card details drawer bounds its panel to the sheet's content, so a
    tall card scrolls the panel's body between its head and foot rather than
-   the whole sheet. */
+   the whole sheet. The panel is drawn straight on the drawer, its own
+   border, corners, shadow and fill dropped, so the drawer is the one card;
+   its padding is the drawer's. */
 .bottom-sheet.card-details-drawer > .sheet-content {
     overflow: hidden;
+    padding: 0;
+}
+
+.bottom-sheet.card-details-drawer > .sheet-content > .card-details-panel {
+    flex: 1 1 auto;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
 }
 
 /* The sheet's `?`, in the header's right corner at the title's height,

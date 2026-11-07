@@ -175,12 +175,15 @@ body {
     overflow: visible;
 }
 
-/* The header holds still while the sheet is up, as while the menu is open:
-   a transform would make it the sheet's containing block. It also rises
-   over the status bar strip, which otherwise paints over the sheet's
-   backdrop inside the header's layer and leaves the notch undimmed. */
+/* The header holds still and unfaded while the sheet is up, as while the
+   menu is open: a transform would make it the sheet's containing block, and
+   the sheet is the bar's descendant, so a fade left from scrolling would
+   make the whole sheet see-through. It also rises over the status bar
+   strip, which otherwise paints over the sheet's backdrop inside the
+   header's layer and leaves the notch undimmed. */
 .screen > .app-nav:has(.theme-picker-sheet .bottom-sheet.show) {
     transform: none !important;
+    --nav-fade: 1 !important;
     z-index: 103;
 }
 
@@ -269,30 +272,6 @@ body {
 
 .swipe-stack-card.top.card-stack-enter-down {
     animation: card-stack-enter-down 0.2s ease-out;
-}
-
-/* ==============================
-  specific - carousel
- ================================ */
-
-.carousel-viewport {
-    overflow: hidden;
-    width: 100%;
-    touch-action: pan-y pinch-zoom;
-    user-select: none;
-    -webkit-user-select: none;
-}
-
-.carousel-strip {
-    display: flex;
-    will-change: transform;
-}
-
-.carousel-page {
-    flex: 0 0 100%;
-    width: 100%;
-    display: flex;
-    justify-content: center;
 }
 
 /* ===============

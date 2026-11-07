@@ -163,49 +163,6 @@
     margin: 0.75rem auto;
 }
 
-.carousel-dots {
-    overflow: hidden;
-    width: 100%;
-    padding: 0.5rem 0;
-    box-sizing: border-box;
-    -webkit-mask-image: linear-gradient(
-        to right,
-        transparent,
-        black 2rem,
-        black calc(100% - 2rem),
-        transparent
-    );
-    mask-image: linear-gradient(
-        to right,
-        transparent,
-        black 2rem,
-        black calc(100% - 2rem),
-        transparent
-    );
-}
-
-.carousel-dots-track {
-    display: flex;
-    gap: 0.375rem;
-    width: max-content;
-    transition: transform 0.2s ease-out;
-}
-
-.carousel-dot {
-    flex-shrink: 0;
-    width: 0.5rem;
-    height: 0.5rem;
-    border-radius: 50%;
-    background: var(--text-primary);
-    opacity: 0.3;
-    transition: opacity 0.2s ease;
-}
-
-.carousel-dot.active {
-    opacity: 1;
-    background: var(--accent-secondary);
-}
-
 /* ===============
   specific - logo
  ================= */

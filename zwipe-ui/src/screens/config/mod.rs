@@ -543,8 +543,8 @@ impl State {
             .show(shown, /* saved */ saved.is_some())
             .into_iter()
             .collect();
-        if let Some(settings) = saved {
-            effects.push(Effect::Toast(waiting.change.saved_toast(settings)));
+        if let Some(toast) = saved.and_then(|settings| waiting.change.saved_toast(settings)) {
+            effects.push(Effect::Toast(toast));
         }
         effects
     }

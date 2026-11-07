@@ -61,6 +61,7 @@ pub fn ScreenFrame(
             page.set(Some(PageTitle {
                 title: nav_title,
                 on_hint,
+                on_back: None,
             }));
         }
     }));

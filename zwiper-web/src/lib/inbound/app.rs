@@ -9,6 +9,7 @@ use zwipe_core::domain::logo;
 use zwipe_core::domain::user::models::settings::PipStyle;
 
 use crate::inbound::chrome::hint_topic::{HintHost, HintTopic};
+use crate::inbound::chrome::leave_guard::GuardedHistory;
 use crate::inbound::chrome::splash::splash_plays_this_load;
 use crate::inbound::router::Route;
 use crate::inbound::screens::auth::login::LoginPrefill;
@@ -48,6 +49,9 @@ pub fn App() -> Element {
             overlay_back_stack.close_top();
         }
     });
+    use_hook(|| {
+        document::eval(HINT_FOCUS_JS);
+    });
     let dialogs = use_dialog_host();
     use_context_provider(|| dialogs);
     use_context_provider(|| LoginPrefill(Signal::new(None)));
@@ -61,6 +65,8 @@ pub fn App() -> Element {
     // The main menu's open state, above the router so it carries across
     // screens.
     use_context_provider(|| MenuOpen(Signal::new(false)));
+    // The router's history, with the leave guard in front of it.
+    use_hook(GuardedHistory::provide);
 
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
@@ -101,6 +107,45 @@ pub fn App() -> Element {
         }
     }
 }
+
+/// Where focus goes around a hint (a dialog drawing hint lines), installed
+/// once. As a hint opens it takes
+/// focus on its first button, so Enter answers the hint rather than the `?`
+/// under it. As it closes focus returns to where it was opened from: the
+/// open drawer, else the form or panel it sits in, else the page's main
+/// column; never the nav, and never the `?`, which Enter would open again.
+/// The opener is the focused element, or the last thing pressed where a
+/// click does not focus a button (Safari).
+const HINT_FOCUS_JS: &str = r#"
+if (!window.__zwipeHintFocus) {
+    window.__zwipeHintFocus = true;
+    let pressed = null;
+    let opener = null;
+    document.addEventListener('pointerdown', (e) => { pressed = e.target; }, true);
+    const place = (el) => {
+        if (!el) return;
+        if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '-1');
+        el.focus({ preventScroll: true });
+    };
+    new MutationObserver(() => {
+        const open = document.querySelector('.alert-dialog[data-state="open"]');
+        if (open && open.querySelector('.hint-body, .hint-line, .hint-bullets')) {
+            if (opener) return;
+            const active = document.activeElement;
+            opener = active && active !== document.body ? active : (pressed || document.body);
+            open.querySelector('.alert-dialog-actions > button')?.focus();
+        } else if (!open && opener) {
+            const from = opener;
+            opener = null;
+            const inNav = from.closest('.web-app-nav, nav');
+            const target = from.closest('.bottom-sheet.show')
+                || (!inNav && from.closest('form, .web-form-panel, .panel-card, .settings-list'))
+                || document.querySelector('.web-main');
+            place(target);
+        }
+    }).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-state'] });
+}
+"#;
 
 /// The page-wide keys. While a dialog is open the kit's own listener runs
 /// Escape and Enter, and the kit's theme sheet handles its arrows and

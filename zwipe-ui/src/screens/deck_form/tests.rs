@@ -900,3 +900,120 @@ fn the_copy_matches_the_app() {
     );
     assert_eq!(Mode::Edit(Uuid::nil()).hint(), OneTimeHint::EditDeck);
 }
+
+#[test]
+fn a_fresh_create_has_nothing_to_lose_until_a_field_changes() {
+    let mut state = create();
+    assert!(!state.has_unsaved_changes(), "an empty form loses nothing");
+    let _ = state.update(Action::SetName("Burn".to_owned()));
+    assert!(state.has_unsaved_changes());
+    let _ = state.update(Action::SetName(String::new()));
+    assert!(
+        !state.has_unsaved_changes(),
+        "back to empty is back to nothing"
+    );
+    let _ = state.update(Action::StepLand(Step::Up));
+    assert!(state.has_unsaved_changes(), "a budget field counts");
+}
+
+#[test]
+fn a_seeded_create_measures_from_its_seed() {
+    let mut state = State::new();
+    let _ = state.update(Action::Load(Open::Create {
+        seed: Some(Box::new(card("Krenko"))),
+    }));
+    assert!(
+        !state.has_unsaved_changes(),
+        "the handed-over commander is where the form starts"
+    );
+    let _ = state.update(Action::ClearSlot(Slot::Commander));
+    assert!(state.has_unsaved_changes());
+}
+
+#[test]
+fn a_swipe_select_pick_is_a_change() {
+    let mut state = create();
+    let _ = state.update(Action::TapFormat(Format::Commander));
+    let _ = state.update(Action::PickSwiped {
+        slot: Slot::Commander,
+        card: Box::new(card("Krenko")),
+    });
+    assert!(state.has_unsaved_changes());
+}
+
+#[test]
+fn an_open_pickers_unkept_pick_is_a_change_until_back_puts_it_back() {
+    let mut state = create();
+    let _ = state.update(Action::OpenPicker(Picker::Format));
+    assert!(
+        !state.has_unsaved_changes(),
+        "opening a picker changes nothing"
+    );
+    let _ = state.update(Action::TapFormat(Format::Modern));
+    assert!(state.has_unsaved_changes());
+    let _ = state.update(Action::BackPicker);
+    assert!(!state.has_unsaved_changes());
+}
+
+#[test]
+fn edit_has_nothing_to_lose_while_loading_or_failed_or_unchanged() {
+    let profile = deck_profile("Burn");
+    let (mut loading, ticket) = edit_loading(profile.id);
+    assert!(
+        !loading.has_unsaved_changes(),
+        "nothing to lose while loading"
+    );
+    let _ = loading.update(Action::Failed { ticket });
+    assert!(!loading.has_unsaved_changes(), "nor once the load failed");
+
+    let mut state = edit_loaded(profile, &[]);
+    assert!(!state.has_unsaved_changes());
+    let _ = state.update(Action::SetName("Burn 2".to_owned()));
+    assert!(state.has_unsaved_changes());
+    let _ = state.update(Action::SetName("Burn".to_owned()));
+    assert!(
+        !state.has_unsaved_changes(),
+        "the saved name back is no change"
+    );
+}
+
+#[test]
+fn a_save_that_went_through_leaves_nothing_to_lose() {
+    let mut state = create();
+    let _ = state.update(Action::SetName("Burn".to_owned()));
+    let effects = state.update(Action::Save);
+    let [Effect::CreateDeck { ticket, .. }] = effects.as_slice() else {
+        panic!("{effects:?}");
+    };
+    let ticket = *ticket;
+    assert!(
+        state.has_unsaved_changes(),
+        "still unsaved while the save is out"
+    );
+    let _ = state.update(Action::Created {
+        ticket,
+        deck_id: Uuid::new_v4(),
+    });
+    assert!(!state.has_unsaved_changes());
+
+    let mut state = edit_loaded(deck_profile("Burn"), &[]);
+    let _ = state.update(Action::SetName("Burn 2".to_owned()));
+    let effects = state.update(Action::Save);
+    let [Effect::UpdateDeck { ticket, .. }] = effects.as_slice() else {
+        panic!("{effects:?}");
+    };
+    let _ = state.update(Action::Updated { ticket: *ticket });
+    assert!(!state.has_unsaved_changes());
+}
+
+#[test]
+fn a_failed_save_keeps_the_changes_unsaved() {
+    let mut state = create();
+    let _ = state.update(Action::SetName("Burn".to_owned()));
+    let effects = state.update(Action::Save);
+    let [Effect::CreateDeck { ticket, .. }] = effects.as_slice() else {
+        panic!("{effects:?}");
+    };
+    let _ = state.update(Action::Failed { ticket: *ticket });
+    assert!(state.has_unsaved_changes());
+}

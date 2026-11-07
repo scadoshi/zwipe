@@ -521,7 +521,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                         Some(deck_profile) => {
                             rsx! {
                             div { class: "content-enter",
-                                  style: "width: calc(100% - 4rem); display: flex; flex-direction: column; gap: var(--panel-gap); padding: 1rem 0;",
+                                  style: "width: calc(100% - 4rem); display: flex; flex-direction: column; gap: var(--panel-gap); padding: 0 0 1rem;",
                                 DeckProfileSection {
                                     deck_profile: deck_profile.clone(),
                                     commander: commander,
@@ -734,7 +734,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                         },
                         None => rsx! {
                             div { class: "content-enter",
-                                  style: "width: calc(100% - 4rem); display: flex; flex-direction: column; gap: var(--panel-gap); padding: 1rem 0;",
+                                  style: "width: calc(100% - 4rem); display: flex; flex-direction: column; gap: var(--panel-gap); padding: 0 0 1rem;",
                                 DeckProfileSkeleton {}
                                 DeckStatsSkeleton {}
                             }

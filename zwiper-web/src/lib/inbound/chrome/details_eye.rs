@@ -1,15 +1,16 @@
 //! The swipe surfaces' eye (card details) button. Below the breakpoint it
 //! opens the details sheet, as in the app. On a wide window the details sit
 //! beside the card, and the eye hides and shows that panel instead, lit
-//! while the panel shows. The panel starts shown when the window has room
-//! for it beside the card and hidden when it would touch the card, decided
-//! once as the screen opens.
+//! while the panel shows. The panel starts hidden where it would touch the
+//! card, and elsewhere as the eye last left it (kept in browser storage),
+//! shown by default, decided once as the screen opens.
 
 use components::icons::EyeIcon;
 use dioxus::prelude::*;
 
 use crate::inbound::chrome::media::use_wide;
 use crate::outbound::browser;
+use crate::outbound::details_store::DetailsStore;
 
 /// The class a swipe surface's body takes while its beside-the-card
 /// details are hidden.
@@ -84,10 +85,19 @@ pub fn beside_fits(surface: Surface, window_w: f64, window_h: f64) -> bool {
     card_right < width - REM - panel
 }
 
-/// Whether the panel starts hidden on `surface` in the current window, or
-/// shown off the browser.
-fn starts_hidden(surface: Surface) -> bool {
-    browser::window_size().is_some_and(|(w, h)| !beside_fits(surface, w, h))
+/// Whether the panel starts hidden: always where it does not `fit` beside
+/// the card, else as the eye last left it (`stored`, whether it was shown),
+/// else shown.
+#[must_use]
+pub fn starts_hidden(fits: bool, stored: Option<bool>) -> bool {
+    !fits || stored.is_some_and(|shown| !shown)
+}
+
+/// Whether the panel starts hidden on `surface` in the current window, with
+/// the eye's stored choice; off the browser it fits and starts shown.
+fn starts_hidden_here(surface: Surface) -> bool {
+    let fits = browser::window_size().is_none_or(|(w, h)| beside_fits(surface, w, h));
+    starts_hidden(fits, DetailsStore::browser().load())
 }
 
 /// One surface's eye: the window's width, the surface's details sheet and
@@ -110,7 +120,10 @@ impl DetailsEye {
         } = self;
         match EyePress::at(*wide.peek()) {
             EyePress::Sheet => sheet.toggle(),
-            EyePress::Beside => beside_hidden.toggle(),
+            EyePress::Beside => {
+                beside_hidden.toggle();
+                DetailsStore::browser().save(!*beside_hidden.peek());
+            }
         }
     }
 
@@ -139,11 +152,11 @@ impl DetailsEye {
 }
 
 /// The eye for `surface`, whose details sheet opens on `sheet`. The beside
-/// panel starts shown where it fits beside the card (see [`beside_fits`]);
-/// later resizes leave the eye as it is.
+/// panel starts as [`starts_hidden`] says, from [`beside_fits`] and the
+/// eye's stored choice; later resizes leave the eye as it is.
 pub fn use_details_eye(sheet: Signal<bool>, surface: Surface) -> DetailsEye {
     let wide = use_wide();
-    let beside_hidden = use_signal(|| starts_hidden(surface));
+    let beside_hidden = use_signal(|| starts_hidden_here(surface));
     DetailsEye {
         wide,
         sheet,
@@ -196,6 +209,20 @@ mod tests {
         assert!(beside_fits(Surface::Window, 1600.0, 900.0));
         assert!(!beside_fits(Surface::Window, 1000.0, 900.0));
         assert!(!beside_fits(Surface::Window, 1000.0, 700.0));
+    }
+
+    #[test]
+    fn the_panel_starts_as_the_eye_left_it_where_it_fits() {
+        assert!(!starts_hidden(true, None));
+        assert!(!starts_hidden(true, Some(true)));
+        assert!(starts_hidden(true, Some(false)));
+    }
+
+    #[test]
+    fn the_panel_starts_hidden_where_it_does_not_fit() {
+        assert!(starts_hidden(false, None));
+        assert!(starts_hidden(false, Some(true)));
+        assert!(starts_hidden(false, Some(false)));
     }
 
     #[test]

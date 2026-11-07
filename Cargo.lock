@@ -4884,7 +4884,7 @@ checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
 [[package]]
 name = "orangui"
 version = "0.0.0"
-source = "git+https://github.com/scadoshi/orangui?branch=main#9793881f8fa929db9245eddee0273fe51665137a"
+source = "git+https://github.com/scadoshi/orangui?branch=main#4eb7a7820f751f08e0658b47e045a1ea66413441"
 dependencies = [
  "dioxus",
  "dioxus-primitives",
@@ -4904,7 +4904,7 @@ dependencies = [
 [[package]]
 name = "orangui-core"
 version = "0.0.0"
-source = "git+https://github.com/scadoshi/orangui?branch=main#9793881f8fa929db9245eddee0273fe51665137a"
+source = "git+https://github.com/scadoshi/orangui?branch=main#4eb7a7820f751f08e0658b47e045a1ea66413441"
 dependencies = [
  "serde",
 ]
@@ -9038,6 +9038,7 @@ dependencies = [
  "getrandom 0.4.3",
  "gloo-timers 0.4.0",
  "reqwest",
+ "serde",
  "serde_json",
  "sha2 0.11.0",
  "thiserror 2.0.19",

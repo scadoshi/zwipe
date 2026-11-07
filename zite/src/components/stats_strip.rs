@@ -64,10 +64,10 @@ pub fn StatsStrip() -> Element {
             compact: true,
             // Where the numbers come from, as chips under the strip.
             source: rsx! {
-                span { class: "tag", "Everybody" }
                 if let Some(label) = label {
                     span { key: "{label}", class: "tag chip-in", "{label}" }
                 }
+                span { class: "tag", "Everybody" }
             },
         }
     }

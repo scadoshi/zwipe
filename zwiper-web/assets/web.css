@@ -59,6 +59,12 @@ body {
     user-select: text;
 }
 
+/* A drawer, form or the main column that takes focus back from a closed
+   hint draws no ring; it holds focus only so the keys stay there. */
+[tabindex="-1"]:focus {
+    outline: none;
+}
+
 /* Below the breakpoint scrollbars hide, as in the app, which signals a
    scroller with edge fades; a wide window draws them thin, the thumb in
    the theme's border color. */
@@ -155,61 +161,58 @@ body {
 
 /* ---- Footer ----
 
-   zwipe.net's footer closes the page on a wide window: a bar the window's
-   width, 1rem under the last panel. The screen's content keeps that 1rem
-   and its wrappers none of their own, so the panels end where zwipe.net's
-   page does. Below the breakpoint, as in the app, there is none. */
+   zwipe.net's footer closes every scrolling screen at every width: a bar
+   the window's width, 1rem under the last panel. The screen's content keeps
+   that 1rem and its wrappers none of their own, so the panels end where
+   zwipe.net's page does. A phone's swipe screen fills the window without
+   scrolling, so it has none. */
 .web-site-footer {
-    display: none;
+    display: block;
+    order: 2;
+    flex: 0 0 auto;
+    width: 100%;
+    margin: 0;
+    box-sizing: border-box;
 }
 
-@media (min-width: 900px) {
-    .web-site-footer {
-        display: block;
-        order: 2;
-        flex: 0 0 auto;
-        width: 100%;
-        margin: 0;
-        box-sizing: border-box;
-    }
+.web-scroll-screen:has(> .web-site-footer) > .screen-content {
+    padding-bottom: 1rem;
+}
 
-    .web-scroll-screen:has(> .web-site-footer) > .screen-content {
-        padding-bottom: 1rem;
-    }
+.web-scroll-screen:has(> .web-site-footer) > .screen-content > :not(.action-dock, .web-screen-chip) {
+    padding-bottom: 0;
+}
 
-    .web-scroll-screen:has(> .web-site-footer) > .screen-content > :not(.action-dock) {
-        padding-bottom: 0;
-    }
+/* A screen with a floating dock ends its content a dock's height above the
+   footer, so at the page's end the dock rests between the two. */
+.web-scroll-screen:has(> .web-site-footer):has(.action-dock:not(:is(.swipe-bottom-row, .web-dock-pair, .bottom-sheet, .screen .screen) *), .web-dock-pair:not(:is(.swipe-bottom-row, .screen .screen) *)) > .screen-content {
+    padding-bottom: 5rem;
+}
 
-    /* A swipe screen's pile chips and docks ride at the window's foot over
-       the swipe area, and once the footer scrolls in they stop on their own
-       line right above it. */
-    .web-scroll-screen > .swipe-bottom-row {
-        --row-gap: calc(env(safe-area-inset-bottom, 0px) + 0.4rem);
-        position: sticky;
-        order: 1;
-        flex: 0 0 auto;
-        bottom: var(--row-gap);
-        margin-bottom: var(--row-gap);
+@media (max-width: 899px) {
+    .web-scroll-screen:has(> .swipe-bottom-row) > .web-site-footer {
+        display: none;
     }
 }
 
-/* The docked details panel shrinks from its foot as the footer scrolls in,
-   pixel for pixel with the rising row, so it keeps ending above the docks
-   and clear of the footer. */
+/* The floating controls a scroll screen holds stop above the footer as it
+   scrolls in (magic.css's footer rise): the action docks, the swipes' dock
+   pair and a swipe screen's bottom row, but not the ones inside them, a
+   sheet or an overlay screen, and the toast stack at the bottom left. The
+   docked details panel shrinks from its foot by as much, so it keeps ending
+   above the docks. */
 @supports (animation-timeline: view()) {
+    .web-scroll-screen :is(.action-dock, .web-dock-pair, .swipe-bottom-row):not(:is(.swipe-bottom-row, .web-dock-pair, .bottom-sheet, .screen .screen) *),
+    .toast-container {
+        animation: footer-rise linear both;
+        animation-timeline: --site-footer;
+        animation-range: entry 0px entry 100vh;
+    }
+
     @media (min-width: 900px) {
-        .web-scroll-screen:has(> .swipe-bottom-row) {
-            timeline-scope: --web-footer;
-        }
-
-        .web-scroll-screen:has(> .swipe-bottom-row) > .web-site-footer {
-            view-timeline: --web-footer block;
-        }
-
         .web-scroll-screen .web-swipe-details {
             animation: web-dock-panel-rise linear both;
-            animation-timeline: --web-footer;
+            animation-timeline: --site-footer;
             animation-range: entry 0px entry 100vh;
         }
     }
@@ -688,7 +691,7 @@ body {
    nothing moved or resized. */
 @media (hover: hover) {
     :is(.settings-list-header, .card-group-header) .btn-action:not(:disabled, .btn-action-danger):hover,
-    .web-flow-step:not(:disabled):hover {
+    .cover-flow-step:not(:disabled):hover {
         color: var(--accent-primary);
         border-color: var(--accent-primary);
     }
@@ -816,64 +819,24 @@ body {
 
 /* ---- Toasts ----
 
-   On a wide window the stack sits bottom left, clear of the nav, and reads
-   up from the bottom: the newest at the bottom, the older ones tucked above
-   it, each rising in from below. A swipe screen's pile chips hold the
-   bottom left, so there the stack sits above them. */
+   The stack is the screens' (components' base.css): bottom left, newest
+   at the bottom, above a screen's dock or bottom row. On a wide window a
+   dock sits far right of it, so only the swipe screens' pile chips lift
+   it; below the breakpoint the swipe screens' stacked docks lift it
+   further. */
 @media (min-width: 900px) {
-    .toast-container {
-        top: auto;
-        right: auto;
-        bottom: var(--web-toast-bottom, 1rem);
-        left: 1rem;
+    body:has(.action-dock) .toast-container {
+        --toast-bottom: 1rem;
     }
 
     body:has(.swipe-bottom-row) .toast-container {
-        --web-toast-bottom: 4.5rem;
-    }
-
-    .toast-container ol {
-        flex-direction: column-reverse;
-    }
-
-    .toast-container li {
-        margin-top: 0;
-        margin-bottom: -2.75rem;
-    }
-
-    .toast-container li:first-child,
-    .toast-container.expanded li {
-        margin-bottom: 0;
-    }
-
-    .toast-container.animating li {
-        transition: margin-bottom 0.2s ease;
-    }
-
-    .toast-container [role="alertdialog"] {
-        animation-name: web-toast-rise-in;
-    }
-
-    @keyframes web-toast-rise-in {
-        from {
-            opacity: 0;
-            transform: translateY(1.5rem) scale(0.96);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-        }
+        --toast-bottom: 4.5rem;
     }
 }
 
-@media (min-width: 900px) and (prefers-reduced-motion: reduce) {
-    .toast-container [role="alertdialog"] {
-        animation: none;
-    }
-
-    .toast-container.animating li {
-        transition: none;
+@media (max-width: 899px) {
+    body:has(.web-dock-pair) .toast-container {
+        --toast-bottom: 7.75rem;
     }
 }
 
@@ -1185,20 +1148,9 @@ body {
 
 /* ---- Printing sheet ---- */
 
-.web-printing-stage {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
+/* The cover flow, then the foot under it. */
+.web-printing-body > .cover-flow {
     margin-bottom: 0.75rem;
-}
-
-.web-printing-stage .carousel-card-image {
-    max-width: min(18rem, 70vw);
-}
-
-.web-printing-step {
-    flex: none;
 }
 
 /* The body takes the arrow keys once clicked, with no focus ring. */
@@ -1206,8 +1158,8 @@ body {
     outline: none;
 }
 
-/* The foot at the sheet's bottom: the dots, then the prices at the left
-   and Save at the right of one row. Save is the dock's button, sitting in
+/* The foot at the sheet's bottom: the prices at the left and Save at the
+   right of one row. Save is the dock's button, sitting in
    the row rather than floating over the sheet. */
 .web-printing-foot {
     display: flex;
@@ -1237,10 +1189,8 @@ body {
 
    From the kit's modal width the printing picker is a large modal over a
    dimmed page, layered over a details sheet as .sheet-over layers the
-   narrow picker. The stage holds the printings in perspective: each card's
-   left edge at the stage's middle, its inline transform placing it, and
-   one shared transition gliding every card as the selection moves. Under
-   the stage sit the selected printing's set, number and prices and Select. */
+   narrow picker, with components' cover flow filling it. Under the flow
+   sit the selected printing's set, number and prices and Select. */
 .web-flow {
     display: contents;
 }
@@ -1268,106 +1218,16 @@ body {
         outline: none;
     }
 
-    /* The stage between its two step buttons, each centered on it beside
-       the fade. */
-    .web-flow-row {
+    /* The cover flow takes the modal's height, its stage stretching
+       between the step buttons rather than keeping the phone's shape. */
+    .web-flow-body > .cover-flow {
         flex: 1 1 auto;
         min-height: 0;
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
     }
 
-    .web-flow-row > .web-flow-stage {
-        flex: 1 1 auto;
+    .web-flow-body .cover-flow-stage {
         align-self: stretch;
-        min-width: 0;
-    }
-
-    /* A squircle icon button holding the swipe dock's arrow, drawn a
-       little heavier at this size. */
-    .web-flow-step {
-        flex: none;
-        width: 2.75rem;
-        height: 2.75rem;
-        border-radius: 0.8rem;
-    }
-
-    .web-flow-step > .action-dock-icon {
-        width: 1.35rem;
-        height: 1.35rem;
-        stroke-width: 2.5;
-    }
-
-    /* The stack melts into the modal at its sides: the outermost cards fade
-       out over the stage's outer ninth on each side, short of the
-       selected card's neighbors. */
-    .web-flow-stage {
-        --flow-fade: linear-gradient(to right, transparent, #000 11%, #000 89%, transparent);
-        position: relative;
-        flex: 1 1 auto;
-        min-height: 0;
-        overflow: hidden;
-        perspective: 1600px;
-        cursor: grab;
-        user-select: none;
-        -webkit-mask-image: var(--flow-fade);
-        mask-image: var(--flow-fade);
-    }
-
-    .web-flow-stage:active {
-        cursor: grabbing;
-    }
-
-    .web-flow-card {
-        position: absolute;
-        top: 4%;
-        left: 50%;
-        height: 92%;
-        aspect-ratio: 488 / 680;
-        transform-origin: center center;
-        transition: transform 0.3s ease;
-        will-change: transform;
-        cursor: pointer;
-    }
-
-    /* A dark veil over each card, as dark as `--flow-dim` says: the
-       selected card's is clear, and each step out darker. */
-    .web-flow-card::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        border-radius: 4.75% / 3.5%;
-        background: #000;
-        opacity: var(--flow-dim, 0);
-        transition: opacity 0.3s ease;
-        pointer-events: none;
-        z-index: 1;
-    }
-
-    .web-flow-card img,
-    .web-flow-missing {
-        display: block;
-        width: 100%;
-        height: 100%;
-        border-radius: 4.75% / 3.5%;
-        box-shadow: var(--shadow-md);
-    }
-
-    .web-flow-card img {
-        object-fit: contain;
-    }
-
-    .web-flow-missing {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 1rem;
-        box-sizing: border-box;
-        text-align: center;
-        background: var(--bg-primary);
-        border: 1px solid var(--border-secondary);
-        color: var(--text-muted);
+        aspect-ratio: auto;
     }
 
     .web-flow-info {
@@ -1383,13 +1243,6 @@ body {
     .web-flow-count {
         color: var(--text-muted);
         font-size: 0.8rem;
-    }
-}
-
-@media (min-width: 60rem) and (prefers-reduced-motion: reduce) {
-    .web-flow-card,
-    .web-flow-card::after {
-        transition: none;
     }
 }
 
@@ -1493,10 +1346,24 @@ body {
 
 /* Without room for both on one row the swipes' dock stacks over the other,
    the two one width with their buttons spread across it, and the screen
-   keeps room for both. The pile chips stay at the row's foot. */
+   keeps room for both. The pair takes one width on every swipe screen,
+   room for Add's labeled dock, and keeps 1rem off the right edge, where
+   the bottom row's padding puts it. The pile chips stay at the row's
+   foot. */
 @media (max-width: 899px) {
     .web-dock-pair {
+        --web-dock-stack-w: 23.5rem;
         flex-direction: column;
+        right: 1rem;
+        width: min(var(--web-dock-stack-w), calc(100vw - 2rem));
+        box-sizing: border-box;
+    }
+
+    /* The floating card details drawer rises over both docks: one more
+       dock's height and the pair's gap above where the kit's single dock
+       would put it. */
+    body:has(.web-dock-pair) .sheet-form-drawer > .bottom-sheet.drawer-every-width {
+        bottom: calc(env(safe-area-inset-bottom, 0px) / 2 + 0.6rem + 2 * 3.125rem + 0.5rem + var(--drawer-float-gap));
     }
 
     .web-dock-pair > .action-dock {
@@ -1517,8 +1384,12 @@ body {
     }
 }
 
-/* A phone keeps the arrows only. */
+/* A phone keeps the arrows only, and the stacked pair narrows to them. */
 @media (max-width: 599px) {
+    .web-dock-pair {
+        --web-dock-stack-w: 12.5rem;
+    }
+
     .web-swipe-dock-label {
         display: none;
     }
@@ -1723,6 +1594,10 @@ body {
     .web-activity-heat .heat-grid {
         width: 100% !important;
         height: auto;
+    }
+
+    .web-activity-heat .activity-days {
+        display: none;
     }
 }
 
@@ -2041,16 +1916,40 @@ body {
         transition: transform 0.3s ease;
     }
 
-    /* Swipe select and the examples cover the bar with their own header,
-       so the panel starts under that. The examples' modal is the panel's
-       containing block, so its height is capped to the modal's. */
-    .web-swipe-select,
+    /* The examples cover the bar with their own header, so the panel
+       starts under that. The examples' modal is the panel's containing
+       block, so its height is capped to the modal's. */
     .web-examples {
         --web-dock-panel-top: 4.7rem;
     }
 
     .web-examples .web-examples-details {
         max-height: calc(100% - var(--web-dock-panel-top) - var(--web-dock-panel-bottom));
+    }
+
+    /* Swipe select's reasons scroll with the card's body, which fades out
+       at an edge with more to scroll past it instead of cutting a row in
+       half: the top fade grows in as the body leaves its top and the bottom
+       one goes as it reaches its end. A body that fits does not fade. */
+    @supports (animation-timeline: scroll()) {
+        .web-swipe-select-details .card-details-panel > .panel-body {
+            -webkit-mask-image: linear-gradient(
+                to bottom,
+                transparent 0,
+                #000 var(--web-fade-top),
+                #000 calc(100% - var(--web-fade-bottom)),
+                transparent 100%
+            );
+            mask-image: linear-gradient(
+                to bottom,
+                transparent 0,
+                #000 var(--web-fade-top),
+                #000 calc(100% - var(--web-fade-bottom)),
+                transparent 100%
+            );
+            animation: web-scroll-fade linear both;
+            animation-timeline: scroll(self);
+        }
     }
 
     .web-details-hidden :is(.web-swipe-details, .web-examples-details) {
@@ -2087,6 +1986,80 @@ body {
     .web-swipe-select-body,
     .web-examples-body {
         grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* The scroll-edge fade's two depths, animated by a body's own scroll. */
+@property --web-fade-top {
+    syntax: "<length>";
+    inherits: false;
+    initial-value: 0px;
+}
+
+@property --web-fade-bottom {
+    syntax: "<length>";
+    inherits: false;
+    initial-value: 0px;
+}
+
+@keyframes web-scroll-fade {
+    0% {
+        --web-fade-top: 0px;
+        --web-fade-bottom: 1rem;
+    }
+
+    8% {
+        --web-fade-top: 1rem;
+    }
+
+    92% {
+        --web-fade-bottom: 1rem;
+    }
+
+    100% {
+        --web-fade-top: 1rem;
+        --web-fade-bottom: 0px;
+    }
+}
+
+/* ---- Swipe screens on a wide window ----
+
+   Swipe select sits under the nav as Add does: the nav names it, carries
+   its `?` and closes it from the back arrow, so its own header goes. Each
+   swipe screen names itself in a quiet chip at its top left, clear of the
+   card in the middle, the details panel at the right and the pile chips
+   at the bottom. Below the breakpoint the title bar or the folded nav
+   names the screen. */
+.web-screen-chip {
+    display: none;
+}
+
+@media (min-width: 900px) {
+    .screen.web-swipe-select,
+    .web-swipe-select > .grid-cells {
+        top: var(--web-nav-h, 4.7rem);
+    }
+
+    .web-swipe-select > .page-header {
+        display: none;
+    }
+
+    /* The chip measures from the window's left, not the content column's. */
+    .web-main .web-cards-swipe.screen-content,
+    .screen-content.web-swipe-select-body {
+        position: static;
+    }
+
+    .chip-note.web-screen-chip {
+        display: inline-block;
+        position: absolute;
+        top: 1rem;
+        left: 1.5rem;
+        z-index: 1;
+        padding: 0.3rem 0.6rem;
+        font-size: 0.75rem;
+        line-height: 1.4;
+        pointer-events: none;
     }
 }
 
@@ -2167,6 +2140,19 @@ body {
     color: var(--accent-primary);
 }
 
+/* ---- Leave guard ----
+
+   The dialog that asks before a screen with unsaved changes is left: the
+   kit's alert dialog, a step above it, so it covers every layer a screen
+   can have open, a hint's dialog included. */
+.alert-dialog-overlay.web-leave-overlay {
+    z-index: 1002;
+}
+
+.alert-dialog.web-leave-dialog {
+    z-index: 1003;
+}
+
 /* ---- Oracle tag dictionary ---- */
 
 /* Below the breakpoint the browse wrapper adds no box, so the controls and
@@ -2221,6 +2207,26 @@ body {
     .web-dict-browse .dict-list {
         max-width: none;
         min-height: 0;
+    }
+}
+
+/* Below the breakpoint the dictionary is the whole window, and its Search
+   box, letters and list fill its width; the letters keep one row that
+   scrolls sideways. */
+@media (max-width: 899px) {
+    .web-dict-browse {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        flex: 1 1 auto;
+        min-height: 0;
+        width: 100%;
+    }
+
+    .web-dict-browse .dict-controls,
+    .web-dict-browse .dict-list {
+        max-width: none;
+        box-sizing: border-box;
     }
 }
 
@@ -2303,10 +2309,10 @@ body {
 }
 
 /* A picker's body in its sheet: the controls on top and the chip grid
-   under them, the grid scrolling on its own down to the sheet's bottom
-   edge, its trailing padding scrolling the last row clear of the dock. */
+   under them, the grid scrolling on its own and ending above a band at
+   the sheet's foot that holds the dock, so the dock never covers a chip. */
 .bottom-sheet.web-picker-sheet:has(.sheet-dock) > .sheet-content {
-    padding: 0;
+    padding: 0 0 calc(5rem + env(safe-area-inset-bottom, 0px));
 }
 
 .web-picker-body {
@@ -2321,12 +2327,36 @@ body {
     color: var(--accent-primary);
 }
 
-/* The grid spans the sheet, so its scrollbar runs along the sheet's right
-   edge, and keeps its chips in the controls' column. */
+/* The controls and the chips fill the sheet's width, the grid's
+   scrollbar along its right edge. */
+.web-picker-body > .tag-controls,
 .web-picker-body > .tag-grid {
     max-width: none;
-    padding-inline: calc((100% - 22rem) / 2 + 1rem);
-    padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+    box-sizing: border-box;
+}
+
+/* A picker is a drawer down to a window that keeps some page beside it.
+   Narrower, the drawer takes the whole window over the grid backdrop, as
+   the app's phone pickers do. */
+.web-picker-body > .grid-cells {
+    display: none;
+}
+
+@media (max-width: 599px) {
+    .sheet-form-drawer > .bottom-sheet.web-picker-sheet.drawer-every-width {
+        width: 100%;
+        border-radius: 0;
+        border-left: none;
+        background-color: transparent;
+    }
+
+    .web-picker-sheet > .sheet-content {
+        background-color: transparent;
+    }
+
+    .web-picker-body > .grid-cells {
+        display: block;
+    }
 }
 
 /* ---- The oracle tag dictionary as the kit's modal ----
@@ -2388,8 +2418,10 @@ body {
         box-sizing: border-box;
     }
 
+    /* The explainer over the input panel one panel gap apart. */
     .web-import.screen-content {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+        row-gap: var(--panel-gap);
     }
 
     .web-import > .import-controls,
@@ -2487,7 +2519,7 @@ body {
         gap: var(--panel-gap);
         width: 100%;
         max-width: none;
-        padding: 0.75rem 0 6rem;
+        padding: var(--panel-gap) 0 6rem;
     }
 
     .web-import > .import-scroll,

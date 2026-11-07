@@ -5,5 +5,6 @@ pub mod auth_gate;
 pub mod ensure_fresh;
 pub mod funnel;
 pub mod logout;
+pub mod settings_sync;
 pub mod signed_out_gate;
 pub mod upkeep;

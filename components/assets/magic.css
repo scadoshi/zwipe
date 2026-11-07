@@ -1024,6 +1024,15 @@ i.ms.ms-cost.ms-gp {
     margin-bottom: 0;
 }
 
+/* The host's content at the body's end sits a gap under the roles. */
+.card-details-body-end {
+    margin-top: 1rem;
+}
+
+.card-details-body-end > :last-child {
+    margin-bottom: 0;
+}
+
 /* The pane's ghost: the title's bar and the rules text's lines. */
 .card-details-ghost .card-details-ghost-title {
     display: inline-block;
@@ -1684,6 +1693,140 @@ i.ms.ms-cost.ms-gp {
     left: 0.45rem;
 }
 
+/* ---- CoverFlow (components::CoverFlow) ----
+   The printings in perspective between two step buttons: each card's left
+   edge at the stage's middle, its inline transform placing it, and one
+   shared transition gliding every card as the selection moves. On a phone
+   the stage keeps a near-square shape, so the middle card takes about
+   three fifths of its width and its neighbors show at the sides; a host
+   with a fixed height stretches it instead. A sideways swipe is the
+   flow's; an up or down one still scrolls the page. */
+.cover-flow {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.cover-flow-step {
+    flex: none;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.7rem;
+}
+
+.cover-flow-step > .action-dock-icon {
+    width: 1.2rem;
+    height: 1.2rem;
+    stroke-width: 2.5;
+}
+
+/* The stack melts into its host at the sides: the outermost cards fade out
+   over the stage's outer ninth on each side, short of the selected card's
+   neighbors. */
+.cover-flow-stage {
+    --flow-fade: linear-gradient(to right, transparent, #000 11%, #000 89%, transparent);
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+    aspect-ratio: 1 / 0.95;
+    overflow: hidden;
+    perspective: 1600px;
+    cursor: grab;
+    user-select: none;
+    touch-action: pan-y;
+    -webkit-mask-image: var(--flow-fade);
+    mask-image: var(--flow-fade);
+}
+
+.cover-flow-stage:active {
+    cursor: grabbing;
+}
+
+.cover-flow-card {
+    position: absolute;
+    top: 4%;
+    left: 50%;
+    height: 92%;
+    aspect-ratio: 488 / 680;
+    transform-origin: center center;
+    transition: transform 0.3s ease;
+    will-change: transform;
+    cursor: pointer;
+}
+
+/* A dark veil over each card, as dark as `--flow-dim` says: the selected
+   card's is clear, and each step out darker. */
+.cover-flow-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 4.75% / 3.5%;
+    background: #000;
+    opacity: var(--flow-dim, 0);
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.cover-flow-card img,
+.cover-flow-missing {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 4.75% / 3.5%;
+    box-shadow: var(--shadow-md);
+}
+
+.cover-flow-card img {
+    object-fit: contain;
+}
+
+.cover-flow-missing {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    box-sizing: border-box;
+    text-align: center;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    color: var(--text-muted);
+}
+
+@media (min-width: 60rem) {
+    .cover-flow {
+        gap: 0.75rem;
+    }
+
+    .cover-flow-step {
+        width: 2.75rem;
+        height: 2.75rem;
+        border-radius: 0.8rem;
+    }
+
+    .cover-flow-step > .action-dock-icon {
+        width: 1.35rem;
+        height: 1.35rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cover-flow-card,
+    .cover-flow-card::after {
+        transition: none;
+    }
+}
+
+/* ---- DrawerSheet (components::DrawerSheet): a page's docks step aside ----
+   While a drawer is open its own dock sits at the bottom right, where the
+   page's floating dock is, which would show behind it as a second rounded
+   square. The page's docks hide until the drawer closes. */
+@media (min-width: 60rem) {
+    body:has(.sheet-form-drawer > .bottom-sheet.show) .action-dock:not(.sheet-dock) {
+        visibility: hidden;
+    }
+}
+
 /* ---- The ghosts the Home panels draw while they load: bars, chips and
    the "?" button's ghost ---- */
 
@@ -2266,6 +2409,38 @@ i.ms.ms-cost.ms-gp {
     border: 0;
 }
 
+/* ---- Floating controls stop above the footer ----
+   The site footer carries a view timeline the whole page can see. A
+   floating control that runs `footer-rise` on it moves up pixel for pixel
+   as the footer scrolls in, so it keeps its gap above the footer instead of
+   covering it. Each site names its floating controls and gives them:
+
+     animation: footer-rise linear both;
+     animation-timeline: --site-footer;
+     animation-range: entry 0px entry 100vh;
+
+   inside `@supports (animation-timeline: view())`. Without scroll-driven
+   animations the controls stay at the window's foot. */
+@supports (animation-timeline: view()) {
+    :root {
+        timeline-scope: --site-footer;
+    }
+
+    footer.site-footer {
+        view-timeline: --site-footer block;
+    }
+}
+
+@keyframes footer-rise {
+    from {
+        translate: 0 0;
+    }
+
+    to {
+        translate: 0 -100vh;
+    }
+}
+
 /* ---- Site footer (SiteFooter) ----
    zwipe.net's footer, which the web app draws too: the copyright and the
    host's links as pills in one centered row, then the notes as one
@@ -2336,4 +2511,16 @@ footer.site-footer .site-footer-note {
     color: var(--palette-1);
     text-decoration: underline;
     text-underline-offset: 3px;
+}
+
+/* A stepper's button at its bound is off: faded on a dark theme, its text
+   muted on a light one, as the kit's buttons are. */
+.stepper-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+[class*="theme-"][class*="-light"] .stepper-btn:disabled {
+    opacity: 1;
+    color: var(--text-muted);
 }

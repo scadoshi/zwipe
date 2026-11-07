@@ -1,4 +1,4 @@
-//! Index and time conversions shared by the carousel and the swipe stack.
+//! Index and time conversions the swipe stack uses.
 
 use chrono::TimeDelta;
 

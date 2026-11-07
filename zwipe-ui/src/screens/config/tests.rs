@@ -200,7 +200,7 @@ fn dark_mode_shows_at_once_and_saves_the_same_theme() {
 }
 
 #[test]
-fn a_saved_dark_mode_draws_the_reply_and_toasts() {
+fn a_saved_dark_mode_draws_the_reply_without_a_toast() {
     let mut state = State::new();
     let effects = state.update(Action::ToggleDarkMode {
         shown: gruvbox(true),
@@ -210,10 +210,7 @@ fn a_saved_dark_mode_draws_the_reply_and_toasts() {
     reply.dark_mode = false;
     assert_eq!(
         saved(&mut state, ticket, reply),
-        [
-            Effect::ThemeSaved(gruvbox(false)),
-            Effect::Toast(Toast::new(ToastKind::Success, "Dark mode off", NORMAL)),
-        ]
+        [Effect::ThemeSaved(gruvbox(false))]
     );
 }
 
@@ -414,10 +411,7 @@ fn a_kept_theme_saves_without_closing_the_sheet_or_a_preview_change() {
     reply.dark_mode = false;
     assert_eq!(
         saved(&mut state, ticket, reply),
-        [
-            Effect::ThemeSaved(dracula),
-            Effect::Toast(Toast::new(ToastKind::Success, "Theme saved", QUICK)),
-        ]
+        [Effect::ThemeSaved(dracula)]
     );
 }
 
@@ -433,8 +427,8 @@ fn every_theme_save_lands() {
     let mut state = State::new();
     let (first, _) = save_in(&state.update(Action::KeepTheme(gruvbox(false))));
     let (second, _) = save_in(&state.update(Action::KeepTheme(gruvbox(true))));
-    assert_eq!(saved(&mut state, second, account()).len(), 2);
-    assert_eq!(saved(&mut state, first, account()).len(), 2);
+    assert_eq!(saved(&mut state, second, account()).len(), 1);
+    assert_eq!(saved(&mut state, first, account()).len(), 1);
 }
 
 #[test]

@@ -22,7 +22,7 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 ## In progress
 
 | 116 to 119, swipe screens: no head, title chip, panel scroll, eye remembered | halo | `nits/halo-116` |
-| 120, 121, picker ✓ room and zwipe.net ghost, focus after a hint | laptop | `nits/laptop-120` |
+| 120, 121, then 124 and 125, picker ✓ room and zwipe.net ghost, focus after a hint, portfolio footer and theme sweep | laptop | `nits/laptop-120`, portfolio `nits/laptop-124` |
 | 122, unsaved changes guard on the deck form | scotland | `nits/scotland-122` |
 | 123, skeleton audit | thinker | `nits/thinker-123` |
 
@@ -171,6 +171,65 @@ From Surfer's Part 3 (2026-11-06), triaged with Scotty:
 
 122. **Leaving the deck form loses unsaved changes without a word.** Creating or editing a deck (its pickers, drawers, the Commander → Swipe select and any other layer on top) with changes not yet saved: any way out (nav, logo, back button, browser back or reload, a link) asks first, "Leave without saving? Your changes to this deck will be lost", with Stay and Leave. The dialog sits above every modal layer the form can have open. No changes means no dialog.
 123. **Skeleton audit.** Every skeleton matches what replaces it: bar thickness, row height and spacing equal the real chart's (Playstyle's charts differ from each other today: one skeleton's bars match, the other's don't); a chip skeleton is an empty chip, never a chip with dots or circles inside standing in for text or pips; and nothing touches its panel's wall (Activity's right-hand chip row starts flush against the panel's left edge). All screens, wide and phone.
+
+124. **scottyfermo.com's footer is three stacked rows.** The © 2026 Scotty Fermo line moves into the row with the icon buttons and Contribute, as zwipe.net's and the app's compact footers do; the Rust/Heron line stays under it.
+
+125. **scottyfermo.com's theme drawer sweeps top to bottom inside the page's left-to-right sweep.** On a wide window a theme change is one left-to-right sweep across everything, the open side drawer included, as on zwipe.net and the app. Only the phone layout's bottom sheet sweeps top to bottom.
+
+126. **Enter on a form field's `?` submits the form.** The kit's info button has no `type="button"`, so inside a form it submits; on the deck form Enter on a field's `?` saves and leaves. Fixed in orangui, then zwipe and the portfolio repin.
+127. **zwipe.net says the app is for mobile.** The page title ("Magic: The Gathering Deck Builder for Mobile | Zwipe"), the hero tagline ("built for mobile"), the meta descriptions and the OG card name phones only; app.zwipe.net exists now, so they say phone and web.
+128. **The app's card details open as a full-height side drawer on a phone.** It touches the top and bottom and frames a card inside a sheet. On a phone it floats in from the right, inset from the top, bottom and edges with rounded corners, not a bottom sheet.
+129. **The details' Printings action is an icon.** It reads "Printings" as a text pill, as on the web.
+130. **The app's printing picker shows one card at a time.** The phone gets the web's cover flow: neighbors visible at the sides, animating in, edge fade and arrows.
+
+131. **The app's deck page leaves a wider gap under the header than other screens.** The Profile panel sits further below the title bar than panels do elsewhere in the app; align it to the app's usual top gap.
+
+From Surfer's Part 4 (half width, 720px), triaged with Scotty:
+
+132. **Toasts land on the title bar's back button at narrow widths.** [S38] On the web, toasts sit at the bottom left at every width, clear of the docks and pile chips, newest at the bottom.
+133. **Tag selectors become squeezed bottom sheets at narrow widths.** [S39] Deck tags, Oracle tags and Format: a side drawer (no grid backdrop) wherever one fits, and below that a full-screen selector with the grid backdrop, never a bottom sheet. Their content fills the width they get (no 320 to 384px column inside a wider sheet), and the dictionary's A to Z row stays one row, scrolling sideways within the width.
+134. **Floating docks run over the footer.** [S40] Every sticky or floating action dock and button (filter funnel, +, ✓, the swipe docks, every screen) stops above the footer when it scrolls in, on the web app and zwipe.net.
+135. **Card groups don't all fold.** [S41] Every card row group everywhere gets the fold caret: the Commander group, Suggested commanders, Staples, Most skipped and any other card list, in the app and on the web.
+136. **A one-type deck's Types chart is a solid slab.** [S42] A single type draws as a normal bar.
+137. **Stacked docks differ in width.** [S46] Swipe select's are 335px against Add's 374px; one width everywhere.
+138. **scottyfermo.com's charts lose their labels when scrolled.** [S43] On a narrow window the commit area chart's counts and the heatmap's Mon/Wed/Fri stay pinned at the left while the charts scroll and fade under them; the scroller starts where both read. Escape closes the phone menu [S45].
+139. **The web app has no footer below 900px.** The compact footer (attribution, Privacy, Community, Contribute) closes every scrolling page at every width, phones included, with the docks stopping above it (134).
+
+From Surfer's Part 5 (narrowest, 504px), triaged with Scotty:
+
+140. **Tap targets are mostly under 44px.** [S47] On touch screens (`pointer: coarse`) every control's hit area reaches 44px without changing how it looks; the expanded row's − and + get room between them so a mis-tap can't remove a copy; zwipe.net's toast ✕ (10×13) gets a real target. Web app, zwipe.net, the portfolio.
+141. **Activity's heatmap scrollbar is white in dark.** [S48] Themed scrollbar, and Mon/Wed/Fri pinned at the left like the portfolio's (138).
+142. **zwipe.net's two-column grids stay two-up at 504px.** [S49] Community and About's crate cards go one column below about 560px.
+143. **Settings' Pips button reads "Theme" under the Theme row.** [S50] Scotty's call: rename the value itself, `Theme` to `Themed`, wire included, following `pip_color_wire.md`: Phase 1 renames everywhere and reads both while the wire still writes `theme`; the floor rises; Phase 4 writes `themed` only. Plan in `context/plans/pip_themed_wire.md`, row in `wire_changes.md`.
+144. **Light/dark can flip a few seconds after load.** [S51] The local copy and the server's race: a Settings toggle sometimes doesn't write localStorage, and on load the server's older copy overwrites the newer local one. The latest choice wins everywhere, with no flip after load.
+
+From Droid's Android pass 1 (`target/droid/report.md`, items D1 to D38), the confident ones:
+
+145. **The app's keyboard and load states.** Login's keyboard covers the password field (D1, broken); the keyboard lifts the Cards dock over Group by and Boards (D20); load errors offer no Retry (D4); the filter's Mana value placeholder clips (D23); the section header's tiny × clear sits inside the toggle (D21).
+146. **The app's spacing sweep.** One side gutter on every screen (D12); collapsible sections start and space like the rest (D15); the deck form's field gaps even (D18); and the few-pixel nits D9, D11, D13, D14, D22, D24, D27, D34.
+147. **The app's copy and contrast.** Draw odds' − disabled at turn 0 (D16); Remove's help points at where the board chips are (D25); the first warning row and its buttons get room (D26); row buttons don't wrap (D30); labels reach 4.5:1 (D31); hint text uses the dialog's width (D35); a tapped format chip stays put while its details open (D10).
+Extended to the app: D2 into 132 (toasts), D5 to D8 into 123 (skeletons), D17 into 136, D19 into 135, D33 into 140 (tap targets).
+Open with Scotty: none.
+148. **The import screen's panels touch.** The mode description panel sits flush on the Paste decklist panel; the usual panel gap between them, and the chip rows above spaced like the rest.
+149. **Toasts and floating buttons land on the footer.** On Export the "Copied to clipboard" toast and the copy button sit over the footer; toasts, like docks (134), stop above the footer at their lowest.
+150. **On Scotty's iPhone in light mode, Home's theme sheet is see-through.** Home's hero, stats and deck tiles show through it, faded; the same sheet on other screens, and Home in the simulator, are opaque. Investigate first: whether the sheet renders inside Home's animated content (an opacity animation that holds or stalls on a device), a compositing layer above it, or a translucent light background; then fix.
+
+151. **Both apps degrade when left open a long time.** In zwipe and Cairn, after hours open (or backgrounded and resumed): screens go see-through (150), taps stop landing (Cairn's counters), or data goes stale (Cairn shows yesterday's count until a relaunch). Likely shared: timers, listeners or layers piling up (orangui's grid rain, polls), and app lifecycle (no refresh on foreground or day rollover, WKWebView's content process killed in the background). Investigate across both apps and orangui, then fix at the shared root.
+
+152. **Toasts for changes the screen already shows.** Theme picks and light/dark toggles ("Dark mode off", the theme name) stop toasting, in the app and on the web. Errors, account changes (password, email, delete), results out of view (copy, share) and Synergy's toggle keep theirs.
+
+153. **Swipe confirmations become a setting, defaulting to a quiet chip.** A new setting, Swipe confirmations: Chip (default), Toasts, or Off. Chip shows the last action ("Added", "Skipped", "Maybe", "Removed", "Kept") in a fixed chip at the top left of the swipe screens, beside the screen's title chip on wide (117) and alone at the top left on phones; no swipe toasts. Toasts keeps today's toasts. Off shows neither. An additive settings field with a serde default, synced like the others; app and web.
+
+122b. **The native app's deck form doesn't ask before leaving yet.** 122 (#252) built the web's guard and zwipe-ui's `has_unsaved_changes`; the app still needs the guard wired to its own navigation (back button, swipe back, nav). Unassigned.
+
+154. **The phone's Printings cover flow scrolls the sheet sideways.** The side cards overflow and the sheet scrolls horizontally; the flow is clipped to its stage, with only the flow's own swipe moving it.
+155. **The Cards screen's featured cards (command zone art row) run off the right edge with no way to scroll.** The row scrolls sideways within the page width with the edge fade, or fits; app and web phone layout.
+
+156. **A second app tab logs the user out of both.** [S55, probably S54 too] Two tabs refresh at once with the same refresh cookie; the server rotates on the first, sees the second as a replay, and revokes the whole family (`RefreshSessionError::Revoked`). Fix: a short reuse window on the server, where a just-rotated token presented again within seconds gets the same successor instead of revoking, plus a cross-tab single flight on the web (Web Locks). Built on a branch with its PR left open for Scotty, since it touches auth. Not deployed.
+
+Scotty on Droid's open items: D3 toasts "Nothing left to remove" (no way back needed; into 145); D29 leave the Art toggle; D32 a follow-up in todo; D36 fine as an outline; D37 hero chips in the logged-in order everywhere (into 147); D38 list rows wrap their chips as the rendered layout intends, consistently (into 146). D28: card-row panels (Suggested commanders, Staples, Most skipped) keep their pink title color, but take the other panel titles' size, weight, letter spacing and inset (into 147).
+
+Skipped with Scotty: S44 (the About diagram scrolls under its arrows; fine as is).
 
 Skipped with Scotty: S35 (old /deck paths 404; old paths don't reroute), S37 (overscroll shade, 104 as designed).
 

@@ -14,10 +14,11 @@ use zwipe_ui::deck::form::Slot;
 
 use super::form::fields::DeckFields;
 use super::form::overlays::DeckFormOverlays;
-use super::form::use_deck_form;
+use super::form::{DECK_LEAVE, use_deck_form};
 use super::skeletons::EditDeckSkeleton;
-use crate::domain::deck::{FormValues, update_request};
+use crate::domain::deck::{FormStart, FormValues, has_unsaved_changes, update_request};
 use crate::inbound::chrome::authed::use_authed;
+use crate::inbound::chrome::leave_guard::use_leave_guard;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::router::Route;
 use crate::inbound::shell::ScreenFrame;
@@ -87,7 +88,12 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         }
     });
 
-    let has_changes = use_memo(move || update_request(&original(), &form.values()).is_some())();
+    // Save shows, and leaving asks first, while the form differs from the
+    // deck as loaded.
+    let changed =
+        use_memo(move || has_unsaved_changes(FormStart::Saved(&original()), &form.values()));
+    let guard = use_leave_guard(changed, DECK_LEAVE);
+    let has_changes = changed();
 
     let submit = use_callback(move |(): ()| {
         if *saving.peek() || deck.peek().as_ref().is_none_or(Result::is_err) {
@@ -114,6 +120,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                 .await;
             saving.set(false);
             if saved.is_ok() {
+                guard.release();
                 navigator.push(Route::ViewDeck { deck_id });
             }
         });
