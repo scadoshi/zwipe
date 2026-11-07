@@ -521,7 +521,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 ScreenHeader { title: remove_cards::TITLE, hint: swipe_hint_open, back: move |()| driver.dispatch(Action::Back) }
 
                 div { class: "screen-content card-swipe content-enter",
-                SwipeConfirmChip { said: driver.said }
+                SwipeConfirmChip { said: driver.said, at_end: stack_empty }
 
                 div { class: "form-container",
                     if !stack_empty {
