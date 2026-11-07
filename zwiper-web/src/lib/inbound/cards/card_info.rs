@@ -1,8 +1,7 @@
 //! A card's prices as chips, for the printing sheet, and a swipe card's
 //! full details in the drawer behind the dock's eye.
 
-use components::icons::{FLIP, LAYERS};
-use components::{CardDetailsPanel, DockAction, DrawerSheet, use_overlay_back};
+use components::{CardDetailsPanel, DrawerSheet, use_overlay_back};
 use dioxus::prelude::*;
 use zwipe_core::domain::card::Card;
 use zwipe_ui::card::info;
@@ -25,10 +24,10 @@ pub fn CardInfoDisplay(card: Card) -> Element {
 /// The card's details as a drawer from the right edge, at every width,
 /// behind the eye button: the card as a [`CardDetailsPanel`] with the host's
 /// `footer` in its foot, the panel's title the drawer's only title. It closes from its title bar's ×, a backdrop tap,
-/// Escape or the back gesture. Its dock, there only when it has something to
-/// hold, has `Flip` for a multi-faced card and `Printings` when the host
-/// passes `on_printings`. Mount it at the screen root beside the printing
-/// sheet.
+/// Escape or the back gesture. The panel's foot has `Flip` for a
+/// multi-faced card and a `Printings` pill when the host passes
+/// `on_printings`, as the wide pane does. Mount it at the screen root
+/// beside the printing sheet.
 #[component]
 pub fn CardDetailsSheet(
     open: Signal<bool>,
@@ -36,25 +35,8 @@ pub fn CardDetailsSheet(
     #[props(default)] on_printings: Option<EventHandler<()>>,
     #[props(default)] footer: Option<Element>,
 ) -> Element {
-    let face_count = components::card_face_count(&card);
-    let mut face = use_signal(|| 0usize);
     let describe_tag = use_describe_tag();
     use_overlay_back(open);
-    // Flip and Printings as the drawer's dock, pinned at its bottom right.
-    let dock = (face_count > 1 || on_printings.is_some()).then(|| {
-        rsx! {
-            if face_count > 1 {
-                DockAction {
-                    label: "Flip",
-                    icon: FLIP,
-                    onclick: move |()| face.set(face().saturating_add(1).checked_rem(face_count).unwrap_or(0)),
-                }
-            }
-            if let Some(handler) = on_printings {
-                DockAction { label: "Printings", icon: LAYERS, onclick: move |()| handler.call(()) }
-            }
-        }
-    });
     rsx! {
         DrawerSheet {
             open,
@@ -64,12 +46,10 @@ pub fn CardDetailsSheet(
             },
             every_width: true,
             class: "card-details-drawer",
-            dock,
             CardDetailsPanel {
                 card,
-                show_flip: false,
-                face: Some(face),
                 describe_tag: Some(describe_tag),
+                on_printings,
                 footer,
             }
         }
