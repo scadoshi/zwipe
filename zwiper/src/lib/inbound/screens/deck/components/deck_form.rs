@@ -2,7 +2,9 @@
 //!
 //! What the form knows and does is `zwipe_ui::screens::deck_form`; this file draws its state, opens the swipe pickers and performs its effects.
 
-use components::{DockAction, TOAST_NORMAL, ToastOptions, Toasts, icons, use_toast};
+use components::{
+    AlertDialog, DialogAction, DockAction, TOAST_NORMAL, ToastOptions, Toasts, icons, use_toast,
+};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use tokio::time;
@@ -13,7 +15,7 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::CardQuery;
 use zwipe_core::domain::deck::DeckTagView;
 use zwipe_ui::deck::form::{self, Slot};
-use zwipe_ui::deck::pickers::{Picker, TagPicker};
+use zwipe_ui::deck::pickers::{self, Picker, TagPicker};
 use zwipe_ui::generation::Ticket;
 use zwipe_ui::screens::deck_form::{
     self as model, Action, Destination, Effect, Open, State, Status,
@@ -359,6 +361,7 @@ pub(crate) fn DeckForm(open: Open) -> Element {
     let format_open = use_memo(move || model.read().picker() == Some(Picker::Format));
     let tags_open = use_memo(move || model.read().picker() == Some(Picker::DeckTags));
     let oracle_tags_open = use_memo(move || model.read().picker() == Some(Picker::OracleTags));
+    let asking = use_memo(move || model.read().is_asking_discard());
 
     let state = model.read();
     let mode = state.mode();
@@ -455,6 +458,7 @@ pub(crate) fn DeckForm(open: Open) -> Element {
 
             TagSelect {
                 open: tags_open,
+                asking,
                 selected: deck_tags,
                 catalog: deck_tags_catalog().unwrap_or_default(),
                 unchanged,
@@ -466,6 +470,7 @@ pub(crate) fn DeckForm(open: Open) -> Element {
 
             OracleTagSelect {
                 open: oracle_tags_open,
+                asking,
                 selected: oracle_tags,
                 unchanged,
                 on_toggle: move |slug: String| driver.dispatch(Action::ToggleTag { picker: TagPicker::OracleTags, slug }),
@@ -477,6 +482,7 @@ pub(crate) fn DeckForm(open: Open) -> Element {
 
             FormatSelect {
                 open: format_open,
+                asking,
                 selected_format,
                 unchanged,
                 on_tap: move |fmt| driver.dispatch(Action::TapFormat(fmt)),
@@ -484,6 +490,53 @@ pub(crate) fn DeckForm(open: Open) -> Element {
                 on_back: move |()| driver.dispatch(Action::BackPicker),
             }
 
+            PickerDiscardDialog {
+                model,
+                on_keep: move |()| driver.dispatch(Action::KeepPicker),
+                on_discard: move |()| driver.dispatch(Action::DiscardPicker),
+            }
+
             DeckFieldsHint { open: hint_open, hint: mode.hint() }
+    }
+}
+
+/// Asks before a picker's Back throws its picks away, while the model asks. Keep, a tap on the dim and the OS back gesture keep the picker open; Discard puts back what it opened on.
+#[component]
+fn PickerDiscardDialog(
+    model: Signal<State>,
+    on_keep: EventHandler<()>,
+    on_discard: EventHandler<()>,
+) -> Element {
+    let mut open = use_signal(|| false);
+    use_effect(move || {
+        if model.read().is_asking_discard() {
+            open.set(true);
+        }
+    });
+    use_effect(move || {
+        if !open() && model.peek().is_asking_discard() {
+            on_keep.call(());
+        }
+    });
+    let title = model
+        .read()
+        .picker()
+        .unwrap_or(Picker::DeckTags)
+        .discard_title()
+        .to_owned();
+    rsx! {
+        AlertDialog {
+            open,
+            title,
+            actions: vec![
+                DialogAction::Dismiss(pickers::KEEP.into()),
+                DialogAction::Confirm {
+                    label: pickers::DISCARD.into(),
+                    danger: true,
+                    on_confirm: Callback::new(move |()| on_discard.call(())),
+                },
+            ],
+            {pickers::DISCARD_BODY}
+        }
     }
 }

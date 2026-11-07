@@ -4,15 +4,16 @@
 //! bar's ×, the search, the definition bar, the chip grid, and Save as the
 //! checkmark in the dock at its bottom right.
 //!
-//! Each opens on a snapshot. The ×, a backdrop tap and Esc put the snapshot
-//! back and say so when something changed; the checkmark keeps the change
-//! and stays off while nothing has. `/` focuses the search.
+//! Each opens on a snapshot. The ×, a backdrop tap and Esc close quietly
+//! when nothing changed, and ask first when something did: Keep stays in
+//! the picker, Discard puts the snapshot back. The checkmark keeps the
+//! change and stays off while nothing has. `/` focuses the search.
 
 use components::hint::{ContentHintDialog, HintBody, guide_for_screen};
 use components::icons::CHECK;
 use components::{
-    Button, ButtonVariant, ClearWrap, DialogAction, DockAction, DrawerSheet, HintDialog,
-    TOAST_NORMAL, TOAST_QUICK, use_overlay_back_action,
+    AlertDialog, Button, ButtonVariant, ClearWrap, DialogAction, DockAction, DrawerSheet,
+    HintDialog, TOAST_NORMAL, TOAST_QUICK, use_overlay_back_action,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -24,8 +25,8 @@ use zwipe_core::domain::deck::{
 };
 use zwipe_ui::deck::form::{format_details, reseed_oracle_tags};
 use zwipe_ui::deck::pickers::{
-    DECK_TAG_BAR_EMPTY, FORMAT_BAR_EMPTY, ORACLE_TAG_BAR_EMPTY, ORACLE_TAG_NO_DESCRIPTION,
-    PICKER_BAR_HINT, Picker,
+    DECK_TAG_BAR_EMPTY, DISCARD, DISCARD_BODY, FORMAT_BAR_EMPTY, KEEP, ORACLE_TAG_BAR_EMPTY,
+    ORACLE_TAG_NO_DESCRIPTION, PICKER_BAR_HINT, Picker,
 };
 use zwipe_ui::filter::fields::same_set;
 use zwipe_ui::hint::HintTopic;
@@ -115,6 +116,28 @@ fn PickerSearch(id: &'static str, placeholder: &'static str, mut query: Signal<S
     }
 }
 
+/// Asks before a picker's ×, backdrop tap or Esc throws its picks away. Keep,
+/// a tap on the dim and Esc leave the picker open; Discard calls
+/// `on_discard`.
+#[component]
+fn DiscardDialog(open: Signal<bool>, picker: Picker, on_discard: Callback<()>) -> Element {
+    rsx! {
+        AlertDialog {
+            open,
+            title: picker.discard_title().to_owned(),
+            actions: vec![
+                DialogAction::Dismiss(KEEP.into()),
+                DialogAction::Confirm {
+                    label: DISCARD.into(),
+                    danger: true,
+                    on_confirm: on_discard,
+                },
+            ],
+            {DISCARD_BODY}
+        }
+    }
+}
+
 /// What the format picker opened on: the format and what its cascade
 /// clears, so `Back` can put them back.
 #[derive(Debug, Clone, PartialEq, Default)]
@@ -131,14 +154,15 @@ struct FormatSnapshot {
 /// it.
 #[component]
 pub fn FormatPicker(form: DeckForm) -> Element {
-    let toast = use_toast();
     let mut open = form.format_open;
     let mut snapshot = use_signal(FormatSnapshot::default);
     let query = use_signal(String::new);
     let mut focused: Signal<Option<Format>> = use_signal(|| None);
     let hint_open = use_signal(|| false);
+    let mut discard_open = use_signal(|| false);
     use_effect(move || {
         if open() {
+            focused.set(None);
             snapshot.set(FormatSnapshot {
                 format: *form.format.peek(),
                 commander: form.commander.card.peek().clone(),
@@ -148,14 +172,8 @@ pub fn FormatPicker(form: DeckForm) -> Element {
             });
         }
     });
-    let back = use_callback(move |(): ()| {
+    let revert = use_callback(move |(): ()| {
         let held = snapshot.peek().clone();
-        if *form.format.peek() != held.format {
-            toast.info(
-                "Format unchanged".to_string(),
-                ToastOptions::default().duration(TOAST_QUICK),
-            );
-        }
         let mut format = form.format;
         format.set(held.format);
         let (mut card, mut text) = (form.commander.card, form.commander.text);
@@ -166,7 +184,16 @@ pub fn FormatPicker(form: DeckForm) -> Element {
         text.set(held.spell_text);
         open.set(false);
     });
-    use_overlay_back_action(open.into(), back);
+    let back = use_callback(move |(): ()| {
+        if *form.format.peek() == snapshot.peek().format {
+            revert.call(());
+        } else {
+            discard_open.set(true);
+        }
+    });
+    // Off the stack while it asks, so Keep puts it back on top.
+    let listening = use_memo(move || open() && !discard_open());
+    use_overlay_back_action(listening.into(), back);
     let unchanged = (form.format)() == snapshot.read().format;
     let typed = query().to_lowercase();
     let results: Vec<Format> = Format::all()
@@ -231,6 +258,7 @@ pub fn FormatPicker(form: DeckForm) -> Element {
             content: Picker::Format.hint(),
             actions: guide_for_screen(HintTopic::Format),
         }
+        DiscardDialog { open: discard_open, picker: Picker::Format, on_discard: revert }
     }
 }
 
@@ -258,8 +286,10 @@ pub fn DeckTagPicker(form: DeckForm) -> Element {
     let query = use_signal(String::new);
     let mut focused: Signal<Option<DeckTagView>> = use_signal(|| None);
     let hint_open = use_signal(|| false);
+    let mut discard_open = use_signal(|| false);
     use_effect(move || {
         if open() {
+            focused.set(None);
             snapshot.set(tags.peek().clone());
         }
     });
@@ -281,18 +311,21 @@ pub fn DeckTagPicker(form: DeckForm) -> Element {
             );
         }
     };
-    let back = use_callback(move |(): ()| {
-        if !same_set(&tags.peek(), &snapshot.peek()) {
-            toast.info(
-                "Deck tags unchanged".to_string(),
-                ToastOptions::default().duration(TOAST_QUICK),
-            );
-        }
+    let revert = use_callback(move |(): ()| {
         tags.set(snapshot());
         open.set(false);
         reconcile();
     });
-    use_overlay_back_action(open.into(), back);
+    let back = use_callback(move |(): ()| {
+        if same_set(&tags.peek(), &snapshot.peek()) {
+            revert.call(());
+        } else {
+            discard_open.set(true);
+        }
+    });
+    // Off the stack while it asks, so Keep puts it back on top.
+    let listening = use_memo(move || open() && !discard_open());
+    use_overlay_back_action(listening.into(), back);
     let unchanged = same_set(&tags(), &snapshot());
     let typed = query().to_lowercase();
     let results: Vec<DeckTagView> = catalog()
@@ -353,6 +386,7 @@ pub fn DeckTagPicker(form: DeckForm) -> Element {
             content: Picker::DeckTags.hint(),
             actions: guide_for_screen(HintTopic::DeckTags),
         }
+        DiscardDialog { open: discard_open, picker: Picker::DeckTags, on_discard: revert }
     }
 }
 
@@ -408,22 +442,27 @@ pub fn OracleTagPicker(form: DeckForm) -> Element {
     let mut focused: Signal<Option<OracleTag>> = use_signal(|| None);
     let hint_open = use_signal(|| false);
     let mut dictionary_open = use_signal(|| false);
+    let mut discard_open = use_signal(|| false);
     use_effect(move || {
         if open() {
+            focused.set(None);
             snapshot.set(selected.peek().clone());
         }
     });
-    let back = use_callback(move |(): ()| {
-        if !same_set(&selected.peek(), &snapshot.peek()) {
-            toast.info(
-                "Oracle tags unchanged".to_string(),
-                ToastOptions::default().duration(TOAST_QUICK),
-            );
-        }
+    let revert = use_callback(move |(): ()| {
         selected.set(snapshot());
         open.set(false);
     });
-    use_overlay_back_action(open.into(), back);
+    let back = use_callback(move |(): ()| {
+        if same_set(&selected.peek(), &snapshot.peek()) {
+            revert.call(());
+        } else {
+            discard_open.set(true);
+        }
+    });
+    // Off the stack while it asks, so Keep puts it back on top.
+    let listening = use_memo(move || open() && !discard_open());
+    use_overlay_back_action(listening.into(), back);
     let adopt = move |slug: String| {
         let mut current = selected.write();
         if current.contains(&slug) {
@@ -540,6 +579,7 @@ pub fn OracleTagPicker(form: DeckForm) -> Element {
         if dictionary_open() {
             OracleTagDictionary { open: dictionary_open, on_use: adopt }
         }
+        DiscardDialog { open: discard_open, picker: Picker::OracleTags, on_discard: revert }
     }
 }
 

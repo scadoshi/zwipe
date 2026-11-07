@@ -20,10 +20,12 @@ use crate::inbound::components::held_open;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::screens::oracle_tag_dictionary::OracleTagDictionary;
 
-/// In-place oracle-tag picker, up while `open`. `selected` holds the deck's oracle tag slugs; a chip tap goes to `on_toggle`, the × to `on_clear` and the dictionary's Use to `on_adopt`. The dock's checkmark (`on_save`) stays off while `unchanged`; the header's back arrow (`on_back`) and the OS back gesture put back the tags it opened on.
+/// In-place oracle-tag picker, up while `open`. `selected` holds the deck's oracle tag slugs; a chip tap goes to `on_toggle`, the × to `on_clear` and the dictionary's Use to `on_adopt`. The dock's checkmark (`on_save`) stays off while `unchanged`; the header's back arrow and the OS back gesture go to `on_back`: the form puts back the tags it opened on, asking first (`asking`) when that throws a pick away.
 #[component]
 pub(crate) fn OracleTagSelect(
     open: ReadSignal<bool>,
+    /// Whether the form is asking before this picker's Back throws its picks away.
+    asking: ReadSignal<bool>,
     selected: Vec<String>,
     unchanged: bool,
     on_toggle: EventHandler<String>,
@@ -36,6 +38,12 @@ pub(crate) fn OracleTagSelect(
     let cache: CatalogCache = use_context();
     let mut query = use_signal(String::new);
     let mut focused = use_signal(|| Option::<OracleTag>::None);
+    // Each opening starts the bar on its hint, not the last chip tapped.
+    use_effect(move || {
+        if open() {
+            focused.set(None);
+        }
+    });
     let hint_open = use_signal(|| false);
     // Dictionary overlay, stacked above this picker; its Use button adopts a tag
     // and stays in place, toasting the outcome.
@@ -44,7 +52,9 @@ pub(crate) fn OracleTagSelect(
 
     // Back, and the OS back gesture, revert to the tags it opened on.
     let back = use_callback(move |(): ()| on_back.call(()));
-    use_overlay_back_action(open, back);
+    // Off the stack while the form asks about discarding, so Keep puts it back on top.
+    let listening = use_memo(move || open() && !asking());
+    use_overlay_back_action(listening.into(), back);
 
     // Read the shared app-wide oracle-tag catalog (prefetched at startup), warming
     // / revalidating it on open. One copy is shared with the dictionary + filter.
