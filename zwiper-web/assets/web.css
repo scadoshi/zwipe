@@ -2715,8 +2715,8 @@ body {
 /* ---- Dialogs ----
 
    On a wide window a dialog sizes to its content up to the page width, so
-   a long hint spreads out instead of scrolling in a phone-width column,
-   and a short confirmation stays compact. */
+   a short confirmation stays compact, and a hint takes one reading width
+   instead of a phone-width column. */
 @media (min-width: 900px) {
     .alert-dialog {
         width: max-content;
@@ -2729,6 +2729,12 @@ body {
 
     .alert-dialog-description {
         padding: 1.25rem var(--dialog-pad-x);
+    }
+
+    /* Every hint takes one width, whatever its longest line. */
+    .alert-dialog:has(.hint-body) {
+        width: min(40rem, calc(100% - 3rem));
+        min-width: 0;
     }
 }
 
