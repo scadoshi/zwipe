@@ -11,7 +11,8 @@
 )]
 
 use zwipe_core::http::paths::{
-    DECK_ROUTE, RECORD_ANONYMOUS_EVENT_ROUTE, RECORD_CRASH_ROUTE, RECORD_USAGE_ROUTE,
+    DECK_ROUTE, DELETE_USER_ROUTE, PUBLIC_METRICS_ROUTE, RECORD_ANONYMOUS_EVENT_ROUTE,
+    RECORD_CRASH_ROUTE, RECORD_USAGE_ROUTE,
 };
 mod common;
 
@@ -627,4 +628,60 @@ async fn terminal_platform_accepted_on_crash_and_usage(pool: sqlx::PgPool) {
         .await
         .unwrap();
     assert_eq!(platform, "terminal");
+}
+
+/// Sets `user_id`'s lifetime counters to `n` swipes in each direction, `n`
+/// searches and `n` decks.
+async fn set_counters(pool: &sqlx::PgPool, user_id: &str, n: i64) {
+    let user_id: Uuid = user_id.parse().unwrap();
+    sqlx::query(
+        "INSERT INTO user_lifetime_counters
+             (user_id, swipes_right, swipes_left, swipes_up, swipes_down, searches, decks_created)
+         VALUES ($1, $2, $2, $2, $2, $2, $2::INTEGER)
+         ON CONFLICT (user_id) DO UPDATE SET
+             swipes_right = $2, swipes_left = $2, swipes_up = $2, swipes_down = $2,
+             searches = $2, decks_created = $2::INTEGER",
+    )
+    .bind(user_id)
+    .bind(n)
+    .execute(pool)
+    .await
+    .unwrap();
+}
+
+#[sqlx::test]
+async fn public_totals_keep_a_deleted_accounts_activity(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (_, stays) = app.register("stays").await;
+    let (goner_token, goner) = app.register("goner").await;
+    app.verify_email(&goner).await;
+    set_counters(&pool, &stays, 3).await;
+    set_counters(&pool, &goner, 10).await;
+
+    let (status, before) = app.get(PUBLIC_METRICS_ROUTE, None).await;
+    assert_eq!(status, StatusCode::OK, "stats: {before}");
+    assert_eq!(before["cards_swiped"], 52, "4 x (3 + 10): {before}");
+    assert_eq!(before["searches"], 13, "{before}");
+    assert_eq!(before["decks_created"], 13, "{before}");
+
+    let (status, _) = app
+        .delete_json(
+            DELETE_USER_ROUTE,
+            json!({ "password": "TestPass123!" }),
+            Some(&goner_token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT, "delete account");
+    let goner_id: Uuid = goner.parse().unwrap();
+    let rows: i64 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM user_lifetime_counters WHERE user_id = $1")
+            .bind(goner_id)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    assert_eq!(rows, 0, "the per-user row leaves with the account");
+
+    let (status, after) = app.get(PUBLIC_METRICS_ROUTE, None).await;
+    assert_eq!(status, StatusCode::OK, "stats: {after}");
+    assert_eq!(after, before, "the totals hold after the delete");
 }
