@@ -22,6 +22,15 @@ pub fn GhostHint() -> Element {
     }
 }
 
+/// A chip whose label is `chars` wide: the chip's own box with a ghost bar
+/// for its label, so it keeps the chip's size. It does nothing.
+#[component]
+pub fn GhostChip(chars: u8) -> Element {
+    rsx! {
+        div { class: "chip web-ghost-chip", GhostText { chars } }
+    }
+}
+
 /// A [`CollapsibleSection`](super::section::CollapsibleSection): the arrow,
 /// a title `chars` wide and, when `hint`, a `?`, over the body, open when
 /// `open`.

@@ -1577,6 +1577,15 @@ body {
     vertical-align: middle;
 }
 
+.skeleton-bar.skeleton-chip.web-ghost-stepper {
+    width: 1.75rem;
+    height: 1.75rem;
+}
+
+.web-ghost-chip {
+    pointer-events: none;
+}
+
 .skeleton-bar.web-ghost-arrow {
     width: 0.6em;
     height: 0.6em;
