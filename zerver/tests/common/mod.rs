@@ -130,7 +130,7 @@ pub(crate) struct TestApp {
 
 impl TestApp {
     pub(crate) fn new(pool: PgPool) -> Self {
-        let db = Postgres { pool: pool.clone() };
+        let db = Postgres::with_pool(pool.clone());
         let emails = FakeEmailSender::default();
         let jwt_secret = JwtSecret::new(TEST_JWT_SECRET).unwrap();
 

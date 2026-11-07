@@ -96,7 +96,7 @@ async fn login_sets_a_locked_down_cookie_and_keeps_the_token_out_of_the_body(poo
 }
 
 #[sqlx::test]
-async fn refresh_rotates_the_cookie_and_a_spent_one_is_refused(pool: sqlx::PgPool) {
+async fn refresh_rotates_the_cookie_and_a_spent_one_is_refused_past_the_window(pool: sqlx::PgPool) {
     let app = TestApp::new(pool);
     let (_, _, first) = cookie_login(&app, "rotor").await;
 
@@ -114,7 +114,31 @@ async fn refresh_rotates_the_cookie_and_a_spent_one_is_refused(pool: sqlx::PgPoo
     let second = pair(&set_cookie(&headers));
     assert_ne!(first, second, "the cookie rotates");
 
-    // The spent cookie is refused, and the reply expires it.
+    // A second tab racing on the spent cookie, inside the reuse window,
+    // gets the same rotated cookie rather than a second one.
+    let (status, headers, body) = app
+        .send_raw(
+            Method::POST,
+            COOKIE_REFRESH_ROUTE,
+            Some(serde_json::json!({})),
+            None,
+            &[origin(), cookie(&first)],
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "the racing tab: {body}");
+    assert_eq!(
+        pair(&set_cookie(&headers)),
+        second,
+        "one cookie for both tabs"
+    );
+
+    // Past the window the spent cookie is refused, and the reply expires it.
+    sqlx::query(
+        "UPDATE refresh_tokens SET replaced_at = replaced_at - INTERVAL '1 minute' WHERE replaced_at IS NOT NULL",
+    )
+    .execute(&app.pool)
+    .await
+    .unwrap();
     let (status, headers, _) = app
         .send_raw(
             Method::POST,

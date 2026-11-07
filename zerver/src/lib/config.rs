@@ -59,6 +59,17 @@ const ACCESS_TOKEN_MINUTES_DEFAULT: i64 = 1440;
 /// the refresh family.
 const ACCESS_TOKEN_MINUTES_MAX: i64 = ACCESS_TOKEN_MINUTES_DEFAULT;
 
+/// Environment variable key for the refresh reuse window in whole seconds.
+const REFRESH_REUSE_SECONDS_KEY: &str = "REFRESH_REUSE_SECONDS";
+
+/// Default refresh reuse window: 30 seconds, room for two tabs or two calls
+/// racing on one refresh token.
+const REFRESH_REUSE_SECONDS_DEFAULT: i64 = 30;
+
+/// Longest refresh reuse window accepted. Past a few minutes it stops being a
+/// race and starts being a replay a thief could hide in.
+const REFRESH_REUSE_SECONDS_MAX: i64 = 300;
+
 /// Environment variable key for the public web base URL (email verify/reset links).
 const WEB_BASE_URL_KEY: &str = "WEB_BASE_URL";
 
@@ -118,6 +129,12 @@ pub struct Config {
     /// Shortening it = edit `.env` on the server + restart zerver; no deploy.
     pub access_token_lifetime: Duration,
 
+    /// How long after a refresh token is rotated a second presentation of it
+    /// gets the same successor instead of revoking the family (two tabs
+    /// racing). Defaults to 30 seconds; 0 turns it off. Edit `.env` +
+    /// restart; no deploy.
+    pub refresh_reuse_window: Duration,
+
     /// Public web base URL used to build email verify/reset links. Defaults to
     /// `https://zwipe.net`. A domain change = edit `.env` + restart; no deploy.
     pub web_base_url: String,
@@ -143,6 +160,7 @@ impl std::fmt::Debug for Config {
             .field("log_dir", &self.log_dir)
             .field("min_client_version", &self.min_client_version)
             .field("access_token_lifetime", &self.access_token_lifetime)
+            .field("refresh_reuse_window", &self.refresh_reuse_window)
             .field("web_base_url", &self.web_base_url)
             .field("support_email_address", &self.support_email_address)
             .finish()
@@ -189,6 +207,16 @@ impl Config {
             Err(_) => ACCESS_TOKEN_MINUTES_DEFAULT,
         };
         let access_token_lifetime = Duration::minutes(access_token_minutes);
+        let refresh_reuse_seconds = match std::env::var(REFRESH_REUSE_SECONDS_KEY) {
+            Ok(raw) => match raw.trim().parse::<i64>() {
+                Ok(seconds) if (0..=REFRESH_REUSE_SECONDS_MAX).contains(&seconds) => seconds,
+                _ => anyhow::bail!(
+                    "invalid {REFRESH_REUSE_SECONDS_KEY}: {raw:?} (expected a whole number of seconds from 0 to {REFRESH_REUSE_SECONDS_MAX})"
+                ),
+            },
+            Err(_) => REFRESH_REUSE_SECONDS_DEFAULT,
+        };
+        let refresh_reuse_window = Duration::seconds(refresh_reuse_seconds);
         let web_base_url = std::env::var(WEB_BASE_URL_KEY)
             .unwrap_or_else(|_| WEB_BASE_URL_DEFAULT.to_string())
             .trim_end_matches('/')
@@ -207,6 +235,7 @@ impl Config {
             log_dir,
             min_client_version,
             access_token_lifetime,
+            refresh_reuse_window,
             web_base_url,
             support_email_address,
         })

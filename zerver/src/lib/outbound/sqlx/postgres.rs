@@ -5,6 +5,8 @@
 
 use anyhow::Context;
 
+use crate::outbound::sqlx::auth::reuse::RefreshReuse;
+
 /// PostgreSQL error code for unique constraint violations (SQLSTATE 23505).
 const UNIQUE_CONSTRAINT_VIOLATION_CODE: &str = "23505";
 
@@ -122,9 +124,27 @@ impl PostgresPoolOptions {
 pub struct Postgres {
     /// The underlying `SQLx` connection pool.
     pub pool: sqlx::PgPool,
+    /// Recent refresh rotations' successors, for the reuse window.
+    pub refresh_reuse: RefreshReuse,
 }
 
 impl Postgres {
+    /// The adapter over an open `pool`, with the default refresh reuse window.
+    #[must_use]
+    pub fn with_pool(pool: sqlx::PgPool) -> Self {
+        Self {
+            pool,
+            refresh_reuse: RefreshReuse::default(),
+        }
+    }
+
+    /// The same adapter with a refresh reuse `window`; zero turns it off.
+    #[must_use]
+    pub fn with_refresh_reuse_window(mut self, window: chrono::Duration) -> Self {
+        self.refresh_reuse = RefreshReuse::new(window);
+        self
+    }
+
     /// Creates a new PostgreSQL connection with optimized pool settings.
     ///
     /// The initial connect retries for about a minute: a simultaneous
@@ -159,6 +179,6 @@ impl Postgres {
             }
         };
 
-        Ok(Self { pool })
+        Ok(Self::with_pool(pool))
     }
 }

@@ -1,4 +1,4 @@
-//! Repo-level Oracle Tags ingest tests. Constructs `Postgres { pool }` and calls
+//! Repo-level Oracle Tags ingest tests. Constructs `Postgres::with_pool(pool)` and calls
 //! `CardRepository::sync_oracle_tags` directly, asserting the catalog + card
 //! correlation land, that re-syncing fully replaces scryfall rows idempotently,
 //! and that non-scryfall (heuristic) correlations survive a re-sync.
@@ -42,7 +42,7 @@ async fn count(pool: &sqlx::PgPool, sql: &'static str) -> i64 {
 
 #[sqlx::test]
 async fn sync_populates_catalog_and_correlations(pool: sqlx::PgPool) {
-    let repo = Postgres { pool: pool.clone() };
+    let repo = Postgres::with_pool(pool.clone());
     let card_a = Uuid::from_u128(0xa);
     let card_b = Uuid::from_u128(0xb);
     // NOTE: `test-null-desc` is a synthetic slug, not a real Scryfall tag. It must
@@ -92,7 +92,7 @@ async fn sync_populates_catalog_and_correlations(pool: sqlx::PgPool) {
 
 #[sqlx::test]
 async fn re_sync_fully_replaces_scryfall_rows(pool: sqlx::PgPool) {
-    let repo = Postgres { pool: pool.clone() };
+    let repo = Postgres::with_pool(pool.clone());
     let card = Uuid::from_u128(0xc);
 
     // First sync: two oracle tags on the card.
@@ -139,7 +139,7 @@ async fn re_sync_fully_replaces_scryfall_rows(pool: sqlx::PgPool) {
 
 #[sqlx::test]
 async fn re_sync_preserves_heuristic_rows(pool: sqlx::PgPool) {
-    let repo = Postgres { pool: pool.clone() };
+    let repo = Postgres::with_pool(pool.clone());
     let card = Uuid::from_u128(0xd);
 
     // Seed a heuristic-sourced correlation (as the heuristic writer would).
@@ -191,7 +191,7 @@ async fn projection_aggregates_onto_card_profiles(pool: sqlx::PgPool) {
     .await
     .unwrap();
 
-    let repo = Postgres { pool: pool.clone() };
+    let repo = Postgres::with_pool(pool.clone());
     repo.refresh_card_oracle_tags().await.unwrap();
 
     let tags: serde_json::Value = sqlx::query_scalar(
@@ -323,7 +323,7 @@ async fn derive_card_categories_combines_otags_and_gaps(pool: sqlx::PgPool) {
     .await
     .unwrap();
 
-    let service = Service::new(Postgres { pool: pool.clone() });
+    let service = Service::new(Postgres::with_pool(pool.clone()));
     let (_otag_rows, merges) = service.derive_card_categories(100).await.unwrap();
     assert_eq!(merges, 1, "the one card should get a straggler merge");
 
@@ -365,7 +365,7 @@ async fn fetch_oracle_tags_returns_catalog_with_parent_slugs(pool: sqlx::PgPool)
     .await
     .unwrap();
 
-    let repo = Postgres { pool: pool.clone() };
+    let repo = Postgres::with_pool(pool.clone());
     let tags = repo.fetch_oracle_tags().await.unwrap();
 
     // ordered by slug: removal, then spot-removal
@@ -415,7 +415,7 @@ async fn grouping_buckets_tags_under_roles_and_other(pool: sqlx::PgPool) {
     .await
     .unwrap();
 
-    let repo = Postgres { pool: pool.clone() };
+    let repo = Postgres::with_pool(pool.clone());
     repo.refresh_oracle_tag_groups().await.unwrap();
 
     let (by_role, other): (serde_json::Value, serde_json::Value) = sqlx::query_as(
@@ -439,7 +439,7 @@ async fn projection_untagged_card_is_empty(pool: sqlx::PgPool) {
     let oracle_id = fixture.oracle_id().unwrap();
     seed_cards(&pool, &[fixture]).await;
 
-    let repo = Postgres { pool: pool.clone() };
+    let repo = Postgres::with_pool(pool.clone());
     repo.refresh_card_oracle_tags().await.unwrap();
 
     let tags: serde_json::Value = sqlx::query_scalar(
@@ -459,7 +459,7 @@ async fn projection_untagged_card_is_empty(pool: sqlx::PgPool) {
 /// + serve (in `fetch_oracle_tags`) end to end, the pipeline the dictionary reads.
 #[sqlx::test]
 async fn sync_overlays_authored_descriptions(pool: sqlx::PgPool) {
-    let repo = Postgres { pool: pool.clone() };
+    let repo = Postgres::with_pool(pool.clone());
     // A real authored entry: the overlay must REPLACE Scryfall's text with ours.
     let (authored_slug, our_desc) = ORACLE_TAG_DESCRIPTIONS[0];
     // A slug absent from the const: Scryfall's text must pass through untouched.
