@@ -593,7 +593,7 @@ pub(crate) static GUIDES: &[Guide] = &[
             },
             Block::H2("Add without swiping"),
             Block::P(
-                "Quick add searches commanders by name; tap a result to save it. The color pips and the Filter button narrow the list of saves.",
+                "Quick add searches commanders by name; tap a result to save it. The color pips and the [[funnel]] narrow the list of saves.",
             ),
             Block::Image {
                 file: "commander-maybeboard/04-maybeboard-hint.webp",

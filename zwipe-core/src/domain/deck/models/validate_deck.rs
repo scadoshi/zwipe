@@ -618,6 +618,29 @@ mod tests {
     }
 
     #[test]
+    fn an_invalid_commander_keeps_its_name_and_the_format_capitalized() {
+        use crate::test_utils::make_card;
+        let mut opt = make_card("Opt");
+        opt.scryfall_data.type_line = Some("Instant".to_string());
+        let mut profile = test_profile(Some(Format::Commander));
+        profile.commander_id = Some(opt.scryfall_data.id);
+        let zone = DeckCommandZone {
+            commander: Some(&opt),
+            ..empty_command_zone()
+        };
+        let lines: Vec<String> = validate_deck(&profile, &[], &zone)
+            .iter()
+            .map(ToString::to_string)
+            .collect();
+        assert!(
+            lines
+                .iter()
+                .any(|l| l == "Opt is not a valid commander for Commander"),
+            "{lines:?}"
+        );
+    }
+
+    #[test]
     fn card_count_at_the_i64_limit_still_warns() {
         let mut profile = test_profile(Some(Format::Commander));
         profile.card_count = i64::MAX;
