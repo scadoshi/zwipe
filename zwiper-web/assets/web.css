@@ -275,10 +275,11 @@ body {
         max-width: 30rem;
     }
 
-    /* The chip row stays inside the panel, under the form's column,
-       instead of spanning the window as the app's does. */
+    /* The chip row is the panel's footer: its rule runs to the panel's
+       edges, as the header's does, instead of spanning the window as the
+       app's does. */
     .web-form-panel > .form-links {
-        margin: 1rem 0 0;
+        margin: 1.5rem -1.5rem -1.5rem;
     }
 
     /* A public screen: the hero at the page's width, then the form in the
