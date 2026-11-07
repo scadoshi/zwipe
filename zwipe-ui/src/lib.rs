@@ -33,6 +33,7 @@ pub mod stores;
 pub mod support;
 pub mod telemetry;
 pub mod text;
+pub mod theme_sync;
 pub mod timing;
 pub mod toast;
 

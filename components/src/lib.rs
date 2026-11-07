@@ -3,7 +3,7 @@
 //! orangui is the generic kit: themes, panels, nav, charts, the entrance
 //! effects and the app and site kits. This crate re-exports, by name, the
 //! orangui items `zwiper` (the app) and `zite` (the site) use, so they keep one
-//! import path, and adds what needs `zwipe-core`: [`CardDetails`], [`CardRow`],
+//! import path, and adds what needs `zwipe-core`: [`CardDetails`], [`CardRow`] and the [`CardListFold`] that holds a list of them,
 //! [`CardRoleChips`], [`RoleTags`], [`OtagDef`], [`KeywordChips`],
 //! [`OracleText`], [`FlippableCardImage`], [`ChangelogFilters`] and
 //! [`ChangelogReleases`], the deck charts ([`BarChart`], [`DeckCharts`], [`ColorChart`], [`ManaCurve`], [`ManaFulfillment`],
@@ -43,6 +43,7 @@
 mod architecture;
 mod card_details;
 mod card_filter;
+mod card_list_fold;
 mod card_role_chips;
 mod card_row;
 mod changelog;
@@ -59,6 +60,7 @@ mod home_colors;
 mod home_decks;
 mod hover_stack;
 mod keyword_chips;
+mod load_failed;
 mod menu_section;
 mod oracle_text;
 mod role_tags;
@@ -68,6 +70,7 @@ mod theme;
 pub use architecture::ZwipeArchitecture;
 pub use card_details::{CardDetails, CardDetailsPanel, CardDetailsPanelSkeleton, card_face_count};
 pub use card_filter::{CardFilterPanel, DictionarySlot};
+pub use card_list_fold::CardListFold;
 pub use card_role_chips::CardRoleChips;
 pub use card_row::CardRow;
 pub use changelog::{
@@ -91,19 +94,21 @@ pub use home_colors::{ColorsEmpty, HomeColors};
 pub use home_decks::HomeDecks;
 pub use hover_stack::{HoverStack, HoverStackHost, use_hover_stack};
 pub use keyword_chips::{KeywordChips, KeywordReminders};
+pub use load_failed::{LoadFailed, RETRY};
 pub use menu_section::MenuSection;
 pub use oracle_text::OracleText;
 pub use orangui::{
-    ALLOWED_THEMES, APP_CSS, ActionBar, ActionButton, ActionDock, AlertDialog, BOOT_BG, BOOT_HEAD,
-    BRAND_RESET_JS, Banner, BootReveal, BottomSheet, Button, ButtonVariant, COMPONENTS_CSS,
-    ChartTip, Chip, ClearWrap, DarkModeButton, Decode, DialogAction, DialogHostView, DockAction,
-    DockFilter, DockPlace, GalleryFooter, GalleryFrame, GridCells, HEAT_CELL, HEAT_ROWS, HeatCell,
-    HeatGrid, HeatHit, HeatReadout, HintBullet, HintBullets, HintDialog, HintKey, HintLine,
-    InfoButton, KEYBOARD_INSET_JS, ModeIcon, NAV_GLIDE_JS, NavBar, NavCtaIcon, PageHeader,
-    PageMeta, PaletteIcon, Panel, PasswordInput, RETIRED_THEMES, REVEAL_JS, Replay, SCROLL_FADE_JS,
-    SITE_CSS, SheetFrame, SheetWide, SiteMeta, Splash, SplashGate, StatsStrip, THEME_GROUPS,
-    THEMES_CSS, TOAST_LONG, TOAST_NORMAL, TOAST_QUICK, TextInput, ThemeConfig, ThemePicker,
-    ThemeSheet, heat_span, icons, peak_indices, status_uses, use_dialog_host, use_heat_pick,
+    ALLOWED_THEMES, APP_CSS, ActionBar, ActionButton, ActionDock, AlertDialog, AppLifecycle,
+    AppPhase, BOOT_BG, BOOT_HEAD, BRAND_RESET_JS, Banner, BootReveal, BottomSheet, Button,
+    ButtonVariant, COMPONENTS_CSS, ChartTip, Chip, ClearWrap, DarkModeButton, Decode, DialogAction,
+    DialogHostView, DockAction, DockFilter, DockPlace, GalleryFooter, GalleryFrame, GridCells,
+    HEAT_CELL, HEAT_ROWS, HeatCell, HeatGrid, HeatHit, HeatReadout, HintBullet, HintBullets,
+    HintDialog, HintKey, HintLine, InfoButton, KEYBOARD_INSET_JS, ModeIcon, NAV_GLIDE_JS, NavBar,
+    NavCtaIcon, PageHeader, PageMeta, PaletteIcon, Panel, PasswordInput, RETIRED_THEMES, REVEAL_JS,
+    Replay, SCROLL_FADE_JS, SITE_CSS, SheetFrame, SheetWide, SiteMeta, Splash, SplashGate,
+    StatsStrip, THEME_GROUPS, THEMES_CSS, TOAST_LONG, TOAST_NORMAL, TOAST_QUICK, TextInput,
+    ThemeConfig, ThemePicker, ThemeSheet, heat_span, icons, peak_indices, status_uses,
+    use_app_lifecycle, use_app_lifecycle_root, use_dialog_host, use_heat_pick, use_on_resume,
     use_os_back, use_overlay_back, use_overlay_back_action, use_overlay_back_stack,
     use_persisted_theme, use_theme_follow, use_theme_wipe, with_separators,
 };
@@ -138,3 +143,10 @@ pub const SCREENS_CSS: &str = concat!(
 /// draws the filter loads it after [`SCREENS_CSS`] (zite, which has none,
 /// after `SITE_CSS`) and before its own stylesheet.
 pub const FILTER_CSS: &str = include_str!("../assets/filter.css");
+
+/// The on-screen keyboard's helper for the apps and the web's phone layout:
+/// it keeps the focused field in view above the keyboard and marks the root
+/// `keyboard-up` while the keyboard shows, which hides the floating docks.
+/// Inline it once with `document::Script`, beside orangui's
+/// `KEYBOARD_INSET_JS`.
+pub const KEYBOARD_JS: &str = include_str!("../assets/keyboard.js");

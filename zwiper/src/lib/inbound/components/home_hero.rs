@@ -5,14 +5,16 @@
 
 use std::time::{Duration, Instant};
 
+use chrono::{DateTime, Utc};
 use components::{Decode, Panel, StatsStrip};
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
+use zwipe_client::call::Dated;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::logo;
 use zwipe_core::http::contracts::metrics::{HttpLifetimeCounters, HttpPublicMetrics};
-use zwipe_ui::home::{Figures, Scope};
+use zwipe_ui::home::{CountsTag, Figures, Scope};
 use zwipe_ui::screens::home;
 
 use crate::inbound::components::auth::authed::use_authed;
@@ -34,6 +36,9 @@ pub struct CachedCounts {
     /// When it answered this launch; `None` for a copy restored from the last
     /// launch, which serves until a fetch replaces it.
     pub fetched_at: Option<Instant>,
+    /// When the server's copy was made, which an edge cache can put well
+    /// before `fetched_at`; `None` when it did not say.
+    pub made_at: Option<DateTime<Utc>>,
 }
 
 impl CachedCounts {
@@ -42,6 +47,7 @@ impl CachedCounts {
         HttpPublicMetrics::infallible_load().map(|metrics| Self {
             metrics,
             fetched_at: None,
+            made_at: None,
         })
     }
 
@@ -49,6 +55,13 @@ impl CachedCounts {
     pub fn is_stale(&self) -> bool {
         self.fetched_at
             .is_none_or(|fetched_at| fetched_at.elapsed() >= COUNTS_FRESH)
+    }
+
+    /// Marks the copy stale, so the next screen asks again.
+    pub fn expire(&mut self) {
+        if let Some(fetched_at) = self.fetched_at.as_mut() {
+            *fetched_at = backdated(*fetched_at);
+        }
     }
 }
 
@@ -70,12 +83,25 @@ impl CachedMyCounts {
     pub fn is_stale(&self) -> bool {
         self.fetched_at.elapsed() >= COUNTS_FRESH
     }
+
+    /// Marks the copy stale, so the next screen asks again.
+    pub fn expire(&mut self) {
+        self.fetched_at = backdated(self.fetched_at);
+    }
+}
+
+/// `fetched_at` moved back by `COUNTS_FRESH`, so it reads as stale. The
+/// monotonic clock stops while the device sleeps, so a copy fetched before a
+/// night asleep still reads as a minute old without this.
+fn backdated(fetched_at: Instant) -> Instant {
+    fetched_at.checked_sub(COUNTS_FRESH).unwrap_or(fetched_at)
 }
 
 /// Everyone's counters from the cache above the router, refetched when
-/// stale, with whether the copy came from this launch. A stale copy keeps
-/// showing while the refetch is out and is only replaced on success.
-fn use_public_counts() -> (Option<HttpPublicMetrics>, bool) {
+/// stale, with their tag (`Live`, or "as of" an edge-cached copy's time)
+/// once the copy came from this launch. A stale copy keeps showing while the
+/// refetch is out and is only replaced on success.
+fn use_public_counts() -> (Option<HttpPublicMetrics>, Option<String>) {
     let client: Signal<ZwipeClient> = use_context();
     let mut cache: Signal<Option<CachedCounts>> = use_context();
     use_effect(move || {
@@ -83,12 +109,16 @@ fn use_public_counts() -> (Option<HttpPublicMetrics>, bool) {
             return;
         }
         spawn(async move {
-            match client().public_metrics().await {
-                Ok(metrics) => {
+            match client().public_metrics_dated().await {
+                Ok(Dated {
+                    value: metrics,
+                    made_at,
+                }) => {
                     metrics.infallible_save();
                     cache.set(Some(CachedCounts {
                         metrics,
                         fetched_at: Some(Instant::now()),
+                        made_at,
                     }));
                 }
                 Err(e) => tracing::warn!("public counters not refreshed: {e}"),
@@ -97,9 +127,12 @@ fn use_public_counts() -> (Option<HttpPublicMetrics>, bool) {
     });
     let value = cache.read();
     let metrics = value.as_ref().map(|c| c.metrics.clone());
-    // "Live" only for an answer from this launch, not a restored copy.
-    let live = value.as_ref().is_some_and(|c| c.fetched_at.is_some());
-    (metrics, live)
+    // A tag only for an answer from this launch, not a restored copy.
+    let tag = value
+        .as_ref()
+        .filter(|c| c.fetched_at.is_some())
+        .map(|c| CountsTag::at(c.made_at, Utc::now()).label());
+    (metrics, tag)
 }
 
 /// The signed-in user's counters from the cache above the router, fetched
@@ -189,14 +222,14 @@ fn my_figures(metrics: Option<&HttpLifetimeCounters>) -> Vec<(Option<u64>, &'sta
 /// logged: these numbers are decoration, not something the user asked for.
 #[component]
 pub fn HomeHero() -> Element {
-    let (metrics, live) = use_public_counts();
+    let (metrics, tag) = use_public_counts();
     rsx! {
         HeroPanel {
             figures: public_figures(metrics.as_ref()),
             roll_key: "all",
             source: rsx! {
-                if live {
-                    span { class: "stat-chip", "Live" }
+                if let Some(tag) = tag {
+                    span { key: "{tag}", class: "stat-chip", "{tag}" }
                 }
                 span { class: "stat-chip", "{CountScope::AllUsers.label()}" }
             },
@@ -213,7 +246,8 @@ pub fn HomeHero() -> Element {
 #[component]
 pub fn HomeHeroScoped(
     figures: Figures,
-    live: bool,
+    /// The tag before the scope button: `Live`, "as of" a time, or nothing.
+    tag: Option<String>,
     scope: Scope,
     ontoggle: EventHandler,
     onactivity: EventHandler,
@@ -226,8 +260,8 @@ pub fn HomeHeroScoped(
             figures,
             roll_key: label,
             source: rsx! {
-                if live {
-                    span { class: "stat-chip", "Live" }
+                if let Some(tag) = tag {
+                    span { key: "{tag}", class: "stat-chip", "{tag}" }
                 }
                 button {
                     class: "card-action-btn hero-scope",

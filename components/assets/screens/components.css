@@ -194,6 +194,17 @@
     word-break: break-word;
 }
 
+/* The pips, the count and the chips on their own line under the art and the
+   name, so every row has the same shape whatever the name's length. */
+.deck-row-chips {
+    flex: 1 0 100%;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    min-width: 0;
+}
+
 /* Tag chips inside a deck-detail info row wrap instead of forcing one line. */
 .info-row-tags {
     display: flex;

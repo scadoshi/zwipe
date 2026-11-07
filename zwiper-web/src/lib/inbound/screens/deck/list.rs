@@ -8,7 +8,7 @@
 use std::collections::HashSet;
 
 use components::icons::{DockIcon, PLUS};
-use components::{Chip, TOAST_LONG};
+use components::{Chip, LoadFailed, TOAST_LONG};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::{ClientError, ZwipeClient};
@@ -18,6 +18,7 @@ use zwipe_core::domain::deck::DeckProfile;
 use zwipe_core::domain::deck::deck_tag::deck_tag_label;
 use zwipe_ui::deck::list::{self, GroupBy, Show};
 use zwipe_ui::deck::{card_count, cards_label, command_zone, count_fits};
+use zwipe_ui::screens::deck_list;
 
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::ghost::{GhostChipRow, GhostShowRow};
@@ -65,13 +66,14 @@ pub fn DeckList() -> Element {
         });
     });
 
-    let decks: Resource<Result<Vec<DeckProfile>, ClientError>> = use_resource(move || async move {
-        authed
-            .try_run("load_decks", |c, s| async move {
-                c.fetch_deck_profiles(&s).await
-            })
-            .await
-    });
+    let mut decks: Resource<Result<Vec<DeckProfile>, ClientError>> =
+        use_resource(move || async move {
+            authed
+                .try_run("load_decks", |c, s| async move {
+                    c.fetch_deck_profiles(&s).await
+                })
+                .await
+        });
 
     // The hint teaches the chip rows, which an empty list hides, so it waits
     // for a list with decks.
@@ -197,9 +199,7 @@ pub fn DeckList() -> Element {
                         }
                     }
                     if errored {
-                        div { class: "message-empty",
-                            span { class: "chip-note", "Could not load decks" }
-                        }
+                        LoadFailed { message: deck_list::LOAD_FAILED, on_retry: move |()| decks.restart() }
                     } else if loading {
                         DeckListSkeleton {}
                     } else if !show_rows {
@@ -316,43 +316,46 @@ fn DeckRow(profile: DeckProfile) -> Element {
                 h3 { class: "font-light text-base tracking-wide deck-list-name",
                     "{profile.name}"
                 }
-                if !pips.is_empty() {
-                    span { class: "identity-pips",
-                        for color in pips {
-                            i {
-                                key: "{color.to_short_name()}",
-                                class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
+                // The pips, the count and the chips take the line under the name.
+                div { class: "deck-row-chips",
+                    if !pips.is_empty() {
+                        span { class: "identity-pips",
+                            for color in pips {
+                                i {
+                                    key: "{color.to_short_name()}",
+                                    class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
+                                }
                             }
                         }
                     }
-                }
-                // "1 card" for one, "{count} cards" otherwise.
-                span {
-                    class: if count_bad { "stat-chip stat-chip-warning" } else { "stat-chip" },
-                    {cards_label(count)}
-                }
-                if let Some(format) = profile.format {
-                    span { class: "stat-chip stat-chip-p3", "{format.display_name()}" }
-                }
-                if let Some(power) = profile.power_level {
-                    span { class: "stat-chip stat-chip-p5", "{power.display_name()}" }
-                }
-                for name in [
-                    profile.commander_name.clone(),
-                    profile.partner_commander_name.clone(),
-                    profile.background_name.clone(),
-                    profile.signature_spell_name.clone(),
-                ]
-                    .into_iter()
-                    .flatten()
-                {
-                    span { class: "stat-chip stat-chip-p3", "{name}" }
-                }
-                for tag in profile.tags.iter() {
-                    span { key: "{tag}", class: "stat-chip stat-chip-muted", "{deck_tag_label(tag)}" }
-                }
-                for tag in profile.other_tags.iter() {
-                    span { key: "{tag}", class: "stat-chip stat-chip-p5", "{tag.display_name()}" }
+                    // "1 card" for one, "{count} cards" otherwise.
+                    span {
+                        class: if count_bad { "stat-chip stat-chip-warning" } else { "stat-chip" },
+                        {cards_label(count)}
+                    }
+                    if let Some(format) = profile.format {
+                        span { class: "stat-chip stat-chip-p3", "{format.display_name()}" }
+                    }
+                    if let Some(power) = profile.power_level {
+                        span { class: "stat-chip stat-chip-p5", "{power.display_name()}" }
+                    }
+                    for name in [
+                        profile.commander_name.clone(),
+                        profile.partner_commander_name.clone(),
+                        profile.background_name.clone(),
+                        profile.signature_spell_name.clone(),
+                    ]
+                        .into_iter()
+                        .flatten()
+                    {
+                        span { class: "stat-chip stat-chip-p3", "{name}" }
+                    }
+                    for tag in profile.tags.iter() {
+                        span { key: "{tag}", class: "stat-chip stat-chip-muted", "{deck_tag_label(tag)}" }
+                    }
+                    for tag in profile.other_tags.iter() {
+                        span { key: "{tag}", class: "stat-chip stat-chip-p5", "{tag.display_name()}" }
+                    }
                 }
             }
         }

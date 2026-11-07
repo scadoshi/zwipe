@@ -6,8 +6,8 @@
 //! `zwipe_ui::activity`; this module draws them.
 
 use components::{
-    BarChart, BarOrientation, ChartTip, Chip, HEAT_CELL, HEAT_ROWS, HeatCell, HeatGrid, HeatHit,
-    HeatReadout, LabelCase, OtagDef, RoleTags, use_heat_pick,
+    BarChart, BarOrientation, CardListFold, ChartTip, Chip, HEAT_CELL, HEAT_ROWS, HeatCell,
+    HeatGrid, HeatHit, HeatReadout, LabelCase, OtagDef, RoleTags, use_heat_pick,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -393,11 +393,11 @@ pub(crate) fn HardPassesPanel(
     on_printing: EventHandler<Card>,
 ) -> Element {
     rsx! {
-        div { class: "maybeboard-list card-group row-enter",
-            div { class: "card-group-header card-group-header-with-hint",
-                span { {model::PASSES_TITLE} }
+        CardListFold {
+            title: model::PASSES_TITLE,
+            actions: rsx! {
                 InfoButton { topic: HintTopic::HardPasses }
-            }
+            },
             if let Some(line) = line {
                 div { class: "activity-total activity-total-group",
                     span { class: "chip-note", "{line}" }

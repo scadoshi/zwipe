@@ -78,7 +78,7 @@ pub(crate) fn DeckFields(
                 }
 
                 // Power level (single-select WotC bracket; Not set = none)
-                div { style: "margin-top: 1rem;",
+                div {
                     div { class: "label-row",
                         label { class: "label", {model::POWER_LEVEL} }
                         InfoButton { topic: HintTopic::PowerLevel }
@@ -230,7 +230,7 @@ pub(crate) fn DeckFields(
                 }
 
                 // Oracle tags (granular strategy; deck tags seed these)
-                div { style: "margin-top: 1rem;",
+                div {
                     div { class: "label-row",
                         label { class: "label", {model::ORACLE_TAGS} }
                         InfoButton { topic: HintTopic::OracleTags }
@@ -275,7 +275,7 @@ pub(crate) fn DeckFields(
                 }
 
                 // Other tags (non-gameplay labels; multi-select)
-                div { style: "margin-top: 1rem;",
+                div {
                     div { class: "label-row",
                         label { class: "label", {model::OTHER_TAGS} }
                         InfoButton { topic: HintTopic::OtherTags }

@@ -60,6 +60,8 @@ pub fn use_overlay_nav(
     // The page's own title, held while the overlay has the nav.
     let held = use_hook(|| Rc::new(RefCell::new(None::<Option<PageTitle>>)));
     let on_drop = Rc::clone(&held);
+    let ours = title.clone();
+    let mine = title.clone();
     use_effect(move || {
         let Some(mut page) = page else {
             return;
@@ -73,15 +75,38 @@ pub fn use_overlay_nav(
                     on_back: Some(on_back),
                 }));
             }
-        } else if let Some(previous) = held.borrow_mut().take() {
+        } else if let Some(previous) = held.borrow_mut().take()
+            && shows_overlay(page.peek().as_ref(), &ours)
+        {
             page.set(previous);
         }
     });
     use_drop(move || {
-        if let (Some(mut page), Some(previous)) = (page, on_drop.borrow_mut().take()) {
+        if let (Some(mut page), Some(previous)) = (page, on_drop.borrow_mut().take())
+            && shows_overlay(page.peek().as_ref(), &mine)
+        {
             page.set(previous);
         }
     });
+}
+
+/// Whether the nav still shows the overlay titled `title`, so closing it
+/// may put the page's own title back. When the page itself is going (a
+/// browser back from under the overlay) its frame has already cleared or
+/// replaced the title, and the held one carries that page's callbacks,
+/// which are dropping with it: putting it back would hand the nav dead
+/// callbacks.
+fn shows_overlay(current: Option<&PageTitle>, title: &str) -> bool {
+    is_overlay_title(
+        current.map(|p| (p.title.as_str(), p.on_back.is_some())),
+        title,
+    )
+}
+
+/// [`shows_overlay`] on the nav's `(title, has a back override)`: an
+/// overlay's title is the one with a back override.
+fn is_overlay_title(current: Option<(&str, bool)>, title: &str) -> bool {
+    current.is_some_and(|(shown, overlay)| overlay && shown == title)
 }
 
 /// The `?` a wide window's nav carries for the screen on view, if any.
@@ -286,5 +311,34 @@ fn BackButton(
                 }
             },
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn closing_an_overlay_restores_the_page_title_only_while_the_nav_shows_it() {
+        assert!(is_overlay_title(
+            Some(("Swipe select", true)),
+            "Swipe select"
+        ));
+    }
+
+    #[test]
+    fn a_page_going_from_under_the_overlay_keeps_its_title_out() {
+        // The page's frame cleared the title as it went.
+        assert!(!is_overlay_title(None, "Swipe select"));
+        // Or the next page's frame already put its own up.
+        assert!(!is_overlay_title(
+            Some(("Goblin Horde", false)),
+            "Swipe select"
+        ));
+        // Another overlay with another title has the nav.
+        assert!(!is_overlay_title(
+            Some(("Suggested commanders", true)),
+            "Swipe select"
+        ));
     }
 }

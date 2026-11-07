@@ -235,6 +235,10 @@ Overnight 2026-11-07, Scotty: "anything you're 90% confident you can fix, just f
 160. **The portfolio's theme change is still two sweeps.** [S125] The drawer's layer wipes from its own left edge at the same time as the page; one sweep across everything, drawer included, on a wide window.
 Also: P2-5 (two toasts when Remove's stack runs out) folds into 145's "Nothing left to remove". Watching, not fixing: P2-4 (theme lost once after a force-stop on GSM) and Surfer's page-wide selection highlight after the Synergy bolt (p7-11).
 
+161. **Browser back with Swipe select open crashes the web app.** Edit deck > Commander > Swipe, then browser back: the wasm traps on 'unreachable' and the app is dead until a reload (Surfer Part 8, twice). Plain back from Edit is fine. Likely the leave guard's history wrapper (122) against swipe select's overlay nav (116). Priority.
+162. **The phone Printings sheet overflows a 725px-tall window.** The select button sits 115px below the fold; the cover flow sizes to the viewport so the whole sheet fits.
+For Scotty: the picker's × discards picks that previewed live in the form (intended cancel, or should × keep them?); a toast covering the filter's Oracle tags row at 720.
+
 Scotty on Droid's open items: D3 toasts "Nothing left to remove" (no way back needed; into 145); D29 leave the Art toggle; D32 a follow-up in todo; D36 fine as an outline; D37 hero chips in the logged-in order everywhere (into 147); D38 list rows wrap their chips as the rendered layout intends, consistently (into 146). D28: card-row panels (Suggested commanders, Staples, Most skipped) keep their pink title color, but take the other panel titles' size, weight, letter spacing and inset (into 147).
 
 Skipped with Scotty: S44 (the About diagram scrolls under its arrows; fine as is).

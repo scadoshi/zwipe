@@ -13,16 +13,17 @@ pub mod hero;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use chrono::{DateTime, Utc};
-use components::{HomeColors, HomeDecks, ThemeConfig};
+use components::{HomeColors, HomeDecks, LoadFailed, ThemeConfig};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use dioxus_primitives::toast::{Toasts, use_toast};
 use zwipe_client::ZwipeClient;
+use zwipe_client::call::Dated;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::user::models::settings::PipStyle;
 use zwipe_ui::generation::Ticket;
-use zwipe_ui::home::Figures;
+use zwipe_ui::home::{CountsTag, Figures};
 use zwipe_ui::screens::home::{
     self, Action, Age, Cached, CachedFigures, DeckTile, Destination, Effect, Flavor, FlavorCard,
     State,
@@ -74,6 +75,7 @@ impl Caches {
             } else {
                 Age::Fresh
             },
+            made_at: c.made_at,
         });
         let mine = self
             .my_counts
@@ -87,6 +89,7 @@ impl Caches {
                 } else {
                     Age::Stale
                 },
+                made_at: None,
             });
         let play_style = self
             .play_style
@@ -223,12 +226,19 @@ impl Driver {
         let mut counts = self.caches.counts;
         spawn(async move {
             let http = client.peek().clone();
-            match http.public_metrics().await {
-                Ok(metrics) => {
+            match http.public_metrics_dated().await {
+                Ok(Dated {
+                    value: metrics,
+                    made_at,
+                }) => {
                     CountsStore::browser().save(&metrics);
                     let figures = Figures::from(&metrics);
-                    counts.set(Some(CachedCounts::fetched(metrics, Utc::now())));
-                    self.dispatch(Action::CountsLoaded { ticket, figures });
+                    counts.set(Some(CachedCounts::fetched(metrics, Utc::now(), made_at)));
+                    self.dispatch(Action::CountsLoaded {
+                        ticket,
+                        figures,
+                        made_at,
+                    });
                 }
                 Err(e) => tracing::warn!("public counters not refreshed: {e}"),
             }
@@ -406,7 +416,7 @@ pub fn Home() -> Element {
 
     let state = driver.model.read();
     let figures = state.figures();
-    let live = state.live();
+    let tag = state.counts_tag(Utc::now()).map(CountsTag::label);
     let scope = state.scope();
     let decks = state.decks();
     let play_style = state.play_style();
@@ -421,7 +431,7 @@ pub fn Home() -> Element {
                     div { class: "web-hero",
                         HomeHeroScoped {
                             figures,
-                            live,
+                            tag,
                             scope,
                             ontoggle: move |()| {
                                 let mine_fresh = caches.mine_fresh(session.peek().as_ref(), Utc::now());
@@ -438,6 +448,7 @@ pub fn Home() -> Element {
                                 onopen: move |()| driver.dispatch(Action::Decks),
                                 ondeck: move |id| driver.dispatch(Action::OpenDeck(id)),
                                 oncreate: move |()| driver.dispatch(Action::CreateDeck),
+                                onretry: move |()| driver.dispatch(Action::RetryDecks),
                             }
                         }
                         div { class: "web-column",
@@ -445,6 +456,7 @@ pub fn Home() -> Element {
                                 play_style,
                                 onplaystyle: move |()| driver.dispatch(Action::Playstyle),
                                 oninfo: move |()| hint.set(Some(HintTopic::HomeColors)),
+                                onretry: move |()| driver.dispatch(Action::RetryPlayStyle),
                             }
                         }
                     }
@@ -452,6 +464,7 @@ pub fn Home() -> Element {
                         flavor,
                         card,
                         on_image: move |sd: ScryfallData| preview.set(Some((sd, 0))),
+                        on_retry: move |()| driver.dispatch(Action::RetryFlavor),
                     }
                 }
             }
@@ -471,6 +484,7 @@ pub(crate) fn FlavorPanel(
     flavor: Flavor,
     card: Option<ScryfallData>,
     on_image: EventHandler<ScryfallData>,
+    #[props(default)] on_retry: Option<EventHandler>,
 ) -> Element {
     let body = match (flavor, card) {
         (Flavor::Quote(quote), Some(sd)) => {
@@ -497,6 +511,14 @@ pub(crate) fn FlavorPanel(
             }
         }
         (Flavor::Blank | Flavor::Quote(_), _) => rsx! {},
+        (Flavor::Failed, _) => rsx! {
+            div { class: "settings-list-header", style: "justify-content: center;",
+                span { class: "settings-list-title", {home::FEATURED_FLAVOR} }
+            }
+            if let Some(on_retry) = on_retry {
+                LoadFailed { message: home::FLAVOR_FAILED, on_retry, class: "home-flavor-line" }
+            }
+        },
         (Flavor::Loading, _) => rsx! {
             div { class: "settings-list-header", style: "justify-content: center;",
                 span { class: "settings-list-title", GhostText { chars: 15 } }

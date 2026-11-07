@@ -132,7 +132,7 @@ pub(crate) fn CmcFilter() -> Element {
 
         match cmc_mode() {
             FilterMode::Exact => rsx! {
-                input { class: "input input-compact input-narrow",
+                input { class: "input input-compact input-narrow input-number-single",
                     id: "cmc-equals",
                     placeholder: "Mana value",
                     value: cmc_equals_string(),

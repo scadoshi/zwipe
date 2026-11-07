@@ -62,6 +62,11 @@ pub const UPCOMING: &[Release] = &[Release {
         "Card details while swiping float in from the right as one card, clear of the header and the dock",
         "Printings show as a cover flow, the neighbors at the sides, stepped by the arrows or a swipe",
         "Loading placeholders match the screen they stand in for, with every chip drawn empty",
+        "A deck with one card type draws its Types chart as a single bar under the type's full name",
+        "Every list of cards folds from its header, the Commander group and Suggested commanders included",
+        "Coming back to the app refreshes your session, Home's figures and your settings",
+        "Your latest Light or Dark choice stays put after the app opens, with no flip back",
+        "The counters on Home and the sign-in screen read Live only while their copy is under five minutes old, otherwise as of its time",
     ],
 }];
 

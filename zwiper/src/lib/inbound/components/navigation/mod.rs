@@ -3,6 +3,9 @@
 /// OS back-intent bridge (edge swipe / hardware back → router `go_back`).
 pub mod back_handler;
 
+/// Asks before a screen with unsaved changes is left.
+pub mod leave_guard;
+
 /// The main menu behind the header's hamburger.
 pub mod menu;
 

@@ -6,6 +6,7 @@ use dioxus::prelude::*;
 use orangui::{Button, ButtonVariant, InfoButton};
 use zwipe_ui::screens::home::{self, PlayStyle};
 
+use crate::LoadFailed;
 use crate::color_bars::{ColorBars, ColorBarsGhost};
 
 /// The panel between Decks and the featured flavor card, in the Decks
@@ -19,12 +20,14 @@ use crate::color_bars::{ColorBars, ColorBarsGhost};
 /// Home's model decides which.
 ///
 /// `onplaystyle` is the Playstyle chip and `oninfo` the header's "?", which
-/// the host answers with its Colors hint.
+/// the host answers with its Colors hint. With `onretry` the failed line
+/// offers Retry.
 #[component]
 pub fn HomeColors(
     play_style: PlayStyle,
     onplaystyle: EventHandler,
     oninfo: EventHandler,
+    #[props(default)] onretry: Option<EventHandler>,
 ) -> Element {
     rsx! {
         div { class: "container-sm flex-col home-flavor home-colors content-enter-delayed",
@@ -39,7 +42,11 @@ pub fn HomeColors(
                 },
                 PlayStyle::Failed => rsx! {
                     PanelHeader { onplaystyle, oninfo }
-                    div { class: "message-empty home-colors-line", {home::PLAY_STYLE_FAILED} }
+                    if let Some(onretry) = onretry {
+                        LoadFailed { message: home::PLAY_STYLE_FAILED, on_retry: onretry, class: "home-colors-line" }
+                    } else {
+                        div { class: "message-empty home-colors-line", {home::PLAY_STYLE_FAILED} }
+                    }
                 },
                 PlayStyle::Loading => rsx! {
                     // Everything ghosts until the summary lands: the title

@@ -3,6 +3,8 @@
 //! Every endpoint goes through [`ZwipeClient::call`]; the per-endpoint files
 //! describe the call and hold no transport code.
 
+use chrono::{DateTime, TimeDelta, Utc};
+use reqwest::header::HeaderMap;
 use tracing::info;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::http::endpoint::{Endpoint, Method};
@@ -26,6 +28,36 @@ impl ZwipeClient {
         endpoint: E,
         session: Option<&Session>,
     ) -> Result<E::Response, ClientError> {
+        let response = self.send(&endpoint, session).await?;
+        decode::<E>(response).await
+    }
+
+    /// Sends `endpoint` like [`Self::call`] and answers with its success body
+    /// and when that copy was made: the response's `Age` before now when the
+    /// caller can read it, else its `Last-Modified`, which an edge cache sets
+    /// to when it fetched the copy. `None` when the response carries neither,
+    /// as one straight from the origin does: the copy is new.
+    ///
+    /// # Errors
+    ///
+    /// As [`Self::call`].
+    pub async fn call_dated<E: Endpoint>(
+        &self,
+        endpoint: E,
+        session: Option<&Session>,
+    ) -> Result<Dated<E::Response>, ClientError> {
+        let response = self.send(&endpoint, session).await?;
+        let made_at = made_at(response.headers(), Utc::now());
+        let value = decode::<E>(response).await?;
+        Ok(Dated { value, made_at })
+    }
+
+    /// Builds and sends `endpoint`'s request.
+    async fn send<E: Endpoint>(
+        &self,
+        endpoint: &E,
+        session: Option<&Session>,
+    ) -> Result<reqwest::Response, ClientError> {
         let mut url = self.base_url.clone();
         url.set_path(&endpoint.path());
         url.set_query(endpoint.query().as_deref());
@@ -58,8 +90,33 @@ impl ZwipeClient {
 
         info!("{} {}", E::METHOD.as_str(), url);
         hold_for_skeleton_audit(E::METHOD).await;
-        decode::<E>(request.send().await?).await
+        Ok(request.send().await?)
     }
+}
+
+/// A response body with when the copy was made.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Dated<T> {
+    /// The decoded body.
+    pub value: T,
+    /// When the copy was made, `None` when the response does not say and it
+    /// is new.
+    pub made_at: Option<DateTime<Utc>>,
+}
+
+/// When a response's copy was made, read at `now`: `Age` seconds before
+/// `now`, else `Last-Modified`.
+fn made_at(headers: &HeaderMap, now: DateTime<Utc>) -> Option<DateTime<Utc>> {
+    let text = |name: &str| headers.get(name).and_then(|v| v.to_str().ok());
+    let aged = text("age")
+        .and_then(|age| age.trim().parse::<i64>().ok())
+        .and_then(TimeDelta::try_seconds)
+        .and_then(|age| now.checked_sub_signed(age));
+    aged.or_else(|| {
+        text("last-modified")
+            .and_then(|date| DateTime::parse_from_rfc2822(date).ok())
+            .map(|date| date.with_timezone(&Utc))
+    })
 }
 
 /// Holds every GET for `SKELETON_DELAY_MS` when the app is built with it set,
@@ -98,4 +155,47 @@ async fn decode<E: Endpoint>(response: reqwest::Response) -> Result<E::Response,
         serde_json::from_slice::<E::Response>(&bytes)?
     };
     Ok(decoded)
+}
+
+#[cfg(test)]
+mod tests {
+    use reqwest::header::HeaderValue;
+
+    use super::*;
+
+    fn at(text: &str) -> DateTime<Utc> {
+        DateTime::parse_from_rfc3339(text)
+            .unwrap()
+            .with_timezone(&Utc)
+    }
+
+    #[test]
+    fn an_edge_copy_is_dated_by_its_age() {
+        let mut headers = HeaderMap::new();
+        headers.insert("age", HeaderValue::from_static("600"));
+        headers.insert(
+            "last-modified",
+            HeaderValue::from_static("Sat, 07 Nov 2026 07:00:00 GMT"),
+        );
+        let now = at("2026-11-07T08:00:00Z");
+        assert_eq!(made_at(&headers, now), Some(at("2026-11-07T07:50:00Z")));
+    }
+
+    #[test]
+    fn without_a_readable_age_the_last_modified_dates_it() {
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            "last-modified",
+            HeaderValue::from_static("Sat, 07 Nov 2026 07:16:43 GMT"),
+        );
+        assert_eq!(
+            made_at(&headers, at("2026-11-07T08:00:00Z")),
+            Some(at("2026-11-07T07:16:43Z"))
+        );
+    }
+
+    #[test]
+    fn a_response_without_either_is_new() {
+        assert_eq!(made_at(&HeaderMap::new(), at("2026-11-07T08:00:00Z")), None);
+    }
 }
