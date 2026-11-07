@@ -9,15 +9,22 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta charset="UTF-8">
         <!-- The first frame, before the app's stylesheets and wasm arrive:
-             the stored theme's backdrop (its --bg-sink, the color the grid's
-             layer paints), mixed as orangui's themes.css mixes it, so the page
-             never flashes white. The app's grid then draws over it in place. -->
+             html in the stored theme's page color (the footer's, which an
+             overscroll past it shows) and body in its backdrop (its
+             --bg-sink, the color the grid's layer paints), mixed as orangui's
+             themes.css mixes it, so the page never flashes white. The app's
+             grid then draws over it in place. The selectors weigh nothing,
+             so the app's own rules win however the sheets are ordered. -->
         <style>
-            html {
+            :where(html) {
+                background-color: var(--first-paint-bg, #282828);
+            }
+
+            :where(body) {
                 background-color: color-mix(in srgb, var(--first-paint-bg, #282828), #000 15%);
             }
 
-            html.first-paint-light {
+            :where(html.first-paint-light body) {
                 background-color: color-mix(in srgb, var(--first-paint-bg), #fff 35%);
             }
         </style>

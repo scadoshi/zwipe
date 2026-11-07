@@ -39,16 +39,17 @@
     }
 }
 
-/* The theme class rides on html as well as the shell, so the page color
-   under everything is the theme's and not the launch color. The page
-   scrolls as one document. */
+/* html wears the theme's page color, the footer's, so a rubber-band
+   overscroll past the footer shows the footer's color; body wears the sink
+   the grid's layer paints. The root copies both from the themed shell
+   (`--page-edge`, `--page-sink`). The page scrolls as one document. */
 html {
     overflow: auto;
-    background-color: var(--bg-primary);
+    background-color: var(--page-edge, var(--bg-primary));
 }
 
 body {
-    background-color: var(--bg-primary);
+    background-color: var(--page-sink, var(--bg-sink));
     color: var(--text-primary);
     font-family: "JetBrains Mono", monospace;
     font-weight: 400;
