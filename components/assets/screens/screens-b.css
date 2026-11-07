@@ -564,13 +564,21 @@
     box-shadow: var(--shadow-sm);
 }
 
-/* The format picker's bar holds its tallest details from the start, so a
-   tapped format's details never push the chips down under the finger; a
-   longer one scrolls inside. */
+/* The format picker's bar keeps one height, so a tapped format's details
+   never push the chips down under the finger. Details longer than the bar
+   scroll inside it and fade at the edge they run past. */
 .tag-def-bar.format-def-bar {
     height: 11rem;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     box-sizing: border-box;
+}
+
+.format-def-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
 }
 
 .tag-def-name {

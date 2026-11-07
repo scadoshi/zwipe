@@ -72,16 +72,18 @@ pub(crate) fn FormatSelect(
                         }
 
                         div { class: "tag-def-bar format-def-bar",
-                            if let Some(fmt) = focused() {
-                                div { class: "tag-def-name", "{fmt.display_name()}" }
-                                ul { class: "tag-def-list",
-                                    for line in form::format_details(fmt) {
-                                        li { "{line}" }
+                            div { class: "format-def-scroll scroll-fade-y",
+                                if let Some(fmt) = focused() {
+                                    div { class: "tag-def-name", "{fmt.display_name()}" }
+                                    ul { class: "tag-def-list",
+                                        for line in form::format_details(fmt) {
+                                            li { "{line}" }
+                                        }
                                     }
+                                } else {
+                                    div { class: "tag-def-name", "{pickers::PICKER_BAR_HINT}" }
+                                    div { class: "tag-def-text", "{Picker::Format.bar_empty()}" }
                                 }
-                            } else {
-                                div { class: "tag-def-name", "{pickers::PICKER_BAR_HINT}" }
-                                div { class: "tag-def-text", "{Picker::Format.bar_empty()}" }
                             }
                         }
                     }
