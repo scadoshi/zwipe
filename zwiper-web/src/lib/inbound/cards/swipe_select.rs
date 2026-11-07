@@ -54,7 +54,7 @@ use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::generation::Generation;
 use zwipe_ui::hint::{Role, SwipeSelectMode};
 use zwipe_ui::playstyle::empty_identity_line;
-use zwipe_ui::stack::{CardStack, Direction, StackAction};
+use zwipe_ui::stack::{CardStack, Direction, NO_CARDS_LEFT, StackAction};
 use zwipe_ui::timing::{LOAD_MORE_AT, MAYBEBOARD_TOAST, PAGE_SIZE};
 
 use crate::domain::swipe_select::{card_key, redeal};
@@ -209,6 +209,7 @@ pub fn SwipeSelect(
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
     let authed = use_authed();
+    let toast = use_toast();
     let pile = Pile {
         stack: use_signal(CardStack::default),
         suggestions: use_signal(Vec::new),
@@ -280,6 +281,17 @@ pub fn SwipeSelect(
                 };
                 if found.is_empty() {
                     exhausted.set(true);
+                    // The cursor waits past the last card: the pile has run out.
+                    let at_end = {
+                        let s = stack.peek();
+                        !s.is_empty() && s.current().is_none()
+                    };
+                    if at_end {
+                        toast.info(
+                            NO_CARDS_LEFT.to_owned(),
+                            ToastOptions::default().duration(TOAST_QUICK),
+                        );
+                    }
                     break;
                 }
                 let seen: HashSet<Uuid> = stack
@@ -497,7 +509,9 @@ fn SwipeSelectBody(
     };
     let control: SwipeControl = use_swipe_control();
 
-    let mut advance = move || {
+    // Moves past the swiped card, fetching the next page near the end, and
+    // says whether the pile ran out under it: no card left and none to come.
+    let mut advance = move || -> bool {
         let near_end = {
             let mut s = stack.write();
             let total = s.len();
@@ -506,6 +520,16 @@ fn SwipeSelectBody(
         if near_end && !*exhausted.peek() {
             load_more.call(());
         }
+        let done = mode == SwipeMode::Suggested || *exhausted.peek();
+        done && !*loading_more.peek() && stack.peek().current().is_none()
+    };
+    // The pile's end replaces the swipe's own line, whatever the
+    // confirmation setting.
+    let ran_out = move || {
+        toast.info(
+            NO_CARDS_LEFT.to_owned(),
+            ToastOptions::default().duration(TOAST_QUICK),
+        );
     };
 
     let undo = use_callback(move |()| {
@@ -577,8 +601,12 @@ fn SwipeSelectBody(
                 _ => SelectSwipe::Skip,
             };
             stack.write().record(action);
-            advance();
-            confirm.info("Skipped");
+            if advance() {
+                confirm.quietly("Skipped");
+                ran_out();
+            } else {
+                confirm.info("Skipped");
+            }
         }
         Swipe::Right => {
             let mut label = mode.noun().to_string();
@@ -599,7 +627,10 @@ fn SwipeSelectBody(
                 return;
             };
             stack.write().record(SelectSwipe::Maybe(oracle_id));
-            advance();
+            let last = advance();
+            if last {
+                ran_out();
+            }
             spawn(async move {
                 if authed
                     .try_run("add_commander_maybeboard", |c, s| async move {
@@ -608,7 +639,11 @@ fn SwipeSelectBody(
                     .await
                     .is_ok()
                 {
-                    confirm.success_for("Added to your commander maybeboard", MAYBEBOARD_TOAST);
+                    if last {
+                        confirm.quietly("Added to your commander maybeboard");
+                    } else {
+                        confirm.success_for("Added to your commander maybeboard", MAYBEBOARD_TOAST);
+                    }
                 }
             });
         }
@@ -654,7 +689,7 @@ fn SwipeSelectBody(
                         on_swipe,
                     }
                 } else if loading() || loading_more() {
-                    CardSkeleton { is_loading: true }
+                    CardSkeleton {}
                 } else if let Some(line) = empty_line {
                     div { class: "message-empty",
                         span { class: "chip-note", "{line}" }

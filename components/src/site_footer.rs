@@ -2,6 +2,9 @@
 
 use dioxus::prelude::*;
 
+/// The year the footer's copyright names.
+const COPYRIGHT_YEAR: u16 = 2026;
+
 /// The footer: the copyright and `children` (the host's links, as
 /// `nav-cta` pills) in one centered row, then the Scryfall credit and the
 /// Fan Content notice as one note across the footer's width. `class` adds
@@ -15,7 +18,7 @@ pub fn SiteFooter(#[props(default)] class: Option<String>, children: Element) ->
     rsx! {
         footer { class,
             div { class: "site-footer-row",
-                p { class: "site-footer-copyright", "© 2026 Zwipe" }
+                p { class: "site-footer-copyright", "© {COPYRIGHT_YEAR} Zwipe" }
                 div { class: "footer-links", {children} }
             }
             p { class: "site-footer-note",

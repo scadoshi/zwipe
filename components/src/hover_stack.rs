@@ -96,7 +96,11 @@ fn pins_right(x: f64, width: f64) -> Option<bool> {
     (width > 0.0).then_some(x < width / 2.0)
 }
 
-/// A screen's hover preview. `Copy`; from [`use_hover_stack`].
+/// A screen's hover preview: the one card previewed and the corner it
+/// pins to, which [`HoverStackHost`] draws outside the rows. The page's
+/// pointer moves go to [`track`](Self::track), and a row that starts to drag
+/// fades the preview through [`leave_held`](Self::leave_held).
+/// `Copy`; from [`use_hover_stack`].
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct HoverStack {
     entry: Signal<Option<HoverEntry>>,

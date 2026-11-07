@@ -84,8 +84,8 @@ pub use color_bars::{ColorBars, ColorBarsGhost};
 pub use cover_flow::CoverFlow;
 pub use danger_zone::DangerZoneAction;
 pub use deck_page::{
-    DeckBand, DeckControls, DeckFacts, DeckFilter, DeckFold, DeckHead, DeckPage, DeckSection,
-    FeaturedCard, NO_CARDS, sections,
+    DeckBand, DeckControls, DeckFacts, DeckFold, DeckHead, DeckPage, DeckSection, FeaturedCard,
+    NO_CARDS, sections,
 };
 pub use drawer_sheet::DrawerSheet;
 pub use flippable_card_image::{FlippableCardImage, reset_image_ease};
@@ -94,7 +94,7 @@ pub use home_colors::{ColorsEmpty, HomeColors};
 pub use home_decks::HomeDecks;
 pub use hover_stack::{HoverStack, HoverStackHost, use_hover_stack};
 pub use keyword_chips::{KeywordChips, KeywordReminders};
-pub use load_failed::{LoadFailed, RETRY};
+pub use load_failed::LoadFailed;
 pub use menu_section::MenuSection;
 pub use oracle_text::OracleText;
 pub use orangui::{

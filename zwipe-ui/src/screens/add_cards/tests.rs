@@ -494,19 +494,25 @@ fn an_empty_page_ends_the_results() {
         ticket: ticket_of(&effects[1..]),
         page: page(Vec::new()),
     });
-    assert!(matches!(
-        effects.as_slice(),
-        [Effect::PileEnd {
-            kind: PileEndKind::Empty,
-            ..
-        }]
-    ));
+    assert!(
+        matches!(
+            effects.as_slice(),
+            [
+                Effect::PileEnd {
+                    kind: PileEndKind::Empty,
+                    ..
+                },
+                Effect::Toast(toast),
+            ] if *toast == Toast::quick(ToastKind::Info, NO_CARDS_LEFT)
+        ),
+        "the reply that ends the pile under the cursor says so: {effects:?}"
+    );
     assert_eq!(state.pile(), Pile::End);
     let _back = state.update(Action::Undo);
     let effects = state.update(Action::Swipe(Direction::Left));
     assert_eq!(
         toasts(&effects).last(),
-        Some(&Toast::normal(ToastKind::Warning, END_OF_RESULTS))
+        Some(&Toast::quick(ToastKind::Info, NO_CARDS_LEFT))
     );
 }
 
@@ -1091,7 +1097,6 @@ fn the_copy_matches_the_app() {
             UNDID_MAYBEBOARD,
             UNDID_MOVE_TO_DECK,
             ALREADY_CHANGED,
-            END_OF_RESULTS,
             TRY_A_FILTER,
             FILTER_AT_DEFAULT,
             FILTER_RESET,
@@ -1112,7 +1117,6 @@ fn the_copy_matches_the_app() {
             "Undid maybeboard",
             "Undid move to deck",
             "Already changed",
-            "End of results",
             "Try a filter to start swiping",
             "Filter already at default",
             "Filter reset",
@@ -1144,4 +1148,24 @@ fn the_copy_matches_the_app() {
 fn the_source_toggle_flips_between_the_two() {
     assert_eq!(Source::Search.toggled(), Source::Maybeboard);
     assert_eq!(Source::Maybeboard.toggled(), Source::Search);
+}
+
+#[test]
+fn the_maybeboard_pile_running_out_under_a_swipe_says_no_cards_left_alone() {
+    let mut built = commander_deck(&["Main", "Maybe A"]);
+    built.entries[1].deck_card.board = Board::Maybeboard;
+    let (mut state, _) = with_deck(&built);
+    let _ = state.update(Action::PickSource {
+        source: Source::Maybeboard,
+        remembered: None,
+    });
+    let _filtered = state.update(Action::Filter(state.filter().clone()));
+    assert_eq!(state.pile(), Pile::Cards);
+    let effects = state.update(Action::Swipe(Direction::Right));
+    assert_eq!(state.pile(), Pile::Empty);
+    assert_eq!(
+        toasts(&effects),
+        [Toast::quick(ToastKind::Info, NO_CARDS_LEFT)],
+        "the move's own line gives way"
+    );
 }
