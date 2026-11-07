@@ -181,3 +181,81 @@ Left as is by Scotty: 29, 32, 36.
 ### Cleanup
 
 The Droid test deck is back to Edgar Markov, Lightning-Rig Crew and Vampire of the Dire Moon. I removed both main-board cards to recheck item 3 and restored them with Undo. Pass 2 added a few skips to the deck. The theme is Gruvbox dark, confirmed after a relaunch. The network throttle is off. The clone's target is 8.4 GB.
+
+## Pass 3
+
+Build: origin/main at 48e5f81b9 (release 48e5f81b9, live on prod), debug APK from ~/Developer/droid/zwipe, the same emulator and account. A release build turns WebView DevTools off, and CDP needs them, so I built debug; it talks to production the same way. Shots are in ~/Developer/droid/shots/pass3-<n>.png.
+
+Surfer was cycling themes on the same account during this pass, so I ran the theme-on-resume checks last and read the server's settings before each one.
+
+My slip: at 08:34, one tap on Settings' "Chip" cycled swipe confirmations to Toasts and saved it, and my next scripted tap hit the Dark toggle. I put both back within a minute (Off, then Chip; Dark), and the server confirmed gruvbox, dark, chip. The composer has been told.
+
+### Open items rechecked
+
+| # | Status | What I saw | Shot |
+|---|---|---|---|
+| 1 | fixed | With the keyboard up (499 px viewport), the focused password field sits at 226 to 273 and Log in at 289 to 336. | pass3-48 |
+| 3 | partly | Emptying the pile shows only "Nothing left to remove" (P2-5 fixed). Undo at the end still does nothing; see new issue 4. | pass3-13, pass3-51 |
+| 4 | fixed | On GSM, each panel shows its error with its own Retry, Featured flavor included. Retry with the network back loads each panel. | pass3-36, pass3-37 |
+| 5 | still | Deck tile art skeleton is still 111x10. | pass3-35 |
+| 6 | still | Playstyle's skeleton has one chip row where the loaded page has six, so Suggested commanders jumps about 300 px. | pass3-38, pass3-39 |
+| 7 | still | Skeleton color rows are 24 px apart, loaded rows 27.4. | pass3-35, pass3-38 |
+| 8 | not rechecked | | |
+| 9 | partly | Home's Colors rows now end 20 to 23 px above the bottom (was 34), but start only about 6 px under the header (Decks: 12). Playstyle's Colors is even at 18/17. | pass3-37, pass3-39 |
+| 10 | fixed | Format details scroll inside the fixed card and fade at the bottom edge (P2-2). | pass3-25 |
+| 11 | fixed | Search to card 9 px, card to chips 9 px. | pass3-25 |
+| 12 | fixed | Gutter is 16 on the deck page, Format picker, Dictionary and About. | pass3-2, pass3-25, pass3-46 |
+| 13 | fixed | TIX and the Profile icons both end at 378.7. | pass3-2 |
+| 14 | fixed | Buy, TCGplayer and Card Kingdom are all 32.2 px tall. | pass3-2 |
+| 15 | fixed | Mana's rows space at 58 px like Profile's, with no extra rule. | pass3-3 |
+| 17 | fixed | A single type reads "CREATURES". | pass3-4 |
+| 18 | fixed | Deck form fields are about 20 px apart, labels about 9 px above their inputs. | pass3-24 |
+| 19 | fixed | Commander has a chevron and lines up with Creatures. | pass3-5 |
+| 20 | fixed | The dock no longer rides the keyboard. Quick add results now float above the field, over the commander art (new issue 7). | pass3-6 |
+| 21 | changed | Mana's header × is now a separate red button beside the toggle. Its 44 px hit box still covers 44 of the header's 46 px height. The label-row ×s are a new problem (new issue 3). | pass3-22 |
+| 22 | fixed | The first label sits 16 px under an open header. | pass3-22 |
+| 23 | fixed | The Mana value input is 102 px with 86 px for text, and the placeholder fits (needs 84). | pass3-22 |
+| 24 | fixed | The Examples card top is at 173, the same as Add's. | pass3-47 |
+| 27 | fixed | "No commanders" sits 16 px above Danger zone, and Clear is disabled. | pass3-34 |
+| 31 | fixed | Light hero stats and the selected USD chip pass (USD about 5.2:1). No contrast hits on Home, Decks, Settings or the deck page in Gruvbox light or dark. | pass3-41, pass3-42, pass3-44 |
+| 34 | fixed | The Decks FAB and the Add dock are both 9/9 from the edges. | pass3-8 |
+| 38 | fixed | Suggested commanders rows all put their chips on one line under the name. | pass3-40 |
+| P2-1 | fixed | Stat chips, Group by, Show and Exceptions pass in dark. | pass3-1, pass3-43 |
+| P2-3 | fixed | Cover flow arrows sit 16 px in from the screen edges. | pass3-19 |
+| P2-4 | not reproduced | Light from the menu, then GSM and a force-stop within 3 s, kept the choice. So did throttling first, then toggling, then a force-stop 3 s later. Both times the server had the save before the stop. | |
+| P2-5 | fixed | Only "Nothing left to remove" shows when the pile empties. | pass3-13 |
+
+Left as is by Scotty: 29, 32, 36.
+
+### New in this release
+
+- **Stay signed in (156):** works. Three force-stop and relaunch cycles, a cold restart after the access token expired, and a warm resume after 17 minutes in the background all stayed signed in. The resume did one refresh, then loaded data and took taps (151).
+- **Theme check on resume:** works. With the app in the background, I changed the theme through the API (gruvbox to nord, then back), and the app showed it within a second of resuming, on Home and on the deck page. The server hadn't moved between my checks.
+- **Lifecycle (151):** no issues seen. Taps land and data reloads after a long background.
+- **Chip contrast (157):** passes. See items 31 and P2-1.
+- **Printings sheet fit (162):** holds. The sheet fits with Save visible at 845, 752 and 647 px tall (`wm size`), and the arrows keep the gutter.
+- **Themed pips:** Settings shows Pips "Themed".
+- **Swipe confirmations:** Settings shows Chip by default, and the chip is set after each swipe (Skipped, Added, Removed, Kept, Undone), but it never shows on screen. See new issue 1.
+
+### Composer's extras
+
+- **175, Remove to the end** (deck at 7 main cards): mid-stack Undo (swipe down) brings the card back, with the chip at "Undone". At the end there's a ghost card and a "Nothing left to remove" toast, but no empty-state text. Swipe-down Undo at the end does nothing (tried twice). The cards really leave: the server showed the deck's entries list empty. The Cards screen's Undo restored them one tap each ("Re-added …"). Afterwards I trimmed the deck back to its two original cards.
+- **Chip mode messages:** the end-of-stack toast still shows on Chip. The chip itself, "Undone" included, is invisible (new issue 1). After the pile empties, the chip keeps the previous word ("Kept"), which won't matter until the chip shows.
+- **Deck welcome hint:** every line matches the phone. The Cards pill is bottom right; pencil, clone and share sit by Profile; Import, Export and Delete are at the bottom; Warnings is there. One nit: the hint's "Clear skips" chip names a row whose button reads "Clear". It doesn't mention + and −, which are on the Cards screen.
+
+### New issues
+
+1. **The swipe confirmation chip is hidden behind the header** (broken). `.swipe-confirm` is `position: absolute; top: 0.5rem` inside `.screen-content`, and that starts at y 0 under the fixed nav (screens-b.css:1294). The chip draws at 16,8 and `elementFromPoint` at its centre returns NAV, so the default setting shows nothing on Add or Remove. Shots: pass3-9, pass3-10.
+2. **The leave guard sticks after the Format picker** (broken). On Edit deck, open Format, tap the selected Commander chip (it deselects), then press the system Back twice. The second Back leaves for the deck page with no dialog, and the guard stays armed. From then on, menu links, the header's Back and the Cards pill do nothing, with no dialog in the DOM; only the system Back works, until a restart. Reproduced twice. A plain Edit then Back is fine. Shot: pass3-29.
+3. **Filter label-row × buttons take taps across the whole section** (broken). `.clear-btn` uses `all: unset` (filter.css:171), which drops the coarse-pointer `position: relative`. So its 44 px `::after` sizes against the section and became 363x421. A tap on empty space left of the Mana value input cleared the Color identity filter. Shots: pass3-22, pass3-23.
+4. **Undo at the end of the Remove stack does nothing** (ugly). See 175 above. Mid-stack Undo works.
+5. **Card roles counts run past the value column** (nit). On the deck page's Distributions, the counts end at 382.7 where the value column ends at 378.7. The role chips start at 28.8 where the rows' labels start at 32.8. Shot: pass3-4.
+6. **"Suggested commanders" wraps to two lines** (nit), now that it uses the larger panel-title type beside Swipe and "?". Shot: pass3-40.
+7. **Quick add results float over the commander art** (nit). The result pills sit 4 px apart over the commander card and its name chips, which show through the gaps. Shot: pass3-7.
+8. **Featured flavor's error chip sits close under its header** (nit). It's about 3 px below the rule, where the Decks and Colors errors sit about 16 px below. Shot: pass3-36.
+9. **One tap on a settings value changes and saves it** (question). Swipe confirmations and Pips cycle their value on a tap with no picker, so a stray tap writes an account setting at once. Is that intended?
+10. **Hero chip after a throttled start** (watch). After a slow start and Retry, the hero showed neither "Live" nor "as of" for a while. Later it read "as of 08:15", a count fetched at the first launch and not refreshed by Retry. Shots: pass3-37, pass3-41.
+
+### Cleanup
+
+The Droid test deck is back to Edgar Markov, Lightning-Rig Crew and Vampire of the Dire Moon (I added 5 cards for 175, then removed them). Pass 3 added a few skips and removals on Add and Remove. The theme is Gruvbox dark and swipe confirmations are on Chip, both confirmed on the server. The network throttle is off and the screen size is reset. The clone's target is 10 GB.
