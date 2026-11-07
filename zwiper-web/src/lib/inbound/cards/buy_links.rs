@@ -19,6 +19,23 @@ pub fn BuyLink(href: String, label: &'static str) -> Element {
     }
 }
 
+/// A retailer link's loading ghost: an empty link at the loaded one's size,
+/// an `a` with no `href` and the loaded link's `button` class (a card's
+/// `card-action-btn`, a deck's `btn-action`), its label and `↗` held but
+/// not drawn.
+#[component]
+pub fn GhostBuyLink(
+    label: &'static str,
+    #[props(default = "card-action-btn")] button: &'static str,
+) -> Element {
+    rsx! {
+        a { class: "{button} web-buy-link web-ghost-chip",
+            span { "{label}" }
+            span { class: "web-buy-ext", "\u{2197}" }
+        }
+    }
+}
+
 /// `TCGplayer` and `Card Kingdom` for one card: its `TCGplayer` product page
 /// when the id is known, else a one-copy entry by name.
 #[component]

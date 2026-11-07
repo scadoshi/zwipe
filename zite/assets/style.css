@@ -1748,16 +1748,19 @@ body[class$="-dark"] .chip-value {
     animation: sk-pulse 1.4s ease-in-out infinite;
 }
 
+/* The deck name's ghost, on the title's own line. */
 .sk-title {
+    display: inline-block;
     width: 12rem;
     height: 1.7rem;
     border-radius: 0.5rem;
-    margin-bottom: 0.6rem;
+    vertical-align: middle;
 }
 
+/* A chip's ghost at the kit chip's height. */
 .sk-chip {
     width: 5rem;
-    height: 1.5rem;
+    height: 1.725rem;
     border-radius: 0.4rem;
 }
 
@@ -1775,9 +1778,19 @@ body[class$="-dark"] .chip-value {
     width: 6rem;
 }
 
-/* A control row's label chip, as the live rows lead with one. */
+/* A control row's label chip, as the live rows lead with one: Group by,
+   then the shorter Show. */
 .sk-chip-label {
-    width: 4rem;
+    width: 4.75rem;
+}
+
+.sk-chip-label-short {
+    width: 3rem;
+}
+
+/* The fold-all button's ghost, an icon button's square. */
+.sk-chip-icon {
+    width: 2.2rem;
 }
 
 /* The featured card's footprint, at the card's own corner radius. */

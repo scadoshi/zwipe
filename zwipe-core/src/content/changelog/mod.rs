@@ -59,6 +59,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Enter closes a picker's ? hint on the web, and the hint no longer reopens on the next Enter",
         "Hovering a card row shows one preview at a time, gone once the pointer leaves the row",
         "A card's P/T reads as clearly as its price in every light theme",
+        "Loading placeholders match the screen they stand in for, with every chip drawn empty",
     ],
 }];
 

@@ -5,14 +5,16 @@
 use dioxus::prelude::*;
 
 use crate::inbound::chrome::ghost::{
-    GhostChipBars, GhostFold, GhostHint, GhostSection, GhostShowRow, GhostText,
+    GhostChip, GhostChipBars, GhostChipRow, GhostFold, GhostHint, GhostSection, GhostShowRow,
+    GhostText,
 };
-use crate::inbound::screens::deck::skeletons::ChipRowSkeleton;
 
-/// Ghost rows in the Card roles chart.
-const ROLE_ROWS: usize = 10;
+/// The Card roles chart's ghost chips, as wide as the roles' short labels.
+const ROLE_CHIPS: [u8; 10] = [4, 4, 5, 5, 5, 5, 4, 5, 5, 5];
 /// Ghost rows in the Oracle tags table, its `TAG_TABLE_ROWS`.
 const TAG_ROWS: usize = 10;
+/// The Oracle tags table's ghost tag chips, as wide as typical tag slugs.
+const TAG_CHIPS: [u8; 5] = [6, 9, 12, 8, 15];
 /// Ghost rows in each card list.
 const LIST_ROWS: usize = 6;
 
@@ -70,9 +72,9 @@ fn TagTableGhost() -> Element {
                     GhostHint {}
                 }
             }
-            for i in 0..TAG_ROWS {
+            for chars in TAG_CHIPS.iter().copied().cycle().take(TAG_ROWS) {
                 div { class: "tag-table-tag",
-                    span { class: "skeleton-bar web-ghost-keyword-chip", style: "width: {6 + (i * 5) % 7}rem;" }
+                    GhostChip { chars, button: true }
                 }
                 for tone in ["p3", "p5", "p2"] {
                     span { class: "tag-table-num",
@@ -92,7 +94,7 @@ fn ListGhost(title: u8, swipe: bool, filters: Option<Element>) -> Element {
     rsx! {
         div { class: "maybeboard-list card-group",
             div { class: "card-group-header card-group-header-with-hint",
-                GhostText { chars: title }
+                span { GhostText { chars: title } }
                 div { class: "card-group-header-actions",
                     if swipe {
                         span { class: "skeleton-bar skeleton-chip web-ghost-action" }
@@ -104,7 +106,7 @@ fn ListGhost(title: u8, swipe: bool, filters: Option<Element>) -> Element {
                 div { class: "web-card-group-filters", {filters} }
             }
             for i in 0..LIST_ROWS {
-                div { key: "{i}", class: "skeleton-card-row",
+                div { key: "{i}", class: "skeleton-card-row web-ghost-card-row",
                     div { class: "skeleton-bar skeleton-card-thumb" }
                     div { class: "skeleton-bar skeleton-card-bar-row" }
                 }
@@ -121,11 +123,11 @@ fn ListGhost(title: u8, swipe: bool, filters: Option<Element>) -> Element {
 #[component]
 pub fn PlaystyleSkeleton(wide: bool) -> Element {
     let show = rsx! {
-        GhostShowRow {}
+        GhostShowRow { pips: 3 }
     };
     let staples = rsx! {
-        ChipRowSkeleton { label: "sm", chips: vec!["sm", "lg", "xl", "md", "md"] }
-        ChipRowSkeleton { label: "sm", chips: vec!["sm", "sm", "sm", "sm", "sm"] }
+        GhostChipRow { label: 4, chips: vec![3, 8, 4] }
+        GhostShowRow { label: 5, pips: 3, art: false }
     };
     rsx! {
         div { class: "web-playstyle web-playstyle-grid web-page",
@@ -141,7 +143,7 @@ pub fn PlaystyleSkeleton(wide: bool) -> Element {
                         GhostPanel { wide, chars: 7, open: false, hint: false, SummaryGhost {} }
                     }
                     div { class: "web-playstyle-cell web-playstyle-roles",
-                        GhostPanel { wide, chars: 10, open: false, GhostChipBars { rows: ROLE_ROWS } }
+                        GhostPanel { wide, chars: 10, open: false, GhostChipBars { chips: ROLE_CHIPS.to_vec() } }
                     }
                     div { class: "web-playstyle-cell web-playstyle-tags",
                         GhostPanel { wide, chars: 11, open: false, TagTableGhost {} }
