@@ -235,11 +235,15 @@ pub fn OracleTagExamples(open: Signal<bool>, slug: String) -> Element {
                                         go_back();
                                     }
                                 },
-                                div { class: "dict-empty", {model::END} }
+                                div { class: "dict-empty",
+                                    span { class: "chip-note", {model::END} }
+                                }
                             }
                         },
                         Status::Empty => rsx! {
-                            div { class: "dict-empty", {model::EMPTY} }
+                            div { class: "dict-empty",
+                                span { class: "chip-note", {model::EMPTY} }
+                            }
                         },
                     }
                 }

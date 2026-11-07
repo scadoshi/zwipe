@@ -45,14 +45,13 @@ pub fn OpenFrame() -> Element {
 /// A screen under the top nav. `title` names the screen for assistive tech,
 /// the browser tab and the folded nav. Below the breakpoint the title and
 /// the `?` (`on_hint`) sit centered in the folded nav; on a wide window the
-/// `?` sits in the nav's icon row. The screen scrolls as one column; a wide window
-/// ends it with zwipe.net's footer unless `footer` is false, for a screen
-/// whose layout holds the window's height.
+/// `?` sits in the nav's icon row. The screen scrolls as one column, and a
+/// wide window ends it with zwipe.net's footer; a swipe screen fills the
+/// window, so its footer starts below the fold.
 #[component]
 pub fn ScreenFrame(
     title: String,
     #[props(default)] on_hint: Option<Callback<()>>,
-    #[props(default = true)] footer: bool,
     children: Element,
 ) -> Element {
     let page = try_use_context::<Signal<Option<PageTitle>>>();
@@ -77,9 +76,7 @@ pub fn ScreenFrame(
             // assistive tech.
             h1 { class: "sr-only", "{title}" }
             {children}
-            if footer {
-                WebFooter {}
-            }
+            WebFooter {}
         }
     }
 }

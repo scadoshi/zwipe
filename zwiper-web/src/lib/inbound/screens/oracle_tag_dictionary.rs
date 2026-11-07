@@ -18,7 +18,8 @@
 //! header's back arrow do.
 
 use components::{
-    Button, ButtonVariant, PageHeader, SheetFrame, SheetWide, TOAST_NORMAL, use_overlay_back,
+    Button, ButtonVariant, ClearWrap, PageHeader, SheetFrame, SheetWide, TOAST_NORMAL,
+    use_overlay_back,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -98,16 +99,20 @@ pub fn OracleTagDictionary(mut open: Signal<bool>, on_use: EventHandler<String>)
                     div { class: "tag-controls-head",
                         span { class: "stat-chip stat-chip-p1 chip-row-label", "Search" }
                     }
-                    input {
-                        class: "input",
-                        id: SEARCH_ID,
-                        r#type: "text",
-                        placeholder: "Search tags or descriptions",
-                        value: "{query()}",
-                        autocapitalize: "none",
-                        autocorrect: "off",
-                        spellcheck: "false",
-                        oninput: move |event| query.set(event.value()),
+                    ClearWrap {
+                        filled: !query().is_empty(),
+                        on_clear: move |()| query.set(String::new()),
+                        input {
+                            class: "input",
+                            id: SEARCH_ID,
+                            r#type: "text",
+                            placeholder: "Search tags or descriptions",
+                            value: "{query()}",
+                            autocapitalize: "none",
+                            autocorrect: "off",
+                            spellcheck: "false",
+                            oninput: move |event| query.set(event.value()),
+                        }
                     }
                     div { class: "dict-letter-rail scroll-fade-x",
                         for c in rail {
@@ -126,9 +131,13 @@ pub fn OracleTagDictionary(mut open: Signal<bool>, on_use: EventHandler<String>)
                 div { class: "dict-list",
                     if rows.is_empty() {
                         if searching {
-                            div { class: "dict-empty", "No tags match \u{201c}{q}\u{201d}." }
+                            div { class: "dict-empty",
+                                span { class: "chip-note", "No tags match \u{201c}{q}\u{201d}." }
+                            }
                         } else {
-                            div { class: "dict-empty", "No tags start with {letter.to_ascii_uppercase()}." }
+                            div { class: "dict-empty",
+                                span { class: "chip-note", "No tags start with {letter.to_ascii_uppercase()}." }
+                            }
                         }
                     } else {
                         for t in rows {
@@ -148,7 +157,9 @@ pub fn OracleTagDictionary(mut open: Signal<bool>, on_use: EventHandler<String>)
         }
     } else if slot.is_failed() {
         rsx! {
-            div { class: "dict-empty", "Couldn't load the dictionary. Pull back and try again." }
+            div { class: "dict-empty",
+                span { class: "chip-note", "Couldn't load the dictionary. Pull back and try again." }
+            }
         }
     } else {
         rsx! { DictionarySkeleton {} }

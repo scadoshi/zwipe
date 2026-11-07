@@ -189,7 +189,9 @@ pub(crate) fn ActivitySections(
     let on_pick = move |picked: RateKind| on_action.call(Action::PickRate(picked));
     let roles_body = match role_rates {
         Rates::Unrated(line) => rsx! {
-            div { class: "activity-total", "{line}" }
+            div { class: "activity-total",
+                span { class: "chip-note", "{line}" }
+            }
         },
         rates => rsx! {
             div { class: "activity-rates",
@@ -211,7 +213,9 @@ pub(crate) fn ActivitySections(
                                 count_suffix: "%",
                             }
                         } else if let Rates::Uncharted(line) = &rates {
-                            div { class: "activity-total", "{line}" }
+                            div { class: "activity-total",
+                                span { class: "chip-note", "{line}" }
+                            }
                         }
                     }
                 }
@@ -220,7 +224,9 @@ pub(crate) fn ActivitySections(
     };
     let tags_body = match tag_rates {
         Rates::Unrated(line) => rsx! {
-            div { class: "activity-total", "{line}" }
+            div { class: "activity-total",
+                span { class: "chip-note", "{line}" }
+            }
         },
         rates => rsx! {
             div { class: "activity-rates",
@@ -239,7 +245,9 @@ pub(crate) fn ActivitySections(
                                 count_suffix: "%",
                             }
                         } else if let Rates::Uncharted(line) = &rates {
-                            div { class: "activity-total", "{line}" }
+                            div { class: "activity-total",
+                                span { class: "chip-note", "{line}" }
+                            }
                         }
                     }
                 }
@@ -369,7 +377,9 @@ pub(crate) fn HardPassesPanel(
                 InfoButton { topic: HintTopic::HardPasses }
             }
             if let Some(line) = line {
-                div { class: "activity-total activity-total-group", "{line}" }
+                div { class: "activity-total activity-total-group",
+                    span { class: "chip-note", "{line}" }
+                }
             }
             for pass in passes {
                 HardPassRow {
