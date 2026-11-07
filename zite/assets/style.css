@@ -68,6 +68,9 @@
 html {
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
+    /* Room for the scrollbar on every page, so a page too short to scroll
+       sits where the others do. */
+    scrollbar-gutter: stable;
 }
 
 html,
