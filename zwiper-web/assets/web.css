@@ -183,7 +183,7 @@ body {
         padding-bottom: 1rem;
     }
 
-    .web-scroll-screen:has(> .web-site-footer) > .screen-content > :not(.action-dock) {
+    .web-scroll-screen:has(> .web-site-footer) > .screen-content > :not(.action-dock, .web-screen-chip) {
         padding-bottom: 0;
     }
 
@@ -2077,11 +2077,18 @@ body {
     }
 }
 
-/* ---- Swipe select on a wide window ----
+/* ---- Swipe screens on a wide window ----
 
    Swipe select sits under the nav as Add does: the nav names it, carries
-   its `?` and closes it from the back arrow, so its own header goes. Below
-   the breakpoint it keeps its title bar. */
+   its `?` and closes it from the back arrow, so its own header goes. Each
+   swipe screen names itself in a quiet chip at its top left, clear of the
+   card in the middle, the details panel at the right and the pile chips
+   at the bottom. Below the breakpoint the title bar or the folded nav
+   names the screen. */
+.web-screen-chip {
+    display: none;
+}
+
 @media (min-width: 900px) {
     .screen.web-swipe-select,
     .web-swipe-select > .grid-cells {
@@ -2090,6 +2097,24 @@ body {
 
     .web-swipe-select > .page-header {
         display: none;
+    }
+
+    /* The chip measures from the window's left, not the content column's. */
+    .web-main .web-cards-swipe.screen-content,
+    .screen-content.web-swipe-select-body {
+        position: static;
+    }
+
+    .chip-note.web-screen-chip {
+        display: inline-block;
+        position: absolute;
+        top: 1rem;
+        left: 1.5rem;
+        z-index: 1;
+        padding: 0.3rem 0.6rem;
+        font-size: 0.75rem;
+        line-height: 1.4;
+        pointer-events: none;
     }
 }
 
