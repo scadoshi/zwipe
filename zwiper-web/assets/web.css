@@ -2729,7 +2729,7 @@ body {
     }
 
     .alert-dialog-description {
-        padding: 0.75rem 0;
+        padding: 1.25rem var(--dialog-pad-x);
     }
 }
 
