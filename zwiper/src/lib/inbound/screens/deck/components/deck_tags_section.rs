@@ -20,7 +20,7 @@ pub(crate) fn DeckTagsSection(deck_profile: DeckProfile) -> Element {
                 div { class: "settings-row info-row-stacked",
                     span { style: "display:flex;align-items:center;gap:0.35rem;",
                         span { class: "settings-row-label", "Deck tags" }
-                        InfoButton { topic: HintTopic::DeckTags }
+                        InfoButton { topic: HintTopic::DeckViewDeckTags }
                     }
                     span { class: "info-row-value info-row-tags",
                         for tag in deck_profile.tags.iter() {
@@ -33,7 +33,7 @@ pub(crate) fn DeckTagsSection(deck_profile: DeckProfile) -> Element {
                 div { class: "settings-row info-row-stacked",
                     span { style: "display:flex;align-items:center;gap:0.35rem;",
                         span { class: "settings-row-label", "Oracle tags" }
-                        InfoButton { topic: HintTopic::OracleTags }
+                        InfoButton { topic: HintTopic::DeckViewOracleTags }
                     }
                     span { class: "info-row-value info-row-tags",
                         for slug in deck_profile.oracle_tags.iter() {

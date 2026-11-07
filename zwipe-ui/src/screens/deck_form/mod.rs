@@ -24,6 +24,7 @@ use zwipe_core::text::sentence_case;
 use crate::deck::form::{self, Cascade, FormValues, Slot, Step};
 use crate::deck::pickers::{self, Draft, PartnerAutofill, Picker, TagPicker, Tapped};
 use crate::generation::{Generation, Ticket};
+use crate::hint::HintTopic;
 use crate::timing;
 use crate::toast::{Toast, ToastKind};
 
@@ -667,6 +668,12 @@ impl State {
     #[must_use]
     pub fn label(&self, slot: Slot) -> &'static str {
         slot.label(self.values.format)
+    }
+
+    /// The `?` topic beside `slot`'s label.
+    #[must_use]
+    pub fn hint(&self, slot: Slot) -> HintTopic {
+        slot.hint(self.values.format)
     }
 
     /// What `slot`'s input shows: the card's name, or the text typed.

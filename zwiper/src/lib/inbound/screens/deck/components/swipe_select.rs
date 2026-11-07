@@ -34,7 +34,6 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::card_filter::query::CardQuery;
-use zwipe_core::domain::user::models::hints::HINT_SWIPE_SELECT;
 use zwipe_ui::generation::Ticket;
 use zwipe_ui::hint::{SwipeSelectMode, one_time};
 use zwipe_ui::screens::swipe_select::{self as model, Action, Destination, Effect, State, Status};
@@ -547,7 +546,7 @@ pub(crate) fn SwipeSelect(
 
                 ContentHintDialog {
                     open: hint_open,
-                    actions: components::hint::guide_for_one_time(HINT_SWIPE_SELECT),
+                    actions: components::hint::guide_for_swipe_select(hint_mode),
                     content: one_time::swipe_select(hint_mode),
                 }
             }

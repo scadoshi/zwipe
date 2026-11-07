@@ -6,7 +6,7 @@
 
 use zwipe_core::domain::user::hints::OneTimeHint;
 
-use super::HintTopic;
+use super::{HintTopic, SwipeSelectMode};
 
 /// Where zite serves its guides; a slug goes on the end.
 pub const GUIDE_BASE: &str = "https://zwipe.net/guides/";
@@ -22,11 +22,12 @@ impl HintTopic {
     #[must_use]
     pub const fn guide_slug(self) -> Option<&'static str> {
         match self {
-            Self::DeckTags | Self::OtherTags => Some("deck-tags"),
-            Self::OracleTags => Some("oracle-tags"),
+            Self::DeckTags | Self::DeckViewDeckTags | Self::OtherTags => Some("deck-tags"),
+            Self::OracleTags | Self::DeckViewOracleTags => Some("oracle-tags"),
             Self::FilterOracleTags => Some("filtering"),
             Self::Format
             | Self::Commander
+            | Self::Oathbreaker
             | Self::Partner
             | Self::Background
             | Self::SignatureSpell => Some("commander-and-formats"),
@@ -63,7 +64,7 @@ impl HintTopic {
     }
 }
 
-/// The slug of the guide that goes deeper on a one-time hint, or `None` when no guide covers it.
+/// The slug of the guide that goes deeper on a one-time hint, or `None` when no guide covers it. [`OneTimeHint::SwipeSelect`]'s guide depends on its overlay, so it is [`swipe_select_slug`]'s and `None` here.
 #[must_use]
 pub const fn one_time_slug(hint: OneTimeHint) -> Option<&'static str> {
     match hint {
@@ -71,7 +72,7 @@ pub const fn one_time_slug(hint: OneTimeHint) -> Option<&'static str> {
         OneTimeHint::DeckList | OneTimeHint::DeckCards => Some("organize-and-browse"),
         OneTimeHint::CreateDeck | OneTimeHint::EditDeck => Some("commander-and-formats"),
         OneTimeHint::FirstDeck => Some("deck-stats"),
-        OneTimeHint::AddDeckCards | OneTimeHint::SwipeSelect => Some("swipe-to-build"),
+        OneTimeHint::AddDeckCards => Some("swipe-to-build"),
         OneTimeHint::RemoveDeckCards => Some("remove-cards"),
         OneTimeHint::Filter => Some("filtering"),
         OneTimeHint::Import | OneTimeHint::Export => Some("import-export"),
@@ -81,7 +82,21 @@ pub const fn one_time_slug(hint: OneTimeHint) -> Option<&'static str> {
         OneTimeHint::CommanderMaybeboard => Some("commander-maybeboard"),
         OneTimeHint::SuggestedCommanders => Some("playstyle"),
         OneTimeHint::Activity => Some("activity"),
-        OneTimeHint::Profile | OneTimeHint::Config | OneTimeHint::UniversesBeyondExceptions => None,
+        OneTimeHint::Profile
+        | OneTimeHint::Config
+        | OneTimeHint::UniversesBeyondExceptions
+        | OneTimeHint::SwipeSelect => None,
+    }
+}
+
+/// The slug of the guide for the Swipe select hint over `mode`'s overlay:
+/// picking a command-zone card goes with the commander guide, swiping
+/// Playstyle's suggestions with the Playstyle guide.
+#[must_use]
+pub const fn swipe_select_slug(mode: SwipeSelectMode) -> &'static str {
+    match mode {
+        SwipeSelectMode::Picking(_) => "commander-and-formats",
+        SwipeSelectMode::Suggested { .. } => "playstyle",
     }
 }
 
@@ -100,7 +115,7 @@ mod tests {
             .collect()
     }
 
-    const TOPICS: [HintTopic; 42] = [
+    const TOPICS: [HintTopic; 45] = [
         HintTopic::Password,
         HintTopic::Email,
         HintTopic::Verification,
@@ -111,11 +126,14 @@ mod tests {
         HintTopic::Website,
         HintTopic::Version,
         HintTopic::DeckTags,
+        HintTopic::DeckViewDeckTags,
         HintTopic::OracleTags,
+        HintTopic::DeckViewOracleTags,
         HintTopic::FilterOracleTags,
         HintTopic::DeckName,
         HintTopic::Format,
         HintTopic::Commander,
+        HintTopic::Oathbreaker,
         HintTopic::Partner,
         HintTopic::Background,
         HintTopic::SignatureSpell,
@@ -181,7 +199,11 @@ mod tests {
         let mapped = TOPICS
             .iter()
             .filter_map(|t| t.guide_slug())
-            .chain(ONE_TIME.iter().filter_map(|h| one_time_slug(*h)));
+            .chain(ONE_TIME.iter().filter_map(|h| one_time_slug(*h)))
+            .chain([
+                swipe_select_slug(SwipeSelectMode::Picking("commander")),
+                swipe_select_slug(SwipeSelectMode::Suggested { has_filter: false }),
+            ]);
         for slug in mapped {
             assert!(slugs.contains(&slug), "{slug} is not one of zite's guides");
         }
@@ -228,6 +250,19 @@ mod tests {
         ] {
             assert_eq!(topic.guide_slug(), Some("card-roles"), "{topic:?}");
         }
+    }
+
+    #[test]
+    fn swipe_select_links_the_guide_for_its_overlay() {
+        assert_eq!(
+            swipe_select_slug(SwipeSelectMode::Picking("oathbreaker")),
+            "commander-and-formats"
+        );
+        assert_eq!(
+            swipe_select_slug(SwipeSelectMode::Suggested { has_filter: true }),
+            "playstyle"
+        );
+        assert_eq!(one_time_slug(OneTimeHint::SwipeSelect), None);
     }
 
     #[test]
