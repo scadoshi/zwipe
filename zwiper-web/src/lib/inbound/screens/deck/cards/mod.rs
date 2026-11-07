@@ -9,7 +9,7 @@ pub(crate) mod quick_add;
 pub mod remove;
 pub mod view;
 
-use components::{CardDetails, TOAST_NORMAL};
+use components::{CardDetailsPanel, CardDetailsPanelSkeleton, TOAST_NORMAL};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, Toasts};
 use zwipe_core::domain::card::Card;
@@ -37,24 +37,27 @@ fn flip_top_card() {
     );
 }
 
-/// The top card's details beside it on a wide window: what the phone keeps
-/// behind the eye button.
+/// The top card's details beside it on a wide window, what the phone keeps
+/// behind the eye button, or their ghost while the cards load. With
+/// `on_printings` the pane offers Printings, as the drawer does.
 #[component]
-fn SwipeDetails(card: Option<Card>) -> Element {
+fn SwipeDetails(
+    card: Option<Card>,
+    #[props(default)] loading: bool,
+    #[props(default)] on_printings: Option<EventHandler<()>>,
+) -> Element {
     let describe_tag = use_describe_tag();
     rsx! {
         div { class: "web-swipe-details",
             if let Some(card) = card {
-                div { class: "web-details-panel",
-                    CardDetails {
-                        key: "{card.scryfall_data.id}",
-                        card,
-                        show_name: true,
-                        show_cost: true,
-                        show_classification: true,
-                        describe_tag: Some(describe_tag),
-                    }
+                CardDetailsPanel {
+                    key: "{card.scryfall_data.id}",
+                    card,
+                    describe_tag: Some(describe_tag),
+                    on_printings,
                 }
+            } else if loading {
+                CardDetailsPanelSkeleton {}
             }
         }
     }

@@ -26,6 +26,8 @@ dioxus = { version = "0.7.9", features = ["router", "fullstack"] }
 serde = { workspace = true }
 serde_json = { workspace = true }
 uuid = { workspace = true }
+# The catalog lists the card filter searches are stamped with when they land.
+chrono = { workspace = true }
 
 # Server feature pulls tokio in. Client (wasm) doesn't need it.
 tokio = { workspace = true, optional = true }

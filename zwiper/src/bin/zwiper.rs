@@ -14,7 +14,6 @@ use zwiper::inbound::router::Router;
 
 const FAVICON: Asset = asset!("/assets/favicon/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
-const ACCORDION_CSS: Asset = asset!("/assets/accordion.css");
 /// Slides each screen's header away as its content scrolls down and back as it scrolls up.
 const HEADER_HIDE_JS: &str = include_str!("../../assets/header_hide.js");
 
@@ -135,8 +134,10 @@ fn App() -> Element {
         document::Style { {components::APP_CSS} }
         document::Style { {components::SCREENS_CSS} }
         document::Link { rel: "stylesheet", href: MAIN_CSS }
-        document::Link { rel: "stylesheet", href: ACCORDION_CSS }
+        document::Style { {components::FILTER_CSS} }
         document::Style { {components::TOAST_CSS} }
+        // The drawer the card details open in.
+        document::Style { {components::FILTER_CSS} }
         // Drives the edge fades on sideways scrollers where CSS scroll
         // timelines are missing (the dictionary's letter rail).
         document::Script { {components::SCROLL_FADE_JS} }

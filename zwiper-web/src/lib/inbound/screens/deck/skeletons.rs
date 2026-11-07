@@ -3,6 +3,8 @@
 
 use dioxus::prelude::*;
 
+use crate::inbound::chrome::ghost::{GhostChip, GhostHint, GhostText};
+
 /// A chip row while its screen loads: the label as a tinted bare chip, then
 /// bare chips of the given sizes (`sm`, `md`, `lg`, `xl`).
 #[component]
@@ -50,141 +52,144 @@ pub fn DeckListSkeleton() -> Element {
     }
 }
 
-/// A label over a bordered input with a ghost value.
+/// A form field's label row: its label `chars` wide, its `?`, then
+/// `extra` (a count, chips).
 #[component]
-fn InputFieldSkeleton() -> Element {
+fn GhostLabelRow(chars: u8, #[props(default)] extra: Option<Element>) -> Element {
     rsx! {
-        div { class: "skeleton-edit-deck-field",
-            div { class: "skeleton-bar skeleton-edit-deck-label" }
-            div { class: "skeleton-edit-deck-input",
-                div { class: "skeleton-bar skeleton-edit-deck-value" }
+        div { class: "label-row",
+            label { class: "label", GhostText { chars } }
+            GhostHint {}
+            {extra}
+        }
+    }
+}
+
+/// A field's box with a value `chars` wide in it; `input` sets the line
+/// height an `input` element draws its text at.
+#[component]
+fn GhostBox(chars: u8, #[props(default)] input: bool) -> Element {
+    rsx! {
+        div {
+            class: "input-clear-wrap",
+            div {
+                class: "input input-placeholder",
+                style: if input { "line-height: normal;" } else { "" },
+                GhostText { chars }
             }
         }
     }
 }
 
-/// A label over a row of bare chips of the given sizes.
+/// A panel of the deck form: its title `chars` wide over `children`.
 #[component]
-fn ChipsFieldSkeleton(chips: Vec<&'static str>) -> Element {
+fn GhostFormPanel(chars: u8, children: Element) -> Element {
     rsx! {
-        div { class: "skeleton-edit-deck-field",
-            div { class: "skeleton-bar skeleton-edit-deck-label" }
-            div { class: "skeleton-edit-deck-chips",
-                for (i, size) in chips.iter().enumerate() {
-                    div { key: "{i}", class: "skeleton-bar skeleton-chip skeleton-chip-{size}" }
-                }
+        div { class: "web-form-panel",
+            div { class: "settings-list-header web-form-head",
+                span { class: "settings-list-title", GhostText { chars } }
+            }
+            div { class: "web-form-fields", {children} }
+        }
+    }
+}
+
+/// A centered wrapping row of chips whose labels are the given widths.
+#[component]
+fn GhostChips(chips: Vec<u8>) -> Element {
+    rsx! {
+        div { class: "chip-row", style: "flex-wrap: wrap; justify-content: center;",
+            for (i, chars) in chips.into_iter().enumerate() {
+                GhostChip { key: "{i}", chars }
             }
         }
     }
 }
 
-/// Edit deck while the deck loads, in the form's two columns: name,
-/// format, commander and power level; then the land and price targets, the
-/// deck tags' chip box and the other tags.
+/// Edit deck while the deck loads, in the form's own panels: Profile (the
+/// name, format and commander boxes and the power levels), then Budget
+/// (the land stepper and the price) and Tags (the two tag boxes and the
+/// other tags), on a wide window in its two columns.
 #[component]
 pub fn EditDeckSkeleton() -> Element {
     rsx! {
         div { class: "container-sm web-deck-form",
-            div { class: "skeleton-edit-deck web-deck-form-column",
-                for i in 0..3 {
-                    InputFieldSkeleton { key: "{i}" }
-                }
-                ChipsFieldSkeleton { chips: vec!["lg", "lg", "lg", "lg", "lg"] }
-            }
-            div { class: "skeleton-edit-deck web-deck-form-column",
-                ChipsFieldSkeleton { chips: vec!["sm", "sm", "sm"] }
-                div { class: "skeleton-edit-deck-field",
-                    div { class: "skeleton-bar skeleton-edit-deck-label" }
-                    div { class: "skeleton-edit-deck-chips",
-                        for i in 0..3 {
-                            div { key: "{i}", class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
+            div { class: "flex-col text-center web-deck-form-column",
+                GhostFormPanel { chars: 7,
+                    div {
+                        div { class: "label-hint",
+                            span { class: "label-hint-anchor",
+                                label { class: "label", GhostText { chars: 9 } }
+                                GhostHint {}
+                            }
+                        }
+                        GhostBox { chars: 11, input: true }
+                    }
+                    div {
+                        GhostLabelRow { chars: 6 }
+                        GhostBox { chars: 9 }
+                    }
+                    div { class: "collapsible open",
+                        div { class: "collapsible-inner",
+                            div {
+                                GhostLabelRow {
+                                    chars: 9,
+                                    extra: rsx! {
+                                        div { class: "chip-xs web-ghost-chip", GhostText { chars: 6 } }
+                                        div { class: "chip-xs chip-primary web-ghost-chip", GhostText { chars: 5 } }
+                                    },
+                                }
+                                GhostBox { chars: 7, input: true }
+                            }
                         }
                     }
-                    div { class: "skeleton-edit-deck-input",
-                        div { class: "skeleton-bar skeleton-edit-deck-value" }
-                    }
-                }
-                div { class: "skeleton-edit-deck-field",
-                    div { class: "skeleton-bar skeleton-edit-deck-label" }
-                    div { class: "skeleton-edit-deck-chipbox",
-                        for (i, size) in ["md", "sm", "md", "sm"].iter().enumerate() {
-                            div { key: "{i}", class: "skeleton-bar skeleton-chip skeleton-chip-{size}" }
+                    for i in 0..3 {
+                        div { key: "{i}", class: "collapsible",
+                            div { class: "collapsible-inner" }
                         }
                     }
-                }
-                ChipsFieldSkeleton { chips: vec!["md", "sm", "lg", "sm", "xl"] }
-            }
-        }
-    }
-}
-
-/// A bordered list ghost: its title bar, then `rows` label and value bars.
-#[component]
-pub fn SkeletonInfoList(rows: usize) -> Element {
-    rsx! {
-        div { class: "skeleton-info-list",
-            div { class: "skeleton-card-header",
-                div { class: "skeleton-bar skeleton-section-label" }
-            }
-            for i in 0..rows {
-                div { key: "{i}", class: "skeleton-info-row",
-                    div { class: "skeleton-bar skeleton-info-row-label" }
-                    div { class: "skeleton-bar skeleton-info-row-value" }
+                    div { style: "margin-top: 1rem;",
+                        GhostLabelRow { chars: 11 }
+                        GhostChips { chips: vec![14, 8, 12, 13, 8] }
+                    }
                 }
             }
-        }
-    }
-}
-
-/// The deck view's Profile card while the deck loads.
-#[component]
-pub fn DeckProfileSkeleton() -> Element {
-    rsx! {
-        div { class: "skeleton-profile",
-            SkeletonInfoList { rows: 3 }
-        }
-    }
-}
-
-/// The deck view's stats while the deck loads: one open list, then three
-/// sections closed to their headers.
-#[component]
-pub fn DeckStatsSkeleton() -> Element {
-    rsx! {
-        div { class: "skeleton-stats",
-            SkeletonInfoList { rows: 5 }
-            for i in 0..3 {
-                div { key: "{i}", class: "skeleton-chart-box",
-                    div { class: "skeleton-bar skeleton-section-label" }
+            div { class: "flex-col text-center web-deck-form-column",
+                GhostFormPanel { chars: 6,
+                    div { style: "margin-top: 1rem;",
+                        GhostLabelRow { chars: 11 }
+                        div { class: "stepper",
+                            span { class: "skeleton-bar skeleton-chip web-ghost-box web-ghost-stepper" }
+                            span { class: "stepper-value", style: "width: auto; min-width: 4rem;",
+                                GhostText { chars: 7 }
+                            }
+                            span { class: "skeleton-bar skeleton-chip web-ghost-box web-ghost-stepper" }
+                        }
+                    }
+                    div { style: "margin-top: 1rem;",
+                        GhostLabelRow {
+                            chars: 12,
+                            extra: rsx! {
+                                div { class: "label-row-chips",
+                                    for i in 0..3 {
+                                        GhostChip { key: "{i}", chars: 3 }
+                                    }
+                                }
+                            },
+                        }
+                        GhostBox { chars: 7, input: true }
+                    }
                 }
-            }
-        }
-    }
-}
-
-/// The deck view's cards column while the deck loads: two groups of ghost
-/// rows.
-#[component]
-pub fn DeckCardsSkeleton() -> Element {
-    rsx! {
-        div { class: "skeleton-card-list web-deck-cards",
-            div { class: "skeleton-card-group",
-                div { class: "skeleton-card-group-header",
-                    div { class: "skeleton-bar skeleton-card-bar-header" }
-                }
-                div { class: "skeleton-card-row",
-                    div { class: "skeleton-bar skeleton-card-thumb" }
-                    div { class: "skeleton-bar skeleton-card-bar-row" }
-                }
-            }
-            div { class: "skeleton-card-group",
-                div { class: "skeleton-card-group-header",
-                    div { class: "skeleton-bar skeleton-card-bar-header skeleton-card-bar-header-wide" }
-                }
-                for i in 0..6 {
-                    div { key: "{i}", class: "skeleton-card-row",
-                        div { class: "skeleton-bar skeleton-card-thumb" }
-                        div { class: "skeleton-bar skeleton-card-bar-row" }
+                GhostFormPanel { chars: 4,
+                    for (i, chars) in [9, 11].into_iter().enumerate() {
+                        div { key: "{i}", style: "margin-top: 1rem;",
+                            GhostLabelRow { chars, extra: rsx! { span { class: "field-count", GhostText { chars: 4 } } } }
+                            div { class: "input input-placeholder", GhostText { chars: 7 } }
+                        }
+                    }
+                    div { style: "margin-top: 1rem;",
+                        GhostLabelRow { chars: 10 }
+                        GhostChips { chips: vec![6, 4, 4, 6, 15] }
                     }
                 }
             }

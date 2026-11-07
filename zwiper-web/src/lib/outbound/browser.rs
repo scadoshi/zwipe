@@ -1,14 +1,11 @@
-//! The browser window itself: opening a page in a new tab, and the
-//! clipboard.
+//! The browser window itself: leaving for another page, and the clipboard.
 
-/// Opens `url` in a new tab, with no handle back to this page. A blocked
-/// pop-up is only logged.
-pub fn open_in_new_tab(url: &str) {
+/// Loads `url` in this tab, in place of the app. A refusal is only logged.
+pub fn open_here(url: &str) {
     #[cfg(target_arch = "wasm32")]
     {
-        let opened = web_sys::window()
-            .map(|window| window.open_with_url_and_target_and_features(url, "_blank", "noopener"));
-        if !matches!(opened, Some(Ok(_))) {
+        let opened = web_sys::window().map(|window| window.location().assign(url));
+        if !matches!(opened, Some(Ok(()))) {
             tracing::warn!("could not open {url}");
         }
     }

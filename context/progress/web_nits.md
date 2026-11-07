@@ -23,10 +23,8 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
-| 12, split phase 5, the cut | laptop | `split/phase-5` |
-| 36, links open in the same tab | halo | `nits/halo-same-tab` (PR #177, approved) |
-| 37, plain hover on every clickable chip and header button | thinker | `nits/thinker-header-chip-hover` (PR #176, approved) |
-| 38, the footer looks like zwipe.net's | scotland | `nits/scotland-footer-look` |
+| 65, 67, cover-flow printing picker, the phone picker's bottom row (PR #207, waiting on Scotty's eye) | scotland | `nits/scotland-65` |
+| cycle-trk-mission description, held until scotland's 2026-11-07 sync confirms its cards | halo | `otags/cycle-trk-mission` (PR #178) |
 
 The loop is in [`../development/factory.md`](../development/factory.md).
 
@@ -42,7 +40,7 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 4. **Deck page card rows have no dividers.** On the wide deck page the rows inside a group (Commander, Creatures) run with no rule between them, where the app's card list separates each row with a bottom border (the shared `.card-row` rule in `components/assets/magic.css`, last row excepted). Likely a web or band style overriding it.
 5. **Modals can be dragged around the screen.** Clicking and dragging a modal (the Universes Beyond exceptions picker, the other screen pickers) moves it. Likely the bottom sheet's drag-to-dismiss gesture still live on the kit's wide `SheetFrame { wide: Modal }` form, where nothing should move it; it should be off on a wide window.
 6. **Privacy policy is too narrow on a wide window.** The page head and sections are held to the policy's 40rem column (the `.web-privacy` rules and the `:has(+ .screen-content .web-privacy)` head cap in `web.css`), so a large window leaves wide empty margins. Wanted wider, likely the page width other screens use (`--web-page-max`), or zite's privacy page width. The head still repeats Privacy policy above the first section's own title.
-7. **Deck tiles on Decks are much too tall.** Six tiles to a row on a wide window, each about 11rem wide (`repeat(auto-fill, minmax(11rem, 1fr))` in `web.css`), so the chips under the name stack one per line: count, format, power, commander, then every tag. A tagged deck runs over 800px tall. Needs a plan; options to weigh:
+7. **Deck tiles on Decks are much too tall.** Decided 2026-11-06: the phone's row shape (art left, name and chips beside) in one column, with two columns at wide widths to compare. Six tiles to a row on a wide window, each about 11rem wide (`repeat(auto-fill, minmax(11rem, 1fr))` in `web.css`), so the chips under the name stack one per line: count, format, power, commander, then every tag. A tagged deck runs over 800px tall. Needs a plan; options to weigh:
    - Fewer, wider tiles: raise the tile minimum to about 18 to 20rem, three or four to a row, so chips wrap several to a line.
    - Let the chips flow in rows: they read as a column now even when two short ones would fit side by side; a centered wrapping row alone cuts the height a lot.
    - The app's row shape on wide too: art at the left, name and chips beside it, two or three rows across the page, the shape the phone layout already uses.
@@ -72,21 +70,56 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 30. **The nav bar's icon buttons have no hover on a wide window.** The top bar's icon buttons (the `!`, Home, Account, Settings, About, Theme and the light/dark toggle) sit still under a mouse, where the text pills beside them (Decks, Playstyle, Activity, Commander maybeboard, Log out) read as clickable. Give them a hover inside `@media (hover: hover)`, matching whatever the pills and the panels (item 9) settle on.
 31. **Card row dividers elsewhere (follow-up to 4).** Each web card row sits in a wrapper (`.web-deck-row > .web-card-row > .card-row`), so the shared `.card-row:last-child { border-bottom: none }` strips every divider. 4 fixed the wide deck page only; the same likely happens below 900px and on Activity, Playstyle and the maybeboard lists.
 32. **Text fields still uncapped (follow-up to 18).** The deck form's fields, the command zone search and the deck dialog's input were not checked for full-width stretch on a wide window.
-33. **The kit's BottomSheet should not drag in modal or drawer form (follow-up to 5).** 5 was fixed in `web.css` by turning off pointer events on the header and pinning an open modal or drawer with `!important` over the drag's inline transform. The clean fix is in orangui: skip starting the drag-to-dismiss when the sheet shows as `SheetWide::Modal` or `Drawer`. That is a kit change and pin bump across zwipe, cairn and portfolio; once it lands, drop the web.css workaround. The same kit pass should drop `AlertDialog`'s hardcoded `target="_blank"` on dialog links for the wasm build, so the web's support dialog (Report a problem, Discord) opens in the same tab too (follow-up to 36).
+33. **(Dropped 2026-11-06: Scotty is fine with dragging; the AlertDialog half is now 60.)** The kit's BottomSheet should not drag in modal or drawer form (follow-up to 5). 5 was fixed in `web.css` by turning off pointer events on the header and pinning an open modal or drawer with `!important` over the drag's inline transform. The clean fix is in orangui: skip starting the drag-to-dismiss when the sheet shows as `SheetWide::Modal` or `Drawer`. That is a kit change and pin bump across zwipe, cairn and portfolio; once it lands, drop the web.css workaround. The same kit pass should drop `AlertDialog`'s hardcoded `target="_blank"` on dialog links for the wasm build, so the web's support dialog (Report a problem, Discord) opens in the same tab too (follow-up to 36).
 34. **The maybeboard's row entrance stagger is broken on the web.** The web's row wrappers make each `.card-row` its wrapper's only child, so `main.css`'s `.maybeboard-list .card-row:nth-child(n)` delays all match the first, and every row enters at once.
-35. **About overflows on a phone width.** At 400px the About page's panels run off the right edge (seen in builds before and after the split's phase 1, so it predates it).
+35. **(Closed 2026-11-06, never reproduced.)** About overflows on a phone width. At 400px the About page's panels ran off the right edge in a headless build before the split's phase 5. Not reproduced since (2026-11-06, thinker, after the split); waiting on a screenshot from a real phone. PR #183 fixed a related overflow found on the way: the phone menu's footer at 320px.
 36. **Outbound links open in the same tab on zwipe.net and app.zwipe.net.** Home's "Magic: The Gathering" link and every other `target="_blank"` or programmatic new-tab open take over the current tab instead. The mobile app keeps sending links to the system browser.
 37. **Every clickable chip and panel header button gets the plain button hover on the web.** Home's All decks and Playstyle header buttons, Decks' Group by options, Show pips, tag chips and fold toggles, and the same chips across the deck page, Playstyle, the filter drawer and Activity. The kit's hover (accent text and border), no transform or size change; label and count chips stay still.
 38. **The web's footer looks wrong.** It sits as a solid block boxed into the page column, cuts off the grid backdrop, and its pills are gold. Match zwipe.net's footer.
+39. **The web's splash plays like zwipe.net's.** zwipe.net plays its splash once a session. The web should too: a fresh app.zwipe.net tab shows it, a refresh does not, and arriving from zwipe.net does not (detected by the referrer, since session storage does not cross origins). zite mirrors it for arrivals from app.zwipe.net.
+40. **Between a phone and the 900px breakpoint the web keeps the phone column.** At a half-screen window (~720px) app.zwipe.net's Home stays a narrow centered column with wide empty margins, where zwipe.net's panels fill the window with a small gutter. Below 900px the web's content fills the window as zite's does; a real phone width looks the same as today.
+41. **Hovers vanish below 900px on a desktop.** On a half-width window Home's deck art hover (and the other wide-only hovers) stops. Hover rules key on `(hover: hover)`, not the window's width.
+42. **Every hint button on the web gets the plain button hover.** The `?` buttons (panel headers, charts, the swipe screens' corner hint, the drawer title bar) sit still under a mouse.
+43. **The two sites' favicons differ.** app.zwipe.net shows a gold Z on a dark square from its lone favicon.ico; zwipe.net a light Z from a full icon set. The web takes zwipe.net's set.
+44. **A deck entry's hover squares its corners.** Hovering a deck on Decks shrinks its corner radius. Wanted: the same radius, a slight grow (no lift), a quick transition, and the background color change kept for now (Scotty may drop it later).
+45. **The wide page heads go.** Each wide page opens with a panel restating the page's title and a one-line description: ceremony, no function. Remove them on every page, Settings included (keeping Home's hero, and any head that carries real controls or identity) and move the page's `?` into the nav bar's icon row.
+46. **The footer is far too tall on both sites.** The copyright sits in line with the pills, the Scryfall credit in line with the Fan Content notice, the attributions use the footer's full width, and the padding shrinks. Shared `SiteFooter`, so zwipe.net and the web change together.
+47. **About repeats the footer's credits.** On a wide window the Credits panel duplicates the footer's Scryfall and Fan Content lines; it goes there. Below 900px, with no footer, it stays.
+48. **zwipe.net's manifest points at missing install icons.** zite's site.webmanifest lists /assets/icon-192.png and /assets/icon-512.png, which return 404 live because zite never bundles them (found by laptop on 43).
+49. **Hand-rolled clear-× inputs.** The deck page's Quick add (and other inputs: the maybeboard's Quick add, the exceptions and picker searches, the dictionary, Import's URL) draw their own input and × instead of `components::ClearWrap`, so they sit slightly smaller and the × doesn't ease in. All go through `ClearWrap`.
+50. **The deck page head's `?` is smaller than its neighbors.** Edit, Clone and Share are full icon buttons; the `?` beside them is the small info button. Same size and shape as the other three.
+51. **Swiping on the web is too slow.** 24 drops a press until the leaving card's 0.32s exit ends. Keep the exit's speed but take the next press halfway through it, so swipes can come twice as fast; a held key still swipes once.
+52. **The swipe surfaces' text buttons belong in the dock.** The "← Skip / ↑ Maybeboard / ↓ Undo / → Add" row under the card moves into the action dock at the bottom right (or a second dock beside it) as icon buttons, on every swipe surface.
+53. **The app's Quick add hand-rolls its clear ×** (zwiper/src/lib/inbound/screens/deck/card/components/quick_add.rs ~117) instead of `components::ClearWrap`, as the web's did before 49. An app change: rides the next app release with a changelog entry if visible.
+54. **Redesign the card details pane** (`components::CardDetails`, both clients; also the todo's 2026-11-05 card details redesign). A kit `Panel` titled with the card's name; a chip row with keys (Type, Rarity, Set, Artist) and the mana pips inline instead of pinned right; the oracle text in the body; card roles, tags and the other bottom pieces in the footer; the price chips under the web's swipe card move into the pane. Wherever it opens as an overlay it slides in as a side drawer from the right, at every width and in the app too (Scotty prefers the side entrance to the pop-up).
+55. **zwipe.net: the testimonials' rating sits on its own line.** Move the "★★★★★ 4.8" chip into the panel header beside "Deck builder testimonials".
+56. **The web's deck page head goes too.** The deck name heading goes; Edit, Clone and Share move into the deck page's action dock; the `?` goes to the nav. The info chips and featured cards stay as content. zwipe.net's shared deck keeps its head.
+57. **Footer pills take the nav's style, not gold** (both sites).
+58. **Every panel on the web hovers**, forms included; panels that can't take a transform (they hold fixed overlays) get the shadow and border without the lift.
+59. **The deck form's pickers become the side drawer on phones too** (the every-width drawer from 54), for one side-sheet story across the app.
+60. **Dialog links open in the same tab on the web.** orangui's AlertDialog hardcodes `target="_blank"` on its link actions; the app needs it (its link hook hands `_blank` https links to the system browser), so only the wasm build drops it. Affects the web's support dialog and the hint dialogs' guide links. Kit change plus pin bumps in zwipe, cairn and portfolio.
+61. **The card details skeleton lacks the footer rule** the loaded panel has (folded into 54).
+62. **The nav's `?` sits apart.** Equal spacing across every icon button and Log out; the `?` glyph heavier.
+63. **The swipe arrow dock needs labels and a place beside the other dock.** "← Skip / ↑ Maybeboard / ↓ Undo / → Add" text on the buttons, and the arrow dock to the left of the existing dock on the same row.
+64. **One chip grammar for tags, every client.** Keywords, card roles and oracle tags draw as a one-off outlined `.keyword-chip` under bare colored group names. They become the kit's regular clickable `Chip`s, with "Keywords", "Card roles" and "Oracle tags" as label chips leading their rows, as Show and Group by do. Shared components, so the app, the web and zwipe.net change together; a 1.18.1 changelog entry.
+65. **The web's printing picker becomes a cover-flow modal on a wide window.** A large modal with the printings as a stacked, fanned carousel (selected large in the middle, ~10 each side shrinking behind it) that glides left and right as you scroll, arrow, drag or click; Enter or a click selects. Phones keep today's picker.
+66. **Home's hero matches across the two sites** (Scotty to thinker directly). app.zwipe.net takes zwipe.net's larger mark, figures and labels on a wide window; zwipe.net takes the app's rounded counters (31.8k) and its pre-hydration roll keeps that shape. PR #206.
+67. **The phone printing picker floats its pager and prices mid-sheet.** The dots and price chips hug the sheet's bottom, and the ✓ sits on the prices' row instead of in its own dock.
 
 ## Done
 
+- 46, a compact footer on both sites: PR #190. 48, zwipe.net's manifest icons: PR #191. 49, inputs through `ClearWrap`: PR #192.
+- 50, the deck head's `?`: PR #193. 53, the app's Quick add: PR #194. 21 phase 5, zwipe.net's full filter: PR #195. 51, swiping twice as fast: PR #196. 55, testimonial rating inline: PR #197.
+- 45, 47, no page heads, the page's `?` in the nav, About drops Credits on wide: PR #198. 52, swipe buttons in the dock: PR #199.
+- 54, 61, card details redesigned as a panel and a side drawer everywhere: PR #200. 56, the deck page head: PR #201. 57, 58, nav-style footer pills, every panel hovers: PR #202.
+- 62, the nav's `?` spaced evenly: PR #203. 63, the labeled arrow dock: PR #204. 28, the skeleton pass: PR #205. 66, the hero aligned across sites: PR #206. 64, one chip grammar for tags: PR #208.
+- Deployed to main 2026-11-06 at `e4466177c` (everything above through #206; #208 rides the next round).
 - 24, held arrow swipes once and the exit slows to 0.32s: PR #152 into `release`.
 - 13, 6, 3, changelog pages by five, privacy at page width, chart title gaps: PR #153 into `release`.
 - 18, 20, wide fields capped at 32rem, dictionary letters in one row: PR #154 into `release`.
-- 8, 16, image preview sized as zite's, dialog padding rebalanced: PR #155 into `release`.
+- 16, dialog padding rebalanced: PR #155 into `release`. 8 from the same PR matched zite only above 900px and was reopened.
 - 9, 10, 4, 30, panel lift, deck art hover, wide deck page dividers, nav icon hover: PR #156 into `release`.
-- 19, 25, pickers as the kit's drawer, no grid tiles inside overlays: PR #157 into `release`.
+- 25, no grid tiles inside overlays: PR #157 into `release`. 19 from the same PR only restyled the old picker and was reopened.
 - 5, 17, modals and drawers stay put on a wide window, Account changes as drawers: PR #158 into `release`.
 - 29, featured card names in chips on every client: PR #159 into `release`.
 - 31, 32, dividers on every web card list, dialog fields capped: PR #160 into `release`.
@@ -101,4 +134,16 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 - 12, split phase 0, the empty `components::SCREENS_CSS` frame: PR #169 into `release`.
 - 2, 23, the web's deck page drops the inline Filter row (`DeckControls` takes an optional `DeckFilter`) and gains fold-all: PR #170 into `release`. 11 won't do.
 - 12, split phases 1 to 4, `main.css` moved into `components/assets/screens/`: PRs #171, #174, #175, #173 into `release`.
+- 41, 42, 44, hovers at any width with a mouse, hint button hover, deck entries keep their corners: PR #185 into `release`.
+- 40, the narrow layout fills a tablet-width window with zwipe.net's gutter: PR #186 into `release`.
+- 7, Decks as rows on a wide window, two columns from 1400px: PR #187 into `release`.
+- 8 (reopened), the image preview as large as zwipe.net's at every width: PR #188 into `release`.
+- 43, the web's favicons match zwipe.net's: PR #189 into `release`.
+- 49, the text inputs that clear typed text go through `components::ClearWrap`: PR #192 into `release`.
+- 19 (reopened), the deck form's pickers as the card filter's drawer and bottom sheet, the dictionary as the kit's modal: PR #182 into `release`.
+- 12, split phase 5: the web stops loading `main.css`, `accordion.css` moves to `components`, scrollbars show on a wide window: PR #180 into `release`. The split is done.
+- 39, the splash plays once a session and not on arrival from zwipe.net (zite mirrors it): PR #181 into `release`.
+- 38, the footer spans the window as zwipe.net's does: PR #179 into `release`.
+- 36, outbound links open in the same tab on zwipe.net and app.zwipe.net: PR #177 into `release`.
+- 37, plain hover on every clickable chip and panel header button: PR #176 into `release`.
 - 22, zite's hover stack in `components`, drawn by zite and the web: PR #172 into `release`.

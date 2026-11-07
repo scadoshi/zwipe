@@ -90,20 +90,20 @@ pub fn CardRoleChips(
 
     rsx! {
         div { class: "card-roles",
-            if show_label {
-                span { class: "chips-label", "Card roles" }
-            }
             if let Some(help) = help {
                 {help}
             }
             div { class: "keyword-chips",
+                if show_label {
+                    span { class: "stat-chip stat-chip-p1 chip-row-label", "Card roles" }
+                }
                 for (i , (label , tags)) in items.iter().enumerate() {
                     if tags.is_empty() {
-                        span { key: "{i}", class: "detail-chip", "{label}" }
+                        span { key: "{i}", class: "stat-chip", "{label}" }
                     } else {
                         button {
                             key: "{i}",
-                            class: if open_idx == Some(i) { "keyword-chip active" } else { "keyword-chip" },
+                            class: if open_idx == Some(i) { "chip selected" } else { "chip" },
                             onclick: move |evt| {
                                 evt.stop_propagation();
                                 if open() == Some(i) {
@@ -134,7 +134,7 @@ pub fn CardRoleChips(
                                             rsx! {
                                                 button {
                                                     key: "{tag}",
-                                                    class: if open_tag().as_deref() == Some(tag.as_str()) { "keyword-chip active" } else { "keyword-chip" },
+                                                    class: if open_tag().as_deref() == Some(tag.as_str()) { "chip selected" } else { "chip" },
                                                     onclick: move |evt| {
                                                         evt.stop_propagation();
                                                         if open_tag().as_deref() == Some(slug.as_str()) {
@@ -149,7 +149,7 @@ pub fn CardRoleChips(
                                             }
                                         }
                                     } else {
-                                        span { key: "{tag}", class: "detail-chip", "{tag}" }
+                                        span { key: "{tag}", class: "stat-chip", "{tag}" }
                                     }
                                 }
                             }

@@ -1,22 +1,21 @@
 use std::collections::{HashMap, HashSet};
 
+use chrono::Utc;
 use components::{
-    CardRow as SharedCardRow, Chip, ColorChart, DeckBand, DeckCharts, DeckControls, DeckFacts,
-    DeckFilter, DeckFold, DeckHead, DeckPage, DrawOdds, FeaturedCard, FlippableCardImage,
-    HoverStackHost, ManaCurve, ManaFulfillment, Panel, use_hover_stack,
+    CardFilterPanel, CardRow as SharedCardRow, Chip, ColorChart, DeckBand, DeckCharts,
+    DeckControls, DeckFacts, DeckFold, DeckHead, DeckPage, DockFilter, DrawOdds, FeaturedCard,
+    FlippableCardImage, HoverStackHost, ManaCurve, ManaFulfillment, Panel, use_hover_stack,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_client::ClientError;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::oracle_tag::OracleTag;
-use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::card::search_card::card_filter::sort_direction::SortDirection;
-use zwipe_core::domain::card::search_card::card_type::CardType;
 use zwipe_core::domain::card::search_card::cards::Cards;
 use zwipe_core::domain::card::search_card::group_cards::GroupByOption;
 use zwipe_core::domain::deck::deck_metrics::{self, DeckMetrics};
@@ -24,6 +23,10 @@ use zwipe_core::domain::deck::{Board, DeckEntry, Format, deck_tag_label};
 use zwipe_core::http::contracts::deck::HttpSharedDeck;
 use zwipe_ui::colors::ColorCounts;
 use zwipe_ui::deck_cards::{self, Zone};
+use zwipe_ui::filter;
+use zwipe_ui::filter::draft::SheetConfig;
+use zwipe_ui::filter::picker::Sources;
+use zwipe_ui::stores::catalog::{Catalog, Kind};
 
 use crate::components::{OVERLAY_EXIT_MS, PageMeta, sleep_ms};
 use crate::{Footer, Nav, api};
@@ -249,9 +252,10 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
 
     // The controls' state, ephemeral per visit.
     let group_by = use_signal(|| GroupByOption::CardType);
-    let name_filter = use_signal(String::new);
-    let selected_types = use_signal(Vec::<CardType>::new);
-    let selected_colors = use_signal(Vec::<Color>::new);
+    // The card filter's applied filter, and the lists its pickers search.
+    let mut card_filter: Signal<CardQueryBuilder> = use_signal(CardQueryBuilder::default);
+    let mut filter_open = use_signal(|| false);
+    let catalog: Signal<Catalog> = use_signal(Catalog::default);
     let show_zone = use_signal(|| true);
     let show_tokens = use_signal(|| false);
     // Art-crop thumbnails on the card rows, on by default (matches the app).
@@ -370,17 +374,10 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
     // The same pass the app's deck view runs: criteria match, name sort, then
     // group, with the lands pulled out. A filter that fails to parse lists
     // every card.
-    let mut builder = CardQueryBuilder::new();
-    let name_query = name_filter();
-    if !name_query.trim().is_empty() {
-        builder.set_name_contains(name_query.trim());
-    }
-    if !selected_types().is_empty() {
-        builder.set_card_type_contains_any(selected_types());
-    }
-    if !selected_colors().is_empty() {
-        builder.set_color_identity_within(selected_colors().into_iter().collect());
-    }
+    let builder = card_filter();
+    let filter_on = !builder.is_empty();
+    let dot = filter::shows_dot(&builder);
+    let sources = Sources::deck(&mainboard.iter().map(|e| e.card.clone()).collect::<Vec<_>>());
     let listed_zone = if show_zone() {
         zone.clone()
     } else {
@@ -463,6 +460,26 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
             path: "/deck".to_string(),
         }
         HoverStackHost { stack: hover_stack }
+        // The funnel floats at the bottom right, as on the web's deck page,
+        // with a reset on its corner while a filter is on.
+        div { class: "action-dock action-dock-right",
+            DockFilter {
+                label: "Filter",
+                dot,
+                active: filter_on,
+                onclick: move |()| filter_open.set(true),
+                on_reset: move |()| card_filter.set(CardQueryBuilder::default()),
+                reset_label: "Reset filter",
+            }
+        }
+        CardFilterPanel {
+            open: filter_open,
+            filter: card_filter,
+            config: SheetConfig { show_format: true, sources, ..SheetConfig::default() },
+            on_apply: move |next: CardQueryBuilder| card_filter.set(next),
+            catalog,
+            on_need: move |kinds: &'static [Kind]| fetch_lists(catalog, kinds),
+        }
         // Tap-to-open full-art overlay. Mirrors the app's ImagePreview: a dimmed
         // backdrop with the card art (its own flip button for DFCs), tap anywhere
         // to dismiss. The flip button stops propagation, so flipping never
@@ -519,11 +536,6 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                         show_tokens: (!deck.tokens.is_empty()).then_some(show_tokens),
                         show_zone,
                         show_art: show_row_art,
-                        filter: Some(DeckFilter {
-                            name: name_filter,
-                            types: selected_types,
-                            colors: selected_colors,
-                        }),
                     }
                 },
                 empty,
@@ -650,5 +662,58 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                 }),
             }
         }
+    }
+}
+
+/// Fetches each of `kinds` that `catalog` is missing, has failed or holds a
+/// day old, from the public list endpoints. The deck tag list needs a
+/// session, so it settles empty; the deck filter never reads it.
+fn fetch_lists(catalog: Signal<Catalog>, kinds: &'static [Kind]) {
+    let mut held = catalog;
+    let claimed = held.write().claim(kinds, Utc::now());
+    for kind in claimed {
+        let mut cell = catalog;
+        spawn(async move {
+            let client = api::client();
+            match kind {
+                Kind::Keywords => {
+                    let answer = client.fetch_keywords().await.ok();
+                    cell.write().keywords.settle(answer, Utc::now());
+                }
+                Kind::KeywordReminders => {
+                    let answer = client.fetch_keyword_reminders().await.ok();
+                    cell.write().keyword_reminders.settle(answer, Utc::now());
+                }
+                Kind::OracleWords => {
+                    let answer = client.fetch_oracle_words().await.ok();
+                    cell.write().oracle_words.settle(answer, Utc::now());
+                }
+                Kind::CardTypes => {
+                    let answer = client.fetch_card_types().await.ok();
+                    cell.write().card_types.settle(answer, Utc::now());
+                }
+                Kind::Artists => {
+                    let answer = client.fetch_artists().await.ok();
+                    cell.write().artists.settle(answer, Utc::now());
+                }
+                Kind::Sets => {
+                    let answer = client.fetch_sets().await.ok();
+                    cell.write().sets.settle(answer, Utc::now());
+                }
+                Kind::CardRoles => {
+                    let answer = client.fetch_card_roles().await.ok();
+                    cell.write().card_roles.settle(answer, Utc::now());
+                }
+                Kind::OracleTags => {
+                    let answer = client.fetch_oracle_tags().await.ok();
+                    cell.write().oracle_tags.settle(answer, Utc::now());
+                }
+                Kind::UbFranchises => {
+                    let answer = client.fetch_ub_franchises().await.ok();
+                    cell.write().ub_franchises.settle(answer, Utc::now());
+                }
+                Kind::DeckTags => cell.write().deck_tags.settle(None, Utc::now()),
+            }
+        });
     }
 }

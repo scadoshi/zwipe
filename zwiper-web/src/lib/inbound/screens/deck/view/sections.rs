@@ -6,8 +6,7 @@
 
 use components::icons::{CloneIcon, EditIcon, ShareIcon};
 use components::{
-    Button, ButtonVariant, ColorChart, DeckCharts, DrawOdds, InfoButton as HintButton, ManaCurve,
-    ManaFulfillment,
+    Button, ButtonVariant, ColorChart, DeckCharts, DrawOdds, ManaCurve, ManaFulfillment,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -39,14 +38,10 @@ fn InfoRow(label: String, value: String) -> Element {
 }
 
 /// Edit, Clone and Share as icons, the actions on the deck as a whole, in
-/// the Profile card's header on the phone and the deck page's head on a
-/// wide window, where `on_hint` adds the page's `?` after them.
+/// the Profile card's header below the breakpoint. A wide window's deck
+/// page holds them in its action dock.
 #[component]
-pub fn ProfileActions(
-    deck_id: Uuid,
-    dialogs: DeckDialogs,
-    #[props(default)] on_hint: Option<Callback<()>>,
-) -> Element {
+pub fn ProfileActions(deck_id: Uuid, dialogs: DeckDialogs) -> Element {
     let navigator = use_navigator();
     let DeckDialogs {
         mut clone,
@@ -77,9 +72,6 @@ pub fn ProfileActions(
                 onclick: move |_| share.set(true),
                 ShareIcon {}
                 span { class: "sr-only", {MoreItem::ShareDeck.short_label()} }
-            }
-            if let Some(open) = on_hint {
-                HintButton { onclick: move |_| open.call(()) }
             }
         }
     }
@@ -209,15 +201,13 @@ pub fn BudgetSection(
 }
 
 /// One retailer link in the Buy row, drawn as the row's action buttons,
-/// opening in a new tab with the `↗` that marks it as leaving the site.
+/// with the `↗` that marks it as leaving the site.
 #[component]
 fn BuyLink(href: String, label: &'static str) -> Element {
     rsx! {
         a {
             class: "btn-action web-buy-link",
             href,
-            target: "_blank",
-            rel: "noopener",
             "{label}"
             span { class: "web-buy-ext", "\u{2197}" }
         }

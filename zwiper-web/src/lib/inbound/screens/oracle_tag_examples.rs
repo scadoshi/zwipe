@@ -6,7 +6,9 @@
 //! a wide window it is a large modal with the card's details beside it;
 //! below the breakpoint it is the app's full-screen overlay.
 
-use components::{CardDetails, PageHeader, TOAST_QUICK, use_overlay_back};
+use components::{
+    CardDetailsPanel, CardDetailsPanelSkeleton, PageHeader, TOAST_QUICK, use_overlay_back,
+};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::domain::card::Card;
@@ -15,11 +17,11 @@ use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortK
 use zwipe_ui::stack::{CardStack, Direction, StackAction};
 use zwipe_ui::timing::{EXAMPLES_MAX_CARDS, LOAD_MORE_AT, PAGE_SIZE};
 
-use crate::inbound::cards::card_info::{CardDetailsSheet, CardInfoDisplay, CardSkeleton};
+use crate::inbound::cards::card_info::{CardDetailsSheet, CardSkeleton};
 use crate::inbound::cards::otag::use_describe_tag;
 use crate::inbound::cards::printing_sheet::PrintingSheet;
 use crate::inbound::cards::swipe_stack::{
-    EndUndoButton, Swipe, SwipeButtons, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
+    Swipe, SwipeDock, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
 };
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::back_arrow::BackArrow;
@@ -171,7 +173,7 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
             }
             div { class: "screen-content card-swipe content-enter web-examples-body {eye.body_class()}",
                 div { class: "form-container web-examples-card",
-                    if let Some(card) = current.clone() {
+                    if current.is_some() {
                         SwipeStack {
                             cards: window,
                             allowed: vec![Swipe::Left, Swipe::Down],
@@ -180,18 +182,12 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
                             on_entered: move |()| stack.write().cancel_entering(),
                             on_swipe,
                         }
-                        SwipeButtons {
-                            control,
-                            buttons: vec![(Swipe::Left, "Next"), (Swipe::Down, "Back one")],
-                        }
-                        CardInfoDisplay { card }
                     } else if past_end {
                         if loading_more() {
                             CardSkeleton { is_loading: true }
                         } else {
                             div { class: "flex-col flex-center", style: "flex: 1; min-height: 0; width: 100%;",
                                 div { class: "dict-empty", "No more cards. Swipe down to go back." }
-                                EndUndoButton { label: "Back one", on_press: go_back }
                             }
                         }
                     } else if loading() || (empty && loading_more()) {
@@ -202,20 +198,28 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
                 }
                 if let Some(card) = current.clone() {
                     div { class: "web-examples-details",
-                        CardDetails {
+                        CardDetailsPanel {
                             key: "{card.scryfall_data.id}",
                             card,
-                            show_name: true,
-                            show_cost: true,
-                            show_classification: true,
                             describe_tag: Some(describe_tag),
+                            on_printings: move |()| printing_open.set(true),
                         }
+                    }
+                } else if loading() || (empty && loading_more()) {
+                    div { class: "web-examples-details",
+                        CardDetailsPanelSkeleton {}
                     }
                 }
             }
             // Card details as the action dock; Back is the header's arrow.
-            div { class: "action-dock action-dock-right",
-                DockEye { eye, disabled: !has_card }
+            SwipeDock {
+                control,
+                buttons: vec![(Swipe::Left, "Next"), (Swipe::Down, "Back one")],
+                card_on_top: has_card,
+                on_undo: move |()| go_back.call(()),
+                div { class: "action-dock action-dock-right",
+                    DockEye { eye, disabled: !has_card }
+                }
             }
             OneTimeHintDialog { hint: OneTimeHint::OtagExamples, open: hint_open }
             if let Some(card) = current {

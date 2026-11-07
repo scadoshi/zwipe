@@ -883,11 +883,19 @@ code {
    real Panel now: the title comes from panel-title, the profile links ride the
    panel's action row, and the tag row sits in the body.) */
 
-/* A chip riding after a panel title (the privacy policy's Last updated)
-   sits a gap off the title text, as the portfolio's title tags do. */
-.panel-title > .stat-chip {
+/* A chip riding after a panel title (the privacy policy's Last updated,
+   the testimonials' rating) sits a gap off the title text, as the
+   portfolio's title tags do. */
+.panel-title > .stat-chip,
+.panel-title > .rating-tag {
     margin-left: 0.6rem;
     vertical-align: middle;
+}
+
+/* The rating keeps its own type inside the heading. */
+.panel-title > .rating-tag {
+    font-weight: 400;
+    letter-spacing: normal;
 }
 
 /* Panelled page header (title + tagline in a floating bubble), shared by the
@@ -1492,10 +1500,6 @@ code {
 }
 
 /* Review track nested in the Reviews panel body, below the rating tag. */
-.testimonials .testimonials-viewport {
-    margin-top: 1.25rem;
-}
-
 /* App Store rating as a clickable share-screen-style chip (warning-tinted,
    like the stars), with the flavor pill's hover grow. */
 .rating-tag {
@@ -1914,12 +1918,12 @@ code {
 }
 
 /* Scoped so it outranks components.css's .detail-chip (equal specificity,
-   loads later) — matches the .shared-deck .keyword-chip rule below. */
+   loads later), as the tag chips' rule below does. */
 .shared-deck .detail-chip {
     font-size: 0.7rem;
 }
 
-.shared-deck .keyword-chip {
+.shared-deck :is(.keyword-chips, .card-detail-otags) :is(.chip, .stat-chip) {
     font-size: 0.7rem;
 }
 

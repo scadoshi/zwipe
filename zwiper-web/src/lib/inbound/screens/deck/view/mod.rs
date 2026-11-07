@@ -1,5 +1,5 @@
 //! The deck view. On a wide window it is the deck page both sites share
-//! (`page`): the name, its facts and the featured cards, the cards as
+//! (`page`): its facts and featured cards, the cards as
 //! bands, the stats folded under them, and Warnings, Data and Danger zone
 //! at the foot. Below the breakpoint it is the app's stack: the Profile
 //! card, the accordion with `Budget` open, Data and Danger zone, and Cards
@@ -8,6 +8,7 @@
 
 pub mod cards;
 pub mod dialogs;
+mod ghost;
 pub mod page;
 pub mod panels;
 pub mod sections;
@@ -28,12 +29,12 @@ use zwipe_ui::deck::form::Slot;
 use zwipe_ui::screens::deck_view::CARDS;
 
 use self::dialogs::{DeckDialogsHost, use_deck_dialogs};
+use self::ghost::{DeckViewGhost, StatsSectionsGhost};
 use self::page::DeckWidePage;
 use self::panels::{DangerZonePanel, DataPanel};
 use self::sections::{
     BudgetSection, ProfileCard, StatsSections, TagsSection, WarningFixes, WarningsSection,
 };
-use super::skeletons::{DeckProfileSkeleton, DeckStatsSkeleton};
 use crate::domain::deck::{has_budget, metrics_possible, tag_count};
 use crate::inbound::cards::card_row::{CardOverlaysHost, use_card_overlays};
 use crate::inbound::cards::otag::{OtagExamplesHost, use_otag_reveals};
@@ -41,7 +42,7 @@ use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::media::use_wide;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::router::Route;
-use crate::inbound::shell::{HeadPlace, ScreenFrame};
+use crate::inbound::shell::ScreenFrame;
 
 /// The screen's title, in the tab and the folded nav.
 const TITLE: &str = "Deck";
@@ -225,15 +226,21 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         .map(|p| format!("{} (clone)", p.name))
         .unwrap_or_default();
 
+    // The deck's name names the page in the tab and the folded nav, once
+    // the profile has loaded.
+    let deck_title = loaded_profile
+        .as_ref()
+        .and_then(|r| r.as_ref().ok())
+        .map_or_else(|| TITLE.to_owned(), |p| p.name.to_string());
+
     rsx! {
         ScreenFrame {
-            title: TITLE,
-            head_place: HeadPlace::Content,
+            title: deck_title,
             on_hint,
             div { class: "screen-content",
                 match loaded_profile {
                     _ if wide() => rsx! {
-                        DeckWidePage { deck_id, currency, fixes, dialogs, on_hint }
+                        DeckWidePage { deck_id, currency, fixes, dialogs }
                     },
                     Some(Ok(p)) => {
                         let cards = metrics
@@ -256,7 +263,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                     TagsSection { profile: p.clone(), open_section }
                                 }
                                 if metrics.is_none() && deck_loading && metrics_possible(&p) {
-                                    DeckStatsSkeleton {}
+                                    StatsSectionsGhost {}
                                 } else {
                                     StatsSections { metrics: metrics.clone(), land_target: p.land_target, open_section }
                                 }
@@ -272,10 +279,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                         p { class: "text-muted", "Could not load deck" }
                     },
                     None => rsx! {
-                        div { class: "content-enter web-deck-view",
-                            DeckProfileSkeleton {}
-                            DeckStatsSkeleton {}
-                        }
+                        DeckViewGhost {}
                     },
                 }
             }

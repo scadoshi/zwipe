@@ -15,6 +15,7 @@ use zwipe_ui::deck::export::{self, Boards};
 
 use super::skeletons::ChipRowSkeleton;
 use crate::inbound::chrome::authed::use_authed;
+use crate::inbound::chrome::ghost::GhostText;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::shell::ScreenFrame;
 use crate::outbound::browser;
@@ -57,7 +58,6 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
     rsx! {
         ScreenFrame {
             title: "Export",
-            description: Some("Copy the deck as a text decklist, board by board".to_owned()),
             on_hint,
             div { class: "screen-content content-enter web-export",
                 div { class: "import-controls",
@@ -106,8 +106,8 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                             p { class: "text-muted", "Could not load deck" }
                         } else {
                             div { class: "web-form-panel",
-                                div { class: "skeleton-card-header web-form-head",
-                                    div { class: "skeleton-bar skeleton-section-label" }
+                                div { class: "settings-list-header web-form-head",
+                                    span { class: "settings-list-title", GhostText { chars: 8 } }
                                 }
                                 div { class: "web-form-fields",
                                     div { class: "skeleton-export-textarea" }

@@ -1,6 +1,7 @@
-/* zwiper-web: what a browser window changes over zwiper's stylesheets.
- * Loads after them. Wide is 900px and up; below that the screens keep the
- * phone layout in one column. */
+/* zwiper-web: the web's own rules over the shared sheets (the kit's and
+ * components' SCREENS_CSS and ACCORDION_CSS). Loads after them. Wide is
+ * 900px and up; below that the screens keep the phone layout in one
+ * column. */
 
 :root {
     --web-content-max: 72rem;
@@ -20,8 +21,9 @@
         --web-field-max: 32rem;
     }
 
-    #quick-add,
-    #commander-maybeboard-search,
+    .input-clear-wrap:has(> #quick-add),
+    .input-clear-wrap.web-ghost-field,
+    .input-clear-wrap:has(> #commander-maybeboard-search),
     #import-url,
     #oracle-tag-dictionary-search {
         max-width: var(--web-field-max);
@@ -37,15 +39,38 @@
     }
 }
 
+/* The theme class rides on html as well as the shell, so the page color
+   under everything is the theme's and not the launch color. The page
+   scrolls as one document. */
 html {
     overflow: auto;
-    touch-action: auto;
+    background-color: var(--bg-primary);
 }
 
 body {
-    max-width: none;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 400;
+    line-height: 1.6;
+    min-height: 100vh;
     overflow: auto;
     user-select: text;
+}
+
+/* Below the breakpoint scrollbars hide, as in the app, which signals a
+   scroller with edge fades; a wide window shows the browser's. */
+@media (max-width: 899px) {
+    *::-webkit-scrollbar {
+        width: 0;
+        height: 0;
+        display: none;
+    }
+
+    * {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
 }
 
 .app-shell {
@@ -96,38 +121,21 @@ body {
     }
 }
 
-/* On a wide window without a page head the `?` sits on its own line at
-   the page's end, at the right, so it never covers the last panel. */
-/* A screen with no page head (the swipe screens) keeps its `?` in the
-   window's top right corner, just under the nav, clear of the dock at the
-   bottom right. */
-.web-screen-hint {
-    position: fixed;
-    top: calc(var(--sheet-drawer-top, 5.4rem) - 0.4rem);
-    right: 1.5rem;
-    z-index: 4;
-    box-sizing: border-box;
-    height: 1.9rem;
-    margin: 0;
-    opacity: 0.55;
-}
-
-.web-screen-hint:hover {
-    opacity: 1;
-}
-
-/* Below the breakpoint the folded nav carries the screen's `?`. */
+/* The screen's `?` in the bar's icon row on a wide window. Below the
+   breakpoint the folded nav's title carries it, so the menu's footer row
+   leaves it out. */
 @media (max-width: 899px) {
-    .web-screen-hint {
+    .web-nav-hint {
         display: none;
     }
 }
 
 /* ---- Footer ----
 
-   zwipe.net's footer closes the page on a wide window, after the last
-   panel and as wide as the page. Below the breakpoint, as in the app,
-   there is none. */
+   zwipe.net's footer closes the page on a wide window: a bar the window's
+   width, 1rem under the last panel. The screen's content keeps that 1rem
+   and its wrappers none of their own, so the panels end where zwipe.net's
+   page does. Below the breakpoint, as in the app, there is none. */
 .web-site-footer {
     display: none;
 }
@@ -137,9 +145,17 @@ body {
         display: block;
         order: 2;
         flex: 0 0 auto;
-        width: min(calc(100% - 3rem), calc(var(--web-page-max) - 3rem));
-        margin: 0 auto;
+        width: 100%;
+        margin: 0;
         box-sizing: border-box;
+    }
+
+    .web-scroll-screen:has(> .web-site-footer) > .screen-content {
+        padding-bottom: 1rem;
+    }
+
+    .web-scroll-screen:has(> .web-site-footer) > .screen-content > :not(.action-dock) {
+        padding-bottom: 0;
     }
 }
 
@@ -306,9 +322,23 @@ body {
         justify-content: center;
     }
 
+    /* The mark and the counters at zite's sizes, as the hero has them
+       from 480px. */
     .web-hero .home-hero .logo {
         grid-row: span 2;
-        font-size: 0.85rem;
+        font-size: clamp(0.45rem, min(2.1vw, 2.2vh), 1.1rem);
+    }
+
+    .web-hero .home-hero .stat {
+        padding: 0.7rem 0.35rem 0.6rem;
+    }
+
+    .web-hero .home-hero .stat-num {
+        font-size: clamp(0.9rem, 3.8vw, 1.5rem);
+    }
+
+    .web-hero .home-hero .stat-label {
+        font-size: clamp(0.6rem, 2.4vw, 0.75rem);
     }
 
 
@@ -339,15 +369,17 @@ body {
 
 /* ---- Panel lift ----
 
-   zwipe.net's: under a mouse a panel rises 3px with the medium shadow. The
-   .web-main prefix outranks the kit's `transition: border-color`, and an
-   entrance animation fills backwards only, so its end transform lets go of
-   the lift. A panel in a sheet, a dialog or a screen over the page holds
-   still, and so does one holding card rows, a sheet, a picker screen or a
-   preview: a transform makes the panel the containing block of the fixed
-   overlays inside it, and a card list's rows carry their own hover. */
-@media (min-width: 900px) and (hover: hover) {
-    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold, .web-details-panel, .deck-row) {
+   zwipe.net's: under a mouse a panel takes the medium shadow and the
+   accent border, and rises 3px. The .web-main prefix outranks the kit's
+   `transition: border-color`, and an entrance animation fills backwards
+   only, so its end transform lets go of the lift. A panel in a sheet, a
+   dialog or a screen over the page holds still. One holding card rows, a
+   sheet, a picker screen, a preview, a dock, a heatmap (its floating tip)
+   or a grid backdrop takes the shadow and border but does not rise: a
+   transform makes the panel the containing block of the fixed overlays
+   inside it. Any width with a mouse. */
+@media (hover: hover) {
+    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold) {
         transition:
             border-color 0.4s ease,
             min-height 0.3s ease,
@@ -355,18 +387,44 @@ body {
             box-shadow 0.4s ease;
     }
 
-    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold, .web-details-panel, .deck-row):is(.content-enter, .content-enter-delayed, .row-enter, .changelog-panel) {
+    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold):is(.content-enter, .content-enter-delayed, .row-enter, .changelog-panel) {
         animation-fill-mode: backwards;
     }
 
-    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold, .web-details-panel, .deck-row):hover:not(:is(.screen .screen, .bottom-sheet, .alert-dialog) *):not(:has(.card-row, .bottom-sheet, .screen, .image-preview-container, .action-dock)) {
+    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold):hover:not(:is(.screen .screen, .bottom-sheet, .alert-dialog) *) {
         box-shadow: var(--shadow-md);
+        border-color: var(--accent-primary);
     }
 }
 
-@media (min-width: 900px) and (hover: hover) and (prefers-reduced-motion: no-preference) {
-    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold, .web-details-panel, .deck-row):hover:not(:is(.screen .screen, .bottom-sheet, .alert-dialog) *):not(:has(.card-row, .bottom-sheet, .screen, .image-preview-container, .action-dock)) {
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold):hover:not(:is(.screen .screen, .bottom-sheet, .alert-dialog) *):not(:has(.card-row, .bottom-sheet, .screen, .image-preview-container, .action-dock, .heat-grid, .grid-cells, .swipe-bottom-row)) {
         transform: translateY(-3px);
+    }
+}
+
+/* A deck on Decks is a card row, so the kit's row hover reaches it with
+   the expanded row's smaller corners and a larger scale. Under a mouse it
+   keeps its own corners, keeps the row hover's tint and grows a touch.
+   Its entrance fills backwards only, so its end transform lets go of the
+   hover. */
+@media (hover: hover) {
+    .card-row.deck-row {
+        animation-fill-mode: backwards;
+        transition:
+            background-color 0.15s ease,
+            transform 0.15s ease;
+    }
+
+    .card-row.deck-row:not(.expanded):hover {
+        border-radius: 1rem;
+        transform: scale(1.012);
+    }
+}
+
+@media (hover: hover) and (prefers-reduced-motion: reduce) {
+    .card-row.deck-row:not(.expanded):hover {
+        transform: none;
     }
 }
 
@@ -511,15 +569,34 @@ body {
         margin-left: 0.75rem;
     }
 
+    /* One gap across the row: the icon group's own between its icons, and
+       the same between the group and Log out. */
     .web-shell .nav-trailing-row {
         padding-bottom: 0;
-        gap: 0.75rem;
+        gap: 0.4rem;
+    }
+
+    /* The screen's `?` in the icons' box, its glyph bold to match the
+       weight of their strokes. */
+    .web-shell .nav-trailing-row .web-nav-hint {
+        width: 2.2rem;
+        height: 1.7rem;
+        padding: 0;
+        font-size: 1rem;
+        font-weight: 700;
     }
 }
 
+/* The theme sheet's wrapper holds only the kit's sheet, fixed to the
+   window, so it takes no slot in the icon row it sits in. */
+.web-theme-sheet {
+    display: contents;
+}
+
 /* The bar's icons, the `!` and Log out answer a mouse as the pills beside
-   them do: the accent on the glyph and the border, at full strength. */
-@media (min-width: 900px) and (hover: hover) {
+   them do: the accent on the glyph and the border, at full strength. In
+   the folded menu too, under a mouse at any width. */
+@media (hover: hover) {
     .web-shell .nav-trailing-row .btn-action {
         transition:
             color 0.15s,
@@ -528,6 +605,41 @@ body {
     }
 
     .web-shell .nav-trailing-row .btn-action:hover {
+        opacity: 1;
+        color: var(--accent-primary);
+        border-color: var(--accent-primary);
+    }
+}
+
+/* ---- Hover on buttons in panels ----
+
+   A mouse lights a panel header's button as the nav pills light: the
+   accent on its text and border, nothing moved or resized. */
+@media (hover: hover) {
+    :is(.settings-list-header, .card-group-header) .btn-action:not(:disabled, .btn-action-danger):hover {
+        color: var(--accent-primary);
+        border-color: var(--accent-primary);
+    }
+
+    /* Every chip a click acts on, the same way: the kit's Chip and the
+       chips drawn as buttons or links, the filter's small toggles and its
+       remove marks, the deck page's fold-all and a card group's fold
+       header. A selected chip keeps its look; label and count chips are
+       spans and divs and stay still. */
+    :is(button, a):is(.chip, .chip-xs, .chip-remove):not(.selected, .disabled, :disabled):hover,
+    .deck-fold-all:not(:disabled):hover,
+    .card-group-header.group-collapsible:hover {
+        color: var(--accent-primary);
+        border-color: var(--accent-primary);
+    }
+
+    /* Every hint and help button, and a dialog's buttons, the same way and
+       at full strength where it rests faded: the `?` beside a title (the
+       kit's InfoButton, the folded nav's included), a swipe screen's
+       corner `?`, a sheet's or drawer's title-bar `?`, and a dialog's
+       buttons. Color, border and opacity only: the corner buttons hold
+       their place with a transform. */
+    :is(.info-button, .drawer-sheet-hint, .page-header-corner, .alert-dialog-cancel, .alert-dialog-action):not(:disabled, [aria-disabled="true"]):hover {
         opacity: 1;
         color: var(--accent-primary);
         border-color: var(--accent-primary);
@@ -543,7 +655,8 @@ body {
    scrolls down. Its height is the kit's --app-nav-h, and the screen opens
    with that much padding, so nothing moves at rest. The pieces' own rules
    (.app-nav-back, .app-nav-title, the menu footer's buttons) come from
-   zwiper's main.css; these are the ones it scopes to its .app-nav. */
+   components' SCREENS_CSS; these are the ones the app scopes to its
+   .app-nav. */
 @media (max-width: 899px) {
     .web-shell {
         position: relative;
@@ -615,6 +728,17 @@ body {
     .web-app-nav .nav-panel .nav-links {
         max-height: none;
         overflow: visible;
+    }
+
+    /* The menu's footer keeps inside a narrow phone: where the icons and
+       Log out do not fit one line, Log out takes the next, at the right. */
+    .web-app-nav .nav-trailing-row {
+        flex-wrap: wrap;
+        row-gap: 0.5rem;
+    }
+
+    .web-app-nav .nav-trailing-row > .app-nav-logout {
+        margin-left: auto;
     }
 }
 
@@ -724,10 +848,19 @@ body {
 
 /* ---- About ---- */
 
-/* About on a wide window: the rows and Credits side by side under the page
-   head, each as wide as its column with the columns' gap between, then the
-   Changelog panel and the release panels at the page's width. */
+/* About on a wide window: the Version and Privacy policy rows, then the
+   Changelog panel and the release panels, each at the page's width. The
+   footer carries the credits there, so the Credits panel shows only below
+   the breakpoint. */
 @media (min-width: 900px) {
+    .web-about > .web-columns {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .web-about .about-credits-column {
+        display: none;
+    }
+
     .changelog-screen.web-about {
         width: 100%;
         max-width: var(--web-page-max);
@@ -774,61 +907,6 @@ body {
 
     .sheet-form-drawer > .bottom-sheet.show {
         transform: translateX(0) !important;
-    }
-}
-
-/* ---- Page head ----
-
-   zite's page header on a wide window: a panel at the top of the page with
-   the screen's title, its `?` at the right end, and the description under
-   a rule. Below the breakpoint it hides and the title and `?` sit in the
-   header's middle (see the header below). */
-.web-page-head-wrap {
-    display: none;
-}
-
-@media (min-width: 900px) {
-    .web-page-head-wrap {
-        display: block;
-        width: 100%;
-        max-width: var(--web-page-max);
-        margin: 1rem auto var(--panel-gap);
-        padding: 0 1.5rem;
-        box-sizing: border-box;
-    }
-
-    /* The page's panels start one panel gap under the head, as they sit
-       one panel gap apart everywhere else. */
-    .web-page-head-wrap + .screen-content {
-        padding-top: 0;
-    }
-
-    .web-page-head {
-        width: 100%;
-        box-sizing: border-box;
-    }
-
-    .web-page-head-bar {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-
-    .web-page-head-line {
-        margin: 0;
-        color: var(--text-primary);
-    }
-}
-
-/* A page head drawn inside a column (the deck view's, beside the profile)
-   shows only on a wide window, as the page-level one does. */
-.web-column > .web-page-head {
-    display: none;
-}
-
-@media (min-width: 900px) {
-    .web-column > .web-page-head {
-        display: block;
     }
 }
 
@@ -1005,13 +1083,19 @@ body {
 
 /* ---- Image preview ----
 
-   On a wide window the open card is as large as zwipe.net's: up to 28rem
+   The open card is as large as zwipe.net's at every width: up to 28rem
    wide and most of the window's height. */
-@media (min-width: 900px) {
-    .image-preview-container .flippable-card-wrapper.card-image img {
-        max-width: min(28rem, 92vw);
-        max-height: 92vh;
-    }
+.image-preview-container .flippable-card-wrapper.card-image img {
+    max-width: min(28rem, 92vw);
+    max-height: 92vh;
+}
+
+/* An entrance animation that holds its end state makes its block the
+   containing block of the preview's fixed layers. While a preview is open
+   the block's finished entrance stops holding (its end state is the
+   block's own), so the preview fills the window. */
+:is(.content-enter, .content-enter-delayed, .row-enter):has(.image-preview-container) {
+    animation-fill-mode: backwards;
 }
 
 /* ---- Printing sheet ---- */
@@ -1035,6 +1119,156 @@ body {
 /* The body takes the arrow keys once clicked, with no focus ring. */
 .web-printing-body:focus {
     outline: none;
+}
+
+/* The foot at the sheet's bottom: the dots, then the prices at the left
+   and Save at the right of one row. Save is the dock's button, sitting in
+   the row rather than floating over the sheet. */
+.web-printing-foot {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.web-printing-foot-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.web-printing-foot-row > .card-prices {
+    justify-content: flex-start;
+    margin: 0;
+}
+
+.action-dock.web-printing-save {
+    position: static;
+    flex: none;
+    margin: 0;
+}
+
+/* ---- Printing picker's cover flow ----
+
+   From the kit's modal width the printing picker is a large modal over a
+   dimmed page, layered over a details sheet as .sheet-over layers the
+   narrow picker. The stage holds the printings in perspective: each card's
+   left edge at the stage's middle, its inline transform placing it, and
+   one shared transition gliding every card as the selection moves. Under
+   the stage sit the selected printing's set, number and prices and Select. */
+.web-flow {
+    display: contents;
+}
+
+@media (min-width: 60rem) {
+    .web-flow .sheet-backdrop {
+        z-index: 204;
+    }
+
+    .web-flow .bottom-sheet.web-flow-sheet {
+        z-index: 205;
+        width: min(76rem, calc(100vw - 4rem));
+        height: 92vh;
+        max-height: 92vh;
+    }
+
+    .web-flow-body {
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        padding: 1rem 1.5rem 1.25rem;
+    }
+
+    .web-flow-body:focus {
+        outline: none;
+    }
+
+    .web-flow-stage {
+        position: relative;
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: hidden;
+        perspective: 1600px;
+        cursor: grab;
+        user-select: none;
+    }
+
+    .web-flow-stage:active {
+        cursor: grabbing;
+    }
+
+    .web-flow-card {
+        position: absolute;
+        top: 4%;
+        left: 50%;
+        height: 92%;
+        aspect-ratio: 488 / 680;
+        transform-origin: center center;
+        transition: transform 0.3s ease;
+        will-change: transform;
+        cursor: pointer;
+    }
+
+    /* A dark veil over each card, as dark as `--flow-dim` says: the
+       selected card's is clear, and each step out darker. */
+    .web-flow-card::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: 4.75% / 3.5%;
+        background: #000;
+        opacity: var(--flow-dim, 0);
+        transition: opacity 0.3s ease;
+        pointer-events: none;
+        z-index: 1;
+    }
+
+    .web-flow-card img,
+    .web-flow-missing {
+        display: block;
+        width: 100%;
+        height: 100%;
+        border-radius: 4.75% / 3.5%;
+        box-shadow: var(--shadow-md);
+    }
+
+    .web-flow-card img {
+        object-fit: contain;
+    }
+
+    .web-flow-missing {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        box-sizing: border-box;
+        text-align: center;
+        background: var(--bg-primary);
+        border: 1px solid var(--border-secondary);
+        color: var(--text-muted);
+    }
+
+    .web-flow-info {
+        flex: none;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding-top: 1rem;
+    }
+
+    .web-flow-count {
+        color: var(--text-muted);
+        font-size: 0.8rem;
+    }
+}
+
+@media (min-width: 60rem) and (prefers-reduced-motion: reduce) {
+    .web-flow-card,
+    .web-flow-card::after {
+        transition: none;
+    }
 }
 
 /* ---- Swipe surfaces ---- */
@@ -1074,7 +1308,8 @@ body {
     cursor: grabbing;
 }
 
-/* A leaving card flies off slower than the app's. */
+/* A leaving card flies off slower than the app's. swipe_stack.rs's EXIT_MS
+   holds the same length, for when the next press plays. */
 .web-swipe-stack {
     --web-swipe-exit: 0.32s;
 }
@@ -1085,24 +1320,87 @@ body {
     animation-duration: var(--web-swipe-exit);
 }
 
-.web-swipe-buttons {
+/* The swipes' dock and the surface's own, side by side at the bottom
+   right: in the bottom row beside the pile chips, or on their own over the
+   screen. The swipes' buttons carry the action's name beside the arrow. */
+.web-dock-pair {
+    --pair-gap: calc(env(safe-area-inset-bottom, 0px) / 2 + 0.6rem);
+    position: fixed;
+    right: var(--pair-gap);
+    bottom: calc(var(--pair-gap) + var(--keyboard-inset, 0px));
+    z-index: 50;
     display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
+    align-items: stretch;
     gap: 0.5rem;
-    margin: 0.75rem 0;
 }
 
-/* Below the breakpoint the card is swiped, as in the app: only its prices
-   sit under it. The buttons stay for a wide window's mouse. */
-@media (max-width: 899px) {
-    .web-swipe-buttons {
-        display: none;
-    }
+.swipe-bottom-row > .web-dock-pair {
+    position: static;
+}
+
+.web-dock-pair > .action-dock {
+    position: static;
+    margin: 0;
+}
+
+.web-swipe-dock-btn {
+    width: auto;
+    gap: 0.35rem;
+    padding: 0 0.7rem;
+    font-size: 0.8rem;
+    white-space: nowrap;
 }
 
 .web-swipe-arrow {
+    font-size: 1.05rem;
     font-weight: 700;
+}
+
+/* The screen keeps room for the docks under its content. */
+.screen:has(> .web-dock-pair) > .screen-content {
+    --content-pad-bottom: 5rem;
+}
+
+.web-scroll-screen:has(> .web-dock-pair) > .screen-content {
+    padding-bottom: 5rem;
+}
+
+/* Without room for both on one row the swipes' dock stacks over the other,
+   the two one width with their buttons spread across it, and the screen
+   keeps room for both. The pile chips stay at the row's foot. */
+@media (max-width: 899px) {
+    .web-dock-pair {
+        flex-direction: column;
+    }
+
+    .web-dock-pair > .action-dock {
+        width: auto;
+        justify-content: space-around;
+    }
+
+    .swipe-bottom-row:has(> .web-dock-pair) {
+        align-items: flex-end;
+    }
+
+    .screen:has(.web-dock-pair) > .screen-content {
+        --content-pad-bottom: 8.6rem;
+    }
+
+    .web-scroll-screen:has(.web-dock-pair) > .screen-content {
+        padding-bottom: 8.6rem;
+    }
+}
+
+/* A phone keeps the arrows only. */
+@media (max-width: 599px) {
+    .web-swipe-dock-label {
+        display: none;
+    }
+
+    .web-swipe-dock-btn {
+        width: 2.4rem;
+        padding: 0;
+    }
 }
 
 /* ---- Large overlays (Oracle tag examples, the dictionary) ---- */
@@ -1111,22 +1409,6 @@ body {
    window they are a large modal over a dimmed page. */
 .web-examples-details {
     display: none;
-}
-
-/* The top card's details beside it on a swipe screen sit on the page, so
-   they get a panel of their own; the detail's own inset becomes the
-   panel's. */
-.web-details-panel {
-    --card-row-detail-pad-x: 1rem;
-    padding: 0.75rem 1rem;
-    background-color: var(--bg-primary);
-    border: 1px solid var(--border-secondary);
-    border-radius: 1rem;
-    box-shadow: var(--shadow-sm);
-}
-
-.web-details-panel .card-row-detail {
-    padding: 0;
 }
 
 @media (min-width: 900px) {
@@ -1217,7 +1499,7 @@ body {
 }
 
 /* A recent deck's art grows a little under a mouse, inside its square. */
-@media (min-width: 900px) and (hover: hover) {
+@media (hover: hover) {
     .home-deck-tile-art > img {
         transition: transform 0.2s ease;
     }
@@ -1227,7 +1509,7 @@ body {
     }
 }
 
-@media (min-width: 900px) and (hover: hover) and (prefers-reduced-motion: reduce) {
+@media (hover: hover) and (prefers-reduced-motion: reduce) {
     .home-deck-tile:hover > .home-deck-tile-art > img {
         transform: none;
     }
@@ -1403,6 +1685,132 @@ body {
         max-width: none;
         margin: 0;
     }
+}
+
+/* ---- Loading ghosts ----
+
+   A ghost of a line of text sits in the element that holds the text, so
+   the line keeps its height; its width is the text's, in ch. The rest
+   stand in for one control each at its size. */
+.skeleton-bar.web-ghost-text {
+    display: inline-block;
+    height: 0.8em;
+    vertical-align: middle;
+}
+
+/* A color bar ghost's count (a 0.65rem bar) holds the count's text line,
+   0.85rem at the page's 1.6 line height, so a ghost row is as tall as a
+   real one. */
+.color-bar-row > .color-bar-count-ghost {
+    margin-top: calc((0.85rem * 1.6 - 0.65rem) / 2);
+    margin-bottom: calc((0.85rem * 1.6 - 0.65rem) / 2);
+}
+
+/* Home's deck tile ghost keeps the tile's square (the bar's own height
+   would flatten it to a strip), and under it the name and format chips'
+   two lines at the chips' height. */
+.skeleton-bar.home-deck-tile-art {
+    height: auto;
+}
+
+.home-deck-tile-chips > .home-deck-skeleton-chip {
+    height: 1.525rem;
+}
+
+.home-deck-tile-chips:has(> .home-deck-skeleton-chip)::after {
+    content: "";
+    width: 55%;
+    height: 1.525rem;
+    box-sizing: border-box;
+    border: 1px solid var(--border-secondary);
+    border-radius: 0.5rem;
+    background-color: var(--bg-primary);
+    animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Home's Colors ghost header at the live header's height, whose action
+   chip sits outside its flow. */
+.home-colors > .skeleton-card-header {
+    min-height: 2.8625rem;
+    box-sizing: border-box;
+}
+
+.skeleton-bar.web-ghost-box {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.skeleton-bar.skeleton-chip.web-ghost-stepper {
+    width: 1.75rem;
+    height: 1.75rem;
+}
+
+.web-ghost-chip {
+    pointer-events: none;
+}
+
+/* A featured card's ghost fills the card's 5:7 slot with its corners. */
+.skeleton-bar.web-ghost-card {
+    width: 100%;
+    height: 100%;
+    border-radius: 4.75% / 3.5%;
+}
+
+.web-ghost-chip.web-ghost-button {
+    line-height: normal;
+}
+
+/* A card row's ghost at a live row's height, the art crop's. */
+.skeleton-card-row.web-ghost-card-row {
+    box-sizing: border-box;
+    min-height: 3.9rem;
+}
+
+.skeleton-bar.web-ghost-pip {
+    display: inline-block;
+    width: 1.43rem;
+    height: 1.43rem;
+    border-radius: 50%;
+    vertical-align: middle;
+}
+
+.skeleton-bar.web-ghost-icon {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    vertical-align: middle;
+}
+
+.skeleton-bar.web-ghost-arrow {
+    width: 0.6em;
+    height: 0.6em;
+}
+
+.skeleton-bar.web-ghost-keyword-chip {
+    display: inline-block;
+    width: 3.375rem;
+    height: 1.425rem;
+    vertical-align: middle;
+    border-radius: 0.5rem;
+}
+
+.skeleton-bar.web-ghost-count {
+    width: 1.5ch;
+    height: 0.8em;
+}
+
+.skeleton-bar.skeleton-chip.web-ghost-count-chip {
+    display: inline-block;
+    width: 1.675rem;
+    height: 1.725rem;
+    vertical-align: middle;
+}
+
+.skeleton-bar.skeleton-chip.web-ghost-action {
+    display: inline-block;
+    width: 4.125rem;
+    height: 1.9875rem;
+    vertical-align: middle;
 }
 
 /* ---- Swipe select ---- */
@@ -1586,55 +1994,6 @@ body {
         padding: 1rem 1.5rem 2rem;
     }
 
-    /* A wide window lays a group's decks out as tiles, as many per row as
-       fit: the art as a square over the name, then the pips on their own
-       line and the chips wrapping under them. */
-    .deck-group > .collapsible > .collapsible-inner {
-        grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
-    }
-
-    .deck-group .deck-row {
-        padding: 1rem;
-    }
-
-    .deck-group .deck-list-row {
-        flex-direction: column;
-        justify-content: flex-start;
-        text-align: center;
-    }
-
-    .deck-group .deck-row-art-img {
-        width: 100%;
-        height: auto;
-        aspect-ratio: 1 / 1;
-        border-radius: 1rem;
-    }
-
-    /* A two-card command zone shares the square. */
-    .deck-group .deck-list-row:has(> .deck-row-art-img + .deck-row-art-img) > .deck-row-art-img {
-        width: calc(50% - 0.2rem);
-    }
-
-    .deck-group .deck-list-name {
-        width: 100%;
-        margin: 0.2rem 0 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .deck-group .deck-list-row > .identity-pips {
-        width: 100%;
-        justify-content: center;
-    }
-
-    /* A long commander name wraps inside its chip rather than cutting. */
-    .deck-group .deck-list-row > .stat-chip {
-        max-width: 100%;
-        white-space: normal;
-        overflow-wrap: anywhere;
-    }
-
     /* There is room for every tag, so the row stays unfolded and the fold
        chip goes. */
     .web-deck-tags-fold {
@@ -1650,6 +2009,16 @@ body {
         overflow: visible;
     }
 
+}
+
+/* Each deck keeps the phone's row on a wide window, its art at the left
+   and the name, pips and chips flowing beside it, one row under another.
+   From 1400px a group's rows pair up in two columns; its header stays
+   across the page over them. */
+@media (min-width: 1400px) {
+    .deck-group > .collapsible > .collapsible-inner {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }
 
 /* ---- Deck form (Create, Edit) ---- */
@@ -1680,42 +2049,53 @@ body {
         padding: 0 1.5rem 2rem;
         box-sizing: border-box;
     }
-
-    /* A picker is the kit's drawer (SheetFrame's wide Drawer form): an
-       inset panel along the right edge under the bar, sliding in from the
-       right, so the form and its cascades stay in view beside it. It has
-       the drawer's fill and no grid cells, and its transform holds the dock
-       inside its bottom right corner. */
-    .web-picker.swipe-select-screen {
-        top: var(--sheet-drawer-top, 5.5rem);
-        bottom: 1rem;
-        left: auto;
-        right: 1rem;
-        width: min(24rem, calc(100vw - 2rem));
-        height: auto;
-        background: var(--bg-primary);
-        border: 1px solid var(--border-secondary);
-        border-radius: 1rem;
-        overflow: hidden;
-        box-shadow: var(--shadow-md), var(--shadow-md);
-        transform: translateX(calc(100% + 1rem));
-        transition: opacity 0.2s ease, transform 0.2s ease;
-    }
-
-    .web-picker.swipe-select-screen.show {
-        transform: translateX(0);
-    }
-
-    .web-picker > .grid-cells {
-        display: none;
-    }
 }
 
-@media (min-width: 900px) and (prefers-reduced-motion: reduce) {
-    .web-picker.swipe-select-screen,
-    .web-picker.swipe-select-screen.show {
-        transform: translateX(0);
-        transition: opacity 0.2s ease;
+/* A picker's body in its sheet: the controls on top and the chip grid
+   under them, the grid scrolling on its own in the drawer's height. */
+.web-picker-sheet > .sheet-content {
+    padding: 0 0 1rem;
+}
+
+.web-picker-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+/* ---- The oracle tag dictionary as the kit's modal ----
+
+   From the kit's modal width the dictionary is its modal, the large
+   overlay's size so the descriptions read at length, layered over a
+   picker's drawer and under the examples overlay. The Search label and
+   box, the letters and the list keep their wide layout; the list scrolls
+   under the controls. */
+.web-dict-sheet {
+    display: contents;
+}
+
+@media (min-width: 60rem) {
+    .web-dict-sheet > .sheet-form-modal > .sheet-backdrop {
+        z-index: 220;
+    }
+
+    .web-dict-sheet > .sheet-form-modal > .bottom-sheet {
+        z-index: 221;
+        width: min(76rem, calc(100vw - 4rem));
+        height: 92vh;
+        max-height: 92vh;
+    }
+
+    .web-dict-sheet .sheet-content {
+        overflow: hidden;
+        padding: 0 1.5rem;
+    }
+
+    .web-dict-sheet .web-dict-browse {
+        max-width: none;
+        padding: 0;
     }
 }
 
@@ -1779,9 +2159,18 @@ body {
 
     /* The decklist runs to the window's foot, under the page head, the
        chips and its panel's header. */
-    .web-export-body textarea {
+    .web-export-body textarea,
+    .web-export-body .skeleton-export-textarea {
         min-height: calc(100vh - 26rem) !important;
     }
+}
+
+/* The decklist's ghost sits in its line as the textarea does, so the
+   panel keeps the textarea's height. */
+.web-export-body .skeleton-export-textarea {
+    display: inline-block;
+    width: 100%;
+    vertical-align: baseline;
 }
 
 /* A panel's ghost while its screen loads: the title bar centered, as the
@@ -1874,32 +2263,11 @@ body {
     }
 }
 
-/* ---- Card filter ---- */
+/* ---- Chip wrappers ---- */
 
-/* The filter sheet's `?`, in the header's right corner at the title's
-   height, faded like a hint button. */
-.web-sheet-hint {
-    position: absolute;
-    right: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    opacity: 0.55;
-    padding: 0.2rem 0.6rem;
-}
-
-/* The chip's hover title rides on a wrapper that adds no box. */
+/* A chip's hover title rides on a wrapper that adds no box. */
 .web-filter-chip {
     display: contents;
-}
-
-.web-filter-chips-center {
-    margin-bottom: 0.5rem;
-    justify-content: center;
-}
-
-.web-filter-accordion .accordion-trigger:focus-visible {
-    outline: 2px solid var(--accent-primary);
-    outline-offset: 2px;
 }
 
 /* ---- Add and Remove cards ---- */
@@ -1938,12 +2306,6 @@ body {
         padding: 1rem 1.5rem;
         box-sizing: border-box;
         overflow-y: auto;
-    }
-
-    /* The `?` sits in the top right corner over this page; the card and its
-       details start under it. */
-    .web-screen:has(> .web-screen-hint) .web-cards-swipe.screen-content {
-        padding-top: 3.25rem;
     }
 
     .web-cards-swipe-main {
@@ -2051,5 +2413,88 @@ body {
         margin: 0;
         padding: 0.75rem 1rem;
         border-top: 1px solid var(--border-secondary);
+    }
+}
+
+/* ---- Between a phone and the breakpoint ----
+
+   A window wider than a phone and narrower than 900px (a tablet, half a
+   desktop screen) fills its width as zwipe.net does: every page's panels
+   run the window's width inside zite's 1.5rem gutter, where the app's
+   phone column would leave wide empty margins. Home's hero scales with
+   it as zite's does. Below 480px the phone layout stands as it is. */
+@media (min-width: 480px) and (max-width: 899px) {
+    /* The page columns held to the app's 40rem take the window's width. */
+    .web-deck-list,
+    .web-playstyle,
+    .web-activity,
+    .web-maybeboard,
+    .web-deck-cards-controls,
+    .web-deck-cards-list {
+        max-width: none;
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+    }
+
+    .web-deck-view,
+    .settings-sections.web-settings-pair,
+    .changelog-screen.web-about,
+    .web-privacy .privacy-content {
+        width: calc(100% - 3rem);
+        max-width: none;
+    }
+
+    .import-controls {
+        max-width: none;
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+    }
+
+    /* The kit's lists keep to 40rem; on the page they run the column. */
+    .web-main .settings-list:not(.bottom-sheet .settings-list) {
+        max-width: none;
+    }
+
+    /* A form panel sits in the gutter like every other panel. */
+    .web-auth {
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    .web-form-panel {
+        width: calc(100% - 3rem);
+        margin-left: 1.5rem;
+        margin-right: 1.5rem;
+    }
+
+    /* Home and the sign-in screens: the hero and the cards beside it at
+       the window's width, the mark and the counters at zite's sizes. */
+    .home-hero {
+        max-width: none;
+        padding: 0 1.5rem;
+        box-sizing: border-box;
+    }
+
+    .web-home .container-sm,
+    .web-auth-flavor .container-sm {
+        width: calc(100% - 3rem);
+        max-width: none;
+    }
+
+    .web-home-page .home-hero .logo,
+    .web-auth .home-hero .logo {
+        font-size: clamp(0.45rem, min(2.1vw, 2.2vh), 1.1rem);
+    }
+
+    .home-hero .stat {
+        padding: 0.7rem 0.35rem 0.6rem;
+    }
+
+    .home-hero .stat-num {
+        font-size: clamp(0.9rem, 3.8vw, 1.5rem);
+    }
+
+    .home-hero .stat-label {
+        font-size: clamp(0.6rem, 2.4vw, 0.75rem);
     }
 }

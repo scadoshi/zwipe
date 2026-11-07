@@ -22,6 +22,9 @@ use pages::{
 pub use zwipe_core::domain::site::{API_BASE, APP_BASE, DISCORD_URL, SUPPORT_EMAIL, WEB_BASE};
 
 const STYLE: Asset = asset!("/assets/style.css");
+/// The kit's input rules the card filter's sheet draws with, which zite
+/// otherwise does not load.
+const FILTER_INPUTS_CSS: &str = include_str!("../assets/filter-inputs.css");
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 const FAVICON_16: Asset = asset!("/assets/favicon-16x16.png");
 const FAVICON_32: Asset = asset!("/assets/favicon-32x32.png");
@@ -287,6 +290,10 @@ fn App() -> Element {
         document::Style { {COMPONENTS_CSS} }
         document::Style { {MAGIC_CSS} }
         document::Style { {SITE_CSS} }
+        // The card filter on a shared deck: the kit's input rules it needs,
+        // scoped to its sheet, then its own.
+        document::Style { {FILTER_INPUTS_CSS} }
+        document::Style { {::components::FILTER_CSS} }
         document::Stylesheet { href: STYLE }
         // Scroll reveal for panels below the fold; everything it does is
         // progressive.

@@ -40,7 +40,12 @@ pub struct Release {
 pub const UPCOMING: &[Release] = &[Release {
     version: Version::new(1, 18, 1),
     date: None,
-    entries: &["A deck's commander and MVPs show their names in chips beside their role"],
+    entries: &[
+        "A deck's commander and MVPs show their names in chips beside their role",
+        "Quick add on a deck's cards and on the Commander maybeboard clears with the same x as the filter's fields",
+        "Card details slide in from the right as a panel titled with the card and its cost, the prices included",
+        "Keywords, card roles and oracle tags use the app's regular chips, each group named by a label chip",
+    ],
 }];
 
 /// Shipped releases, newest first.

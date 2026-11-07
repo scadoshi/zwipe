@@ -35,9 +35,6 @@ use crate::outbound::browser;
 /// how many more each click reveals.
 const CHANGELOG_PAGE_SIZE: usize = 5;
 
-/// The wide page head's line under the title.
-const DESCRIPTION: &str = "The version, credits and what changed in each release";
-
 /// Bullet bars per skeleton row, roughly a real release's.
 const SKELETON_BULLETS: [usize; 3] = [5, 3, 4];
 
@@ -58,7 +55,7 @@ impl Driver {
         let effects = model.write().update(action);
         for effect in effects {
             match effect {
-                Effect::OpenUrl(url) => browser::open_in_new_tab(&url),
+                Effect::OpenUrl(url) => browser::open_here(&url),
                 Effect::Navigate(Destination::Previous) if self.navigator.can_go_back() => {
                     self.navigator.go_back();
                 }
@@ -98,7 +95,7 @@ pub fn About() -> Element {
     let selection = use_signal(|| ChangelogFilter::Latest);
 
     rsx! {
-        ScreenFrame { title: about::TITLE, description: Some(DESCRIPTION.to_owned()),
+        ScreenFrame { title: about::TITLE,
             div { class: "screen-content content-enter",
                 div { class: "changelog-screen web-about",
                     div { class: "web-columns",
@@ -122,7 +119,7 @@ pub fn About() -> Element {
                         }
                     }
                     }
-                    div { class: "web-column",
+                    div { class: "web-column about-credits-column",
                     div { class: "settings-list about-panel",
                         div { class: "settings-list-header",
                             span { class: "settings-list-title", {about::CREDITS} }

@@ -10,8 +10,8 @@
 use std::collections::HashSet;
 
 use components::{
-    ActionDock, AlertDialog, Button, ButtonVariant, Chip, DangerZoneAction, DialogAction,
-    DockFilter, HoverStackHost, TOAST_LONG, TOAST_QUICK, use_hover_stack,
+    ActionDock, AlertDialog, Button, ButtonVariant, Chip, ClearWrap, DangerZoneAction,
+    DialogAction, DockFilter, HoverStackHost, TOAST_LONG, TOAST_QUICK, use_hover_stack,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -36,6 +36,9 @@ use crate::inbound::cards::card_row::{CardOverlaysHost, CardRow, ShowRowArt, use
 use crate::inbound::cards::otag::{OtagExamplesHost, use_otag_reveals};
 use crate::inbound::cards::swipe_select::{SwipeMode, SwipeSelect};
 use crate::inbound::chrome::authed::use_authed;
+use crate::inbound::chrome::ghost::{
+    GhostActionRow, GhostButton, GhostList, GhostShowRow, GhostText,
+};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::chrome::page_keys::{focus_by_id, use_page_keys};
 use crate::inbound::router::Route;
@@ -381,7 +384,6 @@ pub fn CommanderMaybeboard() -> Element {
     rsx! {
         ScreenFrame {
             title: "Commander maybeboard",
-            description: Some("Commanders you've saved for a future deck".to_string()),
             on_hint: move |()| {
                 let mut hint_open = hint_open;
                 hint_open.set(true);
@@ -392,67 +394,69 @@ pub fn CommanderMaybeboard() -> Element {
                 div { class: "flex-col web-maybeboard",
                     if is_loading() {
                         div { class: "chip-row",
-                            div { class: "skeleton-bar skeleton-chip skeleton-chip-lg stat-chip-p1 skeleton-tinted" }
-                            div { class: "skeleton-input-compact" }
-                        }
-                        div { class: "chip-row",
-                            div { class: "skeleton-bar skeleton-chip skeleton-chip-sm stat-chip-p1 skeleton-tinted" }
-                            for i in 0..7 {
-                                div { key: "{i}", class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
+                            span { class: "stat-chip stat-chip-p1 chip-row-label web-ghost-chip", GhostText { chars: 9 } }
+                            div { class: "input-clear-wrap web-ghost-field",
+                                div {
+                                    class: "input input-compact input-placeholder",
+                                    style: "line-height: normal;",
+                                    GhostText { chars: 25 }
+                                }
                             }
                         }
+                        GhostShowRow {}
                         div { class: "maybeboard-list card-group row-enter",
-                            div { class: "card-group-header",
-                                div { class: "skeleton-bar skeleton-card-bar-header" }
+                            div { class: "card-group-header card-group-header-with-hint",
+                                GhostText { chars: 10 }
+                                GhostButton { chars: 5 }
                             }
-                            for i in 0..6 {
-                                div { key: "{i}", class: "skeleton-card-row",
+                            for i in 0..3 {
+                                div { key: "{i}", class: "skeleton-card-row web-ghost-card-row",
                                     div { class: "skeleton-bar skeleton-card-thumb" }
                                     div { class: "skeleton-bar skeleton-card-bar-row" }
                                 }
                             }
                         }
+                        GhostList { chars: 11, class: "danger-zone",
+                            GhostActionRow { label: 16, button: 5 }
+                        }
                     } else {
                         div { class: "chip-row",
                             span { class: "stat-chip stat-chip-p1 chip-row-label", "Quick add" }
-                            input {
-                                class: "input input-compact",
-                                style: "flex: 1; margin-bottom: 0;",
-                                id: QUICK_ADD_ID,
-                                r#type: "text",
-                                placeholder: "Search a commander to add",
-                                value: "{query}",
-                                autocapitalize: "none",
-                                autocorrect: "off",
-                                spellcheck: "false",
-                                oninput: move |event| query.set(event.value()),
-                                onkeydown: move |event: Event<KeyboardData>| {
-                                    let count = shown_results.peek().len();
-                                    match event.key() {
-                                        Key::ArrowDown => {
-                                            event.prevent_default();
-                                            highlight.set(maybeboard::step_highlight(highlight(), count, Step::Down));
-                                        }
-                                        Key::ArrowUp => {
-                                            event.prevent_default();
-                                            highlight.set(maybeboard::step_highlight(highlight(), count, Step::Up));
-                                        }
-                                        Key::Enter => {
-                                            let picked = highlight()
-                                                .and_then(|at| shown_results.peek().get(at).cloned());
-                                            if let Some(card) = picked {
-                                                add_from_search.call(card);
+                            ClearWrap {
+                                filled: !query().is_empty(),
+                                on_clear: move |()| query.set(String::new()),
+                                label: "Clear the search".to_string(),
+                                input {
+                                    class: "input input-compact",
+                                    id: QUICK_ADD_ID,
+                                    r#type: "text",
+                                    placeholder: "Search a commander to add",
+                                    value: "{query}",
+                                    autocapitalize: "none",
+                                    autocorrect: "off",
+                                    spellcheck: "false",
+                                    oninput: move |event| query.set(event.value()),
+                                    onkeydown: move |event: Event<KeyboardData>| {
+                                        let count = shown_results.peek().len();
+                                        match event.key() {
+                                            Key::ArrowDown => {
+                                                event.prevent_default();
+                                                highlight.set(maybeboard::step_highlight(highlight(), count, Step::Down));
                                             }
+                                            Key::ArrowUp => {
+                                                event.prevent_default();
+                                                highlight.set(maybeboard::step_highlight(highlight(), count, Step::Up));
+                                            }
+                                            Key::Enter => {
+                                                let picked = highlight()
+                                                    .and_then(|at| shown_results.peek().get(at).cloned());
+                                                if let Some(card) = picked {
+                                                    add_from_search.call(card);
+                                                }
+                                            }
+                                            _ => {}
                                         }
-                                        _ => {}
-                                    }
-                                },
-                            }
-                            if !query().is_empty() {
-                                button {
-                                    class: "clear-btn",
-                                    onclick: move |_| query.set(String::new()),
-                                    "\u{00d7}"
+                                    },
                                 }
                             }
                         }

@@ -29,6 +29,7 @@ use crate::inbound::card_stores::CardStores;
 use crate::inbound::cards::card_row::{CardOverlays, CardOverlaysHost, use_card_overlays};
 use crate::inbound::cards::otag::{OtagExamplesHost, use_otag_reveals};
 use crate::inbound::cards::printing_sheet::PrintingSheet;
+use crate::inbound::chrome::ghost::GhostText;
 use crate::inbound::chrome::media::use_wide;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog};
 use crate::inbound::router::Route;
@@ -191,7 +192,6 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
     rsx! {
         ScreenFrame {
             title: TITLE,
-            description: Some("Every card in the deck, with quantities, boards and printings".to_string()),
             on_hint: move |()| {
                 let mut hint_open = hint_open;
                 hint_open.set(true);
@@ -434,26 +434,16 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
     }
 }
 
-/// The groups' ghost while the deck loads.
+/// The groups' ghost while the deck loads: the Commander group's one row,
+/// then a full group, in the groups' own header and the rows' height.
 #[component]
 fn DeckCardListGhost() -> Element {
     rsx! {
-        div { class: "skeleton-card-list",
-            div { class: "skeleton-card-group",
-                div { class: "skeleton-card-group-header",
-                    div { class: "skeleton-bar skeleton-card-bar-header" }
-                }
-                div { class: "skeleton-card-row",
-                    div { class: "skeleton-bar skeleton-card-thumb" }
-                    div { class: "skeleton-bar skeleton-card-bar-row" }
-                }
-            }
-            div { class: "skeleton-card-group",
-                div { class: "skeleton-card-group-header",
-                    div { class: "skeleton-bar skeleton-card-bar-header skeleton-card-bar-header-wide" }
-                }
-                for i in 0..6 {
-                    div { key: "{i}", class: "skeleton-card-row",
+        for (i, (title, rows)) in [(9u8, 1usize), (13, 6)].into_iter().enumerate() {
+            div { key: "{i}", class: "card-group",
+                div { class: "card-group-header", GhostText { chars: title } }
+                for r in 0..rows {
+                    div { key: "{r}", class: "skeleton-card-row web-ghost-card-row",
                         div { class: "skeleton-bar skeleton-card-thumb" }
                         div { class: "skeleton-bar skeleton-card-bar-row" }
                     }

@@ -63,8 +63,8 @@ The wide layout copies zite's home page (`zite/assets/style.css`). Screens move 
 
 ## Home
 
-- On the page grammar. The hero card spans the top of the page (the mark left, the three counters and the `Live` and `Everybody`/`Only me` chips right), then zite's tagline under a full-bleed rule, without zite's "built for mobile" ("The Magic: The Gathering deck builder. Swipe through cards for any format, and pick a commander to get the best synergy first.", the game's name linking Wizards in a new tab). Under it the app's `Decks` panel (the three latest decks as tiles, `All decks` in its header) and `Colors` panel (six bars, `Playstyle` in its header), both from `components`, share the columns with `Featured flavor`.
-- The featured flavor panel is the app's: the quote, then the card's name and price, `Image` (the full preview), and in place of `Buy` the `TCGplayer ↗` and `Card Kingdom ↗` links that open in a new tab, as on zite.
+- On the page grammar. The hero card spans the top of the page (the mark left, the three counters and the `Live` and `Everybody`/`Only me` chips right), then zite's tagline under a full-bleed rule, without zite's "built for mobile" ("The Magic: The Gathering deck builder. Swipe through cards for any format, and pick a commander to get the best synergy first.", the game's name linking Wizards). Under it the app's `Decks` panel (the three latest decks as tiles, `All decks` in its header) and `Colors` panel (six bars, `Playstyle` in its header), both from `components`, share the columns with `Featured flavor`.
+- The featured flavor panel is the app's: the quote, then the card's name and price, `Image` (the full preview), and in place of `Buy` the `TCGplayer ↗` and `Card Kingdom ↗` links, as on zite.
 - Home has no actions of its own beyond the hero's `Activity` and the panel headers' chips; the menu holds the rest.
 - Below 900px it is the app's Home: hero, Decks, Colors, Featured flavor.
 
@@ -206,7 +206,7 @@ The wide layout copies zite's home page (`zite/assets/style.css`). Screens move 
 
 - Buttons under swipe cards, on a wide window, use the app's own action names for each mode: `Skip`, `Maybeboard`, `Undo`, `Add` on Add cards; `Keep`, `Move`, `Undo`, `Remove` on Remove; `Skip`, `Save`, `Undo`, `Pick` in Swipe select; `Next`, `Back one` in Examples.
 - Update required shows `Reload` in place of the store link.
-- `Buy` is a link per retailer (`TCGplayer ↗`, `Card Kingdom ↗`) opening in a new tab, as on zite, for a single card and for a deck; the app's `Buy` dialog goes.
+- `Buy` is a link per retailer (`TCGplayer ↗`, `Card Kingdom ↗`), as on zite, for a single card and for a deck; the app's `Buy` dialog goes.
 - The one-time `filter` hint fires the first time the user opens a filter section, not when Add or Remove mounts with the filter docked.
 - A command zone input clears its chosen card only when typing starts, never on a click.
 - Deck view's cards column stays read-only; Deck cards is the editor.

@@ -1,14 +1,15 @@
 //! The deck on a wide window: the deck page both sites share, editing. The
-//! head carries Edit, Clone, Share and the page's `?` beside the name; the
-//! controls add Quick add and the Boards row; the bands are the editor's
-//! rows, opening inline with their actions as on the phone, the hover
-//! preview pinned to the side the cursor is not on; the stats fold under
-//! the cards; and the foot holds Warnings, Data and Danger zone. The dock
-//! floats add, remove, the filter and undo.
+//! head opens on the deck's facts and featured cards, with no name (the tab
+//! and the nav carry it, and the page's `?` sits in the nav); the controls
+//! add Quick add and the Boards row; the bands are the editor's rows,
+//! opening inline with their actions as on the phone, the hover preview
+//! pinned to the side the cursor is not on; the stats fold under the cards;
+//! and the foot holds Warnings, Data and Danger zone. The dock floats add,
+//! remove, the filter and undo, then Edit, Clone and Share.
 
 use std::collections::HashSet;
 
-use components::icons::{DockIcon, MINUS, PLUS, UNDO};
+use components::icons::{CloneIcon, DockIcon, EditIcon, MINUS, PLUS, ShareIcon, UNDO};
 use components::{
     Chip, DeckBand, DeckControls, DeckFacts, DeckFold, DeckHead, DeckPage, DeckSection, DockFilter,
     FeaturedCard, HoverStackHost, use_hover_stack,
@@ -23,13 +24,17 @@ use zwipe_core::domain::deck::{Board, deck_tag_label};
 use zwipe_ui::deck::form::Slot;
 use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::filter::picker::Sources;
+use zwipe_ui::screens::deck_view::{EDIT, MoreItem};
 use zwipe_ui::{buy, deck_cards, filter};
 
 use super::dialogs::DeckDialogs;
+use super::ghost::{
+    DeckBandsGhost, DeckControlsGhost, DeckFootGhost, DeckHeadGhost, DeckStatsGhost,
+};
 use super::panels::{DangerZonePanel, DataPanel};
 use super::sections::{
-    BudgetBody, CurrencyChips, DistributionsBody, DrawOddsStepper, ManaBody, ProfileActions,
-    TagsBody, WarningFixes, WarningsBody, charted,
+    BudgetBody, CurrencyChips, DistributionsBody, DrawOddsStepper, ManaBody, TagsBody,
+    WarningFixes, WarningsBody, charted,
 };
 use crate::domain::deck::{has_budget, tag_count};
 use crate::inbound::card_filter::CardFilterPanel;
@@ -44,7 +49,6 @@ use crate::inbound::screens::deck::cards::editor::{
     Editor, Listed, RowInfo, RowKind, main_row_of, row_view, use_deck_editor,
 };
 use crate::inbound::screens::deck::cards::quick_add::QuickAdd;
-use crate::inbound::screens::deck::skeletons::DeckCardsSkeleton;
 
 /// The stat panels' fold keys, shut when the page opens.
 const FOLDED_STATS: [&str; 5] = ["Budget", "Tags", "Distributions", "Mana", "Draw odds"];
@@ -57,9 +61,13 @@ pub fn DeckWidePage(
     currency: Signal<PriceCurrency>,
     fixes: WarningFixes,
     dialogs: DeckDialogs,
-    on_hint: Callback<()>,
 ) -> Element {
     let navigator = use_navigator();
+    let DeckDialogs {
+        mut clone,
+        mut share,
+        ..
+    } = dialogs;
     let ed = use_deck_editor(deck_id);
     let Editor {
         deck,
@@ -366,14 +374,10 @@ pub fn DeckWidePage(
             onmousemove: move |e| hover_stack.track(e.client_coordinates().x),
             DeckPage {
                 head: rsx! {
-                if let (Some(p), Some(facts)) = (held_profile.clone(), facts) {
+                if let Some(facts) = facts {
                     DeckHead {
-                        name: p.name.to_string(),
                         facts,
                         has_featured: !featured.is_empty(),
-                        actions: rsx! {
-                            ProfileActions { deck_id, dialogs, on_hint }
-                        },
                         for (card, role) in featured.iter().cloned() {
                             FeaturedCard {
                                 key: "{card.scryfall_data.id}-{role}",
@@ -383,10 +387,14 @@ pub fn DeckWidePage(
                             }
                         }
                     }
+                } else {
+                    DeckHeadGhost {}
                 }
             },
             controls: rsx! {
-                if loaded() {
+                if !loaded() {
+                    DeckControlsGhost {}
+                } else {
                     DeckControls {
                         group_by,
                         show_tokens: tokens().is_some_and(|t| !t.is_empty()).then_some(show_tokens),
@@ -433,7 +441,7 @@ pub fn DeckWidePage(
             empty,
             bands: rsx! {
                 if !loaded() {
-                    DeckCardsSkeleton {}
+                    DeckBandsGhost {}
                 }
                 for (section, rows, drop_to) in sections {
                     DeckBand {
@@ -449,6 +457,9 @@ pub fn DeckWidePage(
                 }
             },
             stats: rsx! {
+                if !loaded() {
+                    DeckStatsGhost {}
+                }
                 if let Some(p) = held_profile {
                     if has_budget(&p, has_cards) {
                         DeckFold {
@@ -486,6 +497,9 @@ pub fn DeckWidePage(
                 }
             },
             foot: rsx! {
+                if !loaded() {
+                    DeckFootGhost {}
+                } else {
                 div { class: "web-column",
                     if !warnings.is_empty() {
                         div { class: "web-section open warn web-deck-warnings",
@@ -502,12 +516,13 @@ pub fn DeckWidePage(
                     DataPanel { deck_id, has_cards }
                 }
                 DangerZonePanel { dialogs }
+                }
             },
             }
         }
         // The page's actions as one floating icon bar at the bottom right:
         // add and remove, then the filter (with its reset while a filter is
-        // on) and undo.
+        // on) and undo, then the deck's own: edit, clone and share.
         div { class: "action-dock action-dock-right",
             button {
                 class: "action-dock-btn",
@@ -540,6 +555,27 @@ pub fn DeckWidePage(
                 disabled: !undo_ready,
                 onclick: move |_| apply_undo.call(()),
                 DockIcon { path: UNDO }
+            }
+            span { class: "action-dock-divider" }
+            button {
+                class: "action-dock-btn",
+                "aria-label": EDIT,
+                onclick: move |_| {
+                    navigator.push(Route::EditDeck { deck_id });
+                },
+                EditIcon {}
+            }
+            button {
+                class: "action-dock-btn",
+                "aria-label": MoreItem::CloneDeck.short_label(),
+                onclick: move |_| clone.set(true),
+                CloneIcon {}
+            }
+            button {
+                class: "action-dock-btn",
+                "aria-label": MoreItem::ShareDeck.short_label(),
+                onclick: move |_| share.set(true),
+                ShareIcon {}
             }
         }
         CardFilterPanel {

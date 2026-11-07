@@ -17,8 +17,6 @@ on:
       - 'zwipe-client/**'
       - 'zwipe-ui/**'
       - 'components/**'
-      # The web build still inlines the app's stylesheets.
-      - 'zwiper/assets/**'
       - 'Cargo.lock'
       - '.github/workflows/deploy-web.yml'
   workflow_dispatch:

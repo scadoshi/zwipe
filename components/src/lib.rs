@@ -42,6 +42,7 @@
 
 mod architecture;
 mod card_details;
+mod card_filter;
 mod card_role_chips;
 mod card_row;
 mod changelog;
@@ -49,6 +50,7 @@ mod charts;
 mod color_bars;
 mod danger_zone;
 mod deck_page;
+mod drawer_sheet;
 mod flippable_card_image;
 mod fold;
 pub mod hint;
@@ -63,7 +65,8 @@ mod site_footer;
 mod theme;
 
 pub use architecture::ZwipeArchitecture;
-pub use card_details::{CardDetails, card_face_count};
+pub use card_details::{CardDetails, CardDetailsPanel, CardDetailsPanelSkeleton, card_face_count};
+pub use card_filter::{CardFilterPanel, DictionarySlot};
 pub use card_role_chips::CardRoleChips;
 pub use card_row::CardRow;
 pub use changelog::{
@@ -79,6 +82,7 @@ pub use deck_page::{
     DeckBand, DeckControls, DeckFacts, DeckFilter, DeckFold, DeckHead, DeckPage, DeckSection,
     FeaturedCard, NO_CARDS, sections,
 };
+pub use drawer_sheet::DrawerSheet;
 pub use flippable_card_image::{FlippableCardImage, reset_image_ease};
 pub use fold::{FOLD_AT, Fold, SEE_LESS, SEE_MORE, SeeMore, fold_split};
 pub use home_colors::{ColorsEmpty, HomeColors};
@@ -123,3 +127,12 @@ pub const SCREENS_CSS: &str = concat!(
     include_str!("../assets/screens/screens-a.css"),
     include_str!("../assets/screens/screens-b.css"),
 );
+
+/// The card filter's rules, for the app's filter sheet and for
+/// [`DrawerSheet`] and [`CardFilterPanel`]: the label rows, compact boxes,
+/// stepper, floating picker results, small chips and clear buttons, the
+/// layout helpers its rows use, the section accordion, and the sheet's own
+/// `?`, focus ring, chip wrappers and highlighted result. Every host that
+/// draws the filter loads it after [`SCREENS_CSS`] (zite, which has none,
+/// after `SITE_CSS`) and before its own stylesheet.
+pub const FILTER_CSS: &str = include_str!("../assets/filter.css");

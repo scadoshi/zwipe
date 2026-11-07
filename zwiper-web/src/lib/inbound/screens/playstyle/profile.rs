@@ -1,11 +1,9 @@
 //! Playstyle's profile: the Colors, Summary, Card roles and Oracle tags
-//! sections over the suggestions, and their loading ghosts.
+//! sections over the suggestions.
 
 use std::collections::HashSet;
 
-use components::{
-    BarChart, BarOrientation, ColorBars, ColorBarsGhost, ColorsEmpty, DeckFold, OtagDef, RoleTags,
-};
+use components::{BarChart, BarOrientation, ColorBars, ColorsEmpty, DeckFold, OtagDef, RoleTags};
 use dioxus::prelude::*;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::http::contracts::suggestions::HttpBuilderProfile;
@@ -225,7 +223,7 @@ fn TagTable(rows: Vec<TagRow>) -> Element {
             for row in rows.iter() {
                 div { class: "tag-table-tag",
                     button {
-                        class: if is_open(&row.slug) { "keyword-chip active" } else { "keyword-chip" },
+                        class: if is_open(&row.slug) { "chip selected" } else { "chip" },
                         onclick: tap(row.slug.clone()),
                         "{row.slug}"
                     }
@@ -250,47 +248,6 @@ fn TagTable(rows: Vec<TagRow>) -> Element {
                         }
                     }
                 }
-            }
-        }
-    }
-}
-
-/// The profile while it loads: the Colors section open on its ghost bars,
-/// then three collapsed section ghosts, Summary's hidden on a wide window
-/// where the hero ghosts it.
-#[component]
-pub fn BuilderProfileSkeleton() -> Element {
-    rsx! {
-        div { class: "skeleton-stats",
-            div { class: "skeleton-info-list",
-                div { class: "skeleton-card-header card-group-header-with-hint",
-                    div { class: "skeleton-bar skeleton-section-label" }
-                    div { class: "skeleton-bar skeleton-chip skeleton-info-button" }
-                }
-                ColorBarsGhost {}
-            }
-            div { class: "web-playstyle-summary-inline",
-                div { class: "skeleton-chart-box",
-                    div { class: "skeleton-bar skeleton-section-label" }
-                }
-            }
-            for i in 0..2 {
-                div { key: "{i}", class: "skeleton-chart-box",
-                    div { class: "skeleton-bar skeleton-section-label" }
-                }
-            }
-        }
-    }
-}
-
-/// The Show row while it loads: a tinted label ghost and five chip ghosts.
-#[component]
-pub fn ShowChipRowSkeleton() -> Element {
-    rsx! {
-        div { class: "chip-row", style: "padding:0 0.75rem;margin-bottom:0;",
-            div { class: "skeleton-bar skeleton-chip skeleton-chip-sm stat-chip-p1 skeleton-tinted" }
-            for (i, size) in ["sm", "sm", "md", "md", "sm"].iter().enumerate() {
-                div { key: "{i}", class: "skeleton-bar skeleton-chip skeleton-chip-{size}" }
             }
         }
     }

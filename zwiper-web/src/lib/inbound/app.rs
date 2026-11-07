@@ -9,6 +9,7 @@ use zwipe_core::domain::logo;
 use zwipe_core::domain::user::models::settings::PipStyle;
 
 use crate::inbound::chrome::hint_topic::{HintHost, HintTopic};
+use crate::inbound::chrome::splash::splash_plays_this_load;
 use crate::inbound::router::Route;
 use crate::inbound::screens::auth::login::LoginPrefill;
 use crate::inbound::screens::update_required::UpdateRequired;
@@ -17,6 +18,11 @@ use crate::inbound::shell::MenuOpen;
 use crate::inbound::{caches, card_stores, catalog};
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
+const FAVICON_16: Asset = asset!("/assets/favicon-16x16.png");
+const FAVICON_32: Asset = asset!("/assets/favicon-32x32.png");
+const APPLE_TOUCH_ICON: Asset = asset!("/assets/icon-180.png");
+/// The install manifest; its 192 and 512 icons sit unhashed in `public/icons`.
+const MANIFEST: Asset = asset!("/assets/site.webmanifest");
 const WEB_CSS: Asset = asset!("/assets/web.css");
 /// The header's scroll follow at phone width: the web's own copy of the
 /// app's `header_hide.js`, keyed to the shell's header and scroller.
@@ -24,11 +30,6 @@ const HEADER_HIDE_JS: &str = include_str!("../../../assets/header_hide.js");
 const FONT_JBM_400: Asset = asset!("/assets/fonts/jetbrains-mono-400.woff2");
 const FONT_JBM_500: Asset = asset!("/assets/fonts/jetbrains-mono-500.woff2");
 const FONT_JBM_700: Asset = asset!("/assets/fonts/jetbrains-mono-700.woff2");
-
-/// zwiper's own stylesheets, shared as they are. `web.css` loads after them
-/// and holds only what a browser window changes.
-const ZWIPER_MAIN_CSS: &str = include_str!("../../../../zwiper/assets/main.css");
-const ZWIPER_ACCORDION_CSS: &str = include_str!("../../../../zwiper/assets/accordion.css");
 
 /// The app root. Launch it with a [`ZwipeClient`](zwipe_client::ZwipeClient)
 /// in the root context.
@@ -52,14 +53,21 @@ pub fn App() -> Element {
     use_context_provider(|| LoginPrefill(Signal::new(None)));
     // The `?` buttons post here and the HintHost draws the topic.
     use_context_provider(|| Signal::new(None::<HintTopic>));
-    // Closed until the splash starts to fade; the entrances wait on it.
-    use_context_provider(|| components::SplashGate(Signal::new(false)));
+    // The splash plays once a tab session. While it plays the gate is
+    // closed until it starts to fade, and the entrances wait on it; a load
+    // that skips it opens the gate at once.
+    let splash = use_hook(splash_plays_this_load);
+    use_context_provider(|| components::SplashGate(Signal::new(!splash)));
     // The main menu's open state, above the router so it carries across
     // screens.
     use_context_provider(|| MenuOpen(Signal::new(false)));
 
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
+        document::Link { rel: "icon", r#type: "image/png", sizes: "16x16", href: FAVICON_16 }
+        document::Link { rel: "icon", r#type: "image/png", sizes: "32x32", href: FAVICON_32 }
+        document::Link { rel: "apple-touch-icon", href: APPLE_TOUCH_ICON }
+        document::Link { rel: "manifest", href: MANIFEST }
         document::Style {
             {format!(
                 "@font-face{{font-family:'JetBrains Mono';font-style:normal;font-weight:400;font-display:swap;src:url({FONT_JBM_400}) format('woff2');}}\
@@ -72,15 +80,14 @@ pub fn App() -> Element {
         document::Style { {components::MAGIC_CSS} }
         document::Style { {components::APP_CSS} }
         document::Style { {components::SCREENS_CSS} }
-        document::Style { {ZWIPER_MAIN_CSS} }
-        document::Style { {ZWIPER_ACCORDION_CSS} }
         document::Style { {components::TOAST_CSS} }
+        document::Style { {components::FILTER_CSS} }
         document::Link { rel: "stylesheet", href: WEB_CSS }
         document::Script { {components::SCROLL_FADE_JS} }
         document::Script { {HEADER_HIDE_JS} }
         document::Meta { name: "viewport", content: "width=device-width, initial-scale=1.0" }
 
-        ThemeShell {
+        ThemeShell { splash,
             if upgrade_required.required() {
                 UpdateRequired {}
             } else {
@@ -123,8 +130,9 @@ document.addEventListener('keydown', (e) => {
 "#;
 
 /// The themed element every screen sits in. A theme change wipes over it.
+/// `splash` opens it on the splash.
 #[component]
-fn ThemeShell(children: Element) -> Element {
+fn ThemeShell(splash: bool, children: Element) -> Element {
     let follow = components::use_theme_follow(use_context::<Signal<ThemeConfig>>(), ".app-shell");
     use_context_provider(|| follow);
     let class = follow.shown.read().css_class();
@@ -134,8 +142,10 @@ fn ThemeShell(children: Element) -> Element {
             components::GridCells { still: true }
             // The opening: the field rains in under the mark, then fades to
             // the first screen while it mounts underneath.
-            components::Splash {
-                div { class: "logo", components::Decode { text: logo::ZWIPE } }
+            if splash {
+                components::Splash {
+                    div { class: "logo", components::Decode { text: logo::ZWIPE } }
+                }
             }
             {children}
         }
