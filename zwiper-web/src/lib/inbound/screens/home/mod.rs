@@ -21,7 +21,6 @@ use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::user::models::settings::PipStyle;
-use zwipe_core::http::contracts::user::HttpUpdateSettings;
 use zwipe_ui::generation::Ticket;
 use zwipe_ui::home::Figures;
 use zwipe_ui::screens::home::{
@@ -31,7 +30,6 @@ use zwipe_ui::screens::home::{
 
 use self::hero::HomeHeroScoped;
 use crate::domain::counts::CachedCounts;
-use crate::domain::theme::{self, Sync};
 use crate::inbound::caches::{CachedDecks, CachedMyCounts, CachedPlayStyle};
 use crate::inbound::cards::buy_links::CardBuyLinks;
 use crate::inbound::cards::image_preview::ImagePreview;
@@ -40,12 +38,11 @@ use crate::inbound::chrome::hint_topic::HintTopic;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, open_and_record_hint};
 use crate::inbound::chrome::toast::raise;
 use crate::inbound::router::Route;
-use crate::inbound::session::ensure_fresh::ensure_fresh;
+use crate::inbound::session::settings_sync::sync_settings;
 use crate::inbound::shell::ScreenFrame;
 use crate::outbound::counts_store::CountsStore;
 use crate::outbound::scope_store::ScopeStore;
 use crate::outbound::session_store::SessionStore;
-use crate::outbound::theme_store::ThemeStore;
 
 /// Whether this page load has said hello. Home mounts again on every return
 /// to it; the hello shows once per page load, the verify-email nudge on every
@@ -214,64 +211,9 @@ impl Driver {
         });
     }
 
-    /// Applies fresh settings: the pips, and the theme when the server's is
-    /// the newer choice (one changed on another device). When this
-    /// browser's is newer, as after a save that never reached the server,
-    /// it goes up instead, so the page never flips back after load.
+    /// Applies fresh settings (see `session::settings_sync`).
     fn fetch_settings(self) {
-        let Self {
-            session,
-            client,
-            mut theme,
-            mut pip_style,
-            ..
-        } = self;
-        if session.peek().is_none() {
-            return;
-        }
-        spawn(async move {
-            // A load starts on the stored session, whose access token is a
-            // placeholder until the first refresh; wait for a usable one.
-            let current = match ensure_fresh(session, client).await {
-                Ok(current) => current,
-                Err(e) => {
-                    tracing::warn!("settings fetch skipped: {e}");
-                    return;
-                }
-            };
-            let http = client.peek().clone();
-            match http.fetch_settings(&current).await {
-                Ok(settings) => {
-                    pip_style.set(settings.pip_style);
-                    let store = ThemeStore::browser();
-                    let fetched = components::theme_from_settings(&settings);
-                    let shown = theme.peek().clone();
-                    match theme::reconcile(&shown, store.load_server().as_ref(), &fetched) {
-                        Sync::Keep => store.save_synced(&fetched),
-                        Sync::Apply(newer) => {
-                            store.save_synced(&newer);
-                            theme.set(newer);
-                        }
-                        Sync::Push(newer) => {
-                            let request = HttpUpdateSettings {
-                                theme: Some(newer.name.clone()),
-                                dark_mode: Some(newer.is_dark),
-                                exclude_universes_beyond: None,
-                                universes_beyond_exceptions: None,
-                                pip_style: None,
-                            };
-                            match http.update_settings(request, &current).await {
-                                Ok(saved) => {
-                                    store.save_synced(&components::theme_from_settings(&saved));
-                                }
-                                Err(e) => tracing::warn!("theme push failed: {e}"),
-                            }
-                        }
-                    }
-                }
-                Err(e) => tracing::warn!("settings fetch failed: {e}"),
-            }
-        });
+        sync_settings(self.session, self.client, self.theme, self.pip_style);
     }
 
     /// Fetches everybody's counters into the cache and browser storage.
