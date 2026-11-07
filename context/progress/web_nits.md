@@ -23,19 +23,10 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
-| 104, overscroll shows the footer's color, not a darker strip (queued after 103) | laptop | `nits/laptop-104` |
-| 103, rounded SVG arrows in the swipe dock | laptop | `nits/laptop-103` |
-| 101, the sign-in panels' footer rule runs edge to edge | laptop | `nits/laptop-101` |
-| 100, 102, the cover-flow's edges fade, arrow buttons (queued after 97) | scotland | `nits/scotland-100` |
-| 98, 99, chip row gaps, the row's host extras at the bottom of the body (queued after 96) | thinker | `nits/thinker-98` |
-| 97, the swipe screens' footer loses its extra legroom (queued after 90) | scotland | `nits/scotland-97` |
-| 96, the details panel's footer pinned, header hides on scroll | thinker | `nits/thinker-96` |
-| 93 to 95, the docked panel's jump, the card pinned to center, panel default by space, no lift on the docked panel (queued after 88) | halo | `nits/halo-93` |
-| 92, the web's URLs name resources, not actions (queued after 91) | laptop | `nits/laptop-92` |
-| 91, a live session skips the login page | laptop | `nits/laptop-91` |
-| 90, no white flash before the wasm loads | scotland | `nits/scotland-90` |
-| 88, hint copy and context fixes from the app hint audit | halo | `nits/halo-88` |
-| 89, app hint plumbing: pickers through the shared copy, no duplicate explainers, the web deck view's Oracle tags chart | thinker | `nits/thinker-89` |
+| 93 to 95, the docked panel: load jump, card pinned to center, panel default by space, no lift | halo | `nits/halo-93` |
+| 98, 99, chip row gaps, the row's host extras at the bottom | thinker | `nits/thinker-98` |
+| 97, then 100 and 102, footer legroom, cover-flow edge fade and arrows | scotland | `nits/scotland-97`, `nits/scotland-100` |
+| 103, then 104, rounded dock arrows, overscroll color | laptop | `nits/laptop-103`, `nits/laptop-104` |
 
 The loop is in [`../development/factory.md`](../development/factory.md).
 
@@ -156,6 +147,7 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 
 ## Done
 
+- Merged into `release` after `b0d713965`: 64, 65, 67, 60, 66, 68 to 72, 73 to 76, 77, 78, 79, 80, 81, 82, 85, 86, 87, 88, 89, 90, 91, 92, 96, 101 (PRs #207 to #230).
 - 46, a compact footer on both sites: PR #190. 48, zwipe.net's manifest icons: PR #191. 49, inputs through `ClearWrap`: PR #192.
 - 50, the deck head's `?`: PR #193. 53, the app's Quick add: PR #194. 21 phase 5, zwipe.net's full filter: PR #195. 51, swiping twice as fast: PR #196. 55, testimonial rating inline: PR #197.
 - 45, 47, no page heads, the page's `?` in the nav, About drops Credits on wide: PR #198. 52, swipe buttons in the dock: PR #199.
