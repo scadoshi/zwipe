@@ -1609,6 +1609,14 @@ impl State {
         self.show_command_zone
     }
 
+    /// Whether the Show row offers the Command zone chip: the deck's format has a command zone, or
+    /// the zone holds a card anyway. See [`Zone::offers_chip`].
+    #[must_use]
+    pub fn offers_command_zone(&self) -> bool {
+        self.zone
+            .offers_chip(self.profile.as_ref().and_then(|p| p.format))
+    }
+
     /// Whether the section with this key is collapsed.
     #[must_use]
     pub fn is_collapsed(&self, key: &str) -> bool {

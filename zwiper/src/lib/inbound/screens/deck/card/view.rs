@@ -675,6 +675,7 @@ pub fn View(deck_id: Uuid) -> Element {
     let side_enabled = model.board_enabled(Board::Sideboard);
     let show_tokens = model.show_tokens();
     let show_command_zone = model.show_command_zone();
+    let offers_command_zone = model.offers_command_zone();
     let tokens = model.tokens(&filter);
     let expanded = |key: &str| !model.is_collapsed(key);
     let tokens_expanded = expanded(deck_cards::TOKENS_KEY);
@@ -869,10 +870,12 @@ pub fn View(deck_id: Uuid) -> Element {
                                 onclick: move |_| driver.dispatch(Action::ToggleTokens),
                                 "{deck_cards::TOKENS}"
                             }
-                            Chip {
-                                selected: show_command_zone,
-                                onclick: move |_| driver.dispatch(Action::ToggleCommandZone),
-                                "{deck_cards::COMMAND_ZONE}"
+                            if offers_command_zone {
+                                Chip {
+                                    selected: show_command_zone,
+                                    onclick: move |_| driver.dispatch(Action::ToggleCommandZone),
+                                    "{deck_cards::COMMAND_ZONE}"
+                                }
                             }
                             Chip {
                                 selected: show_row_art(),

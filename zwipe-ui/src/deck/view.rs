@@ -72,7 +72,7 @@ pub enum Done {
     Cloned(String),
     /// A share link was copied to the clipboard, after Share or Copy link.
     LinkCopied,
-    /// Stop share disabled the link.
+    /// Stop sharing disabled the link.
     LinkDisabled,
     /// Clear skips went through.
     SkipsCleared,
