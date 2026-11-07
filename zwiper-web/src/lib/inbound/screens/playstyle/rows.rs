@@ -1,7 +1,7 @@
 //! Playstyle's card rows: a suggestion with the reasons it fits, and the
 //! Staples panel with its Type and Color filters.
 
-use components::{CardRoleChips, Chip};
+use components::{CardListFold, CardRoleChips, Chip};
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
@@ -178,11 +178,11 @@ pub fn StaplesPanel(
             if wide {
                 div { class: "deck-controls", {filters.clone()} }
             }
-            div { class: "maybeboard-list card-group row-enter",
-                div { class: "card-group-header card-group-header-with-hint",
-                    span { "{STAPLES_TITLE}" }
+            CardListFold {
+                title: STAPLES_TITLE,
+                actions: rsx! {
                     InfoButton { topic: HintTopic::SuggestionStaples }
-                }
+                },
                 if !wide {
                     div { class: "web-card-group-filters", {filters} }
                 }

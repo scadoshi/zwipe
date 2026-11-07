@@ -681,6 +681,9 @@ pub fn View(deck_id: Uuid) -> Element {
     let maybe_expanded = expanded(deck_cards::MAYBEBOARD_KEY);
     let side_expanded = expanded(deck_cards::SIDEBOARD_KEY);
     let lands_expanded = expanded(deck_cards::LANDS_KEY);
+    let commander_expanded = expanded(Slot::Commander.group_key());
+    let background_expanded = expanded(Slot::Background.group_key());
+    let spell_expanded = expanded(Slot::SignatureSpell.group_key());
     let zone_card = |slot: Slot| {
         display
             .zone
@@ -720,6 +723,20 @@ pub fn View(deck_id: Uuid) -> Element {
     }
     if show_side && !display.side.is_empty() {
         section_keys.push(deck_cards::SIDEBOARD_KEY.to_owned());
+    }
+    if show_command_zone {
+        for (slot, shown) in [
+            (
+                Slot::Commander,
+                displayed_commander.is_some() || has_partner,
+            ),
+            (Slot::Background, displayed_background.is_some()),
+            (Slot::SignatureSpell, displayed_signature_spell.is_some()),
+        ] {
+            if shown {
+                section_keys.push(slot.group_key().to_owned());
+            }
+        }
     }
     let all_collapsed = model.all_collapsed(&section_keys);
     let lands_title = deck_cards::lands_title(model.copies(&display.lands));
@@ -965,10 +982,10 @@ pub fn View(deck_id: Uuid) -> Element {
                     if show_command_zone {
                         // Pinned commander/oathbreaker group (includes partner if present)
                         if displayed_commander.is_some() || has_partner {
-                            div { class: "card-group row-enter",
-                                div { class: "card-group-header",
-                                    {Slot::Commander.group_header(deck_format, has_partner)}
-                                }
+                            CollapsibleGroup {
+                                title: Slot::Commander.group_header(deck_format, has_partner),
+                                expanded: commander_expanded,
+                                ontoggle: toggle_section(Slot::Commander.group_key()),
                                 if let Some(cmd) = displayed_commander {
                                     CardRow {
                                         card: cmd,
@@ -994,8 +1011,10 @@ pub fn View(deck_id: Uuid) -> Element {
 
                         // Pinned background group
                         if let Some(bg) = displayed_background {
-                            div { class: "card-group row-enter",
-                                div { class: "card-group-header", {Slot::Background.group_header(deck_format, has_partner)} }
+                            CollapsibleGroup {
+                                title: Slot::Background.group_header(deck_format, has_partner),
+                                expanded: background_expanded,
+                                ontoggle: toggle_section(Slot::Background.group_key()),
                                 CardRow {
                                     card: bg,
                                     qty: 1,
@@ -1009,8 +1028,10 @@ pub fn View(deck_id: Uuid) -> Element {
 
                         // Pinned signature spell (Oathbreaker only)
                         if let Some(spell) = displayed_signature_spell {
-                            div { class: "card-group row-enter",
-                                div { class: "card-group-header", {Slot::SignatureSpell.group_header(deck_format, has_partner)} }
+                            CollapsibleGroup {
+                                title: Slot::SignatureSpell.group_header(deck_format, has_partner),
+                                expanded: spell_expanded,
+                                ontoggle: toggle_section(Slot::SignatureSpell.group_key()),
                                 CardRow {
                                     card: spell,
                                     qty: 1,
