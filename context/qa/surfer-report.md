@@ -574,3 +574,51 @@ Fresh app wasm `zwiper-web_bg-dxhf5246e19639ede98.wasm` (2.35 MB transferred) af
 Small: the maybeboard Swipe's dock labels the right swipe "Pick" while the help says "starts a new deck with that commander". It's clear enough, but "Create deck" (the row action's label) would match.
 
 Tester's note: my first light-theme contrast run clicked buttons outside the theme sheet (a bad selector). It toggled Surfer test's boards and moved, starred and removed some of its cards, and opened Log out's confirm, which it then closed. Nothing outside the test account was touched. The session stayed signed in, and everything was put back as described above.
+
+## Part 14, deep flows on live f699acc37 (2026-11-07, done 14:41)
+
+Same wasm as Part 13 (`zwiper-web_bg-dxhf5246e19639ede98.wasm`), hard-reloaded. Wide is 1450 × 759. Phone width (390) was checked in a script-sized popup, DOM measurements only. Signed in throughout, **no logouts**. Test-account state restored: I created and deleted two decks of my own ("Surfer temp", its clone). Settings went back to Themed / Chip / Show, the theme to Zenburn dark, zwipe.net's local theme to Gruvbox dark. Surfer test (6 cards) and the commander maybeboard (empty) weren't touched. Other testers' decks weren't touched. "Droid tmp" appeared mid-pass, which is why the list reads 13.
+
+On the composer's question: **the misclick script in Part 13 did not touch the Commander maybeboard.** It only ran on the Surfer test deck page. Edgar Markov was on the maybeboard because I saved him while testing 194's Swipe, and I removed him myself afterwards with the row's Remove, since the board was empty when I started.
+
+### Works
+
+| Area | What I did | Result |
+|---|---|---|
+| Decks list | Group by None/Format/Color/Tag, color and tag chips | Groups add up to all decks (1+6+1+1+2+1 = 12 at the time). "All" also clears the tag chips |
+| Create deck | Name, format (searched "mod" → Modern), power, Other tags, land target, price target | Save stays hidden and disabled until the form has a name. The price field drops letters ("abc12.5" → 12.5). The first + on Land target jumps from "Not set" to 17. Saved and opened the deck page with the right chips and Budget ($0.00 / $12.50) |
+| Import (text, Add) | `4 Lightning Bolt`, `2x Counterspell`, `1 Snapcaster Mage (ISD) 78`, a bare `Ragavan, Nimble Pilferer`, a fake card, `20 Mountain`, a `Sideboard` heading, `2 Blood Moon` | All formats parsed. The fake card is listed under Failed as "not found". Blood Moon went to the sideboard, and Main counts 28 |
+| Export | Deck, then + Side | Plain list, plus a `// Sideboard` section when Side is on |
+| Round trip | Pasted the export back with Replace | `// Deck` and `// Sideboard` are understood, nothing failed, quantities and boards held |
+| Edit | Rename, format Modern → Commander, Back with unsaved changes | "Leave without saving?" (Stay/Leave) guard works. Saving as Commander with no commander is allowed and raises the right warnings |
+| Fix to 1 | Warning button on Counterspell (2/1) | Saves (see the stale bug below) |
+| Clone | Empty name, then Enter | Save is disabled while the name is empty. Enter saves, and the clone carries the cards, sideboard and tags |
+| Delete | Danger zone → Delete → confirm | Deck gone, back on Decks |
+| Share | Create link → open it signed out (zwipe.net, where this browser is signed out) | "Share link copied". The page renders the deck (title "Surfer temp", chips, groups, filter) at wide and at 390 with no sideways scroll (p14-1). It picked up the rename. Stop share → the link shows "Deck not shared" (p14-6) |
+| Filter drawer | Every section on Add: Name (contains / doesn't contain), Oracle text, Types, Mana value, color identity, Produces, Combat (power 5), Flavor text, Artist, Rarity, Card roles (include, two at once = OR), Oracle tags, Set, Format ("Is legal in" Pauper), Price min/max, Sort (Price USD), Config (Is digital) | Each returns matching cards (checked against the API response: e.g. Pauper = 25/25 legal, repeatable-treasures = 17/17 tagged, power 5 = all P5). Section headers have role=button and tabindex 0 |
+| Oracle tags dictionary | Wide, plus 390 | **Not reproduced.** Wide paints normally; letter jump (M) and Examples work. At 390: 95 rows, 4 in view, overlay and list at opacity 1 with no transform, and a hit test lands inside the first row at 300ms, 1s and 2.5s. One lead for Droid's blank paint: the list is ~16,700px tall and carries a `mask-image` (top/bottom fade). At DPR 2 that's ~33,000 device px, past the 16,384 texture limit many emulator GPUs have, and a mask forces the whole layer onto the GPU. Dropping that mask (189 already argues against it) or virtualizing the list would be the thing to try |
+| Settings | Pips Themed → Classic → Themed; Swipe confirmations Chip → Toasts → Off → Chip; Universes Beyond Show → Hide → Show | Each change toasts. With UB hidden, Exceptions unlocks, and the Add stack's first 25 had no UB sets. All restored |
+| Theme | zwipe.net signed out: Light, theme panel, pick, Escape | Applies at once, Escape closes. App theme switching was covered in Part 13 (50 × 2) |
+| Hints | Every `?` on Settings, Home, Surfer test, Playstyle, Activity, Create deck (37 dialogs) | All open with a title and body, none clip or scroll. At 390 the Draw odds hint is 358 wide, body 210/210 |
+| Guides | All 22 links on zwipe.net/guides | All 200 |
+| 390 overflow | Decks, Create deck, deck page, Import, Export, Settings, Account | scrollWidth 390 on all, nothing past the edges |
+
+### Findings
+
+1. **Deck page doesn't refresh after "Fix to 1".** Toast "Quantity set to 1", but the header still read 28 cards / $182.12, and Warnings still said "Counterspell exceeds copy limit (2/1)". After a reload: 27 cards / $179.55, warning gone (p14-2). Same family as Part 13's stale Warnings after To mainboard. Warnings (and here the header) don't follow every write.
+2. **Import ignores set codes.** `1 Snapcaster Mage (ISD) 78` imported the Innistrad Remastered printing, not Innistrad #78. Export doesn't write set codes either, so printings don't survive a round trip.
+3. **Set filter shows a different set's printing.** Set = Innistrad returns cards printed in Innistrad, but every card shows its Innistrad Remastered printing. It reads like the filter is wrong, though it's the display printing. Probably the same one-printing-per-card model as 2.
+4. **Typeahead suggestions cover the drawer.** Set, Artist and Oracle tags suggestions open upward as loose pills over the section headers above, with no backdrop. They hide the section's own header (p14-3). They stay open after a pick and cover the new chip (p14-4). The last pill can also sit under the Reset/Apply dock.
+5. **Zero filter results are silent.** Config "Is promo: Yes" matched nothing. The stack showed a blank ghost card with the dock disabled and no message (none visible ~3s after Apply). Also: whether "Is promo: Yes" can ever match, given the one-printing pool, is a question.
+6. **Mana value only commits on blur.** After typing "1" in Mana value, Apply stays disabled until focus leaves the field. A tap on ✓ blurs first, so phones are probably fine. On wide, typing then pressing Enter doesn't apply.
+7. **Hidden form rows still take keyboard focus.** On Create deck, the collapsed Commander, Partner, Background and Signature spell rows (height 0, opacity 0) keep their `?` and input at tabindex 0, not inert. That's 8 invisible tab stops before Power level.
+8. **Hint dialog widths swing with text length.** At wide they run from 320px (Types) to 1,184px (Activity), so long hints are single lines over 1,000px wide (p14-5, Draw odds 1,113px). A max width around 40rem would keep line lengths readable.
+9. **Share link is a 404 to anything that doesn't run JS.** `curl https://zwipe.net/deck/<id>` returns **HTTP 404** with the home page's `og:title`/`og:description`/`og:url`. The deck renders client-side. Link previews (iMessage, Discord, X) will show the generic home card, and crawlers see a dead page. The signed-out share page also shows no sideboard (no Boards control), so Blood Moon was missing.
+10. **Warning copy.** "Deck has 28 cards, modern requires at least 60" (lowercase format). "The format, commander, requires a commander" (awkward, lowercase). "Lightning bolt exceeds copy limit (4/1)" (the card name lowercased).
+11. **Small copy and consistency.**
+    - The share dialog's button says "Stop share"; its own text and the guide say "Stop sharing".
+    - A Modern deck still shows the "Command zone" Show chip.
+    - The Import placeholder is a Commander list (Krenko, Urza, Sol Ring) on any format.
+    - The commander maybeboard guide doesn't mention 194's Swipe on the maybeboard page yet, and says a row has three actions where the app shows four (Image, Printings, Create deck, Remove).
+
+Not verified: the phone filter drawer at 390. In the background popup its slide-in never ran (`show` class set, still `translateY(662px)`), which matches Part 13's picker caught mid-slide. That's the popup's throttling, not the app, and Droid covers it on mobile.
