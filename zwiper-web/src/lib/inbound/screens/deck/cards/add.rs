@@ -27,7 +27,7 @@ use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilde
 use zwipe_core::domain::card::search_card::cards::Cards;
 use zwipe_core::domain::deck::{Board, DeckEntry};
 use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard};
-use zwipe_ui::add::{AddDeck, no_results_message, normalized, related_ids};
+use zwipe_ui::add::{AddDeck, normalized, related_ids};
 use zwipe_ui::deck_signals::{Crossing, Level, budget_crossing, land_crossing, price_of};
 use zwipe_ui::filter::AddContext;
 use zwipe_ui::filter::draft::{ResetRule, SheetConfig};
@@ -263,12 +263,8 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             related.set(related_ids(&page));
             related_announced.set(false);
             let served: Vec<Card> = page.cards.into_iter().filter(|c| !holds(c)).collect();
-            if served.is_empty() {
-                toast.warning(
-                    no_results_message(snapshot.synergy(), !page.synergy_applied),
-                    ToastOptions::default().duration(TOAST_NORMAL),
-                );
-            }
+            // An empty reply needs no toast: the ghost card says No cards
+            // match.
             stack.write().replace(served);
             last_search.set(Some(snapshot));
         });

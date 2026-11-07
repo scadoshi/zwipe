@@ -773,15 +773,12 @@ impl State {
                 let mut effects = Vec::new();
                 if explains_empty && served.is_empty() {
                     let synergy = snapshot.synergy();
+                    // The ghost card says No cards match, so no toast repeats it.
                     effects.push(Effect::PileEnd {
                         deck_id,
                         kind: PileEndKind::Empty,
                         synergy,
                     });
-                    effects.push(Effect::Toast(Toast::normal(
-                        ToastKind::Warning,
-                        add::no_results_message(synergy, warming),
-                    )));
                 }
                 self.stack.replace(served);
                 self.last_search = Some(*snapshot);

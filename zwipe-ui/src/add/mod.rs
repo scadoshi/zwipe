@@ -168,17 +168,6 @@ pub fn related_ids(page: &HttpDeckCardSearch) -> HashSet<Uuid> {
         .collect()
 }
 
-/// The empty-results toast, with the synergy note when synergy is on.
-#[must_use]
-pub fn no_results_message(synergy: bool, warming: bool) -> String {
-    let suffix = match (synergy, warming) {
-        (false, _) => "",
-        (true, true) => "; Synergy is warming up, so all cards were searched",
-        (true, false) => "; Synergy is on, turn it off to search everything",
-    };
-    format!("No results for this filter{suffix}")
-}
-
 #[cfg(test)]
 mod tests {
     use zwipe_core::domain::card::search_card::card_type::CardType;
@@ -279,16 +268,7 @@ mod tests {
     }
 
     #[test]
-    fn empty_results_explain_synergy() {
-        assert_eq!(
-            no_results_message(false, true),
-            "No results for this filter"
-        );
-        assert_eq!(
-            no_results_message(true, false),
-            "No results for this filter; Synergy is on, turn it off to search everything"
-        );
-        assert!(no_results_message(true, true).ends_with("so all cards were searched"));
+    fn the_search_asks_for_one_page_of_non_tokens() {
         let b = normalized(&CardQueryBuilder::default());
         assert_eq!((b.limit(), b.offset(), b.is_token()), (25, 0, Some(false)));
     }
