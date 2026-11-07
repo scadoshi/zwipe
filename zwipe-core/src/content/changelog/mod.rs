@@ -71,6 +71,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "The Pips setting's options read Themed and Classic",
         "Swipe screens confirm each swipe in a quiet chip at the top left, with a Swipe confirmations setting for toasts or nothing instead",
         "You stay signed in on up to ten devices and browsers at once, up from five",
+        "On a wide window the deck page's card count, price and charts follow each card you add, remove, move or undo, with no reload",
     ],
 }];
 
