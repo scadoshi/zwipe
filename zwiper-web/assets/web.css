@@ -1144,23 +1144,29 @@ body {
     animation-duration: var(--web-swipe-exit);
 }
 
-.web-swipe-buttons {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.5rem;
-    margin: 0.75rem 0;
+/* The swipes' dock sits one dock height over the surface's own, at the
+   bottom right, in the kit's dock style. Over a bottom row it lines up
+   with the row's dock, at the row's inset. */
+.action-dock.web-swipe-dock {
+    bottom: calc(var(--dock-gap) + var(--keyboard-inset, 0px) + 3.6rem);
 }
 
-/* Below the breakpoint the card is swiped, as in the app: only its prices
-   sit under it. The buttons stay for a wide window's mouse. */
-@media (max-width: 899px) {
-    .web-swipe-buttons {
-        display: none;
-    }
+.screen:has(> .swipe-bottom-row) > .action-dock.web-swipe-dock {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 0.4rem + var(--keyboard-inset, 0px) + 3.6rem);
+    margin-right: 1rem;
 }
 
-.web-swipe-arrow {
+/* The screen keeps room for both docks under its content. */
+.screen:has(> .web-swipe-dock) > .screen-content {
+    --content-pad-bottom: 8.6rem;
+}
+
+.web-scroll-screen:has(> .web-swipe-dock) > .screen-content {
+    padding-bottom: 8.6rem;
+}
+
+.web-swipe-dock-btn {
+    font-size: 1.05rem;
     font-weight: 700;
 }
 
