@@ -212,6 +212,8 @@ Extended to the app: D2 into 132 (toasts), D5 to D8 into 123 (skeletons), D17 in
 Open with Scotty: D28.
 148. **The import screen's panels touch.** The mode description panel sits flush on the Paste decklist panel; the usual panel gap between them, and the chip rows above spaced like the rest.
 149. **Toasts and floating buttons land on the footer.** On Export the "Copied to clipboard" toast and the copy button sit over the footer; toasts, like docks (134), stop above the footer at their lowest.
+150. **On Scotty's iPhone in light mode, Home's theme sheet is see-through.** Home's hero, stats and deck tiles show through it, faded; the same sheet on other screens, and Home in the simulator, are opaque. Investigate first: whether the sheet renders inside Home's animated content (an opacity animation that holds or stalls on a device), a compositing layer above it, or a translucent light background; then fix.
+
 Scotty on Droid's open items: D3 toasts "Nothing left to remove" (no way back needed; into 145); D29 leave the Art toggle; D32 a follow-up in todo; D36 fine as an outline; D37 hero chips in the logged-in order everywhere (into 147); D38 list rows wrap their chips as the rendered layout intends, consistently (into 146). D28 waits on Scotty.
 
 Skipped with Scotty: S44 (the About diagram scrolls under its arrows; fine as is).
