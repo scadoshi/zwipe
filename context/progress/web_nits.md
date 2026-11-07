@@ -23,7 +23,7 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
-| 83, the web's hints link to guides as the app's do (queued after 81) | halo | `nits/halo-83` |
+| 83, 84, the web's hints link to guides, the filter gets its own hints (queued after 81) | halo | `nits/halo-83` |
 | 82, the synergy toggle toasts its mode (queued after 80) | scotland | `nits/scotland-82` |
 | 81, the swipe screens' details as a docked panel with its own scroll (queued after 71-72) | halo | `nits/halo-81` |
 | 79, card row redesigned like card details (queued after 77) | thinker | `nits/thinker-79` |
@@ -133,6 +133,7 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 81. **The swipe screens' card details become a docked side panel.** On a wide window the panel beside the card is fixed at the right like an always-open drawer, height capped to the window, scrolling inside itself, so expanding roles or a long card never grows the page. The eye slides it out and in.
 82. **Toggling synergy while swiping says so.** A quick toast, "Synergy on" or "Synergy off", on every client.
 83. **The web's hints never link to guides.** The shared map (`zwipe-ui/src/hint/guide.rs`) already drives the app's "See guide ↗"; the web gets the same links on one-time hints and the three picker headers, through a shared helper in components. `card-roles` takes the role chart topics; zite's guide sections get anchor ids for later deep links.
+84. **The filter's hints borrow the deck form's copy.** Its Oracle tags `?` talks about the deck and "fine to leave as is". Each filter section that reuses a deck-form topic gets its own filter hint (what include and exclude do, the Dictionary), every client.
 
 ## Done
 
