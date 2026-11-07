@@ -313,8 +313,12 @@ pub enum Action {
     AdoptOracleTag(String),
     /// The open picker's Save: keeps the pick. Closing the deck tag picker reseeds the oracle tags.
     SavePicker,
-    /// The open picker's Back, or the OS back gesture over it: puts back what it opened on, saying so when that throws a change away.
+    /// The open picker's Back, or the OS back gesture over it: puts back what it opened on and closes it. When that would throw a change away it asks first instead ([`State::is_asking_discard`]), and [`Action::KeepPicker`] or [`Action::DiscardPicker`] answers.
     BackPicker,
+    /// The discard dialog's Keep, a tap on its dim, or the OS back gesture over it: the picker stays open with its picks.
+    KeepPicker,
+    /// The discard dialog's Discard: puts back what the picker opened on and closes it.
+    DiscardPicker,
     /// The Save button.
     Save,
     /// The save holding `ticket` made the deck with this id.
@@ -512,6 +516,8 @@ pub struct State {
     name_touched: bool,
     name_error: Option<String>,
     picker: Option<OpenPicker>,
+    /// Whether the open picker's Back is asking before it throws a change away.
+    asking_discard: bool,
     /// The oracle tags the deck tags seeded last, which the next reseed swaps out.
     applied_seed: Vec<String>,
     catalog: Vec<DeckTagView>,
@@ -539,6 +545,7 @@ impl State {
             name_touched: false,
             name_error: None,
             picker: None,
+            asking_discard: false,
             applied_seed: Vec::new(),
             catalog: Vec::new(),
             saving: false,
@@ -606,6 +613,8 @@ impl State {
             | Action::AdoptOracleTag(_)) => self.tag(tag),
             Action::SavePicker => self.save_picker(),
             Action::BackPicker => self.back_picker(),
+            Action::KeepPicker => self.keep_picker(),
+            Action::DiscardPicker => self.revert_picker(),
             Action::Save => self.save(),
             Action::Created { ticket, deck_id } => {
                 if self.take(ticket) != Some(Request::Save) {
@@ -741,6 +750,12 @@ impl State {
             Some(OpenPicker::Tags { picker, draft }) => draft.is_unchanged(self.tag_list(*picker)),
             None => true,
         }
+    }
+
+    /// Whether the open picker's Back is asking before it throws a change away: the client shows [`Picker::discard_title`] with [`pickers::KEEP`] and [`pickers::DISCARD`].
+    #[must_use]
+    pub fn is_asking_discard(&self) -> bool {
+        self.asking_discard && self.picker.is_some()
     }
 
     /// The tags in `picker`'s field.
@@ -1149,6 +1164,7 @@ impl State {
     }
 
     fn open_picker(&mut self, picker: Picker) {
+        self.asking_discard = false;
         self.picker = Some(match picker {
             Picker::Format => OpenPicker::Format {
                 draft: Draft::format(self.values.format),
@@ -1172,6 +1188,7 @@ impl State {
     }
 
     fn save_picker(&mut self) -> Vec<Effect> {
+        self.asking_discard = false;
         match self.picker.take() {
             Some(OpenPicker::Tags {
                 picker: TagPicker::DeckTags,
@@ -1181,11 +1198,26 @@ impl State {
         }
     }
 
+    /// Asks before Back throws a change away; with none, puts back what the picker opened on.
     fn back_picker(&mut self) -> Vec<Effect> {
-        let mut effects = Vec::new();
+        if self.picker.is_some() && !self.picker_unchanged() {
+            self.asking_discard = true;
+            return Vec::new();
+        }
+        self.revert_picker()
+    }
+
+    /// Stops asking; the picker stays open with its picks.
+    fn keep_picker(&mut self) -> Vec<Effect> {
+        self.asking_discard = false;
+        Vec::new()
+    }
+
+    /// Puts back what the open picker opened on and closes it. The format picker also puts back the command zone its picks cleared, which a pick and a pick back can leave changed under the same format.
+    fn revert_picker(&mut self) -> Vec<Effect> {
+        self.asking_discard = false;
         match self.picker.take() {
             Some(OpenPicker::Format { draft, zone }) => {
-                effects.extend(draft.back_toast(&self.values.format).map(Effect::Toast));
                 let ZoneSnapshot {
                     commander,
                     commander_display,
@@ -1198,17 +1230,18 @@ impl State {
                 self.values.signature_spell = signature_spell;
                 self.searches.signature_spell.display = signature_spell_display;
                 self.filters_on();
+                Vec::new()
             }
             Some(OpenPicker::Tags { picker, draft }) => {
-                effects.extend(draft.back_toast(self.tag_list(picker)).map(Effect::Toast));
                 *self.tags_mut(picker) = draft.into_snapshot();
                 if picker == TagPicker::DeckTags {
-                    effects.extend(self.reseed());
+                    self.reseed()
+                } else {
+                    Vec::new()
                 }
             }
-            None => {}
+            None => Vec::new(),
         }
-        effects
     }
 
     /// Swaps the oracle tags the deck tags seeded last for the ones they seed now, keeping manual picks, and says so when any were added.

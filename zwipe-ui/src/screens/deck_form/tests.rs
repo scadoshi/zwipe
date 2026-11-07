@@ -650,11 +650,17 @@ fn the_format_picker_puts_the_command_zone_back_on_back() {
     assert!(!state.picker_unchanged());
     assert_eq!(names(&state, Slot::Commander), None);
 
-    let effects = state.update(Action::BackPicker);
+    assert!(state.update(Action::BackPicker).is_empty());
+    assert!(state.is_asking_discard());
     assert_eq!(
-        toasts(&effects),
-        [Toast::new(ToastKind::Info, "Format unchanged", QUICK)]
+        state.picker(),
+        Some(Picker::Format),
+        "it asks before closing"
     );
+    assert_eq!(state.values().format, Some(Format::Brawl));
+
+    assert!(state.update(Action::DiscardPicker).is_empty());
+    assert!(!state.is_asking_discard());
     assert_eq!(state.picker(), None);
     assert_eq!(state.values().format, Some(Format::Commander));
     assert_eq!(names(&state, Slot::Commander).as_deref(), Some("Krenko"));
@@ -674,6 +680,8 @@ fn format_back_with_the_same_format_still_restores_quietly() {
     let _ = state.update(Action::TapFormat(Format::Commander));
     assert!(state.picker_unchanged());
     assert!(state.update(Action::BackPicker).is_empty());
+    assert!(!state.is_asking_discard(), "nothing to ask about");
+    assert_eq!(state.picker(), None);
     assert_eq!(names(&state, Slot::Commander).as_deref(), Some("Krenko"));
 }
 
@@ -724,7 +732,7 @@ fn saving_deck_tags_seeds_oracle_tags_and_says_so() {
 }
 
 #[test]
-fn deck_tag_back_reverts_says_so_and_reseeds() {
+fn deck_tag_back_asks_then_discard_reverts_and_reseeds() {
     let mut state = create();
     let _ = state.update(Action::Catalog(catalog()));
     let _ = state.update(Action::OpenPicker(Picker::DeckTags));
@@ -732,11 +740,18 @@ fn deck_tag_back_reverts_says_so_and_reseeds() {
         picker: TagPicker::DeckTags,
         slug: "ramp".to_owned(),
     });
-    let effects = state.update(Action::BackPicker);
+    assert!(state.update(Action::BackPicker).is_empty());
+    assert!(state.is_asking_discard());
     assert_eq!(
-        toasts(&effects),
-        [Toast::new(ToastKind::Info, "Deck tags unchanged", QUICK)]
+        state.tags(TagPicker::DeckTags),
+        ["ramp"],
+        "the picks stay while it asks"
     );
+    assert_eq!(
+        toasts(&state.update(Action::DiscardPicker)),
+        Vec::<Toast>::new()
+    );
+    assert_eq!(state.picker(), None);
     assert_eq!(state.tags(TagPicker::DeckTags), NONE);
     assert_eq!(state.tags(TagPicker::OracleTags), NONE);
 }
@@ -811,12 +826,37 @@ fn the_oracle_tag_picker_reverts_on_back_and_adopts_from_the_dictionary() {
         [Toast::new(ToastKind::Info, "Tag already added", QUICK)]
     );
     assert!(!state.picker_unchanged());
-    let effects = state.update(Action::BackPicker);
-    assert_eq!(
-        toasts(&effects),
-        [Toast::new(ToastKind::Info, "Oracle tags unchanged", QUICK)]
-    );
+    let _ = state.update(Action::BackPicker);
+    assert!(state.is_asking_discard());
+    let _ = state.update(Action::DiscardPicker);
     assert_eq!(state.tags(TagPicker::OracleTags), NONE);
+}
+
+#[test]
+fn keep_leaves_the_picker_open_with_its_picks() {
+    let mut state = create();
+    let _ = state.update(Action::OpenPicker(Picker::OracleTags));
+    let _ = state.update(Action::ToggleTag {
+        picker: TagPicker::OracleTags,
+        slug: "ramp".to_owned(),
+    });
+    let _ = state.update(Action::BackPicker);
+    assert!(state.update(Action::KeepPicker).is_empty());
+    assert!(!state.is_asking_discard());
+    assert_eq!(state.picker(), Some(Picker::OracleTags));
+    assert_eq!(state.tags(TagPicker::OracleTags), ["ramp"]);
+    assert!(!state.picker_unchanged(), "Save still keeps them");
+
+    let _ = state.update(Action::ToggleTag {
+        picker: TagPicker::OracleTags,
+        slug: "ramp".to_owned(),
+    });
+    let _ = state.update(Action::BackPicker);
+    assert!(
+        !state.is_asking_discard(),
+        "tapped back to what it opened on"
+    );
+    assert_eq!(state.picker(), None);
 }
 
 #[test]
@@ -952,6 +992,8 @@ fn an_open_pickers_unkept_pick_is_a_change_until_back_puts_it_back() {
     let _ = state.update(Action::TapFormat(Format::Modern));
     assert!(state.has_unsaved_changes());
     let _ = state.update(Action::BackPicker);
+    assert!(state.has_unsaved_changes(), "still asking");
+    let _ = state.update(Action::DiscardPicker);
     assert!(!state.has_unsaved_changes());
 }
 
