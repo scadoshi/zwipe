@@ -32,7 +32,7 @@ use crate::stores::in_flight::{AddOutcome, InFlightAdds};
 use crate::stores::parked::ParkedStack;
 use crate::stores::undo::{self, UndoAction};
 use crate::timing;
-use crate::toast::{Toast, ToastKind};
+use crate::toast::{Line, Toast, ToastKind, keep_one};
 
 /// The screen's title.
 pub const TITLE: &str = "Add";
@@ -467,6 +467,15 @@ pub enum Effect {
     Confirm(Toast),
 }
 
+/// Which of an action's effects raise a toast, for [`keep_one`].
+fn toast_line(effect: &Effect) -> Option<Line<'_>> {
+    match effect {
+        Effect::Toast(toast) => Some(Line::Toast(toast)),
+        Effect::Confirm(toast) => Some(Line::Confirm(toast)),
+        _ => None,
+    }
+}
+
 /// The create request that adds one copy of `card` to `board`.
 #[must_use]
 pub fn add_request(card: &Card, board: Board) -> HttpCreateDeckCard {
@@ -622,6 +631,7 @@ impl State {
             Action::Back => vec![Effect::Navigate(Destination::Previous)],
         };
         effects.extend(self.announce_related());
+        keep_one(&mut effects, toast_line);
         effects
     }
 

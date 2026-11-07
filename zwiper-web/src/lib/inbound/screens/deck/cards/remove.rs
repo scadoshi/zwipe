@@ -31,7 +31,7 @@ use zwipe_ui::stack::{CardStack, RemoveAction, StackAction};
 use zwipe_ui::stores::filters::FilterScope;
 use zwipe_ui::stores::undo::{UndoAction, create_board_field};
 
-use super::{SwipeDetails, flip_top_card, signal_toast};
+use super::{OneLine, SwipeDetails, flip_top_card};
 use crate::inbound::card_filter::CardFilterPanel;
 use crate::inbound::card_stores::CardStores;
 use crate::inbound::cards::card_info::{CardDetailsSheet, CardSkeleton};
@@ -173,7 +173,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
             .replace(shown.sorted(applied.sort(), applied.direction()).into());
     });
 
-    // The land toast on a downward crossing and the budget toast, from the
+    // The land signal on a downward crossing and the budget signal, from the
     // deck as it stood `before`.
     let crossings = move |before: &[DeckEntry]| {
         let after = entries.peek().clone();
@@ -181,24 +181,20 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
         let target = profile.peek().as_ref().and_then(|p| p.land_target);
         let budget = profile.peek().as_ref().and_then(|p| p.price_target);
         let zone_now = zone_cards.peek().clone();
-        signal_toast(
-            toast,
+        [
             land_crossing(
                 target,
                 land_count(before),
                 land_count(&after),
                 Crossing::Down,
             ),
-        );
-        signal_toast(
-            toast,
             budget_crossing(
                 budget,
                 cur,
                 deck_price(before, &zone_now, cur),
                 deck_price(&after, &zone_now, cur),
             ),
-        );
+        ]
     };
 
     let undo_last = use_callback(move |()| {
@@ -367,13 +363,17 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                         }
                     });
                 }
-                confirm.success("Removed from deck");
                 let before = entries.peek().clone();
                 entries
                     .write()
                     .retain(|e| e.deck_card.scryfall_data_id != card_id);
                 stack.write().remove_current();
-                crossings(&before);
+                let mut line = OneLine::default();
+                line.confirm(true, "Removed from deck");
+                for signal in crossings(&before) {
+                    line.signal(signal);
+                }
+                line.raise(confirm, toast);
             }
             Swipe::Up => {
                 let from = entry.as_ref().map_or(Board::Deck, |e| e.deck_card.board);
@@ -412,7 +412,6 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                 } else {
                     "Moved to maybeboard"
                 };
-                confirm.info(message);
                 let before = entries.peek().clone();
                 if let Some(e) = entries
                     .write()
@@ -422,7 +421,12 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                     e.deck_card.board = to;
                 }
                 stack.write().remove_current();
-                crossings(&before);
+                let mut line = OneLine::default();
+                line.confirm(false, message);
+                for signal in crossings(&before) {
+                    line.signal(signal);
+                }
+                line.raise(confirm, toast);
             }
             Swipe::Down => undo_last.call(()),
         }

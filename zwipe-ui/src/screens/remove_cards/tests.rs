@@ -439,10 +439,12 @@ fn removing_a_land_below_the_target_warns() {
     let effects = state.update(Action::Remove);
     assert_eq!(
         toasts(&effects),
-        [
-            Toast::quick(ToastKind::Success, REMOVED),
-            Toast::new(ToastKind::Warning, "Below land target (2)", NORMAL),
-        ]
+        [Toast::new(
+            ToastKind::Warning,
+            "Below land target (2)",
+            NORMAL
+        )],
+        "the warning stands in for the swipe's own line: one toast per action"
     );
     assert!(
         toasts(&state.update(Action::Remove))
@@ -476,14 +478,12 @@ fn moving_a_card_to_main_can_cross_the_budget() {
     let effects = state.update(Action::Move);
     assert_eq!(
         toasts(&effects),
-        [
-            Toast::new(
-                ToastKind::Warning,
-                "Deck at 105.00% of your $10.00 budget",
-                NORMAL
-            ),
-            Toast::quick(ToastKind::Info, NOTHING_LEFT),
-        ]
+        [Toast::new(
+            ToastKind::Warning,
+            "Deck at 105.00% of your $10.00 budget",
+            NORMAL
+        )],
+        "the budget warning outranks the emptied pile's line: one toast per action"
     );
 }
 

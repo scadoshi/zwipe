@@ -26,7 +26,7 @@ use crate::deck::pickers::{self, Draft, PartnerAutofill, Picker, TagPicker, Tapp
 use crate::generation::{Generation, Ticket};
 use crate::hint::HintTopic;
 use crate::timing;
-use crate::toast::{Toast, ToastKind};
+use crate::toast::{Line, Toast, ToastKind, keep_one};
 
 /// Create's title.
 pub const CREATE_TITLE: &str = "Create deck";
@@ -401,6 +401,14 @@ pub enum Effect {
     Toast(Toast),
 }
 
+/// Which of an action's effects raise a toast, for [`keep_one`].
+fn toast_line(effect: &Effect) -> Option<Line<'_>> {
+    match effect {
+        Effect::Toast(toast) => Some(Line::Toast(toast)),
+        _ => None,
+    }
+}
+
 /// One command-zone field's input and search.
 #[derive(Debug, Clone, PartialEq)]
 struct Search {
@@ -550,6 +558,12 @@ impl State {
     /// Applies `action` and returns what the client must do, in order.
     #[must_use = "the client performs the effects"]
     pub fn update(&mut self, action: Action) -> Vec<Effect> {
+        let mut effects = self.dispatch(action);
+        keep_one(&mut effects, toast_line);
+        effects
+    }
+
+    fn dispatch(&mut self, action: Action) -> Vec<Effect> {
         match action {
             Action::Load(open) => self.load(open),
             Action::Loaded { ticket, profile } => self.loaded(ticket, &profile),
