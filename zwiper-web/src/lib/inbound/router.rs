@@ -25,6 +25,7 @@ use crate::inbound::screens::not_found::NotFound;
 use crate::inbound::screens::playstyle::Playstyle;
 use crate::inbound::screens::privacy_policy::PrivacyPolicy;
 use crate::inbound::session::auth_gate::AuthGate;
+use crate::inbound::session::signed_out_gate::SignedOutGate;
 use crate::inbound::shell::{OpenFrame, PublicFrame, Shell};
 
 /// The app's routes. The public ones sit in [`PublicFrame`], Privacy policy,
@@ -37,7 +38,8 @@ use crate::inbound::shell::{OpenFrame, PublicFrame, Shell};
 pub enum Route {
     #[redirect("/changelog", || Route::About {})]
     #[redirect("/config", || Route::Config {})]
-    // == public ==
+    // == public: Home instead, for a load with a live session ==
+    #[layout(SignedOutGate)]
     #[layout(PublicFrame)]
         /// Username or email and password.
         #[route("/login")]
@@ -48,6 +50,7 @@ pub enum Route {
         /// Asks for a password reset email.
         #[route("/forgot-password")]
         ForgotPassword {},
+    #[end_layout]
     #[end_layout]
 
     // == open: the signed-in nav or the public one ==
