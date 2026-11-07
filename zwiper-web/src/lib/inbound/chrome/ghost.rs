@@ -199,9 +199,9 @@ pub fn GhostPipChip() -> Element {
 }
 
 /// A `Show` row over color identities: its tinted label, `All`, five pip
-/// chips, then `Art`.
+/// chips, then `Art` when `art`.
 #[component]
-pub fn GhostShowRow() -> Element {
+pub fn GhostShowRow(#[props(default = true)] art: bool) -> Element {
     rsx! {
         div { class: "chip-row",
             span { class: "stat-chip stat-chip-p1 chip-row-label web-ghost-chip", GhostText { chars: 4 } }
@@ -209,7 +209,23 @@ pub fn GhostShowRow() -> Element {
             for i in 0..5 {
                 GhostPipChip { key: "{i}" }
             }
-            GhostChip { chars: 3, button: true }
+            if art {
+                GhostChip { chars: 3, button: true }
+            }
+        }
+    }
+}
+
+/// A chip row: its tinted label `label` wide, then the kit's chips whose
+/// labels are `chips` wide.
+#[component]
+pub fn GhostChipRow(label: u8, chips: Vec<u8>) -> Element {
+    rsx! {
+        div { class: "chip-row",
+            span { class: "stat-chip stat-chip-p1 chip-row-label web-ghost-chip", GhostText { chars: label } }
+            for (i, chars) in chips.into_iter().enumerate() {
+                GhostChip { key: "{i}", chars, button: true }
+            }
         }
     }
 }
