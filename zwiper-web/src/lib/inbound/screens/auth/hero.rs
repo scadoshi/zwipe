@@ -6,9 +6,10 @@ use chrono::Utc;
 use components::{Decode, Panel, StatsStrip};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
+use zwipe_client::call::Dated;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::logo;
-use zwipe_ui::home::{Figures, Scope};
+use zwipe_ui::home::{CountsTag, Figures, Scope};
 use zwipe_ui::screens::home::{self, Flavor, FlavorCard};
 
 use crate::domain::counts::CachedCounts;
@@ -24,7 +25,8 @@ pub fn strip_figures(figures: Option<Figures>) -> Vec<(Option<u64>, &'static str
 
 /// The public screens' hero: the mark over decks created, searches run and
 /// cards swiped across everyone from the root's copy, tagged `Everybody`
-/// and, once the copy comes from this visit, `Live`. A restored or stale
+/// and, once the copy comes from this visit, `Live` or "as of" an
+/// edge-cached copy's time. A restored or stale
 /// copy is fetched again on mount and stored for the next visit; a failed
 /// fetch leaves the copy on screen.
 #[component]
@@ -41,20 +43,25 @@ pub fn PublicHero() -> Element {
         }
         spawn(async move {
             let http = client.peek().clone();
-            match http.public_metrics().await {
-                Ok(metrics) => {
+            match http.public_metrics_dated().await {
+                Ok(Dated {
+                    value: metrics,
+                    made_at,
+                }) => {
                     CountsStore::browser().save(&metrics);
-                    counts.set(Some(CachedCounts::fetched(metrics, Utc::now())));
+                    counts.set(Some(CachedCounts::fetched(metrics, Utc::now(), made_at)));
                 }
                 Err(e) => tracing::warn!("public counters not refreshed: {e}"),
             }
         });
     });
-    let (figures, live) = {
+    let (figures, tag) = {
         let copy = counts.read();
         (
             copy.as_ref().map(|c| Figures::from(&c.metrics)),
-            copy.as_ref().is_some_and(CachedCounts::is_live),
+            copy.as_ref()
+                .and_then(|c| c.tag(Utc::now()))
+                .map(CountsTag::label),
         )
     };
     rsx! {
@@ -63,8 +70,8 @@ pub fn PublicHero() -> Element {
                 figures: strip_figures(figures),
                 roll_key: "all",
                 source: rsx! {
-                    if live {
-                        span { class: "stat-chip", {home::LIVE} }
+                    if let Some(tag) = tag {
+                        span { key: "{tag}", class: "stat-chip", "{tag}" }
                     }
                     span { class: "stat-chip", "{Scope::Everybody.label()}" }
                 },

@@ -20,7 +20,7 @@ use zwipe_core::http::contracts::suggestions::HttpPlayStyleSummary;
 use crate::buy;
 use crate::colors::{Bar, ColorCounts};
 use crate::generation::{Generation, Ticket};
-use crate::home::{self, Figures, Scope, UserSource};
+use crate::home::{self, CountsTag, Figures, Scope, UserSource};
 use crate::toast::Toast;
 
 /// The screen's title.
@@ -119,6 +119,9 @@ pub struct CachedFigures {
     pub figures: Figures,
     /// How old they are.
     pub age: Age,
+    /// When the server's copy was made, which an edge cache can put well
+    /// before the fetch; `None` when it did not say.
+    pub made_at: Option<DateTime<Utc>>,
 }
 
 /// The featured flavor card a client holds, with when the server picks the next one.
@@ -197,6 +200,8 @@ pub enum Action {
         ticket: Ticket,
         /// Everybody's counters.
         figures: Figures,
+        /// When the server's copy was made, `None` when it did not say.
+        made_at: Option<DateTime<Utc>>,
     },
     /// The user's own counters arrived for the fetch holding `ticket`. A failed fetch keeps the figures waiting, so the client sends nothing.
     MyCountsLoaded {
@@ -504,11 +509,16 @@ impl State {
                     return greet(cached.as_deref(), UserSource::Cached, greeted);
                 }
             }
-            Action::CountsLoaded { ticket, figures } => {
+            Action::CountsLoaded {
+                ticket,
+                figures,
+                made_at,
+            } => {
                 if self.generations.counts.is_current(ticket) {
                     self.everybody = Some(CachedFigures {
                         figures,
                         age: Age::Fresh,
+                        made_at,
                     });
                 }
             }
@@ -645,6 +655,21 @@ impl State {
             Scope::OnlyMe => self.mine,
         }
         .unwrap_or_default()
+    }
+
+    /// The tag under the hero's figures at `now`: everybody's, once fetched
+    /// this launch, `Live` while the server's copy is new and "as of" its time
+    /// after; the user's own, never edge-cached, `Live` once any copy is held.
+    /// `None` before then.
+    #[must_use]
+    pub fn counts_tag(&self, now: DateTime<Utc>) -> Option<CountsTag> {
+        match self.scope {
+            Scope::Everybody => self
+                .everybody
+                .filter(|e| e.age != Age::Restored)
+                .map(|e| CountsTag::at(e.made_at, now)),
+            Scope::OnlyMe => self.mine.map(|_| CountsTag::Live),
+        }
     }
 
     /// Whether the hero tags its figures [`LIVE`]: everybody's once fetched this launch, the user's own once any copy is held.

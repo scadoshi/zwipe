@@ -8,7 +8,6 @@ use dioxus::prelude::*;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::http::contracts::metrics::HttpLifetimeCounters;
 use zwipe_ui::home::{Figures, Scope};
-use zwipe_ui::screens::home;
 
 use crate::inbound::caches::CachedMyCounts;
 use crate::inbound::chrome::authed::use_authed;
@@ -57,14 +56,15 @@ pub fn use_my_counts(scope: Signal<Scope>) -> Option<HttpLifetimeCounters> {
 }
 
 /// Home's hero: the mark over everybody's or the user's own three
-/// `figures`, tagged `Live` once the figures on screen come from this visit,
-/// then the scope button, which calls `ontoggle`. A new scope rolls the
-/// figures to the other counts while its label fades in. Home's model holds
-/// the figures and the scope.
+/// `figures`, tagged `tag` (`Live`, or "as of" an edge-cached copy's time)
+/// once the figures on screen come from this visit, then the scope button,
+/// which calls `ontoggle`. A new scope rolls the figures to the other counts
+/// while its label fades in. Home's model holds the figures and the scope.
 #[component]
 pub fn HomeHeroScoped(
     figures: Figures,
-    live: bool,
+    /// The tag before the scope button: `Live`, "as of" a time, or nothing.
+    tag: Option<String>,
     scope: Scope,
     ontoggle: EventHandler,
 ) -> Element {
@@ -74,8 +74,8 @@ pub fn HomeHeroScoped(
             figures: strip_figures(Some(figures)),
             roll_key: label,
             source: rsx! {
-                if live {
-                    span { class: "stat-chip", {home::LIVE} }
+                if let Some(tag) = tag {
+                    span { key: "{tag}", class: "stat-chip", "{tag}" }
                 }
                 button {
                     class: "card-action-btn hero-scope",
