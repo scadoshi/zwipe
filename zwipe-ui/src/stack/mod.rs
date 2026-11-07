@@ -14,6 +14,11 @@ pub const CARDS_WARNING_THRESHOLD: usize = 400;
 /// How often the cap warning repeats once past [`CARDS_WARNING_THRESHOLD`].
 pub const STACK_WARNING_EVERY: usize = 100;
 
+/// The toast when a swipe stack runs out under the user's swipes, on every swipe screen. It is a
+/// toast, not a swipe's confirmation, so it shows whatever the confirmation setting is, and it
+/// takes the place of the last swipe's own line.
+pub const NO_CARDS_LEFT: &str = "No cards left";
+
 /// The cards a swipe surface shows at once, the top one taking input.
 pub const STACK_DEPTH: usize = 10;
 

@@ -26,7 +26,7 @@ use crate::filter::{self, AddContext};
 use crate::generation::{Generation, Ticket};
 use crate::stack::{
     AddAction, CARDS_WARNING_THRESHOLD, CardStack, Direction, MAX_CARDS_IN_STACK, MaybeboardAction,
-    STACK_WARNING_EVERY, StackAction,
+    NO_CARDS_LEFT, STACK_WARNING_EVERY, StackAction,
 };
 use crate::stores::in_flight::{AddOutcome, InFlightAdds};
 use crate::stores::parked::ParkedStack;
@@ -100,9 +100,6 @@ pub const STACK_LIMIT_REACHED: &str = "Card stack limit reached, start a new sea
 /// The toast as the stack nears its cap.
 pub const STACK_LIMIT_NEAR: &str =
     "Approaching the card stack limit, start a new search to continue";
-
-/// The toast for a swipe past the last card with nothing left to fetch.
-pub const END_OF_RESULTS: &str = "End of results";
 
 /// The toast when Search has nothing to serve without a filter.
 pub const TRY_A_FILTER: &str = "Try a filter to start swiping";
@@ -579,11 +576,14 @@ impl State {
         Self::default()
     }
 
-    /// Applies `action` and returns what the client must do, in order.
+    /// Applies `action` and returns what the client must do, in order. When a swipe or a page
+    /// reply runs the pile out, it says [`NO_CARDS_LEFT`] in place of the swipe's own line.
     ///
     /// A reply whose request is no longer waiting changes nothing.
     #[must_use = "the client performs the effects"]
     pub fn update(&mut self, action: Action) -> Vec<Effect> {
+        let ran_out_by = matches!(action, Action::Swipe(_) | Action::Searched { .. });
+        let before = self.pile();
         let mut effects = match action {
             Action::Load {
                 deck_id,
@@ -631,6 +631,14 @@ impl State {
             Action::Back => vec![Effect::Navigate(Destination::Previous)],
         };
         effects.extend(self.announce_related());
+        let after = self.pile();
+        let ran_out = match self.source {
+            Source::Search => before != Pile::End && after == Pile::End,
+            Source::Maybeboard => before == Pile::Cards && after == Pile::Empty,
+        };
+        if ran_out_by && ran_out {
+            effects.push(Effect::Toast(Toast::quick(ToastKind::Info, NO_CARDS_LEFT)));
+        }
         keep_one(&mut effects, toast_line);
         effects
     }
@@ -1199,7 +1207,7 @@ impl State {
         add_deck.total_price = (add_deck.total_price - price).max(0.0);
     }
 
-    /// Moves the Search cursor past the committed card, warning near the cap, at the end, or fetching the next page.
+    /// Moves the Search cursor past the committed card, warning near the cap or fetching the next page.
     fn advance(&mut self) -> Vec<Effect> {
         let total = self.stack.len();
         if !self.stack.advance() {
@@ -1212,12 +1220,9 @@ impl State {
             effects.push(quick(ToastKind::Info, STACK_LIMIT_NEAR));
         }
         let index = self.stack.index();
-        if index >= total && self.run.exhausted {
-            effects.push(Effect::Toast(Toast::normal(
-                ToastKind::Warning,
-                END_OF_RESULTS,
-            )));
-        } else if total > 0
+        let spent = index >= total && self.run.exhausted;
+        if !spent
+            && total > 0
             && index
                 .checked_add(1)
                 .is_some_and(|seen| seen >= total.saturating_sub(timing::LOAD_MORE_AT))

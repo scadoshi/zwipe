@@ -18,7 +18,7 @@ use zwipe_core::domain::deck::Board;
 use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_ui::generation::Ticket;
 use zwipe_ui::screens::remove_cards::{
-    self, Action, BoardFilter, Destination, Effect, State, Status, UndoClaim,
+    self, Action, BoardFilter, Destination, Effect, State, UndoClaim,
 };
 use zwipe_ui::stack;
 use zwipe_ui::stores::undo as shared_undo;
@@ -503,9 +503,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
     // Snapshot the model once per render.
     let state = driver.model.read();
     let stack_empty = state.is_empty();
-    let status = state.status();
     let can_undo = state.can_undo();
-    let empty_line = state.empty_line();
     let window = state.window().to_vec();
     let current = state.current().cloned();
     let board_filter = state.board();
@@ -545,12 +543,6 @@ pub fn Remove(deck_id: Uuid) -> Element {
                             },
                         }
 
-                    } else if status == Status::Empty {
-                        // The end of the stack, or nothing to show: says which,
-                        // and the dock's undo still brings the last swipe back.
-                        div { class: "dict-empty",
-                            span { class: "chip-note", {empty_line} }
-                        }
                     } else {
                         CardSkeleton {}
                     }
