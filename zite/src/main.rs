@@ -186,6 +186,11 @@ async fn static_routes() -> ServerFnResult<Vec<String>> {
 #[derive(Debug, Clone, Copy)]
 pub struct SiteSplash(pub Signal<bool>);
 
+/// Whether the page shows cards, and so pips: true while a shared deck
+/// with any card is on screen. The nav's pip toggle shows only then.
+#[derive(Debug, Clone, Copy)]
+pub struct ShowsPips(pub Signal<bool>);
+
 #[component]
 fn App() -> Element {
     // The picked theme, remembered in localStorage. It starts at the default
@@ -197,6 +202,7 @@ fn App() -> Element {
     // The pip style, kept the same way under its own key.
     let pip_style = pip_store::use_persisted_pip_style();
     use_context_provider(|| pip_style);
+    use_context_provider(|| ShowsPips(Signal::new(false)));
     use_context_provider(|| Replay(Signal::new(0u32)));
     // Closed until the splash starts to fade, so the hero's entrances run as
     // it leaves. index.html decides before first paint whether this load gets
@@ -315,8 +321,10 @@ fn App() -> Element {
 pub fn Nav() -> Element {
     let (theme, shown) = use_theme_wipe(use_context::<Signal<ThemeConfig>>(), "body");
     let pip_style = use_context::<Signal<PipStyle>>();
-    // The pip style only shows on a shared deck, the one page that draws pips.
+    // The pip style only shows on a shared deck with cards, the one page
+    // that draws pips.
     let on_shared_deck = matches!(use_route::<Route>(), Route::SharedDeck { .. });
+    let shows_pips = use_context::<ShowsPips>().0;
     let mut open = use_signal(|| false);
     let mut replay = use_context::<Replay>().0;
     let mut hovering = use_signal(|| false);
@@ -388,7 +396,7 @@ pub fn Nav() -> Element {
             trailing: rsx! {
                 div { class: "theme-controls",
                     ThemePicker { theme, shown }
-                    if on_shared_deck {
+                    if on_shared_deck && shows_pips() {
                         components::PipToggle { style: pip_style }
                     }
                 }
