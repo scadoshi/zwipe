@@ -49,7 +49,7 @@ use crate::inbound::card_filter::CardFilterPanel;
 use crate::inbound::card_stores::CardStores;
 use crate::inbound::cards::card_info::{CardDetailsSheet, CardSkeleton};
 use crate::inbound::cards::printing_sheet::PrintingSheet;
-use crate::inbound::cards::swipe_confirm::{SwipeScreenChips, use_swipe_confirm};
+use crate::inbound::cards::swipe_confirm::{SwipeScreenChips, Tone, use_swipe_confirm};
 use crate::inbound::cards::swipe_stack::{
     Swipe, SwipeDock, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
 };
@@ -408,10 +408,11 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
 
     // Sends one copy to the main deck or the maybeboard. The answer can
     // land after the screen is gone, so it runs in the root.
-    let add_card = use_callback(move |(card, maybe): (Card, bool)| {
+    let add_card = use_callback(move |(card, board): (Card, Board)| {
         let card_id = card.scryfall_data.id;
-        let board = maybe.then(|| Board::Maybeboard.display_name().to_owned());
-        let request = HttpCreateDeckCard::new(&card.scryfall_data, 1, board);
+        let maybe = board.is_maybeboard();
+        let board_name = maybe.then(|| Board::Maybeboard.display_name().to_owned());
+        let request = HttpCreateDeckCard::new(&card.scryfall_data, 1, board_name);
         in_flight.write().begin(card_id);
         let op = if maybe { "add_maybeboard" } else { "add_card" };
         spawn_forever(async move {
@@ -643,9 +644,9 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
     let mut on_search_swipe = move |(swipe, card): (Swipe, Card)| match swipe {
         Swipe::Right => {
             stack.write().record(AddAction::Add);
-            add_card.call((card.clone(), false));
+            add_card.call((card.clone(), Board::Deck));
             let mut line = OneLine::default();
-            line.confirm(true, "Added to deck");
+            line.confirm(Tone::Success, "Added to deck");
             for signal in count_add(&card, 1) {
                 line.signal(signal);
             }
@@ -666,7 +667,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             }
             stack.write().record(AddAction::Skip);
             let mut line = OneLine::default();
-            line.confirm(false, "Skipped");
+            line.confirm(Tone::Info, "Skipped");
             for said in advance.call(()) {
                 line.signal(Some(said));
             }
@@ -674,9 +675,9 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         }
         Swipe::Up => {
             stack.write().record(AddAction::Maybe);
-            add_card.call((card, true));
+            add_card.call((card, Board::Maybeboard));
             let mut line = OneLine::default();
-            line.confirm(false, "Added to maybeboard");
+            line.confirm(Tone::Info, "Added to maybeboard");
             for said in advance.call(()) {
                 line.signal(Some(said));
             }
@@ -689,13 +690,14 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         Swipe::Right => {
             let card_id = card.scryfall_data.id;
             let card_name = card.scryfall_data.name.clone();
+            let oracle_id = card.scryfall_data.oracle_id;
             mb_stack.write().record(MaybeboardAction::Promote {
-                card: Box::new(card.clone()),
+                card: Box::new(card),
             });
             if let Some(d) = deck.write().as_mut() {
                 d.maybeboard
                     .retain(|e| e.deck_card.scryfall_data_id != card_id);
-                if let Some(oracle_id) = card.scryfall_data.oracle_id {
+                if let Some(oracle_id) = oracle_id {
                     d.in_deck.insert(oracle_id);
                 }
             }

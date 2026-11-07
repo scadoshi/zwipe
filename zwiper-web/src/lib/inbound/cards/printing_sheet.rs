@@ -22,11 +22,16 @@ use zwipe_ui::card::info;
 
 use crate::inbound::cards::card_info::{CardInfoDisplay, PrintingSheetSkeleton};
 use crate::inbound::chrome::authed::use_authed;
-use crate::inbound::chrome::media::use_min_width;
+use crate::inbound::chrome::media::{KIT_MODAL_PX, use_min_width};
 
-/// The width, 60rem, from which the kit draws a sheet form as a modal, and
-/// the picker is the cover flow.
-const KIT_MODAL_PX: u32 = 960;
+/// Which way a step through the printings goes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Step {
+    /// To the printing before.
+    Back,
+    /// To the printing after.
+    Forward,
+}
 
 /// The printings of `card`, opening on the one shown. `on_save` takes the
 /// picked printing and toasts `saved_message`; `read_only` hides the dock.
@@ -41,6 +46,7 @@ pub fn PrintingSheet(
 ) -> Element {
     let authed = use_authed();
     let toast = use_toast();
+    // From the kit's modal width on, the picker is the cover flow.
     let flow = use_min_width(KIT_MODAL_PX);
     let mut printings: Signal<Vec<Card>> = use_signal(Vec::new);
     let mut loading = use_signal(|| false);
@@ -92,11 +98,11 @@ pub fn PrintingSheet(
         open.set(false);
     });
 
-    let mut step = move |forward: bool| {
+    let mut step = move |way: Step| {
         if count < 2 {
             return;
         }
-        let next = if forward {
+        let next = if way == Step::Forward {
             at.saturating_add(1).min(count.saturating_sub(1))
         } else {
             at.saturating_sub(1)
@@ -146,8 +152,8 @@ pub fn PrintingSheet(
                     class: "web-printing-body",
                     tabindex: "-1",
                     onkeydown: move |e: Event<KeyboardData>| match e.key() {
-                        Key::ArrowLeft => step(false),
-                        Key::ArrowRight => step(true),
+                        Key::ArrowLeft => step(Step::Back),
+                        Key::ArrowRight => step(Step::Forward),
                         Key::Enter => save.call(()),
                         _ => {}
                     },
@@ -213,9 +219,9 @@ fn CoverFlowSheet(
     });
 
     // The arrow keys step as the flow's buttons do.
-    let mut step = move |forward: bool| {
+    let mut step = move |way: Step| {
         let current = *index.peek();
-        let next = if forward {
+        let next = if way == Step::Forward {
             current.saturating_add(1)
         } else {
             current.saturating_sub(1)
@@ -250,11 +256,11 @@ fn CoverFlowSheet(
                         onkeydown: move |e: Event<KeyboardData>| match e.key() {
                             Key::ArrowLeft => {
                                 e.prevent_default();
-                                step(false);
+                                step(Step::Back);
                             }
                             Key::ArrowRight => {
                                 e.prevent_default();
-                                step(true);
+                                step(Step::Forward);
                             }
                             Key::Enter if !read_only => on_select.call(()),
                             _ => {}

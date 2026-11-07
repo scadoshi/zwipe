@@ -16,7 +16,7 @@ use zwipe_core::domain::card::Card;
 use zwipe_ui::deck_signals::Level;
 
 use crate::inbound::cards::otag::use_describe_tag;
-use crate::inbound::cards::swipe_confirm::SwipeConfirm;
+use crate::inbound::cards::swipe_confirm::{SwipeConfirm, Tone};
 
 /// Raises a land or budget signal from zwipe-ui as the app's toast: info or
 /// warning, up for the normal band.
@@ -37,14 +37,14 @@ fn signal_toast(toast: Toasts, signal: Option<(Level, String)>) {
 /// chip.
 #[derive(Debug, Default)]
 pub(crate) struct OneLine {
-    said: Option<(bool, String)>,
+    said: Option<(Tone, String)>,
     signals: Vec<(Level, String)>,
 }
 
 impl OneLine {
-    /// The swipe's own confirmation: a change to the deck when `success`.
-    pub(crate) fn confirm(&mut self, success: bool, text: impl Into<String>) {
-        self.said = Some((success, text.into()));
+    /// The swipe's own confirmation, in its `tone`.
+    pub(crate) fn confirm(&mut self, tone: Tone, text: impl Into<String>) {
+        self.said = Some((tone, text.into()));
     }
 
     /// A signal the swipe set off, if any.
@@ -68,8 +68,8 @@ impl OneLine {
                 }
                 signal_toast(toast, Some(signal));
             }
-            (None, Some((true, text))) => confirm.success(text),
-            (None, Some((false, text))) => confirm.info(text),
+            (None, Some((Tone::Success, text))) => confirm.success(text),
+            (None, Some((Tone::Info, text))) => confirm.info(text),
             (None, None) => {}
         }
     }
