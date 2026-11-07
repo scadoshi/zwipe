@@ -8,7 +8,8 @@
 //! arrows, a drag or a click on a side card, with Enter, a click on the
 //! middle card or `Select` picking it. Below that width `Previous` and
 //! `Next` (and the arrows) step through them one at a time, in a centered
-//! modal down to the breakpoint and the app's bottom sheet under it. It
+//! modal down to the breakpoint and the app's bottom sheet under it, with
+//! the dots and the prices at its bottom and Save at the prices' right. It
 //! closes from its title bar's ×, a backdrop tap, a drag down or Esc.
 
 use components::icons::{CHECK, DockIcon};
@@ -161,7 +162,7 @@ pub fn PrintingSheet(
                     },
                     if loading() {
                         PrintingSheetSkeleton {}
-                    } else if let Some(card) = visible.clone() {
+                    } else if let Some(card) = visible {
                         div { class: "web-printing-stage",
                             if count > 1 {
                                 button {
@@ -188,22 +189,27 @@ pub fn PrintingSheet(
                                 }
                             }
                         }
-                        if count > 1 {
-                            CarouselDots { current: at, total: count }
-                        }
-                        CardInfoDisplay { card }
-                    }
-                }
-                // Save floats at the sheet's bottom right, grayed until a
-                // different printing shows.
-                if !read_only {
-                    div { class: "action-dock action-dock-right sheet-dock",
-                        button {
-                            class: "action-dock-btn",
-                            "aria-label": "Save",
-                            disabled: !changed || visible.is_none(),
-                            onclick: move |_| save.call(()),
-                            DockIcon { path: CHECK }
+                        // The dots, then the prices with Save at their
+                        // right, at the sheet's bottom. Save is grayed
+                        // until a different printing shows.
+                        div { class: "web-printing-foot",
+                            if count > 1 {
+                                CarouselDots { current: at, total: count }
+                            }
+                            div { class: "web-printing-foot-row",
+                                CardInfoDisplay { card }
+                                if !read_only {
+                                    div { class: "action-dock web-printing-save",
+                                        button {
+                                            class: "action-dock-btn",
+                                            "aria-label": "Save",
+                                            disabled: !changed,
+                                            onclick: move |_| save.call(()),
+                                            DockIcon { path: CHECK }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }

@@ -1114,6 +1114,33 @@ body {
     outline: none;
 }
 
+/* The foot at the sheet's bottom: the dots, then the prices at the left
+   and Save at the right of one row. Save is the dock's button, sitting in
+   the row rather than floating over the sheet. */
+.web-printing-foot {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.web-printing-foot-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.web-printing-foot-row > .card-prices {
+    justify-content: flex-start;
+    margin: 0;
+}
+
+.action-dock.web-printing-save {
+    position: static;
+    flex: none;
+    margin: 0;
+}
+
 /* ---- Printing picker's cover flow ----
 
    From the kit's modal width the printing picker is a large modal over a
