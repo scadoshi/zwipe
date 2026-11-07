@@ -180,11 +180,47 @@ body {
         padding-bottom: 0;
     }
 
-    /* A swipe screen's pile chips and docks stay fixed at the window's
-       foot, so its footer runs on under them far enough for its lines to
-       scroll clear of the row. */
-    .web-scroll-screen:has(> .swipe-bottom-row) > .web-site-footer {
-        padding-bottom: 5.5rem;
+    /* A swipe screen's pile chips and docks ride at the window's foot over
+       the swipe area, and once the footer scrolls in they stop on their own
+       line right above it. */
+    .web-scroll-screen > .swipe-bottom-row {
+        --row-gap: calc(env(safe-area-inset-bottom, 0px) + 0.4rem);
+        position: sticky;
+        order: 1;
+        flex: 0 0 auto;
+        bottom: var(--row-gap);
+        margin-bottom: var(--row-gap);
+    }
+}
+
+/* The docked details panel shrinks from its foot as the footer scrolls in,
+   pixel for pixel with the rising row, so it keeps ending above the docks
+   and clear of the footer. */
+@supports (animation-timeline: view()) {
+    @media (min-width: 900px) {
+        .web-scroll-screen:has(> .swipe-bottom-row) {
+            timeline-scope: --web-footer;
+        }
+
+        .web-scroll-screen:has(> .swipe-bottom-row) > .web-site-footer {
+            view-timeline: --web-footer block;
+        }
+
+        .web-scroll-screen .web-swipe-details {
+            animation: web-dock-panel-rise linear both;
+            animation-timeline: --web-footer;
+            animation-range: entry 0px entry 100vh;
+        }
+    }
+}
+
+@keyframes web-dock-panel-rise {
+    from {
+        max-height: calc(100dvh - var(--web-dock-panel-top) - var(--web-dock-panel-bottom));
+    }
+
+    to {
+        max-height: calc(100dvh - var(--web-dock-panel-top) - var(--web-dock-panel-bottom) - 100vh);
     }
 }
 
