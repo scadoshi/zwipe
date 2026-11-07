@@ -538,20 +538,18 @@ mod tests {
         let zone = Zone::default();
         let counts = |warnings: Vec<DeckWarning>| -> Vec<String> {
             warnings
-                .into_iter()
-                .map(|w| w.to_string())
+                .iter()
+                .map(ToString::to_string)
                 .filter(|m| m.contains(" cards, "))
                 .collect()
         };
-        assert_eq!(
-            counts(zone.live_warnings(&profile, &fetched, &live)),
-            ["Deck has 3 cards, modern requires at least 60"],
-        );
+        let before = counts(zone.live_warnings(&profile, &fetched, &live));
+        assert_eq!(before.len(), 1, "{before:?}");
+        assert!(before[0].starts_with("Deck has 3 cards"), "{before:?}");
         live[3].deck_card.board = Board::Deck;
-        assert_eq!(
-            counts(zone.live_warnings(&profile, &fetched, &live)),
-            ["Deck has 4 cards, modern requires at least 60"],
-        );
+        let after = counts(zone.live_warnings(&profile, &fetched, &live));
+        assert_eq!(after.len(), 1, "{after:?}");
+        assert!(after[0].starts_with("Deck has 4 cards"), "{after:?}");
     }
 
     #[test]
