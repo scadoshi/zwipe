@@ -1734,8 +1734,11 @@ html.keyboard-up .web-dock-pair {
    shared transition gliding every card as the selection moves. On a phone
    the stage keeps a near-square shape, so the middle card takes about
    three fifths of its width and its neighbors show at the sides; a host
-   with a fixed height stretches it instead. A sideways swipe is the
-   flow's; an up or down one still scrolls the page. */
+   with a fixed height stretches it instead. In a bottom sheet the stage
+   is never taller than the sheet's 85vh less --flow-reserve, the sheet's
+   title bar, padding and what sits under the flow, so a short window
+   shrinks the cards and the whole sheet still fits. A sideways swipe is
+   the flow's; an up or down one still scrolls the page. */
 .cover-flow {
     display: flex;
     align-items: center;
@@ -1764,6 +1767,7 @@ html.keyboard-up .web-dock-pair {
     flex: 1 1 auto;
     min-width: 0;
     aspect-ratio: 1 / 0.95;
+    max-height: calc(85vh - var(--flow-reserve, 15rem) - env(safe-area-inset-bottom, 0px));
     overflow: hidden;
     perspective: 1600px;
     cursor: grab;

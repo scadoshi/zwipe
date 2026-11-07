@@ -1148,7 +1148,13 @@ body {
 
 /* ---- Printing sheet ---- */
 
-/* The cover flow, then the foot under it. */
+/* The cover flow, then the foot under it. The reserve is the sheet's
+   title bar, its padding, this margin and the foot, so the flow leaves the
+   foot on screen. */
+.web-printing-body {
+    --flow-reserve: 12.5rem;
+}
+
 .web-printing-body > .cover-flow {
     margin-bottom: 0.75rem;
 }
@@ -1228,6 +1234,7 @@ body {
     .web-flow-body .cover-flow-stage {
         align-self: stretch;
         aspect-ratio: auto;
+        max-height: none;
     }
 
     .web-flow-info {
