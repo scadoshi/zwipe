@@ -64,6 +64,8 @@ pub const UPCOMING: &[Release] = &[Release {
         "Loading placeholders match the screen they stand in for, with every chip drawn empty",
         "A deck with one card type draws its Types chart as a single bar under the type's full name",
         "Every list of cards folds from its header, the Commander group and Suggested commanders included",
+        "Coming back to the app refreshes your session, Home's figures and your settings",
+        "Your latest Light or Dark choice stays put after the app opens, with no flip back",
     ],
 }];
 

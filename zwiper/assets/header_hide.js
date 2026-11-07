@@ -46,11 +46,13 @@
 
     // A header whose content sits at the top is fully shown. Dioxus reuses
     // the header element across screens, so one that slid away on a scrolled
-    // screen would otherwise arrive on the next screen already gone.
+    // screen would otherwise arrive on the next screen already gone. A header
+    // already at rest is left alone, so a change to the page writes no style.
     const observer = new MutationObserver(() => {
         for (const nav of document.querySelectorAll(".screen > .app-nav")) {
             const area = nav.parentElement.querySelector(":scope > .screen-content");
             if (area && area.scrollTop > 0) continue;
+            if (!offset.has(nav) && !nav.style.transform) continue;
             if (area) lastTop.delete(area);
             offset.delete(nav);
             nav.style.transform = "";
