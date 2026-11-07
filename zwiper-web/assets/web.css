@@ -1847,6 +1847,18 @@ body {
     .web-swipe-select-details {
         display: block;
     }
+
+    /* The card as Add's: one centered column at Add's width and page
+       width. */
+    .web-swipe-select-body {
+        justify-items: center;
+        max-width: 96rem;
+    }
+
+    .web-swipe-select-body > .web-swipe-select-card {
+        width: 100%;
+        max-width: 30rem;
+    }
 }
 
 /* ---- The card's details on a wide window ----
@@ -1900,11 +1912,12 @@ body {
         transition: transform 0.3s ease, visibility 0s linear 0.3s;
     }
 
-    /* A finished entrance that holds its end state makes its block the
-       panel's containing block; it lets go, so the panel docks to the
-       window. */
+    /* An entrance on the panel's block makes that block the panel's
+       containing block while it runs or holds, so the panel would start out
+       of place and snap. The block doesn't animate; its card and the panel
+       enter on their own (below). */
     :is(.content-enter, .content-enter-delayed):has(> :is(.web-swipe-details, .web-examples-details)) {
-        animation-fill-mode: backwards;
+        animation: none;
     }
 
     /* The card takes one centered column, clear of the panel while it is
@@ -1920,6 +1933,28 @@ body {
     .web-swipe-select-body.web-details-hidden,
     .web-examples-body.web-details-hidden {
         padding-right: 1.5rem;
+    }
+}
+
+/* The entrance the panel's block gives up: its other children fade up as
+   the block did, and the panel fades in where it docks. */
+@media (min-width: 900px) and (prefers-reduced-motion: no-preference) {
+    :is(.content-enter, .content-enter-delayed):has(> :is(.web-swipe-details, .web-examples-details))
+        > :not(.web-swipe-details, .web-examples-details) {
+        animation: content-enter 0.3s ease-out both;
+    }
+
+    :is(.content-enter, .content-enter-delayed) > :is(.web-swipe-details, .web-examples-details) {
+        animation: web-panel-in 0.3s ease-out both;
+    }
+
+    @keyframes web-panel-in {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
     }
 }
 

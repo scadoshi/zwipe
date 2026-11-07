@@ -691,47 +691,51 @@ fn SwipeSelectBody(
         // Filter, refresh and card details as the action dock. The suggested
         // ranking filters by the host's Show chips alone; a chosen identity
         // lights the dot. Back is the header's arrow.
-        SwipeDock {
-            control,
-            buttons: [
-                (Swipe::Left, "Skip"),
-                (Swipe::Up, "Save"),
-                (Swipe::Down, "Undo"),
-                (Swipe::Right, "Pick"),
-            ]
-                .into_iter()
-                .filter(|(swipe, _)| *swipe != Swipe::Up || mode.saves_up())
-                .collect(),
-            card_on_top: has_card,
-            on_undo: move |()| undo.call(()),
-            div { class: "action-dock action-dock-right",
-                if has_filter {
-                    DockFilter {
-                        label: "Filter",
-                        dot: suggested_identity.is_some(),
-                        onclick: move |()| filter_open.set(true),
+        // In Add's bottom row, so the docks sit where Add's do.
+        div { class: "swipe-bottom-row",
+            div { class: "swipe-bottom-chips" }
+            SwipeDock {
+                control,
+                buttons: [
+                    (Swipe::Left, "Skip"),
+                    (Swipe::Up, "Save"),
+                    (Swipe::Down, "Undo"),
+                    (Swipe::Right, "Pick"),
+                ]
+                    .into_iter()
+                    .filter(|(swipe, _)| *swipe != Swipe::Up || mode.saves_up())
+                    .collect(),
+                card_on_top: has_card,
+                on_undo: move |()| undo.call(()),
+                div { class: "action-dock action-dock-right",
+                    if has_filter {
+                        DockFilter {
+                            label: "Filter",
+                            dot: suggested_identity.is_some(),
+                            onclick: move |()| filter_open.set(true),
+                        }
+                    } else if !suggested {
+                        DockFilter {
+                            label: "Filter",
+                            dot: filter::shows_dot(&user_filter.read()),
+                            onclick: move |()| filter_open.set(true),
+                        }
                     }
-                } else if !suggested {
-                    DockFilter {
-                        label: "Filter",
-                        dot: filter::shows_dot(&user_filter.read()),
-                        onclick: move |()| filter_open.set(true),
+                    button {
+                        class: "action-dock-btn",
+                        "aria-label": "Refresh",
+                        onclick: move |_| {
+                            on_refresh.call(());
+                            toast.info(
+                                "Stack refreshed".to_string(),
+                                ToastOptions::default().duration(TOAST_QUICK),
+                            );
+                        },
+                        DockIcon { path: REFRESH }
                     }
+                    span { class: "action-dock-divider" }
+                    DockEye { eye, disabled: !has_card }
                 }
-                button {
-                    class: "action-dock-btn",
-                    "aria-label": "Refresh",
-                    onclick: move |_| {
-                        on_refresh.call(());
-                        toast.info(
-                            "Stack refreshed".to_string(),
-                            ToastOptions::default().duration(TOAST_QUICK),
-                        );
-                    },
-                    DockIcon { path: REFRESH }
-                }
-                span { class: "action-dock-divider" }
-                DockEye { eye, disabled: !has_card }
             }
         }
         if let Some(card) = current {
