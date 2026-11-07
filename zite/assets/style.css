@@ -104,6 +104,7 @@ body {
     line-height: 1.6;
     min-height: 100vh;
     max-width: 100vw;
+    /* A double tap is two taps, not a zoom; pinch zoom stays. */
     touch-action: manipulation;
     /* No elastic overscroll: rubber-banding slides the sticky nav/footer with
        the content while the fixed grid stays put, flashing grid above the
