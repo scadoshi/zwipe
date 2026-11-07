@@ -143,6 +143,25 @@ pub(crate) fn Keywords() -> Element {
             }
         }
 
+        ClearWrap {
+            filled: !keywords_search().is_empty(),
+            on_clear: move |()| {
+                keywords_search.set(String::new());
+            },
+            input { class: "input input-compact",
+                    style: "flex: 1; margin-bottom: 0;",
+                    id: "keyword-search",
+                    placeholder: "Type to search",
+                    value: "{keywords_search()}",
+                    r#type: "text",
+                    autocapitalize: "none",
+                    autocorrect: "off",
+                    spellcheck: "false",
+                    oninput: move |event| {
+                        keywords_search.set(event.value());
+                    }
+                }
+        }
         if !keywords_search().is_empty() {
             if let Some(keywords) = all_keywords.read().as_ref() {
                 {
@@ -162,13 +181,15 @@ pub(crate) fn Keywords() -> Element {
                         rsx! {}
                     } else {
                         rsx! {
-                            div { class: "search-float-anchor",
-                                div { class: "search-float-results",
+                            div {
+                                div { class: "card-filter-results",
                                     for (i, keyword) in results.into_iter().enumerate() {
-                                        div {
-                                            class: "chip-unselected search-float-chip",
-                                            style: "animation-delay: {i * 40}ms, {250 + i * 40}ms;",
+                                        button {
+                                            r#type: "button",
+                                            class: "chip-unselected card-filter-result",
+                                            style: "animation-delay: {i * 40}ms;",
                                             onclick: move |_| {
+                                                keywords_search.set(String::new());
                                                 let mode = keywords_mode();
                                                 let mut current = read_keywords(&filter_builder(), mode);
                                                 current.push(keyword.clone());
@@ -183,26 +204,6 @@ pub(crate) fn Keywords() -> Element {
                     }
                 }
             }
-        }
-
-        ClearWrap {
-            filled: !keywords_search().is_empty(),
-            on_clear: move |()| {
-                keywords_search.set(String::new());
-            },
-            input { class: "input input-compact",
-                    style: "flex: 1; margin-bottom: 0;",
-                    id: "keyword-search",
-                    placeholder: "Type to search",
-                    value: "{keywords_search()}",
-                    r#type: "text",
-                    autocapitalize: "none",
-                    autocorrect: "off",
-                    spellcheck: "false",
-                    oninput: move |event| {
-                        keywords_search.set(event.value());
-                    }
-                }
         }
 
         // == excludes ==
@@ -240,6 +241,25 @@ pub(crate) fn Keywords() -> Element {
             }
         }
 
+        ClearWrap {
+            filled: !excludes_search().is_empty(),
+            on_clear: move |()| {
+                excludes_search.set(String::new());
+            },
+            input { class: "input input-compact",
+                    style: "flex: 1; margin-bottom: 0;",
+                    id: "keyword-excludes-search",
+                    placeholder: "Type to search",
+                    value: "{excludes_search()}",
+                    r#type: "text",
+                    autocapitalize: "none",
+                    autocorrect: "off",
+                    spellcheck: "false",
+                    oninput: move |event| {
+                        excludes_search.set(event.value());
+                    }
+                }
+        }
         if !excludes_search().is_empty() {
             if let Some(keywords) = all_keywords.read().as_ref() {
                 {
@@ -259,13 +279,15 @@ pub(crate) fn Keywords() -> Element {
                         rsx! {}
                     } else {
                         rsx! {
-                            div { class: "search-float-anchor",
-                                div { class: "search-float-results",
+                            div {
+                                div { class: "card-filter-results",
                                     for (i, keyword) in results.into_iter().enumerate() {
-                                        div {
-                                            class: "chip-unselected search-float-chip",
-                                            style: "animation-delay: {i * 40}ms, {250 + i * 40}ms;",
+                                        button {
+                                            r#type: "button",
+                                            class: "chip-unselected card-filter-result",
+                                            style: "animation-delay: {i * 40}ms;",
                                             onclick: move |_| {
+                                                excludes_search.set(String::new());
                                                 let mut current = read_excluded(&filter_builder());
                                                 current.push(keyword.clone());
                                                 write_excluded(&mut filter_builder.write(), current);
@@ -279,26 +301,6 @@ pub(crate) fn Keywords() -> Element {
                     }
                 }
             }
-        }
-
-        ClearWrap {
-            filled: !excludes_search().is_empty(),
-            on_clear: move |()| {
-                excludes_search.set(String::new());
-            },
-            input { class: "input input-compact",
-                    style: "flex: 1; margin-bottom: 0;",
-                    id: "keyword-excludes-search",
-                    placeholder: "Type to search",
-                    value: "{excludes_search()}",
-                    r#type: "text",
-                    autocapitalize: "none",
-                    autocorrect: "off",
-                    spellcheck: "false",
-                    oninput: move |event| {
-                        excludes_search.set(event.value());
-                    }
-                }
         }
     }
 }

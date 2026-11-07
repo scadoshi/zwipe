@@ -147,49 +147,6 @@ pub(crate) fn OtherTypes() -> Element {
             }
         }
 
-        if !search_query().is_empty() {
-            if let Some(all_types) = all_card_types.read().as_ref() {
-                {
-                    let results: Vec<String> = all_types
-                        .iter()
-                        .filter(|t| {
-                            let lower = t.to_lowercase();
-                            !selected_other_types.contains(&lower)
-                                && !excluded_other_types.contains(&lower)
-                                && lower.contains(&search_query().to_lowercase())
-                        })
-                        .take(8)
-                        .map(|x| x.to_lowercase())
-                        .collect();
-
-                    if results.is_empty() {
-                        rsx! {}
-                    } else {
-                        rsx! {
-                            div { class: "search-float-anchor",
-                                div { class: "search-float-results",
-                                    for (i, t) in results.into_iter().enumerate() {
-                                        div {
-                                            class: "chip-unselected search-float-chip",
-                                            style: "animation-delay: {i * 40}ms, {250 + i * 40}ms;",
-                                            onclick: move |_| {
-                                                let mode = other_type_mode();
-                                                let mut current = read_other_types(&filter_builder(), mode);
-                                                current.push(t.clone());
-                                                write_other_types(&mut filter_builder.write(), mode, current);
-                                                is_typing.set(false);
-                                            },
-                                            "{t}"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
         ClearWrap {
             filled: !search_query().is_empty(),
             on_clear: move |()| {
@@ -213,6 +170,50 @@ pub(crate) fn OtherTypes() -> Element {
                         is_typing.set(false);
                     }
                 }
+        }
+        if !search_query().is_empty() {
+            if let Some(all_types) = all_card_types.read().as_ref() {
+                {
+                    let results: Vec<String> = all_types
+                        .iter()
+                        .filter(|t| {
+                            let lower = t.to_lowercase();
+                            !selected_other_types.contains(&lower)
+                                && !excluded_other_types.contains(&lower)
+                                && lower.contains(&search_query().to_lowercase())
+                        })
+                        .take(8)
+                        .map(|x| x.to_lowercase())
+                        .collect();
+
+                    if results.is_empty() {
+                        rsx! {}
+                    } else {
+                        rsx! {
+                            div {
+                                div { class: "card-filter-results",
+                                    for (i, t) in results.into_iter().enumerate() {
+                                        button {
+                                            r#type: "button",
+                                            class: "chip-unselected card-filter-result",
+                                            style: "animation-delay: {i * 40}ms;",
+                                            onclick: move |_| {
+                                                search_query.set(String::new());
+                                                let mode = other_type_mode();
+                                                let mut current = read_other_types(&filter_builder(), mode);
+                                                current.push(t.clone());
+                                                write_other_types(&mut filter_builder.write(), mode, current);
+                                                is_typing.set(false);
+                                            },
+                                            "{t}"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         // == type line excludes ==
@@ -250,48 +251,6 @@ pub(crate) fn OtherTypes() -> Element {
             }
         }
 
-        if !excludes_search().is_empty() {
-            if let Some(all_types) = all_card_types.read().as_ref() {
-                {
-                    let results: Vec<String> = all_types
-                        .iter()
-                        .filter(|t| {
-                            let lower = t.to_lowercase();
-                            !selected_other_types.contains(&lower)
-                                && !excluded_other_types.contains(&lower)
-                                && lower.contains(&excludes_search().to_lowercase())
-                        })
-                        .take(8)
-                        .map(|x| x.to_lowercase())
-                        .collect();
-
-                    if results.is_empty() {
-                        rsx! {}
-                    } else {
-                        rsx! {
-                            div { class: "search-float-anchor",
-                                div { class: "search-float-results",
-                                    for (i, t) in results.into_iter().enumerate() {
-                                        div {
-                                            class: "chip-unselected search-float-chip",
-                                            style: "animation-delay: {i * 40}ms, {250 + i * 40}ms;",
-                                            onclick: move |_| {
-                                                let mut current = read_excluded(&filter_builder());
-                                                current.push(t.clone());
-                                                write_excluded(&mut filter_builder.write(), current);
-                                                excludes_is_typing.set(false);
-                                            },
-                                            "{t}"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
         ClearWrap {
             filled: !excludes_search().is_empty(),
             on_clear: move |()| {
@@ -315,6 +274,49 @@ pub(crate) fn OtherTypes() -> Element {
                         excludes_is_typing.set(false);
                     }
                 }
+        }
+        if !excludes_search().is_empty() {
+            if let Some(all_types) = all_card_types.read().as_ref() {
+                {
+                    let results: Vec<String> = all_types
+                        .iter()
+                        .filter(|t| {
+                            let lower = t.to_lowercase();
+                            !selected_other_types.contains(&lower)
+                                && !excluded_other_types.contains(&lower)
+                                && lower.contains(&excludes_search().to_lowercase())
+                        })
+                        .take(8)
+                        .map(|x| x.to_lowercase())
+                        .collect();
+
+                    if results.is_empty() {
+                        rsx! {}
+                    } else {
+                        rsx! {
+                            div {
+                                div { class: "card-filter-results",
+                                    for (i, t) in results.into_iter().enumerate() {
+                                        button {
+                                            r#type: "button",
+                                            class: "chip-unselected card-filter-result",
+                                            style: "animation-delay: {i * 40}ms;",
+                                            onclick: move |_| {
+                                                excludes_search.set(String::new());
+                                                let mut current = read_excluded(&filter_builder());
+                                                current.push(t.clone());
+                                                write_excluded(&mut filter_builder.write(), current);
+                                                excludes_is_typing.set(false);
+                                            },
+                                            "{t}"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

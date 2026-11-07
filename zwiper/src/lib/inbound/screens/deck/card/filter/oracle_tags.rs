@@ -158,38 +158,6 @@ pub(crate) fn OracleTags(on_dictionary: EventHandler<PickerField>) -> Element {
             }
 
             // search-to-add over the full catalog
-            if !includes_search().is_empty() {
-                {
-                    let results: Vec<OracleTag> = oracle_tag::search_oracle_tags(tags, &includes_search())
-                        .into_iter()
-                        .filter(|t| !selected.contains(&t.slug))
-                        .take(8)
-                        .collect();
-
-                    rsx! {
-                        if !results.is_empty() {
-                            div { class: "search-float-anchor",
-                                div { class: "search-float-results",
-                                    for (i, tag) in results.into_iter().enumerate() {
-                                        div {
-                                            class: "chip-unselected search-float-chip",
-                                            style: "animation-delay: {i * 40}ms, {250 + i * 40}ms;",
-                                            onclick: move |_| {
-                                                let m = mode();
-                                                let mut current = read_selected(&filter_builder(), m);
-                                                current.push(tag.slug.clone());
-                                                write_selected(&mut filter_builder.write(), m, current);
-                                            },
-                                            "{tag.slug}"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
             ClearWrap {
                 filled: !includes_search().is_empty(),
                 on_clear: move |()| {
@@ -208,6 +176,39 @@ pub(crate) fn OracleTags(on_dictionary: EventHandler<PickerField>) -> Element {
                             includes_search.set(event.value());
                         }
                     }
+            }
+            if !includes_search().is_empty() {
+                {
+                    let results: Vec<OracleTag> = oracle_tag::search_oracle_tags(tags, &includes_search())
+                        .into_iter()
+                        .filter(|t| !selected.contains(&t.slug))
+                        .take(8)
+                        .collect();
+
+                    rsx! {
+                        if !results.is_empty() {
+                            div {
+                                div { class: "card-filter-results",
+                                    for (i, tag) in results.into_iter().enumerate() {
+                                        button {
+                                            r#type: "button",
+                                            class: "chip-unselected card-filter-result",
+                                            style: "animation-delay: {i * 40}ms;",
+                                            onclick: move |_| {
+                                                includes_search.set(String::new());
+                                                let m = mode();
+                                                let mut current = read_selected(&filter_builder(), m);
+                                                current.push(tag.slug.clone());
+                                                write_selected(&mut filter_builder.write(), m, current);
+                                            },
+                                            "{tag.slug}"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
 
             // == excludes ==
@@ -250,37 +251,6 @@ pub(crate) fn OracleTags(on_dictionary: EventHandler<PickerField>) -> Element {
                 }
             }
 
-            if !excludes_search().is_empty() {
-                {
-                    let results: Vec<OracleTag> = oracle_tag::search_oracle_tags(tags, &excludes_search())
-                        .into_iter()
-                        .filter(|t| !selected.contains(&t.slug) && !excluded.contains(&t.slug))
-                        .take(8)
-                        .collect();
-
-                    rsx! {
-                        if !results.is_empty() {
-                            div { class: "search-float-anchor",
-                                div { class: "search-float-results",
-                                    for (i, tag) in results.into_iter().enumerate() {
-                                        div {
-                                            class: "chip-unselected search-float-chip",
-                                            style: "animation-delay: {i * 40}ms, {250 + i * 40}ms;",
-                                            onclick: move |_| {
-                                                let mut current = read_excluded(&filter_builder());
-                                                current.push(tag.slug.clone());
-                                                write_excluded(&mut filter_builder.write(), current);
-                                            },
-                                            "{tag.slug}"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
             ClearWrap {
                 filled: !excludes_search().is_empty(),
                 on_clear: move |()| {
@@ -299,6 +269,38 @@ pub(crate) fn OracleTags(on_dictionary: EventHandler<PickerField>) -> Element {
                             excludes_search.set(event.value());
                         }
                     }
+            }
+            if !excludes_search().is_empty() {
+                {
+                    let results: Vec<OracleTag> = oracle_tag::search_oracle_tags(tags, &excludes_search())
+                        .into_iter()
+                        .filter(|t| !selected.contains(&t.slug) && !excluded.contains(&t.slug))
+                        .take(8)
+                        .collect();
+
+                    rsx! {
+                        if !results.is_empty() {
+                            div {
+                                div { class: "card-filter-results",
+                                    for (i, tag) in results.into_iter().enumerate() {
+                                        button {
+                                            r#type: "button",
+                                            class: "chip-unselected card-filter-result",
+                                            style: "animation-delay: {i * 40}ms;",
+                                            onclick: move |_| {
+                                                excludes_search.set(String::new());
+                                                let mut current = read_excluded(&filter_builder());
+                                                current.push(tag.slug.clone());
+                                                write_excluded(&mut filter_builder.write(), current);
+                                            },
+                                            "{tag.slug}"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
