@@ -402,3 +402,9 @@ Theme state left: the app was left on **Gruvbox light** (I toggled to light for 
 | 132, 118 wide | Toasts bottom-left; wide panel | **Untested**: logged out again before I got to them |
 
 **#55 revised: the session drops without a second tab.** After Scotty signed in, I used one tab only: Settings → Activity → deck page → Add, each a full page load (`navigate`), over about 1.5 minutes. On the load of /add the app landed on /login, and `zwiper-web.session` was gone again (07:44:56Z). So the second tab wasn't the cause, or at least not the only one. A theory that fits all three logouts (deploy reload, second tab, plain navigations): when a page load triggers a token refresh and the page is unloaded (a new full navigation) before the response is stored, the server has rotated the refresh token, but the client still holds the old one. The next load sends the old token, it's seen as a replay, and the family is revoked. That would hit real users on reloads, back/forward to the site, or link clicks during a refresh. Worth checking zerver's logs for replay-revocations from the test account between 07:40 and 07:45Z. Severity: **broken**.
+
+## Part 7, last checks before standing by (1450, signed in)
+
+- **132 (toasts bottom-left, clear of docks): holds at wide.** "Synergy off" toast at x 16–178, y 518–579, above the From/Search pile chips (y 606–633) and well left of the docks (x 848–1423) (p7-11).
+- **Unconfirmed: page-wide highlight after the Synergy toggle.** After clicking the Synergy bolt on Add, all page text (details panel, docks, footer, nav Log out) was painted as if selected, yet `getSelection()` was an empty Range. Clicking elsewhere didn't clear it; a reload did. I didn't get to retry before standing by, so it may be a one-off paint artifact. Worth a quick repro: on Add, toggle the bolt and look for selection highlight across the page (p7-11).
+- 118 wide recheck and 144 cross-tab: not done (stood down until the session fix, 156, ships).
