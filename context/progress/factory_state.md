@@ -50,6 +50,8 @@ For Scotty's triage: the picker × discarding live picks; a toast over the filte
 - Scotty's calls: login cap 5 to 10 (#280, test fix pending at halo); both QA agents keep sharing `test`; Cairn `fix/app-lifecycle` merged to Cairn main (`f777c35`) with its portfolio changelog; 158A option 1 approved (thinker, after the skeleton follow-up); the WebView crash fallback approved (laptop, spike first). The Dioxus bug is already dioxus#5885 (fix PRs #5886, #5890); a comment draft for Scotty is at `~/Developer/zwipe/target/dioxus-webview-terminate-issue.md`. Nothing filed.
 - In flight: halo 280 test fix, 181, then 170, 171; scotland 178 (priority), 179, 174; thinker skeletons (D5 D6 D7 D9), then 158A; laptop the WebView fallback.
 - Next deploy after this batch, with Scotty's go.
+- Deployed `3e72d3344` (2026-11-07 midday). Since then merged into release: #293 (158A, retired lifetime counters, a migration), #294 #297 #299 #300 #302 #303 (the scadoshi-rust audit, plus orangui #17 and Cairn main), #295 (crash fallback on the native run loop, orangui #16), #296 (182), #298 (183), #301 (184), #304 (175 dock and toast wrap, orangui #18), #305 (175 swipe-down at the end). Cairn main has the crash fallback (#4), backup/import, the Android fixes and the audit fixes. The next deploy waits on Scotty's go.
+- In flight: thinker 165 follow-up (card detail chips in light themes); scotland Droid's seven Cairn fixes. Parked for Scotty: the Quick add 'No results' pill.
 
 ## PR #259 (156, the auth logout): composer review notes for Scotty
 
