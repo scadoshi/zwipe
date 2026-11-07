@@ -19,11 +19,13 @@ use std::ptr::NonNull;
 
 use dioxus::prelude::*;
 
+use crate::inbound::components::navigation::leave_guard::LeaveDialog;
 use crate::inbound::router::Router;
 
 /// Layout wrapping all routes: installs the OS-back bridge, then renders the
-/// active route via `Outlet`. Being a layout puts it inside the router context,
-/// so `use_navigator()` resolves here.
+/// active route via `Outlet`, with the leave guard's dialog over it. Being a
+/// layout puts it inside the router context, so `use_navigator()` resolves
+/// here.
 #[component]
 pub fn BackHandlerLayout() -> Element {
     let nav = use_navigator();
@@ -38,6 +40,7 @@ pub fn BackHandlerLayout() -> Element {
 
     rsx! {
         Outlet::<Router> {}
+        LeaveDialog {}
     }
 }
 
