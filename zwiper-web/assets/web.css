@@ -22,6 +22,7 @@
     }
 
     .input-clear-wrap:has(> #quick-add),
+    .input-clear-wrap.web-ghost-field,
     .input-clear-wrap:has(> #commander-maybeboard-search),
     #import-url,
     #oracle-tag-dictionary-search {

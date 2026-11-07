@@ -396,7 +396,7 @@ pub fn CommanderMaybeboard() -> Element {
                     if is_loading() {
                         div { class: "chip-row",
                             span { class: "stat-chip stat-chip-p1 chip-row-label web-ghost-chip", GhostText { chars: 9 } }
-                            div { class: "input-clear-wrap",
+                            div { class: "input-clear-wrap web-ghost-field",
                                 div {
                                     class: "input input-compact input-placeholder",
                                     style: "line-height: normal;",

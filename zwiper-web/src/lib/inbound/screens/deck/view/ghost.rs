@@ -80,8 +80,7 @@ pub fn DeckControlsGhost() -> Element {
         div { class: "chip-row",
             span { class: "stat-chip stat-chip-p1 chip-row-label web-ghost-chip", GhostText { chars: 9 } }
             div {
-                class: "input-clear-wrap",
-                style: "flex: 1 1 0%; min-width: 0; margin-bottom: 0;",
+                class: "input-clear-wrap web-ghost-field",
                 div {
                     class: "input input-compact input-placeholder",
                     style: "line-height: normal;",
