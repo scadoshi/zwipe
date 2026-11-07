@@ -13,7 +13,7 @@ use crate::config::APP_VERSION;
 use crate::domain::theme;
 use crate::inbound::root_signal::use_root_signal;
 use crate::inbound::session::ensure_fresh::ensure_fresh;
-use crate::inbound::session::funnel;
+use crate::inbound::session::{funnel, settings_sync};
 use crate::outbound::session_store::SessionStore;
 use crate::outbound::theme_store::ThemeStore;
 use crate::outbound::timer;
@@ -89,6 +89,15 @@ pub fn use_session_upkeep() -> UpgradeRequired {
             }
             // The first round runs at once.
             timer::sleep(UPKEEP_INTERVAL).await;
+        }
+    });
+
+    // The tab coming back to the foreground fetches the settings again, so a
+    // theme chosen on another device meanwhile shows without a trip to Home.
+    use_future(move || async move {
+        let mut visible = document::eval(settings_sync::VISIBLE_JS);
+        while visible.recv::<bool>().await.is_ok() {
+            settings_sync::sync_settings(session, client, theme, pip_style);
         }
     });
 

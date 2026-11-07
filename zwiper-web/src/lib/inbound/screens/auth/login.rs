@@ -22,6 +22,7 @@ use crate::inbound::router::Route;
 use crate::inbound::screens::auth::hero::{PublicFlavor, PublicHero};
 use crate::inbound::shell::ScreenFrame;
 use crate::outbound::session_store::SessionStore;
+use crate::outbound::theme_store::ThemeStore;
 
 /// An identifier for the login form to fill in once, set by a screen that
 /// sends the user here (Create profile's username, Forgot password's
@@ -94,7 +95,9 @@ impl Driver {
             Effect::ClearPassword => password.set(String::new()),
             Effect::SignedIn(new_session) => {
                 SessionStore::browser().infallible_save(&new_session);
-                theme.set(components::theme_from_settings(&new_session.settings));
+                let profile = components::theme_from_settings(&new_session.settings);
+                ThemeStore::browser().save_synced(&profile);
+                theme.set(profile);
                 pip_style.set(new_session.settings.pip_style);
                 session.set(Some(*new_session));
             }

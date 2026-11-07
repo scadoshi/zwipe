@@ -12,6 +12,7 @@ use zwipe_core::http::contracts::user::HttpUpdateSettings;
 
 use crate::domain::settings::{self, RequestSeq};
 use crate::inbound::chrome::authed::use_authed;
+use crate::outbound::theme_store::ThemeStore;
 
 /// Flips Dark/Light at once and saves it, saying what it did; a failure
 /// puts back the mode from before the click, and a reply overtaken by a
@@ -28,6 +29,7 @@ pub(crate) fn use_toggle_dark_mode() -> Callback<()> {
             name: prev.name.clone(),
             is_dark: !prev.is_dark,
         };
+        ThemeStore::browser().save(&next);
         theme.set(next.clone());
         if !signed_in(session) {
             toast.success(
@@ -56,6 +58,9 @@ pub(crate) fn use_toggle_dark_mode() -> Callback<()> {
             let Some(shown) = settings::settle(*dark_seq.peek(), mine, saved, prev) else {
                 return;
             };
+            if saved_dark.is_some() {
+                ThemeStore::browser().save_synced(&shown);
+            }
             theme.set(shown);
             if let Some(dark) = saved_dark {
                 toast.success(
@@ -80,6 +85,7 @@ pub(crate) fn ThemesSheet(open: Signal<bool>) -> Element {
     let authed = use_authed();
 
     let save = move |picked: ThemeConfig| {
+        ThemeStore::browser().save(&picked);
         if !signed_in(session) {
             theme.set(picked);
             toast.success(
@@ -102,7 +108,9 @@ pub(crate) fn ThemesSheet(open: Signal<bool>) -> Element {
                 })
                 .await
             {
-                theme.set(components::theme_from_settings(&settings));
+                let saved = components::theme_from_settings(&settings);
+                ThemeStore::browser().save_synced(&saved);
+                theme.set(saved);
                 toast.success(
                     "Theme saved".to_string(),
                     ToastOptions::default().duration(TOAST_QUICK),

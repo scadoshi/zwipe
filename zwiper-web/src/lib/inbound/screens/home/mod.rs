@@ -38,6 +38,7 @@ use crate::inbound::chrome::hint_topic::HintTopic;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, open_and_record_hint};
 use crate::inbound::chrome::toast::raise;
 use crate::inbound::router::Route;
+use crate::inbound::session::settings_sync::sync_settings;
 use crate::inbound::shell::ScreenFrame;
 use crate::outbound::counts_store::CountsStore;
 use crate::outbound::scope_store::ScopeStore;
@@ -210,29 +211,9 @@ impl Driver {
         });
     }
 
-    /// Applies fresh settings, so a theme changed on another device shows
-    /// here.
+    /// Applies fresh settings (see `session::settings_sync`).
     fn fetch_settings(self) {
-        let Self {
-            session,
-            client,
-            mut theme,
-            mut pip_style,
-            ..
-        } = self;
-        let Some(current) = session.peek().clone() else {
-            return;
-        };
-        spawn(async move {
-            let http = client.peek().clone();
-            match http.fetch_settings(&current).await {
-                Ok(settings) => {
-                    theme.set(components::theme_from_settings(&settings));
-                    pip_style.set(settings.pip_style);
-                }
-                Err(e) => tracing::warn!("settings fetch failed: {e}"),
-            }
-        });
+        sync_settings(self.session, self.client, self.theme, self.pip_style);
     }
 
     /// Fetches everybody's counters into the cache and browser storage.
