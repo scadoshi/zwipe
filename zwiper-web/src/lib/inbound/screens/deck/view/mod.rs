@@ -69,6 +69,9 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     let mut share_token: Signal<Option<Uuid>> = use_signal(|| None);
     let mut seeded_for: Signal<Option<Uuid>> = use_signal(|| None);
     let mut commander: Signal<Option<Card>> = use_signal(|| None);
+    // Counts the warning fixes that have landed, so the wide page reloads
+    // its own copy of the deck after each.
+    let mut fixed = use_signal(|| 0u32);
 
     let mut profile: Resource<Result<DeckProfile, ClientError>> =
         use_resource(use_reactive!(|deck_id| async move {
@@ -148,6 +151,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                         ToastOptions::default().duration(TOAST_QUICK),
                     );
                     deck.restart();
+                    fixed.with_mut(|n| *n = n.wrapping_add(1));
                 }
             });
         }),
@@ -170,6 +174,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 commander.set(None);
                 profile.restart();
                 deck.restart();
+                fixed.with_mut(|n| *n = n.wrapping_add(1));
             });
         }),
         // As in the app, straight to the client: a missing session reads
@@ -191,6 +196,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                             ToastOptions::default().duration(TOAST_QUICK),
                         );
                         deck.restart();
+                        fixed.with_mut(|n| *n = n.wrapping_add(1));
                     }
                     Err(e) => {
                         tracing::warn!("remove_flagged_card failed: {e}");
@@ -240,7 +246,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
             div { class: "screen-content",
                 match loaded_profile {
                     _ if wide() => rsx! {
-                        DeckWidePage { deck_id, currency, fixes, dialogs }
+                        DeckWidePage { deck_id, currency, fixes, fixed, dialogs }
                     },
                     Some(Ok(p)) => {
                         let cards = metrics

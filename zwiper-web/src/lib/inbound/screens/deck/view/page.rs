@@ -52,13 +52,14 @@ use crate::inbound::screens::deck::cards::quick_add::QuickAdd;
 /// The stat panels' fold keys, shut when the page opens.
 const FOLDED_STATS: [&str; 5] = ["Budget", "Tags", "Distributions", "Mana", "Draw odds"];
 
-/// The page for `deck_id`. `fixes` are the warnings' fixes; after one the
-/// page reloads the deck.
+/// The page for `deck_id`. `fixes` are the warnings' fixes, and `fixed`
+/// counts the ones that have landed: each reloads the deck.
 #[component]
 pub fn DeckWidePage(
     deck_id: Uuid,
     currency: Signal<PriceCurrency>,
     fixes: WarningFixes,
+    fixed: ReadSignal<u32>,
     dialogs: DeckDialogs,
 ) -> Element {
     let navigator = use_navigator();
@@ -104,22 +105,13 @@ pub fn DeckWidePage(
     let hover_stack = use_hover_stack();
     let folded: Signal<HashSet<String>> =
         use_signal(|| FOLDED_STATS.into_iter().map(String::from).collect());
-    // A fix made at the foot reloads the deck, so the rows follow.
-    let after_fix = use_callback(move |()| ed.reload.call(()));
-    let fixes = WarningFixes {
-        fix_quantity: use_callback(move |change: (Uuid, i32)| {
-            fixes.fix_quantity.call(change);
-            after_fix.call(());
-        }),
-        clear_commander: use_callback(move |()| {
-            fixes.clear_commander.call(());
-            after_fix.call(());
-        }),
-        remove: use_callback(move |card: Uuid| {
-            fixes.remove.call(card);
-            after_fix.call(());
-        }),
-    };
+    // A fix made at the foot reloads the deck once it has landed, so the
+    // rows, the counts and the warnings follow.
+    use_effect(move || {
+        if fixed() > 0 {
+            ed.reload.call(());
+        }
+    });
 
     let Listed {
         tokens: token_rows,
@@ -319,8 +311,8 @@ pub fn DeckWidePage(
         }
     };
 
-    // The owner's facts and stats follow the cards as edited here; the
-    // warnings and store links stay the deck's as fetched.
+    // The owner's facts, stats and warnings follow the cards as edited here;
+    // the store links stay the deck's as fetched.
     let held_deck = deck();
     let metrics = held_deck.as_ref().and_then(|d| {
         zone.read()
@@ -328,7 +320,10 @@ pub fn DeckWidePage(
     });
     let warnings = held_deck
         .as_ref()
-        .map(|d| d.warnings.clone())
+        .map(|d| {
+            zone.read()
+                .live_warnings(&d.deck_profile, &d.entries, &entries.read())
+        })
         .unwrap_or_default();
     let buy_links = held_deck.as_ref().map(buy::links);
     let has_cards = metrics.is_some();
