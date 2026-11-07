@@ -20,7 +20,7 @@ use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::ui_toast;
 use crate::inbound::router::Router;
 use crate::outbound::session::Persist;
-use crate::outbound::{app_icon, theme_store};
+use crate::outbound::{app_icon, pending_settings_store, theme_store};
 
 /// An identifier for the login form to fill in once, set by a screen that
 /// sends the user here (Create profile's username, Forgot password's email).
@@ -90,10 +90,19 @@ impl Driver {
             }
             Effect::SetIdentifier(value) => identifier.set(value),
             Effect::ClearPassword => password.set(String::new()),
-            Effect::SignedIn(new_session) => {
+            Effect::SignedIn(mut new_session) => {
+                theme_store::save_server_seen(&components::theme_from_settings(
+                    &new_session.settings,
+                ));
+                // A change this user made before the app died shows at once;
+                // Home's settings sync sends it.
+                if let Some(pending) =
+                    pending_settings_store::load().and_then(|p| p.of(new_session.user.id))
+                {
+                    pending.apply(&mut new_session.settings);
+                }
                 new_session.infallible_save();
                 let picked = components::theme_from_settings(&new_session.settings);
-                theme_store::save_server_seen(&picked);
                 app_icon::follow(&picked);
                 theme.set(picked);
                 pip_style.set(new_session.settings.pip_style);

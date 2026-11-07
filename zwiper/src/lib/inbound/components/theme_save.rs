@@ -13,11 +13,12 @@ use components::{ThemeConfig, ThemeSheet};
 use dioxus::prelude::*;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::http::contracts::user::HttpUpdateSettings;
+use zwipe_ui::pending_settings::PendingSettings;
 use zwipe_ui::screens::config::{Action, SaveTicket, Theme};
 use zwipe_ui::settings::SettingChange;
 
 use crate::inbound::components::auth::authed::Authed;
-use crate::outbound::{app_icon, theme_store};
+use crate::outbound::{app_icon, pending_settings_store, theme_store};
 
 /// The app's theme value for a theme the model names.
 pub fn theme_config_of(theme: Theme) -> ThemeConfig {
@@ -39,7 +40,8 @@ pub fn theme_of(config: ThemeConfig) -> Theme {
 /// `dispatch`: [`Action::Saved`] with the server's settings, or
 /// [`Action::SaveFailed`] once `authed` has reported the failure and raised
 /// its error toast. Without a session the reply is the pick kept on the
-/// device.
+/// device. The change stays pending on the device until the server answers,
+/// so one the app dies before hearing back about goes up on the next launch.
 pub fn save(
     authed: Authed,
     session: Signal<Option<Session>>,
@@ -47,13 +49,19 @@ pub fn save(
     change: SettingChange,
     dispatch: impl Fn(Action) + 'static,
 ) {
-    if session.peek().is_none() {
+    let Some(user_id) = session.peek().as_ref().map(|s| s.user.id) else {
         dispatch(Action::Saved {
             ticket,
             settings: Box::new(change.kept_on_device()),
         });
         return;
-    }
+    };
+    let sent = change.clone();
+    pending_settings_store::store(Some(&PendingSettings::record(
+        pending_settings_store::load(),
+        user_id,
+        change.clone(),
+    )));
     let request = HttpUpdateSettings::from(change);
     spawn(async move {
         let reply = authed
@@ -61,6 +69,8 @@ pub fn save(
                 c.update_settings(request, &s).await
             })
             .await;
+        let left = pending_settings_store::load().and_then(|p| p.answered(&sent));
+        pending_settings_store::store(left.as_ref());
         dispatch(match reply {
             Ok(settings) => Action::Saved {
                 ticket,

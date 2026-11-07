@@ -4,10 +4,15 @@
 //! this device and the server. Home runs it as it loads, and the root
 //! each time the app comes back to the foreground, so a theme chosen on
 //! another device shows without waiting for Home.
+//!
+//! A change the app died before saving goes first (see
+//! [`zwipe_ui::pending_settings`]): its reply stands in for the fetch, and
+//! while it cannot go up the device keeps showing it and takes nothing from
+//! the server.
 
 use components::ThemeConfig;
 use dioxus::prelude::*;
-use zwipe_client::ZwipeClient;
+use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user::models::settings::PipStyle;
 use zwipe_core::http::contracts::user::HttpUpdateSettings;
@@ -15,7 +20,7 @@ use zwipe_ui::theme_sync::{Sync, reconcile};
 
 use crate::inbound::components::auth::ensure_session::EnsureFresh;
 use crate::outbound::session::Persist;
-use crate::outbound::{app_icon, theme_store};
+use crate::outbound::{app_icon, pending_settings_store, theme_store};
 
 /// Fetches the settings and applies them, when a session is held. It waits
 /// for a usable access token first. A failure logs and changes nothing.
@@ -37,12 +42,35 @@ pub fn sync_settings(
             }
         };
         let http = client.peek().clone();
-        let settings = match http.fetch_settings(&current).await {
-            Ok(settings) => settings,
-            Err(e) => {
-                tracing::warn!("settings fetch failed: {e}");
-                return;
-            }
+        let resent = match pending_settings_store::load().and_then(|p| p.of(current.user.id)) {
+            None => None,
+            Some(pending) => match http.update_settings(pending.update(), &current).await {
+                Ok(saved) => {
+                    pending_settings_store::store(None);
+                    Some(saved)
+                }
+                // The server refuses the change itself: drop it rather than
+                // send it on every launch.
+                Err(e @ (ClientError::BadRequest(_) | ClientError::UnprocessableEntity(_))) => {
+                    tracing::warn!("pending settings refused; dropped: {e}");
+                    pending_settings_store::store(None);
+                    None
+                }
+                Err(e) => {
+                    tracing::warn!("pending settings not sent; kept: {e}");
+                    return;
+                }
+            },
+        };
+        let settings = match resent {
+            Some(saved) => saved,
+            None => match http.fetch_settings(&current).await {
+                Ok(settings) => settings,
+                Err(e) => {
+                    tracing::warn!("settings fetch failed: {e}");
+                    return;
+                }
+            },
         };
         pip_style.set(settings.pip_style);
         // A swipe confirmations choice made on another device: keep it in the
