@@ -1503,6 +1503,10 @@ code {
    panel-action buttons. Renamed from `.chip`
    so the interactive `.chip` in the shared components.css doesn't collide. */
 .hero-chip {
+    /* Stretched to the store buttons' height, with its text centered as
+       theirs is. */
+    display: inline-flex;
+    align-items: center;
     padding: 0.2rem 0.6rem;
     border-radius: 0.6rem;
     font-family: "JetBrains Mono", monospace;
@@ -1518,6 +1522,14 @@ code {
         transparent
     );
     border-color: color-mix(in srgb, var(--palette-5) 40%, transparent);
+}
+
+/* A light theme's palette-5 is too pale to read on its own tint: the text
+   leans to the theme's text color and the tint thins, at least 4.5:1 in
+   every light theme. */
+body[class$="-light"] .chip-value {
+    color: color-mix(in srgb, var(--palette-5) 30%, var(--text-primary));
+    background-color: color-mix(in srgb, var(--palette-5) 8%, transparent);
 }
 
 /* ==================
