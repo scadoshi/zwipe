@@ -508,3 +508,30 @@ Same deck, Remove on Main, details panel docked on the right and showing the top
 - **Console:** 6 DELETEs, 2 POSTs logged, no errors or warnings.
 
 Differences from Scotty's shot (blank stack, docks live, stale details, dead Undo): none of them showed up on web for me, with keys or clicks. It may be timing (swiping faster than the throttle), a deck where some cards were kept and cycled, or Android-only. droid's repro is on Android.
+
+Deck restored after 10b: Edgar Markov plus 5 creatures (4 re-added with Quick add).
+
+**New, small: Cards page summary chips go stale after Quick add.** At wide, after adding 4 cards with Quick add on `/decks/…/cards`, the list showed Creatures (5) but the header chips still said "2 cards · $32.87". They caught up only after a reload ("6 cards · $81.25"). The Quick add success toast fires and the list updates; just the summary row doesn't.
+
+## Part 11, release 3e72d3344 (2026-11-07, 09:51–10:00)
+
+Wide is 1450 × 759. Phone width (390 × 777) was checked in a script-sized popup, DOM measurements only. Signed in throughout, **no logouts**. I used one app tab, plus the popup for about 5 minutes at the end. Deck and theme restored afterwards (Surfer test: Edgar Markov plus 5 creatures; Gruvbox dark).
+
+| # | Check | Result |
+|---|---|---|
+| 163 | Details and dialogs scroll edge to edge between dividers | **Fixed.** Wide Add page: details `.panel-body` spans y 158–439, exactly between its two rules. At 390: details drawer body 174–578 between rules; the deck hint dialog's description spans 202–565 between rules and scrolls there (363/532) |
+| 167 | Pickers full-screen and in the viewport at phone width | **Fixed.** At 390, Format, Deck tags and Oracle tags open at x 0–390, y 0–777, with the chip grid below and nothing off the left edge |
+| 169 | Bigger toast ×, hover fill | **Fixed.** 32 × 32, fills on hover (p11-8). zwipe.net's banner × not rechecked (its deploy isn't live) |
+| 173 | Page dock slides down and fades with the filter drawer | **Fixed.** On open the dock moves from y 699 to 781 and fades from 1 to 0 over about 300ms; on close it reverses |
+| 174 | Swipe screen title tag tinted, not button-like | **Fixed.** Remove is red-tinted (p11-3); Add (p11-9) and Swipe select (p11-10) are green-tinted. No border or pointer cursor |
+| 176 | Deck welcome hint shows + and − on wide | **Fixed.** "+ adds cards and − removes them" is the first line (p11-2) |
+| 165 | Light-theme controls at 4.5:1 | **Partly.** "Add cards" and "Import" (warning fix buttons) now pass on all 50 light themes (lowest 4.82). Other chips still fail on 42 of 50 light themes, mostly 2.4–2.8: the "?" buttons (2.45 Bluloco, 2.48 Material), power/toughness chips (2.62 Ayu), type chips (2.65 Tokyo Night, Monokai), set and price chips, rarity chips (2.68 Miasma) |
+| 170 | Picker × with changes asks Keep/Discard; hint cleared on open | **Fixed.** × after picking Aggro asks "Discard tag changes?" with Keep / Discard (p11-6). Discard reverts the form, and reopening shows the default hint |
+| 181 | Deck page count/price follow Quick add and removes | **Fixed.** Quick add Vampire Nighthawk: "6 cards · $81.25" → "7 cards · $81.45" live (p11-1). Removing it with the row's −: back to 6 · $81.25 and Warnings updated, no reload. It kept up across 4 more adds too |
+| 172 | One toast per action | **Holds.** Add → one "Added …", remove → one "Card removed" |
+| 175 | Remove to the end, then Undo, including a fast undo | **Works on web.** Fast: last → plus ↓ together sent DELETE and POST in the same second, and the card came back with the details panel (p11-4). Slow: the end shows "No cards", Keep/Move/Remove disabled, details unmounted (p11-5); Undo restores everything. Still no toast at the end |
+| 164 | Escape closes zwipe.net's theme panel | **Not yet.** zwipe.net still serves `zite-dxh762c74b1eefc6afb.js`, and Escape leaves the panel open |
+| 166 | Portfolio root scrollbar themed | **Fixed.** `html` has `scrollbar-color: rgb(60,56,54) transparent`, thin |
+| 168 | Portfolio no sideways scroll at 375 | **Fixed.** upsee, sharpmas, rustmas: scrollWidth 364 in a 375 frame (p11-7) |
+
+Small: after a Quick add, the suggestion pill under the field flips to "No results" while the input still holds the added card's name, which reads like the add failed (p11-1).
