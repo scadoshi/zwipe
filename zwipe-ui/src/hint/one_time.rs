@@ -46,6 +46,77 @@ fn building_a_deck() -> Vec<Block> {
     ]
 }
 
+/// The first-deck hint for the deck page's layout. Narrow (the app, and the
+/// web below its breakpoint), the Profile card carries the pencil, clone
+/// and share, and the `Cards` pill floats in the dock. Wide, one dock holds
+/// add and remove, the filter and undo, then edit, clone and share.
+#[must_use]
+pub fn first_deck(wide: bool) -> HintContent {
+    let mut blocks = if wide {
+        vec![
+            bullet(vec![
+                icon_key(KeyIcon::Plus),
+                text(" adds cards and "),
+                icon_key(KeyIcon::Minus),
+                text(" removes them"),
+            ]),
+            bullet(vec![
+                icon_key(KeyIcon::Funnel),
+                text(" filters the cards (its "),
+                key("\u{d7}"),
+                text(" resets the filter), and "),
+                icon_key(KeyIcon::Undo),
+                text(" undoes"),
+            ]),
+            bullet(vec![
+                icon_key(KeyIcon::Edit),
+                text(" changes the name, format, command zone, tags and targets"),
+            ]),
+            bullet(vec![
+                icon_key(KeyIcon::Clone),
+                text(" clones the deck and "),
+                icon_key(KeyIcon::Share),
+                text(" shares a link to it"),
+            ]),
+        ]
+    } else {
+        vec![
+            bullet(vec![key("Cards"), text(" browses, adds and removes cards")]),
+            bullet(vec![
+                text("The "),
+                icon_key(KeyIcon::Edit),
+                text(" by "),
+                key("Profile"),
+                text(" changes the name, format, command zone, tags and targets"),
+            ]),
+            bullet(vec![
+                text("Beside it, "),
+                icon_key(KeyIcon::Clone),
+                text(" clones the deck and "),
+                icon_key(KeyIcon::Share),
+                text(" shares a link to it"),
+            ]),
+        ]
+    };
+    blocks.extend([
+        bullet(vec![text(
+            "Import, export and delete are at the bottom of the page",
+        )]),
+        bullet(vec![
+            text("Skipped and removed cards stay out of the add stack. "),
+            key("Clear skips"),
+            text(" at the bottom brings them back"),
+        ]),
+        bullet(vec![text(
+            "Stats fill in as the deck grows. Tap a section to expand it",
+        )]),
+        bullet(vec![text(
+            "Warnings flag rule problems, each with a one-tap fix",
+        )]),
+    ]);
+    content("Welcome to your deck", blocks)
+}
+
 /// A dialog's content from its title and body.
 fn content(title: &str, blocks: Vec<Block>) -> HintContent {
     HintContent {
@@ -141,40 +212,7 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
                 ]),
             ],
         ),
-        OneTimeHint::FirstDeck => content(
-            "Welcome to your deck",
-            vec![
-                bullet(vec![key("Cards"), text(" browses, adds and removes cards")]),
-                bullet(vec![
-                    text("The "),
-                    icon_key(KeyIcon::Edit),
-                    text(" by "),
-                    key("Profile"),
-                    text(" changes the name, format, command zone, tags and targets"),
-                ]),
-                bullet(vec![
-                    text("Beside it, "),
-                    icon_key(KeyIcon::Clone),
-                    text(" clones the deck and "),
-                    icon_key(KeyIcon::Share),
-                    text(" shares a link to it"),
-                ]),
-                bullet(vec![text(
-                    "Import, export and delete are at the bottom of the page",
-                )]),
-                bullet(vec![
-                    text("Skipped and removed cards stay out of the add stack. "),
-                    key("Clear skips"),
-                    text(" at the bottom brings them back"),
-                ]),
-                bullet(vec![text(
-                    "Stats fill in as the deck grows. Tap a section to expand it",
-                )]),
-                bullet(vec![text(
-                    "Warnings flag rule problems, each with a one-tap fix",
-                )]),
-            ],
-        ),
+        OneTimeHint::FirstDeck => first_deck(false),
         OneTimeHint::DeckCards => content(
             "Browsing your deck",
             vec![
@@ -611,6 +649,26 @@ mod tests {
             account.blocks[1].plain(),
             "Danger zone at the bottom logs you out or deletes your account"
         );
+    }
+
+    #[test]
+    fn the_wide_deck_hint_shows_the_docks_icons_and_no_cards_pill() {
+        let wide = first_deck(true);
+        assert_eq!(
+            wide.blocks[0].plain(),
+            "plus adds cards and minus removes them"
+        );
+        assert_eq!(wide.blocks[0].spans()[0], icon_key(KeyIcon::Plus));
+        assert_eq!(wide.blocks[0].spans()[2], icon_key(KeyIcon::Minus));
+        assert!(
+            wide.blocks
+                .iter()
+                .all(|b| !b.spans().contains(&key("Cards"))),
+            "the wide page has no Cards pill"
+        );
+        let narrow = first_deck(false);
+        assert_eq!(narrow.blocks[0].spans()[0], key("Cards"));
+        assert_eq!(content_for(OneTimeHint::FirstDeck), Some(narrow));
     }
 
     #[test]
