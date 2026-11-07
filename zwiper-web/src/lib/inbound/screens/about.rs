@@ -35,9 +35,6 @@ use crate::outbound::browser;
 /// how many more each click reveals.
 const CHANGELOG_PAGE_SIZE: usize = 5;
 
-/// The wide page head's line under the title.
-const DESCRIPTION: &str = "The version, credits and what changed in each release";
-
 /// Bullet bars per skeleton row, roughly a real release's.
 const SKELETON_BULLETS: [usize; 3] = [5, 3, 4];
 
@@ -98,7 +95,7 @@ pub fn About() -> Element {
     let selection = use_signal(|| ChangelogFilter::Latest);
 
     rsx! {
-        ScreenFrame { title: about::TITLE, description: Some(DESCRIPTION.to_owned()),
+        ScreenFrame { title: about::TITLE,
             div { class: "screen-content content-enter",
                 div { class: "changelog-screen web-about",
                     div { class: "web-columns",

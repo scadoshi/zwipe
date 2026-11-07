@@ -381,7 +381,6 @@ pub fn CommanderMaybeboard() -> Element {
     rsx! {
         ScreenFrame {
             title: "Commander maybeboard",
-            description: Some("Commanders you've saved for a future deck".to_string()),
             on_hint: move |()| {
                 let mut hint_open = hint_open;
                 hint_open.set(true);
