@@ -32,6 +32,6 @@
 }
 
 :where(.card-filter-sheet) .input::placeholder {
-    color: var(--text-muted);
+    color: var(--ink-text-muted, var(--text-muted));
     font-weight: 400;
 }

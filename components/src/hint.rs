@@ -129,11 +129,13 @@ pub fn KeyGlyph(icon: KeyIcon) -> Element {
 }
 
 /// A colored word inside a hint, such as a swipe direction. `color` names a
-/// CSS variable, like `--color-success`.
+/// CSS variable, like `--color-success`; the word draws in that variable's
+/// ink, so it reads in every theme.
 #[component]
 pub fn HintColored(color: String, children: Element) -> Element {
+    let ink = orangui::ink_color(&color);
     rsx! {
-        span { style: "color: var({color}); font-weight: 600;", {children} }
+        span { style: "color: {ink}; font-weight: 600;", {children} }
     }
 }
 

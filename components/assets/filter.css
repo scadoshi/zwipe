@@ -76,7 +76,7 @@
 }
 
 .text-muted {
-    color: var(--text-muted);
+    color: var(--ink-text-muted, var(--text-muted));
 }
 
 .chip-xs {
@@ -132,7 +132,7 @@
 .label-xs {
     font-size: 0.875rem;
     margin-bottom: 0.25rem;
-    color: var(--accent-tertiary);
+    color: var(--ink-accent-tertiary, var(--accent-tertiary));
     font-weight: 400;
     letter-spacing: 0.1em;
     text-align: center;
@@ -493,5 +493,5 @@
 /* The picker result the arrow keys point at. */
 .card-filter-highlight {
     border-color: var(--accent-primary);
-    color: var(--accent-primary);
+    color: var(--ink-accent-primary, var(--accent-primary));
 }

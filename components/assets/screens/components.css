@@ -32,7 +32,7 @@
  ============================= */
 
 .input-placeholder {
-    color: var(--text-muted);
+    color: var(--ink-text-muted, var(--text-muted));
 }
 
 .input-tappable {
@@ -227,7 +227,7 @@
 }
 
 .card h3 {
-    color: var(--accent-primary);
+    color: var(--ink-accent-primary, var(--accent-primary));
 }
 
 .form-container {
@@ -306,7 +306,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--text-muted);
+    color: var(--ink-text-muted, var(--text-muted));
     font-size: 0.975rem;
     animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
