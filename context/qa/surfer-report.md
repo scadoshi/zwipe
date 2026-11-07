@@ -705,3 +705,42 @@ Signed in throughout, **no logouts**. I cloned isshin (101 cards, not mine) into
 9. **A long name drops below the art on Decks.** Short names sit beside the thumbnail. The 64-character one wraps onto its own lines under it, so that card's layout differs from its neighbors (p16-2).
 10. **Color groups are icon-only.** Group by Color headers show just mana symbols and "(10)", with no text or aria-label, so a screen reader hears "(10)".
 11. **No sort on Decks or Home.** Decks is alphabetical only. Home shows recent. There's no way to sort by size, price, format or last changed. That's a feature question, not a bug.
+
+## Part 17, swipe screens, Account, accessibility sweep (2026-11-07, live f699acc37)
+
+Wide is 1450. Phone-width card sizing on the swipe screens was covered in Part 13 (326 × 454 at 390 on Add, Remove and Swipe select). Signed in throughout, **no logouts**. No password changes, no sign-out, no Account saves. Surfer test was restored to 6 cards / $81.25 (one leftover add removed by hand, see 1). No stray decks; Decks lists 12, since Droid removed its long-named deck.
+
+**About the accessibility sweep:** loading axe-core from cdnjs into the production page was blocked here, since it runs third-party code in the signed-in session. So the sweep uses my own in-page checks modeled on axe's rules (button-name, link-name, image-alt, label, duplicate-id, landmark-one-main, page-has-heading-one, heading-order, aria-hidden-focus, color-contrast), plus three custom ones (clickable but not focusable, hidden but focusable, live regions). I confirmed the important ones with real Tab presses. It's an approximation of axe, not axe. A real axe/Lighthouse run from CI or a local dev build would be the next step.
+
+### Swipe screens
+
+| Check | Result |
+|---|---|
+| Add, keyboard chain → ← ↑ → then ↓ ×4 (Surfer test) | Forward: POST card 201, POST suppressions 204, POST card 201 (maybeboard), POST card 201. Back: DELETE, DELETE, DELETE suppression, DELETE, in exact reverse. Stack returned to Champion of Dusk |
+| Add, rapid input: 6 × → at 50ms, then 6 × ↓ | 2 adds, then 2 deletes, no duplicates, back to the start. The extra presses drop silently while the swipe animates (by design, nit 24) |
+| Remove, → ← → then ↓ ×3 | 2 DELETEs, then 2 POSTs. Undoing the Keep steps back with no write. Deck back to 6 / $81.25 with the same printings |
+| Swipe select (commander), ← ×3, ↓ ×3, ↓ again, → | Skips and undos are local (no writes). The extra ↓ says "Nothing to undo". → filled Commander = Fire Lord Azula. Leaving the form went through the leave guard, and no deck was saved |
+| Empty filter result | With Synergy on: "No results for this filter; Synergy is on, turn it off to search everything". With it off: "No results for this filter". Ghost card shown, Skip/Maybeboard/Add disabled. (Part 14's silent zero result was on a deck without a commander.) |
+| Toasts | `role="alert"` inside a `region` labeled "N notifications", so they're announced |
+
+### Account
+
+Username / Email / Password rows each open a drawer. Change username shows "Must be at least 3 characters long" inline. Nothing was submitted.
+
+### Findings
+
+1. **Changing the filter on Add throws away undo history while Undo stays enabled.** I added Champion of Dusk (POST 201), changed the filter (Rarity → Mythic, Apply), then pressed ↓ and clicked Undo. Nothing happened: no DELETE, no "Nothing to undo", and Undo still looked enabled. The add stuck in the deck, and I removed it by hand. Either undo should survive a filter change, or Undo should disable and say so.
+2. **Keyboard users can't create a deck properly or open one.** Confirmed with real Tab presses:
+    - **Create deck:** after Deck name, Tab skips the Format field, every power-level chip, the Commander/Partner/Background/Signature "Filter" and "Swipe" chips, Deck tags, Oracle tags, the Other tags chips and USD/EUR/TIX. These are all `div`s (`div.input-tappable`, `div.chip`, `div.chip-xs`) with no tabindex. Only Deck name, Land target ± and Price target are reachable.
+    - **Decks:** no deck card is focusable (`div.deck-list-row`). Tab goes from the tag chips to "Create" and then the footer, so a keyboard user can't open any deck. Group headers ("All (13)") aren't focusable either.
+    - **Deck page:** rows and group heads aren't focusable (Part 16, 1–2).
+    - **Elsewhere:** the sweep found the same clickable-but-not-focusable pattern on Playstyle (197 elements: fold heads, row arrows), Activity (23), Commander maybeboard (5) and the deck page (94).
+3. **Icon-only chips have no accessible name** (button-name). The color filter chips on Decks (5) and Commander maybeboard (5), and 7 chips on Playstyle, contain only a mana-symbol `<i>`. A screen reader says "button".
+4. **Card art without alt** (image-alt). `img.card-row-art` has no `alt` attribute on the deck page (6), Playstyle (20) and Activity (2). `alt=""` would be enough, since the name sits next to it.
+5. **Duplicate ids on Account.** Change username and Change email both render `<input id="password">`, and both "Password" labels use `for="password"`. So the second label points at the first drawer's input. Change email's new-email field is `type=text`. None of the Account password fields (`password` ×2, `current_password`, `new_password`, `confirm_password`) has `autocomplete`.
+6. **Account drawer keeps a stale draft and lets you save invalid input.** Typing "ab" into New username shows the error, but "Save changes" stays enabled with the error showing and the password empty (not pressed). Closing with × asks nothing and leaves "ab" in the field for next time.
+7. **Contrast** (color-contrast): the Decks list's muted stat chips ("Commander", commander name) are 3.86:1 on Zenburn dark. Everything else on the ten screens passed at 4.5:1.
+8. **Placeholder-only labels** (label): Quick add on the deck page ("Search a card to add") and on Commander maybeboard have only a placeholder as their name; the "Quick add" tag beside them isn't a `<label>`.
+9. **Heading order:** on Decks, the h1 is followed by h3 deck names with no h2.
+10. **Cards hidden from Add after an undo.** Elenda, the Dusk Rose (skipped, then undone, which deleted the suppression with 204) and Sorin, Imperious Bloodlord (sent to the maybeboard, then undone) no longer show in Add even when searched by exact name, with Synergy off. Indulgent Aristocrat (added, then undone) does show again. Possibly swipe memory counting an undone swipe. Worth a look, but I'm not calling it a bug.
+11. **Small:** each toast is a focusable `role="alertdialog"` (tabindex 0) wrapping a `role="alert"`. For an info toast, alert alone is enough. A focusable dialog per toast adds tab stops.
