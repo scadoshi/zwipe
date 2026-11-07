@@ -23,6 +23,8 @@ Still open beyond nits: the platform tag on funnel events (check `ClientPlatform
 
 | Items | Machine | Branch |
 | --- | --- | --- |
+| 71, 72, errors in sentence case, deck form Profile+Budget left, Tags right | halo | `nits/halo-71-72` |
+| 73 to 75, drawer dock inset, themed scrollbars, lists clip at the edge, Search label in accent one | laptop | `nits/laptop-73-75` |
 | 70, a deck entry lifts on hover like a panel | scotland | `nits/scotland-70` |
 | 68, About drops Privacy policy on wide | halo | `nits/halo-68` |
 | 69, the app's About changelog pages by five | thinker | `nits/thinker-69` |
@@ -111,6 +113,11 @@ The loop is in [`../development/factory.md`](../development/factory.md).
 68. **The web's About repeats the footer's Privacy policy.** On a wide window the row goes; Version stays. Phones keep it.
 69. **The app's About changelog scrolls forever on a year.** It pages by five with Show more, as the web and zwipe.net do. App change, 1.18.1 entry.
 70. **A deck entry lifts on hover.** Decks keeps two columns; a hovered entry rises like the panels do (translateY(-3px) with the medium shadow) instead of growing.
+71. **Field errors render lowercase** ("deck name minimum length is 1 character"). The UI capitalizes the first letter where it shows them; the Display text stays lowercase. Web and app.
+72. **The deck form's panels:** Profile with Budget under it on the left, Tags alone on the right, on a wide window.
+73. **The drawers' dock touches the scrollbar,** and the wide layout's scrollbars are the browser's gray: inset the dock; thin scrollbars in the theme's border color.
+74. **Drawer lists stop short of the bottom edge.** They scroll to the border and clip on it; the top fade stays.
+75. **The drawers' "Search" label** takes accent one, the panel titles' color.
 
 ## Done
 
