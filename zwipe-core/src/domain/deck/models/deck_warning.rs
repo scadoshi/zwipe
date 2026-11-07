@@ -5,7 +5,7 @@ use std::ops::Deref;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::text::sentence_case;
+use crate::text::into_sentence_case;
 
 /// Suggested fix action for a deck warning.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -35,7 +35,7 @@ impl DeckWarning {
     /// Creates a deck-level warning (no specific card).
     pub fn new(message: impl Into<String>) -> Self {
         Self {
-            message: sentence_case(&message.into()),
+            message: into_sentence_case(message.into()),
             scryfall_data_id: None,
             action: None,
         }
@@ -44,7 +44,7 @@ impl DeckWarning {
     /// Creates a card-specific warning with the offending card's ID.
     pub fn with_card(message: impl Into<String>, scryfall_data_id: Uuid) -> Self {
         Self {
-            message: sentence_case(&message.into()),
+            message: into_sentence_case(message.into()),
             scryfall_data_id: Some(scryfall_data_id),
             action: None,
         }
@@ -57,7 +57,7 @@ impl DeckWarning {
         action: WarningAction,
     ) -> Self {
         Self {
-            message: sentence_case(&message.into()),
+            message: into_sentence_case(message.into()),
             scryfall_data_id: Some(scryfall_data_id),
             action: Some(action),
         }

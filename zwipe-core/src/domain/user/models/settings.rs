@@ -112,8 +112,8 @@ pub fn display_theme_name(slug: &str) -> String {
 #[serde(rename_all = "lowercase")]
 pub enum PipStyle {
     /// Pips in the current theme's own five mana colors. Stored as
-    /// `themed`; the wire still writes `theme`, the name 1.15.0 to 1.18.0
-    /// parse, and reads both.
+    /// `themed`; the wire writes `theme`, the name 1.15.0 to 1.18.0 parse,
+    /// and reads both.
     #[default]
     #[serde(rename = "theme", alias = "themed")]
     Themed,
@@ -212,10 +212,11 @@ impl fmt::Display for SwipeConfirmations {
     }
 }
 
-/// A swipe confirmations name that is none of `chip`, `toasts` or `off`.
+/// A swipe confirmations name that is none of `chip`, `toasts` or `off`,
+/// carrying the name refused.
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
-#[error("unknown swipe confirmations")]
-pub struct ParseSwipeConfirmationsError;
+#[error("unknown swipe confirmations {0:?}")]
+pub struct ParseSwipeConfirmationsError(pub String);
 
 impl FromStr for SwipeConfirmations {
     type Err = ParseSwipeConfirmationsError;
@@ -224,7 +225,7 @@ impl FromStr for SwipeConfirmations {
         Self::ALL
             .into_iter()
             .find(|value| value.as_str() == s)
-            .ok_or(ParseSwipeConfirmationsError)
+            .ok_or_else(|| ParseSwipeConfirmationsError(s.to_owned()))
     }
 }
 
@@ -292,25 +293,90 @@ pub struct UpdateSettings {
 }
 
 impl UpdateSettings {
-    /// Validates and constructs the request. A slug in [`RENAMED_THEMES`]
-    /// becomes the theme it maps to.
+    /// Starts an update for `user_id` that changes nothing. Set what
+    /// changes, then [`build`](UpdateSettingsBuilder::build) it.
+    #[must_use]
+    pub fn builder(user_id: Uuid) -> UpdateSettingsBuilder {
+        UpdateSettingsBuilder {
+            user_id,
+            theme: None,
+            dark_mode: None,
+            exclude_universes_beyond: None,
+            universes_beyond_exceptions: None,
+            pip_style: None,
+            swipe_confirmations: None,
+        }
+    }
+}
+
+/// Builds an [`UpdateSettings`]: each setter takes the new value, or `None`
+/// to leave that setting unchanged, and [`build`](Self::build) validates the
+/// whole request.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UpdateSettingsBuilder {
+    user_id: Uuid,
+    theme: Option<String>,
+    dark_mode: Option<bool>,
+    exclude_universes_beyond: Option<bool>,
+    universes_beyond_exceptions: Option<Vec<String>>,
+    pip_style: Option<PipStyle>,
+    swipe_confirmations: Option<SwipeConfirmations>,
+}
+
+impl UpdateSettingsBuilder {
+    /// The theme's slug.
+    #[must_use]
+    pub fn theme(mut self, theme: Option<&str>) -> Self {
+        self.theme = theme.map(ToString::to_string);
+        self
+    }
+
+    /// Whether dark mode is on.
+    #[must_use]
+    pub fn dark_mode(mut self, dark_mode: Option<bool>) -> Self {
+        self.dark_mode = dark_mode;
+        self
+    }
+
+    /// Whether Universes Beyond cards are hidden.
+    #[must_use]
+    pub fn exclude_universes_beyond(mut self, exclude: Option<bool>) -> Self {
+        self.exclude_universes_beyond = exclude;
+        self
+    }
+
+    /// The franchise slugs served while Universes Beyond is hidden.
+    #[must_use]
+    pub fn universes_beyond_exceptions(mut self, slugs: Option<Vec<String>>) -> Self {
+        self.universes_beyond_exceptions = slugs;
+        self
+    }
+
+    /// How mana pips are colored.
+    #[must_use]
+    pub fn pip_style(mut self, pip_style: Option<PipStyle>) -> Self {
+        self.pip_style = pip_style;
+        self
+    }
+
+    /// What the swipe screens say after a swipe.
+    #[must_use]
+    pub fn swipe_confirmations(mut self, swipe_confirmations: Option<SwipeConfirmations>) -> Self {
+        self.swipe_confirmations = swipe_confirmations;
+        self
+    }
+
+    /// Validates the request. A slug in [`RENAMED_THEMES`] becomes the theme
+    /// it maps to.
     ///
     /// # Errors
     ///
-    /// Returns [`InvalidUpdateSettings::InvalidTheme`] when `theme` is not
+    /// Returns [`InvalidUpdateSettings::InvalidTheme`] when the theme is not
     /// in [`ALLOWED_THEMES`], and
     /// [`InvalidUpdateSettings::InvalidFranchise`] when an exception slug
     /// names no known Universes Beyond franchise.
-    pub fn new(
-        user_id: Uuid,
-        theme: Option<&str>,
-        dark_mode: Option<bool>,
-        exclude_universes_beyond: Option<bool>,
-        universes_beyond_exceptions: Option<Vec<String>>,
-        pip_style: Option<PipStyle>,
-        swipe_confirmations: Option<SwipeConfirmations>,
-    ) -> Result<Self, InvalidUpdateSettings> {
-        let theme = theme.map(|t| {
+    pub fn build(self) -> Result<UpdateSettings, InvalidUpdateSettings> {
+        let theme = self.theme.as_deref().map(|t| {
             RENAMED_THEMES
                 .iter()
                 .find(|(from, _)| *from == t)
@@ -321,21 +387,21 @@ impl UpdateSettings {
         {
             return Err(InvalidUpdateSettings::InvalidTheme);
         }
-        if let Some(slugs) = &universes_beyond_exceptions
+        if let Some(slugs) = &self.universes_beyond_exceptions
             && slugs.iter().any(|s| {
                 crate::domain::card::scryfall_data::universe::franchise_by_slug(s).is_none()
             })
         {
             return Err(InvalidUpdateSettings::InvalidFranchise);
         }
-        Ok(Self {
-            user_id,
+        Ok(UpdateSettings {
+            user_id: self.user_id,
             theme: theme.map(ToString::to_string),
-            dark_mode,
-            exclude_universes_beyond,
-            universes_beyond_exceptions,
-            pip_style,
-            swipe_confirmations,
+            dark_mode: self.dark_mode,
+            exclude_universes_beyond: self.exclude_universes_beyond,
+            universes_beyond_exceptions: self.universes_beyond_exceptions,
+            pip_style: self.pip_style,
+            swipe_confirmations: self.swipe_confirmations,
         })
     }
 }
@@ -456,22 +522,19 @@ mod tests {
     fn accepts_all_allowed_themes() {
         let id = Uuid::new_v4();
         for theme in ALLOWED_THEMES {
-            let result = UpdateSettings::new(id, Some(theme), Some(true), None, None, None, None);
+            let result = UpdateSettings::builder(id)
+                .theme(Some(theme))
+                .dark_mode(Some(true))
+                .build();
             assert!(result.is_ok(), "should accept theme: {theme}");
         }
     }
 
     #[test]
     fn an_old_slug_updates_to_its_current_theme() {
-        let result = UpdateSettings::new(
-            Uuid::new_v4(),
-            Some("ristretto"),
-            None,
-            None,
-            None,
-            None,
-            None,
-        );
+        let result = UpdateSettings::builder(Uuid::new_v4())
+            .theme(Some("ristretto"))
+            .build();
         assert_eq!(
             result.unwrap().theme.as_deref(),
             Some("monokai-pro-ristretto")
@@ -480,36 +543,27 @@ mod tests {
 
     #[test]
     fn a_removed_theme_updates_to_its_closest_one() {
-        let result = UpdateSettings::new(
-            Uuid::new_v4(),
-            Some("visual-studio"),
-            None,
-            None,
-            None,
-            None,
-            None,
-        );
+        let result = UpdateSettings::builder(Uuid::new_v4())
+            .theme(Some("visual-studio"))
+            .build();
         assert_eq!(result.unwrap().theme.as_deref(), Some("vscode"));
     }
 
     #[test]
     fn rejects_unknown_theme() {
-        let result = UpdateSettings::new(
-            Uuid::new_v4(),
-            Some("not-a-theme"),
-            Some(true),
-            None,
-            None,
-            None,
-            None,
-        );
+        let result = UpdateSettings::builder(Uuid::new_v4())
+            .theme(Some("not-a-theme"))
+            .dark_mode(Some(true))
+            .build();
         assert!(matches!(result, Err(InvalidUpdateSettings::InvalidTheme)));
     }
 
     #[test]
     fn rejects_empty_theme() {
-        let result =
-            UpdateSettings::new(Uuid::new_v4(), Some(""), Some(true), None, None, None, None);
+        let result = UpdateSettings::builder(Uuid::new_v4())
+            .theme(Some(""))
+            .dark_mode(Some(true))
+            .build();
         assert!(matches!(result, Err(InvalidUpdateSettings::InvalidTheme)));
     }
 
@@ -517,32 +571,27 @@ mod tests {
 
     #[test]
     fn none_theme_passes_through() {
-        let result =
-            UpdateSettings::new(Uuid::new_v4(), None, Some(false), None, None, None, None).unwrap();
+        let result = UpdateSettings::builder(Uuid::new_v4())
+            .dark_mode(Some(false))
+            .build()
+            .unwrap();
         assert!(result.theme.is_none());
         assert_eq!(result.dark_mode, Some(false));
     }
 
     #[test]
     fn none_dark_mode_passes_through() {
-        let result = UpdateSettings::new(
-            Uuid::new_v4(),
-            Some("dracula"),
-            None,
-            None,
-            None,
-            None,
-            None,
-        )
-        .unwrap();
+        let result = UpdateSettings::builder(Uuid::new_v4())
+            .theme(Some("dracula"))
+            .build()
+            .unwrap();
         assert_eq!(result.theme.as_deref(), Some("dracula"));
         assert!(result.dark_mode.is_none());
     }
 
     #[test]
     fn both_none_is_valid() {
-        let result =
-            UpdateSettings::new(Uuid::new_v4(), None, None, None, None, None, None).unwrap();
+        let result = UpdateSettings::builder(Uuid::new_v4()).build().unwrap();
         assert!(result.theme.is_none());
         assert!(result.dark_mode.is_none());
     }
@@ -551,19 +600,14 @@ mod tests {
 
     #[test]
     fn accepts_known_franchise_slugs() {
-        let result = UpdateSettings::new(
-            Uuid::new_v4(),
-            None,
-            None,
-            Some(true),
-            Some(vec![
+        let result = UpdateSettings::builder(Uuid::new_v4())
+            .exclude_universes_beyond(Some(true))
+            .universes_beyond_exceptions(Some(vec![
                 "middle-earth".to_string(),
                 "final-fantasy".to_string(),
-            ]),
-            None,
-            None,
-        )
-        .unwrap();
+            ]))
+            .build()
+            .unwrap();
         assert_eq!(result.exclude_universes_beyond, Some(true));
         assert_eq!(
             result
@@ -576,15 +620,10 @@ mod tests {
 
     #[test]
     fn rejects_unknown_franchise_slug() {
-        let result = UpdateSettings::new(
-            Uuid::new_v4(),
-            None,
-            None,
-            Some(true),
-            Some(vec!["not-a-franchise".to_string()]),
-            None,
-            None,
-        );
+        let result = UpdateSettings::builder(Uuid::new_v4())
+            .exclude_universes_beyond(Some(true))
+            .universes_beyond_exceptions(Some(vec!["not-a-franchise".to_string()]))
+            .build();
         assert!(matches!(
             result,
             Err(InvalidUpdateSettings::InvalidFranchise)
@@ -703,7 +742,7 @@ mod tests {
         }
         assert_eq!(
             "bogus".parse::<SwipeConfirmations>(),
-            Err(ParseSwipeConfirmationsError)
+            Err(ParseSwipeConfirmationsError("bogus".to_owned()))
         );
     }
 
@@ -715,16 +754,10 @@ mod tests {
 
     #[test]
     fn pip_style_passes_through_the_update() {
-        let result = UpdateSettings::new(
-            Uuid::new_v4(),
-            None,
-            None,
-            None,
-            None,
-            Some(PipStyle::Classic),
-            None,
-        )
-        .unwrap();
+        let result = UpdateSettings::builder(Uuid::new_v4())
+            .pip_style(Some(PipStyle::Classic))
+            .build()
+            .unwrap();
         assert_eq!(result.pip_style, Some(PipStyle::Classic));
     }
 }

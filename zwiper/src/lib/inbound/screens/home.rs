@@ -223,7 +223,7 @@ impl Driver {
         let client = self.client;
         let mut counts = self.caches.counts;
         spawn(async move {
-            match client().public_metrics_dated().await {
+            match client().fetch_public_metrics_dated().await {
                 Ok(Dated {
                     value: metrics,
                     made_at,

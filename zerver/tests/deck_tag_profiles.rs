@@ -105,7 +105,7 @@ async fn batched_profiles_follow_the_lift_steps(pool: sqlx::PgPool) {
         seed_catalog_tag(&pool, id, slug, None).await;
     }
     seed_catalog_tag(&pool, 0x16, "cycle-ramp", Some(0x11)).await;
-    let repo = Postgres::with_pool(pool.clone());
+    let repo = Postgres::from_pool(pool.clone());
 
     let deck_a = vec![a1, a2, a3, a1];
     let deck_b = vec![b1, b2];

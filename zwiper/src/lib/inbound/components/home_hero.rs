@@ -109,7 +109,7 @@ fn use_public_counts() -> (Option<HttpPublicMetrics>, Option<String>) {
             return;
         }
         spawn(async move {
-            match client().public_metrics_dated().await {
+            match client().fetch_public_metrics_dated().await {
                 Ok(Dated {
                     value: metrics,
                     made_at,
