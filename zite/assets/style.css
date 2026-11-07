@@ -2207,3 +2207,42 @@ html.js:not(.splash-skip).splash-over .splash {
     display: flex;
     justify-content: center;
 }
+
+/* ---- Touch targets ----
+
+   On a touch screen every control answers a tap 44px across, however
+   small it draws: a box centered on it, at least 44px each way, takes the
+   tap without changing how it looks (the store and theme icons, the
+   hamburger, the toast's close, chips and buttons). `:where` keeps a
+   control that sets its own position where it is. The expanded row's -
+   and + stand apart, so a tap meant for one never lands on the other. */
+@media (pointer: coarse) {
+    :where(button, [role="button"], .chip, .chip-xs, .sd-chip, a.nav-cta, a.panel-action, a.nav-brand) {
+        position: relative;
+    }
+
+    :is(button, [role="button"], .chip, .chip-xs, .sd-chip, a.nav-cta, a.panel-action, a.nav-brand)::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: max(100%, 44px);
+        height: max(100%, 44px);
+        transform: translate(-50%, -50%);
+    }
+
+    .card-action-count {
+        margin-inline: 0.75rem;
+    }
+
+    /* The toast clips what leaves it, so its close takes the 44px corner
+       inside it, from the toast's top right edge. */
+    .banner .banner-dismiss::after {
+        top: -0.5rem;
+        right: -0.7rem;
+        left: auto;
+        width: 44px;
+        height: 44px;
+        transform: none;
+    }
+}

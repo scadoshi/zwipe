@@ -2856,3 +2856,30 @@ body {
         font-size: clamp(0.6rem, 2.4vw, 0.75rem);
     }
 }
+
+/* ---- Touch targets ----
+
+   On a touch screen every control answers a tap 44px across, however
+   small it draws: a box centered on it, at least 44px each way, takes the
+   tap without changing how it looks. `:where` keeps a control that sets
+   its own position where it is. The expanded row's - and + stand apart,
+   so a tap meant for one never lands on the other. */
+@media (pointer: coarse) {
+    :where(button, [role="button"], .chip, .chip-xs, a.nav-cta, a.panel-action, a.nav-brand) {
+        position: relative;
+    }
+
+    :is(button, [role="button"], .chip, .chip-xs, a.nav-cta, a.panel-action, a.nav-brand)::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: max(100%, 44px);
+        height: max(100%, 44px);
+        transform: translate(-50%, -50%);
+    }
+
+    .card-action-count {
+        margin-inline: 0.75rem;
+    }
+}
