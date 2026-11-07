@@ -24,6 +24,7 @@ impl HintTopic {
         match self {
             Self::DeckTags | Self::OtherTags => Some("deck-tags"),
             Self::OracleTags => Some("oracle-tags"),
+            Self::FilterOracleTags => Some("filtering"),
             Self::Format
             | Self::Commander
             | Self::Partner
@@ -99,7 +100,7 @@ mod tests {
             .collect()
     }
 
-    const TOPICS: [HintTopic; 41] = [
+    const TOPICS: [HintTopic; 42] = [
         HintTopic::Password,
         HintTopic::Email,
         HintTopic::Verification,
@@ -111,6 +112,7 @@ mod tests {
         HintTopic::Version,
         HintTopic::DeckTags,
         HintTopic::OracleTags,
+        HintTopic::FilterOracleTags,
         HintTopic::DeckName,
         HintTopic::Format,
         HintTopic::Commander,
@@ -214,6 +216,7 @@ mod tests {
         assert_eq!(HintTopic::DrawOdds.guide_slug(), Some("deck-stats"));
         assert_eq!(HintTopic::SuggestionStaples.guide_slug(), Some("playstyle"));
         assert_eq!(one_time_slug(OneTimeHint::Export), Some("import-export"));
+        assert_eq!(HintTopic::FilterOracleTags.guide_slug(), Some("filtering"));
     }
 
     #[test]

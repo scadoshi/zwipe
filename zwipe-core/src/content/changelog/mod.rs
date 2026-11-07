@@ -48,6 +48,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "About's changelog shows five releases at a time, with Show more for the rest",
         "The error under a field on the deck, sign-in and account forms starts with a capital letter",
         "Add says Synergy on or Synergy off when you tap the bolt",
+        "The card filter's Oracle tags hint explains include, exclude and the Dictionary",
     ],
 }];
 

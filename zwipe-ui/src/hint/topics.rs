@@ -33,6 +33,9 @@ pub enum HintTopic {
     DeckTags,
     /// A deck's oracle tags.
     OracleTags,
+    /// The card filter's Oracle tags section: which cards its picks keep
+    /// and which they leave out.
+    FilterOracleTags,
     /// A deck's name.
     DeckName,
     /// A deck's format.
@@ -97,7 +100,7 @@ pub enum HintTopic {
 
 impl HintTopic {
     /// Every topic, in the app's order.
-    pub const ALL: [Self; 41] = [
+    pub const ALL: [Self; 42] = [
         Self::Password,
         Self::Email,
         Self::Verification,
@@ -109,6 +112,7 @@ impl HintTopic {
         Self::Version,
         Self::DeckTags,
         Self::OracleTags,
+        Self::FilterOracleTags,
         Self::DeckName,
         Self::Format,
         Self::Commander,
@@ -155,9 +159,11 @@ impl HintTopic {
             Self::Website => "Website",
             Self::Version => "Version",
             Self::DeckTags => "Deck tags",
-            Self::OracleTags | Self::OracleTagChart | Self::SuggestionTagChart | Self::TagRates => {
-                "Oracle tags"
-            }
+            Self::OracleTags
+            | Self::FilterOracleTags
+            | Self::OracleTagChart
+            | Self::SuggestionTagChart
+            | Self::TagRates => "Oracle tags",
             Self::DeckName => "Deck name",
             Self::Format => "Format",
             Self::Commander => "Commander",
@@ -274,6 +280,28 @@ impl HintTopic {
                     text("Your "),
                     emph("deck tags", Role::Primary),
                     text(" pre-pick a starter set from about 4,500. Fine to leave as is"),
+                ]),
+            ],
+            Self::FilterOracleTags => vec![
+                bullet(vec![
+                    text("Under "),
+                    key("Oracle tags include"),
+                    text(", cards with "),
+                    emph("any", Role::Success),
+                    text(" of your picks stay in. Switch the chip to "),
+                    key("All"),
+                    text(" to keep only cards with every one"),
+                ]),
+                bullet(vec![
+                    text("Under "),
+                    key("Oracle tags exclude"),
+                    text(", cards with "),
+                    emph("any", Role::Error),
+                    text(" of your picks are left out"),
+                ]),
+                bullet(vec![
+                    key("Dictionary"),
+                    text(" lists every tag and what it means"),
                 ]),
             ],
             Self::DeckName => vec![line(vec![text(

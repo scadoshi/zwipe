@@ -435,7 +435,7 @@ pub(crate) fn CardFilterSheet(
                         },
                         AccordionTrigger {
                             {Section::OracleTags.title()}
-                            InfoButton { topic: HintTopic::OracleTags }
+                            InfoButton { topic: HintTopic::FilterOracleTags }
                             if active.contains(&Section::OracleTags) {
                                 button {
                                     class: "clear-btn",
