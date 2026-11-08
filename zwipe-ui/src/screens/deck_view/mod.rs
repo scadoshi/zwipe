@@ -22,7 +22,7 @@ use crate::toast::{Line, Toast, keep_one};
 pub const TITLE: &str = "Deck";
 
 /// The line in place of the deck when its profile failed to load.
-pub const LOAD_FAILED: &str = "Could not load deck";
+pub const LOAD_FAILED: &str = "Couldn't load deck";
 
 /// The button that opens Edit deck.
 pub const EDIT: &str = "Edit";

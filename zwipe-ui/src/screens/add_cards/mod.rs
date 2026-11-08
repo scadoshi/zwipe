@@ -38,7 +38,7 @@ use crate::toast::{Line, Toast, ToastKind, keep_one};
 pub const TITLE: &str = "Add";
 
 /// The pile's message, with a Retry, when the cards could not load.
-pub const LOAD_FAILED: &str = "Could not load cards";
+pub const LOAD_FAILED: &str = "Couldn't load cards";
 
 /// The hint's title.
 pub const HINT_TITLE: &str = "Swipe to build";
