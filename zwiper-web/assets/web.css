@@ -220,20 +220,13 @@ body {
 /* The floating controls a scroll screen holds stop above the footer as it
    scrolls in (magic.css's footer rise): the action docks, the swipes' dock
    pair and a swipe screen's bottom row, but not the ones inside them, a
-   sheet or an overlay screen, and the toast stack at the bottom left while
-   no sheet is open, so a toast over a sheet stays at its foot. The
-   docked details panel shrinks from its foot by as much, so it keeps ending
-   above the docks. */
+   sheet or an overlay screen. The docked details panel shrinks from its
+   foot by as much, so it keeps ending above the docks. */
 @supports (animation-timeline: view()) {
-    .web-scroll-screen :is(.action-dock, .web-dock-pair, .swipe-bottom-row):not(:is(.swipe-bottom-row, .web-dock-pair, .bottom-sheet, .screen .screen) *),
-    .toast-container {
+    .web-scroll-screen :is(.action-dock, .web-dock-pair, .swipe-bottom-row):not(:is(.swipe-bottom-row, .web-dock-pair, .bottom-sheet, .screen .screen) *) {
         animation: footer-rise linear both;
         animation-timeline: --site-footer;
         animation-range: entry 0px entry 100vh;
-    }
-
-    body:has(.bottom-sheet.show) .toast-container {
-        animation: none;
     }
 
     @media (min-width: 900px) {
@@ -851,6 +844,24 @@ body {
    dock sits far right of it, so only the swipe screens' pile chips lift
    it; below the breakpoint the swipe screens' stacked docks lift it
    further. */
+/* The stack rises by as much of the footer as shows (`--web-footer-lift`,
+   which footer_lift.rs keeps on the root), so it rests the same gap above
+   the footer as the docks, except while a sheet is open, where a toast
+   stays at the sheet's foot. */
+body .toast-container {
+    translate: 0 calc(-1 * var(--web-footer-lift, 0px));
+}
+
+body:has(.bottom-sheet.show) .toast-container {
+    translate: none;
+}
+
+/* A dock inside a closed sheet form is not on screen, so it leaves the
+   stack at the window's foot. */
+html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bottom-sheet:not(.show) *))) .toast-container {
+    --toast-bottom: 1rem;
+}
+
 @media (min-width: 900px) {
     body:has(.action-dock) .toast-container {
         --toast-bottom: 1rem;
