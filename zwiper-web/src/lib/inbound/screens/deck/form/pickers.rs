@@ -13,7 +13,7 @@ use components::hint::{ContentHintDialog, HintBody, guide_for_screen};
 use components::icons::CHECK;
 use components::{
     AlertDialog, Button, ButtonVariant, Chip, ClearWrap, DialogAction, DockAction, DrawerSheet,
-    HintDialog, TOAST_NORMAL, TOAST_QUICK, use_overlay_back_action,
+    HintDialog, TOAST_NORMAL, TOAST_QUICK, use_overlay_back_action, use_picker_search,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -157,7 +157,7 @@ struct FormatSnapshot {
 pub fn FormatPicker(form: DeckForm) -> Element {
     let mut open = form.format_open;
     let mut snapshot = use_signal(FormatSnapshot::default);
-    let query = use_signal(String::new);
+    let query = use_picker_search(open.into());
     let mut focused: Signal<Option<Format>> = use_signal(|| None);
     let hint_open = use_signal(|| false);
     let mut discard_open = use_signal(|| false);
@@ -287,7 +287,7 @@ pub fn DeckTagPicker(form: DeckForm) -> Element {
     let mut open = form.tags_open;
     let mut tags = form.tags;
     let mut snapshot: Signal<Vec<String>> = use_signal(Vec::new);
-    let query = use_signal(String::new);
+    let query = use_picker_search(open.into());
     let mut focused: Signal<Option<DeckTagView>> = use_signal(|| None);
     let hint_open = use_signal(|| false);
     let mut discard_open = use_signal(|| false);
@@ -442,7 +442,7 @@ pub fn OracleTagPicker(form: DeckForm) -> Element {
     let mut open = form.oracle_tags_open;
     let mut selected = form.oracle_tags;
     let mut snapshot: Signal<Vec<String>> = use_signal(Vec::new);
-    let query = use_signal(String::new);
+    let query = use_picker_search(open.into());
     let mut focused: Signal<Option<OracleTag>> = use_signal(|| None);
     let hint_open = use_signal(|| false);
     let mut dictionary_open = use_signal(|| false);

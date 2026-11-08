@@ -65,6 +65,7 @@ mod keyword_chips;
 mod load_failed;
 mod menu_section;
 mod oracle_text;
+mod picker_search;
 mod pressable;
 mod role_tags;
 mod share_url;
@@ -124,6 +125,7 @@ pub use orangui::{
 pub use orangui::{OpenUrlError, open_url, use_in_app_links};
 #[cfg(feature = "toast")]
 pub use orangui::{TOAST_CSS, ToastOptions, ToastStack, Toasts, use_toast};
+pub use picker_search::use_picker_search;
 pub use pressable::{Pressable, is_press};
 pub use role_tags::{OtagDef, RoleTags};
 pub use share_url::ShareUrl;
