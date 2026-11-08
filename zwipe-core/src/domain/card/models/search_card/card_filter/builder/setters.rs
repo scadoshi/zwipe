@@ -1036,20 +1036,18 @@ impl CardQueryBuilder {
 
     // == Utility Methods ==
 
-    /// Clears all search filters, keeps only config (limit, offset, flags, language).
+    /// Clears all search filters, keeps only config (limit, offset, sort, the
+    /// token exclusion, synergy and currency).
     ///
-    /// Useful for resetting search while preserving pagination state and defaults.
+    /// The Config flags (playable, digital, oversized, promo, content warning,
+    /// language) go back to their defaults: at the default each is a setting,
+    /// and changed it is a filter the user picked, so [`is_empty`](Self::is_empty)
+    /// sees it.
     pub fn retain_config(&mut self) -> &mut Self {
         let default = Self {
             limit: self.limit,
             offset: self.offset,
             is_token: self.is_token,
-            is_playable: self.is_playable,
-            digital: self.digital,
-            oversized: self.oversized,
-            promo: self.promo,
-            content_warning: self.content_warning,
-            language: self.language.clone(),
             sort: self.sort,
             direction: self.direction,
             // Synergy is a mode flag, not a search criterion: clearing the filter

@@ -669,8 +669,7 @@ async fn promo_filter_is_printing_aware(pool: sqlx::PgPool) {
     let repo = Postgres::from_pool(pool.clone());
 
     let mut b = CardQueryBuilder::new();
-    // Promo alone is config, not a query; every fixture is a creature.
-    b.set_type_line_contains("Creature").set_promo(true);
+    b.set_promo(true);
     let served = repo
         .search_scryfall_data(&b.build().unwrap())
         .await
@@ -691,8 +690,7 @@ async fn promo_filter_is_printing_aware(pool: sqlx::PgPool) {
 
     // Set B has only the plain printing of Split Card: no promo to show.
     let mut b = CardQueryBuilder::new();
-    // Promo alone is config, not a query; every fixture is a creature.
-    b.set_type_line_contains("Creature").set_promo(true);
+    b.set_promo(true);
     b.set_set_equals_any(vec!["Set B"]);
     let served = repo
         .search_scryfall_data(&b.build().unwrap())
@@ -701,8 +699,7 @@ async fn promo_filter_is_printing_aware(pool: sqlx::PgPool) {
     assert!(served.is_empty(), "no promo printing in Set B: {served:?}");
 
     let mut b = CardQueryBuilder::new();
-    // Promo alone is config, not a query; every fixture is a creature.
-    b.set_type_line_contains("Creature").set_promo(true);
+    b.set_promo(true);
     b.set_set_equals_any(vec!["Set A"]);
     let served = repo
         .search_scryfall_data(&b.build().unwrap())
