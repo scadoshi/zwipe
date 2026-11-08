@@ -8855,6 +8855,7 @@ dependencies = [
  "tracing-subscriber",
  "urlencoding",
  "uuid",
+ "zwipe-client",
  "zwipe-core",
 ]
 

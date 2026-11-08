@@ -20,6 +20,7 @@ use crate::domain::auth::requests::authenticate_user::{AuthenticateUser, Authent
 use crate::domain::auth::requests::change_email::{ChangeEmail, ChangeEmailError};
 use crate::domain::auth::requests::change_password::{ChangePassword, ChangePasswordError};
 use crate::domain::auth::requests::change_username::{ChangeUsername, ChangeUsernameError};
+use crate::domain::auth::requests::check_reset_token::CheckResetTokenError;
 use crate::domain::auth::requests::confirm_email_change::{
     ConfirmEmailChange, ConfirmEmailChangeError, ConfirmedEmailChange,
 };
@@ -159,6 +160,13 @@ pub trait AuthRepository: Clone + Send + Sync + 'static {
         token_hash: String,
         expires_at: DateTime<Utc>,
     ) -> impl Future<Output = Result<(), RegisterUserError>> + Send;
+
+    /// Whether a password reset token with this hash exists and has not
+    /// expired. Reads only: the token stays as it is.
+    fn password_reset_token_is_live(
+        &self,
+        token_hash: &str,
+    ) -> impl Future<Output = Result<bool, anyhow::Error>> + Send;
 
     /// Validates expiry, deletes the token, and returns the owning `user_id`.
     ///
@@ -368,6 +376,15 @@ pub trait AuthService: Clone + Send + Sync + 'static {
         &self,
         request: &RequestPasswordReset,
     ) -> impl Future<Output = Result<(), RequestPasswordResetError>> + Send;
+
+    /// Checks that a reset token is live without spending or extending it.
+    ///
+    /// Returns [`CheckResetTokenError::InvalidToken`] when it is unknown, used
+    /// or expired.
+    fn check_reset_token(
+        &self,
+        token: &str,
+    ) -> impl Future<Output = Result<(), CheckResetTokenError>> + Send;
 
     /// Completes a password reset using the one-time token and updates the password.
     ///

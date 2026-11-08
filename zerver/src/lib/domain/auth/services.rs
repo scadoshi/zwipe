@@ -20,6 +20,7 @@ use crate::domain::auth::requests::authenticate_user::{AuthenticateUser, Authent
 use crate::domain::auth::requests::change_email::{ChangeEmail, ChangeEmailError};
 use crate::domain::auth::requests::change_password::{ChangePassword, ChangePasswordError};
 use crate::domain::auth::requests::change_username::{ChangeUsername, ChangeUsernameError};
+use crate::domain::auth::requests::check_reset_token::CheckResetTokenError;
 use crate::domain::auth::requests::confirm_email_change::{
     ConfirmEmailChange, ConfirmEmailChangeError, ConfirmedEmailChange,
 };
@@ -688,6 +689,15 @@ where
 
         tracing::info!(event = "password_reset_requested", user_id = %user_id);
         Ok(())
+    }
+
+    async fn check_reset_token(&self, token: &str) -> Result<(), CheckResetTokenError> {
+        let hash = hex::encode(sha2::Sha256::digest(token.as_bytes()));
+        if self.auth_repo.password_reset_token_is_live(&hash).await? {
+            Ok(())
+        } else {
+            Err(CheckResetTokenError::InvalidToken)
+        }
     }
 
     async fn reset_password(

@@ -3,6 +3,8 @@
 //! Methods for user authentication:
 //! login, logout, token refresh, and registration.
 
+/// Reset link check endpoint.
+pub mod check_reset_token;
 /// Pending email change confirmation endpoint.
 pub mod confirm_email_change;
 /// The browser's login, refresh and logout, carried by an `HttpOnly` cookie.

@@ -1,4 +1,4 @@
-use components::{InfoButton, Panel, PasswordInput};
+use components::{HintKey, InfoButton, Panel, PasswordInput};
 use dioxus::prelude::*;
 use zwipe_client::ClientError;
 use zwipe_core::domain::auth::models::secret::Secret;
@@ -17,6 +17,8 @@ fn validate_password(pw: &str) -> Option<String> {
 #[derive(Clone, PartialEq)]
 enum ResetState {
     Form,
+    /// The check on load found the token used or expired.
+    DeadLink,
     Loading,
     Success,
     Error(String),
@@ -52,12 +54,36 @@ fn check_submit(state: &ResetState, pw: &str, cf: &str, token: &str) -> SubmitCh
     SubmitCheck::Send
 }
 
+/// Whether the check on load says the link is dead: only a 400, the
+/// server's answer for a used or expired token. Anything else says nothing
+/// about the token, so the form stays.
+fn link_is_dead(answer: &Result<(), ClientError>) -> bool {
+    matches!(answer, Err(ClientError::BadRequest(_)))
+}
+
 #[component]
 pub fn Reset(token: String) -> Element {
     let password = use_signal(String::new);
     let confirm = use_signal(String::new);
     let mut state = use_signal(|| ResetState::Form);
     let mut rules_open = use_signal(|| false);
+
+    // The link's token is checked once on load. Only the server's word that
+    // it is dead (a 400) replaces the form; any other answer, a rate limit or
+    // a failed request leaves the form up, and the submit says what it finds.
+    let check_token = token.clone();
+    use_future(move || {
+        let token = check_token.clone();
+        async move {
+            if token.is_empty() {
+                return;
+            }
+            let answer = api::client().check_reset_token(token).await;
+            if link_is_dead(&answer) && *state.peek() == ResetState::Form {
+                state.set(ResetState::DeadLink);
+            }
+        }
+    });
 
     let on_submit = move |e: FormEvent| {
         e.prevent_default();
@@ -154,6 +180,13 @@ pub fn Reset(token: String) -> Element {
                     }
                     }
                 },
+                ResetState::DeadLink => rsx! {
+                    div { class: "outcome-error",
+                    Panel { title: "Link already used or expired", title_h1: true, centered: true,
+                        p { class: "card-summary", "If you already reset your password, log in with the new one. If not, tap " HintKey { "Forgot password" } " on " HintKey { "Log in" } " in the app for a new link." }
+                    }
+                    }
+                },
                 _ => rsx! {
                     Panel { title: "Reset password", title_h1: true, centered: true,
                         actions: rsx! {
@@ -213,6 +246,20 @@ mod tests {
     use super::*;
 
     const GOOD: &str = "Correct!Horse!Battery9";
+
+    #[test]
+    fn only_a_400_marks_the_link_dead() {
+        assert!(link_is_dead(&Err(ClientError::BadRequest(String::new()))));
+        for kept in [
+            Ok(()),
+            Err(ClientError::NotFound(String::new())),
+            Err(ClientError::TooManyRequests(String::new())),
+            Err(ClientError::InternalServerError(String::new())),
+            Err(ClientError::Unauthorized(String::new())),
+        ] {
+            assert!(!link_is_dead(&kept), "{kept:?} replaced the form");
+        }
+    }
 
     #[test]
     fn a_submit_while_loading_is_ignored() {
