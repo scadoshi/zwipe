@@ -10,6 +10,6 @@ zwipe.net is on GitHub Pages, which serves /deck/:token as the SPA's 404.html wi
 
 A Pages Function at zite/functions/deck/[token].js reads the public share API and rewrites title, description and og/twitter tags with the deck's name, format, commander and card count, using the commander's art_crop as the image. Cutover steps are in deploy_web.md.
 
-## Step 2: a generated preview image (idea, not planned yet)
+## Step 2: a generated preview image (planned, see [share_preview_image.md](share_preview_image.md))
 
 Scotty wants a share preview that shows basic deck stats: an og image generated per deck (deck name, commander art, format, card count, color identity, maybe price and mana curve). Scotty mentioned an earlier thread about this that hasn't been found. Plan it after the cutover. One option is to render the image in a Pages Function or Worker (Satori + resvg-wasm, or workers-og) and cache it per deck version.
