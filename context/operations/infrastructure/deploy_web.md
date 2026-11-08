@@ -38,7 +38,7 @@ GitHub → Actions tab → **Deploy zite** → Run workflow → Run workflow
 
 `zite/functions/deck/[token].js` is a Pages Function for `/deck/:token`. It reads the deck from the public `GET /api/share/deck/:token` and serves the site shell with the deck's own title, description, image and canonical link, so link previews show the deck. An unknown, revoked or malformed token gets the generic tags with a 404, and a failing API gets the generic page with a 200. Every other path is a static file, with `index.html` and a 200 for an app route, since there is no `404.html`. `zite/tests/og_function.rs` keeps the Function's format names and commander formats matched to zwipe-core.
 
-Both deploys run on every push until zwipe.net moves. Until then the Cloudflare copy serves at `zwipe-site.pages.dev`, where the preview tags can be checked with `curl`. The app there can't load a deck in the browser, since the API's CORS list doesn't include that origin. Secrets: `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, the same as `deploy-web.yml`.
+zwipe.net moved to the `zwipe-site` Pages project on 2026-11-07; GitHub Pages is unpublished and its deploy job is gone. Secrets: `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, the same as `deploy-web.yml`.
 
 Cutover (Scotty, in the dashboard):
 
