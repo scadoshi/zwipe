@@ -1,6 +1,6 @@
 # Deploy: zite
 
-Deployment for the zite Dioxus web frontend. Hosted on GitHub Pages at `zwipe.net`.
+Deployment for the zite Dioxus web frontend. Hosted on Cloudflare Pages (project `zwipe-site`) at `zwipe.net`.
 
 The pipeline runs automatically on push to `main` when files under `zite/**`, `zwipe-core/**` or `components/**` change (or the workflow file itself). Manual trigger is also available.
 
@@ -27,10 +27,8 @@ GitHub → Actions tab → **Deploy zite** → Run workflow → Run workflow
 1. Installs `build-essential` (needed for proc-macro crates targeting WASM). dx downloads its own pinned `wasm-opt` regardless of PATH, so no binaryen is installed here (see [`cicd.md`](cicd.md))
 2. Installs a prebuilt `dioxus-cli@0.7.10` binary via `taiki-e/install-action`, so nothing is compiled from source
 3. Runs `dx build --release --platform web --ssg --force-sequential` from `zite/`. Both flags matter: `--ssg` pre-renders the static routes, and dropping `--force-sequential` lets the parallel client build overwrite the SSG output with the bare shell
-4. Writes `CNAME` (`zwipe.net`) into the build output
-5. Copies `index.html` → `404.html` (SPA routing, GitHub Pages serves 404.html for unknown paths, Dioxus Router takes over)
-6. Uploads build output as a GitHub Pages artifact and deploys
-7. `deploy-cloudflare` takes the same artifact, drops `404.html` and `CNAME`, and uploads it from `zite/` with `wrangler pages deploy` to the Cloudflare Pages project `zwipe-site`, creating the project on its first run. Running from `zite/` bundles `zite/functions` with it
+4. Uploads the build output as one artifact
+5. `deploy-cloudflare` unpacks it and uploads it from `zite/` with `wrangler pages deploy` to the Cloudflare Pages project `zwipe-site`, creating the project on its first run. Running from `zite/` bundles `zite/functions` with it
 
 ---
 
@@ -40,11 +38,7 @@ GitHub → Actions tab → **Deploy zite** → Run workflow → Run workflow
 
 zwipe.net moved to the `zwipe-site` Pages project on 2026-11-07; GitHub Pages is unpublished and its deploy job is gone. Secrets: `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, the same as `deploy-web.yml`.
 
-Cutover (Scotty, in the dashboard):
-
-1. Workers & Pages → `zwipe-site` → Custom domains: add `zwipe.net` and `www.zwipe.net`. Cloudflare replaces the GitHub A records and the `www` CNAME with its own.
-2. Check that `curl -sI https://zwipe.net/deck/<a live token>` answers `200` with `server: cloudflare`.
-3. Repository Settings → Pages: unpublish the site, then remove the `deploy` job and the CNAME and 404.html steps from `deploy-zite.yml`.
+The apex record is a proxied CNAME `@` → `zwipe-site.pages.dev`; Cloudflare didn't replace GitHub's A records on its own, so they were deleted by hand. Check a deploy with `curl -sI https://zwipe.net/deck/<a live token>`: `200`, `server: cloudflare`, and the deck's own `og:title`.
 
 ---
 
@@ -56,8 +50,7 @@ Visit `https://zwipe.net` and confirm the latest changes are live.
 
 ## Notes
 
-- GitHub Pages config: **Repository Settings → Pages → Source**: GitHub Actions
-- Custom domain `zwipe.net` with HTTPS enforced
+- Custom domains `zwipe.net` and `www.zwipe.net` are attached to `zwipe-site` in the Cloudflare dashboard
 
 ---
 
