@@ -21,7 +21,9 @@ use zwipe_ui::filter::picker::Sources;
 use zwipe_ui::screens::deck_cards::TITLE;
 use zwipe_ui::{deck_cards, filter};
 
-use super::editor::{Editor, Listed, RowInfo, RowKind, main_row_of, row_view, use_deck_editor};
+use super::editor::{
+    Editor, Listed, LoadFailure, RowInfo, RowKind, main_row_of, row_view, use_deck_editor,
+};
 use super::featured::FeaturedCards;
 use super::quick_add::QuickAdd;
 use crate::inbound::card_filter::CardFilterPanel;
@@ -112,7 +114,7 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
         };
     }
     let navigator = use_navigator();
-    let ed = use_deck_editor(deck_id);
+    let ed = use_deck_editor(deck_id, LoadFailure::Toast);
     let Editor {
         entries,
         zone,

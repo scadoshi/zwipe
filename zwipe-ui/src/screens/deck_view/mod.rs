@@ -291,6 +291,8 @@ pub enum Status {
 pub enum Action {
     /// Fetches this deck's profile and cards, as the screen does when it opens or its deck id changes. What shows stays until the replies replace it, and replies to requests for the deck shown before are dropped.
     Load(Uuid),
+    /// Tries a failed load again, from Retry or the connection coming back: the skeletons show while the fetches are out. Does nothing unless the profile or the deck failed.
+    Retry,
     /// The profile arrived for the fetch holding `ticket`.
     ProfileLoaded {
         /// The ticket from the [`Effect::FetchProfile`] this answers.
@@ -708,6 +710,7 @@ impl State {
     fn dispatch(&mut self, action: Action) -> Vec<Effect> {
         match action {
             Action::Load(deck_id) => self.load(deck_id),
+            Action::Retry => self.retry(),
             Action::ProfileLoaded { ticket, profile } => self.profile_loaded(ticket, *profile),
             Action::DeckLoaded { ticket, deck } => {
                 self.deck_loaded(ticket, *deck);
@@ -834,6 +837,20 @@ impl State {
         if self.hint == HintOffer::Waiting {
             self.hint = HintOffer::Offered;
             effects.push(Effect::OfferHint(OneTimeHint::FirstDeck));
+        }
+        effects
+    }
+
+    /// Fetches again whatever failed, back on its skeleton, and leaves a load that landed alone.
+    fn retry(&mut self) -> Vec<Effect> {
+        let mut effects = Vec::new();
+        if matches!(self.profile.value, Fetched::Failed) {
+            self.profile.value = Fetched::Loading;
+            effects.extend(self.fetch_profile());
+        }
+        if matches!(self.deck.value, Fetched::Failed) {
+            self.deck.value = Fetched::Loading;
+            effects.extend(self.fetch_deck());
         }
         effects
     }

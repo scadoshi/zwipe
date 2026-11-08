@@ -5,7 +5,8 @@
 
 use components::icons::{CloneIcon, EditIcon, ShareIcon};
 use components::{
-    AlertDialog, Button, ButtonVariant, DialogAction, TOAST_NORMAL, ToastOptions, Toasts, use_toast,
+    AlertDialog, Button, ButtonVariant, DialogAction, LoadFailed, TOAST_NORMAL, ToastOptions,
+    Toasts, use_back_online, use_toast,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -224,9 +225,11 @@ impl Driver {
 
     fn fetch_deck(self, ticket: Ticket, deck_id: Uuid) {
         spawn(async move {
+            // Quiet: the profile fetch beside it raises the one toast a
+            // failed visit gets.
             let reply = self
                 .authed
-                .try_run("load_deck", |c, s| async move {
+                .try_run_quiet("load_deck", |c, s| async move {
                     c.fetch_deck(deck_id, &s).await
                 })
                 .await;
@@ -432,6 +435,8 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     use_effect(use_reactive!(
         |deck_id| driver.dispatch(Action::Load(deck_id))
     ));
+    // A load that failed offline goes again once the connection is back.
+    use_back_online(Callback::new(move |()| driver.dispatch(Action::Retry)));
 
     // The Roles chart's tags: a description lookup from the
     // shared catalog cache and an examples-browse opener, as on the deck
@@ -728,9 +733,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                             }
                         },
                         None if failed => rsx! {
-                            div { class: "message-empty",
-                                span { class: "chip-note", {deck_view::LOAD_FAILED} }
-                            }
+                            LoadFailed { message: deck_view::LOAD_FAILED, on_retry: move |()| driver.dispatch(Action::Retry) }
                         },
                         None => rsx! {
                             div { class: "content-enter",
