@@ -117,3 +117,6 @@ Left open as agreed. The design is sound: a rotated token presented again within
 - Merged since the deploy (not live): 221 web, 258, 270, 273, 278, 279, 280, 283, 287 (changelog split, workspace 1.18.8), 265, 288, 289, 290 part 1, #416 (GitHub Pages job removed).
 - New, waiting on Scotty: 282 (stale bundle after deploy), 284 (toast vs footer, reproduced), 286 (portfolio orangui line anchors), 290 part 2 (what Keep means on the discard prompt), 291 (logout revokes every session).
 - 285 (share preview image) merged in #424 and #425; samples sent to Scotty. Deploy note: zerver must deploy before zite (the zite build waits for it). Workers all idle.
+
+## 2026-11-08 limit
+Scotty raised the worker limit to 3 for now ("push it a little bit more"). Busy: thinker 285 part 2, halo 291, scotland 284.
