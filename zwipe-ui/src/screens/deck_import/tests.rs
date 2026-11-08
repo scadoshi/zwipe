@@ -391,7 +391,7 @@ fn the_copy_matches_the_app() {
         "1 Krenko, Mob Boss\n1 Urza, Lord High Artificer\n1 Sol Ring"
     );
     assert_eq!(URL_LABEL, "Paste an Archidekt deck URL");
-    assert_eq!(URL_PLACEHOLDER, "https://archidekt.com/decks/...");
+    assert_eq!(URL_PLACEHOLDER, "https://archidekt.com/decks/…");
     assert_eq!((IMPORTED, FAILED), ("Imported", "Failed"));
     assert_eq!(BACK, "Back");
     assert_eq!(

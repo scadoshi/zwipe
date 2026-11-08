@@ -7,6 +7,7 @@ use uuid::Uuid;
 use zwipe_core::domain::deck::requests::clone_deck::{CloneDeck, InvalidCloneDeck};
 use zwipe_core::domain::user::requests::get_user::GetUser;
 use zwipe_core::http::contracts::deck::{HttpCloneDeck, HttpClonedDeck};
+use zwipe_core::http::messages;
 
 use crate::domain::deck::models::deck::clone_deck::CloneDeckError;
 use crate::domain::deck::models::deck::get_deck_profile::GetDeckProfileError;
@@ -23,9 +24,7 @@ impl From<CloneDeckError> for ApiError {
         match value {
             CloneDeckError::SourceNotFound => Self::NotFound("source deck not found".to_string()),
             CloneDeckError::Forbidden => Self::NotFound("deck not found".to_string()),
-            CloneDeckError::Duplicate => {
-                Self::Conflict("a deck with that name already exists".to_string())
-            }
+            CloneDeckError::Duplicate => Self::Conflict(messages::CLONE_NAME_TAKEN.to_string()),
             CloneDeckError::LimitReached => {
                 Self::UnprocessableEntity("deck limit reached".to_string())
             }

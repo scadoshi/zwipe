@@ -47,7 +47,7 @@ pub const TEXT_PLACEHOLDER: &str = "1 Krenko, Mob Boss\n1 Urza, Lord High Artifi
 pub const URL_LABEL: &str = "Paste an Archidekt deck URL";
 
 /// The link input's placeholder.
-pub const URL_PLACEHOLDER: &str = "https://archidekt.com/decks/...";
+pub const URL_PLACEHOLDER: &str = "https://archidekt.com/decks/…";
 
 /// The label over the cards that came in.
 pub const IMPORTED: &str = "Imported";
