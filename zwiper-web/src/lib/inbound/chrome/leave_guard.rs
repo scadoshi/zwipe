@@ -322,13 +322,13 @@ const FOCUS_STAY_JS: &str = "(() => { const stay = document.querySelector('.web-
 /// Gives focus back to what had it before the dialog.
 const FOCUS_BACK_JS: &str = "(() => { const from = window.__zwipeLeaveFrom; window.__zwipeLeaveFrom = null; if (from && from.isConnected && from.focus) from.focus(); })()";
 
-/// The dialog the guard asks through, over every layer a screen can have
-/// open, with the kit's alert dialog's look. Mount it once inside the
-/// router.
-#[component]
-pub fn LeaveDialog() -> Element {
-    let navigator = use_navigator();
-    let mut asking = use_hook(|| {
+/// Registers a mounted [`LeaveDialog`]'s open state and armed marker with
+/// the guard, and takes them back when it goes, unless a dialog mounted
+/// since has taken the slots: moving between frames that each draw the nav
+/// (About's and the authed screens') mounts the next dialog before the last
+/// one drops. Returns `(asking, armed)`.
+fn use_dialog_slots() -> (Signal<bool>, Signal<bool>) {
+    let asking = use_hook(|| {
         let asking = Signal::new(false);
         GUARD.with(|g| g.asking.set(Some(asking)));
         asking
@@ -338,12 +338,26 @@ pub fn LeaveDialog() -> Element {
         GUARD.with(|g| g.armed.set(Some(armed)));
         armed
     });
-    use_drop(|| {
+    use_drop(move || {
         GUARD.with(|g| {
-            g.asking.set(None);
-            g.armed.set(None);
+            if g.asking.get() == Some(asking) {
+                g.asking.set(None);
+            }
+            if g.armed.get() == Some(armed) {
+                g.armed.set(None);
+            }
         });
     });
+    (asking, armed)
+}
+
+/// The dialog the guard asks through, over every layer a screen can have
+/// open, with the kit's alert dialog's look. Mount it once inside the
+/// router.
+#[component]
+pub fn LeaveDialog() -> Element {
+    let navigator = use_navigator();
+    let (mut asking, armed) = use_dialog_slots();
     use_hook(|| {
         document::eval(UNLOAD_JS);
         document::eval(TAB_JS);
@@ -451,6 +465,68 @@ mod tests {
         components::use_overlay_back(open);
         OPEN.with(|o| *o.borrow_mut() = Some(open));
         rsx! {}
+    }
+
+    thread_local! {
+        /// Which of the two dialogs are mounted: the first, the second.
+        static MOUNTED: RefCell<Option<Signal<(bool, bool)>>> = const { RefCell::new(None) };
+        /// The second dialog's open state, handed out to the test body.
+        static SECOND: RefCell<Option<Signal<bool>>> = const { RefCell::new(None) };
+    }
+
+    #[component]
+    fn TwoFrames() -> Element {
+        let mounted = use_signal(|| (true, false));
+        MOUNTED.with(|m| *m.borrow_mut() = Some(mounted));
+        let (first, second) = mounted();
+        rsx! {
+            if first {
+                Slots { second: false }
+            }
+            if second {
+                Slots { second: true }
+            }
+        }
+    }
+
+    #[component]
+    fn Slots(second: bool) -> Element {
+        let (asking, _) = use_dialog_slots();
+        if second {
+            SECOND.with(|s| *s.borrow_mut() = Some(asking));
+        }
+        rsx! {}
+    }
+
+    #[test]
+    fn a_dialog_dropped_after_the_next_one_mounts_leaves_the_guard_its_successor() {
+        let mut dom = VirtualDom::new(TwoFrames);
+        dom.rebuild_in_place();
+        let mut mounted = MOUNTED.with(|m| *m.borrow()).unwrap();
+
+        // About's frame to the authed one: the new nav's dialog mounts, then
+        // the old one goes.
+        dom.in_runtime(|| mounted.set((true, true)));
+        dom.render_immediate_to_vec();
+        dom.in_runtime(|| mounted.set((false, true)));
+        dom.render_immediate_to_vec();
+
+        let second = SECOND.with(|s| *s.borrow()).unwrap();
+        assert_eq!(
+            GUARD.with(|g| g.asking.get()),
+            Some(second),
+            "the guard opens the dialog still on screen"
+        );
+        assert!(
+            GUARD.with(|g| g.armed.get()).is_some(),
+            "the unload marker survives"
+        );
+
+        arm(Some(COPY));
+        assert!(hold(Held::Back), "an armed guard holds the move");
+        assert!(dom.in_runtime(|| *second.peek()), "and the dialog opens");
+        GUARD.with(|g| g.held.borrow_mut().take());
+        arm(None);
     }
 
     #[test]
