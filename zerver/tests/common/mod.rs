@@ -46,7 +46,7 @@ pub(crate) const TEST_ORIGIN: &str = "https://app.zwipe.net";
 use zwipe::outbound::sqlx::postgres::Postgres;
 use zwipe_core::domain::card::scryfall_data::rarity::Rarity;
 
-const TEST_JWT_SECRET: &str = "test-jwt-secret-that-is-at-least-32-characters-long";
+pub(crate) const TEST_JWT_SECRET: &str = "test-jwt-secret-that-is-at-least-32-characters-long";
 
 /// Captures every outbound email instead of hitting Resend. Later slices read
 /// the verify/reset token out of the last captured body.

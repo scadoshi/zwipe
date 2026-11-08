@@ -30,7 +30,7 @@ pub const LOGOUT_ROUTE: &str = "/api/auth/logout";
 pub const COOKIE_LOGIN_ROUTE: &str = "/api/auth/cookie/login";
 /// The browser's refresh: the refresh token travels only in that cookie.
 pub const COOKIE_REFRESH_ROUTE: &str = "/api/auth/cookie/refresh";
-/// The browser's logout: revokes the sessions and expires the cookie.
+/// The browser's logout: ends the cookie's session and expires the cookie.
 pub const COOKIE_LOGOUT_ROUTE: &str = "/api/auth/cookie/logout";
 pub const VERIFY_EMAIL_ROUTE: &str = "/api/auth/verify-email";
 pub const CONFIRM_EMAIL_CHANGE_ROUTE: &str = "/api/auth/confirm-email-change";

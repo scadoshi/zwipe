@@ -23,14 +23,17 @@ use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
 use axum::{Extension, Json};
 use axum_extra::extract::cookie::{Cookie, CookieJar, SameSite};
 use chrono::Utc;
+use uuid::Uuid;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::http::contracts::auth::{HttpAuthenticateUser, HttpCookieRefresh, HttpSession};
 use zwipe_core::version::Version;
 
 use super::authenticate_user::login;
 use super::refresh_session::refresh;
-use super::revoke_sessions::revoke_sessions;
+use super::revoke_sessions::end_sessions;
+use crate::domain::auth::ports::AuthService;
 use crate::domain::auth::requests::refresh_session::RefreshSession;
+use crate::domain::auth::requests::revoke_sessions::RevokeSessions;
 use crate::inbound::http::middleware::{AuthenticatedUser, ClientIp};
 use crate::inbound::http::{ApiError, AppState};
 
@@ -102,8 +105,11 @@ pub async fn cookie_refresh(
     }
 }
 
-/// Logs the browser out: revokes every session the user holds, as the app's
-/// logout does, and expires the cookie.
+/// Logs the browser out: ends the session its cookie's refresh token belongs
+/// to, leaving the user's other sessions alone, and expires the cookie.
+/// Without a stored cookie token for the user, the session is the one the
+/// access token's `family_id` claim names, and without that claim too the
+/// logout ends every session the user holds.
 ///
 /// # Errors
 ///
@@ -117,8 +123,25 @@ pub async fn cookie_logout(
     jar: CookieJar,
 ) -> Result<(CookieJar, StatusCode), ApiError> {
     check_origin(&headers, &origins)?;
-    let status = revoke_sessions(user, State(state)).await?;
+    let cookie_family = match cookie_session(&jar, user.id) {
+        Some(session) => state
+            .auth_service
+            .fetch_refresh_family(&session)
+            .await
+            .map_err(ApiError::from)?,
+        None => None,
+    };
+    let request = RevokeSessions::family(user.id, cookie_family.or(user.family_id));
+    let status = end_sessions(&state, &request).await?;
     Ok((jar.remove(removal()), status))
+}
+
+/// The cookie's refresh token as a request for `user_id`, `None` when there
+/// is no cookie, it does not parse, or it names another user.
+fn cookie_session(jar: &CookieJar, user_id: Uuid) -> Option<RefreshSession> {
+    let (cookie_user, token) = jar.get(REFRESH_COOKIE).and_then(|c| parse(c.value()))?;
+    let session = RefreshSession::new(&cookie_user, &token).ok()?;
+    (session.user_id == user_id).then_some(session)
 }
 
 /// Refuses a request with no `Origin`, or one outside the allowed list.

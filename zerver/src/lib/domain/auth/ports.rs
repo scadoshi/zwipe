@@ -9,7 +9,6 @@ use chrono::{DateTime, Utc};
 use uuid::Uuid;
 use zwipe_core::domain::Email;
 use zwipe_core::domain::auth::models::platform::ClientPlatform;
-use zwipe_core::domain::auth::models::refresh_token::RefreshToken;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user::User;
 use zwipe_core::domain::user::username::Username;
@@ -24,7 +23,9 @@ use crate::domain::auth::requests::check_reset_token::CheckResetTokenError;
 use crate::domain::auth::requests::confirm_email_change::{
     ConfirmEmailChange, ConfirmEmailChangeError, ConfirmedEmailChange,
 };
-use crate::domain::auth::requests::create_session::{CreateSession, CreateSessionError};
+use crate::domain::auth::requests::create_session::{
+    CreateSession, CreateSessionError, IssuedRefreshToken,
+};
 use crate::domain::auth::requests::delete_user::{DeleteUser, DeleteUserError};
 use crate::domain::auth::requests::refresh_session::{
     RefreshSession, RefreshSessionError, RotatedRefreshToken,
@@ -65,15 +66,15 @@ pub trait AuthRepository: Clone + Send + Sync + 'static {
 
     /// Creates a new refresh token for an existing user (new session).
     ///
-    /// Generates and stores a new refresh token for the specified user ID,
-    /// tagged with the client `platform` and `client_version` (`None` if
-    /// unknown/not reported).
+    /// Generates and stores a new refresh token for the specified user ID in
+    /// a new family, tagged with the client `platform` and `client_version`
+    /// (`None` if unknown/not reported).
     fn create_refresh_token(
         &self,
         request: Uuid,
         platform: Option<ClientPlatform>,
         client_version: Option<String>,
-    ) -> impl Future<Output = Result<RefreshToken, CreateSessionError>> + Send;
+    ) -> impl Future<Output = Result<IssuedRefreshToken, CreateSessionError>> + Send;
 
     /// Exchanges a refresh token for a new one (token rotation).
     ///
@@ -150,6 +151,21 @@ pub trait AuthRepository: Clone + Send + Sync + 'static {
         &self,
         user_id: Uuid,
     ) -> impl Future<Output = Result<(), RevokeSessionsError>> + Send;
+
+    /// Deletes every refresh token of `user_id` in `family_id` (logout of
+    /// one session). A family the user does not hold deletes nothing.
+    fn delete_refresh_token_family(
+        &self,
+        user_id: Uuid,
+        family_id: Uuid,
+    ) -> impl Future<Output = Result<(), RevokeSessionsError>> + Send;
+
+    /// The family of the refresh token in `request`, live or rotated, when
+    /// it is `request.user_id`'s; `None` when no such token is stored.
+    fn fetch_refresh_family(
+        &self,
+        request: &RefreshSession,
+    ) -> impl Future<Output = Result<Option<Uuid>, RevokeSessionsError>> + Send;
 
     // == email verification ==
 
@@ -340,13 +356,20 @@ pub trait AuthService: Clone + Send + Sync + 'static {
         request: &DeleteUser,
     ) -> impl Future<Output = Result<(), DeleteUserError>> + Send;
 
-    /// Revokes all sessions for a user (logout everywhere).
-    ///
-    /// Deletes all refresh tokens for the user, logging them out from all devices.
+    /// Revokes the sessions `request.scope` names: one refresh token family
+    /// (a logout) or every session the user holds.
     fn revoke_sessions(
         &self,
         request: &RevokeSessions,
     ) -> impl Future<Output = Result<(), RevokeSessionsError>> + Send;
+
+    /// The refresh token family the token in `request` belongs to, so a
+    /// browser's logout can name its session by its cookie. `None` when the
+    /// token is not stored for that user.
+    fn fetch_refresh_family(
+        &self,
+        request: &RefreshSession,
+    ) -> impl Future<Output = Result<Option<Uuid>, RevokeSessionsError>> + Send;
 
     // == email verification ==
 

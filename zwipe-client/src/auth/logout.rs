@@ -6,7 +6,7 @@ use zwipe_core::http::endpoints::auth::Logout;
 use crate::{ClientError, ZwipeClient};
 
 impl ZwipeClient {
-    /// Logs out users and invalidating sessions.
+    /// Logs out the session `session` belongs to, leaving the user's other sessions signed in.
     ///
     /// # Errors
     ///

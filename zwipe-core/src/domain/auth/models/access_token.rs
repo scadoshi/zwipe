@@ -61,6 +61,12 @@ pub struct UserClaims {
     /// the claim decodes as `None`, and `None` leaves the claim out.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub platform: Option<ClientPlatform>,
+
+    /// The refresh token family of the session that minted the token, which
+    /// names the session a logout ends. A token without the claim decodes as
+    /// `None`, and `None` leaves the claim out.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub family_id: Option<Uuid>,
 }
 
 // == main ==
@@ -228,6 +234,7 @@ mod tests {
             exp: 1_234_567_890,
             iat: 1_234_567_890,
             platform: None,
+            family_id: None,
         };
 
         let serialized = serde_json::to_string(&claims).unwrap();
@@ -245,6 +252,7 @@ mod tests {
             exp: 1_234_567_890,
             iat: 1_234_567_890,
             platform: Some(ClientPlatform::Terminal),
+            family_id: Some(uuid::Uuid::new_v4()),
         };
 
         let serialized = serde_json::to_value(&claims).unwrap();
@@ -263,10 +271,12 @@ mod tests {
             exp: 1_234_567_890,
             iat: 1_234_567_890,
             platform: None,
+            family_id: None,
         };
 
         let serialized = serde_json::to_value(&claims).unwrap();
         assert!(serialized.get("platform").is_none(), "{serialized}");
+        assert!(serialized.get("family_id").is_none(), "{serialized}");
     }
 
     #[test]
@@ -280,6 +290,7 @@ mod tests {
         });
         let claims: UserClaims = serde_json::from_value(json).unwrap();
         assert_eq!(claims.platform, None);
+        assert_eq!(claims.family_id, None);
     }
 
     #[test]
@@ -321,6 +332,7 @@ mod tests {
             exp: 1_234_567_890,
             iat: 1_234_567_890,
             platform: None,
+            family_id: None,
         };
         let claims2 = UserClaims {
             user_id: id1,
@@ -329,6 +341,7 @@ mod tests {
             exp: 1_234_567_890,
             iat: 1_234_567_890,
             platform: None,
+            family_id: None,
         };
         let claims3 = UserClaims {
             user_id: id2,
@@ -337,6 +350,7 @@ mod tests {
             exp: 1_234_567_890,
             iat: 1_234_567_890,
             platform: None,
+            family_id: None,
         };
 
         assert_eq!(claims1, claims2);

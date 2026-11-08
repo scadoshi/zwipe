@@ -114,7 +114,7 @@ impl Endpoint for CookieRefresh {
     }
 }
 
-/// The browser's logout: revokes the sessions and expires the cookie.
+/// The browser's logout: ends the cookie's session and expires the cookie.
 #[derive(Debug)]
 pub struct CookieLogout;
 impl Endpoint for CookieLogout {

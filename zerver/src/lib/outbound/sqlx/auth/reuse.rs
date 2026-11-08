@@ -139,6 +139,7 @@ mod tests {
                 value: value.to_string(),
                 expires_at: Utc::now(),
             },
+            family_id: uuid::Uuid::nil(),
             platform: None,
         }
     }
