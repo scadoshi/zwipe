@@ -1424,6 +1424,16 @@ impl CardRepository for MyPostgres {
                 push_returned(&mut qb, d);
                 qb.push(", ");
             }
+            // A card whose whole name is the query leads, folded and stripped
+            // as the name filter is, so typing a full name finds the card even
+            // when the limit cuts the rest short. The query holds only letters,
+            // digits and spaces, so ILIKE without a wildcard is equality.
+            if let Some(query_string) = criteria.name_contains() {
+                qb.push("(");
+                qb.push(STRIP_NAME);
+                qb.push_bind(query_string.to_owned());
+                qb.push(") DESC, ");
+            }
             let col = match order_by {
                 CardSortKey::Name => "name",
                 CardSortKey::Cmc => "cmc",

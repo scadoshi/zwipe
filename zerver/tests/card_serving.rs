@@ -574,3 +574,77 @@ async fn deck_serve_with_promo_shows_the_promo_printing(pool: sqlx::PgPool) {
     let want = promo.id().to_string();
     assert_eq!(served, vec![(want.as_str(), true)], "{body}");
 }
+
+/// Quick add's search (zwipe-ui's `quick_add_query`, rebuilt here: name holds the query, synergy off, skipped included, by name, five at most) for `query` on `deck_id`: the names it offers, in order.
+async fn quick_add_names(app: &TestApp, deck_id: Uuid, token: &str, query: &str) -> Vec<String> {
+    use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
+    use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
+    let mut builder = CardQueryBuilder::with_name_contains(query);
+    builder
+        .set_synergy(false)
+        .set_include_skipped(true)
+        .set_sort(CardSortKey::Name)
+        .set_limit(5);
+    let body = serde_json::to_value(builder.build().unwrap()).unwrap();
+    let (status, reply) = app
+        .post(&search_deck_cards_route(deck_id), body, Some(token))
+        .await;
+    assert_eq!(status, StatusCode::OK, "{reply}");
+    reply["cards"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|c| c["scryfall_data"]["name"].as_str().unwrap().to_string())
+        .collect()
+}
+
+#[sqlx::test]
+async fn quick_add_puts_an_exact_name_first_even_past_the_limit(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, uid) = app.register("quickadder").await;
+    app.verify_email(&uid).await;
+    let (status, deck) = app
+        .post(
+            DECK_ROUTE,
+            json!({ "name": "Mono red", "format": "commander" }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED, "{deck}");
+    let deck_id: Uuid = deck["id"].as_str().unwrap().parse().unwrap();
+
+    let mut cards: Vec<_> = [
+        "A Mountain Pass",
+        "Backed by the Mountain",
+        "Call the Mountain Chocobo",
+        "Celebrate the Mountain-king",
+        "Cori Mountain Monastery",
+    ]
+    .into_iter()
+    .map(|name| card(name).mono("R").type_line("Sorcery"))
+    .collect();
+    cards.push(card("Mountain").type_line("Basic Land — Mountain"));
+    seed_cards(&pool, &cards).await;
+
+    for typed in ["Mountain", "mountain", "MOUNTAIN"] {
+        let names = quick_add_names(&app, deck_id, &token, typed).await;
+        assert_eq!(names.len(), 5, "{typed}: {names:?}");
+        assert_eq!(names[0], "Mountain", "{typed}: {names:?}");
+        assert_eq!(
+            names[1..],
+            [
+                "A Mountain Pass",
+                "Backed by the Mountain",
+                "Call the Mountain Chocobo",
+                "Celebrate the Mountain-king"
+            ],
+            "the rest stay by name"
+        );
+    }
+
+    let names = quick_add_names(&app, deck_id, &token, "Mount").await;
+    assert_eq!(
+        names[0], "A Mountain Pass",
+        "a partial name keeps the name order: {names:?}"
+    );
+}
