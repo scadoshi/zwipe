@@ -130,3 +130,6 @@ Scotty raised the worker limit to 3 for now ("push it a little bit more"). Busy:
 ## Scotty to-dos (when back)
 - Cairn 1.4.0 What's New in App Store Connect still has 1.3.0's notes. Replace with cairn context/operations/store-submissions/1.4.0/whats_new.md (474 chars). It's submitted, so: App Review, remove from review, paste, Save, Add for Review.
 - Swap the new store screenshots into App Store Connect and Play Console for Zwipe and Cairn (Droid's set, once approved).
+
+## Next deploy
+Surfer parked a tab on app.zwipe.net/decks at build 00ed27f59: after the next deploy, check 282 with that real stale tab (a screen change after 5 min loads the new build).
