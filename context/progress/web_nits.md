@@ -369,3 +369,4 @@ Skipped with Scotty: S7 (no Image in the swipe screens' details, intended), S23 
 239. **Collapsed groups still take focus.** [Surfer p16, approved] A collapsed group's rows are inert: Tab and screen readers skip them.
 240. **Deck rows are draggable but drop nowhere.** [Surfer p16-5, 2026-11-07, approved] Drag isn't a feature: remove `draggable` from rows (and any drag handlers that only fade the preview). Board moves stay on the row buttons.
 241. **Hover preview covers row actions.** [Surfer p16-4] Closed, not a bug (Scotty): moving toward the buttons moves the preview to the other side.
+242. **Warnings don't follow +, − or board moves.** [Surfer p16-3, 2026-11-07, approved] After +, −, To sideboard/mainboard/maybeboard or Fix, the Warnings count and lines recompute at once, matching what a reload shows. App and web.
