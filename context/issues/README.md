@@ -45,7 +45,7 @@ Who checked, on which live build, what they saw.
 | # | Title | State | Owner | PR |
 |---|---|---|---|---|
 | [278](278-add-tag-outline.md) | The Add title tag has no outline | merging | scotland | #413 |
-| [279](279-home-create-deck.md) | Create deck button on Home's Decks panel | fixing | halo | - |
+| [279](279-home-create-deck.md) | Create deck button on Home's Decks panel | merging | halo | #414 |
 | [280](280-panel-title-sizes.md) | Panel titles render at different sizes | fixing | thinker | - |
 | [282](282-stale-bundle-after-deploy.md) | Web keeps the old bundle until a hard refresh | reported | - | - |
 

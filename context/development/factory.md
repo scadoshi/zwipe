@@ -35,7 +35,7 @@ Every bug, nit and small feature is a file in [`../issues/`](../issues/README.md
 
 ## Gates
 
-Before pushing, the worker runs `cargo +nightly fmt --all`, `cargo clippy --workspace --all-targets -- -D warnings`, the tests for the crates it touched, and `RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps` (not `--lib`: CI documents the zite and zwiper binaries too). Wire changes follow [`../architecture/api_evolution.md`](../architecture/api_evolution.md) and go through the composer first.
+Before pushing, the worker runs `cargo +nightly fmt --all`, `cargo clippy --workspace --all-targets -- -D warnings`, the tests for the crates it touched, and `RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps` (not `--lib`: CI documents the zite and zwiper binaries too). Wire changes follow [`api_evolution.md`](../architecture/api_evolution.md) and go through the composer first.
 
 ## Roles
 
