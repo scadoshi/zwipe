@@ -91,6 +91,21 @@ use zwipe_core::domain::auth::password::InvalidPassword;
 #[derive(Clone)]
 pub struct Password(String);
 
+/// Longest password, in characters, the server checks against a stored hash.
+/// Anything longer is turned away before Argon2 runs, so a huge body can't
+/// buy seconds of hashing. It is far above the policy's
+/// [`MAX_LENGTH`](zwipe_core::domain::auth::password::MAX_LENGTH) of 128 and
+/// kept apart from it on purpose: no password any policy ever allowed is this
+/// long, so tightening the policy can never lock an account out here.
+pub const MAX_VERIFIED_LENGTH: usize = 1_024;
+
+/// Whether `password` is short enough to check against a hash: at most
+/// [`MAX_VERIFIED_LENGTH`] characters.
+#[must_use]
+pub fn is_verifiable(password: &str) -> bool {
+    password.chars().count() <= MAX_VERIFIED_LENGTH
+}
+
 impl Password {
     /// Creates a new validated password.
     ///
@@ -291,11 +306,16 @@ impl HashedPassword {
     /// }
     /// ```
     ///
+    /// A password longer than [`MAX_VERIFIED_LENGTH`] is `false` without hashing.
+    ///
     /// # Errors
     ///
     /// Returns the `password_hash` error when the stored hash doesn't parse or
     /// verification fails for any reason other than a wrong password.
     pub fn verify(&self, password: &str) -> Result<bool, password_hash::Error> {
+        if !is_verifiable(password) {
+            return Ok(false);
+        }
         let parsed_hash = argon2::PasswordHash::new(&self.0)?;
 
         match Argon2::default().verify_password(password.as_bytes(), &parsed_hash) {
@@ -332,6 +352,35 @@ impl std::fmt::Display for HashedPassword {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_verify_cap_sits_far_above_the_policy() {
+        assert_eq!(MAX_VERIFIED_LENGTH, 1_024);
+        assert!(
+            MAX_VERIFIED_LENGTH >= zwipe_core::domain::auth::password::MAX_LENGTH.saturating_mul(8),
+            "eight times the policy's longest"
+        );
+        assert!(is_verifiable(&"a".repeat(MAX_VERIFIED_LENGTH)));
+        assert!(!is_verifiable(&"a".repeat(MAX_VERIFIED_LENGTH + 1)));
+        assert!(
+            is_verifiable(&"é".repeat(MAX_VERIFIED_LENGTH)),
+            "counted in characters, not bytes"
+        );
+    }
+
+    #[test]
+    fn a_password_over_the_cap_never_matches_and_one_at_it_still_can() {
+        let at_cap = format!("Aa1!{}", "x".repeat(MAX_VERIFIED_LENGTH - 4));
+        let hash = HashedPassword::generate(Password(at_cap.clone())).unwrap();
+        assert!(
+            hash.verify(&at_cap).unwrap(),
+            "a password at the cap verifies"
+        );
+        assert!(
+            !hash.verify(&format!("{at_cap}y")).unwrap(),
+            "one character over is refused before hashing"
+        );
+    }
 
     // == redaction ==
 

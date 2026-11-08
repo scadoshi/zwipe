@@ -13,7 +13,7 @@ use zwipe_core::domain::user::User;
 use crate::domain::auth::lockout::LoginLockout;
 use crate::domain::auth::models::UserWithPasswordHash;
 use crate::domain::auth::models::access_token::{AccessTokenExt, JwtSecret};
-use crate::domain::auth::models::password::{HashedPassword, Password};
+use crate::domain::auth::models::password::{self, HashedPassword, Password};
 use crate::domain::auth::notice_cooldown::NoticeCooldown;
 use crate::domain::auth::ports::{AuthRepository, AuthService};
 use crate::domain::auth::requests::authenticate_user::{AuthenticateUser, AuthenticateUserError};
@@ -216,6 +216,9 @@ where
         &self,
         request: &AuthenticateUser,
     ) -> Result<User, AuthenticateUserError> {
+        if !password::is_verifiable(request.password.read()) {
+            return Err(AuthenticateUserError::PasswordTooLong);
+        }
         let (user, password_hash) = self
             .auth_repo
             .fetch_user_with_password_hash(request)
@@ -312,6 +315,11 @@ where
         &self,
         request: &AuthenticateUser,
     ) -> Result<Session, AuthenticateUserError> {
+        // Before the lookup, so the answer is the same for every account and
+        // no oversized password reaches Argon2 or the lockout.
+        if !password::is_verifiable(request.password.read()) {
+            return Err(AuthenticateUserError::PasswordTooLong);
+        }
         let user_with_password_hash: UserWithPasswordHash = match self
             .auth_repo
             .fetch_user_with_password_hash(request)
