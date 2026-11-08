@@ -107,9 +107,13 @@
 
 /* `position: relative` after `all: unset` keeps the touch target's tap box
    on the ×. */
+/* A picked chip's ×. It stacks above the chip's own touch box (base.css),
+   which would otherwise lie over it and take the tap, so its 44px box
+   answers instead. */
 .chip-remove {
     all: unset;
     position: relative;
+    z-index: 1;
     cursor: pointer;
     font-size: 1rem;
     line-height: 1;
