@@ -41,6 +41,16 @@ pub fn cards_label(count: i64) -> String {
     }
 }
 
+/// `1 deck`, `2 decks`.
+#[must_use]
+pub fn decks_label(count: u32) -> String {
+    if count == 1 {
+        "1 deck".to_owned()
+    } else {
+        format!("{count} decks")
+    }
+}
+
 /// Whether `count` fits the format's minimum and maximum deck size. A deck with no format, or a format with no limit, always fits.
 #[must_use]
 pub fn count_fits(profile: &DeckProfile, count: i64) -> bool {
