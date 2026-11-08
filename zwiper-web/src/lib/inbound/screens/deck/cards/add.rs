@@ -850,9 +850,9 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                     mb_stack.write().rewind();
                     let next = counter.peek().wrapping_add(1);
                     counter.set(next);
+                    toast.info(add_cards::MAYBEBOARD_REFRESHED.to_owned(), quick);
                 }
             });
-            toast.info("Maybeboard refreshed".to_string(), quick);
             return;
         }
         if deck.peek().is_none() {
@@ -893,8 +893,8 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             let served: Vec<Card> = page.cards.into_iter().filter(|c| !holds(c)).collect();
             stack.write().replace(served);
             last_search.set(Some(snapshot));
+            toast.info(add_cards::STACK_REFRESHED.to_owned(), quick);
         });
-        toast.info("Stack refreshed".to_string(), quick);
     });
 
     let at = source();
