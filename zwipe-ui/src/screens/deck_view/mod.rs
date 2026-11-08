@@ -98,8 +98,12 @@ pub const CLEAR_SKIPS_BODY: &str = "Skipped cards come back on their own after a
 /// The Clear skips dialog's button that clears.
 pub const CLEAR: &str = "Clear";
 
-/// The Delete dialog's line.
-pub const DELETE_BODY: &str = "Are you sure you want to delete this deck?";
+/// The Delete dialog's line, naming the deck: "Delete Krenko? This can't be undone." Before the profile loads it reads "this deck".
+#[must_use]
+pub fn delete_body(name: Option<&str>) -> String {
+    let deck = name.unwrap_or("this deck");
+    format!("Delete {deck}? This can't be undone.")
+}
 
 /// The Delete dialog's button that deletes.
 pub const DELETE: &str = "Delete";
@@ -1217,6 +1221,12 @@ impl State {
         } else {
             SHARE_UNSHARED
         }
+    }
+
+    /// The Delete dialog's line for the deck, from [`delete_body`].
+    #[must_use]
+    pub fn delete_body(&self) -> String {
+        delete_body(self.profile().map(|p| &*p.name))
     }
 
     /// The Clone dialog's prefill, `{name} (clone)`, empty until the profile loads.

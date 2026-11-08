@@ -954,7 +954,15 @@ fn the_copy_matches_the_app() {
         "Skipped cards come back on their own after a week, and removed cards after a month. Clearing brings them all back now. This can't be undone."
     );
     assert_eq!([CLEAR, DELETE], ["Clear", "Delete"]);
-    assert_eq!(DELETE_BODY, "Are you sure you want to delete this deck?");
+}
+
+#[test]
+fn the_delete_line_names_the_deck() {
+    assert_eq!(
+        delete_body(Some("Goblin Horde")),
+        "Delete Goblin Horde? This can't be undone."
+    );
+    assert_eq!(delete_body(None), "Delete this deck? This can't be undone.");
 }
 
 #[test]
