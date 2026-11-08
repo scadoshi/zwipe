@@ -132,6 +132,9 @@ pub fn ForgotPassword() -> Element {
                                 id: "email",
                                 label: EMAIL,
                                 placeholder: EMAIL,
+                                input_type: "email",
+                                name: "email",
+                                autocomplete: "email",
                                 error: email_error.as_deref().map(sentence_case),
                             }
                             if is_loading {

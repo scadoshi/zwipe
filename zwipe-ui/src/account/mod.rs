@@ -15,6 +15,9 @@ pub const MISSING_INPUTS: &str = "Enter your username or email and password";
 /// The one line under any address that does not parse, on every form.
 pub const INVALID_EMAIL: &str = "Enter a valid email address";
 
+/// The line under an empty email field, on every form.
+pub const EMAIL_REQUIRED: &str = "Email is required";
+
 /// The line under a username the word filter turns down.
 pub const USERNAME_BAD_WORD: &str = "Pick a different username";
 
@@ -95,7 +98,7 @@ pub fn missing_inputs_toast() -> Toast {
     Toast::normal(ToastKind::Error, MISSING_INPUTS)
 }
 
-/// Forgot password's check: the address as typed, untrimmed, with [`INVALID_EMAIL`] for every failure.
+/// Forgot password's check: the address as typed, untrimmed, with [`email_error`]'s lines.
 #[must_use]
 pub fn reset_email_error(raw: &str) -> Option<String> {
     email_error(raw)
@@ -133,9 +136,12 @@ pub fn username_error(raw: &str) -> Option<String> {
     })
 }
 
-/// [`INVALID_EMAIL`] when `raw` is not an email address, `None` when it is one.
+/// [`EMAIL_REQUIRED`] when `raw` is empty or only spaces, [`INVALID_EMAIL`] when it is not an email address, `None` when it is one.
 #[must_use]
 pub fn email_error(raw: &str) -> Option<String> {
+    if raw.trim().is_empty() {
+        return Some(EMAIL_REQUIRED.to_owned());
+    }
     Email::new(raw).is_err().then(|| INVALID_EMAIL.to_owned())
 }
 
@@ -227,7 +233,6 @@ mod tests {
     fn every_bad_email_gets_the_same_plain_line() {
         assert_eq!(email_error("me@zwipe.net"), None);
         for raw in [
-            "",
             "me.zwipe.net",
             "me@localhost",
             "\"me@zwipe.net",
@@ -235,6 +240,19 @@ mod tests {
         ] {
             assert_eq!(email_error(raw).as_deref(), Some(INVALID_EMAIL), "{raw:?}");
         }
+    }
+
+    #[test]
+    fn an_empty_email_is_required_not_invalid() {
+        for raw in ["", "   "] {
+            assert_eq!(email_error(raw).as_deref(), Some(EMAIL_REQUIRED), "{raw:?}");
+            assert_eq!(
+                reset_email_error(raw).as_deref(),
+                Some(EMAIL_REQUIRED),
+                "{raw:?}"
+            );
+        }
+        assert_eq!(EMAIL_REQUIRED, "Email is required");
     }
 
     #[test]
@@ -397,7 +415,7 @@ mod tests {
     #[test]
     fn the_reset_form_has_one_line_and_does_not_trim() {
         assert_eq!(reset_email_error("a@b.co"), None);
-        for raw in ["", "nope", " a@b.co", "a@b.co ", "a@localhost"] {
+        for raw in ["nope", " a@b.co", "a@b.co ", "a@localhost"] {
             assert_eq!(
                 reset_email_error(raw).as_deref(),
                 Some(INVALID_EMAIL),

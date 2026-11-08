@@ -18,9 +18,10 @@ uuid = { workspace = true }
 
 # reqwest is split by target: the workspace copy carries rustls-tls, which does
 # not compile for wasm32. The browser supplies TLS there, so the wasm build
-# takes reqwest without it. zite's manifest carries the same split.
+# takes reqwest without it. zite's manifest carries the same split. The browser
+# also decodes compressed bodies itself, so only the native build asks for them.
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-reqwest = { workspace = true }
+reqwest = { workspace = true, features = ["gzip", "brotli"] }
 # Only for the SKELETON_DELAY_MS audit hold in call.rs.
 tokio = { workspace = true }
 

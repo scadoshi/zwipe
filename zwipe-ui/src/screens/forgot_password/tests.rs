@@ -1,5 +1,5 @@
 use super::*;
-use crate::account::INVALID_EMAIL;
+use crate::account::{EMAIL_REQUIRED, INVALID_EMAIL};
 use crate::toast::NORMAL;
 
 fn typed(email: &str) -> State {
@@ -39,7 +39,7 @@ fn the_line_shows_while_the_field_holds_text() {
 fn a_failing_submit_shows_the_line_and_sends_nothing() {
     let mut state = State::new();
     assert_eq!(state.update(Action::Submit), []);
-    assert_eq!(state.error().as_deref(), Some(INVALID_EMAIL));
+    assert_eq!(state.error().as_deref(), Some(EMAIL_REQUIRED));
     assert!(!state.is_loading());
 }
 

@@ -204,6 +204,8 @@ pub fn Reset(token: String) -> Element {
                             PasswordInput {
                                 value: password,
                                 id: "reset-password",
+                                name: "new-password",
+                                autocomplete: "new-password",
                                 placeholder: "New password",
                                 disabled: current_state == ResetState::Loading,
                             }
@@ -213,6 +215,8 @@ pub fn Reset(token: String) -> Element {
                             PasswordInput {
                                 value: confirm,
                                 id: "reset-confirm",
+                                name: "confirm-password",
+                                autocomplete: "new-password",
                                 placeholder: "Confirm password",
                                 disabled: current_state == ResetState::Loading,
                             }
