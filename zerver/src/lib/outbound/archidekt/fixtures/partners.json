@@ -1,0 +1,17 @@
+{
+  "id": 1002,
+  "name": "Tymna Thrasios",
+  "deckFormat": 3,
+  "categories": [
+    {"id": 1, "name": "Commander", "isPremier": true, "includedInDeck": true, "includedInPrice": true},
+    {"id": 2, "name": "Draw", "isPremier": false, "includedInDeck": true, "includedInPrice": true}
+  ],
+  "cards": [
+    {"quantity": 1, "categories": ["Commander"],
+     "card": {"uid": "8a0a3b62-3c1c-4b4b-9f8e-6f3d7b0a1c21", "oracleCard": {"name": "Tymna the Weaver"}}},
+    {"quantity": 1, "categories": ["Commander"],
+     "card": {"uid": "3c6a38dc-1b3f-4f0e-8a3d-2f5b9c0e7d42", "oracleCard": {"name": "Thrasios, Triton Hero"}}},
+    {"quantity": 1, "categories": ["Draw"],
+     "card": {"uid": "bf76c6a4-d6e8-4d50-b65f-020252f7b659", "oracleCard": {"name": "Mystic Remora"}}}
+  ]
+}

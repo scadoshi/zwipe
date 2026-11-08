@@ -9,6 +9,7 @@ use zwipe_core::domain::deck::requests::create_deck_profile::{
 };
 use zwipe_core::domain::user::requests::get_user::GetUser;
 use zwipe_core::http::contracts::deck::HttpCreateDeckProfile;
+use zwipe_core::http::messages;
 
 use crate::domain::deck::models::deck::create_deck_profile::CreateDeckProfileError;
 use crate::domain::deck::ports::DeckService;
@@ -22,7 +23,7 @@ impl From<CreateDeckProfileError> for ApiError {
     fn from(value: CreateDeckProfileError) -> Self {
         match value {
             CreateDeckProfileError::Duplicate => {
-                Self::Conflict("deck with name and user combination already exists".to_string())
+                Self::Conflict(messages::DECK_NAME_TAKEN.to_string())
             }
             CreateDeckProfileError::LimitReached => {
                 Self::UnprocessableEntity("deck limit reached".to_string())

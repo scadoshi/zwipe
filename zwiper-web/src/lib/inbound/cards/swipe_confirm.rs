@@ -142,10 +142,14 @@ pub fn SwipeScreenChips(
     let said = (confirm.said)();
     let var = tone.css_var();
     let name = var.strip_prefix("--").unwrap_or(var);
-    let paint = format!("--chip-tone: var({var}); --chip-ink: var(--ink-{name}, var({var}));");
+    // The label tags' own tint and outline in the screen's color, both mixed
+    // over the page surface so the tag stays opaque over the backdrop.
+    let paint = format!(
+        "--tone: var({var}); --tone-ink: var(--ink-{name}, var({var})); --tone-base: var(--bg-primary);"
+    );
     rsx! {
         div { class: "web-screen-chips",
-            span { class: "detail-chip web-screen-chip", style: "{paint}", "{title}" }
+            span { class: "stat-chip chip-row-label web-screen-chip", style: "{paint}", "{title}" }
             if let (false, Some((count, text))) = (at_end, said) {
                 span { key: "{count}", class: "chip-note web-swipe-confirm", "{text}" }
             }

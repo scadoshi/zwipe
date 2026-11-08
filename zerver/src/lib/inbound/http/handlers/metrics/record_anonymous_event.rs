@@ -22,7 +22,7 @@ pub async fn record_anonymous_event(
 ) -> Result<StatusCode, ApiError> {
     state
         .metrics_service
-        .record_anonymous_event(event.session_id, event.kind)
+        .record_anonymous_event(event.session_id, event.kind, event.platform)
         .await
         .map_err(ApiError::from)?;
 

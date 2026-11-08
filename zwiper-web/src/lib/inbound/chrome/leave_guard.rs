@@ -10,12 +10,17 @@
 //!
 //! Stay drops the move and leaves every layer on the screen as it was.
 //! Leave disarms the guard and makes the move.
+//!
+//! The browser's back or forward with a sheet or dialog open closes the top
+//! one instead, armed or not, and puts the screen's URL back; the guard only
+//! asks once nothing is open.
 
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::Arc;
 
+use components::OverlayBackStack;
 use dioxus::history::History;
 use dioxus::prelude::*;
 
@@ -70,6 +75,11 @@ struct Guard {
     /// Whether a screen is armed, which the mounted [`LeaveDialog`] marks for
     /// the unload prompt.
     armed: Cell<Option<Signal<bool>>>,
+    /// The open sheets and dialogs, from [`watch_overlays`].
+    overlays: Cell<Option<OverlayBackStack>>,
+    /// The route on screen, which a back or forward that closes an overlay
+    /// puts back.
+    shown: RefCell<String>,
 }
 
 thread_local! {
@@ -108,6 +118,44 @@ fn undo_pop() -> bool {
     hold(Held::Popped)
 }
 
+/// On the browser's back or forward with a sheet or dialog open, puts the
+/// screen's URL back and closes the top one. Returns whether it did.
+fn close_overlay_on_pop() -> bool {
+    let found = GUARD.with(|g| {
+        let overlays = g.overlays.get()?;
+        let inner = g.inner.borrow().clone()?;
+        Some((overlays, inner, g.shown.borrow().clone()))
+    });
+    let Some((mut overlays, inner, shown)) = found else {
+        return false;
+    };
+    if !overlays.close_top() {
+        return false;
+    }
+    inner.push(shown);
+    true
+}
+
+/// Records the platform's current route as the one on screen.
+fn show_current() {
+    GUARD.with(|g| {
+        if let Some(inner) = g.inner.borrow().as_ref() {
+            *g.shown.borrow_mut() = inner.current_route();
+        }
+    });
+}
+
+/// Records `route` as the one on screen.
+fn show(route: String) {
+    GUARD.with(|g| *g.shown.borrow_mut() = route);
+}
+
+/// Lets the browser's back and forward close the top of `overlays` before
+/// they move or ask. Call it once, where the stack is provided.
+pub fn watch_overlays(overlays: OverlayBackStack) {
+    GUARD.with(|g| g.overlays.set(Some(overlays)));
+}
+
 /// Arms the guard with `copy`, recording the route it guards, or disarms
 /// it with `None`.
 fn arm(copy: Option<LeaveCopy>) {
@@ -142,6 +190,7 @@ impl std::fmt::Debug for GuardedHistory {
 impl GuardedHistory {
     /// Puts the guard in front of `inner`.
     pub fn new(inner: Rc<dyn History>) -> Self {
+        show(inner.current_route());
         GUARD.with(|g| *g.inner.borrow_mut() = Some(Rc::clone(&inner)));
         Self { inner }
     }
@@ -185,13 +234,15 @@ impl History for GuardedHistory {
 
     fn push(&self, route: String) {
         if route == self.inner.current_route() || !hold(Held::Push(route.clone())) {
-            self.inner.push(route);
+            self.inner.push(route.clone());
+            show(route);
         }
     }
 
     fn replace(&self, path: String) {
         if !hold(Held::Replace(path.clone())) {
-            self.inner.replace(path);
+            self.inner.replace(path.clone());
+            show(path);
         }
     }
 
@@ -201,9 +252,11 @@ impl History for GuardedHistory {
 
     fn updater(&self, callback: Arc<dyn Fn() + Send + Sync>) {
         self.inner.updater(Arc::new(move || {
-            if !undo_pop() {
-                callback();
+            if close_overlay_on_pop() || undo_pop() {
+                return;
             }
+            show_current();
+            callback();
         }));
     }
 
@@ -363,5 +416,75 @@ pub fn LeaveDialog() -> Element {
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use dioxus::history::MemoryHistory;
+
+    use super::*;
+
+    const COPY: LeaveCopy = LeaveCopy {
+        title: "Leave without saving?",
+        body: "Your changes are lost.",
+        stay: "Stay",
+        leave: "Leave",
+    };
+
+    thread_local! {
+        /// The open sheet's signal, handed out to the test body.
+        static OPEN: RefCell<Option<Signal<bool>>> = const { RefCell::new(None) };
+    }
+
+    #[component]
+    fn Root() -> Element {
+        let overlays = components::use_overlay_back_stack();
+        use_context_provider(|| overlays);
+        watch_overlays(overlays);
+        rsx! { Sheet {} }
+    }
+
+    #[component]
+    fn Sheet() -> Element {
+        let open = use_signal(|| true);
+        components::use_overlay_back(open);
+        OPEN.with(|o| *o.borrow_mut() = Some(open));
+        rsx! {}
+    }
+
+    #[test]
+    fn the_browser_back_closes_an_open_sheet_before_the_guard_asks() {
+        let inner: Rc<dyn History> = Rc::new(MemoryHistory::with_initial_path("/decks"));
+        let guarded = GuardedHistory::new(Rc::clone(&inner));
+        guarded.push("/decks/new".to_owned());
+        arm(Some(COPY));
+        let mut dom = VirtualDom::new(Root);
+        dom.rebuild_in_place();
+        dom.render_immediate_to_vec();
+        let open = OPEN.with(|o| *o.borrow()).unwrap();
+
+        inner.go_back();
+        let closed = dom.in_runtime(close_overlay_on_pop);
+
+        assert!(closed, "the pop closed the sheet");
+        assert!(!dom.in_runtime(|| *open.peek()), "the sheet is shut");
+        assert_eq!(
+            inner.current_route(),
+            "/decks/new",
+            "the form's URL is back"
+        );
+        assert!(
+            GUARD.with(|g| g.held.borrow().is_none()),
+            "the guard did not ask"
+        );
+
+        inner.go_back();
+        assert!(
+            !dom.in_runtime(close_overlay_on_pop),
+            "nothing open, so the guard's turn"
+        );
+        assert!(undo_pop(), "the guard holds the next back");
+        arm(None);
     }
 }

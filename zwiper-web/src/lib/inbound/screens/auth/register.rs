@@ -18,6 +18,7 @@ use zwipe_core::http::contracts::auth::HttpRegisterUser;
 use zwipe_core::http::contracts::metrics::AnonymousEventKind;
 use zwipe_ui::account::Password;
 use zwipe_ui::screens::register::{self, Action, Destination, Effect, Field, State};
+use zwipe_ui::telemetry::vocabulary::{AuthScreen, Screen};
 use zwipe_ui::text::sentence_case;
 
 use crate::inbound::chrome::hint_topic::{self, HintTopic};
@@ -27,6 +28,7 @@ use crate::inbound::screens::auth::hero::{PublicFlavor, PublicHero};
 use crate::inbound::screens::auth::login::LoginPrefill;
 use crate::inbound::session::funnel;
 use crate::inbound::shell::ScreenFrame;
+use crate::inbound::telemetry;
 
 /// Register's model with the handles that perform its effects. Copy, so
 /// every handler and task holds its own.
@@ -115,6 +117,7 @@ fn use_field_sync(driver: &Driver, input: Signal<String>, edit: fn(String) -> Ac
 /// Return in any field runs `Create account`.
 #[component]
 pub fn Register() -> Element {
+    telemetry::use_telemetry_screen(Screen::Auth(AuthScreen::Register));
     let LoginPrefill(login_prefill) = use_context();
     let driver = Driver {
         model: use_signal(State::new),

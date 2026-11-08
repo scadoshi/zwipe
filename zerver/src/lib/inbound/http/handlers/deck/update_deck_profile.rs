@@ -9,6 +9,7 @@ use zwipe_core::domain::deck::requests::update_deck_profile::{
     InvalidUpdateDeckProfile, UpdateDeckProfile,
 };
 use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
+use zwipe_core::http::messages;
 
 use crate::domain::deck::models::deck::update_deck_profile::UpdateDeckProfileError;
 use crate::domain::deck::ports::DeckService;
@@ -24,7 +25,7 @@ impl From<UpdateDeckProfileError> for ApiError {
                 Self::NotFound("deck profile not found".to_string())
             }
             UpdateDeckProfileError::Duplicate => {
-                Self::Conflict("deck with name and user combination already exists".to_string())
+                Self::Conflict(messages::DECK_NAME_TAKEN.to_string())
             }
             UpdateDeckProfileError::GetDeckProfileError(e) => ApiError::from(e),
             UpdateDeckProfileError::DeckFromDb(e) | UpdateDeckProfileError::Database(e) => {

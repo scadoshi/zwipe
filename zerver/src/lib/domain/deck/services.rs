@@ -4,6 +4,7 @@ use std::fmt::Debug;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::CardQuery;
+use zwipe_core::domain::card::search_card::commander_eligibility;
 use zwipe_core::domain::deck::deck_profile::DeckProfile;
 use zwipe_core::domain::deck::requests::clear_deck_suppressions::ClearDeckSuppressions;
 use zwipe_core::domain::deck::requests::clone_deck::CloneDeck;
@@ -40,7 +41,9 @@ use crate::domain::deck::models::deck::delete_deck::DeleteDeckError;
 use crate::domain::deck::models::deck::get_deck::GetDeckError;
 use crate::domain::deck::models::deck::get_deck_profile::GetDeckProfileError;
 use crate::domain::deck::models::deck::get_deck_tokens::GetDeckTokensError;
-use crate::domain::deck::models::deck::import_archidekt::ArchidektCard;
+use crate::domain::deck::models::deck::import_archidekt::{
+    ArchidektDeck, OpenSlots, ProfileFill, ResolvedCommander,
+};
 use crate::domain::deck::models::deck::search_deck_cards::{DeckCardServe, SearchDeckCardsError};
 use crate::domain::deck::models::deck::share_deck::{
     GetSharedDeckError, ShareDeckError, SharedDeck,
@@ -1049,6 +1052,7 @@ where
         Ok(ImportDeckCardsResult {
             imported,
             unresolved,
+            ..ImportDeckCardsResult::default()
         })
     }
 
@@ -1060,12 +1064,14 @@ where
         &self,
         user_id: Uuid,
         deck_id: Uuid,
-        cards: &[ArchidektCard],
+        deck: &ArchidektDeck,
         board: Board,
         email_verified: bool,
         mode: ImportMode,
     ) -> Result<ImportDeckCardsResult, ImportDeckCardsError> {
         use std::collections::HashSet;
+
+        let cards = &deck.cards;
 
         // Auth check
         let get_deck = GetDeckProfile::new(user_id, deck_id);
@@ -1083,7 +1089,7 @@ where
         .into_iter()
         .flatten()
         .collect();
-        let additional_oracle_ids: HashSet<Uuid> = if additional_scryfall_ids.is_empty() {
+        let mut additional_oracle_ids: HashSet<Uuid> = if additional_scryfall_ids.is_empty() {
             HashSet::new()
         } else {
             self.card_repo
@@ -1099,7 +1105,11 @@ where
         // but carry a null oracle_id (reversible Secret Lair printings do); those
         // can't be deck cards (deck_cards.oracle_id is NOT NULL), so they fall
         // through to the name fallback below.
-        let all_ids: ScryfallDataIds = cards.iter().map(|c| c.scryfall_id).collect();
+        let all_ids: ScryfallDataIds = cards
+            .iter()
+            .chain(&deck.commanders)
+            .map(|c| c.scryfall_id)
+            .collect();
         let resolved = self
             .card_repo
             .fetch_multiple_scryfall_data(&all_ids)
@@ -1115,6 +1125,7 @@ where
         // swapping the fancy printing for a standard one with a valid oracle_id).
         let fallback_names: Vec<String> = cards
             .iter()
+            .chain(&deck.commanders)
             .filter(|c| !oracle_by_id.contains_key(&c.scryfall_id) && !c.name.is_empty())
             .map(|c| c.name.to_lowercase())
             .collect::<HashSet<_>>()
@@ -1139,6 +1150,45 @@ where
                 })
             })
             .collect();
+
+        // The deck's empty format and commander slots take Archidekt's. The
+        // commanders' copies in the card list are skipped, as an existing
+        // commander's are.
+        let type_lines: HashMap<Uuid, &str> = resolved
+            .iter()
+            .map(|sd| (sd.id, sd.type_line.as_deref().unwrap_or("")))
+            .chain(name_matches.iter().map(|c| {
+                (
+                    c.scryfall_data.id,
+                    c.scryfall_data.type_line.as_deref().unwrap_or(""),
+                )
+            }))
+            .collect();
+        let commanders: Vec<ResolvedCommander> = deck
+            .commanders
+            .iter()
+            .filter_map(|c| {
+                let (scryfall_id, oracle_id) = oracle_by_id
+                    .get(&c.scryfall_id)
+                    .map(|&oracle| (c.scryfall_id, oracle))
+                    .or_else(|| by_name.get(&c.name.to_lowercase()).copied())?;
+                Some(ResolvedCommander {
+                    scryfall_id,
+                    oracle_id,
+                    name: c.name.clone(),
+                    is_background: type_lines
+                        .get(&scryfall_id)
+                        .is_some_and(|t| commander_eligibility::is_background_type_line(t)),
+                })
+            })
+            .collect();
+        let fill = ProfileFill::plan(OpenSlots::from(&deck_profile), deck.format, &commanders);
+        additional_oracle_ids.extend(
+            [&fill.commander, &fill.partner, &fill.background]
+                .into_iter()
+                .flatten()
+                .map(|c| c.oracle_id),
+        );
 
         // Classify each card, deduplicating by oracle_id (summing quantities).
         let mut unresolved: Vec<UnresolvedCard> = Vec::new();
@@ -1217,9 +1267,25 @@ where
             .collect();
         imported.sort_by(|a, b| a.name.cmp(&b.name));
 
+        if !fill.is_empty() {
+            let request = UpdateDeckProfile::builder(deck_id, user_id)
+                .format(fill.format.as_ref().map(|f| Some(f.to_legality_key())))
+                .commander_id(fill.commander.as_ref().map(|c| Some(c.scryfall_id)))
+                .partner_commander_id(fill.partner.as_ref().map(|c| Some(c.scryfall_id)))
+                .background_id(fill.background.as_ref().map(|c| Some(c.scryfall_id)))
+                .build()
+                .map_err(|e| ImportDeckCardsError::Database(e.into()))?;
+            self.deck_repo
+                .update_deck_profile(&request)
+                .await
+                .map_err(|e| ImportDeckCardsError::Database(e.into()))?;
+        }
+
         Ok(ImportDeckCardsResult {
             imported,
             unresolved,
+            format_set: fill.format,
+            commanders_set: fill.card_names(),
         })
     }
 

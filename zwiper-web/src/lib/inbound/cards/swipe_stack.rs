@@ -16,6 +16,7 @@ use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ImageSize;
 use zwipe_ui::stack::{Direction, STACK_DEPTH};
+use zwipe_ui::telemetry::SwipeDirection;
 
 /// A drag this far along its axis, in pixels, commits; the app's distance.
 pub const COMMIT_PX: f64 = 90.0;
@@ -42,6 +43,17 @@ pub enum Swipe {
     Up,
     /// Down, which never moves the card.
     Down,
+}
+
+impl From<Swipe> for SwipeDirection {
+    fn from(swipe: Swipe) -> Self {
+        match swipe {
+            Swipe::Left => Self::Left,
+            Swipe::Right => Self::Right,
+            Swipe::Up => Self::Up,
+            Swipe::Down => Self::Down,
+        }
+    }
 }
 
 impl Swipe {

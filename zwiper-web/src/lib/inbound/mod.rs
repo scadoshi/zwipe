@@ -12,3 +12,4 @@ pub mod router;
 pub mod screens;
 pub mod session;
 pub mod shell;
+pub mod telemetry;

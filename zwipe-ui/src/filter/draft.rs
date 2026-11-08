@@ -8,6 +8,7 @@
 
 use chrono::{DateTime, Utc};
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
+use zwipe_core::domain::deck::Format;
 use zwipe_core::domain::user::hints::OneTimeHint;
 
 use super::fields::parse_number;
@@ -41,6 +42,9 @@ pub struct SheetConfig {
     pub reset: ResetRule,
     /// Where the word pickers draw from.
     pub sources: Sources,
+    /// The deck's format on a deck's swipe pile: "Is legal in" holding only
+    /// it is the default, not a filter. `None` elsewhere.
+    pub deck_format: Option<Format>,
 }
 
 /// What opening the sheet asks of the client.
@@ -143,8 +147,8 @@ impl FilterDraft {
         }
         let action = super::apply_action(
             self.config.validate,
-            FilterState::of(&self.snapshot),
-            FilterState::of(&self.draft),
+            FilterState::of(&self.snapshot, self.config.deck_format),
+            FilterState::of(&self.draft, self.config.deck_format),
             false,
         );
         match action {
@@ -289,6 +293,25 @@ mod tests {
             panic!("applies");
         };
         assert_eq!(toast.text, "Filter cleared");
+    }
+
+    #[test]
+    fn a_format_picked_beside_the_deck_format_applies_rather_than_clears() {
+        let config = SheetConfig {
+            validate: true,
+            deck_format: Some(Format::Commander),
+            ..SheetConfig::default()
+        };
+        let mut seeded = CardQueryBuilder::default();
+        seeded.set_legalities_contains_any(["commander"]);
+        let mut draft = FilterDraft::new(&seeded, config);
+        draft
+            .draft
+            .set_legalities_contains_any(["commander", "pauper"]);
+        let ApplyOutcome::Applied { toast, .. } = draft.apply() else {
+            panic!("Commander + Pauper applies");
+        };
+        assert_eq!(toast.text, "Filter applied");
     }
 
     #[test]

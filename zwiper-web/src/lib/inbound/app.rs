@@ -9,14 +9,14 @@ use zwipe_core::domain::logo;
 use zwipe_core::domain::user::models::settings::PipStyle;
 
 use crate::inbound::chrome::hint_topic::{HintHost, HintTopic};
-use crate::inbound::chrome::leave_guard::GuardedHistory;
+use crate::inbound::chrome::leave_guard::{self, GuardedHistory};
 use crate::inbound::chrome::splash;
 use crate::inbound::router::Route;
 use crate::inbound::screens::auth::login::LoginPrefill;
 use crate::inbound::screens::update_required::UpdateRequired;
 use crate::inbound::session::upkeep;
 use crate::inbound::shell::MenuOpen;
-use crate::inbound::{caches, card_stores, catalog};
+use crate::inbound::{caches, card_stores, catalog, telemetry};
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 const FAVICON_16: Asset = asset!("/assets/favicon-16x16.png");
@@ -37,12 +37,14 @@ const FONT_JBM_700: Asset = asset!("/assets/fonts/jetbrains-mono-700.woff2");
 #[component]
 pub fn App() -> Element {
     let upgrade_required = upkeep::use_session_upkeep();
+    telemetry::use_telemetry(use_context(), use_context());
     caches::use_root_caches();
     catalog::use_catalog_cache();
     card_stores::use_card_stores();
     // Dialogs and sheets register here, so Esc closes the top one.
     let mut overlay_back_stack = use_overlay_back_stack();
     use_context_provider(|| overlay_back_stack);
+    leave_guard::watch_overlays(overlay_back_stack);
     use_future(move || async move {
         let mut escapes = document::eval(KEYS_JS);
         while escapes.recv::<bool>().await.is_ok() {

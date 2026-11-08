@@ -27,6 +27,7 @@ use zwipe_core::http::contracts::deck_card::HttpPatchDeckCard;
 use zwipe_ui::buy;
 use zwipe_ui::deck::form::Slot;
 use zwipe_ui::screens::deck_view::{CARDS, LOAD_FAILED, delete_body};
+use zwipe_ui::telemetry::vocabulary::{DeckScreen, Screen, component};
 
 use self::dialogs::{DeckDialogsHost, use_deck_dialogs};
 use self::ghost::{DeckViewGhost, StatsSectionsGhost};
@@ -43,6 +44,7 @@ use crate::inbound::chrome::media::use_wide;
 use crate::inbound::chrome::one_time_hint::{FirstDeckHintDialog, OneTimeHint, use_one_time_hint};
 use crate::inbound::router::Route;
 use crate::inbound::shell::ScreenFrame;
+use crate::inbound::telemetry;
 
 /// The screen's title, in the tab and the folded nav.
 const TITLE: &str = "Deck";
@@ -50,12 +52,14 @@ const TITLE: &str = "Deck";
 /// The deck view for `deck_id`.
 #[component]
 pub fn ViewDeck(deck_id: Uuid) -> Element {
+    telemetry::use_telemetry_screen(Screen::Deck(DeckScreen::View));
     let navigator = use_navigator();
     let wide = use_wide();
     let client: Signal<ZwipeClient> = use_context();
     let session: Signal<Option<Session>> = use_context();
     let authed = use_authed();
     let toast = use_toast();
+    let usage = telemetry::use_usage();
     let hint_open = use_one_time_hint(OneTimeHint::FirstDeck);
     let on_hint = use_callback(move |()| {
         let mut hint_open = hint_open;
@@ -213,6 +217,12 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                     }
                     Err(e) => {
                         tracing::warn!("remove_flagged_card failed: {e}");
+                        usage.peek().report_error(
+                            telemetry::screen_name(),
+                            component::DECK_WARNINGS,
+                            "remove_flagged_card",
+                            &telemetry::failure(&e),
+                        );
                         toast.error(
                             e.to_user_message(),
                             ToastOptions::default().duration(TOAST_NORMAL),

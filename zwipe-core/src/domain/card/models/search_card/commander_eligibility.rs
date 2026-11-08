@@ -205,7 +205,13 @@ pub fn has_choose_a_background(card: &Card) -> bool {
 
 /// Whether a card is a Background enchantment.
 pub fn is_background_card(card: &Card) -> bool {
-    let type_line = card.scryfall_data.type_line.as_deref().unwrap_or("");
+    is_background_type_line(card.scryfall_data.type_line.as_deref().unwrap_or(""))
+}
+
+/// Whether `type_line` is a Background enchantment's: legendary, an
+/// enchantment, and a Background.
+#[must_use]
+pub fn is_background_type_line(type_line: &str) -> bool {
     type_line.contains("Legendary")
         && type_line.contains("Enchantment")
         && type_line.contains("Background")

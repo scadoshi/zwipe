@@ -4,6 +4,8 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use crate::domain::auth::models::platform::ClientPlatform;
+
 /// Pre-auth funnel event kinds accepted by the anonymous ingest endpoint.
 ///
 /// A closed set shared by client and server: an unknown kind fails
@@ -43,6 +45,9 @@ pub struct HttpAnonymousEvent {
     pub session_id: Uuid,
     /// Which funnel step occurred.
     pub kind: AnonymousEventKind,
+    /// The platform that sent it. `None` from a client older than the field.
+    #[serde(default)]
+    pub platform: Option<ClientPlatform>,
 }
 
 /// Batched usage counters posted by the client.
@@ -193,7 +198,7 @@ pub struct HttpCrashReport {
     /// `CARGO_PKG_VERSION`, self-reported, untrusted debugging metadata.
     pub client_version: String,
     /// Platform of the crashed build.
-    pub platform: crate::domain::auth::models::platform::ClientPlatform,
+    pub platform: ClientPlatform,
     /// Panic payload + location. Truncated on both sides.
     pub message: String,
     /// When the panic hook ran (client clock, untrusted and indicative only).
@@ -632,6 +637,30 @@ mod tests {
         let report: ClientErrorReport = serde_json::from_str(json).unwrap();
         assert_eq!(report.component, "");
         assert_eq!(report.screen, "deck_edit");
+    }
+
+    #[test]
+    fn an_anonymous_event_round_trips_its_platform() {
+        use crate::domain::auth::models::platform::ClientPlatform;
+
+        let event = HttpAnonymousEvent {
+            session_id: Uuid::nil(),
+            kind: AnonymousEventKind::RegisterViewed,
+            platform: Some(ClientPlatform::Web),
+        };
+        let wire = serde_json::to_string(&event).unwrap();
+        assert!(wire.contains(r#""platform":"web""#), "{wire}");
+        let back: HttpAnonymousEvent = serde_json::from_str(&wire).unwrap();
+        assert_eq!(back.platform, Some(ClientPlatform::Web));
+        assert_eq!(back.kind, AnonymousEventKind::RegisterViewed);
+    }
+
+    #[test]
+    fn an_older_anonymous_event_without_a_platform_still_reads() {
+        let json = r#"{"session_id":"00000000-0000-0000-0000-000000000000","kind":"app_opened"}"#;
+        let event: HttpAnonymousEvent = serde_json::from_str(json).unwrap();
+        assert_eq!(event.platform, None);
+        assert_eq!(event.kind, AnonymousEventKind::AppOpened);
     }
 
     #[test]

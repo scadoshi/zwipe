@@ -8,9 +8,11 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user::email;
 use zwipe_core::http::contracts::auth::HttpChangeEmail;
 use zwipe_ui::account;
+use zwipe_ui::telemetry::vocabulary::{ProfileScreen, Screen};
 use zwipe_ui::text::sentence_case;
 
 use crate::inbound::chrome::authed::use_authed;
+use crate::inbound::telemetry;
 
 /// New email and password. The answer is the same whether or not the
 /// address is free; a success puts it under `Pending` until its link is
@@ -19,6 +21,7 @@ use crate::inbound::chrome::authed::use_authed;
 /// `Save changes`.
 #[component]
 pub(super) fn ChangeEmailSheet(mut open: Signal<bool>) -> Element {
+    telemetry::use_telemetry_screen(Screen::Profile(ProfileScreen::ChangeEmail));
     let mut session: Signal<Option<Session>> = use_context();
     let authed = use_authed();
     let toast = use_toast();

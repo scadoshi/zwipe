@@ -38,7 +38,7 @@ use crate::domain::deck::models::deck::delete_deck::DeleteDeckError;
 use crate::domain::deck::models::deck::get_deck::GetDeckError;
 use crate::domain::deck::models::deck::get_deck_profile::GetDeckProfileError;
 use crate::domain::deck::models::deck::get_deck_tokens::GetDeckTokensError;
-use crate::domain::deck::models::deck::import_archidekt::ArchidektCard;
+use crate::domain::deck::models::deck::import_archidekt::ArchidektDeck;
 use crate::domain::deck::models::deck::search_deck_cards::{DeckCardServe, SearchDeckCardsError};
 use crate::domain::deck::models::deck::share_deck::{
     GetSharedDeckError, ShareDeckError, SharedDeck,
@@ -480,16 +480,19 @@ pub trait DeckService: Clone + Send + Sync + 'static {
         request: &ImportDeckCards,
     ) -> impl Future<Output = Result<ImportDeckCardsResult, ImportDeckCardsError>> + Send;
 
-    /// Imports an Archidekt card list into an existing deck owned by `user_id`,
-    /// onto the given board, exactly like `import_deck_cards`, except cards
-    /// resolve by Scryfall printing id (with a name fallback) instead of by
-    /// name. With [`zwipe_core::domain::deck::ImportMode::Replace`], the board
-    /// is made to exactly match the list.
+    /// Imports an Archidekt deck's cards into an existing deck owned by
+    /// `user_id`, onto the given board, exactly like `import_deck_cards`,
+    /// except cards resolve by Scryfall printing id (with a name fallback)
+    /// instead of by name. With [`zwipe_core::domain::deck::ImportMode::Replace`],
+    /// the board is made to exactly match the list. Once the cards are in, the
+    /// deck's format and commander slots that are still empty take Archidekt's
+    /// (see [`ProfileFill::plan`](crate::domain::deck::models::deck::import_archidekt::ProfileFill::plan)),
+    /// and the result says what was set.
     fn import_archidekt_deck(
         &self,
         user_id: uuid::Uuid,
         deck_id: uuid::Uuid,
-        cards: &[ArchidektCard],
+        deck: &ArchidektDeck,
         board: zwipe_core::domain::deck::Board,
         email_verified: bool,
         mode: zwipe_core::domain::deck::ImportMode,

@@ -9,8 +9,11 @@
 //! [`ClientError::Decode`]) never reached the server at all.
 //!
 //! User-facing copy lives here too ([`ClientError::to_user_message`]), the
-//! client owns the client-to-user translation. Server-authored 4xx messages
-//! pass through verbatim: by contract they are user-safe copy. A 400 or 413
+//! client owns the client-to-user translation. A 4xx the user caused and can
+//! fix (a bad import link, a taken name, a full deck) is matched against the
+//! server's text in [`zwipe_core::http::messages`] and shown in plain words;
+//! any other server-authored 4xx passes through verbatim, since by contract
+//! it is user-safe copy. A 400 or 413
 //! comes from the framework rather than the server's `ApiError`, so its body
 //! is replaced with copy of the client's own.
 
@@ -18,6 +21,8 @@ use std::sync::Arc;
 
 use reqwest::StatusCode;
 use thiserror::Error;
+use zwipe_core::domain::deck::requests::import_deck_cards::{MAX_IMPORT_LINES, TooManyImportLines};
+use zwipe_core::http::messages;
 use zwipe_core::text::sentence_case;
 
 /// Errors surfaced by API client calls.
@@ -97,9 +102,40 @@ impl ClientError {
             ClientError::PayloadTooLarge(_) => {
                 "Request too large, try importing fewer cards".to_string()
             }
+            ClientError::NotFound(message)
+            | ClientError::Conflict(message)
+            | ClientError::UnprocessableEntity(message) => {
+                plain_message(message).unwrap_or_else(|| sentence_case(message))
+            }
             other => sentence_case(&other.to_string()),
         }
     }
+}
+
+/// Plain words for a server message about a mistake the user can fix, or
+/// `None` for any other message, which shows as the server wrote it.
+fn plain_message(server: &str) -> Option<String> {
+    let plain = match server {
+        messages::ARCHIDEKT_BAD_LINK => "That isn't an Archidekt deck link",
+        messages::ARCHIDEKT_NOT_FOUND => "That Archidekt deck is private or doesn't exist",
+        messages::ARCHIDEKT_TOO_LARGE => "That Archidekt deck is too big to import",
+        messages::CARD_LIMIT => "This deck is full (every board counts toward the limit)",
+        messages::UNVERIFIED_CARD_LIMIT => "Verify your email to add more cards to this deck",
+        messages::DECK_NAME_TAKEN | messages::CLONE_NAME_TAKEN => {
+            "You already have a deck with that name"
+        }
+        messages::USERNAME_TAKEN | messages::USERNAME_IN_USE => "That username is taken",
+        messages::EMAIL_IN_USE => "Another account already uses that email",
+        messages::CARD_ALREADY_IN_DECK => "That card is already in this deck",
+        messages::PASSWORD_TOO_LONG => "That password is too long",
+        _ if server == TooManyImportLines.to_string() => {
+            return Some(format!(
+                "Paste up to {MAX_IMPORT_LINES} card lines at a time"
+            ));
+        }
+        _ => return None,
+    };
+    Some(plain.to_owned())
 }
 
 impl From<reqwest::Error> for ClientError {
@@ -134,6 +170,89 @@ impl From<(StatusCode, String)> for ClientError {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_mistake_the_user_can_fix_reads_plainly() {
+        let cases = [
+            (
+                ClientError::UnprocessableEntity(messages::ARCHIDEKT_BAD_LINK.to_owned()),
+                "That isn't an Archidekt deck link",
+            ),
+            (
+                ClientError::NotFound(messages::ARCHIDEKT_NOT_FOUND.to_owned()),
+                "That Archidekt deck is private or doesn't exist",
+            ),
+            (
+                ClientError::UnprocessableEntity(messages::ARCHIDEKT_TOO_LARGE.to_owned()),
+                "That Archidekt deck is too big to import",
+            ),
+            (
+                ClientError::UnprocessableEntity(TooManyImportLines.to_string()),
+                "Paste up to 1000 card lines at a time",
+            ),
+            (
+                ClientError::UnprocessableEntity(messages::CARD_LIMIT.to_owned()),
+                "This deck is full (every board counts toward the limit)",
+            ),
+            (
+                ClientError::UnprocessableEntity(messages::UNVERIFIED_CARD_LIMIT.to_owned()),
+                "Verify your email to add more cards to this deck",
+            ),
+            (
+                ClientError::Conflict(messages::DECK_NAME_TAKEN.to_owned()),
+                "You already have a deck with that name",
+            ),
+            (
+                ClientError::Conflict(messages::CLONE_NAME_TAKEN.to_owned()),
+                "You already have a deck with that name",
+            ),
+            (
+                ClientError::Conflict(messages::USERNAME_TAKEN.to_owned()),
+                "That username is taken",
+            ),
+            (
+                ClientError::Conflict(messages::USERNAME_IN_USE.to_owned()),
+                "That username is taken",
+            ),
+            (
+                ClientError::Conflict(messages::EMAIL_IN_USE.to_owned()),
+                "Another account already uses that email",
+            ),
+            (
+                ClientError::Conflict(messages::CARD_ALREADY_IN_DECK.to_owned()),
+                "That card is already in this deck",
+            ),
+            (
+                ClientError::UnprocessableEntity(messages::PASSWORD_TOO_LONG.to_owned()),
+                "That password is too long",
+            ),
+        ];
+        for (error, plain) in cases {
+            assert_eq!(error.to_user_message(), plain, "{error:?}");
+        }
+    }
+
+    #[test]
+    fn other_server_messages_and_real_failures_stay_as_they_were() {
+        assert_eq!(
+            ClientError::NotFound("deck not found".to_owned()).to_user_message(),
+            "Deck not found"
+        );
+        assert_eq!(
+            ClientError::UnprocessableEntity("invalid board value".to_owned()).to_user_message(),
+            "Invalid board value"
+        );
+        assert_eq!(
+            ClientError::InternalServerError(messages::ARCHIDEKT_BAD_LINK.to_owned())
+                .to_user_message(),
+            "Something went wrong, please try again",
+            "only a 4xx is matched"
+        );
+        assert_eq!(
+            ClientError::Unauthorized("invalid credentials".to_owned()).to_user_message(),
+            "Invalid credentials"
+        );
+    }
 
     #[test]
     fn status_codes_map_to_vocabulary() {
@@ -197,9 +316,8 @@ mod tests {
     fn wire_messages_pass_through_in_sentence_case() {
         let error = ClientError::from((StatusCode::NOT_FOUND, "Deck Not Found".to_string()));
         assert_eq!(error.to_user_message(), "Deck Not Found");
-        let error =
-            ClientError::from((StatusCode::CONFLICT, "username already in use".to_string()));
-        assert_eq!(error.to_user_message(), "Username already in use");
+        let error = ClientError::from((StatusCode::CONFLICT, "deck limit reached".to_string()));
+        assert_eq!(error.to_user_message(), "Deck limit reached");
     }
 
     /// Internal detail, transport noise, and decode noise all collapse to

@@ -3,7 +3,9 @@
 //! The client sends the deck URL; the server extracts the id, fetches the
 //! deck from Archidekt's public API, resolves each printing by Scryfall id,
 //! and imports the cards into the caller's deck exactly like the plain-text
-//! importer (same boards, same add/replace modes, same result shape).
+//! importer (same boards, same add/replace modes, same result shape). The
+//! deck's empty format and commander slots then take Archidekt's, and the
+//! result names what was set.
 //! Keeping fetch + parse server-side means the (undocumented) Archidekt shape
 //! can be patched without an app release.
 
@@ -15,6 +17,7 @@ use zwipe_core::domain::deck::requests::get_deck_profile::GetDeckProfile;
 use zwipe_core::domain::deck::requests::import_deck_cards::ImportDeckCardsResult;
 use zwipe_core::domain::user::requests::get_user::GetUser;
 use zwipe_core::http::contracts::deck::HttpImportArchidektDeck;
+use zwipe_core::http::messages;
 
 use crate::domain::deck::ports::DeckService;
 use crate::domain::user::ports::UserService;
@@ -26,17 +29,14 @@ use crate::outbound::archidekt::{ArchidektClient, ArchidektError};
 impl From<ArchidektError> for ApiError {
     fn from(value: ArchidektError) -> Self {
         match value {
-            ArchidektError::NotFound => Self::NotFound(
-                "deck not found on archidekt, make sure it's public and the url is correct"
-                    .to_string(),
-            ),
+            ArchidektError::NotFound => Self::NotFound(messages::ARCHIDEKT_NOT_FOUND.to_string()),
             ArchidektError::Upstream(code) => {
                 tracing::warn!(status = code, "archidekt upstream error");
                 Self::InternalServerError("failed to fetch deck from archidekt".to_string())
             }
             ArchidektError::Network(e) => e.to_500(),
             ArchidektError::TooLarge => {
-                Self::UnprocessableEntity("deck from archidekt is too large to import".to_string())
+                Self::UnprocessableEntity(messages::ARCHIDEKT_TOO_LARGE.to_string())
             }
         }
     }
@@ -56,11 +56,8 @@ pub async fn import_archidekt_deck(
     State(state): State<AppState>,
     Json(body): Json<HttpImportArchidektDeck>,
 ) -> Result<(StatusCode, Json<ImportDeckCardsResult>), ApiError> {
-    let archidekt_id = ArchidektClient::extract_deck_id(&body.url).ok_or_else(|| {
-        ApiError::UnprocessableEntity(
-            "could not parse an archidekt deck id from the url".to_string(),
-        )
-    })?;
+    let archidekt_id = ArchidektClient::extract_deck_id(&body.url)
+        .ok_or_else(|| ApiError::UnprocessableEntity(messages::ARCHIDEKT_BAD_LINK.to_string()))?;
     let board = body
         .board
         .as_deref()
@@ -82,13 +79,20 @@ pub async fn import_archidekt_deck(
         .await?;
     let email_verified = db_user.email_verified_at.is_some();
 
-    let cards = ArchidektClient::new(&state.web_base_url)
+    let archidekt_deck = ArchidektClient::new(&state.web_base_url)
         .fetch_deck(archidekt_id)
         .await?;
 
     let result = state
         .deck_service
-        .import_archidekt_deck(user.id, deck_id, &cards, board, email_verified, body.mode)
+        .import_archidekt_deck(
+            user.id,
+            deck_id,
+            &archidekt_deck,
+            board,
+            email_verified,
+            body.mode,
+        )
         .await
         .map_err(ApiError::from)?;
 

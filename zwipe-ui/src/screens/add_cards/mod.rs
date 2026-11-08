@@ -14,7 +14,7 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::card_filter::query::CardQuery;
 use zwipe_core::domain::card::search_card::cards::Cards;
-use zwipe_core::domain::deck::{Board, Deck, DeckCard, DeckEntry, Quantity};
+use zwipe_core::domain::deck::{Board, Deck, DeckCard, DeckEntry, Format, Quantity};
 use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_core::http::contracts::deck::HttpDeckCardSearch;
 use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard};
@@ -780,6 +780,11 @@ impl State {
             query,
         });
         effects
+    }
+
+    /// The deck's format, once the deck is in.
+    fn deck_format(&self) -> Option<Format> {
+        self.deck.as_ref().and_then(|deck| deck.format)
     }
 
     /// Takes in a page: a search's starts the stack, a load-more's tops it up.
@@ -1573,6 +1578,17 @@ impl State {
     #[must_use]
     pub fn validates_apply(&self) -> bool {
         self.source == Source::Search
+    }
+
+    /// The deck's format for the filter sheet on Search, where "Is legal in"
+    /// holding only it is the default; `None` on Maybeboard, which filters
+    /// the deck's own cards.
+    #[must_use]
+    pub fn sheet_deck_format(&self) -> Option<Format> {
+        match self.source {
+            Source::Search => self.deck_format(),
+            Source::Maybeboard => None,
+        }
     }
 
     /// The note the ghost card carries: [`NO_CARDS_MATCH`] when the filter left nothing to deal, a

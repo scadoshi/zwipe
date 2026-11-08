@@ -1,0 +1,18 @@
+{
+  "id": 1001,
+  "name": "Atraxa counters",
+  "deckFormat": 3,
+  "categories": [
+    {"id": 1, "name": "Commander", "isPremier": true, "includedInDeck": true, "includedInPrice": true},
+    {"id": 2, "name": "Ramp", "isPremier": false, "includedInDeck": true, "includedInPrice": true},
+    {"id": 3, "name": "Maybeboard", "isPremier": false, "includedInDeck": false, "includedInPrice": false}
+  ],
+  "cards": [
+    {"quantity": 1, "categories": ["Commander"],
+     "card": {"uid": "d0d33d52-3d28-4635-b985-51e126289259", "oracleCard": {"name": "Atraxa, Praetors' Voice"}}},
+    {"quantity": 1, "categories": ["Ramp"],
+     "card": {"uid": "4cbc6901-6a4a-4d0a-83ea-7eefa3b35021", "oracleCard": {"name": "Sol Ring"}}},
+    {"quantity": 1, "categories": ["Maybeboard"],
+     "card": {"uid": "1ff4f1b5-b5d6-4d3c-bc9d-2f2c3fa1b5c1", "oracleCard": {"name": "Doubling Season"}}}
+  ]
+}

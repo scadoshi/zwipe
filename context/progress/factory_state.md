@@ -1,6 +1,6 @@
 # Factory state
 
-The handoff for the composer session: where the factory stands, so a fresh or compacted composer can pick it up. The rules are in [`../development/factory.md`](../development/factory.md). Every nit, with its scope, is in [`web_nits.md`](web_nits.md). Update this file whenever the queue changes shape.
+The handoff for the composer session: where the factory stands, so a fresh or compacted composer can pick it up. The rules are in [`../development/factory.md`](../development/factory.md). Open issues are in [`../issues/`](../issues/README.md); nits 1 to 277 are archived in [`web_nits.md`](web_nits.md). Update this file whenever the queue changes shape.
 
 ## As of 2026-11-06, late night
 

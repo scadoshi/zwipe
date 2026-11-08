@@ -1,9 +1,9 @@
 //! The authed-call facade: the one way a screen makes an authed request.
 //!
-//! It refreshes the session, runs the call, and on a failure logs it and
+//! It refreshes the session, runs the call, and on a failure logs it,
+//! reports it to telemetry under the screen and component it came from, and
 //! raises the app's error toast, so every screen handles a failed call the
-//! same way. The app also reports each failure to its telemetry; the web
-//! build has none, so the log line is the whole report.
+//! same way.
 
 use std::fmt;
 
@@ -12,8 +12,11 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, Toasts, use_toast};
 use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::session::Session;
+use zwipe_ui::telemetry::SharedUsageBuffer;
+use zwipe_ui::telemetry::vocabulary::component;
 
 use crate::inbound::session::ensure_fresh::ensure_fresh;
+use crate::inbound::telemetry;
 
 /// The contexts a call needs, in one `Copy` handle that closures and spawned
 /// tasks capture freely.
@@ -22,6 +25,9 @@ pub struct Authed {
     session: Signal<Option<Session>>,
     client: Signal<ZwipeClient>,
     toast: Toasts,
+    usage: Signal<SharedUsageBuffer>,
+    screen: &'static str,
+    component: &'static str,
 }
 
 impl fmt::Debug for Authed {
@@ -29,16 +35,22 @@ impl fmt::Debug for Authed {
         f.debug_struct("Authed")
             .field("session", &self.session)
             .field("client", &self.client)
+            .field("screen", &self.screen)
+            .field("component", &self.component)
             .finish_non_exhaustive()
     }
 }
 
-/// Reads the root contexts once. Call it beside a screen's other hooks.
+/// Reads the root contexts once, and the screen its failures are reported
+/// under. Call it beside a screen's other hooks.
 pub fn use_authed() -> Authed {
     Authed {
         session: use_context(),
         client: use_context(),
         toast: use_toast(),
+        usage: telemetry::use_usage(),
+        screen: telemetry::screen_name(),
+        component: component::NONE,
     }
 }
 
@@ -138,8 +150,18 @@ impl Authed {
             .inspect_err(|e| self.report(op, e, report))
     }
 
+    /// This handle with its failures reported under `component`.
+    #[must_use]
+    pub fn in_component(mut self, component: &'static str) -> Self {
+        self.component = component;
+        self
+    }
+
     fn report(&self, op: &'static str, e: &ClientError, report: Report) {
         tracing::warn!("{op} failed: {e}");
+        self.usage
+            .peek()
+            .report_error(self.screen, self.component, op, &telemetry::failure(e));
         if report == Report::Toast {
             self.toast.error(
                 e.to_user_message(),

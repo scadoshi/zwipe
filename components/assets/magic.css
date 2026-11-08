@@ -1464,7 +1464,30 @@ i.ms.ms-cost.ms-gp {
     display: flex;
     align-items: center;
     gap: 0.6rem;
-    margin-bottom: 0.75rem;
+}
+
+/* The caret leads the version, sized to the heading. */
+.changelog-version-row .collapse-caret {
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-left: -0.25rem;
+}
+
+/* The space under a card's version row is the notes' own, so a shut card
+   closes up to its header. */
+.changelog-card .changelog-bullets {
+    padding-top: 0.75rem;
+}
+
+/* Collapse all, at the right end over the releases. */
+.changelog-collapse-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: var(--panel-gap);
+}
+
+.changelog-collapse-row .collapse-all {
+    font-family: inherit;
 }
 
 .changelog-version {
@@ -1528,6 +1551,11 @@ i.ms.ms-cost.ms-gp {
     flex-direction: column;
     gap: var(--panel-gap);
     margin-top: var(--panel-gap);
+}
+
+.changelog-collapse-row + .changelog-panels,
+.changelog-collapse-row + .changelog-list {
+    margin-top: 0.75rem;
 }
 
 .changelog-panel {
@@ -2033,6 +2061,7 @@ html.keyboard-up .web-dock-pair {
     transform: translateY(-50%);
     display: inline-flex;
     align-items: center;
+    gap: 0.4rem;
 }
 
 /* A color bar ghost's count (a 0.65rem bar) holds the count's text line,
@@ -2127,6 +2156,24 @@ html.keyboard-up .web-dock-pair {
     min-height: 0;
     padding-bottom: 0;
     text-align: left;
+}
+
+/* With the + beside All decks, the corner holds both buttons. */
+.home-decks > .home-decks-header-create {
+    --home-panel-action-width: 8.3rem;
+}
+
+/* A panel too narrow to center the title between the two reserves, a phone's,
+   starts the title at the left edge instead, so it never cuts off. */
+.home-decks {
+    container-type: inline-size;
+}
+
+@container (max-width: 26rem) {
+    .home-flavor.home-decks > .settings-list-header.home-decks-header-create {
+        justify-content: flex-start;
+        padding-left: 1rem;
+    }
 }
 
 .home-decks > .settings-list-header {
@@ -2419,15 +2466,19 @@ html.keyboard-up .web-dock-pair {
     box-shadow: var(--shadow-sm);
 }
 
+/* A fold's title in the panels' own title type, the same as a card list's
+   (.card-group-header) and a settings list's: size, weight, letter spacing
+   and inset. */
 .deck-fold-head {
     display: flex;
     align-items: center;
     gap: 0.4rem;
-    padding: 0.6rem 1rem;
+    padding: 0.75rem 1rem;
     border-bottom: 1px solid var(--border-secondary);
     color: var(--ink-accent-tertiary, var(--accent-tertiary));
-    font-size: 0.85rem;
-    font-weight: 600;
+    font-size: 1rem;
+    font-weight: 400;
+    letter-spacing: 0.1em;
     cursor: pointer;
     user-select: none;
     transition: border-color 0.25s ease;

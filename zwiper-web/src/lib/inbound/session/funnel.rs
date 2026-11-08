@@ -3,10 +3,8 @@
 //!
 //! Each page load gets one random id, held in memory only, so the server can
 //! count distinct attempts without knowing a person or a browser. A post is
-//! fire and forget: a failure is logged at debug and dropped.
-//!
-//! The web sends none of them yet. zerver records no platform with an event,
-//! so web visits would land in the app's funnel numbers.
+//! fire and forget: a failure is logged at debug and dropped. The client
+//! stamps each with the `web` platform, so they stay apart from the app's.
 
 use std::sync::LazyLock;
 
@@ -15,23 +13,15 @@ use uuid::Uuid;
 use zwipe_client::ZwipeClient;
 use zwipe_core::http::contracts::metrics::{AnonymousEventKind, HttpAnonymousEvent};
 
-/// Whether [`record`] posts anything. Off until zerver tags each funnel
-/// event with the platform that sent it; the callers stay wired so turning
-/// it on is this one line.
-const SEND_FUNNEL_EVENTS: bool = false;
-
 /// This page load's funnel id. A reload is a new attempt.
 static FUNNEL_ID: LazyLock<Uuid> = LazyLock::new(Uuid::new_v4);
 
-/// Posts one funnel event in the background, or does nothing while
-/// `SEND_FUNNEL_EVENTS` is off. Call it from a component.
+/// Posts one funnel event in the background. Call it from a component.
 pub fn record(client: Signal<ZwipeClient>, kind: AnonymousEventKind) {
-    if !SEND_FUNNEL_EVENTS {
-        return;
-    }
     let event = HttpAnonymousEvent {
         session_id: *FUNNEL_ID,
         kind,
+        platform: None,
     };
     let http = client.peek().clone();
     spawn(async move {

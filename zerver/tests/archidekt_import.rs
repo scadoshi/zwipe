@@ -34,10 +34,22 @@ async fn fetches_and_parses_the_real_satya_deck() {
     assert_eq!(id, DECK_ID);
 
     // contact_url feeds a courteous User-Agent; any real URL is fine.
-    let cards = ArchidektClient::new("https://zwipe.net")
+    let deck = ArchidektClient::new("https://zwipe.net")
         .fetch_deck(id)
         .await
         .expect("public deck should fetch + parse");
+    let cards = &deck.cards;
+    let commanders: Vec<&str> = deck.commanders.iter().map(|c| c.name.as_str()).collect();
+    eprintln!("format {:?}, commanders {commanders:?}", deck.format);
+    assert_eq!(
+        deck.format,
+        Some(zwipe_core::domain::deck::Format::Commander),
+        "a Commander deck on Archidekt reads as Commander"
+    );
+    assert!(
+        commanders.iter().any(|name| name.starts_with("Satya")),
+        "the premier category holds the commander, got {commanders:?}"
+    );
 
     eprintln!(
         "fetched {} distinct entries from Archidekt deck {DECK_ID}",
