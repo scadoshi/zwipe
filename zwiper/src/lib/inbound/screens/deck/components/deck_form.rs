@@ -347,7 +347,10 @@ pub(crate) fn DeckForm(open: Open) -> Element {
 
     // Reactive Zwipe-select modes: derived from the current format / commander.
     let commander_mode = use_memo(move || model.read().values().format.map(SwipeMode::Commander));
-    let partner_mode = use_memo(|| Some(SwipeMode::Partner));
+    let partner_mode = use_memo(move || {
+        let commander = model.read().values().commander.clone().map(Box::new);
+        Some(SwipeMode::Partner(commander))
+    });
     let background_mode = use_memo(|| Some(SwipeMode::Background));
     let spell_mode = use_memo(move || {
         model

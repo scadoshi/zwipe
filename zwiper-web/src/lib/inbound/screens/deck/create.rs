@@ -4,9 +4,11 @@
 
 use components::icons::{CHECK, DockIcon};
 use dioxus::prelude::*;
+use dioxus_primitives::toast::use_toast;
 use zwipe_core::domain::deck::Format;
 use zwipe_ui::screens::deck_form;
 
+use super::form::command_zone::autofill_named_partner;
 use super::form::fields::DeckFields;
 use super::form::overlays::DeckFormOverlays;
 use super::form::{DECK_LEAVE, use_deck_form};
@@ -29,14 +31,17 @@ pub fn CreateDeck() -> Element {
     let mut saving = use_signal(|| false);
 
     // The handed-over commander, taken once. The format is set directly so
-    // the picker's cascade cannot clear the commander.
+    // the picker's cascade cannot clear the commander; a "Partner with"
+    // commander still has its partner filled in.
     let seed: CreateDeckSeed = use_context();
+    let toast = use_toast();
     use_hook(move || {
         let mut slot = seed.0;
         let taken = slot.write().take();
         if let Some(card) = taken {
             let mut format = form.format;
             format.set(Some(Format::Commander));
+            autofill_named_partner(form, &card, authed, toast);
             form.commander.pick(card);
         }
     });

@@ -131,6 +131,14 @@ pub fn CommandZoneField(form: DeckForm, slot: Slot, label: String) -> Element {
             }
             searching.set(false);
             if let Some(cards) = reply {
+                // With its Filter on, Partner lists only the cards the
+                // commander can pair with.
+                let cards = match commander.as_ref() {
+                    Some(commander) if slot == Slot::Partner && *filter_on.peek() => {
+                        form::legal_partners(commander, cards)
+                    }
+                    _ => cards,
+                };
                 results.set(cards);
                 dropdown.set(true);
             } else {

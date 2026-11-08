@@ -171,6 +171,14 @@ fn page_query(
     form::swipe_query(filter, slot, format, commander, offset).ok()
 }
 
+/// `cards` without the ones the commander cannot pair with, on the partner pile with a commander chosen.
+fn partners_only(mode: SwipeMode, commander: Option<&Card>, cards: Vec<Card>) -> Vec<Card> {
+    match (mode, commander) {
+        (SwipeMode::Partner, Some(commander)) => form::legal_partners(commander, cards),
+        _ => cards,
+    }
+}
+
 /// Whether a card is one of the host's exclusions.
 fn excluded(card: &Card, ids: &HashSet<Uuid>) -> bool {
     card.scryfall_data
@@ -305,6 +313,7 @@ pub fn SwipeSelect(
                     .into_iter()
                     .filter(|c| !seen.contains(&c.scryfall_data.id) && !excluded(c, &skip))
                     .collect();
+                let page = partners_only(mode, commander.as_ref(), page);
                 let Some(next) = at.checked_add(PAGE_SIZE) else {
                     exhausted.set(true);
                     stack.write().append(page);
@@ -356,6 +365,7 @@ pub fn SwipeSelect(
             return;
         };
         loading.set(true);
+        let commander_for_page = commander_for_deal.clone();
         spawn(async move {
             let reply = authed
                 .run_quiet("swipe_select_search", |c, s| async move {
@@ -372,6 +382,7 @@ pub fn SwipeSelect(
             let raw_empty = found.is_empty();
             let skip = excluded_now();
             let page: Vec<Card> = found.into_iter().filter(|c| !excluded(c, &skip)).collect();
+            let page = partners_only(mode, commander_for_page.as_ref(), page);
             exhausted.set(raw_empty);
             offset.set(PAGE_SIZE);
             let need_more = !raw_empty && page.is_empty();
