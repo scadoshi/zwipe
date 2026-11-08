@@ -256,3 +256,53 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5
+
+  # The same build on Cloudflare Pages (project zwipe-site), where the share
+  # page's Pages Function serves each deck's own link-preview tags. It runs
+  # beside the GitHub Pages deploy until zwipe.net's DNS moves to the Pages
+  # project; until then it serves at zwipe-site.pages.dev. It needs the repo
+  # secrets CLOUDFLARE_API_TOKEN (Account > Cloudflare Pages > Edit) and
+  # CLOUDFLARE_ACCOUNT_ID, the same ones deploy-web.yml uses.
+  deploy-cloudflare:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          sparse-checkout: zite/functions
+
+      - name: Download the Pages artifact
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: github-pages
+          path: pages-artifact
+
+      - name: Unpack the site
+        # The GitHub Pages artifact is one tarball. Cloudflare serves index.html
+        # with a 200 for a path it has no file for only while there is no
+        # 404.html, and it takes its domain from the project, not a CNAME file.
+        run: |
+          mkdir site
+          tar -xf pages-artifact/artifact.tar -C site
+          rm -f site/404.html site/CNAME
+
+      - name: Deploy to Cloudflare Pages
+        # Run from zite/ so wrangler bundles zite/functions with the upload.
+        # The project is created on the first run; --branch main publishes to
+        # production.
+        working-directory: zite
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          WRANGLER="npx --yes wrangler@4.151.2"
+          if ! $WRANGLER pages project list | grep -q "zwipe-site"; then
+            $WRANGLER pages project create zwipe-site --production-branch main
+          fi
+          $WRANGLER pages deploy ../site \
+            --project-name zwipe-site \
+            --branch main \
+            --commit-hash "${GITHUB_SHA}" \
+            --commit-dirty=true
