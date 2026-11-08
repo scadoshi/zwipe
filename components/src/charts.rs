@@ -64,6 +64,10 @@ pub enum LabelCase {
 /// Width of a horizontal chart's label column unless the host sets one.
 const DEFAULT_LABEL_WIDTH: &str = "5ch";
 
+/// Width of the Draw odds label column: the longest one-word role name,
+/// Counterspell, on one line; a two-word role wraps.
+const DRAW_ODDS_LABEL_WIDTH: &str = "12ch";
+
 /// The widest a chip label column grows before its chips wrap, so the bar
 /// keeps room on a phone.
 const CHIP_LABEL_MAX_WIDTH: &str = "50%";
@@ -626,7 +630,7 @@ fn OddsRow(label: &'static str, pct: u32) -> Element {
         div {
             key: "{label}-{pct}",
             style: "display:flex;align-items:center;gap:0.5rem;padding:0.175rem 0;",
-            span { style: "width:5ch;font-size:0.7rem;color:var(--text-primary);opacity:0.85;text-align:right;flex-shrink:0;text-transform:uppercase;",
+            span { style: "width:{DRAW_ODDS_LABEL_WIDTH};font-size:0.7rem;color:var(--text-primary);opacity:0.85;text-align:right;flex-shrink:0;text-transform:uppercase;",
                 "{label}"
             }
             div { class: "chart-track",
