@@ -365,3 +365,5 @@ Skipped with Scotty: S7 (no Image in the swipe screens' details, intended), S23 
 235. **Email errors are worded two ways.** [Surfer p15-9, approved] One message everywhere; an empty field says it's required rather than "Missing @ symbol".
 236. **A signed-out deep link loses its target.** [Surfer p15-10, approved] Redirect to login keeps the target (`?next=` or session storage, same-origin paths only) and returns there after sign-in.
 237. **Portfolio stats don't say what they count.** [Surfer p15-12, approved] "14 repos · 88 stars" reads as the whole account; say they're showcased repos, in a few words.
+238. **Deck rows and group headers can't be reached by keyboard.** [Surfer p16, 2026-11-07, approved] Rows and group headers take Tab focus and open or toggle on Enter and Space, with a visible focus ring.
+239. **Collapsed groups still take focus.** [Surfer p16, approved] A collapsed group's rows are inert: Tab and screen readers skip them.
