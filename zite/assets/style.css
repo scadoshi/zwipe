@@ -964,6 +964,12 @@ code {
    real Panel now: the title comes from panel-title, the profile links ride the
    panel's action row, and the tag row sits in the body.) */
 
+/* An in-page panel's h2 title takes the h3 headings' spacing, not the
+   h2's, so it reads as the smaller heading its size says it is. */
+h2.panel-title {
+    letter-spacing: 0.05em;
+}
+
 /* A chip riding after a panel title (the privacy policy's Last updated,
    the testimonials' rating) sits a gap off the title text, as the
    portfolio's title tags do. */
