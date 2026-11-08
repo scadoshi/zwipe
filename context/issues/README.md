@@ -56,6 +56,7 @@ Who checked, on which live build, what they saw.
 | [288](288-stack-refreshed-on-failed-refresh.md) | Add says Stack refreshed when the refresh failed | approved (easy) | laptop | - |
 | [289](289-top-color-sr-text.md) | Top color pip reads Mono-red to screen readers | approved (easy) | laptop | - |
 | [290](290-format-sheet-keeps-draft.md) | Format sheet keeps its search after Discard; Keep is unclear | reproduced (part 2 for Scotty) | laptop | - |
+| [291](291-logout-revokes-all-sessions.md) | Logging out on one device logs out every device | reported | - | - |
 
 ## Waiting for live verification
 
