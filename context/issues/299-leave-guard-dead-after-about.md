@@ -1,6 +1,6 @@
 # 299. Create deck's leave guard stops working after visiting About
 
-State: reported | Owner: - | PR: - | Build seen: 1d7053e88
+State: reproduced | Owner: - | PR: - | Build seen: 1d7053e88
 
 ## Report
 Surfer, live web 1d7053e88, wide, 2026-11-08. Once About has been opened in the session (full load or in-app), Create deck with unsaved edits can't be left. Header Back, the Decks nav link, the logo and browser Back all do nothing, no "Leave without saving?" dialog shows, and the console has no errors. This is what Scotty saw in 281, which was closed as can't-reproduce because my earlier runs never went through About.
