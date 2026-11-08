@@ -5,7 +5,6 @@ use components::{
     DockPlace, TextInput, icons,
 };
 use dioxus::prelude::*;
-use zwipe_core::domain::auth::password;
 use zwipe_ui::screens::account::{Action, CANCEL, Dialog, FORGOT_PASSWORD, Field, Sheet};
 use zwipe_ui::text::sentence_case;
 
@@ -64,7 +63,6 @@ pub fn ChangePasswordSheet(open: Signal<bool>) -> Element {
                     id: "new_password",
                     name: "new-password",
                     autocomplete: "new-password",
-                    maxlength: password::MAX_LENGTH,
                     label: Field::NewPassword.label(),
                     placeholder: Field::NewPassword.placeholder(),
                     input_type: "password",
@@ -77,7 +75,6 @@ pub fn ChangePasswordSheet(open: Signal<bool>) -> Element {
                     id: "confirm_password",
                     name: "confirm-password",
                     autocomplete: "new-password",
-                    maxlength: password::MAX_LENGTH,
                     label: Field::ConfirmPassword.label(),
                     placeholder: Field::ConfirmPassword.placeholder(),
                     input_type: "password",

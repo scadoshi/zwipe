@@ -6,7 +6,6 @@ use components::{Button, ButtonVariant, TOAST_NORMAL, TextInput, ToastOptions, T
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use zwipe_client::ZwipeClient;
-use zwipe_core::domain::user::email;
 use zwipe_core::http::contracts::auth::HttpRequestPasswordReset;
 use zwipe_ui::screens::forgot_password::{
     self, Action, BACK, CREATE_ACCOUNT, Destination, EMAIL, Effect, SEND, State,
@@ -114,7 +113,6 @@ pub fn ForgotPassword() -> Element {
                         TextInput {
                             value: driver.email,
                             id: "email",
-                            maxlength: email::MAX_LENGTH,
                             label: EMAIL,
                             placeholder: EMAIL,
                             input_type: "email",

@@ -87,7 +87,7 @@ fn typing_in_the_confirmation_judges_the_password() {
     type_in(&mut state, Field::ConfirmPassword, "x");
     assert_eq!(
         state.error(Field::Password).as_deref(),
-        Some("Must be at least 8 characters long")
+        Some("Passwords do not match")
     );
     assert_eq!(
         state.error(Field::ConfirmPassword),
@@ -125,7 +125,7 @@ fn a_submit_with_a_failing_field_judges_every_field_and_sends_nothing() {
         [
             Some("Must be at least 3 characters long".to_owned()),
             Some("Email is required".to_owned()),
-            Some("Must be at least 8 characters long".to_owned()),
+            Some("Password is required".to_owned()),
             None,
         ]
     );

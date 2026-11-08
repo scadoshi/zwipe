@@ -1,6 +1,6 @@
 //! Forgot password: an email field with Send reset link under it, then Back to log in and Create account. The reset itself happens on the website, from the emailed link.
 //!
-//! The client keeps a [`State`] while the screen is up and hands every keystroke in as [`Action::EditEmail`]. The check is [`account::reset_email_error`]: the address as typed, untrimmed. Neither button waits on the request, so a second Send reset link sends again; every reply lands, and the first success hands the email to Login with [`Effect::Prefill`], toasts [`LINK_SENT`] and goes there in place of this screen. The text input and its focus stay in the client.
+//! The client keeps a [`State`] while the screen is up and hands every keystroke in as [`Action::EditEmail`]. The check is [`account::reset_email_error`], presence only: the address is sent as typed and the server judges it. Neither button waits on the request, so a second Send reset link sends again; every reply lands, and the first success hands the email to Login with [`Effect::Prefill`], toasts [`LINK_SENT`] and goes there in place of this screen. The text input and its focus stay in the client.
 
 #[cfg(test)]
 mod tests;
