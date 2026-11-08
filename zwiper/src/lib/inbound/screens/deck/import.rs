@@ -7,7 +7,7 @@
 //! effects.
 
 use components::icons::{self, DockIcon};
-use components::{Chip, Toasts, use_toast};
+use components::{AlertDialog, Chip, DialogAction, Toasts, use_toast};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use uuid::Uuid;
@@ -39,6 +39,9 @@ struct Driver {
     session: Signal<Option<Session>>,
     client: Signal<ZwipeClient>,
     hint_open: Signal<bool>,
+    /// The board a replace asks about, while its confirm dialog is up.
+    confirm: Signal<Option<Board>>,
+    confirm_open: Signal<bool>,
 }
 
 impl Driver {
@@ -61,6 +64,8 @@ impl Driver {
             session,
             client,
             hint_open,
+            mut confirm,
+            mut confirm_open,
             ..
         } = self;
         match effect {
@@ -112,6 +117,10 @@ impl Driver {
                     ));
                 });
             }
+            Effect::ConfirmReplace(board) => {
+                confirm.set(Some(board));
+                confirm_open.set(true);
+            }
             Effect::ClearUndo(deck_id) => undo_store.clear(deck_id),
             Effect::Toast(raised) => ui_toast::raise(toast, raised),
             Effect::Navigate(destination) => {
@@ -146,6 +155,8 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
         session: use_context(),
         client: use_context(),
         hint_open: use_signal(|| false),
+        confirm: use_signal(|| None),
+        confirm_open: use_signal(|| false),
     };
     // Import hint: auto-opens on first visit; the header "?" reopens it.
     let import_hint = driver.hint_open;
@@ -176,6 +187,22 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                 ScreenHeader { title: deck_import::TITLE, hint: import_hint, back: move |()| driver.dispatch(Action::Back) }
 
                 OneTimeHintDialog { open: import_hint, hint: OneTimeHint::Import }
+
+                if let Some(asked) = (driver.confirm)() {
+                    AlertDialog {
+                        open: driver.confirm_open,
+                        title: deck_import::replace_title(asked),
+                        actions: vec![
+                            DialogAction::Dismiss(deck_import::CANCEL.into()),
+                            DialogAction::Confirm {
+                                label: deck_import::REPLACE.into(),
+                                danger: true,
+                                on_confirm: Callback::new(move |()| driver.dispatch(Action::ConfirmReplace)),
+                            },
+                        ],
+                        {deck_import::replace_body(asked)}
+                    }
+                }
 
                 div { class: "screen-content content-enter",
                     // Console stays a fixed flex child on the grid; the

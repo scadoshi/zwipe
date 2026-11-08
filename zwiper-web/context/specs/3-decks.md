@@ -374,7 +374,7 @@ Reached from the deck view's More sheet ("Import cards") and from the below-mini
    - Text source: label "Paste decklist", multi-line textarea (min ~12 rows), placeholder three lines "1 Krenko, Mob Boss" / "1 Urza, Lord High Artificer" / "1 Sol Ring".
    - Archidekt source: label "Paste an Archidekt deck URL", single-line URL input, placeholder "https://archidekt.com/decks/...".
    - Results (after an import): label "Imported" then one bubble per card: name and "x{quantity}" (dimmed). Label "Unresolved" then one error-styled bubble per card: name and reason (dimmed).
-4. ActionBar: "Back" (→ `Router::ViewDeck { deck_id }`) and the submit button. Submit label: "Importing..." while loading, else "Replace" in Replace mode, else "Import". Disabled while loading or when the active input (text or URL) is blank after trim.
+4. ActionBar: "Back" (→ `Router::ViewDeck { deck_id }`) and the submit button. Submit label: "Importing..." while loading, else "Replace" in Replace mode, else "Import". Disabled while loading or when the active input (text or URL) is blank after trim. In Replace mode the submit first opens a confirm dialog (`deck_import::replace_title` / `replace_body` for the board, e.g. "Replace the mainboard?" / "Every card on the mainboard comes off and the imported cards go in their place. You can't undo this."), with "Cancel" and a danger "Replace" that sends the import.
 
 Text and URL keep their own values when switching From.
 
