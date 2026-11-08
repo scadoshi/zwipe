@@ -503,6 +503,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     let share_url = state.share_url();
     let share_body = state.share_body();
     let clone_name = state.clone_name();
+    let delete_body = state.delete_body();
     drop(state);
 
     let mana_curve_bars: Option<[(usize, u32); 7]> =
@@ -778,7 +779,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                         on_confirm: attempt_delete,
                     },
                 ],
-                {deck_view::DELETE_BODY}
+                {delete_body}
             }
 
             MoreButtons {

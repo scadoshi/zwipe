@@ -40,13 +40,15 @@ pub fn use_deck_dialogs() -> DeckDialogs {
 }
 
 /// The dialogs for `deck_id`. `share_token` is the deck's live link, which
-/// Share and Stop sharing update in place.
+/// Share and Stop sharing update in place. `delete_body` is the Delete
+/// dialog's line, naming the deck.
 #[component]
 pub fn DeckDialogsHost(
     deck_id: Uuid,
     dialogs: DeckDialogs,
     mut share_token: Signal<Option<Uuid>>,
     clone_name: String,
+    delete_body: String,
 ) -> Element {
     let navigator = use_navigator();
     let authed = use_authed();
@@ -198,7 +200,7 @@ pub fn DeckDialogsHost(
                     on_confirm: delete,
                 },
             ],
-            "Are you sure you want to delete this deck?"
+            "{delete_body}"
         }
         CloneDeckDialog { source_deck_id: deck_id, default_name: clone_name, open: clone_open }
     }
