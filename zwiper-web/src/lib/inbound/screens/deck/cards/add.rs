@@ -939,6 +939,10 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             AddSource::Search => ResetRule::AddSearch(ctx.clone()),
             AddSource::Maybeboard => ResetRule::AddMaybeboard,
         },
+        deck_format: match at {
+            AddSource::Search => ctx.format,
+            AddSource::Maybeboard => None,
+        },
         ..SheetConfig::default()
     };
     let panel_key = format!("{at:?}-{}-{}", deck.read().is_some(), ctx.lands_at_target);

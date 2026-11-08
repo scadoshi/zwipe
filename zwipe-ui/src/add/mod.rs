@@ -188,6 +188,52 @@ mod tests {
     use super::*;
     use crate::test_support::{card, deck, deck_profile};
 
+    fn commander_context() -> AddContext {
+        AddContext {
+            format: Some(Format::Commander),
+            ..AddContext::default()
+        }
+    }
+
+    /// A card legal in Pauper and banned in Commander.
+    fn pauper_only_card() -> Card {
+        use zwipe_core::domain::card::scryfall_data::legalities::LegalityKind;
+        let mut c = card("Pauper Only");
+        c.scryfall_data.legalities.pauper = Some(LegalityKind::Legal);
+        c.scryfall_data.legalities.commander = Some(LegalityKind::Banned);
+        c
+    }
+
+    #[test]
+    fn another_format_picked_beside_the_deck_format_is_a_filter() {
+        let ctx = commander_context();
+        let mut b = CardQueryBuilder::default();
+        b.set_legalities_contains_any(["commander", "pauper"]);
+        assert!(ctx.shows_dot(&b), "Commander + Pauper is a filter");
+        assert!(b.has_search_intent(Some(Format::Commander)));
+        let mut own = CardQueryBuilder::default();
+        own.set_legalities_contains_any(["commander"]);
+        assert!(!ctx.shows_dot(&own), "the deck's own format is the default");
+    }
+
+    #[test]
+    fn an_any_pick_widens_the_deck_format() {
+        let mut own = CardQueryBuilder::default();
+        own.set_legalities_contains_any(["commander"]);
+        let query = normalized(&own).build().unwrap();
+        assert!(
+            !query.criteria().matches(&pauper_only_card()),
+            "the deck's format alone keeps a Commander-banned card out"
+        );
+        let mut b = CardQueryBuilder::default();
+        b.set_legalities_contains_any(["commander", "pauper"]);
+        let query = normalized(&b).build().unwrap();
+        assert!(
+            query.criteria().matches(&pauper_only_card()),
+            "Commander + Pauper lets a Pauper card in; the deck only warns"
+        );
+    }
+
     fn commander_deck() -> Deck {
         let mut commander = card("Commander");
         commander.scryfall_data.color_identity = vec![Color::Green, Color::Blue].into();
@@ -264,7 +310,7 @@ mod tests {
         assert!(!add.lands_at_target());
         let mut filter = CardQueryBuilder::default();
         add.seed(&mut filter, false);
-        assert!(!filter.has_search_intent());
+        assert!(!filter.has_search_intent(add.format));
         assert!(!add.context().serves(&filter));
     }
 

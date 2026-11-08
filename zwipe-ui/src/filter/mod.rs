@@ -36,10 +36,11 @@ pub enum FilterState {
 }
 
 impl FilterState {
-    /// `Set` when the filter has search intent.
+    /// `Set` when the filter has search intent. On a deck, `deck_format` is its
+    /// format: "Is legal in" holding only that format is no filter.
     #[must_use]
-    pub fn of(b: &CardQueryBuilder) -> Self {
-        if b.has_search_intent() {
+    pub fn of(b: &CardQueryBuilder, deck_format: Option<Format>) -> Self {
+        if b.has_search_intent(deck_format) {
             Self::Set
         } else {
             Self::Empty
@@ -100,14 +101,15 @@ impl AddContext {
     /// Whether Add's Filter key shows its dot: a user filter (a changed Config flag counts) or a sort, not counting deck legality, commander identity, synergy or the automatic land exclusion.
     #[must_use]
     pub fn shows_dot(&self, b: &CardQueryBuilder) -> bool {
-        !b.is_empty_ignoring_deck_context_and_auto_lands(self.lands_at_target) || b.sort().is_some()
+        !b.is_empty_ignoring_deck_context_and_auto_lands(self.format, self.lands_at_target)
+            || b.sort().is_some()
     }
 
     /// Whether Add serves cards for this filter: a commander deck with a commander always, else only with search intent, which a changed Config flag gives.
     #[must_use]
     pub fn serves(&self, b: &CardQueryBuilder) -> bool {
         let commander_format = self.format.is_some_and(|f| f.has_commander());
-        (commander_format && self.has_commander) || b.has_search_intent()
+        (commander_format && self.has_commander) || b.has_search_intent(self.format)
     }
 
     /// Puts the deck's legality, commander identity and land exclusion back on `b`.
@@ -138,7 +140,8 @@ impl AddContext {
     ///
     /// Returns [`AlreadyDefault`] when nothing but deck context is set and there is no sort.
     pub fn reset_search(&self, b: &mut CardQueryBuilder) -> Result<(), AlreadyDefault> {
-        let at_default = b.is_empty_ignoring_deck_context_and_auto_lands(self.lands_at_target);
+        let at_default =
+            b.is_empty_ignoring_deck_context_and_auto_lands(self.format, self.lands_at_target);
         if at_default && b.sort().is_none() {
             return Err(AlreadyDefault);
         }
@@ -294,7 +297,18 @@ mod tests {
         assert!(!pile.serves(&blank));
         let mut legal_only = blank.clone();
         legal_only.set_legalities_contains_any(vec!["modern".to_owned()]);
-        assert!(!pile.serves(&legal_only), "legality alone is deck context");
+        let modern_deck = AddContext {
+            format: Some(Format::Modern),
+            ..AddContext::default()
+        };
+        assert!(
+            !modern_deck.serves(&legal_only),
+            "the deck's own format alone is deck context"
+        );
+        assert!(
+            pile.serves(&legal_only),
+            "a format picked on a deck with none is a filter"
+        );
         let mut sorted = blank.clone();
         sorted.set_sort(CardSortKey::Name);
         assert!(pile.serves(&sorted));
