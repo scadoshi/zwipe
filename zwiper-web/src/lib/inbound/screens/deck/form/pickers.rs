@@ -32,7 +32,7 @@ use zwipe_ui::filter::fields::same_set;
 use zwipe_ui::hint::HintTopic;
 use zwipe_ui::timing::ORACLE_TAG_PICKER_LIMIT;
 
-use super::DeckForm;
+use super::{DeckForm, SlotState};
 use crate::inbound::catalog::CatalogCache;
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::page_keys::{focus_by_id, use_page_keys};
@@ -138,16 +138,93 @@ fn DiscardDialog(open: Signal<bool>, picker: Picker, on_discard: Callback<()>) -
     }
 }
 
+/// A command-zone slot's card, input text and search, as a picker opened on
+/// them.
+#[derive(Debug, Clone, PartialEq, Default)]
+struct SlotSnapshot {
+    card: Option<Card>,
+    text: String,
+    query: String,
+}
+
+impl SlotSnapshot {
+    fn take(slot: SlotState) -> Self {
+        Self {
+            card: slot.card.peek().clone(),
+            text: slot.text.peek().clone(),
+            query: slot.query.peek().clone(),
+        }
+    }
+
+    fn restore(self, slot: SlotState) {
+        let (mut card, mut text, mut query) = (slot.card, slot.text, slot.query);
+        card.set(self.card);
+        text.set(self.text);
+        query.set(self.query);
+    }
+}
+
 /// What the format picker opened on: the format, the land target a pick
-/// moves and what its cascade clears, so `Back` can put them back.
+/// moves and the command zone its cascade clears (the commander, and with it
+/// the partner and the background), so Discard puts the form back as it was.
 #[derive(Debug, Clone, PartialEq, Default)]
 struct FormatSnapshot {
     format: Option<Format>,
     land_target: Option<i32>,
-    commander: Option<Card>,
-    commander_text: String,
-    spell: Option<Card>,
-    spell_text: String,
+    commander: SlotSnapshot,
+    partner: SlotSnapshot,
+    background: SlotSnapshot,
+    spell: SlotSnapshot,
+}
+
+impl FormatSnapshot {
+    fn take(form: &DeckForm) -> Self {
+        Self {
+            format: *form.format.peek(),
+            land_target: *form.land_target.peek(),
+            commander: SlotSnapshot::take(form.commander),
+            partner: SlotSnapshot::take(form.partner),
+            background: SlotSnapshot::take(form.background),
+            spell: SlotSnapshot::take(form.signature_spell),
+        }
+    }
+
+    fn restore(self, form: &DeckForm) {
+        let (mut format, mut land_target) = (form.format, form.land_target);
+        format.set(self.format);
+        land_target.set(self.land_target);
+        self.commander.restore(form.commander);
+        self.partner.restore(form.partner);
+        self.background.restore(form.background);
+        self.spell.restore(form.signature_spell);
+    }
+}
+
+/// What the deck tag picker opened on: the deck tags, and the oracle tags
+/// and seed a kept pick reseeds, so Discard puts all three back.
+#[derive(Debug, Clone, PartialEq, Default)]
+struct TagSnapshot {
+    tags: Vec<String>,
+    oracle_tags: Vec<String>,
+    applied_seed: Vec<String>,
+}
+
+impl TagSnapshot {
+    fn take(form: &DeckForm) -> Self {
+        Self {
+            tags: form.tags.peek().clone(),
+            oracle_tags: form.oracle_tags.peek().clone(),
+            applied_seed: form.applied_seed.peek().clone(),
+        }
+    }
+
+    fn restore(self, form: &DeckForm) {
+        let (mut tags, mut oracle_tags, mut applied_seed) =
+            (form.tags, form.oracle_tags, form.applied_seed);
+        tags.set(self.tags);
+        oracle_tags.set(self.oracle_tags);
+        applied_seed.set(self.applied_seed);
+    }
 }
 
 /// The format picker: single select, with the format's details in the bar.
@@ -164,28 +241,11 @@ pub fn FormatPicker(form: DeckForm) -> Element {
     use_effect(move || {
         if open() {
             focused.set(None);
-            snapshot.set(FormatSnapshot {
-                format: *form.format.peek(),
-                land_target: *form.land_target.peek(),
-                commander: form.commander.card.peek().clone(),
-                commander_text: form.commander.text.peek().clone(),
-                spell: form.signature_spell.card.peek().clone(),
-                spell_text: form.signature_spell.text.peek().clone(),
-            });
+            snapshot.set(FormatSnapshot::take(&form));
         }
     });
     let revert = use_callback(move |(): ()| {
-        let held = snapshot.peek().clone();
-        let mut format = form.format;
-        format.set(held.format);
-        let mut land_target = form.land_target;
-        land_target.set(held.land_target);
-        let (mut card, mut text) = (form.commander.card, form.commander.text);
-        card.set(held.commander);
-        text.set(held.commander_text);
-        let (mut card, mut text) = (form.signature_spell.card, form.signature_spell.text);
-        card.set(held.spell);
-        text.set(held.spell_text);
+        snapshot.peek().clone().restore(&form);
         open.set(false);
     });
     let back = use_callback(move |(): ()| {
@@ -286,7 +346,7 @@ pub fn DeckTagPicker(form: DeckForm) -> Element {
     });
     let mut open = form.tags_open;
     let mut tags = form.tags;
-    let mut snapshot: Signal<Vec<String>> = use_signal(Vec::new);
+    let mut snapshot: Signal<TagSnapshot> = use_signal(TagSnapshot::default);
     let query = use_picker_search(open.into());
     let mut focused: Signal<Option<DeckTagView>> = use_signal(|| None);
     let hint_open = use_signal(|| false);
@@ -294,7 +354,7 @@ pub fn DeckTagPicker(form: DeckForm) -> Element {
     use_effect(move || {
         if open() {
             focused.set(None);
-            snapshot.set(tags.peek().clone());
+            snapshot.set(TagSnapshot::take(&form));
         }
     });
 
@@ -316,12 +376,11 @@ pub fn DeckTagPicker(form: DeckForm) -> Element {
         }
     };
     let revert = use_callback(move |(): ()| {
-        tags.set(snapshot());
+        snapshot.peek().clone().restore(&form);
         open.set(false);
-        reconcile();
     });
     let back = use_callback(move |(): ()| {
-        if same_set(&tags.peek(), &snapshot.peek()) {
+        if same_set(&tags.peek(), &snapshot.peek().tags) {
             revert.call(());
         } else {
             discard_open.set(true);
@@ -330,7 +389,7 @@ pub fn DeckTagPicker(form: DeckForm) -> Element {
     // Off the stack while it asks, so Keep puts it back on top.
     let listening = use_memo(move || open() && !discard_open());
     use_overlay_back_action(listening.into(), back);
-    let unchanged = same_set(&tags(), &snapshot());
+    let unchanged = same_set(&tags(), &snapshot.read().tags);
     let typed = query().to_lowercase();
     let results: Vec<DeckTagView> = catalog()
         .into_iter()
@@ -619,5 +678,100 @@ fn OracleTagChip(
             },
             "{slug}"
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::cell::RefCell;
+
+    use uuid::Uuid;
+
+    use super::*;
+    use crate::inbound::screens::deck::form::use_deck_form;
+
+    thread_local! {
+        static FORM: RefCell<Option<DeckForm>> = const { RefCell::new(None) };
+    }
+
+    #[component]
+    fn Host() -> Element {
+        let form = use_deck_form();
+        FORM.with(|f| *f.borrow_mut() = Some(form));
+        rsx! {}
+    }
+
+    /// A real card renamed to `name`, with a fresh printing id.
+    fn card(name: &str) -> Card {
+        let mut card: Card = serde_json::from_str(include_str!(
+            "../../../../../../../zwipe-ui/src/test_support/card.json"
+        ))
+        .unwrap();
+        let id = Uuid::new_v4();
+        card.card_profile.scryfall_data_id = id;
+        card.scryfall_data.id = id;
+        card.scryfall_data.name = name.to_owned();
+        card
+    }
+
+    fn fill(slot: SlotState, name: &str) {
+        let (mut card_signal, mut text) = (slot.card, slot.text);
+        card_signal.set(Some(card(name)));
+        text.set(name.to_owned());
+    }
+
+    /// A form as Edit holds a Commander deck led by a partner pair with a
+    /// Background, and its tags.
+    fn edit_form(dom: &VirtualDom) -> DeckForm {
+        let form = FORM.with(|f| *f.borrow()).unwrap();
+        dom.in_runtime(|| {
+            let (mut format, mut tags, mut oracle_tags, mut seed) =
+                (form.format, form.tags, form.oracle_tags, form.applied_seed);
+            format.set(Some(Format::Commander));
+            fill(form.commander, "Tymna the Weaver");
+            fill(form.partner, "Thrasios, Triton Hero");
+            fill(form.background, "Raised by Giants");
+            tags.set(vec!["ramp".to_owned()]);
+            oracle_tags.set(Vec::new());
+            seed.set(vec!["ramp".to_owned()]);
+        });
+        form
+    }
+
+    #[test]
+    fn discarding_a_format_pick_puts_the_whole_command_zone_back() {
+        let mut dom = VirtualDom::new(Host);
+        dom.rebuild_in_place();
+        let form = edit_form(&dom);
+        dom.in_runtime(|| {
+            let before = form.values();
+            let snapshot = FormatSnapshot::take(&form);
+            form.select_format(Format::Pauper);
+            // The form's commander effect clears the mates on the change.
+            form.partner.clear_all();
+            form.background.clear_all();
+            snapshot.restore(&form);
+            assert_eq!(form.values(), before);
+        });
+    }
+
+    #[test]
+    fn discarding_a_deck_tag_change_puts_the_oracle_tags_and_seed_back() {
+        let mut dom = VirtualDom::new(Host);
+        dom.rebuild_in_place();
+        let form = edit_form(&dom);
+        dom.in_runtime(|| {
+            let before = form.values();
+            let seed_before = form.applied_seed.peek().clone();
+            let snapshot = TagSnapshot::take(&form);
+            let (mut tags, mut oracle_tags, mut seed) =
+                (form.tags, form.oracle_tags, form.applied_seed);
+            tags.set(Vec::new());
+            oracle_tags.set(vec!["mana-rock".to_owned()]);
+            seed.set(vec!["mana-rock".to_owned()]);
+            snapshot.restore(&form);
+            assert_eq!(form.values(), before);
+            assert_eq!(*form.applied_seed.peek(), seed_before);
+        });
     }
 }

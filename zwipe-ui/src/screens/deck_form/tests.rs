@@ -1141,3 +1141,76 @@ fn a_long_name_says_the_limit_in_plain_words() {
         Some("Deck names are 1 to 64 characters")
     );
 }
+
+/// A saved Commander deck led by a partner pair, with a Background chosen too.
+fn edit_partnered() -> State {
+    let mut profile = deck_profile("Partners");
+    profile.format = Some(Format::Commander);
+    let mut commander = card("Tymna the Weaver");
+    commander.scryfall_data.keywords = Some(vec!["Partner".to_owned()]);
+    let mut partner = card("Thrasios, Triton Hero");
+    partner.scryfall_data.keywords = Some(vec!["Partner".to_owned()]);
+    let background = card("Raised by Giants");
+    profile.commander_id = Some(commander.scryfall_data.id);
+    profile.partner_commander_id = Some(partner.scryfall_data.id);
+    profile.background_id = Some(background.scryfall_data.id);
+    edit_loaded(
+        profile,
+        &[
+            (Slot::Commander, commander),
+            (Slot::Partner, partner),
+            (Slot::Background, background),
+        ],
+    )
+}
+
+#[test]
+fn discarding_a_format_pick_leaves_edit_unchanged() {
+    let mut state = edit_partnered();
+    assert!(!state.has_unsaved_changes(), "a fresh Edit loses nothing");
+    let before = state.values().clone();
+    let _ = state.update(Action::OpenPicker(Picker::Format));
+    let _ = state.update(Action::TapFormat(Format::Pauper));
+    let _ = state.update(Action::BackPicker);
+    let _ = state.update(Action::DiscardPicker);
+    assert_eq!(state.values(), &before, "Discard puts the whole form back");
+    assert!(!state.has_unsaved_changes());
+    assert_eq!(state.save_label(), None, "nothing to save");
+}
+
+#[test]
+fn discarding_a_deck_tag_change_leaves_edit_unchanged() {
+    let mut profile = deck_profile("Ramp");
+    profile.tags = vec!["ramp".to_owned()];
+    profile.oracle_tags = Vec::new();
+    let mut state = edit_loaded(profile, &[]);
+    let _ = state.update(Action::Catalog(catalog()));
+    assert!(!state.has_unsaved_changes());
+    let before = state.values().clone();
+    let _ = state.update(Action::OpenPicker(Picker::DeckTags));
+    let _ = state.update(Action::ToggleTag {
+        picker: TagPicker::DeckTags,
+        slug: "ramp".to_owned(),
+    });
+    let _ = state.update(Action::BackPicker);
+    let _ = state.update(Action::DiscardPicker);
+    assert_eq!(state.values(), &before, "the oracle tags are as saved too");
+    assert!(!state.has_unsaved_changes());
+}
+
+#[test]
+fn discarding_an_oracle_tag_change_leaves_edit_unchanged() {
+    let mut profile = deck_profile("Rocks");
+    profile.oracle_tags = vec!["mana-rock".to_owned()];
+    let mut state = edit_loaded(profile, &[]);
+    let before = state.values().clone();
+    let _ = state.update(Action::OpenPicker(Picker::OracleTags));
+    let _ = state.update(Action::ToggleTag {
+        picker: TagPicker::OracleTags,
+        slug: "mana-rock".to_owned(),
+    });
+    let _ = state.update(Action::BackPicker);
+    let _ = state.update(Action::DiscardPicker);
+    assert_eq!(state.values(), &before);
+    assert!(!state.has_unsaved_changes());
+}
