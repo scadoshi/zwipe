@@ -826,3 +826,41 @@ I changed nothing. Card rules text and keyword reminder text from Scryfall are o
 - **Anachronism:** 1.16.1 "**Settings** names the theme's mode Dark or Light", but the screen was still "Config" until 1.18.0 ("Config is now called Settings").
 - **Claim vs behavior:** 1.18.1 "the deck page's card count, price and charts follow each card you add, remove, move or undo, with no reload". True for those, but the Warnings panel on the same page doesn't follow (Parts 13, 14, 16), so a reader may expect it to.
 - **"x" vs "×"** (13). "Maybe" for the maybeboard chip (2).
+
+## Part 19, release 80d5b43ab rechecks plus walkthrough (2026-11-07)
+
+App wasm `zwiper-web_bg-dxhfaaa4e686f4d373.wasm` and zite `zite_bg-dxh6528a09277506917.wasm` after hard reloads. Wide is 1450. 390 was checked in the popup (DOM) and in zwipe.net iframes. Signed in throughout, **no logouts**. I used a temp Modern deck "Surfer p19" (created, shared, renamed, changed to Commander, then share stopped and the deck deleted). Surfer test, settings and theme untouched. Decks now reads 14 because Droid added "Droid web11".
+
+| # | Check | Result |
+|---|---|---|
+| 196 | Web picker chips not faded under the hint box | **Fixed.** Format, Deck tags and Oracle tags grids start exactly at the hint bar's bottom (437/437, 328/328, 385/385) with no top fade. The only fade left is at the open bottom edge |
+| 197 | Warnings follow every deck change | **Fixed.** On the wide deck page, live with no reload: + (Lightning Bolt to 5 adds "Lightning Bolt has 5 copies, Modern allows 4"), Fix to 4 (gone, header 9), To sideboard (header and "Deck has 8 cards"), To mainboard (back to 9), Quick add (10) |
+| 199 | Long drawer title clear of × (web) | **Fixed.** At 390, "Asmoranomardicadaistinaculdacar" wraps to two lines at x 97–322, with × at x 55–89. No overflow (scrollWidth = clientWidth) |
+| 200 | Import honors set and collector number; export writes them | **Fixed.** `1 Snapcaster Mage (ISD) 78`, `4 Lightning Bolt (M10) 146` and `1 Ragavan, Nimble Pilferer (MH2) 138` got those printings. `(XXX) 999` fell back to a default printing. Export writes `(SET) number` on every line, including the sideboard |
+| 201 | Set filter shows that set's printing | **Fixed.** Set = Innistrad deals Silent Departure / Innistrad #75, Cackling Counterpart #46, … (Innistrad, not Remastered) |
+| 202 | Typeahead pills in flow, close on pick | **Fixed.** Set suggestions sit under the field with the headers above uncovered. Picking closes them and leaves an "Innistrad ×" chip with an Include toggle |
+| 203 | "No cards match" when nothing is left | **Partly.** A Name filter with no hits shows "No cards match" on the ghost card. **But "Is promo: Yes" alone still matches nothing and leaves a blank, dimmed ghost with no message**, so both halves of 203's second point are still open |
+| 204 | Number boxes apply as you type | **Fixed.** Typing 2 in Mana value enables Apply without leaving the field, and the results are all MV 2. Enter in the box doesn't apply it (small) |
+| 205 | Hidden Create deck rows out of the tab order | **Fixed.** The four shut command-zone rows are `inert`. 0 focusable controls inside |
+| 206 | One hint width at wide | **Partly.** Only dialogs with `.hint-body` (page hints like "Building a deck" and "Welcome to your deck") take 40rem (640px). Every field and section hint uses `.hint-line` or `.hint-bullets`, matches no rule, and still sizes to its text: Create deck 479–805px, deck page 320 (Types) to 1,113px (Draw odds). The new rule is `.alert-dialog:has(.hint-body)`. It needs `.hint-line` and `.hint-bullets` too |
+| 208 | Warning copy | **Fixed.** "Deck has 0 cards, Modern requires at least 60", "Commander decks need a commander", "Lightning Bolt has 4 copies, Commander allows 1", "Counterspell has 2 copies, Commander allows 1", "Brainstorm is not legal in Modern" |
+| 209 | Stop sharing, zone chip, guide | **Fixed.** The dialog says "Stop sharing". A Modern deck's Show row is Tokens/Art with no Command zone (the share page too). The maybeboard guide now says "four actions: Image…" and has a "Swipe from the list" section. "Filter button" is gone |
+| 210 | Header Back asks on unsaved edits | Web still asks ("Leave without saving?" after a rename, then header ‹). The app side is Droid's |
+| 207 (sideboard) | Share page shows the sideboard | **Fixed.** "Sideboard (2)" group at wide and at 390 (no sideways scroll). Prices follow the chosen printing (Bolt $1.81, M10). The share URL still returns HTTP 404 to non-JS clients (207's og part, out of scope here) |
+
+### Walkthrough, new ground
+
+- **Playstyle:** Summary, Colors, Card roles (decks per role), Oracle tags (Decks / Cards / Impact), Suggested commanders and Staples all render.
+    - The Summary reads oddly: "Top colors" shows a single red pip with "(6)" right above "Top color: Red (12)". It isn't clear that one counts decks by color identity and the other counts cards.
+    - Impact ranks "gives-unblockable" second (1 deck, 1 card, impact 25), above tags in 5–7 decks. A tag with one card can outrank broad ones, which might want a minimum.
+- **Activity:** tapping a lit day shows "48 swipes, 21 searches, Sep 22" and tapping again hides it. Part 18's stray "0 swipes, 0 searches, Feb 23" readout no longer shows before a tap. The 373 heatmap squares aren't focusable, so keyboard users can't read any day.
+- **About and Help:** About shows the version and the app changelog (Latest / 2026, 1.18.1 Upcoming). "!" opens "Help & feedback: Reach the team or join the community" with "Report a problem ↗" and "Join the Discord ↗".
+- **Quick add on the deck page:** "Mountain" suggests "Call the Mountain Chocobo", "Celebrate the Mountain-king", "Cori Mountain Monastery"… but not the basic land Mountain, and no exact match first. The add itself updates count and Warnings live. (I clicked the first suggestion and the second, "Celebrate the Mountain-king", was added, probably my mis-aimed click.)
+- **Toast after To mainboard still says "Moved to deck"** (Part 18, item 2).
+- **Card art "Flip" label:** on Add, a double-faced card (Norman Osborn) shows its "Flip" control over the card's mana cost at the top right.
+
+### Still open from this recheck
+
+1. 203: `Is promo: Yes` never matches, and a Config-only zero result shows a blank ghost with no "No cards match".
+2. 206: field and section hints (`.hint-line` / `.hint-bullets`) still vary from 320 to 1,113px at wide. Only `.hint-body` dialogs got 40rem.
+3. 207: share URL is HTTP 404 without JS (known, out of scope).
