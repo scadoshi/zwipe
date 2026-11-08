@@ -9,3 +9,5 @@ Also slide 1 (crate diagram, "Seven crates in one workspace..."): zwiper-web is 
 
 ## Decision
 Scotty, 2026-11-08: add zwiper-web as its own new box on both slides for now; he will say if it gets too busy.
+
+Scotty on the first draft: each client points at one crate, so it looks like it only pulls from that one. Redo: the clients join into one arrow at the shared group as a whole; zerver points at zwipe-core only.
