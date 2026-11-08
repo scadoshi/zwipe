@@ -1,4 +1,4 @@
-//! Decks: every deck the user has, with Group by, the Show row and its tags,
+//! Decks: every deck the user has, with Group by, Sort, the Show row and its tags,
 //! collapsible groups, and Create as the dock's `+` behind its gate.
 //!
 //! On a wide window the tag row stays unfolded and each group lays its rows
@@ -16,7 +16,7 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::deck::DeckProfile;
 use zwipe_core::domain::deck::deck_tag::deck_tag_label;
-use zwipe_ui::deck::list::{self, GroupBy, Show};
+use zwipe_ui::deck::list::{self, GroupBy, Show, SortBy};
 use zwipe_ui::deck::{card_count, cards_label, command_zone, count_fits};
 use zwipe_ui::screens::deck_list;
 
@@ -26,6 +26,7 @@ use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, open
 use crate::inbound::router::Route;
 use crate::inbound::screens::deck::skeletons::DeckListSkeleton;
 use crate::inbound::shell::ScreenFrame;
+use crate::outbound::deck_sort_store::DeckSortStore;
 use crate::outbound::session_store::SessionStore;
 
 /// The deck list screen.
@@ -40,6 +41,12 @@ pub fn DeckList() -> Element {
     let mut hint_fired = use_signal(|| false);
 
     let mut group_by = use_signal(GroupBy::default);
+    // The order Decks was last left in, from browser storage.
+    let mut sort = use_signal(|| DeckSortStore::browser().load());
+    let mut set_sort = move |next| {
+        sort.set(next);
+        DeckSortStore::browser().save(next);
+    };
     let collapsed: Signal<HashSet<String>> = use_signal(HashSet::new);
     let mut show = use_signal(Show::default);
     let mut tags_open = use_signal(|| false);
@@ -116,7 +123,8 @@ pub fn DeckList() -> Element {
     let tags_present: Vec<(String, String)> =
         profiles.as_deref().map(list::all_tags).unwrap_or_default();
     let filter = show();
-    let shown: Option<Vec<DeckProfile>> = profiles.as_deref().map(|p| list::shown(p, &filter));
+    let shown: Option<Vec<DeckProfile>> =
+        profiles.as_deref().map(|p| list::shown(p, &filter, sort()));
 
     rsx! {
         ScreenFrame {
@@ -129,6 +137,7 @@ pub fn DeckList() -> Element {
                 div { class: "flex-col web-deck-list deck-list-stack",
                     if loading {
                         GhostChipRow { label: 8, chips: vec![4, 6, 5, 3] }
+                        GhostChipRow { label: 4, chips: vec![4, 4, 6, 9] }
                         GhostShowRow { art: false }
                     } else if show_rows {
                         div { class: "chip-row",
@@ -140,6 +149,31 @@ pub fn DeckList() -> Element {
                                     onclick: move |_| group_by.set(option),
                                     "{option.label()}"
                                 }
+                            }
+                        }
+                        // The key chips pick, the last chip turns the order around.
+                        div { class: "chip-row",
+                            span { class: "stat-chip stat-chip-p1 chip-row-label", {deck_list::SORT} }
+                            for by in SortBy::ALL {
+                                Chip {
+                                    key: "{by.label()}",
+                                    selected: sort().by == by,
+                                    onclick: move |_| {
+                                        let mut next = sort();
+                                        next.by = by;
+                                        set_sort(next);
+                                    },
+                                    "{by.label()}"
+                                }
+                            }
+                            Chip {
+                                selected: false,
+                                onclick: move |_| {
+                                    let mut next = sort();
+                                    next.direction = next.direction.flipped();
+                                    set_sort(next);
+                                },
+                                "{sort().direction}"
                             }
                         }
                         div { class: "chip-row",
