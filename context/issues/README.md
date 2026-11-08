@@ -55,7 +55,7 @@ Who checked, on which live build, what they saw.
 | [287](287-split-1-18-changelog.md) | Split the 1.18 changelog into logical patches | merged | laptop | #420 |
 | [288](288-stack-refreshed-on-failed-refresh.md) | Add says Stack refreshed when the refresh failed | merged | laptop | #421 |
 | [289](289-top-color-sr-text.md) | Top color pip reads Mono-red to screen readers | merged | laptop | #422 |
-| [290](290-format-sheet-keeps-draft.md) | Format sheet keeps its search after Discard; Keep is unclear | part 1 merged (#423); part 2 for Scotty | laptop | #423 |
+| [290](290-format-sheet-keeps-draft.md) | Format sheet keeps its search after Discard; Keep is unclear | part 1 merged (#423); part 2 fixing (Keep editing) | laptop | #423 |
 | [291](291-logout-revokes-all-sessions.md) | Logging out on one device logs out every device | approved | halo | - |
 
 ## Waiting for live verification
