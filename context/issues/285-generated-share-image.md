@@ -1,6 +1,6 @@
 # 285. Generated preview image for shared decks
 
-State: fixing | Owner: thinker | PR: #424, #425, part 2 pending | Build seen: -
+State: merged | Owner: thinker | PR: #424, #425, #426 | Build seen: -
 
 ## Report
 Scotty, 2026-11-07: a shared deck's link preview shows a generated image with basic deck stats, not just the commander's art crop. Step 2 of `context/plans/share_preview.md`. Plan only for now: write `context/plans/share_preview_image.md` and bring Scotty the open questions one at a time.
@@ -22,3 +22,5 @@ thinker, 2026-11-07:
 
 ## Part 2
 Scotty, 2026-11-08, after the samples: lay it out like the deck list. Name first, then all the info as tags, the same tags the deck list uses: format, card count, price, and the command zone (both partners, Oathbreaker plus signature spell, or the one commander). The artist line becomes a label tag reading "Art" followed by the artist names. Use the grid tiles in the background, like the app. Put the content inside a panel element so it looks like the app. Follow the website's own OG image (`zite/public/assets/og-default.png`) as the example.
+
+Part 2 fix: thinker, #426, merged 2026-11-08 after Scotty approved the samples ("I like the new layout").
