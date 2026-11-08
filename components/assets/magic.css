@@ -2419,15 +2419,19 @@ html.keyboard-up .web-dock-pair {
     box-shadow: var(--shadow-sm);
 }
 
+/* A fold's title in the panels' own title type, the same as a card list's
+   (.card-group-header) and a settings list's: size, weight, letter spacing
+   and inset. */
 .deck-fold-head {
     display: flex;
     align-items: center;
     gap: 0.4rem;
-    padding: 0.6rem 1rem;
+    padding: 0.75rem 1rem;
     border-bottom: 1px solid var(--border-secondary);
     color: var(--ink-accent-tertiary, var(--accent-tertiary));
-    font-size: 0.85rem;
-    font-weight: 600;
+    font-size: 1rem;
+    font-weight: 400;
+    letter-spacing: 0.1em;
     cursor: pointer;
     user-select: none;
     transition: border-color 0.25s ease;
