@@ -32,8 +32,8 @@ pub const ORACLE_TAG_NO_DESCRIPTION: &str = "No description for this tag.";
 /// The discard dialog's body, under [`Picker::discard_title`].
 pub const DISCARD_BODY: &str = "The form goes back to how it was when you opened this.";
 
-/// The discard dialog's button that keeps the picks and the picker open.
-pub const KEEP: &str = "Keep";
+/// The discard dialog's button that keeps the picks and the picker open, so changes still wait for ✓.
+pub const KEEP: &str = "Keep editing";
 
 /// The discard dialog's button that puts back what the picker opened on.
 pub const DISCARD: &str = "Discard";
@@ -373,6 +373,12 @@ mod tests {
     use super::*;
     use crate::test_support::card;
     use crate::toast::{NORMAL, QUICK};
+
+    #[test]
+    fn the_discard_dialog_offers_keep_editing_and_discard() {
+        assert_eq!(KEEP, "Keep editing");
+        assert_eq!(DISCARD, "Discard");
+    }
 
     fn slugs(values: &[&str]) -> Vec<String> {
         values.iter().map(|&s| s.to_owned()).collect()
