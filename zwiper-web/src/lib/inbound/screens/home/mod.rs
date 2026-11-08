@@ -28,6 +28,7 @@ use zwipe_ui::screens::home::{
     self, Action, Age, Cached, CachedFigures, DeckTile, Destination, Effect, Flavor, FlavorCard,
     State,
 };
+use zwipe_ui::telemetry::vocabulary::Screen;
 
 use self::hero::HomeHeroScoped;
 use crate::domain::counts::CachedCounts;
@@ -42,6 +43,7 @@ use crate::inbound::chrome::toast::raise;
 use crate::inbound::router::Route;
 use crate::inbound::session::settings_sync;
 use crate::inbound::shell::{DeckOpener, ScreenFrame};
+use crate::inbound::telemetry;
 use crate::outbound::counts_store::CountsStore;
 use crate::outbound::scope_store::ScopeStore;
 use crate::outbound::session_store::SessionStore;
@@ -373,6 +375,7 @@ fn route(destination: Destination) -> Route {
 /// hour's card has expired, the featured flavor, as the model asks.
 #[component]
 pub fn Home() -> Element {
+    telemetry::use_telemetry_screen(Screen::Home);
     let session: Signal<Option<Session>> = use_context();
     let caches = Caches {
         counts: use_context(),

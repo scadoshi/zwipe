@@ -4,6 +4,7 @@ use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
+use zwipe_core::domain::deck::Format;
 use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::filter::picker::PickerField;
@@ -141,6 +142,10 @@ pub(crate) fn CardFilterSheet(
     #[props(default = false)] show_format_filter: bool,
     #[props(default = false)] show_active_indicators: bool,
     #[props(default = false)] validate_before_apply: bool,
+    /// The deck's format on Add's search, where "Is legal in" holding only it
+    /// is the default rather than a filter.
+    #[props(default)]
+    deck_format: Option<Format>,
     on_clear: Option<EventHandler>,
 ) -> Element {
     let filter_builder: Signal<CardQueryBuilder> = use_context();
@@ -181,6 +186,7 @@ pub(crate) fn CardFilterSheet(
                 config: Box::new(SheetConfig {
                     show_format: show_format_filter,
                     validate: validate_before_apply,
+                    deck_format,
                     ..SheetConfig::default()
                 }),
                 notice: ResetNotice::Toast,

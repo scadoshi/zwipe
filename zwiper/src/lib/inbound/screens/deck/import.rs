@@ -243,6 +243,9 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                             "{explainer.before}"
                             span { class: "hl-key", "{explainer.board}" }
                             "{explainer.after}"
+                            if let Some(fills) = explainer.fills {
+                                " {fills}"
+                            }
                         }
                     }
 
@@ -293,12 +296,27 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                             }
 
                             if let Some(r) = result {
+                                if !deck_import::set_rows(&r).is_empty() {
+                                    div { class: "form-panel",
+                                        div { class: "settings-list-header",
+                                            span { class: "settings-list-title", "{deck_import::SET_ON_DECK}" }
+                                        }
+                                        div { class: "form-panel-fields import-cards",
+                                            for (value, tag) in deck_import::set_rows(&r) {
+                                                div { class: "chip-bubble",
+                                                    span { class: "font-light", "{value}" }
+                                                    span { class: "font-light opacity-50", "{tag}" }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                                 if !r.imported.is_empty() {
                                     div { class: "form-panel",
                                         div { class: "settings-list-header",
                                             span { class: "settings-list-title", "{deck_import::IMPORTED}" }
                                         }
-                                        div { class: "form-panel-fields import-cards",
+                                        div { class: "form-panel-fields import-cards import-output",
                                             for card in r.imported.iter() {
                                                 div { class: "chip-bubble",
                                                     span { class: "font-light", "{card.name}" }
@@ -313,7 +331,7 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                                         div { class: "settings-list-header",
                                             span { class: "settings-list-title", "{deck_import::FAILED}" }
                                         }
-                                        div { class: "form-panel-fields import-cards",
+                                        div { class: "form-panel-fields import-cards import-output",
                                             for card in r.unresolved.iter() {
                                                 div { class: "chip-bubble-error",
                                                     span { class: "font-light", "{card.name}" }

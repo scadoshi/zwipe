@@ -12,6 +12,7 @@ fn main() {
     let _ = dioxus::logger::init(tracing::Level::INFO);
     // The app's mark, through the logger: on the web stdout goes nowhere and
     // the console, and the dev server's log pane, carry the logger.
+    zwiper_web::inbound::telemetry::install_panic_hook();
     tracing::info!("\n{}", logo::ZWIPER);
     tracing::info!("zwiper-web v{APP_VERSION} starting against {BACKEND_URL}");
     let url: Url = match BACKEND_URL.parse() {

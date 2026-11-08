@@ -11,6 +11,7 @@ use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::deck::Deck;
 use zwipe_ui::deck::form::Slot;
 use zwipe_ui::screens::deck_form;
+use zwipe_ui::telemetry::vocabulary::{DeckScreen, Screen};
 
 use super::form::fields::DeckFields;
 use super::form::overlays::DeckFormOverlays;
@@ -23,10 +24,12 @@ use crate::inbound::chrome::leave_guard::use_leave_guard;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::router::Route;
 use crate::inbound::shell::ScreenFrame;
+use crate::inbound::telemetry;
 
 /// The Edit deck screen for `deck_id`.
 #[component]
 pub fn EditDeck(deck_id: Uuid) -> Element {
+    telemetry::use_telemetry_screen(Screen::Deck(DeckScreen::Edit));
     let navigator = use_navigator();
     let client: Signal<ZwipeClient> = use_context();
     let authed = use_authed();

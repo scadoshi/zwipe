@@ -8,6 +8,7 @@ use uuid::Uuid;
 use zwipe_core::http::contracts::auth::{
     HttpRegisterUser, HttpRegistrationAccepted, RegistrationStatus,
 };
+use zwipe_core::http::messages;
 
 use crate::domain::auth::models::access_token::InvalidJwt;
 use crate::domain::auth::ports::AuthService;
@@ -64,7 +65,7 @@ impl From<RegisterUserError> for ApiError {
                 Self::InternalServerError("internal server error".to_string())
             }
             RegisterUserError::UsernameTaken => {
-                Self::Conflict("username already taken".to_string())
+                Self::Conflict(messages::USERNAME_TAKEN.to_string())
             }
             RegisterUserError::Database(e) | RegisterUserError::UserFromDb(e) => e.to_500(),
         }

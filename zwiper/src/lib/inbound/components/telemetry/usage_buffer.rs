@@ -1,15 +1,12 @@
-//! The app's handle on zwipe-ui's usage buffer: one lock shared by every
-//! screen and the flush tasks, plus the mapping from a
-//! [`ClientError`](zwipe_client::ClientError) to the
-//! report it makes.
-
-use std::sync::{Arc, Mutex, MutexGuard};
+//! The app's handle on zwipe-ui's shared usage buffer, taking the app's own
+//! swipe [`Direction`](crate::inbound::components::interactions::swipe::direction::Direction)
+//! and [`ClientError`](zwipe_client::ClientError).
 
 use uuid::Uuid;
 use zwipe_client::ClientError;
 use zwipe_core::domain::auth::models::platform::ClientPlatform;
 use zwipe_core::http::contracts::metrics::{HttpUsageBatch, PileEndKind};
-use zwipe_ui::telemetry::{self, ErrorKind, HandledError, SwipeDirection};
+use zwipe_ui::telemetry::{Failure, SharedUsageBuffer, SwipeDirection};
 
 use crate::inbound::components::interactions::swipe::direction::Direction;
 
@@ -24,14 +21,19 @@ impl From<Direction> for SwipeDirection {
     }
 }
 
+/// The report a failed request makes.
+pub fn failure(error: &ClientError) -> Failure {
+    match error {
+        ClientError::Network(_) => Failure::Network(error.to_string()),
+        ClientError::Decode(detail) => Failure::Decode(detail.to_string()),
+        api => Failure::Status(api.status().unwrap_or(500), api.to_string()),
+    }
+}
+
 /// The shared usage buffer. Cloning shares it.
-///
-/// Every method takes the lock for one call and releases it before
-/// returning, so no guard outlives a call or crosses an `.await`. A poisoned
-/// lock is logged and the call does nothing: telemetry never fails a screen.
 #[derive(Debug, Clone)]
 pub struct UsageBuffer {
-    inner: Arc<Mutex<telemetry::UsageBuffer>>,
+    inner: SharedUsageBuffer,
 }
 
 impl Default for UsageBuffer {
@@ -45,77 +47,45 @@ impl UsageBuffer {
     /// build's version.
     pub fn new() -> Self {
         Self {
-            inner: Arc::new(Mutex::new(telemetry::UsageBuffer::new(
-                ClientPlatform::CURRENT,
-                env!("CARGO_PKG_VERSION"),
-            ))),
+            inner: SharedUsageBuffer::new(ClientPlatform::CURRENT, env!("CARGO_PKG_VERSION")),
         }
-    }
-
-    /// The buffer, or `None` with a warning when a panic poisoned its lock.
-    fn lock(&self) -> Option<MutexGuard<'_, telemetry::UsageBuffer>> {
-        self.inner
-            .lock()
-            .inspect_err(|_| tracing::warn!("usage buffer lock poisoned, usage dropped"))
-            .ok()
     }
 
     /// Records one swipe in the given direction.
     pub fn record_swipe(&self, direction: Direction) {
-        if let Some(mut buffer) = self.lock() {
-            buffer.record_swipe(direction.into());
-        }
+        self.inner.record_swipe(direction.into());
     }
 
     /// Records one card search.
     pub fn record_search(&self) {
-        if let Some(mut buffer) = self.lock() {
-            buffer.record_search();
-        }
+        self.inner.record_search();
     }
 
     /// Records one add-stack swipe as a suggestion signal for
-    /// `(card, deck)`. See [`telemetry::UsageBuffer::record_signal`].
+    /// `(card, deck)`.
     pub fn record_signal(&self, deck_id: Uuid, card_oracle_id: Option<Uuid>, direction: Direction) {
-        if let Some(mut buffer) = self.lock() {
-            buffer.record_signal(deck_id, card_oracle_id, direction.into());
-        }
+        self.inner
+            .record_signal(deck_id, card_oracle_id, direction.into());
     }
 
-    /// Records one swipe select decision. See
-    /// [`telemetry::UsageBuffer::record_select_signal`].
+    /// Records one swipe select decision.
     pub fn record_select_signal(&self, card_oracle_id: Option<Uuid>, direction: Direction) {
-        if let Some(mut buffer) = self.lock() {
-            buffer.record_select_signal(card_oracle_id, direction.into());
-        }
+        self.inner
+            .record_select_signal(card_oracle_id, direction.into());
     }
 
     /// Records one deliberate removal of a card from a deck.
     pub fn record_removal(&self, deck_id: Uuid, card_oracle_id: Option<Uuid>) {
-        if let Some(mut buffer) = self.lock() {
-            buffer.record_removal(deck_id, card_oracle_id);
-        }
+        self.inner.record_removal(deck_id, card_oracle_id);
     }
 
     /// Records one time a deck's add-screen pile ran out.
     pub fn record_pile_end(&self, deck_id: Uuid, kind: PileEndKind, synergy: bool) {
-        if let Some(mut buffer) = self.lock() {
-            buffer.record_pile_end(deck_id, kind, synergy);
-        }
+        self.inner.record_pile_end(deck_id, kind, synergy);
     }
 
-    /// Reports a handled error that was just shown to the user, and logs it
-    /// (one call, two sinks: client logs and the server table tell the same
-    /// story).
-    ///
-    /// `screen`, `component` and `action` come from
-    /// [`super::vocabulary`]. `component` is `""` when the screen itself
-    /// showed the error.
-    ///
-    /// `Network` errors are logged but never buffered: they're mostly the
-    /// user's connectivity, and couldn't be reported over the same dead
-    /// connection anyway. A `Decode` message keeps only its shape; see
-    /// [`HandledError::new`].
+    /// Reports a handled error that was just shown to the user, and logs it.
+    /// See [`SharedUsageBuffer::report_error`].
     pub fn report_error(
         &self,
         screen: &'static str,
@@ -123,64 +93,20 @@ impl UsageBuffer {
         action: &'static str,
         error: &ClientError,
     ) {
-        let (kind, message) = match error {
-            ClientError::Network(_) => {
-                tracing::warn!(
-                    screen,
-                    component,
-                    action,
-                    kind = "network",
-                    "error shown: {error}"
-                );
-                return;
-            }
-            ClientError::Decode(detail) => (ErrorKind::Decode, detail.to_string()),
-            api => (api_error_kind(api), api.to_string()),
-        };
-        let handled = HandledError::new(screen, component, action, kind, &message);
-        tracing::warn!(
-            screen,
-            component,
-            action,
-            kind = kind.as_str(),
-            "error shown: {}",
-            handled.message()
-        );
-        if let Some(mut buffer) = self.lock() {
-            buffer.report_error(handled);
-        }
+        self.inner
+            .report_error(screen, component, action, &failure(error));
     }
 
     /// Drops everything buffered without sending it.
     pub fn clear(&self) {
-        if let Some(mut buffer) = self.lock() {
-            buffer.clear();
-        }
+        self.inner.clear();
     }
 
     /// Snapshots everything buffered into a batch and empties the buffer.
     ///
     /// Returns `None` when nothing was buffered.
     pub fn snapshot_and_zero(&self) -> Option<HttpUsageBatch> {
-        self.lock()?.snapshot_and_zero()
-    }
-}
-
-/// The report kind for a status-carrying [`ClientError`].
-fn api_error_kind(api: &ClientError) -> ErrorKind {
-    match api {
-        ClientError::Unauthorized(_) => ErrorKind::Unauthorized,
-        ClientError::Forbidden(_) => ErrorKind::Forbidden,
-        ClientError::NotFound(_) => ErrorKind::NotFound,
-        ClientError::UnprocessableEntity(_) => ErrorKind::Unprocessable,
-        ClientError::TooManyRequests(_) => ErrorKind::TooManyRequests,
-        ClientError::Conflict(_) => ErrorKind::Conflict,
-        ClientError::BadRequest(_) => ErrorKind::BadRequest,
-        ClientError::PayloadTooLarge(_) => ErrorKind::PayloadTooLarge,
-        // Network and Decode are handled before this is reached.
-        ClientError::InternalServerError(_) | ClientError::Network(_) | ClientError::Decode(_) => {
-            ErrorKind::Internal
-        }
+        self.inner.snapshot_and_zero()
     }
 }
 

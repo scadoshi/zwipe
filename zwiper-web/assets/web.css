@@ -2027,7 +2027,7 @@ body {
     pointer-events: none;
 }
 
-.web-screen-chip {
+.stat-chip.web-screen-chip {
     display: none;
 }
 
@@ -2075,15 +2075,10 @@ body {
         left: 1.5rem;
     }
 
-    /* A tag, not a button: the card details' colored chip (.detail-chip's
-       box, a tint and a 1px outline in its own color) in the screen's action
-       color, with its ink on a fill made opaque over the page, and no lift
-       or pointer. */
-    .detail-chip.web-screen-chip {
+    /* A label tag, the same tint and outline as the chip rows' labels, in
+       the screen's action color (set inline), with no pointer. */
+    .stat-chip.web-screen-chip {
         display: inline-block;
-        color: var(--chip-ink);
-        background-color: color-mix(in srgb, var(--chip-tone) 12%, var(--bg-primary));
-        border-color: color-mix(in srgb, var(--chip-tone) 35%, transparent);
         cursor: default;
     }
 }
@@ -2165,10 +2160,13 @@ body {
 }
 
 /* The floating result the arrow keys point at, in the maybeboard's and the
-   command zone's searches. */
+   command zone's searches: the primary accent and a ring outside the chip,
+   since every floating chip already wears the secondary accent's outline. */
 .web-float-highlight {
     border-color: var(--accent-primary);
     color: var(--ink-accent-primary, var(--accent-primary));
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 1px;
 }
 
 /* ---- Leave guard ----
@@ -2482,9 +2480,12 @@ body {
         box-sizing: border-box;
     }
 
-    /* The explainer over the input panel one panel gap apart. */
+    /* The explainer over the input panel one panel gap apart. The last
+       row takes whatever height the results need beyond the first two, so
+       the input never moves down beside a long list. */
     .web-import.screen-content {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-rows: auto auto 1fr;
         row-gap: var(--panel-gap);
     }
 
@@ -2510,7 +2511,7 @@ body {
 
     .web-import-results {
         grid-column: 2;
-        grid-row: 1 / span 2;
+        grid-row: 1 / span 3;
     }
 
     /* Export: the board chips over the decklist, one column. */
@@ -2570,6 +2571,18 @@ body {
 
 .web-import-cards > :last-child {
     margin-bottom: 0;
+}
+
+/* On a wide window the output window runs through the panel's padding to
+   the header's rule and the panel's foot, and puts the padding back inside,
+   so its scroll meets the panel's edges. */
+@media (min-width: 900px) {
+    .web-form-panel > .import-output {
+        box-sizing: border-box;
+        margin: -1.5rem -1.5rem -1.5rem;
+        padding: 1.5rem;
+        border-radius: 0 0 1rem 1rem;
+    }
 }
 
 /* Below the breakpoint the panels take the screen's width with the page

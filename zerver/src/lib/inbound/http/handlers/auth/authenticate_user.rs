@@ -5,6 +5,7 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::http::contracts::auth::{HttpAuthenticateUser, HttpSession};
+use zwipe_core::http::messages;
 use zwipe_core::version::Version;
 
 use crate::domain::auth::ports::AuthService;
@@ -28,7 +29,7 @@ impl From<AuthenticateUserError> for ApiError {
                 Self::Unauthorized("invalid credentials".to_string())
             }
             AuthenticateUserError::PasswordTooLong => {
-                Self::UnprocessableEntity("password too long".to_string())
+                Self::UnprocessableEntity(messages::PASSWORD_TOO_LONG.to_string())
             }
             AuthenticateUserError::Database(e)
             | AuthenticateUserError::UserFromDb(e)

@@ -4,6 +4,7 @@ use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
 use zwipe_core::http::contracts::auth::HttpConfirmEmailChange;
+use zwipe_core::http::messages;
 
 use crate::domain::auth::ports::AuthService;
 use crate::domain::auth::requests::confirm_email_change::{
@@ -20,7 +21,7 @@ impl From<ConfirmEmailChangeError> for ApiError {
                 Self::UnprocessableEntity("token not found or expired".to_string())
             }
             ConfirmEmailChangeError::AddressTaken => {
-                Self::Conflict("that address is already in use by another account".to_string())
+                Self::Conflict(messages::EMAIL_IN_USE.to_string())
             }
             ConfirmEmailChangeError::UserFromDb(e) | ConfirmEmailChangeError::Database(e) => {
                 e.to_500()

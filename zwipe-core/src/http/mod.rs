@@ -7,4 +7,5 @@ pub mod contracts;
 pub mod endpoint;
 pub mod endpoints;
 pub mod helpers;
+pub mod messages;
 pub mod paths;

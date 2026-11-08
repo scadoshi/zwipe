@@ -1,0 +1,12 @@
+{
+  "id": 1003,
+  "name": "1v1 Kenrith",
+  "deckFormat": 11,
+  "categories": [
+    {"id": 1, "name": "Commander", "isPremier": true, "includedInDeck": true, "includedInPrice": true}
+  ],
+  "cards": [
+    {"quantity": 1, "categories": ["Commander"],
+     "card": {"uid": "a2c5ee76-6084-413c-bb70-45490d818245", "oracleCard": {"name": "Kenrith, the Returned King"}}}
+  ]
+}

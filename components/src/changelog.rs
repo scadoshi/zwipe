@@ -34,11 +34,13 @@
 //! [`ChangelogReleases`], sharing a `Signal<Filter>` the caller owns, so the
 //! chips can sit in the caller's titled panel while the releases stack under
 //! it on their own. Two looks share the one rendering path, [`ChangelogLook`]:
-//! zite's floating cards and the app's panels.
+//! zite's floating cards and the app's panels. Each version's caret shuts
+//! its notes, and one Collapse all over the list shuts or opens them all.
 
 use std::ptr;
 
 use dioxus::prelude::*;
+use orangui::{CollapseAll, CollapseBody, CollapseCaret, use_collapse_set};
 use zwipe_core::http::contracts::changelog::HttpChangelog;
 pub use zwipe_ui::changelog::Filter;
 use zwipe_ui::changelog::{Listed, Tag, listed, minors, months, visible, years};
@@ -218,6 +220,8 @@ pub fn ChangelogReleases(
 ) -> Element {
     // The selection the reveal was made under, and how many it reveals.
     let mut revealed = use_signal(|| None::<(Filter, usize)>);
+    // Every version starts open; a caret or Collapse all shuts them.
+    let collapse = use_collapse_set();
     let listed = listed(&data);
     let current = selection();
     let mut shown = visible(&listed, &current);
@@ -235,6 +239,7 @@ pub fn ChangelogReleases(
     // Included in each card's key so switching filters remounts the visible
     // cards, replaying their ease-in animation.
     let filter_key = format!("{current:?}");
+    let shown_versions: Vec<String> = shown.iter().map(|s| s.release.version.clone()).collect();
     let (list_class, release_class, header_class, body_class) = match look {
         ChangelogLook::Site => (
             "changelog-list",
@@ -251,6 +256,11 @@ pub fn ChangelogReleases(
     };
 
     rsx! {
+        if !shown_versions.is_empty() {
+            div { class: "changelog-collapse-row",
+                CollapseAll { set: collapse, keys: shown_versions }
+            }
+        }
         div { class: list_class,
             for (item , release) in listed.iter().map(|item| (item, item.release)) {
                 if show(item) {
@@ -259,6 +269,11 @@ pub fn ChangelogReleases(
                         id: anchor_id(&release.version),
                         class: release_class,
                         div { class: header_class,
+                            CollapseCaret {
+                                set: collapse,
+                                section: release.version.clone(),
+                                label: release.version.clone(),
+                            }
                             h2 { class: "changelog-version",
                                 if link_versions {
                                     a {
@@ -277,9 +292,11 @@ pub fn ChangelogReleases(
                                 span { class: "status-tag status-done", "Latest" }
                             }
                         }
-                        ul { class: body_class,
-                            for entry in release.entries.iter() {
-                                li { "{entry}" }
+                        CollapseBody { set: collapse, section: release.version.clone(),
+                            ul { class: body_class,
+                                for entry in release.entries.iter() {
+                                    li { "{entry}" }
+                                }
                             }
                         }
                     }

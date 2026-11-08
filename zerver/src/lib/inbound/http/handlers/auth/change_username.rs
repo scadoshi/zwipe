@@ -5,6 +5,7 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use zwipe_core::domain::user::User;
 use zwipe_core::http::contracts::auth::HttpChangeUsername;
+use zwipe_core::http::messages;
 
 use crate::domain::auth::ports::AuthService;
 use crate::domain::auth::requests::change_username::{
@@ -20,7 +21,7 @@ impl From<ChangeUsernameError> for ApiError {
         tracing::warn!(event = "change_username_error", error = %value);
         match value {
             ChangeUsernameError::UserNotFound => Self::NotFound("user not found".to_string()),
-            ChangeUsernameError::Duplicate => Self::Conflict("username already in use".to_string()),
+            ChangeUsernameError::Duplicate => Self::Conflict(messages::USERNAME_IN_USE.to_string()),
             ChangeUsernameError::Unchanged => Self::UnprocessableEntity(
                 "new username must be different from your current username".to_string(),
             ),

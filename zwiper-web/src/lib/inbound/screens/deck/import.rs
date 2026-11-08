@@ -14,11 +14,13 @@ use uuid::Uuid;
 use zwipe_core::domain::deck::{ImportDeckCardsResult, ImportMode};
 use zwipe_ui::deck::form::{ImportTone, import_outcome};
 use zwipe_ui::screens::deck_import;
+use zwipe_ui::telemetry::vocabulary::{DeckScreen, Screen};
 
 use crate::inbound::card_stores::CardStores;
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::shell::ScreenFrame;
+use crate::inbound::telemetry;
 
 /// Where the cards come from.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -40,6 +42,7 @@ const BOARDS: [(&str, Option<&str>); 3] = [
 /// The Import screen for `deck_id`.
 #[component]
 pub fn ImportDeck(deck_id: Uuid) -> Element {
+    telemetry::use_telemetry_screen(Screen::Deck(DeckScreen::Import));
     let authed = use_authed();
     let stores: CardStores = use_context();
     let toast = use_toast();
@@ -175,6 +178,9 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                             span { class: "hl-key", "{board_word}" }
                             ". Existing cards stay but take new quantities if applicable."
                         }
+                        if source() == Source::Archidekt {
+                            " {deck_import::ARCHIDEKT_FILLS}"
+                        }
                     }
                 }
                 div { class: "import-scroll",
@@ -210,7 +216,7 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                                         "aria-label": "Archidekt deck URL",
                                         style: "width:100%;",
                                         r#type: "url",
-                                        placeholder: "https://archidekt.com/decks/...",
+                                        placeholder: "https://archidekt.com/decks/…",
                                         value: "{url}",
                                         autocapitalize: "none",
                                         autocorrect: "off",
@@ -222,12 +228,27 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                         }
                         div { class: "web-import-results",
                             if let Some(r) = result() {
+                                if !deck_import::set_rows(&r).is_empty() {
+                                    div { class: "web-form-panel",
+                                        div { class: "settings-list-header web-form-head",
+                                            span { class: "settings-list-title", "{deck_import::SET_ON_DECK}" }
+                                        }
+                                        div { class: "web-form-fields web-import-cards",
+                                            for (value, tag) in deck_import::set_rows(&r) {
+                                                div { class: "chip-bubble",
+                                                    span { class: "font-light", "{value}" }
+                                                    span { class: "font-light opacity-50", "{tag}" }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                                 if !r.imported.is_empty() {
                                     div { class: "web-form-panel",
                                         div { class: "settings-list-header web-form-head",
                                             span { class: "settings-list-title", "{deck_import::IMPORTED}" }
                                         }
-                                        div { class: "web-form-fields web-import-cards",
+                                        div { class: "web-form-fields web-import-cards import-output",
                                             for card in r.imported.iter() {
                                                 div { class: "chip-bubble",
                                                     span { class: "font-light", "{card.name}" }
@@ -242,7 +263,7 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                                         div { class: "settings-list-header web-form-head",
                                             span { class: "settings-list-title", "{deck_import::FAILED}" }
                                         }
-                                        div { class: "web-form-fields web-import-cards",
+                                        div { class: "web-form-fields web-import-cards import-output",
                                             for card in r.unresolved.iter() {
                                                 div { class: "chip-bubble-error",
                                                     span { class: "font-light", "{card.name}" }

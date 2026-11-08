@@ -1,6 +1,6 @@
 # Deploy: zite
 
-Deployment for the zite Dioxus web frontend. Hosted on GitHub Pages at `zwipe.net`.
+Deployment for the zite Dioxus web frontend. Hosted on Cloudflare Pages (project `zwipe-site`) at `zwipe.net`.
 
 The pipeline runs automatically on push to `main` when files under `zite/**`, `zwipe-core/**` or `components/**` change (or the workflow file itself). Manual trigger is also available.
 
@@ -27,9 +27,18 @@ GitHub → Actions tab → **Deploy zite** → Run workflow → Run workflow
 1. Installs `build-essential` (needed for proc-macro crates targeting WASM). dx downloads its own pinned `wasm-opt` regardless of PATH, so no binaryen is installed here (see [`cicd.md`](cicd.md))
 2. Installs a prebuilt `dioxus-cli@0.7.10` binary via `taiki-e/install-action`, so nothing is compiled from source
 3. Runs `dx build --release --platform web --ssg --force-sequential` from `zite/`. Both flags matter: `--ssg` pre-renders the static routes, and dropping `--force-sequential` lets the parallel client build overwrite the SSG output with the bare shell
-4. Writes `CNAME` (`zwipe.net`) into the build output
-5. Copies `index.html` → `404.html` (SPA routing, GitHub Pages serves 404.html for unknown paths, Dioxus Router takes over)
-6. Uploads build output as a GitHub Pages artifact and deploys
+4. Uploads the build output as one artifact
+5. `deploy-cloudflare` unpacks it and uploads it from `zite/` with `wrangler pages deploy` to the Cloudflare Pages project `zwipe-site`, creating the project on its first run. Running from `zite/` bundles `zite/functions` with it
+
+---
+
+## Cloudflare Pages and the share page's preview tags
+
+`zite/functions/deck/[token].js` is a Pages Function for `/deck/:token`. It reads the deck from the public `GET /api/share/deck/:token` and serves the site shell with the deck's own title, description, image and canonical link, so link previews show the deck. An unknown, revoked or malformed token gets the generic tags with a 404, and a failing API gets the generic page with a 200. Every other path is a static file, with `index.html` and a 200 for an app route, since there is no `404.html`. `zite/tests/og_function.rs` keeps the Function's format names and commander formats matched to zwipe-core.
+
+zwipe.net moved to the `zwipe-site` Pages project on 2026-11-07; GitHub Pages is unpublished and its deploy job is gone. Secrets: `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, the same as `deploy-web.yml`.
+
+The apex record is a proxied CNAME `@` → `zwipe-site.pages.dev`; Cloudflare didn't replace GitHub's A records on its own, so they were deleted by hand. Check a deploy with `curl -sI https://zwipe.net/deck/<a live token>`: `200`, `server: cloudflare`, and the deck's own `og:title`.
 
 ---
 
@@ -41,8 +50,7 @@ Visit `https://zwipe.net` and confirm the latest changes are live.
 
 ## Notes
 
-- GitHub Pages config: **Repository Settings → Pages → Source**: GitHub Actions
-- Custom domain `zwipe.net` with HTTPS enforced
+- Custom domains `zwipe.net` and `www.zwipe.net` are attached to `zwipe-site` in the Cloudflare dashboard
 
 ---
 

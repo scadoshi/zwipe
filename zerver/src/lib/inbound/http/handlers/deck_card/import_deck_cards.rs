@@ -8,6 +8,7 @@ use zwipe_core::domain::deck::requests::import_deck_cards::{
 };
 use zwipe_core::domain::user::requests::get_user::GetUser;
 use zwipe_core::http::contracts::deck_card::HttpImportDeckCards;
+use zwipe_core::http::messages;
 
 use crate::domain::deck::models::deck_card::import_deck_cards::ImportDeckCardsError;
 use crate::domain::deck::ports::DeckService;
@@ -27,14 +28,12 @@ impl From<ImportDeckCardsError> for ApiError {
         match value {
             ImportDeckCardsError::Forbidden => Self::NotFound("deck not found".to_string()),
             ImportDeckCardsError::DeckNotFound(e) => ApiError::from(e),
-            ImportDeckCardsError::LimitReached => Self::UnprocessableEntity(
-                "card limit reached (mainboard, maybeboard, and sideboard all count toward it)"
-                    .to_string(),
-            ),
-            ImportDeckCardsError::UnverifiedLimitReached => Self::UnprocessableEntity(
-                "card limit reached across all boards, verify your email to unlock more"
-                    .to_string(),
-            ),
+            ImportDeckCardsError::LimitReached => {
+                Self::UnprocessableEntity(messages::CARD_LIMIT.to_string())
+            }
+            ImportDeckCardsError::UnverifiedLimitReached => {
+                Self::UnprocessableEntity(messages::UNVERIFIED_CARD_LIMIT.to_string())
+            }
             ImportDeckCardsError::Database(e) => e.to_500(),
         }
     }
