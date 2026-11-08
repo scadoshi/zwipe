@@ -12,13 +12,12 @@ on:
       - '.github/workflows/deploy-zite.yml'
   workflow_dispatch:
 
-# Read-only for test, lint and build; only the deploy job gets the Pages and
-# OIDC grants it needs.
+# Read-only throughout; the Cloudflare deploy authenticates with its own token.
 permissions:
   contents: read
 
 concurrency:
-  group: pages
+  group: zite-deploy
   cancel-in-progress: false
 
 jobs:
@@ -223,46 +222,25 @@ jobs:
         # server function into target/dx/zite/release/web/public/<route>/index.html.
         # The wasm bundle still hydrates after load. Dynamic routes
         # (/verify/:token, /reset/:token) are excluded automatically and fall
-        # back to SPA hydration via the 404.html step below.
+        # back to SPA hydration: Cloudflare serves index.html for them.
         #
         # --force-sequential is required: it builds the client first, then runs
         # the server + SSG step. Without it, the parallel client build finishes
         # last and overwrites the SSG'd public/index.html with the bare shell.
         run: dx build --release --platform web --ssg --force-sequential
 
-      - name: Add CNAME
-        run: echo "zwipe.net" > target/dx/zite/release/web/public/CNAME
-
-      - name: Add 404.html for SPA routing
-        run: cp target/dx/zite/release/web/public/index.html target/dx/zite/release/web/public/404.html
-
-      - name: Upload Pages artifact
-        # v5 pairs with deploy-pages@v5 and pulls a Node-24 upload-artifact
-        # internally (v3 pinned upload-artifact@v4 → Node-20 deprecation warning).
+      - name: Upload the site
+        # upload-pages-artifact packs the build as one tarball artifact named
+        # github-pages; the Cloudflare job below unpacks it. Nothing deploys to
+        # GitHub Pages any more.
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
         with:
           path: target/dx/zite/release/web/public
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5
-
-  # The same build on Cloudflare Pages (project zwipe-site), where the share
-  # page's Pages Function serves each deck's own link-preview tags. It runs
-  # beside the GitHub Pages deploy until zwipe.net's DNS moves to the Pages
-  # project; until then it serves at zwipe-site.pages.dev. It needs the repo
-  # secrets CLOUDFLARE_API_TOKEN (Account > Cloudflare Pages > Edit) and
-  # CLOUDFLARE_ACCOUNT_ID, the same ones deploy-web.yml uses.
+  # zwipe.net is the Cloudflare Pages project zwipe-site, where the share
+  # page's Pages Function serves each deck's own link-preview tags. It needs
+  # the repo secrets CLOUDFLARE_API_TOKEN (Account > Cloudflare Pages > Edit)
+  # and CLOUDFLARE_ACCOUNT_ID, the same ones deploy-web.yml uses.
   deploy-cloudflare:
     needs: build
     runs-on: ubuntu-latest
@@ -279,13 +257,11 @@ jobs:
           path: pages-artifact
 
       - name: Unpack the site
-        # The GitHub Pages artifact is one tarball. Cloudflare serves index.html
-        # with a 200 for a path it has no file for only while there is no
-        # 404.html, and it takes its domain from the project, not a CNAME file.
+        # The artifact is one tarball. Cloudflare serves index.html with a 200
+        # for a path it has no file for only while there is no 404.html.
         run: |
           mkdir site
           tar -xf pages-artifact/artifact.tar -C site
-          rm -f site/404.html site/CNAME
 
       - name: Deploy to Cloudflare Pages
         # Run from zite/ so wrangler bundles zite/functions with the upload.
