@@ -423,6 +423,7 @@ pub(crate) struct CardFixture {
     set_name: String,
     set_id: Uuid,
     set_type: String,
+    finishes: Vec<String>,
     collector_number: String,
     legalities: Value,
     flavor_text: Option<String>,
@@ -465,6 +466,7 @@ pub(crate) fn card(name: &str) -> CardFixture {
         set_name: "Test Set".to_string(),
         set_id: Uuid::from_u128(0x5e7),
         set_type: "expansion".to_string(),
+        finishes: vec!["nonfoil".to_string()],
         collector_number: n.to_string(),
         legalities: json!({}),
         flavor_text: None,
@@ -607,6 +609,11 @@ impl CardFixture {
         self.collector_number = number.to_string();
         self
     }
+    /// The finishes the printing is sold in (defaults to `["nonfoil"]`).
+    pub(crate) fn finishes(mut self, finishes: &[&str]) -> Self {
+        self.finishes = finishes.iter().map(ToString::to_string).collect();
+        self
+    }
     /// Scryfall's set type (defaults to `"expansion"`), e.g. `"memorabilia"`.
     pub(crate) fn set_type(mut self, set_type: &str) -> Self {
         self.set_type = set_type.to_string();
@@ -730,7 +737,7 @@ pub(crate) async fn seed_cards(pool: &PgPool, cards: &[CardFixture]) {
                 .push_bind(true) // booster
                 .push_bind(c.collector_number.as_str())
                 .push_bind(c.digital)
-                .push_bind(vec!["nonfoil".to_string()]) // finishes
+                .push_bind(c.finishes.clone())
                 .push_bind("2015") // frame
                 .push_bind(false) // full_art
                 .push_bind(true) // highres_image
