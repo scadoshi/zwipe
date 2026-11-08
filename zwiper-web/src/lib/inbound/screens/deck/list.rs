@@ -123,8 +123,13 @@ pub fn DeckList() -> Element {
     let tags_present: Vec<(String, String)> =
         profiles.as_deref().map(list::all_tags).unwrap_or_default();
     let filter = show();
-    let shown: Option<Vec<DeckProfile>> =
-        profiles.as_deref().map(|p| list::shown(p, &filter, sort()));
+    // Last changed and Price only when the server sends them; a remembered
+    // key it doesn't send sorts by name until it does.
+    let sort_keys = profiles.as_deref().map(SortBy::offered).unwrap_or_default();
+    let shown_sort = sort().within(&sort_keys);
+    let shown: Option<Vec<DeckProfile>> = profiles
+        .as_deref()
+        .map(|p| list::shown(p, &filter, shown_sort));
 
     rsx! {
         ScreenFrame {
@@ -154,10 +159,10 @@ pub fn DeckList() -> Element {
                         // The key chips pick, the last chip turns the order around.
                         div { class: "chip-row",
                             span { class: "stat-chip stat-chip-p1 chip-row-label", {deck_list::SORT} }
-                            for by in SortBy::ALL {
+                            for by in sort_keys {
                                 Chip {
                                     key: "{by.label()}",
-                                    selected: sort().by == by,
+                                    selected: shown_sort.by == by,
                                     onclick: move |_| {
                                         let mut next = sort();
                                         next.by = by;
