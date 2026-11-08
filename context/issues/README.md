@@ -64,4 +64,4 @@ Who checked, on which live build, what they saw.
 
 ## Waiting for live verification
 
-[`verify-37d09dbf9.md`](verify-37d09dbf9.md): everything in the 37d09dbf9 deploy. The 1e03520ef list is done ([verify-1e03520ef.md](verify-1e03520ef.md)).
+[`verify-1d7053e88.md`](verify-1d7053e88.md): everything in the 1d7053e88 deploy. Earlier lists: [verify-37d09dbf9.md](verify-37d09dbf9.md), [verify-1e03520ef.md](verify-1e03520ef.md).
