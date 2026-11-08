@@ -8,6 +8,7 @@ use dioxus::prelude::*;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::http::contracts::suggestions::HttpBuilderProfile;
 use zwipe_ui::playstyle::{SummaryValue, TagRow, profile_summary, role_bars, role_tags, tag_rows};
+use zwipe_ui::screens::playstyle::{SUMMARY_DECKS, SUMMARY_TOP_COLOR, SUMMARY_TOP_COLORS};
 
 use super::chips::IdentityPips;
 use crate::inbound::cards::charts::{chart_bars, color_bars};
@@ -60,7 +61,7 @@ pub fn BuilderProfileSections(
     let colors = profile.color_map.as_ref().and_then(color_bars);
     let open_section: Signal<Option<String>> = use_signal(|| Some(COLORS_TITLE.to_string()));
     let roles = chart_bars(role_bars(&profile.roles, &profile.tags));
-    let tags = tag_rows(&profile.tags);
+    let tags = tag_rows(&profile.tags, profile.deck_count);
     let profile_tags = profile.tags;
     let describe_tag = try_use_context::<OtagDescribe>().map(|d| d.0);
     let on_examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
@@ -140,15 +141,15 @@ pub fn ProfileSummary(
         ProfilePanel { title: SUMMARY_TITLE, open_section, folds,
             div { class: "flex-col",
                 div { class: "settings-row",
-                    span { class: "settings-row-label", "Decks" }
+                    span { class: "settings-row-label", "{SUMMARY_DECKS}" }
                     span { class: "info-row-value", "{summary.decks}" }
                 }
                 if let Some(value) = summary.color_set {
-                    SummaryIdentityRow { label: "Top colors", value }
+                    SummaryIdentityRow { label: SUMMARY_TOP_COLORS, value }
                 }
                 if let Some(value) = summary.color {
                     SummaryIdentityRow {
-                        label: "Top color",
+                        label: SUMMARY_TOP_COLOR,
                         name: value.pips.first().map(Color::to_long_name),
                         value,
                     }

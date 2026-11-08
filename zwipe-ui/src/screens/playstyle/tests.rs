@@ -688,7 +688,7 @@ fn the_copy_matches_the_app() {
     assert_eq!(ROLES_TITLE, "Card roles");
     assert_eq!(TAGS_TITLE, "Oracle tags");
     assert_eq!(SUMMARY_DECKS, "Decks");
-    assert_eq!(SUMMARY_TOP_COLORS, "Top colors");
+    assert_eq!(SUMMARY_TOP_COLORS, "Top identity");
     assert_eq!(SUMMARY_TOP_COLOR, "Top color");
     assert_eq!(TAG_COLUMN, "Tag");
     assert_eq!(DECKS_COLUMN, "Decks");

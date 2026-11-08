@@ -55,10 +55,10 @@ pub const TAGS_TITLE: &str = "Oracle tags";
 /// The Summary row with the deck count.
 pub const SUMMARY_DECKS: &str = "Decks";
 
-/// The Summary row with the most common color set.
-pub const SUMMARY_TOP_COLORS: &str = "Top colors";
+/// The Summary row with the exact color identity the most decks are built in.
+pub const SUMMARY_TOP_COLORS: &str = "Top identity";
 
-/// The Summary row with the color in the most decks.
+/// The Summary row with the single color the most decks include.
 pub const SUMMARY_TOP_COLOR: &str = "Top color";
 
 /// The oracle tags table's first column.
@@ -665,7 +665,7 @@ impl State {
     pub fn tag_rows(&self) -> Vec<TagRow> {
         self.profile
             .as_ref()
-            .map(|p| playstyle::tag_rows(&p.tags))
+            .map(|p| playstyle::tag_rows(&p.tags, p.deck_count))
             .unwrap_or_default()
     }
 
