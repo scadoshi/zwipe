@@ -113,7 +113,7 @@ fn rate_limit_copy(wait_secs: u64) -> String {
 }
 
 /// `Cache-Control: public, max-age=3600` for successful responses on the
-/// public read endpoints (card catalogs, marketing stats, changelog), so the
+/// public read endpoints (card catalogs, marketing stats), so the
 /// CF edge (whose cache rules respect origin TTL) holds one copy per hour
 /// instead of falling back to its daily default. Two handlers set their own,
 /// which `if_not_present` lets win: featured-flavor counts down to the hour
@@ -430,19 +430,14 @@ pub fn public_routes() -> Router<AppState> {
                                 .error_handler(stable_rate_limit),
                         ),
                 )
-                // Merged rather than routed directly: the cache layer hangs on
-                // a wrapping Router because MethodRouter::layer can't infer
-                // its error type when chained after the governor.
-                .merge(
-                    Router::new()
-                        .route(
-                            "/changelog",
-                            get(changelog::get_changelog).layer(
-                                GovernorLayer::new(public_changelog_config)
-                                    .error_handler(stable_rate_limit),
-                            ),
-                        )
-                        .layer(hourly_cache_layer()),
+                // The handler sets its own Cache-Control (no-cache plus an
+                // ETag), so the hourly layer stays off this route.
+                .route(
+                    "/changelog",
+                    get(changelog::get_changelog).layer(
+                        GovernorLayer::new(public_changelog_config)
+                            .error_handler(stable_rate_limit),
+                    ),
                 )
                 .nest(
                     "/metrics",
