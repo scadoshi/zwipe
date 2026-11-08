@@ -2732,8 +2732,10 @@ body {
         padding: 1.25rem var(--dialog-pad-x);
     }
 
-    /* Every hint takes one width, whatever its longest line. */
-    .alert-dialog:has(.hint-body) {
+    /* Every hint takes one width, whatever its longest line: a page's hint
+       in its .hint-body, and a field's or section's lines and bullets drawn
+       straight into the dialog. */
+    .alert-dialog:has(.hint-body, .hint-line, .hint-bullets) {
         width: min(40rem, calc(100% - 3rem));
         min-width: 0;
     }
