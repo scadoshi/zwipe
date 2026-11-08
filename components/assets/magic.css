@@ -1479,17 +1479,6 @@ i.ms.ms-cost.ms-gp {
     padding-top: 0.75rem;
 }
 
-/* Collapse all, at the right end over the releases. */
-.changelog-collapse-row {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: var(--panel-gap);
-}
-
-.changelog-collapse-row .collapse-all {
-    font-family: inherit;
-}
-
 .changelog-version {
     font-size: 1.1rem;
     color: var(--ink-accent-primary, var(--accent-primary));
@@ -1551,11 +1540,6 @@ i.ms.ms-cost.ms-gp {
     flex-direction: column;
     gap: var(--panel-gap);
     margin-top: var(--panel-gap);
-}
-
-.changelog-collapse-row + .changelog-panels,
-.changelog-collapse-row + .changelog-list {
-    margin-top: 0.75rem;
 }
 
 .changelog-panel {

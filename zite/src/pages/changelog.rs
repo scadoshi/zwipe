@@ -1,4 +1,7 @@
-use components::{ChangelogFilter, ChangelogFilters, ChangelogReleases, Panel};
+use components::{
+    ChangelogCollapseAll, ChangelogFilter, ChangelogFilters, ChangelogReleases, Panel,
+    use_collapse_set,
+};
 use dioxus::prelude::*;
 
 use crate::components::{PageMeta, sleep_ms};
@@ -39,6 +42,8 @@ pub fn Changelog() -> Element {
     });
 
     let selection = use_signal(|| ChangelogFilter::Latest);
+    // Every release starts open; a header or Collapse all shuts them.
+    let collapse = use_collapse_set();
 
     rsx! {
         PageMeta {
@@ -49,12 +54,17 @@ pub fn Changelog() -> Element {
         Nav {}
         main { id: "content", class: "page content-enter",
             div { class: "page-header",
-                Panel { title: "Changelog", title_h1: true,
+                Panel {
+                    title: "Changelog",
+                    title_h1: true,
+                    title_end: rsx! {
+                        ChangelogCollapseAll { selection, set: collapse }
+                    },
                     p { class: "tagline", "Every release, newest first." }
                     ChangelogFilters { selection, anchor: anchor() }
                 }
             }
-            ChangelogReleases { selection, link_versions: true, page_size: PAGE_SIZE }
+            ChangelogReleases { selection, collapse, link_versions: true, page_size: PAGE_SIZE }
         }
         Footer {}
     }

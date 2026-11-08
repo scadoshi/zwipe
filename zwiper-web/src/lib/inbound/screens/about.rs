@@ -17,7 +17,8 @@
 //! draws its state and performs its effects.
 
 use components::{
-    Button, ButtonVariant, ChangelogFilter, ChangelogFilters, ChangelogLook, ChangelogReleases,
+    Button, ButtonVariant, ChangelogCollapseAll, ChangelogFilter, ChangelogFilters, ChangelogLook,
+    ChangelogReleases, use_collapse_set,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -100,6 +101,8 @@ pub fn About() -> Element {
         (screen.status(), screen.changelog().cloned())
     };
     let selection = use_signal(|| ChangelogFilter::Latest);
+    // Every release starts open; a header or Collapse all shuts them.
+    let collapse = use_collapse_set();
 
     rsx! {
         ScreenFrame { title: about::TITLE,
@@ -141,6 +144,9 @@ pub fn About() -> Element {
                     div { class: "settings-list about-panel",
                         div { class: "settings-list-header",
                             span { class: "settings-list-title", {about::CHANGELOG} }
+                            if let (Status::Loaded, Some(data)) = (status, &data) {
+                                ChangelogCollapseAll { data: data.clone(), selection, set: collapse }
+                            }
                         }
                         match (status, &data) {
                             (Status::Loaded, Some(data)) => rsx! {
@@ -156,7 +162,7 @@ pub fn About() -> Element {
                     }
                     match (status, data) {
                         (Status::Loaded, Some(data)) => rsx! {
-                            ChangelogReleases { data, selection, look: ChangelogLook::App, page_size: CHANGELOG_PAGE_SIZE }
+                            ChangelogReleases { data, selection, collapse, look: ChangelogLook::App, page_size: CHANGELOG_PAGE_SIZE }
                         },
                         (Status::Failed, _) => rsx! {},
                         (Status::Loading | Status::Loaded, _) => rsx! { ChangelogSkeletonPanels {} },
