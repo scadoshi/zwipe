@@ -7,3 +7,4 @@ Scotty, 2026-11-07: a shared deck's link preview shows a generated image with ba
 
 Scotty's answers: 1. zerver draws it, Cloudflare caches it.
 2. The owner's theme (share API may carry the theme name).
+3. Show the price as is (USD sum of priced cards; unpriced cards just don't count).
