@@ -236,12 +236,20 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         exhausted.set(false);
         if deck.peek().is_some() && !context().serves(&filter.peek()) {
             toast.warning(
-                "Try a filter to start swiping".to_string(),
+                add_cards::TRY_A_FILTER.to_string(),
                 ToastOptions::default().duration(TOAST_NORMAL),
             );
             return;
         }
         let Ok(query) = builder.build() else {
+            // Nothing to search on: once the deck is in, say so rather than
+            // leave a blank ghost.
+            if deck.peek().is_some() {
+                toast.warning(
+                    add_cards::TRY_A_FILTER.to_string(),
+                    ToastOptions::default().duration(TOAST_NORMAL),
+                );
+            }
             return;
         };
         loading_cards.set(true);

@@ -734,6 +734,14 @@ impl State {
             return effects;
         }
         let Ok(query) = add::normalized(&self.filter).build() else {
+            // Nothing to search on, as with no deck format and no filter:
+            // once the deck is in, say so rather than leave a blank ghost.
+            if self.deck.is_some() {
+                effects.push(Effect::Toast(Toast::normal(
+                    ToastKind::Warning,
+                    TRY_A_FILTER,
+                )));
+            }
             return effects;
         };
         self.run.searching = true;
