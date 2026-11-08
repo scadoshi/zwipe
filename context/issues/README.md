@@ -60,4 +60,4 @@ Who checked, on which live build, what they saw.
 
 ## Waiting for live verification
 
-[`verify-1e03520ef.md`](verify-1e03520ef.md): everything merged in the 1e03520ef deploy.
+[`verify-37d09dbf9.md`](verify-37d09dbf9.md): everything merged in the 1e03520ef deploy.
