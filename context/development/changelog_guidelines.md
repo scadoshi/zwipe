@@ -31,4 +31,4 @@ The "What's New" text in `operations/store-submissions/<version>/whats_new.md` i
 
 ## Mechanics
 
-New work goes under `UPCOMING`. At cut time the entry moves to the top of `RELEASES` with the App Store's "Ready for Distribution" date, and the version bumps per `versioning.md`.
+New work goes under `UPCOMING`. At cut time the entry moves to the top of `RELEASES` dated the day the build is cut and submitted (never moved to the day it goes live), and the version bumps per `versioning.md`.
