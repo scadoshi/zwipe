@@ -38,6 +38,12 @@ pub enum Slot {
 }
 
 impl Slot {
+    /// Whether this slot's Swipe select pile depends on the commander: Partner deals only the cards it can pair with, and Signature spell only spells within its colors. The client hands the commander to these piles and deals them again when it changes.
+    #[must_use]
+    pub const fn pile_needs_commander(self) -> bool {
+        matches!(self, Self::Partner | Self::SignatureSpell)
+    }
+
     /// Every slot, top to bottom on the form.
     pub const ALL: [Self; 4] = [
         Self::Commander,
@@ -165,6 +171,15 @@ mod tests {
 
     use super::*;
     use crate::test_support::deck_profile;
+
+    #[test]
+    fn the_partner_and_signature_spell_piles_need_the_commander() {
+        let needs: Vec<Slot> = Slot::ALL
+            .into_iter()
+            .filter(|slot| slot.pile_needs_commander())
+            .collect();
+        assert_eq!(needs, [Slot::Partner, Slot::SignatureSpell]);
+    }
 
     #[test]
     fn labels_follow_the_app_in_every_format() {
