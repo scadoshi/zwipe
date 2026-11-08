@@ -422,7 +422,7 @@ pub fn CommanderMaybeboard() -> Element {
                         }
                     } else {
                         div { class: "chip-row",
-                            span { class: "stat-chip stat-chip-p1 chip-row-label", "Quick add" }
+                            label { class: "stat-chip stat-chip-p1 chip-row-label", r#for: QUICK_ADD_ID, "Quick add" }
                             ClearWrap {
                                 filled: !query().is_empty(),
                                 on_clear: move |()| query.set(String::new()),
