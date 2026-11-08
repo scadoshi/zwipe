@@ -974,6 +974,47 @@ mod tests {
     }
 
     #[test]
+    fn a_changed_config_flag_is_search_intent() {
+        /// A flag's name and the change that moves it off its default.
+        type Change = (&'static str, fn(&mut CardQueryBuilder));
+        let changes: [Change; 7] = [
+            ("promo yes", |b| {
+                b.set_promo(true);
+            }),
+            ("promo no", |b| {
+                b.set_promo(false);
+            }),
+            ("digital", |b| {
+                b.set_digital(true);
+            }),
+            ("oversized", |b| {
+                b.set_oversized(true);
+            }),
+            ("content warning", |b| {
+                b.set_content_warning(true);
+            }),
+            ("playable", |b| {
+                b.set_is_playable(false);
+            }),
+            ("language", |b| {
+                b.set_language("ja");
+            }),
+        ];
+        for (what, change) in changes {
+            let mut b = CardQueryBuilder::new();
+            change(&mut b);
+            assert!(!b.is_empty(), "{what} is a filter");
+            assert!(b.has_search_intent(), "{what} searches");
+            assert!(b.build().is_ok(), "{what} builds on its own");
+            b.retain_config();
+            assert!(b.is_empty(), "clearing the filter resets {what}");
+        }
+        let mut token = CardQueryBuilder::new();
+        token.set_is_token(false);
+        assert!(token.is_empty(), "the token exclusion stays config");
+    }
+
+    #[test]
     fn has_search_intent_counts_sort_and_synergy() {
         // Bare builder (config only) is the firehose: no intent.
         let bare = CardQueryBuilder::new();

@@ -240,9 +240,10 @@ fn adds_search_refuses_an_empty_filter_over_an_empty_one() {
         config(true, true, ResetRule::Plain),
         ResetNotice::Toast,
     ));
-    let mut playable_off = CardQueryBuilder::default();
-    playable_off.set_is_playable(false);
-    edit(&mut state, &playable_off);
+    // A page size is config, not a filter.
+    let mut paged = CardQueryBuilder::default();
+    paged.set_limit(50);
+    edit(&mut state, &paged);
     assert_eq!(
         state.update(Action::Apply),
         [Effect::Toast(Toast::new(

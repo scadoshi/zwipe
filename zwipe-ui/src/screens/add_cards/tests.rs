@@ -286,6 +286,27 @@ fn the_ghost_has_no_note_before_a_search() {
 }
 
 #[test]
+fn promo_alone_searches_on_a_deck_with_no_format() {
+    let (mut state, _) = with_deck(&deck(deck_profile("No format"), Vec::new()));
+    let mut promo = state.filter().clone();
+    promo.set_promo(true);
+    let effects = state.update(Action::Filter(promo));
+    assert!(has_search(&effects), "Is promo alone searches: {effects:?}");
+}
+
+#[test]
+fn digital_alone_searches_on_a_deck_with_no_format() {
+    let (mut state, _) = with_deck(&deck(deck_profile("No format"), Vec::new()));
+    let mut digital = state.filter().clone();
+    digital.set_digital(true);
+    let effects = state.update(Action::Filter(digital));
+    assert!(
+        has_search(&effects),
+        "Is digital alone searches: {effects:?}"
+    );
+}
+
+#[test]
 fn a_config_only_filter_searches_and_an_empty_reply_says_no_cards_match() {
     let mut profile = deck_profile("Modern");
     profile.format = Some(Format::Modern);
