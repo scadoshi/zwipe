@@ -51,7 +51,7 @@ Who checked, on which live build, what they saw.
 | [283](283-collapsible-changelog-versions.md) | Collapsible versions in every changelog | merging | laptop | #417, portfolio#20 |
 | [285](285-generated-share-image.md) | Generated preview image for shared decks | merged | thinker | #424, #425, #426 |
 | [286](286-portfolio-orangui-line-anchors.md) | Portfolio orangui source line ranges are stale | merged | laptop | portfolio#21 |
-| [265](265-partner-swipe-stack.md) | Partner Swipe stack still offers illegal partners | fixing (verify FAIL) | laptop | #419, #430 |
+| [265](265-partner-swipe-stack.md) | Partner Swipe stack still offers illegal partners | merged | laptop | #419, #430, #437 |
 | [287](287-split-1-18-changelog.md) | Split the 1.18 changelog into logical patches | merged | laptop | #420 |
 | [288](288-stack-refreshed-on-failed-refresh.md) | Add says Stack refreshed when the refresh failed | merged | laptop | #421 |
 | [289](289-top-color-sr-text.md) | Top color pip reads Mono-red to screen readers | merged | laptop | #422 |
