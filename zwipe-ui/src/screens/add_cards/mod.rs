@@ -716,7 +716,7 @@ impl State {
                 add_deck.seed(&mut self.filter, self.remembered);
                 self.deck = Some(add_deck);
                 let mut effects = vec![Effect::SetFilter(self.filter.clone())];
-                if self.stack.is_empty() {
+                if !self.stack.has_served() {
                     effects.push(Effect::Rerun);
                 }
                 effects
@@ -732,7 +732,7 @@ impl State {
         }
     }
 
-    /// Starts a new stack from the top with the live filter. On Search, once the deck is in, a filter Add would not serve asks for one instead.
+    /// Starts a new stack from the top with the live filter, the swiped cards kept behind it for undo. On Search, once the deck is in, a filter Add would not serve asks for one instead.
     fn fresh_search(&mut self) -> Vec<Effect> {
         let Some(deck_id) = self.deck_id else {
             return Vec::new();
@@ -741,7 +741,7 @@ impl State {
         self.epoch = Some(ticket);
         self.run.searching = false;
         self.failed.search = false;
-        self.stack.reset();
+        self.stack.clear_ahead();
         self.last_search = None;
         self.run.exhausted = false;
         let mut effects = vec![Effect::StopEnter(Source::Search), Effect::EaseImages];
@@ -810,7 +810,7 @@ impl State {
                         synergy,
                     });
                 }
-                self.stack.replace(served);
+                self.stack.replace_ahead(served);
                 self.last_search = Some(*snapshot);
                 self.run.searching = false;
                 effects.extend(warned);
@@ -1448,7 +1448,7 @@ impl State {
     #[must_use]
     pub fn load_failed(&self) -> bool {
         self.source == Source::Search
-            && self.stack.is_empty()
+            && !self.stack.has_served()
             && !self.run.searching
             && (self.failed.search || (self.failed.deck && self.deck.is_none()))
     }
@@ -1612,7 +1612,7 @@ impl State {
     pub fn pile(&self) -> Pile {
         match self.source {
             Source::Search if self.stack.current().is_some() => Pile::Cards,
-            Source::Search if !self.stack.is_empty() => {
+            Source::Search if self.stack.has_served() => {
                 if self.run.loading_more {
                     Pile::Loading
                 } else {
@@ -1653,7 +1653,7 @@ impl State {
     #[must_use]
     pub fn parked(&self) -> Option<ParkedStack> {
         let filter = self.last_search.clone()?;
-        if self.stack.is_empty() {
+        if !self.stack.has_served() {
             return None;
         }
         let (cards, index, history) = self.stack.park_state();
