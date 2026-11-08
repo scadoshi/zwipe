@@ -67,6 +67,8 @@ struct HoverEntry {
     id: u64,
     /// The image the card shows.
     url: String,
+    /// The card's name, the image's alt text.
+    name: String,
     /// Where the card is in its life.
     phase: HoverPhase,
 }
@@ -111,14 +113,15 @@ pub struct HoverStack {
 }
 
 impl HoverStack {
-    /// Shows a hovered row's image in place of any card on show, held until
-    /// [`Self::leave`] with the id it returns.
-    pub(crate) fn enter(self, url: String) -> u64 {
+    /// Shows a hovered row's image of the card `name` in place of any card
+    /// on show, held until [`Self::leave`] with the id it returns.
+    pub(crate) fn enter(self, url: String, name: String) -> u64 {
         let id = self.take_id();
         let mut entry = self.entry;
         entry.set(Some(HoverEntry {
             id,
             url,
+            name,
             phase: HoverPhase::Held,
         }));
         id
@@ -232,7 +235,7 @@ pub fn HoverStackHost(stack: HoverStack) -> Element {
             div {
                 key: "{entry.id}",
                 class: if entry.phase == HoverPhase::Leaving { "hover-stack-card leaving" } else { "hover-stack-card" },
-                img { src: "{entry.url}", alt: "Card preview" }
+                img { src: "{entry.url}", alt: "{entry.name}" }
             }
         }
     }
@@ -250,6 +253,7 @@ mod tests {
         HoverEntry {
             id,
             url: format!("card-{id}"),
+            name: format!("Card {id}"),
             phase: HoverPhase::Held,
         }
     }

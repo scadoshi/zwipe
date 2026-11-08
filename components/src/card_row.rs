@@ -201,7 +201,7 @@ pub fn CardRow(
                     if let Some(stack) = hover_stack
                         && expanded_card() != Some(card_id)
                         && let Some(url) = sd_on_enter.face_image_url(face_on_enter.get(), ImageSize::Normal)
-                        && let Some(stale) = held_on_enter.replace(Some(stack.enter(url.to_string())))
+                        && let Some(stale) = held_on_enter.replace(Some(stack.enter(url.to_string(), sd_on_enter.name.clone())))
                     {
                         stack.leave(stale);
                     }
@@ -228,11 +228,13 @@ pub fn CardRow(
                     }
                 },
                 if let Some(url) = art_url {
+                    // The name sits beside the art, so the art has no alt of its own.
                     img {
                         class: "{art_class}",
                         src: "{url}",
                         loading: "lazy",
                         draggable: false,
+                        alt: "",
                     }
                 }
                 // The name's head and its tags flow beside the art; the tags
