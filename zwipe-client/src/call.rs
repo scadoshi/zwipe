@@ -87,6 +87,13 @@ impl ZwipeClient {
         if E::CREDENTIALS {
             request = request.fetch_credentials_include();
         }
+        // A browser may hold a copy longer than the server's header says
+        // (an edge can raise max-age), so a call that changes on a deploy
+        // asks it to check with the server first; a current copy is a 304.
+        #[cfg(target_arch = "wasm32")]
+        if E::REVALIDATE {
+            request = request.fetch_cache_no_cache();
+        }
 
         info!("{} {}", E::METHOD.as_str(), url);
         hold_for_skeleton_audit(E::METHOD).await;

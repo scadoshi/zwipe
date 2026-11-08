@@ -13,6 +13,7 @@ pub struct GetChangelog;
 impl Endpoint for GetChangelog {
     const METHOD: Method = Method::Get;
     const AUTH: bool = false;
+    const REVALIDATE: bool = true;
     type Request = ();
     type Response = HttpChangelog;
     fn path(&self) -> Cow<'static, str> {

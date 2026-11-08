@@ -58,6 +58,10 @@ pub trait Endpoint {
     /// Whether a browser sends and stores cookies on the call. Only the web
     /// session endpoints set it; every other call stays cookie-free.
     const CREDENTIALS: bool = false;
+    /// Whether a browser revalidates its cached copy with the server before
+    /// using it, for an answer that changes on a deploy. Off by default, so
+    /// other calls keep whatever caching their headers allow.
+    const REVALIDATE: bool = false;
     /// Body this call accepts. `()` when it sends none.
     type Request: Serialize;
     /// Decoded success body.
