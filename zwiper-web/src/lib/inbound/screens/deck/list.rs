@@ -306,7 +306,7 @@ fn DeckRow(profile: DeckProfile) -> Element {
                         alt: "",
                     }
                 }
-                h3 { class: "font-light text-base tracking-wide deck-list-name",
+                h2 { class: "font-light text-base tracking-wide deck-list-name",
                     "{profile.name}"
                 }
                 // The pips, the count and the chips take the line under the name.
