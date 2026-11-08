@@ -68,13 +68,13 @@ Who checked, on which live build, what they saw.
 | [300](300-share-image-version-not-bumped.md) | Share image URL keeps its old ?v= after the image layout changes | verified | thinker | #438 |
 | [301](301-form-dirty-after-discard.md) | Edit deck still asks to leave after a picker change was discarded | verified | laptop | #439 |
 | [302](302-add-details-overlaps-card.md) | Add's card details panel overlaps the swipe card at 900 to 1060px | verified | laptop | #440 |
-| [303](303-web-unstyled-flash-on-load.md) | The web app flashes unstyled on a hard refresh | merged | thinker | #445 |
-| [304](304-home-stats-chip-gap.md) | Web Home's stat chips sit far below the counters | merged | laptop | #443 |
-| [305](305-home-decks-create-label.md) | Home's Decks panel "+" should read "Create deck" | merged | laptop | #443 |
-| [306](306-openframe-reuse-shell.md) | About and Privacy draw a second app frame when signed in | merged | halo | #444 |
-| [307](307-about-cards-skip-zwiper-web.md) | zwipe.net About's crate cards leave out zwiper-web | merged | laptop | #447 |
+| [303](303-web-unstyled-flash-on-load.md) | The web app flashes unstyled on a hard refresh | verified | thinker | #445 |
+| [304](304-home-stats-chip-gap.md) | Web Home's stat chips sit far below the counters | verified | laptop | #443 |
+| [305](305-home-decks-create-label.md) | Home's Decks panel "+" should read "Create deck" | verified | laptop | #443 |
+| [306](306-openframe-reuse-shell.md) | About and Privacy draw a second app frame when signed in | verified | halo | #444 |
+| [307](307-about-cards-skip-zwiper-web.md) | zwipe.net About's crate cards leave out zwiper-web | verified | laptop | #447 |
 | [308](308-share-image-size-for-whatsapp.md) | Share preview images may be too big for WhatsApp | parked | - | - |
-| [309](309-robots-blocks-share-unfurls.md) | X shows no card for shared deck links (robots.txt) | merged | laptop | #449 |
+| [309](309-robots-blocks-share-unfurls.md) | X shows no card for shared deck links (robots.txt) | verified | laptop | #449 |
 
 ## Waiting for live verification
 
