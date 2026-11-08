@@ -125,7 +125,7 @@ pub(crate) fn QuickAdd(
                 div { class: "search-float-anchor", id: "quick-add-anchor",
                     div { class: "search-float-results", id: "quick-add-results",
                         if searching() {
-                            div { class: "chip-unselected search-float-chip", "Searching..." }
+                            div { class: "chip-unselected search-float-chip", "Searching…" }
                         } else if shown.is_empty() {
                             div { class: "chip-unselected search-float-chip", "No results" }
                         } else {

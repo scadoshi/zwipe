@@ -73,7 +73,7 @@ pub const CLONE_PLACEHOLDER: &str = "New deck name";
 pub const CLONE_SAVE: &str = "Save";
 
 /// The Clone dialog's button while the clone is on its way.
-pub const CLONE_BUSY: &str = "Cloning...";
+pub const CLONE_BUSY: &str = "Cloning…";
 
 /// The Share dialog's line while the deck has a link.
 pub const SHARE_SHARED: &str = "Anyone with the link can view this deck. Stop sharing disables the link; sharing again creates a new one.";

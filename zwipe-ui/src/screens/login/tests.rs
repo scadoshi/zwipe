@@ -260,7 +260,7 @@ fn the_copy_matches_the_app() {
         [
             "Log in",
             "Log in",
-            "Logging in",
+            "Logging in…",
             "Create account",
             "Forgot password"
         ]

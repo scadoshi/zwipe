@@ -217,7 +217,7 @@ fn CloneDeckDialog(source_deck_id: Uuid, default_name: String, open: Signal<bool
     let blank = use_memo(move || name().trim().is_empty());
     let save = ActionButton::new("Save")
         .disabled(blank)
-        .busy("Cloning...", move || {
+        .busy("Cloning…", move || {
             let new_name = name.peek().trim().to_owned();
             async move {
                 let body = HttpCloneDeck {

@@ -116,7 +116,7 @@ pub(super) fn ChangeUsernameSheet(mut open: Signal<bool>) -> Element {
                 div { class: "action-dock action-dock-right sheet-dock",
                     button {
                         class: "action-dock-btn",
-                        "aria-label": if is_loading() { "Saving..." } else { "Save changes" },
+                        "aria-label": if is_loading() { "Saving…" } else { "Save changes" },
                         disabled: is_loading(),
                         onclick: move |_| attempt_submit(),
                         DockIcon { path: CHECK }

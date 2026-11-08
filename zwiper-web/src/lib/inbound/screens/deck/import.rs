@@ -98,7 +98,7 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
 
     let board_word = board().unwrap_or("mainboard");
     let submit_label = if loading() {
-        "Importing..."
+        "Importing…"
     } else if mode().is_replace() {
         "Replace"
     } else {

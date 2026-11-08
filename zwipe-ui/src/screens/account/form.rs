@@ -8,7 +8,7 @@ use zwipe_core::domain::user::User;
 use crate::account;
 
 /// The Save button's label while a change is out.
-pub const SAVING: &str = "Saving...";
+pub const SAVING: &str = "Saving…";
 
 /// The Save button's label.
 pub const SAVE: &str = "Save changes";

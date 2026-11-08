@@ -159,7 +159,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                 div { class: "action-dock action-dock-right",
                     button {
                         class: "action-dock-btn",
-                        "aria-label": if saving() { "Saving..." } else { "Save changes" },
+                        "aria-label": if saving() { "Saving…" } else { "Save changes" },
                         disabled: saving(),
                         onclick: move |_| submit.call(()),
                         DockIcon { path: CHECK }

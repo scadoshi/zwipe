@@ -157,11 +157,11 @@ pub fn password_required(password: &str) -> Option<String> {
     password.is_empty().then(|| PASSWORD_REQUIRED.to_owned())
 }
 
-/// The Resend button's label on the email verification row: "Sending..." while a send is out, "Resend in {n}s" while `cooldown_secs` runs, otherwise "Resend".
+/// The Resend button's label on the email verification row: "Sending…" while a send is out, "Resend in {n}s" while `cooldown_secs` runs, otherwise "Resend".
 #[must_use]
 pub fn resend_label(sending: bool, cooldown_secs: u64) -> String {
     if sending {
-        "Sending...".to_owned()
+        "Sending…".to_owned()
     } else if cooldown_secs > 0 {
         format!("Resend in {cooldown_secs}s")
     } else {
@@ -484,10 +484,10 @@ mod tests {
 
     #[test]
     fn resend_says_what_it_is_doing() {
-        assert_eq!(resend_label(true, 60), "Sending...");
+        assert_eq!(resend_label(true, 60), "Sending…");
         assert_eq!(
             resend_label(true, 0),
-            "Sending...",
+            "Sending…",
             "sending wins over a spent cooldown"
         );
         assert_eq!(resend_label(false, 60), "Resend in 60s");

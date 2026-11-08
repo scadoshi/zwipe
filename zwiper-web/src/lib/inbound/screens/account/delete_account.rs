@@ -69,7 +69,7 @@ pub(super) fn DeleteAccountDialog(open: Signal<bool>) -> Element {
         .danger()
         .live_label(label)
         .disabled(counting)
-        .busy("Deleting...", move || {
+        .busy("Deleting…", move || {
             let password = password();
             async move {
                 let deleted = authed

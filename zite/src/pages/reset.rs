@@ -156,7 +156,7 @@ pub fn Reset(token: String) -> Element {
                                 form: "reset-form",
                                 class: "panel-action",
                                 disabled: current_state == ResetState::Loading,
-                                if current_state == ResetState::Loading { "Updating..." } else { "Set new password" }
+                                if current_state == ResetState::Loading { "Updating…" } else { "Set new password" }
                             }
                         },
 

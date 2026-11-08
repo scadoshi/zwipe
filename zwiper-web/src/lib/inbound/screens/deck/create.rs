@@ -95,7 +95,7 @@ pub fn CreateDeck() -> Element {
                 div { class: "action-dock action-dock-right",
                     button {
                         class: "action-dock-btn",
-                        "aria-label": if saving() { "Saving..." } else { "Create" },
+                        "aria-label": if saving() { "Saving…" } else { "Create" },
                         disabled: saving(),
                         onclick: move |_| submit.call(()),
                         DockIcon { path: CHECK }

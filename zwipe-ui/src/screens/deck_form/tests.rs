@@ -284,7 +284,7 @@ fn create_sends_the_form_and_opens_the_new_deck() {
     };
     assert_eq!(request.name, "Burn");
     assert!(state.is_saving());
-    assert_eq!(state.save_label(), Some("Saving..."));
+    assert_eq!(state.save_label(), Some("Saving…"));
     assert!(state.update(Action::Save).is_empty(), "one save at a time");
     assert!(
         state.update(Action::Back).is_empty(),
@@ -352,11 +352,7 @@ fn edit_with_nothing_changed_says_so() {
     let effects = state.update(Action::Save);
     assert_eq!(
         toasts(&effects),
-        [Toast::new(
-            ToastKind::Error,
-            "No changes to save",
-            NORMAL
-        )]
+        [Toast::new(ToastKind::Error, "No changes to save", NORMAL)]
     );
     assert!(!state.is_saving());
 }
@@ -904,7 +900,7 @@ fn the_copy_matches_the_app() {
             "Couldn't load deck",
             "Back",
             "Save",
-            "Saving..."
+            "Saving…"
         ]
     );
     assert_eq!([PROFILE, BUDGET, TAGS], ["Profile", "Budget", "Tags"]);
@@ -932,7 +928,7 @@ fn the_copy_matches_the_app() {
     );
     assert_eq!(
         [NOT_SET, FILTER, SWIPE, SEARCHING, NO_RESULTS],
-        ["Not set", "Filter", "Swipe", "Searching...", "No results"]
+        ["Not set", "Filter", "Swipe", "Searching…", "No results"]
     );
     assert_eq!(
         ORACLE_TAGS_SEEDED,

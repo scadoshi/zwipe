@@ -1128,7 +1128,7 @@ fn the_copy_matches_the_app() {
     assert_eq!(HINT_TITLE, "Browsing your deck");
     assert_eq!(QUICK_ADD, "Quick add");
     assert_eq!(QUICK_ADD_PLACEHOLDER, "Search a card to add");
-    assert_eq!(SEARCHING, "Searching...");
+    assert_eq!(SEARCHING, "Searching…");
     assert_eq!(NO_RESULTS, "No results");
     assert_eq!(GROUP_BY, "Group by");
     assert_eq!(BOARDS, "Boards");

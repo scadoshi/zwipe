@@ -254,7 +254,7 @@ fn the_copy_matches_the_app() {
             "Create account",
             "Back to log in",
             "Create account",
-            "Creating...",
+            "Creating…",
             "Check your inbox to verify your email, then log in"
         ]
     );

@@ -65,7 +65,7 @@ pub const IMPORT: &str = "Import";
 pub const REPLACE: &str = "Replace";
 
 /// The submit button while an import is out.
-pub const IMPORTING: &str = "Importing...";
+pub const IMPORTING: &str = "Importing…";
 
 /// Where an action sends the user. The client maps each to its own route.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

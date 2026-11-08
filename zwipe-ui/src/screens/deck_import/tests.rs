@@ -365,7 +365,7 @@ fn the_copy_matches_the_app() {
     assert_eq!(BACK, "Back");
     assert_eq!(
         (IMPORT, REPLACE, IMPORTING),
-        ("Import", "Replace", "Importing...")
+        ("Import", "Replace", "Importing…")
     );
     let sources: Vec<&str> = Source::ALL.into_iter().map(Source::label).collect();
     assert_eq!(sources, ["Text", "Archidekt"]);

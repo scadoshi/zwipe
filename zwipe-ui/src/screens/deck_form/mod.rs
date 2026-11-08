@@ -45,7 +45,7 @@ pub const BACK: &str = "Back";
 pub const SAVE: &str = "Save";
 
 /// The save button while the save is out.
-pub const SAVING: &str = "Saving...";
+pub const SAVING: &str = "Saving…";
 
 /// The title of the dialog that asks before leaving the form with unsaved changes.
 pub const LEAVE_TITLE: &str = "Leave without saving?";
@@ -102,7 +102,7 @@ pub const FILTER: &str = "Filter";
 pub const SWIPE: &str = "Swipe";
 
 /// A command-zone search's one chip while it waits or runs.
-pub const SEARCHING: &str = "Searching...";
+pub const SEARCHING: &str = "Searching…";
 
 /// A command-zone search's one chip when it found nothing.
 pub const NO_RESULTS: &str = "No results";

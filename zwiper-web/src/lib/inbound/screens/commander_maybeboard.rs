@@ -465,7 +465,7 @@ pub fn CommanderMaybeboard() -> Element {
                             div { class: "search-float-anchor",
                                 div { class: "search-float-results search-float-below",
                                     if is_searching() {
-                                        div { class: "chip-unselected search-float-chip", "Searching..." }
+                                        div { class: "chip-unselected search-float-chip", "Searching…" }
                                     } else if results.is_empty() {
                                         div { class: "chip-unselected search-float-chip", "No results" }
                                     } else {
