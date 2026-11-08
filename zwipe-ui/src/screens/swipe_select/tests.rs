@@ -167,7 +167,7 @@ fn opening_offers_the_hint_and_searches_the_first_page() {
 #[test]
 fn the_hint_is_offered_on_the_first_open_only() {
     let mut state = loaded(&cards(&["Krenko"]));
-    let effects = state.update(open(Mode::Partner));
+    let effects = state.update(open(Mode::Partner(None)));
     assert!(
         !effects.iter().any(|e| matches!(e, Effect::OfferHint(_))),
         "{effects:?}"
@@ -180,7 +180,7 @@ fn each_mode_adds_its_constraint_and_noun() {
     let cases = [
         (Mode::Commander(Format::Commander), "commander", true),
         (Mode::Commander(Format::Oathbreaker), "oathbreaker", true),
-        (Mode::Partner, "partner", true),
+        (Mode::Partner(None), "partner", true),
         (Mode::Background, "background", false),
         (Mode::SignatureSpell(colors), "signature spell", false),
     ];
@@ -259,7 +259,7 @@ fn opening_with_no_mode_deals_nothing() {
 #[test]
 fn a_late_reply_is_ignored() {
     let mut state = State::new();
-    let older = ticket_of(&state.update(open(Mode::Partner)));
+    let older = ticket_of(&state.update(open(Mode::Partner(None))));
     let newer = ticket_of(&state.update(Action::Refresh(CardQueryBuilder::new())));
     assert_eq!(
         state.update(Action::Found {
@@ -363,7 +363,7 @@ fn a_first_page_all_excluded_pulls_the_next() {
     let pile = cards(&["Krenko"]);
     let mut state = State::new();
     let ticket = ticket_of(&state.update(Action::Open {
-        mode: Some(Mode::Partner),
+        mode: Some(Mode::Partner(None)),
         filter: CardQueryBuilder::new(),
         pile: SuggestedPile::default(),
         excluded: pile[0].scryfall_data.oracle_id.into_iter().collect(),
@@ -373,7 +373,10 @@ fn a_first_page_all_excluded_pulls_the_next() {
         cards: pile,
     });
     assert!(matches!(effects.as_slice(), [Effect::LoadMore { .. }]));
-    assert_eq!(search_of(&effects).1, want_query(&Mode::Partner, PAGE_SIZE));
+    assert_eq!(
+        search_of(&effects).1,
+        want_query(&Mode::Partner(None), PAGE_SIZE)
+    );
     assert_eq!(state.status(), Status::Loading, "the next page is out");
 }
 
@@ -806,5 +809,34 @@ fn swiping_the_last_card_says_the_pile_is_spent() {
     assert_eq!(
         effects,
         [Effect::Toast(Toast::quick(ToastKind::Info, NO_CARDS_LEFT))]
+    );
+}
+
+/// A legendary creature named `name` with these keywords and rules text.
+fn partner_card(name: &str, keywords: &[&str], text: &str) -> Card {
+    let mut card = cards(&[name]).remove(0);
+    card.scryfall_data.keywords = Some(keywords.iter().map(|k| (*k).to_owned()).collect());
+    card.scryfall_data.oracle_text = Some(text.to_owned());
+    card.scryfall_data.type_line = Some("Legendary Creature".to_owned());
+    card
+}
+
+#[test]
+fn tymnas_partner_pile_deals_only_plain_partners() {
+    let tymna = partner_card("Tymna the Weaver", &["Partner"], "Partner");
+    let mut state = State::new();
+    let ticket = ticket_of(&state.update(open(Mode::Partner(Some(Box::new(tymna))))));
+    let _found = state.update(Action::Found {
+        ticket,
+        cards: vec![
+            partner_card("Pir, Imaginative Rascal", &["Partner with", "Partner"], "Partner with Toothy, Imaginary Friend (When this creature enters, target player may put Toothy into their hand.)"),
+            partner_card("Thrasios, Triton Hero", &["Partner"], "Partner"),
+            partner_card("Ian Chesterton", &["Doctor's companion"], "Doctor's companion"),
+            partner_card("Kraum, Ludevic's Opus", &["Partner"], "Partner"),
+        ],
+    });
+    assert_eq!(
+        names(state.window()),
+        ["Thrasios, Triton Hero", "Kraum, Ludevic's Opus"]
     );
 }
