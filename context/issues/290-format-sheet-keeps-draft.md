@@ -14,5 +14,7 @@ Part 2 (for Scotty): Keep reads as "keep the change" but only returns to the ope
 ## Fix
 Part 1, branch `nits/laptop-290`. The Format, Deck tags and Oracle tags pickers stay mounted while shut, in the app and on web, and none of them cleared its search, so a reopened picker showed the old text and a filtered list. `components::use_picker_search(open)` holds a picker's search and empties it whenever the picker closes, by ✓, Discard or a quiet close. All six pickers (three per client) use it. Failing test first: `closing_a_picker_empties_its_search`. The pick itself still follows the form: Discard puts the format back, ✓ keeps it. Part 2 (the Keep wording) waits for Scotty.
 
+Part 2, branch `nits/laptop-290b`. The discard dialog's Keep button reads "Keep editing" (`zwipe_ui::deck::pickers::KEEP`), the one label the app and web both use for every picker that asks before discarding: Format, Deck tags and Oracle tags. No other dialog uses it. Behavior is unchanged: picks still apply only on ✓. Failing test first: `the_discard_dialog_offers_keep_editing_and_discard`.
+
 ## Decision (part 2)
 Scotty, 2026-11-08: rename Keep to "Keep editing". Changes still apply only on ✓, so people can click through formats and read the descriptions without the sheet closing.
