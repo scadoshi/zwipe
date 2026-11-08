@@ -48,7 +48,7 @@ Who checked, on which live build, what they saw.
 | [279](279-home-create-deck.md) | Create deck button on Home's Decks panel | merging | halo | #414 |
 | [280](280-panel-title-sizes.md) | Panel titles render at different sizes | fixing | thinker | - |
 | [282](282-stale-bundle-after-deploy.md) | Web keeps the old bundle until a hard refresh | reported | - | - |
-| [283](283-collapsible-changelog-versions.md) | Collapsible versions in every changelog | fixing | laptop | - |
+| [283](283-collapsible-changelog-versions.md) | Collapsible versions in every changelog | merging | laptop | #417, portfolio#20 |
 | [285](285-generated-share-image.md) | Generated preview image for shared decks | approved (plan) | thinker | - |
 
 ## Waiting for live verification
