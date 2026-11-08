@@ -108,7 +108,7 @@ pub(super) fn ChangeUsernameSheet(mut open: Signal<bool>) -> Element {
                     }
                     TextInput {
                         value: password,
-                        id: "password",
+                        id: "username_password",
                         name: "password",
                         autocomplete: "current-password",
                         label: "Password",

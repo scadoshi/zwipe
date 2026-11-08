@@ -44,7 +44,7 @@ pub fn ChangeUsernameSheet(open: Signal<bool>) -> Element {
 
                 TextInput {
                     value: driver.inputs.get(sheet, Field::Password),
-                    id: "password",
+                    id: "username_password",
                     name: "password",
                     autocomplete: "current-password",
                     label: Field::Password.label(),

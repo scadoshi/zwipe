@@ -110,7 +110,7 @@ pub(super) fn ChangeEmailSheet(mut open: Signal<bool>) -> Element {
                     }
                     TextInput {
                         value: password,
-                        id: "password",
+                        id: "email_password",
                         name: "password",
                         autocomplete: "current-password",
                         label: "Password",
