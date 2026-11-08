@@ -170,9 +170,6 @@ pub fn narrow_to_partners(builder: &mut CardQueryBuilder, commander: Option<&Car
             if builder.keywords_excludes().is_none() {
                 builder.set_keywords_excludes(["Partner with"]);
             }
-            if builder.oracle_text_not_contains().is_none() {
-                builder.set_oracle_text_not_contains(PARTNER_VARIANT_PREFIX);
-            }
         }
         Some(PartnerKind::Variant(variant)) => {
             if builder.oracle_text_contains().is_none() {
@@ -391,6 +388,53 @@ mod tests {
         ]
     }
 
+    /// What the server serves for `query` from `cards`, by the criteria's own in-memory mirror of the SQL.
+    fn served(query: &CardQuery, cards: Vec<Card>) -> Vec<Card> {
+        cards
+            .into_iter()
+            .filter(|card| query.criteria().matches(card))
+            .collect()
+    }
+
+    #[test]
+    fn tymnas_search_serves_plain_partners_and_her_pile_drops_variants() {
+        let tymna = tymna();
+        let query = swipe_query(
+            &CardQueryBuilder::new(),
+            Slot::Partner,
+            Some(Format::Commander),
+            Some(&tymna),
+            0,
+        )
+        .unwrap();
+        let served = served(&query, variant_pile());
+        assert!(
+            names(&served).contains(&"Thrasios, Triton Hero"),
+            "Tymna's search drops plain partners: {:?}",
+            names(&served)
+        );
+        assert_eq!(
+            names(&legal_partners(&tymna, served)),
+            ["Thrasios, Triton Hero"]
+        );
+    }
+
+    #[test]
+    fn wernogs_search_serves_friends_forever_only() {
+        let query = swipe_query(
+            &CardQueryBuilder::new(),
+            Slot::Partner,
+            Some(Format::Commander),
+            Some(&wernog()),
+            0,
+        )
+        .unwrap();
+        assert_eq!(
+            names(&served(&query, variant_pile())),
+            ["Cecily, Haunted Mage"]
+        );
+    }
+
     #[test]
     fn tymnas_pile_excludes_every_partner_variant() {
         assert_eq!(
@@ -477,7 +521,7 @@ mod tests {
             builder.keywords_excludes(),
             Some(&["Partner with".to_owned()][..])
         );
-        assert_eq!(builder.oracle_text_not_contains(), Some("Partner\u{2014}"));
+        assert_eq!(builder.oracle_text_not_contains(), None);
         let pir = commander(
             "Pir, Imaginative Rascal",
             &["Partner with", "Partner"],
