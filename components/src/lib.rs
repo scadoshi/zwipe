@@ -41,6 +41,7 @@
 //! (`open_url`, `use_in_app_links`).
 
 mod architecture;
+mod back_online;
 mod card_details;
 mod card_filter;
 mod card_list_fold;
@@ -69,6 +70,7 @@ mod site_footer;
 mod theme;
 
 pub use architecture::ZwipeArchitecture;
+pub use back_online::use_back_online;
 pub use card_details::{
     CardDetails, CardDetailsCost, CardDetailsPanel, CardDetailsPanelSkeleton, card_face_count,
 };

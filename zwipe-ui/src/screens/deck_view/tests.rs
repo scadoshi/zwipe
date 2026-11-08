@@ -223,6 +223,45 @@ fn a_failed_profile_reads_could_not_load() {
 }
 
 #[test]
+fn retry_fetches_what_failed_from_its_skeleton() {
+    let profile = deck_profile("Offline");
+    let (mut state, profile_ticket, deck_ticket) = loading(&profile);
+    assert_eq!(state.update(Action::Retry), [], "nothing failed yet");
+    let _ = state.update(Action::Failed {
+        ticket: profile_ticket,
+    });
+    let _ = state.update(Action::Failed {
+        ticket: deck_ticket,
+    });
+    assert_eq!(state.status(), Status::Failed);
+
+    let effects = state.update(Action::Retry);
+    let [
+        Effect::FetchProfile { ticket, .. },
+        Effect::FetchDeck { .. },
+    ] = effects.as_slice()
+    else {
+        panic!("both go again, with no second hint: {effects:?}");
+    };
+    let ticket = *ticket;
+    assert_eq!(
+        state.status(),
+        Status::Loading,
+        "the skeleton, not the error"
+    );
+    let _ = state.update(Action::ProfileLoaded {
+        ticket,
+        profile: Box::new(profile),
+    });
+    assert_eq!(state.status(), Status::Loaded);
+    assert_eq!(
+        state.update(Action::Retry),
+        [],
+        "a landed profile and a deck still out are left alone"
+    );
+}
+
+#[test]
 fn a_failed_deck_stops_loading_with_no_stats() {
     let (mut profile, _) = two_cards("Gone");
     profile.card_count = 2;
@@ -797,7 +836,7 @@ fn can_clone_needs_more_than_spaces() {
 #[test]
 fn the_copy_matches_the_app() {
     assert_eq!(TITLE, "Deck");
-    assert_eq!(LOAD_FAILED, "Could not load deck");
+    assert_eq!(LOAD_FAILED, "Couldn't load deck");
     assert_eq!([EDIT, CARDS], ["Edit", "Cards"]);
     assert_eq!(
         MoreItem::ALL.map(MoreItem::label),
