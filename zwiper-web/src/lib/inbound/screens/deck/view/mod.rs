@@ -13,7 +13,7 @@ pub mod page;
 pub mod panels;
 pub mod sections;
 
-use components::{Button, ButtonVariant, TOAST_NORMAL, TOAST_QUICK};
+use components::{Button, ButtonVariant, LoadFailed, TOAST_NORMAL, TOAST_QUICK, use_back_online};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
@@ -26,7 +26,7 @@ use zwipe_core::domain::deck::{Deck, DeckProfile};
 use zwipe_core::http::contracts::deck_card::HttpPatchDeckCard;
 use zwipe_ui::buy;
 use zwipe_ui::deck::form::Slot;
-use zwipe_ui::screens::deck_view::CARDS;
+use zwipe_ui::screens::deck_view::{CARDS, LOAD_FAILED};
 
 use self::dialogs::{DeckDialogsHost, use_deck_dialogs};
 use self::ghost::{DeckViewGhost, StatsSectionsGhost};
@@ -81,14 +81,27 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 })
                 .await
         }));
+    // Quiet: the profile fetch beside it raises the one toast a failed
+    // visit gets.
     let mut deck: Resource<Result<Deck, ClientError>> =
         use_resource(use_reactive!(|deck_id| async move {
             authed
-                .try_run("load_deck", |c, s| async move {
+                .try_run_quiet("load_deck", |c, s| async move {
                     c.fetch_deck(deck_id, &s).await
                 })
                 .await
         }));
+
+    // Tries a failed load again, from Retry or the connection coming back.
+    let retry = use_callback(move |()| {
+        if matches!(&*profile.peek(), Some(Err(_))) {
+            profile.restart();
+        }
+        if matches!(&*deck.peek(), Some(Err(_))) {
+            deck.restart();
+        }
+    });
+    use_back_online(retry);
 
     // A deck the server no longer has leaves for Decks, replacing this
     // screen in history so Back never reopens it; the fetch's toast has
@@ -245,6 +258,9 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
             on_hint,
             div { class: "screen-content",
                 match loaded_profile {
+                    Some(Err(())) => rsx! {
+                        LoadFailed { message: LOAD_FAILED, on_retry: retry }
+                    },
                     _ if wide() => rsx! {
                         DeckWidePage { deck_id, currency, fixes, fixed, dialogs }
                     },
@@ -281,9 +297,6 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                             }
                         }
                     }
-                    Some(Err(())) => rsx! {
-                        p { class: "text-muted", "Could not load deck" }
-                    },
                     None => rsx! {
                         DeckViewGhost {}
                     },

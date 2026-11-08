@@ -249,6 +249,15 @@ impl Editor {
     }
 }
 
+/// Whether a failed deck fetch raises its own toast.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum LoadFailure {
+    /// The fetch toasts, on a page with nothing else to say it.
+    Toast,
+    /// The fetch stays quiet: the host page's own fetch toasts and draws the failure.
+    Quiet,
+}
+
 /// The engine for `deck_id`: fetches the deck and its tokens, parks the
 /// filter on leave, and binds the keys (↑ ↓ move the selection, `+` and `-`
 /// change its quantity, F flips it, `/` focuses Quick add, Ctrl+Z undoes).
@@ -256,7 +265,7 @@ impl Editor {
     clippy::too_many_lines,
     reason = "the engine's handlers share its signals and read as one piece"
 )]
-pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
+pub(crate) fn use_deck_editor(deck_id: Uuid, on_failure: LoadFailure) -> Editor {
     let toast = use_toast();
     let authed = use_authed();
     let session: Signal<Option<Session>> = use_context();
@@ -342,12 +351,12 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
     // Fetches the deck, first on mount and again after a fix made elsewhere.
     let reload = use_callback(move |()| {
         spawn(async move {
-            let Some(fetched) = authed
-                .run("load_deck", |c, s| async move {
-                    c.fetch_deck(deck_id, &s).await
-                })
-                .await
-            else {
+            let fetch = |c: ZwipeClient, s: Session| async move { c.fetch_deck(deck_id, &s).await };
+            let fetched = match on_failure {
+                LoadFailure::Toast => authed.run("load_deck", fetch).await,
+                LoadFailure::Quiet => authed.run_quiet("load_deck", fetch).await,
+            };
+            let Some(fetched) = fetched else {
                 return;
             };
             let held = zone_of(&fetched);

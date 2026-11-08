@@ -22,7 +22,7 @@ use crate::toast::{Line, Toast, keep_one};
 pub const TITLE: &str = "Deck";
 
 /// The line in place of the deck when its profile failed to load.
-pub const LOAD_FAILED: &str = "Could not load deck";
+pub const LOAD_FAILED: &str = "Couldn't load deck";
 
 /// The button that opens Edit deck.
 pub const EDIT: &str = "Edit";
@@ -106,7 +106,10 @@ pub const DELETE: &str = "Delete";
 /// Where an action sends the user. The client maps each to its own route.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Destination {
-    /// The deck list, from Back and in place of a deleted or gone deck.
+    /// The screen that opened the deck, from Back. The client knows it; the
+    /// deck list when it doesn't.
+    Back,
+    /// The deck list, in place of a deleted or gone deck.
     DeckList,
     /// Edit deck for this deck.
     EditDeck(Uuid),
@@ -291,6 +294,8 @@ pub enum Status {
 pub enum Action {
     /// Fetches this deck's profile and cards, as the screen does when it opens or its deck id changes. What shows stays until the replies replace it, and replies to requests for the deck shown before are dropped.
     Load(Uuid),
+    /// Tries a failed load again, from Retry or the connection coming back: the skeletons show while the fetches are out. Does nothing unless the profile or the deck failed.
+    Retry,
     /// The profile arrived for the fetch holding `ticket`.
     ProfileLoaded {
         /// The ticket from the [`Effect::FetchProfile`] this answers.
@@ -708,6 +713,7 @@ impl State {
     fn dispatch(&mut self, action: Action) -> Vec<Effect> {
         match action {
             Action::Load(deck_id) => self.load(deck_id),
+            Action::Retry => self.retry(),
             Action::ProfileLoaded { ticket, profile } => self.profile_loaded(ticket, *profile),
             Action::DeckLoaded { ticket, deck } => {
                 self.deck_loaded(ticket, *deck);
@@ -732,7 +738,7 @@ impl State {
                 self.currency = currency;
                 Vec::new()
             }
-            Action::Back => vec![Effect::Navigate(Destination::DeckList)],
+            Action::Back => vec![Effect::Navigate(Destination::Back)],
             Action::Edit => self.navigate(Destination::EditDeck),
             Action::Cards => self.navigate(Destination::DeckCards),
             Action::AddCards => self.navigate(Destination::AddCards),
@@ -834,6 +840,20 @@ impl State {
         if self.hint == HintOffer::Waiting {
             self.hint = HintOffer::Offered;
             effects.push(Effect::OfferHint(OneTimeHint::FirstDeck));
+        }
+        effects
+    }
+
+    /// Fetches again whatever failed, back on its skeleton, and leaves a load that landed alone.
+    fn retry(&mut self) -> Vec<Effect> {
+        let mut effects = Vec::new();
+        if matches!(self.profile.value, Fetched::Failed) {
+            self.profile.value = Fetched::Loading;
+            effects.extend(self.fetch_profile());
+        }
+        if matches!(self.deck.value, Fetched::Failed) {
+            self.deck.value = Fetched::Loading;
+            effects.extend(self.fetch_deck());
         }
         effects
     }
@@ -1168,6 +1188,13 @@ impl State {
     #[must_use]
     pub fn share_token(&self) -> Option<Uuid> {
         self.share_token
+    }
+
+    /// The live share link, which the Share dialog shows under its line: `Some` while the deck has
+    /// a public link.
+    #[must_use]
+    pub fn share_url(&self) -> Option<String> {
+        self.share_token.map(view::share_link)
     }
 
     /// The Share dialog's line: [`SHARE_SHARED`] while the deck has a link, else [`SHARE_UNSHARED`].

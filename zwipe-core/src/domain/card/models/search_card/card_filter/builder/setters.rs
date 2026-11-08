@@ -587,6 +587,26 @@ impl CardQueryBuilder {
         self
     }
 
+    /// Sets filter matching cards legal in every one of the provided formats. Empty vec = None.
+    pub fn set_legalities_contains_all<I, S>(&mut self, legalities_contains_all: I) -> &mut Self
+    where
+        I: IntoIterator<Item = S>,
+        S: Into<String>,
+    {
+        let v: Vec<String> = legalities_contains_all
+            .into_iter()
+            .map(Into::into)
+            .collect();
+        self.legalities_contains_all = if v.is_empty() { None } else { Some(v) };
+        self
+    }
+
+    /// Clears the `legalities_contains_all` filter.
+    pub fn unset_legalities_contains_all(&mut self) -> &mut Self {
+        self.legalities_contains_all = None;
+        self
+    }
+
     // == Commander Filter Setters ==
 
     /// Sets the commander eligibility filter for a specific format.

@@ -10,7 +10,7 @@ use zwipe_core::domain::deck::{DeckOtherTag, DeckProfile, Format, PowerLevel};
 use zwipe_core::http::contracts::deck::{HttpCreateDeckProfile, HttpUpdateDeckProfile};
 use zwipe_core::http::helpers::Patch;
 
-use super::{parse_price, price_text};
+use super::{follow_land_target, parse_price, price_text};
 use crate::deck::command_zone::{self, Slot};
 
 /// Every field the Create and Edit forms hold.
@@ -106,8 +106,9 @@ impl FormValues {
         shows(slot, self.format, self.commander.as_ref())
     }
 
-    /// Picks `format` from the format picker: the commander goes, and the signature spell unless the new format has one. Clearing a commander that was set also clears its partner and background ([`FormValues::set_commander`]), and every Filter goes back on.
+    /// Picks `format` from the format picker: the commander goes, and the signature spell unless the new format has one. Clearing a commander that was set also clears its partner and background ([`FormValues::set_commander`]), and every Filter goes back on. A land target still at the old format's usual count moves to the new one's ([`follow_land_target`]).
     pub fn pick_format(&mut self, format: Format) -> Cascade {
+        self.land_target = follow_land_target(self.land_target, self.format, Some(format));
         self.format = Some(format);
         let mut cleared = vec![Slot::Commander];
         if !format.has_signature_spell() {

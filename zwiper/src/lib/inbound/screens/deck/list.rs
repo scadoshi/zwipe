@@ -30,6 +30,7 @@ use zwipe_ui::screens::deck_list::{self, Action, Destination, Effect, State, Sta
 
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::hint_dialog::OneTimeHintDialog;
+use crate::inbound::components::navigation::deck_opener::DeckOpener;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen};
 use crate::inbound::components::{hint_dialog, ui_toast};
@@ -49,6 +50,7 @@ struct Driver {
     session: Signal<Option<Session>>,
     client: Signal<ZwipeClient>,
     hint_open: Signal<bool>,
+    opener: DeckOpener,
 }
 
 impl Driver {
@@ -70,6 +72,7 @@ impl Driver {
             mut session,
             client,
             hint_open,
+            opener,
             ..
         } = self;
         match effect {
@@ -110,6 +113,9 @@ impl Driver {
                 hint_dialog::open_and_record_hint(hint.key(), session, client, hint_open);
             }
             Effect::Navigate(destination) => {
+                if let Destination::Deck(deck_id) = destination {
+                    opener.record(deck_id, Router::DeckList {});
+                }
                 navigator.push(route(destination));
             }
             Effect::Toast(warning) => ui_toast::raise(toast, warning),
@@ -252,6 +258,7 @@ pub fn DeckList() -> Element {
         navigator: use_navigator(),
         toast: use_toast(),
         authed: use_authed(Screen::Deck(DeckScreen::List)),
+        opener: use_context(),
         session: use_context(),
         client: use_context(),
         hint_open: use_signal(|| false),

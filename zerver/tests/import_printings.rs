@@ -1,6 +1,7 @@
 //! Import honors a decklist's printing: `1 Card (SET) 123` lands that printing,
-//! a set or number the card lacks falls back to its default printing, and no
-//! line ever resolves to an Art Series, token or memorabilia printing.
+//! a line with no set lands the cheapest normal printing, a set the card lacks
+//! falls back the same way, and no line ever resolves to an Art Series, token
+//! or memorabilia printing.
 //!
 //! Requires `DATABASE_URL`: `set -a; source zerver/.env; set +a`.
 
@@ -176,4 +177,71 @@ async fn no_line_resolves_to_an_art_series_token_or_memorabilia_printing(pool: s
         vec![(keeper, real.id())],
         "the Art Series name lands the playable card by its front face"
     );
+}
+
+#[sqlx::test]
+async fn a_line_with_no_set_lands_the_cheapest_normal_printing(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, deck_id) = deck_for(&app, "cheapest").await;
+    let bolt = Uuid::from_u128(0xb017);
+    let cheap = card("Lightning Bolt")
+        .oracle(Some(bolt))
+        .set("m11", "Magic 2011")
+        .usd("0.25");
+    seed_cards(
+        &pool,
+        &[
+            card("Lightning Bolt")
+                .oracle(Some(bolt))
+                .set("lea", "Limited Edition Alpha")
+                .usd("28.99"),
+            cheap.clone(),
+            card("Lightning Bolt")
+                .oracle(Some(bolt))
+                .set("pmei", "Media Inserts")
+                .promo(true)
+                .usd("0.10"),
+            card("Lightning Bolt")
+                .oracle(Some(bolt))
+                .set("2xm", "Double Masters")
+                .finishes(&["foil"])
+                .usd("0.05"),
+            card("Lightning Bolt")
+                .oracle(Some(bolt))
+                .set("sld", "Secret Lair Drop")
+                .lang("ja")
+                .usd("0.01"),
+        ],
+    )
+    .await;
+
+    import(&app, &token, deck_id, "4 Lightning Bolt").await;
+    assert_eq!(
+        deck_rows(&pool, deck_id).await,
+        vec![(bolt, cheap.id())],
+        "not the promo, the foil-only or the Japanese printing"
+    );
+
+    // A set the card lacks falls back to the cheapest too.
+    import(&app, &token, deck_id, "4 Lightning Bolt (M10) 1").await;
+    assert_eq!(deck_rows(&pool, deck_id).await, vec![(bolt, cheap.id())]);
+}
+
+#[sqlx::test]
+async fn a_card_with_no_priced_printing_lands_the_default_printing(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, deck_id) = deck_for(&app, "unpriced").await;
+    let oracle = Uuid::from_u128(0x0b7);
+    seed_cards(
+        &pool,
+        &[
+            card("Opt").oracle(Some(oracle)).set("xln", "Ixalan"),
+            card("Opt").oracle(Some(oracle)).set("dom", "Dominaria"),
+        ],
+    )
+    .await;
+
+    import(&app, &token, deck_id, "4 Opt").await;
+    let default = default_printing(&pool, oracle).await;
+    assert_eq!(deck_rows(&pool, deck_id).await, vec![(oracle, default)]);
 }

@@ -64,6 +64,25 @@ pub const IMPORT: &str = "Import";
 /// The submit button in [`ImportMode::Replace`].
 pub const REPLACE: &str = "Replace";
 
+/// The confirm dialog's Cancel, which keeps the board as it is.
+pub const CANCEL: &str = "Cancel";
+
+/// The confirm dialog's title before a [`ImportMode::Replace`] import into `board`.
+#[must_use]
+pub fn replace_title(board: Board) -> String {
+    format!("Replace the {}?", board.word())
+}
+
+/// The confirm dialog's line before a [`ImportMode::Replace`] import into `board`. The import
+/// also clears the deck's undo history, so nothing brings the old cards back.
+#[must_use]
+pub fn replace_body(board: Board) -> String {
+    format!(
+        "Every card on the {} comes off and the imported cards go in their place. You can't undo this.",
+        board.word()
+    )
+}
+
 /// The submit button while an import is out.
 pub const IMPORTING: &str = "Importing...";
 
@@ -177,11 +196,13 @@ pub enum Action {
     PickMode(ImportMode),
     /// Picks the board the cards go to.
     PickBoard(Board),
-    /// Sends the import. Does nothing while one is out, before [`Action::Open`], or when `input` trims to nothing.
+    /// Sends the import. Does nothing while one is out, before [`Action::Open`], or when `input` trims to nothing. In [`ImportMode::Replace`] it asks first, with [`Effect::ConfirmReplace`], and holds `input` for [`Action::ConfirmReplace`].
     Submit {
         /// The active input as typed: the decklist for [`Source::Text`], the link for [`Source::Archidekt`].
         input: String,
     },
+    /// The user confirmed the replace: sends the import held since [`Action::Submit`]. A dialog closed without it sends nothing, and the next [`Action::Submit`] holds its own input.
+    ConfirmReplace,
     /// The import holding `ticket` went through.
     Imported {
         /// The ticket from the effect this answers.
@@ -234,6 +255,8 @@ pub enum Effect {
         /// Whether the import adds or replaces.
         mode: ImportMode,
     },
+    /// Asks the user to confirm a replace: the client opens a dialog with [`replace_title`] and [`replace_body`] for this board, and answers with [`Action::ConfirmReplace`] if the user goes ahead.
+    ConfirmReplace(Board),
     /// Clears this deck's undo history, after an import that brought cards in.
     ClearUndo(Uuid),
     /// Raises this toast.
@@ -276,6 +299,8 @@ pub struct State {
     phase: Phase,
     hint: HintOffer,
     tickets: Generation,
+    /// The input a replace waits to send until the user confirms it.
+    held: Option<String>,
 }
 
 impl State {
@@ -301,7 +326,21 @@ impl State {
             Action::PickSource(source) => self.source = source,
             Action::PickMode(mode) => self.mode = mode,
             Action::PickBoard(board) => self.board = board,
-            Action::Submit { input } => return self.submit(input).into_iter().collect(),
+            Action::Submit { input } => {
+                if self.mode.is_replace() && self.deck_id.is_some() && self.can_submit(&input) {
+                    self.held = Some(input);
+                    return vec![Effect::ConfirmReplace(self.board)];
+                }
+                return self.submit(input).into_iter().collect();
+            }
+            Action::ConfirmReplace => {
+                return self
+                    .held
+                    .take()
+                    .and_then(|input| self.submit(input))
+                    .into_iter()
+                    .collect();
+            }
             Action::Imported { ticket, result } => return self.imported(ticket, result),
             Action::Failed { ticket } => {
                 if self.lands(ticket) {

@@ -182,6 +182,7 @@ pub struct CardQueryBuilder {
     language: Option<String>,
     // legalities
     legalities_contains_any: Option<Vec<String>>,
+    legalities_contains_all: Option<Vec<String>>,
     // commander
     is_commander_in_format: Option<Format>,
     // partner/background/spell
@@ -257,6 +258,7 @@ impl Default for CardQueryBuilder {
             content_warning: Some(false),
             language: Some("en".to_string()),
             legalities_contains_any: None,
+            legalities_contains_all: None,
             is_commander_in_format: None,
             is_partner: None,
             is_background: None,
@@ -929,6 +931,7 @@ impl CardQueryBuilder {
             content_warning: self.content_warning,
             language: trim(&self.language),
             legalities_contains_any: self.legalities_contains_any.clone(),
+            legalities_contains_all: self.legalities_contains_all.clone(),
             is_commander_in_format: self.is_commander_in_format,
             is_partner: self.is_partner,
             is_background: self.is_background,

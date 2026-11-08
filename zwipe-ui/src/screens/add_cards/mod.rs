@@ -37,6 +37,9 @@ use crate::toast::{Line, Toast, ToastKind, keep_one};
 /// The screen's title.
 pub const TITLE: &str = "Add";
 
+/// The pile's message, with a Retry, when the cards could not load.
+pub const LOAD_FAILED: &str = "Couldn't load cards";
+
 /// The hint's title.
 pub const HINT_TITLE: &str = "Swipe to build";
 
@@ -303,6 +306,8 @@ pub enum Action {
     SwapPrinting(Box<Card>),
     /// Searches again from the top, or reloads the maybeboard.
     Refresh,
+    /// Tries a failed load again, from Retry or the connection coming back: the deck's first fetch and the search from the top, whichever failed. Does nothing when neither did.
+    Retry,
     /// Goes back to where the user came from.
     Back,
 }
@@ -539,6 +544,15 @@ struct Run {
     exhausted: bool,
 }
 
+/// The loads that failed, which [`Action::Retry`] sends again.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+struct Failed {
+    /// The search from the top failed, so nothing is coming.
+    search: bool,
+    /// The deck's first fetch failed, so the deck context never came.
+    deck: bool,
+}
+
 /// Add cards for one visit. Starts with no card and no deck; send [`Action::Load`] with the deck.
 ///
 /// Every request takes a fresh [`Ticket`] from one [`Generation`] and waits in a list keyed by it, so each reply finds its own request. A search from the top marks its ticket as the stack's epoch; a reply to an older search, or a page of an older stack, changes nothing but the loading flag it held. A new [`Action::Load`] empties the list.
@@ -557,6 +571,7 @@ pub struct State {
     /// The ticket of the search that started the stack.
     epoch: Option<Ticket>,
     run: Run,
+    failed: Failed,
     /// The filter that produced the stack, which parking records.
     last_search: Option<CardQueryBuilder>,
     warming: bool,
@@ -628,6 +643,7 @@ impl State {
                 Vec::new()
             }
             Action::Refresh => self.refresh(),
+            Action::Retry => self.retry(),
             Action::Back => vec![Effect::Navigate(Destination::Previous)],
         };
         effects.extend(self.announce_related());
@@ -691,6 +707,7 @@ impl State {
     fn deck_loaded(&mut self, ticket: Ticket, deck: &Deck) -> Vec<Effect> {
         match self.take(ticket) {
             Some(Pending::Deck) => {
+                self.failed.deck = false;
                 let add_deck = AddDeck::from_deck(deck);
                 add_deck.seed(&mut self.filter, self.remembered);
                 self.deck = Some(add_deck);
@@ -719,6 +736,7 @@ impl State {
         let ticket = self.generation.next_ticket();
         self.epoch = Some(ticket);
         self.run.searching = false;
+        self.failed.search = false;
         self.stack.reset();
         self.last_search = None;
         self.run.exhausted = false;
@@ -1002,9 +1020,14 @@ impl State {
             return Vec::new();
         };
         match self.take(ticket) {
+            Some(Pending::Deck) => {
+                self.failed.deck = true;
+                Vec::new()
+            }
             Some(Pending::Search { .. }) => {
                 if self.epoch == Some(ticket) {
                     self.run.searching = false;
+                    self.failed.search = true;
                 }
                 Vec::new()
             }
@@ -1389,6 +1412,32 @@ impl State {
         }
     }
 
+    /// Fetches the deck again if its first fetch failed, and searches again if the search from the top failed. The deck's reply reruns the search itself when the stack is empty.
+    fn retry(&mut self) -> Vec<Effect> {
+        let Some(deck_id) = self.deck_id else {
+            return Vec::new();
+        };
+        let mut effects = Vec::new();
+        if self.failed.deck {
+            self.failed.deck = false;
+            let ticket = self.wait(Pending::Deck);
+            effects.push(Effect::FetchDeck { ticket, deck_id });
+        }
+        if self.failed.search {
+            effects.extend(self.fresh_search());
+        }
+        effects
+    }
+
+    /// Whether the pile shows [`LOAD_FAILED`] with a Retry in place of its ghost: Search's search from the top failed, or the deck never came and nothing is on show.
+    #[must_use]
+    pub fn load_failed(&self) -> bool {
+        self.source == Source::Search
+            && self.stack.is_empty()
+            && !self.run.searching
+            && (self.failed.search || (self.failed.deck && self.deck.is_none()))
+    }
+
     /// Searches again from the top on Search, or reloads the maybeboard.
     fn refresh(&mut self) -> Vec<Effect> {
         let Some(deck_id) = self.deck_id else {
@@ -1413,6 +1462,7 @@ impl State {
         self.last_search = None;
         self.run.exhausted = false;
         self.run.searching = true;
+        self.failed.search = false;
         vec![
             Effect::StopEnter(Source::Search),
             Effect::EaseImages,

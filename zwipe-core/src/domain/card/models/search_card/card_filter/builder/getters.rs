@@ -215,6 +215,11 @@ impl CardQueryBuilder {
         self.legalities_contains_any.as_deref()
     }
 
+    /// Returns the `legalities_contains_all` filter value.
+    pub fn legalities_contains_all(&self) -> Option<&[String]> {
+        self.legalities_contains_all.as_deref()
+    }
+
     // == Commander Filter Getters ==
 
     /// Returns the commander eligibility format filter.

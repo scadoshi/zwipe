@@ -715,6 +715,43 @@ async fn promo_filter_is_printing_aware(pool: sqlx::PgPool) {
     assert_eq!(shown, vec![("Split Card", "Set A", true)]);
 }
 
+/// Is legal in: Any matches a card legal in either format, All only one legal
+/// in both.
+#[sqlx::test]
+async fn legality_filter_matches_any_or_all(pool: sqlx::PgPool) {
+    seed_cards(
+        &pool,
+        &[
+            card("Both Formats").legal("commander").legal("modern"),
+            card("Commander Only").legal("commander"),
+            card("Neither"),
+        ],
+    )
+    .await;
+    let repo = Postgres::from_pool(pool.clone());
+    let names = |served: Vec<zwipe_core::domain::card::scryfall_data::ScryfallData>| {
+        let mut names: Vec<String> = served.into_iter().map(|s| s.name).collect();
+        names.sort_unstable();
+        names
+    };
+
+    let mut b = CardQueryBuilder::new();
+    b.set_legalities_contains_any(["commander", "modern"]);
+    let any = repo
+        .search_scryfall_data(&b.build().unwrap())
+        .await
+        .unwrap();
+    assert_eq!(names(any), vec!["Both Formats", "Commander Only"]);
+
+    let mut b = CardQueryBuilder::new();
+    b.set_legalities_contains_all(["commander", "modern"]);
+    let all = repo
+        .search_scryfall_data(&b.build().unwrap())
+        .await
+        .unwrap();
+    assert_eq!(names(all), vec!["Both Formats"]);
+}
+
 /// The Universes Beyond serve setting: exclusion hides cards with no
 /// in-universe printing, the franchise whitelist lets its cards back through,
 /// and a card with any in-universe printing is never touched.

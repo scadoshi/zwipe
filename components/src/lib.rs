@@ -41,6 +41,7 @@
 //! (`open_url`, `use_in_app_links`).
 
 mod architecture;
+mod back_online;
 mod card_details;
 mod card_filter;
 mod card_list_fold;
@@ -64,10 +65,12 @@ mod load_failed;
 mod menu_section;
 mod oracle_text;
 mod role_tags;
+mod share_url;
 mod site_footer;
 mod theme;
 
 pub use architecture::ZwipeArchitecture;
+pub use back_online::use_back_online;
 pub use card_details::{
     CardDetails, CardDetailsCost, CardDetailsPanel, CardDetailsPanelSkeleton, card_face_count,
 };
@@ -119,6 +122,7 @@ pub use orangui::{OpenUrlError, open_url, use_in_app_links};
 #[cfg(feature = "toast")]
 pub use orangui::{TOAST_CSS, ToastOptions, ToastStack, Toasts, use_toast};
 pub use role_tags::{OtagDef, RoleTags};
+pub use share_url::ShareUrl;
 pub use site_footer::SiteFooter;
 pub use theme::{pip_style_class, theme_from_settings};
 

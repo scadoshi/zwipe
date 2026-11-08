@@ -109,6 +109,7 @@ impl AddDeck {
         }
         if let Some(format) = self.format
             && filter.legalities_contains_any().is_none()
+            && filter.legalities_contains_all().is_none()
         {
             filter.set_legalities_contains_any(vec![format.to_legality_key().to_owned()]);
         }
@@ -226,6 +227,15 @@ mod tests {
         );
         assert!(filter.color_identity_within().is_some());
         assert_eq!(filter.card_type_excludes_any(), None);
+
+        let mut all = CardQueryBuilder::default();
+        all.set_legalities_contains_all(["modern", "pioneer"]);
+        add.seed(&mut all, false);
+        assert_eq!(
+            all.legalities_contains_any(),
+            None,
+            "an All pick is not narrowed by the deck's format"
+        );
 
         let mut remembered = CardQueryBuilder::default();
         add.seed(&mut remembered, true);
