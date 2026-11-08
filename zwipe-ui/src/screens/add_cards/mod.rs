@@ -70,6 +70,10 @@ pub const ADDED_TO_MAYBEBOARD: &str = "Added to maybeboard";
 /// The toast for a right swipe on Maybeboard.
 pub use crate::screens::deck_cards::MOVED_TO_MAINBOARD;
 
+/// The quiet chip's word for a right swipe on Maybeboard: the card joined
+/// the deck, as an add from Search does.
+pub const MOVED_TO_MAINBOARD_CHIP: &str = "Added";
+
 /// The toast for an up swipe on Maybeboard.
 pub const ALREADY_ON_MAYBEBOARD: &str = "Already on maybeboard";
 
@@ -1288,7 +1292,10 @@ impl State {
                 deck_id,
                 card_id,
             },
-            confirm(ToastKind::Success, MOVED_TO_MAINBOARD),
+            Effect::Confirm(
+                Toast::quick(ToastKind::Success, MOVED_TO_MAINBOARD)
+                    .with_chip(MOVED_TO_MAINBOARD_CHIP),
+            ),
         ]
     }
 

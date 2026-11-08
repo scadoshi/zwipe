@@ -706,7 +706,11 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             }
             mb_stack.write().remove_current();
             let mut line = OneLine::default();
-            line.confirm(Tone::Success, "Moved to mainboard");
+            line.confirm_as(
+                Tone::Success,
+                add_cards::MOVED_TO_MAINBOARD,
+                add_cards::MOVED_TO_MAINBOARD_CHIP,
+            );
             if mb_stack.peek().is_empty() {
                 line.ran_out();
             }

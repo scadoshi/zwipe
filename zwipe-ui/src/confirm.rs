@@ -34,6 +34,7 @@ pub fn chip_word(text: &str) -> &str {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::toast::{Toast, ToastKind};
 
     #[test]
     fn each_confirmation_has_its_short_word() {
@@ -59,6 +60,15 @@ mod tests {
         ] {
             assert_eq!(chip_word(text), word, "{text}");
         }
+    }
+
+    #[test]
+    fn add_keeps_its_own_word_for_a_move_to_mainboard() {
+        let toast = Toast::quick(ToastKind::Success, add_cards::MOVED_TO_MAINBOARD)
+            .with_chip(add_cards::MOVED_TO_MAINBOARD_CHIP);
+        assert_eq!(toast.chip_word(), "Added");
+        let remove = Toast::quick(ToastKind::Success, remove_cards::MOVED_TO_MAINBOARD);
+        assert_eq!(remove.chip_word(), "Main");
     }
 
     #[test]

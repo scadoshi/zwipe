@@ -8,6 +8,8 @@ use std::time::Duration;
 
 pub use orangui_core::toast::{LONG, NORMAL, QUICK};
 
+use crate::confirm;
+
 /// How a toast is colored and announced.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ToastKind {
@@ -30,6 +32,9 @@ pub struct Toast {
     pub text: String,
     /// How long it stays up: [`QUICK`], [`NORMAL`] or [`LONG`].
     pub duration: Duration,
+    /// The swipe screens' quiet chip word, when it is not the one
+    /// [`chip_word`](crate::confirm::chip_word) gives the text.
+    pub chip: Option<&'static str>,
 }
 
 impl Toast {
@@ -40,6 +45,25 @@ impl Toast {
             kind,
             text: text.into(),
             duration,
+            chip: None,
+        }
+    }
+
+    /// The same toast with `word` in the quiet chip in place of its text's.
+    #[must_use]
+    pub fn with_chip(self, word: &'static str) -> Self {
+        Self {
+            chip: Some(word),
+            ..self
+        }
+    }
+
+    /// The quiet chip's word for this toast.
+    #[must_use]
+    pub fn chip_word(&self) -> &str {
+        match self.chip {
+            Some(word) => word,
+            None => confirm::chip_word(&self.text),
         }
     }
 

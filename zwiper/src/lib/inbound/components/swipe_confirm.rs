@@ -6,7 +6,6 @@ use components::Toasts;
 use dioxus::prelude::*;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user::settings::SwipeConfirmations;
-use zwipe_ui::confirm::chip_word;
 use zwipe_ui::toast::Toast;
 
 use crate::inbound::components::ui_toast;
@@ -31,7 +30,7 @@ pub(crate) fn confirm(
     match setting {
         SwipeConfirmations::Chip => {
             let count = said.peek().as_ref().map_or(0, |(n, _)| n.wrapping_add(1));
-            said.set(Some((count, chip_word(&toast.text).to_owned())));
+            said.set(Some((count, toast.chip_word().to_owned())));
         }
         SwipeConfirmations::Toasts => ui_toast::raise(toasts, toast),
         SwipeConfirmations::Off => {}

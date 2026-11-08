@@ -862,7 +862,15 @@ fn the_maybeboard_source_cycles_promotes_and_undoes() {
     else {
         panic!("{effects:?}");
     };
-    assert_eq!(*toast, Toast::quick(ToastKind::Success, MOVED_TO_MAINBOARD));
+    assert_eq!(
+        *toast,
+        Toast::quick(ToastKind::Success, MOVED_TO_MAINBOARD).with_chip(MOVED_TO_MAINBOARD_CHIP)
+    );
+    assert_eq!(
+        toast.chip_word(),
+        "Added",
+        "the chip says what it said before"
+    );
     let card_id = *card_id;
     assert_eq!(top(&state).as_deref(), Some("Maybe B"));
     let effects = state.update(Action::Landed { ticket: *ticket });
