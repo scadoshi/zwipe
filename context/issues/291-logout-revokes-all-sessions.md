@@ -7,3 +7,6 @@ Droid, 2026-11-08: signing out of the Android app ran zerver's revoke_sessions, 
 
 ## Decision
 Scotty, 2026-11-08: sign out invalidates only that session, not every device.
+
+## Plan
+halo, 2026-11-08: web ends the refresh cookie's token family. The app gets an optional `family_id` claim in the access token (serde default), and logout ends that family. No client change. A token without the claim (old build, or minted before the deploy) falls back to revoking every session, as today. Composer approved: additive, no client change.
