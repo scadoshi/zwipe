@@ -11,15 +11,15 @@ Not in this deploy (their PRs merged late): 221 on web, 258, 270, 273. They go i
 | 214 | Add offline shows "Couldn't load cards" + Retry, one toast | Surfer | Droid | |
 | 219 | Toast stays below the Exceptions chips with a sheet open | Droid (390) | | |
 | 226 | App downloads compressed (deck loads on slow network) | | Droid | |
-| 227 | Escape closes zwipe.net's phone menu, focus back on the toggle | Surfer | | |
-| 228-229 | zwipe.net focus ring visible; skip link on zwipe.net and the portfolio | Surfer | | |
-| 230 | Portfolio orangui source links resolve | Surfer | | |
-| 231 | zwipe.net/reset/<bogus> shows "already used or expired" on load | Surfer | | |
-| 232 | Token pages have their own titles | Surfer | | |
+| 227 | Escape closes zwipe.net's phone menu, focus back on the toggle | Surfer | | web PASS |
+| 228-229 | zwipe.net focus ring visible; skip link on zwipe.net and the portfolio | Surfer | | web PASS |
+| 230 | Portfolio orangui source links resolve | Surfer | | web PASS |
+| 231 | zwipe.net/reset/<bogus> shows "already used or expired" on load | Surfer | | web PASS |
+| 232 | Token pages have their own titles | Surfer | | web PASS |
 | 233-234 | Auth forms have autocomplete; Forgot password email field is type=email | Surfer | Droid | |
 | 235 | Empty email says "Email is required" | Surfer | Droid | |
 | 236 | Signed-out deep link returns to the deck after sign-in | Surfer | | |
-| 237 | Portfolio stats say showcased repos | Surfer | | |
+| 237 | Portfolio stats say showcased repos | Surfer | | web PASS |
 | 238-240, 250 | Tab reaches deck rows, group headers, Create deck chips, Decks rows; collapsed groups skipped; no drag | Surfer | | |
 | 243 | Deck name stops at 64 and shows its error live; no password checks in the UI | Surfer | Droid | |
 | 244 | Totals say "N unpriced"; price sort puts unpriced last | Surfer | Droid | |
