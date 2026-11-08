@@ -13,7 +13,7 @@ pub fn Community() -> Element {
             path: "/community/",
         }
         Nav {}
-        div { class: "page content-enter",
+        main { id: "content", class: "page content-enter",
             div { class: "section",
                 Panel { title: "Community", title_h1: true,
                     p { "Get help, report bugs, suggest features, and follow updates." }

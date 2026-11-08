@@ -336,7 +336,7 @@ pub fn Guides() -> Element {
             path: "/guides/",
         }
         Nav {}
-        div { class: "page content-enter",
+        main { id: "content", class: "page content-enter",
             div { class: "page-header",
                 Panel { title: "Guides", title_h1: true,
                     p { class: "tagline", "How Zwipe works, one feature at a time." }
@@ -438,7 +438,7 @@ pub fn GuidePage(slug: String) -> Element {
                 path: "/guides/",
             }
             Nav {}
-            div { class: "page content-enter",
+            main { id: "content", class: "page content-enter",
                 div { class: "section",
                     Panel { title: "Guide not found", title_h1: true,
                         p { class: "guide-p",
@@ -477,7 +477,7 @@ pub fn GuidePage(slug: String) -> Element {
         PageMeta { title: "{g.title}", description: "{g.summary}", path: "/guides/{g.slug}/" }
         document::Script { r#type: "application/ld+json", "{json_ld}" }
         Nav {}
-        div { class: "page content-enter guide-page",
+        main { id: "content", class: "page content-enter guide-page",
             // With screenshots, the article and a sidecar gallery Panel sit
             // as siblings: prose panel beside the phone viewer on wide
             // screens, gallery first when stacked on phones. The article

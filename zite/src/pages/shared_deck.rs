@@ -218,67 +218,69 @@ pub fn SharedDeck(token: String) -> Element {
         // Reachable only by having the link; keep crawlers out.
         document::Meta { name: "robots", content: "noindex" }
         Nav {}
-        match &*result.read() {
-            None => rsx! {
-                PageMeta {
-                    title: "Shared deck".to_string(),
-                    description: "A Magic: The Gathering deck shared from Zwipe.".to_string(),
-                    path: "/deck".to_string(),
-                }
-                SharedDeckSkeleton {}
-            },
-            Some(Err(FetchError::NotShared)) => rsx! {
-                PageMeta {
-                    title: "Deck not shared".to_string(),
-                    description: "A Magic: The Gathering deck shared from Zwipe.".to_string(),
-                    path: "/deck".to_string(),
-                }
-                // Inform-and-stop alert, formatted like the app's
-                // update-required screen; deliberately a dead end (the nav is
-                // right there for anyone who wants to explore).
-                div { class: "dead-end content-enter",
-                    Panel {
-                        title: "Deck not shared",
-                        title_h1: true,
-                        p { class: "subtitle",
-                            "This deck is no longer shared. The owner may have stopped sharing it, or the link may be incomplete."
+        main { id: "content", class: "site-main",
+            match &*result.read() {
+                None => rsx! {
+                    PageMeta {
+                        title: "Shared deck".to_string(),
+                        description: "A Magic: The Gathering deck shared from Zwipe.".to_string(),
+                        path: "/deck".to_string(),
+                    }
+                    SharedDeckSkeleton {}
+                },
+                Some(Err(FetchError::NotShared)) => rsx! {
+                    PageMeta {
+                        title: "Deck not shared".to_string(),
+                        description: "A Magic: The Gathering deck shared from Zwipe.".to_string(),
+                        path: "/deck".to_string(),
+                    }
+                    // Inform-and-stop alert, formatted like the app's
+                    // update-required screen; deliberately a dead end (the nav is
+                    // right there for anyone who wants to explore).
+                    div { class: "dead-end content-enter",
+                        Panel {
+                            title: "Deck not shared",
+                            title_h1: true,
+                            p { class: "subtitle",
+                                "This deck is no longer shared. The owner may have stopped sharing it, or the link may be incomplete."
+                            }
                         }
                     }
-                }
-            },
-            Some(Err(FetchError::Network(e))) => rsx! {
-                PageMeta {
-                    title: "Shared deck".to_string(),
-                    description: "A Magic: The Gathering deck shared from Zwipe.".to_string(),
-                    path: "/deck".to_string(),
-                }
-                div { class: "dead-end content-enter",
-                    Panel {
-                        title: "Couldn't load this deck",
-                        title_h1: true,
-                        // Retry rides the panel's own action row.
-                        actions: rsx! {
-                            button {
-                                class: "sd-retry",
-                                disabled: retrying(),
-                                onclick: move |_| {
-                                    retrying.set(true);
-                                    result.restart();
-                                    spawn(async move {
-                                        sleep_ms(RETRY_SPINNER_MIN_MS).await;
-                                        retrying.set(false);
-                                    });
-                                },
-                                if retrying() { "Retrying\u{2026}" } else { "Retry" }
-                            }
-                        },
-                        p { class: "subtitle", "Error: {e}" }
+                },
+                Some(Err(FetchError::Network(e))) => rsx! {
+                    PageMeta {
+                        title: "Shared deck".to_string(),
+                        description: "A Magic: The Gathering deck shared from Zwipe.".to_string(),
+                        path: "/deck".to_string(),
                     }
-                }
-            },
-            Some(Ok(deck)) => rsx! {
-                SharedDeckView { deck: deck.clone() }
-            },
+                    div { class: "dead-end content-enter",
+                        Panel {
+                            title: "Couldn't load this deck",
+                            title_h1: true,
+                            // Retry rides the panel's own action row.
+                            actions: rsx! {
+                                button {
+                                    class: "sd-retry",
+                                    disabled: retrying(),
+                                    onclick: move |_| {
+                                        retrying.set(true);
+                                        result.restart();
+                                        spawn(async move {
+                                            sleep_ms(RETRY_SPINNER_MIN_MS).await;
+                                            retrying.set(false);
+                                        });
+                                    },
+                                    if retrying() { "Retrying\u{2026}" } else { "Retry" }
+                                }
+                            },
+                            p { class: "subtitle", "Error: {e}" }
+                        }
+                    }
+                },
+                Some(Ok(deck)) => rsx! {
+                    SharedDeckView { deck: deck.clone() }
+                },
+            }
         }
         Footer {}
     }

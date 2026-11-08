@@ -66,6 +66,9 @@
    a figure that fits on a narrow desktop window can spill out of its tile on
    the device. Text keeps the size the sheet gives it. */
 html {
+    /* Native chrome (scrollbars, form controls, the default focus ring)
+       follows the theme's mode: dark unless the body is on a light theme. */
+    color-scheme: dark;
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
     /* Room for the scrollbar on every page, so a page too short to scroll
@@ -261,6 +264,10 @@ a {
     }
 }
 
+html:has(> body[class*="theme-"][class*="-light"]) {
+    color-scheme: light;
+}
+
 /* ==================
         layout
  ==================== */
@@ -269,6 +276,41 @@ a {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+}
+
+/* The landmark around a page made of several blocks; it lays them out the
+   way #main does, so a page reads the same with or without it. */
+.site-main {
+    flex: 1 0 auto;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+/* Off screen until a keyboard lands on it, then pinned top left over the nav. */
+.skip-link {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+    z-index: 1000;
+    padding: 0.5rem 0.75rem;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 6px;
+    text-decoration: none;
+    transform: translateY(calc(-100% - 1rem));
+}
+
+.skip-link:focus {
+    transform: none;
+}
+
+/* Every control's keyboard ring is the theme's second accent, which clears
+   3:1 on both the panel and the sink behind it in every theme. */
+:focus-visible {
+    outline: 2px solid var(--accent-secondary);
+    outline-offset: 2px;
 }
 
 .page {

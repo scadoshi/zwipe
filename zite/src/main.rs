@@ -196,6 +196,13 @@ pub struct ShowsPips(pub Signal<bool>);
 /// aside.
 const ESCAPE_JS: &str = "document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !document.querySelector('.alert-dialog[data-state=\"open\"]')) dioxus.send(true); });";
 
+/// Sends `true` on every Escape, for the nav to close its phone menu. Every
+/// page mounts its own nav, so the listener removes the one before it.
+const MENU_ESCAPE_JS: &str = "window.__zwipeMenuEscapeOff?.(); const onKey = (e) => { if (e.key === 'Escape') dioxus.send(true); }; document.addEventListener('keydown', onKey); window.__zwipeMenuEscapeOff = () => document.removeEventListener('keydown', onKey);";
+
+/// Puts focus back on the phone menu's toggle once Escape closes the menu.
+const MENU_TOGGLE_FOCUS_JS: &str = "document.querySelector('.nav-toggle')?.focus();";
+
 #[component]
 fn App() -> Element {
     // The picked theme, remembered in localStorage. It starts at the default
@@ -342,9 +349,21 @@ pub fn Nav() -> Element {
     let on_shared_deck = matches!(use_route::<Route>(), Route::SharedDeck { .. });
     let shows_pips = use_context::<ShowsPips>().0;
     let mut open = use_signal(|| false);
+    // Escape closes the phone menu and gives focus back to its toggle.
+    use_future(move || async move {
+        let mut keys = document::eval(MENU_ESCAPE_JS);
+        while keys.recv::<bool>().await.is_ok() {
+            if *open.peek() {
+                open.set(false);
+                let _ = document::eval(MENU_TOGGLE_FOCUS_JS).await;
+            }
+        }
+    });
     let mut replay = use_context::<Replay>().0;
     let mut hovering = use_signal(|| false);
     rsx! {
+        // First in the tab order, shown only while focused.
+        a { class: "skip-link", href: "#content", "Skip to content" }
         NavBar {
             open,
             brand: rsx! {

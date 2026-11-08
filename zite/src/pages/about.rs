@@ -32,7 +32,7 @@ pub fn About() -> Element {
             path: "/about/",
         }
         Nav {}
-        div { class: "page content-enter",
+        main { id: "content", class: "page content-enter",
             div { class: "about-header section",
                 Panel {
                     eyebrow: "About",

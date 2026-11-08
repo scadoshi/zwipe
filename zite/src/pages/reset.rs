@@ -4,6 +4,7 @@ use zwipe_client::ClientError;
 use zwipe_core::domain::auth::models::secret::Secret;
 use zwipe_ui::text::sentence_case;
 
+use crate::components::PageMeta;
 use crate::{Nav, api};
 
 /// Validate a candidate password against the shared password policy.
@@ -112,6 +113,11 @@ pub fn Reset(token: String) -> Element {
     };
 
     rsx! {
+        PageMeta {
+            title: "Reset password",
+            description: "Set a new password for your Zwipe account.",
+            path: "/reset",
+        }
         Nav {}
         // The password policy, from the same list the app's hint shows. A tap
         // on the backdrop or Got it closes it.
@@ -139,7 +145,7 @@ pub fn Reset(token: String) -> Element {
                 }
             }
         }
-        div { class: "form-page content-enter",
+        main { id: "content", class: "form-page content-enter",
             match current_state {
                 ResetState::Success => rsx! {
                     div { class: "outcome-success",

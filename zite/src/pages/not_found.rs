@@ -26,7 +26,7 @@ pub fn NotFound(segments: Vec<String>) -> Element {
         // Keep dead paths out of search results.
         document::Meta { name: "robots", content: "noindex" }
         Nav {}
-        div { class: "dead-end content-enter",
+        main { id: "content", class: "dead-end content-enter",
             Panel {
                 title: "Page not found",
                 title_h1: true,

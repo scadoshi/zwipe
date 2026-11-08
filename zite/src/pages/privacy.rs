@@ -27,7 +27,7 @@ pub fn Privacy() -> Element {
             path: "/privacy/",
         }
         Nav {}
-        div { class: "page content-enter",
+        main { id: "content", class: "page content-enter",
             div { class: "section",
                 Panel {
                     title: "Privacy policy",
