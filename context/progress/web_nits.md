@@ -353,3 +353,15 @@ Skipped with Scotty: S7 (no Image in the swipe screens' details, intended), S23 
 - 36, outbound links open in the same tab on zwipe.net and app.zwipe.net: PR #177 into `release`.
 - 37, plain hover on every clickable chip and panel header button: PR #176 into `release`.
 - 22, zite's hover stack in `components`, drawn by zite and the web: PR #172 into `release`.
+226. **The Android app downloads uncompressed.** [Droid, 2026-11-07, approved by Scotty] The app's reqwest has no gzip or brotli, so a 100-card deck is 513 KB instead of 51 KB and screens time out on EDGE. Turn both on for the app's client.
+227. **Escape doesn't close zwipe.net's phone menu.** [Surfer p15-1, 2026-11-07, approved] Escape closes it and returns focus to the menu button, like the portfolio's menu and the theme panel (164).
+228. **zwipe.net doesn't declare `color-scheme`.** [Surfer p15-2, approved] Set it per theme (dark on dark themes) and give every control a themed focus ring of at least 3:1, so Chrome's default blue (2.66:1 on Gruvbox) never shows.
+229. **No `<main>` landmark or skip link.** [Surfer p15-3, approved] zwipe.net wraps its content in `<main>`; zwipe.net and the portfolio get a "Skip to content" link that appears on focus.
+230. **Two dead links on the portfolio's orangui page.** [Surfer p15-4, approved] `src/chart_math.rs` and `src/theme.rs` no longer exist in orangui; point them at the current files.
+231. **Reset link doesn't check its token up front.** [Surfer p15-5, approved] `zwipe.net/reset/<token>` checks the token on load and says "Link already used or expired" instead of showing the form. Same for verify and confirm-email.
+232. **Token pages use the home page's title.** [Surfer p15-6, approved] `/reset/…`, `/verify/…` and `/confirm-email/…` get their own titles ("Reset password", "Verify email", "Confirm email").
+233. **Auth forms have no autocomplete hints.** [Surfer p15-7, approved] Login: `username` and `current-password` (with names). Create profile and zwipe.net's reset form: `new-password`.
+234. **Forgot password's email field is `type=text`.** [Surfer p15-8, approved] Make it `type=email` (and `autocomplete=email`), matching Create profile.
+235. **Email errors are worded two ways.** [Surfer p15-9, approved] One message everywhere; an empty field says it's required rather than "Missing @ symbol".
+236. **A signed-out deep link loses its target.** [Surfer p15-10, approved] Redirect to login keeps the target (`?next=` or session storage, same-origin paths only) and returns there after sign-in.
+237. **Portfolio stats don't say what they count.** [Surfer p15-12, approved] "14 repos · 88 stars" reads as the whole account; say they're showcased repos, in a few words.
