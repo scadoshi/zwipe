@@ -74,7 +74,7 @@ Built for players who want a fast, focused mobile experience, not another clutte
 |-------|------|--------|
 | App icon | 512×512, 32-bit PNG, ≤1 MB, no alpha | Use the 1.6× ASCII Z master (`zwiper/assets/favicon/icon-1024.png`), downscale to 512 |
 | Feature graphic | 1024×500 PNG/JPG | TODO |
-| Phone screenshots | 2–8, 16:9 or 9:16, each side 320–3840 px | Reuse iOS captures (re-export at a Play-accepted size) |
+| Phone screenshots | 2–8, 16:9 or 9:16, each side 320–3840 px | `context/operations/store-screenshots/2026-11-08/play/`: eight 1080x1920 PNGs |
 | 7"/10" tablet screenshots | optional | TODO (skip if phone-only) |
 | Promo video | optional YouTube URL | TODO (the swipe demo) |
 

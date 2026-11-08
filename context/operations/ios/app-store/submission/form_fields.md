@@ -104,4 +104,4 @@ This is a Magic: The Gathering deck builder. Use the provided test account to lo
 
 ## Screenshots
 
-12 screenshots in this directory, taken on iPhone 11 Pro Max simulator (1242×2688px).
+The current set is [`store-screenshots/2026-11-08/`](../../../store-screenshots/2026-11-08/README.md): eight 1206x2622 PNGs in `app-store/` for App Store Connect's iPhone slot, from the Android emulator in Gruvbox dark with demo data. Its README gives the order.
