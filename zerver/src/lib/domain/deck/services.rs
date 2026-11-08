@@ -936,6 +936,24 @@ where
             })
             .collect();
         let printings = self.fetch_named_printings(&request.lines, &matched).await?;
+        // A line that names no printing, or names one the card lacks, lands
+        // the card's cheapest normal printing, or the default when none has
+        // a price.
+        let matched_oracles: Vec<Uuid> = matched
+            .iter()
+            .flatten()
+            .filter_map(|card| card.scryfall_data.oracle_id)
+            .collect::<std::collections::HashSet<_>>()
+            .into_iter()
+            .collect();
+        let cheapest: HashMap<Uuid, Uuid> = self
+            .card_repo
+            .fetch_cheapest_printings(&matched_oracles)
+            .await
+            .map_err(|e| ImportDeckCardsError::Database(e.into()))?
+            .into_iter()
+            .filter_map(|printing| printing.oracle_id.map(|oracle| (oracle, printing.id)))
+            .collect();
 
         // Classify lines, deduplicating by oracle_id (summing quantities).
         let mut unresolved: Vec<UnresolvedCard> = request.rejected.clone();
@@ -958,9 +976,16 @@ where
                     .printing
                     .as_ref()
                     .and_then(|named| printings.pick(oracle_id, named))
-                    .map_or((card.scryfall_data.id, RowPrinting::Default), |id| {
-                        (id, RowPrinting::Named)
-                    });
+                    .map_or_else(
+                        || {
+                            let default = cheapest
+                                .get(&oracle_id)
+                                .copied()
+                                .unwrap_or(card.scryfall_data.id);
+                            (default, RowPrinting::Default)
+                        },
+                        |id| (id, RowPrinting::Named),
+                    );
                 let (row, _) = insert_map.entry(oracle_id).or_insert_with(|| {
                     (
                         ImportRow {

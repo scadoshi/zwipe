@@ -673,3 +673,23 @@ fn slots_show_per_format_and_commander() {
     assert!(zone().shows(Slot::Partner));
     assert!(!zone().shows(Slot::SignatureSpell));
 }
+
+#[test]
+fn the_command_zone_ids_are_every_picked_slot() {
+    let tymna = card("Tymna the Weaver");
+    let thrasios = card("Thrasios, Triton Hero");
+    let mut values = FormValues {
+        commander: Some(tymna.clone()),
+        ..FormValues::default()
+    };
+    let ids = |cards: &[&Card]| -> HashSet<Uuid> {
+        cards
+            .iter()
+            .filter_map(|c| c.scryfall_data.oracle_id)
+            .collect()
+    };
+    assert_eq!(values.command_zone_oracle_ids(), ids(&[&tymna]));
+    values.partner = Some(thrasios.clone());
+    assert_eq!(values.command_zone_oracle_ids(), ids(&[&tymna, &thrasios]));
+    assert!(FormValues::default().command_zone_oracle_ids().is_empty());
+}

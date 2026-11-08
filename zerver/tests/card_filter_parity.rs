@@ -60,7 +60,8 @@ async fn sql_and_predicate_agree_on_every_criterion(pool: sqlx::PgPool) {
             .usd("5.00")
             .flavor_text("Lightning fast")
             .categories(&["burn"])
-            .legal("commander"),
+            .legal("commander")
+            .legal("modern"),
         card("Llanowar Elves")
             .mono("G")
             .cmc(1.0)
@@ -400,6 +401,14 @@ async fn sql_and_predicate_agree_on_every_criterion(pool: sqlx::PgPool) {
         (
             "legalities_contains_any",
             json!({ "legalities_contains_any": ["commander"] }),
+        ),
+        (
+            "legalities_contains_any_two",
+            json!({ "legalities_contains_any": ["commander", "modern"] }),
+        ),
+        (
+            "legalities_contains_all",
+            json!({ "legalities_contains_all": ["commander", "modern"] }),
         ),
         (
             "is_commander_in_format",

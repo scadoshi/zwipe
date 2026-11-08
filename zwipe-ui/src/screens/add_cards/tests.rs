@@ -286,6 +286,59 @@ fn the_ghost_has_no_note_before_a_search() {
 }
 
 #[test]
+fn promo_alone_searches_on_a_deck_with_no_format() {
+    let (mut state, _) = with_deck(&deck(deck_profile("No format"), Vec::new()));
+    let mut promo = state.filter().clone();
+    promo.set_promo(true);
+    let effects = state.update(Action::Filter(promo));
+    assert!(has_search(&effects), "Is promo alone searches: {effects:?}");
+}
+
+#[test]
+fn digital_alone_searches_on_a_deck_with_no_format() {
+    let (mut state, _) = with_deck(&deck(deck_profile("No format"), Vec::new()));
+    let mut digital = state.filter().clone();
+    digital.set_digital(true);
+    let effects = state.update(Action::Filter(digital));
+    assert!(
+        has_search(&effects),
+        "Is digital alone searches: {effects:?}"
+    );
+}
+
+#[test]
+fn a_config_only_filter_searches_and_an_empty_reply_says_no_cards_match() {
+    let mut profile = deck_profile("Modern");
+    profile.format = Some(Format::Modern);
+    let (mut state, _) = with_deck(&deck(profile, Vec::new()));
+    let mut promo = state.filter().clone();
+    promo.set_promo(true);
+    let effects = state.update(Action::Filter(promo));
+    assert!(has_search(&effects), "Is promo alone searches: {effects:?}");
+    let _ = state.update(Action::Searched {
+        ticket: ticket_of(&effects),
+        page: page(Vec::new()),
+    });
+    assert_eq!(state.ghost_note(), Some(NO_CARDS_MATCH));
+    assert_eq!(
+        state.ghost_synergy_note(),
+        None,
+        "no Synergy without a commander"
+    );
+}
+
+#[test]
+fn an_unsearchable_filter_says_try_a_filter_once_the_deck_is_in() {
+    let (mut state, _) = with_deck(&pile_deck());
+    let effects = state.update(Action::Filter(state.filter().clone()));
+    assert!(!has_search(&effects));
+    assert_eq!(
+        toasts(&effects),
+        [Toast::normal(ToastKind::Warning, TRY_A_FILTER)]
+    );
+}
+
+#[test]
 fn a_late_search_reply_is_ignored() {
     let (mut state, _) = with_deck(&commander_deck(&[]));
     let older = ticket_of(&state.update(Action::Filter(state.filter().clone())));
@@ -328,6 +381,59 @@ fn a_failed_search_stops_loading() {
     let ticket = ticket_of(&state.update(Action::Filter(state.filter().clone())));
     assert_eq!(state.update(Action::Failed { ticket }), NOTHING);
     assert_eq!(state.pile(), Pile::Empty);
+    assert!(state.load_failed(), "the pile says it failed, with a Retry");
+    assert_eq!(state.ghost_note(), None);
+
+    let effects = state.update(Action::Retry);
+    assert!(has_search(&effects), "Retry searches again: {effects:?}");
+    assert!(!state.load_failed(), "the skeleton while it runs");
+    let _ = state.update(Action::Searched {
+        ticket: ticket_of(&effects),
+        page: page(vec![card("Bear")]),
+    });
+    assert!(!state.load_failed());
+    assert_eq!(state.update(Action::Retry), NOTHING, "nothing failed");
+}
+
+#[test]
+fn a_failed_deck_fetch_comes_back_on_retry() {
+    let deck_id = Uuid::new_v4();
+    let mut state = State::new();
+    let effects = state.update(Action::Load {
+        deck_id,
+        filter: None,
+        parked: None,
+    });
+    let deck_ticket = effects
+        .iter()
+        .find_map(|e| match e {
+            Effect::FetchDeck { ticket, .. } => Some(*ticket),
+            _ => None,
+        })
+        .unwrap();
+    let search = effects.iter().find_map(|e| match e {
+        Effect::Search { ticket, .. } => Some(*ticket),
+        _ => None,
+    });
+    let _ = state.update(Action::Failed {
+        ticket: deck_ticket,
+    });
+    if let Some(ticket) = search {
+        let _ = state.update(Action::Failed { ticket });
+    }
+    assert!(state.load_failed(), "no deck and no cards");
+    let effects = state.update(Action::Retry);
+    assert!(
+        effects
+            .iter()
+            .any(|e| matches!(e, Effect::FetchDeck { .. })),
+        "the deck goes again: {effects:?}"
+    );
+    assert_eq!(
+        has_search(&effects),
+        search.is_some(),
+        "and the search, if it had gone out"
+    );
 }
 
 #[test]

@@ -98,7 +98,7 @@ fn nothing_acts_before_load() {
     }
     assert_eq!(
         state.update(Action::Back),
-        [Effect::Navigate(Destination::DeckList)]
+        [Effect::Navigate(Destination::Back)]
     );
 }
 
@@ -133,6 +133,11 @@ fn the_profile_lands_and_seeds_the_currency_and_share_link() {
     assert_eq!(state.currency(), PriceCurrency::Eur);
     assert_eq!(state.share_token(), Some(Uuid::nil()));
     assert_eq!(state.share_body(), SHARE_SHARED);
+    assert_eq!(
+        state.share_url(),
+        state.share_token().map(view::share_link),
+        "the dialog shows the live link"
+    );
     assert_eq!(state.clone_name(), "Budget (clone)");
     assert!(state.deck_loading(), "the deck is still out");
 }
@@ -215,6 +220,45 @@ fn a_failed_profile_reads_could_not_load() {
     assert_eq!(state.update(Action::Failed { ticket }), []);
     assert_eq!(state.status(), Status::Failed);
     assert_eq!(state.sections(), []);
+}
+
+#[test]
+fn retry_fetches_what_failed_from_its_skeleton() {
+    let profile = deck_profile("Offline");
+    let (mut state, profile_ticket, deck_ticket) = loading(&profile);
+    assert_eq!(state.update(Action::Retry), [], "nothing failed yet");
+    let _ = state.update(Action::Failed {
+        ticket: profile_ticket,
+    });
+    let _ = state.update(Action::Failed {
+        ticket: deck_ticket,
+    });
+    assert_eq!(state.status(), Status::Failed);
+
+    let effects = state.update(Action::Retry);
+    let [
+        Effect::FetchProfile { ticket, .. },
+        Effect::FetchDeck { .. },
+    ] = effects.as_slice()
+    else {
+        panic!("both go again, with no second hint: {effects:?}");
+    };
+    let ticket = *ticket;
+    assert_eq!(
+        state.status(),
+        Status::Loading,
+        "the skeleton, not the error"
+    );
+    let _ = state.update(Action::ProfileLoaded {
+        ticket,
+        profile: Box::new(profile),
+    });
+    assert_eq!(state.status(), Status::Loaded);
+    assert_eq!(
+        state.update(Action::Retry),
+        [],
+        "a landed profile and a deck still out are left alone"
+    );
 }
 
 #[test]
@@ -420,7 +464,7 @@ fn the_action_bar_and_more_items_go_where_the_app_goes() {
     let id = profile.id;
     let mut state = loaded(&profile, built);
     let cases = [
-        (Action::Back, Effect::Navigate(Destination::DeckList)),
+        (Action::Back, Effect::Navigate(Destination::Back)),
         (Action::Edit, Effect::Navigate(Destination::EditDeck(id))),
         (Action::Cards, Effect::Navigate(Destination::DeckCards(id))),
         (

@@ -182,6 +182,7 @@ pub struct CardQueryBuilder {
     language: Option<String>,
     // legalities
     legalities_contains_any: Option<Vec<String>>,
+    legalities_contains_all: Option<Vec<String>>,
     // commander
     is_commander_in_format: Option<Format>,
     // partner/background/spell
@@ -257,6 +258,7 @@ impl Default for CardQueryBuilder {
             content_warning: Some(false),
             language: Some("en".to_string()),
             legalities_contains_any: None,
+            legalities_contains_all: None,
             is_commander_in_format: None,
             is_partner: None,
             is_background: None,
@@ -929,6 +931,7 @@ impl CardQueryBuilder {
             content_warning: self.content_warning,
             language: trim(&self.language),
             legalities_contains_any: self.legalities_contains_any.clone(),
+            legalities_contains_all: self.legalities_contains_all.clone(),
             is_commander_in_format: self.is_commander_in_format,
             is_partner: self.is_partner,
             is_background: self.is_background,
@@ -968,6 +971,47 @@ mod tests {
         builder.set_keywords_excludes(vec!["haste"]);
         assert!(!builder.is_empty());
         assert!(builder.build().is_ok());
+    }
+
+    #[test]
+    fn a_changed_config_flag_is_search_intent() {
+        /// A flag's name and the change that moves it off its default.
+        type Change = (&'static str, fn(&mut CardQueryBuilder));
+        let changes: [Change; 7] = [
+            ("promo yes", |b| {
+                b.set_promo(true);
+            }),
+            ("promo no", |b| {
+                b.set_promo(false);
+            }),
+            ("digital", |b| {
+                b.set_digital(true);
+            }),
+            ("oversized", |b| {
+                b.set_oversized(true);
+            }),
+            ("content warning", |b| {
+                b.set_content_warning(true);
+            }),
+            ("playable", |b| {
+                b.set_is_playable(false);
+            }),
+            ("language", |b| {
+                b.set_language("ja");
+            }),
+        ];
+        for (what, change) in changes {
+            let mut b = CardQueryBuilder::new();
+            change(&mut b);
+            assert!(!b.is_empty(), "{what} is a filter");
+            assert!(b.has_search_intent(), "{what} searches");
+            assert!(b.build().is_ok(), "{what} builds on its own");
+            b.retain_config();
+            assert!(b.is_empty(), "clearing the filter resets {what}");
+        }
+        let mut token = CardQueryBuilder::new();
+        token.set_is_token(false);
+        assert!(token.is_empty(), "the token exclusion stays config");
     }
 
     #[test]

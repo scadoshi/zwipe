@@ -358,6 +358,9 @@ pub(crate) fn DeckForm(open: Open) -> Element {
             .map(|c| SwipeMode::SignatureSpell(c.scryfall_data.color_identity.clone()))
     });
 
+    // Every slot's pile leaves out the cards already in the command zone.
+    let zone_ids = use_memo(move || model.read().values().command_zone_oracle_ids());
+
     let format_open = use_memo(move || model.read().picker() == Some(Picker::Format));
     let tags_open = use_memo(move || model.read().picker() == Some(Picker::DeckTags));
     let oracle_tags_open = use_memo(move || model.read().picker() == Some(Picker::OracleTags));
@@ -419,6 +422,7 @@ pub(crate) fn DeckForm(open: Open) -> Element {
                 host_screen,
                 open: show_commander_swipe,
                 mode: commander_mode,
+                exclude_oracle_ids: Some(zone_ids.into()),
                 on_select: move |card: Card| {
                     driver.dispatch(Action::PickSwiped { slot: Slot::Commander, card: Box::new(card) });
                     show_commander_swipe.set(false);
@@ -429,6 +433,7 @@ pub(crate) fn DeckForm(open: Open) -> Element {
                 host_screen,
                 open: show_partner_swipe,
                 mode: partner_mode,
+                exclude_oracle_ids: Some(zone_ids.into()),
                 on_select: move |card: Card| {
                     driver.dispatch(Action::PickSwiped { slot: Slot::Partner, card: Box::new(card) });
                     show_partner_swipe.set(false);
@@ -439,6 +444,7 @@ pub(crate) fn DeckForm(open: Open) -> Element {
                 host_screen,
                 open: show_background_swipe,
                 mode: background_mode,
+                exclude_oracle_ids: Some(zone_ids.into()),
                 on_select: move |card: Card| {
                     driver.dispatch(Action::PickSwiped { slot: Slot::Background, card: Box::new(card) });
                     show_background_swipe.set(false);
@@ -449,6 +455,7 @@ pub(crate) fn DeckForm(open: Open) -> Element {
                 host_screen,
                 open: show_signature_spell_swipe,
                 mode: spell_mode,
+                exclude_oracle_ids: Some(zone_ids.into()),
                 on_select: move |card: Card| {
                     driver.dispatch(Action::PickSwiped { slot: Slot::SignatureSpell, card: Box::new(card) });
                     show_signature_spell_swipe.set(false);

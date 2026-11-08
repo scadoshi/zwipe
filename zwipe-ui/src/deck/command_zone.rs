@@ -1,11 +1,28 @@
 //! The command zone's four slots and what each client shows and sends for them: the role labels, the deck cards list's group headers, the order of a deck row's art crops and the update that sets or clears one slot. The app's words and order, which web and the TUI share.
 
+use std::collections::HashSet;
+
 use uuid::Uuid;
+use zwipe_core::domain::card::Card;
 use zwipe_core::domain::deck::{DeckProfile, Format};
 use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
 use zwipe_core::http::helpers::Patch;
 
 use crate::hint::HintTopic;
+
+/// The oracle ids of the cards already in the command zone. A slot's Swipe
+/// select keeps them out of its pile, so the partner stack never offers the
+/// commander. A card with no oracle id is skipped.
+#[must_use]
+pub fn zone_oracle_ids<'card>(
+    cards: impl IntoIterator<Item = Option<&'card Card>>,
+) -> HashSet<Uuid> {
+    cards
+        .into_iter()
+        .flatten()
+        .filter_map(|card| card.scryfall_data.oracle_id)
+        .collect()
+}
 
 /// One of the four command-zone slots, on the deck form and in the deck cards view's command zone.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

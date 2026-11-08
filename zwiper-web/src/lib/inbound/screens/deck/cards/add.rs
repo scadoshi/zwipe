@@ -14,7 +14,8 @@ use std::collections::HashSet;
 
 use components::icons::{BoltIcon, DockIcon, REFRESH};
 use components::{
-    Chip, DockFilter, SheetFrame, SheetWide, TOAST_NORMAL, TOAST_QUICK, reset_image_ease,
+    Chip, DockFilter, LoadFailed, SheetFrame, SheetWide, TOAST_NORMAL, TOAST_QUICK,
+    reset_image_ease, use_back_online,
 };
 use dioxus::core::spawn_forever;
 use dioxus::prelude::*;
@@ -134,6 +135,10 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
     let mut related_announced = use_signal(|| false);
     let mut exhausted = use_signal(|| false);
     let mut loading_cards = use_signal(|| true);
+    // The loads that failed, which Retry and the connection coming back
+    // send again: the deck's context, and the search from the top.
+    let mut deck_failed = use_signal(|| false);
+    let mut search_failed = use_signal(|| false);
     let mut loading_more = use_signal(|| false);
     let mut searches = use_signal(Generation::default);
     let mut first_run = use_signal(|| true);
@@ -185,7 +190,8 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
 
     // The deck's context: what it holds, its land and price totals, and the
     // legality, colors, synergy and land rules the search starts from.
-    use_hook(move || {
+    let fetch_context = use_callback(move |()| {
+        deck_failed.set(false);
         spawn(async move {
             let Some(full) = authed
                 .run_quiet("load_deck_context", |c, s| async move {
@@ -193,6 +199,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                 })
                 .await
             else {
+                deck_failed.set(true);
                 return;
             };
             let add = AddDeck::from_deck(&full);
@@ -203,6 +210,17 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             }
         });
     });
+    use_hook(move || fetch_context.call(()));
+    // Sends again whatever failed, from Retry or the connection coming back.
+    let retry = use_callback(move |()| {
+        if *deck_failed.peek() {
+            fetch_context.call(());
+        }
+        if *search_failed.peek() {
+            bump();
+        }
+    });
+    use_back_online(retry);
 
     // The search: on mount, resuming a parked stack when its filter still
     // stands, and on every bump while the source is Search.
@@ -231,18 +249,27 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         let ticket = searches.write().next_ticket();
         // Until the deck lands the search can't run, and the stack ghosts.
         loading_cards.set(deck.peek().is_none());
+        search_failed.set(false);
         stack.write().reset();
         reset_image_ease();
         last_search.set(None);
         exhausted.set(false);
         if deck.peek().is_some() && !context().serves(&filter.peek()) {
             toast.warning(
-                "Try a filter to start swiping".to_string(),
+                add_cards::TRY_A_FILTER.to_string(),
                 ToastOptions::default().duration(TOAST_NORMAL),
             );
             return;
         }
         let Ok(query) = builder.build() else {
+            // Nothing to search on: once the deck is in, say so rather than
+            // leave a blank ghost.
+            if deck.peek().is_some() {
+                toast.warning(
+                    add_cards::TRY_A_FILTER.to_string(),
+                    ToastOptions::default().duration(TOAST_NORMAL),
+                );
+            }
             return;
         };
         loading_cards.set(true);
@@ -258,6 +285,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             }
             loading_cards.set(false);
             let Ok(page) = reply else {
+                search_failed.set(true);
                 return;
             };
             warming.set(!page.synergy_applied);
@@ -802,6 +830,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         last_search.set(None);
         exhausted.set(false);
         loading_cards.set(true);
+        search_failed.set(false);
         let snapshot = filter.peek().clone();
         spawn(async move {
             let reply = authed
@@ -814,6 +843,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             }
             loading_cards.set(false);
             let Ok(page) = reply else {
+                search_failed.set(true);
                 return;
             };
             warming.set(!page.synergy_applied);
@@ -905,6 +935,10 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                 .then_some(NO_CARDS_MATCH)
         }
     };
+    // In place of the ghost, with a Retry, when the cards could not load.
+    let load_failed = at == AddSource::Search
+        && stack.read().is_empty()
+        && (search_failed() || (deck_failed() && deck.read().is_none()));
     // Under it, after an empty search with Synergy on, whether Synergy may
     // be the reason.
     let ghost_detail = if at == AddSource::Search && ghost_note.is_some() {
@@ -971,6 +1005,8 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                             }
                         } else if at == AddSource::Search && loading_cards() {
                             CardSkeleton {}
+                        } else if load_failed {
+                            LoadFailed { message: add_cards::LOAD_FAILED, on_retry: retry }
                         } else {
                             CardSkeleton { note: ghost_note, detail: ghost_detail }
                         }

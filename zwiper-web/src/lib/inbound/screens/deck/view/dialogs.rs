@@ -2,7 +2,7 @@
 //! skips and Delete. The profile header's icons and the Danger zone panel
 //! open them; an action in a dialog closes it, as the app does.
 
-use components::{ActionButton, AlertDialog, DialogAction, TOAST_QUICK};
+use components::{ActionButton, AlertDialog, DialogAction, ShareUrl, TOAST_QUICK};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
@@ -168,7 +168,10 @@ pub fn DeckDialogsHost(
             open: share_open,
             title: "Share deck",
             actions: share_actions,
-            "{share_body}"
+            div { "{share_body}" }
+            if let Some(token) = share_token() {
+                ShareUrl { url: share_link(token) }
+            }
         }
         AlertDialog {
             open: clear_open,

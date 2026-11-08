@@ -7,7 +7,7 @@
 //! dock at the bottom right; Ctrl+Enter (Cmd+Enter on a Mac) runs it too.
 
 use components::icons::{CHECK, DockIcon};
-use components::{Chip, TOAST_NORMAL, TOAST_QUICK};
+use components::{AlertDialog, Chip, DialogAction, TOAST_NORMAL, TOAST_QUICK};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
@@ -58,7 +58,8 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
     };
     let disabled = loading() || blank;
 
-    let mut run_import = move || {
+    let mut confirm_open = use_signal(|| false);
+    let run_import = use_callback(move |()| {
         let (board, mode, source) = (*board.peek(), *mode.peek(), *source.peek());
         let (text, url) = (text.peek().clone(), url.peek().clone());
         result.set(None);
@@ -94,6 +95,14 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
             }
             result.set(Some(reply));
         });
+    });
+    // A replace asks first, since it clears the board and the undo history.
+    let mut submit = move || {
+        if mode.peek().is_replace() {
+            confirm_open.set(true);
+        } else {
+            run_import.call(());
+        }
     };
 
     let board_word = board().unwrap_or("mainboard");
@@ -119,7 +128,7 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                     let chord = modifiers.ctrl() || modifiers.meta();
                     if event.key() == Key::Enter && chord && !disabled {
                         event.prevent_default();
-                        run_import();
+                        submit();
                     }
                 },
                 div { class: "import-controls",
@@ -253,11 +262,33 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                     class: "action-dock-btn",
                     "aria-label": submit_label,
                     disabled,
-                    onclick: move |_| run_import(),
+                    onclick: move |_| submit(),
                     DockIcon { path: CHECK }
                 }
             }
         }
         OneTimeHintDialog { hint: OneTimeHint::Import, open: hint_open }
+        AlertDialog {
+            open: confirm_open,
+            title: deck_import::replace_title(ui_board(board())),
+            actions: vec![
+                DialogAction::Dismiss(deck_import::CANCEL.into()),
+                DialogAction::Confirm {
+                    label: deck_import::REPLACE.into(),
+                    danger: true,
+                    on_confirm: run_import,
+                },
+            ],
+            {deck_import::replace_body(ui_board(board()))}
+        }
+    }
+}
+
+/// The shared model's board for a board as sent: none is the mainboard.
+fn ui_board(board: Option<&str>) -> deck_import::Board {
+    match board {
+        Some("maybeboard") => deck_import::Board::Maybe,
+        Some("sideboard") => deck_import::Board::Side,
+        _ => deck_import::Board::Main,
     }
 }

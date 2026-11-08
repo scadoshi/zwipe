@@ -96,6 +96,24 @@ impl Authed {
         self.execute(op, Report::Quiet, f).await.ok()
     }
 
+    /// [`run_quiet`](Self::run_quiet) that hands the error back, for a
+    /// load beside another that already toasts, which still needs to know
+    /// what failed.
+    ///
+    /// # Errors
+    ///
+    /// The refresh's or the call's [`ClientError`], already logged.
+    pub async fn try_run_quiet<T, Fut>(
+        &self,
+        op: &'static str,
+        f: impl FnOnce(ZwipeClient, Session) -> Fut,
+    ) -> Result<T, ClientError>
+    where
+        Fut: Future<Output = Result<T, ClientError>>,
+    {
+        self.execute(op, Report::Quiet, f).await
+    }
+
     async fn execute<T, Fut>(
         &self,
         op: &'static str,

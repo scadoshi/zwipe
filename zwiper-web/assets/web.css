@@ -1162,12 +1162,13 @@ body {
     max-height: 92vh;
 }
 
-/* On a phone the open card runs edge to edge, a 1rem gutter each side as
-   the app's does, or as tall as the window allows: a set width, so the
-   size never rests on how a browser resolves the image's own size. */
+/* On a phone the open card is the app's size: 55vh tall, the app's
+   `.card-image` cap, unless a 1rem gutter each side narrows it first
+   (333px at 411 wide). A set width, so the size never rests on how a
+   browser resolves the image's own size. */
 @media (max-width: 599px) {
     .image-preview-container .flippable-card-wrapper.card-image img {
-        width: min(calc(100vw - 2rem), calc(92dvh * 63 / 88));
+        width: min(calc(100vw - 2rem), calc(55vh * 63 / 88));
         max-width: none;
         height: auto;
     }
@@ -2153,7 +2154,13 @@ body {
     }
 }
 
-/* The Quick add result the arrow keys point at. */
+/* Quick add's results under its bar keep a row's gap from the row below. */
+.quick-add-results {
+    margin-bottom: 0.5rem;
+}
+
+/* The floating result the arrow keys point at, in the maybeboard's and the
+   command zone's searches. */
 .web-float-highlight {
     border-color: var(--accent-primary);
     color: var(--ink-accent-primary, var(--accent-primary));
@@ -2731,8 +2738,10 @@ body {
         padding: 1.25rem var(--dialog-pad-x);
     }
 
-    /* Every hint takes one width, whatever its longest line. */
-    .alert-dialog:has(.hint-body) {
+    /* Every hint takes one width, whatever its longest line: a page's hint
+       in its .hint-body, and a field's or section's lines and bullets drawn
+       straight into the dialog. */
+    .alert-dialog:has(.hint-body, .hint-line, .hint-bullets) {
         width: min(40rem, calc(100% - 3rem));
         min-width: 0;
     }

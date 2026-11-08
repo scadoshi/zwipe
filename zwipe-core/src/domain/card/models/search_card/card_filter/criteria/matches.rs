@@ -409,6 +409,19 @@ impl CardCriteria {
             }
         }
 
+        // == legality (every format) ==
+        if let Some(formats) = self.legalities_contains_all() {
+            let is_legal_in_all = formats.iter().all(|format_key| {
+                Format::try_from(format_key.as_str())
+                    .ok()
+                    .and_then(|fmt| sd.legalities.get(&fmt).cloned())
+                    .is_some_and(|k| matches!(k, LegalityKind::Legal | LegalityKind::Restricted))
+            });
+            if !is_legal_in_all {
+                return false;
+            }
+        }
+
         // == commander eligibility ==
         if let Some(format) = self.is_commander_in_format()
             && !commander_eligibility::is_valid_commander(card, format)

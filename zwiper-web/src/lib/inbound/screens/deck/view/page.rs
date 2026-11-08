@@ -45,7 +45,7 @@ use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog};
 use crate::inbound::router::Route;
 use crate::inbound::screens::deck::cards::editor::{
-    Editor, Listed, RowInfo, RowKind, main_row_of, row_view, use_deck_editor,
+    Editor, Listed, LoadFailure, RowInfo, RowKind, main_row_of, row_view, use_deck_editor,
 };
 use crate::inbound::screens::deck::cards::quick_add::QuickAdd;
 
@@ -68,7 +68,8 @@ pub fn DeckWidePage(
         mut share,
         ..
     } = dialogs;
-    let ed = use_deck_editor(deck_id);
+    // Quiet: the deck view's own profile fetch raises the one toast.
+    let ed = use_deck_editor(deck_id, LoadFailure::Quiet);
     let Editor {
         deck,
         entries,
