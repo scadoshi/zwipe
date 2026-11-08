@@ -1,6 +1,6 @@
 # 298. The web app's header breaks at 150% zoom
 
-State: reported | Owner: - | PR: - | Build seen: 1d7053e88
+State: fixing | Owner: laptop | PR: - | Build seen: 1d7053e88
 
 ## Report
 Scotty, 2026-11-08 (screenshot, app.zwipe.net/decks at 150% browser zoom, window ~1200 CSS px wide at that zoom): the header wraps into two rows, nav pills (Decks, Playstyle, Activity, Commander maybeboard) on top and the icon row plus Log out underneath, with an empty dark block filling the left of the header beside the logo and Back. The header takes about a third of the viewport. "A little crazy."
@@ -37,3 +37,6 @@ Coverage (everything else was clean: no horizontal scroll, no element past the r
 Heights were 800 CSS px for the automated pass (height doesn't change the header).
 
 Shots on halo: ~/Developer/surfer-shots/298-decks-1120-one-row.png, 298-decks-1100-two-rows.png, 298-decks-960-empty-block.png.
+
+## Decision
+Scotty, 2026-11-08: switch to the hamburger below 1110 CSS px (instead of 890) so the header never wraps. Recheck 302 after.
