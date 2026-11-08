@@ -106,7 +106,10 @@ pub const DELETE: &str = "Delete";
 /// Where an action sends the user. The client maps each to its own route.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Destination {
-    /// The deck list, from Back and in place of a deleted or gone deck.
+    /// The screen that opened the deck, from Back. The client knows it; the
+    /// deck list when it doesn't.
+    Back,
+    /// The deck list, in place of a deleted or gone deck.
     DeckList,
     /// Edit deck for this deck.
     EditDeck(Uuid),
@@ -732,7 +735,7 @@ impl State {
                 self.currency = currency;
                 Vec::new()
             }
-            Action::Back => vec![Effect::Navigate(Destination::DeckList)],
+            Action::Back => vec![Effect::Navigate(Destination::Back)],
             Action::Edit => self.navigate(Destination::EditDeck),
             Action::Cards => self.navigate(Destination::DeckCards),
             Action::AddCards => self.navigate(Destination::AddCards),

@@ -98,7 +98,7 @@ fn nothing_acts_before_load() {
     }
     assert_eq!(
         state.update(Action::Back),
-        [Effect::Navigate(Destination::DeckList)]
+        [Effect::Navigate(Destination::Back)]
     );
 }
 
@@ -420,7 +420,7 @@ fn the_action_bar_and_more_items_go_where_the_app_goes() {
     let id = profile.id;
     let mut state = loaded(&profile, built);
     let cases = [
-        (Action::Back, Effect::Navigate(Destination::DeckList)),
+        (Action::Back, Effect::Navigate(Destination::Back)),
         (Action::Edit, Effect::Navigate(Destination::EditDeck(id))),
         (Action::Cards, Effect::Navigate(Destination::DeckCards(id))),
         (
