@@ -116,7 +116,7 @@ fn ProfileFields(form: DeckForm, on_enter: EventHandler<()>) -> Element {
                 Collapsible { show: show_spell,
                     CommandZoneField { form, slot: Slot::SignatureSpell, label: Slot::SignatureSpell.label(format) }
                 }
-                div { style: "margin-top: 1rem;",
+                div {
                     div { class: "label-row",
                         label { class: "label", "Power level" }
                         InfoButton { topic: HintTopic::PowerLevel }
