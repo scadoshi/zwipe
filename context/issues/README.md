@@ -52,6 +52,7 @@ Who checked, on which live build, what they saw.
 | [285](285-generated-share-image.md) | Generated preview image for shared decks | fixing | thinker | - |
 | [286](286-portfolio-orangui-line-anchors.md) | Portfolio orangui source line ranges are stale | reported | - | - |
 | [265](265-partner-swipe-stack.md) | Partner Swipe stack still offers illegal partners | reproduced | laptop | - |
+| [287](287-split-1-18-changelog.md) | Split the 1.18 changelog into logical patches | approved | laptop | - |
 
 ## Waiting for live verification
 
