@@ -124,7 +124,7 @@ fn a_submit_with_a_failing_field_judges_every_field_and_sends_nothing() {
         errors(&state),
         [
             Some("Must be at least 3 characters long".to_owned()),
-            Some("Enter a valid email address".to_owned()),
+            Some("Email is required".to_owned()),
             Some("Must be at least 8 characters long".to_owned()),
             None,
         ]
