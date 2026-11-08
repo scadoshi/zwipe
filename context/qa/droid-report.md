@@ -495,7 +495,7 @@ Release 80d5b43ab is live. Web: app.zwipe.net at 411px in the emulator's Chrome.
 |---|---|---|---|
 | 200 | fixed | Web import of "1 Snapcaster Mage (ISD) 78" and "1 Bloodline Keeper (ISD) 90" lists "Bloodline Keeper // Lord of Lineage". Export writes "(ISD) 90" and "(ISD) 78" back, and Bloodline Keeper now shows its real art and groups as a Creature. | web11-13 |
 | 201 | fixed | Set: Innistrad on web shows Silent Departure as the Innistrad printing, no longer Innistrad Remastered. | web11-12 |
-| 203 promo | not fixed | Name "Sol Ring" with Is promo: Yes gives "No cards match" on web, though Scryfall lists 10 paper promo Sol Rings (soc 427, sld 910/912/913, pfdn 1, plg22 1 and more). | |
+| 203 promo | partly | Corrected after a retest (app, Add on a deck with no format, filter Reset, Config defaults). My first web check was on a Modern deck, where the default "Is legal in: Modern" excludes Sol Ring, so the format, not Is promo, emptied it (the same applies to pass 9's app note). With no format: Name "Sol Ring" + Is promo: Yes returns Sol Ring, but its details show the Foundations Commander printing, which isn't a promo, so it matches the card and then shows the default printing (like 201 before its fix). Is promo: Yes alone runs no search: bare ghost, no dot on the funnel, no message or toast. | |
 | 208 | fixed | Web warnings on a Modern deck: "Deck has 8 cards, Modern requires at least 60", "Pyroblast is not legal in Modern", "Lightning Bolt has 5 copies, Modern allows 4". | web11-3 |
 | 197 (web) | fixed | Fix to 4 toasts "Quantity set to 4", and the count and warnings drop to 7 cards and 3 warnings at once. | |
 
