@@ -2305,22 +2305,6 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
         max-width: var(--web-page-max);
         padding: 1rem 1.5rem 2rem;
     }
-
-    /* There is room for every tag, so the row stays unfolded and the fold
-       chip goes. */
-    .web-deck-tags-fold {
-        display: none;
-    }
-
-    .web-deck-tags.collapsible {
-        grid-template-rows: 1fr;
-        opacity: 1;
-    }
-
-    .web-deck-tags > .collapsible-inner {
-        overflow: visible;
-    }
-
 }
 
 /* Each deck keeps the phone's row on a wide window, its art at the left

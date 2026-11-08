@@ -1,9 +1,8 @@
 //! Decks: every deck the user has, with Group by, Sort, the Show row and its tags,
 //! collapsible groups, and Create as the dock's `+` behind its gate.
 //!
-//! On a wide window the tag row stays unfolded and each group lays its rows
-//! out two to a line with larger art. Below the breakpoint it is the app's
-//! list with the `Tags` fold chip.
+//! The deck tags fold behind the `Tags` chip as in the app, at every width. On
+//! a wide window each group lays its rows out two to a line with larger art.
 
 use std::collections::HashSet;
 
@@ -212,7 +211,7 @@ pub fn DeckList() -> Element {
                                             class: if tags_open() { "chip-fold-arrow expanded" } else { "chip-fold-arrow" },
                                             "\u{25B8}"
                                         }
-                                        "Tags"
+                                        {deck_list::TAGS}
                                     }
                                     if !tags_open() {
                                         for (key, label) in tags_present.iter().filter(|(key, _)| filter.tags.contains(key)).cloned() {
@@ -228,7 +227,7 @@ pub fn DeckList() -> Element {
                             }
                         }
                         if !tags_present.is_empty() {
-                            div { class: if tags_open() { "collapsible open web-deck-tags" } else { "collapsible web-deck-tags" },
+                            div { class: if tags_open() { "collapsible open" } else { "collapsible" },
                                 div { class: "collapsible-inner",
                                     div { class: "chip-row",
                                         for (key, label) in tags_present {
@@ -403,5 +402,28 @@ fn DeckRow(profile: DeckProfile) -> Element {
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    /// The bodies of every rule in web.css whose selector names `selector`.
+    fn rules_for(selector: &str) -> Vec<&'static str> {
+        include_str!("../../../../../assets/web.css")
+            .split('}')
+            .filter_map(|rule| rule.split_once('{'))
+            .filter(|(head, _)| head.contains(selector))
+            .map(|(_, body)| body)
+            .collect()
+    }
+
+    #[test]
+    fn the_tags_fold_chip_shows_at_every_width() {
+        let rules = rules_for(".web-deck-tags-fold");
+        assert!(!rules.is_empty(), "web.css has no rule for the fold chip");
+        assert!(
+            rules.iter().all(|body| !body.contains("display: none")),
+            "a web.css rule hides the Tags fold chip: {rules:?}"
+        );
     }
 }
