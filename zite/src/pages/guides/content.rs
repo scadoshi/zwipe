@@ -151,6 +151,26 @@ pub(crate) fn guide_image(file: &str) -> Option<Asset> {
         "import-export/03-export.webp" => {
             Some(asset!("/assets/guides/import-export/03-export.webp"))
         }
+        "activity/01-heatmap-and-totals.webp" => {
+            Some(asset!("/assets/guides/activity/01-heatmap-and-totals.webp"))
+        }
+        "activity/02-card-roles.webp" => Some(asset!("/assets/guides/activity/02-card-roles.webp")),
+        "activity/03-most-skipped.webp" => {
+            Some(asset!("/assets/guides/activity/03-most-skipped.webp"))
+        }
+        "playstyle/01-colors.webp" => Some(asset!("/assets/guides/playstyle/01-colors.webp")),
+        "playstyle/02-oracle-tag-impact.webp" => {
+            Some(asset!("/assets/guides/playstyle/02-oracle-tag-impact.webp"))
+        }
+        "playstyle/03-why-this-commander.webp" => Some(asset!(
+            "/assets/guides/playstyle/03-why-this-commander.webp"
+        )),
+        "tags-roles-and-oracle-tags/01-deck-and-oracle-tags.webp" => Some(asset!(
+            "/assets/guides/tags-roles-and-oracle-tags/01-deck-and-oracle-tags.webp"
+        )),
+        "tags-roles-and-oracle-tags/02-role-to-oracle-tags.webp" => Some(asset!(
+            "/assets/guides/tags-roles-and-oracle-tags/02-role-to-oracle-tags.webp"
+        )),
         _ => None,
     }
 }
@@ -637,6 +657,11 @@ pub(crate) static GUIDES: &[Guide] = &[
             Block::P(
                 "Colors opens first: a bar per color with its mana pip and how many of your cards are that color, colorless last. It's the same panel as on Home. Tap a section under it to open it.",
             ),
+            Block::Image {
+                file: "playstyle/01-colors.webp",
+                alt: "Playstyle's Colors panel: a bar per color with its card count, colorless last, over the Show row of color chips",
+                caption: None,
+            },
             Block::Bullets(&[
                 "Summary shows how many decks were read, your most built color combination and your top single color.",
                 "Card roles shows how many of your decks fill each role, like ramp or removal. Tap a role to see its tags.",
@@ -650,10 +675,20 @@ pub(crate) static GUIDES: &[Guide] = &[
                 "A tag your decks use no more than Magic overall doesn't show up.",
                 "Each column has its own `?`, too.",
             ]),
+            Block::Image {
+                file: "playstyle/02-oracle-tag-impact.webp",
+                alt: "Oracle tags: each tag's Decks, Cards and Impact, the top tag at 100",
+                caption: None,
+            },
             Block::H2("Why this commander"),
             Block::P(
                 "Expand a row and tap Why this commander? for the Oracle tags it shares with your decks and the colors you keep building in. While you swipe, the card's details sheet shows the same reasons.",
             ),
+            Block::Image {
+                file: "playstyle/03-why-this-commander.webp",
+                alt: "An expanded suggestion's Why this commander?: the Oracle tags it shares with your decks and a color you keep building in",
+                caption: None,
+            },
             Block::H2("What you can do with one"),
             Block::Bullets(&[
                 "Create deck starts a new deck with it as your commander.",
@@ -692,6 +727,11 @@ pub(crate) static GUIDES: &[Guide] = &[
             Block::P(
                 "On the Home screen, tap Activity under the counters. Each section has a `?`.",
             ),
+            Block::Image {
+                file: "activity/01-heatmap-and-totals.webp",
+                alt: "The Activity screen: the counters, a year of days as a heatmap, and Totals for Added, Skipped, Maybeboard and Removed",
+                caption: None,
+            },
             Block::H2("What's on it"),
             Block::Bullets(&[
                 "Activity is a heatmap of the last year, a square per day, darker the more you swiped and searched. Tap a square for its counts. Totals, under it, counts the cards dealt to your decks: added, skipped, saved to a maybeboard, or added and later removed.",
@@ -701,6 +741,16 @@ pub(crate) static GUIDES: &[Guide] = &[
                 "Both read your decks with a commander, for roles and tags dealt at least 10 times.",
                 "Most skipped lists cards you skip and never add or save, with the skip count and, in an open row, the commanders you skipped it under. Skips are weighed against other players': a card most people pass on needs a lot of skips to show up, one they usually keep needs two.",
             ]),
+            Block::Image {
+                file: "activity/02-card-roles.webp",
+                alt: "Card roles with Added picked in the Show row: each role's share of the cards dealt to you",
+                caption: None,
+            },
+            Block::Image {
+                file: "activity/03-most-skipped.webp",
+                alt: "Most skipped: cards you keep passing on, each with its skip count",
+                caption: None,
+            },
         ],
     },
     Guide {
@@ -922,10 +972,20 @@ pub(crate) static GUIDES: &[Guide] = &[
             Block::P(
                 "Oracle tags are specific: `spot-removal`, `ramp`, `sacrifice-outlet`. Add or remove them directly to fine-tune. Selected Oracle tags sharpen which cards Zwipe suggests.",
             ),
+            Block::Image {
+                file: "tags-roles-and-oracle-tags/01-deck-and-oracle-tags.webp",
+                alt: "A deck's Tags section: its deck tags over the Oracle tags they selected",
+                caption: None,
+            },
             Block::H2("Card roles: the summary"),
             Block::P(
                 "You never assign card roles; they're computed from a card's Oracle tags and shown as chips (Removal, Ramp, Card advantage) when you expand a card's row or open its rules. Tap a role to see the Oracle tags under it. You can filter the stack by role.",
             ),
+            Block::Image {
+                file: "tags-roles-and-oracle-tags/02-role-to-oracle-tags.webp",
+                alt: "A card's row expanded: its card roles, with Ramp tapped to show the Oracle tags under it",
+                caption: None,
+            },
             Block::H2("How it flows"),
             Block::Diagram(
                 "You configure\n  Deck tags\n     │ seed\n     ▼\n  Oracle tags  (refine freely)\n     │ match\n     ▼\nZwipe serves\n  cards that fit your deck",
@@ -1093,3 +1153,43 @@ pub(crate) static GUIDES: &[Guide] = &[
         ],
     },
 ];
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The files a guide's screenshots name, in order.
+    fn shots(guide: &Guide) -> Vec<&'static str> {
+        guide
+            .blocks
+            .iter()
+            .filter_map(|block| match block {
+                Block::Image { file, .. } => Some(*file),
+                _ => None,
+            })
+            .collect()
+    }
+
+    #[test]
+    fn every_guide_has_a_screenshot() {
+        let bare: Vec<&str> = GUIDES
+            .iter()
+            .filter(|guide| shots(guide).is_empty())
+            .map(|guide| guide.slug)
+            .collect();
+        assert!(bare.is_empty(), "guides without a screenshot: {bare:?}");
+    }
+
+    #[test]
+    fn every_screenshot_is_registered() {
+        for guide in GUIDES {
+            for file in shots(guide) {
+                assert!(
+                    guide_image(file).is_some(),
+                    "{}: {file} has no guide_image arm",
+                    guide.slug
+                );
+            }
+        }
+    }
+}
