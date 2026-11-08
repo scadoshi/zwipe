@@ -10,6 +10,7 @@
 use components::hint::ContentHintDialog;
 use components::{
     Button, ButtonVariant, Chip, DialogAction, DockAction, icons, use_overlay_back_action,
+    use_picker_search,
 };
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
@@ -38,7 +39,7 @@ pub(crate) fn OracleTagSelect(
 ) -> Element {
     let client: Signal<ZwipeClient> = use_context();
     let cache: CatalogCache = use_context();
-    let mut query = use_signal(String::new);
+    let mut query = use_picker_search(open);
     let mut focused = use_signal(|| Option::<OracleTag>::None);
     // Each opening starts the bar on its hint, not the last chip tapped.
     use_effect(move || {

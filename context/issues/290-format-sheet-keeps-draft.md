@@ -10,3 +10,6 @@ Surfer, live, Create deck, wide: tapping Pauper fills the Format field at once. 
 
 Part 1 (inside 254's approved scope, easy): closing the sheet, by Discard or ✓, clears its search text.
 Part 2 (for Scotty): Keep reads as "keep the change" but only returns to the open sheet, where ✓ still has to be tapped. Rename it (e.g. "Keep editing") or make Keep apply and close?
+
+## Fix
+Part 1, branch `nits/laptop-290`. The Format, Deck tags and Oracle tags pickers stay mounted while shut, in the app and on web, and none of them cleared its search, so a reopened picker showed the old text and a filtered list. `components::use_picker_search(open)` holds a picker's search and empties it whenever the picker closes, by ✓, Discard or a quiet close. All six pickers (three per client) use it. Failing test first: `closing_a_picker_empties_its_search`. The pick itself still follows the form: Discard puts the format back, ✓ keeps it. Part 2 (the Keep wording) waits for Scotty.

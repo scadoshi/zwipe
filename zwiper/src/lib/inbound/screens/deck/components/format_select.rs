@@ -7,7 +7,7 @@
 //! command-zone cascade (clearing commander and signature spell on a change).
 
 use components::hint::ContentHintDialog;
-use components::{Chip, DockAction, icons, use_overlay_back_action};
+use components::{Chip, DockAction, icons, use_overlay_back_action, use_picker_search};
 use dioxus::prelude::*;
 use zwipe_core::domain::deck::format::Format;
 use zwipe_ui::deck::form;
@@ -35,7 +35,7 @@ pub(crate) fn FormatSelect(
     let listening = use_memo(move || open() && !asking());
     use_overlay_back_action(listening.into(), back);
 
-    let mut query = use_signal(String::new);
+    let mut query = use_picker_search(open);
     let mut focused = use_signal(|| Option::<Format>::None);
     // Each opening starts the bar on its hint, not the last chip tapped.
     use_effect(move || {

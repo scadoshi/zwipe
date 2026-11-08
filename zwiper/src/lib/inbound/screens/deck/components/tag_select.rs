@@ -8,7 +8,7 @@
 //! filters the grid by name for quick jumps.
 
 use components::hint::ContentHintDialog;
-use components::{Chip, DockAction, icons, use_overlay_back_action};
+use components::{Chip, DockAction, icons, use_overlay_back_action, use_picker_search};
 use dioxus::prelude::*;
 use zwipe_core::domain::deck::{DeckTagView, MAX_DECK_TAGS};
 use zwipe_ui::deck::pickers::{self, Picker};
@@ -30,7 +30,7 @@ pub(crate) fn TagSelect(
     on_save: EventHandler<()>,
     on_back: EventHandler<()>,
 ) -> Element {
-    let mut query = use_signal(String::new);
+    let mut query = use_picker_search(open);
     let mut focused = use_signal(|| Option::<DeckTagView>::None);
     // Each opening starts the bar on its hint, not the last chip tapped.
     use_effect(move || {
