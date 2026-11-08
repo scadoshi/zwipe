@@ -96,18 +96,34 @@ pub struct AddContext {
     pub lands_at_target: bool,
 }
 
+/// Whether the user changed a Config flag from its default: playable, digital, oversized, promo,
+/// content warning or language. The builder counts these as settings rather than criteria, but on
+/// Add each is a filter the user picked, so it narrows the stack like any other.
+#[must_use]
+pub fn config_changed(b: &CardQueryBuilder) -> bool {
+    let default = CardQueryBuilder::default();
+    b.is_playable() != default.is_playable()
+        || b.digital() != default.digital()
+        || b.oversized() != default.oversized()
+        || b.promo() != default.promo()
+        || b.content_warning() != default.content_warning()
+        || b.language() != default.language()
+}
+
 impl AddContext {
-    /// Whether Add's Filter key shows its dot: a user filter or a sort, not counting deck legality, commander identity, synergy or the automatic land exclusion.
+    /// Whether Add's Filter key shows its dot: a user filter, a changed Config flag or a sort, not counting deck legality, commander identity, synergy or the automatic land exclusion.
     #[must_use]
     pub fn shows_dot(&self, b: &CardQueryBuilder) -> bool {
-        !b.is_empty_ignoring_deck_context_and_auto_lands(self.lands_at_target) || b.sort().is_some()
+        !b.is_empty_ignoring_deck_context_and_auto_lands(self.lands_at_target)
+            || b.sort().is_some()
+            || config_changed(b)
     }
 
-    /// Whether Add serves cards for this filter: a commander deck with a commander always, else only with search intent.
+    /// Whether Add serves cards for this filter: a commander deck with a commander always, else only with search intent or a changed Config flag.
     #[must_use]
     pub fn serves(&self, b: &CardQueryBuilder) -> bool {
         let commander_format = self.format.is_some_and(|f| f.has_commander());
-        (commander_format && self.has_commander) || b.has_search_intent()
+        (commander_format && self.has_commander) || b.has_search_intent() || config_changed(b)
     }
 
     /// Puts the deck's legality, commander identity and land exclusion back on `b`.
@@ -295,9 +311,26 @@ mod tests {
         let mut legal_only = blank.clone();
         legal_only.set_legalities_contains_any(vec!["modern".to_owned()]);
         assert!(!pile.serves(&legal_only), "legality alone is deck context");
-        let mut sorted = blank;
+        let mut sorted = blank.clone();
         sorted.set_sort(CardSortKey::Name);
         assert!(pile.serves(&sorted));
+        let mut promo = blank;
+        promo.set_promo(true);
+        assert!(pile.serves(&promo), "a Config flag is a filter on Add");
+        assert!(pile.shows_dot(&promo));
+    }
+
+    #[test]
+    fn only_a_changed_config_flag_counts() {
+        let mut b = CardQueryBuilder::default();
+        assert!(!config_changed(&b));
+        b.set_is_token(false);
+        assert!(
+            !config_changed(&b),
+            "Add's own token exclusion is not the user's"
+        );
+        b.set_digital(true);
+        assert!(config_changed(&b));
     }
 
     #[test]
