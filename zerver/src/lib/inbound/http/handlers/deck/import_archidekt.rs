@@ -3,7 +3,9 @@
 //! The client sends the deck URL; the server extracts the id, fetches the
 //! deck from Archidekt's public API, resolves each printing by Scryfall id,
 //! and imports the cards into the caller's deck exactly like the plain-text
-//! importer (same boards, same add/replace modes, same result shape).
+//! importer (same boards, same add/replace modes, same result shape). The
+//! deck's empty format and commander slots then take Archidekt's, and the
+//! result names what was set.
 //! Keeping fetch + parse server-side means the (undocumented) Archidekt shape
 //! can be patched without an app release.
 
@@ -77,13 +79,20 @@ pub async fn import_archidekt_deck(
         .await?;
     let email_verified = db_user.email_verified_at.is_some();
 
-    let cards = ArchidektClient::new(&state.web_base_url)
+    let archidekt_deck = ArchidektClient::new(&state.web_base_url)
         .fetch_deck(archidekt_id)
         .await?;
 
     let result = state
         .deck_service
-        .import_archidekt_deck(user.id, deck_id, &cards, board, email_verified, body.mode)
+        .import_archidekt_deck(
+            user.id,
+            deck_id,
+            &archidekt_deck,
+            board,
+            email_verified,
+            body.mode,
+        )
         .await
         .map_err(ApiError::from)?;
 

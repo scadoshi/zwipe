@@ -45,6 +45,7 @@ fn result(imported: &[&str], unresolved: &[&str]) -> ImportDeckCardsResult {
                 reason: "not found".to_owned(),
             })
             .collect(),
+        ..ImportDeckCardsResult::default()
     }
 }
 
@@ -102,6 +103,7 @@ fn the_explainer_follows_the_mode_and_board() {
             before: "Adds imported cards into the ",
             board: "mainboard",
             after: ". Existing cards stay but take new quantities if applicable.",
+            fills: None,
         }
     );
     let _ = state.update(Action::PickMode(ImportMode::Replace));
@@ -112,7 +114,37 @@ fn the_explainer_follows_the_mode_and_board() {
             before: "Removes all existing cards in the ",
             board: "maybeboard",
             after: ", replacing with imported cards.",
+            fills: None,
         }
+    );
+}
+
+#[test]
+fn an_archidekt_link_says_what_else_it_sets() {
+    let (mut state, _) = opened();
+    let _ = state.update(Action::PickSource(Source::Archidekt));
+    assert_eq!(
+        state.explainer().fills,
+        Some("Also sets the deck's format and commander from Archidekt, if the deck has none yet.")
+    );
+}
+
+#[test]
+fn the_set_rows_list_the_format_then_the_command_zone() {
+    let mut set = result(&["Sol Ring"], &[]);
+    assert!(set_rows(&set).is_empty(), "a text import sets nothing");
+    set.format_set = Some(zwipe_core::domain::deck::Format::Commander);
+    set.commanders_set = vec![
+        "Tymna the Weaver".to_owned(),
+        "Thrasios, Triton Hero".to_owned(),
+    ];
+    assert_eq!(
+        set_rows(&set),
+        [
+            ("Commander".to_owned(), "format"),
+            ("Tymna the Weaver".to_owned(), "command zone"),
+            ("Thrasios, Triton Hero".to_owned(), "command zone"),
+        ]
     );
 }
 

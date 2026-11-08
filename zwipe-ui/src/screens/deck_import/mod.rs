@@ -37,6 +37,35 @@ pub const REPLACE_BEFORE: &str = "Removes all existing cards in the ";
 /// The explainer's words after the board in [`ImportMode::Replace`].
 pub const REPLACE_AFTER: &str = ", replacing with imported cards.";
 
+/// The explainer's line while the source is [`Source::Archidekt`]: what else the import sets, and when.
+pub const ARCHIDEKT_FILLS: &str =
+    "Also sets the deck's format and commander from Archidekt, if the deck has none yet.";
+
+/// The label over what an Archidekt import set on the deck.
+pub const SET_ON_DECK: &str = "Set on the deck";
+
+/// A [`set_rows`] row's tag for the format.
+pub const SET_FORMAT: &str = "format";
+
+/// A [`set_rows`] row's tag for a commander, partner or background.
+pub const SET_COMMAND_ZONE: &str = "command zone";
+
+/// What an import set on the deck, one row each: the format, then the command zone cards, commander first. Each is the value with its tag, [`SET_FORMAT`] or [`SET_COMMAND_ZONE`]. Empty when it set nothing.
+#[must_use]
+pub fn set_rows(result: &ImportDeckCardsResult) -> Vec<(String, &'static str)> {
+    result
+        .format_set
+        .iter()
+        .map(|f| (f.display_name().to_owned(), SET_FORMAT))
+        .chain(
+            result
+                .commanders_set
+                .iter()
+                .map(|name| (name.clone(), SET_COMMAND_ZONE)),
+        )
+        .collect()
+}
+
 /// The label over the decklist box, for [`Source::Text`].
 pub const TEXT_LABEL: &str = "Paste decklist";
 
@@ -183,6 +212,8 @@ pub struct Explainer {
     pub board: &'static str,
     /// The words after the board.
     pub after: &'static str,
+    /// What else the import sets, [`ARCHIDEKT_FILLS`] for an Archidekt link, `None` for a decklist.
+    pub fills: Option<&'static str>,
 }
 
 /// What a user does on Import, and each reply the client hands back.
@@ -481,6 +512,7 @@ impl State {
             before,
             board: self.board.word(),
             after,
+            fills: (self.source == Source::Archidekt).then_some(ARCHIDEKT_FILLS),
         }
     }
 }

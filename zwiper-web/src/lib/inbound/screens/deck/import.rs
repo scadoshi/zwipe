@@ -175,6 +175,9 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                             span { class: "hl-key", "{board_word}" }
                             ". Existing cards stay but take new quantities if applicable."
                         }
+                        if source() == Source::Archidekt {
+                            " {deck_import::ARCHIDEKT_FILLS}"
+                        }
                     }
                 }
                 div { class: "import-scroll",
@@ -222,6 +225,21 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                         }
                         div { class: "web-import-results",
                             if let Some(r) = result() {
+                                if !deck_import::set_rows(&r).is_empty() {
+                                    div { class: "web-form-panel",
+                                        div { class: "settings-list-header web-form-head",
+                                            span { class: "settings-list-title", "{deck_import::SET_ON_DECK}" }
+                                        }
+                                        div { class: "web-form-fields web-import-cards",
+                                            for (value, tag) in deck_import::set_rows(&r) {
+                                                div { class: "chip-bubble",
+                                                    span { class: "font-light", "{value}" }
+                                                    span { class: "font-light opacity-50", "{tag}" }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                                 if !r.imported.is_empty() {
                                     div { class: "web-form-panel",
                                         div { class: "settings-list-header web-form-head",
