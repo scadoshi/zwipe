@@ -72,7 +72,7 @@ Who checked, on which live build, what they saw.
 | [304](304-home-stats-chip-gap.md) | Web Home's stat chips sit far below the counters | merged | laptop | #443 |
 | [305](305-home-decks-create-label.md) | Home's Decks panel "+" should read "Create deck" | merged | laptop | #443 |
 | [306](306-openframe-reuse-shell.md) | About and Privacy draw a second app frame when signed in | merged | halo | #444 |
-| [307](307-about-cards-skip-zwiper-web.md) | zwipe.net About's crate cards leave out zwiper-web | fixing | laptop | #447 |
+| [307](307-about-cards-skip-zwiper-web.md) | zwipe.net About's crate cards leave out zwiper-web | merged | laptop | #447 |
 | [308](308-share-image-size-for-whatsapp.md) | Share preview images may be too big for WhatsApp | parked | - | - |
 | [309](309-robots-blocks-share-unfurls.md) | X shows no card for shared deck links (robots.txt) | approved | laptop | - |
 
