@@ -135,10 +135,18 @@ pub fn added(name: &str) -> String {
     format!("Added {name}")
 }
 
-/// The toast after a row's move to `board`.
+/// The toast after a move to the mainboard, from any screen.
+pub const MOVED_TO_MAINBOARD: &str = "Moved to mainboard";
+
+/// The toast after a row's move to `board`. The words are the copy's
+/// (mainboard), not the board's wire name (deck).
 #[must_use]
 pub fn moved_to(board: Board) -> String {
-    format!("Moved to {}", board.display_name())
+    match board {
+        Board::Deck => MOVED_TO_MAINBOARD.to_owned(),
+        Board::Maybeboard => "Moved to maybeboard".to_owned(),
+        Board::Sideboard => "Moved to sideboard".to_owned(),
+    }
 }
 
 /// A card group's header: `label` and its copy count, or the count alone for a color group, whose pips stand in for the label.

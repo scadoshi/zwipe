@@ -7,7 +7,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::domain::card::Card;
-use crate::domain::card::card_role::CardRole;
+use crate::domain::card::card_role::{self, CardRole};
 use crate::domain::card::scryfall_data::ScryfallData;
 use crate::domain::card::scryfall_data::colors::Color;
 use crate::domain::card::search_card::card_filter::price_currency::PriceCurrency;
@@ -84,17 +84,18 @@ pub struct DeckMetrics {
 }
 
 impl DeckMetrics {
-    /// 5-letter abbreviation for type distribution labels.
+    /// The type chart's word for a type: the type's singular, or a short
+    /// word for the long ones, so each fits its column on a phone.
     pub fn abbreviate_type(label: &str) -> &str {
         match label {
-            "lands" => "lands",
-            "creatures" => "creat",
-            "planeswalkers" => "plnsw",
-            "artifacts" => "artif",
-            "enchantments" => "enchn",
-            "instants" => "instn",
-            "sorceries" => "sorcr",
-            "other" => "other",
+            "lands" => "Land",
+            "creatures" => "Creature",
+            "planeswalkers" => "Walker",
+            "artifacts" => "Artifact",
+            "enchantments" => "Enchant",
+            "instants" => "Instant",
+            "sorceries" => "Sorcery",
+            "other" => "Other",
             _ => label,
         }
     }
@@ -223,7 +224,7 @@ impl DeckMetrics {
     }
 
     /// Draw-odds inputs: `(library size, [(bucket label, count)])`, lands
-    /// plus each card role, the largest bucket first and Land ahead of a role
+    /// plus each card role by its display name, the largest bucket first and Land ahead of a role
     /// it ties. Library size is the mainboard (the commander sits in the
     /// command zone, not the library).
     pub fn draw_odds_buckets(&self) -> (u32, Vec<(&'static str, u32)>) {
@@ -232,7 +233,7 @@ impl DeckMetrics {
         buckets.extend(
             self.card_role_counts
                 .iter()
-                .map(|(label, count)| (*label, display_count(*count))),
+                .map(|(key, count)| (card_role::label_for_short_name(key), display_count(*count))),
         );
         buckets.sort_by_key(|(_, count)| std::cmp::Reverse(*count));
         (deck_size, buckets)
@@ -804,7 +805,7 @@ mod tests {
             type_counts: vec![("creatures", 4), ("lands", 2)],
             ..DeckMetrics::from_entries(&[])
         };
-        assert_eq!(two.type_bars(), vec![("creat", 4, 100), ("lands", 2, 50)]);
+        assert_eq!(two.type_bars(), vec![("Creature", 4, 100), ("Land", 2, 50)]);
     }
 
     #[test]
@@ -1042,7 +1043,7 @@ mod tests {
         assert_eq!(deck_size, 10);
         assert_eq!(
             buckets,
-            vec![("remov", 4), ("Land", 3), ("ramp", 3)],
+            vec![("Removal", 4), ("Land", 3), ("Ramp", 3)],
             "Land stays ahead of a role it ties"
         );
     }

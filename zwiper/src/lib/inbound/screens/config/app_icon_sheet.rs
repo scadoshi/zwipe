@@ -10,8 +10,8 @@ use components::{
 use dioxus::prelude::*;
 use zwipe_core::domain::logo::Z;
 use zwipe_core::domain::user::settings;
-use zwipe_core::text::sentence_case;
 
+use super::APP_ICON_FAILED;
 use crate::outbound::app_icon;
 
 /// The tile: the mark as text in a theme's own class, so it is the same glyph
@@ -108,7 +108,7 @@ pub fn AppIconSheet(
             }
             Err(e) => {
                 tracing::error!("failed to set app icon: {e}");
-                toast.error(sentence_case(&e.to_string()), ToastOptions::default());
+                toast.error(APP_ICON_FAILED.to_owned(), ToastOptions::default());
             }
         }
         open.set(false);

@@ -1,4 +1,4 @@
-//! Login: a username-or-email and password form with Log in, Create profile and Forgot password under it.
+//! Login: a username-or-email and password form with Log in, Create account and Forgot password under it.
 //!
 //! The client keeps a [`State`] while the screen is up and hands every keystroke in as [`Action::EditIdentifier`] or [`Action::EditPassword`]. The submit gate is [`account::login_gate`]. A login that goes through comes back as [`Effect::SignedIn`] carrying the session: storing it, applying its settings and the keyring are the client's. The text inputs, their focus and the password's Show and Hide stay in the client.
 
@@ -12,16 +12,16 @@ use crate::generation::{Generation, Ticket};
 use crate::toast::Toast;
 
 /// The screen's title.
-pub const TITLE: &str = "Login";
+pub const TITLE: &str = "Log in";
 
 /// The submit button's label.
 pub const LOG_IN: &str = "Log in";
 
 /// The submit button's label while a login is out.
-pub const LOGGING_IN: &str = "Logging in...";
+pub const LOGGING_IN: &str = "Logging in";
 
 /// The button that opens Register.
-pub const CREATE_PROFILE: &str = "Create profile";
+pub const CREATE_ACCOUNT: &str = "Create account";
 
 /// The button that opens Forgot password.
 pub const FORGOT_PASSWORD: &str = "Forgot password";
@@ -66,7 +66,7 @@ impl Field {
 pub enum Destination {
     /// Home, once a login goes through.
     Home,
-    /// Register, from Create profile.
+    /// Register, from Create account.
     Register,
     /// Forgot password, from its button.
     ForgotPassword,
@@ -95,7 +95,7 @@ pub enum Action {
         /// The ticket from the [`Effect::SignIn`] this answers.
         ticket: Ticket,
     },
-    /// Presses Create profile.
+    /// Presses Create account.
     CreateProfile,
     /// Presses Forgot password.
     ForgotPassword,
@@ -146,7 +146,7 @@ impl State {
 
     /// Applies `action` and returns what the client must do, in order.
     ///
-    /// Create profile and Forgot password do nothing while a login is out, as their buttons are held.
+    /// Create account and Forgot password do nothing while a login is out, as their buttons are held.
     #[must_use = "the client performs the effects"]
     pub fn update(&mut self, action: Action) -> Vec<Effect> {
         match action {

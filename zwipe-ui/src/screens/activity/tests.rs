@@ -420,7 +420,7 @@ fn only_activity_opens_on_entry() {
 #[test]
 fn the_copy_matches_the_app() {
     assert_eq!(TITLE, "Activity");
-    assert_eq!(LOAD_FAILED, "Could not load your activity");
+    assert_eq!(LOAD_FAILED, "Couldn't load your activity");
     assert_eq!(NOTHING_YET, "Swipe some cards to see your activity");
     assert_eq!(TOTALS, "Totals");
     assert_eq!(SHOW, "Show");

@@ -369,7 +369,7 @@ fn the_copy_matches_the_app() {
             "Show",
             "All",
             "Tags",
-            "Could not load decks",
+            "Couldn't load decks",
             "No decks",
             "No decks match"
         ]

@@ -40,7 +40,7 @@ fn building_a_deck() -> Vec<Block> {
             text(" what it does"),
         ]),
         bullet(vec![text(
-            "Deck tags and oracle tags shape which cards we suggest",
+            "Deck tags and Oracle tags shape which cards we suggest",
         )]),
         bullet(vec![
             text("Tap a field's "),
@@ -238,7 +238,7 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
                     emph("keyword", Role::Palette1),
                     text(" chip for what it does, or a "),
                     emph("role", Role::Palette1),
-                    text(" chip for its oracle tags"),
+                    text(" chip for its Oracle tags"),
                 ]),
                 bullet(vec![
                     key("Group by"),
@@ -296,7 +296,7 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
                 bullet(vec![
                     text("The chip after "),
                     key("From"),
-                    text(" switches between Search and your Maybe pile"),
+                    text(" switches between Search and the maybeboard"),
                 ]),
                 bullet(vec![
                     icon_key(KeyIcon::Bolt),
@@ -325,7 +325,7 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
                 bullet(vec![
                     text("Swipe "),
                     emph("up", Role::Warning),
-                    text(" moves it between main and maybeboard"),
+                    text(" moves it between mainboard and maybeboard"),
                 ]),
                 bullet(vec![
                     text("Swipe "),
@@ -455,7 +455,7 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
             "Playstyle",
             vec![
                 line(vec![text(
-                    "Your colors, card roles and top oracle tags from every deck you own in any format",
+                    "Your colors, card roles and top Oracle tags from every deck you own in any format",
                 )]),
                 line(vec![text(
                     "Below them, your top 10 commanders ranked against all your decks, best fit first",

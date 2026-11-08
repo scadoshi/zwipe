@@ -18,10 +18,10 @@ pub const TITLE: &str = "Oracle tags";
 pub const SEARCH_PLACEHOLDER: &str = "Search tags or descriptions";
 
 /// The line in place of the dictionary when the catalog failed with nothing cached.
-pub const LOAD_FAILED: &str = "Couldn't load the dictionary. Pull back and try again.";
+pub const LOAD_FAILED: &str = "Couldn't load the dictionary. Close it and try again.";
 
 /// The toast raised when the catalog fails with nothing cached while the dictionary is up.
-pub const LOAD_FAILED_TOAST: &str = "Couldn't load the oracle-tag dictionary";
+pub const LOAD_FAILED_TOAST: &str = "Couldn't load the Oracle tags dictionary";
 
 /// A row's stand-in for a tag with no description.
 pub const NO_DESCRIPTION: &str = "No description yet";

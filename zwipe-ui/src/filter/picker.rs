@@ -34,7 +34,7 @@ impl PickerField {
     pub fn placeholder(self) -> &'static str {
         match self {
             Self::Include(MatchGroup::Tags) | Self::Exclude(MatchGroup::Tags) => {
-                "Search all oracle tags"
+                "Search all Oracle tags"
             }
             _ => "Type to search",
         }
@@ -392,6 +392,6 @@ mod tests {
         include.pick(&mut b, &modes, "ramp");
         assert_eq!(b.oracle_tags_contains_all(), Some(&strings(&["ramp"])[..]));
         assert_eq!(modes.match_of(&b, MatchGroup::Tags), Match::All);
-        assert_eq!(include.placeholder(), "Search all oracle tags");
+        assert_eq!(include.placeholder(), "Search all Oracle tags");
     }
 }

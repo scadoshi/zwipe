@@ -452,7 +452,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                     }
                 });
                 let message = if to == Board::Deck {
-                    "Moved to main"
+                    "Moved to mainboard"
                 } else {
                     "Moved to maybeboard"
                 };

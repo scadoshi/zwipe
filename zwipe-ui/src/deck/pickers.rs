@@ -131,13 +131,13 @@ impl TagPicker {
         }
     }
 
-    /// The toast a tap past the cap raises: `You may only choose up to 5 tags` or `You may only choose up to 30 oracle tags`, a warning up for [`QUICK`](crate::toast::QUICK).
+    /// The toast a tap past the cap raises: `Up to 5 deck tags` or `Up to 30 Oracle tags`, a warning up for [`QUICK`](crate::toast::QUICK).
     #[must_use]
     pub fn cap_toast(self) -> Toast {
         let text = match self {
-            Self::DeckTags => format!("You may only choose up to {MAX_DECK_TAGS} tags"),
+            Self::DeckTags => format!("Up to {MAX_DECK_TAGS} deck tags"),
             Self::OracleTags => {
-                format!("You may only choose up to {MAX_DECK_ORACLE_TAGS} oracle tags")
+                format!("Up to {MAX_DECK_ORACLE_TAGS} Oracle tags")
             }
         };
         Toast::quick(ToastKind::Warning, text)
@@ -444,7 +444,7 @@ mod tests {
             TagPicker::DeckTags.cap_toast(),
             Toast::new(
                 ToastKind::Warning,
-                format!("You may only choose up to {MAX_DECK_TAGS} tags"),
+                format!("Up to {MAX_DECK_TAGS} deck tags"),
                 QUICK,
             ),
         );
@@ -470,7 +470,7 @@ mod tests {
         let toast = TagPicker::OracleTags.cap_toast();
         assert_eq!(
             toast.text,
-            format!("You may only choose up to {MAX_DECK_ORACLE_TAGS} oracle tags"),
+            format!("Up to {MAX_DECK_ORACLE_TAGS} Oracle tags"),
         );
         assert_eq!((toast.kind, toast.duration), (ToastKind::Warning, QUICK));
     }

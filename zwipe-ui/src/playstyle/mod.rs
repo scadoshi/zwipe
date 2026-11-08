@@ -224,7 +224,7 @@ pub fn role_bars(roles: &[HttpProfileRole], tags: &[HttpProfileTag]) -> Vec<Bar>
         .iter()
         .map(|r| Bar {
             key: r.role.clone(),
-            label: card_role::role_short_label(&r.role),
+            label: card_role::role_label(&r.role),
             count: u64::from(r.decks),
             pct: DeckMetrics::bar_pct(decks_usize(r.decks), max),
             revealable: tags

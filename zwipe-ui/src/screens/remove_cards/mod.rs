@@ -53,8 +53,8 @@ pub const REMOVED: &str = "Removed from deck";
 /// The toast for an up swipe that moves the card to the maybeboard.
 pub const MOVED_TO_MAYBEBOARD: &str = "Moved to maybeboard";
 
-/// The toast for an up swipe that moves a maybeboard card to the main board.
-pub const MOVED_TO_MAIN: &str = "Moved to main";
+/// The toast for an up swipe that moves a maybeboard card to the mainboard.
+pub use crate::screens::deck_cards::MOVED_TO_MAINBOARD;
 
 /// The toast for an undo with no swipe to undo.
 pub const NOTHING_TO_UNDO: &str = "Nothing to undo";
@@ -704,7 +704,7 @@ impl State {
         let message = if to.is_maybeboard() {
             MOVED_TO_MAYBEBOARD
         } else {
-            MOVED_TO_MAIN
+            MOVED_TO_MAINBOARD
         };
         let mut effects = vec![
             Effect::MoveDeckCard {

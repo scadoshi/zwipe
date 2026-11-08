@@ -206,7 +206,7 @@ fn back_goes_to_the_deck() {
 fn the_copy_matches_the_app() {
     assert_eq!((TITLE, BOARDS), ("Export", "Export"));
     assert_eq!(DECKLIST, "Decklist");
-    assert_eq!(LOAD_FAILED, "Could not load deck");
+    assert_eq!(LOAD_FAILED, "Couldn't load deck");
     assert_eq!((BACK, COPY), ("Back", "Copy"));
     assert_eq!(COPIED, "Copied to clipboard");
     let boards: Vec<&str> = Board::ALL.into_iter().map(Board::label).collect();

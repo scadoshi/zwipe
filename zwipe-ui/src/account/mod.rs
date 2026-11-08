@@ -4,7 +4,7 @@ use std::fmt::{self, Debug, Formatter};
 
 use chrono::{DateTime, Utc};
 use zwipe_core::domain::auth::models::password;
-use zwipe_core::domain::user::{Email, Username};
+use zwipe_core::domain::user::{Email, InvalidUsername, Username};
 use zwipe_core::text::sentence_case;
 
 use crate::toast::{Toast, ToastKind};
@@ -12,8 +12,11 @@ use crate::toast::{Toast, ToastKind};
 /// The toast for a Log in tap with a field left empty.
 pub const MISSING_INPUTS: &str = "Enter your username or email and password";
 
-/// Forgot password's one line for any address that does not parse.
-pub const INVALID_RESET_EMAIL: &str = "Please enter a valid email address";
+/// The one line under any address that does not parse, on every form.
+pub const INVALID_EMAIL: &str = "Enter a valid email address";
+
+/// The line under a username the word filter turns down.
+pub const USERNAME_BAD_WORD: &str = "Pick a different username";
 
 /// The line under a password whose confirmation differs.
 pub const PASSWORDS_DIFFER: &str = "Passwords do not match";
@@ -92,12 +95,10 @@ pub fn missing_inputs_toast() -> Toast {
     Toast::normal(ToastKind::Error, MISSING_INPUTS)
 }
 
-/// Forgot password's check: the address as typed, untrimmed, with [`INVALID_RESET_EMAIL`] for every failure.
+/// Forgot password's check: the address as typed, untrimmed, with [`INVALID_EMAIL`] for every failure.
 #[must_use]
 pub fn reset_email_error(raw: &str) -> Option<String> {
-    Email::new(raw)
-        .is_err()
-        .then(|| INVALID_RESET_EMAIL.to_owned())
+    email_error(raw)
 }
 
 /// Register's check of a new password and its confirmation: the policy's first failure, else [`PASSWORDS_DIFFER`]. A confirmation still shorter than the password is not judged until a submit was tried, since mid-typing it cannot match yet.
@@ -125,15 +126,16 @@ pub fn change_password_error(
 /// Why `raw` is not a username, in the app's words, or `None` when it is one.
 #[must_use]
 pub fn username_error(raw: &str) -> Option<String> {
-    Username::new(raw)
-        .err()
-        .map(|e| sentence_case(&e.to_string()))
+    Username::new(raw).err().map(|e| match e {
+        InvalidUsername::BadWord => USERNAME_BAD_WORD.to_owned(),
+        other => sentence_case(&other.to_string()),
+    })
 }
 
-/// Why `raw` is not an email address, in the app's words, or `None` when it is one.
+/// [`INVALID_EMAIL`] when `raw` is not an email address, `None` when it is one.
 #[must_use]
 pub fn email_error(raw: &str) -> Option<String> {
-    Email::new(raw).err().map(|e| email_message(&e).to_owned())
+    Email::new(raw).is_err().then(|| INVALID_EMAIL.to_owned())
 }
 
 /// What is wrong with a new username on Change username: [`username_error`], then [`USERNAME_UNCHANGED`] when it is exactly the current one. Usernames are unique by exact text, so a change of case is a change.
@@ -146,35 +148,6 @@ pub fn change_username_error(current: &str, raw: &str) -> Option<String> {
 #[must_use]
 pub fn change_email_error(current: &str, raw: &str) -> Option<String> {
     email_error(raw).or_else(|| (raw == current).then(|| EMAIL_UNCHANGED.to_owned()))
-}
-
-/// The app's wording for each way an email address can be wrong.
-fn email_message(error: &email_address::Error) -> &'static str {
-    use email_address::Error::{
-        DomainEmpty, DomainInvalidSeparator, DomainTooFew, DomainTooLong, InvalidCharacter,
-        InvalidComment, InvalidIPAddress, LocalPartEmpty, LocalPartTooLong, MissingDisplayName,
-        MissingEndBracket, MissingSeparator, SubDomainEmpty, SubDomainTooLong, UnbalancedQuotes,
-        UnsupportedDisplayName, UnsupportedDomainLiteral,
-    };
-    match error {
-        InvalidCharacter => "Invalid character in email",
-        MissingSeparator => "Missing @ symbol",
-        LocalPartEmpty => "Missing text before @",
-        LocalPartTooLong => "Text before @ is too long",
-        DomainEmpty => "Missing domain after @",
-        DomainTooLong => "Domain is too long",
-        SubDomainEmpty => "Empty part in domain",
-        SubDomainTooLong => "A part of the domain is too long",
-        DomainTooFew => "Domain must have at least one dot",
-        DomainInvalidSeparator => "Invalid dot placement in domain",
-        UnbalancedQuotes => "Unbalanced quotes in email",
-        InvalidComment => "Invalid comment in email",
-        InvalidIPAddress => "Invalid IP address in domain",
-        UnsupportedDomainLiteral => "Domain literal not supported",
-        UnsupportedDisplayName => "Display name not supported",
-        MissingDisplayName => "Missing display name",
-        MissingEndBracket => "Missing closing bracket",
-    }
 }
 
 /// [`PASSWORD_REQUIRED`] for an empty password.
@@ -250,16 +223,17 @@ mod tests {
     }
 
     #[test]
-    fn emails_use_the_apps_wording() {
+    fn every_bad_email_gets_the_same_plain_line() {
         assert_eq!(email_error("me@zwipe.net"), None);
-        assert_eq!(
-            email_error("me.zwipe.net").as_deref(),
-            Some("Missing @ symbol")
-        );
-        assert_eq!(
-            email_error("me@localhost").as_deref(),
-            Some("Domain must have at least one dot")
-        );
+        for raw in [
+            "",
+            "me.zwipe.net",
+            "me@localhost",
+            "\"me@zwipe.net",
+            "me@[127.0.0.1]",
+        ] {
+            assert_eq!(email_error(raw).as_deref(), Some(INVALID_EMAIL), "{raw:?}");
+        }
     }
 
     #[test]
@@ -345,7 +319,7 @@ mod tests {
     #[test]
     fn the_shared_lines_keep_the_apps_words() {
         assert_eq!(MISSING_INPUTS, "Enter your username or email and password");
-        assert_eq!(INVALID_RESET_EMAIL, "Please enter a valid email address");
+        assert_eq!(INVALID_EMAIL, "Enter a valid email address");
         assert_eq!(PASSWORDS_DIFFER, "Passwords do not match");
         assert_eq!(PASSWORD_REQUIRED, "Password is required");
         assert_eq!(
@@ -425,7 +399,7 @@ mod tests {
         for raw in ["", "nope", " a@b.co", "a@b.co ", "a@localhost"] {
             assert_eq!(
                 reset_email_error(raw).as_deref(),
-                Some(INVALID_RESET_EMAIL),
+                Some(INVALID_EMAIL),
                 "address {raw:?}"
             );
         }

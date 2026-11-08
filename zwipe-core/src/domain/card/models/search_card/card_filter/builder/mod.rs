@@ -805,7 +805,7 @@ impl CardQueryBuilder {
             self.card_roles_excludes.as_deref(),
         )?;
         check_include_exclude_clash(
-            "oracle tags",
+            "Oracle tags",
             &[
                 self.oracle_tags_contains_any.as_deref(),
                 self.oracle_tags_contains_all.as_deref(),

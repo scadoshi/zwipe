@@ -15,11 +15,10 @@ use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCur
 use zwipe_core::domain::card::search_card::commander_eligibility::{self, PartnerKind};
 use zwipe_core::domain::deck::requests::update_deck_profile::InvalidUpdateDeckProfile;
 use zwipe_core::domain::deck::{
-    self, DeckName, DeckOtherTag, DeckProfile, DeckTagView, Format, PowerLevel,
+    self, DeckName, DeckOtherTag, DeckProfile, DeckTagView, Format, InvalidDeckname, PowerLevel,
 };
 use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_core::http::contracts::deck::{HttpCreateDeckProfile, HttpUpdateDeckProfile};
-use zwipe_core::text::sentence_case;
 
 use crate::deck::form::{self, Cascade, FormValues, Slot, Step};
 use crate::deck::pickers::{self, Draft, PartnerAutofill, Picker, TagPicker, Tapped};
@@ -35,7 +34,7 @@ pub const CREATE_TITLE: &str = "Create deck";
 pub const EDIT_TITLE: &str = "Edit deck";
 
 /// The line in place of the form when Edit's deck failed to load.
-pub const LOAD_FAILED: &str = "Could not load deck";
+pub const LOAD_FAILED: &str = "Couldn't load deck";
 
 /// The Back button.
 pub const BACK: &str = "Back";
@@ -1160,7 +1159,7 @@ impl State {
         if self.name_touched {
             self.name_error = DeckName::new(self.values.name.as_str())
                 .err()
-                .map(|e| sentence_case(&e.to_string()));
+                .map(|e| name_message(&e).to_owned());
         }
     }
 
@@ -1284,7 +1283,7 @@ impl State {
             return Vec::new();
         }
         if let Err(e) = DeckName::new(self.values.name.as_str()) {
-            self.name_error = Some(sentence_case(&e.to_string()));
+            self.name_error = Some(name_message(&e).to_owned());
             return Vec::new();
         }
         self.saving = true;
@@ -1323,5 +1322,15 @@ impl State {
     fn take(&mut self, ticket: Ticket) -> Option<Request> {
         let at = self.waiting.iter().position(|(t, _)| *t == ticket)?;
         Some(self.waiting.remove(at).1)
+    }
+}
+
+/// The line under a deck name the validator turns down, in the app's words
+/// rather than the validator's.
+fn name_message(error: &InvalidDeckname) -> &'static str {
+    match error {
+        InvalidDeckname::TooShort => "Deck name is required",
+        InvalidDeckname::TooLong => "Deck names are 1 to 64 characters",
+        InvalidDeckname::BadWord => "Pick a different name",
     }
 }

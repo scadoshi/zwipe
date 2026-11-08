@@ -48,41 +48,55 @@ impl PartialEq for SwipeConfirm {
 impl SwipeConfirm {
     /// Confirms a neutral action: skipped, kept, moved, undone.
     pub fn info(self, text: impl Into<String>) {
-        self.say(Tone::Info, text.into(), TOAST_QUICK);
+        self.say(Tone::Info, text.into(), None, TOAST_QUICK);
     }
 
     /// Confirms an action that changed the deck: added, removed, picked.
     pub fn success(self, text: impl Into<String>) {
-        self.say(Tone::Success, text.into(), TOAST_QUICK);
+        self.say(Tone::Success, text.into(), None, TOAST_QUICK);
+    }
+
+    /// [`Self::success`] with `chip` in the quiet chip in place of the text's
+    /// own word.
+    pub fn success_as(self, text: impl Into<String>, chip: &'static str) {
+        self.say(Tone::Success, text.into(), Some(chip), TOAST_QUICK);
     }
 
     /// [`Self::success`], its toast up for `lasting` rather than the quick
     /// band.
     pub fn success_for(self, text: impl Into<String>, lasting: Duration) {
-        self.say(Tone::Success, text.into(), lasting);
+        self.say(Tone::Success, text.into(), None, lasting);
     }
 
     /// Updates the chip with `text` in chip mode, and raises no toast in any
     /// mode: for a swipe whose own toast gives way to another one.
     pub fn quietly(self, text: impl Into<String>) {
-        let chip = self
+        self.quietly_as(&text.into(), None);
+    }
+
+    /// [`Self::quietly`], with `chip` in place of the text's own word when
+    /// given.
+    pub fn quietly_as(self, text: &str, chip: Option<&'static str>) {
+        let shows_chip = self
             .session
             .peek()
             .as_ref()
             .is_some_and(|s| s.settings.swipe_confirmations == SwipeConfirmations::Chip);
-        if chip {
-            self.set_chip(&text.into());
+        if shows_chip {
+            self.set_chip(text, chip);
         }
     }
 
-    /// Shows `text`'s chip word, easing in again even when it repeats.
-    fn set_chip(self, text: &str) {
+    /// Shows `chip`, or `text`'s chip word, easing in again even when it
+    /// repeats.
+    fn set_chip(self, text: &str, chip: Option<&'static str>) {
         let mut said = self.said;
         let count = said.peek().as_ref().map_or(0, |(n, _)| n.wrapping_add(1));
-        said.set(Some((count, chip_word(text).to_owned())));
+        let word = chip.unwrap_or_else(|| chip_word(text));
+        said.set(Some((count, word.to_owned())));
     }
 
-    fn say(self, tone: Tone, text: String, lasting: Duration) {
+    fn say(self, tone: Tone, text: String, chip: Option<&'static str>, lasting: Duration) {
         let setting = self
             .session
             .peek()
@@ -90,7 +104,7 @@ impl SwipeConfirm {
             .map(|s| s.settings.swipe_confirmations)
             .unwrap_or_default();
         match setting {
-            SwipeConfirmations::Chip => self.set_chip(&text),
+            SwipeConfirmations::Chip => self.set_chip(&text, chip),
             SwipeConfirmations::Toasts => {
                 let options = ToastOptions::default().duration(lasting);
                 match tone {

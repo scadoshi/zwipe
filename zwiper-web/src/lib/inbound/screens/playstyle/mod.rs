@@ -197,7 +197,7 @@ pub fn Playstyle() -> Element {
     let create_with = move |card: Card| {
         if at_deck_limit() {
             toast.warning(
-                "Verify your email to create more than 1 deck".to_string(),
+                "Verify your email to create more than one deck".to_string(),
                 ToastOptions::default().duration(TOAST_LONG),
             );
         } else {

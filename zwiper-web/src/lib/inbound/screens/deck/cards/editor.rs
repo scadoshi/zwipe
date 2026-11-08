@@ -27,6 +27,7 @@ use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCa
 use zwipe_ui::deck::form::Slot;
 use zwipe_ui::deck_cards::{self, Boards, Bursts, Write, Zone};
 use zwipe_ui::deck_signals::{Crossing, budget_crossing, land_count, land_crossing};
+use zwipe_ui::screens;
 use zwipe_ui::stores::filters::FilterScope;
 use zwipe_ui::stores::undo::{UndoAction, create_board_field};
 use zwipe_ui::timing::QUANTITY_FLUSH;
@@ -598,7 +599,7 @@ pub(crate) fn use_deck_editor(deck_id: Uuid, on_failure: LoadFailure) -> Editor 
         });
         if record {
             toast.info(
-                format!("Moved to {}", target.display_name()),
+                screens::deck_cards::moved_to(target),
                 ToastOptions::default().duration(TOAST_QUICK),
             );
         }

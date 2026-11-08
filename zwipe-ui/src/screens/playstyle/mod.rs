@@ -29,7 +29,7 @@ use crate::toast::{Toast, ToastKind};
 pub const TITLE: &str = "Playstyle";
 
 /// The line in place of the screen when the ranking failed to load.
-pub const LOAD_FAILED: &str = "Could not load your suggestions";
+pub const LOAD_FAILED: &str = "Couldn't load your suggestions";
 
 /// The line in place of the screen when the user has no deck with cards to read from.
 pub const COLD_START: &str = "No playstyle yet";
@@ -98,7 +98,7 @@ pub const COLOR: &str = "Color";
 pub const WHY: &str = "Why this commander?";
 
 /// The lead-in of a suggestion's shared tags bullet.
-pub const SHARES_TAGS: &str = "Shares oracle tags with your decks";
+pub const SHARES_TAGS: &str = "Shares Oracle tags with your decks";
 
 /// A row's button that starts a deck with its commander.
 pub const CREATE_DECK: &str = "Create deck";

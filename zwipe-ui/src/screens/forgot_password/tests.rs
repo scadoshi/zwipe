@@ -1,5 +1,5 @@
 use super::*;
-use crate::account::INVALID_RESET_EMAIL;
+use crate::account::INVALID_EMAIL;
 use crate::toast::NORMAL;
 
 fn typed(email: &str) -> State {
@@ -28,7 +28,7 @@ fn a_new_screen_shows_the_form_with_no_line() {
 #[test]
 fn the_line_shows_while_the_field_holds_text() {
     let mut state = typed("nope");
-    assert_eq!(state.error().as_deref(), Some(INVALID_RESET_EMAIL));
+    assert_eq!(state.error().as_deref(), Some(INVALID_EMAIL));
     assert_eq!(state.update(Action::EditEmail(String::new())), []);
     assert_eq!(state.error(), None, "an emptied field waits for a send");
     assert_eq!(state.update(Action::EditEmail("a@b.co".to_owned())), []);
@@ -39,7 +39,7 @@ fn the_line_shows_while_the_field_holds_text() {
 fn a_failing_submit_shows_the_line_and_sends_nothing() {
     let mut state = State::new();
     assert_eq!(state.update(Action::Submit), []);
-    assert_eq!(state.error().as_deref(), Some(INVALID_RESET_EMAIL));
+    assert_eq!(state.error().as_deref(), Some(INVALID_EMAIL));
     assert!(!state.is_loading());
 }
 
@@ -162,13 +162,13 @@ fn create_profile_goes_to_register() {
 #[test]
 fn the_copy_matches_the_app() {
     assert_eq!(
-        [TITLE, EMAIL, BACK, SEND, CREATE_PROFILE, LINK_SENT],
+        [TITLE, EMAIL, BACK, SEND, CREATE_ACCOUNT, LINK_SENT],
         [
             "Forgot password",
             "Email",
-            "Back to login",
+            "Back to log in",
             "Send reset link",
-            "Create profile",
+            "Create account",
             "If that email is registered, a reset link is on its way"
         ]
     );

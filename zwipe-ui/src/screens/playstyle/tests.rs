@@ -679,7 +679,7 @@ fn reasons_draw_nothing_without_a_tag_or_color() {
 #[test]
 fn the_copy_matches_the_app() {
     assert_eq!(TITLE, "Playstyle");
-    assert_eq!(LOAD_FAILED, "Could not load your suggestions");
+    assert_eq!(LOAD_FAILED, "Couldn't load your suggestions");
     assert_eq!(COLD_START, "No playstyle yet");
     assert_eq!(NO_SUGGESTIONS, "No suggestions right now");
     assert_eq!(LIST_TITLE, "Suggested commanders");
@@ -702,7 +702,7 @@ fn the_copy_matches_the_app() {
     assert_eq!(TYPE, "Type");
     assert_eq!(COLOR, "Color");
     assert_eq!(WHY, "Why this commander?");
-    assert_eq!(SHARES_TAGS, "Shares oracle tags with your decks");
+    assert_eq!(SHARES_TAGS, "Shares Oracle tags with your decks");
     assert_eq!(CREATE_DECK, "Create deck");
     assert_eq!(MAYBEBOARD, "Maybeboard");
     assert_eq!(REMOVE, "Remove");

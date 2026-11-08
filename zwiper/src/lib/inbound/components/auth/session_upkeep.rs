@@ -158,7 +158,7 @@ fn use_session_and_client() -> (Signal<Option<Session>>, Signal<ZwipeClient>) {
 /// Provides the screen state kept above the router: form handoffs, stacks,
 /// stores, the hint channel and Home's caches.
 fn use_screen_state() {
-    // Create profile and Forgot password hand their identifier to the login form through this.
+    // Create account and Forgot password hand their identifier to the login form through this.
     let login_prefill = use_signal(|| None);
     use_context_provider(|| LoginPrefill(login_prefill));
 

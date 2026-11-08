@@ -1,5 +1,5 @@
 //! The frame around every screen: the top nav, with the screens on authed
-//! routes and `Log in` and `Create profile` on public ones, the app's menu
+//! routes and `Log in` and `Create account` on public ones, the app's menu
 //! footer below the breakpoint, and the screen header.
 
 mod frame;

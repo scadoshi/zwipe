@@ -757,7 +757,7 @@ fn land_and_budget_crossings_toast() {
         toasts(&effects),
         [(
             ToastKind::Info,
-            "Deck at 60.00% of your $100.00 budget".to_owned()
+            "Deck at 60% of your $100.00 budget".to_owned()
         )]
     );
 }

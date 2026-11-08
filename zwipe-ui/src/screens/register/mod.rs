@@ -1,4 +1,4 @@
-//! Register: username, email, password and confirmation fields that check themselves as they are typed, with Back to login and Create profile under them.
+//! Register: username, email, password and confirmation fields that check themselves as they are typed, with Back to log in and Create account under them.
 //!
 //! The client keeps a [`State`] while the screen is up and hands every keystroke in as an `Edit` action. Each check comes from [`crate::account`]. A field starts showing its line once it has held something, or after a submit, and from then on follows every change; the password's line covers the confirmation. A registration that goes through hands its username to Login with [`Effect::Prefill`] and goes there in place of this screen, so Back does not return to the filled form. The text inputs, their focus, the password rules' `?` and the funnel events stay in the client.
 
@@ -10,13 +10,13 @@ use crate::generation::{Generation, Ticket};
 use crate::toast::{Toast, ToastKind};
 
 /// The screen's title.
-pub const TITLE: &str = "Create profile";
+pub const TITLE: &str = "Create account";
 
 /// The button back to Login.
-pub const BACK: &str = "Back to login";
+pub const BACK: &str = "Back to log in";
 
 /// The submit button's label.
-pub const CREATE_PROFILE: &str = "Create profile";
+pub const CREATE_ACCOUNT: &str = "Create account";
 
 /// The submit button's label while a registration is out.
 pub const CREATING: &str = "Creating...";
@@ -73,7 +73,7 @@ impl Field {
 /// Where an action sends the user. The client maps each to its own route.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Destination {
-    /// Back where the user came from, Login, from Back to login.
+    /// Back where the user came from, Login, from Back to log in.
     Previous,
     /// Login in place of this screen, once a registration goes through.
     Login,
@@ -90,7 +90,7 @@ pub enum Action {
     EditPassword(Password),
     /// Sets the confirmation to what is typed.
     EditConfirm(Password),
-    /// Presses Create profile. Every field is judged from then on; the registration goes out when all pass.
+    /// Presses Create account. Every field is judged from then on; the registration goes out when all pass.
     Submit,
     /// The registration holding `ticket` went through.
     Registered {
@@ -102,7 +102,7 @@ pub enum Action {
         /// The ticket from the [`Effect::Register`] this answers.
         ticket: Ticket,
     },
-    /// Presses Back to login.
+    /// Presses Back to log in.
     Back,
 }
 
@@ -144,7 +144,7 @@ pub struct State {
     email: String,
     password: Password,
     confirm: Password,
-    /// Whether Create profile was pressed.
+    /// Whether Create account was pressed.
     attempted: bool,
     sending: Option<Sending>,
     tickets: Generation,
@@ -159,7 +159,7 @@ impl State {
 
     /// Applies `action` and returns what the client must do, in order.
     ///
-    /// Create profile does nothing while a registration is out, as its button is held.
+    /// Create account does nothing while a registration is out, as its button is held.
     #[must_use = "the client performs the effects"]
     pub fn update(&mut self, action: Action) -> Vec<Effect> {
         match action {
@@ -220,13 +220,13 @@ impl State {
         self.sending.is_some()
     }
 
-    /// The submit button's label: [`CREATING`] while a registration is out, else [`CREATE_PROFILE`].
+    /// The submit button's label: [`CREATING`] while a registration is out, else [`CREATE_ACCOUNT`].
     #[must_use]
     pub fn submit_label(&self) -> &'static str {
         if self.is_loading() {
             CREATING
         } else {
-            CREATE_PROFILE
+            CREATE_ACCOUNT
         }
     }
 

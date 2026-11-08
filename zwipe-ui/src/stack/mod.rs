@@ -21,7 +21,7 @@ pub const NO_CARDS_LEFT: &str = "No cards left";
 
 /// The note an Add stack's ghost card carries when the filter matches no card, so the empty pile
 /// says why it is empty after the toast has gone.
-pub const NO_CARDS_MATCH: &str = "No cards match";
+pub const NO_CARDS_MATCH: &str = "No cards match your filters";
 
 /// The cards a swipe surface shows at once, the top one taking input.
 pub const STACK_DEPTH: usize = 10;

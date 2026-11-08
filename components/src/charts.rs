@@ -11,6 +11,7 @@
 use std::collections::BTreeMap;
 
 use dioxus::prelude::*;
+use zwipe_core::domain::card::card_role;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::deck::deck_metrics::ManaBalanceRow;
 use zwipe_core::domain::deck::draw_odds;
@@ -62,6 +63,10 @@ pub enum LabelCase {
 
 /// Width of a horizontal chart's label column unless the host sets one.
 const DEFAULT_LABEL_WIDTH: &str = "5ch";
+
+/// Width of the Draw odds label column: the longest one-word role name,
+/// Counterspell, on one line; a two-word role wraps.
+const DRAW_ODDS_LABEL_WIDTH: &str = "12ch";
 
 /// The widest a chip label column grows before its chips wrap, so the bar
 /// keeps room on a phone.
@@ -365,9 +370,12 @@ fn role_bars(
 ) -> Vec<Bar> {
     bars.iter()
         .copied()
-        .map(|(label, count, pct)| {
-            let bar = tuple_bar((label, count, pct));
-            if role_tags.get(label).is_some_and(|tags| !tags.is_empty()) {
+        .map(|(key, count, pct)| {
+            let bar = Bar {
+                label: card_role::label_for_short_name(key).to_owned(),
+                ..tuple_bar((key, count, pct))
+            };
+            if role_tags.get(key).is_some_and(|tags| !tags.is_empty()) {
                 bar
             } else {
                 bar.with_no_reveal()
@@ -458,9 +466,11 @@ pub fn DeckCharts(
                 } else {
                     BarChart {
                         label: "Card roles",
-                        bars: tuple_bars(cat_bars),
+                        bars: role_bars(cat_bars, &BTreeMap::new()),
                         hint: role_hint,
                         orientation: BarOrientation::Horizontal,
+                        // Wide enough for the longest role name, Graveyard Hate.
+                        label_width: "14ch",
                         fold: true,
                     }
                 }
@@ -620,7 +630,7 @@ fn OddsRow(label: &'static str, pct: u32) -> Element {
         div {
             key: "{label}-{pct}",
             style: "display:flex;align-items:center;gap:0.5rem;padding:0.175rem 0;",
-            span { style: "width:5ch;font-size:0.7rem;color:var(--text-primary);opacity:0.85;text-align:right;flex-shrink:0;text-transform:uppercase;",
+            span { style: "width:{DRAW_ODDS_LABEL_WIDTH};font-size:0.7rem;color:var(--text-primary);opacity:0.85;text-align:right;flex-shrink:0;text-transform:uppercase;",
                 "{label}"
             }
             div { class: "chart-track",

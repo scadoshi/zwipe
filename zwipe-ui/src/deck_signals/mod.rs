@@ -70,7 +70,7 @@ pub fn budget_crossing(
     }
     let pct = after / budget * 100.0;
     let message = format!(
-        "Deck at {pct:.2}% of your {} budget",
+        "Deck at {pct:.0}% of your {} budget",
         currency.format_amount(budget)
     );
     let level = if after >= budget {
@@ -128,10 +128,7 @@ mod tests {
         assert_eq!(budget_crossing(None, PriceCurrency::Usd, 0.0, 99.0), None);
         assert_eq!(
             budget_crossing(Some(100.0), PriceCurrency::Usd, 40.0, 55.5),
-            Some((
-                Level::Info,
-                "Deck at 55.50% of your $100.00 budget".to_owned()
-            ))
+            Some((Level::Info, "Deck at 56% of your $100.00 budget".to_owned()))
         );
         assert_eq!(
             budget_crossing(Some(100.0), PriceCurrency::Usd, 55.0, 60.0),

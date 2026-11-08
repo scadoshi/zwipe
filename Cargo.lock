@@ -8986,7 +8986,6 @@ name = "zwipe-ui"
 version = "1.18.0"
 dependencies = [
  "chrono",
- "email_address",
  "getrandom 0.4.3",
  "orangui-core",
  "serde_json",
