@@ -18,8 +18,8 @@ use crate::version::Version;
 /// format of the wire's `date` string, which apps up to 1.13.0 show as is.
 pub const DISPLAY_DATE_FORMAT: &str = "%b %-d, %Y";
 
-/// One version and its notes. Dates from the App Store Connect submission
-/// history (public "Ready for Distribution" date); newest first. Entries
+/// One version and its notes, dated the day its build was cut and submitted
+/// to the stores; newest first. Entries
 /// follow `context/development/changelog_guidelines.md`: a phrase saying what
 /// changed, no period, no examples. The tests below hold the parts of that a
 /// machine can check.
@@ -27,7 +27,8 @@ pub const DISPLAY_DATE_FORMAT: &str = "%b %-d, %Y";
 pub struct Release {
     /// The release number.
     pub version: Version,
-    /// The day it shipped. `None` only for [`UPCOMING`], which has not.
+    /// The day its build was cut and submitted, not the day it went live.
+    /// `None` only for [`UPCOMING`], which has not been cut.
     /// `NaiveDate::from_ymd_opt` keeps this const; a test checks every
     /// shipped release got a valid date.
     pub date: Option<NaiveDate>,
