@@ -4,7 +4,7 @@ use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilde
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 
 use super::fields::{
-    Exactness, Exclude, Match, MatchGroup, RangeGroup, Side, SideGroup, Stat, TextField, Toggle,
+    Exactness, Match, MatchGroup, RangeGroup, Side, SideGroup, Stat, TextField, Toggle,
 };
 use super::picker::PickerField;
 
@@ -175,6 +175,7 @@ impl Section {
             }
             Self::Format => {
                 b.unset_legalities_contains_any()
+                    .unset_legalities_contains_all()
                     .unset_is_commander_in_format()
                     .unset_is_partner()
                     .unset_is_background()
@@ -295,7 +296,7 @@ pub enum Clear {
     /// A list of includes.
     Includes(MatchGroup),
     /// A list of excludes.
-    Excludes(Exclude),
+    Excludes(MatchGroup),
     /// A value or range.
     Range(RangeGroup),
     /// An include or exclude list.
@@ -316,15 +317,13 @@ impl Clear {
         match self {
             Self::Text(field) => field.unset(b),
             Self::Includes(group) => group.write(b, Match::Any, Vec::new()),
-            Self::Excludes(exclude) => exclude.write(b, Vec::new()),
+            Self::Excludes(group) => group.write_excludes(b, Vec::new()),
             Self::Range(group) => group.unset(b),
             Self::Side(group) => group.write(b, Side::Include, Vec::new()),
             Self::CommanderIn => {
                 b.unset_is_commander_in_format();
             }
-            Self::Legal => {
-                b.unset_legalities_contains_any();
-            }
+            Self::Legal => MatchGroup::Legal.write(b, Match::Any, Vec::new()),
             Self::Price => {
                 b.unset_price_min().unset_price_max();
             }
@@ -508,7 +507,7 @@ fn include_exclude(
             Clear::Includes(group),
         ),
         Row::Picker(PickerField::Include(group)),
-        label(b, exclude, None, Clear::Excludes(group.exclude())),
+        label(b, exclude, None, Clear::Excludes(group)),
         Row::Picker(PickerField::Exclude(group)),
     ]
 }
@@ -545,7 +544,7 @@ fn types_rows(b: &CardQueryBuilder) -> Vec<Row> {
             b,
             "Basic types exclude",
             None,
-            Clear::Excludes(Exclude::BasicTypes),
+            Clear::Excludes(MatchGroup::BasicTypes),
         ),
         Row::Chips(ChipSet::BasicExcludes),
     ];
@@ -592,7 +591,7 @@ fn mana_rows(b: &CardQueryBuilder, modes: &Modes) -> Vec<Row> {
             b,
             "Doesn't produce",
             None,
-            Clear::Excludes(MatchGroup::Produced.exclude()),
+            Clear::Excludes(MatchGroup::Produced),
         ),
         Row::Chips(ChipSet::ProducedExcludes),
     ]);
@@ -631,7 +630,7 @@ fn card_roles_rows(b: &CardQueryBuilder) -> Vec<Row> {
             b,
             "Card roles exclude",
             None,
-            Clear::Excludes(MatchGroup::Roles.exclude()),
+            Clear::Excludes(MatchGroup::Roles),
         ),
         Row::Chips(ChipSet::RolesExclude),
     ]
@@ -666,12 +665,7 @@ fn oracle_tags_rows(b: &CardQueryBuilder) -> Vec<Row> {
             Clear::Includes(MatchGroup::Tags),
         ),
         Row::Picker(PickerField::Include(MatchGroup::Tags)),
-        label(
-            b,
-            TAGS_EXCLUDE,
-            None,
-            Clear::Excludes(MatchGroup::Tags.exclude()),
-        ),
+        label(b, TAGS_EXCLUDE, None, Clear::Excludes(MatchGroup::Tags)),
         Row::Picker(PickerField::Exclude(MatchGroup::Tags)),
     ]
 }
@@ -740,7 +734,12 @@ pub fn rows(section: Section, b: &CardQueryBuilder, modes: &Modes) -> Vec<Row> {
         Format => vec![
             label(b, "Is commander in", None, Clear::CommanderIn),
             Row::Chips(ChipSet::CommanderIn),
-            label(b, "Is legal in", None, Clear::Legal),
+            label(
+                b,
+                "Is legal in",
+                Some(ModeChip::Match(MatchGroup::Legal)),
+                Clear::Legal,
+            ),
             Row::Chips(ChipSet::LegalIn),
         ],
         Price => vec![

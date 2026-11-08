@@ -1173,6 +1173,19 @@ impl CardRepository for MyPostgres {
             sep.push_unseparated(")");
         }
 
+        if let Some(formats) = criteria.legalities_contains_all() {
+            sep.push("(");
+            for (i, format_key) in formats.iter().enumerate() {
+                if i > 0 {
+                    sep.push_unseparated(" AND ");
+                }
+                sep.push_unseparated("legalities->>");
+                sep.push_bind_unseparated(format_key.clone());
+                sep.push_unseparated(" IN ('legal', 'restricted')");
+            }
+            sep.push_unseparated(")");
+        }
+
         if let Some(format) = criteria.is_commander_in_format() {
             // A meld result (Brisela, Titania Gaea Incarnate) is its own card
             // object with a legendary creature type line and no " // " to
