@@ -61,7 +61,7 @@ Who checked, on which live build, what they saw.
 | [293](293-empty-swipe-pile-skeleton.md) | An empty Swipe pile stays on a skeleton card | merged | laptop | #432 |
 | [294](294-portfolio-zwipe-web-app.md) | Portfolio's Zwipe page leaves out the web app | merged | thinker | portfolio#22, #434 |
 | [295](295-changelog-whole-header-toggles.md) | Changelog versions only toggle from the caret | approved | scotland | - |
-| [296](296-collapsed-group-tag-hover-border.md) | A collapsed group's tag loses its bottom border color on hover | fixing | laptop | #433 |
+| [296](296-collapsed-group-tag-hover-border.md) | A collapsed group's tag loses its bottom border color on hover | merged | laptop | #433 |
 | [297](297-web-decks-tag-filters-collapsible.md) | Web Decks shows every deck tag filter up front | fixing | laptop | #435 |
 | [298](298-web-header-at-150-zoom.md) | The web app's header breaks at 150% zoom | reported | - | - |
 
