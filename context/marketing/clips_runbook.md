@@ -127,4 +127,18 @@ These are vertical posts for TikTok, Reels and Shorts. Each takes 15 to 25s: abo
 
 ## 9. Publishing to zwipe.net and the portfolio
 
-(To fill in: thinker is setting this up. Cover where the files go, which version to use (full, cropped or 9:16), the encode or size limits, and how to deploy.)
+Both galleries use the **cropped** takes (1080x2218), shrunk for the web. The full frame is for the store listings and the 9:16 cuts are for TikTok, so neither goes on a site.
+
+1. Encode each cropped take at half size, with no audio track, plus its first frame as a poster:
+   ```bash
+   for n in 1_swipe 2_stats 3_playstyle 4_activity; do
+     ffmpeg -i cropped/$n.mp4 -an -vf "scale=540:-2:flags=lanczos" -c:v libx264 -profile:v high \
+       -preset slow -crf 26 -pix_fmt yuv420p -movflags +faststart web/$n.mp4
+     ffmpeg -i web/$n.mp4 -frames:v 1 -q:v 4 web/$n.jpg
+   done
+   ```
+   The 2026-11-08 set came out at 152 to 477 KB a clip. The ceiling is 2 MB, because a clip autoplays on the home page. Card text is still crisp at 540 wide, since the gallery draws the clip at most 700px tall.
+2. **zwipe.net.** Put the `.mp4` and `.jpg` pairs in `zite/assets/demo/`, and delete the files they replace. Each clip is a row in `DEMOS` in `zite/src/pages/home.rs`: video, poster, the caption under it, and a screen-reader label ("Demo: Deck stats"). Write captions with the human-copy skill: one short line that says what the clip shows. If the clips change shape, update the 540 / 1110 ratio in `.demo-col .gallery-video` in `zite/assets/style.css`. The test `every_demo_file_is_shown_and_every_clip_is_light` fails on a file no row uses, a clip over 2 MB, or a poster that isn't beside its clip.
+3. **Portfolio.** Put the same `.mp4` files, without posters, in `assets/projects/zwipe/` in the portfolio repo, and delete the old ones. Each clip is a `MediaItem` in the Zwipe project in `src/data.rs`, with alt text that describes the clip and the same caption as zwipe.net.
+4. Check both galleries at 1440 and 390 wide with a local `dx serve`, and step through every clip. If the page still shows the old clips, the dev server is serving a stale pre-render: delete `target/dx/<crate>/debug/web/public` and serve again.
+5. Deploy: open a PR to `release` for zite and a PR to `main` for the portfolio. The portfolio publishes to GitHub Pages when its PR merges. zwipe.net publishes when release reaches zwipe's `main`, through `deploy-zite.yml`.
