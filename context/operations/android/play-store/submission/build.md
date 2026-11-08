@@ -31,7 +31,7 @@ Then do the Gradle edits (step 2) and repackage. **Add future patches to that sc
 ## Prerequisites (one-time)
 
 - **Upload keystore** at `~/certs/zwipe-upload.jks` (alias `zwipe-upload`, PKCS12). Created once with `keytool -genkeypair ... -keystore ~/certs/zwipe-upload.jks -alias zwipe-upload -keyalg RSA -keysize 2048 -validity 9125`. The **password lives in the password manager**, never in this repo. `~/certs/` is outside the repo and covered by the [mac-restore](../../../ios/mac_restore.md) backup. *Losing the upload key is recoverable via Play's upload-key reset; losing the password isn't fun, so keep it.*
-- **bundletool** (`brew install bundletool`): manifest checks + the optional emulator install.
+- **bundletool** (`brew install bundletool`): the manifest checks.
 - Build env exported (see [../../setup.md](../../setup.md)):
   ```bash
   export ANDROID_HOME="$HOME/Library/Android/sdk"
@@ -86,7 +86,7 @@ dx generates a bare `MainActivity.kt` (`class MainActivity : WryActivity()`), wh
 ~/Developer/zwipe/zcripts/android/back_handler.sh
 ```
 
-Skip it and the edge-swipe / hardware back closes the app from any screen (the pre-2026-07-09 bug). See [`../../../../archive/back_swipe_gesture.md`](../../../../archive/back_swipe_gesture.md). R8 keeps the handler (it's used), but the step-5 smoke test is the confirmation.
+Skip it and the edge-swipe / hardware back closes the app from any screen (the pre-2026-07-09 bug). See [`../../../../archive/back_swipe_gesture.md`](../../../../archive/back_swipe_gesture.md). R8 keeps the handler (it's used); the owner's on-device testing confirms it.
 
 ## 1d. Patch the manifest (launchMode + configChanges + screenOrientation)
 
@@ -158,8 +158,6 @@ cd ~/Developer/zwipe
 
 ## 4a. Verify the patches actually shipped (30 seconds, do not skip)
 
-The lab in step 5 is now part of the standard flow while tao is vendored: the two 1.10.3 crashes (`UnsatisfiedLinkError`, then `NoSuchMethodError: getId`) were both launch crashes on every device that no grep could catch. Install the universal APK on the emulator with a throwaway keystore and watch it reach Login before signing with the real key.
-
 The post-bundle patches are invisible once the AAB is built, and a missing one fails *silently*: the release just quietly carries the old bug. Three greps against the signed artifact settle it:
 
 ```bash
@@ -196,22 +194,5 @@ ls zwipe-*.aab | grep -v "zwipe-<VERSION>.aab" | xargs rm -v   # remove all but 
 ```
 
 > **If Play rejects with "Version code N has already been used":** a prior upload (even a superseded/internal one) burned that code. Bump `versionCode` in the generated `app/build.gradle.kts` and re-run steps 3–4 (`gradlew :app:bundleRelease` → jarsigner): no full rebuild, since the patched project is still in place. Always bump; never reuse.
-
-## 5. (Optional) Emulator install of the RELEASE artifact
-
-The owner tests the release build on a real device before rollout, so an emulator smoke test is not part of the standard flow. If a device isn't available, this exercises the exact minified artifact (R8 + edge-to-edge):
-
-```bash
-ADB="$ANDROID_HOME/platform-tools/adb"
-bundletool build-apks --bundle=zwipe-<VERSION>.aab --output=/tmp/z.apks --overwrite \
-  --mode=universal --ks=~/certs/zwipe-upload.jks --ks-key-alias=zwipe-upload
-"$ADB" uninstall com.scadoshi.zwipe 2>/dev/null
-bundletool install-apks --apks=/tmp/z.apks
-"$ADB" shell am start -n com.scadoshi.zwipe/dev.dioxus.main.MainActivity
-"$ADB" logcat -d | grep -iE 'FATAL|UnsatisfiedLink' | head   # must be empty
-"$ADB" exec-out screencap -p > /tmp/zwipe.png                 # eyeball the layout
-```
-
-Check: app launches (no `libmain.so`/R8 crash), and login/home content isn't clipped under the transparent status/nav bars.
 
 **Next:** upload + roll out → [publish.md](publish.md).
