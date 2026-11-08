@@ -2165,10 +2165,13 @@ body {
 }
 
 /* The floating result the arrow keys point at, in the maybeboard's and the
-   command zone's searches. */
+   command zone's searches: the primary accent and a ring outside the chip,
+   since every floating chip already wears the secondary accent's outline. */
 .web-float-highlight {
     border-color: var(--accent-primary);
     color: var(--ink-accent-primary, var(--accent-primary));
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 1px;
 }
 
 /* ---- Leave guard ----

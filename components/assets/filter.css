@@ -230,7 +230,15 @@
 
 /* Entrance float-up (staggered per chip via inline animation-delay), then a
    soft idle drift so the layer reads as hovering rather than parked. */
+/* Every floating typeahead's chips (command zone pickers, the commander
+   maybeboard, Quick add): a selected chip's accent outline on the theme's
+   raised surface, with a deeper shadow, so they read as a popup over the
+   label or row behind them. */
 .search-float-chip {
+    background-color: var(--bg-raised);
+    border-color: var(--accent-secondary);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-md);
     animation:
         search-float-in 0.25s ease-out both,
         search-float-drift 3.2s ease-in-out 0.25s infinite;
