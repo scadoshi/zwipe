@@ -9,7 +9,7 @@ use zwipe_core::domain::logo;
 use zwipe_core::domain::user::models::settings::PipStyle;
 
 use crate::inbound::chrome::hint_topic::{HintHost, HintTopic};
-use crate::inbound::chrome::leave_guard::GuardedHistory;
+use crate::inbound::chrome::leave_guard::{self, GuardedHistory};
 use crate::inbound::chrome::splash;
 use crate::inbound::router::Route;
 use crate::inbound::screens::auth::login::LoginPrefill;
@@ -43,6 +43,7 @@ pub fn App() -> Element {
     // Dialogs and sheets register here, so Esc closes the top one.
     let mut overlay_back_stack = use_overlay_back_stack();
     use_context_provider(|| overlay_back_stack);
+    leave_guard::watch_overlays(overlay_back_stack);
     use_future(move || async move {
         let mut escapes = document::eval(KEYS_JS);
         while escapes.recv::<bool>().await.is_ok() {
