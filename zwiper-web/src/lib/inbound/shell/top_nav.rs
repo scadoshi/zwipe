@@ -16,6 +16,7 @@ use zwipe_core::domain::logo;
 use crate::inbound::chrome::back_arrow::BackArrow;
 use crate::inbound::chrome::leave_guard::LeaveDialog;
 use crate::inbound::router::Route;
+use crate::inbound::shell::deck_opener::DeckOpener;
 use crate::inbound::shell::menu_footer::MenuFooter;
 use crate::inbound::shell::nav::{Back, MenuOpen, Section, route_of, section_of};
 
@@ -282,6 +283,7 @@ fn BackButton(
     mut open: Signal<bool>,
 ) -> Element {
     let navigator = use_navigator();
+    let opener: DeckOpener = use_context();
     if let Some(close) = page.read().as_ref().and_then(|p| p.on_back) {
         return rsx! {
             BackArrow {
@@ -302,6 +304,9 @@ fn BackButton(
                 match &back {
                     Back::To(route) => {
                         navigator.push(route.clone());
+                    }
+                    Back::Opener(deck_id) => {
+                        navigator.push(opener.back_from(*deck_id));
                     }
                     Back::Previous if navigator.can_go_back() => navigator.go_back(),
                     Back::Previous => {

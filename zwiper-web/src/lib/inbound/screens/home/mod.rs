@@ -42,7 +42,7 @@ use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, open
 use crate::inbound::chrome::toast::raise;
 use crate::inbound::router::Route;
 use crate::inbound::session::settings_sync;
-use crate::inbound::shell::ScreenFrame;
+use crate::inbound::shell::{DeckOpener, ScreenFrame};
 use crate::inbound::telemetry;
 use crate::outbound::counts_store::CountsStore;
 use crate::outbound::scope_store::ScopeStore;
@@ -139,6 +139,7 @@ struct Driver {
     session: Signal<Option<Session>>,
     client: Signal<ZwipeClient>,
     hint_open: Signal<bool>,
+    opener: DeckOpener,
     theme: Signal<ThemeConfig>,
     pip_style: Signal<PipStyle>,
     caches: Caches,
@@ -170,6 +171,9 @@ impl Driver {
             Effect::SaveScope(next) => ScopeStore::browser().save(next),
             Effect::MarkGreeted => GREETED.store(true, Ordering::Relaxed),
             Effect::Navigate(destination) => {
+                if let Destination::Deck(deck_id) = destination {
+                    self.opener.record(deck_id, Route::Home {});
+                }
                 self.navigator.push(route(destination));
             }
             Effect::Toast(raised) => raise(self.toast, &raised),
@@ -392,6 +396,7 @@ pub fn Home() -> Element {
     let driver = Driver {
         model,
         navigator: use_navigator(),
+        opener: use_context(),
         toast: use_toast(),
         authed: use_authed(),
         session,
