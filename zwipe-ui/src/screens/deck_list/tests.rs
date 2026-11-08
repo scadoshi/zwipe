@@ -424,3 +424,52 @@ fn a_visit_starts_on_the_remembered_sort_and_a_reload_keeps_it() {
     });
     assert_eq!(names(&state), [["simic", "Burn", "Artifacts"]]);
 }
+
+#[test]
+fn last_changed_and_price_chips_follow_the_payload_and_a_remembered_one_waits_for_them() {
+    let remembered = Sort {
+        by: SortBy::LastChanged,
+        direction: SortDirection::Descending,
+    };
+    let mut old_server = State::with_sort(remembered);
+    let _ = old_server.update(Action::Load);
+    let effects = old_server.update(Action::Load);
+    let [Effect::RefreshUser, Effect::FetchDecks(ticket)] = effects.as_slice() else {
+        panic!("Load fetches: {effects:?}");
+    };
+    let _ = old_server.update(Action::Loaded {
+        ticket: *ticket,
+        decks: library(),
+    });
+    assert_eq!(
+        old_server.sort_keys(),
+        [SortBy::Name, SortBy::Size, SortBy::Format]
+    );
+    assert_eq!(old_server.sort().by, SortBy::Name, "falls back to Name");
+    assert_eq!(names(&old_server), [["simic", "Burn", "Artifacts"]]);
+
+    let mut decks = library();
+    for (deck, seconds) in decks.iter_mut().zip([3_000, 1_000, 2_000]) {
+        deck.updated_at = chrono::DateTime::from_timestamp(seconds, 0);
+    }
+    let mut state = State::with_sort(remembered);
+    let effects = state.update(Action::Load);
+    let [Effect::RefreshUser, Effect::FetchDecks(ticket)] = effects.as_slice() else {
+        panic!("Load fetches: {effects:?}");
+    };
+    let _ = state.update(Action::Loaded {
+        ticket: *ticket,
+        decks,
+    });
+    assert_eq!(
+        state.sort_keys(),
+        [
+            SortBy::Name,
+            SortBy::Size,
+            SortBy::Format,
+            SortBy::LastChanged
+        ]
+    );
+    assert_eq!(state.sort(), remembered);
+    assert_eq!(names(&state), [["simic", "Artifacts", "Burn"]]);
+}

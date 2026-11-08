@@ -693,6 +693,10 @@ mod tests {
             partner_commander_art_url: None,
             background_art_url: None,
             signature_spell_art_url: None,
+            updated_at: None,
+            total_price_usd: None,
+            total_price_eur: None,
+            total_price_tix: None,
         }
     }
 

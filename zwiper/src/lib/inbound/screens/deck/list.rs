@@ -289,6 +289,7 @@ pub fn DeckList() -> Element {
     let show_rows = state.chips_shown();
     let group_by = state.group_by();
     let sort = state.sort();
+    let sort_keys = state.sort_keys();
     let all_on = state.show().is_all();
     let picked_colors = state.show().colors.clone();
     let picked_tags = state.show().tags.clone();
@@ -331,9 +332,9 @@ pub fn DeckList() -> Element {
                         }
                         ChipRowGhost {
                             label: deck_list::SORT,
-                            chips: SortBy::ALL
-                                .map(|by| ChipGhost::Text(by.label().to_string()))
+                            chips: SortBy::offered(&[])
                                 .into_iter()
+                                .map(|by| ChipGhost::Text(by.label().to_string()))
                                 .chain(iter::once(ChipGhost::Text(sort.direction.to_string())))
                                 .collect::<Vec<_>>(),
                         }
@@ -359,7 +360,7 @@ pub fn DeckList() -> Element {
                         // The key chips pick, the last chip turns the order around.
                         div { class: "chip-row",
                             span { class: "stat-chip stat-chip-p1 chip-row-label", {deck_list::SORT} }
-                            for by in SortBy::ALL {
+                            for by in sort_keys {
                                 Chip {
                                     key: "{by.label()}",
                                     selected: sort.by == by,

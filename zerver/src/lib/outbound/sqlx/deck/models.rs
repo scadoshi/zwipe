@@ -1,5 +1,6 @@
 //! Database-to-domain deck model conversions.
 
+use chrono::{DateTime, Utc};
 use sqlx_macros::FromRow;
 use uuid::Uuid;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
@@ -42,6 +43,10 @@ pub struct DatabaseDeckProfile {
     pub partner_commander_art_url: Option<String>,
     pub background_art_url: Option<String>,
     pub signature_spell_art_url: Option<String>,
+    pub updated_at: Option<DateTime<Utc>>,
+    pub total_price_usd: Option<f64>,
+    pub total_price_eur: Option<f64>,
+    pub total_price_tix: Option<f64>,
 }
 
 /// converts database deck to validated domain deck
@@ -109,6 +114,10 @@ impl TryFrom<DatabaseDeckProfile> for DeckProfile {
             partner_commander_art_url: value.partner_commander_art_url,
             background_art_url: value.background_art_url,
             signature_spell_art_url: value.signature_spell_art_url,
+            updated_at: value.updated_at,
+            total_price_usd: value.total_price_usd,
+            total_price_eur: value.total_price_eur,
+            total_price_tix: value.total_price_tix,
         })
     }
 }
@@ -180,6 +189,10 @@ mod tests {
             partner_commander_art_url: None,
             background_art_url: None,
             signature_spell_art_url: None,
+            updated_at: None,
+            total_price_usd: None,
+            total_price_eur: None,
+            total_price_tix: None,
         }
     }
 
