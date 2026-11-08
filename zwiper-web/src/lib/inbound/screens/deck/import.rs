@@ -14,11 +14,13 @@ use uuid::Uuid;
 use zwipe_core::domain::deck::{ImportDeckCardsResult, ImportMode};
 use zwipe_ui::deck::form::{ImportTone, import_outcome};
 use zwipe_ui::screens::deck_import;
+use zwipe_ui::telemetry::vocabulary::{DeckScreen, Screen};
 
 use crate::inbound::card_stores::CardStores;
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::shell::ScreenFrame;
+use crate::inbound::telemetry;
 
 /// Where the cards come from.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -40,6 +42,7 @@ const BOARDS: [(&str, Option<&str>); 3] = [
 /// The Import screen for `deck_id`.
 #[component]
 pub fn ImportDeck(deck_id: Uuid) -> Element {
+    telemetry::use_telemetry_screen(Screen::Deck(DeckScreen::Import));
     let authed = use_authed();
     let stores: CardStores = use_context();
     let toast = use_toast();

@@ -8,15 +8,18 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user::username;
 use zwipe_core::http::contracts::auth::HttpChangeUsername;
 use zwipe_ui::account;
+use zwipe_ui::telemetry::vocabulary::{ProfileScreen, Screen};
 use zwipe_ui::text::sentence_case;
 
 use crate::inbound::chrome::authed::use_authed;
+use crate::inbound::telemetry;
 
 /// New username and password. Every open starts empty; each field shows its
 /// error line once it has held text or after a submit attempt. Enter runs
 /// `Save changes`.
 #[component]
 pub(super) fn ChangeUsernameSheet(mut open: Signal<bool>) -> Element {
+    telemetry::use_telemetry_screen(Screen::Profile(ProfileScreen::ChangeUsername));
     let mut session: Signal<Option<Session>> = use_context();
     let authed = use_authed();
     let toast = use_toast();

@@ -12,17 +12,20 @@ use uuid::Uuid;
 use zwipe_client::ClientError;
 use zwipe_core::domain::deck::Deck;
 use zwipe_ui::deck::export::{self, Boards};
+use zwipe_ui::telemetry::vocabulary::{DeckScreen, Screen};
 
 use super::skeletons::ChipRowSkeleton;
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::ghost::GhostText;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::shell::ScreenFrame;
+use crate::inbound::telemetry;
 use crate::outbound::browser;
 
 /// The Export screen for `deck_id`.
 #[component]
 pub fn ExportDeck(deck_id: Uuid) -> Element {
+    telemetry::use_telemetry_screen(Screen::Deck(DeckScreen::Export));
     let authed = use_authed();
     let toast = use_toast();
     let hint_open = use_one_time_hint(OneTimeHint::Export);

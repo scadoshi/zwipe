@@ -57,8 +57,11 @@ impl<R: MetricsRepository> MetricsService for Service<R> {
         &self,
         session_id: Uuid,
         kind: AnonymousEventKind,
+        platform: Option<ClientPlatform>,
     ) -> Result<(), MetricsError> {
-        self.repo.record_anonymous_event(session_id, kind).await
+        self.repo
+            .record_anonymous_event(session_id, kind, platform)
+            .await
     }
 
     async fn record_crash(&self, report: &HttpCrashReport) -> Result<(), MetricsError> {

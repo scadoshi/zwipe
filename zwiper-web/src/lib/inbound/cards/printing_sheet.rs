@@ -19,6 +19,7 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::domain::card::Card;
 use zwipe_ui::card::info;
+use zwipe_ui::telemetry::vocabulary::component;
 
 use crate::inbound::cards::card_info::{CardInfoDisplay, PrintingSheetSkeleton};
 use crate::inbound::chrome::authed::use_authed;
@@ -44,7 +45,7 @@ pub fn PrintingSheet(
     #[props(default)] read_only: bool,
     #[props(default = "Printing saved")] saved_message: &'static str,
 ) -> Element {
-    let authed = use_authed();
+    let authed = use_authed().in_component(component::PRINTING_SHEET);
     let toast = use_toast();
     // From the kit's modal width on, the picker is the cover flow.
     let flow = use_min_width(KIT_MODAL_PX);

@@ -16,6 +16,7 @@ use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::http::contracts::suggestions::HttpActivity;
 use zwipe_ui::activity::has_anything;
+use zwipe_ui::telemetry::vocabulary::Screen;
 
 use self::sections::{ACTIVITY_TITLE, ActivityRates, ActivityYear, HardPassesPanel, HeatGhost};
 use crate::inbound::cards::card_row::{CardOverlaysHost, ShowRowArt, use_card_overlays};
@@ -27,6 +28,7 @@ use crate::inbound::chrome::ghost::{
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::screens::home::hero::MyCountsPanel;
 use crate::inbound::shell::ScreenFrame;
+use crate::inbound::telemetry;
 
 /// The Card roles chart's ghost chips, as wide as the roles' short labels.
 const ROLE_CHIPS: [u8; 6] = [4, 4, 5, 5, 5, 5];
@@ -40,6 +42,7 @@ const TAG_CHIPS: [u8; 6] = [6, 9, 12, 8, 15, 7];
 /// it only Activity.
 #[component]
 fn ActivitySkeleton() -> Element {
+    telemetry::use_telemetry_screen(Screen::Activity);
     rsx! {
         div { class: "web-activity-year",
             GhostSection { chars: 8, open: true,

@@ -6,13 +6,17 @@ use components::{ActionButton, AlertDialog, DialogAction, ShareUrl, TOAST_QUICK}
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
+use zwipe_client::ZwipeClient;
+use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::deck::deck_name;
 use zwipe_core::http::contracts::deck::HttpCloneDeck;
 use zwipe_ui::screens::deck_view;
+use zwipe_ui::telemetry::vocabulary::component;
 
 use crate::domain::deck::share_link;
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::router::Route;
+use crate::inbound::telemetry;
 use crate::outbound::browser;
 
 /// Which of the deck's dialogs is up. `Copy`, so the buttons that open
@@ -100,11 +104,15 @@ pub fn DeckDialogsHost(
             }
         });
     });
-    // The app first sends its pending skips so they clear too; the web
-    // records none.
+    // Pending skips go out first, so this window's skips clear too.
+    let usage = telemetry::use_usage();
+    let session: Signal<Option<Session>> = use_context();
+    let client: Signal<ZwipeClient> = use_context();
     let clear_skips = use_callback(move |()| {
         spawn(async move {
+            telemetry::flush_once(usage, session, client).await;
             if authed
+                .in_component(component::MORE_BUTTONS)
                 .run("clear_suppressions", |c, s| async move {
                     c.clear_deck_suppressions(deck_id, &s).await
                 })

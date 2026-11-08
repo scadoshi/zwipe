@@ -22,6 +22,7 @@ pub fn record_anonymous_event(client: Signal<ZwipeClient>, kind: AnonymousEventK
     let event = HttpAnonymousEvent {
         session_id: *SESSION_ID,
         kind,
+        platform: None,
     };
     let http = client.peek().clone();
     spawn(async move {

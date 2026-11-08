@@ -33,6 +33,7 @@ use zwipe_core::http::contracts::suggestions::{
 };
 use zwipe_ui::generation::Generation;
 use zwipe_ui::playstyle::{HELD_SIZE, LIST_SIZE, empty_identity_line, of_identity, shown};
+use zwipe_ui::telemetry::vocabulary::Screen;
 
 pub use self::chips::{IdentityPips, ShowIdentityChips};
 use self::profile::{BuilderProfileSections, ProfileSummary};
@@ -49,6 +50,7 @@ use crate::inbound::chrome::media::use_wide;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::router::Route;
 use crate::inbound::shell::ScreenFrame;
+use crate::inbound::telemetry;
 
 /// The suggestions list's title.
 const LIST_TITLE: &str = "Suggested commanders";
@@ -61,6 +63,7 @@ fn suggestion_colors(suggestion: &HttpCommanderSuggestion) -> &[Color] {
 /// The Playstyle screen.
 #[component]
 pub fn Playstyle() -> Element {
+    telemetry::use_telemetry_screen(Screen::SuggestedCommanders);
     let navigator = use_navigator();
     let session: Signal<Option<Session>> = use_context();
     let toast = use_toast();
