@@ -77,7 +77,7 @@ Who checked, on which live build, what they saw.
 | [309](309-robots-blocks-share-unfurls.md) | X shows no card for shared deck links (robots.txt) | verified | laptop | #449 |
 | [310](310-guide-screenshots-refresh.md) | zwipe.net guides use old screenshots | verified | scotland | #456 |
 | [311](311-guides-filter-chip-and-clear.md) | zwipe.net guides filter: plain label and a hand-rolled × | verified | thinker | #455 |
-| [312](312-three-guides-without-screenshots.md) | Three guides have no screenshots | fixing | scotland | #461 |
+| [312](312-three-guides-without-screenshots.md) | Three guides have no screenshots | merged | scotland | #461 |
 
 ## Waiting for live verification
 
