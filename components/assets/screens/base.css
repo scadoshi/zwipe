@@ -617,6 +617,15 @@ body .toast-container [role="alertdialog"] {
     align-items: flex-start;
 }
 
+/* An import's card lists: an output window of its own that scrolls inside
+   its panel, so a long import never stretches the screen. The panel's
+   border edges it, with no fade. */
+.import-output {
+    max-height: min(22rem, 50vh);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
 /* The scroll container under the console: imported entries / the decklist
    slide under the pinned rows and fade out at the edges, mirroring
    .dict-list. */

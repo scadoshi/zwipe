@@ -227,7 +227,7 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                                         div { class: "settings-list-header web-form-head",
                                             span { class: "settings-list-title", "{deck_import::IMPORTED}" }
                                         }
-                                        div { class: "web-form-fields web-import-cards",
+                                        div { class: "web-form-fields web-import-cards import-output",
                                             for card in r.imported.iter() {
                                                 div { class: "chip-bubble",
                                                     span { class: "font-light", "{card.name}" }
@@ -242,7 +242,7 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                                         div { class: "settings-list-header web-form-head",
                                             span { class: "settings-list-title", "{deck_import::FAILED}" }
                                         }
-                                        div { class: "web-form-fields web-import-cards",
+                                        div { class: "web-form-fields web-import-cards import-output",
                                             for card in r.unresolved.iter() {
                                                 div { class: "chip-bubble-error",
                                                     span { class: "font-light", "{card.name}" }
