@@ -2629,13 +2629,6 @@ body {
     }
 }
 
-/* ---- Chip wrappers ---- */
-
-/* A chip's hover title rides on a wrapper that adds no box. */
-.web-filter-chip {
-    display: contents;
-}
-
 /* ---- Add and Remove cards ---- */
 
 /* Below the breakpoint it is the app's swipe screen: the card, its prices
@@ -2714,13 +2707,6 @@ body {
     width: 100%;
     padding: 0 1rem;
     box-sizing: border-box;
-}
-
-/* A row being dragged onto a board's header. */
-.card-group-header.web-drop-over {
-    color: var(--ink-accent-primary, var(--accent-primary));
-    outline: 1px dashed var(--accent-primary);
-    outline-offset: 2px;
 }
 
 

@@ -610,6 +610,50 @@ mod tests {
     }
 
     #[test]
+    fn live_warnings_follow_to_mainboard_to_maybeboard_and_a_removal() {
+        let mut profile = deck_profile("D");
+        profile.format = Some(Format::Commander);
+        let mut fetched = entries();
+        fetched.retain(|e| e.deck_card.board == Board::Deck);
+        profile.card_count = fetched
+            .iter()
+            .map(|e| i64::from(*e.deck_card.quantity))
+            .sum();
+        let zone = Zone::default();
+        let warnings = |live: &[DeckEntry]| -> Vec<String> {
+            zone.live_warnings(&profile, &fetched, live)
+                .iter()
+                .map(ToString::to_string)
+                .collect()
+        };
+        let as_fetched = warnings(&fetched);
+        let mut live = fetched.clone();
+
+        live[0].deck_card.board = Board::Sideboard;
+        assert!(warnings(&live).iter().any(|w| w.contains("sideboards")));
+        live[0].deck_card.board = Board::Deck;
+        assert_eq!(warnings(&live), as_fetched, "To mainboard clears it");
+
+        live[0].deck_card.board = Board::Maybeboard;
+        let moved = warnings(&live);
+        assert!(
+            !moved.iter().any(|w| w.contains("sideboards")),
+            "the maybeboard is not a sideboard: {moved:?}"
+        );
+        assert_ne!(
+            moved, as_fetched,
+            "To maybeboard drops a card from the count"
+        );
+
+        let removed: Vec<DeckEntry> = fetched.iter().skip(1).cloned().collect();
+        assert_eq!(
+            warnings(&removed),
+            moved,
+            "− to 0 counts as the card leaving"
+        );
+    }
+
+    #[test]
     fn live_metrics_are_none_for_an_empty_deck() {
         assert!(Zone::default().live_metrics(&[], &[], &[]).is_none());
     }

@@ -94,7 +94,6 @@ pub fn DeckWidePage(
         save_printing,
         apply_undo,
         reset_filter,
-        on_drop,
         ..
     } = ed;
     let CardStores { undo, .. } = use_context();
@@ -159,7 +158,7 @@ pub fn DeckWidePage(
 
     // The sections, in the editor's order: tokens, the maybeboard and
     // sideboard, the command zone, the main board's groups and its lands.
-    let mut sections: Vec<(DeckSection, Vec<RowInfo>, Option<Board>)> = Vec::new();
+    let mut sections: Vec<(DeckSection, Vec<RowInfo>)> = Vec::new();
     if !token_rows.is_empty() {
         let rows = token_rows
             .iter()
@@ -177,7 +176,6 @@ pub fn DeckWidePage(
                 cards: token_rows,
             },
             rows,
-            None,
         ));
     }
     for (board, title, entries_on) in [
@@ -203,7 +201,6 @@ pub fn DeckWidePage(
                 cards: entries_on.into_iter().map(|e| e.card).collect(),
             },
             rows,
-            Some(board),
         ));
     }
     let commanders: Vec<(Slot, Card)> = zone_rows
@@ -228,7 +225,6 @@ pub fn DeckWidePage(
                     kind: RowKind::Zone(slot),
                 })
                 .collect(),
-            None,
         ));
     }
     for (slot, card) in zone_rows
@@ -249,7 +245,6 @@ pub fn DeckWidePage(
                 qty: 1,
                 kind: RowKind::Zone(slot),
             }],
-            None,
         ));
     }
     for group in main_groups {
@@ -272,7 +267,6 @@ pub fn DeckWidePage(
                 cards: group.cards,
             },
             rows,
-            Some(Board::Deck),
         ));
     }
     if !main_lands.is_empty() {
@@ -289,13 +283,12 @@ pub fn DeckWidePage(
                 cards: main_lands,
             },
             rows,
-            Some(Board::Deck),
         ));
     }
     let empty = loaded() && shown_boards.main && sections.is_empty();
 
     // The fold-all button: every band shut, or every one open again.
-    let section_keys: Vec<String> = sections.iter().map(|(s, _, _)| s.key.clone()).collect();
+    let section_keys: Vec<String> = sections.iter().map(|(s, _)| s.key.clone()).collect();
     let all_folded = {
         let shut = collapsed.read();
         !section_keys.is_empty() && section_keys.iter().all(|k| shut.contains(k))
@@ -410,23 +403,15 @@ pub fn DeckWidePage(
                                     ("Maybe", Board::Maybeboard, shown_boards.maybe, has_maybe || shown_boards.maybe),
                                     ("Side", Board::Sideboard, shown_boards.side, has_side || shown_boards.side),
                                 ] {
-                                    span {
+                                    Chip {
                                         key: "{label}",
-                                        class: "web-filter-chip",
-                                        ondragover: move |e| e.prevent_default(),
-                                        ondrop: move |e| {
-                                            e.prevent_default();
-                                            on_drop.call(board);
+                                        selected: on,
+                                        disabled: !enabled,
+                                        onclick: move |_| {
+                                            boards.write().toggle(board);
+                                            selected.set(None);
                                         },
-                                        Chip {
-                                            selected: on,
-                                            disabled: !enabled,
-                                            onclick: move |_| {
-                                                boards.write().toggle(board);
-                                                selected.set(None);
-                                            },
-                                            "{label}"
-                                        }
+                                        "{label}"
                                     }
                                 }
                             }
@@ -439,13 +424,11 @@ pub fn DeckWidePage(
                 if !loaded() {
                     DeckBandsGhost {}
                 }
-                for (section, rows, drop_to) in sections {
+                for (section, rows) in sections {
                     DeckBand {
                         key: "{section.key}",
                         section,
                         folded: collapsed,
-                        drop_to,
-                        on_drop,
                         for row in rows {
                             {row_view(&ed, cur, &row_meta, row)}
                         }

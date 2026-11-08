@@ -73,7 +73,8 @@ impl Cards {
 
     /// Returns the cards ordered by `sort`. `None` is a no-op (pass a
     /// [`CardSortKey`] directly or a builder's `sort()`); `Random` shuffles and
-    /// ignores `direction`.
+    /// ignores `direction`. Under a price key, cards with no price come last
+    /// in either direction.
     #[must_use]
     pub fn sorted(
         mut self,
@@ -87,13 +88,8 @@ impl Cards {
             self.0.shuffle(&mut rand::rng());
             return self;
         }
-        self.0.sort_by(|a, b| {
-            let ord = sort.compare(&a.scryfall_data, &b.scryfall_data);
-            match direction {
-                SortDirection::Ascending => ord,
-                SortDirection::Descending => ord.reverse(),
-            }
-        });
+        self.0
+            .sort_by(|a, b| sort.compare_in(&a.scryfall_data, &b.scryfall_data, direction));
         self
     }
 
@@ -106,7 +102,7 @@ impl Cards {
 }
 
 /// Sorts deck entries by their card under `sort`, mirroring [`Cards::sorted`](crate::domain::card::models::search_card::cards::Cards::sorted)
-/// (`None` no-op, `Random` shuffles, missing values last ascending).
+/// (`None` no-op, `Random` shuffles, unpriced cards last under a price key either way, other missing values last ascending).
 pub fn sort_deck_entries(
     entries: &mut [DeckEntry],
     sort: impl Into<Option<CardSortKey>>,
@@ -119,13 +115,8 @@ pub fn sort_deck_entries(
         entries.shuffle(&mut rand::rng());
         return;
     }
-    entries.sort_by(|a, b| {
-        let ord = sort.compare(&a.card.scryfall_data, &b.card.scryfall_data);
-        match direction {
-            SortDirection::Ascending => ord,
-            SortDirection::Descending => ord.reverse(),
-        }
-    });
+    entries
+        .sort_by(|a, b| sort.compare_in(&a.card.scryfall_data, &b.card.scryfall_data, direction));
 }
 #[cfg(test)]
 mod tests {
@@ -957,6 +948,34 @@ mod tests {
         let result = Cards::from(vec![a, b, c]).sorted(CardSortKey::Cmc, SortDirection::Ascending);
         assert_eq!(result[0].scryfall_data.name, "B");
         assert_eq!(result[2].scryfall_data.name, "A");
+    }
+
+    fn priced(name: &str, usd: Option<&str>) -> Card {
+        let mut card = make_card(name);
+        card.scryfall_data.prices.usd = usd.map(str::to_owned);
+        card
+    }
+
+    fn names(cards: &Cards) -> Vec<&str> {
+        cards
+            .iter()
+            .map(|c| c.scryfall_data.name.as_str())
+            .collect()
+    }
+
+    #[test]
+    fn test_sorted_price_puts_unpriced_last_both_ways() {
+        let cards = || {
+            Cards::from(vec![
+                priced("None", None),
+                priced("Cheap", Some("0.25")),
+                priced("Pricey", Some("12.00")),
+            ])
+        };
+        let up = cards().sorted(CardSortKey::PriceUsd, SortDirection::Ascending);
+        let down = cards().sorted(CardSortKey::PriceUsd, SortDirection::Descending);
+        assert_eq!(names(&up), ["Cheap", "Pricey", "None"]);
+        assert_eq!(names(&down), ["Pricey", "Cheap", "None"]);
     }
 
     #[test]

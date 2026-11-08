@@ -84,7 +84,6 @@ struct RowActions {
     mvp: Option<bool>,
     on_star: Option<EventHandler<()>>,
     on_print: Option<EventHandler<Card>>,
-    drag: Option<EventHandler<()>>,
 }
 
 /// What the view lists, in order, after the pass and the Boards and Show
@@ -225,7 +224,6 @@ pub(crate) struct Editor {
     pub printing: Signal<Option<(Card, Option<Slot>)>>,
     pub printing_open: Signal<bool>,
     pub filter_open: Signal<bool>,
-    pub dragging: Signal<Option<Uuid>>,
     pub hint_open: Signal<bool>,
     pub listing: Memo<Listed>,
     pub meta: Memo<HashMap<Uuid, Meta>>,
@@ -236,7 +234,6 @@ pub(crate) struct Editor {
     pub apply_undo: Callback<()>,
     pub reset_filter: Callback<()>,
     pub reload: Callback<()>,
-    pub on_drop: Callback<Board>,
 }
 
 impl Editor {
@@ -301,7 +298,6 @@ pub(crate) fn use_deck_editor(deck_id: Uuid, on_failure: LoadFailure) -> Editor 
     let mut printing: Signal<Option<(Card, Option<Slot>)>> = use_signal(|| None);
     let printing_open = use_signal(|| false);
     let filter_open = use_signal(|| false);
-    let mut dragging: Signal<Option<Uuid>> = use_signal(|| None);
     let hint_open = use_signal(|| false);
     let mut hint_fired = use_signal(|| false);
 
@@ -894,12 +890,6 @@ pub(crate) fn use_deck_editor(deck_id: Uuid, on_failure: LoadFailure) -> Editor 
     }));
     use_undo_key(Callback::new(move |()| apply_undo.call(())));
 
-    let on_drop = use_callback(move |board: Board| {
-        if let Some(card_id) = dragging.take() {
-            move_to_board.call((card_id, board, true));
-        }
-    });
-
     Editor {
         deck,
         entries,
@@ -919,7 +909,6 @@ pub(crate) fn use_deck_editor(deck_id: Uuid, on_failure: LoadFailure) -> Editor 
         printing,
         printing_open,
         filter_open,
-        dragging,
         hint_open,
         listing,
         meta,
@@ -930,7 +919,6 @@ pub(crate) fn use_deck_editor(deck_id: Uuid, on_failure: LoadFailure) -> Editor 
         apply_undo,
         reset_filter,
         reload,
-        on_drop,
     }
 }
 
@@ -947,7 +935,6 @@ pub(crate) fn row_view(
         mut face,
         mut printing,
         mut printing_open,
-        mut dragging,
         change_quantity,
         move_to_board,
         toggle_mvp,
@@ -965,7 +952,6 @@ pub(crate) fn row_view(
             mvp,
             on_star,
             on_print,
-            drag,
         } = match kind {
             RowKind::Main { mvp } => RowActions {
                 on_qty: Some(EventHandler::new(move |d| {
@@ -981,7 +967,6 @@ pub(crate) fn row_view(
                     printing.set(Some((c, None)));
                     printing_open.set(true);
                 })),
-                drag: Some(EventHandler::new(move |()| dragging.set(Some(card_id)))),
             },
             RowKind::Board(b) => RowActions {
                 on_qty: Some(EventHandler::new(move |d| {
@@ -995,7 +980,6 @@ pub(crate) fn row_view(
                     printing.set(Some((c, None)));
                     printing_open.set(true);
                 })),
-                drag: Some(EventHandler::new(move |()| dragging.set(Some(card_id)))),
                 ..RowActions::default()
             },
             RowKind::Zone(slot) => RowActions {
@@ -1024,7 +1008,6 @@ pub(crate) fn row_view(
                     on_toggle_mvp: on_star,
                     price_currency: cur,
                     on_printing: on_print,
-                    on_drag_start: drag,
                 }
             }
         }

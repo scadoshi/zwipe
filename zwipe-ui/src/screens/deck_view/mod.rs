@@ -1074,23 +1074,28 @@ impl State {
         self.metrics().is_some()
     }
 
-    /// The [`TOTAL_PRICE`] row's value in the picked currency. `None` until the profile loads.
+    /// The [`TOTAL_PRICE`] row's value in the picked currency, with how many copies have no price in it. `None` until the profile loads.
     #[must_use]
     pub fn total_price_line(&self) -> Option<String> {
         let total = self.metrics().and_then(|m| self.totals(m).0);
+        let unpriced = self.metrics().map_or(0, |m| m.unpriced(self.currency));
         self.profile()
-            .map(|p| view::total_price_line(p, total, self.currency))
+            .map(|p| view::with_unpriced(view::total_price_line(p, total, self.currency), unpriced))
     }
 
-    /// The [`AVERAGE_CARD_PRICE`] row's value in the picked currency, [`NO_PRICE`] when nothing is priced. `None` without metrics, which hides the row.
+    /// The [`AVERAGE_CARD_PRICE`] row's value in the picked currency with how many copies have no price in it, [`NO_PRICE`] when nothing is priced. `None` without metrics, which hides the row.
     #[must_use]
     pub fn average_price_line(&self) -> Option<String> {
         let metrics = self.metrics()?;
-        Some(
-            self.totals(metrics)
-                .1
-                .map_or_else(|| NO_PRICE.to_owned(), |v| self.currency.format_amount(v)),
-        )
+        Some(self.totals(metrics).1.map_or_else(
+            || NO_PRICE.to_owned(),
+            |v| {
+                view::with_unpriced(
+                    self.currency.format_amount(v),
+                    metrics.unpriced(self.currency),
+                )
+            },
+        ))
     }
 
     /// The running total and average in the picked currency.
