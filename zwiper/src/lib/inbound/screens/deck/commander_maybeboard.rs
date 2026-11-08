@@ -418,7 +418,11 @@ pub fn CommanderMaybeboard() -> Element {
                         }
                     } else {
                         div { class: "chip-row",
-                            span { class: "stat-chip stat-chip-p1 chip-row-label", {model::QUICK_ADD} }
+                            label {
+                                class: "stat-chip stat-chip-p1 chip-row-label",
+                                r#for: "commander-maybeboard-search",
+                                {model::QUICK_ADD}
+                            }
                             ClearWrap {
                                 filled: !query.is_empty(),
                                 on_clear: move |()| driver.dispatch(Action::Type(String::new())),
@@ -485,7 +489,11 @@ pub fn CommanderMaybeboard() -> Element {
                                     key: "{color.to_short_name()}",
                                     selected: picked,
                                     onclick: move |_| driver.dispatch(Action::ToggleColor(color)),
-                                    i { class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost" }
+                                    i {
+                                        class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
+                                        "aria-hidden": "true",
+                                    }
+                                    span { class: "sr-only", "{color.to_long_name()}" }
                                 }
                             }
                             Chip {

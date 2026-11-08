@@ -21,6 +21,24 @@ use zwipe_core::domain::deck::{Board, deck_metrics};
 use crate::CardDetails;
 use crate::hover_stack::{HeldEntry, HoverStack};
 
+/// Opens the row's detail, letting go of its hover preview, or shuts it
+/// when it is open.
+fn toggle(
+    mut expanded_card: Signal<Option<Uuid>>,
+    card_id: Uuid,
+    hover_stack: Option<HoverStack>,
+    held: &HeldEntry,
+) {
+    if expanded_card() == Some(card_id) {
+        expanded_card.set(None);
+    } else {
+        if let (Some(stack), Some(id)) = (hover_stack, held.take()) {
+            stack.leave(id);
+        }
+        expanded_card.set(Some(card_id));
+    }
+}
+
 /// Expandable card row with compact view and optional actions.
 #[component]
 pub fn CardRow(
@@ -102,6 +120,7 @@ pub fn CardRow(
     });
     let held_on_enter = Rc::clone(&held);
     let held_on_click = Rc::clone(&held);
+    let held_on_key = Rc::clone(&held);
     let held_on_leave = held;
     let face_on_enter = Rc::clone(&shown_face);
     let face_on_flip = shown_face;
@@ -182,7 +201,7 @@ pub fn CardRow(
                     if let Some(stack) = hover_stack
                         && expanded_card() != Some(card_id)
                         && let Some(url) = sd_on_enter.face_image_url(face_on_enter.get(), ImageSize::Normal)
-                        && let Some(stale) = held_on_enter.replace(Some(stack.enter(url.to_string())))
+                        && let Some(stale) = held_on_enter.replace(Some(stack.enter(url.to_string(), sd_on_enter.name.clone())))
                     {
                         stack.leave(stale);
                     }
@@ -198,22 +217,24 @@ pub fn CardRow(
                         handler.call(());
                     }
                 },
-                onclick: move |_| {
-                    if expanded_card() == Some(card_id) {
-                        expanded_card.set(None);
-                    } else {
-                        if let (Some(stack), Some(id)) = (hover_stack, held_on_click.take()) {
-                            stack.leave(id);
-                        }
-                        expanded_card.set(Some(card_id));
+                role: "button",
+                tabindex: "0",
+                "aria-expanded": "{is_expanded}",
+                onclick: move |_| toggle(expanded_card, card_id, hover_stack, &held_on_click),
+                onkeydown: move |evt: KeyboardEvent| {
+                    if evt.key() == Key::Enter || evt.key() == Key::Character(" ".into()) {
+                        evt.prevent_default();
+                        toggle(expanded_card, card_id, hover_stack, &held_on_key);
                     }
                 },
                 if let Some(url) = art_url {
+                    // The name sits beside the art, so the art has no alt of its own.
                     img {
                         class: "{art_class}",
                         src: "{url}",
                         loading: "lazy",
                         draggable: false,
+                        alt: "",
                     }
                 }
                 // The name's head and its tags flow beside the art; the tags
@@ -258,7 +279,8 @@ pub fn CardRow(
                 }
             }
 
-            div { class: "{collapse_class}",
+            // A shut detail is inert, so Tab and screen readers pass over it.
+            div { class: "{collapse_class}", inert: (!is_expanded).then_some(true),
                 div { class: "card-row-collapse-inner",
                 hr { class: "card-row-rule" }
                 CardDetails {

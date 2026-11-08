@@ -38,5 +38,7 @@ pub mod rarity;
 pub mod set;
 /// Sort order selection.
 pub mod sort;
+/// What a number box's text says while it is typed.
+pub(crate) mod typed_number;
 /// Card type filter.
 pub mod types;

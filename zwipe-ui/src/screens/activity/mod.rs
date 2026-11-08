@@ -16,7 +16,7 @@ use crate::generation::{Generation, Ticket};
 pub const TITLE: &str = "Activity";
 
 /// The line in place of the sections when the activity failed to load.
-pub const LOAD_FAILED: &str = "Could not load your activity";
+pub const LOAD_FAILED: &str = "Couldn't load your activity";
 
 /// The line in place of the sections when the account has nothing to show yet.
 pub const NOTHING_YET: &str = "Swipe some cards to see your activity";

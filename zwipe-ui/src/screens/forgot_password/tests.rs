@@ -1,5 +1,5 @@
 use super::*;
-use crate::account::INVALID_RESET_EMAIL;
+use crate::account::EMAIL_REQUIRED;
 use crate::toast::NORMAL;
 
 fn typed(email: &str) -> State {
@@ -26,27 +26,32 @@ fn a_new_screen_shows_the_form_with_no_line() {
 }
 
 #[test]
-fn the_line_shows_while_the_field_holds_text() {
+fn any_address_typed_is_left_to_the_server() {
     let mut state = typed("nope");
-    assert_eq!(state.error().as_deref(), Some(INVALID_RESET_EMAIL));
+    assert_eq!(
+        state.error(),
+        None,
+        "an existing account's address is not judged here"
+    );
     assert_eq!(state.update(Action::EditEmail(String::new())), []);
     assert_eq!(state.error(), None, "an emptied field waits for a send");
-    assert_eq!(state.update(Action::EditEmail("a@b.co".to_owned())), []);
-    assert_eq!(state.error(), None);
 }
 
 #[test]
 fn a_failing_submit_shows_the_line_and_sends_nothing() {
     let mut state = State::new();
     assert_eq!(state.update(Action::Submit), []);
-    assert_eq!(state.error().as_deref(), Some(INVALID_RESET_EMAIL));
+    assert_eq!(state.error().as_deref(), Some(EMAIL_REQUIRED));
     assert!(!state.is_loading());
 }
 
 #[test]
-fn the_email_is_checked_and_sent_untrimmed() {
+fn the_email_is_sent_as_typed() {
     let mut state = typed(" a@b.co");
-    assert_eq!(state.update(Action::Submit), [], "a space fails");
+    assert!(matches!(
+        state.update(Action::Submit).as_slice(),
+        [Effect::RequestReset { email, .. }] if email == " a@b.co"
+    ));
     let mut state = typed("a@b.co");
     assert!(matches!(
         state.update(Action::Submit).as_slice(),
@@ -162,14 +167,22 @@ fn create_profile_goes_to_register() {
 #[test]
 fn the_copy_matches_the_app() {
     assert_eq!(
-        [TITLE, EMAIL, BACK, SEND, CREATE_PROFILE, LINK_SENT],
+        [TITLE, EMAIL, BACK, SEND, CREATE_ACCOUNT, LINK_SENT],
         [
             "Forgot password",
             "Email",
-            "Back to login",
+            "Back to log in",
             "Send reset link",
-            "Create profile",
+            "Create account",
             "If that email is registered, a reset link is on its way"
         ]
     );
+}
+
+#[test]
+fn the_email_error_holds_send_while_it_shows() {
+    let mut state = typed("me@zwipe.net");
+    assert!(!state.submit_held());
+    assert_eq!(state.update(Action::EditEmail("   ".to_owned())), []);
+    assert!(state.submit_held());
 }

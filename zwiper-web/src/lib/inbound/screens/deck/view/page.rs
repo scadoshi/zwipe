@@ -45,20 +45,21 @@ use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog};
 use crate::inbound::router::Route;
 use crate::inbound::screens::deck::cards::editor::{
-    Editor, Listed, RowInfo, RowKind, main_row_of, row_view, use_deck_editor,
+    Editor, Listed, LoadFailure, RowInfo, RowKind, main_row_of, row_view, use_deck_editor,
 };
 use crate::inbound::screens::deck::cards::quick_add::QuickAdd;
 
 /// The stat panels' fold keys, shut when the page opens.
 const FOLDED_STATS: [&str; 5] = ["Budget", "Tags", "Distributions", "Mana", "Draw odds"];
 
-/// The page for `deck_id`. `fixes` are the warnings' fixes; after one the
-/// page reloads the deck.
+/// The page for `deck_id`. `fixes` are the warnings' fixes, and `fixed`
+/// counts the ones that have landed: each reloads the deck.
 #[component]
 pub fn DeckWidePage(
     deck_id: Uuid,
     currency: Signal<PriceCurrency>,
     fixes: WarningFixes,
+    fixed: ReadSignal<u32>,
     dialogs: DeckDialogs,
 ) -> Element {
     let navigator = use_navigator();
@@ -67,7 +68,8 @@ pub fn DeckWidePage(
         mut share,
         ..
     } = dialogs;
-    let ed = use_deck_editor(deck_id);
+    // Quiet: the deck view's own profile fetch raises the one toast.
+    let ed = use_deck_editor(deck_id, LoadFailure::Quiet);
     let Editor {
         deck,
         entries,
@@ -92,7 +94,6 @@ pub fn DeckWidePage(
         save_printing,
         apply_undo,
         reset_filter,
-        on_drop,
         ..
     } = ed;
     let CardStores { undo, .. } = use_context();
@@ -104,22 +105,13 @@ pub fn DeckWidePage(
     let hover_stack = use_hover_stack();
     let folded: Signal<HashSet<String>> =
         use_signal(|| FOLDED_STATS.into_iter().map(String::from).collect());
-    // A fix made at the foot reloads the deck, so the rows follow.
-    let after_fix = use_callback(move |()| ed.reload.call(()));
-    let fixes = WarningFixes {
-        fix_quantity: use_callback(move |change: (Uuid, i32)| {
-            fixes.fix_quantity.call(change);
-            after_fix.call(());
-        }),
-        clear_commander: use_callback(move |()| {
-            fixes.clear_commander.call(());
-            after_fix.call(());
-        }),
-        remove: use_callback(move |card: Uuid| {
-            fixes.remove.call(card);
-            after_fix.call(());
-        }),
-    };
+    // A fix made at the foot reloads the deck once it has landed, so the
+    // rows, the counts and the warnings follow.
+    use_effect(move || {
+        if fixed() > 0 {
+            ed.reload.call(());
+        }
+    });
 
     let Listed {
         tokens: token_rows,
@@ -166,7 +158,7 @@ pub fn DeckWidePage(
 
     // The sections, in the editor's order: tokens, the maybeboard and
     // sideboard, the command zone, the main board's groups and its lands.
-    let mut sections: Vec<(DeckSection, Vec<RowInfo>, Option<Board>)> = Vec::new();
+    let mut sections: Vec<(DeckSection, Vec<RowInfo>)> = Vec::new();
     if !token_rows.is_empty() {
         let rows = token_rows
             .iter()
@@ -184,7 +176,6 @@ pub fn DeckWidePage(
                 cards: token_rows,
             },
             rows,
-            None,
         ));
     }
     for (board, title, entries_on) in [
@@ -210,7 +201,6 @@ pub fn DeckWidePage(
                 cards: entries_on.into_iter().map(|e| e.card).collect(),
             },
             rows,
-            Some(board),
         ));
     }
     let commanders: Vec<(Slot, Card)> = zone_rows
@@ -235,7 +225,6 @@ pub fn DeckWidePage(
                     kind: RowKind::Zone(slot),
                 })
                 .collect(),
-            None,
         ));
     }
     for (slot, card) in zone_rows
@@ -256,7 +245,6 @@ pub fn DeckWidePage(
                 qty: 1,
                 kind: RowKind::Zone(slot),
             }],
-            None,
         ));
     }
     for group in main_groups {
@@ -279,7 +267,6 @@ pub fn DeckWidePage(
                 cards: group.cards,
             },
             rows,
-            Some(Board::Deck),
         ));
     }
     if !main_lands.is_empty() {
@@ -296,13 +283,12 @@ pub fn DeckWidePage(
                 cards: main_lands,
             },
             rows,
-            Some(Board::Deck),
         ));
     }
     let empty = loaded() && shown_boards.main && sections.is_empty();
 
     // The fold-all button: every band shut, or every one open again.
-    let section_keys: Vec<String> = sections.iter().map(|(s, _, _)| s.key.clone()).collect();
+    let section_keys: Vec<String> = sections.iter().map(|(s, _)| s.key.clone()).collect();
     let all_folded = {
         let shut = collapsed.read();
         !section_keys.is_empty() && section_keys.iter().all(|k| shut.contains(k))
@@ -319,8 +305,8 @@ pub fn DeckWidePage(
         }
     };
 
-    // The owner's facts and stats follow the cards as edited here; the
-    // warnings and store links stay the deck's as fetched.
+    // The owner's facts, stats and warnings follow the cards as edited here;
+    // the store links stay the deck's as fetched.
     let held_deck = deck();
     let metrics = held_deck.as_ref().and_then(|d| {
         zone.read()
@@ -328,7 +314,10 @@ pub fn DeckWidePage(
     });
     let warnings = held_deck
         .as_ref()
-        .map(|d| d.warnings.clone())
+        .map(|d| {
+            zone.read()
+                .live_warnings(&d.deck_profile, &d.entries, &entries.read())
+        })
         .unwrap_or_default();
     let buy_links = held_deck.as_ref().map(buy::links);
     let has_cards = metrics.is_some();
@@ -398,7 +387,7 @@ pub fn DeckWidePage(
                     DeckControls {
                         group_by,
                         show_tokens: tokens().is_some_and(|t| !t.is_empty()).then_some(show_tokens),
-                        show_zone,
+                        show_zone: zone.read().offers_chip(format).then_some(show_zone),
                         show_art,
                         all_folded,
                         on_fold_all: fold_all,
@@ -414,23 +403,15 @@ pub fn DeckWidePage(
                                     ("Maybe", Board::Maybeboard, shown_boards.maybe, has_maybe || shown_boards.maybe),
                                     ("Side", Board::Sideboard, shown_boards.side, has_side || shown_boards.side),
                                 ] {
-                                    span {
+                                    Chip {
                                         key: "{label}",
-                                        class: "web-filter-chip",
-                                        ondragover: move |e| e.prevent_default(),
-                                        ondrop: move |e| {
-                                            e.prevent_default();
-                                            on_drop.call(board);
+                                        selected: on,
+                                        disabled: !enabled,
+                                        onclick: move |_| {
+                                            boards.write().toggle(board);
+                                            selected.set(None);
                                         },
-                                        Chip {
-                                            selected: on,
-                                            disabled: !enabled,
-                                            onclick: move |_| {
-                                                boards.write().toggle(board);
-                                                selected.set(None);
-                                            },
-                                            "{label}"
-                                        }
+                                        "{label}"
                                     }
                                 }
                             }
@@ -443,13 +424,11 @@ pub fn DeckWidePage(
                 if !loaded() {
                     DeckBandsGhost {}
                 }
-                for (section, rows, drop_to) in sections {
+                for (section, rows) in sections {
                     DeckBand {
                         key: "{section.key}",
                         section,
                         folded: collapsed,
-                        drop_to,
-                        on_drop,
                         for row in rows {
                             {row_view(&ed, cur, &row_meta, row)}
                         }

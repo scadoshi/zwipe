@@ -1,0 +1,316 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT d.id, d.name, d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id,\n                      d.format, d.tags as \"tags?\", d.power_level, d.other_tags as \"other_tags?\", d.oracle_tags as \"oracle_tags?\", d.land_target, d.price_target, d.price_target_currency, d.share_token, d.user_id,\n                      COALESCE(SUM(dc.quantity) FILTER (WHERE dc.board = 'deck'), 0) as \"card_count\",\n                      d.updated_at as \"updated_at?\",\n                      totals.usd as \"total_price_usd?\",\n                      totals.eur as \"total_price_eur?\",\n                      totals.tix as \"total_price_tix?\",\n                      sd.name as \"commander_name?\",\n                      (SELECT s2.name FROM scryfall_data s2 WHERE s2.id = d.partner_commander_id) as \"partner_commander_name?\",\n                      (SELECT s3.name FROM scryfall_data s3 WHERE s3.id = d.background_id) as \"background_name?\",\n                      (SELECT s4.name FROM scryfall_data s4 WHERE s4.id = d.signature_spell_id) as \"signature_spell_name?\",\n                      -- Command-zone art, as correlated subqueries rather than off the\n                      -- joined `sd` so the GROUP BY below stays as it is. COALESCE is\n                      -- the front-face fallback double-faced cards need.\n                      (SELECT COALESCE(s5.image_uris->>'art_crop', s5.card_faces->0->'image_uris'->>'art_crop') FROM scryfall_data s5 WHERE s5.id = d.commander_id) as \"commander_art_url?\",\n                      (SELECT COALESCE(s6.image_uris->>'art_crop', s6.card_faces->0->'image_uris'->>'art_crop') FROM scryfall_data s6 WHERE s6.id = d.partner_commander_id) as \"partner_commander_art_url?\",\n                      (SELECT COALESCE(s7.image_uris->>'art_crop', s7.card_faces->0->'image_uris'->>'art_crop') FROM scryfall_data s7 WHERE s7.id = d.background_id) as \"background_art_url?\",\n                      (SELECT COALESCE(s8.image_uris->>'art_crop', s8.card_faces->0->'image_uris'->>'art_crop') FROM scryfall_data s8 WHERE s8.id = d.signature_spell_id) as \"signature_spell_art_url?\",\n                      (SELECT array_agg(DISTINCT ci)\n                         FROM scryfall_data sci, unnest(sci.color_identity) AS ci\n                        WHERE sci.id = ANY(ARRAY[d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id]\n                                           || ARRAY(SELECT dc2.scryfall_data_id FROM deck_cards dc2 WHERE dc2.deck_id = d.id AND dc2.board = 'deck'))) as \"color_identity?: Vec<String>\"\n               FROM decks d\n               -- The deck's prices as DeckMetrics counts them: main board copies at\n               -- their nonfoil price, then the command zone cards not already on the\n               -- main board, one copy each. NULL in a currency nothing is priced in.\n               LEFT JOIN LATERAL (\n                   SELECT SUM(usd) AS usd, SUM(eur) AS eur, SUM(tix) AS tix\n                     FROM (SELECT mc.quantity * CASE WHEN mp.prices->>'usd' ~ '^[0-9]+(\\.[0-9]+)?$' THEN (mp.prices->>'usd')::float8 END AS usd,\n                                  mc.quantity * CASE WHEN mp.prices->>'eur' ~ '^[0-9]+(\\.[0-9]+)?$' THEN (mp.prices->>'eur')::float8 END AS eur,\n                                  mc.quantity * CASE WHEN mp.prices->>'tix' ~ '^[0-9]+(\\.[0-9]+)?$' THEN (mp.prices->>'tix')::float8 END AS tix\n                             FROM deck_cards mc\n                             JOIN scryfall_data mp ON mp.id = mc.scryfall_data_id\n                            WHERE mc.deck_id = d.id AND mc.board = 'deck'\n                           UNION ALL\n                           SELECT CASE WHEN zp.prices->>'usd' ~ '^[0-9]+(\\.[0-9]+)?$' THEN (zp.prices->>'usd')::float8 END, CASE WHEN zp.prices->>'eur' ~ '^[0-9]+(\\.[0-9]+)?$' THEN (zp.prices->>'eur')::float8 END, CASE WHEN zp.prices->>'tix' ~ '^[0-9]+(\\.[0-9]+)?$' THEN (zp.prices->>'tix')::float8 END\n                             FROM scryfall_data zp\n                            WHERE zp.id = ANY(ARRAY[d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id])\n                              AND NOT EXISTS (SELECT 1 FROM deck_cards zc\n                                               WHERE zc.deck_id = d.id AND zc.board = 'deck' AND zc.scryfall_data_id = zp.id)) AS priced\n               ) totals ON true\n               LEFT JOIN deck_cards dc ON d.id = dc.deck_id\n               LEFT JOIN scryfall_data sd ON d.commander_id = sd.id\n               WHERE d.user_id = $1\n               GROUP BY d.id, d.name, d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id,\n                        d.format, d.land_target, d.price_target, d.price_target_currency, d.share_token, d.user_id, sd.name,\n                        totals.usd, totals.eur, totals.tix\n               ORDER BY d.updated_at DESC, d.id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "decks",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar",
+        "origin": {
+          "Table": {
+            "table": "decks",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "commander_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "decks",
+            "name": "commander_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "partner_commander_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "decks",
+            "name": "partner_commander_id"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "background_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "decks",
+            "name": "background_id"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "signature_spell_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "decks",
+            "name": "signature_spell_id"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "format",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "decks",
+            "name": "format"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "tags?",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "decks",
+            "name": "tags"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "power_level",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "decks",
+            "name": "power_level"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "other_tags?",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "decks",
+            "name": "other_tags"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "oracle_tags?",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "decks",
+            "name": "oracle_tags"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "land_target",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "decks",
+            "name": "land_target"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "price_target",
+        "type_info": "Float8",
+        "origin": {
+          "Table": {
+            "table": "decks",
+            "name": "price_target"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "price_target_currency",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "decks",
+            "name": "price_target_currency"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "share_token",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "decks",
+            "name": "share_token"
+          }
+        }
+      },
+      {
+        "ordinal": 15,
+        "name": "user_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "decks",
+            "name": "user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 16,
+        "name": "card_count",
+        "type_info": "Int8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 17,
+        "name": "updated_at?",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "decks",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 18,
+        "name": "total_price_usd?",
+        "type_info": "Float8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 19,
+        "name": "total_price_eur?",
+        "type_info": "Float8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 20,
+        "name": "total_price_tix?",
+        "type_info": "Float8",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 21,
+        "name": "commander_name?",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "scryfall_data",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 22,
+        "name": "partner_commander_name?",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 23,
+        "name": "background_name?",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 24,
+        "name": "signature_spell_name?",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 25,
+        "name": "commander_art_url?",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 26,
+        "name": "partner_commander_art_url?",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 27,
+        "name": "background_art_url?",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 28,
+        "name": "signature_spell_art_url?",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 29,
+        "name": "color_identity?: Vec<String>",
+        "type_info": "TextArray",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      true,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      false,
+      null,
+      false,
+      null,
+      null,
+      null,
+      false,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "hash": "37389013e118ec45441ac11ed4a51be2ba6aabf77ab480d606db1670484da459"
+}

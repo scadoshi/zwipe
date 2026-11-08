@@ -5,7 +5,7 @@ use zwipe_core::domain::deck::UNVERIFIED_MAX_DECKS_PER_USER;
 use crate::toast::{LONG, Toast, ToastKind};
 
 /// The warning an unverified account sees once it holds as many decks as it may.
-pub const VERIFY_TO_CREATE: &str = "Verify your email to create more than 1 deck";
+pub const VERIFY_TO_CREATE: &str = "Verify your email to create more than one deck";
 
 /// Whether the user may start a new deck, given whether their email is verified and how many decks they hold now.
 ///
@@ -56,16 +56,16 @@ mod tests {
             panic!("an unverified account with a deck is gated");
         };
         assert_eq!(toast.kind, ToastKind::Warning);
-        assert_eq!(toast.text, "Verify your email to create more than 1 deck");
+        assert_eq!(toast.text, "Verify your email to create more than one deck");
         assert_eq!(toast.duration, LONG);
     }
 
     #[test]
     fn the_warning_names_the_cap() {
-        let cap = format!("more than {UNVERIFIED_MAX_DECKS_PER_USER} deck");
-        assert!(
-            VERIFY_TO_CREATE.contains(&cap),
-            "{VERIFY_TO_CREATE:?} vs {cap:?}"
+        assert_eq!(
+            UNVERIFIED_MAX_DECKS_PER_USER, 1,
+            "{VERIFY_TO_CREATE:?} spells the cap out as one deck"
         );
+        assert!(VERIFY_TO_CREATE.contains("more than one deck"));
     }
 }

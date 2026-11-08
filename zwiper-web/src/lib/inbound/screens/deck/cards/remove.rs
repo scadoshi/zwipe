@@ -32,7 +32,9 @@ use zwipe_ui::hint::Role;
 use zwipe_ui::screens::remove_cards;
 use zwipe_ui::stack::{CardStack, RemoveAction, StackAction};
 use zwipe_ui::stores::filters::FilterScope;
+use zwipe_ui::stores::undo;
 use zwipe_ui::stores::undo::{UndoAction, create_board_field};
+use zwipe_ui::telemetry::vocabulary::{DeckScreen, Screen};
 
 use super::{OneLine, SwipeDetails, flip_top_card};
 use crate::inbound::card_filter::CardFilterPanel;
@@ -49,6 +51,7 @@ use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_
 use crate::inbound::chrome::page_keys::{use_page_keys, use_undo_key};
 use crate::inbound::session::ensure_fresh::ensure_fresh;
 use crate::inbound::shell::ScreenFrame;
+use crate::inbound::telemetry;
 
 /// Which board Remove trims.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -81,9 +84,11 @@ const ALL_SWIPES: [Swipe; 4] = [Swipe::Left, Swipe::Right, Swipe::Up, Swipe::Dow
 /// The Remove cards screen for `deck_id`.
 #[component]
 pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
+    telemetry::use_telemetry_screen(Screen::Deck(DeckScreen::CardRemove));
     let toast = use_toast();
     let confirm = use_swipe_confirm();
     let authed = use_authed();
+    let usage = telemetry::use_usage();
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
     let CardStores {
@@ -233,7 +238,8 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                         confirm.success("Undid remove");
                     }
                     Err(e) => {
-                        toast.error(format!("Failed to undo: {e}"), ToastOptions::default());
+                        tracing::warn!("undo failed: {e}");
+                        toast.error(undo::UNDO_FAILED.to_owned(), ToastOptions::default());
                         if let Some(entry) = taken {
                             undo.write().push(deck_id, entry);
                         }
@@ -333,7 +339,8 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                             confirm.success("Undid move");
                         }
                         Err(e) => {
-                            toast.error(format!("Failed to undo: {e}"), ToastOptions::default());
+                            tracing::warn!("undo failed: {e}");
+                            toast.error(undo::UNDO_FAILED.to_owned(), ToastOptions::default());
                             if let Some(entry) = taken {
                                 undo.write().push(deck_id, entry);
                             }
@@ -345,6 +352,12 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
     });
 
     let mut on_swipe = move |(swipe, card): (Swipe, Card)| {
+        usage.peek().record_swipe(swipe.into());
+        if swipe == Swipe::Right {
+            usage
+                .peek()
+                .record_removal(deck_id, card.scryfall_data.oracle_id);
+        }
         let card_id = card.scryfall_data.id;
         let entry = entries
             .peek()
@@ -452,7 +465,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                     }
                 });
                 let message = if to == Board::Deck {
-                    "Moved to main"
+                    "Moved to mainboard"
                 } else {
                     "Moved to maybeboard"
                 };

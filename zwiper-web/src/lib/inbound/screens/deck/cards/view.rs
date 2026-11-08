@@ -7,7 +7,7 @@
 use std::collections::HashSet;
 
 use components::icons::{DockIcon, MINUS, PLUS, UNDO};
-use components::{Chip, DockFilter};
+use components::{Chip, DockFilter, IdentityPips};
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
@@ -19,9 +19,12 @@ use zwipe_ui::deck::form::Slot;
 use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::filter::picker::Sources;
 use zwipe_ui::screens::deck_cards::TITLE;
+use zwipe_ui::telemetry::vocabulary::{DeckScreen, Screen};
 use zwipe_ui::{deck_cards, filter};
 
-use super::editor::{Editor, Listed, RowInfo, RowKind, main_row_of, row_view, use_deck_editor};
+use super::editor::{
+    Editor, Listed, LoadFailure, RowInfo, RowKind, main_row_of, row_view, use_deck_editor,
+};
 use super::featured::FeaturedCards;
 use super::quick_add::QuickAdd;
 use crate::inbound::card_filter::CardFilterPanel;
@@ -36,68 +39,60 @@ use crate::inbound::router::Route;
 use crate::inbound::screens::deck::skeletons::ChipRowSkeleton;
 use crate::inbound::screens::deck::view::ViewDeck;
 use crate::inbound::shell::ScreenFrame;
+use crate::inbound::telemetry;
 
-/// A collapsible card group, its header a drop target for `drop_to` when
-/// rows can be dragged onto its board.
+/// A collapsible card group. Its header toggles it from a click, Enter or
+/// Space, and a shut group's rows are inert.
 #[component]
 fn CardGroup(
     title: String,
     section_key: String,
     #[props(default)] pips: Option<Vec<Color>>,
     collapsed: Signal<HashSet<String>>,
-    #[props(default)] drop_to: Option<Board>,
-    on_drop: EventHandler<Board>,
     children: Element,
 ) -> Element {
+    telemetry::use_telemetry_screen(Screen::Deck(DeckScreen::CardView));
     let open = !collapsed().contains(&section_key);
-    let mut over = use_signal(|| false);
-    let header_class = match (open, over()) {
-        (true, true) => "card-group-header group-collapsible expanded web-drop-over",
-        (true, false) => "card-group-header group-collapsible expanded",
-        (false, true) => "card-group-header group-collapsible web-drop-over",
-        (false, false) => "card-group-header group-collapsible",
+    let header_class = if open {
+        "card-group-header group-collapsible expanded"
+    } else {
+        "card-group-header group-collapsible"
     };
+    let key_for_keys = section_key.clone();
     rsx! {
         div { class: if open { "card-group row-enter" } else { "card-group row-enter collapsed" },
             div {
                 class: header_class,
-                onclick: move |_| {
-                    let mut set = collapsed.write();
-                    if !set.remove(&section_key) {
-                        set.insert(section_key.clone());
-                    }
-                },
-                ondragover: move |e| {
-                    if drop_to.is_some() {
-                        e.prevent_default();
-                        over.set(true);
-                    }
-                },
-                ondragleave: move |_| over.set(false),
-                ondrop: move |e| {
-                    over.set(false);
-                    if let Some(board) = drop_to {
-                        e.prevent_default();
-                        on_drop.call(board);
+                role: "button",
+                tabindex: "0",
+                "aria-expanded": "{open}",
+                onclick: move |_| flip(collapsed, &section_key),
+                onkeydown: move |evt: KeyboardEvent| {
+                    if evt.key() == Key::Enter || evt.key() == Key::Character(" ".into()) {
+                        evt.prevent_default();
+                        flip(collapsed, &key_for_keys);
                     }
                 },
                 span { class: "card-row-arrow", "\u{25b8}" }
                 if let Some(pips) = pips.as_ref().filter(|p| !p.is_empty()) {
-                    span { class: "identity-pips",
-                        for color in pips.iter() {
-                            i {
-                                key: "{color.to_short_name()}",
-                                class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
-                            }
-                        }
-                    }
+                    IdentityPips { colors: pips.clone() }
                 }
                 "{title}"
             }
-            div { class: if open { "collapsible open" } else { "collapsible" },
+            div {
+                class: if open { "collapsible open" } else { "collapsible" },
+                inert: (!open).then_some(true),
                 div { class: "collapsible-inner", {children} }
             }
         }
+    }
+}
+
+/// Shuts the group under `section_key` when it is open, or opens it.
+fn flip(mut collapsed: Signal<HashSet<String>>, section_key: &str) {
+    let mut set = collapsed.write();
+    if !set.remove(section_key) {
+        set.insert(section_key.to_owned());
     }
 }
 
@@ -112,7 +107,7 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
         };
     }
     let navigator = use_navigator();
-    let ed = use_deck_editor(deck_id);
+    let ed = use_deck_editor(deck_id, LoadFailure::Toast);
     let Editor {
         entries,
         zone,
@@ -135,7 +130,6 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
         save_printing,
         apply_undo,
         reset_filter,
-        on_drop,
         ..
     } = ed;
     let CardStores { undo, .. } = use_context();
@@ -187,6 +181,7 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
     let filter_on = !applied.is_empty();
     let dot = filter::shows_dot(&applied);
     let has_zone = !zone_rows.is_empty();
+    let offers_zone = zone.read().offers_chip(format);
     let has_partner = zone_rows.iter().any(|(slot, _)| *slot == Slot::Partner);
 
     rsx! {
@@ -250,30 +245,24 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
                                 ("Maybe", Board::Maybeboard, shown_boards.maybe, has_maybe || shown_boards.maybe),
                                 ("Side", Board::Sideboard, shown_boards.side, has_side || shown_boards.side),
                             ] {
-                                span {
+                                Chip {
                                     key: "{label}",
-                                    class: "web-filter-chip",
-                                    ondragover: move |e| e.prevent_default(),
-                                    ondrop: move |e| {
-                                        e.prevent_default();
-                                        on_drop(board);
+                                    selected: on,
+                                    disabled: !enabled,
+                                    onclick: move |_| {
+                                        boards.write().toggle(board);
+                                        selected.set(None);
                                     },
-                                    Chip {
-                                        selected: on,
-                                        disabled: !enabled,
-                                        onclick: move |_| {
-                                            boards.write().toggle(board);
-                                            selected.set(None);
-                                        },
-                                        "{label}"
-                                    }
+                                    "{label}"
                                 }
                             }
                         }
                         div { class: "chip-row",
                             span { class: "stat-chip stat-chip-p1 chip-row-label", "Show" }
                             Chip { selected: show_tokens(), onclick: move |_| show_tokens.toggle(), "Tokens" }
-                            Chip { selected: show_zone(), onclick: move |_| show_zone.toggle(), "Command zone" }
+                            if offers_zone {
+                                Chip { selected: show_zone(), onclick: move |_| show_zone.toggle(), "Command zone" }
+                            }
                             Chip { selected: show_art(), onclick: move |_| show_art.toggle(), "Art" }
                         }
                     } else {
@@ -301,7 +290,6 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
                             title: format!("Tokens ({})", token_rows.len()),
                             section_key: "Tokens",
                             collapsed,
-                            on_drop,
                             for card in token_rows {
                                 {row_view(&ed, cur, &row_meta, RowInfo { card, qty: 1, kind: RowKind::Token })}
                             }
@@ -312,8 +300,6 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
                             title: format!("Maybeboard ({})", maybe_rows.len()),
                             section_key: "Maybeboard",
                             collapsed,
-                            drop_to: Some(Board::Maybeboard),
-                            on_drop,
                             for entry in maybe_rows {
                                 {row_view(&ed, cur, &row_meta, RowInfo { qty: *entry.deck_card.quantity, card: entry.card, kind: RowKind::Board(Board::Maybeboard) })}
                             }
@@ -324,8 +310,6 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
                             title: format!("Sideboard ({})", side_rows.len()),
                             section_key: "Sideboard",
                             collapsed,
-                            drop_to: Some(Board::Sideboard),
-                            on_drop,
                             for entry in side_rows {
                                 {row_view(&ed, cur, &row_meta, RowInfo { qty: *entry.deck_card.quantity, card: entry.card, kind: RowKind::Board(Board::Sideboard) })}
                             }
@@ -339,7 +323,6 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
                                     title: slot.group_header(format, has_partner).to_string(),
                                     section_key: slot.group_key().to_owned(),
                                     collapsed,
-                                    on_drop,
                                     {row_view(&ed, cur, &row_meta, RowInfo { card, qty: 1, kind: RowKind::Zone(slot) })}
                                     if slot == Slot::Commander {
                                         for (partner_slot, partner) in zone_rows.iter().filter(|(s, _)| *s == Slot::Partner).cloned() {
@@ -357,8 +340,6 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
                             section_key: group.key.clone(),
                             pips: group.pips.clone(),
                             collapsed,
-                            drop_to: Some(Board::Deck),
-                            on_drop,
                             for card in group.cards.iter() {
                                 {row_view(&ed, cur, &row_meta, main_row(card))}
                             }
@@ -369,8 +350,6 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
                             title: format!("Lands ({})", qty_count(&main_lands)),
                             section_key: "Lands",
                             collapsed,
-                            drop_to: Some(Board::Deck),
-                            on_drop,
                             for card in main_lands.iter() {
                                 {row_view(&ed, cur, &row_meta, main_row(card))}
                             }

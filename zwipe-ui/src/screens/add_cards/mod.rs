@@ -26,7 +26,7 @@ use crate::filter::{self, AddContext};
 use crate::generation::{Generation, Ticket};
 use crate::stack::{
     AddAction, CARDS_WARNING_THRESHOLD, CardStack, Direction, MAX_CARDS_IN_STACK, MaybeboardAction,
-    NO_CARDS_LEFT, STACK_WARNING_EVERY, StackAction,
+    NO_CARDS_LEFT, NO_CARDS_MATCH, STACK_WARNING_EVERY, StackAction,
 };
 use crate::stores::in_flight::{AddOutcome, InFlightAdds};
 use crate::stores::parked::ParkedStack;
@@ -36,6 +36,9 @@ use crate::toast::{Line, Toast, ToastKind, keep_one};
 
 /// The screen's title.
 pub const TITLE: &str = "Add";
+
+/// The pile's message, with a Retry, when the cards could not load.
+pub const LOAD_FAILED: &str = "Couldn't load cards";
 
 /// The hint's title.
 pub const HINT_TITLE: &str = "Swipe to build";
@@ -68,7 +71,11 @@ pub const ADDED_TO_DECK: &str = "Added to deck";
 pub const ADDED_TO_MAYBEBOARD: &str = "Added to maybeboard";
 
 /// The toast for a right swipe on Maybeboard.
-pub const MOVED_TO_DECK: &str = "Moved to deck";
+pub use crate::screens::deck_cards::MOVED_TO_MAINBOARD;
+
+/// The quiet chip's word for a right swipe on Maybeboard: the card joined
+/// the deck, as an add from Search does.
+pub const MOVED_TO_MAINBOARD_CHIP: &str = "Added";
 
 /// The toast for an up swipe on Maybeboard.
 pub const ALREADY_ON_MAYBEBOARD: &str = "Already on maybeboard";
@@ -88,18 +95,18 @@ pub const UNDID_ADD: &str = "Undid add";
 /// The toast for undoing an up swipe on Search.
 pub const UNDID_MAYBEBOARD: &str = "Undid maybeboard";
 
-/// The toast once an undone move to the deck lands.
-pub const UNDID_MOVE_TO_DECK: &str = "Undid move to deck";
+/// The toast once an undone move to the mainboard lands.
+pub const UNDID_MOVE_TO_MAINBOARD: &str = "Undid move to mainboard";
 
 /// The toast for undoing a move the deck cards view's Undo already reversed.
 pub const ALREADY_CHANGED: &str = "Already changed";
 
 /// The toast when paging stops at the stack's cap.
-pub const STACK_LIMIT_REACHED: &str = "Card stack limit reached, start a new search to continue";
+pub const STACK_LIMIT_REACHED: &str = "Card stack limit reached. Start a new search to continue.";
 
 /// The toast as the stack nears its cap.
 pub const STACK_LIMIT_NEAR: &str =
-    "Approaching the card stack limit, start a new search to continue";
+    "Approaching the card stack limit. Start a new search to continue.";
 
 /// The toast when Search has nothing to serve without a filter.
 pub const TRY_A_FILTER: &str = "Try a filter to start swiping";
@@ -303,6 +310,8 @@ pub enum Action {
     SwapPrinting(Box<Card>),
     /// Searches again from the top, or reloads the maybeboard.
     Refresh,
+    /// Tries a failed load again, from Retry or the connection coming back: the deck's first fetch and the search from the top, whichever failed. Does nothing when neither did.
+    Retry,
     /// Goes back to where the user came from.
     Back,
 }
@@ -539,6 +548,15 @@ struct Run {
     exhausted: bool,
 }
 
+/// The loads that failed, which [`Action::Retry`] sends again.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+struct Failed {
+    /// The search from the top failed, so nothing is coming.
+    search: bool,
+    /// The deck's first fetch failed, so the deck context never came.
+    deck: bool,
+}
+
 /// Add cards for one visit. Starts with no card and no deck; send [`Action::Load`] with the deck.
 ///
 /// Every request takes a fresh [`Ticket`] from one [`Generation`] and waits in a list keyed by it, so each reply finds its own request. A search from the top marks its ticket as the stack's epoch; a reply to an older search, or a page of an older stack, changes nothing but the loading flag it held. A new [`Action::Load`] empties the list.
@@ -557,6 +575,7 @@ pub struct State {
     /// The ticket of the search that started the stack.
     epoch: Option<Ticket>,
     run: Run,
+    failed: Failed,
     /// The filter that produced the stack, which parking records.
     last_search: Option<CardQueryBuilder>,
     warming: bool,
@@ -628,6 +647,7 @@ impl State {
                 Vec::new()
             }
             Action::Refresh => self.refresh(),
+            Action::Retry => self.retry(),
             Action::Back => vec![Effect::Navigate(Destination::Previous)],
         };
         effects.extend(self.announce_related());
@@ -691,11 +711,12 @@ impl State {
     fn deck_loaded(&mut self, ticket: Ticket, deck: &Deck) -> Vec<Effect> {
         match self.take(ticket) {
             Some(Pending::Deck) => {
+                self.failed.deck = false;
                 let add_deck = AddDeck::from_deck(deck);
                 add_deck.seed(&mut self.filter, self.remembered);
                 self.deck = Some(add_deck);
                 let mut effects = vec![Effect::SetFilter(self.filter.clone())];
-                if self.stack.is_empty() {
+                if !self.stack.has_served() {
                     effects.push(Effect::Rerun);
                 }
                 effects
@@ -711,7 +732,7 @@ impl State {
         }
     }
 
-    /// Starts a new stack from the top with the live filter. On Search, once the deck is in, a filter Add would not serve asks for one instead.
+    /// Starts a new stack from the top with the live filter, the swiped cards kept behind it for undo. On Search, once the deck is in, a filter Add would not serve asks for one instead.
     fn fresh_search(&mut self) -> Vec<Effect> {
         let Some(deck_id) = self.deck_id else {
             return Vec::new();
@@ -719,7 +740,8 @@ impl State {
         let ticket = self.generation.next_ticket();
         self.epoch = Some(ticket);
         self.run.searching = false;
-        self.stack.reset();
+        self.failed.search = false;
+        self.stack.clear_ahead();
         self.last_search = None;
         self.run.exhausted = false;
         let mut effects = vec![Effect::StopEnter(Source::Search), Effect::EaseImages];
@@ -734,6 +756,14 @@ impl State {
             return effects;
         }
         let Ok(query) = add::normalized(&self.filter).build() else {
+            // Nothing to search on, as with no deck format and no filter:
+            // once the deck is in, say so rather than leave a blank ghost.
+            if self.deck.is_some() {
+                effects.push(Effect::Toast(Toast::normal(
+                    ToastKind::Warning,
+                    TRY_A_FILTER,
+                )));
+            }
             return effects;
         };
         self.run.searching = true;
@@ -773,17 +803,14 @@ impl State {
                 let mut effects = Vec::new();
                 if explains_empty && served.is_empty() {
                     let synergy = snapshot.synergy();
+                    // The ghost card says No cards match, so no toast repeats it.
                     effects.push(Effect::PileEnd {
                         deck_id,
                         kind: PileEndKind::Empty,
                         synergy,
                     });
-                    effects.push(Effect::Toast(Toast::normal(
-                        ToastKind::Warning,
-                        add::no_results_message(synergy, warming),
-                    )));
                 }
-                self.stack.replace(served);
+                self.stack.replace_ahead(served);
                 self.last_search = Some(*snapshot);
                 self.run.searching = false;
                 effects.extend(warned);
@@ -916,7 +943,7 @@ impl State {
                         },
                     });
                 }
-                vec![confirm(ToastKind::Success, UNDID_MOVE_TO_DECK)]
+                vec![confirm(ToastKind::Success, UNDID_MOVE_TO_MAINBOARD)]
             }
             _ => Vec::new(),
         }
@@ -1005,9 +1032,14 @@ impl State {
             return Vec::new();
         };
         match self.take(ticket) {
+            Some(Pending::Deck) => {
+                self.failed.deck = true;
+                Vec::new()
+            }
             Some(Pending::Search { .. }) => {
                 if self.epoch == Some(ticket) {
                     self.run.searching = false;
+                    self.failed.search = true;
                 }
                 Vec::new()
             }
@@ -1291,7 +1323,10 @@ impl State {
                 deck_id,
                 card_id,
             },
-            confirm(ToastKind::Success, MOVED_TO_DECK),
+            Effect::Confirm(
+                Toast::quick(ToastKind::Success, MOVED_TO_MAINBOARD)
+                    .with_chip(MOVED_TO_MAINBOARD_CHIP),
+            ),
         ]
     }
 
@@ -1392,6 +1427,32 @@ impl State {
         }
     }
 
+    /// Fetches the deck again if its first fetch failed, and searches again if the search from the top failed. The deck's reply reruns the search itself when the stack is empty.
+    fn retry(&mut self) -> Vec<Effect> {
+        let Some(deck_id) = self.deck_id else {
+            return Vec::new();
+        };
+        let mut effects = Vec::new();
+        if self.failed.deck {
+            self.failed.deck = false;
+            let ticket = self.wait(Pending::Deck);
+            effects.push(Effect::FetchDeck { ticket, deck_id });
+        }
+        if self.failed.search {
+            effects.extend(self.fresh_search());
+        }
+        effects
+    }
+
+    /// Whether the pile shows [`LOAD_FAILED`] with a Retry in place of its ghost: Search's search from the top failed, or the deck never came and nothing is on show.
+    #[must_use]
+    pub fn load_failed(&self) -> bool {
+        self.source == Source::Search
+            && !self.stack.has_served()
+            && !self.run.searching
+            && (self.failed.search || (self.failed.deck && self.deck.is_none()))
+    }
+
     /// Searches again from the top on Search, or reloads the maybeboard.
     fn refresh(&mut self) -> Vec<Effect> {
         let Some(deck_id) = self.deck_id else {
@@ -1416,6 +1477,7 @@ impl State {
         self.last_search = None;
         self.run.exhausted = false;
         self.run.searching = true;
+        self.failed.search = false;
         vec![
             Effect::StopEnter(Source::Search),
             Effect::EaseImages,
@@ -1513,12 +1575,44 @@ impl State {
         self.source == Source::Search
     }
 
+    /// The note the ghost card carries: [`NO_CARDS_MATCH`] when the filter left nothing to deal, a
+    /// search that came back empty or a maybeboard with cards none of which match. `None` while
+    /// cards show, while a search runs and for an empty maybeboard.
+    #[must_use]
+    pub fn ghost_note(&self) -> Option<&'static str> {
+        if self.pile() != Pile::Empty {
+            return None;
+        }
+        let matched_none = match self.source {
+            Source::Search => self.last_search.is_some(),
+            Source::Maybeboard => {
+                !self.filter.is_empty()
+                    && self.deck.as_ref().is_some_and(|d| !d.maybeboard.is_empty())
+            }
+        };
+        matched_none.then_some(NO_CARDS_MATCH)
+    }
+
+    /// The line under [`Self::ghost_note`] after an empty search with Synergy on, from
+    /// [`add::synergy_note`].
+    #[must_use]
+    pub fn ghost_synergy_note(&self) -> Option<&'static str> {
+        if self.source != Source::Search || self.ghost_note().is_none() {
+            return None;
+        }
+        let synergy = self
+            .last_search
+            .as_ref()
+            .is_some_and(CardQueryBuilder::synergy);
+        add::synergy_note(synergy, self.warming)
+    }
+
     /// What the pile area draws.
     #[must_use]
     pub fn pile(&self) -> Pile {
         match self.source {
             Source::Search if self.stack.current().is_some() => Pile::Cards,
-            Source::Search if !self.stack.is_empty() => {
+            Source::Search if self.stack.has_served() => {
                 if self.run.loading_more {
                     Pile::Loading
                 } else {
@@ -1559,7 +1653,7 @@ impl State {
     #[must_use]
     pub fn parked(&self) -> Option<ParkedStack> {
         let filter = self.last_search.clone()?;
-        if self.stack.is_empty() {
+        if !self.stack.has_served() {
             return None;
         }
         let (cards, index, history) = self.stack.park_state();

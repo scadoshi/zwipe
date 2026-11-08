@@ -249,7 +249,7 @@ fn resend_holds_the_cooldown_from_the_press_and_runs_it_from_the_reply() {
     let effects = state.update(Action::Resend);
     let ticket = ticket_of(&effects);
     assert_eq!(effects, vec![Effect::ResendVerification(ticket)]);
-    assert_eq!(state.resend_label(), "Sending...");
+    assert_eq!(state.resend_label(), "Sending…");
     assert_eq!(state.cooldown_secs(), 60);
     assert!(!state.can_resend());
     assert_eq!(
@@ -331,6 +331,36 @@ fn a_stray_tick_changes_nothing() {
 }
 
 #[test]
+fn a_showing_error_holds_save_but_a_password_s_never_does() {
+    let mut state = opened();
+    let _ = state.update(Action::OpenSheet(Sheet::Username));
+    assert!(!state.submit_held(Sheet::Username), "nothing showing yet");
+    edit(&mut state, Sheet::Username, Field::NewUsername, "ab");
+    assert!(state.submit_held(Sheet::Username));
+    edit(
+        &mut state,
+        Sheet::Username,
+        Field::NewUsername,
+        "goblin_king",
+    );
+    assert!(!state.submit_held(Sheet::Username));
+    let _ = state.update(Action::Save(Sheet::Username));
+    assert!(
+        state.error(Sheet::Username, Field::Password).is_some(),
+        "the empty password's line shows"
+    );
+    assert!(
+        !state.submit_held(Sheet::Username),
+        "a password line never holds Save"
+    );
+    let _ = state.update(Action::OpenSheet(Sheet::Password));
+    edit(&mut state, Sheet::Password, Field::NewPassword, "one");
+    edit(&mut state, Sheet::Password, Field::ConfirmPassword, "two");
+    assert!(state.error(Sheet::Password, Field::NewPassword).is_some());
+    assert!(!state.submit_held(Sheet::Password));
+}
+
+#[test]
 fn the_username_sheet_judges_each_field_while_it_holds_text() {
     let mut state = opened();
     assert_eq!(
@@ -364,7 +394,7 @@ fn save_with_a_bad_field_shows_every_line_and_sends_nothing() {
     assert_eq!(state.update(Action::Save(Sheet::Email)), none());
     assert_eq!(
         state.error(Sheet::Email, Field::NewEmail).as_deref(),
-        Some("Missing @ symbol")
+        Some("Enter a valid email address")
     );
     assert_eq!(
         state.error(Sheet::Email, Field::Password).as_deref(),
@@ -769,8 +799,8 @@ fn the_copy_matches_the_app() {
     assert_eq!(MoreItem::DeleteAccount.label(), "Delete account");
     assert_eq!(CANCEL, "Cancel");
     assert_eq!(DELETE_PASSWORD, "Password");
-    assert_eq!(DELETING, "Deleting...");
-    assert_eq!((SAVE, SAVING), ("Save changes", "Saving..."));
+    assert_eq!(DELETING, "Deleting…");
+    assert_eq!((SAVE, SAVING), ("Save changes", "Saving…"));
     let labels: Vec<&str> = [
         Row::Username,
         Row::Email,
@@ -835,15 +865,15 @@ fn the_copy_matches_the_app() {
         ),
         (
             "Delete account",
-            "This will permanently delete your account, all decks, and all card data. This cannot be undone.",
+            "This will permanently delete your account, all decks, and all card data. This can't be undone.",
             "Delete"
         )
     );
     assert_eq!(VERIFICATION_SENT, "Verification email sent");
-    assert_eq!(RESEND_LIMITED, "Please wait a moment");
+    assert_eq!(RESEND_LIMITED, "Wait a moment and try again");
     assert_eq!(EMAIL_VERIFIED, "Email verified");
     assert_eq!(NOT_VERIFIED, "Not verified yet. Check your inbox");
-    assert_eq!(PASSWORD_CHANGED, "Password change successful");
+    assert_eq!(PASSWORD_CHANGED, "Password changed");
 }
 
 #[test]

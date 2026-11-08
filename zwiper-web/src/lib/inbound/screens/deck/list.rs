@@ -1,4 +1,4 @@
-//! Decks: every deck the user has, with Group by, the Show row and its tags,
+//! Decks: every deck the user has, with Group by, Sort, the Show row and its tags,
 //! collapsible groups, and Create as the dock's `+` behind its gate.
 //!
 //! On a wide window the tag row stays unfolded and each group lays its rows
@@ -8,7 +8,7 @@
 use std::collections::HashSet;
 
 use components::icons::{DockIcon, PLUS};
-use components::{Chip, LoadFailed, TOAST_LONG};
+use components::{Chip, IdentityPips, LoadFailed, Pressable, TOAST_LONG};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::{ClientError, ZwipeClient};
@@ -16,9 +16,10 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::deck::DeckProfile;
 use zwipe_core::domain::deck::deck_tag::deck_tag_label;
-use zwipe_ui::deck::list::{self, GroupBy, Show};
+use zwipe_ui::deck::list::{self, GroupBy, Show, SortBy};
 use zwipe_ui::deck::{card_count, cards_label, command_zone, count_fits};
 use zwipe_ui::screens::deck_list;
+use zwipe_ui::telemetry::vocabulary::{DeckScreen, Screen};
 
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::ghost::{GhostChipRow, GhostShowRow};
@@ -26,11 +27,14 @@ use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, open
 use crate::inbound::router::Route;
 use crate::inbound::screens::deck::skeletons::DeckListSkeleton;
 use crate::inbound::shell::ScreenFrame;
+use crate::inbound::telemetry;
+use crate::outbound::deck_sort_store::DeckSortStore;
 use crate::outbound::session_store::SessionStore;
 
 /// The deck list screen.
 #[component]
 pub fn DeckList() -> Element {
+    telemetry::use_telemetry_screen(Screen::Deck(DeckScreen::List));
     let navigator = use_navigator();
     let client: Signal<ZwipeClient> = use_context();
     let mut session: Signal<Option<Session>> = use_context();
@@ -40,6 +44,12 @@ pub fn DeckList() -> Element {
     let mut hint_fired = use_signal(|| false);
 
     let mut group_by = use_signal(GroupBy::default);
+    // The order Decks was last left in, from browser storage.
+    let mut sort = use_signal(|| DeckSortStore::browser().load());
+    let mut set_sort = move |next| {
+        sort.set(next);
+        DeckSortStore::browser().save(next);
+    };
     let collapsed: Signal<HashSet<String>> = use_signal(HashSet::new);
     let mut show = use_signal(Show::default);
     let mut tags_open = use_signal(|| false);
@@ -100,7 +110,7 @@ pub fn DeckList() -> Element {
         });
         if at_limit {
             toast.warning(
-                "Verify your email to create more than 1 deck".to_string(),
+                "Verify your email to create more than one deck".to_string(),
                 ToastOptions::default().duration(TOAST_LONG),
             );
         } else {
@@ -116,7 +126,13 @@ pub fn DeckList() -> Element {
     let tags_present: Vec<(String, String)> =
         profiles.as_deref().map(list::all_tags).unwrap_or_default();
     let filter = show();
-    let shown: Option<Vec<DeckProfile>> = profiles.as_deref().map(|p| list::shown(p, &filter));
+    // Last changed and Price only when the server sends them; a remembered
+    // key it doesn't send sorts by name until it does.
+    let sort_keys = profiles.as_deref().map(SortBy::offered).unwrap_or_default();
+    let shown_sort = sort().within(&sort_keys);
+    let shown: Option<Vec<DeckProfile>> = profiles
+        .as_deref()
+        .map(|p| list::shown(p, &filter, shown_sort));
 
     rsx! {
         ScreenFrame {
@@ -129,6 +145,7 @@ pub fn DeckList() -> Element {
                 div { class: "flex-col web-deck-list deck-list-stack",
                     if loading {
                         GhostChipRow { label: 8, chips: vec![4, 6, 5, 3] }
+                        GhostChipRow { label: 4, chips: vec![4, 4, 6, 9] }
                         GhostShowRow { art: false }
                     } else if show_rows {
                         div { class: "chip-row",
@@ -140,6 +157,31 @@ pub fn DeckList() -> Element {
                                     onclick: move |_| group_by.set(option),
                                     "{option.label()}"
                                 }
+                            }
+                        }
+                        // The key chips pick, the last chip turns the order around.
+                        div { class: "chip-row",
+                            span { class: "stat-chip stat-chip-p1 chip-row-label", {deck_list::SORT} }
+                            for by in sort_keys {
+                                Chip {
+                                    key: "{by.label()}",
+                                    selected: shown_sort.by == by,
+                                    onclick: move |_| {
+                                        let mut next = sort();
+                                        next.by = by;
+                                        set_sort(next);
+                                    },
+                                    "{by.label()}"
+                                }
+                            }
+                            Chip {
+                                selected: false,
+                                onclick: move |_| {
+                                    let mut next = sort();
+                                    next.direction = next.direction.flipped();
+                                    set_sort(next);
+                                },
+                                "{sort().direction}"
                             }
                         }
                         div { class: "chip-row",
@@ -154,7 +196,11 @@ pub fn DeckList() -> Element {
                                     key: "{color.to_short_name()}",
                                     selected: filter.colors.contains(&color),
                                     onclick: move |_| show.write().toggle_color(color),
-                                    i { class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost" }
+                                    i {
+                                        class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
+                                        "aria-hidden": "true",
+                                    }
+                                    span { class: "sr-only", "{color.to_long_name()}" }
                                 }
                             }
                             if !tags_present.is_empty() {
@@ -257,9 +303,10 @@ fn DeckGroupSection(
     rsx! {
         div {
             class: if expanded { "card-group deck-group row-enter" } else { "card-group deck-group row-enter collapsed" },
-            div {
+            Pressable {
                 class: if expanded { "card-group-header group-collapsible expanded" } else { "card-group-header group-collapsible" },
-                onclick: move |_| {
+                expanded,
+                onpress: move |()| {
                     let mut set = collapsed.write();
                     if !set.remove(&group_key) {
                         set.insert(group_key.clone());
@@ -267,20 +314,15 @@ fn DeckGroupSection(
                 },
                 span { class: "card-row-arrow", "\u{25b8}" }
                 if let Some(pips) = pips.as_ref().filter(|p| !p.is_empty()) {
-                    span { class: "identity-pips",
-                        for color in pips.iter() {
-                            i {
-                                key: "{color.to_short_name()}",
-                                class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
-                            }
-                        }
-                    }
+                    IdentityPips { colors: pips.clone() }
                     "({count})"
                 } else {
                     "{header} ({count})"
                 }
             }
-            div { class: if expanded { "collapsible open" } else { "collapsible" },
+            div {
+                class: if expanded { "collapsible open" } else { "collapsible" },
+                inert: (!expanded).then_some(true),
                 div { class: "collapsible-inner", {children} }
             }
         }
@@ -297,9 +339,9 @@ fn DeckRow(profile: DeckProfile) -> Element {
     let art = command_zone::art(&profile).into_iter().map(str::to_owned);
     let deck_id = profile.id;
     rsx! {
-        div {
+        Pressable {
             class: "card-row deck-row row-enter",
-            onclick: move |_| {
+            onpress: move |()| {
                 navigator.push(Route::ViewDeck { deck_id });
             },
             div { class: "deck-list-row",
@@ -313,7 +355,7 @@ fn DeckRow(profile: DeckProfile) -> Element {
                         alt: "",
                     }
                 }
-                h3 { class: "font-light text-base tracking-wide deck-list-name",
+                h2 { class: "font-light text-base tracking-wide deck-list-name",
                     "{profile.name}"
                 }
                 // The pips, the count and the chips take the line under the name.

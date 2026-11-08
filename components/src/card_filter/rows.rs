@@ -237,7 +237,8 @@ fn ChipRow(mut draft: Signal<FilterDraft>, set: ChipSet, catalog: ReadSignal<Cat
                                     filter_chips::tap(set, &mut d.draft, &d.modes, &value);
                                 },
                                 if let Some(symbol) = option.symbol.as_ref() {
-                                    i { class: "ms ms-{symbol} ms-cost" }
+                                    i { class: "ms ms-{symbol} ms-cost", "aria-hidden": "true" }
+                                    span { class: "sr-only", "{option.label}" }
                                 } else {
                                     "{option.label}"
                                 }
@@ -300,7 +301,32 @@ fn RangeStepper(mut draft: Signal<FilterDraft>, stat: Stat, end: End, shown: Str
     }
 }
 
-/// A number box parsed as it loses focus: the exact mana value.
+/// How long typing rests before a number box writes to the draft, in
+/// milliseconds: long enough that `1` on the way to `12` is not applied.
+#[cfg(target_arch = "wasm32")]
+const NUMBER_SETTLE_MS: u32 = 300;
+
+/// Runs `commit` once typing in a box has rested for [`NUMBER_SETTLE_MS`].
+/// Each keystroke moves `keystrokes` on, and a timer that wakes to a newer
+/// count does nothing. Off the browser nothing is timed and `commit` runs at
+/// once.
+fn settle(mut keystrokes: Signal<u32>, commit: impl FnOnce() + 'static) {
+    let count = keystrokes.peek().wrapping_add(1);
+    keystrokes.set(count);
+    #[cfg(target_arch = "wasm32")]
+    spawn(async move {
+        gloo_timers::future::TimeoutFuture::new(NUMBER_SETTLE_MS).await;
+        if *keystrokes.peek() == count {
+            commit();
+        }
+    });
+    #[cfg(not(target_arch = "wasm32"))]
+    commit();
+}
+
+/// A number box for the exact mana value. It writes to the draft as typing
+/// rests, quietly passing over text that isn't a number yet, and on losing
+/// focus, where invalid text raises a toast and valid text is tidied.
 #[component]
 fn NumberBox(
     mut draft: Signal<FilterDraft>,
@@ -308,6 +334,7 @@ fn NumberBox(
     on_toast: Option<EventHandler<Toast>>,
 ) -> Element {
     let mut text = use_signal(|| field.text(&draft.peek().draft));
+    let keystrokes = use_signal(|| 0u32);
     rsx! {
         input {
             class: "input input-compact input-narrow input-number-single",
@@ -318,7 +345,14 @@ fn NumberBox(
             autocapitalize: "none",
             autocorrect: "off",
             spellcheck: "false",
-            oninput: move |e| text.set(e.value()),
+            oninput: move |e| {
+                text.set(e.value());
+                settle(keystrokes, move || {
+                    let typed = text.peek().clone();
+                    // Text that isn't a number yet waits for the blur's toast.
+                    draft.write().set_number(field, &typed, "").ok();
+                });
+            },
             onblur: move |_| {
                 let typed = text.peek().clone();
                 let result = draft.write().set_number(field, &typed, "");
@@ -331,7 +365,9 @@ fn NumberBox(
     }
 }
 
-/// A min box, `to` and a max box, each parsed as it loses focus.
+/// A min box, `to` and a max box. Each writes to the draft as typing rests,
+/// quietly passing over text that isn't a number yet, and on losing focus,
+/// where invalid text raises a toast.
 #[component]
 fn NumberPair(
     mut draft: Signal<FilterDraft>,
@@ -341,12 +377,23 @@ fn NumberPair(
 ) -> Element {
     let mut min_text = use_signal(|| min.text(&draft.peek().draft));
     let mut max_text = use_signal(|| max.text(&draft.peek().draft));
-    let mut commit = move |field: NumberField| {
-        let (typed, other) = if field == min {
+    let keystrokes = use_signal(|| 0u32);
+    let texts = move |field: NumberField| {
+        if field == min {
             (min_text.peek().clone(), max_text.peek().clone())
         } else {
             (max_text.peek().clone(), min_text.peek().clone())
-        };
+        }
+    };
+    let quiet = move |field: NumberField| {
+        settle(keystrokes, move || {
+            let (typed, other) = texts(field);
+            // Text that isn't a number yet waits for the blur's toast.
+            draft.write().set_number(field, &typed, &other).ok();
+        });
+    };
+    let mut commit = move |field: NumberField| {
+        let (typed, other) = texts(field);
         let result = draft.write().set_number(field, &typed, &other);
         if let Err(t) = result {
             raise(on_toast, t);
@@ -363,7 +410,10 @@ fn NumberPair(
                 autocapitalize: "none",
                 autocorrect: "off",
                 spellcheck: "false",
-                oninput: move |e| min_text.set(e.value()),
+                oninput: move |e| {
+                    min_text.set(e.value());
+                    quiet(min);
+                },
                 onblur: move |_| commit(min),
             }
             span { class: "text-muted", "to" }
@@ -376,7 +426,10 @@ fn NumberPair(
                 autocapitalize: "none",
                 autocorrect: "off",
                 spellcheck: "false",
-                oninput: move |e| max_text.set(e.value()),
+                oninput: move |e| {
+                    max_text.set(e.value());
+                    quiet(max);
+                },
                 onblur: move |_| commit(max),
             }
         }
@@ -384,8 +437,9 @@ fn NumberPair(
 }
 
 /// A searchable picker: the picks as removable pills, then the search box
-/// with its results floating above it. ↑ and ↓ move through the results and
-/// Enter picks the highlighted one.
+/// with its results in flow under it, so they push the rows below down
+/// rather than covering them. ↑ and ↓ move through the results, Enter picks
+/// the highlighted one, and a pick clears the search, which closes them.
 #[component]
 fn Picker(
     mut draft: Signal<FilterDraft>,
@@ -404,8 +458,12 @@ fn Picker(
     let lit = highlight().min(results.len().saturating_sub(1));
     let results_for_keys = results.clone();
     let mut pick = move |value: String| {
-        let d = &mut *draft.write();
-        field.pick(&mut d.draft, &d.modes, &value);
+        {
+            let d = &mut *draft.write();
+            field.pick(&mut d.draft, &d.modes, &value);
+        }
+        query.set(String::new());
+        highlight.set(0);
     };
     rsx! {
         if !picked.is_empty() {
@@ -422,22 +480,6 @@ fn Picker(
                                 }
                             },
                             "\u{00d7}"
-                        }
-                    }
-                }
-            }
-        }
-        if !results.is_empty() {
-            div { class: "search-float-anchor",
-                div { class: "search-float-results",
-                    for (i, value) in results.into_iter().enumerate() {
-                        div {
-                            key: "{value}",
-                            class: if i == lit { "chip-unselected search-float-chip card-filter-highlight" } else { "chip-unselected search-float-chip" },
-                            style: result_delays(i),
-                            onmousedown: move |e| e.prevent_default(),
-                            onclick: move |_| pick(value.clone()),
-                            "{value}"
                         }
                     }
                 }
@@ -479,18 +521,28 @@ fn Picker(
                 },
             }
         }
+        if !results.is_empty() {
+            div { class: "card-filter-results",
+                for (i, value) in results.into_iter().enumerate() {
+                    div {
+                        key: "{value}",
+                        class: if i == lit { "chip-unselected card-filter-result card-filter-highlight" } else { "chip-unselected card-filter-result" },
+                        style: result_delay(i),
+                        onmousedown: move |e| e.prevent_default(),
+                        onclick: move |_| pick(value.clone()),
+                        "{value}"
+                    }
+                }
+            }
+        }
     }
 }
 
 /// How far apart the results ease in, in milliseconds.
 const RESULT_STAGGER_MS: usize = 40;
 
-/// How long after its entrance a result's fade starts, in milliseconds.
-const RESULT_FADE_MS: usize = 250;
-
-/// The `i`th result's entrance and fade delays.
-fn result_delays(i: usize) -> String {
+/// The `i`th result's entrance delay.
+fn result_delay(i: usize) -> String {
     let enter = i.saturating_mul(RESULT_STAGGER_MS);
-    let fade = RESULT_FADE_MS.saturating_add(enter);
-    format!("animation-delay: {enter}ms, {fade}ms;")
+    format!("animation-delay: {enter}ms;")
 }

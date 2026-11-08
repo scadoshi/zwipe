@@ -27,6 +27,7 @@ use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCa
 use zwipe_ui::deck::form::Slot;
 use zwipe_ui::deck_cards::{self, Boards, Bursts, Write, Zone};
 use zwipe_ui::deck_signals::{Crossing, budget_crossing, land_count, land_crossing};
+use zwipe_ui::screens;
 use zwipe_ui::stores::filters::FilterScope;
 use zwipe_ui::stores::undo::{UndoAction, create_board_field};
 use zwipe_ui::timing::QUANTITY_FLUSH;
@@ -40,6 +41,7 @@ use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, open_and_record_hint};
 use crate::inbound::chrome::page_keys::{focus_by_id, use_page_keys, use_undo_key};
 use crate::inbound::screens::deck::view::cards::zone as zone_of;
+use crate::inbound::telemetry;
 use crate::outbound::timer;
 
 /// What a row is, which decides its actions.
@@ -83,7 +85,6 @@ struct RowActions {
     mvp: Option<bool>,
     on_star: Option<EventHandler<()>>,
     on_print: Option<EventHandler<Card>>,
-    drag: Option<EventHandler<()>>,
 }
 
 /// What the view lists, in order, after the pass and the Boards and Show
@@ -224,7 +225,6 @@ pub(crate) struct Editor {
     pub printing: Signal<Option<(Card, Option<Slot>)>>,
     pub printing_open: Signal<bool>,
     pub filter_open: Signal<bool>,
-    pub dragging: Signal<Option<Uuid>>,
     pub hint_open: Signal<bool>,
     pub listing: Memo<Listed>,
     pub meta: Memo<HashMap<Uuid, Meta>>,
@@ -235,7 +235,6 @@ pub(crate) struct Editor {
     pub apply_undo: Callback<()>,
     pub reset_filter: Callback<()>,
     pub reload: Callback<()>,
-    pub on_drop: Callback<Board>,
 }
 
 impl Editor {
@@ -249,6 +248,15 @@ impl Editor {
     }
 }
 
+/// Whether a failed deck fetch raises its own toast.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum LoadFailure {
+    /// The fetch toasts, on a page with nothing else to say it.
+    Toast,
+    /// The fetch stays quiet: the host page's own fetch toasts and draws the failure.
+    Quiet,
+}
+
 /// The engine for `deck_id`: fetches the deck and its tokens, parks the
 /// filter on leave, and binds the keys (↑ ↓ move the selection, `+` and `-`
 /// change its quantity, F flips it, `/` focuses Quick add, Ctrl+Z undoes).
@@ -256,9 +264,10 @@ impl Editor {
     clippy::too_many_lines,
     reason = "the engine's handlers share its signals and read as one piece"
 )]
-pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
+pub(crate) fn use_deck_editor(deck_id: Uuid, on_failure: LoadFailure) -> Editor {
     let toast = use_toast();
     let authed = use_authed();
+    let usage = telemetry::use_usage();
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
     let CardStores {
@@ -291,7 +300,6 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
     let mut printing: Signal<Option<(Card, Option<Slot>)>> = use_signal(|| None);
     let printing_open = use_signal(|| false);
     let filter_open = use_signal(|| false);
-    let mut dragging: Signal<Option<Uuid>> = use_signal(|| None);
     let hint_open = use_signal(|| false);
     let mut hint_fired = use_signal(|| false);
 
@@ -342,12 +350,12 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
     // Fetches the deck, first on mount and again after a fix made elsewhere.
     let reload = use_callback(move |()| {
         spawn(async move {
-            let Some(fetched) = authed
-                .run("load_deck", |c, s| async move {
-                    c.fetch_deck(deck_id, &s).await
-                })
-                .await
-            else {
+            let fetch = |c: ZwipeClient, s: Session| async move { c.fetch_deck(deck_id, &s).await };
+            let fetched = match on_failure {
+                LoadFailure::Toast => authed.run("load_deck", fetch).await,
+                LoadFailure::Quiet => authed.run_quiet("load_deck", fetch).await,
+            };
+            let Some(fetched) = fetched else {
                 return;
             };
             let held = zone_of(&fetched);
@@ -439,6 +447,9 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
             else {
                 return;
             };
+            usage
+                .peek()
+                .record_removal(deck_id, entry.card.scryfall_data.oracle_id);
             removed_rows.write().insert(card_id, entry.clone());
             if record {
                 let baseline = bursts.peek().baseline(card_id).unwrap_or(current);
@@ -589,7 +600,7 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
         });
         if record {
             toast.info(
-                format!("Moved to {}", target.display_name()),
+                screens::deck_cards::moved_to(target),
                 ToastOptions::default().duration(TOAST_QUICK),
             );
         }
@@ -884,12 +895,6 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
     }));
     use_undo_key(Callback::new(move |()| apply_undo.call(())));
 
-    let on_drop = use_callback(move |board: Board| {
-        if let Some(card_id) = dragging.take() {
-            move_to_board.call((card_id, board, true));
-        }
-    });
-
     Editor {
         deck,
         entries,
@@ -909,7 +914,6 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
         printing,
         printing_open,
         filter_open,
-        dragging,
         hint_open,
         listing,
         meta,
@@ -920,7 +924,6 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
         apply_undo,
         reset_filter,
         reload,
-        on_drop,
     }
 }
 
@@ -937,7 +940,6 @@ pub(crate) fn row_view(
         mut face,
         mut printing,
         mut printing_open,
-        mut dragging,
         change_quantity,
         move_to_board,
         toggle_mvp,
@@ -955,7 +957,6 @@ pub(crate) fn row_view(
             mvp,
             on_star,
             on_print,
-            drag,
         } = match kind {
             RowKind::Main { mvp } => RowActions {
                 on_qty: Some(EventHandler::new(move |d| {
@@ -971,7 +972,6 @@ pub(crate) fn row_view(
                     printing.set(Some((c, None)));
                     printing_open.set(true);
                 })),
-                drag: Some(EventHandler::new(move |()| dragging.set(Some(card_id)))),
             },
             RowKind::Board(b) => RowActions {
                 on_qty: Some(EventHandler::new(move |d| {
@@ -985,7 +985,6 @@ pub(crate) fn row_view(
                     printing.set(Some((c, None)));
                     printing_open.set(true);
                 })),
-                drag: Some(EventHandler::new(move |()| dragging.set(Some(card_id)))),
                 ..RowActions::default()
             },
             RowKind::Zone(slot) => RowActions {
@@ -1014,7 +1013,6 @@ pub(crate) fn row_view(
                     on_toggle_mvp: on_star,
                     price_currency: cur,
                     on_printing: on_print,
-                    on_drag_start: drag,
                 }
             }
         }

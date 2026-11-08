@@ -167,7 +167,7 @@ Builder = filter clone with `set_is_token(false)`, `set_limit(25)`, `set_offset(
    - `synergy_warming = !synergy_applied`.
    - `related_ids` = printing ids (`card_profile.scryfall_data_id`) of `cards[related_from..]`; `related_announced = false`.
    - Drop cards whose oracle id is in `deck_cards_ids`.
-   - If nothing is left: telemetry `record_pile_end(deck_id, PileEndKind::Empty, synergy)` and toast warning (NORMAL): "No results for this filter", plus, when synergy is on, either "; Synergy is warming up, so all cards were searched" (warming) or "; tap Synergy to turn it off". Full examples: `No results for this filter; tap Synergy to turn it off`.
+   - If nothing is left: telemetry `record_pile_end(deck_id, PileEndKind::Empty, synergy)`, and the ghost card reads "No cards match" (`NO_CARDS_MATCH`), with a line under it when Synergy was on (`add::synergy_note`): "Synergy is on, turn it off to search everything", or "Synergy is warming up, so all cards were searched" while it warms. No toast.
    - `stack.replace(served)`, `last_search_filter = snapshot`, `is_loading_cards = false`.
    - On Err: `is_loading_cards = false` (the facade already toasted the error).
 
@@ -342,7 +342,6 @@ Triggered from `advance_after_commit` when the cursor is within 5 of the end.
 | reset at default | warning | Filter already at default | QUICK |
 | reset | info | Filter reset | QUICK |
 | gate refuses blank query | warning | Try a filter to start swiping | NORMAL |
-| empty result | warning | No results for this filter[; Synergy is warming up, so all cards were searched \| ; tap Synergy to turn it off] | NORMAL |
 | related cards begin | info | That's every synergy pick. Showing cards like your deck | NORMAL |
 | maybeboard: promote undo, already reversed | info | Already changed | QUICK |
 | maybeboard: undo promote | success | Undid move to deck | QUICK |
@@ -633,7 +632,7 @@ Hint: once `deck_entries` becomes non-empty for the first time, `open_and_record
    - **QuickAdd** (see 3.6).
    - **Group by** row: label chip "Group by", chips "Type", "Mana value", "Color", "Card role" (`GroupByOption::all()`, single select). Tap → set collapse flag, set the option (the pass reruns).
    - **Boards** row: label "Boards", chips "Main", "Maybe", "Side" (multi-select). Each tap toggles; if all three would be off, "Main" snaps back on. Set the collapse flag, bump the counter. "Maybe" is disabled when the deck has no maybeboard cards and it is not already on; same for "Side" with the sideboard.
-   - **Show** row: label "Show", chips "Tokens" (toggle `show_tokens`), "Command zone" (toggle `show_command_zone`), "Art" (toggle row art thumbnails).
+   - **Show** row: label "Show", chips "Tokens" (toggle `show_tokens`), "Command zone" (toggle `show_command_zone`; only where the format has a command zone or the zone holds a card, `Zone::offers_chip`), "Art" (toggle row art thumbnails).
 5. **Sections**, in this order:
    1. **Tokens** (if `show_tokens` and the token list is loaded and non-empty): collapsible group "Tokens ({n})", rows sorted by the builder's sort or Name. Token rows are plain (qty 1, no actions besides the defaults Flip/Image). The filter does not apply to tokens.
    2. **Maybeboard** (if `show_maybe` and non-empty after the filter): entries on the maybeboard, filtered with the builder's criteria when non-empty, sorted with `cards::sort_deck_entries(key or Name, direction)`; group "Maybeboard ({count})" (count = rows). Rows: qty, qty stepper, move buttons for `current_board = Maybeboard`, Printing. No star.
@@ -909,7 +908,7 @@ Read on 2026-10-30 from `zwipe-tui/src`. The TUI was being restructured while I 
 11. **Land and budget signals**: no running land count or "Land target reached ({target})", no running price total or "Deck at {pct:.2}% of your {amount} budget". The TUI header count does add swipes.
 12. **Stack cap**: no 500-card cap ("Card stack limit reached, please refresh your search to continue") and no "Approaching the card stack limit..." every 100 from 400.
 13. **End of results**: app = toast warning "End of results" + "No cards" skeleton that accepts a down-pull (60 px) undo; TUI = "No more cards match this deck." and undo via `u`/Down (equivalent behavior, different text, no toast).
-14. **Empty first page**: app toasts "No results for this filter" (+ synergy suffix) and records a pile-end; TUI shows "No more cards match this deck." (exhausted on an empty first page).
+14. **Empty first page**: app shows "No cards match" on the ghost card (no toast) and records a pile-end; TUI shows "No more cards match this deck." (exhausted on an empty first page).
 15. **related_from**: the app tracks every related printing id across all pages and announces once per fresh stack when the first one reaches the top (toast, NORMAL, no trailing period), plus telemetry. The TUI only checks the first page that carried `related_from`, and only that exact card; text has a trailing period.
 16. **Card info**: the app shows image + "Prices: $x | €y | z TIX", "Set: ...", "Released: ...", "Artist: ..." under it, and keeps rules text in the eye details sheet (with keywords, card roles, oracle tags, Flip, Printings). The TUI shows rules text inline and only the set name; no prices, release date, artist, keywords, roles or tags.
 17. **DFC**: the app shows one face at a time with a Flip control; the TUI prints all faces stacked with "//" and shows only the primary image.

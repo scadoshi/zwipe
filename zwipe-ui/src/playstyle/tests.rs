@@ -395,31 +395,31 @@ fn profile_summary_counts_decks_with_the_top_set_and_color() {
     assert_eq!(summary.decks, "7");
     assert_eq!(
         summary.color_set,
-        Some(value(&[White, Blue, Red], "(4)")),
+        Some(value(&[White, Blue, Red], "4 decks")),
         "pips in WUBRG order whatever order the server sent"
     );
-    assert_eq!(summary.color, Some(value(&[Blue], "(5)")));
+    assert_eq!(summary.color, Some(value(&[Blue], "5 decks")));
 
     let summary = profile_summary(&profile(1, vec![color("B", 1)], Some(top(&["B"], 1))));
     assert_eq!(summary.decks, "1");
-    assert_eq!(summary.color_set, Some(value(&[Black], "(1)")));
-    assert_eq!(summary.color, Some(value(&[Black], "(1)")));
+    assert_eq!(summary.color_set, Some(value(&[Black], "1 deck")));
+    assert_eq!(summary.color, Some(value(&[Black], "1 deck")));
 }
 
 #[test]
 fn profile_summary_omits_what_the_profile_lacks() {
     let summary = profile_summary(&profile(3, vec![color("U", 2)], None));
     assert_eq!(summary.color_set, None, "no identity repeats");
-    assert_eq!(summary.color, Some(value(&[Blue], "(2)")));
+    assert_eq!(summary.color, Some(value(&[Blue], "2 decks")));
 
     let summary = profile_summary(&profile(2, vec![], Some(top(&[], 2))));
-    assert_eq!(summary.color_set, Some(value(&[], "(2)")));
+    assert_eq!(summary.color_set, Some(value(&[], "2 decks")));
     assert_eq!(summary.color, None, "every deck colorless");
 
     let summary = profile_summary(&profile(2, vec![color("C", 2), color("G", 1)], None));
     assert_eq!(
         summary.color,
-        Some(value(&[Green], "(1)")),
+        Some(value(&[Green], "1 deck")),
         "a code outside WUBRG is skipped"
     );
 }
@@ -451,7 +451,7 @@ fn bar(key: &str, label: &str, count: u64, pct: u32) -> Bar {
 }
 
 #[test]
-fn role_bars_keep_the_order_sent_and_abbreviate_like_the_deck_chart() {
+fn role_bars_keep_the_order_sent_and_name_each_role() {
     let roles = [
         HttpProfileRole {
             role: "sacrifice".to_owned(),
@@ -469,8 +469,8 @@ fn role_bars_keep_the_order_sent_and_abbreviate_like_the_deck_chart() {
     assert_eq!(
         role_bars(&roles, &tags),
         vec![
-            bar("sacrifice", "sacrf", 50, 100),
-            bar("ramp", "ramp", 1, 4)
+            bar("sacrifice", "Sacrifice", 50, 100),
+            bar("ramp", "Ramp", 1, 4)
         ],
         "a nonzero bar is at least the 4% sliver"
     );
@@ -506,7 +506,7 @@ fn tag_rows_show_the_top_ten_while_roles_read_every_tag_sent() {
         .map(|i| profile_tag(&format!("removal-{i:02}"), Some("removal"), 1, 1, 1.0))
         .collect();
     tags.push(profile_tag("mana-rock", Some("ramp"), 1, 1, 0.5));
-    let rows = tag_rows(&tags);
+    let rows = tag_rows(&tags, 1);
     assert_eq!(rows.len(), TAG_TABLE_ROWS);
     assert!(rows.iter().all(|r| r.slug.starts_with("removal-")));
     assert_eq!(role_tags(&tags, "ramp"), vec!["mana-rock"]);
@@ -521,7 +521,7 @@ fn tag_rows_keep_the_order_sent_and_scale_impact_to_the_top_tag() {
         profile_tag("typal-goblin", None, 1, 2, 0.01),
         profile_tag("blink", None, 1, 1, 0.0),
     ];
-    let rows = tag_rows(&tags);
+    let rows = tag_rows(&tags, 1);
     let got: Vec<(&str, u32, u32, Option<u32>)> = rows
         .iter()
         .map(|r| (r.slug.as_str(), r.decks, r.cards, r.impact))
@@ -537,26 +537,86 @@ fn tag_rows_keep_the_order_sent_and_scale_impact_to_the_top_tag() {
         ],
         "the order sent, impact rounded against the top score"
     );
-    assert_eq!(tag_rows(&[]), Vec::<TagRow>::new());
+    assert_eq!(tag_rows(&[], 1), Vec::<TagRow>::new());
+}
+
+#[test]
+fn tag_rows_rank_only_tags_in_enough_decks() {
+    let tags = [
+        profile_tag("sacrifice-outlet", Some("sacrifice"), 6, 23, 1.6),
+        profile_tag("gives-unblockable", None, 1, 1, 1.2),
+        profile_tag("treasure", Some("ramp"), 3, 40, 0.8),
+        profile_tag("aristocrats", Some("sacrifice"), TAG_MIN_DECKS, 9, 0.4),
+    ];
+    let rows = tag_rows(&tags, 7);
+    let got: Vec<(&str, Option<u32>)> = rows.iter().map(|r| (r.slug.as_str(), r.impact)).collect();
+    assert_eq!(
+        got,
+        vec![
+            ("sacrifice-outlet", Some(100)),
+            ("treasure", Some(50)),
+            ("aristocrats", Some(25)),
+        ],
+        "a tag in one deck of seven is left out, whatever its score"
+    );
+    assert_eq!(
+        role_tags(&tags, "sacrifice"),
+        vec!["sacrifice-outlet", "aristocrats"]
+    );
+}
+
+#[test]
+fn tag_rows_rescale_impact_among_the_ranked_tags() {
+    let tags = [
+        profile_tag("gives-unblockable", None, 1, 1, 2.0),
+        profile_tag("treasure", Some("ramp"), 3, 40, 1.0),
+        profile_tag("blink", None, 2, 4, 0.5),
+    ];
+    let rows = tag_rows(&tags, 3);
+    let got: Vec<(&str, Option<u32>)> = rows.iter().map(|r| (r.slug.as_str(), r.impact)).collect();
+    assert_eq!(
+        got,
+        vec![("treasure", Some(100)), ("blink", Some(50))],
+        "the top ranked tag reads 100, not the dropped one"
+    );
+}
+
+#[test]
+fn tag_rows_rank_every_tag_for_a_single_deck() {
+    let tags = [
+        profile_tag("gives-unblockable", None, 1, 1, 2.0),
+        profile_tag("treasure", Some("ramp"), 1, 4, 1.0),
+    ];
+    assert_eq!(
+        tag_rows(&tags, 1).len(),
+        2,
+        "one deck, so every tag is in all of them"
+    );
 }
 
 #[test]
 fn tag_rows_round_impact_to_the_nearest_whole() {
-    let rows = tag_rows(&[
-        profile_tag("a", None, 1, 1, 3.0),
-        profile_tag("b", None, 1, 1, 2.0),
-        profile_tag("c", None, 1, 1, 1.0),
-    ]);
+    let rows = tag_rows(
+        &[
+            profile_tag("a", None, 1, 1, 3.0),
+            profile_tag("b", None, 1, 1, 2.0),
+            profile_tag("c", None, 1, 1, 1.0),
+        ],
+        1,
+    );
     let got: Vec<Option<u32>> = rows.iter().map(|r| r.impact).collect();
     assert_eq!(got, vec![Some(100), Some(67), Some(33)]);
 }
 
 #[test]
 fn tag_rows_with_no_score_show_no_impact() {
-    let rows = tag_rows(&[
-        profile_tag("treasure", None, 2, 5, 0.0),
-        profile_tag("blink", None, 1, 3, 0.0),
-    ]);
+    let rows = tag_rows(
+        &[
+            profile_tag("treasure", None, 2, 5, 0.0),
+            profile_tag("blink", None, 1, 3, 0.0),
+        ],
+        1,
+    );
     let got: Vec<(u32, u32, Option<u32>)> =
         rows.iter().map(|r| (r.decks, r.cards, r.impact)).collect();
     assert_eq!(

@@ -15,6 +15,7 @@ use zwipe_core::domain::user::models::settings::{
 };
 use zwipe_core::http::contracts::user::HttpUpdateSettings;
 use zwipe_ui::screens::config;
+use zwipe_ui::telemetry::vocabulary::{ProfileScreen, Screen};
 
 use crate::domain::settings::{self, RequestSeq};
 use crate::inbound::chrome::authed::use_authed;
@@ -23,6 +24,7 @@ use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_
 use crate::inbound::screens::config::exceptions::ExceptionsSheet;
 pub(crate) use crate::inbound::screens::config::themes::{ThemesSheet, use_toggle_dark_mode};
 use crate::inbound::shell::ScreenFrame;
+use crate::inbound::telemetry;
 use crate::outbound::session_store::SessionStore;
 
 /// The update that changes only what `edit` sets.
@@ -46,6 +48,7 @@ fn update(edit: impl FnOnce(&mut HttpUpdateSettings)) -> HttpUpdateSettings {
 /// before that click, and a reply overtaken by a newer click is ignored.
 #[component]
 pub fn Config() -> Element {
+    telemetry::use_telemetry_screen(Screen::Profile(ProfileScreen::Settings));
     let theme: Signal<ThemeConfig> = use_context();
     let mut pip_style: Signal<PipStyle> = use_context();
     let mut session: Signal<Option<Session>> = use_context();

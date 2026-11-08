@@ -3,10 +3,11 @@
 //! The list carries the deck cards screen's chip-row grammar: a single-select
 //! "Group by" row that folds the list into `card-group-header` sections
 //! (format, color identity, or tag: a deck with several tags appears under
-//! each), and a "Show" filter row seeded from the decks themselves (color
-//! pips, deck tags, descriptive tags) with All as the reset. Both are
-//! ephemeral per visit: with the 20-deck cap there is no state worth
-//! persisting.
+//! each), a "Sort" row whose key chips and direction chip match the filter
+//! sheet's Sort by and Sort order, and a "Show" filter row seeded from the
+//! decks themselves (color pips, deck tags, descriptive tags) with All as the
+//! reset. Group by and Show last one visit; the sort lasts the session, in
+//! `DeckSortMemory`.
 //!
 //! What the screen knows and does is `zwipe_ui::screens::deck_list`; this
 //! file draws its state and performs its effects.
@@ -14,7 +15,7 @@
 use std::iter;
 
 use components::icons::{self};
-use components::{Chip, DockAction, LoadFailed};
+use components::{Chip, DockAction, IdentityPips, LoadFailed, Pressable};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use dioxus_primitives::toast::{Toasts, use_toast};
@@ -25,11 +26,12 @@ use zwipe_core::domain::deck;
 use zwipe_core::domain::deck::deck_profile::DeckProfile;
 use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_ui::deck::command_zone;
-use zwipe_ui::deck::list::{self, GroupBy};
+use zwipe_ui::deck::list::{self, GroupBy, Sort, SortBy};
 use zwipe_ui::screens::deck_list::{self, Action, Destination, Effect, State, Status};
 
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::hint_dialog::OneTimeHintDialog;
+use crate::inbound::components::navigation::deck_opener::DeckOpener;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen};
 use crate::inbound::components::{hint_dialog, ui_toast};
@@ -37,6 +39,12 @@ use crate::inbound::router::Router;
 use crate::inbound::screens::deck::components::skeletons::{
     ChipGhost, ChipRowGhost, DeckListSkeleton,
 };
+
+/// The deck list's sort for the session, provided above the router so a
+/// visit starts where the last one left it. In memory only: an app restart
+/// goes back to Name, A to Z.
+#[derive(Clone, Copy)]
+pub(crate) struct DeckSortMemory(pub(crate) Signal<Sort>);
 
 /// The deck list's model with the handles that perform its effects. Copy,
 /// so every handler and task holds its own.
@@ -49,6 +57,8 @@ struct Driver {
     session: Signal<Option<Session>>,
     client: Signal<ZwipeClient>,
     hint_open: Signal<bool>,
+    opener: DeckOpener,
+    sort_memory: DeckSortMemory,
 }
 
 impl Driver {
@@ -70,6 +80,8 @@ impl Driver {
             mut session,
             client,
             hint_open,
+            opener,
+            sort_memory,
             ..
         } = self;
         match effect {
@@ -110,9 +122,16 @@ impl Driver {
                 hint_dialog::open_and_record_hint(hint.key(), session, client, hint_open);
             }
             Effect::Navigate(destination) => {
+                if let Destination::Deck(deck_id) = destination {
+                    opener.record(deck_id, Router::DeckList {});
+                }
                 navigator.push(route(destination));
             }
             Effect::Toast(warning) => ui_toast::raise(toast, warning),
+            Effect::RememberSort(sort) => {
+                let DeckSortMemory(mut memory) = sort_memory;
+                memory.set(sort);
+            }
         }
     }
 }
@@ -141,21 +160,15 @@ fn DeckGroupSection(
     rsx! {
         div {
             class: if expanded { "card-group deck-group row-enter" } else { "card-group deck-group row-enter collapsed" },
-            div {
+            Pressable {
                 class: if expanded { "card-group-header group-collapsible expanded" } else { "card-group-header group-collapsible" },
-                onclick: move |_| ontoggle.call(()),
+                expanded,
+                onpress: move |()| ontoggle.call(()),
                 span { class: "card-row-arrow", "▸" }
                 if let Some(pips) = pips.as_ref().filter(|p| !p.is_empty()) {
                     // Same wrapper the deck rows use, so a group's pips are the
                     // size of the pips on the decks beneath it.
-                    span { class: "identity-pips",
-                        for color in pips.iter() {
-                            i {
-                                key: "{color.to_short_name()}",
-                                class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
-                            }
-                        }
-                    }
+                    IdentityPips { colors: pips.clone() }
                     "({count})"
                 } else {
                     "{header} ({count})"
@@ -163,6 +176,7 @@ fn DeckGroupSection(
             }
             div {
                 class: if expanded { "collapsible open" } else { "collapsible" },
+                inert: (!expanded).then_some(true),
                 div { class: "collapsible-inner", {children} }
             }
         }
@@ -178,9 +192,9 @@ fn DeckRow(profile: DeckProfile, onopen: EventHandler) -> Element {
     let pips = list::identity_colors(&profile);
     let art = command_zone::art(&profile);
     rsx! {
-        div {
+        Pressable {
             class: "card-row deck-row row-enter",
-            onclick: move |_| onopen.call(()),
+            onpress: move |()| onopen.call(()),
             div { class: "deck-list-row",
                 // The command zone's art leads the row beside the name. Two
                 // crops (a pair of partners, or oathbreaker + signature spell)
@@ -195,7 +209,7 @@ fn DeckRow(profile: DeckProfile, onopen: EventHandler) -> Element {
                         alt: "",
                     }
                 }
-                h3 { class: "font-light text-base tracking-wide deck-list-name",
+                h2 { class: "font-light text-base tracking-wide deck-list-name",
                     {profile.name.to_string()}
                 }
                 // The pips, the count and the chips take the line under the name.
@@ -247,14 +261,17 @@ fn DeckRow(profile: DeckProfile, onopen: EventHandler) -> Element {
 /// Screen displaying all user's decks with navigation to view/edit.
 #[component]
 pub fn DeckList() -> Element {
+    let sort_memory: DeckSortMemory = use_context();
     let driver = Driver {
-        model: use_signal(State::new),
+        model: use_signal(|| State::with_sort(*sort_memory.0.peek())),
         navigator: use_navigator(),
         toast: use_toast(),
         authed: use_authed(Screen::Deck(DeckScreen::List)),
+        opener: use_context(),
         session: use_context(),
         client: use_context(),
         hint_open: use_signal(|| false),
+        sort_memory,
     };
     let decks_hint_open = driver.hint_open;
     let session = driver.session;
@@ -271,6 +288,8 @@ pub fn DeckList() -> Element {
     // loaded-and-empty list, or a load error.
     let show_rows = state.chips_shown();
     let group_by = state.group_by();
+    let sort = state.sort();
+    let sort_keys = state.sort_keys();
     let all_on = state.show().is_all();
     let picked_colors = state.show().colors.clone();
     let picked_tags = state.show().tags.clone();
@@ -306,10 +325,18 @@ pub fn DeckList() -> Element {
                     // never a selected chip that vanishes), and the
                     // deck-derived tags fold behind the Tags chip.
                     if loading {
-                        // Group by, then Show: All, the five pips, Tags.
+                        // Group by, Sort, then Show: All, the five pips, Tags.
                         ChipRowGhost {
                             label: deck_list::GROUP_BY,
                             chips: GroupBy::ALL.map(|option| ChipGhost::Text(option.label().to_string())).to_vec(),
+                        }
+                        ChipRowGhost {
+                            label: deck_list::SORT,
+                            chips: SortBy::offered(&[])
+                                .into_iter()
+                                .map(|by| ChipGhost::Text(by.label().to_string()))
+                                .chain(iter::once(ChipGhost::Text(sort.direction.to_string())))
+                                .collect::<Vec<_>>(),
                         }
                         ChipRowGhost {
                             label: deck_list::SHOW,
@@ -330,6 +357,23 @@ pub fn DeckList() -> Element {
                                 }
                             }
                         }
+                        // The key chips pick, the last chip turns the order around.
+                        div { class: "chip-row",
+                            span { class: "stat-chip stat-chip-p1 chip-row-label", {deck_list::SORT} }
+                            for by in sort_keys {
+                                Chip {
+                                    key: "{by.label()}",
+                                    selected: sort.by == by,
+                                    onclick: move |_| driver.dispatch(Action::PickSort(by)),
+                                    "{by.label()}"
+                                }
+                            }
+                            Chip {
+                                selected: false,
+                                onclick: move |_| driver.dispatch(Action::FlipSortDirection),
+                                "{sort.direction}"
+                            }
+                        }
                         div { class: "chip-row",
                             span { class: "stat-chip stat-chip-p1 chip-row-label", {deck_list::SHOW} }
                             Chip {
@@ -342,7 +386,11 @@ pub fn DeckList() -> Element {
                                     key: "{color.to_short_name()}",
                                     selected: picked_colors.contains(&color),
                                     onclick: move |_| driver.dispatch(Action::ToggleColor(color)),
-                                    i { class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost" }
+                                    i {
+                                        class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
+                                        "aria-hidden": "true",
+                                    }
+                                    span { class: "sr-only", "{color.to_long_name()}" }
                                 }
                             }
                             // The Tags fold chip shows only when some deck has a tag.

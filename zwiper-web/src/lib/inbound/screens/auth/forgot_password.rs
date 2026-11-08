@@ -1,7 +1,7 @@
 //! Forgot password: the email field as a panel headed with the screen's
 //! name, under the hero and beside the featured flavor card on a wide
 //! window, over it below the breakpoint, `Send reset link` full width under it, then `Back to
-//! login` and `Create profile` as chips beneath. A sent link returns to
+//! login` and `Create account` as chips beneath. A sent link returns to
 //! Login in this screen's place with the email filled in and says a link is
 //! on its way.
 //!
@@ -16,8 +16,9 @@ use dioxus_primitives::toast::{ToastOptions, Toasts, use_toast};
 use zwipe_client::ZwipeClient;
 use zwipe_core::http::contracts::auth::HttpRequestPasswordReset;
 use zwipe_ui::screens::forgot_password::{
-    self, Action, BACK, CREATE_PROFILE, Destination, EMAIL, Effect, SEND, State,
+    self, Action, BACK, CREATE_ACCOUNT, Destination, EMAIL, Effect, SEND, State,
 };
+use zwipe_ui::telemetry::vocabulary::{AuthScreen, Screen};
 use zwipe_ui::text::sentence_case;
 
 use crate::inbound::chrome::toast::raise;
@@ -26,6 +27,7 @@ use crate::inbound::screens::auth::hero::{PublicFlavor, PublicHero};
 use crate::inbound::screens::auth::login::LoginPrefill;
 use crate::inbound::screens::auth::register::go_back_or_login;
 use crate::inbound::shell::ScreenFrame;
+use crate::inbound::telemetry;
 
 /// Forgot password's model with the handles that perform its effects. Copy,
 /// so every handler and task holds its own.
@@ -91,6 +93,7 @@ impl Driver {
 /// is on its way. Return in the field runs `Send reset link`.
 #[component]
 pub fn ForgotPassword() -> Element {
+    telemetry::use_telemetry_screen(Screen::Auth(AuthScreen::ForgotPassword));
     let LoginPrefill(login_prefill) = use_context();
     let driver = Driver {
         model: use_signal(State::new),
@@ -108,6 +111,7 @@ pub fn ForgotPassword() -> Element {
 
     let model = driver.model.read();
     let is_loading = model.is_loading();
+    let submit_held = model.submit_held();
     let email_error = model.error();
     drop(model);
 
@@ -132,6 +136,9 @@ pub fn ForgotPassword() -> Element {
                                 id: "email",
                                 label: EMAIL,
                                 placeholder: EMAIL,
+                                input_type: "email",
+                                name: "email",
+                                autocomplete: "email",
                                 error: email_error.as_deref().map(sentence_case),
                             }
                             if is_loading {
@@ -142,7 +149,7 @@ pub fn ForgotPassword() -> Element {
                             // page.
                             div { class: "form-submit",
                                 Button {
-                                    disabled: is_loading,
+                                    disabled: is_loading || submit_held,
                                     onclick: move |evt: MouseEvent| {
                                         evt.prevent_default();
                                         driver.dispatch(Action::Submit);
@@ -160,7 +167,7 @@ pub fn ForgotPassword() -> Element {
                             Button {
                                 variant: ButtonVariant::Action,
                                 onclick: move |_| driver.dispatch(Action::CreateProfile),
-                                {CREATE_PROFILE}
+                                {CREATE_ACCOUNT}
                             }
                         }
                     }

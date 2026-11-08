@@ -2,7 +2,7 @@
 //! confirm in a toast's full words ("Added to deck"); the chip says the
 //! short form ("Added"), so it stays quiet.
 
-use crate::screens::{add_cards, remove_cards, swipe_select};
+use crate::screens::{add_cards, deck_cards, remove_cards, swipe_select};
 
 /// The chip's word for a confirmation that says `text` in full. A text this
 /// table does not know shows as it is.
@@ -10,18 +10,18 @@ use crate::screens::{add_cards, remove_cards, swipe_select};
 pub fn chip_word(text: &str) -> &str {
     match text {
         add_cards::SKIPPED => "Skipped",
-        add_cards::ADDED_TO_DECK | add_cards::MOVED_TO_DECK => "Added",
+        add_cards::ADDED_TO_DECK => "Added",
         add_cards::ADDED_TO_MAYBEBOARD
         | add_cards::ALREADY_ON_MAYBEBOARD
         | remove_cards::MOVED_TO_MAYBEBOARD
         | swipe_select::SAVED => "Maybe",
         remove_cards::KEPT => "Kept",
         remove_cards::REMOVED => "Removed",
-        remove_cards::MOVED_TO_MAIN => "Main",
+        deck_cards::MOVED_TO_MAINBOARD => "Main",
         add_cards::UNDID_SKIP
         | add_cards::UNDID_ADD
         | add_cards::UNDID_MAYBEBOARD
-        | add_cards::UNDID_MOVE_TO_DECK
+        | add_cards::UNDID_MOVE_TO_MAINBOARD
         | remove_cards::UNDID_KEEP
         | remove_cards::UNDID_REMOVE
         | remove_cards::UNDID_MOVE
@@ -34,6 +34,7 @@ pub fn chip_word(text: &str) -> &str {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::toast::{Toast, ToastKind};
 
     #[test]
     fn each_confirmation_has_its_short_word() {
@@ -41,16 +42,15 @@ mod tests {
             (add_cards::SKIPPED, "Skipped"),
             (add_cards::ADDED_TO_DECK, "Added"),
             (add_cards::ADDED_TO_MAYBEBOARD, "Maybe"),
-            (add_cards::MOVED_TO_DECK, "Added"),
             (add_cards::ALREADY_ON_MAYBEBOARD, "Maybe"),
             (add_cards::UNDID_SKIP, "Undone"),
             (add_cards::UNDID_ADD, "Undone"),
             (add_cards::UNDID_MAYBEBOARD, "Undone"),
-            (add_cards::UNDID_MOVE_TO_DECK, "Undone"),
+            (add_cards::UNDID_MOVE_TO_MAINBOARD, "Undone"),
             (remove_cards::KEPT, "Kept"),
             (remove_cards::REMOVED, "Removed"),
             (remove_cards::MOVED_TO_MAYBEBOARD, "Maybe"),
-            (remove_cards::MOVED_TO_MAIN, "Main"),
+            (deck_cards::MOVED_TO_MAINBOARD, "Main"),
             (remove_cards::UNDID_KEEP, "Undone"),
             (remove_cards::UNDID_REMOVE, "Undone"),
             (remove_cards::UNDID_MOVE, "Undone"),
@@ -60,6 +60,15 @@ mod tests {
         ] {
             assert_eq!(chip_word(text), word, "{text}");
         }
+    }
+
+    #[test]
+    fn add_keeps_its_own_word_for_a_move_to_mainboard() {
+        let toast = Toast::quick(ToastKind::Success, add_cards::MOVED_TO_MAINBOARD)
+            .with_chip(add_cards::MOVED_TO_MAINBOARD_CHIP);
+        assert_eq!(toast.chip_word(), "Added");
+        let remove = Toast::quick(ToastKind::Success, remove_cards::MOVED_TO_MAINBOARD);
+        assert_eq!(remove.chip_word(), "Main");
     }
 
     #[test]

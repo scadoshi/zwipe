@@ -3,8 +3,9 @@ use std::collections::{HashMap, HashSet};
 use chrono::Utc;
 use components::{
     CardFilterPanel, CardRow as SharedCardRow, Chip, ColorChart, DeckBand, DeckCharts,
-    DeckControls, DeckFacts, DeckFold, DeckHead, DeckPage, DockFilter, DrawOdds, FeaturedCard,
-    FlippableCardImage, HoverStackHost, ManaCurve, ManaFulfillment, Panel, use_hover_stack,
+    DeckControls, DeckFacts, DeckFold, DeckHead, DeckPage, DeckSection, DockFilter, DrawOdds,
+    FeaturedCard, FlippableCardImage, HoverStackHost, ManaCurve, ManaFulfillment, Panel,
+    use_hover_stack,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -37,6 +38,27 @@ const RETRY_SPINNER_MIN_MS: u32 = 500;
 /// Longest the featured row waits for its images before it opens anyway.
 const FEATURED_WAIT_MS: u32 = 4000;
 
+/// The sideboard band's title and fold key.
+const SIDEBOARD: &str = "Sideboard";
+
+/// The sideboard as a band after the main board, titled with its card count;
+/// `None` when it is empty or the filter leaves none of it.
+fn sideboard_section(side: &[DeckEntry]) -> Option<DeckSection> {
+    if side.is_empty() {
+        return None;
+    }
+    let count = side
+        .iter()
+        .map(|e| i64::from(*e.deck_card.quantity))
+        .fold(0, i64::saturating_add);
+    Some(DeckSection {
+        key: SIDEBOARD.to_owned(),
+        title: format!("{SIDEBOARD} ({count})"),
+        pips: None,
+        cards: side.iter().map(|e| e.card.clone()).collect(),
+    })
+}
+
 /// How a shared-deck fetch can fail, from the reader's point of view.
 #[derive(Clone, PartialEq)]
 enum FetchError {
@@ -58,7 +80,7 @@ fn CardRow(
     /// Tap-to-open full-art overlay target. Set to this card's data + the face
     /// currently shown when the in-detail "Image" button is tapped.
     mut overlay_card: Signal<Option<(ScryfallData, usize)>>,
-    /// Resolve an oracle tag's description, so the card-role tags reveal their
+    /// Resolve an Oracle tag's description, so the card-role tags reveal their
     /// definition inline. No `on_examples` on the web (no swipe browse).
     describe_tag: Callback<String, Option<String>>,
     /// Art-crop thumbnail visibility (the "Art" chip in Show). Always
@@ -196,67 +218,69 @@ pub fn SharedDeck(token: String) -> Element {
         // Reachable only by having the link; keep crawlers out.
         document::Meta { name: "robots", content: "noindex" }
         Nav {}
-        match &*result.read() {
-            None => rsx! {
-                PageMeta {
-                    title: "Shared deck".to_string(),
-                    description: "A Magic: The Gathering deck shared from Zwipe.".to_string(),
-                    path: "/deck".to_string(),
-                }
-                SharedDeckSkeleton {}
-            },
-            Some(Err(FetchError::NotShared)) => rsx! {
-                PageMeta {
-                    title: "Deck not shared".to_string(),
-                    description: "A Magic: The Gathering deck shared from Zwipe.".to_string(),
-                    path: "/deck".to_string(),
-                }
-                // Inform-and-stop alert, formatted like the app's
-                // update-required screen; deliberately a dead end (the nav is
-                // right there for anyone who wants to explore).
-                div { class: "dead-end content-enter",
-                    Panel {
-                        title: "Deck not shared",
-                        title_h1: true,
-                        p { class: "subtitle",
-                            "This deck is no longer shared. The owner may have stopped sharing it, or the link may be incomplete."
+        main { id: "content", class: "site-main",
+            match &*result.read() {
+                None => rsx! {
+                    PageMeta {
+                        title: "Shared deck".to_string(),
+                        description: "A Magic: The Gathering deck shared from Zwipe.".to_string(),
+                        path: "/deck".to_string(),
+                    }
+                    SharedDeckSkeleton {}
+                },
+                Some(Err(FetchError::NotShared)) => rsx! {
+                    PageMeta {
+                        title: "Deck not shared".to_string(),
+                        description: "A Magic: The Gathering deck shared from Zwipe.".to_string(),
+                        path: "/deck".to_string(),
+                    }
+                    // Inform-and-stop alert, formatted like the app's
+                    // update-required screen; deliberately a dead end (the nav is
+                    // right there for anyone who wants to explore).
+                    div { class: "dead-end content-enter",
+                        Panel {
+                            title: "Deck not shared",
+                            title_h1: true,
+                            p { class: "subtitle",
+                                "This deck is no longer shared. The owner may have stopped sharing it, or the link may be incomplete."
+                            }
                         }
                     }
-                }
-            },
-            Some(Err(FetchError::Network(e))) => rsx! {
-                PageMeta {
-                    title: "Shared deck".to_string(),
-                    description: "A Magic: The Gathering deck shared from Zwipe.".to_string(),
-                    path: "/deck".to_string(),
-                }
-                div { class: "dead-end content-enter",
-                    Panel {
-                        title: "Could not load this deck",
-                        title_h1: true,
-                        // Retry rides the panel's own action row.
-                        actions: rsx! {
-                            button {
-                                class: "sd-retry",
-                                disabled: retrying(),
-                                onclick: move |_| {
-                                    retrying.set(true);
-                                    result.restart();
-                                    spawn(async move {
-                                        sleep_ms(RETRY_SPINNER_MIN_MS).await;
-                                        retrying.set(false);
-                                    });
-                                },
-                                if retrying() { "Retrying\u{2026}" } else { "Retry" }
-                            }
-                        },
-                        p { class: "subtitle", "Error: {e}" }
+                },
+                Some(Err(FetchError::Network(e))) => rsx! {
+                    PageMeta {
+                        title: "Shared deck".to_string(),
+                        description: "A Magic: The Gathering deck shared from Zwipe.".to_string(),
+                        path: "/deck".to_string(),
                     }
-                }
-            },
-            Some(Ok(deck)) => rsx! {
-                SharedDeckView { deck: deck.clone() }
-            },
+                    div { class: "dead-end content-enter",
+                        Panel {
+                            title: "Couldn't load this deck",
+                            title_h1: true,
+                            // Retry rides the panel's own action row.
+                            actions: rsx! {
+                                button {
+                                    class: "sd-retry",
+                                    disabled: retrying(),
+                                    onclick: move |_| {
+                                        retrying.set(true);
+                                        result.restart();
+                                        spawn(async move {
+                                            sleep_ms(RETRY_SPINNER_MIN_MS).await;
+                                            retrying.set(false);
+                                        });
+                                    },
+                                    if retrying() { "Retrying\u{2026}" } else { "Retry" }
+                                }
+                            },
+                            p { class: "subtitle", "Error: {e}" }
+                        }
+                    }
+                },
+                Some(Ok(deck)) => rsx! {
+                    SharedDeckView { deck: deck.clone() }
+                },
+            }
         }
         Footer {}
     }
@@ -424,7 +448,18 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
     } else {
         Zone::default()
     };
-    let display = deck_cards::pass(&mainboard, &listed_zone, &builder, group_by());
+    let sideboard: Vec<DeckEntry> = deck
+        .entries
+        .iter()
+        .filter(|e| e.deck_card.board == Board::Sideboard)
+        .cloned()
+        .collect();
+    let side_qty: HashMap<Uuid, i32> = sideboard
+        .iter()
+        .map(|e| (e.deck_card.scryfall_data_id, *e.deck_card.quantity))
+        .collect();
+    let listed: Vec<DeckEntry> = mainboard.iter().chain(&sideboard).cloned().collect();
+    let display = deck_cards::pass(&listed, &listed_zone, &builder, group_by());
     // Tokens the deck's cards produce (server-derived), shown like the app's
     // token list. Name-sorted, not run through the card filter.
     let tokens: Option<Vec<Card>> = show_tokens().then(|| {
@@ -432,7 +467,10 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
             .sorted(CardSortKey::Name, SortDirection::Ascending)
             .into()
     });
-    let sections = components::sections(&display, deck.format, tokens.as_deref(), &qty_by_id);
+    let mut sections = components::sections(&display, deck.format, tokens.as_deref(), &qty_by_id);
+    if let Some(section) = sideboard_section(&display.side) {
+        sections.push(section);
+    }
     // The fold-all button: every card group shut, or every one open again.
     let section_keys: Vec<String> = sections.iter().map(|s| s.key.clone()).collect();
     let all_folded = {
@@ -450,6 +488,21 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
         }
     };
     let empty = sections.is_empty();
+    // Each band with its rows' quantities, the sideboard's from its own
+    // entries: a card can sit in both boards in different numbers.
+    let bands = sections.into_iter().map(|section| {
+        let qty_of = if section.key == SIDEBOARD {
+            &side_qty
+        } else {
+            &qty_by_id
+        };
+        let quantities: Vec<i32> = section
+            .cards
+            .iter()
+            .map(|c| qty_of.get(&c.scryfall_data.id).copied().unwrap_or(1))
+            .collect();
+        (section, quantities)
+    });
 
     // Distribution charts, mirroring the app's deck screen sections: metrics
     // over the full entry list (mainboard-only inside, same as the app) plus
@@ -575,21 +628,21 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                         all_folded,
                         on_fold_all: fold_all,
                         show_tokens: (!deck.tokens.is_empty()).then_some(show_tokens),
-                        show_zone,
+                        show_zone: zone.offers_chip(deck.format).then_some(show_zone),
                         show_art: show_row_art,
                     }
                 },
                 empty,
                 bands: rsx! {
-                    for section in sections {
+                    for (section, quantities) in bands {
                         DeckBand {
                             key: "{section.key}",
                             section: section.clone(),
                             folded,
-                            for card in section.cards {
+                            for (card, qty) in section.cards.into_iter().zip(quantities) {
                                 CardRow {
                                     key: "{card.scryfall_data.id}",
-                                    qty: *qty_by_id.get(&card.scryfall_data.id).unwrap_or(&1),
+                                    qty,
                                     mvp: mvp_ids.contains(&card.scryfall_data.id),
                                     card,
                                     expanded_card,

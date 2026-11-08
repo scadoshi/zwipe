@@ -3,8 +3,9 @@
 //!
 //! A search waits for a pause in typing and two characters, offers five
 //! names, and surfaces skipped and removed cards too, since a typed name is
-//! deliberate. ↑ and ↓ move through the results and Enter adds the
-//! highlighted one; `/` focuses the box.
+//! deliberate. The results sit under the box, pushing the rows below down.
+//! ↑ and ↓ move through them and Enter adds the highlighted one; a pick
+//! clears the box, which closes them. `/` focuses the box.
 
 use components::{ClearWrap, TOAST_QUICK};
 use dioxus::prelude::*;
@@ -21,6 +22,7 @@ use zwipe_ui::timing::{QUICK_ADD_DEBOUNCE, QUICK_ADD_LIMIT, QUICK_ADD_MIN_CHARS}
 
 use crate::inbound::card_stores::CardStores;
 use crate::inbound::chrome::authed::use_authed;
+use crate::inbound::telemetry;
 use crate::outbound::timer;
 
 /// The input's id, for `/`.
@@ -35,6 +37,7 @@ pub(crate) fn QuickAdd(
     on_added: EventHandler<()>,
 ) -> Element {
     let authed = use_authed();
+    let usage = telemetry::use_usage();
     let toast = use_toast();
     let CardStores { mut undo, .. } = use_context();
     let mut query = use_signal(String::new);
@@ -70,6 +73,7 @@ pub(crate) fn QuickAdd(
                 show.set(false);
                 return;
             };
+            usage.peek().record_search();
             let reply = authed
                 .run_quiet("quick_add_search", |c, s| async move {
                     c.search_deck_cards(deck_id, &filter, &s).await
@@ -88,7 +92,9 @@ pub(crate) fn QuickAdd(
 
     let mut add = move |card: Card| {
         let id = card.scryfall_data.id;
-        results.write().retain(|c| c.scryfall_data.id != id);
+        query.set(String::new());
+        results.set(Vec::new());
+        show.set(false);
         let request = HttpCreateDeckCard::new(&card.scryfall_data, 1, None);
         spawn(async move {
             let Some(deck_card) = authed
@@ -121,30 +127,8 @@ pub(crate) fn QuickAdd(
     let keyed = shown.clone();
     rsx! {
         div {
-            if show() {
-                div { class: "search-float-anchor", id: "quick-add-anchor",
-                    div { class: "search-float-results", id: "quick-add-results",
-                        if searching() {
-                            div { class: "chip-unselected search-float-chip", "Searching..." }
-                        } else if shown.is_empty() {
-                            div { class: "chip-unselected search-float-chip", "No results" }
-                        } else {
-                            for (i, card) in shown.into_iter().enumerate() {
-                                div {
-                                    key: "{card.scryfall_data.id}",
-                                    class: if i == lit { "chip-unselected search-float-chip web-float-highlight" } else { "chip-unselected search-float-chip" },
-                                    style: "animation-delay: {i * 40}ms, {250 + i * 40}ms;",
-                                    onmousedown: move |e| e.prevent_default(),
-                                    onclick: move |_| add(card.clone()),
-                                    "{card.scryfall_data.name}"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
             div { class: "chip-row",
-                span { class: "stat-chip stat-chip-p1 chip-row-label", "Quick add" }
+                label { class: "stat-chip stat-chip-p1 chip-row-label", r#for: QUICK_ADD_ID, "Quick add" }
                 ClearWrap {
                     filled: !query().is_empty(),
                     on_clear: move |()| {
@@ -187,6 +171,27 @@ pub(crate) fn QuickAdd(
                             }
                             _ => {}
                         },
+                    }
+                }
+            }
+            if show() {
+                div { class: "card-filter-results quick-add-results",
+                    if searching() {
+                        div { class: "chip-unselected", "Searching…" }
+                    } else if shown.is_empty() {
+                        div { class: "chip-unselected", "No results" }
+                    } else {
+                        for (i, card) in shown.into_iter().enumerate() {
+                            button {
+                                key: "{card.scryfall_data.id}",
+                                r#type: "button",
+                                class: if i == lit { "chip-unselected card-filter-result card-filter-highlight" } else { "chip-unselected card-filter-result" },
+                                style: "animation-delay: {i * 40}ms;",
+                                onmousedown: move |e| e.prevent_default(),
+                                onclick: move |_| add(card.clone()),
+                                "{card.scryfall_data.name}"
+                            }
+                        }
                     }
                 }
             }

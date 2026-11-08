@@ -10,7 +10,7 @@ use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilde
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::Format;
 
-use crate::filter::fields::{self, Exclude, MatchGroup, RangeGroup, SideGroup, StrList};
+use crate::filter::fields::{self, Exclude, MatchGroup, RangeGroup, SideGroup};
 use crate::filter::sections::{self, ChipSet, Modes};
 
 /// The mana symbols the Produces rows offer, with their long names: the five colors, then colorless.
@@ -127,14 +127,14 @@ pub fn is_selected(set: ChipSet, b: &CardQueryBuilder, value: &str) -> bool {
             .iter()
             .any(|c| c.to_short_name() == value),
         ChipSet::ProducedIncludes => has(MatchGroup::Produced.values(b)),
-        ChipSet::ProducedExcludes => has(MatchGroup::Produced.exclude().values(b)),
+        ChipSet::ProducedExcludes => has(MatchGroup::Produced.excluded(b)),
         ChipSet::Rarity => has(SideGroup::Rarity.values(b)),
         ChipSet::RolesInclude => has(MatchGroup::Roles.values(b)),
-        ChipSet::RolesExclude => has(MatchGroup::Roles.exclude().values(b)),
+        ChipSet::RolesExclude => has(MatchGroup::Roles.excluded(b)),
         ChipSet::CommanderIn => b
             .is_commander_in_format()
             .is_some_and(|f| f.to_legality_key() == value),
-        ChipSet::LegalIn => has(StrList::Legal.get(b)),
+        ChipSet::LegalIn => has(MatchGroup::Legal.values(b)),
         ChipSet::Currency => sections::currency(b).label() == value,
         ChipSet::SortBy => b.sort().is_some_and(|k| k.to_string() == value),
         ChipSet::SortOrder => false,
@@ -177,10 +177,7 @@ pub fn tap(set: ChipSet, b: &mut CardQueryBuilder, modes: &Modes, value: &str) {
                 b.set_is_commander_in_format(*format);
             }
         }
-        ChipSet::LegalIn => {
-            let values = fields::toggled(StrList::Legal.get(b), value);
-            StrList::Legal.set(b, values);
-        }
+        ChipSet::LegalIn => toggle_includes(b, modes, MatchGroup::Legal, value),
         ChipSet::Currency => {
             if let Some(currency) = PriceCurrency::all().iter().find(|c| c.label() == value) {
                 b.set_price_currency(*currency);
@@ -213,9 +210,8 @@ fn toggle_includes(b: &mut CardQueryBuilder, modes: &Modes, group: MatchGroup, v
 
 /// Toggles `value` in `group`'s excludes.
 fn toggle_excludes(b: &mut CardQueryBuilder, group: MatchGroup, value: &str) {
-    let exclude = group.exclude();
-    let values = fields::toggled(exclude.values(b), value);
-    exclude.write(b, values);
+    let values = fields::toggled(group.excluded(b), value);
+    group.write_excludes(b, values);
 }
 
 #[cfg(test)]
@@ -314,6 +310,25 @@ mod tests {
         tap(ChipSet::LegalIn, &mut b, &modes, "modern");
         tap(ChipSet::LegalIn, &mut b, &modes, "legacy");
         assert_eq!(b.legalities_contains_any(), None);
+    }
+
+    #[test]
+    fn legal_in_all_moves_the_formats_to_the_all_field() {
+        let mut b = CardQueryBuilder::default();
+        let mut modes = Modes::default();
+        tap(ChipSet::LegalIn, &mut b, &modes, "modern");
+        modes.flip(&mut b, ModeChip::Match(MatchGroup::Legal));
+        assert_eq!(modes.match_of(&b, MatchGroup::Legal), Match::All);
+        tap(ChipSet::LegalIn, &mut b, &modes, "pioneer");
+        assert_eq!(b.legalities_contains_any(), None);
+        assert_eq!(
+            b.legalities_contains_all(),
+            Some(&["modern".to_owned(), "pioneer".to_owned()][..])
+        );
+        assert!(is_selected(ChipSet::LegalIn, &b, "pioneer"));
+        modes.flip(&mut b, ModeChip::Match(MatchGroup::Legal));
+        assert_eq!(b.legalities_contains_all(), None);
+        assert_eq!(b.legalities_contains_any().map(<[String]>::len), Some(2));
     }
 
     #[test]

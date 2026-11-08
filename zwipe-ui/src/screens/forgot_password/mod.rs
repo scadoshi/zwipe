@@ -1,6 +1,6 @@
-//! Forgot password: an email field with Send reset link under it, then Back to login and Create profile. The reset itself happens on the website, from the emailed link.
+//! Forgot password: an email field with Send reset link under it, then Back to log in and Create account. The reset itself happens on the website, from the emailed link.
 //!
-//! The client keeps a [`State`] while the screen is up and hands every keystroke in as [`Action::EditEmail`]. The check is [`account::reset_email_error`]: the address as typed, untrimmed. Neither button waits on the request, so a second Send reset link sends again; every reply lands, and the first success hands the email to Login with [`Effect::Prefill`], toasts [`LINK_SENT`] and goes there in place of this screen. The text input and its focus stay in the client.
+//! The client keeps a [`State`] while the screen is up and hands every keystroke in as [`Action::EditEmail`]. The check is [`account::reset_email_error`], presence only: the address is sent as typed and the server judges it. Neither button waits on the request, so a second Send reset link sends again; every reply lands, and the first success hands the email to Login with [`Effect::Prefill`], toasts [`LINK_SENT`] and goes there in place of this screen. The text input and its focus stay in the client.
 
 #[cfg(test)]
 mod tests;
@@ -16,13 +16,13 @@ pub const TITLE: &str = "Forgot password";
 pub const EMAIL: &str = "Email";
 
 /// The button back to Login.
-pub const BACK: &str = "Back to login";
+pub const BACK: &str = "Back to log in";
 
 /// The submit button.
 pub const SEND: &str = "Send reset link";
 
 /// The button to Register.
-pub const CREATE_PROFILE: &str = "Create profile";
+pub const CREATE_ACCOUNT: &str = "Create account";
 
 /// The toast once a request went in. It never says whether the address has an account.
 pub const LINK_SENT: &str = "If that email is registered, a reset link is on its way";
@@ -30,11 +30,11 @@ pub const LINK_SENT: &str = "If that email is registered, a reset link is on its
 /// Where an action sends the user. The client maps each to its own route.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Destination {
-    /// Back where the user came from, Login, from Back to login.
+    /// Back where the user came from, Login, from Back to log in.
     Previous,
     /// Login in place of this screen, once a request went in.
     Login,
-    /// Register, from Create profile.
+    /// Register, from Create account.
     Register,
 }
 
@@ -55,9 +55,9 @@ pub enum Action {
         /// The ticket from the [`Effect::RequestReset`] this answers.
         ticket: Ticket,
     },
-    /// Presses Back to login.
+    /// Presses Back to log in.
     Back,
-    /// Presses Create profile.
+    /// Presses Create account.
     CreateProfile,
 }
 
@@ -141,6 +141,12 @@ impl State {
             return None;
         }
         account::reset_email_error(&self.email)
+    }
+
+    /// Whether the email's error line is showing, which holds Send reset link.
+    #[must_use]
+    pub fn submit_held(&self) -> bool {
+        self.error().is_some()
     }
 
     /// Whether the spinner turns under the field.

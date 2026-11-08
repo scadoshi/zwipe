@@ -347,7 +347,10 @@ pub(crate) fn DeckForm(open: Open) -> Element {
 
     // Reactive Zwipe-select modes: derived from the current format / commander.
     let commander_mode = use_memo(move || model.read().values().format.map(SwipeMode::Commander));
-    let partner_mode = use_memo(|| Some(SwipeMode::Partner));
+    let partner_mode = use_memo(move || {
+        let commander = model.read().values().commander.clone().map(Box::new);
+        Some(SwipeMode::Partner(commander))
+    });
     let background_mode = use_memo(|| Some(SwipeMode::Background));
     let spell_mode = use_memo(move || {
         model
@@ -358,6 +361,9 @@ pub(crate) fn DeckForm(open: Open) -> Element {
             .map(|c| SwipeMode::SignatureSpell(c.scryfall_data.color_identity.clone()))
     });
 
+    // Every slot's pile leaves out the cards already in the command zone.
+    let zone_ids = use_memo(move || model.read().values().command_zone_oracle_ids());
+
     let format_open = use_memo(move || model.read().picker() == Some(Picker::Format));
     let tags_open = use_memo(move || model.read().picker() == Some(Picker::DeckTags));
     let oracle_tags_open = use_memo(move || model.read().picker() == Some(Picker::OracleTags));
@@ -367,6 +373,7 @@ pub(crate) fn DeckForm(open: Open) -> Element {
     let mode = state.mode();
     let status = state.status();
     let saving = state.is_saving();
+    let submit_held = state.submit_held();
     let save_label = state.save_label();
     let unchanged = state.picker_unchanged();
     let selected_format = state.values().format;
@@ -403,13 +410,14 @@ pub(crate) fn DeckForm(open: Open) -> Element {
             }
 
             // Save as the action dock's checkmark, pinned bottom right, while
-            // there is something to save; dimmed while the save is out.
+            // there is something to save; dimmed while the save is out or
+            // the name's error line shows.
             if let Some(label) = save_label {
                 div { class: "action-dock action-dock-right",
                     DockAction {
                         label,
                         icon: icons::CHECK,
-                        disabled: saving,
+                        disabled: saving || submit_held,
                         onclick: move |()| driver.dispatch(Action::Save),
                     }
                 }
@@ -419,6 +427,7 @@ pub(crate) fn DeckForm(open: Open) -> Element {
                 host_screen,
                 open: show_commander_swipe,
                 mode: commander_mode,
+                exclude_oracle_ids: Some(zone_ids.into()),
                 on_select: move |card: Card| {
                     driver.dispatch(Action::PickSwiped { slot: Slot::Commander, card: Box::new(card) });
                     show_commander_swipe.set(false);
@@ -429,6 +438,7 @@ pub(crate) fn DeckForm(open: Open) -> Element {
                 host_screen,
                 open: show_partner_swipe,
                 mode: partner_mode,
+                exclude_oracle_ids: Some(zone_ids.into()),
                 on_select: move |card: Card| {
                     driver.dispatch(Action::PickSwiped { slot: Slot::Partner, card: Box::new(card) });
                     show_partner_swipe.set(false);
@@ -439,6 +449,7 @@ pub(crate) fn DeckForm(open: Open) -> Element {
                 host_screen,
                 open: show_background_swipe,
                 mode: background_mode,
+                exclude_oracle_ids: Some(zone_ids.into()),
                 on_select: move |card: Card| {
                     driver.dispatch(Action::PickSwiped { slot: Slot::Background, card: Box::new(card) });
                     show_background_swipe.set(false);
@@ -449,6 +460,7 @@ pub(crate) fn DeckForm(open: Open) -> Element {
                 host_screen,
                 open: show_signature_spell_swipe,
                 mode: spell_mode,
+                exclude_oracle_ids: Some(zone_ids.into()),
                 on_select: move |card: Card| {
                     driver.dispatch(Action::PickSwiped { slot: Slot::SignatureSpell, card: Box::new(card) });
                     show_signature_spell_swipe.set(false);

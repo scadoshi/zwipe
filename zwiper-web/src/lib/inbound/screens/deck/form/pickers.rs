@@ -12,7 +12,7 @@
 use components::hint::{ContentHintDialog, HintBody, guide_for_screen};
 use components::icons::CHECK;
 use components::{
-    AlertDialog, Button, ButtonVariant, ClearWrap, DialogAction, DockAction, DrawerSheet,
+    AlertDialog, Button, ButtonVariant, Chip, ClearWrap, DialogAction, DockAction, DrawerSheet,
     HintDialog, TOAST_NORMAL, TOAST_QUICK, use_overlay_back_action,
 };
 use dioxus::prelude::*;
@@ -138,11 +138,12 @@ fn DiscardDialog(open: Signal<bool>, picker: Picker, on_discard: Callback<()>) -
     }
 }
 
-/// What the format picker opened on: the format and what its cascade
-/// clears, so `Back` can put them back.
+/// What the format picker opened on: the format, the land target a pick
+/// moves and what its cascade clears, so `Back` can put them back.
 #[derive(Debug, Clone, PartialEq, Default)]
 struct FormatSnapshot {
     format: Option<Format>,
+    land_target: Option<i32>,
     commander: Option<Card>,
     commander_text: String,
     spell: Option<Card>,
@@ -165,6 +166,7 @@ pub fn FormatPicker(form: DeckForm) -> Element {
             focused.set(None);
             snapshot.set(FormatSnapshot {
                 format: *form.format.peek(),
+                land_target: *form.land_target.peek(),
                 commander: form.commander.card.peek().clone(),
                 commander_text: form.commander.text.peek().clone(),
                 spell: form.signature_spell.card.peek().clone(),
@@ -176,6 +178,8 @@ pub fn FormatPicker(form: DeckForm) -> Element {
         let held = snapshot.peek().clone();
         let mut format = form.format;
         format.set(held.format);
+        let mut land_target = form.land_target;
+        land_target.set(held.land_target);
         let (mut card, mut text) = (form.commander.card, form.commander.text);
         card.set(held.commander);
         text.set(held.commander_text);
@@ -236,9 +240,9 @@ pub fn FormatPicker(form: DeckForm) -> Element {
                     div { class: "chip-unselected", "No results" }
                 } else {
                     for format in results {
-                        div {
+                        Chip {
                             key: "{format.display_name()}",
-                            class: if (form.format)() == Some(format) { "chip selected" } else { "chip" },
+                            selected: (form.format)() == Some(format),
                             onclick: move |_| {
                                 focused.set(Some(format));
                                 if *form.format.peek() == Some(format) {
@@ -403,8 +407,8 @@ fn DeckTagChip(
     let picked = tags.read().contains(&tag.slug);
     let label = tag.display_name.clone();
     rsx! {
-        div {
-            class: if picked { "chip selected" } else { "chip" },
+        Chip {
+            selected: picked,
             onclick: move |_| {
                 focused.set(Some(tag.clone()));
                 query.set(String::new());
@@ -415,7 +419,7 @@ fn DeckTagChip(
                     current.push(tag.slug.clone());
                 } else {
                     toast.warning(
-                        format!("You may only choose up to {MAX_DECK_TAGS} tags"),
+                        format!("Up to {MAX_DECK_TAGS} deck tags"),
                         ToastOptions::default().duration(TOAST_QUICK),
                     );
                 }
@@ -478,7 +482,7 @@ pub fn OracleTagPicker(form: DeckForm) -> Element {
             );
         } else {
             toast.warning(
-                format!("You may only choose up to {MAX_DECK_ORACLE_TAGS} oracle tags"),
+                format!("Up to {MAX_DECK_ORACLE_TAGS} Oracle tags"),
                 ToastOptions::default().duration(TOAST_QUICK),
             );
         }
@@ -596,8 +600,8 @@ fn OracleTagChip(
     let picked = selected.read().contains(&tag.slug);
     let slug = tag.slug.clone();
     rsx! {
-        div {
-            class: if picked { "chip selected" } else { "chip" },
+        Chip {
+            selected: picked,
             onclick: move |_| {
                 focused.set(Some(tag.clone()));
                 query.set(String::new());
@@ -608,7 +612,7 @@ fn OracleTagChip(
                     current.push(tag.slug.clone());
                 } else {
                     toast.warning(
-                        format!("You may only choose up to {MAX_DECK_ORACLE_TAGS} oracle tags"),
+                        format!("Up to {MAX_DECK_ORACLE_TAGS} Oracle tags"),
                         ToastOptions::default().duration(TOAST_QUICK),
                     );
                 }

@@ -162,7 +162,7 @@ pub fn Shell() -> Element {
 }
 
 /// The nav over the public screens: the mark, then the app's signed-out
-/// menu, `Log in`, `Create profile` and `Forgot password`, the current one
+/// menu, `Log in`, `Create account` and `Forgot password`, the current one
 /// lit, and the footer's `!`, About icon and theme pair, in the bar on a
 /// wide window and under the folded list below the breakpoint.
 #[component]
@@ -172,7 +172,7 @@ pub fn PublicNav() -> Element {
     let page: Signal<Option<PageTitle>> = use_context();
     let links = [
         (Route::Login {}, "Log in"),
-        (Route::Register {}, "Create profile"),
+        (Route::Register {}, "Create account"),
         (Route::ForgotPassword {}, "Forgot password"),
     ];
     rsx! {

@@ -152,7 +152,11 @@ fn an_archidekt_import_sends_the_link() {
     let (mut state, deck_id) = opened();
     let _ = state.update(Action::PickSource(Source::Archidekt));
     let _ = state.update(Action::PickMode(ImportMode::Replace));
-    let effects = submit(&mut state, "https://archidekt.com/decks/1");
+    assert_eq!(
+        submit(&mut state, "https://archidekt.com/decks/1"),
+        [Effect::ConfirmReplace(Board::Main)]
+    );
+    let effects = state.update(Action::ConfirmReplace);
     let [
         Effect::ImportArchidektDeck {
             deck_id: sent,
@@ -173,6 +177,33 @@ fn an_archidekt_import_sends_the_link() {
             None,
             ImportMode::Replace
         )
+    );
+}
+
+#[test]
+fn a_replace_asks_first_and_sends_only_once_confirmed() {
+    let (mut state, _) = opened();
+    let _ = state.update(Action::PickMode(ImportMode::Replace));
+    let _ = state.update(Action::PickBoard(Board::Side));
+    assert_eq!(
+        submit(&mut state, "1 Sol Ring"),
+        [Effect::ConfirmReplace(Board::Side)]
+    );
+    assert!(!state.importing(), "nothing goes out before the confirm");
+    assert!(matches!(
+        state.update(Action::ConfirmReplace).as_slice(),
+        [Effect::ImportDeckCards { text, board: Some("sideboard"), .. }] if text == "1 Sol Ring"
+    ));
+    assert_eq!(state.update(Action::ConfirmReplace), NONE, "it sends once");
+    assert_eq!(submit(&mut state, "   "), NONE, "a blank list never asks");
+}
+
+#[test]
+fn the_replace_confirm_names_the_board() {
+    assert_eq!(replace_title(Board::Main), "Replace the mainboard?");
+    assert_eq!(
+        replace_body(Board::Side),
+        "Every card on the sideboard comes off and the imported cards go in their place. You can't undo this."
     );
 }
 
@@ -360,12 +391,12 @@ fn the_copy_matches_the_app() {
         "1 Krenko, Mob Boss\n1 Urza, Lord High Artificer\n1 Sol Ring"
     );
     assert_eq!(URL_LABEL, "Paste an Archidekt deck URL");
-    assert_eq!(URL_PLACEHOLDER, "https://archidekt.com/decks/...");
+    assert_eq!(URL_PLACEHOLDER, "https://archidekt.com/decks/…");
     assert_eq!((IMPORTED, FAILED), ("Imported", "Failed"));
     assert_eq!(BACK, "Back");
     assert_eq!(
         (IMPORT, REPLACE, IMPORTING),
-        ("Import", "Replace", "Importing...")
+        ("Import", "Replace", "Importing…")
     );
     let sources: Vec<&str> = Source::ALL.into_iter().map(Source::label).collect();
     assert_eq!(sources, ["Text", "Archidekt"]);

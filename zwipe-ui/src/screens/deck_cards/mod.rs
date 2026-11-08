@@ -45,7 +45,7 @@ pub const QUICK_ADD: &str = "Quick add";
 pub const QUICK_ADD_PLACEHOLDER: &str = "Search a card to add";
 
 /// The one result chip while a search waits or is out.
-pub const SEARCHING: &str = "Searching...";
+pub const SEARCHING: &str = "Searching…";
 
 /// The one result chip when the search found nothing.
 pub const NO_RESULTS: &str = "No results";
@@ -135,10 +135,18 @@ pub fn added(name: &str) -> String {
     format!("Added {name}")
 }
 
-/// The toast after a row's move to `board`.
+/// The toast after a move to the mainboard, from any screen.
+pub const MOVED_TO_MAINBOARD: &str = "Moved to mainboard";
+
+/// The toast after a row's move to `board`. The words are the copy's
+/// (mainboard), not the board's wire name (deck).
 #[must_use]
 pub fn moved_to(board: Board) -> String {
-    format!("Moved to {}", board.display_name())
+    match board {
+        Board::Deck => MOVED_TO_MAINBOARD.to_owned(),
+        Board::Maybeboard => "Moved to maybeboard".to_owned(),
+        Board::Sideboard => "Moved to sideboard".to_owned(),
+    }
 }
 
 /// A card group's header: `label` and its copy count, or the count alone for a color group, whose pips stand in for the label.
@@ -346,7 +354,7 @@ pub enum Action {
         /// The cards found.
         cards: Vec<Card>,
     },
-    /// Adds a Quick add result to the main board. It leaves the results at once and joins the deck when the server confirms.
+    /// Adds a Quick add result to the main board. It clears the search and closes the results at once, and joins the deck when the server confirms.
     AddCard(Box<Card>),
     /// The [`Effect::CreateCard`] holding `ticket` created this deck card.
     Created {
@@ -991,12 +999,20 @@ impl State {
         }]
     }
 
+    /// Empties Quick add's search and closes its results.
+    fn close_quick_add(&mut self) {
+        self.quick.query.clear();
+        self.quick.results.clear();
+        self.quick.waiting = None;
+        self.quick.searching = false;
+        self.quick.open = false;
+    }
+
     fn add_card(&mut self, card: Card) -> Vec<Effect> {
         let Some(deck_id) = self.deck_id else {
             return Vec::new();
         };
-        let card_id = card.scryfall_data.id;
-        self.quick.results.retain(|c| c.scryfall_data.id != card_id);
+        self.close_quick_add();
         let request = HttpCreateDeckCard::new(&card.scryfall_data, 1, None);
         let ticket = self.request(Pending::QuickAdd(Box::new(card)));
         vec![Effect::CreateCard {
@@ -1607,6 +1623,14 @@ impl State {
     #[must_use]
     pub fn show_command_zone(&self) -> bool {
         self.show_command_zone
+    }
+
+    /// Whether the Show row offers the Command zone chip: the deck's format has a command zone, or
+    /// the zone holds a card anyway. See [`Zone::offers_chip`].
+    #[must_use]
+    pub fn offers_command_zone(&self) -> bool {
+        self.zone
+            .offers_chip(self.profile.as_ref().and_then(|p| p.format))
     }
 
     /// Whether the section with this key is collapsed.

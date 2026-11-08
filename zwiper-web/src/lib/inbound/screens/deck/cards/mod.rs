@@ -39,6 +39,8 @@ fn signal_toast(toast: Toasts, signal: Option<(Level, String)>) {
 #[derive(Debug, Default)]
 pub(crate) struct OneLine {
     said: Option<(Tone, String)>,
+    /// The quiet chip's word for the confirmation, when not its text's.
+    chip: Option<&'static str>,
     signals: Vec<(Level, String)>,
 }
 
@@ -46,6 +48,13 @@ impl OneLine {
     /// The swipe's own confirmation, in its `tone`.
     pub(crate) fn confirm(&mut self, tone: Tone, text: impl Into<String>) {
         self.said = Some((tone, text.into()));
+    }
+
+    /// [`Self::confirm`] with `chip` in the quiet chip in place of the
+    /// text's own word.
+    pub(crate) fn confirm_as(&mut self, tone: Tone, text: impl Into<String>, chip: &'static str) {
+        self.said = Some((tone, text.into()));
+        self.chip = Some(chip);
     }
 
     /// A signal the swipe set off, if any.
@@ -71,11 +80,14 @@ impl OneLine {
         match (winner, self.said) {
             (Some(signal), said) => {
                 if let Some((_, text)) = said {
-                    confirm.quietly(text);
+                    confirm.quietly_as(&text, self.chip);
                 }
                 signal_toast(toast, Some(signal));
             }
-            (None, Some((Tone::Success, text))) => confirm.success(text),
+            (None, Some((Tone::Success, text))) => match self.chip {
+                Some(chip) => confirm.success_as(text, chip),
+                None => confirm.success(text),
+            },
             (None, Some((Tone::Info, text))) => confirm.info(text),
             (None, None) => {}
         }

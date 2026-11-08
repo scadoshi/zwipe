@@ -224,8 +224,8 @@ fn the_copy_matches_the_app() {
         [
             "Oracle tags",
             "Search tags or descriptions",
-            "Couldn't load the dictionary. Pull back and try again.",
-            "Couldn't load the oracle-tag dictionary",
+            "Couldn't load the dictionary. Close it and try again.",
+            "Couldn't load the Oracle tags dictionary",
             "No description yet",
             "Examples",
             "Use",

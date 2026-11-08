@@ -622,3 +622,284 @@ On the composer's question: **the misclick script in Part 13 did not touch the C
     - The commander maybeboard guide doesn't mention 194's Swipe on the maybeboard page yet, and says a row has three actions where the app shows four (Image, Printings, Create deck, Remove).
 
 Not verified: the phone filter drawer at 390. In the background popup its slide-in never ran (`show` class set, still `translateY(662px)`), which matches Part 13's picker caught mid-slide. That's the popup's throttling, not the app, and Droid covers it on mobile.
+
+## Part 15, zwipe.net, the portfolio and the app's signed-out screens (2026-11-07, done 14:58)
+
+zwipe.net serves `zite_bg-dxh9074ac72e5c198ca.wasm`; the app is still on live f699acc37. Wide is 1450. 390 was checked with same-origin iframes for zwipe.net and the portfolio (screenshots work), and with the script-sized popup for the app (DOM only). The test session stayed signed in throughout, **no logouts**. zwipe.net's and the portfolio's local themes went back to Gruvbox dark and Poimandres dark.
+
+**How I saw the app signed out without signing out:** from app.zwipe.net/robots.txt I opened a popup and wrote the app's own index.html into it with a small shim first:
+- reads of `zwiper-web.session` return nothing;
+- writes and removals of that key are dropped, so the real session can't be touched;
+- calls to `/auth/(cookie|refresh|logout|login|register|password|reset)` get a canned 401.
+
+The popup boots the real wasm signed out. None of the guards fired (0 blocked writes, 0 blocked requests), and the main tab's session was present and working afterwards. I didn't submit any sign-in, sign-up or reset, and typed no passwords. Production is no place for test passwords, so password strength, mismatch and the reset submit are untested.
+
+### Works
+
+| Area | Check | Result |
+|---|---|---|
+| Crawl | Every internal link and asset from each home page | zwipe.net: 58 URLs over 29 pages, all 200. Portfolio: 43 URLs over 22 pages, all 200, apart from Cloudflare's `/cdn-cgi/l/email-protection` (S23, skipped before) |
+| Meta | title, description, og:title/url/image, canonical, h1 on all 51 pages | Unique titles and descriptions, og:url and canonical match each page, og:image present, exactly one h1 everywhere |
+| Sitemaps/robots | zwipe.net | sitemap has 29 locs (= the crawl). robots allows / and disallows `/deck/`, `/verify/`, `/confirm-email/`, `/reset/` |
+| External links | 89, skipping retailers | All fine apart from the two below. LinkedIn's 999 is its bot wall |
+| Changelog | Latest, year → months → minor chips, Show more, `#v1-12-1` | Latest shows 1.18.0 and the upcoming 1.18.1. 2026 shows 5 at a time, and 11 Show mores reach all 59 releases. Sep narrows to 5. The fragment lands on 1.12.1 just under the nav with 2026 › Oct › 1.12 lit. Cairn's changelog on the portfolio lists 1.3.0 and 1.3.1 |
+| Theme toggles | zwipe.net and portfolio, signed out: Light, pick a theme, Escape | Both apply at once and keep the choice. Escape closes the theme panel on both. On zwipe.net, opening it moves focus to the current theme's row and Escape gives focus back to the trigger |
+| Metrics | zwipe.net counters, portfolio stats | zwipe.net matches live (2,270 / 31.8k / 264.7k, "as of Nov 7" then Live). Portfolio "7,897 commits · 14 repos · 88 stars" lines up with Heron's allowlist (the 14 showcased repos sum to about 88 stars). GitHub's overall totals are 40 public repos and 128 stars |
+| Keyboard | Tab through zwipe.net and portfolio homes | Logical order (nav, banner, content, footer). The closed theme panels' 50 buttons are out of the tab order. Portfolio cards waiting on scroll-reveal come in at full opacity when focused |
+| 390 | zwipe.net: home, guides, about, changelog, community, privacy, contribute, two guides. Portfolio: home, projects, zwipe, systems, contribute, cairn changelog | No sideways scroll on any (scrollWidth = clientWidth 379 in a 390 frame). The phone menu lists every link with the theme and dark buttons at the bottom (p15-1) |
+| App signed out: Login | 390 and 1400 | Renders with counters, form, Create profile and Forgot password. Empty submit, or a name with no password, shows "Enter your username or email and password" and sends nothing |
+| Create profile | Empty, `ab`, `a b!`, `not-an-email`, valid name and email with no password | "Must be at least 3 characters long", "Cannot contain whitespace", "Missing @ symbol", "Must be at least 8 characters long". No request sent |
+| Forgot password | Empty, `bad` | "Please enter a valid email address", no request |
+| Deep links | `/`, `/decks`, a deck, its Add, `/settings`, `/account`, `/maybeboard`, `/playstyle` | All land on `/login` (history replaced, length 1) with no deck or user API calls. `/nonexistent-page` gives the app's "Page not found" |
+| Token pages | zwipe.net `/verify/…`, `/confirm-email/…` with a bogus token | "Link already used or expired" with what to do next |
+
+### Findings
+
+1. **Escape doesn't close zwipe.net's phone menu.** At 390, with the menu open and focus on Guides, a real Escape key leaves it open (`aria-expanded` stays true) (p15-1). The portfolio's phone menu closes on Escape, and zwipe.net's theme panel does too (164).
+2. **zwipe.net doesn't declare `color-scheme`.** It's `normal` on dark themes (the portfolio sets `dark`). So Chrome draws its default dark-blue focus ring, rgb(0,95,204), which is **2.66:1 on Gruvbox's background**, under the 3:1 non-text minimum. Nearly every control uses it (only the testimonial link has a themed 3px ring). The same default also affects scrollbars and native controls. The portfolio's ring is light blue and easy to see. The app wasn't checked for this.
+3. **zwipe.net has no `<main>` landmark** (only nav and footer), and neither site has a skip link.
+4. **Two dead links on the portfolio's orangui page:** `github.com/scadoshi/orangui/blob/main/src/chart_math.rs` and `.../src/theme.rs` are 404. orangui's `src/` no longer has those files. The other 20 file links on that page resolve.
+5. **Reset link doesn't check the token up front.** `zwipe.net/reset/<bogus>` shows the full "Set new password" form, so someone with a dead link only finds out after choosing a password. Verify and confirm-email check on load and say "Link already used or expired". (Submit not tested; see above.)
+6. **Generic titles on the token pages.** `/reset/…`, `/verify/…` and `/confirm-email/…` all have the home page's title ("Magic: The Gathering Deck Builder for Phone and Web | Zwipe") instead of "Reset password" etc. They're disallowed in robots, so this only shows in tabs and history.
+7. **No autocomplete hints on auth forms.**
+    - Login's fields have no `autocomplete` and no `name`; they should be `username` and `current-password`.
+    - Create profile's and zwipe.net's reset form's password fields have none either; they should be `new-password`.
+    - Without these, password managers guess or skip the forms.
+8. **Forgot password's email field is `type=text`.** Phones won't show the email keyboard. Create profile's is `type=email`.
+9. **Email errors are worded differently.** Create profile says "Missing @ symbol", even when the field is empty. Forgot password says "Please enter a valid email address".
+10. **A deep link signed out probably loses its target.** A signed-out deck link redirects to plain `/login`, with no `?next=` and nothing in localStorage or sessionStorage. So after signing in you'd likely land on Home, not the deck. I can't confirm the after-sign-in step without signing in.
+11. **Login's counters keep "as of Nov 7" after fetching live stats.** They settle on the live 2,270 / 31.8k / 264.7k, but the tag still says "as of Nov 7". Home (signed in) says "Live" once fresh (195).
+12. **Portfolio stats don't say what they count.** "14 repos · 88 stars" reads as the whole GitHub account (40 repos, 128 stars). "Counted by Heron" is there, but not that it covers showcased repos only. Wording question for Scotty.
+
+## Part 16, deck page in depth, plus Home and Decks order (2026-11-07, live f699acc37, wide 1450)
+
+Signed in throughout, **no logouts**. I cloned isshin (101 cards, not mine) into a temp deck and did everything on the clone, then deleted it. isshin itself was only read. Surfer test, settings and theme untouched. Decks reads 13 because Droid added a long-named deck during the pass.
+
+### Works
+
+| Area | Check | Result |
+|---|---|---|
+| Price totals | Sum of qty × row price vs header and Budget | **Exact:** $568.94 in all three over 83 rows / 101 cards. Changing a printing (Boros Charm → OTJ Commander $4.99) updated the row, header and Budget live to $573.93. The dock's Undo restored the old printing ("Boros Charm printing restored") and $568.94. Sideboard cards are left out of the total (moving Chaos Warp to Side dropped it $0.76) |
+| Row actions | Image, Printings (arrow keys, Select), −, +, Star, To maybeboard / To sideboard | All work. Star adds ★ to the row and puts the card in the deck head as an "MVP" card, and the button becomes Unstar. +/− change the count and header live. To sideboard moves the card and the header live |
+| Group by | Type, Mana value, Color, Card role | Type and Mana value add up to 100 (+1 commander = 101). Color adds up to 100 (W 10, B 4, R 13, WB 5, WR 13, BR 3, WBR 5, UBR 1, colorless 8, lands 38). Card role adds up to 221, since cards carry several roles |
+| Stats | Types chart, mana curve | Types match the Type groups. The curve (5/18/19/10/7/3) matches the Mana value groups. The Card roles chart reads 1–2 higher than the Card role groups (AGGRO 35 vs 33, RAMP 17 vs 16, SACRF 9 vs 8), probably because the chart counts the commander. Worth labeling |
+| Sort | Filter → Sort → Price (USD), Descending | Rows within each group come out by price, high to low (46.85, 28.74, 12.25…). See 7 for unpriced cards |
+| Large deck | 101 cards, 83 rows | Rows render ~0.8s after navigation. ~6,900 DOM nodes, 44 MB heap, 82 of 84 images lazy-loaded |
+| Long names | 64-character deck name | Accepted at 64 exactly. Home's deck tile cuts it off with an ellipsis. Decks wraps it (see 9) |
+| Decks order | List | Alphabetical, ignoring case (big fat chud … Surfer test, test, WWWW…). No sort control |
+| Home order | Decks panel | The three most recently changed decks (the new clone first) |
+
+### Findings
+
+1. **Card rows can't be used from the keyboard.** A row (`div.web-card-row`) and its head have no tabindex or role, so Tab never lands on a row and nothing expands it from the keyboard. Group headers (`div.deck-fold-head`) are the same. On a phone or with a mouse that's fine. For keyboard users it's a dead end.
+2. **…and collapsed rows still own over a thousand tab stops.** Every collapsed row keeps its chips and its Image / Printings / − / + / Star / To maybeboard / To sideboard buttons at tabindex 0 inside a 0-height, opacity-0 wrapper (`card-row-collapse`). On this deck that's **1,017 of the page's 1,056 tab stops**, all invisible. Real Tab presses from Quick add go: Group by chips, Boards, Show, "Shut every group", then hidden "Aggression", "Image", "Printings", "−", "+"… An Enter there changes the deck unseen. The page dock (+ − filter undo edit clone share) comes after all of them. The fix is `inert` (or tabindex -1) on collapsed content, plus a focusable row head with `aria-expanded`.
+3. **Warnings don't follow +, − or board moves** (adds to Part 13's To mainboard and Part 14's Fix to 1).
+    - **+** took Chaos Warp to 2 in a Commander deck. The header went 101 → 102, but the Warnings count stayed at 2 with no copy-limit line.
+    - **To sideboard** dropped the header to 100, but Warnings still said "Deck has 101 cards" and had no "Commander does not use sideboards".
+    - After a reload both are right: "Crackling doom exceeds copy limit (2/1)" and the sideboard warning show up.
+4. **Hover preview covers the row actions.** The floating card preview opens over the list itself, on whichever side has more room, so it sits on the expanded row above. In p16-1 the pointer is on Chaos Warp, and its preview hides Boros Charm's details and its Image and Printings buttons. Moving to those buttons means passing other rows, which swaps the preview.
+5. **Drag between boards does nothing.** All 82 rows are `draggable="true"`, but a real mouse drag onto the Sideboard group and a synthetic dragstart/dragover/drop both did nothing (no data set, no drop highlight). If drag isn't a feature, `draggable` should go. Moving with the row buttons works.
+6. **Deck name length isn't limited in the field.** The clone (and probably the create/edit) name input has no `maxlength`. A 98-character name only fails on Save with the raw server message "Invalid deck name: deck name maximum length is 64 characters" in a toast. A maxlength of 64, or a counter, would stop it at the field.
+7. **Unpriced cards: the total silently excludes them, and they sort first.** 11 of the 101 cards have no USD price on their chosen printing (Phyrexian Arena, Boros Charm FDN, Sword of the Animist, Mountain…). The total and "Average card price" ($7.39 = $568.94 / 77 priced cards) leave them out with no note. Sorting by Price (USD) Descending puts these unpriced cards **first** in each group, ahead of $46.85.
+8. **Card names lowercased in warnings, badly.** "Nicol bolas, the ravager // nicol bolas, the arisen is outside commander's color identity", "Crackling doom exceeds copy limit". Same root as Part 14's "Lightning bolt".
+9. **A long name drops below the art on Decks.** Short names sit beside the thumbnail. The 64-character one wraps onto its own lines under it, so that card's layout differs from its neighbors (p16-2).
+10. **Color groups are icon-only.** Group by Color headers show just mana symbols and "(10)", with no text or aria-label, so a screen reader hears "(10)".
+11. **No sort on Decks or Home.** Decks is alphabetical only. Home shows recent. There's no way to sort by size, price, format or last changed. That's a feature question, not a bug.
+
+## Part 17, swipe screens, Account, accessibility sweep (2026-11-07, live f699acc37)
+
+Wide is 1450. Phone-width card sizing on the swipe screens was covered in Part 13 (326 × 454 at 390 on Add, Remove and Swipe select). Signed in throughout, **no logouts**. No password changes, no sign-out, no Account saves. Surfer test was restored to 6 cards / $81.25 (one leftover add removed by hand, see 1). No stray decks; Decks lists 12, since Droid removed its long-named deck.
+
+**About the accessibility sweep:** loading axe-core from cdnjs into the production page was blocked here, since it runs third-party code in the signed-in session. So the sweep uses my own in-page checks modeled on axe's rules (button-name, link-name, image-alt, label, duplicate-id, landmark-one-main, page-has-heading-one, heading-order, aria-hidden-focus, color-contrast), plus three custom ones (clickable but not focusable, hidden but focusable, live regions). I confirmed the important ones with real Tab presses. It's an approximation of axe, not axe. A real axe/Lighthouse run from CI or a local dev build would be the next step.
+
+### Swipe screens
+
+| Check | Result |
+|---|---|
+| Add, keyboard chain → ← ↑ → then ↓ ×4 (Surfer test) | Forward: POST card 201, POST suppressions 204, POST card 201 (maybeboard), POST card 201. Back: DELETE, DELETE, DELETE suppression, DELETE, in exact reverse. Stack returned to Champion of Dusk |
+| Add, rapid input: 6 × → at 50ms, then 6 × ↓ | 2 adds, then 2 deletes, no duplicates, back to the start. The extra presses drop silently while the swipe animates (by design, nit 24) |
+| Remove, → ← → then ↓ ×3 | 2 DELETEs, then 2 POSTs. Undoing the Keep steps back with no write. Deck back to 6 / $81.25 with the same printings |
+| Swipe select (commander), ← ×3, ↓ ×3, ↓ again, → | Skips and undos are local (no writes). The extra ↓ says "Nothing to undo". → filled Commander = Fire Lord Azula. Leaving the form went through the leave guard, and no deck was saved |
+| Empty filter result | With Synergy on: "No results for this filter; Synergy is on, turn it off to search everything". With it off: "No results for this filter". Ghost card shown, Skip/Maybeboard/Add disabled. (Part 14's silent zero result was on a deck without a commander.) |
+| Toasts | `role="alert"` inside a `region` labeled "N notifications", so they're announced |
+
+### Account
+
+Username / Email / Password rows each open a drawer. Change username shows "Must be at least 3 characters long" inline. Nothing was submitted.
+
+### Findings
+
+1. **Changing the filter on Add throws away undo history while Undo stays enabled.** I added Champion of Dusk (POST 201), changed the filter (Rarity → Mythic, Apply), then pressed ↓ and clicked Undo. Nothing happened: no DELETE, no "Nothing to undo", and Undo still looked enabled. The add stuck in the deck, and I removed it by hand. Either undo should survive a filter change, or Undo should disable and say so.
+2. **Keyboard users can't create a deck properly or open one.** Confirmed with real Tab presses:
+    - **Create deck:** after Deck name, Tab skips the Format field, every power-level chip, the Commander/Partner/Background/Signature "Filter" and "Swipe" chips, Deck tags, Oracle tags, the Other tags chips and USD/EUR/TIX. These are all `div`s (`div.input-tappable`, `div.chip`, `div.chip-xs`) with no tabindex. Only Deck name, Land target ± and Price target are reachable.
+    - **Decks:** no deck card is focusable (`div.deck-list-row`). Tab goes from the tag chips to "Create" and then the footer, so a keyboard user can't open any deck. Group headers ("All (13)") aren't focusable either.
+    - **Deck page:** rows and group heads aren't focusable (Part 16, 1–2).
+    - **Elsewhere:** the sweep found the same clickable-but-not-focusable pattern on Playstyle (197 elements: fold heads, row arrows), Activity (23), Commander maybeboard (5) and the deck page (94).
+3. **Icon-only chips have no accessible name** (button-name). The color filter chips on Decks (5) and Commander maybeboard (5), and 7 chips on Playstyle, contain only a mana-symbol `<i>`. A screen reader says "button".
+4. **Card art without alt** (image-alt). `img.card-row-art` has no `alt` attribute on the deck page (6), Playstyle (20) and Activity (2). `alt=""` would be enough, since the name sits next to it.
+5. **Duplicate ids on Account.** Change username and Change email both render `<input id="password">`, and both "Password" labels use `for="password"`. So the second label points at the first drawer's input. Change email's new-email field is `type=text`. None of the Account password fields (`password` ×2, `current_password`, `new_password`, `confirm_password`) has `autocomplete`.
+6. **Account drawer keeps a stale draft and lets you save invalid input.** Typing "ab" into New username shows the error, but "Save changes" stays enabled with the error showing and the password empty (not pressed). Closing with × asks nothing and leaves "ab" in the field for next time.
+7. **Contrast** (color-contrast): the Decks list's muted stat chips ("Commander", commander name) are 3.86:1 on Zenburn dark. Everything else on the ten screens passed at 4.5:1.
+8. **Placeholder-only labels** (label): Quick add on the deck page ("Search a card to add") and on Commander maybeboard have only a placeholder as their name; the "Quick add" tag beside them isn't a `<label>`.
+9. **Heading order:** on Decks, the h1 is followed by h3 deck names with no h2.
+10. **Cards hidden from Add after an undo.** Elenda, the Dusk Rose (skipped, then undone, which deleted the suppression with 204) and Sorin, Imperious Bloodlord (sent to the maybeboard, then undone) no longer show in Add even when searched by exact name, with Synergy off. Indulgent Aristocrat (added, then undone) does show again. Possibly swipe memory counting an undone swipe. Worth a look, but I'm not calling it a bug.
+11. **Small:** each toast is a focusable `role="alertdialog"` (tabindex 0) wrapping a `role="alert"`. For an info toast, alert alone is enough. A focusable dialog per toast adds tab stops.
+
+## Part 18, copy proofread, read-only (2026-11-07, live f699acc37, zwipe.net, main at the time)
+
+**Sources:**
+- The rendered text of 15 signed-in screens, plus all 51 distinct `?` hints opened on them (captured from the DOM).
+- The string literals in `components`, `zwipe-ui`, `zwiper-web` and `zite` on `origin/main` (about 2,500 strings), for toasts and errors I couldn't trigger safely.
+- The 22 live guides on zwipe.net.
+- The changelog's upcoming 1.18.1 and the 10 releases before it (from `/api/changelog`).
+
+I changed nothing. Card rules text and keyword reminder text from Scryfall are out of scope. Strings from source are marked (src) when I didn't see them on screen.
+
+### Across the app (terms and patterns)
+
+1. **"Oracle tags" vs "oracle tags".** Capitalized as a name in 31 mid-sentence places, lowercase in 76, sometimes side by side:
+    - Activity's empty states: "Swipe more cards to see your **Oracle tags**" next to "Swipe more cards to see your **card roles**".
+    - 1.18.1: "Keywords, card roles and **oracle tags** use the app's regular chips" two lines above "The card filter's **Oracle tags** hint".
+    - Suggest one rule: capitalized only as a field or section name ("the Oracle tags picker"), lowercase in prose. Card roles and deck tags already follow it.
+2. **Maybeboard naming.** The same pile is "Maybeboard" (chip, button, toast), "Maybe" (Boards chips, 1.18.0 "Add switches between Search and Maybe"), and "**your Maybe pile**" (Add's "Swipe to build" hint: "The chip after From switches between Search and your Maybe pile"). The mainboard is "mainboard" (To mainboard button, hints), "main" (Remove hint "moves it between main and maybeboard", toast "Moved to main"), and "deck" (toast "**Moved to deck**" right after tapping "To mainboard", "Undid move to deck"). "Sideboard" is consistent. "maybe board" and "side board" spelled apart: none.
+3. **Sign-in naming.** The screen is "Login" (tab title, header), the button "Log in", the chip back from Forgot password "**Back to login**", the loading label "Logging in...", and the changelog says "sign-in screen"/"sign-in forms". Registration is "Create profile" on screen but "register" in 1.13.0 and in the 1.10-era changelog. Pick one noun for the screen ("Log in") and use it in the back chip.
+4. **Empty and end states are worded six ways:** "No cards left", "No cards found", "No cards match your filters", "No more cards. Swipe down to go back." (the only one with a period), "No results", and "No results for this filter". "Could not load …" (decks, deck, activity, changelog, featured flavor, commander maybeboard, suggestions) sits beside "**Couldn't** load the dictionary. **Pull back and try again.**" and "Couldn't load the oracle-tag dictionary" (src). "Pull back" is a phone gesture with no meaning on the web. "oracle-tag dictionary" is hyphenated where everything else says "the dictionary" or "Oracle tags dictionary".
+5. **Email errors in four voices:**
+    - Create profile: "Missing @ symbol" (shown even when the field is empty).
+    - Forgot password and Account: "Please enter a valid email address".
+    - (src): "Email is not valid: use a@b.c".
+    - (src): raw validator messages, also reachable through Create profile, e.g. "Domain must have at least one dot", "Empty part in domain", "Domain literal not supported", "Display name not supported", "Unbalanced quotes in email", "Text before @ is too long".
+    - Suggest one plain line, "Enter a valid email address", for every case.
+6. **"Please"** appears only in "Please enter a valid email address", "Please wait a moment" and "Card stack limit reached, please refresh your search to continue". Elsewhere the voice is plain ("Approaching the card stack limit, refresh your search to continue"). Both stack-limit lines are comma splices; a period or semicolon would fix them.
+7. **Punctuation at the end of short UI lines is mixed.** Most hints, toasts and empty states have no final period, but these do:
+    - "Version: The build you are on. What changed in each release is listed below."
+    - "Tap a format to see its details here." and "Tap a tag to see its definition here."
+    - "No description for this tag.", "No example cards for this tag yet.", "No tags match "…"."
+    - "Update to keep building."
+    - "Changing your password will log you out on all other devices."
+    - "This will permanently delete your account… This cannot be undone."
+8. **"can't" vs "cannot":** "This can't be undone." (clear skips, src) vs "This cannot be undone." (delete account).
+9. **Server wording shown raw:**
+    - "Invalid deck name: deck name maximum length is 64 characters" (Part 16).
+    - "Deck name minimum length is 1 character" (src).
+    - "Universes Beyond franchises not fetched: {e}" (src, puts an error object in front of users).
+    - "Password change successful" (src), where nearby lines read "Username changed to {name}".
+10. **Card and format names lowercased in Warnings** (Parts 14 and 16, more examples from src):
+    - "Opt is not a valid commander for **commander**" (the format name, and "commander" twice).
+    - "Deck has 28 cards, **modern** requires at least 60".
+    - "The format, **commander**, requires a commander".
+    - "Lightning bolt" and "Nicol bolas, the ravager // nicol bolas, the arisen".
+11. **Chart abbreviations read oddly:** ANTHM, CSPEL, PROTC, SACRF, LIFGN, EVASN, CADV, PLNSW, INSTN, SORCR, ENCHN, ARTIF (Distributions, Draw odds, Activity). They're vowel-dropped codes rather than words. The full role names fit in most of those rows at wide.
+12. **Numbers:** "Verify your email to create more than **1** deck" (src), where "one" reads better. "Deck at {pct:.2}% of your {} budget" (src) prints two decimals ("Deck at 87.53% of your $100 budget").
+13. **Symbols:** the changelog uses both "x" ("Sheets close from an x in their corner", "an x on the filter resets it") and "×" ("a × beside the box"). The UI draws ×.
+
+### Screen by screen
+
+| Screen | Copy notes |
+|---|---|
+| Home | Fine. "Live" / "as of Nov 7", "Everybody" / "Only me", "Hello, test!" toast. |
+| Decks | Hint "Your decks: Tap a deck to open it…" fine. The `+` is shown as the icon (good). |
+| Deck page | Welcome hint uses icons for + − filter undo edit clone share (good). Warnings, see 10. Toasts "Moved to deck" vs button "To mainboard", see 2. "Draw odds: … turn 0 is the opening hand" reads well. |
+| Add | "Swipe to build" hint: "your Maybe pile" (2). "Swipe left skips it for a week" vs Swipe select's plain "skips it": fine, but they mean different durations, so maybe say so on Swipe select too. "No results for this filter; Synergy is on, turn it off to search everything" is another comma splice, same as 6. |
+| Remove | "Swipe to trim" hint: "moves it between main and maybeboard" (2). "even at the end of the stack" is good. |
+| Swipe select | Fine. "Nothing to undo" toast fine. 1.18.0 lowercases it as "swipe select". |
+| Import / Export | Placeholder is a Commander list on any format (Part 14). "Removes all existing cards in the mainboard, replacing with imported cards." would read better as "…mainboard and replaces them with the imported cards". |
+| Create / Edit deck | Hints are tight and consistent. "Tap a format to see its details here." vs Oracle tags picker "Tap a tag to see what it means. Picking a deck tag pre-selects some of these for you." (two phrasings of one pattern, see 7). "You may only choose up to {N} oracle tags" / "…{N} tags" (src) is stiff; "Up to {N} oracle tags" would match the "Up to 5" hint. |
+| Playstyle | Hints good. "Remove hides it for a week" matches Add. |
+| Activity | Readout before any tap shows "0 swipes, 0 searches, Feb 23", an arbitrary empty day. A prompt like "Tap a square" would read better. Empty-state casing (1). |
+| Commander maybeboard | Hint good, covers 194's Swipe. |
+| Settings | **Theme hint is wrong:** "The last four are color blind modes". The group lists Achromatopsia, Deuteranopia, GitHub High Contrast, Modus, Protanopia, Tritanopia, so the last four include GitHub High Contrast and Modus, and two of the color-blind modes come first. Suggest "Achromatopsia, Deuteranopia, Protanopia and Tritanopia are color blind modes". "Swipe confirmations: … Off says nothing" fine. |
+| Account | "Your account: … Danger zone at the bottom logs you out or deletes your account" fine. "Email: Where password resets and verification go" fine. "New email must be different from your current email" etc. are consistent. |
+| About | "Version" hint has periods (7). |
+| Login / Create profile / Forgot password | 3, 5, "Logging in..." uses three dots where the rest of the copy has no ellipsis at all. |
+
+### zwipe.net guides (22, live)
+
+- **Icon rule:** "Save commanders for later" says "The color pips and **the Filter button** narrow the list of saves". That's the funnel icon, which other guides draw as the icon ("Tap the [funnel]").
+- **Out of date:** the same guide says an expanded row has "three actions". The app shows four (Image, Printings, Create deck, Remove). It does now mention the maybeboard's Swipe button (194).
+- Board names ("Main, Maybe, Side, or All", "Boards is three independent toggles") match the chips. No raw `[[icon]]` tokens or backticks leak into the rendered text. No British spellings.
+
+### Changelog (1.18.1 upcoming, 1.18.0 back to 1.12.1)
+
+- **Spelling:** "grey chips" (1.17.0) vs "gray chip" (1.18.1); "all the way **round**" (1.18.1), US English would be "around".
+- **Casing:** "swipe select" (1.18.0); "oracle tags" vs "Oracle tags" (1).
+- **Anachronism:** 1.16.1 "**Settings** names the theme's mode Dark or Light", but the screen was still "Config" until 1.18.0 ("Config is now called Settings").
+- **Claim vs behavior:** 1.18.1 "the deck page's card count, price and charts follow each card you add, remove, move or undo, with no reload". True for those, but the Warnings panel on the same page doesn't follow (Parts 13, 14, 16), so a reader may expect it to.
+- **"x" vs "×"** (13). "Maybe" for the maybeboard chip (2).
+
+## Part 19, release 80d5b43ab rechecks plus walkthrough (2026-11-07)
+
+App wasm `zwiper-web_bg-dxhfaaa4e686f4d373.wasm` and zite `zite_bg-dxh6528a09277506917.wasm` after hard reloads. Wide is 1450. 390 was checked in the popup (DOM) and in zwipe.net iframes. Signed in throughout, **no logouts**. I used a temp Modern deck "Surfer p19" (created, shared, renamed, changed to Commander, then share stopped and the deck deleted). Surfer test, settings and theme untouched. Decks now reads 14 because Droid added "Droid web11".
+
+| # | Check | Result |
+|---|---|---|
+| 196 | Web picker chips not faded under the hint box | **Fixed.** Format, Deck tags and Oracle tags grids start exactly at the hint bar's bottom (437/437, 328/328, 385/385) with no top fade. The only fade left is at the open bottom edge |
+| 197 | Warnings follow every deck change | **Fixed.** On the wide deck page, live with no reload: + (Lightning Bolt to 5 adds "Lightning Bolt has 5 copies, Modern allows 4"), Fix to 4 (gone, header 9), To sideboard (header and "Deck has 8 cards"), To mainboard (back to 9), Quick add (10) |
+| 199 | Long drawer title clear of × (web) | **Fixed.** At 390, "Asmoranomardicadaistinaculdacar" wraps to two lines at x 97–322, with × at x 55–89. No overflow (scrollWidth = clientWidth) |
+| 200 | Import honors set and collector number; export writes them | **Fixed.** `1 Snapcaster Mage (ISD) 78`, `4 Lightning Bolt (M10) 146` and `1 Ragavan, Nimble Pilferer (MH2) 138` got those printings. `(XXX) 999` fell back to a default printing. Export writes `(SET) number` on every line, including the sideboard |
+| 201 | Set filter shows that set's printing | **Fixed.** Set = Innistrad deals Silent Departure / Innistrad #75, Cackling Counterpart #46, … (Innistrad, not Remastered) |
+| 202 | Typeahead pills in flow, close on pick | **Fixed.** Set suggestions sit under the field with the headers above uncovered. Picking closes them and leaves an "Innistrad ×" chip with an Include toggle |
+| 203 | "No cards match" when nothing is left | **Partly.** A Name filter with no hits shows "No cards match" on the ghost card. **But "Is promo: Yes" alone still matches nothing and leaves a blank, dimmed ghost with no message**, so both halves of 203's second point are still open |
+| 204 | Number boxes apply as you type | **Fixed.** Typing 2 in Mana value enables Apply without leaving the field, and the results are all MV 2. Enter in the box doesn't apply it (small) |
+| 205 | Hidden Create deck rows out of the tab order | **Fixed.** The four shut command-zone rows are `inert`. 0 focusable controls inside |
+| 206 | One hint width at wide | **Partly.** Only dialogs with `.hint-body` (page hints like "Building a deck" and "Welcome to your deck") take 40rem (640px). Every field and section hint uses `.hint-line` or `.hint-bullets`, matches no rule, and still sizes to its text: Create deck 479–805px, deck page 320 (Types) to 1,113px (Draw odds). The new rule is `.alert-dialog:has(.hint-body)`. It needs `.hint-line` and `.hint-bullets` too |
+| 208 | Warning copy | **Fixed.** "Deck has 0 cards, Modern requires at least 60", "Commander decks need a commander", "Lightning Bolt has 4 copies, Commander allows 1", "Counterspell has 2 copies, Commander allows 1", "Brainstorm is not legal in Modern" |
+| 209 | Stop sharing, zone chip, guide | **Fixed.** The dialog says "Stop sharing". A Modern deck's Show row is Tokens/Art with no Command zone (the share page too). The maybeboard guide now says "four actions: Image…" and has a "Swipe from the list" section. "Filter button" is gone |
+| 210 | Header Back asks on unsaved edits | Web still asks ("Leave without saving?" after a rename, then header ‹). The app side is Droid's |
+| 207 (sideboard) | Share page shows the sideboard | **Fixed.** "Sideboard (2)" group at wide and at 390 (no sideways scroll). Prices follow the chosen printing (Bolt $1.81, M10). The share URL still returns HTTP 404 to non-JS clients (207's og part, out of scope here) |
+
+### Walkthrough, new ground
+
+- **Playstyle:** Summary, Colors, Card roles (decks per role), Oracle tags (Decks / Cards / Impact), Suggested commanders and Staples all render.
+    - The Summary reads oddly: "Top colors" shows a single red pip with "(6)" right above "Top color: Red (12)". It isn't clear that one counts decks by color identity and the other counts cards.
+    - Impact ranks "gives-unblockable" second (1 deck, 1 card, impact 25), above tags in 5–7 decks. A tag with one card can outrank broad ones, which might want a minimum.
+- **Activity:** tapping a lit day shows "48 swipes, 21 searches, Sep 22" and tapping again hides it. Part 18's stray "0 swipes, 0 searches, Feb 23" readout no longer shows before a tap. The 373 heatmap squares aren't focusable, so keyboard users can't read any day.
+- **About and Help:** About shows the version and the app changelog (Latest / 2026, 1.18.1 Upcoming). "!" opens "Help & feedback: Reach the team or join the community" with "Report a problem ↗" and "Join the Discord ↗".
+- **Quick add on the deck page:** "Mountain" suggests "Call the Mountain Chocobo", "Celebrate the Mountain-king", "Cori Mountain Monastery"… but not the basic land Mountain, and no exact match first. The add itself updates count and Warnings live. (I clicked the first suggestion and the second, "Celebrate the Mountain-king", was added, probably my mis-aimed click.)
+- **Toast after To mainboard still says "Moved to deck"** (Part 18, item 2).
+- **Card art "Flip" label:** on Add, a double-faced card (Norman Osborn) shows its "Flip" control over the card's mana cost at the top right.
+
+### Still open from this recheck
+
+1. 203: `Is promo: Yes` never matches, and a Config-only zero result shows a blank ghost with no "No cards match".
+2. 206: field and section hints (`.hint-line` / `.hint-bullets`) still vary from 320 to 1,113px at wide. Only `.hint-body` dialogs got 40rem.
+3. 207: share URL is HTTP 404 without JS (known, out of scope).
+
+## Part 20, release 66e364d7e rechecks plus walkthrough (2026-11-07)
+
+Signed in throughout, no logouts. Wide is 1450px in the main tab; 390 is a sized popup measured through the DOM only (no screenshots, transitions turned off so frozen background animations don't skew the numbers). I made a temp deck "Surfer p20", shared it, imported into it, then stopped sharing and deleted it. Universes Beyond went to Hide for the 219 test and back to Show. Surfer test is untouched (6 cards), and the theme stayed Zenburn dark. Shots are in `~/Developer/surfer-shots/p20-*`.
+
+### Rechecks
+
+| Nit | Result |
+|---|---|
+| 203 Config-only filters | **Fixed.** Is promo: Yes on its own sends `promo:true` and all 25 results are promo printings (Mockingbird, Quartzwood Crasher, …). Playable + digital + oversized + content warning on their own returns zero and the card says "No cards match your filters". |
+| 213 partner stack | **Fixed.** The server's stack for Tymna still contains Tymna (#18 of the first 24), but the client skips her: I stepped through 30 cards in order and she never showed. See new finding 1 for the rest of that stack. |
+| 214 Couldn't load | **Fixed.** With api.zwipe.net failing, the deck page shows "Couldn't load deck" with Retry and one connection toast. Retry while still offline adds exactly one more toast. Firing `online` with the network back reloads the deck without a tap. Add does the same with "Couldn't load cards". |
+| 215 Is legal in Any / All | **Fixed.** Name "bolt" + Commander and Pauper: Any returns a mix of Commander-only and both-legal cards; All returns 19, every one legal in both. Request carries `legalities_contains_any` and the new all field. See new finding 6 for Any on its own. |
+| 216 Replace asks | **Fixed.** "Replace the mainboard?" with "Every card on the mainboard comes off… You can't undo this." Cancel keeps the pasted list. In-app dialog, not a browser confirm. |
+| 217 command-zone rows | **Fixed** on web. Create with no format shows no Commander/Partner rows; Format label at 262px, Power level at 362px. Edit switched to Modern shows the same 262/362, no gap. Commander adds Commander, then Partner after Tymna; Oathbreaker shows Oathbreaker + Signature spell. |
+| 218 land target | **Fixed.** + from Not set gives 37 on Commander; switching to Oathbreaker moves it to 17. Set to 18 by hand, then back to Commander: stays 18. |
+| 219 toast over Exceptions | **Fixed** at 390 (DOM): with one toast up, the sheet pads its content to 168px and the last chip row ends at 609px, 12px above the toast (621px). At wide the sheet is a centered modal and the toast sits bottom left, no overlap. |
+| 220 import printing | **Fixed.** "1 Lightning Bolt" imports at $0.10 (was $28.99); Sol Ring $1.22, Counterspell $2.18. |
+| 221 Back origin | App-only, as specced (the commit touches `zwiper` and `zwipe-ui`). On web, Back from a deck opened on Home still lands on Decks. Noting in case web should match. |
+| 222 share link shown | **Fixed.** After Create link, reopening Share shows `https://zwipe.net/deck/…` on one selectable line (`user-select: all`, ellipsis). At 390 it truncates at 254 of 507px and the three buttons wrap to two rows, which reads fine. Create link itself copies and closes, so the link only shows on the second open. |
+| 223 See guide | **Fixed.** `target=_blank rel="noopener noreferrer"` on the deck page hint's "See guide ↗". |
+| 224 web preview size | **Fixed.** At 390×777 the Image preview is 306px wide, exactly `min(100vw − 2rem, 55vh × 63/88)`. |
+| 225 chip × | **Fixed** for touch. With the `pointer: coarse` rules applied, the × has a 44px `::after` box and wins hit tests 20px either side of its center. With a mouse it stays a 10×16 target (by design). It still has no accessible name beyond "×". |
+| Web Quick add (202) | **Fixed.** Results sit in flow under the box as chips and close on a pick. Typing "Mountain" still offers no basic Mountain (Part 19). |
+| Copy pass, … | **Fixed** in source: every in-progress label ends with "…" (Saving…, Searching…, Logging in…), no "..." left. Part 18's flagged phrases are all gone from `origin/main`: Maybe pile, Moved to deck, Back to login, Missing @, Please enter a valid, Pull back, the Theme hint, Could not load, This cannot be undone, Filter button, three actions, grey, round. Live: "Moved to maybeboard" / "Moved to mainboard"; Create account everywhere; zwipe.net's maybeboard guide says four actions and draws the funnel. |
+
+### New findings
+
+1. **The partner stack offers partners Tymna can't pair with.** Tymna has plain Partner, but the stack includes "Partner with" cards (Toothy, Slurrk, Ukkima, Pir, Brallin, Shabraz), Doctor's companions (Ian Chesterton, Jo Grant, Clara Oswald, Donna Noble…), and The Prismatic Piper. Only plain-Partner cards (Thrasios, Akiri, Kraum, Vial Smasher…) are legal with her.
+2. **"1 cards"** in the deck head chip (`components/src/deck_page.rs:207`, `"{facts.cards} cards"`). Decks list already says "1 card". Shot p20-2.
+3. **The Archidekt bad-link error is raw server text:** "Could not parse an archidekt deck id from the url", with lowercase archidekt, "url", and "Could not" where the copy pass moved to "Couldn't". Something like "That isn't an Archidekt deck link" would match. The Archidekt placeholder also ends in "..." (`https://archidekt.com/decks/...`).
+4. **Import's URL panel drops down the page** once the Imported list is long: after a 21-card Archidekt import the input panel sits about 200px below the mode hint, beside the middle of the Imported panel. The import screen is a grid and the tall Imported panel stretches the row the input shares. Shot p20-3.
+5. **The command-zone typeahead floats over its own label.** Typing "Tymna" in Commander shows the "Tymna the Weaver" chip above the field, covering "Commander" and the Filter button (`.search-float-results`, absolute). Other typeaheads now sit under their box (202). Shot p20-1.
+6. **Is legal in Any with the deck's format plus another format, on its own, toasts "Filter cleared"** and "Try a filter to start swiping" while Commander and Pauper both stay highlighted in the drawer. That's logical, since Add already limits to Commander-legal cards, but the picks look applied. All with the same picks searches.
+7. **Delete deck's dialog** says "Are you sure you want to delete this deck?" with no name and no "This can't be undone", where Clear skips, Clear maybeboard and Delete account all end with it.
+8. **An empty command-zone field keeps its ×** after a format switch clears it (Commander "Not set" with ×, Oathbreaker "Not set" with ×).
+9. **A toast follows you to the next screen:** "Try a filter to start swiping" from Add was still up on the deck page after an in-app navigation.
+
+Also seen: Droid's "Droid tmp14" (Tymna) is now in the test account's Decks (13 total); I didn't touch it.

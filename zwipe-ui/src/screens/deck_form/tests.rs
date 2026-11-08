@@ -120,13 +120,19 @@ fn create_opens_ready_and_offers_its_hint() {
 }
 
 #[test]
-fn a_seeded_commander_comes_in_under_commander_with_no_partner_search() {
+fn a_seeded_partner_with_commander_comes_in_and_searches_its_partner() {
     let seed = partner_with("Pir, Imaginative Rascal", "Toothy, Imaginary Friend");
     let mut state = State::new();
     let effects = state.update(Action::Load(Open::Create {
         seed: Some(Box::new(seed)),
     }));
-    assert_eq!(effects.len(), 1, "only the hint: {effects:?}");
+    assert!(
+        matches!(
+            effects.as_slice(),
+            [Effect::OfferHint(_), Effect::FindPartner { mate, .. }] if mate == "Toothy, Imaginary Friend"
+        ),
+        "the hint, then the partner search: {effects:?}"
+    );
     assert_eq!(state.values().format, Some(Format::Commander));
     assert_eq!(state.display(Slot::Commander), "Pir, Imaginative Rascal");
     assert_eq!(
@@ -267,6 +273,17 @@ fn the_name_error_shows_once_the_name_held_text() {
 }
 
 #[test]
+fn the_name_error_holds_save_while_it_shows() {
+    let mut state = create();
+    assert!(!state.submit_held());
+    let _ = state.update(Action::SetName("Burn".to_owned()));
+    let _ = state.update(Action::SetName(String::new()));
+    assert!(state.submit_held());
+    let _ = state.update(Action::SetName("Burn".to_owned()));
+    assert!(!state.submit_held());
+}
+
+#[test]
 fn save_refuses_a_bad_name_inline() {
     let mut state = create();
     assert!(state.update(Action::Save).is_empty());
@@ -284,7 +301,7 @@ fn create_sends_the_form_and_opens_the_new_deck() {
     };
     assert_eq!(request.name, "Burn");
     assert!(state.is_saving());
-    assert_eq!(state.save_label(), Some("Saving..."));
+    assert_eq!(state.save_label(), Some("Saving…"));
     assert!(state.update(Action::Save).is_empty(), "one save at a time");
     assert!(
         state.update(Action::Back).is_empty(),
@@ -352,11 +369,7 @@ fn edit_with_nothing_changed_says_so() {
     let effects = state.update(Action::Save);
     assert_eq!(
         toasts(&effects),
-        [Toast::new(
-            ToastKind::Error,
-            "must update at least one field",
-            NORMAL
-        )]
+        [Toast::new(ToastKind::Error, "No changes to save", NORMAL)]
     );
     assert!(!state.is_saving());
 }
@@ -412,6 +425,32 @@ fn a_short_query_closes_the_results_and_a_long_one_searches_after_the_debounce()
     assert_eq!(
         state.results(Slot::Commander),
         Some(Results::Found(vec![found]))
+    );
+}
+
+#[test]
+fn tymnas_partner_results_list_only_plain_partners() {
+    let mut tymna = card("Tymna the Weaver");
+    tymna.scryfall_data.keywords = Some(vec!["Partner".to_owned()]);
+    let mut thrasios = card("Thrasios, Triton Hero");
+    thrasios.scryfall_data.keywords = Some(vec!["Partner".to_owned()]);
+    let mut pir = partner_with("Pir, Imaginative Rascal", "Toothy, Imaginary Friend");
+    pir.scryfall_data.keywords = Some(vec!["Partner with".to_owned(), "Partner".to_owned()]);
+    let mut state = create();
+    let _ = state.update(Action::TapFormat(Format::Commander));
+    let _ = state.update(Action::PickSwiped {
+        slot: Slot::Commander,
+        card: Box::new(tymna),
+    });
+    let ticket = type_search(&mut state, Slot::Partner, "a");
+    let _ = state.update(Action::Debounced { ticket });
+    let _ = state.update(Action::Searched {
+        ticket,
+        cards: vec![pir, thrasios.clone()],
+    });
+    assert_eq!(
+        state.results(Slot::Partner),
+        Some(Results::Found(vec![thrasios]))
     );
 }
 
@@ -901,10 +940,10 @@ fn the_copy_matches_the_app() {
         [
             "Create deck",
             "Edit deck",
-            "Could not load deck",
+            "Couldn't load deck",
             "Back",
             "Save",
-            "Saving..."
+            "Saving…"
         ]
     );
     assert_eq!([PROFILE, BUDGET, TAGS], ["Profile", "Budget", "Tags"]);
@@ -932,7 +971,7 @@ fn the_copy_matches_the_app() {
     );
     assert_eq!(
         [NOT_SET, FILTER, SWIPE, SEARCHING, NO_RESULTS],
-        ["Not set", "Filter", "Swipe", "Searching...", "No results"]
+        ["Not set", "Filter", "Swipe", "Searching…", "No results"]
     );
     assert_eq!(
         ORACLE_TAGS_SEEDED,
@@ -1058,4 +1097,47 @@ fn a_failed_save_keeps_the_changes_unsaved() {
     };
     let _ = state.update(Action::Failed { ticket: *ticket });
     assert!(state.has_unsaved_changes());
+}
+
+#[test]
+fn a_format_switch_moves_an_untouched_land_target_and_discard_puts_it_back() {
+    let mut state = create();
+    let _ = state.update(Action::OpenPicker(Picker::Format));
+    let _ = state.update(Action::TapFormat(Format::Commander));
+    let _ = state.update(Action::SavePicker);
+    let _ = state.update(Action::StepLand(Step::Up));
+    assert_eq!(
+        state.values().land_target,
+        Some(37),
+        "Commander's usual count"
+    );
+
+    let _ = state.update(Action::OpenPicker(Picker::Format));
+    let _ = state.update(Action::TapFormat(Format::Oathbreaker));
+    assert_eq!(
+        state.values().land_target,
+        Some(17),
+        "it follows to Oathbreaker's"
+    );
+    let _ = state.update(Action::DiscardPicker);
+    assert_eq!(state.values().land_target, Some(37), "Discard puts it back");
+
+    let _ = state.update(Action::StepLand(Step::Up));
+    let _ = state.update(Action::OpenPicker(Picker::Format));
+    let _ = state.update(Action::TapFormat(Format::Oathbreaker));
+    assert_eq!(
+        state.values().land_target,
+        Some(38),
+        "a target the user set stays"
+    );
+}
+
+#[test]
+fn a_long_name_says_the_limit_in_plain_words() {
+    let mut state = create();
+    let _ = state.update(Action::SetName("x".repeat(65)));
+    assert_eq!(
+        state.name_error(),
+        Some("Deck names are 1 to 64 characters")
+    );
 }

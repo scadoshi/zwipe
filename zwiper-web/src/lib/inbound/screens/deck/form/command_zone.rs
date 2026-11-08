@@ -19,6 +19,7 @@ use zwipe_ui::timing::COMMAND_ZONE_SEARCH_DEBOUNCE;
 use super::DeckForm;
 use crate::inbound::chrome::authed::{Authed, use_authed};
 use crate::inbound::chrome::hint_topic::InfoButton;
+use crate::inbound::telemetry;
 use crate::outbound::timer;
 
 /// The input's id, for the label.
@@ -81,6 +82,7 @@ pub fn autofill_named_partner(form: DeckForm, selected: &Card, authed: Authed, t
 pub fn CommandZoneField(form: DeckForm, slot: Slot, label: String) -> Element {
     let state = form.slot(slot);
     let authed = use_authed();
+    let usage = telemetry::use_usage();
     let toast = use_toast();
     let mut results: Signal<Vec<Card>> = use_signal(Vec::new);
     let mut searching = use_signal(|| false);
@@ -121,6 +123,7 @@ pub fn CommandZoneField(form: DeckForm, slot: Slot, label: String) -> Element {
                 dropdown.set(false);
                 return;
             };
+            usage.peek().record_search();
             let reply = authed
                 .run_quiet("command_zone_search", |c, s| async move {
                     c.search_cards(&filter, &s).await
@@ -131,6 +134,14 @@ pub fn CommandZoneField(form: DeckForm, slot: Slot, label: String) -> Element {
             }
             searching.set(false);
             if let Some(cards) = reply {
+                // With its Filter on, Partner lists only the cards the
+                // commander can pair with.
+                let cards = match commander.as_ref() {
+                    Some(commander) if slot == Slot::Partner && *filter_on.peek() => {
+                        form::legal_partners(commander, cards)
+                    }
+                    _ => cards,
+                };
                 results.set(cards);
                 dropdown.set(true);
             } else {
@@ -155,12 +166,14 @@ pub fn CommandZoneField(form: DeckForm, slot: Slot, label: String) -> Element {
             div { class: "label-row",
                 label { class: "label", r#for: input_id(slot), "{label}" }
                 InfoButton { topic: slot.hint((form.format)()) }
-                div {
+                button {
+                    r#type: "button",
                     class: if filter_on() { "chip-xs selected" } else { "chip-xs" },
                     onclick: move |_| filter_on.toggle(),
                     "Filter"
                 }
-                div {
+                button {
+                    r#type: "button",
                     class: "chip-xs chip-primary",
                     onclick: move |_| swipe_open.set(true),
                     "Swipe"
@@ -170,7 +183,7 @@ pub fn CommandZoneField(form: DeckForm, slot: Slot, label: String) -> Element {
                 div { class: "search-float-anchor",
                     div { class: "search-float-results",
                         if searching() {
-                            div { class: "chip-unselected search-float-chip", "Searching..." }
+                            div { class: "chip-unselected search-float-chip", "Searching…" }
                         } else if found.is_empty() {
                             div { class: "chip-unselected search-float-chip", "No results" }
                         } else {

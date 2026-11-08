@@ -34,7 +34,7 @@ impl PickerField {
     pub fn placeholder(self) -> &'static str {
         match self {
             Self::Include(MatchGroup::Tags) | Self::Exclude(MatchGroup::Tags) => {
-                "Search all oracle tags"
+                "Search all Oracle tags"
             }
             _ => "Type to search",
         }
@@ -67,7 +67,7 @@ impl PickerField {
     pub fn picked(self, b: &CardQueryBuilder) -> Vec<String> {
         match self {
             Self::Include(group) => group.values(b),
-            Self::Exclude(group) => group.exclude().values(b),
+            Self::Exclude(group) => group.excluded(b),
             Self::Side(group) => group.values(b),
         }
     }
@@ -78,7 +78,7 @@ impl PickerField {
             Self::Include(MatchGroup::Tags) | Self::Side(_) => self.picked(b),
             Self::Include(group) | Self::Exclude(group) => {
                 let mut taken = group.values(b);
-                taken.extend(group.exclude().values(b));
+                taken.extend(group.excluded(b));
                 taken
             }
         }
@@ -91,7 +91,7 @@ impl PickerField {
                 let mode = modes.match_of(b, group);
                 group.write(b, mode, values);
             }
-            Self::Exclude(group) => group.exclude().write(b, values),
+            Self::Exclude(group) => group.write_excludes(b, values),
             Self::Side(group) => {
                 let side = modes.side_of(b, group);
                 group.write(b, side, values);
@@ -392,6 +392,6 @@ mod tests {
         include.pick(&mut b, &modes, "ramp");
         assert_eq!(b.oracle_tags_contains_all(), Some(&strings(&["ramp"])[..]));
         assert_eq!(modes.match_of(&b, MatchGroup::Tags), Match::All);
-        assert_eq!(include.placeholder(), "Search all oracle tags");
+        assert_eq!(include.placeholder(), "Search all Oracle tags");
     }
 }

@@ -587,6 +587,26 @@ impl CardQueryBuilder {
         self
     }
 
+    /// Sets filter matching cards legal in every one of the provided formats. Empty vec = None.
+    pub fn set_legalities_contains_all<I, S>(&mut self, legalities_contains_all: I) -> &mut Self
+    where
+        I: IntoIterator<Item = S>,
+        S: Into<String>,
+    {
+        let v: Vec<String> = legalities_contains_all
+            .into_iter()
+            .map(Into::into)
+            .collect();
+        self.legalities_contains_all = if v.is_empty() { None } else { Some(v) };
+        self
+    }
+
+    /// Clears the `legalities_contains_all` filter.
+    pub fn unset_legalities_contains_all(&mut self) -> &mut Self {
+        self.legalities_contains_all = None;
+        self
+    }
+
     // == Commander Filter Setters ==
 
     /// Sets the commander eligibility filter for a specific format.
@@ -1016,20 +1036,18 @@ impl CardQueryBuilder {
 
     // == Utility Methods ==
 
-    /// Clears all search filters, keeps only config (limit, offset, flags, language).
+    /// Clears all search filters, keeps only config (limit, offset, sort, the
+    /// token exclusion, synergy and currency).
     ///
-    /// Useful for resetting search while preserving pagination state and defaults.
+    /// The Config flags (playable, digital, oversized, promo, content warning,
+    /// language) go back to their defaults: at the default each is a setting,
+    /// and changed it is a filter the user picked, so [`is_empty`](Self::is_empty)
+    /// sees it.
     pub fn retain_config(&mut self) -> &mut Self {
         let default = Self {
             limit: self.limit,
             offset: self.offset,
             is_token: self.is_token,
-            is_playable: self.is_playable,
-            digital: self.digital,
-            oversized: self.oversized,
-            promo: self.promo,
-            content_warning: self.content_warning,
-            language: self.language.clone(),
             sort: self.sort,
             direction: self.direction,
             // Synergy is a mode flag, not a search criterion: clearing the filter

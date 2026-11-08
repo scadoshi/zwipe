@@ -2,7 +2,7 @@
 //! that still show while Universes Beyond is hidden.
 
 use components::icons::{CHECK, DockIcon};
-use components::{BottomSheet, SheetFrame, SheetWide, TOAST_QUICK};
+use components::{BottomSheet, Chip, SheetFrame, SheetWide, TOAST_QUICK};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
@@ -113,9 +113,9 @@ pub(super) fn ExceptionsSheet(
                 }
                 div { class: "flex flex-wrap gap-1 flex-center",
                     for franchise in offered {
-                        div {
+                        Chip {
                             key: "{franchise.slug}",
-                            class: if draft().contains(&franchise.slug) { "chip selected" } else { "chip" },
+                            selected: draft().contains(&franchise.slug),
                             onclick: move |_| {
                                 let next = fields::toggled(draft.peek().clone(), &franchise.slug);
                                 draft.set(next);

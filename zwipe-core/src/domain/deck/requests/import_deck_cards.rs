@@ -1,7 +1,8 @@
 //! Deck card import operation.
 //!
-//! Parses plain-text decklists (`[qty] [card name]` per line),
-//! resolves card names against the database, and bulk-inserts matched cards.
+//! Parses plain-text decklists (`[qty] [card name] [(SET) number]` per line),
+//! resolves card names and named printings against the database, and
+//! bulk-inserts matched cards.
 //! Supports `// Sideboard` and `// Maybeboard` section headers, and MTGA's bare
 //! `Sideboard` line.
 
@@ -31,8 +32,23 @@ pub struct ImportLine {
     pub quantity: i32,
     /// Card name (as entered by the user).
     pub card_name: String,
+    /// The printing the line names after the card name, if any.
+    pub printing: Option<NamedPrinting>,
     /// Which board this card belongs to.
     pub board: Board,
+}
+
+/// The printing an import line names after the card name, as Moxfield,
+/// Archidekt and MTGA write it: `(ISD) 78`. The import uses that printing when
+/// the database has it for the named card, and the card's default printing
+/// otherwise.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct NamedPrinting {
+    /// The set code, lowercased (`isd`), matching Scryfall's `set`.
+    pub set_code: String,
+    /// The collector number, when the line gives one. Can hold non-digits
+    /// (`78a`, `★12`).
+    pub collector_number: Option<String>,
 }
 
 /// Validated import request.
@@ -144,6 +160,7 @@ impl ImportDeckCards {
                 None => (1, trimmed),
             };
             let card_name = strip_trailing_metadata(rest);
+            let printing = named_printing(rest);
             if card_name.is_empty() || quantity < 1 {
                 continue;
             }
@@ -160,6 +177,7 @@ impl ImportDeckCards {
             lines.push(ImportLine {
                 quantity,
                 card_name,
+                printing,
                 board: current_board,
             });
         }
@@ -186,6 +204,31 @@ fn strip_trailing_metadata(s: &str) -> String {
         .or_else(|| s.split_once('['))
         .map_or(s, |(name, _)| name);
     name.trim().to_string()
+}
+
+/// The printing named after a card name: the set code in the first
+/// parentheses, then the collector number when the next word is one (not a
+/// `*F*` foil marker or a `[Tag]`).
+///
+/// - `"Aether Hub (drc) 145 [Land]"` -> `drc`, `145`
+/// - `"Sol Ring (C21)"` -> `c21`, no number
+/// - `"Aether Hub [Land]"` -> `None`
+fn named_printing(s: &str) -> Option<NamedPrinting> {
+    let (_, after_paren) = s.split_once('(')?;
+    let (code, after_code) = after_paren.split_once(')')?;
+    let code = code.trim();
+    if code.is_empty() || !code.chars().all(|c| c.is_ascii_alphanumeric()) {
+        return None;
+    }
+    let collector_number = after_code
+        .split_whitespace()
+        .next()
+        .filter(|word| !word.starts_with('*') && !word.starts_with('['))
+        .map(str::to_string);
+    Some(NamedPrinting {
+        set_code: code.to_ascii_lowercase(),
+        collector_number,
+    })
 }
 
 /// The front face of a double-faced card's canonical name (`"A // B"` -> `"A"`),
@@ -364,6 +407,45 @@ mod tests {
         assert_eq!(lines[0].card_name, "Aether Hub");
         assert_eq!(lines[1].quantity, 1);
         assert_eq!(lines[1].card_name, "Dr. Madison Li");
+    }
+
+    #[test]
+    fn a_named_printing_keeps_its_set_and_number() {
+        let lines = parse_lines(
+            "1 Delver of Secrets (ISD) 51\n1x Aether Hub (drc) 145 [Land]\n1 Sol Ring (C21)\n1 Dr. Madison Li (pip) 531 *F* [Draw]\n1 Opt",
+        );
+        let printings: Vec<Option<(&str, Option<&str>)>> = lines
+            .iter()
+            .map(|line| {
+                line.printing
+                    .as_ref()
+                    .map(|p| (p.set_code.as_str(), p.collector_number.as_deref()))
+            })
+            .collect();
+        assert_eq!(
+            printings,
+            vec![
+                Some(("isd", Some("51"))),
+                Some(("drc", Some("145"))),
+                Some(("c21", None)),
+                Some(("pip", Some("531"))),
+                None,
+            ]
+        );
+        assert_eq!(lines[0].card_name, "Delver of Secrets");
+    }
+
+    #[test]
+    fn a_tag_or_a_foil_marker_is_not_a_printing() {
+        assert_eq!(named_printing("Aether Hub [Land]"), None);
+        assert_eq!(named_printing("Opt (not a set) 5"), None);
+        assert_eq!(
+            named_printing("Opt (XLN) *F*"),
+            Some(NamedPrinting {
+                set_code: "xln".to_owned(),
+                collector_number: None,
+            })
+        );
     }
 
     #[test]

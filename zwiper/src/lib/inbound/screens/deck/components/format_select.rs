@@ -7,7 +7,7 @@
 //! command-zone cascade (clearing commander and signature spell on a change).
 
 use components::hint::ContentHintDialog;
-use components::{DockAction, icons, use_overlay_back_action};
+use components::{Chip, DockAction, icons, use_overlay_back_action};
 use dioxus::prelude::*;
 use zwipe_core::domain::deck::format::Format;
 use zwipe_ui::deck::form;
@@ -107,9 +107,9 @@ pub(crate) fn FormatSelect(
                             div { class: "chip-unselected", "No results" }
                         } else {
                             for fmt in results {
-                                div {
+                                Chip {
                                     key: "{fmt.display_name()}",
-                                    class: if selected_format == Some(fmt) { "chip selected" } else { "chip" },
+                                    selected: selected_format == Some(fmt),
                                     onclick: move |_| {
                                         focused.set(Some(fmt));
                                         on_tap.call(fmt);

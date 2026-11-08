@@ -1,11 +1,12 @@
-//! Create profile: the hero, then the four fields and `Create profile` in
-//! a panel headed with the screen's name, `Back to login` as a chip along
+//! Create account: the hero, then the four fields and `Create account` in
+//! a panel headed with the screen's name, `Back to log in` as a chip along
 //! its foot, then the featured flavor card.
 
 use components::{Button, ButtonVariant, TOAST_NORMAL, TextInput, ToastOptions, Toasts, use_toast};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use zwipe_client::ZwipeClient;
+use zwipe_core::domain::user::{email, username};
 use zwipe_core::http::contracts::auth::HttpRegisterUser;
 use zwipe_core::http::contracts::metrics::AnonymousEventKind;
 use zwipe_ui::account::Password;
@@ -128,6 +129,7 @@ pub fn Register() -> Element {
 
     let model = driver.model.read();
     let is_loading = model.is_loading();
+    let submit_held = model.submit_held();
     let submit_label = model.submit_label();
     let username_error = model.error(Field::Username);
     let email_error = model.error(Field::Email);
@@ -147,6 +149,9 @@ pub fn Register() -> Element {
                     TextInput {
                         value: driver.username,
                         id: "username",
+                        maxlength: username::MAX_LENGTH,
+                        name: "username",
+                        autocomplete: "username",
                         label: Field::Username.label(),
                         placeholder: Field::Username.placeholder(),
                         error: username_error.as_deref().map(sentence_case),
@@ -154,6 +159,9 @@ pub fn Register() -> Element {
                     TextInput {
                         value: driver.email,
                         id: "email",
+                        maxlength: email::MAX_LENGTH,
+                        name: "email",
+                        autocomplete: "email",
                         label: Field::Email.label(),
                         placeholder: Field::Email.placeholder(),
                         input_type: "email",
@@ -162,6 +170,8 @@ pub fn Register() -> Element {
                     TextInput {
                         value: driver.password,
                         id: "password",
+                        name: "new-password",
+                        autocomplete: "new-password",
                         label: Field::Password.label(),
                         placeholder: Field::Password.placeholder(),
                         input_type: "password",
@@ -171,6 +181,8 @@ pub fn Register() -> Element {
                     TextInput {
                         value: driver.confirm_password,
                         id: "confirm_password",
+                        name: "confirm-password",
+                        autocomplete: "new-password",
                         label: Field::ConfirmPassword.label(),
                         placeholder: Field::ConfirmPassword.placeholder(),
                         input_type: "password",
@@ -179,7 +191,7 @@ pub fn Register() -> Element {
                     // the click handles the submit itself, never the page.
                     div { class: "form-submit",
                         Button {
-                            disabled: is_loading,
+                            disabled: is_loading || submit_held,
                             onclick: move |evt: MouseEvent| {
                                 evt.prevent_default();
                                 driver.dispatch(Action::Submit);

@@ -338,3 +338,221 @@ Build: main at f699acc37 (live on app.zwipe.net and zwipe.net), debug APK from ~
 ### Cleanup
 
 Droid test is as Scotty left it, apart from skips on Add (app and web). The maybeboard is empty on the server. Throttle and airplane mode are off. The clone's target is 11 GB.
+
+## Pass 7
+
+Build: main at f699acc37 (prod), debug APK on the Pixel_9a emulator against production, then app.zwipe.net at 411px in the emulator's Chrome, both as `test`. Shots are in ~/Developer/droid/shots/pass7-<n>.png (app) and web7-<n>.png (web). No logouts.
+
+I made two throwaway decks ("Droid tmp" in the app, "Droid web tmp" on web) so swipes and imports didn't touch Droid test, and deleted both on web. Every setting I changed went back and I checked it on the server.
+
+### What works
+
+- **Deck create, edit, clone, delete** (app and web). Create with only a name, then Edit to set format, commander (Swipe select), power level, land target, price target, deck tag and other tag, and save. Clone opens "<name> (clone)" with a toast. Delete asks first and the list count drops.
+- **Import** (app and web). Text import in Add mode handles "2 Swamp", "1x Name", a "Sideboard" header (Bolt went to the side board) and reports "Notacard Fakename not found". Replace mode and an export round trip work: importing the export gives the same list.
+- **Export**. The Deck, Maybe and Side chips add their sections with "// Commander", "// Deck", "// Sideboard" headers, and copy toasts "Copied to clipboard".
+- **Share**. Create link copies it ("Share link copied") and Stop sharing disables it ("Link disabled").
+- **Filters on Add**: oracle text, flavor text, price max, mana value, artist (typeahead pick), Planeswalker plus Mythic, excluding Creature and Land plus the Removal role, legal in Pauper on its own, and sort by price. Every one returned cards that fit.
+- **Swipe select in each mode** (app): commander (right picks Edgar Markov), oathbreaker, signature spell, background (Wilson, Refined Grizzly, then Scion of Halaster) and partner. Each mode's hint names what right does. Maybeboard mode was covered in pass 6.
+- **Format changes** drop a command zone card that no longer fits (Edgar left when the deck became Oathbreaker), and the deck page warns about the new format: 60 cards, banned Sol Ring, no signature spell, no sideboards.
+- **Themes**: picking Bluloco and toggling light mode both apply at once and save. Zenburn dark is restored.
+- **Settings** (app and web): Pips (Themed and Classic), Swipe confirmations (Chip, Toasts, Off), Universes Beyond (Show and Hide, which enables Exceptions) all save at once with a toast. All restored.
+- **Hints**: every "?" I opened had text, and Add's "See guide ↗" points at zwipe.net/guides/swipe-to-build/ (200).
+- **About, Account, Help & feedback** open with sensible content (v1.18.0).
+- **Offline Home** shows the cached counters and decks. Decks offline shows "Could not load decks" with Retry, and Retry works once online (app and web).
+- **Rotation**: forcing landscape keeps the app in portrait, as the manifest locks it.
+
+### New
+
+1. **The app's header Back drops unsaved Edit deck changes without asking** (bug, app only). Rename the deck in Edit deck, then tap the header ‹: the Deck page opens and the rename is gone. System Back on the same edit shows "Leave without saving?", and so does the web's header Back. Pass 4 had the app's header Back asking (178), so this looks like a regression. Shots: pass7-25, pass7-26, web7-1.
+2. **A colorless commander is treated as five-color** (bug, app and web). Droid tmp with Arzakon (a colorless planeswalker) shows W U B R G pips on Decks, and the signature-spell Swipe select offers Negate, Chaos Warp and Nature's Lore. Shot: pass7-29.
+3. **The partner Swipe select offers the commander itself** (bug). With Tymna the Weaver as commander, the partner stack's second card is Tymna the Weaver.
+4. **Import with set and number picks an Art Series card** (bug, app and web). "1 Bloodline Keeper (ISD) 90" imports "Bloodline Keeper // Bloodline Keeper", Common, Innistrad Remastered Art Series, grouped under Other. The export then carries that name. Shots: pass7-11, pass7-13, pass7-14.
+5. **"Could not load deck" is a dead end** (bug, app and web). Opening a deck offline shows "Could not load deck" with no Retry, and it stays there after the network returns. Only leaving and coming back loads it. The same visit raises the connection toast twice. Shot: pass7-39.
+6. **More than one "Is legal in" format means any of them** (question). With the deck's Commander preselected, adding Pauper still shows Elenda and other rares; Pauper alone shows commons. If "legal in both" is meant, it should narrow.
+7. **Warnings lowercase card names** (nit): "Sol ring is banned in oathbreaker", "Bloodline keeper // bloodline keeper is not legal in oathbreaker".
+8. **Replace import doesn't confirm** (question). It clears the mainboard straight away.
+9. **The share dialog never shows the link** (nit). It offers Copy link and "Stop share" (the body says "Stop sharing"), but never the URL itself.
+10. **Create and Edit treat the commander rows differently** (nit). The app's Create deck shows Commander, Partner, Background and Signature spell rows with no format set; Edit hides them until a format is chosen. On web, Create leaves an empty gap where they hide. Shots: pass7-2, web7-3.
+11. **Switching to Oathbreaker keeps the 37 land target** (nit). It was set while the deck was Commander; a 60-card format may want its own default.
+12. **A toast covers the Exceptions sheet's chips** (nit). "Universes Beyond hidden" sits over the last row of the picker (Warhammer 40,000). Shot: pass7-35.
+13. **Lightning Bolt imports at $28.99** (question). With no set given, the printing chosen is a pricey one, which skews the deck total.
+14. **Back from a deck goes to Decks, not where I came from** (nit, app). Open Droid test from Home's tile, and the header Back lands on Decks.
+15. **Web's "See guide ↗" opens in the same tab** (question). The arrow suggests a new tab, but `target` is empty, so it leaves the app.
+
+### Not covered
+
+- The Universes Beyond exclusion's effect on Add results, the Archidekt import source and the Combat filter. I ran out of time on these.
+- Slow network: GSM was tried in pass 6 (Decks timed out). This pass only did offline.
+
+### Cleanup
+
+Both throwaway decks are deleted (12 decks on the server, Droid test untouched). Server settings: zenburn, dark, theme pips, chip confirmations, Universes Beyond shown with the same four exceptions. The maybeboard is empty, as the composer asked. Airplane mode is off and rotation is back to portrait. The clone's target is 10 GB.
+
+## Pass 8
+
+Build: main at f699acc37 (prod), debug APK on the Pixel_9a emulator against production, plus app.zwipe.net in the emulator's Chrome, as `test`. Shots are in ~/Developer/droid/shots/pass8-<n>.png. I used one throwaway deck (deleted at the end) for imports, swipes and the long name.
+
+### Nit 210 repro (app, header ‹ on Edit deck)
+
+| Case | "Leave without saving?" | Result |
+|---|---|---|
+| (a) rename only | no | rename lost |
+| (b) format only (None to Commander, shown in the form) | no | still None |
+| (c) Commander format, then Edgar Markov via Swipe select | no | both lost |
+
+System Back on the same edits shows the prompt (pass 7), and so does the web's header Back.
+
+### Pass 7's Not covered list
+
+- **Universes Beyond hidden on Add** works. With UB shown, Name "Dalek" gives The Dalek Emperor and friends. Hidden, it gives "No results for this filter". Spider-Man cards still show because Marvel is one of the four exceptions, and Sliver Queen (not UB) is unaffected. Restored to Show. Shot: pass8-1.
+- **Combat filter** works. Power exact 4 returned Terry Pin 4/3, Inga and Esika 4/4, Treasury Thrull 4/4, Kheru Lich Lord 4/4, Monet 4/4, Everlasting Lich 4/0 (each checked in card details).
+- **Archidekt import** works. https://archidekt.com/decks/59349 brought in all 100 cards ($587.51), Bloodline Keeper as "Bloodline Keeper // Lord of Lineage" (unlike the text import's Art Series card, pass 7 New 4). But the deck stayed format None with no commander: Edgar Markov arrived as an ordinary creature. Question: should an Archidekt import set the commander (and format) from Archidekt's Commander category? Shots: pass8-2, pass8-3.
+
+### Slow network
+
+1. **Big loads time out on EDGE in the app because responses come uncompressed** (bug, app only). With `adb emu network speed edge` and `delay edge`, Decks shows skeletons for about 31s, then "Could not load decks" with a connection toast. Playstyle, Activity, Commander maybeboard, the Droid test deck, its Cards and Add stayed on skeletons past 25s. Home, Settings, Account and About show at once from cache. The cause looks like the client: the workspace `reqwest` has `features = ["json", "rustls-tls", "http2"]` and no `gzip` or `brotli`, so the app never sends Accept-Encoding. The server does compress: the 100-card deck is 512,820 bytes raw and 51,395 bytes with `accept-encoding: br`. Add `REQUEST_TIMEOUT` = 30s in `zwipe-client/src/lib.rs`, and a few decks' worth of raw JSON can't arrive in time at EDGE speed. The web isn't affected (the browser asks for compression). With DevTools throttled to about 30 KB/s and 400ms latency, web Decks, Activity and the maybeboard showed in under a second and Playstyle in about 5s. Shot: pass8-10.
+2. **Add stalls on a bare ghost card on a slow network** (bug, app). On EDGE, Droid test's Add sat on an empty ghost card for over a minute with no message, toast or error. It stayed empty after the network went back to full, and Add's refresh button didn't help; leaving and coming back loaded 10 cards. Shots: pass8-11, pass8-12.
+
+### Free roam
+
+- **100-card deck**: the Cards page drew 90 rows in under 0.6s. The Type, Mana value, Color and Card role groupings all add up (Type 27+14+6+12+9+32 = 100, Mana value 13+26+14+6+4+5+32 = 100). Shot: pass8-6.
+- **Long deck names**: a 94-character name is refused on save with "Deck name maximum length is 64 characters". The field itself has no maxlength, so you can keep typing past 64 and only learn at save (nit). A 64-character name wraps cleanly on the Deck page, the Cards header and the Decks list, and Home truncates it with "…". Shots: pass8-4 to pass8-8.
+- **Rapid swipes and undo** (temp deck, server counts after each burst). Ten right swipes sent back to back added 5 cards (100 to 105). The other five were ignored mid-animation. UI and server agreed, so nothing was lost or doubled. Bursts of five swipe-downs undid two cards each (105 to 103 to 101), then one more brought it to 100 exactly, and the next said "Nothing to undo". The "Undone" chip was still on screen next to that toast (nit, one message per action).
+- **Help & feedback**: "Join the Discord ↗" is a live invite (discord.gg/s2UReqUUeg, server "Zwipers", no expiry). "Report a problem ↗" opens the mail app (a mailto), which is the Gmail welcome tour on the emulator.
+- **About**: "View" opens the in-app Privacy policy. "zwipe.net ↗" opens a Chrome Custom Tab. The Scryfall, Fan Content Policy, zwipe.net and zwipe.net/privacy links all return 200.
+
+### Cleanup
+
+The temp deck is deleted (12 decks on the server, Droid test untouched). Server settings are unchanged (zenburn, dark, theme pips, chip, Universes Beyond shown with the same four exceptions), the maybeboard is empty, the network is back to full and airplane mode is off.
+
+## Pass 9
+
+Build: debug APK from origin/release, app only, against production (api.zwipe.net), on the Pixel_9a emulator, installed with `-r` so `test` stayed signed in. First build a0cb6c918; I rebuilt at 1cb240dd0 once #346 (210) landed. Shots are in ~/Developer/droid/shots/pass9-<n>.png. One throwaway Modern deck, deleted at the end.
+
+Production still runs the main-branch server, so fixes that changed zerver or the shared warning code can't show yet: 200's import, 201, and 208's copy. 209 has no commit in release.
+
+| # | Status | What I saw | Shots |
+|---|---|---|---|
+| 197 | fixed (app) | After +, Fix to 4, To sideboard, Quick add and To mainboard, the Deck page's card count and Warnings matched each change on return, with no reload. Fix to 4 toasts "Quantity set to 4", and count and warnings change at once. I didn't reach a "Fix to 1" case (Modern offers Fix to 4). | pass9-1, pass9-3 |
+| 198 | fixed | `.tag-grid` has no mask in the Format or Oracle tags picker. Scrolled chips cut at the hint box's edge. | pass9-13, pass9-14 |
+| 199 | fixed | "Edgar, Ancient Bloodlord": the × ends at x 89, the title starts at 97 and wraps to two lines with its pips centred under it. | pass9-12 |
+| 200 | export fixed, import needs a server deploy | Export now writes set and number, e.g. "4 Lightning Bolt (SLC) 83" and "1 Snapcaster Mage (INR) 478". Import on production still maps "(ISD) 90" to "Bloodline Keeper // Bloodline Keeper" (Innistrad Remastered Art Series) and "(ISD) 78" to Snapcaster Mage from Innistrad Remastered. 8116af609 changed zerver. | |
+| 201 | needs a server deploy | Set: Innistrad shows Silent Departure and the rest as the Innistrad Remastered printing (zerver change f69990dba). | pass9-8 |
+| 202 | not fixed in the app | The Set typeahead pills float above the input, covering the Oracle tags and Set headers. After picking "Innistrad" they stay open over the picked chip until the text is cleared. The Cards page's Quick add pills do the same: after a pick they stay up over the header and cover its ‹, so Back can't be tapped until the field is cleared. 548e33d2d may be web only. | pass9-5 to pass9-7 |
+| 203 | fixed (with a double message) | A filter with no results shows "No cards match" inside the ghost card, plus a "No results for this filter" toast. "Is promo: Yes" still matches nothing, even with Name "Sol Ring". | pass9-9 |
+| 204 | not fixed in the app | Mana value typed with the real keyboard ("4") and left 2s in focus: the section's × doesn't appear, and Apply while still focused applies no filter (no dot on the funnel) and leaves a bare ghost with no message. Blurring the field commits it. 8121e7a68 may be web only. | pass9-10, pass9-11 |
+| 208 | needs a server deploy | Warnings still read "Deck has 7 cards, modern requires at least 60", "Bloodline keeper // bloodline keeper is not legal in modern" and "Lightning bolt exceeds copy limit (5/4)". | pass9-2 |
+| 209 | not in release | The share dialog still says "Stop share", and the Cards page shows a Command zone chip on a Modern deck. | pass9-5 |
+| 210 | fixed (1cb240dd0) | Header ‹ on Edit deck asks "Leave without saving?" for (a) rename only, (b) format only and (c) Commander format plus Edgar Markov picked in Swipe select. Stay keeps the edits in the form; Leave discards them (the deck stays Modern with its name). | |
+
+### New
+
+1. **Quick add doesn't offer the exact match** (nit). Typing "Mountain" lists Call the Mountain Chocobo, Celebrate the Mountain-king, Cori Mountain Monastery, Cori Mountain Stalwart and Goblin Mountaineer, but not the basic Mountain. Shot: pass9-4.
+
+### Cleanup
+
+The temp deck is deleted (12 decks, Droid test untouched). Server settings are unchanged (zenburn, dark, theme pips, chip, Universes Beyond shown with the same four exceptions), and the maybeboard is empty. The emulator now runs the 1cb240dd0 debug build, still signed in.
+
+## Pass 10
+
+Build: debug APK from origin/release at 9665fd9e3 (includes #351, #350 and 209's #342), app only, against production, on the Pixel_9a emulator, installed with `-r` so `test` stayed signed in. Shots are in ~/Developer/droid/shots/pass10-<n>.png. One throwaway deck (Modern, then Commander with Kozilek), deleted at the end. I made all taps below with real `adb input tap`; the scripts only found where to tap.
+
+| # | Status | What I saw | Shots |
+|---|---|---|---|
+| 202 | fixed | Set, Artist, Oracle tags, Oracle words, Keywords and Type line: the pills sit under their box, none above it or over a section header. A tap on a pill adds the chip, empties the box and closes the pills. Quick add on Cards: pills start under the box (box 99..135, first pill at 151) and the header ‹ is clear (hit test lands on the back button). Picking Goblin Mountaineer adds it, empties the box, and ‹ then works. | pass10-4 to pass10-6 |
+| 204 | fixed | Mana value "4" and Price Max "0.10", typed with the real keyboard and left focused, show the section's × within 1.5s. Apply while still focused applies them (mana value 4 cards; Swift Maneuver and other cheap cards). | |
+| 203 | fixed | A no-result filter shows "No cards match" in the ghost card with no toast. With Synergy on (⚡ pressed) it adds "Synergy is on, turn it off to search everything". With Synergy off, only the first line shows. | pass10-11, pass10-12 |
+| 209 | fixed | The share dialog's button and body say "Stop sharing". A Modern deck's Show row has Show, Tokens and Art, no Command zone. The maybeboard hint covers its Swipe (left skips, up saves, right starts a deck) and the row actions (Quick add, Create deck, Remove). Its See guide link (zwipe.net/guides/commander-maybeboard/) returns 200. | pass10-1, pass10-2 |
+
+### A picked filter chip's × ignores real taps (bug, app)
+
+Laptop's report reproduces. After picking Innistrad in Set, a real tap on the chip's × (at 368,1509, the button's centre) does nothing, and neither does a tap on the chip body. The × is `button.chip-remove`, 10x16 CSS px, and `document.elementFromPoint` at its centre returns the parent `div.chip.selected`, not the button. So touches never reach the button, even though its click handler works (a scripted `.click()` removes the chip). That target is also far under 44px.
+
+### Colorless commander (composer's add)
+
+Droid tmp10 with Kozilek, the Great Distortion as Commander: after I removed an off-color card, the Decks row shows no color pips (pass 7's Arzakon deck showed all five). After Reset, Add's filter starts with Color identity set to nothing (colorless) plus synergy Oracle tags. The stack is all colorless: Expedition Map, Planar Bridge, Eldrazi Temple, Hedron Archive, Basalt Monolith, Void Winnower, Dreamstone Hedron, Ugin, the Spirit Dragon, Stonespeaker Crystal, Everflowing Chalice, Geode Golem, Sanctum of Ugin, Kozilek, Butcher of Truth, Ulamog, the Infinite Gyre, Gilded Lotus, Artisan of Kozilek. Before the Reset, a Price filter left over from my 204 check had no color limit and dealt white, red and green cards. That's expected for a hand-set filter, but worth knowing.
+
+### Nit 217 correction
+
+Pass 7 item 10 said the app's Create deck shows the Commander, Partner, Background and Signature rows with no format set. That came from page text, not a screenshot. On 9665fd9e3 the rows are in the DOM but collapsed to 0 height, so Create hides them like Edit does (pass10-7). The web half stands: app.zwipe.net's Create leaves an empty gap where the rows collapse (web7-3).
+
+### Other
+
+- The swipe chip "Skipped" stays on screen after a new filter returns no cards (nit). Shot: pass10-11.
+- Quick add still doesn't list the basic Mountain for "Mountain" (pass 9).
+
+### Cleanup
+
+The temp deck is deleted (12 decks, Droid test untouched). Server settings are unchanged, the maybeboard is empty, and the emulator runs the 9665fd9e3 debug build, still signed in.
+
+## Pass 11
+
+Release 80d5b43ab is live. Web: app.zwipe.net at 411px in the emulator's Chrome. App: the 9665fd9e3 debug build against production (now on the new server). Signed in as `test`. Shots are in ~/Developer/droid/shots/web11-<n>.png and pass11-<n>.png. One throwaway web deck ("Droid web11"), deleted at the end. Every tap that mattered was a real `adb input tap`. Note that the web filter's accordion ignores scripted clicks; the app's does not.
+
+### Server-side fixes, now live
+
+| # | Status | What I saw | Shots |
+|---|---|---|---|
+| 200 | fixed | Web import of "1 Snapcaster Mage (ISD) 78" and "1 Bloodline Keeper (ISD) 90" lists "Bloodline Keeper // Lord of Lineage". Export writes "(ISD) 90" and "(ISD) 78" back, and Bloodline Keeper now shows its real art and groups as a Creature. | web11-13 |
+| 201 | fixed | Set: Innistrad on web shows Silent Departure as the Innistrad printing, no longer Innistrad Remastered. | web11-12 |
+| 203 promo | partly | Corrected after a retest (app, Add on a deck with no format, filter Reset, Config defaults). My first web check was on a Modern deck, where the default "Is legal in: Modern" excludes Sol Ring, so the format, not Is promo, emptied it (the same applies to pass 9's app note). With no format: Name "Sol Ring" + Is promo: Yes returns Sol Ring, but its details show the Foundations Commander printing, which isn't a promo, so it matches the card and then shows the default printing (like 201 before its fix). Is promo: Yes alone runs no search: bare ghost, no dot on the funnel, no message or toast. | |
+| 208 | fixed | Web warnings on a Modern deck: "Deck has 8 cards, Modern requires at least 60", "Pyroblast is not legal in Modern", "Lightning Bolt has 5 copies, Modern allows 4". | web11-3 |
+| 197 (web) | fixed | Fix to 4 toasts "Quantity set to 4", and the count and warnings drop to 7 cards and 3 warnings at once. | |
+
+### Web rechecks (same nits as pass 10's app run)
+
+| # | Status | What I saw | Shots |
+|---|---|---|---|
+| 202 filters | fixed | Set: the pills (DIV chips) sit under the box (box 449..485, first pill 501) and close on a real-tap pick, which also empties the box. The pills can sit behind the open keyboard, so a tap aimed at one can land on a keyboard key. Closing the keyboard first keeps them up and tappable. | web11-6, web11-11 |
+| 202 Quick add | not fixed on web | On the web Cards page, "Mountain" pills float above the box (box 99..135, pills at -42..61 CSS px). They cover the deck title and the header ‹, whose hit test lands on a pill. The app's Quick add is fixed. | web11-13 |
+| 204 | fixed | Mana value "7" typed with the keyboard and left focused shows the section's ×. Apply while focused returns 7-drops (Dream Harvest, Conspiracy Unraveler, Never // Return, Terror Ballista). | |
+| 203 | fixed | No-result filter: "No cards match" with no toast. | |
+| 209 | fixed | The share dialog says "Stop sharing". A Modern deck's Show row has no Command zone. The maybeboard hint covers its Swipe and row actions. | |
+| 225 (chip ×) | not fixed on web | Same as the app: the picked chip's `button.chip-remove` is 10x16, `elementFromPoint` at its centre returns the chip DIV, and a real tap does nothing. | |
+
+### Free app run-through
+
+- **Activity totals don't add up to the swipe count** (question). The Activity panel reads 303 swipes, but its Totals bars are Added 25, Skipped 52, Maybeboard 5, Removed 64 = 146. My guess is that swipes on decks since deleted (lots of temp decks in passes 7 to 11) leave the bars but not the counter. Shot: pass11-2.
+- **Draw odds start at "by turn 0"** (question). The stepper works (+ to turn 3), but turn 0 is an odd default label; "opening hand" may read better.
+- Playstyle, Activity, Distributions, Mana and Draw odds all render with data. Printings opens the cover flow, → steps and updates the price chips (INR 328: $32.79 €27.47 1.72 TIX), and closing without picking toasts "Printing unchanged". Shots: pass11-1 to pass11-6.
+
+### Cleanup
+
+The web temp deck is deleted. The server has 13 decks: Droid test plus Surfer's "Surfer p19 renamed" and the rest. Server settings are unchanged (zenburn, dark, theme pips, chip, Universes Beyond shown with the same four exceptions), and the maybeboard is empty. The emulator runs the 9665fd9e3 debug build, signed in.
+
+## Pass 12
+
+Release 66e364d7e is live (bundle `zwiper-web-dxh99f335c127a64cbc.js`). Web only: app.zwipe.net at 411px in the emulator's Chrome, signed in as `test`. Shots are in ~/Developer/droid/shots/web13-<name>.png (the web12 names were taken by the promo capture). One throwaway Commander deck ("Droid tmp14", Tymna), deleted at the end. Taps were real `adb input tap`s unless noted.
+
+### Nits 213 to 225 on web
+
+| # | Status | What I saw | Shots |
+|---|---|---|---|
+| 213 | fixed | Create, Commander, Tymna, then Partner Swipe. The server reply still includes Tymna (the fix filters on the client, by oracle id), but 40 skips through the pile never dealt her. Tokens in the reply (Rock, Clue, Experience) never showed either. | web13-partner-swipe |
+| 214 | partly | Deck page: opening a deck in airplane mode shows "Couldn't load deck" with Retry and one connection toast. Back online, it loads on its own within 3 s. Add is not covered: offline it sits on a bare ghost for 45 s with no "Couldn't load cards", no Retry and no toast, and Refresh offline toasts "Filter is empty", which is misleading. It does recover on its own once back online. | web13-offline-deck, web13-add-offline |
+| 215 | fixed | Is legal in has an Any / All toggle. Commander + Pauper Commander on All sends `legalities_contains_all: ["commander","paupercommander"]` and deals Pauper Commander cards. Back on Any, it sends `legalities_contains_any` and deals rares again. | web13-all |
+| 216 | fixed | Replace mode: the button reads Replace and asks "Replace the mainboard? Every card on the mainboard comes off and the imported cards go in their place. You can't undo this." Cancel leaves the deck as it was (checked on the server). | web13-replace-confirm |
+| 217 | fixed | Create and Edit both hide Commander, Partner, Background and Signature spell with no format, with no gap. Commander as the format shows the Commander row, then Partner once Tymna is in. | web13-create, web13-cmd, web13-z |
+| 218 | fixed | Edit: Land target + from "Not set" gives 37. Switching to Oathbreaker moves it to 17. Set to 20 and switched back to Commander, it stays 20. | |
+| 219 | not fixed on web | Hide Universes Beyond, then open Exceptions right away. The sheet makes room at the bottom, but the "Universes Beyond hidden" toast draws over the middle of the chips instead (CSS y 407 to 490, over Assassin's Creed, Doctor Who, Jurassic World and Marvel). Same on a second run. The container is `position: fixed; bottom: 72px`, but the toast sits about 300px above it. | web13-exc-sheet, web13-exc-b |
+| 220 | fixed, one data outlier | No set given: Counterspell imports as Mystery Booster 2 ($2.18) and Sol Ring as Foundations Commander ($1.22), the cheapest priced printings per Scryfall. Lightning Bolt imports as Summer Magic / Edgar 162, because Scryfall prices it at $0.10 USD (its EUR is 5017). The rule works, but the data lets a very rare printing win. Maybe skip printings whose USD and EUR disagree wildly. | |
+| 221 | app nit, web note | On web, opening a deck from Home's tile and tapping the header ‹ still lands on Decks. The nit says app, so this is only a note. | |
+| 222 | fixed | Before a link exists, the dialog offers Create link, which copies the link and closes with "Share link copied". Reopened, it shows `https://zwipe.net/deck/b1a9…` truncated in a `div.share-url` (`user-select: all`) above Copy link and Stop sharing. I stopped sharing ("Link disabled"). | web13-share2 |
+| 223 | fixed | The Decks and Add hints' "See guide ↗" links have `target=_blank rel="noopener noreferrer"`. A real tap opened zwipe.net/guides/swipe-to-build/ in a new tab, and the app tab stayed on Add. I closed the guide tab. | |
+| 224 | fixed | The web Add preview is 347px wide at x=32 on a 411px viewport. The app's Add preview measures the same, 347px at x=32. | web13-preview |
+| 225 | fixed | The picked chip's × is still 10x16, but an `::after` gives it a 44x44 hit area and `elementFromPoint` now returns it. A real tap about 8 CSS px off its centre removed the chip. | web13-chip |
+
+### Quick add
+
+- **Deck Cards page: fixed.** "Plains" lists Chaplain's Blessing, Mistveil Plains, Plains and Snow-Covered Plains as buttons in flow under the box. The exact basic is there. Picking Plains toasts "Added Plains", empties the box and closes the results. Shot: web13-deck-qa.
+- **Commander maybeboard: still floats.** "Tymna" shows its result as a `div.chip-unselected` laid over the Show row's color pips, not in flow under the box. The 202 web fix only touched the deck page. I didn't pick it, so the maybeboard stays empty. Shot: web13-maybe-qa.
+- **Create deck's Commander box floats too.** "Tymna" put its "Tymna the Weaver" pill above the box, over the Commander label and its Filter button. Shot: web13-pill-above.
+
+### New on web
+
+- **Android Back on Swipe select asks to leave the deck form.** With Partner Swipe open on Create, the system Back gesture shows "Leave without saving?" when it should close the sheet. Stay keeps everything; the header ‹ closes the sheet as expected. Shot: web13-back-guard.
+- **The ⚡ in Add's dock is Synergy, not Quick add.** It toggles "Synergy on" / "Synergy off". I turned it back off. That's fine, just worth knowing when reading older notes.
+
+### Cleanup
+
+Droid tmp14 is deleted, and its share link was stopped first. The server has 12 decks again, the maybeboard is empty, and settings are unchanged (zenburn, dark, theme pips, chip, Universes Beyond shown with the same four exceptions). Universes Beyond went Hide → Show twice for 219 and ended on Show. The emulator's app is still the 9665fd9e3 debug build, signed in.

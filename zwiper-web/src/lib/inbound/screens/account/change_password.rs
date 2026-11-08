@@ -13,10 +13,12 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::http::contracts::auth::{HttpChangePassword, HttpRequestPasswordReset};
 use zwipe_ui::account;
 use zwipe_ui::screens::account::{FORGOT_PASSWORD, RESET_LINK_SENT};
+use zwipe_ui::telemetry::vocabulary::{ProfileScreen, Screen};
 use zwipe_ui::text::sentence_case;
 
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::hint_topic::{self, HintTopic};
+use crate::inbound::telemetry;
 
 /// Current, new and confirm. Only the new password is judged, once it or the
 /// confirmation has held text or after an attempt; the current one never
@@ -27,6 +29,7 @@ use crate::inbound::chrome::hint_topic::{self, HintTopic};
 /// user who no longer knows the current one.
 #[component]
 pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
+    telemetry::use_telemetry_screen(Screen::Profile(ProfileScreen::ChangePassword));
     let authed = use_authed();
     let toast = use_toast();
     let client: Signal<ZwipeClient> = use_context();
@@ -45,10 +48,10 @@ pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
         confirm.set(String::new());
     };
     use_effect(move || {
-        if open() {
-            clear();
-            submit_attempted.set(false);
-        }
+        // Opening and closing both start the form over.
+        let _open = open();
+        clear();
+        submit_attempted.set(false);
     });
 
     let error_now = move |attempted: bool| {
@@ -92,7 +95,7 @@ pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
                 .is_some()
             {
                 toast.success(
-                    "Password change successful".to_string(),
+                    "Password changed".to_string(),
                     ToastOptions::default().duration(TOAST_QUICK),
                 );
                 clear();
@@ -159,6 +162,8 @@ pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
                     TextInput {
                         value: current,
                         id: "current_password",
+                        name: "current-password",
+                        autocomplete: "current-password",
                         label: "Current password",
                         placeholder: "Current password",
                         input_type: "password",
@@ -166,6 +171,8 @@ pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
                     TextInput {
                         value: new_password,
                         id: "new_password",
+                        name: "new-password",
+                        autocomplete: "new-password",
                         label: "New password",
                         placeholder: "New password",
                         input_type: "password",
@@ -175,6 +182,8 @@ pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
                     TextInput {
                         value: confirm,
                         id: "confirm_password",
+                        name: "confirm-password",
+                        autocomplete: "new-password",
                         label: "Confirm password",
                         placeholder: "Confirm new",
                         input_type: "password",
@@ -185,7 +194,7 @@ pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
                 div { class: "action-dock action-dock-right sheet-dock",
                     button {
                         class: "action-dock-btn",
-                        "aria-label": if is_loading() { "Saving..." } else { "Save changes" },
+                        "aria-label": if is_loading() { "Saving…" } else { "Save changes" },
                         disabled: is_loading(),
                         onclick: move |_| ask_to_confirm(),
                         DockIcon { path: CHECK }

@@ -233,10 +233,16 @@ pub fn role_label(slug: &str) -> String {
     )
 }
 
-/// The chart label for a role slug: [`CardRole::to_short_name`] for a known
-/// role, the slug itself otherwise, so a role reads the same in every chart.
-pub fn role_short_label(slug: &str) -> String {
-    CardRole::try_from(slug).map_or_else(|_| slug.to_string(), |r| r.to_short_name().to_string())
+/// The display name for a role's [`CardRole::to_short_name`], the key the
+/// deck metrics count roles under; the short name itself when no role has it.
+pub fn label_for_short_name(short: &str) -> &str {
+    match CardRole::all()
+        .iter()
+        .find(|role| role.to_short_name() == short)
+    {
+        Some(role) => role.display_name(),
+        None => short,
+    }
 }
 
 /// Title-cases a `snake_case`/`kebab-case` slug (`future_role` → "Future Role").
@@ -259,10 +265,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn role_short_label_matches_the_chart_abbreviation() {
-        assert_eq!(role_short_label("sacrifice"), "sacrf");
-        assert_eq!(role_short_label("graveyard_hate"), "grvht");
-        assert_eq!(role_short_label("future_role"), "future_role");
+    fn a_short_name_reads_as_its_role() {
+        assert_eq!(label_for_short_name("sacrf"), "Sacrifice");
+        assert_eq!(label_for_short_name("cadv"), "Card advantage");
+        assert_eq!(label_for_short_name("future"), "future");
     }
 
     #[test]

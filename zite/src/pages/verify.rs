@@ -2,6 +2,7 @@ use components::{HintKey, Panel};
 use dioxus::prelude::*;
 use zwipe_client::ClientError;
 
+use crate::components::PageMeta;
 use crate::{Nav, api};
 
 #[component]
@@ -29,8 +30,13 @@ pub fn Verify(token: String) -> Element {
     });
 
     rsx! {
+        PageMeta {
+            title: "Verify email",
+            description: "Verify the email address on your Zwipe account.",
+            path: "/verify",
+        }
         Nav {}
-        div { class: "form-page content-enter",
+        main { id: "content", class: "form-page content-enter",
             match &*result.read() {
                 None => rsx! {
                     Panel { title: "Verifying", title_h1: true, centered: true,

@@ -28,6 +28,7 @@ use zwipe_ui::commander::maybeboard::{self, Step};
 use zwipe_ui::filter;
 use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::generation::{Generation, Ticket};
+use zwipe_ui::telemetry::vocabulary::Screen;
 use zwipe_ui::timing::{MAYBEBOARD_QUICK_ADD_LIMIT, QUICK_ADD_DEBOUNCE, QUICK_ADD_MIN_CHARS};
 
 use crate::domain::commander_maybeboard;
@@ -44,6 +45,7 @@ use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_
 use crate::inbound::chrome::page_keys::{focus_by_id, use_page_keys};
 use crate::inbound::router::Route;
 use crate::inbound::shell::ScreenFrame;
+use crate::inbound::telemetry;
 use crate::outbound::timer;
 
 /// The Quick add input's id, for `/`.
@@ -121,11 +123,13 @@ impl SavedList {
 /// The commander maybeboard screen.
 #[component]
 pub fn CommanderMaybeboard() -> Element {
+    telemetry::use_telemetry_screen(Screen::CommanderMaybeboard);
     let navigator = use_navigator();
     let session: Signal<Option<Session>> = use_context();
     let seed: CreateDeckSeed = use_context();
     let toast = use_toast();
     let authed = use_authed();
+    let usage = telemetry::use_usage();
     let hint_open = use_one_time_hint(OneTimeHint::CommanderMaybeboard);
     let mut show_clear_dialog = use_signal(|| false);
 
@@ -201,6 +205,7 @@ pub fn CommanderMaybeboard() -> Element {
                 is_searching.set(false);
                 return;
             };
+            usage.peek().record_search();
             let found = authed
                 .run_quiet("maybeboard_search", |c, s| async move {
                     c.search_commanders(&filter, &s).await
@@ -287,7 +292,7 @@ pub fn CommanderMaybeboard() -> Element {
         });
         if at_limit {
             toast.warning(
-                "Verify your email to create more than 1 deck".to_string(),
+                "Verify your email to create more than one deck".to_string(),
                 ToastOptions::default().duration(TOAST_LONG),
             );
         } else {
@@ -422,7 +427,7 @@ pub fn CommanderMaybeboard() -> Element {
                         }
                     } else {
                         div { class: "chip-row",
-                            span { class: "stat-chip stat-chip-p1 chip-row-label", "Quick add" }
+                            label { class: "stat-chip stat-chip-p1 chip-row-label", r#for: QUICK_ADD_ID, "Quick add" }
                             ClearWrap {
                                 filled: !query().is_empty(),
                                 on_clear: move |()| query.set(String::new()),
@@ -465,7 +470,7 @@ pub fn CommanderMaybeboard() -> Element {
                             div { class: "search-float-anchor",
                                 div { class: "search-float-results search-float-below",
                                     if is_searching() {
-                                        div { class: "chip-unselected search-float-chip", "Searching..." }
+                                        div { class: "chip-unselected search-float-chip", "Searching…" }
                                     } else if results.is_empty() {
                                         div { class: "chip-unselected search-float-chip", "No results" }
                                     } else {
@@ -499,7 +504,11 @@ pub fn CommanderMaybeboard() -> Element {
                                             picked.insert(color);
                                         }
                                     },
-                                    i { class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost" }
+                                    i {
+                                        class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
+                                        "aria-hidden": "true",
+                                    }
+                                    span { class: "sr-only", "{color.to_long_name()}" }
                                 }
                             }
                             Chip {
@@ -522,7 +531,7 @@ pub fn CommanderMaybeboard() -> Element {
                                 }
                             },
                             if load_failed() {
-                                div { class: "card-row card-row-note", "Could not load your commander maybeboard" }
+                                div { class: "card-row card-row-note", "Couldn't load your commander maybeboard" }
                             } else if !has_entries {
                                 div { class: "card-row card-row-note", "No commanders" }
                             } else if filtered.is_empty() {

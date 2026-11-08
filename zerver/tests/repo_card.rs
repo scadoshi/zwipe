@@ -573,8 +573,9 @@ async fn latest_cards_pick_prefers_in_universe_printing(pool: sqlx::PgPool) {
 }
 
 /// Array-semantics set filters: include matches any printing's set (not just
-/// the pick), and exclude only hides a card when EVERY printing's set is
-/// excluded (the Sol Ring / Secret Lair Drop shadowing bug).
+/// the pick) and shows that set's printing, and exclude only hides a card when
+/// EVERY printing's set is excluded (the Sol Ring / Secret Lair Drop shadowing
+/// bug).
 #[sqlx::test]
 async fn set_filters_are_printing_aware(pool: sqlx::PgPool) {
     let oracle = Uuid::from_u128(0x0002);
@@ -611,6 +612,14 @@ async fn set_filters_are_printing_aware(pool: sqlx::PgPool) {
         vec!["Beyond Only", "Universal Staple"],
         "include must match any printing's set"
     );
+    let staple = served
+        .iter()
+        .find(|s| s.name == "Universal Staple")
+        .unwrap();
+    assert_eq!(
+        staple.set_name, "Marvel's Spider-Man",
+        "include shows the filtered set's printing, not the view's pick"
+    );
 
     // Exclude: the staple survives (it also exists in Test Set); the
     // spm-only card is gone.
@@ -626,6 +635,118 @@ async fn set_filters_are_printing_aware(pool: sqlx::PgPool) {
         vec!["Universal Staple"],
         "exclude must only hide cards with no printing left"
     );
+}
+
+/// Is promo: Yes is printing-aware like the Set filter: it matches a card with
+/// any promo printing and shows that printing, and with a Set filter on it
+/// needs a promo printing in a filtered set.
+#[sqlx::test]
+async fn promo_filter_is_printing_aware(pool: sqlx::PgPool) {
+    let twin = Uuid::from_u128(0x0a1);
+    let split = Uuid::from_u128(0x0a2);
+    let twin_promo = card("Promo Twin")
+        .oracle(Some(twin))
+        .set("ppls", "Planeshift Promos")
+        .promo(true);
+    seed_cards(
+        &pool,
+        &[
+            card("Promo Twin")
+                .oracle(Some(twin))
+                .set("pls", "Planeshift"),
+            twin_promo.clone(),
+            card("Only Promo").promo(true),
+            card("Never Promo"),
+            // A promo in one set and a plain printing in another.
+            card("Split Card")
+                .oracle(Some(split))
+                .set("aaa", "Set A")
+                .promo(true),
+            card("Split Card").oracle(Some(split)).set("bbb", "Set B"),
+        ],
+    )
+    .await;
+    let repo = Postgres::from_pool(pool.clone());
+
+    let mut b = CardQueryBuilder::new();
+    b.set_promo(true);
+    let served = repo
+        .search_scryfall_data(&b.build().unwrap())
+        .await
+        .unwrap();
+    let mut shown: Vec<(&str, bool)> = served.iter().map(|s| (s.name.as_str(), s.promo)).collect();
+    shown.sort_unstable();
+    assert_eq!(
+        shown,
+        vec![
+            ("Only Promo", true),
+            ("Promo Twin", true),
+            ("Split Card", true)
+        ],
+        "every card with a promo printing, each shown as that promo"
+    );
+    let twin_shown = served.iter().find(|s| s.name == "Promo Twin").unwrap();
+    assert_eq!(twin_shown.id, twin_promo.id());
+
+    // Set B has only the plain printing of Split Card: no promo to show.
+    let mut b = CardQueryBuilder::new();
+    b.set_promo(true);
+    b.set_set_equals_any(vec!["Set B"]);
+    let served = repo
+        .search_scryfall_data(&b.build().unwrap())
+        .await
+        .unwrap();
+    assert!(served.is_empty(), "no promo printing in Set B: {served:?}");
+
+    let mut b = CardQueryBuilder::new();
+    b.set_promo(true);
+    b.set_set_equals_any(vec!["Set A"]);
+    let served = repo
+        .search_scryfall_data(&b.build().unwrap())
+        .await
+        .unwrap();
+    let shown: Vec<(&str, &str, bool)> = served
+        .iter()
+        .map(|s| (s.name.as_str(), s.set_name.as_str(), s.promo))
+        .collect();
+    assert_eq!(shown, vec![("Split Card", "Set A", true)]);
+}
+
+/// Is legal in: Any matches a card legal in either format, All only one legal
+/// in both.
+#[sqlx::test]
+async fn legality_filter_matches_any_or_all(pool: sqlx::PgPool) {
+    seed_cards(
+        &pool,
+        &[
+            card("Both Formats").legal("commander").legal("modern"),
+            card("Commander Only").legal("commander"),
+            card("Neither"),
+        ],
+    )
+    .await;
+    let repo = Postgres::from_pool(pool.clone());
+    let names = |served: Vec<zwipe_core::domain::card::scryfall_data::ScryfallData>| {
+        let mut names: Vec<String> = served.into_iter().map(|s| s.name).collect();
+        names.sort_unstable();
+        names
+    };
+
+    let mut b = CardQueryBuilder::new();
+    b.set_legalities_contains_any(["commander", "modern"]);
+    let any = repo
+        .search_scryfall_data(&b.build().unwrap())
+        .await
+        .unwrap();
+    assert_eq!(names(any), vec!["Both Formats", "Commander Only"]);
+
+    let mut b = CardQueryBuilder::new();
+    b.set_legalities_contains_all(["commander", "modern"]);
+    let all = repo
+        .search_scryfall_data(&b.build().unwrap())
+        .await
+        .unwrap();
+    assert_eq!(names(all), vec!["Both Formats"]);
 }
 
 /// The Universes Beyond serve setting: exclusion hides cards with no

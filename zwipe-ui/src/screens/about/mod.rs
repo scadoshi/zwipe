@@ -26,7 +26,7 @@ pub const CREDITS: &str = "Credits";
 pub const CHANGELOG: &str = "Changelog";
 
 /// The note in place of the history when the launch fetch failed.
-pub const FAILED: &str = "Could not load the changelog";
+pub const FAILED: &str = "Couldn't load the changelog";
 
 /// The first chip, which goes back to [`Filter::Latest`].
 pub const LATEST: &str = "Latest";

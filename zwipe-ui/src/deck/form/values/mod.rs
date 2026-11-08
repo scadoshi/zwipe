@@ -1,5 +1,7 @@
 //! What the deck form holds and what it sends, as the app's Create and Edit screens do it: the values, Create's request, Edit's sparse update against the deck as saved, the knock-on clears a format or commander change makes, and which command-zone slots show.
 
+use std::collections::HashSet;
+
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
@@ -8,8 +10,8 @@ use zwipe_core::domain::deck::{DeckOtherTag, DeckProfile, Format, PowerLevel};
 use zwipe_core::http::contracts::deck::{HttpCreateDeckProfile, HttpUpdateDeckProfile};
 use zwipe_core::http::helpers::Patch;
 
-use super::{parse_price, price_text};
-use crate::deck::command_zone::Slot;
+use super::{follow_land_target, parse_price, price_text};
+use crate::deck::command_zone::{self, Slot};
 
 /// Every field the Create and Edit forms hold.
 ///
@@ -45,6 +47,18 @@ pub struct FormValues {
 }
 
 impl FormValues {
+    /// The oracle ids of the commander, partner, background and signature
+    /// spell picked so far, which every slot's Swipe select leaves out.
+    #[must_use]
+    pub fn command_zone_oracle_ids(&self) -> HashSet<Uuid> {
+        command_zone::zone_oracle_ids([
+            self.commander.as_ref(),
+            self.partner.as_ref(),
+            self.background.as_ref(),
+            self.signature_spell.as_ref(),
+        ])
+    }
+
     /// A saved deck's values before its command-zone cards load: every field but the command zone, which each card fills as it arrives ([`FormValues::slot_mut`]). A missing currency reads as USD.
     #[must_use]
     pub fn saved(profile: &DeckProfile) -> Self {
@@ -92,8 +106,9 @@ impl FormValues {
         shows(slot, self.format, self.commander.as_ref())
     }
 
-    /// Picks `format` from the format picker: the commander goes, and the signature spell unless the new format has one. Clearing a commander that was set also clears its partner and background ([`FormValues::set_commander`]), and every Filter goes back on.
+    /// Picks `format` from the format picker: the commander goes, and the signature spell unless the new format has one. Clearing a commander that was set also clears its partner and background ([`FormValues::set_commander`]), and every Filter goes back on. A land target still at the old format's usual count moves to the new one's ([`follow_land_target`]).
     pub fn pick_format(&mut self, format: Format) -> Cascade {
+        self.land_target = follow_land_target(self.land_target, self.format, Some(format));
         self.format = Some(format);
         let mut cleared = vec![Slot::Commander];
         if !format.has_signature_spell() {

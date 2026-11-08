@@ -58,9 +58,9 @@ pub(super) fn DeleteAccountDialog(open: Signal<bool>) -> Element {
     let mut password = use_signal(String::new);
 
     use_effect(move || {
-        if open() {
-            password.set(String::new());
-        }
+        // Opening and closing both start the form over.
+        let _open = open();
+        password.set(String::new());
     });
 
     let label = use_memo(move || account::delete_label(u64::from(countdown())));
@@ -69,7 +69,7 @@ pub(super) fn DeleteAccountDialog(open: Signal<bool>) -> Element {
         .danger()
         .live_label(label)
         .disabled(counting)
-        .busy("Deleting...", move || {
+        .busy("Deleting…", move || {
             let password = password();
             async move {
                 let deleted = authed
@@ -96,10 +96,11 @@ pub(super) fn DeleteAccountDialog(open: Signal<bool>) -> Element {
             open,
             title: "Delete account",
             actions: vec![DialogAction::Dismiss("Cancel".into()), delete.into()],
-            "This will permanently delete your account, all decks, and all card data. This cannot be undone."
+            "This will permanently delete your account, all decks, and all card data. This can't be undone."
             TextInput {
                 value: password,
                 input_type: "password".to_string(),
+                autocomplete: "current-password",
                 placeholder: "Password".to_string(),
             }
         }

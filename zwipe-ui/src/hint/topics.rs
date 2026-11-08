@@ -217,7 +217,9 @@ impl HintTopic {
                 .collect(),
             Self::Theme => vec![
                 bullet(vec![text("The app's palette. Picks preview as you tap")]),
-                bullet(vec![text("The last four are color blind modes")]),
+                bullet(vec![text(
+                    "The last group holds the high contrast and color blind themes",
+                )]),
                 bullet(vec![
                     mode_key("Light", KeyIcon::Light),
                     text(" "),
@@ -238,7 +240,7 @@ impl HintTopic {
                 archetypes(),
                 bullet(vec![
                     text("Picking one pre-selects the "),
-                    emph("oracle tags", Role::Tertiary),
+                    emph("Oracle tags", Role::Tertiary),
                     text(" that define it"),
                 ]),
                 bullet(vec![
@@ -372,7 +374,7 @@ impl HintTopic {
                 "Mainboard cards by role, like ramp or removal. Cards with no role are left out. Tap a role to see its tags",
             )])],
             Self::OracleTagChart => vec![line(vec![text(
-                "Mainboard cards by oracle tag, the finer tags under each role. Tap a tag for what it means",
+                "Mainboard cards by Oracle tag, the finer tags under each role. Tap a tag for what it means",
             )])],
             Self::ColorChart => vec![line(vec![text(
                 "Mainboard cards by color identity; a two-color card counts for both",

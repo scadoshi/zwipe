@@ -172,7 +172,7 @@ pub fn Home() -> Element {
         ),
         (
             DEMO_ORACLE_TAGS,
-            "Browse the tag dictionary and filter by oracle tag",
+            "Browse the tag dictionary and filter by Oracle tag",
             "Demo: Oracle tags",
         ),
         (
@@ -251,135 +251,137 @@ pub fn Home() -> Element {
             }
         }
         Nav {}
-        div { class: "banner-stack",
-            Banner {
-                "{latest} is out. "
-                Link { to: Route::Changelog {}, "See what's new" }
-            }
-        }
-        div { class: "hero",
-            // Semantic page heading for crawlers and screen readers; the ASCII
-            // logo is the visual title, so this is visually hidden and the
-            // logo is hidden from screen readers.
-            h1 { class: "sr-only", "Zwipe, the Magic: The Gathering deck builder for phone and web" }
-            // Keyed on the replay count so the spacing animation runs again
-            // with the decode.
-            div { class: "hero-card",
-                // The mark, then the numbers it stands for, then the sentence
-                // under both.
-                div { class: "hero-head",
-                    for run in [use_context::<Replay>().0()] {
-                        div { key: "logo{run}", class: "logo", "aria-hidden": "true", Decode { text: LOGO_ASCII } }
-                    }
-                    StatsStrip {}
-                }
-                hr { class: "hero-rule" }
-                p { class: "tagline",
-                    "The "
-                    a { href: "https://magic.wizards.com/en", "Magic: The Gathering" }
-                    " deck builder for phone and web. Swipe through cards for any format, and pick a commander to get the best synergy first."
-                }
-                div { class: "hero-chips",
-                    span { class: "hero-chip chip-value", "Free" }
-                    span { class: "hero-chip chip-value", "No ads" }
-                    a {
-                        class: "panel-action",
-                        href: "https://apps.apple.com/us/app/zwipe-tcg/id6761341603",
-                        "iOS"
-                        span { class: "ext", "\u{2197}" }
-                    }
-                    a {
-                        class: "panel-action",
-                        href: "https://play.google.com/store/apps/details?id=com.scadoshi.zwipe",
-                        "Android"
-                        span { class: "ext", "\u{2197}" }
-                    }
+        main { id: "content", class: "site-main",
+            div { class: "banner-stack",
+                Banner {
+                    "{latest} is out. "
+                    Link { to: Route::Changelog {}, "See what's new" }
                 }
             }
-        }
-        // Tap-to-open full-art overlay for the featured flavor card, copied
-        // from the shared-deck page: a dimmed backdrop with the card art, tap
-        // anywhere to dismiss (the flip button stops propagation, so flipping
-        // never dismisses). Lives at the top level, outside `content-enter`.
-        if flavor_overlay().is_some() || flavor_overlay_dismissing() {
-            div { class: "sd-image-overlay-backdrop" }
-            div {
-                class: if flavor_overlay_dismissing() { "sd-image-overlay dismissing" } else { "sd-image-overlay" },
-                onclick: move |_| {
-                    dismiss_flavor_overlay(flavor_overlay, flavor_overlay_dismissing);
-                },
-                if let Some(sd) = flavor_overlay() {
-                    FlippableCardImage {
-                        sd,
-                        size: ImageSize::Large,
-                        class: "sd-image-overlay-img".to_string(),
-                        draggable: false,
+            div { class: "hero",
+                // Semantic page heading for crawlers and screen readers; the ASCII
+                // logo is the visual title, so this is visually hidden and the
+                // logo is hidden from screen readers.
+                h1 { class: "sr-only", "Zwipe, the Magic: The Gathering deck builder for phone and web" }
+                // Keyed on the replay count so the spacing animation runs again
+                // with the decode.
+                div { class: "hero-card",
+                    // The mark, then the numbers it stands for, then the sentence
+                    // under both.
+                    div { class: "hero-head",
+                        for run in [use_context::<Replay>().0()] {
+                            div { key: "logo{run}", class: "logo", "aria-hidden": "true", Decode { text: LOGO_ASCII } }
+                        }
+                        StatsStrip {}
+                    }
+                    hr { class: "hero-rule" }
+                    p { class: "tagline",
+                        "The "
+                        a { href: "https://magic.wizards.com/en", "Magic: The Gathering" }
+                        " deck builder for phone and web. Swipe through cards for any format, and pick a commander to get the best synergy first."
+                    }
+                    div { class: "hero-chips",
+                        span { class: "hero-chip chip-value", "Free" }
+                        span { class: "hero-chip chip-value", "No ads" }
+                        a {
+                            class: "panel-action",
+                            href: "https://apps.apple.com/us/app/zwipe-tcg/id6761341603",
+                            "iOS"
+                            span { class: "ext", "\u{2197}" }
+                        }
+                        a {
+                            class: "panel-action",
+                            href: "https://play.google.com/store/apps/details?id=com.scadoshi.zwipe",
+                            "Android"
+                            span { class: "ext", "\u{2197}" }
+                        }
                     }
                 }
             }
-        }
-        div { class: "page content-enter",
-            // The demo and the three core sells share one band: the gallery
-            // is ~70vh tall, so the stacked panels fill its side-space
-            // instead of renting another screen below it.
-            div { class: "demo-features",
-                div { class: "demo-col",
-                    // Same Panel grammar as the rest of the band; the per-clip
-                    // caption under the video does the describing.
-                    Panel { title: "Watch it work",
-                        GalleryFrame { index, total, noun: "demo",
-                            video {
-                                // key forces a remount when index changes so autoplay re-fires
-                                // for the new src instead of the browser keeping the old video.
-                                key: "{index()}",
-                                class: "gallery-video",
-                                src: current_src,
-                                "aria-label": "{current_label}",
-                                autoplay: true,
-                                muted: true,
-                                "loop": true,
-                                playsinline: true,
-                                controls: true,
-                                preload: "metadata",
+            // Tap-to-open full-art overlay for the featured flavor card, copied
+            // from the shared-deck page: a dimmed backdrop with the card art, tap
+            // anywhere to dismiss (the flip button stops propagation, so flipping
+            // never dismisses). Lives at the top level, outside `content-enter`.
+            if flavor_overlay().is_some() || flavor_overlay_dismissing() {
+                div { class: "sd-image-overlay-backdrop" }
+                div {
+                    class: if flavor_overlay_dismissing() { "sd-image-overlay dismissing" } else { "sd-image-overlay" },
+                    onclick: move |_| {
+                        dismiss_flavor_overlay(flavor_overlay, flavor_overlay_dismissing);
+                    },
+                    if let Some(sd) = flavor_overlay() {
+                        FlippableCardImage {
+                            sd,
+                            size: ImageSize::Large,
+                            class: "sd-image-overlay-img".to_string(),
+                            draggable: false,
+                        }
+                    }
+                }
+            }
+            div { class: "page content-enter",
+                // The demo and the three core sells share one band: the gallery
+                // is ~70vh tall, so the stacked panels fill its side-space
+                // instead of renting another screen below it.
+                div { class: "demo-features",
+                    div { class: "demo-col",
+                        // Same Panel grammar as the rest of the band; the per-clip
+                        // caption under the video does the describing.
+                        Panel { title: "Watch it work",
+                            GalleryFrame { index, total, noun: "demo",
+                                video {
+                                    // key forces a remount when index changes so autoplay re-fires
+                                    // for the new src instead of the browser keeping the old video.
+                                    key: "{index()}",
+                                    class: "gallery-video",
+                                    src: current_src,
+                                    "aria-label": "{current_label}",
+                                    autoplay: true,
+                                    muted: true,
+                                    "loop": true,
+                                    playsinline: true,
+                                    controls: true,
+                                    preload: "metadata",
+                                }
+                            }
+                            hr { class: "gallery-rule" }
+                            GalleryFooter { index: index(), total, caption: current_caption.to_string() }
+                        }
+                    }
+                    // The three core sells: swiping, synergy-ordered serving,
+                    // and tags. Hosting basics (accounts, sync, import) are
+                    // assumed service table stakes, not pitched.
+                    div { class: "features-stack",
+                        Panel { title: "Swipe to build",
+                            ul { class: "card-bullets",
+                                li { "Right to add a card" }
+                                li { "Left to skip it" }
+                                li { "Up to save it to your maybeboard" }
+                                li { "Down to undo" }
+                                li { "Removing cards works the same way, swipe by swipe" }
+                                li { "Swipe-pick your commander, partner, background, or signature spell" }
                             }
                         }
-                        hr { class: "gallery-rule" }
-                        GalleryFooter { index: index(), total, caption: current_caption.to_string() }
-                    }
-                }
-                // The three core sells: swiping, synergy-ordered serving,
-                // and tags. Hosting basics (accounts, sync, import) are
-                // assumed service table stakes, not pitched.
-                div { class: "features-stack",
-                    Panel { title: "Swipe to build",
-                        ul { class: "card-bullets",
-                            li { "Right to add a card" }
-                            li { "Left to skip it" }
-                            li { "Up to save it to your maybeboard" }
-                            li { "Down to undo" }
-                            li { "Removing cards works the same way, swipe by swipe" }
-                            li { "Swipe-pick your commander, partner, background, or signature spell" }
+                        Panel { title: "Served in synergy order",
+                            ul { class: "card-bullets",
+                                li { "Most synergistic cards show first based on your selected commander" }
+                                li { "The order learns from swipes: crowd favorites rise as players build" }
+                                li { "Only cards legal in your format and colors" }
+                            }
                         }
-                    }
-                    Panel { title: "Served in synergy order",
-                        ul { class: "card-bullets",
-                            li { "Most synergistic cards show first based on your selected commander" }
-                            li { "The order learns from swipes: crowd favorites rise as players build" }
-                            li { "Only cards legal in your format and colors" }
-                        }
-                    }
-                    Panel { title: "Know what every card does",
-                        ul { class: "card-bullets",
-                            li { "Every card labeled by role: ramp, removal, counterspell, tokens, and more" }
-                            li { "Filter your feed by what a card does" }
-                            li { "Tap any tag for a plain-language definition" }
-                            li { "Built on Scryfall's community-maintained tags" }
+                        Panel { title: "Know what every card does",
+                            ul { class: "card-bullets",
+                                li { "Every card labeled by role: ramp, removal, counterspell, tokens, and more" }
+                                li { "Filter your feed by what a card does" }
+                                li { "Tap any tag for a plain-language definition" }
+                                li { "Built on Scryfall's community-maintained tags" }
+                            }
                         }
                     }
                 }
+                FeaturedFlavor { overlay: flavor_overlay }
+                Testimonials {}
             }
-            FeaturedFlavor { overlay: flavor_overlay }
-            Testimonials {}
         }
         Footer {}
     }

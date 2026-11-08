@@ -158,6 +158,25 @@ pub(crate) fn OracleTags(on_dictionary: EventHandler<PickerField>) -> Element {
             }
 
             // search-to-add over the full catalog
+            ClearWrap {
+                filled: !includes_search().is_empty(),
+                on_clear: move |()| {
+                    includes_search.set(String::new());
+                },
+                input { class: "input input-compact",
+                        style: "flex: 1; margin-bottom: 0;",
+                        id: "oracle-tags-search",
+                        placeholder: "Search all Oracle tags",
+                        value: "{includes_search()}",
+                        r#type: "text",
+                        autocapitalize: "none",
+                        autocorrect: "off",
+                        spellcheck: "false",
+                        oninput: move |event| {
+                            includes_search.set(event.value());
+                        }
+                    }
+            }
             if !includes_search().is_empty() {
                 {
                     let results: Vec<OracleTag> = oracle_tag::search_oracle_tags(tags, &includes_search())
@@ -168,13 +187,15 @@ pub(crate) fn OracleTags(on_dictionary: EventHandler<PickerField>) -> Element {
 
                     rsx! {
                         if !results.is_empty() {
-                            div { class: "search-float-anchor",
-                                div { class: "search-float-results",
+                            div {
+                                div { class: "card-filter-results",
                                     for (i, tag) in results.into_iter().enumerate() {
-                                        div {
-                                            class: "chip-unselected search-float-chip",
-                                            style: "animation-delay: {i * 40}ms, {250 + i * 40}ms;",
+                                        button {
+                                            r#type: "button",
+                                            class: "chip-unselected card-filter-result",
+                                            style: "animation-delay: {i * 40}ms;",
                                             onclick: move |_| {
+                                                includes_search.set(String::new());
                                                 let m = mode();
                                                 let mut current = read_selected(&filter_builder(), m);
                                                 current.push(tag.slug.clone());
@@ -188,26 +209,6 @@ pub(crate) fn OracleTags(on_dictionary: EventHandler<PickerField>) -> Element {
                         }
                     }
                 }
-            }
-
-            ClearWrap {
-                filled: !includes_search().is_empty(),
-                on_clear: move |()| {
-                    includes_search.set(String::new());
-                },
-                input { class: "input input-compact",
-                        style: "flex: 1; margin-bottom: 0;",
-                        id: "oracle-tags-search",
-                        placeholder: "Search all oracle tags",
-                        value: "{includes_search()}",
-                        r#type: "text",
-                        autocapitalize: "none",
-                        autocorrect: "off",
-                        spellcheck: "false",
-                        oninput: move |event| {
-                            includes_search.set(event.value());
-                        }
-                    }
             }
 
             // == excludes ==
@@ -250,6 +251,25 @@ pub(crate) fn OracleTags(on_dictionary: EventHandler<PickerField>) -> Element {
                 }
             }
 
+            ClearWrap {
+                filled: !excludes_search().is_empty(),
+                on_clear: move |()| {
+                    excludes_search.set(String::new());
+                },
+                input { class: "input input-compact",
+                        style: "flex: 1; margin-bottom: 0;",
+                        id: "oracle-tags-excludes-search",
+                        placeholder: "Search all Oracle tags",
+                        value: "{excludes_search()}",
+                        r#type: "text",
+                        autocapitalize: "none",
+                        autocorrect: "off",
+                        spellcheck: "false",
+                        oninput: move |event| {
+                            excludes_search.set(event.value());
+                        }
+                    }
+            }
             if !excludes_search().is_empty() {
                 {
                     let results: Vec<OracleTag> = oracle_tag::search_oracle_tags(tags, &excludes_search())
@@ -260,13 +280,15 @@ pub(crate) fn OracleTags(on_dictionary: EventHandler<PickerField>) -> Element {
 
                     rsx! {
                         if !results.is_empty() {
-                            div { class: "search-float-anchor",
-                                div { class: "search-float-results",
+                            div {
+                                div { class: "card-filter-results",
                                     for (i, tag) in results.into_iter().enumerate() {
-                                        div {
-                                            class: "chip-unselected search-float-chip",
-                                            style: "animation-delay: {i * 40}ms, {250 + i * 40}ms;",
+                                        button {
+                                            r#type: "button",
+                                            class: "chip-unselected card-filter-result",
+                                            style: "animation-delay: {i * 40}ms;",
                                             onclick: move |_| {
+                                                excludes_search.set(String::new());
                                                 let mut current = read_excluded(&filter_builder());
                                                 current.push(tag.slug.clone());
                                                 write_excluded(&mut filter_builder.write(), current);
@@ -279,26 +301,6 @@ pub(crate) fn OracleTags(on_dictionary: EventHandler<PickerField>) -> Element {
                         }
                     }
                 }
-            }
-
-            ClearWrap {
-                filled: !excludes_search().is_empty(),
-                on_clear: move |()| {
-                    excludes_search.set(String::new());
-                },
-                input { class: "input input-compact",
-                        style: "flex: 1; margin-bottom: 0;",
-                        id: "oracle-tags-excludes-search",
-                        placeholder: "Search all oracle tags",
-                        value: "{excludes_search()}",
-                        r#type: "text",
-                        autocapitalize: "none",
-                        autocorrect: "off",
-                        spellcheck: "false",
-                        oninput: move |event| {
-                            excludes_search.set(event.value());
-                        }
-                    }
             }
         }
     }

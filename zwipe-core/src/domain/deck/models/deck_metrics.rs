@@ -7,7 +7,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::domain::card::Card;
-use crate::domain::card::card_role::CardRole;
+use crate::domain::card::card_role::{self, CardRole};
 use crate::domain::card::scryfall_data::ScryfallData;
 use crate::domain::card::scryfall_data::colors::Color;
 use crate::domain::card::search_card::card_filter::price_currency::PriceCurrency;
@@ -65,6 +65,12 @@ pub struct DeckMetrics {
     pub total_price_tix: Option<f64>,
     /// Average card price in MTGO Event Tickets. `None` if no cards priced.
     pub avg_price_tix: Option<f64>,
+    /// Copies with no USD price, which the USD total and average leave out.
+    pub unpriced_usd: usize,
+    /// Copies with no EUR price, which the EUR total and average leave out.
+    pub unpriced_eur: usize,
+    /// Copies with no MTGO Event Tickets price, which the tix total and average leave out.
+    pub unpriced_tix: usize,
     /// Non-empty mechanical category counts, sorted by count descending.
     pub card_role_counts: Vec<(&'static str, usize)>,
     /// Each charted role's oracle tags across the mainboard, keyed by the
@@ -84,17 +90,29 @@ pub struct DeckMetrics {
 }
 
 impl DeckMetrics {
-    /// 5-letter abbreviation for type distribution labels.
+    /// Copies with no price in `currency`, which its total and average
+    /// leave out.
+    #[must_use]
+    pub fn unpriced(&self, currency: PriceCurrency) -> usize {
+        match currency {
+            PriceCurrency::Usd => self.unpriced_usd,
+            PriceCurrency::Eur => self.unpriced_eur,
+            PriceCurrency::Tix => self.unpriced_tix,
+        }
+    }
+
+    /// The type chart's word for a type: the type's singular, or a short
+    /// word for the long ones, so each fits its column on a phone.
     pub fn abbreviate_type(label: &str) -> &str {
         match label {
-            "lands" => "lands",
-            "creatures" => "creat",
-            "planeswalkers" => "plnsw",
-            "artifacts" => "artif",
-            "enchantments" => "enchn",
-            "instants" => "instn",
-            "sorceries" => "sorcr",
-            "other" => "other",
+            "lands" => "Land",
+            "creatures" => "Creature",
+            "planeswalkers" => "Walker",
+            "artifacts" => "Artifact",
+            "enchantments" => "Enchant",
+            "instants" => "Instant",
+            "sorceries" => "Sorcery",
+            "other" => "Other",
             _ => label,
         }
     }
@@ -223,7 +241,7 @@ impl DeckMetrics {
     }
 
     /// Draw-odds inputs: `(library size, [(bucket label, count)])`, lands
-    /// plus each card role, the largest bucket first and Land ahead of a role
+    /// plus each card role by its display name, the largest bucket first and Land ahead of a role
     /// it ties. Library size is the mainboard (the commander sits in the
     /// command zone, not the library).
     pub fn draw_odds_buckets(&self) -> (u32, Vec<(&'static str, u32)>) {
@@ -232,7 +250,7 @@ impl DeckMetrics {
         buckets.extend(
             self.card_role_counts
                 .iter()
-                .map(|(label, count)| (*label, display_count(*count))),
+                .map(|(key, count)| (card_role::label_for_short_name(key), display_count(*count))),
         );
         buckets.sort_by_key(|(_, count)| std::cmp::Reverse(*count));
         (deck_size, buckets)
@@ -284,6 +302,7 @@ impl DeckMetrics {
         let mut eur_copies = 0.0f64;
         let mut tix_sum = 0.0f64;
         let mut tix_copies = 0.0f64;
+        let mut unpriced = [0usize; 3];
         let mut power_sum = 0.0f64;
         let mut power_copies = 0.0f64;
         let mut toughness_sum = 0.0f64;
@@ -410,6 +429,7 @@ impl DeckMetrics {
                 tix_sum += p * qty_f;
                 tix_copies += qty_f;
             }
+            count_unpriced(&mut unpriced, &card.scryfall_data, qty);
         }
 
         let mana_balance: [(usize, usize); 5] = std::array::from_fn(|i| {
@@ -451,7 +471,9 @@ impl DeckMetrics {
                 tix_sum += p;
                 tix_copies += 1.0;
             }
+            count_unpriced(&mut unpriced, &card.scryfall_data, 1);
         }
+        let [unpriced_usd, unpriced_eur, unpriced_tix] = unpriced;
 
         let type_counts: Vec<(&'static str, usize)> = TYPE_LABELS
             .iter()
@@ -538,6 +560,9 @@ impl DeckMetrics {
             avg_price_eur,
             total_price_tix,
             avg_price_tix,
+            unpriced_usd,
+            unpriced_eur,
+            unpriced_tix,
             card_role_counts,
             card_role_tags,
             oracle_tag_counts,
@@ -689,6 +714,17 @@ fn produced_color_index(s: &str) -> Option<usize> {
     Color::try_from(s).ok().map(color_slot)
 }
 
+/// Adds `copies` to each currency's slot in `unpriced` (USD, EUR, tix) the
+/// printing has no price in.
+fn count_unpriced(unpriced: &mut [usize; 3], scryfall_data: &ScryfallData, copies: usize) {
+    let currencies = [PriceCurrency::Usd, PriceCurrency::Eur, PriceCurrency::Tix];
+    for (slot, currency) in unpriced.iter_mut().zip(currencies) {
+        if card_price(scryfall_data, currency).is_none() {
+            *slot = slot.saturating_add(copies);
+        }
+    }
+}
+
 /// Parse an optional price string (e.g. "1.50") into f64.
 fn parse_price(price: Option<&str>) -> Option<f64> {
     price.and_then(|s| s.parse::<f64>().ok())
@@ -804,7 +840,7 @@ mod tests {
             type_counts: vec![("creatures", 4), ("lands", 2)],
             ..DeckMetrics::from_entries(&[])
         };
-        assert_eq!(two.type_bars(), vec![("creat", 4, 100), ("lands", 2, 50)]);
+        assert_eq!(two.type_bars(), vec![("Creature", 4, 100), ("Land", 2, 50)]);
     }
 
     #[test]
@@ -1042,7 +1078,7 @@ mod tests {
         assert_eq!(deck_size, 10);
         assert_eq!(
             buckets,
-            vec![("remov", 4), ("Land", 3), ("ramp", 3)],
+            vec![("Removal", 4), ("Land", 3), ("Ramp", 3)],
             "Land stays ahead of a role it ties"
         );
     }
@@ -1189,6 +1225,27 @@ mod tests {
         let metrics = DeckMetrics::from_entries(&[priced, unpriced]);
         assert!((metrics.total_price_usd.unwrap() - 2.00).abs() < f64::EPSILON);
         assert!((metrics.avg_price_usd.unwrap() - 2.00).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn unpriced_counts_copies_per_currency() {
+        let mut priced = make_entry("Sol Ring", 1);
+        priced.card.scryfall_data.prices.usd = Some("2.00".to_string());
+        let unpriced = make_entry("Mystery Card", 3);
+
+        let metrics = DeckMetrics::from_entries(&[priced, unpriced]);
+        assert_eq!(metrics.unpriced(PriceCurrency::Usd), 3);
+        assert_eq!(metrics.unpriced(PriceCurrency::Eur), 4);
+        assert_eq!(metrics.unpriced(PriceCurrency::Tix), 4);
+    }
+
+    #[test]
+    fn an_unpriced_commander_counts_once() {
+        let spell = make_entry("Sol Ring", 1);
+        let commander = make_entry("Mystery Commander", 1).card;
+
+        let metrics = DeckMetrics::from_entries_and_command_zone(&[spell], &[commander]);
+        assert_eq!(metrics.unpriced(PriceCurrency::Usd), 2);
     }
 
     #[test]

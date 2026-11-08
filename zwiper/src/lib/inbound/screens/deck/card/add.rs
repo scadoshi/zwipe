@@ -5,7 +5,9 @@
 //! card's entrance, image easing and the sheets.
 
 use components::icons::{self, BoltIcon, EyeIcon};
-use components::{Chip, DockAction, DockFilter, ToastOptions, Toasts, use_toast};
+use components::{
+    Chip, DockAction, DockFilter, LoadFailed, ToastOptions, Toasts, use_back_online, use_toast,
+};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use uuid::Uuid;
@@ -21,7 +23,7 @@ use zwipe_ui::screens::add_cards::{
     self, Action, Destination, Effect, Pile, Source, State, UndoClaim,
 };
 use zwipe_ui::stack;
-use zwipe_ui::stores::parked;
+use zwipe_ui::stores::{parked, undo};
 
 use super::components::card_info::{CardDetailsSheet, CardSkeleton};
 use super::components::printing_sheet::PrintingSheet;
@@ -398,7 +400,8 @@ impl Driver {
                     } else {
                         tracing::warn!("undo add (delete deck card) failed: {e}");
                     }
-                    toast.error(format!("Failed to undo: {e}"), ToastOptions::default());
+                    tracing::warn!("undo failed: {e}");
+                    toast.error(undo::UNDO_FAILED.to_owned(), ToastOptions::default());
                     self.dispatch(Action::Failed { ticket });
                 }
             }
@@ -423,7 +426,8 @@ impl Driver {
                 Ok(_) => self.dispatch(Action::Landed { ticket }),
                 Err(e) => {
                     tracing::warn!("undo promote failed: {e}");
-                    toast.error(format!("Failed to undo: {e}"), ToastOptions::default());
+                    tracing::warn!("undo failed: {e}");
+                    toast.error(undo::UNDO_FAILED.to_owned(), ToastOptions::default());
                     self.dispatch(Action::Failed { ticket });
                 }
             }
@@ -595,6 +599,8 @@ pub fn Add(deck_id: Uuid) -> Element {
             parked,
         });
     });
+    // A load that failed offline goes again once the connection is back.
+    use_back_online(Callback::new(move |()| driver.dispatch(Action::Retry)));
 
     // Every bump after the first render is an applied filter or a rerun the
     // model asked for: hand the filter to the model.
@@ -643,11 +649,26 @@ pub fn Add(deck_id: Uuid) -> Element {
         driver.dispatch(committed.map_or(Action::Undo, Action::Swipe));
     };
 
-    let (source, pile, window, current, printing_card, shows_synergy, validates_apply, shows_dot) = {
+    let (
+        source,
+        pile,
+        ghost_note,
+        ghost_detail,
+        load_failed,
+        window,
+        current,
+        printing_card,
+        shows_synergy,
+        validates_apply,
+        shows_dot,
+    ) = {
         let model = driver.model.read();
         (
             model.source(),
             model.pile(),
+            model.ghost_note(),
+            model.ghost_synergy_note(),
+            model.load_failed(),
             model.window().to_vec(),
             model.current().cloned(),
             model.printing_card().cloned(),
@@ -721,8 +742,10 @@ pub fn Add(deck_id: Uuid) -> Element {
                                 },
                                 CardSkeleton {}
                             }
+                        } else if load_failed {
+                            LoadFailed { message: add_cards::LOAD_FAILED, on_retry: move |()| driver.dispatch(Action::Retry) }
                         } else {
-                            CardSkeleton {}
+                            CardSkeleton { note: ghost_note, detail: ghost_detail }
                         }
                     } else {
                         // Maybeboard mode
@@ -738,7 +761,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                             }
 
                         } else {
-                            CardSkeleton {}
+                            CardSkeleton { note: ghost_note, detail: ghost_detail }
                         }
                     }
 

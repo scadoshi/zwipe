@@ -636,7 +636,7 @@ fn the_copy_matches_the_app() {
     assert_eq!(TITLE, "Commander maybeboard");
     assert_eq!(QUICK_ADD, "Quick add");
     assert_eq!(QUICK_ADD_PLACEHOLDER, "Search a commander to add");
-    assert_eq!(SEARCHING, "Searching...");
+    assert_eq!(SEARCHING, "Searching…");
     assert_eq!(NO_RESULTS, "No results");
     assert_eq!(SHOW, "Show");
     assert_eq!(SHOW_ALL, "All");
@@ -658,5 +658,5 @@ fn the_copy_matches_the_app() {
     assert_eq!(LIST_TITLE, "Commanders");
     assert_eq!(NO_COMMANDERS, "No commanders");
     assert_eq!(NO_MATCH, "No commanders match");
-    assert_eq!(LOAD_FAILED, "Could not load your commander maybeboard");
+    assert_eq!(LOAD_FAILED, "Couldn't load your commander maybeboard");
 }

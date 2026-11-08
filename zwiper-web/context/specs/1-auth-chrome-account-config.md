@@ -225,7 +225,7 @@ Gaps and differences to close:
 | Password | `Password` | see 1.4 |
 | Email | `Email` | Line: `Where password resets and verification go` |
 | Verification | `Verification` | Line: `Confirms the email is yours. ` `[Resend]` ` if it never came` |
-| Theme | `Theme` | • `The app's palette. Picks preview as you tap` • `The last four are color blind modes` • `[☀ light]` ` ` `[☾ dark]` ` switches between the theme's two palettes` (icons are the sun/moon ModeIcon SVGs) |
+| Theme | `Theme` | • `The app's palette. Picks preview as you tap` • `The last group holds the high contrast and color blind themes` • `[☀ light]` ` ` `[☾ dark]` ` switches between the theme's two palettes` (icons are the sun/moon ModeIcon SVGs) |
 | Pips | `Pips` | • `[Theme]` ` draws mana symbols in your theme's colors` • `[Natural]` ` keeps Magic's classic colors on every theme` |
 | AppIcon | `App icon` | • `The icon on your home screen, in any theme's colors` • `[Match theme]` ` keeps it in your theme as you change it` (skip for TUI) |
 | UniversesBeyond | `Universes Beyond` | • `[Hide]` ` keeps crossover cards out of searches and commander picks` • `Exceptions keeps chosen franchises showing` |
@@ -262,7 +262,7 @@ Gaps and differences to close:
 | TagRates | `Oracle tags` | • `The tags where your rate stands out most from other players', with your own rate` • `A tag everyone passes on shows only after a lot of skips. Tap a tag to see what it means` • `From your decks with a commander, for tags dealt at least 10 times` |
 | HardPasses | `Most skipped` | • `Cards you skip and never add or save, when other players usually keep them` • `A card everyone passes on shows only after a lot of skips. The tag counts yours, and an open row names the commanders you skipped it under` • `From your decks with a commander` |
 
-`MAX_DECK_TAGS` is `zwipe_core::domain::deck::MAX_DECK_TAGS`. Note the Theme hint says "The last four are color blind modes" but the picker's last group is `High contrast & color blind` with six themes (four color-blind); copy as is.
+`MAX_DECK_TAGS` is `zwipe_core::domain::deck::MAX_DECK_TAGS`. The Theme hint's second line names the picker's last group, `High contrast & color blind`: six themes, four of them color blind.
 
 ### 2.3 One-time hint dialogs (`components/hint_dialog.rs`)
 

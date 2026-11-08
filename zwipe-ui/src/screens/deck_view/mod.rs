@@ -16,13 +16,14 @@ use crate::buy;
 use crate::deck::view::{self, Done};
 use crate::deck::warning::{self, Fix};
 use crate::generation::{Generation, Ticket};
+use crate::screens::deck_form;
 use crate::toast::{Line, Toast, keep_one};
 
 /// The screen's title.
 pub const TITLE: &str = "Deck";
 
 /// The line in place of the deck when its profile failed to load.
-pub const LOAD_FAILED: &str = "Could not load deck";
+pub const LOAD_FAILED: &str = "Couldn't load deck";
 
 /// The button that opens Edit deck.
 pub const EDIT: &str = "Edit";
@@ -73,7 +74,7 @@ pub const CLONE_PLACEHOLDER: &str = "New deck name";
 pub const CLONE_SAVE: &str = "Save";
 
 /// The Clone dialog's button while the clone is on its way.
-pub const CLONE_BUSY: &str = "Cloning...";
+pub const CLONE_BUSY: &str = "Cloning…";
 
 /// The Share dialog's line while the deck has a link.
 pub const SHARE_SHARED: &str = "Anyone with the link can view this deck. Stop sharing disables the link; sharing again creates a new one.";
@@ -86,7 +87,7 @@ pub const SHARE_UNSHARED: &str =
 pub const COPY_LINK: &str = "Copy link";
 
 /// The Share dialog's button that disables the link.
-pub const STOP_SHARE: &str = "Stop share";
+pub const STOP_SHARE: &str = "Stop sharing";
 
 /// The Share dialog's button that creates a link.
 pub const CREATE_LINK: &str = "Create link";
@@ -106,7 +107,10 @@ pub const DELETE: &str = "Delete";
 /// Where an action sends the user. The client maps each to its own route.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Destination {
-    /// The deck list, from Back and in place of a deleted or gone deck.
+    /// The screen that opened the deck, from Back. The client knows it; the
+    /// deck list when it doesn't.
+    Back,
+    /// The deck list, in place of a deleted or gone deck.
     DeckList,
     /// Edit deck for this deck.
     EditDeck(Uuid),
@@ -291,6 +295,8 @@ pub enum Status {
 pub enum Action {
     /// Fetches this deck's profile and cards, as the screen does when it opens or its deck id changes. What shows stays until the replies replace it, and replies to requests for the deck shown before are dropped.
     Load(Uuid),
+    /// Tries a failed load again, from Retry or the connection coming back: the skeletons show while the fetches are out. Does nothing unless the profile or the deck failed.
+    Retry,
     /// The profile arrived for the fetch holding `ticket`.
     ProfileLoaded {
         /// The ticket from the [`Effect::FetchProfile`] this answers.
@@ -545,10 +551,16 @@ pub fn fix_buttons(warning: &DeckWarning) -> Vec<(String, Action)> {
     warning::labels(fix).into_iter().zip(actions).collect()
 }
 
-/// Whether the Clone dialog's Save is on: the name has something besides spaces.
+/// The line under the Clone dialog's name, from the same check as Create and Edit ([`deck_form::name_error`]), or `None` when the name is a deck name.
+#[must_use]
+pub fn clone_name_error(name: &str) -> Option<String> {
+    deck_form::name_error(name)
+}
+
+/// Whether the Clone dialog's Save is on: the name passes [`clone_name_error`].
 #[must_use]
 pub fn can_clone(name: &str) -> bool {
-    !name.trim().is_empty()
+    clone_name_error(name).is_none()
 }
 
 /// One fetch's last result, and the ticket of the request still out for it.
@@ -697,7 +709,7 @@ impl State {
 
     /// Applies `action` and returns what the client must do, in order.
     ///
-    /// The currency follows the first profile's price target currency, once per visit, and the user's pick after that. The share link follows every profile that lands, and Share and Stop share after that. The hint is offered once per visit, on the first [`Action::Load`].
+    /// The currency follows the first profile's price target currency, once per visit, and the user's pick after that. The share link follows every profile that lands, and Share and Stop sharing after that. The hint is offered once per visit, on the first [`Action::Load`].
     #[must_use = "the client performs the effects"]
     pub fn update(&mut self, action: Action) -> Vec<Effect> {
         let mut effects = self.dispatch(action);
@@ -708,6 +720,7 @@ impl State {
     fn dispatch(&mut self, action: Action) -> Vec<Effect> {
         match action {
             Action::Load(deck_id) => self.load(deck_id),
+            Action::Retry => self.retry(),
             Action::ProfileLoaded { ticket, profile } => self.profile_loaded(ticket, *profile),
             Action::DeckLoaded { ticket, deck } => {
                 self.deck_loaded(ticket, *deck);
@@ -732,7 +745,7 @@ impl State {
                 self.currency = currency;
                 Vec::new()
             }
-            Action::Back => vec![Effect::Navigate(Destination::DeckList)],
+            Action::Back => vec![Effect::Navigate(Destination::Back)],
             Action::Edit => self.navigate(Destination::EditDeck),
             Action::Cards => self.navigate(Destination::DeckCards),
             Action::AddCards => self.navigate(Destination::AddCards),
@@ -834,6 +847,20 @@ impl State {
         if self.hint == HintOffer::Waiting {
             self.hint = HintOffer::Offered;
             effects.push(Effect::OfferHint(OneTimeHint::FirstDeck));
+        }
+        effects
+    }
+
+    /// Fetches again whatever failed, back on its skeleton, and leaves a load that landed alone.
+    fn retry(&mut self) -> Vec<Effect> {
+        let mut effects = Vec::new();
+        if matches!(self.profile.value, Fetched::Failed) {
+            self.profile.value = Fetched::Loading;
+            effects.extend(self.fetch_profile());
+        }
+        if matches!(self.deck.value, Fetched::Failed) {
+            self.deck.value = Fetched::Loading;
+            effects.extend(self.fetch_deck());
         }
         effects
     }
@@ -1054,23 +1081,28 @@ impl State {
         self.metrics().is_some()
     }
 
-    /// The [`TOTAL_PRICE`] row's value in the picked currency. `None` until the profile loads.
+    /// The [`TOTAL_PRICE`] row's value in the picked currency, with how many copies have no price in it. `None` until the profile loads.
     #[must_use]
     pub fn total_price_line(&self) -> Option<String> {
         let total = self.metrics().and_then(|m| self.totals(m).0);
+        let unpriced = self.metrics().map_or(0, |m| m.unpriced(self.currency));
         self.profile()
-            .map(|p| view::total_price_line(p, total, self.currency))
+            .map(|p| view::with_unpriced(view::total_price_line(p, total, self.currency), unpriced))
     }
 
-    /// The [`AVERAGE_CARD_PRICE`] row's value in the picked currency, [`NO_PRICE`] when nothing is priced. `None` without metrics, which hides the row.
+    /// The [`AVERAGE_CARD_PRICE`] row's value in the picked currency with how many copies have no price in it, [`NO_PRICE`] when nothing is priced. `None` without metrics, which hides the row.
     #[must_use]
     pub fn average_price_line(&self) -> Option<String> {
         let metrics = self.metrics()?;
-        Some(
-            self.totals(metrics)
-                .1
-                .map_or_else(|| NO_PRICE.to_owned(), |v| self.currency.format_amount(v)),
-        )
+        Some(self.totals(metrics).1.map_or_else(
+            || NO_PRICE.to_owned(),
+            |v| {
+                view::with_unpriced(
+                    self.currency.format_amount(v),
+                    metrics.unpriced(self.currency),
+                )
+            },
+        ))
     }
 
     /// The running total and average in the picked currency.
@@ -1168,6 +1200,13 @@ impl State {
     #[must_use]
     pub fn share_token(&self) -> Option<Uuid> {
         self.share_token
+    }
+
+    /// The live share link, which the Share dialog shows under its line: `Some` while the deck has
+    /// a public link.
+    #[must_use]
+    pub fn share_url(&self) -> Option<String> {
+        self.share_token.map(view::share_link)
     }
 
     /// The Share dialog's line: [`SHARE_SHARED`] while the deck has a link, else [`SHARE_UNSHARED`].

@@ -488,6 +488,20 @@ impl AuthRepository for Postgres {
         Ok(())
     }
 
+    async fn password_reset_token_is_live(&self, token_hash: &str) -> Result<bool, anyhow::Error> {
+        let live: bool = query_scalar!(
+            r#"SELECT EXISTS(
+                SELECT 1 FROM password_reset_tokens
+                WHERE token_hash = $1 AND expires_at > NOW()
+            ) as "exists!""#,
+            token_hash
+        )
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|e| anyhow::anyhow!("{e}"))?;
+        Ok(live)
+    }
+
     async fn use_password_reset_token(&self, token_hash: &str) -> Result<Uuid, ResetPasswordError> {
         let user_id: Option<Uuid> = query_scalar!(
             "DELETE FROM password_reset_tokens WHERE token_hash = $1 AND expires_at > NOW() RETURNING user_id",

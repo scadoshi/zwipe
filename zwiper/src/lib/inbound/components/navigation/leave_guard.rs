@@ -13,11 +13,14 @@
 //! reply that lands after the screen has gone changes nothing; a move made
 //! from any route but the one it armed on disarms it; and with no dialog
 //! mounted to ask, a move goes through rather than vanishing.
+//!
+//! The state is one per process, not per thread: on Android the app renders
+//! on one thread and handles taps on another, so a tap must find the guard
+//! the screen armed while rendering.
 
-use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::str::FromStr;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use dioxus::history::History;
 use dioxus::prelude::*;
@@ -54,94 +57,115 @@ pub struct LeaveCopy {
 
 /// The guard, one per app. The history the router calls runs outside any
 /// component, so the state lives here.
-#[derive(Default)]
+#[derive(Debug)]
 struct Guard {
     /// The armed screen's copy; `None` while disarmed.
-    copy: Cell<Option<LeaveCopy>>,
+    copy: Option<LeaveCopy>,
     /// The route the guard armed on; a move from any other disarms it.
-    route: RefCell<Option<String>>,
+    route: Option<String>,
     /// The mounted screen that owns the guard, `0` for none.
-    owner: Cell<u64>,
+    owner: u64,
     /// The last owner handed out.
-    owners: Cell<u64>,
-    /// The router's history, under [`GuardedHistory`], for the route.
-    inner: RefCell<Option<Rc<dyn History>>>,
+    owners: u64,
     /// The move waiting on the dialog.
-    held: RefCell<Option<Held>>,
+    held: Option<Held>,
     /// The dialog's open state, from the mounted [`LeaveDialog`].
-    asking: Cell<Option<Signal<bool>>>,
+    asking: Option<SyncSignal<bool>>,
 }
 
-thread_local! {
-    static GUARD: Guard = Guard::default();
+static GUARD: Mutex<Guard> = Mutex::new(Guard {
+    copy: None,
+    route: None,
+    owner: 0,
+    owners: 0,
+    held: None,
+    asking: None,
+});
+
+/// Runs `f` on the guard. `None` when a panic elsewhere poisoned its lock,
+/// and then every move goes through.
+fn with_guard<R>(f: impl FnOnce(&mut Guard) -> R) -> Option<R> {
+    let Ok(mut guard) = GUARD.lock() else {
+        tracing::warn!("leave guard lock poisoned; moves go through");
+        return None;
+    };
+    Some(f(&mut guard))
 }
 
-/// Holds `held` and opens the dialog while the guard is armed on the route
-/// on view and a dialog is mounted to ask. Returns whether it held it; a
-/// guard armed on another route disarms instead.
-fn hold(held: Held) -> bool {
-    GUARD.with(|g| {
-        if g.copy.get().is_none() {
-            return false;
+impl Guard {
+    /// Holds `held` while the guard is armed on `here`, the route on view,
+    /// and a dialog is mounted to ask, returning the dialog to open. A guard
+    /// armed on another route disarms instead.
+    fn hold(&mut self, held: Held, here: &str) -> Option<SyncSignal<bool>> {
+        self.copy?;
+        if self.route.as_deref().is_some_and(|armed| armed != here) {
+            self.copy = None;
+            self.route = None;
+            return None;
         }
-        let here = g.inner.borrow().as_ref().map(|inner| inner.current_route());
-        let moved =
-            matches!((&here, &*g.route.borrow()), (Some(here), Some(armed)) if here != armed);
-        if moved {
-            g.copy.set(None);
-            *g.route.borrow_mut() = None;
-            return false;
-        }
-        let Some(mut asking) = g.asking.get() else {
-            return false;
-        };
-        *g.held.borrow_mut() = Some(held);
-        asking.set(true);
-        true
-    })
-}
+        let asking = self.asking?;
+        self.held = Some(held);
+        Some(asking)
+    }
 
-/// Arms the guard with `copy`, recording the route on view, or disarms it
-/// with `None`.
-fn arm(copy: Option<LeaveCopy>) {
-    GUARD.with(|g| {
-        if copy.is_some() && g.copy.get().is_none() {
-            *g.route.borrow_mut() = g.inner.borrow().as_ref().map(|inner| inner.current_route());
+    /// Arms the guard with `copy`, recording `here` as the route it armed
+    /// on, or disarms it with `None`.
+    fn arm(&mut self, copy: Option<LeaveCopy>, here: Option<String>) {
+        if copy.is_some() && self.copy.is_none() {
+            self.route = here;
         }
         if copy.is_none() {
-            *g.route.borrow_mut() = None;
+            self.route = None;
         }
-        g.copy.set(copy);
-    });
+        self.copy = copy;
+    }
+}
+
+/// Holds `held` and opens the dialog while the guard is armed on `here` and
+/// a dialog is mounted to ask. Returns whether it held it.
+fn hold(held: Held, here: &str) -> bool {
+    let Some(mut asking) = with_guard(|g| g.hold(held, here)).flatten() else {
+        return false;
+    };
+    asking.set(true);
+    true
+}
+
+/// Disarms the guard.
+fn disarm() {
+    with_guard(|g| g.arm(None, None));
 }
 
 /// Hands out a new owner and makes it the guard's.
 fn take_ownership() -> u64 {
-    GUARD.with(|g| {
-        let owner = g.owners.get().wrapping_add(1).max(1);
-        g.owners.set(owner);
-        g.owner.set(owner);
+    with_guard(|g| {
+        let owner = g.owners.wrapping_add(1).max(1);
+        g.owners = owner;
+        g.owner = owner;
         owner
     })
+    .unwrap_or(0)
 }
 
-/// Arms or disarms the guard for `owner`, if it still owns it.
-fn arm_for(owner: u64, copy: Option<LeaveCopy>) {
-    if GUARD.with(|g| g.owner.get()) == owner {
-        arm(copy);
-    }
+/// Arms or disarms the guard for `owner` on `here`, if it still owns it.
+fn arm_for(owner: u64, copy: Option<LeaveCopy>, here: Option<String>) {
+    with_guard(|g| {
+        if g.owner == owner {
+            g.arm(copy, here);
+        }
+    });
 }
 
 /// Lets `owner`'s hold go, disarming the guard, if it still owns it.
 fn release(owner: u64) {
-    GUARD.with(|g| {
-        if g.owner.get() == owner {
-            g.owner.set(0);
+    with_guard(|g| {
+        if g.owner == owner {
+            g.owner = 0;
+        }
+        if g.owner == 0 {
+            g.arm(None, None);
         }
     });
-    if GUARD.with(|g| g.owner.get()) == 0 {
-        arm(None);
-    }
 }
 
 /// The app's in-memory history with the guard in front: while a screen is
@@ -161,7 +185,6 @@ impl GuardedHistory {
     /// component and everything under it. Call it once above the router.
     pub fn provide() {
         let inner = dioxus::history::history();
-        GUARD.with(|g| *g.inner.borrow_mut() = Some(Rc::clone(&inner)));
         let guarded: Rc<dyn History> = Rc::new(Self { inner });
         provide_context(guarded);
     }
@@ -181,7 +204,7 @@ impl History for GuardedHistory {
     }
 
     fn go_back(&self) {
-        if !hold(Held::Back) {
+        if !hold(Held::Back, &self.inner.current_route()) {
             self.inner.go_back();
         }
     }
@@ -191,25 +214,26 @@ impl History for GuardedHistory {
     }
 
     fn go_forward(&self) {
-        if !hold(Held::Forward) {
+        if !hold(Held::Forward, &self.inner.current_route()) {
             self.inner.go_forward();
         }
     }
 
     fn push(&self, route: String) {
-        if route == self.inner.current_route() || !hold(Held::Push(route.clone())) {
+        let here = self.inner.current_route();
+        if route == here || !hold(Held::Push(route.clone()), &here) {
             self.inner.push(route);
         }
     }
 
     fn replace(&self, path: String) {
-        if !hold(Held::Replace(path.clone())) {
+        if !hold(Held::Replace(path.clone()), &self.inner.current_route()) {
             self.inner.replace(path);
         }
     }
 
     fn external(&self, url: String) -> bool {
-        hold(Held::External(url.clone())) || self.inner.external(url)
+        hold(Held::External(url.clone()), &self.inner.current_route()) || self.inner.external(url)
     }
 
     fn updater(&self, callback: Arc<dyn Fn() + Send + Sync>) {
@@ -234,7 +258,8 @@ impl LeaveGuard {
     /// moves that change asks for, so a save's own move goes through. A
     /// screen that no longer owns the guard changes nothing.
     pub fn set(self, changed: bool) {
-        arm_for(self.owner, changed.then_some(self.copy));
+        let here = try_consume_context::<Rc<dyn History>>().map(|history| history.current_route());
+        arm_for(self.owner, changed.then_some(self.copy), here);
     }
 }
 
@@ -253,20 +278,27 @@ pub fn use_leave_guard(copy: LeaveCopy) -> LeaveGuard {
 pub fn LeaveDialog() -> Element {
     let navigator = use_navigator();
     let mut asking = use_hook(|| {
-        let asking = Signal::new(false);
-        GUARD.with(|g| g.asking.set(Some(asking)));
+        let asking = Signal::new_maybe_sync(false);
+        with_guard(|g| g.asking = Some(asking));
         asking
     });
-    use_drop(|| GUARD.with(|g| g.asking.set(None)));
+    use_drop(move || {
+        with_guard(|g| {
+            if g.asking == Some(asking) {
+                g.asking = None;
+            }
+        });
+    });
+    let open = use_memo(move || *asking.read());
 
     let stay = use_callback(move |()| {
-        GUARD.with(|g| g.held.borrow_mut().take());
+        with_guard(|g| g.held.take());
         asking.set(false);
     });
-    components::use_overlay_back_action(asking.into(), stay);
+    components::use_overlay_back_action(open.into(), stay);
     let mut leave = move || {
-        let held = GUARD.with(|g| g.held.borrow_mut().take());
-        arm(None);
+        let held = with_guard(|g| g.held.take()).flatten();
+        disarm();
         asking.set(false);
         let to_route = |path: &str| {
             Router::from_str(path).unwrap_or_else(|e| {
@@ -290,7 +322,7 @@ pub fn LeaveDialog() -> Element {
         }
     };
 
-    let copy = GUARD.with(|g| g.copy.get());
+    let copy = with_guard(|g| g.copy).flatten();
     rsx! {
         if let (true, Some(copy)) = (asking(), copy) {
             div {
@@ -332,6 +364,10 @@ pub fn LeaveDialog() -> Element {
 
 #[cfg(test)]
 mod tests {
+    use std::cell::RefCell;
+    use std::sync::MutexGuard;
+    use std::thread;
+
     use super::*;
 
     const COPY: LeaveCopy = LeaveCopy {
@@ -341,87 +377,91 @@ mod tests {
         leave: "l",
     };
 
-    /// A history whose route the test sets.
-    struct Fixed(RefCell<String>);
+    const EDIT: &str = "/decks/1/edit";
 
-    impl History for Fixed {
-        fn current_route(&self) -> String {
-            self.0.borrow().clone()
-        }
-        fn go_back(&self) {}
-        fn go_forward(&self) {}
-        fn push(&self, route: String) {
-            *self.0.borrow_mut() = route;
-        }
-        fn replace(&self, path: String) {
-            *self.0.borrow_mut() = path;
-        }
-    }
+    /// The guard is one per process, so the tests take turns with it.
+    static SERIAL: Mutex<()> = Mutex::new(());
 
-    /// A guard on `route` with a dialog mounted, as the app has it.
-    fn on(route: &str) -> Rc<Fixed> {
-        let history = Rc::new(Fixed(RefCell::new(route.to_owned())));
-        let inner: Rc<dyn History> = Rc::<Fixed>::clone(&history);
-        GUARD.with(|g| {
-            *g.inner.borrow_mut() = Some(inner);
-            g.asking
-                .set(Some(Signal::new_in_scope(false, ScopeId::ROOT)));
+    /// A fresh guard with no dialog, held for the test's length.
+    fn fresh() -> MutexGuard<'static, ()> {
+        let turn = SERIAL
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        with_guard(|g| {
+            *g = Guard {
+                copy: None,
+                route: None,
+                owner: 0,
+                owners: 0,
+                held: None,
+                asking: None,
+            };
         });
-        arm(None);
-        history
+        turn
     }
 
+    /// Runs `test` in a runtime with a dialog mounted to ask, as the app has
+    /// it.
     fn with_runtime(test: impl FnOnce()) {
         let mut dom = VirtualDom::new(|| rsx! {});
         dom.rebuild_in_place();
-        dom.in_runtime(test);
+        dom.in_runtime(|| {
+            let asking = Signal::new_maybe_sync_in_scope(false, ScopeId::ROOT);
+            with_guard(|g| g.asking = Some(asking));
+            test();
+        });
+    }
+
+    /// A screen that owns the guard, armed on `route`.
+    fn armed_on(route: &str) -> u64 {
+        let owner = take_ownership();
+        arm_for(owner, Some(COPY), Some(route.to_owned()));
+        owner
     }
 
     #[test]
     fn a_disarmed_guard_holds_nothing() {
+        let _turn = fresh();
         with_runtime(|| {
-            let _ = on("/decks/1/edit");
-            assert!(!hold(Held::Back));
-            assert!(!hold(Held::Push("/decks".to_string())));
+            assert!(!hold(Held::Back, EDIT));
+            assert!(!hold(Held::Push("/decks".to_string()), EDIT));
         });
     }
 
     #[test]
     fn an_armed_guard_holds_the_move_until_disarmed() {
+        let _turn = fresh();
         with_runtime(|| {
-            let _ = on("/decks/1/edit");
-            let guard = LeaveGuard {
-                copy: COPY,
-                owner: take_ownership(),
-            };
-            guard.set(true);
-            assert!(hold(Held::Back), "back waits on the dialog");
-            assert!(hold(Held::Push("/decks".to_string())), "a link waits too");
+            let owner = armed_on(EDIT);
+            assert!(hold(Held::Back, EDIT), "back waits on the dialog");
+            assert!(
+                hold(Held::Push("/decks".to_string()), EDIT),
+                "a link waits too"
+            );
             assert_eq!(
-                GUARD.with(|g| g.held.borrow().clone()),
+                with_guard(|g| g.held.clone()).flatten(),
                 Some(Held::Push("/decks".to_string())),
                 "the latest move waits"
             );
-            guard.set(false);
-            assert!(!hold(Held::Back), "a saved form lets every move through");
-            release(guard.owner);
+            arm_for(owner, None, Some(EDIT.to_owned()));
+            assert!(
+                !hold(Held::Back, EDIT),
+                "a saved form lets every move through"
+            );
+            release(owner);
         });
     }
 
     #[test]
     fn a_screen_that_has_gone_cannot_arm_it() {
+        let _turn = fresh();
         with_runtime(|| {
-            let _ = on("/decks/1/edit");
-            let form = LeaveGuard {
-                copy: COPY,
-                owner: take_ownership(),
-            };
-            form.set(true);
-            release(form.owner);
-            assert!(!hold(Held::Back), "the form going disarms it");
-            form.set(true);
+            let owner = armed_on(EDIT);
+            release(owner);
+            assert!(!hold(Held::Back, EDIT), "the form going disarms it");
+            arm_for(owner, Some(COPY), Some(EDIT.to_owned()));
             assert!(
-                !hold(Held::Push("/decks".to_string())),
+                !hold(Held::Push("/decks".to_string()), EDIT),
                 "a late reply from the gone form arms nothing"
             );
         });
@@ -429,59 +469,171 @@ mod tests {
 
     #[test]
     fn a_new_screen_takes_the_guard_from_an_old_one() {
+        let _turn = fresh();
         with_runtime(|| {
-            let _ = on("/decks/1/edit");
-            let old = LeaveGuard {
-                copy: COPY,
-                owner: take_ownership(),
-            };
-            let new = LeaveGuard {
-                copy: COPY,
-                owner: take_ownership(),
-            };
-            old.set(true);
-            assert!(!hold(Held::Back), "only the owner arms it");
-            new.set(true);
-            release(old.owner);
+            let old = take_ownership();
+            let new = take_ownership();
+            arm_for(old, Some(COPY), Some(EDIT.to_owned()));
+            assert!(!hold(Held::Back, EDIT), "only the owner arms it");
+            arm_for(new, Some(COPY), Some(EDIT.to_owned()));
+            release(old);
             assert!(
-                hold(Held::Back),
+                hold(Held::Back, EDIT),
                 "the old screen going leaves the new one's guard armed"
             );
-            release(new.owner);
+            release(new);
         });
     }
 
     #[test]
     fn a_move_from_another_route_disarms_it() {
+        let _turn = fresh();
         with_runtime(|| {
-            let history = on("/decks/1/edit");
-            let guard = LeaveGuard {
-                copy: COPY,
-                owner: take_ownership(),
-            };
-            guard.set(true);
-            history.push("/decks/1".to_owned());
+            let owner = armed_on(EDIT);
             assert!(
-                !hold(Held::Push("/decks".to_string())),
+                !hold(Held::Push("/decks".to_string()), "/decks/1"),
                 "armed on the form, not here"
             );
-            assert!(!hold(Held::Back), "and it stays disarmed");
-            release(guard.owner);
+            assert!(!hold(Held::Back, EDIT), "and it stays disarmed");
+            release(owner);
         });
     }
 
     #[test]
     fn with_no_dialog_to_ask_the_move_goes_through() {
+        let _turn = fresh();
         with_runtime(|| {
-            let _ = on("/decks/1/edit");
-            GUARD.with(|g| g.asking.set(None));
-            let guard = LeaveGuard {
-                copy: COPY,
-                owner: take_ownership(),
-            };
-            guard.set(true);
-            assert!(!hold(Held::Back));
-            release(guard.owner);
+            with_guard(|g| g.asking = None);
+            let owner = armed_on(EDIT);
+            assert!(!hold(Held::Back, EDIT));
+            release(owner);
         });
+    }
+
+    #[test]
+    fn a_tap_handled_on_another_thread_finds_the_guard_armed() {
+        let _turn = fresh();
+        with_runtime(|| {});
+        let owner = armed_on(EDIT);
+        let held = thread::spawn(|| {
+            with_guard(|g| g.hold(Held::Push("/decks".to_owned()), EDIT).is_some())
+        })
+        .join()
+        .unwrap();
+        assert_eq!(
+            held,
+            Some(true),
+            "Android handles taps off the render thread"
+        );
+        release(owner);
+    }
+
+    /// The routes the router tests run on: a deck, and its edit form under
+    /// the layout that mounts the dialog, as the app's router has them.
+    #[derive(Routable, Clone, PartialEq, Debug)]
+    enum Route {
+        #[layout(Layout)]
+        #[route("/deck")]
+        Deck {},
+        #[route("/deck/edit")]
+        Edit {},
+    }
+
+    #[component]
+    fn Layout() -> Element {
+        rsx! {
+            Outlet::<Route> {}
+            LeaveDialog {}
+        }
+    }
+
+    #[component]
+    fn Deck() -> Element {
+        rsx! { "deck" }
+    }
+
+    thread_local! {
+        /// The edit form's header back and the OS back, handed to the test.
+        static BACKS: RefCell<Option<(Callback<()>, Callback<()>)>> = const { RefCell::new(None) };
+    }
+
+    /// An edit form with unsaved changes. Its header back arms the guard
+    /// and pushes the deck, as the deck form's Back does; the OS back is the
+    /// router's go back, as the back handler calls it.
+    #[component]
+    fn Edit() -> Element {
+        let guard = use_leave_guard(COPY);
+        let navigator = use_navigator();
+        let header_back = use_callback(move |()| {
+            guard.set(true);
+            navigator.push(Route::Deck {});
+        });
+        let os_back = use_callback(move |()| navigator.go_back());
+        use_hook(move || {
+            guard.set(true);
+            BACKS.with(|b| *b.borrow_mut() = Some((header_back, os_back)));
+        });
+        rsx! { "edit" }
+    }
+
+    thread_local! {
+        /// The history the router tests run on, kept to read the route on view.
+        static HISTORY: RefCell<Option<Rc<dyn History>>> = const { RefCell::new(None) };
+    }
+
+    fn app() -> Element {
+        use_hook(GuardedHistory::provide);
+        rsx! {
+            Router::<Route> {}
+        }
+    }
+
+    /// The app on the edit form, opened from the deck, with its two backs.
+    fn on_the_edit_form() -> (VirtualDom, Callback<()>, Callback<()>) {
+        let mut dom = VirtualDom::new(app);
+        let history: Rc<dyn History> =
+            Rc::new(dioxus::history::MemoryHistory::with_initial_path("/deck"));
+        history.push("/deck/edit".to_owned());
+        HISTORY.with(|h| *h.borrow_mut() = Some(Rc::clone(&history)));
+        dom.provide_root_context(history);
+        dom.rebuild_in_place();
+        let (header_back, os_back) = BACKS.with(|b| b.borrow_mut().take()).unwrap();
+        (dom, header_back, os_back)
+    }
+
+    fn route_on_view() -> String {
+        HISTORY
+            .with(|h| h.borrow().as_ref().map(|history| history.current_route()))
+            .unwrap()
+    }
+
+    fn asking() -> bool {
+        with_guard(|g| g.asking.is_some_and(|a| *a.peek())).unwrap()
+    }
+
+    #[test]
+    fn the_header_back_asks_before_leaving_unsaved_changes() {
+        let _turn = fresh();
+        let (mut dom, header_back, _) = on_the_edit_form();
+        dom.in_runtime(|| header_back.call(()));
+        dom.render_immediate_to_vec();
+        assert_eq!(route_on_view(), "/deck/edit", "the form stays on view");
+        assert!(asking(), "the dialog asks");
+        assert_eq!(
+            with_guard(|g| g.held.clone()).flatten(),
+            Some(Held::Push("/deck".to_owned())),
+            "the header's move waits on the answer"
+        );
+    }
+
+    #[test]
+    fn the_os_back_asks_before_leaving_unsaved_changes() {
+        let _turn = fresh();
+        let (mut dom, _, os_back) = on_the_edit_form();
+        dom.in_runtime(|| os_back.call(()));
+        dom.render_immediate_to_vec();
+        assert_eq!(route_on_view(), "/deck/edit", "the form stays on view");
+        assert!(asking(), "the dialog asks");
+        assert_eq!(with_guard(|g| g.held.clone()).flatten(), Some(Held::Back));
     }
 }

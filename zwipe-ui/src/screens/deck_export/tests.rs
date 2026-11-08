@@ -82,7 +82,10 @@ fn a_second_load_fetches_without_the_hint() {
 fn the_loaded_deck_gives_the_decklist() {
     let (state, _) = loaded();
     assert_eq!(state.status(), Status::Loaded);
-    assert_eq!(state.text().as_deref(), Some("// Deck\n1 Sol Ring"));
+    assert_eq!(
+        state.text().as_deref(),
+        Some("// Deck\n1 Sol Ring (M15) 77")
+    );
 }
 
 #[test]
@@ -138,13 +141,15 @@ fn the_toggles_change_the_decklist() {
     assert_eq!(state.update(Action::Toggle(Board::Side)), NONE);
     assert_eq!(
         state.text().as_deref(),
-        Some("// Deck\n1 Sol Ring\n\n// Maybeboard\n1 Opt\n\n// Sideboard\n1 Duress")
+        Some(
+            "// Deck\n1 Sol Ring (M15) 77\n\n// Maybeboard\n1 Opt (M15) 77\n\n// Sideboard\n1 Duress (M15) 77"
+        )
     );
     let _ = state.update(Action::Toggle(Board::Deck));
     assert!(!state.is_on(Board::Deck));
     assert_eq!(
         state.text().as_deref(),
-        Some("\n// Maybeboard\n1 Opt\n\n// Sideboard\n1 Duress")
+        Some("\n// Maybeboard\n1 Opt (M15) 77\n\n// Sideboard\n1 Duress (M15) 77")
     );
 }
 
@@ -173,7 +178,7 @@ fn copy_copies_the_decklist_and_toasts() {
     assert_eq!(
         state.update(Action::Copy),
         [Effect::Copy {
-            text: "// Deck\n1 Sol Ring".to_owned(),
+            text: "// Deck\n1 Sol Ring (M15) 77".to_owned(),
             done: Toast::new(ToastKind::Info, "Copied to clipboard", QUICK),
         }]
     );
@@ -201,7 +206,7 @@ fn back_goes_to_the_deck() {
 fn the_copy_matches_the_app() {
     assert_eq!((TITLE, BOARDS), ("Export", "Export"));
     assert_eq!(DECKLIST, "Decklist");
-    assert_eq!(LOAD_FAILED, "Could not load deck");
+    assert_eq!(LOAD_FAILED, "Couldn't load deck");
     assert_eq!((BACK, COPY), ("Back", "Copy"));
     assert_eq!(COPIED, "Copied to clipboard");
     let boards: Vec<&str> = Board::ALL.into_iter().map(Board::label).collect();

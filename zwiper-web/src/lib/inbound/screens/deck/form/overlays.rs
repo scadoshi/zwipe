@@ -4,6 +4,7 @@
 use dioxus::prelude::*;
 use dioxus_primitives::toast::use_toast;
 use zwipe_core::domain::card::Card;
+use zwipe_ui::deck::command_zone;
 use zwipe_ui::deck::form::Slot;
 
 use super::DeckForm;
@@ -35,6 +36,15 @@ pub fn DeckFormOverlays(form: DeckForm) -> Element {
         let mut open = state.swipe_open;
         open.set(false);
     };
+    // Every slot's pile leaves out the cards already in the command zone.
+    let zone_ids = use_memo(move || {
+        command_zone::zone_oracle_ids([
+            form.commander.card.read().as_ref(),
+            form.partner.card.read().as_ref(),
+            form.background.card.read().as_ref(),
+            form.signature_spell.card.read().as_ref(),
+        ])
+    });
     let close = move |slot: Slot| {
         let mut open = form.slot(slot).swipe_open;
         open.set(false);
@@ -48,6 +58,7 @@ pub fn DeckFormOverlays(form: DeckForm) -> Element {
                 key: "{format.to_legality_key()}",
                 open: form.commander.swipe_open,
                 mode: SwipeMode::Commander(format),
+                exclude_oracle_ids: Some(zone_ids.into()),
                 on_select: move |card: Card| pick(Slot::Commander, card),
                 on_close: move |()| close(Slot::Commander),
             }
@@ -55,12 +66,14 @@ pub fn DeckFormOverlays(form: DeckForm) -> Element {
         SwipeSelect {
             open: form.partner.swipe_open,
             mode: SwipeMode::Partner,
+            exclude_oracle_ids: Some(zone_ids.into()),
             on_select: move |card: Card| pick(Slot::Partner, card),
             on_close: move |()| close(Slot::Partner),
         }
         SwipeSelect {
             open: form.background.swipe_open,
             mode: SwipeMode::Background,
+            exclude_oracle_ids: Some(zone_ids.into()),
             on_select: move |card: Card| pick(Slot::Background, card),
             on_close: move |()| close(Slot::Background),
         }
@@ -69,6 +82,7 @@ pub fn DeckFormOverlays(form: DeckForm) -> Element {
                 key: "{key}",
                 open: form.signature_spell.swipe_open,
                 mode: SwipeMode::SignatureSpell,
+                exclude_oracle_ids: Some(zone_ids.into()),
                 commander: commander.clone(),
                 on_select: move |card: Card| pick(Slot::SignatureSpell, card),
                 on_close: move |()| close(Slot::SignatureSpell),

@@ -19,6 +19,7 @@ use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_core::http::contracts::suggestions::{HttpCommanderSuggestion, HttpSuggestionReasons};
 
 use crate::commander::swipe_select;
+use crate::deck::form;
 use crate::generation::{Generation, Ticket};
 use crate::playstyle;
 use crate::stack::{CardStack, Direction, NO_CARDS_LEFT, StackAction};
@@ -79,8 +80,8 @@ pub enum Destination {
 pub enum Mode {
     /// Legal commanders for the deck's format.
     Commander(Format),
-    /// Partner commanders.
-    Partner,
+    /// Partners for the commander, when one is chosen: only the cards it can pair with are dealt. With none, every card with a partner ability.
+    Partner(Option<Box<Card>>),
     /// "Choose a Background" backgrounds.
     Background,
     /// Signature spells within the oathbreaker's color identity.
@@ -96,7 +97,7 @@ impl Mode {
         match self {
             Self::Commander(format) if format.has_signature_spell() => "oathbreaker",
             Self::Commander(_) | Self::Suggested => "commander",
-            Self::Partner => "partner",
+            Self::Partner(_) => "partner",
             Self::Background => "background",
             Self::SignatureSpell(_) => "signature spell",
         }
@@ -105,7 +106,10 @@ impl Mode {
     /// Whether an up swipe saves to the commander maybeboard: only where the pile holds commanders.
     #[must_use]
     pub fn saves(&self) -> bool {
-        matches!(self, Self::Commander(_) | Self::Partner | Self::Suggested)
+        matches!(
+            self,
+            Self::Commander(_) | Self::Partner(_) | Self::Suggested
+        )
     }
 
     /// Adds this mode's constraint to `builder`. The suggested pile never searches, so it adds none.
@@ -114,9 +118,7 @@ impl Mode {
             Self::Commander(format) => {
                 builder.set_is_commander_in_format(*format);
             }
-            Self::Partner => {
-                builder.set_is_partner(true);
-            }
+            Self::Partner(commander) => form::narrow_to_partners(builder, commander.as_deref()),
             Self::Background => {
                 builder.set_is_background(true);
             }
@@ -677,16 +679,20 @@ impl State {
         builder.build().ok()
     }
 
-    /// `cards` without the host's excluded oracle ids.
+    /// `cards` without the host's excluded oracle ids and, on [`Mode::Partner`] with a commander, without the cards it cannot pair with.
     fn without_excluded(&self, cards: Vec<Card>) -> Vec<Card> {
-        cards
+        let kept: Vec<Card> = cards
             .into_iter()
             .filter(|c| {
                 !c.scryfall_data
                     .oracle_id
                     .is_some_and(|o| self.excluded.contains(&o))
             })
-            .collect()
+            .collect();
+        match &self.mode {
+            Some(Mode::Partner(Some(commander))) => form::legal_partners(commander, kept),
+            _ => kept,
+        }
     }
 
     /// The pick toast's words, "Commander selected".

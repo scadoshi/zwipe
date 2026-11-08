@@ -15,6 +15,7 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
 use zwipe_ui::stack::{CardStack, Direction, StackAction};
+use zwipe_ui::telemetry::vocabulary::{OracleTagScreen, Screen};
 use zwipe_ui::timing::{EXAMPLES_MAX_CARDS, LOAD_MORE_AT, PAGE_SIZE};
 
 use crate::inbound::cards::card_info::{CardDetailsSheet, CardSkeleton};
@@ -27,6 +28,7 @@ use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::back_arrow::BackArrow;
 use crate::inbound::chrome::details_eye::{DockEye, Surface, use_details_eye};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
+use crate::inbound::telemetry;
 
 /// A step forward through the examples. It leaves to the left, so a step
 /// back brings the card in from there.
@@ -43,6 +45,7 @@ impl StackAction for Next {
 /// per tag.
 #[component]
 pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
+    telemetry::use_telemetry_screen(Screen::OracleTag(OracleTagScreen::Examples));
     use_overlay_back(open);
     let toast = use_toast();
     let authed = use_authed();
@@ -188,7 +191,7 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
                         } else {
                             div { class: "flex-col flex-center", style: "flex: 1; min-height: 0; width: 100%;",
                                 div { class: "dict-empty",
-                                    span { class: "chip-note", "No more cards. Swipe down to go back." }
+                                    span { class: "chip-note", "No cards left. Swipe down to go back." }
                                 }
                             }
                         }

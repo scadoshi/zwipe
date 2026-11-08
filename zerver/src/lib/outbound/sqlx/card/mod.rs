@@ -230,6 +230,94 @@ const POPULARITY_JOIN: &str = "LEFT JOIN (SELECT oracle_id AS pop_oracle_id, dec
 /// data-accrues behavior (`context/archive/commander_select_signal.md` §3).
 const SELECT_SIGNAL_JOIN: &str = "LEFT JOIN (SELECT commander_oracle_id AS sel_oid, shown AS sel_shown FROM commander_select_signal) sel ON sel.sel_oid = latest_cards.oracle_id";
 
+/// A printing a decklist import may resolve to: never an Art Series card
+/// (named `"A // A"`, so its front face would match `"A"`), a token, an emblem,
+/// or a memorabilia printing (gold-bordered World Championship cards and the
+/// like). Unqualified columns, so it reads against `latest_cards` and
+/// `scryfall_data` alike.
+const IMPORTABLE_PRINTING: &str = "layout NOT IN ('art_series', 'token', 'double_faced_token', 'emblem') \
+     AND set_type NOT IN ('memorabilia', 'token')";
+
+/// The printing a search shows when its filters match a card by any of its
+/// printings rather than the view's pick.
+#[derive(Debug, Clone, Copy, Default)]
+struct WantedPrinting<'q> {
+    /// The Set filter: the printing is in one of these sets.
+    set_names: Option<&'q [String]>,
+    /// Is promo: Yes. The printing is a promo.
+    promo: bool,
+}
+
+impl WantedPrinting<'_> {
+    /// Whether the search asks for a printing other than the view's pick.
+    fn is_any(&self) -> bool {
+        self.set_names.is_some() || self.promo
+    }
+
+    /// Whether `printing` already is the one wanted.
+    fn fits(&self, printing: &ScryfallData) -> bool {
+        self.set_names
+            .is_none_or(|sets| sets.contains(&printing.set_name))
+            && (!self.promo || printing.promo)
+    }
+}
+
+impl MyPostgres {
+    /// `cards` with each card whose printing isn't the `wanted` one swapped
+    /// for one that is, in order. Among several, the view's own preferences
+    /// pick: paper, non-promo, regular size, no content warning, English, a
+    /// normal layout, then the newest. A card with no such printing keeps its
+    /// own.
+    async fn swap_to_wanted_printings(
+        &self,
+        cards: Vec<ScryfallData>,
+        wanted: WantedPrinting<'_>,
+    ) -> Result<Vec<ScryfallData>, SearchScryfallDataError> {
+        let unfit: Vec<uuid::Uuid> = cards
+            .iter()
+            .filter(|card| !wanted.fits(card))
+            .filter_map(|card| card.oracle_id)
+            .collect();
+        if unfit.is_empty() {
+            return Ok(cards);
+        }
+        let db_rows: Vec<DatabaseScryfallData> = query_as(
+            "SELECT DISTINCT ON (sd.oracle_id) sd.* FROM scryfall_data sd \
+             JOIN card_profiles cp ON sd.id = cp.scryfall_data_id \
+             WHERE sd.oracle_id = ANY($1) \
+               AND ($2::text[] IS NULL OR sd.set_name = ANY($2)) \
+               AND (NOT $3 OR sd.promo) \
+             ORDER BY sd.oracle_id, sd.digital, sd.promo, sd.oversized, \
+                      COALESCE(sd.content_warning, false), \
+                      (sd.lang IS DISTINCT FROM 'en'), \
+                      (sd.layout = 'reversible_card'), \
+                      sd.released_at DESC, sd.collector_number, sd.id",
+        )
+        .bind(&unfit)
+        .bind(wanted.set_names)
+        .bind(wanted.promo)
+        .fetch_all(&self.pool)
+        .await?;
+        let mut swaps: HashMap<uuid::Uuid, ScryfallData> = HashMap::new();
+        for row in db_rows {
+            let printing =
+                ScryfallData::try_from(row).map_err(SearchScryfallDataError::Database)?;
+            if let Some(oracle_id) = printing.oracle_id {
+                swaps.insert(oracle_id, printing);
+            }
+        }
+        Ok(cards
+            .into_iter()
+            .map(|card| {
+                card.oracle_id
+                    .filter(|_| !wanted.fits(&card))
+                    .and_then(|oracle_id| swaps.remove(&oracle_id))
+                    .unwrap_or(card)
+            })
+            .collect())
+    }
+}
+
 impl CardRepository for MyPostgres {
     // == create ==
     async fn upsert(&self, scryfall_data: &ScryfallData) -> Result<Card, CreateCardError> {
@@ -1035,9 +1123,27 @@ impl CardRepository for MyPostgres {
             sep.push_bind_unseparated(is_oversized);
         }
 
-        if let Some(is_promo) = criteria.promo() {
-            sep.push("latest_cards.promo = ");
-            sep.push_bind_unseparated(is_promo);
+        match criteria.promo() {
+            // Printing-aware: a card with any promo printing (in a filtered
+            // set, when the Set filter is on, so the one shown is both).
+            Some(true) => {
+                sep.push(
+                    "EXISTS (SELECT 1 FROM scryfall_data p \
+                     JOIN card_profiles pp ON p.id = pp.scryfall_data_id \
+                     WHERE p.oracle_id = latest_cards.oracle_id AND p.promo",
+                );
+                if let Some(sets) = criteria.set_equals_any() {
+                    sep.push_unseparated(" AND p.set_name = ANY(");
+                    sep.push_bind_unseparated(sets);
+                    sep.push_unseparated(")");
+                }
+                sep.push_unseparated(")");
+            }
+            // The view picks a non-promo printing whenever the card has one.
+            Some(false) => {
+                sep.push("latest_cards.promo = false");
+            }
+            None => {}
         }
 
         if let Some(has_warning) = criteria.content_warning() {
@@ -1059,6 +1165,19 @@ impl CardRepository for MyPostgres {
             for (i, format_key) in formats.iter().enumerate() {
                 if i > 0 {
                     sep.push_unseparated(" OR ");
+                }
+                sep.push_unseparated("legalities->>");
+                sep.push_bind_unseparated(format_key.clone());
+                sep.push_unseparated(" IN ('legal', 'restricted')");
+            }
+            sep.push_unseparated(")");
+        }
+
+        if let Some(formats) = criteria.legalities_contains_all() {
+            sep.push("(");
+            for (i, format_key) in formats.iter().enumerate() {
+                if i > 0 {
+                    sep.push_unseparated(" AND ");
                 }
                 sep.push_unseparated("legalities->>");
                 sep.push_bind_unseparated(format_key.clone());
@@ -1305,6 +1424,16 @@ impl CardRepository for MyPostgres {
                 push_returned(&mut qb, d);
                 qb.push(", ");
             }
+            // A card whose whole name is the query leads, folded and stripped
+            // as the name filter is, so typing a full name finds the card even
+            // when the limit cuts the rest short. The query holds only letters,
+            // digits and spaces, so ILIKE without a wildcard is equality.
+            if let Some(query_string) = criteria.name_contains() {
+                qb.push("(");
+                qb.push(STRIP_NAME);
+                qb.push_bind(query_string.to_owned());
+                qb.push(") DESC, ");
+            }
             let col = match order_by {
                 CardSortKey::Name => "name",
                 CardSortKey::Cmc => "cmc",
@@ -1454,6 +1583,16 @@ impl CardRepository for MyPostgres {
                     scryfall_data.insert(position, wildcard);
                 }
             }
+        }
+
+        // The Set filter and Is promo: Yes match a card by any of its
+        // printings; show the printing they matched rather than the view's pick.
+        let wanted = WantedPrinting {
+            set_names: criteria.set_equals_any(),
+            promo: criteria.promo() == Some(true),
+        };
+        if wanted.is_any() {
+            scryfall_data = self.swap_to_wanted_printings(scryfall_data, wanted).await?;
         }
         Ok(scryfall_data)
     }
@@ -1787,16 +1926,19 @@ impl CardRepository for MyPostgres {
         let lowered: Vec<String> = lowered.into_iter().collect();
         // ORDER BY makes the row order stable, so when an entry is ambiguous
         // (two double-faced cards share a front face) resolution is deterministic.
-        let db_rows: Vec<DatabaseScryfallData> = query_as(
+        let sql = format!(
             "SELECT * FROM latest_cards \
-             WHERE LOWER(name) = ANY($1) \
-                OR LOWER(split_part(name, ' // ', 1)) = ANY($1) \
-             ORDER BY name",
-        )
-        .bind(&lowered)
-        .fetch_all(&self.pool)
-        .await
-        .map_err(|e| SearchScryfallDataError::Database(e.into()))?;
+             WHERE (LOWER(name) = ANY($1) \
+                OR LOWER(split_part(name, ' // ', 1)) = ANY($1)) \
+               AND {IMPORTABLE_PRINTING} \
+             ORDER BY name"
+        );
+        // Built from string constants only; every value is bound.
+        let db_rows: Vec<DatabaseScryfallData> = query_as(sqlx::AssertSqlSafe(sql))
+            .bind(&lowered)
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|e| SearchScryfallDataError::Database(e.into()))?;
         let scryfall_data: Vec<ScryfallData> = db_rows
             .into_iter()
             .map(ScryfallData::try_from)
@@ -1809,6 +1951,70 @@ impl CardRepository for MyPostgres {
         let card_profiles = self.fetch_card_profiles(&scryfall_data_ids).await?;
         let cards = card_profiles.sleeve(scryfall_data);
         Ok(cards)
+    }
+
+    async fn fetch_cheapest_printings(
+        &self,
+        oracle_ids: &[uuid::Uuid],
+    ) -> Result<Vec<ScryfallData>, SearchCardsError> {
+        if oracle_ids.is_empty() {
+            return Ok(vec![]);
+        }
+        // The USD price is a decimal string; one that won't parse as a number
+        // is treated as no price.
+        let sql = format!(
+            "SELECT DISTINCT ON (sd.oracle_id) sd.* FROM scryfall_data sd \
+             JOIN card_profiles cp ON sd.id = cp.scryfall_data_id \
+             WHERE sd.oracle_id = ANY($1) AND {IMPORTABLE_PRINTING} \
+               AND sd.lang = 'en' AND NOT sd.digital AND NOT sd.oversized \
+               AND NOT sd.promo AND 'nonfoil' = ANY(sd.finishes) \
+               AND sd.prices->>'usd' ~ '^[0-9]+(\\.[0-9]+)?$' \
+             ORDER BY sd.oracle_id, (sd.prices->>'usd')::numeric, \
+                      sd.released_at DESC, sd.id"
+        );
+        // Built from string constants only; every value is bound.
+        let db_rows: Vec<DatabaseScryfallData> = query_as(sqlx::AssertSqlSafe(sql))
+            .bind(oracle_ids)
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|e| SearchScryfallDataError::Database(e.into()))?;
+        let printings: Vec<ScryfallData> = db_rows
+            .into_iter()
+            .map(ScryfallData::try_from)
+            .collect::<Result<_, _>>()
+            .map_err(SearchScryfallDataError::Database)?;
+        Ok(printings)
+    }
+
+    async fn fetch_printings_in_sets(
+        &self,
+        oracle_ids: &[uuid::Uuid],
+        set_codes: &[String],
+    ) -> Result<Vec<ScryfallData>, SearchCardsError> {
+        if oracle_ids.is_empty() || set_codes.is_empty() {
+            return Ok(vec![]);
+        }
+        let sql = format!(
+            "SELECT sd.* FROM scryfall_data sd \
+             JOIN card_profiles cp ON sd.id = cp.scryfall_data_id \
+             WHERE sd.oracle_id = ANY($1) AND LOWER(sd.set) = ANY($2) \
+               AND {IMPORTABLE_PRINTING} \
+             ORDER BY (sd.lang IS DISTINCT FROM 'en'), sd.digital, sd.promo, \
+                      sd.collector_number, sd.id"
+        );
+        // Built from string constants only; every value is bound.
+        let db_rows: Vec<DatabaseScryfallData> = query_as(sqlx::AssertSqlSafe(sql))
+            .bind(oracle_ids)
+            .bind(set_codes)
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|e| SearchScryfallDataError::Database(e.into()))?;
+        let printings: Vec<ScryfallData> = db_rows
+            .into_iter()
+            .map(ScryfallData::try_from)
+            .collect::<Result<_, _>>()
+            .map_err(SearchScryfallDataError::Database)?;
+        Ok(printings)
     }
 
     async fn search_cards_deck_aware(

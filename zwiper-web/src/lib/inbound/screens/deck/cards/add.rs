@@ -14,7 +14,8 @@ use std::collections::HashSet;
 
 use components::icons::{BoltIcon, DockIcon, REFRESH};
 use components::{
-    Chip, DockFilter, SheetFrame, SheetWide, TOAST_NORMAL, TOAST_QUICK, reset_image_ease,
+    Chip, DockFilter, LoadFailed, SheetFrame, SheetWide, TOAST_NORMAL, TOAST_QUICK,
+    reset_image_ease, use_back_online,
 };
 use dioxus::core::spawn_forever;
 use dioxus::prelude::*;
@@ -27,7 +28,8 @@ use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilde
 use zwipe_core::domain::card::search_card::cards::Cards;
 use zwipe_core::domain::deck::{Board, DeckEntry};
 use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard};
-use zwipe_ui::add::{AddDeck, no_results_message, normalized, related_ids};
+use zwipe_core::http::contracts::metrics::PileEndKind;
+use zwipe_ui::add::{AddDeck, normalized, related_ids, synergy_note};
 use zwipe_ui::deck_signals::{Crossing, Level, budget_crossing, land_crossing, price_of};
 use zwipe_ui::filter::AddContext;
 use zwipe_ui::filter::draft::{ResetRule, SheetConfig};
@@ -36,12 +38,14 @@ use zwipe_ui::hint::Role;
 use zwipe_ui::screens::add_cards;
 use zwipe_ui::stack::{
     AddAction, CARDS_WARNING_THRESHOLD, CardStack, MAX_CARDS_IN_STACK, MaybeboardAction,
-    NO_CARDS_LEFT, STACK_WARNING_EVERY, StackAction,
+    NO_CARDS_LEFT, NO_CARDS_MATCH, STACK_WARNING_EVERY, StackAction,
 };
 use zwipe_ui::stores::filters::FilterScope;
 use zwipe_ui::stores::in_flight::AddOutcome;
 use zwipe_ui::stores::parked::ParkedStack;
+use zwipe_ui::stores::undo;
 use zwipe_ui::stores::undo::UndoAction;
+use zwipe_ui::telemetry::vocabulary::{DeckScreen, Screen};
 use zwipe_ui::timing::LOAD_MORE_AT;
 
 use super::{OneLine, SwipeDetails, flip_top_card};
@@ -60,6 +64,7 @@ use crate::inbound::chrome::page_keys::{use_page_keys, use_undo_key};
 use crate::inbound::root_signal::use_signal_for_root_tasks;
 use crate::inbound::session::ensure_fresh::ensure_fresh;
 use crate::inbound::shell::ScreenFrame;
+use crate::inbound::telemetry;
 
 /// A downward pull this long, in pixels, on the empty end of the pile
 /// undoes the last swipe, as in the app.
@@ -106,9 +111,11 @@ const ALL_SWIPES: [Swipe; 4] = [Swipe::Left, Swipe::Right, Swipe::Up, Swipe::Dow
 /// The Add cards screen for `deck_id`.
 #[component]
 pub fn AddDeckCard(deck_id: Uuid) -> Element {
+    telemetry::use_telemetry_screen(Screen::Deck(DeckScreen::CardAdd));
     let toast = use_toast();
     let confirm = use_swipe_confirm();
     let authed = use_authed();
+    let usage = telemetry::use_usage();
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
     let CardStores {
@@ -133,6 +140,10 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
     let mut related_announced = use_signal(|| false);
     let mut exhausted = use_signal(|| false);
     let mut loading_cards = use_signal(|| true);
+    // The loads that failed, which Retry and the connection coming back
+    // send again: the deck's context, and the search from the top.
+    let mut deck_failed = use_signal(|| false);
+    let mut search_failed = use_signal(|| false);
     let mut loading_more = use_signal(|| false);
     let mut searches = use_signal(Generation::default);
     let mut first_run = use_signal(|| true);
@@ -166,7 +177,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         let parked_filter = last_search.peek().clone();
         let was_exhausted = exhausted.try_peek().is_ok_and(|e| *e);
         if let Some(parked_filter) = parked_filter
-            && !stack.peek().is_empty()
+            && stack.peek().has_served()
         {
             let (cards, index, history) = stack.peek().park_state();
             stacks.write().park(
@@ -184,24 +195,45 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
 
     // The deck's context: what it holds, its land and price totals, and the
     // legality, colors, synergy and land rules the search starts from.
-    use_hook(move || {
+    // Until it lands the pile ghosts; a failure toasts once and leaves
+    // Couldn't load cards with a Retry.
+    let fetch_context = use_callback(move |()| {
+        deck_failed.set(false);
+        if deck.peek().is_none() {
+            loading_cards.set(true);
+        }
         spawn(async move {
             let Some(full) = authed
-                .run_quiet("load_deck_context", |c, s| async move {
+                .run("load_deck_context", |c, s| async move {
                     c.fetch_deck(deck_id, &s).await
                 })
                 .await
             else {
+                deck_failed.set(true);
+                if deck.peek().is_none() {
+                    loading_cards.set(false);
+                }
                 return;
             };
             let add = AddDeck::from_deck(&full);
             add.seed(&mut filter.write(), had_restored);
             deck.set(Some(add));
-            if stack.peek().is_empty() {
+            if !stack.peek().has_served() {
                 bump();
             }
         });
     });
+    use_hook(move || fetch_context.call(()));
+    // Sends again whatever failed, from Retry or the connection coming back.
+    let retry = use_callback(move |()| {
+        if *deck_failed.peek() {
+            fetch_context.call(());
+        }
+        if *search_failed.peek() {
+            bump();
+        }
+    });
+    use_back_online(retry);
 
     // The search: on mount, resuming a parked stack when its filter still
     // stands, and on every bump while the source is Search.
@@ -229,47 +261,67 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         }
         let ticket = searches.write().next_ticket();
         // Until the deck lands the search can't run, and the stack ghosts.
-        loading_cards.set(deck.peek().is_none());
-        stack.write().reset();
+        loading_cards.set(deck.peek().is_none() && !*deck_failed.peek());
+        search_failed.set(false);
+        stack.write().clear_ahead();
         reset_image_ease();
         last_search.set(None);
         exhausted.set(false);
         if deck.peek().is_some() && !context().serves(&filter.peek()) {
             toast.warning(
-                "Try a filter to start swiping".to_string(),
+                add_cards::TRY_A_FILTER.to_string(),
                 ToastOptions::default().duration(TOAST_NORMAL),
             );
             return;
         }
         let Ok(query) = builder.build() else {
+            // Nothing to search on: once the deck is in, say so rather than
+            // leave a blank ghost.
+            if deck.peek().is_some() {
+                toast.warning(
+                    add_cards::TRY_A_FILTER.to_string(),
+                    ToastOptions::default().duration(TOAST_NORMAL),
+                );
+            }
             return;
         };
         loading_cards.set(true);
         let snapshot = filter.peek().clone();
+        // Ahead of the deck, the deck's own load toasts a failure for both.
+        let quiet = deck.peek().is_none();
+        usage.peek().record_search();
         spawn(async move {
-            let reply = authed
-                .try_run("search_cards", |c, s| async move {
-                    c.search_deck_cards(deck_id, &query, &s).await
-                })
-                .await;
+            // Buffered usage feeds synergy ordering, so it goes out before
+            // the search.
+            telemetry::flush_once(usage, session, client).await;
+            let call = |c: ZwipeClient, s: Session| async move {
+                c.search_deck_cards(deck_id, &query, &s).await
+            };
+            let reply = if quiet {
+                authed.try_run_quiet("search_cards", call).await
+            } else {
+                authed.try_run("search_cards", call).await
+            };
             if !searches.peek().is_current(ticket) {
                 return;
             }
             loading_cards.set(false);
             let Ok(page) = reply else {
+                search_failed.set(true);
                 return;
             };
             warming.set(!page.synergy_applied);
             related.set(related_ids(&page));
             related_announced.set(false);
             let served: Vec<Card> = page.cards.into_iter().filter(|c| !holds(c)).collect();
+            // An empty reply needs no toast: the ghost card says No cards
+            // match.
             if served.is_empty() {
-                toast.warning(
-                    no_results_message(snapshot.synergy(), !page.synergy_applied),
-                    ToastOptions::default().duration(TOAST_NORMAL),
-                );
+                usage
+                    .peek()
+                    .record_pile_end(deck_id, PileEndKind::Empty, snapshot.synergy());
             }
-            stack.write().replace(served);
+            stack.write().replace_ahead(served);
             last_search.set(Some(snapshot));
         });
     });
@@ -324,6 +376,9 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             && related.peek().contains(&top)
         {
             related_announced.set(true);
+            usage
+                .peek()
+                .record_pile_end(deck_id, PileEndKind::SynergyExhausted, true);
             toast.info(
                 "That's every synergy pick. Showing cards like your deck".to_string(),
                 ToastOptions::default().duration(TOAST_NORMAL),
@@ -334,7 +389,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
     let load_more = use_callback(move |()| {
         if stack.peek().len() >= MAX_CARDS_IN_STACK {
             toast.warning(
-                "Card stack limit reached, please refresh your search to continue".to_string(),
+                add_cards::STACK_LIMIT_REACHED.to_owned(),
                 ToastOptions::default().duration(TOAST_NORMAL),
             );
             return;
@@ -347,6 +402,8 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         };
         loading_more.set(true);
         let ticket = searches.peek().current();
+        let synergy = filter.peek().synergy();
+        usage.peek().record_search();
         spawn(async move {
             let reply = authed
                 .try_run("load_more", |c, s| async move {
@@ -373,6 +430,9 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                     .collect();
                 if fresh.is_empty() {
                     exhausted.set(true);
+                    usage
+                        .peek()
+                        .record_pile_end(deck_id, PileEndKind::Empty, synergy);
                     // The cursor waits past the last card: the stack has run out.
                     if stack.peek().index() >= stack.peek().len() {
                         toast.info(
@@ -400,10 +460,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         if (CARDS_WARNING_THRESHOLD..MAX_CARDS_IN_STACK).contains(&total)
             && total.checked_rem(STACK_WARNING_EVERY) == Some(0)
         {
-            said.push((
-                Level::Info,
-                "Approaching the card stack limit, refresh your search to continue".to_string(),
-            ));
+            said.push((Level::Info, add_cards::STACK_LIMIT_NEAR.to_owned()));
         }
         if index >= total && *exhausted.peek() {
             said.push((Level::Info, NO_CARDS_LEFT.to_owned()));
@@ -567,7 +624,8 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                     confirm.success(message);
                 }
                 Err(e) => {
-                    toast.error(format!("Failed to undo: {e}"), ToastOptions::default());
+                    tracing::warn!("undo failed: {e}");
+                    toast.error(undo::UNDO_FAILED.to_owned(), ToastOptions::default());
                     if let Some(entry) = taken {
                         undo.write().push(deck_id, entry);
                     }
@@ -631,10 +689,11 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                         }
                         d.maybeboard.push(DeckEntry { card, deck_card });
                     }
-                    confirm.success("Undid move to deck");
+                    confirm.success("Undid move to mainboard");
                 }
                 Err(e) => {
-                    toast.error(format!("Failed to undo: {e}"), ToastOptions::default());
+                    tracing::warn!("undo failed: {e}");
+                    toast.error(undo::UNDO_FAILED.to_owned(), ToastOptions::default());
                     if let Some(entry) = taken {
                         undo.write().push(deck_id, entry);
                     }
@@ -710,7 +769,11 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             }
             mb_stack.write().remove_current();
             let mut line = OneLine::default();
-            line.confirm(Tone::Success, "Moved to deck");
+            line.confirm_as(
+                Tone::Success,
+                add_cards::MOVED_TO_MAINBOARD,
+                add_cards::MOVED_TO_MAINBOARD_CHIP,
+            );
             if mb_stack.peek().is_empty() {
                 line.ran_out();
             }
@@ -792,6 +855,10 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             toast.info("Maybeboard refreshed".to_string(), quick);
             return;
         }
+        if deck.peek().is_none() {
+            fetch_context.call(());
+            return;
+        }
         let Ok(query) = normalized(&filter.peek()).build() else {
             toast.warning("Filter is empty".to_string(), quick);
             return;
@@ -802,8 +869,11 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         last_search.set(None);
         exhausted.set(false);
         loading_cards.set(true);
+        search_failed.set(false);
         let snapshot = filter.peek().clone();
+        usage.peek().record_search();
         spawn(async move {
+            telemetry::flush_once(usage, session, client).await;
             let reply = authed
                 .try_run("search_cards", |c, s| async move {
                     c.search_deck_cards(deck_id, &query, &s).await
@@ -814,6 +884,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             }
             loading_cards.set(false);
             let Ok(page) = reply else {
+                search_failed.set(true);
                 return;
             };
             warming.set(!page.synergy_applied);
@@ -881,13 +952,44 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             (
                 s.window().to_vec(),
                 s.entering(),
-                !s.is_empty() && s.current().is_none(),
+                s.has_served() && s.current().is_none(),
             )
         }
         AddSource::Maybeboard => {
             let s = mb_stack.read();
             (s.window().to_vec(), s.entering(), false)
         }
+    };
+    // The ghost says why when the filter leaves nothing to deal: a search
+    // that came back empty, or maybeboard cards none of which match.
+    let ghost_note = match at {
+        AddSource::Search => {
+            (!loading_cards() && last_search.read().is_some() && !stack.read().has_served())
+                .then_some(NO_CARDS_MATCH)
+        }
+        AddSource::Maybeboard => {
+            let has_maybe = deck
+                .read()
+                .as_ref()
+                .is_some_and(|d| !d.maybeboard.is_empty());
+            (has_maybe && !filter.read().is_empty() && mb_stack.read().is_empty())
+                .then_some(NO_CARDS_MATCH)
+        }
+    };
+    // In place of the ghost, with a Retry, when the cards could not load.
+    let load_failed = at == AddSource::Search
+        && !stack.read().has_served()
+        && (search_failed() || (deck_failed() && deck.read().is_none()));
+    // Under it, after an empty search with Synergy on, whether Synergy may
+    // be the reason.
+    let ghost_detail = if at == AddSource::Search && ghost_note.is_some() {
+        let synergy = last_search
+            .read()
+            .as_ref()
+            .is_some_and(CardQueryBuilder::synergy);
+        synergy_note(synergy, warming())
+    } else {
+        None
     };
     let buttons = vec![
         (Swipe::Left, "Skip"),
@@ -914,9 +1016,19 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                                     AddSource::Search => stack.write().cancel_entering(),
                                     AddSource::Maybeboard => mb_stack.write().cancel_entering(),
                                 },
-                                on_swipe: move |pair: (Swipe, Card)| match *source.peek() {
-                                    AddSource::Search => on_search_swipe(pair),
-                                    AddSource::Maybeboard => on_maybeboard_swipe(pair),
+                                on_swipe: move |pair: (Swipe, Card)| {
+                                    let (swipe, card) = &pair;
+                                    usage.peek().record_swipe((*swipe).into());
+                                    let at = *source.peek();
+                                    if at == AddSource::Search && *swipe != Swipe::Down {
+                                        usage
+                                            .peek()
+                                            .record_signal(deck_id, card.scryfall_data.oracle_id, (*swipe).into());
+                                    }
+                                    match at {
+                                        AddSource::Search => on_search_swipe(pair),
+                                        AddSource::Maybeboard => on_maybeboard_swipe(pair),
+                                    }
                                 },
                             }
                         } else if end_of_pile {
@@ -944,8 +1056,10 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                             }
                         } else if at == AddSource::Search && loading_cards() {
                             CardSkeleton {}
+                        } else if load_failed {
+                            LoadFailed { message: add_cards::LOAD_FAILED, on_retry: retry }
                         } else {
-                            CardSkeleton {}
+                            CardSkeleton { note: ghost_note, detail: ghost_detail }
                         }
                     }
                 }

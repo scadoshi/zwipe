@@ -172,6 +172,10 @@ impl CardCriteria {
         self.legalities_contains_any.as_deref()
     }
 
+    pub fn legalities_contains_all(&self) -> Option<&[String]> {
+        self.legalities_contains_all.as_deref()
+    }
+
     // commander
     pub fn is_commander_in_format(&self) -> Option<&Format> {
         self.is_commander_in_format.as_ref()

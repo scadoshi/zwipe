@@ -1,5 +1,7 @@
 use components::icons::{self};
-use components::{Button, ButtonVariant, Chip, DockAction, DockFilter, Toasts, use_toast};
+use components::{
+    Button, ButtonVariant, Chip, DockAction, DockFilter, IdentityPips, Pressable, Toasts, use_toast,
+};
 use dioxus::core::spawn_forever;
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -474,24 +476,19 @@ fn CollapsibleGroup(
     rsx! {
         div {
             class: if expanded { "card-group row-enter" } else { "card-group row-enter collapsed" },
-            div {
+            Pressable {
                 class: if expanded { "card-group-header group-collapsible expanded" } else { "card-group-header group-collapsible" },
-                onclick: move |_| ontoggle(()),
+                expanded,
+                onpress: move |()| ontoggle(()),
                 span { class: "card-row-arrow", "▸" }
                 if let Some(pips) = pips.as_ref().filter(|p| !p.is_empty()) {
-                    span { class: "identity-pips",
-                        for color in pips.iter() {
-                            i {
-                                key: "{color.to_short_name()}",
-                                class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
-                            }
-                        }
-                    }
+                    IdentityPips { colors: pips.clone() }
                 }
                 "{title}"
             }
             div {
                 class: if expanded { "collapsible open" } else { "collapsible" },
+                inert: (!expanded).then_some(true),
                 div { class: "collapsible-inner", {children} }
             }
         }
@@ -675,6 +672,7 @@ pub fn View(deck_id: Uuid) -> Element {
     let side_enabled = model.board_enabled(Board::Sideboard);
     let show_tokens = model.show_tokens();
     let show_command_zone = model.show_command_zone();
+    let offers_command_zone = model.offers_command_zone();
     let tokens = model.tokens(&filter);
     let expanded = |key: &str| !model.is_collapsed(key);
     let tokens_expanded = expanded(deck_cards::TOKENS_KEY);
@@ -869,10 +867,12 @@ pub fn View(deck_id: Uuid) -> Element {
                                 onclick: move |_| driver.dispatch(Action::ToggleTokens),
                                 "{deck_cards::TOKENS}"
                             }
-                            Chip {
-                                selected: show_command_zone,
-                                onclick: move |_| driver.dispatch(Action::ToggleCommandZone),
-                                "{deck_cards::COMMAND_ZONE}"
+                            if offers_command_zone {
+                                Chip {
+                                    selected: show_command_zone,
+                                    onclick: move |_| driver.dispatch(Action::ToggleCommandZone),
+                                    "{deck_cards::COMMAND_ZONE}"
+                                }
                             }
                             Chip {
                                 selected: show_row_art(),

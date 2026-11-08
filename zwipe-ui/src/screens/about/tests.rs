@@ -102,7 +102,7 @@ fn the_copy_matches_the_app() {
     assert_eq!(labels, ["Version", "Website", "Privacy policy"]);
     assert_eq!(CREDITS, "Credits");
     assert_eq!(CHANGELOG, "Changelog");
-    assert_eq!(FAILED, "Could not load the changelog");
+    assert_eq!(FAILED, "Couldn't load the changelog");
     assert_eq!(LATEST, "Latest");
     assert_eq!(BACK, "Back");
 }

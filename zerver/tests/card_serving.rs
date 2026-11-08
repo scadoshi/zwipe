@@ -19,6 +19,7 @@ mod common;
 use axum::http::StatusCode;
 use common::{TestApp, card, seed_cards};
 use serde_json::json;
+use uuid::Uuid;
 
 /// Reads the `name` off every card in a search result (a `Vec<Card>`).
 /// Deck-aware search answers `{ cards, synergy_applied }`, unlike the plain
@@ -519,5 +520,131 @@ async fn synergy_pool_runs_out_into_related_cards(pool: sqlx::PgPool) {
     assert!(
         served.iter().any(|n| n == "Near Card"),
         "the card sharing the deck's tags makes the first page: {served:?}"
+    );
+}
+
+/// The Add screen's serve on a deck with no format: a name search with
+/// Is promo: Yes serves the card as its promo printing, not the default one.
+#[sqlx::test]
+async fn deck_serve_with_promo_shows_the_promo_printing(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, uid) = app.register("promoserve").await;
+    app.verify_email(&uid).await;
+    let ring = Uuid::from_u128(0x501);
+    let promo = card("Sol Ring")
+        .oracle(Some(ring))
+        .set("sld", "Secret Lair Drop")
+        .promo(true);
+    seed_cards(
+        &pool,
+        &[
+            card("Sol Ring")
+                .oracle(Some(ring))
+                .set("fdc", "Foundations Commander"),
+            promo.clone(),
+        ],
+    )
+    .await;
+
+    let (status, deck) = app
+        .post(DECK_ROUTE, json!({ "name": "No Format" }), Some(&token))
+        .await;
+    assert_eq!(status, StatusCode::CREATED, "create: {deck}");
+    let did: Uuid = deck["id"].as_str().unwrap().parse().unwrap();
+
+    let (status, body) = app
+        .post(
+            &search_deck_cards_route(did),
+            json!({ "name_contains": "Sol Ring", "promo": true }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "serve: {body}");
+    let served: Vec<(&str, bool)> = body["cards"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|c| {
+            (
+                c["scryfall_data"]["id"].as_str().unwrap(),
+                c["scryfall_data"]["promo"].as_bool().unwrap(),
+            )
+        })
+        .collect();
+    let want = promo.id().to_string();
+    assert_eq!(served, vec![(want.as_str(), true)], "{body}");
+}
+
+/// Quick add's search (zwipe-ui's `quick_add_query`, rebuilt here: name holds the query, synergy off, skipped included, by name, five at most) for `query` on `deck_id`: the names it offers, in order.
+async fn quick_add_names(app: &TestApp, deck_id: Uuid, token: &str, query: &str) -> Vec<String> {
+    use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
+    use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
+    let mut builder = CardQueryBuilder::with_name_contains(query);
+    builder
+        .set_synergy(false)
+        .set_include_skipped(true)
+        .set_sort(CardSortKey::Name)
+        .set_limit(5);
+    let body = serde_json::to_value(builder.build().unwrap()).unwrap();
+    let (status, reply) = app
+        .post(&search_deck_cards_route(deck_id), body, Some(token))
+        .await;
+    assert_eq!(status, StatusCode::OK, "{reply}");
+    reply["cards"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|c| c["scryfall_data"]["name"].as_str().unwrap().to_string())
+        .collect()
+}
+
+#[sqlx::test]
+async fn quick_add_puts_an_exact_name_first_even_past_the_limit(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, uid) = app.register("quickadder").await;
+    app.verify_email(&uid).await;
+    let (status, deck) = app
+        .post(
+            DECK_ROUTE,
+            json!({ "name": "Mono red", "format": "commander" }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED, "{deck}");
+    let deck_id: Uuid = deck["id"].as_str().unwrap().parse().unwrap();
+
+    let mut cards: Vec<_> = [
+        "A Mountain Pass",
+        "Backed by the Mountain",
+        "Call the Mountain Chocobo",
+        "Celebrate the Mountain-king",
+        "Cori Mountain Monastery",
+    ]
+    .into_iter()
+    .map(|name| card(name).mono("R").type_line("Sorcery"))
+    .collect();
+    cards.push(card("Mountain").type_line("Basic Land — Mountain"));
+    seed_cards(&pool, &cards).await;
+
+    for typed in ["Mountain", "mountain", "MOUNTAIN"] {
+        let names = quick_add_names(&app, deck_id, &token, typed).await;
+        assert_eq!(names.len(), 5, "{typed}: {names:?}");
+        assert_eq!(names[0], "Mountain", "{typed}: {names:?}");
+        assert_eq!(
+            names[1..],
+            [
+                "A Mountain Pass",
+                "Backed by the Mountain",
+                "Call the Mountain Chocobo",
+                "Celebrate the Mountain-king"
+            ],
+            "the rest stay by name"
+        );
+    }
+
+    let names = quick_add_names(&app, deck_id, &token, "Mount").await;
+    assert_eq!(
+        names[0], "A Mountain Pass",
+        "a partial name keeps the name order: {names:?}"
     );
 }

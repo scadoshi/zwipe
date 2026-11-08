@@ -59,6 +59,16 @@ pub fn total_price_line(
     }
 }
 
+/// A price row's value with ` (N unpriced)` after it when `unpriced` copies have no price in the shown currency, which its sum and average leave out.
+#[must_use]
+pub fn with_unpriced(line: String, unpriced: usize) -> String {
+    if unpriced == 0 {
+        line
+    } else {
+        format!("{line} ({unpriced} unpriced)")
+    }
+}
+
 /// The clone dialog's prefilled name: `{name} (clone)`.
 #[must_use]
 pub fn clone_name(deck_name: &str) -> String {
@@ -72,7 +82,7 @@ pub enum Done {
     Cloned(String),
     /// A share link was copied to the clipboard, after Share or Copy link.
     LinkCopied,
-    /// Stop share disabled the link.
+    /// Stop sharing disabled the link.
     LinkDisabled,
     /// Clear skips went through.
     SkipsCleared,
@@ -169,6 +179,15 @@ mod tests {
         assert_eq!(
             total_price_line(&profile, Some(3.0), PriceCurrency::Usd),
             "$3.00 / 100.00 TIX"
+        );
+    }
+
+    #[test]
+    fn a_price_row_says_how_many_are_unpriced() {
+        assert_eq!(with_unpriced("$412.30".to_owned(), 0), "$412.30");
+        assert_eq!(
+            with_unpriced("$412.30 / $500.00".to_owned(), 11),
+            "$412.30 / $500.00 (11 unpriced)"
         );
     }
 

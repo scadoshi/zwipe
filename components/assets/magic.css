@@ -2402,13 +2402,6 @@ html.keyboard-up .web-dock-pair {
     gap: var(--panel-gap);
 }
 
-/* A header taking a dragged row. */
-.deck-fold-head.deck-drop-over {
-    color: var(--ink-accent-primary, var(--accent-primary));
-    outline: 1px dashed var(--accent-primary);
-    outline-offset: -2px;
-}
-
 .deck-empty {
     margin: 0;
     padding: 1rem;
@@ -2656,4 +2649,56 @@ footer.site-footer .site-footer-note {
 [class*="theme-"][class*="-light"] .stepper-btn:disabled {
     opacity: 1;
     color: var(--text-muted);
+}
+
+/* The Share dialog's link: one selectable line, cut with an ellipsis when it
+   runs past the dialog, in a sunk field so it reads as something to copy. */
+.share-url {
+    margin-top: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    background: var(--bg-sink);
+    max-width: 100%;
+    box-sizing: border-box;
+    color: var(--text-primary);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    user-select: all;
+    -webkit-user-select: all;
+}
+
+/* A fold's toggle fills the header up to its accessory. */
+.deck-fold-toggle {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: center;
+    gap: 0.4rem;
+    min-width: 0;
+}
+
+/* The keyboard's ring on a row head or a group header, drawn inside so
+   the rounded clip never cuts it, and on a fold's toggle, out in the
+   header's padding. */
+.card-row-compact:focus-visible,
+.card-group-header:focus-visible,
+.deck-fold-toggle:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: -2px;
+    border-radius: 0.5rem;
+}
+
+.deck-fold-toggle:focus-visible,
+.card-list-fold-title:focus-visible,
+.web-section-title:focus-visible {
+    outline-offset: 0.3rem;
+}
+
+/* Any other element that acts as a button: a deck row, a picker field.
+   The ring follows the element's own corners. */
+:where([role="button"][tabindex="0"]):focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: -2px;
 }

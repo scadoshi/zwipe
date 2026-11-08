@@ -1,10 +1,10 @@
 //! The deck fields the create and edit screens share: name, format, the command zone, power level, budget and tags, drawn from the screen model.
 
-use components::{ClearWrap, TextInput};
+use components::{Chip, ClearWrap, Pressable, TextInput};
 use dioxus::prelude::*;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::{
-    self, DeckOtherTag, MAX_DECK_ORACLE_TAGS, MAX_DECK_TAGS, PowerLevel,
+    self, DeckOtherTag, MAX_DECK_ORACLE_TAGS, MAX_DECK_TAGS, PowerLevel, deck_name,
 };
 use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_ui::deck::form::{Slot, Step};
@@ -50,6 +50,7 @@ pub(crate) fn DeckFields(
                     on_info: info_button::open_topic(HintTopic::DeckName),
                     value: name,
                     id: "deck_name",
+                    maxlength: deck_name::MAX_LENGTH,
                     placeholder: model::NOT_SET,
                     error: name_error.as_deref().map(sentence_case),
                     on_clear: |()| {},
@@ -66,9 +67,9 @@ pub(crate) fn DeckFields(
                         filled: format.is_some(),
                         on_clear: move |()| on_action.call(Action::ClearFormat),
                         if let Some(fmt) = format {
-                            div { class: "input input-tappable", onclick: move |_| on_action.call(Action::OpenPicker(Picker::Format)), "{fmt.display_name()}" }
+                            Pressable { class: "input input-tappable", onpress: move |()| on_action.call(Action::OpenPicker(Picker::Format)), "{fmt.display_name()}" }
                         } else {
-                            div { class: "input input-placeholder input-tappable", onclick: move |_| on_action.call(Action::OpenPicker(Picker::Format)), {model::NOT_SET} }
+                            Pressable { class: "input input-placeholder input-tappable", onpress: move |()| on_action.call(Action::OpenPicker(Picker::Format)), {model::NOT_SET} }
                         }
                     }
                 }
@@ -92,9 +93,9 @@ pub(crate) fn DeckFields(
                     }
                     div { class: "chip-row", style: "flex-wrap: wrap; justify-content: center;",
                         for pl in PowerLevel::all().iter().copied() {
-                            div {
+                            Chip {
                                 key: "{pl}",
-                                class: if power_level == Some(pl) { "chip selected" } else { "chip" },
+                                selected: power_level == Some(pl),
                                 onclick: move |_| on_action.call(Action::TogglePowerLevel(pl)),
                                 "{pl.display_name()}"
                             }
@@ -151,8 +152,8 @@ pub(crate) fn DeckFields(
                         // The currencies on the label's line.
                         div { class: "label-row-chips",
                             for currency in PriceCurrency::all().iter().copied() {
-                                div {
-                                    class: if currency_picked == currency { "chip selected" } else { "chip" },
+                                Chip {
+                                    selected: currency_picked == currency,
                                     onclick: move |_| on_action.call(Action::PickCurrency(currency)),
                                     "{currency.label()}"
                                 }
@@ -202,9 +203,9 @@ pub(crate) fn DeckFields(
                     }
 
                     if deck_tags.is_empty() {
-                        div { class: "input input-placeholder input-tappable", onclick: move |_| on_action.call(Action::OpenPicker(Picker::DeckTags)), {model::NOT_SET} }
+                        Pressable { class: "input input-placeholder input-tappable", onpress: move |()| on_action.call(Action::OpenPicker(Picker::DeckTags)), {model::NOT_SET} }
                     } else {
-                        div { class: "chip-box input-tappable", onclick: move |_| on_action.call(Action::OpenPicker(Picker::DeckTags)),
+                        Pressable { class: "chip-box input-tappable", onpress: move |()| on_action.call(Action::OpenPicker(Picker::DeckTags)),
                             for tag in deck_tags {
                                 div {
                                     key: "{tag}",
@@ -214,6 +215,8 @@ pub(crate) fn DeckFields(
                                     // chip-box's own onclick doesn't also open the picker.
                                     button {
                                         class: "chip-remove",
+                                        // Its keys stay with it: Enter removes the chip without opening the picker.
+                                        onkeydown: move |evt| evt.stop_propagation(),
                                         onclick: move |evt| {
                                             evt.stop_propagation();
                                             on_action.call(Action::RemoveTag {
@@ -245,13 +248,13 @@ pub(crate) fn DeckFields(
                     }
 
                     if oracle_tags.is_empty() {
-                        div {
+                        Pressable {
                             class: "input input-placeholder input-tappable",
-                            onclick: move |_| on_action.call(Action::OpenPicker(Picker::OracleTags)),
+                            onpress: move |()| on_action.call(Action::OpenPicker(Picker::OracleTags)),
                             {model::NOT_SET}
                         }
                     } else {
-                        div { class: "chip-box input-tappable", onclick: move |_| on_action.call(Action::OpenPicker(Picker::OracleTags)),
+                        Pressable { class: "chip-box input-tappable", onpress: move |()| on_action.call(Action::OpenPicker(Picker::OracleTags)),
                             for slug in oracle_tags {
                                 div {
                                     key: "{slug}",
@@ -259,6 +262,8 @@ pub(crate) fn DeckFields(
                                     "{slug}"
                                     button {
                                         class: "chip-remove",
+                                        // Its keys stay with it: Enter removes the chip without opening the picker.
+                                        onkeydown: move |evt| evt.stop_propagation(),
                                         onclick: move |evt| {
                                             evt.stop_propagation();
                                             on_action.call(Action::RemoveTag {
@@ -289,9 +294,9 @@ pub(crate) fn DeckFields(
                     }
                     div { class: "chip-row", style: "flex-wrap: wrap; justify-content: center;",
                         for tag in DeckOtherTag::all().iter().copied() {
-                            div {
+                            Chip {
                                 key: "{tag}",
-                                class: if other_tags.contains(&tag) { "chip selected" } else { "chip" },
+                                selected: other_tags.contains(&tag),
                                 onclick: move |_| on_action.call(Action::ToggleOtherTag(tag)),
                                 "{tag.display_name()}"
                             }
@@ -334,12 +339,14 @@ fn SlotField(
                 div { class: "label-row",
                     label { class: "label", {label} }
                     InfoButton { topic }
-                    div {
+                    button {
+                        r#type: "button",
                         class: if filter_on { "chip-xs selected" } else { "chip-xs" },
                         onclick: move |_| on_action.call(Action::ToggleFilter(slot)),
                         {model::FILTER}
                     }
-                    div {
+                    button {
+                        r#type: "button",
                         class: "chip-xs chip-primary",
                         onclick: move |_| on_swipe.call(slot),
                         {model::SWIPE}

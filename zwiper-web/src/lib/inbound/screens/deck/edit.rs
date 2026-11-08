@@ -8,9 +8,10 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
 use zwipe_client::{ClientError, ZwipeClient};
-use zwipe_core::domain::deck::requests::update_deck_profile::InvalidUpdateDeckProfile;
-use zwipe_core::domain::deck::{Deck, DeckName};
+use zwipe_core::domain::deck::Deck;
 use zwipe_ui::deck::form::Slot;
+use zwipe_ui::screens::deck_form;
+use zwipe_ui::telemetry::vocabulary::{DeckScreen, Screen};
 
 use super::form::fields::DeckFields;
 use super::form::overlays::DeckFormOverlays;
@@ -23,10 +24,12 @@ use crate::inbound::chrome::leave_guard::use_leave_guard;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::router::Route;
 use crate::inbound::shell::ScreenFrame;
+use crate::inbound::telemetry;
 
 /// The Edit deck screen for `deck_id`.
 #[component]
 pub fn EditDeck(deck_id: Uuid) -> Element {
+    telemetry::use_telemetry_screen(Screen::Deck(DeckScreen::Edit));
     let navigator = use_navigator();
     let client: Signal<ZwipeClient> = use_context();
     let authed = use_authed();
@@ -101,14 +104,14 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         if *saving.peek() || deck.peek().as_ref().is_none_or(Result::is_err) {
             return;
         }
-        if let Err(e) = DeckName::new(form.name.peek().clone()) {
+        if let Some(message) = deck_form::name_error(&form.name.peek()) {
             let mut error = form.name_error;
-            error.set(Some(e.to_string()));
+            error.set(Some(message));
             return;
         }
         let Some(request) = domain::deck::update_request(&original.peek(), &form.values()) else {
             toast.error(
-                InvalidUpdateDeckProfile::NoUpdates.to_string(),
+                deck_form::NO_CHANGES.to_owned(),
                 ToastOptions::default().duration(TOAST_NORMAL),
             );
             return;
@@ -146,7 +149,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                         DeckFields { form, on_enter: move |()| submit.call(()) }
                     },
                     Some(false) => rsx! {
-                        p { class: "text-muted", "Could not load deck" }
+                        p { class: "text-muted", "Couldn't load deck" }
                     },
                     None => rsx! {
                         EditDeckSkeleton {}
@@ -154,13 +157,14 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                 }
             }
             // Save as the action dock's checkmark, pinned bottom right, while
-            // there is something to save; dimmed while the save is out.
+            // there is something to save; dimmed while the save is out or
+            // the name's error line shows.
             if has_changes {
                 div { class: "action-dock action-dock-right",
                     button {
                         class: "action-dock-btn",
-                        "aria-label": if saving() { "Saving..." } else { "Save changes" },
-                        disabled: saving(),
+                        "aria-label": if saving() { "Saving…" } else { "Save changes" },
+                        disabled: saving() || (form.name_error)().is_some(),
                         onclick: move |_| submit.call(()),
                         DockIcon { path: CHECK }
                     }

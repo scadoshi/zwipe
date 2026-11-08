@@ -23,7 +23,7 @@ pub const BOARDS: &str = "Export";
 pub const DECKLIST: &str = "Decklist";
 
 /// The line in place of the decklist when the deck failed to load.
-pub const LOAD_FAILED: &str = "Could not load deck";
+pub const LOAD_FAILED: &str = "Couldn't load deck";
 
 /// The Back button, to the deck.
 pub const BACK: &str = "Back";

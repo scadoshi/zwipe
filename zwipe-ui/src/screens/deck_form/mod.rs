@@ -13,13 +13,11 @@ use zwipe_core::domain::card::search_card::card_filter::CardQuery;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::card::search_card::commander_eligibility::{self, PartnerKind};
-use zwipe_core::domain::deck::requests::update_deck_profile::InvalidUpdateDeckProfile;
 use zwipe_core::domain::deck::{
-    self, DeckName, DeckOtherTag, DeckProfile, DeckTagView, Format, PowerLevel,
+    self, DeckName, DeckOtherTag, DeckProfile, DeckTagView, Format, InvalidDeckname, PowerLevel,
 };
 use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_core::http::contracts::deck::{HttpCreateDeckProfile, HttpUpdateDeckProfile};
-use zwipe_core::text::sentence_case;
 
 use crate::deck::form::{self, Cascade, FormValues, Slot, Step};
 use crate::deck::pickers::{self, Draft, PartnerAutofill, Picker, TagPicker, Tapped};
@@ -35,7 +33,10 @@ pub const CREATE_TITLE: &str = "Create deck";
 pub const EDIT_TITLE: &str = "Edit deck";
 
 /// The line in place of the form when Edit's deck failed to load.
-pub const LOAD_FAILED: &str = "Could not load deck";
+pub const LOAD_FAILED: &str = "Couldn't load deck";
+
+/// The toast for Save on Edit deck with nothing changed.
+pub const NO_CHANGES: &str = "No changes to save";
 
 /// The Back button.
 pub const BACK: &str = "Back";
@@ -44,7 +45,7 @@ pub const BACK: &str = "Back";
 pub const SAVE: &str = "Save";
 
 /// The save button while the save is out.
-pub const SAVING: &str = "Saving...";
+pub const SAVING: &str = "Saving…";
 
 /// The title of the dialog that asks before leaving the form with unsaved changes.
 pub const LEAVE_TITLE: &str = "Leave without saving?";
@@ -101,10 +102,25 @@ pub const FILTER: &str = "Filter";
 pub const SWIPE: &str = "Swipe";
 
 /// A command-zone search's one chip while it waits or runs.
-pub const SEARCHING: &str = "Searching...";
+pub const SEARCHING: &str = "Searching…";
 
 /// A command-zone search's one chip when it found nothing.
 pub const NO_RESULTS: &str = "No results";
+
+/// The search for the partner a "Partner with" `commander` names, or `None` for any other commander.
+fn find_partner(commander: &Card) -> Option<Effect> {
+    let Some(PartnerKind::Named(mate)) = commander_eligibility::partner_kind(commander) else {
+        return None;
+    };
+    let mut builder = CardQueryBuilder::with_name_contains(&mate);
+    builder.set_limit(PARTNER_RESULT_LIMIT);
+    let query = builder.build().ok()?;
+    Some(Effect::FindPartner {
+        picked: commander.scryfall_data.id,
+        mate,
+        query: Box::new(query),
+    })
+}
 
 /// The toast after closing the deck tag picker adds oracle tags the deck tags seed.
 pub const ORACLE_TAGS_SEEDED: &str = "Oracle tags derived from your deck tags";
@@ -117,7 +133,7 @@ const PARTNER_RESULT_LIMIT: u32 = 5;
 pub enum Open {
     /// A new deck, starting from the commander the commander maybeboard seeded, if any.
     Create {
-        /// The seeded commander. It comes in with the format set to Commander and no knock-on clear or partner autofill.
+        /// The seeded commander. It comes in with the format set to Commander and no knock-on clear; a "Partner with" commander still has its partner filled in.
         seed: Option<Box<Card>>,
     },
     /// The saved deck with this id.
@@ -480,9 +496,10 @@ impl Searches {
     }
 }
 
-/// The commander and signature spell as the format picker opened on them, which its Back puts back. The partner and background are not kept, so a format change that cleared them leaves them cleared.
+/// The land target, commander and signature spell as the format picker opened on them, which its Back puts back. The partner and background are not kept, so a format change that cleared them leaves them cleared.
 #[derive(Debug, Clone, PartialEq)]
 struct ZoneSnapshot {
+    land_target: Option<i32>,
     commander: Option<Card>,
     commander_display: String,
     signature_spell: Option<Card>,
@@ -598,13 +615,7 @@ impl State {
             }
             Action::Debounced { ticket } => self.debounced(ticket),
             Action::Searched { ticket, cards } => {
-                if let Some(slot) = self.searches.holding(ticket) {
-                    let search = self.searches.get_mut(slot);
-                    search.waiting = None;
-                    search.searching = false;
-                    search.open = true;
-                    search.results = cards;
-                }
+                self.searched(ticket, cards);
                 Vec::new()
             }
             Action::PartnerSearched {
@@ -778,6 +789,12 @@ impl State {
         self.tag_list(picker)
     }
 
+    /// Whether the name's error line is showing, which holds Save.
+    #[must_use]
+    pub fn submit_held(&self) -> bool {
+        self.name_error.is_some()
+    }
+
     /// Whether a save is out, which turns Back and Save off.
     #[must_use]
     pub fn is_saving(&self) -> bool {
@@ -823,16 +840,18 @@ impl State {
             Open::Create { seed } => {
                 self.mode = Mode::Create;
                 self.status = Status::Ready;
+                let mut effects = vec![Effect::OfferHint(self.mode.hint())];
                 if let Some(card) = seed {
                     self.values.format = Some(Format::Commander);
                     self.searches
                         .commander
                         .display
                         .clone_from(&card.scryfall_data.name);
+                    effects.extend(find_partner(&card));
                     self.values.commander = Some(*card);
                 }
                 self.saved = self.values.clone();
-                vec![Effect::OfferHint(self.mode.hint())]
+                effects
             }
             Open::Edit(deck_id) => {
                 self.mode = Mode::Edit(deck_id);
@@ -1031,25 +1050,28 @@ impl State {
             *self.values.slot_mut(slot) = Some(card);
             return Vec::new();
         }
-        let named = match commander_eligibility::partner_kind(&card) {
-            Some(PartnerKind::Named(mate)) => Some((card.scryfall_data.id, mate)),
-            _ => None,
-        };
+        let find = find_partner(&card);
         let cascade = self.values.set_commander(Some(card));
         self.apply(&cascade);
-        let Some((picked, mate)) = named else {
-            return Vec::new();
+        find.into_iter().collect()
+    }
+
+    /// Lands the typeahead results for the search holding `ticket`. With its Filter on, Partner lists only the cards the commander can pair with.
+    fn searched(&mut self, ticket: Ticket, cards: Vec<Card>) {
+        let Some(slot) = self.searches.holding(ticket) else {
+            return;
         };
-        let mut builder = CardQueryBuilder::with_name_contains(&mate);
-        builder.set_limit(PARTNER_RESULT_LIMIT);
-        let Ok(query) = builder.build() else {
-            return Vec::new();
+        let cards = match (&self.values.commander, slot) {
+            (Some(commander), Slot::Partner) if self.searches.get(slot).filter_on => {
+                form::legal_partners(commander, cards)
+            }
+            _ => cards,
         };
-        vec![Effect::FindPartner {
-            picked,
-            mate,
-            query: Box::new(query),
-        }]
+        let search = self.searches.get_mut(slot);
+        search.waiting = None;
+        search.searching = false;
+        search.open = true;
+        search.results = cards;
     }
 
     fn partner_searched(&mut self, picked: Uuid, mate: &str, cards: &[Card]) -> Vec<Effect> {
@@ -1157,9 +1179,7 @@ impl State {
             self.name_touched = true;
         }
         if self.name_touched {
-            self.name_error = DeckName::new(self.values.name.as_str())
-                .err()
-                .map(|e| sentence_case(&e.to_string()));
+            self.name_error = name_error(&self.values.name);
         }
     }
 
@@ -1183,6 +1203,7 @@ impl State {
             Picker::Format => OpenPicker::Format {
                 draft: Draft::format(self.values.format),
                 zone: Box::new(ZoneSnapshot {
+                    land_target: self.values.land_target,
                     commander: self.values.commander.clone(),
                     commander_display: self.searches.commander.display.clone(),
                     signature_spell: self.values.signature_spell.clone(),
@@ -1227,18 +1248,20 @@ impl State {
         Vec::new()
     }
 
-    /// Puts back what the open picker opened on and closes it. The format picker also puts back the command zone its picks cleared, which a pick and a pick back can leave changed under the same format.
+    /// Puts back what the open picker opened on and closes it. The format picker also puts back the land target its picks moved and the command zone its picks cleared, which a pick and a pick back can leave changed under the same format.
     fn revert_picker(&mut self) -> Vec<Effect> {
         self.asking_discard = false;
         match self.picker.take() {
             Some(OpenPicker::Format { draft, zone }) => {
                 let ZoneSnapshot {
+                    land_target,
                     commander,
                     commander_display,
                     signature_spell,
                     signature_spell_display,
                 } = *zone;
                 self.values.format = draft.into_snapshot();
+                self.values.land_target = land_target;
                 self.values.commander = commander;
                 self.searches.commander.display = commander_display;
                 self.values.signature_spell = signature_spell;
@@ -1279,8 +1302,8 @@ impl State {
         if self.saving || self.status != Status::Ready {
             return Vec::new();
         }
-        if let Err(e) = DeckName::new(self.values.name.as_str()) {
-            self.name_error = Some(sentence_case(&e.to_string()));
+        if let Some(error) = name_error(&self.values.name) {
+            self.name_error = Some(error);
             return Vec::new();
         }
         self.saving = true;
@@ -1293,10 +1316,7 @@ impl State {
             Mode::Edit(deck_id) => {
                 let Some(request) = self.values.update_request(&self.saved) else {
                     self.saving = false;
-                    return vec![Effect::Toast(Toast::normal(
-                        ToastKind::Error,
-                        InvalidUpdateDeckProfile::NoUpdates.to_string(),
-                    ))];
+                    return vec![Effect::Toast(Toast::normal(ToastKind::Error, NO_CHANGES))];
                 };
                 let ticket = self.request(Request::Save);
                 vec![Effect::UpdateDeck {
@@ -1320,4 +1340,26 @@ impl State {
         let at = self.waiting.iter().position(|(t, _)| *t == ticket)?;
         Some(self.waiting.remove(at).1)
     }
+}
+
+/// The line under a deck name the validator turns down, in the app's words
+/// rather than the validator's.
+#[must_use]
+pub fn name_message(error: &InvalidDeckname) -> String {
+    match error {
+        InvalidDeckname::TooShort => "Deck name is required".to_owned(),
+        InvalidDeckname::TooLong => format!(
+            "Deck names are 1 to {} characters",
+            deck::deck_name::MAX_LENGTH
+        ),
+        InvalidDeckname::BadWord => "Pick a different name".to_owned(),
+    }
+}
+
+/// [`DeckName::new`]'s verdict on `raw` as the line under a deck name field
+/// ([`name_message`]), or `None` when it is a deck name. Create, Edit and
+/// Clone all judge a name with it.
+#[must_use]
+pub fn name_error(raw: &str) -> Option<String> {
+    DeckName::new(raw).err().map(|e| name_message(&e))
 }

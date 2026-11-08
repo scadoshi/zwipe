@@ -4,6 +4,8 @@
 
 use dioxus::prelude::*;
 
+use crate::is_press;
+
 /// A card list panel (Suggested commanders, Staples, Most skipped, the
 /// Commander maybeboard): a header of the arrow and `title`, then `actions`
 /// at its end, over `children`, which ease shut and open with the
@@ -23,7 +25,18 @@ pub fn CardListFold(
             div {
                 class: if open() { "card-group-header card-group-header-with-hint group-collapsible expanded" } else { "card-group-header card-group-header-with-hint group-collapsible" },
                 onclick: move |_| open.toggle(),
-                span { class: "card-list-fold-title",
+                // The keyboard's toggle, beside the actions rather than
+                // around them, so their own buttons stay separate.
+                span {
+                    class: "card-list-fold-title",
+                    role: "button",
+                    tabindex: "0",
+                    "aria-expanded": "{open}",
+                    onkeydown: move |evt: KeyboardEvent| {
+                        if is_press(&evt) {
+                            open.toggle();
+                        }
+                    },
                     span { class: "card-row-arrow", "\u{25b8}" }
                     span { "{title}" }
                 }
@@ -35,7 +48,10 @@ pub fn CardListFold(
                     }
                 }
             }
-            div { class: if open() { "collapsible open" } else { "collapsible" },
+            // A shut panel is inert, so Tab and screen readers pass over it.
+            div {
+                class: if open() { "collapsible open" } else { "collapsible" },
+                inert: (!open()).then_some(true),
                 div { class: "collapsible-inner", {children} }
             }
         }

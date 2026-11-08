@@ -43,7 +43,7 @@ fn a_new_screen_shows_no_lines_and_is_idle() {
     let state = State::new();
     assert_eq!(errors(&state), [None, None, None, None]);
     assert!(!state.is_loading());
-    assert_eq!(state.submit_label(), CREATE_PROFILE);
+    assert_eq!(state.submit_label(), CREATE_ACCOUNT);
 }
 
 #[test]
@@ -58,7 +58,7 @@ fn a_field_shows_its_line_while_it_holds_text() {
     type_in(&mut state, Field::Email, "me.zwipe.net");
     assert_eq!(
         state.error(Field::Email).as_deref(),
-        Some("Missing @ symbol")
+        Some("Enter a valid email address")
     );
     type_in(&mut state, Field::Username, "");
     type_in(&mut state, Field::Email, "");
@@ -75,6 +75,20 @@ fn a_field_shows_its_line_while_it_holds_text() {
 }
 
 #[test]
+fn a_showing_error_holds_submit_but_the_password_s_never_does() {
+    let mut state = State::new();
+    assert!(!state.submit_held());
+    type_in(&mut state, Field::Email, "me.zwipe.net");
+    assert!(state.submit_held());
+    type_in(&mut state, Field::Email, "me@zwipe.net");
+    assert!(!state.submit_held());
+    type_in(&mut state, Field::Password, "one");
+    type_in(&mut state, Field::ConfirmPassword, "two");
+    assert!(state.error(Field::Password).is_some());
+    assert!(!state.submit_held());
+}
+
+#[test]
 fn the_email_is_checked_trimmed() {
     let mut state = State::new();
     type_in(&mut state, Field::Email, "  me@zwipe.net ");
@@ -87,7 +101,7 @@ fn typing_in_the_confirmation_judges_the_password() {
     type_in(&mut state, Field::ConfirmPassword, "x");
     assert_eq!(
         state.error(Field::Password).as_deref(),
-        Some("Must be at least 8 characters long")
+        Some("Passwords do not match")
     );
     assert_eq!(
         state.error(Field::ConfirmPassword),
@@ -124,8 +138,8 @@ fn a_submit_with_a_failing_field_judges_every_field_and_sends_nothing() {
         errors(&state),
         [
             Some("Must be at least 3 characters long".to_owned()),
-            Some("Missing @ symbol".to_owned()),
-            Some("Must be at least 8 characters long".to_owned()),
+            Some("Email is required".to_owned()),
+            Some("Password is required".to_owned()),
             None,
         ]
     );
@@ -249,12 +263,12 @@ fn the_fields_keep_the_apps_labels() {
 #[test]
 fn the_copy_matches_the_app() {
     assert_eq!(
-        [TITLE, BACK, CREATE_PROFILE, CREATING, CHECK_INBOX],
+        [TITLE, BACK, CREATE_ACCOUNT, CREATING, CHECK_INBOX],
         [
-            "Create profile",
-            "Back to login",
-            "Create profile",
-            "Creating...",
+            "Create account",
+            "Back to log in",
+            "Create account",
+            "Creating…",
             "Check your inbox to verify your email, then log in"
         ]
     );

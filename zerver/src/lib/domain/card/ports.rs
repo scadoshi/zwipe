@@ -285,6 +285,26 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
         names: &[String],
     ) -> impl Future<Output = Result<Vec<Card>, SearchCardsError>> + Send;
 
+    /// The cheapest normal printing of each of `oracle_ids` by its USD price:
+    /// English, paper, regular size, not a promo, sold in nonfoil, and never an
+    /// Art Series, token or memorabilia printing. A card with no such printing
+    /// that has a USD price is left out. Import lands these for a line that
+    /// names no printing.
+    fn fetch_cheapest_printings(
+        &self,
+        oracle_ids: &[uuid::Uuid],
+    ) -> impl Future<Output = Result<Vec<ScryfallData>, SearchCardsError>> + Send;
+
+    /// Every printing of the cards `oracle_ids` in the sets `set_codes`
+    /// (lowercase Scryfall set codes), English first, then paper before
+    /// digital, then non-promo, then by collector number. Import resolves a
+    /// decklist's `(SET) number` from these.
+    fn fetch_printings_in_sets(
+        &self,
+        oracle_ids: &[uuid::Uuid],
+        set_codes: &[String],
+    ) -> impl Future<Output = Result<Vec<ScryfallData>, SearchCardsError>> + Send;
+
     /// `search_cards` with deck awareness: rows whose `oracle_id` is in
     /// `exclude_oracle_ids` are omitted, the deck's suppression set (skipped
     /// / removed cards) is filtered out when `deck_id` is given, and when

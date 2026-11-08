@@ -84,6 +84,8 @@
     padding: 0.15rem 0.5rem;
     border: 1px solid var(--border-primary);
     border-radius: 0.4rem;
+    /* A button element, so the host's face has to be named. */
+    font-family: inherit;
     font-size: 0.7rem;
     color: var(--text-primary);
     cursor: pointer;
@@ -107,9 +109,13 @@
 
 /* `position: relative` after `all: unset` keeps the touch target's tap box
    on the ×. */
+/* A picked chip's ×. It stacks above the chip's own touch box (base.css),
+   which would otherwise lie over it and take the tap, so its 44px box
+   answers instead. */
 .chip-remove {
     all: unset;
     position: relative;
+    z-index: 1;
     cursor: pointer;
     font-size: 1rem;
     line-height: 1;
@@ -224,7 +230,15 @@
 
 /* Entrance float-up (staggered per chip via inline animation-delay), then a
    soft idle drift so the layer reads as hovering rather than parked. */
+/* Every floating typeahead's chips (command zone pickers, the commander
+   maybeboard, Quick add): a selected chip's accent outline on the theme's
+   raised surface, with a deeper shadow, so they read as a popup over the
+   label or row behind them. */
 .search-float-chip {
+    background-color: var(--bg-raised);
+    border-color: var(--accent-secondary);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-md);
     animation:
         search-float-in 0.25s ease-out both,
         search-float-drift 3.2s ease-in-out 0.25s infinite;
@@ -488,6 +502,21 @@
 .card-filter-accordion .accordion-trigger:focus-visible {
     outline: 2px solid var(--accent-primary);
     outline-offset: 2px;
+}
+
+/* A picker's results, in flow under its search box, each easing in. */
+.card-filter-results {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.25rem;
+}
+
+.card-filter-result {
+    font-family: inherit;
+    line-height: inherit;
+    cursor: pointer;
+    animation: search-float-in 0.25s ease-out both;
 }
 
 /* The picker result the arrow keys point at. */

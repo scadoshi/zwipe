@@ -74,6 +74,12 @@ pub enum AuthenticateUserError {
     #[error("invalid password")]
     InvalidPassword,
 
+    /// The provided password is longer than
+    /// [`MAX_VERIFIED_LENGTH`](crate::domain::auth::models::password::MAX_VERIFIED_LENGTH),
+    /// so it was turned away before any lookup or hashing.
+    #[error("password too long")]
+    PasswordTooLong,
+
     /// Database operation failed during authentication.
     #[error(transparent)]
     Database(anyhow::Error),

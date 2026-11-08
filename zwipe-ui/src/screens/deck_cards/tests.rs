@@ -524,11 +524,8 @@ fn a_quick_add_joins_the_deck_records_undo_and_toasts() {
         panic!("an add creates the card: {effects:?}");
     };
     assert_eq!(request.quantity, 1);
-    assert_eq!(
-        state.quick_add(),
-        Some(QuickAddResults::Empty),
-        "the pick leaves the results at once"
-    );
+    assert!(state.quick_add().is_none(), "the pick closes the results");
+    assert_eq!(state.quick_query(), "", "and clears the search");
     let ticket = *ticket;
     let deck_card = deck(deck_profile("D"), vec![signet.clone()]).entries[0]
         .deck_card
@@ -760,7 +757,7 @@ fn land_and_budget_crossings_toast() {
         toasts(&effects),
         [(
             ToastKind::Info,
-            "Deck at 60.00% of your $100.00 budget".to_owned()
+            "Deck at 60% of your $100.00 budget".to_owned()
         )]
     );
 }
@@ -1131,7 +1128,7 @@ fn the_copy_matches_the_app() {
     assert_eq!(HINT_TITLE, "Browsing your deck");
     assert_eq!(QUICK_ADD, "Quick add");
     assert_eq!(QUICK_ADD_PLACEHOLDER, "Search a card to add");
-    assert_eq!(SEARCHING, "Searching...");
+    assert_eq!(SEARCHING, "Searching…");
     assert_eq!(NO_RESULTS, "No results");
     assert_eq!(GROUP_BY, "Group by");
     assert_eq!(BOARDS, "Boards");

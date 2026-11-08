@@ -1,21 +1,17 @@
-use components::{InfoButton, Panel, PasswordInput};
+use components::{HintKey, InfoButton, Panel, PasswordInput};
 use dioxus::prelude::*;
 use zwipe_client::ClientError;
 use zwipe_core::domain::auth::models::secret::Secret;
 use zwipe_ui::text::sentence_case;
 
+use crate::components::PageMeta;
 use crate::{Nav, api};
-
-/// Validate a candidate password against the shared password policy.
-fn validate_password(pw: &str) -> Option<String> {
-    zwipe_core::domain::auth::password::validate(pw)
-        .err()
-        .map(|e| format!("Password {e}"))
-}
 
 #[derive(Clone, PartialEq)]
 enum ResetState {
     Form,
+    /// The check on load found the token used or expired.
+    DeadLink,
     Loading,
     Success,
     Error(String),
@@ -33,12 +29,14 @@ enum SubmitCheck {
 }
 
 /// Decides a submit from the page state, the two fields and the link's token.
+/// The password policy is the server's alone, so a rule it changes later can
+/// never stop the page from sending; only an empty or mismatched pair is held.
 fn check_submit(state: &ResetState, pw: &str, cf: &str, token: &str) -> SubmitCheck {
     if *state == ResetState::Loading {
         return SubmitCheck::Ignore;
     }
-    if let Some(err) = validate_password(pw) {
-        return SubmitCheck::Reject(err);
+    if pw.is_empty() {
+        return SubmitCheck::Reject("Password is required".to_string());
     }
     if pw != cf {
         return SubmitCheck::Reject("Passwords do not match".to_string());
@@ -51,12 +49,47 @@ fn check_submit(state: &ResetState, pw: &str, cf: &str, token: &str) -> SubmitCh
     SubmitCheck::Send
 }
 
+/// The line a failed reset shows: the server's reason for a password it
+/// turns down (422), the connection message for a request that never landed,
+/// and a dead link for anything else.
+fn failure_message(error: &ClientError) -> String {
+    match error {
+        ClientError::UnprocessableEntity(reason) => format!("Password {reason}"),
+        ClientError::Network(_) | ClientError::Decode(_) => error.to_user_message(),
+        _ => "This link is invalid or has expired. Request a new one from the app.".to_string(),
+    }
+}
+
+/// Whether the check on load says the link is dead: only a 400, the
+/// server's answer for a used or expired token. Anything else says nothing
+/// about the token, so the form stays.
+fn link_is_dead(answer: &Result<(), ClientError>) -> bool {
+    matches!(answer, Err(ClientError::BadRequest(_)))
+}
+
 #[component]
 pub fn Reset(token: String) -> Element {
     let password = use_signal(String::new);
     let confirm = use_signal(String::new);
     let mut state = use_signal(|| ResetState::Form);
     let mut rules_open = use_signal(|| false);
+
+    // The link's token is checked once on load. Only the server's word that
+    // it is dead (a 400) replaces the form; any other answer, a rate limit or
+    // a failed request leaves the form up, and the submit says what it finds.
+    let check_token = token.clone();
+    use_future(move || {
+        let token = check_token.clone();
+        async move {
+            if token.is_empty() {
+                return;
+            }
+            let answer = api::client().check_reset_token(token).await;
+            if link_is_dead(&answer) && *state.peek() == ResetState::Form {
+                state.set(ResetState::DeadLink);
+            }
+        }
+    });
 
     let on_submit = move |e: FormEvent| {
         e.prevent_default();
@@ -80,14 +113,7 @@ pub fn Reset(token: String) -> Element {
         spawn(async move {
             match api::client().reset_password(token, Secret::new(pw)).await {
                 Ok(()) => state.set(ResetState::Success),
-                // A request that never landed is not a bad token; say so.
-                Err(e @ (ClientError::Network(_) | ClientError::Decode(_))) => {
-                    state.set(ResetState::Error(e.to_user_message()));
-                }
-                Err(_) => state.set(ResetState::Error(
-                    "This link is invalid or has expired. Request a new one from the app."
-                        .to_string(),
-                )),
+                Err(e) => state.set(ResetState::Error(failure_message(&e))),
             }
         });
     };
@@ -112,6 +138,11 @@ pub fn Reset(token: String) -> Element {
     };
 
     rsx! {
+        PageMeta {
+            title: "Reset password",
+            description: "Set a new password for your Zwipe account.",
+            path: "/reset",
+        }
         Nav {}
         // The password policy, from the same list the app's hint shows. A tap
         // on the backdrop or Got it closes it.
@@ -139,12 +170,19 @@ pub fn Reset(token: String) -> Element {
                 }
             }
         }
-        div { class: "form-page content-enter",
+        main { id: "content", class: "form-page content-enter",
             match current_state {
                 ResetState::Success => rsx! {
                     div { class: "outcome-success",
                     Panel { title: "Password reset", title_h1: true, centered: true,
                         p { class: "card-summary", "Your password is updated and every session is signed out." }
+                    }
+                    }
+                },
+                ResetState::DeadLink => rsx! {
+                    div { class: "outcome-error",
+                    Panel { title: "Link already used or expired", title_h1: true, centered: true,
+                        p { class: "card-summary", "If you already reset your password, log in with the new one. If not, tap " HintKey { "Forgot password" } " on " HintKey { "Log in" } " in the app for a new link." }
                     }
                     }
                 },
@@ -156,7 +194,7 @@ pub fn Reset(token: String) -> Element {
                                 form: "reset-form",
                                 class: "panel-action",
                                 disabled: current_state == ResetState::Loading,
-                                if current_state == ResetState::Loading { "Updating..." } else { "Set new password" }
+                                if current_state == ResetState::Loading { "Updating…" } else { "Set new password" }
                             }
                         },
 
@@ -171,6 +209,8 @@ pub fn Reset(token: String) -> Element {
                             PasswordInput {
                                 value: password,
                                 id: "reset-password",
+                                name: "new-password",
+                                autocomplete: "new-password",
                                 placeholder: "New password",
                                 disabled: current_state == ResetState::Loading,
                             }
@@ -180,6 +220,8 @@ pub fn Reset(token: String) -> Element {
                             PasswordInput {
                                 value: confirm,
                                 id: "reset-confirm",
+                                name: "confirm-password",
+                                autocomplete: "new-password",
                                 placeholder: "Confirm password",
                                 disabled: current_state == ResetState::Loading,
                             }
@@ -205,6 +247,20 @@ mod tests {
     const GOOD: &str = "Correct!Horse!Battery9";
 
     #[test]
+    fn only_a_400_marks_the_link_dead() {
+        assert!(link_is_dead(&Err(ClientError::BadRequest(String::new()))));
+        for kept in [
+            Ok(()),
+            Err(ClientError::NotFound(String::new())),
+            Err(ClientError::TooManyRequests(String::new())),
+            Err(ClientError::InternalServerError(String::new())),
+            Err(ClientError::Unauthorized(String::new())),
+        ] {
+            assert!(!link_is_dead(&kept), "{kept:?} replaced the form");
+        }
+    }
+
+    #[test]
     fn a_submit_while_loading_is_ignored() {
         assert_eq!(
             check_submit(&ResetState::Loading, GOOD, GOOD, "token"),
@@ -227,5 +283,34 @@ mod tests {
             check_submit(&ResetState::Form, GOOD, GOOD, ""),
             SubmitCheck::Reject(_)
         ));
+        assert_eq!(
+            check_submit(&ResetState::Form, "", "", "token"),
+            SubmitCheck::Reject("Password is required".to_string())
+        );
+    }
+
+    #[test]
+    fn the_password_policy_is_left_to_the_server() {
+        for weak in ["short", "alllowercase", "a"] {
+            assert_eq!(
+                check_submit(&ResetState::Form, weak, weak, "token"),
+                SubmitCheck::Send,
+                "{weak:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_password_the_server_turns_down_shows_its_reason() {
+        assert_eq!(
+            failure_message(&ClientError::UnprocessableEntity(
+                "must be at least 8 characters long".to_string()
+            )),
+            "Password must be at least 8 characters long"
+        );
+        assert_eq!(
+            failure_message(&ClientError::Unauthorized(String::new())),
+            "This link is invalid or has expired. Request a new one from the app."
+        );
     }
 }

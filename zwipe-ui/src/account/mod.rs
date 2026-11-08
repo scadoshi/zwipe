@@ -3,8 +3,7 @@
 use std::fmt::{self, Debug, Formatter};
 
 use chrono::{DateTime, Utc};
-use zwipe_core::domain::auth::models::password;
-use zwipe_core::domain::user::{Email, Username};
+use zwipe_core::domain::user::{Email, InvalidUsername, Username};
 use zwipe_core::text::sentence_case;
 
 use crate::toast::{Toast, ToastKind};
@@ -12,8 +11,14 @@ use crate::toast::{Toast, ToastKind};
 /// The toast for a Log in tap with a field left empty.
 pub const MISSING_INPUTS: &str = "Enter your username or email and password";
 
-/// Forgot password's one line for any address that does not parse.
-pub const INVALID_RESET_EMAIL: &str = "Please enter a valid email address";
+/// The one line under any address that does not parse, on every form.
+pub const INVALID_EMAIL: &str = "Enter a valid email address";
+
+/// The line under an empty email field, on every form.
+pub const EMAIL_REQUIRED: &str = "Email is required";
+
+/// The line under a username the word filter turns down.
+pub const USERNAME_BAD_WORD: &str = "Pick a different username";
 
 /// The line under a password whose confirmation differs.
 pub const PASSWORDS_DIFFER: &str = "Passwords do not match";
@@ -92,19 +97,17 @@ pub fn missing_inputs_toast() -> Toast {
     Toast::normal(ToastKind::Error, MISSING_INPUTS)
 }
 
-/// Forgot password's check: the address as typed, untrimmed, with [`INVALID_RESET_EMAIL`] for every failure.
+/// Forgot password's check: [`EMAIL_REQUIRED`] when nothing but spaces is typed, else none. The address belongs to an existing account, so its form is the server's to judge: one accepted under older rules must still get a link.
 #[must_use]
 pub fn reset_email_error(raw: &str) -> Option<String> {
-    Email::new(raw)
-        .is_err()
-        .then(|| INVALID_RESET_EMAIL.to_owned())
+    raw.trim().is_empty().then(|| EMAIL_REQUIRED.to_owned())
 }
 
-/// Register's check of a new password and its confirmation: the policy's first failure, else [`PASSWORDS_DIFFER`]. A confirmation still shorter than the password is not judged until a submit was tried, since mid-typing it cannot match yet.
+/// Register's check of a new password and its confirmation: [`PASSWORD_REQUIRED`] once a submit was tried with both empty, else [`PASSWORDS_DIFFER`]. The password policy is the server's alone, so no rule a later policy changes can stop a client from sending. A confirmation still shorter than the password is not judged until a submit was tried, since mid-typing it cannot match yet.
 #[must_use]
 pub fn password_error(password: &str, confirm: &str, attempted: bool) -> Option<String> {
-    if let Err(e) = password::validate(password) {
-        return Some(sentence_case(&e.to_string()));
+    if password.is_empty() && confirm.is_empty() {
+        return attempted.then(|| PASSWORD_REQUIRED.to_owned());
     }
     let judged = attempted || confirm.chars().count() >= password.chars().count();
     (password != confirm && judged).then(|| PASSWORDS_DIFFER.to_owned())
@@ -125,15 +128,20 @@ pub fn change_password_error(
 /// Why `raw` is not a username, in the app's words, or `None` when it is one.
 #[must_use]
 pub fn username_error(raw: &str) -> Option<String> {
-    Username::new(raw)
-        .err()
-        .map(|e| sentence_case(&e.to_string()))
+    Username::new(raw).err().map(|e| match e {
+        InvalidUsername::BadWord => USERNAME_BAD_WORD.to_owned(),
+        InvalidUsername::Whitespace => "Can't contain spaces".to_owned(),
+        other => sentence_case(&other.to_string()),
+    })
 }
 
-/// Why `raw` is not an email address, in the app's words, or `None` when it is one.
+/// [`EMAIL_REQUIRED`] when `raw` is empty or only spaces, [`INVALID_EMAIL`] when it is not an email address, `None` when it is one.
 #[must_use]
 pub fn email_error(raw: &str) -> Option<String> {
-    Email::new(raw).err().map(|e| email_message(&e).to_owned())
+    if raw.trim().is_empty() {
+        return Some(EMAIL_REQUIRED.to_owned());
+    }
+    Email::new(raw).is_err().then(|| INVALID_EMAIL.to_owned())
 }
 
 /// What is wrong with a new username on Change username: [`username_error`], then [`USERNAME_UNCHANGED`] when it is exactly the current one. Usernames are unique by exact text, so a change of case is a change.
@@ -148,46 +156,17 @@ pub fn change_email_error(current: &str, raw: &str) -> Option<String> {
     email_error(raw).or_else(|| (raw == current).then(|| EMAIL_UNCHANGED.to_owned()))
 }
 
-/// The app's wording for each way an email address can be wrong.
-fn email_message(error: &email_address::Error) -> &'static str {
-    use email_address::Error::{
-        DomainEmpty, DomainInvalidSeparator, DomainTooFew, DomainTooLong, InvalidCharacter,
-        InvalidComment, InvalidIPAddress, LocalPartEmpty, LocalPartTooLong, MissingDisplayName,
-        MissingEndBracket, MissingSeparator, SubDomainEmpty, SubDomainTooLong, UnbalancedQuotes,
-        UnsupportedDisplayName, UnsupportedDomainLiteral,
-    };
-    match error {
-        InvalidCharacter => "Invalid character in email",
-        MissingSeparator => "Missing @ symbol",
-        LocalPartEmpty => "Missing text before @",
-        LocalPartTooLong => "Text before @ is too long",
-        DomainEmpty => "Missing domain after @",
-        DomainTooLong => "Domain is too long",
-        SubDomainEmpty => "Empty part in domain",
-        SubDomainTooLong => "A part of the domain is too long",
-        DomainTooFew => "Domain must have at least one dot",
-        DomainInvalidSeparator => "Invalid dot placement in domain",
-        UnbalancedQuotes => "Unbalanced quotes in email",
-        InvalidComment => "Invalid comment in email",
-        InvalidIPAddress => "Invalid IP address in domain",
-        UnsupportedDomainLiteral => "Domain literal not supported",
-        UnsupportedDisplayName => "Display name not supported",
-        MissingDisplayName => "Missing display name",
-        MissingEndBracket => "Missing closing bracket",
-    }
-}
-
 /// [`PASSWORD_REQUIRED`] for an empty password.
 #[must_use]
 pub fn password_required(password: &str) -> Option<String> {
     password.is_empty().then(|| PASSWORD_REQUIRED.to_owned())
 }
 
-/// The Resend button's label on the email verification row: "Sending..." while a send is out, "Resend in {n}s" while `cooldown_secs` runs, otherwise "Resend".
+/// The Resend button's label on the email verification row: "Sending…" while a send is out, "Resend in {n}s" while `cooldown_secs` runs, otherwise "Resend".
 #[must_use]
 pub fn resend_label(sending: bool, cooldown_secs: u64) -> String {
     if sending {
-        "Sending...".to_owned()
+        "Sending…".to_owned()
     } else if cooldown_secs > 0 {
         format!("Resend in {cooldown_secs}s")
     } else {
@@ -245,35 +224,34 @@ mod tests {
         );
         assert_eq!(
             username_error("has space").as_deref(),
-            Some("Cannot contain whitespace")
+            Some("Can't contain spaces")
         );
     }
 
     #[test]
-    fn emails_use_the_apps_wording() {
+    fn every_bad_email_gets_the_same_plain_line() {
         assert_eq!(email_error("me@zwipe.net"), None);
-        assert_eq!(
-            email_error("me.zwipe.net").as_deref(),
-            Some("Missing @ symbol")
-        );
-        assert_eq!(
-            email_error("me@localhost").as_deref(),
-            Some("Domain must have at least one dot")
-        );
+        for raw in [
+            "me.zwipe.net",
+            "me@localhost",
+            "\"me@zwipe.net",
+            "me@[127.0.0.1]",
+        ] {
+            assert_eq!(email_error(raw).as_deref(), Some(INVALID_EMAIL), "{raw:?}");
+        }
     }
 
     #[test]
-    fn a_new_password_is_measured_in_characters_by_the_core_validator() {
-        let seven = "Aé1!bcd";
-        assert_eq!(
-            change_password_error("Old!pass1", seven, seven, true).as_deref(),
-            Some("Must be at least 8 characters long"),
-            "eight bytes but seven characters is too short"
-        );
-        assert_eq!(
-            change_password_error("Old!pass1", "Aé1!bcde", "Aé1!bcde", true),
-            None
-        );
+    fn an_empty_email_is_required_not_invalid() {
+        for raw in ["", "   "] {
+            assert_eq!(email_error(raw).as_deref(), Some(EMAIL_REQUIRED), "{raw:?}");
+            assert_eq!(
+                reset_email_error(raw).as_deref(),
+                Some(EMAIL_REQUIRED),
+                "{raw:?}"
+            );
+        }
+        assert_eq!(EMAIL_REQUIRED, "Email is required");
     }
 
     #[test]
@@ -345,7 +323,7 @@ mod tests {
     #[test]
     fn the_shared_lines_keep_the_apps_words() {
         assert_eq!(MISSING_INPUTS, "Enter your username or email and password");
-        assert_eq!(INVALID_RESET_EMAIL, "Please enter a valid email address");
+        assert_eq!(INVALID_EMAIL, "Enter a valid email address");
         assert_eq!(PASSWORDS_DIFFER, "Passwords do not match");
         assert_eq!(PASSWORD_REQUIRED, "Password is required");
         assert_eq!(
@@ -420,28 +398,27 @@ mod tests {
     }
 
     #[test]
-    fn the_reset_form_has_one_line_and_does_not_trim() {
-        assert_eq!(reset_email_error("a@b.co"), None);
-        for raw in ["", "nope", " a@b.co", "a@b.co ", "a@localhost"] {
-            assert_eq!(
-                reset_email_error(raw).as_deref(),
-                Some(INVALID_RESET_EMAIL),
-                "address {raw:?}"
-            );
+    fn the_reset_form_leaves_an_address_to_the_server() {
+        for raw in ["a@b.co", "nope", " a@b.co", "a@localhost", "me@[127.0.0.1]"] {
+            assert_eq!(reset_email_error(raw), None, "address {raw:?}");
         }
     }
 
     #[test]
-    fn the_policy_wins_over_the_mismatch() {
+    fn no_password_policy_is_checked_in_the_client() {
+        assert_eq!(password_error("short", "short", true), None);
+        assert_eq!(password_error("a", "a", false), None);
         assert_eq!(
             password_error("short", "other", true).as_deref(),
-            Some("Must be at least 8 characters long")
+            Some(PASSWORDS_DIFFER)
         );
+        assert_eq!(password_error("", "", false), None, "nothing tried yet");
         assert_eq!(
             password_error("", "", true).as_deref(),
-            Some("Must be at least 8 characters long"),
-            "an empty password fails the policy, not the mismatch"
+            Some(PASSWORD_REQUIRED),
+            "an empty submit asks for one"
         );
+        assert_eq!(change_password_error(GOOD, "short", "short", true), None);
     }
 
     #[test]
@@ -488,10 +465,6 @@ mod tests {
     #[test]
     fn change_password_repeats_registers_checks_then_refuses_the_same_password() {
         assert_eq!(
-            change_password_error(GOOD, "short", "short", true).as_deref(),
-            Some("Must be at least 8 characters long")
-        );
-        assert_eq!(
             change_password_error(GOOD, GOOD, "Abc", true).as_deref(),
             Some(PASSWORDS_DIFFER),
             "the mismatch comes before sameness"
@@ -509,10 +482,10 @@ mod tests {
 
     #[test]
     fn resend_says_what_it_is_doing() {
-        assert_eq!(resend_label(true, 60), "Sending...");
+        assert_eq!(resend_label(true, 60), "Sending…");
         assert_eq!(
             resend_label(true, 0),
-            "Sending...",
+            "Sending…",
             "sending wins over a spent cooldown"
         );
         assert_eq!(resend_label(false, 60), "Resend in 60s");

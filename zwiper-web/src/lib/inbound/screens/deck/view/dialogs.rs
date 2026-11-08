@@ -1,16 +1,22 @@
-//! The deck view's dialogs: Clone, Share with Copy and Stop share, Clear
+//! The deck view's dialogs: Clone, Share with Copy and Stop sharing, Clear
 //! skips and Delete. The profile header's icons and the Danger zone panel
 //! open them; an action in a dialog closes it, as the app does.
 
-use components::{ActionButton, AlertDialog, DialogAction, TOAST_QUICK};
+use components::{ActionButton, AlertDialog, DialogAction, ShareUrl, TOAST_QUICK};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
+use zwipe_client::ZwipeClient;
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::deck::deck_name;
 use zwipe_core::http::contracts::deck::HttpCloneDeck;
+use zwipe_ui::screens::deck_view;
+use zwipe_ui::telemetry::vocabulary::component;
 
 use crate::domain::deck::share_link;
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::router::Route;
+use crate::inbound::telemetry;
 use crate::outbound::browser;
 
 /// Which of the deck's dialogs is up. `Copy`, so the buttons that open
@@ -38,7 +44,7 @@ pub fn use_deck_dialogs() -> DeckDialogs {
 }
 
 /// The dialogs for `deck_id`. `share_token` is the deck's live link, which
-/// Share and Stop share update in place.
+/// Share and Stop sharing update in place.
 #[component]
 pub fn DeckDialogsHost(
     deck_id: Uuid,
@@ -98,11 +104,15 @@ pub fn DeckDialogsHost(
             }
         });
     });
-    // The app first sends its pending skips so they clear too; the web
-    // records none.
+    // Pending skips go out first, so this window's skips clear too.
+    let usage = telemetry::use_usage();
+    let session: Signal<Option<Session>> = use_context();
+    let client: Signal<ZwipeClient> = use_context();
     let clear_skips = use_callback(move |()| {
         spawn(async move {
+            telemetry::flush_once(usage, session, client).await;
             if authed
+                .in_component(component::MORE_BUTTONS)
                 .run("clear_suppressions", |c, s| async move {
                     c.clear_deck_suppressions(deck_id, &s).await
                 })
@@ -142,7 +152,7 @@ pub fn DeckDialogsHost(
                     on_confirm: copy_shared,
                 },
                 DialogAction::Confirm {
-                    label: "Stop share".into(),
+                    label: deck_view::STOP_SHARE.into(),
                     danger: true,
                     on_confirm: stop_share,
                 },
@@ -167,7 +177,10 @@ pub fn DeckDialogsHost(
             open: share_open,
             title: "Share deck",
             actions: share_actions,
-            "{share_body}"
+            div { "{share_body}" }
+            if let Some(token) = share_token() {
+                ShareUrl { url: share_link(token) }
+            }
         }
         AlertDialog {
             open: clear_open,
@@ -200,8 +213,9 @@ pub fn DeckDialogsHost(
 }
 
 /// Clone deck: a copy of the deck under a new name, prefilled with
-/// `{name} (clone)` on every open. `Save` stays off while the name is
-/// blank; a failure keeps the dialog open.
+/// `{name} (clone)` on every open. The name is judged like Create's, with
+/// its line under the field, and `Save` stays off until it passes; a failure
+/// keeps the dialog open.
 #[component]
 fn CloneDeckDialog(source_deck_id: Uuid, default_name: String, open: Signal<bool>) -> Element {
     let navigator = use_navigator();
@@ -209,14 +223,14 @@ fn CloneDeckDialog(source_deck_id: Uuid, default_name: String, open: Signal<bool
     let toast = use_toast();
     let mut name = use_signal(String::new);
     use_effect(move || {
-        if open() {
-            name.set(default_name.clone());
-        }
+        // Opening and closing both start the form over.
+        let _open = open();
+        name.set(default_name.clone());
     });
-    let blank = use_memo(move || name().trim().is_empty());
+    let blank = use_memo(move || !deck_view::can_clone(&name()));
     let save = ActionButton::new("Save")
         .disabled(blank)
-        .busy("Cloning...", move || {
+        .busy("Cloning…", move || {
             let new_name = name.peek().trim().to_owned();
             async move {
                 let body = HttpCloneDeck {
@@ -251,20 +265,26 @@ fn CloneDeckDialog(source_deck_id: Uuid, default_name: String, open: Signal<bool
     }
 }
 
-/// The new name field, its own component so it reads the name where the
-/// dialog host draws it.
+/// The new name field and its line, its own component so it reads the name
+/// where the dialog host draws it.
 #[component]
 fn CloneNameInput(mut name: Signal<String>) -> Element {
+    let error = deck_view::clone_name_error(&name());
+    let error_shown = error.is_some();
     rsx! {
         input {
             r#type: "text",
-            class: "input",
+            class: if error_shown { "input input-error" } else { "input" },
             placeholder: "New deck name",
+            maxlength: deck_name::MAX_LENGTH.to_string(),
             value: "{name}",
             autocapitalize: "none",
             autocorrect: "off",
             spellcheck: "false",
             oninput: move |evt| name.set(evt.value()),
+        }
+        if let Some(error) = error {
+            div { class: "message-error", "{error}" }
         }
     }
 }

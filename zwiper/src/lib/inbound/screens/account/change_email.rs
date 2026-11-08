@@ -2,6 +2,7 @@
 
 use components::{ActionDock, BottomSheet, DockAction, DockPlace, TextInput, icons};
 use dioxus::prelude::*;
+use zwipe_core::domain::user::email;
 use zwipe_ui::screens::account::{Action, Field, Sheet};
 use zwipe_ui::text::sentence_case;
 
@@ -17,6 +18,7 @@ pub fn ChangeEmailSheet(open: Signal<bool>) -> Element {
 
     let model = driver.model.read();
     let is_loading = model.is_saving(sheet);
+    let submit_held = model.submit_held(sheet);
     let save_label = model.save_label(sheet);
     let email_error = model.error(sheet, Field::NewEmail);
     let password_error = model.error(sheet, Field::Password);
@@ -33,6 +35,10 @@ pub fn ChangeEmailSheet(open: Signal<bool>) -> Element {
                 TextInput {
                     value: driver.inputs.get(sheet, Field::NewEmail),
                     id: "new_email",
+                    input_type: "email",
+                    name: "email",
+                    autocomplete: "email",
+                    maxlength: email::MAX_LENGTH,
                     label: Field::NewEmail.label(),
                     placeholder: Field::NewEmail.placeholder(),
                     error: email_error.as_deref().map(sentence_case),
@@ -40,7 +46,9 @@ pub fn ChangeEmailSheet(open: Signal<bool>) -> Element {
 
                 TextInput {
                     value: driver.inputs.get(sheet, Field::Password),
-                    id: "password",
+                    id: "email_password",
+                    name: "password",
+                    autocomplete: "current-password",
                     label: Field::Password.label(),
                     placeholder: Field::Password.placeholder(),
                     input_type: "password",
@@ -52,7 +60,7 @@ pub fn ChangeEmailSheet(open: Signal<bool>) -> Element {
                 DockAction {
                     label: save_label,
                     icon: icons::CHECK,
-                    disabled: is_loading,
+                    disabled: is_loading || submit_held,
                     onclick: move |()| driver.dispatch(Action::Save(sheet)),
                 }
             }

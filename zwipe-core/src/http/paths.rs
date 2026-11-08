@@ -36,6 +36,8 @@ pub const VERIFY_EMAIL_ROUTE: &str = "/api/auth/verify-email";
 pub const CONFIRM_EMAIL_CHANGE_ROUTE: &str = "/api/auth/confirm-email-change";
 pub const FORGOT_PASSWORD_ROUTE: &str = "/api/auth/forgot-password";
 pub const RESET_PASSWORD_ROUTE: &str = "/api/auth/reset-password";
+/// Whether a reset link's token is still live, read without spending it.
+pub const CHECK_RESET_TOKEN_ROUTE: &str = "/api/auth/reset-password/check";
 pub const RESEND_VERIFICATION_ROUTE: &str = "/api/auth/resend-verification";
 
 // == user ==
@@ -262,6 +264,7 @@ pub const FIXED_ROUTES: &[(Method, &str, bool)] = &[
     (Method::Post, REGISTER_ROUTE, false),
     (Method::Post, RESEND_VERIFICATION_ROUTE, true),
     (Method::Post, RESET_PASSWORD_ROUTE, false),
+    (Method::Post, CHECK_RESET_TOKEN_ROUTE, false),
     (Method::Post, SEARCH_CARDS_ROUTE, true),
     (Method::Post, SEARCH_COMMANDERS_ROUTE, true),
     (Method::Post, VERIFY_EMAIL_ROUTE, false),

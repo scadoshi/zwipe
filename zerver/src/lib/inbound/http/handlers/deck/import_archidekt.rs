@@ -15,6 +15,7 @@ use zwipe_core::domain::deck::requests::get_deck_profile::GetDeckProfile;
 use zwipe_core::domain::deck::requests::import_deck_cards::ImportDeckCardsResult;
 use zwipe_core::domain::user::requests::get_user::GetUser;
 use zwipe_core::http::contracts::deck::HttpImportArchidektDeck;
+use zwipe_core::http::messages;
 
 use crate::domain::deck::ports::DeckService;
 use crate::domain::user::ports::UserService;
@@ -26,17 +27,14 @@ use crate::outbound::archidekt::{ArchidektClient, ArchidektError};
 impl From<ArchidektError> for ApiError {
     fn from(value: ArchidektError) -> Self {
         match value {
-            ArchidektError::NotFound => Self::NotFound(
-                "deck not found on archidekt, make sure it's public and the url is correct"
-                    .to_string(),
-            ),
+            ArchidektError::NotFound => Self::NotFound(messages::ARCHIDEKT_NOT_FOUND.to_string()),
             ArchidektError::Upstream(code) => {
                 tracing::warn!(status = code, "archidekt upstream error");
                 Self::InternalServerError("failed to fetch deck from archidekt".to_string())
             }
             ArchidektError::Network(e) => e.to_500(),
             ArchidektError::TooLarge => {
-                Self::UnprocessableEntity("deck from archidekt is too large to import".to_string())
+                Self::UnprocessableEntity(messages::ARCHIDEKT_TOO_LARGE.to_string())
             }
         }
     }
@@ -56,11 +54,8 @@ pub async fn import_archidekt_deck(
     State(state): State<AppState>,
     Json(body): Json<HttpImportArchidektDeck>,
 ) -> Result<(StatusCode, Json<ImportDeckCardsResult>), ApiError> {
-    let archidekt_id = ArchidektClient::extract_deck_id(&body.url).ok_or_else(|| {
-        ApiError::UnprocessableEntity(
-            "could not parse an archidekt deck id from the url".to_string(),
-        )
-    })?;
+    let archidekt_id = ArchidektClient::extract_deck_id(&body.url)
+        .ok_or_else(|| ApiError::UnprocessableEntity(messages::ARCHIDEKT_BAD_LINK.to_string()))?;
     let board = body
         .board
         .as_deref()

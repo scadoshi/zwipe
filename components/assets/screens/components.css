@@ -186,8 +186,10 @@
     min-width: 0;
 }
 
+/* A zero basis keeps the name on the art's line however long it is, so a
+   long name wraps beside the art instead of dropping under it. */
 .deck-list-name {
-    flex: 0 1 auto;
+    flex: 1 1 0;
     min-width: 0;
     margin-right: 0.25rem;
     overflow-wrap: anywhere;
@@ -309,6 +311,27 @@
     color: var(--ink-text-muted, var(--text-muted));
     font-size: 0.975rem;
     animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* A ghost that says why the filter left nothing to deal: it holds still,
+   and its words are large bold body ink, which clears 3:1 on the ghost's
+   fill in every theme (the lowest is One Dark, 3.97:1). */
+.skeleton-image.skeleton-note {
+    animation: none;
+    padding: 1rem;
+    box-sizing: border-box;
+    flex-direction: column;
+    gap: 0.75rem;
+    text-align: center;
+    color: var(--text-primary);
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+/* The Synergy line under it, smaller but still large bold text
+   (18.7px), so it keeps the same 3:1. */
+.skeleton-note-detail {
+    font-size: 1.17rem;
 }
 
 /* Deck stats + chart skeleton (deck view) */

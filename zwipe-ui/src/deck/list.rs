@@ -1,10 +1,12 @@
 //! The deck list's Show filter and Group by, ported from the app's `list.rs`.
 
+use std::cmp::Ordering;
 use std::collections::BTreeSet;
 
 use zwipe_core::domain::card::scryfall_data::colors::Color;
-use zwipe_core::domain::deck::DeckProfile;
+use zwipe_core::domain::card::search_card::card_filter::sort_direction::SortDirection;
 use zwipe_core::domain::deck::deck_tag::deck_tag_label;
+use zwipe_core::domain::deck::{DeckProfile, Format};
 
 /// How the deck list folds into sections.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
@@ -33,6 +35,152 @@ impl GroupBy {
             Self::Color => "Color",
             Self::Tag => "Tag",
         }
+    }
+}
+
+/// What the deck list sorts on.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum SortBy {
+    /// The deck's name, ignoring case.
+    #[default]
+    Name,
+    /// The main board's card count.
+    Size,
+    /// The format's name, with decks that have none after the rest either way.
+    Format,
+    /// When the deck last changed, oldest first ascending. Only offered when the server sends it.
+    LastChanged,
+    /// The total price in USD, cheapest first ascending, with unpriced decks after the rest either way. Only offered when the server sends it.
+    Price,
+}
+
+impl SortBy {
+    /// Every key in chip order.
+    pub const ALL: [Self; 5] = [
+        Self::Name,
+        Self::Size,
+        Self::Format,
+        Self::LastChanged,
+        Self::Price,
+    ];
+
+    /// The chip's label.
+    #[must_use]
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Name => "Name",
+            Self::Size => "Size",
+            Self::Format => "Format",
+            Self::LastChanged => "Last changed",
+            Self::Price => "Price",
+        }
+    }
+
+    /// The keys `profiles` can sort on, in chip order: Name, Size and Format always, Last changed and Price when any deck carries them, which a server older than those fields never sends.
+    #[must_use]
+    pub fn offered(profiles: &[DeckProfile]) -> Vec<Self> {
+        Self::ALL
+            .into_iter()
+            .filter(|by| match by {
+                Self::Name | Self::Size | Self::Format => true,
+                Self::LastChanged => profiles.iter().any(|p| p.updated_at.is_some()),
+                Self::Price => profiles.iter().any(|p| p.total_price_usd.is_some()),
+            })
+            .collect()
+    }
+
+    /// The key [`Sort::key`] stores it under.
+    fn slug(self) -> &'static str {
+        match self {
+            Self::Name => "name",
+            Self::Size => "size",
+            Self::Format => "format",
+            Self::LastChanged => "changed",
+            Self::Price => "price",
+        }
+    }
+}
+
+/// The deck list's order: a key and a direction. Decks the key ties on fall back to their names, A to Z.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub struct Sort {
+    /// What to sort on.
+    pub by: SortBy,
+    /// Which way.
+    pub direction: SortDirection,
+}
+
+impl Sort {
+    /// The sort as one string, such as `size-descending`, for a client that stores it as text.
+    #[must_use]
+    pub fn key(self) -> String {
+        let direction = match self.direction {
+            SortDirection::Ascending => "ascending",
+            SortDirection::Descending => "descending",
+        };
+        format!("{}-{direction}", self.by.slug())
+    }
+
+    /// The sort [`Self::key`] gave `key`, or `None` for anything else.
+    #[must_use]
+    pub fn from_key(key: &str) -> Option<Self> {
+        let (by, direction) = key.split_once('-')?;
+        let by = SortBy::ALL.into_iter().find(|b| b.slug() == by)?;
+        let direction = match direction {
+            "ascending" => SortDirection::Ascending,
+            "descending" => SortDirection::Descending,
+            _ => return None,
+        };
+        Some(Self { by, direction })
+    }
+
+    /// This sort when `offered` holds its key, else Name in the same direction: a remembered key the decks can't sort on.
+    #[must_use]
+    pub fn within(self, offered: &[SortBy]) -> Self {
+        if offered.contains(&self.by) {
+            self
+        } else {
+            Self {
+                by: SortBy::Name,
+                ..self
+            }
+        }
+    }
+
+    /// How `a` and `b` order under this sort.
+    #[must_use]
+    pub fn compare(self, a: &DeckProfile, b: &DeckProfile) -> Ordering {
+        let directed = |ordering: Ordering| match self.direction {
+            SortDirection::Ascending => ordering,
+            SortDirection::Descending => ordering.reverse(),
+        };
+        let by_name = || a.name.to_lowercase().cmp(&b.name.to_lowercase());
+        match self.by {
+            SortBy::Name => directed(by_name()),
+            SortBy::Size => directed(a.card_count.cmp(&b.card_count)),
+            SortBy::Format => present_first(
+                a.format.as_ref().map(Format::display_name),
+                b.format.as_ref().map(Format::display_name),
+                |x, y| directed(x.cmp(y)),
+            ),
+            SortBy::LastChanged => {
+                present_first(a.updated_at, b.updated_at, |x, y| directed(x.cmp(y)))
+            }
+            SortBy::Price => present_first(a.total_price_usd, b.total_price_usd, |x, y| {
+                directed(x.total_cmp(y))
+            }),
+        }
+        .then_with(by_name)
+    }
+}
+
+/// Orders two optional keys: both present compare with `compare`, and a missing one goes after a present one whichever way the sort runs.
+fn present_first<T>(a: Option<T>, b: Option<T>, compare: impl Fn(&T, &T) -> Ordering) -> Ordering {
+    match (a, b) {
+        (Some(x), Some(y)) => compare(&x, &y),
+        (Some(_), None) => Ordering::Less,
+        (None, Some(_)) => Ordering::Greater,
+        (None, None) => Ordering::Equal,
     }
 }
 
@@ -153,15 +301,15 @@ impl DeckGroup {
     }
 }
 
-/// The decks that pass `show`, sorted by name ignoring case.
+/// The decks that pass `show`, in `sort`'s order.
 #[must_use]
-pub fn shown(profiles: &[DeckProfile], show: &Show) -> Vec<DeckProfile> {
+pub fn shown(profiles: &[DeckProfile], show: &Show, sort: Sort) -> Vec<DeckProfile> {
     let mut decks: Vec<DeckProfile> = profiles
         .iter()
         .filter(|p| show.matches(p))
         .cloned()
         .collect();
-    decks.sort_by_cached_key(|d| d.name.to_lowercase());
+    decks.sort_by(|a, b| sort.compare(a, b));
     decks
 }
 
@@ -259,6 +407,7 @@ fn push_into(
 
 #[cfg(test)]
 mod tests {
+    use chrono::DateTime;
     use zwipe_core::domain::deck::{DeckOtherTag, Format};
 
     use super::*;
@@ -319,13 +468,127 @@ mod tests {
     fn shown_decks_sort_by_name_ignoring_case() {
         let decks = [colored("b", &[]), colored("A", &[]), colored("c", &["R"])];
         let mut show = Show::default();
-        let all: Vec<String> = shown(&decks, &show)
+        let all: Vec<String> = shown(&decks, &show, Sort::default())
             .iter()
             .map(|d| d.name.to_string())
             .collect();
         assert_eq!(all, ["A", "b", "c"]);
         show.toggle_color(Color::Red);
-        assert_eq!(shown(&decks, &show).len(), 1);
+        assert_eq!(shown(&decks, &show, Sort::default()).len(), 1);
+    }
+
+    fn sorted(decks: &[DeckProfile], by: SortBy, direction: SortDirection) -> Vec<String> {
+        shown(decks, &Show::default(), Sort { by, direction })
+            .iter()
+            .map(|d| d.name.to_string())
+            .collect()
+    }
+
+    #[test]
+    fn decks_sort_by_name_size_or_format_either_way() {
+        use SortDirection::{Ascending, Descending};
+        let mut big = deck_profile("big");
+        big.card_count = 100;
+        big.format = Some(Format::Commander);
+        let mut small = deck_profile("Small");
+        small.card_count = 40;
+        small.format = Some(Format::Modern);
+        let mut also_small = deck_profile("also small");
+        also_small.card_count = 40;
+        let decks = [big, small, also_small];
+
+        assert_eq!(
+            sorted(&decks, SortBy::Name, Ascending),
+            ["also small", "big", "Small"]
+        );
+        assert_eq!(
+            sorted(&decks, SortBy::Name, Descending),
+            ["Small", "big", "also small"]
+        );
+        assert_eq!(
+            sorted(&decks, SortBy::Size, Ascending),
+            ["also small", "Small", "big"],
+            "a tie falls back to the name"
+        );
+        assert_eq!(
+            sorted(&decks, SortBy::Size, Descending),
+            ["big", "also small", "Small"]
+        );
+        assert_eq!(
+            sorted(&decks, SortBy::Format, Ascending),
+            ["big", "Small", "also small"],
+            "no format goes last"
+        );
+        assert_eq!(
+            sorted(&decks, SortBy::Format, Descending),
+            ["Small", "big", "also small"],
+            "and stays last descending"
+        );
+    }
+
+    #[test]
+    fn last_changed_and_price_show_only_when_the_server_sends_them() {
+        use SortDirection::{Ascending, Descending};
+        let mut old = deck_profile("Old");
+        let mut new = deck_profile("New");
+        let mut unpriced = deck_profile("Unpriced");
+        let base = [old.clone(), new.clone(), unpriced.clone()];
+        assert_eq!(
+            SortBy::offered(&base),
+            [SortBy::Name, SortBy::Size, SortBy::Format]
+        );
+        let remembered = Sort {
+            by: SortBy::Price,
+            direction: SortDirection::Descending,
+        };
+        assert_eq!(
+            remembered.within(&SortBy::offered(&base)),
+            Sort {
+                by: SortBy::Name,
+                direction: SortDirection::Descending
+            },
+            "an old server falls back to Name"
+        );
+
+        old.updated_at = DateTime::from_timestamp(1_000, 0);
+        new.updated_at = DateTime::from_timestamp(2_000, 0);
+        old.total_price_usd = Some(12.5);
+        new.total_price_usd = Some(3.0);
+        unpriced.updated_at = DateTime::from_timestamp(1_500, 0);
+        let decks = [old, new, unpriced];
+        assert_eq!(SortBy::offered(&decks), SortBy::ALL);
+        assert_eq!(remembered.within(&SortBy::offered(&decks)), remembered);
+        assert_eq!(
+            sorted(&decks, SortBy::LastChanged, Ascending),
+            ["Old", "Unpriced", "New"]
+        );
+        assert_eq!(
+            sorted(&decks, SortBy::LastChanged, Descending),
+            ["New", "Unpriced", "Old"]
+        );
+        assert_eq!(
+            sorted(&decks, SortBy::Price, Ascending),
+            ["New", "Old", "Unpriced"]
+        );
+        assert_eq!(
+            sorted(&decks, SortBy::Price, Descending),
+            ["Old", "New", "Unpriced"],
+            "an unpriced deck stays last"
+        );
+    }
+
+    #[test]
+    fn a_sort_round_trips_through_its_key() {
+        for by in SortBy::ALL {
+            for direction in [SortDirection::Ascending, SortDirection::Descending] {
+                let sort = Sort { by, direction };
+                assert_eq!(Sort::from_key(&sort.key()), Some(sort), "{}", sort.key());
+            }
+        }
+        assert_eq!(Sort::default().key(), "name-ascending");
+        assert_eq!(Sort::from_key("rarity-ascending"), None);
+        assert_eq!(Sort::from_key("name"), None);
+        assert_eq!(Sort::from_key("name-sideways"), None);
     }
 
     #[test]

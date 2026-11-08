@@ -1,7 +1,7 @@
 //! Login: the form as a panel headed with the screen's name, under the hero
 //! and beside the featured flavor card on a wide window, over it below the
 //! breakpoint: the two fields, `Log in` full width under them, then
-//! `Create profile` and `Forgot password` as chips in one centered row.
+//! `Create account` and `Forgot password` as chips in one centered row.
 //!
 //! What the screen knows and does is `zwipe_ui::screens::login`; this file
 //! draws its state and performs its effects.
@@ -16,16 +16,19 @@ use zwipe_core::domain::user::models::settings::PipStyle;
 use zwipe_core::http::contracts::auth::HttpAuthenticateUser;
 use zwipe_ui::account::Password;
 use zwipe_ui::screens::login::{self, Action, Destination, Effect, Field, State};
+use zwipe_ui::telemetry::vocabulary::{AuthScreen, Screen};
 
 use crate::inbound::chrome::toast::raise;
 use crate::inbound::router::Route;
 use crate::inbound::screens::auth::hero::{PublicFlavor, PublicHero};
+use crate::inbound::session::return_to;
 use crate::inbound::shell::ScreenFrame;
+use crate::inbound::telemetry;
 use crate::outbound::session_store::SessionStore;
 use crate::outbound::theme_store::ThemeStore;
 
 /// An identifier for the login form to fill in once, set by a screen that
-/// sends the user here (Create profile's username, Forgot password's
+/// sends the user here (Create account's username, Forgot password's
 /// email). Provided at the root, so it works while Login sits under them in
 /// the history.
 #[derive(Debug, Clone, Copy)]
@@ -101,6 +104,10 @@ impl Driver {
                 pip_style.set(new_session.settings.pip_style);
                 session.set(Some(*new_session));
             }
+            Effect::Navigate(Destination::Home) => {
+                self.navigator
+                    .push(return_to::take().unwrap_or(Route::Home {}));
+            }
             Effect::Navigate(to) => {
                 self.navigator.push(route(to));
             }
@@ -121,6 +128,7 @@ fn route(destination: Destination) -> Route {
 /// The login screen. Return in either field runs `Log in`.
 #[component]
 pub fn Login() -> Element {
+    telemetry::use_telemetry_screen(Screen::Auth(AuthScreen::Login));
     let driver = Driver {
         model: use_signal(State::new),
         identifier: use_signal(String::new),
@@ -176,12 +184,16 @@ pub fn Login() -> Element {
                             TextInput {
                                 value: driver.identifier,
                                 id: "identity",
+                                name: "username",
+                                autocomplete: "username",
                                 label: Field::Identifier.label(),
                                 placeholder: Field::Identifier.placeholder(),
                             }
                             TextInput {
                                 value: driver.password,
                                 id: "password",
+                                name: "password",
+                                autocomplete: "current-password",
                                 label: Field::Password.label(),
                                 placeholder: Field::Password.placeholder(),
                                 input_type: "password",
@@ -204,7 +216,7 @@ pub fn Login() -> Element {
                             Button {
                                 variant: ButtonVariant::Action,
                                 onclick: move |_| driver.dispatch(Action::CreateProfile),
-                                {login::CREATE_PROFILE}
+                                {login::CREATE_ACCOUNT}
                             }
                             Button {
                                 variant: ButtonVariant::Action,

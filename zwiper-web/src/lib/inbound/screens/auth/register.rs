@@ -1,6 +1,6 @@
 //! Register: the four fields as a panel headed with the screen's name,
 //! under the hero and beside the featured flavor card on a wide window,
-//! over it below the breakpoint, `Create profile` full width under them, then `Back to
+//! over it below the breakpoint, `Create account` full width under them, then `Back to
 //! login` as a chip beneath. The password rules are the `?` beside
 //! `Password`, as in the app. A profile created returns to Login in this
 //! screen's place with the username filled in.
@@ -13,10 +13,12 @@ use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use dioxus_primitives::toast::{ToastOptions, Toasts, use_toast};
 use zwipe_client::ZwipeClient;
+use zwipe_core::domain::user::{email, username};
 use zwipe_core::http::contracts::auth::HttpRegisterUser;
 use zwipe_core::http::contracts::metrics::AnonymousEventKind;
 use zwipe_ui::account::Password;
 use zwipe_ui::screens::register::{self, Action, Destination, Effect, Field, State};
+use zwipe_ui::telemetry::vocabulary::{AuthScreen, Screen};
 use zwipe_ui::text::sentence_case;
 
 use crate::inbound::chrome::hint_topic::{self, HintTopic};
@@ -26,6 +28,7 @@ use crate::inbound::screens::auth::hero::{PublicFlavor, PublicHero};
 use crate::inbound::screens::auth::login::LoginPrefill;
 use crate::inbound::session::funnel;
 use crate::inbound::shell::ScreenFrame;
+use crate::inbound::telemetry;
 
 /// Register's model with the handles that perform its effects. Copy, so
 /// every handler and task holds its own.
@@ -109,11 +112,12 @@ fn use_field_sync(driver: &Driver, input: Signal<String>, edit: fn(String) -> Ac
     use_effect(move || driver.dispatch(edit(input())));
 }
 
-/// Create profile. Each field starts showing its error line once it has
+/// Create account. Each field starts showing its error line once it has
 /// held text, or after a submit attempt, and rechecks on every change.
-/// Return in any field runs `Create profile`.
+/// Return in any field runs `Create account`.
 #[component]
 pub fn Register() -> Element {
+    telemetry::use_telemetry_screen(Screen::Auth(AuthScreen::Register));
     let LoginPrefill(login_prefill) = use_context();
     let driver = Driver {
         model: use_signal(State::new),
@@ -141,6 +145,7 @@ pub fn Register() -> Element {
 
     let model = driver.model.read();
     let is_loading = model.is_loading();
+    let submit_held = model.submit_held();
     let submit_label = model.submit_label();
     let username_error = model.error(Field::Username);
     let email_error = model.error(Field::Email);
@@ -166,6 +171,9 @@ pub fn Register() -> Element {
                             TextInput {
                                 value: driver.username,
                                 id: "username",
+                                maxlength: username::MAX_LENGTH,
+                                name: "username",
+                                autocomplete: "username",
                                 label: Field::Username.label(),
                                 placeholder: Field::Username.placeholder(),
                                 error: username_error.as_deref().map(sentence_case),
@@ -173,6 +181,9 @@ pub fn Register() -> Element {
                             TextInput {
                                 value: driver.email,
                                 id: "email",
+                                maxlength: email::MAX_LENGTH,
+                                name: "email",
+                                autocomplete: "email",
                                 label: Field::Email.label(),
                                 placeholder: Field::Email.placeholder(),
                                 input_type: "email",
@@ -181,6 +192,8 @@ pub fn Register() -> Element {
                             TextInput {
                                 value: driver.password,
                                 id: "password",
+                                name: "new-password",
+                                autocomplete: "new-password",
                                 label: Field::Password.label(),
                                 placeholder: Field::Password.placeholder(),
                                 input_type: "password",
@@ -190,6 +203,8 @@ pub fn Register() -> Element {
                             TextInput {
                                 value: driver.confirm_password,
                                 id: "confirm_password",
+                                name: "confirm-password",
+                                autocomplete: "new-password",
                                 label: Field::ConfirmPassword.label(),
                                 placeholder: Field::ConfirmPassword.placeholder(),
                                 input_type: "password",
@@ -199,7 +214,7 @@ pub fn Register() -> Element {
                             // page.
                             div { class: "form-submit",
                                 Button {
-                                    disabled: is_loading,
+                                    disabled: is_loading || submit_held,
                                     onclick: move |evt: MouseEvent| {
                                         evt.prevent_default();
                                         driver.dispatch(Action::Submit);

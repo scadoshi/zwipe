@@ -16,6 +16,7 @@ use zwipe_core::http::contracts::suggestions::{
 };
 
 use crate::activity::Bar;
+use crate::deck::decks_label;
 
 /// Suggestions the list shows; a shorter list after a dropped row refetches.
 pub const LIST_SIZE: usize = 10;
@@ -28,6 +29,9 @@ pub const TOP_IMPACT: u32 = 100;
 
 /// Rows the oracle tags table shows: the user's 10 most impactful tags. The profile sends more so each card role can reveal its own tags.
 pub const TAG_TABLE_ROWS: usize = 10;
+
+/// Decks a tag has to be in to rank in the oracle tags table, so one card in one deck can't outrank a tag the user builds around. A profile with fewer decks ranks every tag.
+pub const TAG_MIN_DECKS: u32 = 2;
 
 /// The Staples Type row's card types, in the row's fixed order.
 pub const STAPLE_TYPES: [CardType; 7] = [
@@ -164,7 +168,7 @@ pub fn group_shared_tags(tags: &[HttpSharedTag]) -> SharedTags {
 pub struct SummaryValue {
     /// The colors drawn as pips in WUBRG order; empty for colorless.
     pub pips: Vec<Color>,
-    /// The deck count after the pips, "(4)".
+    /// The deck count after the pips, "4 decks".
     pub count: String,
 }
 
@@ -190,14 +194,14 @@ pub fn profile_summary(profile: &HttpBuilderProfile) -> ProfileSummary {
             .collect();
         SummaryValue {
             pips: colors::identity_of(&parsed),
-            count: format!("({})", top.decks),
+            count: decks_label(top.decks),
         }
     });
     let color = profile.colors.iter().find_map(|c| {
         let color = Color::try_from(c.color.as_str()).ok()?;
         Some(SummaryValue {
             pips: vec![color],
-            count: format!("({})", c.decks),
+            count: decks_label(c.decks),
         })
     });
     ProfileSummary {
@@ -224,7 +228,7 @@ pub fn role_bars(roles: &[HttpProfileRole], tags: &[HttpProfileTag]) -> Vec<Bar>
         .iter()
         .map(|r| Bar {
             key: r.role.clone(),
-            label: card_role::role_short_label(&r.role),
+            label: card_role::role_label(&r.role),
             count: u64::from(r.decks),
             pct: DeckMetrics::bar_pct(decks_usize(r.decks), max),
             revealable: tags
@@ -262,10 +266,13 @@ pub fn impact(score: f64, max: f64) -> Option<u32> {
     )
 }
 
-/// One row per oracle tag in the order sent (highest score first), the first [`TAG_TABLE_ROWS`] only, its impact scaled so the top tag reads [`TOP_IMPACT`].
-pub fn tag_rows(tags: &[HttpProfileTag]) -> Vec<TagRow> {
-    let max = tags.iter().map(|t| t.score).fold(0.0, f64::max);
-    tags.iter()
+/// One row per oracle tag in at least [`TAG_MIN_DECKS`] of the profile's `deck_count` decks (every tag when it has fewer), in the order sent (highest score first), the first [`TAG_TABLE_ROWS`] only, its impact scaled so the top of those tags reads [`TOP_IMPACT`].
+pub fn tag_rows(tags: &[HttpProfileTag], deck_count: u32) -> Vec<TagRow> {
+    let min_decks = TAG_MIN_DECKS.min(deck_count);
+    let ranked: Vec<&HttpProfileTag> = tags.iter().filter(|t| t.decks >= min_decks).collect();
+    let max = ranked.iter().map(|t| t.score).fold(0.0, f64::max);
+    ranked
+        .into_iter()
         .take(TAG_TABLE_ROWS)
         .map(|t| TagRow {
             slug: t.slug.clone(),

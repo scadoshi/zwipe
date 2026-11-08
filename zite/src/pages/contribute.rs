@@ -20,7 +20,7 @@ pub fn Contribute() -> Element {
             path: "/contribute/",
         }
         Nav {}
-        div { class: "page content-enter",
+        main { id: "content", class: "page content-enter",
             div { class: "section",
                 Panel { title: "Contribute", title_h1: true,
                     p {

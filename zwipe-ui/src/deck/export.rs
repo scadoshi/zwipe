@@ -1,5 +1,9 @@
 //! The decklist the Export screen copies, built as the app builds it so it round-trips through Import.
+//!
+//! Each line is `{qty} {name} ({SET}) {collector number}`, the form Moxfield
+//! and MTGA write, so an import lands the exact printing.
 
+use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::deck::{Board, Deck};
 
 /// Which boards the export includes. At least one is always on.
@@ -52,12 +56,21 @@ impl Boards {
     }
 }
 
-/// `{qty} {name}` for each entry on `board`, in served order.
+/// `{qty} {name} ({SET}) {number}` for one printing.
+fn line(quantity: i32, printing: &ScryfallData) -> String {
+    let set = printing.set.to_uppercase();
+    format!(
+        "{quantity} {} ({set}) {}",
+        printing.name, printing.collector_number
+    )
+}
+
+/// One line for each entry on `board`, in served order.
 fn board_lines(deck: &Deck, board: Board) -> Vec<String> {
     deck.entries
         .iter()
         .filter(|e| e.deck_card.board == board)
-        .map(|e| format!("{} {}", *e.deck_card.quantity, e.card.scryfall_data.name))
+        .map(|e| line(*e.deck_card.quantity, &e.card.scryfall_data))
         .collect()
 }
 
@@ -66,18 +79,37 @@ fn board_lines(deck: &Deck, board: Board) -> Vec<String> {
 pub fn text(deck: &Deck, boards: Boards) -> String {
     let profile = &deck.deck_profile;
     let mut lines: Vec<String> = Vec::new();
-    let command_zone: Vec<&str> = [
-        profile.commander_name.as_deref(),
-        profile.partner_commander_name.as_deref(),
-        profile.background_name.as_deref(),
-        profile.signature_spell_name.as_deref(),
+    // A command-zone card the deck carries writes its printing; one it
+    // doesn't writes the profile's name alone.
+    let command_zone: Vec<String> = [
+        (profile.commander_id, profile.commander_name.as_deref()),
+        (
+            profile.partner_commander_id,
+            profile.partner_commander_name.as_deref(),
+        ),
+        (profile.background_id, profile.background_name.as_deref()),
+        (
+            profile.signature_spell_id,
+            profile.signature_spell_name.as_deref(),
+        ),
     ]
     .into_iter()
-    .flatten()
+    .filter_map(|(id, name)| {
+        let printing = id.and_then(|id| {
+            deck.command_zone_cards
+                .iter()
+                .find(|card| card.scryfall_data.id == id)
+        });
+        match (printing, name) {
+            (Some(card), _) => Some(line(1, &card.scryfall_data)),
+            (None, Some(name)) => Some(format!("1 {name}")),
+            (None, None) => None,
+        }
+    })
     .collect();
     if !command_zone.is_empty() {
         lines.push("// Commander".to_owned());
-        lines.extend(command_zone.iter().map(|name| format!("1 {name}")));
+        lines.extend(command_zone);
         lines.push(String::new());
     }
     if boards.deck {
@@ -103,7 +135,9 @@ pub fn text(deck: &Deck, boards: Boards) -> String {
 
 #[cfg(test)]
 mod tests {
-    use zwipe_core::domain::deck::Quantity;
+    use uuid::Uuid;
+    use zwipe_core::domain::deck::requests::import_deck_cards::{ImportDeckCards, NamedPrinting};
+    use zwipe_core::domain::deck::{ImportMode, Quantity};
 
     use super::*;
     use crate::test_support::{card, deck, deck_profile};
@@ -137,7 +171,7 @@ mod tests {
         built.entries[2].deck_card.board = Board::Sideboard;
         assert_eq!(
             text(&built, Boards::default()),
-            "// Commander\n1 Krenko, Mob Boss\n\n// Deck\n2 Sol Ring"
+            "// Commander\n1 Krenko, Mob Boss\n\n// Deck\n2 Sol Ring (M15) 77"
         );
         let all = Boards {
             deck: true,
@@ -146,7 +180,59 @@ mod tests {
         };
         assert_eq!(
             text(&built, all),
-            "// Commander\n1 Krenko, Mob Boss\n\n// Deck\n2 Sol Ring\n\n// Maybeboard\n1 Opt\n\n// Sideboard\n1 Duress"
+            "// Commander\n1 Krenko, Mob Boss\n\n// Deck\n2 Sol Ring (M15) 77\n\n// Maybeboard\n1 Opt (M15) 77\n\n// Sideboard\n1 Duress (M15) 77"
+        );
+    }
+
+    #[test]
+    fn a_carried_command_zone_card_writes_its_printing() {
+        let commander = card("Krenko, Mob Boss");
+        let mut profile = deck_profile("Krenko");
+        profile.commander_id = Some(commander.scryfall_data.id);
+        profile.commander_name = Some("Krenko, Mob Boss".to_owned());
+        let mut built = deck(profile, Vec::new());
+        built.command_zone_cards = vec![commander];
+        assert_eq!(
+            text(&built, Boards::default()),
+            "// Commander\n1 Krenko, Mob Boss (M15) 77\n"
+        );
+    }
+
+    #[test]
+    fn the_export_imports_back_as_the_same_printings() {
+        let mut delver = card("Delver of Secrets");
+        delver.scryfall_data.set = "isd".to_owned();
+        delver.scryfall_data.collector_number = "51a".to_owned();
+        let mut keeper = card("Bloodline Keeper // Lord of Lineage");
+        keeper.scryfall_data.set = "isd".to_owned();
+        keeper.scryfall_data.collector_number = "90".to_owned();
+        let built = deck(deck_profile("Vampires"), vec![delver, keeper]);
+        let parsed = ImportDeckCards::parse(
+            Uuid::nil(),
+            Uuid::nil(),
+            &text(&built, Boards::default()),
+            /* email_verified */ true,
+            None,
+            ImportMode::Replace,
+        )
+        .unwrap();
+        let lines: Vec<(&str, Option<NamedPrinting>)> = parsed
+            .lines
+            .iter()
+            .map(|l| (l.card_name.as_str(), l.printing.clone()))
+            .collect();
+        let printing = |number: &str| {
+            Some(NamedPrinting {
+                set_code: "isd".to_owned(),
+                collector_number: Some(number.to_owned()),
+            })
+        };
+        assert_eq!(
+            lines,
+            vec![
+                ("Delver of Secrets", printing("51a")),
+                ("Bloodline Keeper // Lord of Lineage", printing("90")),
+            ]
         );
     }
 

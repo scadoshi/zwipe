@@ -1,3 +1,4 @@
+use zwipe_core::domain::card::search_card::card_filter::sort_direction::SortDirection;
 use zwipe_core::domain::deck::{DeckOtherTag, Format};
 
 use super::*;
@@ -369,10 +370,106 @@ fn the_copy_matches_the_app() {
             "Show",
             "All",
             "Tags",
-            "Could not load decks",
+            "Couldn't load decks",
             "No decks",
             "No decks match"
         ]
     );
     assert_eq!(CREATE, "Create");
+}
+
+#[test]
+fn the_sort_reorders_the_groups_and_asks_to_be_remembered() {
+    let mut state = loaded(library());
+    assert_eq!(state.sort(), Sort::default());
+    assert_eq!(names(&state), [["Artifacts", "Burn", "simic"]]);
+
+    let effects = state.update(Action::FlipSortDirection);
+    let flipped = Sort {
+        by: SortBy::Name,
+        direction: SortDirection::Descending,
+    };
+    assert_eq!(effects, [Effect::RememberSort(flipped)]);
+    assert_eq!(names(&state), [["simic", "Burn", "Artifacts"]]);
+
+    let effects = state.update(Action::PickSort(SortBy::Format));
+    let by_format = Sort {
+        by: SortBy::Format,
+        ..flipped
+    };
+    assert_eq!(
+        effects,
+        [Effect::RememberSort(by_format)],
+        "the direction stays"
+    );
+    assert_eq!(names(&state), [["Burn", "simic", "Artifacts"]]);
+}
+
+#[test]
+fn a_visit_starts_on_the_remembered_sort_and_a_reload_keeps_it() {
+    let sort = Sort {
+        by: SortBy::Format,
+        direction: SortDirection::Ascending,
+    };
+    let mut state = State::with_sort(sort);
+    let _ = state.update(Action::Load);
+    assert_eq!(state.sort(), sort);
+    let effects = state.update(Action::Load);
+    let [Effect::RefreshUser, Effect::FetchDecks(ticket)] = effects.as_slice() else {
+        panic!("Load fetches: {effects:?}");
+    };
+    let _ = state.update(Action::Loaded {
+        ticket: *ticket,
+        decks: library(),
+    });
+    assert_eq!(names(&state), [["simic", "Burn", "Artifacts"]]);
+}
+
+#[test]
+fn last_changed_and_price_chips_follow_the_payload_and_a_remembered_one_waits_for_them() {
+    let remembered = Sort {
+        by: SortBy::LastChanged,
+        direction: SortDirection::Descending,
+    };
+    let mut old_server = State::with_sort(remembered);
+    let _ = old_server.update(Action::Load);
+    let effects = old_server.update(Action::Load);
+    let [Effect::RefreshUser, Effect::FetchDecks(ticket)] = effects.as_slice() else {
+        panic!("Load fetches: {effects:?}");
+    };
+    let _ = old_server.update(Action::Loaded {
+        ticket: *ticket,
+        decks: library(),
+    });
+    assert_eq!(
+        old_server.sort_keys(),
+        [SortBy::Name, SortBy::Size, SortBy::Format]
+    );
+    assert_eq!(old_server.sort().by, SortBy::Name, "falls back to Name");
+    assert_eq!(names(&old_server), [["simic", "Burn", "Artifacts"]]);
+
+    let mut decks = library();
+    for (deck, seconds) in decks.iter_mut().zip([3_000, 1_000, 2_000]) {
+        deck.updated_at = chrono::DateTime::from_timestamp(seconds, 0);
+    }
+    let mut state = State::with_sort(remembered);
+    let effects = state.update(Action::Load);
+    let [Effect::RefreshUser, Effect::FetchDecks(ticket)] = effects.as_slice() else {
+        panic!("Load fetches: {effects:?}");
+    };
+    let _ = state.update(Action::Loaded {
+        ticket: *ticket,
+        decks,
+    });
+    assert_eq!(
+        state.sort_keys(),
+        [
+            SortBy::Name,
+            SortBy::Size,
+            SortBy::Format,
+            SortBy::LastChanged
+        ]
+    );
+    assert_eq!(state.sort(), remembered);
+    assert_eq!(names(&state), [["simic", "Artifacts", "Burn"]]);
 }

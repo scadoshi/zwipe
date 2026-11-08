@@ -56,11 +56,12 @@ pub trait MetricsRepository: Clone + Send + Sync + 'static {
         action: AuditAction,
     ) -> impl Future<Output = Result<(), MetricsError>> + Send;
 
-    /// Appends a pre-auth funnel event row keyed by the client session id.
+    /// Appends a pre-auth funnel event row keyed by the client session id, with the platform that sent it (`None` from an older client).
     fn record_anonymous_event(
         &self,
         session_id: Uuid,
         kind: AnonymousEventKind,
+        platform: Option<ClientPlatform>,
     ) -> impl Future<Output = Result<(), MetricsError>> + Send;
 
     /// Stores a crash report exactly once (`ON CONFLICT (crash_id) DO NOTHING`).
@@ -139,6 +140,7 @@ pub trait MetricsService: Clone + Send + Sync + 'static {
         &self,
         session_id: Uuid,
         kind: AnonymousEventKind,
+        platform: Option<ClientPlatform>,
     ) -> impl Future<Output = Result<(), MetricsError>> + Send;
 
     /// Stores a crash report from an unauthenticated client (exactly once

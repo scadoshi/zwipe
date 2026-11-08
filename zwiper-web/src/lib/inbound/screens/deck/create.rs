@@ -4,8 +4,12 @@
 
 use components::icons::{CHECK, DockIcon};
 use dioxus::prelude::*;
-use zwipe_core::domain::deck::{DeckName, Format};
+use dioxus_primitives::toast::use_toast;
+use zwipe_core::domain::deck::Format;
+use zwipe_ui::screens::deck_form;
+use zwipe_ui::telemetry::vocabulary::{DeckScreen, Screen};
 
+use super::form::command_zone::autofill_named_partner;
 use super::form::fields::DeckFields;
 use super::form::overlays::DeckFormOverlays;
 use super::form::{DECK_LEAVE, use_deck_form};
@@ -17,10 +21,12 @@ use crate::inbound::chrome::leave_guard::use_leave_guard;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::router::Route;
 use crate::inbound::shell::ScreenFrame;
+use crate::inbound::telemetry;
 
 /// The Create deck screen.
 #[component]
 pub fn CreateDeck() -> Element {
+    telemetry::use_telemetry_screen(Screen::Deck(DeckScreen::Create));
     let navigator = use_navigator();
     let authed = use_authed();
     let hint_open = use_one_time_hint(OneTimeHint::CreateDeck);
@@ -28,14 +34,17 @@ pub fn CreateDeck() -> Element {
     let mut saving = use_signal(|| false);
 
     // The handed-over commander, taken once. The format is set directly so
-    // the picker's cascade cannot clear the commander.
+    // the picker's cascade cannot clear the commander; a "Partner with"
+    // commander still has its partner filled in.
     let seed: CreateDeckSeed = use_context();
+    let toast = use_toast();
     use_hook(move || {
         let mut slot = seed.0;
         let taken = slot.write().take();
         if let Some(card) = taken {
             let mut format = form.format;
             format.set(Some(Format::Commander));
+            autofill_named_partner(form, &card, authed, toast);
             form.commander.pick(card);
         }
     });
@@ -52,9 +61,9 @@ pub fn CreateDeck() -> Element {
             return;
         }
         let values = form.values();
-        if let Err(e) = DeckName::new(values.name.clone()) {
+        if let Some(message) = deck_form::name_error(&values.name) {
             let mut error = form.name_error;
-            error.set(Some(e.to_string()));
+            error.set(Some(message));
             return;
         }
         saving.set(true);
@@ -77,7 +86,7 @@ pub fn CreateDeck() -> Element {
         });
     });
 
-    let valid = DeckName::new((form.name)()).is_ok();
+    let valid = deck_form::name_error(&(form.name)()).is_none();
     rsx! {
         ScreenFrame {
             title: "Create deck",
@@ -94,7 +103,7 @@ pub fn CreateDeck() -> Element {
                 div { class: "action-dock action-dock-right",
                     button {
                         class: "action-dock-btn",
-                        "aria-label": if saving() { "Saving..." } else { "Create" },
+                        "aria-label": if saving() { "Saving…" } else { "Create" },
                         disabled: saving(),
                         onclick: move |_| submit.call(()),
                         DockIcon { path: CHECK }

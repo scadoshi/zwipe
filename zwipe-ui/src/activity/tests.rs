@@ -314,8 +314,8 @@ fn role_rates_sort_highest_first_and_reveal_only_swiped_tags() {
     assert_eq!(
         rows,
         [
-            ("removal".to_owned(), "remov".to_owned(), 90, false),
-            ("ramp".to_owned(), "ramp".to_owned(), 33, true)
+            ("removal".to_owned(), "Removal".to_owned(), 90, false),
+            ("ramp".to_owned(), "Ramp".to_owned(), 33, true)
         ],
         "a role with nothing dealt is left out"
     );

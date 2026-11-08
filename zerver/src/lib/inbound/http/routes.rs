@@ -196,7 +196,7 @@ pub fn public_routes() -> Router<AppState> {
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
-    // 10 req / 1hr per IP: verify-email, confirm-email-change, reset-password
+    // 10 req / 1hr per IP: verify-email, confirm-email-change, reset-password and its check
     let verify_reset_config = Arc::new(
         GovernorConfigBuilder::default()
             .period(Duration::from_secs(360))
@@ -360,6 +360,13 @@ pub fn public_routes() -> Router<AppState> {
                             "/forgot-password",
                             post(auth::request_password_reset).layer(
                                 GovernorLayer::new(forgot_password_config)
+                                    .error_handler(stable_rate_limit),
+                            ),
+                        )
+                        .route(
+                            "/reset-password/check",
+                            post(auth::check_reset_token).layer(
+                                GovernorLayer::new(Arc::clone(&verify_reset_config))
                                     .error_handler(stable_rate_limit),
                             ),
                         )

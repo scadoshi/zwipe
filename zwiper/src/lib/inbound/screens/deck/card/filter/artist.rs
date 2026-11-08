@@ -155,49 +155,6 @@ pub fn Artist() -> Element {
                 }
             }
 
-            if !artist_search_query().is_empty() {
-                if let Some(artists) = all_artists.read().as_ref() {
-                    {
-                        let query = artist_search_query().to_lowercase();
-                        let already_selected = selected_artists.as_slice();
-
-                        let results: Vec<String> = artists
-                            .iter()
-                            .filter(|a| {
-                                a.to_lowercase().contains(&query)
-                                && !already_selected.contains(a)
-                            })
-                            .take(5)
-                            .cloned()
-                            .collect();
-
-                        if results.is_empty() {
-                            rsx! {}
-                        } else {
-                            rsx! {
-                                div { class: "search-float-anchor",
-                                    div { class: "search-float-results",
-                                        for (i, artist) in results.into_iter().enumerate() {
-                                            div {
-                                                class: "chip-unselected search-float-chip",
-                                                style: "animation-delay: {i * 40}ms, {250 + i * 40}ms;",
-                                                onclick: move |_| {
-                                                    let mut current = read_artists(&filter_builder(), mode());
-                                                    current.push(artist.clone());
-                                                    write_artists(&mut filter_builder.write(), mode(), current);
-                                                    artist_is_typing.set(false);
-                                                },
-                                                {artist.clone()}
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
             ClearWrap {
                 filled: !artist_search_query().is_empty(),
                 on_clear: move |()| {
@@ -221,6 +178,50 @@ pub fn Artist() -> Element {
                             artist_is_typing.set(false);
                         }
                     }
+            }
+            if !artist_search_query().is_empty() {
+                if let Some(artists) = all_artists.read().as_ref() {
+                    {
+                        let query = artist_search_query().to_lowercase();
+                        let already_selected = selected_artists.as_slice();
+
+                        let results: Vec<String> = artists
+                            .iter()
+                            .filter(|a| {
+                                a.to_lowercase().contains(&query)
+                                && !already_selected.contains(a)
+                            })
+                            .take(5)
+                            .cloned()
+                            .collect();
+
+                        if results.is_empty() {
+                            rsx! {}
+                        } else {
+                            rsx! {
+                                div {
+                                    div { class: "card-filter-results",
+                                        for (i, artist) in results.into_iter().enumerate() {
+                                            button {
+                                                r#type: "button",
+                                                class: "chip-unselected card-filter-result",
+                                                style: "animation-delay: {i * 40}ms;",
+                                                onclick: move |_| {
+                                                    artist_search_query.set(String::new());
+                                                    let mut current = read_artists(&filter_builder(), mode());
+                                                    current.push(artist.clone());
+                                                    write_artists(&mut filter_builder.write(), mode(), current);
+                                                    artist_is_typing.set(false);
+                                                },
+                                                {artist.clone()}
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }

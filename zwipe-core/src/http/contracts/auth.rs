@@ -290,6 +290,22 @@ impl fmt::Debug for HttpResetPassword {
     }
 }
 
+/// Reset link check request body.
+#[derive(Deserialize, Serialize)]
+pub struct HttpCheckResetToken {
+    /// The reset token from the email link.
+    pub token: String,
+}
+
+/// Redacted: the token is a single-use credential.
+impl fmt::Debug for HttpCheckResetToken {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("HttpCheckResetToken")
+            .field("token", &"REDACTED")
+            .finish()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -427,7 +443,13 @@ mod tests {
                 new_password: Secret::new("hunter22hunter22"),
             }
         );
-        for debug in [verify, confirm, reset] {
+        let check = format!(
+            "{:?}",
+            HttpCheckResetToken {
+                token: token.to_string(),
+            }
+        );
+        for debug in [verify, confirm, reset, check] {
             assert!(!debug.contains(token), "token leaked: {debug}");
             assert!(debug.contains("REDACTED"), "no redaction marker: {debug}");
         }

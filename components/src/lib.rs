@@ -41,6 +41,7 @@
 //! (`open_url`, `use_in_app_links`).
 
 mod architecture;
+mod back_online;
 mod card_details;
 mod card_filter;
 mod card_list_fold;
@@ -59,15 +60,19 @@ pub mod hint;
 mod home_colors;
 mod home_decks;
 mod hover_stack;
+mod identity_pips;
 mod keyword_chips;
 mod load_failed;
 mod menu_section;
 mod oracle_text;
+mod pressable;
 mod role_tags;
+mod share_url;
 mod site_footer;
 mod theme;
 
 pub use architecture::ZwipeArchitecture;
+pub use back_online::use_back_online;
 pub use card_details::{
     CardDetails, CardDetailsCost, CardDetailsPanel, CardDetailsPanelSkeleton, card_face_count,
 };
@@ -95,6 +100,7 @@ pub use fold::{FOLD_AT, Fold, SEE_LESS, SEE_MORE, SeeMore, fold_split};
 pub use home_colors::{ColorsEmpty, HomeColors};
 pub use home_decks::HomeDecks;
 pub use hover_stack::{HoverStack, HoverStackHost, use_hover_stack};
+pub use identity_pips::IdentityPips;
 pub use keyword_chips::{KeywordChips, KeywordReminders};
 pub use load_failed::LoadFailed;
 pub use menu_section::MenuSection;
@@ -106,19 +112,21 @@ pub use orangui::{
     DialogHostView, DockAction, DockFilter, DockPlace, GalleryFooter, GalleryFrame, GridCells,
     HEAT_CELL, HEAT_ROWS, HeatCell, HeatGrid, HeatHit, HeatReadout, HintBullet, HintBullets,
     HintDialog, HintKey, HintLine, InfoButton, KEYBOARD_INSET_JS, ModeIcon, NAV_GLIDE_JS, NavBar,
-    NavCtaIcon, PageHeader, PageMeta, PaletteIcon, Panel, PasswordInput, RETIRED_THEMES, REVEAL_JS,
-    Replay, SCROLL_FADE_JS, SITE_CSS, SheetFrame, SheetWide, SiteMeta, Splash, SplashGate,
-    StatsStrip, THEME_GROUPS, THEMES_CSS, TOAST_LONG, TOAST_NORMAL, TOAST_QUICK, TextInput,
-    ThemeConfig, ThemePicker, ThemeSheet, heat_span, icons, peak_indices, status_uses,
-    use_app_lifecycle, use_app_lifecycle_root, use_dialog_host, use_heat_pick, use_on_resume,
-    use_os_back, use_overlay_back, use_overlay_back_action, use_overlay_back_stack,
+    NavCtaIcon, OverlayBackStack, PageHeader, PageMeta, PaletteIcon, Panel, PasswordInput,
+    RETIRED_THEMES, REVEAL_JS, Replay, SCROLL_FADE_JS, SITE_CSS, SheetFrame, SheetWide, SiteMeta,
+    Splash, SplashGate, StatsStrip, THEME_GROUPS, THEMES_CSS, TOAST_LONG, TOAST_NORMAL,
+    TOAST_QUICK, TextInput, ThemeConfig, ThemePicker, ThemeSheet, heat_span, icons, peak_indices,
+    status_uses, use_app_lifecycle, use_app_lifecycle_root, use_dialog_host, use_heat_pick,
+    use_on_resume, use_os_back, use_overlay_back, use_overlay_back_action, use_overlay_back_stack,
     use_page_kill_recovery, use_persisted_theme, use_theme_follow, use_theme_wipe, with_separators,
 };
 #[cfg(feature = "links")]
 pub use orangui::{OpenUrlError, open_url, use_in_app_links};
 #[cfg(feature = "toast")]
 pub use orangui::{TOAST_CSS, ToastOptions, ToastStack, Toasts, use_toast};
+pub use pressable::{Pressable, is_press};
 pub use role_tags::{OtagDef, RoleTags};
+pub use share_url::ShareUrl;
 pub use site_footer::SiteFooter;
 pub use theme::{pip_style_class, theme_from_settings};
 

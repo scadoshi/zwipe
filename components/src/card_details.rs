@@ -479,7 +479,7 @@ pub fn CardDetailsPanelSkeleton() -> Element {
     rsx! {
         div { class: "panel-card card-details-panel card-details-ghost",
             div { class: "panel-head",
-                h3 { class: "panel-title",
+                h2 { class: "panel-title",
                     span { class: "skeleton-bar card-details-ghost-title" }
                 }
             }

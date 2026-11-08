@@ -236,7 +236,7 @@ fn a_search_serves_cards_the_deck_does_not_hold() {
 }
 
 #[test]
-fn an_empty_search_says_why() {
+fn an_empty_search_says_why_on_the_ghost_alone() {
     let (mut state, _) = with_deck(&commander_deck(&[]));
     let effects = state.update(Action::Filter(state.filter().clone()));
     let ticket = ticket_of(&effects);
@@ -252,14 +252,90 @@ fn an_empty_search_says_why() {
             ..
         }
     )));
-    assert_eq!(
-        toasts(&effects),
-        [Toast::normal(
-            ToastKind::Warning,
-            "No results for this filter; Synergy is on, turn it off to search everything"
-        )]
+    assert!(
+        toasts(&effects).is_empty(),
+        "the ghost says it, not a toast: {effects:?}"
     );
     assert_eq!(state.pile(), Pile::Empty);
+    assert_eq!(
+        state.ghost_note(),
+        Some(NO_CARDS_MATCH),
+        "the ghost says why"
+    );
+    assert_eq!(
+        state.ghost_synergy_note(),
+        Some("Synergy is on. Turn it off to search everything."),
+        "and that Synergy may be the reason"
+    );
+
+    let effects = state.update(Action::Filter(state.filter().clone()));
+    assert_eq!(state.pile(), Pile::Loading);
+    assert_eq!(state.ghost_note(), None, "no note while the search runs");
+    let ticket = ticket_of(&effects);
+    let _ = state.update(Action::Searched {
+        ticket,
+        page: page(vec![card("Bear")]),
+    });
+    assert_eq!(state.ghost_note(), None, "cards on show");
+}
+
+#[test]
+fn the_ghost_has_no_note_before_a_search() {
+    let (state, _) = with_deck(&commander_deck(&[]));
+    assert_eq!(state.ghost_note(), None);
+}
+
+#[test]
+fn promo_alone_searches_on_a_deck_with_no_format() {
+    let (mut state, _) = with_deck(&deck(deck_profile("No format"), Vec::new()));
+    let mut promo = state.filter().clone();
+    promo.set_promo(true);
+    let effects = state.update(Action::Filter(promo));
+    assert!(has_search(&effects), "Is promo alone searches: {effects:?}");
+}
+
+#[test]
+fn digital_alone_searches_on_a_deck_with_no_format() {
+    let (mut state, _) = with_deck(&deck(deck_profile("No format"), Vec::new()));
+    let mut digital = state.filter().clone();
+    digital.set_digital(true);
+    let effects = state.update(Action::Filter(digital));
+    assert!(
+        has_search(&effects),
+        "Is digital alone searches: {effects:?}"
+    );
+}
+
+#[test]
+fn a_config_only_filter_searches_and_an_empty_reply_says_no_cards_match() {
+    let mut profile = deck_profile("Modern");
+    profile.format = Some(Format::Modern);
+    let (mut state, _) = with_deck(&deck(profile, Vec::new()));
+    let mut promo = state.filter().clone();
+    promo.set_promo(true);
+    let effects = state.update(Action::Filter(promo));
+    assert!(has_search(&effects), "Is promo alone searches: {effects:?}");
+    let _ = state.update(Action::Searched {
+        ticket: ticket_of(&effects),
+        page: page(Vec::new()),
+    });
+    assert_eq!(state.ghost_note(), Some(NO_CARDS_MATCH));
+    assert_eq!(
+        state.ghost_synergy_note(),
+        None,
+        "no Synergy without a commander"
+    );
+}
+
+#[test]
+fn an_unsearchable_filter_says_try_a_filter_once_the_deck_is_in() {
+    let (mut state, _) = with_deck(&pile_deck());
+    let effects = state.update(Action::Filter(state.filter().clone()));
+    assert!(!has_search(&effects));
+    assert_eq!(
+        toasts(&effects),
+        [Toast::normal(ToastKind::Warning, TRY_A_FILTER)]
+    );
 }
 
 #[test]
@@ -305,6 +381,59 @@ fn a_failed_search_stops_loading() {
     let ticket = ticket_of(&state.update(Action::Filter(state.filter().clone())));
     assert_eq!(state.update(Action::Failed { ticket }), NOTHING);
     assert_eq!(state.pile(), Pile::Empty);
+    assert!(state.load_failed(), "the pile says it failed, with a Retry");
+    assert_eq!(state.ghost_note(), None);
+
+    let effects = state.update(Action::Retry);
+    assert!(has_search(&effects), "Retry searches again: {effects:?}");
+    assert!(!state.load_failed(), "the skeleton while it runs");
+    let _ = state.update(Action::Searched {
+        ticket: ticket_of(&effects),
+        page: page(vec![card("Bear")]),
+    });
+    assert!(!state.load_failed());
+    assert_eq!(state.update(Action::Retry), NOTHING, "nothing failed");
+}
+
+#[test]
+fn a_failed_deck_fetch_comes_back_on_retry() {
+    let deck_id = Uuid::new_v4();
+    let mut state = State::new();
+    let effects = state.update(Action::Load {
+        deck_id,
+        filter: None,
+        parked: None,
+    });
+    let deck_ticket = effects
+        .iter()
+        .find_map(|e| match e {
+            Effect::FetchDeck { ticket, .. } => Some(*ticket),
+            _ => None,
+        })
+        .unwrap();
+    let search = effects.iter().find_map(|e| match e {
+        Effect::Search { ticket, .. } => Some(*ticket),
+        _ => None,
+    });
+    let _ = state.update(Action::Failed {
+        ticket: deck_ticket,
+    });
+    if let Some(ticket) = search {
+        let _ = state.update(Action::Failed { ticket });
+    }
+    assert!(state.load_failed(), "no deck and no cards");
+    let effects = state.update(Action::Retry);
+    assert!(
+        effects
+            .iter()
+            .any(|e| matches!(e, Effect::FetchDeck { .. })),
+        "the deck goes again: {effects:?}"
+    );
+    assert_eq!(
+        has_search(&effects),
+        search.is_some(),
+        "and the search, if it had gone out"
+    );
 }
 
 #[test]
@@ -567,6 +696,66 @@ fn undo_with_nothing_to_undo_says_so() {
         toasts(&state.update(Action::Undo)),
         [Toast::normal(ToastKind::Info, NOTHING_TO_UNDO)]
     );
+}
+
+/// `state` after the filter is applied again and its search serves `served`.
+fn refiltered(state: &mut State, served: &[Card]) {
+    let effects = state.update(Action::Filter(state.filter().clone()));
+    let ticket = ticket_of(&effects);
+    let _served = state.update(Action::Searched {
+        ticket,
+        page: page(served.to_vec()),
+    });
+}
+
+#[test]
+fn undo_reaches_a_skip_across_a_filter_change() {
+    let mut state = serving(&[card("A"), card("B")]);
+    let _skipped = state.update(Action::Swipe(Direction::Left));
+    refiltered(&mut state, &[card("C")]);
+    assert_eq!(top(&state).as_deref(), Some("C"));
+    let effects = state.update(Action::Undo);
+    assert_eq!(
+        toasts(&effects),
+        [Toast::quick(ToastKind::Info, UNDID_SKIP)]
+    );
+    assert_eq!(top(&state).as_deref(), Some("A"));
+}
+
+#[test]
+fn undo_reaches_an_add_across_a_filter_change() {
+    let mut state = serving(&[card("A"), card("B")]);
+    let effects = state.update(Action::Swipe(Direction::Right));
+    let Some(Effect::AddCard { card: added, .. }) = effects.first() else {
+        panic!("{effects:?}");
+    };
+    let deck_card = Box::new(serving_deck_card(added));
+    let _recorded = state.update(Action::Added {
+        ticket: ticket_of(&effects),
+        deck_card,
+    });
+    refiltered(&mut state, &[card("C")]);
+    let effects = state.update(Action::Undo);
+    assert!(
+        effects.iter().any(|e| matches!(
+            e,
+            Effect::TakeUndo {
+                claim: UndoClaim::Added { .. },
+                ..
+            }
+        )),
+        "{effects:?}"
+    );
+    assert_eq!(top(&state).as_deref(), Some("A"));
+}
+
+#[test]
+fn a_filter_change_that_matches_nothing_still_says_no_cards_match() {
+    let mut state = serving(&[card("A")]);
+    let _skipped = state.update(Action::Swipe(Direction::Left));
+    refiltered(&mut state, &[]);
+    assert_eq!(state.pile(), Pile::Empty);
+    assert!(state.ghost_note().is_some());
 }
 
 #[test]
@@ -839,7 +1028,15 @@ fn the_maybeboard_source_cycles_promotes_and_undoes() {
     else {
         panic!("{effects:?}");
     };
-    assert_eq!(*toast, Toast::quick(ToastKind::Success, MOVED_TO_DECK));
+    assert_eq!(
+        *toast,
+        Toast::quick(ToastKind::Success, MOVED_TO_MAINBOARD).with_chip(MOVED_TO_MAINBOARD_CHIP)
+    );
+    assert_eq!(
+        toast.chip_word(),
+        "Added",
+        "the chip says what it said before"
+    );
     let card_id = *card_id;
     assert_eq!(top(&state).as_deref(), Some("Maybe B"));
     let effects = state.update(Action::Landed { ticket: *ticket });
@@ -865,7 +1062,7 @@ fn the_maybeboard_source_cycles_promotes_and_undoes() {
     });
     assert_eq!(
         toasts(&effects),
-        [Toast::quick(ToastKind::Success, UNDID_MOVE_TO_DECK)]
+        [Toast::quick(ToastKind::Success, UNDID_MOVE_TO_MAINBOARD)]
     );
 }
 
@@ -1088,14 +1285,14 @@ fn the_copy_matches_the_app() {
             SKIPPED,
             ADDED_TO_DECK,
             ADDED_TO_MAYBEBOARD,
-            MOVED_TO_DECK,
+            MOVED_TO_MAINBOARD,
             ALREADY_ON_MAYBEBOARD,
             NOTHING_TO_UNDO,
             NO_PREVIOUS_CARD,
             UNDID_SKIP,
             UNDID_ADD,
             UNDID_MAYBEBOARD,
-            UNDID_MOVE_TO_DECK,
+            UNDID_MOVE_TO_MAINBOARD,
             ALREADY_CHANGED,
             TRY_A_FILTER,
             FILTER_AT_DEFAULT,
@@ -1108,14 +1305,14 @@ fn the_copy_matches_the_app() {
             "Skipped",
             "Added to deck",
             "Added to maybeboard",
-            "Moved to deck",
+            "Moved to mainboard",
             "Already on maybeboard",
             "Nothing to undo",
             "No previous card",
             "Undid skip",
             "Undid add",
             "Undid maybeboard",
-            "Undid move to deck",
+            "Undid move to mainboard",
             "Already changed",
             "Try a filter to start swiping",
             "Filter already at default",
@@ -1127,11 +1324,11 @@ fn the_copy_matches_the_app() {
     );
     assert_eq!(
         STACK_LIMIT_REACHED,
-        "Card stack limit reached, start a new search to continue"
+        "Card stack limit reached. Start a new search to continue."
     );
     assert_eq!(
         STACK_LIMIT_NEAR,
-        "Approaching the card stack limit, start a new search to continue"
+        "Approaching the card stack limit. Start a new search to continue."
     );
     assert_eq!(
         SYNERGY_WARMING,

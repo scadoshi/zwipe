@@ -6,6 +6,9 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::CardQuery;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::card_filter::error::InvalidCardCriteria;
+use zwipe_core::domain::card::search_card::commander_eligibility::{
+    self, PartnerKind, partner_kind,
+};
 use zwipe_core::domain::deck::deck_profile::MAX_LAND_TARGET;
 use zwipe_core::domain::deck::{Format, MAX_DECK_ORACLE_TAGS};
 
@@ -29,6 +32,26 @@ pub fn step_land_target(current: Option<i32>, format: Option<Format>, step: Step
         (None, _) => format.and_then(|f| f.default_land_target()).unwrap_or(0),
         (Some(v), Step::Down) => v.saturating_sub(1).max(0),
         (Some(v), Step::Up) => v.saturating_add(1).min(MAX_LAND_TARGET),
+    }
+}
+
+/// The land target after the format changes from `old` to `new`. A target
+/// still at `old`'s usual count moves to `new`'s, since the user never set
+/// it; a target the user set, an unset one, and any target when the format
+/// is cleared stay as they are.
+#[must_use]
+pub fn follow_land_target(
+    current: Option<i32>,
+    old: Option<Format>,
+    new: Option<Format>,
+) -> Option<i32> {
+    let (Some(target), Some(new)) = (current, new) else {
+        return current;
+    };
+    if old.and_then(|f| f.default_land_target()) == Some(target) {
+        new.default_land_target().or(current)
+    } else {
+        current
     }
 }
 
@@ -124,6 +147,72 @@ pub fn reseed_oracle_tags(
     (tags, added)
 }
 
+/// The type line every Time Lord Doctor carries, which a Doctor's companion partners with.
+const TIME_LORD_DOCTOR: &str = "Time Lord Doctor";
+
+/// Narrows a partner search toward the cards `commander` can pair with, by its partner ability; with no commander, toward every card with one. Only fields the user's filter leaves unset are narrowed, and the narrowing only trims the pages: [`legal_partners`] decides.
+pub fn narrow_to_partners(builder: &mut CardQueryBuilder, commander: Option<&Card>) {
+    let Some(commander) = commander else {
+        builder.set_is_partner(true);
+        return;
+    };
+    let keywords_free = builder.keywords_contains_all().is_none();
+    match partner_kind(commander) {
+        Some(PartnerKind::Named(name)) => {
+            if builder.name_contains().is_none() {
+                builder.set_name_contains(name);
+            }
+        }
+        Some(PartnerKind::Generic) => {
+            if keywords_free {
+                builder.set_keywords_contains_all(["Partner"]);
+            }
+            if builder.keywords_excludes().is_none() {
+                builder.set_keywords_excludes(["Partner with"]);
+            }
+        }
+        Some(PartnerKind::FriendsForever) => {
+            if keywords_free {
+                builder.set_keywords_contains_all(["Friends forever"]);
+            }
+        }
+        Some(PartnerKind::DoctorsCompanion) => {
+            if builder.type_line_contains().is_none() {
+                builder.set_type_line_contains(TIME_LORD_DOCTOR);
+            }
+        }
+        None if is_time_lord_doctor(commander) => {
+            if keywords_free {
+                builder.set_keywords_contains_all(["Doctor's companion"]);
+            }
+        }
+        None => {
+            builder.set_is_partner(true);
+        }
+    }
+}
+
+/// `cards` without the ones `commander` cannot pair with, by `validate_deck`'s own rule ([`commander_eligibility::are_valid_partners`]), and without another printing of the commander itself.
+#[must_use]
+pub fn legal_partners(commander: &Card, cards: Vec<Card>) -> Vec<Card> {
+    let own = commander.scryfall_data.oracle_id;
+    cards
+        .into_iter()
+        .filter(|card| {
+            (own.is_none() || card.scryfall_data.oracle_id != own)
+                && commander_eligibility::are_valid_partners(commander, card)
+        })
+        .collect()
+}
+
+/// Whether `card` is a Time Lord Doctor, the card a Doctor's companion pairs with.
+fn is_time_lord_doctor(card: &Card) -> bool {
+    card.scryfall_data
+        .type_line
+        .as_deref()
+        .is_some_and(|line| line.contains(TIME_LORD_DOCTOR))
+}
+
 /// The typeahead search for `slot`: the name typed, narrowed by the slot's rule while its Filter is on.
 ///
 /// # Errors
@@ -151,9 +240,7 @@ pub fn search_query(
                     builder.set_is_commander_in_format(format);
                 }
             }
-            Slot::Partner => {
-                builder.set_is_partner(true);
-            }
+            Slot::Partner => narrow_to_partners(&mut builder, commander),
             Slot::Background => {
                 builder.set_is_background(true);
             }
@@ -189,9 +276,7 @@ pub fn swipe_query(
                 builder.set_is_commander_in_format(format);
             }
         }
-        Slot::Partner => {
-            builder.set_is_partner(true);
-        }
+        Slot::Partner => narrow_to_partners(&mut builder, commander),
         Slot::Background => {
             builder.set_is_background(true);
         }
@@ -251,6 +336,172 @@ pub enum ImportTone {
 mod tests {
     use super::*;
     use crate::test_support::card;
+
+    /// A legendary creature named `name` with these keywords, rules text and type line.
+    fn commander(name: &str, keywords: &[&str], text: &str, type_line: &str) -> Card {
+        let mut card = card(name);
+        let data = &mut card.scryfall_data;
+        data.keywords = Some(keywords.iter().map(|k| (*k).to_owned()).collect());
+        data.oracle_text = Some(text.to_owned());
+        data.type_line = Some(type_line.to_owned());
+        card
+    }
+
+    fn tymna() -> Card {
+        commander(
+            "Tymna the Weaver",
+            &["Partner"],
+            "Lifelink\nPartner",
+            "Legendary Creature \u{2014} Human Cleric",
+        )
+    }
+
+    fn names(cards: &[Card]) -> Vec<&str> {
+        cards
+            .iter()
+            .map(|c| c.scryfall_data.name.as_str())
+            .collect()
+    }
+
+    #[test]
+    fn tymna_is_offered_only_plain_partners() {
+        let tymna = tymna();
+        let mut tymna_again = card("Tymna the Weaver");
+        tymna_again.scryfall_data.oracle_id = tymna.scryfall_data.oracle_id;
+        tymna_again.scryfall_data.keywords = Some(vec!["Partner".to_owned()]);
+        let pile = vec![
+            commander(
+                "Thrasios, Triton Hero",
+                &["Partner"],
+                "Partner",
+                "Legendary Creature \u{2014} Merfolk Wizard",
+            ),
+            commander(
+                "Pir, Imaginative Rascal",
+                &["Partner with", "Partner"],
+                "Partner with Toothy, Imaginary Friend (When this creature enters, target player may put Toothy into their hand.)",
+                "Legendary Creature \u{2014} Human",
+            ),
+            commander(
+                "Ian Chesterton",
+                &["Doctor's companion"],
+                "Doctor's companion",
+                "Legendary Creature \u{2014} Human Advisor",
+            ),
+            commander(
+                "Will the Wise",
+                &["Friends forever"],
+                "Friends forever",
+                "Legendary Creature \u{2014} Human Wizard",
+            ),
+            commander(
+                "The Prismatic Piper",
+                &["Partner"],
+                "If The Prismatic Piper is your commander, choose a color before the game begins.\nPartner",
+                "Legendary Creature \u{2014} Shapeshifter",
+            ),
+            tymna_again,
+        ];
+        assert_eq!(
+            names(&legal_partners(&tymna, pile)),
+            ["Thrasios, Triton Hero", "The Prismatic Piper"]
+        );
+    }
+
+    #[test]
+    fn each_partner_ability_narrows_the_search_its_own_way() {
+        let mut builder = CardQueryBuilder::new();
+        narrow_to_partners(&mut builder, Some(&tymna()));
+        assert_eq!(
+            builder.keywords_excludes(),
+            Some(&["Partner with".to_owned()][..])
+        );
+        let pir = commander(
+            "Pir, Imaginative Rascal",
+            &["Partner with", "Partner"],
+            "Partner with Toothy, Imaginary Friend (When this creature enters, target player may put Toothy into their hand.)",
+            "Legendary Creature \u{2014} Human",
+        );
+        let mut builder = CardQueryBuilder::new();
+        narrow_to_partners(&mut builder, Some(&pir));
+        assert_eq!(builder.name_contains(), Some("Toothy, Imaginary Friend"));
+        let doctor = commander(
+            "The Fourteenth Doctor",
+            &[],
+            "",
+            "Legendary Creature \u{2014} Time Lord Doctor",
+        );
+        let mut builder = CardQueryBuilder::new();
+        narrow_to_partners(&mut builder, Some(&doctor));
+        assert_eq!(
+            builder.keywords_contains_all(),
+            Some(&["Doctor's companion".to_owned()][..])
+        );
+        let mut builder = CardQueryBuilder::new();
+        narrow_to_partners(&mut builder, None);
+        assert_eq!(builder.is_partner(), Some(true));
+    }
+
+    #[test]
+    fn a_doctor_is_offered_its_companions() {
+        let doctor = commander(
+            "The Fourteenth Doctor",
+            &[],
+            "",
+            "Legendary Creature \u{2014} Time Lord Doctor",
+        );
+        let pile = vec![
+            commander(
+                "Ian Chesterton",
+                &["Doctor's companion"],
+                "Doctor's companion",
+                "Legendary Creature \u{2014} Human Advisor",
+            ),
+            commander(
+                "Thrasios, Triton Hero",
+                &["Partner"],
+                "Partner",
+                "Legendary Creature \u{2014} Merfolk Wizard",
+            ),
+        ];
+        assert_eq!(names(&legal_partners(&doctor, pile)), ["Ian Chesterton"]);
+    }
+
+    #[test]
+    fn a_default_land_target_follows_the_format_and_a_set_one_stays() {
+        let commander = Some(Format::Commander);
+        let oathbreaker = Some(Format::Oathbreaker);
+        assert_eq!(
+            super::follow_land_target(Some(37), commander, oathbreaker),
+            Some(17),
+            "Commander's 37 becomes Oathbreaker's 17"
+        );
+        assert_eq!(
+            super::follow_land_target(Some(17), oathbreaker, commander),
+            Some(37),
+            "and back"
+        );
+        assert_eq!(
+            super::follow_land_target(Some(36), commander, oathbreaker),
+            Some(36),
+            "a target the user set stays"
+        );
+        assert_eq!(
+            super::follow_land_target(None, commander, oathbreaker),
+            None,
+            "unset stays unset"
+        );
+        assert_eq!(
+            super::follow_land_target(Some(37), commander, None),
+            Some(37),
+            "clearing the format keeps it"
+        );
+        assert_eq!(
+            super::follow_land_target(Some(37), None, oathbreaker),
+            Some(37),
+            "with no format before, nothing was a default"
+        );
+    }
 
     #[test]
     fn the_land_stepper_starts_at_the_formats_count_and_stays_in_range() {

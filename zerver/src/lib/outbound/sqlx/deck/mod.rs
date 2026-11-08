@@ -44,7 +44,9 @@ use crate::domain::deck::models::deck::update_deck_profile::UpdateDeckProfileErr
 use crate::domain::deck::models::deck_card::create_deck_card::CreateDeckCardError;
 use crate::domain::deck::models::deck_card::delete_deck_card::DeleteDeckCardError;
 use crate::domain::deck::models::deck_card::get_deck_card::GetDeckCardError;
-use crate::domain::deck::models::deck_card::import_deck_cards::ImportDeckCardsError;
+use crate::domain::deck::models::deck_card::import_deck_cards::{
+    ImportDeckCardsError, ImportRow, RowPrinting,
+};
 use crate::domain::deck::models::deck_card::update_deck_card::UpdateDeckCardError;
 use crate::domain::deck::ports::DeckRepository;
 use crate::outbound::sqlx::deck::error::{IntoDeckCardError, IntoDeckProfileError};
@@ -107,6 +109,18 @@ async fn lock_user_and_count_decks(
     Ok(count)
 }
 
+/// Marks the deck as changed now, inside a card write's transaction, so the
+/// deck list's last changed and Home's recent decks count card edits.
+async fn touch_deck(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    deck_id: uuid::Uuid,
+) -> Result<(), sqlx::Error> {
+    query!("UPDATE decks SET updated_at = now() WHERE id = $1", deck_id)
+        .execute(&mut **tx)
+        .await?;
+    Ok(())
+}
+
 impl DeckRepository for Postgres {
     // == create ==
     async fn create_deck_profile(
@@ -136,6 +150,10 @@ impl DeckRepository for Postgres {
                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
                RETURNING id, name, commander_id, partner_commander_id, background_id, signature_spell_id, format, tags as "tags?", power_level, other_tags as "other_tags?", oracle_tags as "oracle_tags?", land_target, price_target, price_target_currency, share_token, user_id,
                          0::bigint as "card_count",
+                         updated_at as "updated_at?",
+                         NULL::float8 as "total_price_usd?",
+                         NULL::float8 as "total_price_eur?",
+                         NULL::float8 as "total_price_tix?",
                          (SELECT sd.name FROM scryfall_data sd WHERE sd.id = commander_id) as "commander_name?",
                          (SELECT sd.name FROM scryfall_data sd WHERE sd.id = partner_commander_id) as "partner_commander_name?",
                          (SELECT sd.name FROM scryfall_data sd WHERE sd.id = background_id) as "background_name?",
@@ -224,6 +242,7 @@ impl DeckRepository for Postgres {
         .execute(&mut *tx)
         .await?;
         let deck_card: DeckCard = database_deck_card.try_into()?;
+        touch_deck(&mut tx, request.deck_id).await?;
         tx.commit().await?;
         Ok(deck_card)
     }
@@ -252,6 +271,10 @@ impl DeckRepository for Postgres {
             r#"SELECT d.id, d.name, d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id,
                       d.format, d.tags as "tags?", d.power_level, d.other_tags as "other_tags?", d.oracle_tags as "oracle_tags?", d.land_target, d.price_target, d.price_target_currency, d.share_token, d.user_id,
                       COALESCE(SUM(dc.quantity) FILTER (WHERE dc.board = 'deck'), 0) as "card_count",
+                      d.updated_at as "updated_at?",
+                      NULL::float8 as "total_price_usd?",
+                      NULL::float8 as "total_price_eur?",
+                      NULL::float8 as "total_price_tix?",
                       sd.name as "commander_name?",
                       (SELECT s2.name FROM scryfall_data s2 WHERE s2.id = d.partner_commander_id) as "partner_commander_name?",
                       (SELECT s3.name FROM scryfall_data s3 WHERE s3.id = d.background_id) as "background_name?",
@@ -293,6 +316,10 @@ impl DeckRepository for Postgres {
             r#"SELECT d.id, d.name, d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id,
                       d.format, d.tags as "tags?", d.power_level, d.other_tags as "other_tags?", d.oracle_tags as "oracle_tags?", d.land_target, d.price_target, d.price_target_currency, d.share_token, d.user_id,
                       COALESCE(SUM(dc.quantity) FILTER (WHERE dc.board = 'deck'), 0) as "card_count",
+                      d.updated_at as "updated_at?",
+                      totals.usd as "total_price_usd?",
+                      totals.eur as "total_price_eur?",
+                      totals.tix as "total_price_tix?",
                       sd.name as "commander_name?",
                       (SELECT s2.name FROM scryfall_data s2 WHERE s2.id = d.partner_commander_id) as "partner_commander_name?",
                       (SELECT s3.name FROM scryfall_data s3 WHERE s3.id = d.background_id) as "background_name?",
@@ -309,11 +336,30 @@ impl DeckRepository for Postgres {
                         WHERE sci.id = ANY(ARRAY[d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id]
                                            || ARRAY(SELECT dc2.scryfall_data_id FROM deck_cards dc2 WHERE dc2.deck_id = d.id AND dc2.board = 'deck'))) as "color_identity?: Vec<String>"
                FROM decks d
+               -- The deck's prices as DeckMetrics counts them: main board copies at
+               -- their nonfoil price, then the command zone cards not already on the
+               -- main board, one copy each. NULL in a currency nothing is priced in.
+               LEFT JOIN LATERAL (
+                   SELECT SUM(usd) AS usd, SUM(eur) AS eur, SUM(tix) AS tix
+                     FROM (SELECT mc.quantity * CASE WHEN mp.prices->>'usd' ~ '^[0-9]+(\.[0-9]+)?$' THEN (mp.prices->>'usd')::float8 END AS usd,
+                                  mc.quantity * CASE WHEN mp.prices->>'eur' ~ '^[0-9]+(\.[0-9]+)?$' THEN (mp.prices->>'eur')::float8 END AS eur,
+                                  mc.quantity * CASE WHEN mp.prices->>'tix' ~ '^[0-9]+(\.[0-9]+)?$' THEN (mp.prices->>'tix')::float8 END AS tix
+                             FROM deck_cards mc
+                             JOIN scryfall_data mp ON mp.id = mc.scryfall_data_id
+                            WHERE mc.deck_id = d.id AND mc.board = 'deck'
+                           UNION ALL
+                           SELECT CASE WHEN zp.prices->>'usd' ~ '^[0-9]+(\.[0-9]+)?$' THEN (zp.prices->>'usd')::float8 END, CASE WHEN zp.prices->>'eur' ~ '^[0-9]+(\.[0-9]+)?$' THEN (zp.prices->>'eur')::float8 END, CASE WHEN zp.prices->>'tix' ~ '^[0-9]+(\.[0-9]+)?$' THEN (zp.prices->>'tix')::float8 END
+                             FROM scryfall_data zp
+                            WHERE zp.id = ANY(ARRAY[d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id])
+                              AND NOT EXISTS (SELECT 1 FROM deck_cards zc
+                                               WHERE zc.deck_id = d.id AND zc.board = 'deck' AND zc.scryfall_data_id = zp.id)) AS priced
+               ) totals ON true
                LEFT JOIN deck_cards dc ON d.id = dc.deck_id
                LEFT JOIN scryfall_data sd ON d.commander_id = sd.id
                WHERE d.user_id = $1
                GROUP BY d.id, d.name, d.commander_id, d.partner_commander_id, d.background_id, d.signature_spell_id,
-                        d.format, d.land_target, d.price_target, d.price_target_currency, d.share_token, d.user_id, sd.name
+                        d.format, d.land_target, d.price_target, d.price_target_currency, d.share_token, d.user_id, sd.name,
+                        totals.usd, totals.eur, totals.tix
                ORDER BY d.updated_at DESC, d.id"#,
             request.user_id
         )
@@ -456,6 +502,10 @@ impl DeckRepository for Postgres {
             .push_bind(request.deck_id)
             .push(r" RETURNING id, name, commander_id, partner_commander_id, background_id, signature_spell_id, format, tags, power_level, other_tags, oracle_tags, land_target, price_target, price_target_currency, share_token, user_id,
                        (SELECT COALESCE(SUM(dc.quantity) FILTER (WHERE dc.board = 'deck'), 0) FROM deck_cards dc WHERE dc.deck_id = decks.id) as card_count,
+                       updated_at,
+                       NULL::float8 as total_price_usd,
+                       NULL::float8 as total_price_eur,
+                       NULL::float8 as total_price_tix,
                        (SELECT sd.name FROM scryfall_data sd WHERE sd.id = decks.commander_id) as commander_name,
                        (SELECT sd.name FROM scryfall_data sd WHERE sd.id = decks.partner_commander_id) as partner_commander_name,
                        (SELECT sd.name FROM scryfall_data sd WHERE sd.id = decks.background_id) as background_name,
@@ -590,6 +640,7 @@ impl DeckRepository for Postgres {
             .push(" RETURNING deck_id::TEXT, scryfall_data_id::TEXT, oracle_id::TEXT, quantity, board, mvp_at");
         let database_deck_card: DatabaseDeckCard = qb.build_query_as().fetch_one(&mut *tx).await?;
         let deck_card: DeckCard = database_deck_card.try_into()?;
+        touch_deck(&mut tx, request.deck_id).await?;
         tx.commit().await?;
         Ok(deck_card)
     }
@@ -1221,6 +1272,7 @@ impl DeckRepository for Postgres {
         )
         .execute(&mut *tx)
         .await?;
+        touch_deck(&mut tx, request.deck_id).await?;
         tx.commit().await?;
         Ok(())
     }
@@ -1234,7 +1286,7 @@ impl DeckRepository for Postgres {
         user_id: uuid::Uuid,
         deck_id: uuid::Uuid,
         mode: zwipe_core::domain::deck::ImportMode,
-        batch: &[(uuid::Uuid, uuid::Uuid, i32, String)],
+        batch: &[ImportRow],
         card_limit: i64,
         email_verified: bool,
     ) -> Result<Vec<DeckCard>, ImportDeckCardsError> {
@@ -1275,14 +1327,14 @@ impl DeckRepository for Postgres {
         // Post-import total: in replace mode a deck board present in the import
         // becomes exactly the imported list; in add mode the upsert replaces
         // quantities for re-imported oracle_ids, so subtract that overlap.
-        let import_total: i64 = batch.iter().map(|(_, _, qty, _)| i64::from(*qty)).sum();
+        let import_total: i64 = batch.iter().map(|row| i64::from(row.quantity)).sum();
         let post_import_total: Option<i64> = if mode.is_replace() {
-            if batch.iter().any(|(_, _, _, board)| board == "deck") {
+            if batch.iter().any(|row| row.board == Board::Deck) {
                 Some(
                     batch
                         .iter()
-                        .filter(|(_, _, _, board)| board == "deck")
-                        .map(|(_, _, qty, _)| i64::from(*qty))
+                        .filter(|row| row.board == Board::Deck)
+                        .map(|row| i64::from(row.quantity))
                         .sum(),
                 )
             } else {
@@ -1290,7 +1342,7 @@ impl DeckRepository for Postgres {
             }
         } else {
             let import_oracle_ids: Vec<uuid::Uuid> =
-                batch.iter().map(|(_, oid, _, _)| *oid).collect();
+                batch.iter().map(|row| row.oracle_id).collect();
             let overlap_qty = sqlx::query_scalar!(
                 "SELECT COALESCE(SUM(quantity), 0) FROM deck_cards WHERE deck_id = $1 AND oracle_id = ANY($2) AND board = 'deck'",
                 deck_id,
@@ -1314,22 +1366,29 @@ impl DeckRepository for Postgres {
         let mut qb: QueryBuilder<sqlx::Postgres> = QueryBuilder::new(
             "INSERT INTO deck_cards (deck_id, scryfall_data_id, oracle_id, quantity, board) ",
         );
-        qb.push_values(
-            batch,
-            |mut b, (scryfall_data_id, oracle_id, quantity, board)| {
-                b.push_bind(deck_id)
-                    .push_bind(scryfall_data_id)
-                    .push_bind(oracle_id)
-                    .push_bind(quantity)
-                    .push_bind(board);
-            },
-        );
+        qb.push_values(batch, |mut b, row| {
+            b.push_bind(deck_id)
+                .push_bind(row.scryfall_data_id)
+                .push_bind(row.oracle_id)
+                .push_bind(row.quantity)
+                .push_bind(row.board.display_name());
+        });
+        let named_printings: Vec<uuid::Uuid> = batch
+            .iter()
+            .filter(|row| row.printing == RowPrinting::Named)
+            .map(|row| row.scryfall_data_id)
+            .collect();
+        // `mvp_at` must follow the board: an import that moves a starred card
+        // off the mainboard has to drop the star, or it strands an MVP the
+        // podium cap can't see (the cap counts mainboard stars only). A CHECK
+        // constraint backs this up. A card already in the deck takes the
+        // imported printing only when the import named it.
         qb.push(
-                        // `mvp_at` must follow the board: an import that moves a starred
-            // card off the mainboard has to drop the star, or it strands an MVP
-            // the podium cap can't see (the cap counts mainboard stars only).
-            // A CHECK constraint backs this up.
-            " ON CONFLICT (deck_id, oracle_id) DO UPDATE SET quantity = EXCLUDED.quantity, board = EXCLUDED.board, mvp_at = CASE WHEN EXCLUDED.board = 'deck' THEN deck_cards.mvp_at ELSE NULL END RETURNING deck_id::TEXT, scryfall_data_id::TEXT, oracle_id::TEXT, quantity, board, mvp_at",
+            " ON CONFLICT (deck_id, oracle_id) DO UPDATE SET quantity = EXCLUDED.quantity, board = EXCLUDED.board, mvp_at = CASE WHEN EXCLUDED.board = 'deck' THEN deck_cards.mvp_at ELSE NULL END, scryfall_data_id = CASE WHEN EXCLUDED.scryfall_data_id = ANY(",
+        );
+        qb.push_bind(named_printings);
+        qb.push(
+            ") THEN EXCLUDED.scryfall_data_id ELSE deck_cards.scryfall_data_id END RETURNING deck_id::TEXT, scryfall_data_id::TEXT, oracle_id::TEXT, quantity, board, mvp_at",
         );
         let rows: Vec<DatabaseDeckCard> =
             qb.build_query_as().fetch_all(&mut *tx).await.map_err(db)?;
@@ -1345,21 +1404,19 @@ impl DeckRepository for Postgres {
         // imported list. Boards absent from the import are untouched. Bulk
         // deletes intentionally don't suppress.
         if mode.is_replace() {
-            let boards: std::collections::HashSet<&str> = batch
-                .iter()
-                .map(|(_, _, _, board)| board.as_str())
-                .collect();
+            let boards: std::collections::HashSet<Board> =
+                batch.iter().map(|row| row.board).collect();
             for board in boards {
                 let keep: Vec<uuid::Uuid> = batch
                     .iter()
-                    .filter(|(_, _, _, b)| b == board)
-                    .map(|(_, oid, _, _)| *oid)
+                    .filter(|row| row.board == board)
+                    .map(|row| row.oracle_id)
                     .collect();
                 sqlx::query(
                     "DELETE FROM deck_cards WHERE deck_id = $1 AND board = $2 AND NOT (oracle_id = ANY($3))",
                 )
                 .bind(deck_id)
-                .bind(board)
+                .bind(board.display_name())
                 .bind(&keep)
                 .execute(&mut *tx)
                 .await
@@ -1367,6 +1424,7 @@ impl DeckRepository for Postgres {
             }
         }
 
+        touch_deck(&mut tx, deck_id).await.map_err(db)?;
         tx.commit().await.map_err(db)?;
         Ok(deck_cards)
     }

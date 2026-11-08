@@ -109,6 +109,7 @@ impl AddDeck {
         }
         if let Some(format) = self.format
             && filter.legalities_contains_any().is_none()
+            && filter.legalities_contains_all().is_none()
         {
             filter.set_legalities_contains_any(vec![format.to_legality_key().to_owned()]);
         }
@@ -168,15 +169,15 @@ pub fn related_ids(page: &HttpDeckCardSearch) -> HashSet<Uuid> {
         .collect()
 }
 
-/// The empty-results toast, with the synergy note when synergy is on.
+/// The line under an empty search's "No cards match your filters" when Synergy was on: why Synergy may be
+/// the reason. `warming` is a search that ran without Synergy because its scores are not ready.
 #[must_use]
-pub fn no_results_message(synergy: bool, warming: bool) -> String {
-    let suffix = match (synergy, warming) {
-        (false, _) => "",
-        (true, true) => "; Synergy is warming up, so all cards were searched",
-        (true, false) => "; Synergy is on, turn it off to search everything",
-    };
-    format!("No results for this filter{suffix}")
+pub fn synergy_note(synergy: bool, warming: bool) -> Option<&'static str> {
+    match (synergy, warming) {
+        (false, _) => None,
+        (true, true) => Some("Synergy is warming up, so all cards were searched"),
+        (true, false) => Some("Synergy is on. Turn it off to search everything."),
+    }
 }
 
 #[cfg(test)]
@@ -226,6 +227,15 @@ mod tests {
         );
         assert!(filter.color_identity_within().is_some());
         assert_eq!(filter.card_type_excludes_any(), None);
+
+        let mut all = CardQueryBuilder::default();
+        all.set_legalities_contains_all(["modern", "pioneer"]);
+        add.seed(&mut all, false);
+        assert_eq!(
+            all.legalities_contains_any(),
+            None,
+            "an All pick is not narrowed by the deck's format"
+        );
 
         let mut remembered = CardQueryBuilder::default();
         add.seed(&mut remembered, true);
@@ -279,16 +289,20 @@ mod tests {
     }
 
     #[test]
-    fn empty_results_explain_synergy() {
+    fn the_synergy_note_says_why_synergy_found_nothing() {
+        assert_eq!(synergy_note(false, true), None);
         assert_eq!(
-            no_results_message(false, true),
-            "No results for this filter"
+            synergy_note(true, false),
+            Some("Synergy is on. Turn it off to search everything.")
         );
         assert_eq!(
-            no_results_message(true, false),
-            "No results for this filter; Synergy is on, turn it off to search everything"
+            synergy_note(true, true),
+            Some("Synergy is warming up, so all cards were searched")
         );
-        assert!(no_results_message(true, true).ends_with("so all cards were searched"));
+    }
+
+    #[test]
+    fn the_search_asks_for_one_page_of_non_tokens() {
         let b = normalized(&CardQueryBuilder::default());
         assert_eq!((b.limit(), b.offset(), b.is_token()), (25, 0, Some(false)));
     }

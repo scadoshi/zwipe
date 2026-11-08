@@ -374,7 +374,7 @@ Reached from the deck view's More sheet ("Import cards") and from the below-mini
    - Text source: label "Paste decklist", multi-line textarea (min ~12 rows), placeholder three lines "1 Krenko, Mob Boss" / "1 Urza, Lord High Artificer" / "1 Sol Ring".
    - Archidekt source: label "Paste an Archidekt deck URL", single-line URL input, placeholder "https://archidekt.com/decks/...".
    - Results (after an import): label "Imported" then one bubble per card: name and "x{quantity}" (dimmed). Label "Unresolved" then one error-styled bubble per card: name and reason (dimmed).
-4. ActionBar: "Back" (→ `Router::ViewDeck { deck_id }`) and the submit button. Submit label: "Importing..." while loading, else "Replace" in Replace mode, else "Import". Disabled while loading or when the active input (text or URL) is blank after trim.
+4. ActionBar: "Back" (→ `Router::ViewDeck { deck_id }`) and the submit button. Submit label: "Importing..." while loading, else "Replace" in Replace mode, else "Import". Disabled while loading or when the active input (text or URL) is blank after trim. In Replace mode the submit first opens a confirm dialog (`deck_import::replace_title` / `replace_body` for the board, e.g. "Replace the mainboard?" / "Every card on the mainboard comes off and the imported cards go in their place. You can't undo this."), with "Cancel" and a danger "Replace" that sends the import.
 
 Text and URL keep their own values when switching From.
 
@@ -541,12 +541,12 @@ Title "Profile", then label/value rows:
 **Warnings** (shown when `fetch_deck` returned warnings). Warning border, badge = count. One row per warning: the message (muted) and, on the right, its fix (small warning-styled buttons):
 
 - **Below-minimum card count** (no card id and the message contains "requires at least", e.g. "deck has 60 cards, commander requires at least 100"): two buttons "Add cards" (→ `Router::AddDeckCard { deck_id }`) and "Import" (→ `Router::ImportDeck { deck_id }`). Matched on the text on purpose; the wire enum stays unchanged.
-- Card warning with `WarningAction::FixQuantity(n)` (copy limit, e.g. "Sol Ring exceeds copy limit (2/1)"): button "Fix to {n}". Calls `update_deck_card(&self, deck_id: Uuid, scryfall_data_id: Uuid, request: &HttpPatchDeckCard, session: &Session) -> Result<DeckCard, ClientError>` with `HttpPatchDeckCard::new(Some(n), None)` (absolute quantity). Success: info toast "Quantity set to {n}" (`TOAST_QUICK`), reload the deck. Error: toast (§0.3).
+- Card warning with `WarningAction::FixQuantity(n)` (copy limit, e.g. "Sol Ring has 2 copies, Commander allows 1"): button "Fix to {n}". Calls `update_deck_card(&self, deck_id: Uuid, scryfall_data_id: Uuid, request: &HttpPatchDeckCard, session: &Session) -> Result<DeckCard, ClientError>` with `HttpPatchDeckCard::new(Some(n), None)` (absolute quantity). Success: info toast "Quantity set to {n}" (`TOAST_QUICK`), reload the deck. Error: toast (§0.3).
 - Card warning with `WarningAction::ClearCommander` ("{name} is not a valid commander for {format}"): button "Clear". Calls `update_deck_profile(deck_id, HttpUpdateDeckProfile::builder().commander_id(Patch::Set(None)).build())`. Success: info toast "Oathbreaker cleared" in Oathbreaker, else "Commander cleared" (`TOAST_QUICK`); reload profile and deck.
-- Any other warning that carries a card id (action None or `Remove`, e.g. "{card} is not legal in {format}", "{card} is banned in {format}", "{card} is outside commander's color identity"): button "Remove". Calls `delete_deck_card(&self, deck_id: Uuid, scryfall_data_id: Uuid, session: &Session) -> Result<(), ClientError>` directly (not through Authed; a missing session yields "Session expired"). Success: info "Card removed" (`TOAST_QUICK`), reload the deck. Error: error toast with the user message (`TOAST_NORMAL`).
+- Any other warning that carries a card id (action None or `Remove`, e.g. "{card} is not legal in {format}", "{card} is banned in {format}", "{card} is outside your commander's color identity"): button "Remove". Calls `delete_deck_card(&self, deck_id: Uuid, scryfall_data_id: Uuid, session: &Session) -> Result<(), ClientError>` directly (not through Authed; a missing session yields "Session expired"). Success: info "Card removed" (`TOAST_QUICK`), reload the deck. Error: error toast with the user message (`TOAST_NORMAL`).
 - Deck-level warnings with no card id and no "requires at least" text get no button.
 
-Full warning texts from `validate_deck.rs` (for reference): "deck has {n} {card|cards}, {format} requires at least {min}"; "deck has {n} {card|cards}, {format} allows at most {max}"; "deck has {n} {land|lands}, below the land target of {target}"; "deck totals {amount}, over your {budget} budget"; "the format, {format}, requires a commander"; "{card} is not legal in {format}"; "{card} is banned in {format}"; "{card} exceeds copy limit ({n}/{max})"; "{card} is outside commander's color identity"; "{card} is not a valid commander for {format}"; "{format} does not support partner commanders"; "{card} does not have a partner ability"; "{a} and {b} cannot be partners"; "{format} does not support backgrounds"; "{card} does not have 'choose a background'"; "{card} is not a valid background enchantment"; "a commander cannot have both a partner and a background"; "{format} does not use sideboards"; "sideboard has {n} cards, {format} allows at most {max}"; "oathbreaker format requires a signature spell"; "{format} does not use signature spells"; "{card} must be an instant or sorcery to be a signature spell"; "{card} is outside the oathbreaker's color identity".
+Full warning texts from `validate_deck.rs` (for reference), each with its first letter capitalized, card names as printed and format names as `Format::display_name` gives them: "deck has {n} {card|cards}, {format} requires at least {min}"; "deck has {n} {card|cards}, {format} allows at most {max}"; "deck has {n} {land|lands}, below the land target of {target}"; "deck totals {amount}, over your {budget} budget"; "{format} decks need a commander" ("an oathbreaker" in Oathbreaker); "{card} is not legal in {format}"; "{card} is banned in {format}"; "{card} has {n} copies, {format} allows {max}"; "{card} is outside your commander's color identity"; "{card} is not a valid commander for {format}"; "{format} does not support partner commanders"; "{card} does not have a partner ability"; "{a} and {b} cannot be partners"; "{format} does not support backgrounds"; "{card} doesn't have Choose a Background"; "{card} is not a valid background enchantment"; "a commander cannot have both a partner and a background"; "{format} does not use sideboards"; "sideboard has {n} cards, {format} allows at most {max}"; "Oathbreaker decks need a signature spell"; "{format} does not use signature spells"; "{card} must be an instant or sorcery to be a signature spell"; "{card} is outside your oathbreaker's color identity". The below-minimum fix matches "requires at least", so that phrase stays.
 
 ### 5.6 First-deck hint
 
@@ -561,7 +561,7 @@ Full warning texts from `validate_deck.rs` (for reference): "deck has {n} {card|
 
 ### 5.7 State seeding
 
-- `share_token` is seeded from the loaded profile and updated in place by Share / Stop share.
+- `share_token` is seeded from the loaded profile and updated in place by Share / Stop sharing.
 - `has_cards` = metrics exist (any active entry or command-zone card).
 - `tcg_url` / `ck_url` exist once `fetch_deck` has loaded (built from active **and sideboard** entries; maybeboard excluded).
 
@@ -601,9 +601,9 @@ Title "Share deck". One dialog covers the whole lifecycle, and stopping acts dir
 
 - Not shared (`share_token` None): body "Anyone with the link can view this deck. You can stop sharing at any time." Actions: "Close", "Create link".
   - "Create link": closes the More sheet; `share_deck(&self, deck_id: Uuid, session: &Session) -> Result<HttpDeckShareToken { share_token: Uuid }, ClientError>` (`run_at(MORE_BUTTONS, "share_deck")`). Success: store the token, copy the link, info toast "Share link copied" (`TOAST_QUICK`).
-- Shared: body "Anyone with the link can view this deck. Stop sharing disables the link; sharing again creates a new one." Actions: "Close", "Copy link", "Stop share" (danger).
+- Shared: body "Anyone with the link can view this deck. Stop sharing disables the link; sharing again creates a new one." Actions: "Close", "Copy link", "Stop sharing" (danger).
   - "Copy link": closes the More sheet, copies the current link, toast "Share link copied".
-  - "Stop share": closes the More sheet; `unshare_deck(&self, deck_id: Uuid, session: &Session) -> Result<(), ClientError>` (`run_at(MORE_BUTTONS, "unshare_deck")`). Success: token = None, info toast "Link disabled" (`TOAST_QUICK`).
+  - "Stop sharing": closes the More sheet; `unshare_deck(&self, deck_id: Uuid, session: &Session) -> Result<(), ClientError>` (`run_at(MORE_BUTTONS, "unshare_deck")`). Success: token = None, info toast "Link disabled" (`TOAST_QUICK`).
 - Link: `format!("{WEB_BASE}/deck/{token}")`. `zwipe_core::domain::site::WEB_BASE` is "http://localhost:8080" in debug builds and "https://zwipe.net" in release builds (no trailing slash). Copied with `navigator.clipboard.writeText` in the app.
 - Re-sharing after Stop creates a new token; old links die.
 
@@ -664,7 +664,7 @@ Deck view
 18. Warnings: messages only. Missing every fix action: "Add cards" / "Import" for the below-minimum warning, "Fix to {n}" (`update_deck_card`), "Clear" (commander, `update_deck_profile`), "Remove" (`delete_deck_card`), their toasts and the reload.
 19. Profile: uses `commander_name`, not a fetched card (same visible result). "Cards" matches.
 20. No action bar equivalents for Edit or Cards (Cards → the card list/add/remove screens belong to other specs; the TUI's `s` jumps straight to swiping).
-21. No More sheet: Import, Export, Buy (URL builder and opening a browser), Clone (dialog with prefilled name, busy state), Share/Copy/Stop share (token state, WEB_BASE link, clipboard), Clear skips (flush then `clear_deck_suppressions`), Delete (confirm, then back to the list).
+21. No More sheet: Import, Export, Buy (URL builder and opening a browser), Clone (dialog with prefilled name, busy state), Share/Copy/Stop sharing (token state, WEB_BASE link, clipboard), Clear skips (flush then `clear_deck_suppressions`), Delete (confirm, then back to the list).
 22. No first-deck hint ("Welcome to your deck") and no one-time hint recording anywhere on these screens.
 23. No toast system: the TUI has a single status line (`app.status`). Every toast in this spec needs a home, with kind (info/success/warning/error) and a timeout.
 24. The TUI fetches only `fetch_deck` (profile comes with it); the app also calls `fetch_deck_profile`. Not a visible difference.

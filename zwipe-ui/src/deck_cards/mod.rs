@@ -9,7 +9,8 @@ use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilde
 use zwipe_core::domain::card::search_card::cards::{Cards, sort_deck_entries};
 use zwipe_core::domain::card::search_card::group_cards::{CardGroup, GroupByOption, GroupCards};
 use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
-use zwipe_core::domain::deck::{Board, DeckEntry};
+use zwipe_core::domain::deck::validate_deck::{DeckCommandZone, validate_deck};
+use zwipe_core::domain::deck::{Board, DeckEntry, DeckProfile, DeckWarning, Format};
 
 use crate::deck::form::Slot;
 use crate::stores::undo::UndoAction;
@@ -69,6 +70,13 @@ impl Zone {
         entries.retain(|e| !oracles.contains(&e.deck_card.oracle_id));
     }
 
+    /// Whether the Show row offers the Command zone chip: the deck's `format` has a command zone,
+    /// or this zone holds a card anyway.
+    #[must_use]
+    pub fn offers_chip(&self, format: Option<Format>) -> bool {
+        format.is_some_and(|f| f.has_commander()) || !self.cards().is_empty()
+    }
+
     /// The oracle IDs of the zone's cards.
     fn oracles(&self) -> Vec<Uuid> {
         self.cards()
@@ -85,15 +93,53 @@ impl Zone {
         live: &[DeckEntry],
         zone_cards: &[Card],
     ) -> Option<DeckMetrics> {
+        let all = self.rejoin(fetched, live);
+        (!all.is_empty() || !zone_cards.is_empty())
+            .then(|| DeckMetrics::from_entries_and_command_zone(&all, zone_cards))
+    }
+
+    /// The deck's warnings as a fresh fetch would give them while the screen holds `live`, worked out as the server does: the entries rejoined as for [`Self::live_metrics`], `fetched_profile` counting the main board's copies as they stand, and the command zone as this zone holds it.
+    #[must_use]
+    pub fn live_warnings(
+        &self,
+        fetched_profile: &DeckProfile,
+        fetched: &[DeckEntry],
+        live: &[DeckEntry],
+    ) -> Vec<DeckWarning> {
+        let all = self.rejoin(fetched, live);
+        let card_count = all
+            .iter()
+            .filter(|e| e.deck_card.board == Board::Deck)
+            .map(|e| i64::from(*e.deck_card.quantity))
+            .fold(0i64, i64::saturating_add);
+        let id = |card: Option<&Card>| card.map(|c| c.scryfall_data.id);
+        let profile = DeckProfile {
+            card_count,
+            commander_id: id(self.commander.as_ref()),
+            partner_commander_id: id(self.partner.as_ref()),
+            background_id: id(self.background.as_ref()),
+            signature_spell_id: id(self.signature.as_ref()),
+            ..fetched_profile.clone()
+        };
+        let zone = DeckCommandZone {
+            commander: self.commander.as_ref(),
+            partner_commander: self.partner.as_ref(),
+            background: self.background.as_ref(),
+            signature_spell: self.signature.as_ref(),
+        };
+        validate_deck(&profile, &all, &zone)
+    }
+
+    /// `live` with the fetched entries [stripped](Self::strip) for this zone put back.
+    fn rejoin(&self, fetched: &[DeckEntry], live: &[DeckEntry]) -> Vec<DeckEntry> {
         let oracles = self.oracles();
-        let mut stripped: Vec<DeckEntry> = fetched
+        let mut all: Vec<DeckEntry> = fetched
             .iter()
             .filter(|e| oracles.contains(&e.deck_card.oracle_id))
             .cloned()
             .collect();
-        stripped.extend_from_slice(live);
-        (!stripped.is_empty() || !zone_cards.is_empty())
-            .then(|| DeckMetrics::from_entries_and_command_zone(&stripped, zone_cards))
+        all.extend_from_slice(live);
+        all
     }
 }
 
@@ -382,6 +428,7 @@ pub fn undo_message(action: &UndoAction) -> String {
 #[cfg(test)]
 mod tests {
     use chrono::{Duration, Utc};
+    use zwipe_core::domain::deck::{Format, Quantity};
 
     use super::*;
     use crate::test_support::{card, deck, deck_profile};
@@ -486,6 +533,124 @@ mod tests {
         live.retain(|e| e.card.scryfall_data.name != "Ant" && e.card.scryfall_data.name != "Bee");
         let after_remove = zone.live_metrics(&fetched, &live, &zone_cards).unwrap();
         assert_eq!(after_remove.total_cards, as_fetched.total_cards - 1);
+    }
+
+    #[test]
+    fn the_command_zone_chip_shows_where_there_is_a_zone() {
+        let empty = Zone::default();
+        assert!(!empty.offers_chip(Some(Format::Modern)));
+        assert!(!empty.offers_chip(None));
+        assert!(empty.offers_chip(Some(Format::Commander)));
+        assert!(empty.offers_chip(Some(Format::Oathbreaker)));
+        let held = Zone {
+            commander: Some(card("Boss")),
+            ..Zone::default()
+        };
+        assert!(
+            held.offers_chip(Some(Format::Modern)),
+            "a card in the zone keeps it"
+        );
+    }
+
+    #[test]
+    fn live_warnings_follow_a_card_moved_to_the_main_board() {
+        let mut profile = deck_profile("D");
+        profile.format = Some(Format::Modern);
+        let fetched = entries();
+        profile.card_count = 3;
+        let mut live = fetched.clone();
+        let zone = Zone::default();
+        let counts = |warnings: Vec<DeckWarning>| -> Vec<String> {
+            warnings
+                .iter()
+                .map(ToString::to_string)
+                .filter(|m| m.contains(" cards, "))
+                .collect()
+        };
+        let before = counts(zone.live_warnings(&profile, &fetched, &live));
+        assert_eq!(before.len(), 1, "{before:?}");
+        assert!(before[0].starts_with("Deck has 3 cards"), "{before:?}");
+        live[3].deck_card.board = Board::Deck;
+        let after = counts(zone.live_warnings(&profile, &fetched, &live));
+        assert_eq!(after.len(), 1, "{after:?}");
+        assert!(after[0].starts_with("Deck has 4 cards"), "{after:?}");
+    }
+
+    #[test]
+    fn live_warnings_follow_a_quantity_change_and_a_move_to_the_sideboard() {
+        let mut profile = deck_profile("D");
+        profile.format = Some(Format::Commander);
+        let mut fetched = entries();
+        fetched.retain(|e| e.deck_card.board == Board::Deck);
+        let mut live = fetched.clone();
+        let zone = Zone::default();
+        let says = |live: &[DeckEntry], words: &str| {
+            zone.live_warnings(&profile, &fetched, live)
+                .iter()
+                .any(|w| w.to_string().contains(words))
+        };
+        assert!(!says(&live, "copies"));
+        assert!(!says(&live, "sideboards"));
+
+        let zebra = live
+            .iter_mut()
+            .find(|e| e.card.scryfall_data.name == "Zebra")
+            .unwrap();
+        zebra.deck_card.quantity = Quantity::new(2).unwrap();
+        assert!(
+            says(&live, "Zebra has 2 copies") || says(&live, "copy limit"),
+            "+ raises the copy limit"
+        );
+
+        live[0].deck_card.board = Board::Sideboard;
+        assert!(
+            says(&live, "sideboards"),
+            "To sideboard raises the no-sideboard warning"
+        );
+    }
+
+    #[test]
+    fn live_warnings_follow_to_mainboard_to_maybeboard_and_a_removal() {
+        let mut profile = deck_profile("D");
+        profile.format = Some(Format::Commander);
+        let mut fetched = entries();
+        fetched.retain(|e| e.deck_card.board == Board::Deck);
+        profile.card_count = fetched
+            .iter()
+            .map(|e| i64::from(*e.deck_card.quantity))
+            .sum();
+        let zone = Zone::default();
+        let warnings = |live: &[DeckEntry]| -> Vec<String> {
+            zone.live_warnings(&profile, &fetched, live)
+                .iter()
+                .map(ToString::to_string)
+                .collect()
+        };
+        let as_fetched = warnings(&fetched);
+        let mut live = fetched.clone();
+
+        live[0].deck_card.board = Board::Sideboard;
+        assert!(warnings(&live).iter().any(|w| w.contains("sideboards")));
+        live[0].deck_card.board = Board::Deck;
+        assert_eq!(warnings(&live), as_fetched, "To mainboard clears it");
+
+        live[0].deck_card.board = Board::Maybeboard;
+        let moved = warnings(&live);
+        assert!(
+            !moved.iter().any(|w| w.contains("sideboards")),
+            "the maybeboard is not a sideboard: {moved:?}"
+        );
+        assert_ne!(
+            moved, as_fetched,
+            "To maybeboard drops a card from the count"
+        );
+
+        let removed: Vec<DeckEntry> = fetched.iter().skip(1).cloned().collect();
+        assert_eq!(
+            warnings(&removed),
+            moved,
+            "− to 0 counts as the card leaving"
+        );
     }
 
     #[test]

@@ -53,13 +53,13 @@ pub const CANCEL: &str = "Cancel";
 pub const DELETE_PASSWORD: &str = "Password";
 
 /// The Delete account dialog's button label while the delete is out.
-pub const DELETING: &str = "Deleting...";
+pub const DELETING: &str = "Deleting…";
 
 /// The toast once a verification email went out.
 pub const VERIFICATION_SENT: &str = "Verification email sent";
 
 /// The toast when the server says a verification email went out too recently.
-pub const RESEND_LIMITED: &str = "Please wait a moment";
+pub const RESEND_LIMITED: &str = "Wait a moment and try again";
 
 /// The toast when a check finds the email verified.
 pub const EMAIL_VERIFIED: &str = "Email verified";
@@ -68,7 +68,7 @@ pub const EMAIL_VERIFIED: &str = "Email verified";
 pub const NOT_VERIFIED: &str = "Not verified yet. Check your inbox";
 
 /// The toast once the password changed.
-pub const PASSWORD_CHANGED: &str = "Password change successful";
+pub const PASSWORD_CHANGED: &str = "Password changed";
 /// The Change password sheet's header chip, for a user who no longer knows the current one.
 pub const FORGOT_PASSWORD: &str = "Forgot?";
 /// The toast once the reset link went out, before the address it went to.
@@ -164,7 +164,7 @@ impl Dialog {
             }
             Self::LogOut => "Are you sure you want to log out?",
             Self::DeleteAccount => {
-                "This will permanently delete your account, all decks, and all card data. This cannot be undone."
+                "This will permanently delete your account, all decks, and all card data. This can't be undone."
             }
         }
     }
@@ -874,6 +874,15 @@ impl State {
         self.forms
             .get(sheet)
             .error(sheet, field, self.user.as_ref())
+    }
+
+    /// Whether an error line other than a password's is showing on `sheet`, which holds its Save.
+    #[must_use]
+    pub fn submit_held(&self, sheet: Sheet) -> bool {
+        sheet
+            .fields()
+            .iter()
+            .any(|&field| !field.is_password() && self.error(sheet, field).is_some())
     }
 
     /// Whether `sheet`'s change is out. Its Back and Save are off meanwhile.

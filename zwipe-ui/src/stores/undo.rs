@@ -13,6 +13,9 @@ use crate::deck::form::Slot;
 /// Entries kept per deck; the oldest drop first.
 pub const MAX_UNDO_ACTIONS: usize = 100;
 
+/// The toast when the call that reverses a swipe fails.
+pub const UNDO_FAILED: &str = "Couldn't undo that";
+
 /// One change to a deck, with what its undo needs.
 #[derive(Debug, Clone, PartialEq)]
 pub enum UndoAction {

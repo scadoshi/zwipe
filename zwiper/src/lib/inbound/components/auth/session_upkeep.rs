@@ -17,6 +17,7 @@ use zwipe_core::domain::user::settings::PipStyle;
 use zwipe_core::http::contracts::metrics::AnonymousEventKind;
 use zwipe_core::version;
 pub use zwipe_ui::changelog::ChangelogCache;
+use zwipe_ui::deck::list::Sort;
 
 use crate::config::Config;
 use crate::inbound::components::auth::ensure_session::EnsureFresh;
@@ -33,6 +34,7 @@ use crate::inbound::screens::deck::card::components::add_stack_cache::use_add_st
 use crate::inbound::screens::deck::card::components::filter_store::use_filter_store;
 use crate::inbound::screens::deck::card::components::undo_log::use_undo_store;
 use crate::inbound::screens::deck::create::CreateDeckCommanderSeed;
+use crate::inbound::screens::deck::list::DeckSortMemory;
 use crate::outbound::app_icon;
 use crate::outbound::count_scope_store::CountScope;
 use crate::outbound::session::Persist;
@@ -158,7 +160,7 @@ fn use_session_and_client() -> (Signal<Option<Session>>, Signal<ZwipeClient>) {
 /// Provides the screen state kept above the router: form handoffs, stacks,
 /// stores, the hint channel and Home's caches.
 fn use_screen_state() {
-    // Create profile and Forgot password hand their identifier to the login form through this.
+    // Create account and Forgot password hand their identifier to the login form through this.
     let login_prefill = use_signal(|| None);
     use_context_provider(|| LoginPrefill(login_prefill));
 
@@ -172,6 +174,10 @@ fn use_screen_state() {
     // leave (see filter_store.rs).
     let filter_store = use_filter_store();
     use_context_provider(|| filter_store);
+
+    // The deck list's sort for the session (see DeckSortMemory).
+    let deck_sort = DeckSortMemory(use_signal(Sort::default));
+    use_context_provider(|| deck_sort);
 
     // Per-deck undo stacks, parked/restored by the deck cards screen.
     let undo_store = use_undo_store();

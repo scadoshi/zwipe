@@ -1,6 +1,6 @@
 //! The deck list: the user's decks folded by Group by and narrowed by Show, with Create and the list's one-time hint.
 //!
-//! Group by, Show, the tag fold and the collapsed groups last one visit: the client keeps a [`State`] while the screen is up and drops it on leaving. Folding and narrowing come from [`crate::deck::list`] and the Create check from [`crate::deck::create_gate`].
+//! Group by, Show, the tag fold and the collapsed groups last one visit: the client keeps a [`State`] while the screen is up and drops it on leaving. The sort outlives the visit: the client starts the screen with [`State::with_sort`] and keeps what [`Effect::RememberSort`] hands it. Folding and narrowing come from [`crate::deck::list`] and the Create check from [`crate::deck::create_gate`].
 
 #[cfg(test)]
 mod tests;
@@ -13,7 +13,7 @@ use zwipe_core::domain::deck::DeckProfile;
 use zwipe_core::domain::user::hints::OneTimeHint;
 
 use crate::deck;
-use crate::deck::list::{self, DeckGroup, GroupBy, Show};
+use crate::deck::list::{self, DeckGroup, GroupBy, Show, Sort, SortBy};
 use crate::generation::{Generation, Ticket};
 use crate::toast::Toast;
 
@@ -22,6 +22,9 @@ pub const TITLE: &str = "Decks";
 
 /// The Group by row's label.
 pub const GROUP_BY: &str = "Group by";
+
+/// The Sort row's label.
+pub const SORT: &str = "Sort";
 
 /// The Show row's label.
 pub const SHOW: &str = "Show";
@@ -33,7 +36,7 @@ pub const SHOW_ALL: &str = "All";
 pub const TAGS: &str = "Tags";
 
 /// The line in place of the list when the decks failed to load.
-pub const LOAD_FAILED: &str = "Could not load decks";
+pub const LOAD_FAILED: &str = "Couldn't load decks";
 
 /// The line in place of the list when the user has no deck.
 pub const NO_DECKS: &str = "No decks";
@@ -118,6 +121,10 @@ pub enum Action {
     },
     /// Picks a Group by mode. Collapsed groups stay collapsed.
     PickGroupBy(GroupBy),
+    /// Sorts on this key, keeping the direction.
+    PickSort(SortBy),
+    /// Turns the sort the other way.
+    FlipSortDirection,
     /// Unpicks every color and tag.
     ShowAll,
     /// Picks or unpicks a color.
@@ -152,6 +159,8 @@ pub enum Effect {
     Navigate(Destination),
     /// Raises this toast.
     Toast(Toast),
+    /// Keeps this sort for the next visit's [`State::with_sort`].
+    RememberSort(Sort),
 }
 
 /// The decks as the last fetch left them.
@@ -178,6 +187,7 @@ enum HintOffer {
 pub struct State {
     decks: Decks,
     group_by: GroupBy,
+    sort: Sort,
     show: Show,
     tags_open: bool,
     collapsed: BTreeSet<String>,
@@ -190,6 +200,15 @@ impl State {
     #[must_use]
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// The screen as it first draws, sorted by `sort`: the one a past visit left.
+    #[must_use]
+    pub fn with_sort(sort: Sort) -> Self {
+        Self {
+            sort,
+            ..Self::default()
+        }
     }
 
     /// Applies `action` and returns what the client must do, in order.
@@ -223,6 +242,14 @@ impl State {
                 }
             }
             Action::PickGroupBy(by) => self.group_by = by,
+            Action::PickSort(by) => {
+                self.sort.by = by;
+                return vec![Effect::RememberSort(self.sort)];
+            }
+            Action::FlipSortDirection => {
+                self.sort.direction = self.sort.direction.flipped();
+                return vec![Effect::RememberSort(self.sort)];
+            }
             Action::ShowAll => self.show.clear(),
             Action::ToggleColor(color) => self.show.toggle_color(color),
             Action::ToggleTag(key) => self.show.toggle_tag(&key),
@@ -270,6 +297,18 @@ impl State {
         self.group_by
     }
 
+    /// The list's order: the picked sort, or Name in its direction while the decks can't sort on the picked key (see [`Self::sort_keys`]).
+    #[must_use]
+    pub fn sort(&self) -> Sort {
+        self.sort.within(&self.sort_keys())
+    }
+
+    /// The Sort row's key chips: Name, Size and Format, then Last changed and Price when the decks carry them.
+    #[must_use]
+    pub fn sort_keys(&self) -> Vec<SortBy> {
+        SortBy::offered(self.decks())
+    }
+
     /// The picked colors and tags.
     #[must_use]
     pub fn show(&self) -> &Show {
@@ -288,7 +327,7 @@ impl State {
         self.collapsed.contains(key)
     }
 
-    /// Whether the Group by and Show rows show: only once a list with a deck has loaded.
+    /// Whether the Group by, Sort and Show rows show: only once a list with a deck has loaded.
     #[must_use]
     pub fn chips_shown(&self) -> bool {
         self.status() == Status::Loaded
@@ -352,13 +391,15 @@ impl State {
         }
     }
 
-    /// The decks Show lets through, sorted by name ignoring case, in their groups. Empty until decks load.
+    /// The decks Show lets through, in [`Self::sort`]'s order, in their groups. Empty until decks load.
     ///
     /// With nothing let through, [`GroupBy::None`] still gives its one "All" group with no decks under [`NO_MATCH`], as the app draws it; the other modes give no group.
     #[must_use]
     pub fn groups(&self) -> Vec<DeckGroup> {
         match &self.decks {
-            Decks::Loaded(decks) => list::group(&list::shown(decks, &self.show), self.group_by),
+            Decks::Loaded(decks) => {
+                list::group(&list::shown(decks, &self.show, self.sort()), self.group_by)
+            }
             Decks::Loading | Decks::Failed | Decks::Empty => Vec::new(),
         }
     }

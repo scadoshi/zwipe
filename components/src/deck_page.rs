@@ -14,12 +14,13 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
 use zwipe_core::domain::card::search_card::group_cards::GroupByOption;
-use zwipe_core::domain::deck::{Board, Format, PowerLevel};
+use zwipe_core::domain::deck::{Format, PowerLevel};
+use zwipe_ui::deck::cards_label;
 use zwipe_ui::deck::command_zone::Slot;
 use zwipe_ui::deck_cards::Display;
 
 use crate::icons::{DockIcon, FOLD, UNFOLD};
-use crate::{Button, ButtonVariant, Chip, FlippableCardImage};
+use crate::{Button, ButtonVariant, Chip, FlippableCardImage, IdentityPips};
 
 /// The line under an empty card list.
 pub const NO_CARDS: &str = "No cards found";
@@ -204,7 +205,7 @@ pub fn DeckHead(
                     }
                 }
                 div { class: "deck-head-meta",
-                    span { class: "stat-chip stat-chip-p5", "{facts.cards} cards" }
+                    span { class: "stat-chip stat-chip-p5", {cards_label(facts.cards)} }
                     if let Some(format) = facts.format {
                         span { class: "stat-chip stat-chip-p3", "{format.display_name()}" }
                     }
@@ -294,7 +295,8 @@ pub fn FeaturedCard(
 
 /// The rows over the cards: the host's `leading` row, Group by, the host's
 /// `boards` row and Show. The host holds every signal; `show_tokens`
-/// is `None` for a list with no tokens, and `on_change` fires when a row
+/// is `None` for a list with no tokens, `show_zone` is `None` for a deck
+/// with no command zone, and `on_change` fires when a row
 /// changes what the list shows. With `on_fold_all` the Show row ends in the
 /// fold-all button, which shuts every group, or opens every group once
 /// `all_folded`.
@@ -304,7 +306,7 @@ pub fn DeckControls(
     #[props(default)] all_folded: bool,
     #[props(default)] on_fold_all: Option<Callback<()>>,
     #[props(default)] show_tokens: Option<Signal<bool>>,
-    mut show_zone: Signal<bool>,
+    #[props(default)] show_zone: Option<Signal<bool>>,
     mut show_art: Signal<bool>,
     #[props(default)] on_change: Option<Callback<()>>,
     #[props(default)] leading: Option<Element>,
@@ -345,10 +347,12 @@ pub fn DeckControls(
                     "Tokens"
                 }
             }
-            Chip {
-                selected: show_zone(),
-                onclick: move |_| show_zone.toggle(),
-                "Command zone"
+            if let Some(mut zone) = show_zone {
+                Chip {
+                    selected: zone(),
+                    onclick: move |_| zone.toggle(),
+                    "Command zone"
+                }
             }
             Chip {
                 selected: show_art(),
@@ -371,61 +375,42 @@ pub fn DeckControls(
 
 /// A folding panel: a header with the disclosure arrow, the `pips` or the
 /// `title`, and the host's `accessory` at its right end, over a body that
-/// eases shut. `folded` holds the keys of the shut panels. With `on_drop`
-/// the header takes a dragged row.
+/// eases shut. `folded` holds the keys of the shut panels.
 #[component]
 pub fn DeckFold(
     fold_key: String,
     title: String,
     #[props(default)] pips: Option<Vec<Color>>,
     #[props(default)] accessory: Option<Element>,
-    mut folded: Signal<HashSet<String>>,
-    #[props(default)] on_drop: Option<Callback<()>>,
+    folded: Signal<HashSet<String>>,
     children: Element,
 ) -> Element {
     let shut = folded().contains(&fold_key);
-    let mut over = use_signal(|| false);
-    let head_class = if over() {
-        "deck-fold-head deck-drop-over"
-    } else {
-        "deck-fold-head"
-    };
+    let key_for_keys = fold_key.clone();
     rsx! {
         div { class: if shut { "deck-fold folded" } else { "deck-fold" },
             div {
-                class: head_class,
-                onclick: move |_| {
-                    let mut set = folded.write();
-                    if !set.remove(&fold_key) {
-                        set.insert(fold_key.clone());
-                    }
-                },
-                ondragover: move |evt| {
-                    if on_drop.is_some() {
-                        evt.prevent_default();
-                        over.set(true);
-                    }
-                },
-                ondragleave: move |_| over.set(false),
-                ondrop: move |evt| {
-                    over.set(false);
-                    if let Some(on_drop) = on_drop {
-                        evt.prevent_default();
-                        on_drop.call(());
-                    }
-                },
-                span { class: "card-row-arrow", "\u{25b8}" }
-                if let Some(pips) = pips.as_ref().filter(|p| !p.is_empty()) {
-                    span { class: "identity-pips",
-                        for color in pips.iter() {
-                            i {
-                                key: "{color.to_short_name()}",
-                                class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
-                            }
+                class: "deck-fold-head",
+                onclick: move |_| flip(folded, &fold_key),
+                // The keyboard's toggle, beside the accessory rather than
+                // around it, so the accessory's own controls stay separate.
+                span {
+                    class: "deck-fold-toggle",
+                    role: "button",
+                    tabindex: "0",
+                    "aria-expanded": "{!shut}",
+                    onkeydown: move |evt: KeyboardEvent| {
+                        if evt.key() == Key::Enter || evt.key() == Key::Character(" ".into()) {
+                            evt.prevent_default();
+                            flip(folded, &key_for_keys);
                         }
+                    },
+                    span { class: "card-row-arrow", "\u{25b8}" }
+                    if let Some(pips) = pips.as_ref().filter(|p| !p.is_empty()) {
+                        IdentityPips { colors: pips.clone() }
                     }
+                    "{title}"
                 }
-                "{title}"
                 if let Some(accessory) = accessory {
                     div {
                         class: "deck-fold-accessory",
@@ -434,35 +419,36 @@ pub fn DeckFold(
                     }
                 }
             }
-            div { class: "deck-fold-body",
+            // A shut body is inert, so Tab and screen readers pass over it.
+            div { class: "deck-fold-body", inert: shut.then_some(true),
                 div { class: "deck-fold-inner", {children} }
             }
         }
     }
 }
 
+/// Shuts the panel under `fold_key` when it is open, or opens it.
+fn flip(mut folded: Signal<HashSet<String>>, fold_key: &str) {
+    let mut set = folded.write();
+    if !set.remove(fold_key) {
+        set.insert(fold_key.to_owned());
+    }
+}
+
 /// One card group as a band the page's width: a [`DeckFold`] over its rows
-/// (`children`). With `drop_to`, a row dragged onto its header moves to
-/// that board through `on_drop`.
+/// (`children`).
 #[component]
 pub fn DeckBand(
     section: DeckSection,
     folded: Signal<HashSet<String>>,
-    #[props(default)] drop_to: Option<Board>,
-    #[props(default)] on_drop: Option<Callback<Board>>,
     children: Element,
 ) -> Element {
-    let dropped = match (drop_to, on_drop) {
-        (Some(board), Some(on_drop)) => Some(Callback::new(move |()| on_drop.call(board))),
-        _ => None,
-    };
     rsx! {
         DeckFold {
             fold_key: section.key,
             title: section.title,
             pips: section.pips,
             folded,
-            on_drop: dropped,
             div { class: "deck-band-rows", {children} }
         }
     }
