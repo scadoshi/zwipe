@@ -5,4 +5,20 @@ Disallow: /verify/
 Disallow: /confirm-email/
 Disallow: /reset/
 
+# Link-preview bots fetch a shared deck to draw the card its link unfurls
+# into; shared deck pages carry noindex, so search stays out of them.
+User-agent: Twitterbot
+User-agent: facebookexternalhit
+User-agent: LinkedInBot
+User-agent: Slackbot-LinkExpanding
+User-agent: Discordbot
+User-agent: TelegramBot
+User-agent: WhatsApp
+User-agent: SkypeUriPreview
+User-agent: Teams
+Allow: /
+Disallow: /verify/
+Disallow: /confirm-email/
+Disallow: /reset/
+
 Sitemap: https://zwipe.net/sitemap.xml
