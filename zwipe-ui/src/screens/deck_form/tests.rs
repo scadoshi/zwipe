@@ -901,7 +901,7 @@ fn the_copy_matches_the_app() {
         [
             "Create deck",
             "Edit deck",
-            "Could not load deck",
+            "Couldn't load deck",
             "Back",
             "Save",
             "Saving..."
@@ -1090,5 +1090,15 @@ fn a_format_switch_moves_an_untouched_land_target_and_discard_puts_it_back() {
         state.values().land_target,
         Some(38),
         "a target the user set stays"
+    );
+}
+
+#[test]
+fn a_long_name_says_the_limit_in_plain_words() {
+    let mut state = create();
+    let _ = state.update(Action::SetName("x".repeat(65)));
+    assert_eq!(
+        state.name_error(),
+        Some("Deck names are 1 to 64 characters")
     );
 }

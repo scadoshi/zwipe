@@ -255,7 +255,7 @@ fn the_copy_matches_the_app() {
         [
             "Examples",
             "Example cards",
-            "No more cards. Swipe down to go back.",
+            "No cards left. Swipe down to go back.",
             "No example cards for this tag yet.",
             "Already at the first card",
             "Back"

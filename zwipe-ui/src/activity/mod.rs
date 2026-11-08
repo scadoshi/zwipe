@@ -382,7 +382,7 @@ pub fn role_rate_bars(kind: RateKind, roles: &[HttpRoleRates], tags: &[HttpTagRa
         .into_iter()
         .map(|(role, rate)| Bar {
             key: role.role.clone(),
-            label: card_role::role_short_label(&role.role),
+            label: card_role::role_label(&role.role),
             count: u64::from(rate),
             pct: rate,
             revealable: tags.iter().any(|t| t.role == role.role),

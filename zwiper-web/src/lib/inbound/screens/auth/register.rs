@@ -1,6 +1,6 @@
 //! Register: the four fields as a panel headed with the screen's name,
 //! under the hero and beside the featured flavor card on a wide window,
-//! over it below the breakpoint, `Create profile` full width under them, then `Back to
+//! over it below the breakpoint, `Create account` full width under them, then `Back to
 //! login` as a chip beneath. The password rules are the `?` beside
 //! `Password`, as in the app. A profile created returns to Login in this
 //! screen's place with the username filled in.
@@ -109,9 +109,9 @@ fn use_field_sync(driver: &Driver, input: Signal<String>, edit: fn(String) -> Ac
     use_effect(move || driver.dispatch(edit(input())));
 }
 
-/// Create profile. Each field starts showing its error line once it has
+/// Create account. Each field starts showing its error line once it has
 /// held text, or after a submit attempt, and rechecks on every change.
-/// Return in any field runs `Create profile`.
+/// Return in any field runs `Create account`.
 #[component]
 pub fn Register() -> Element {
     let LoginPrefill(login_prefill) = use_context();

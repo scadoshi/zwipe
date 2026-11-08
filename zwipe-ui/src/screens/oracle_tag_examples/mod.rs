@@ -25,7 +25,7 @@ pub const TITLE: &str = "Examples";
 pub const HINT_TITLE: &str = "Example cards";
 
 /// The line past the last card.
-pub const END: &str = "No more cards. Swipe down to go back.";
+pub const END: &str = "No cards left. Swipe down to go back.";
 
 /// The line when the tag has no cards, or the first page failed.
 pub const EMPTY: &str = "No example cards for this tag yet.";

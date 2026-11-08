@@ -126,7 +126,7 @@ fn the_copy_matches_the_app() {
             KEPT,
             REMOVED,
             MOVED_TO_MAYBEBOARD,
-            MOVED_TO_MAIN,
+            MOVED_TO_MAINBOARD,
             NOTHING_TO_UNDO,
             UNDID_KEEP,
             UNDID_REMOVE,
@@ -138,7 +138,7 @@ fn the_copy_matches_the_app() {
             "Kept",
             "Removed from deck",
             "Moved to maybeboard",
-            "Moved to main",
+            "Moved to mainboard",
             "Nothing to undo",
             "Undid keep",
             "Undid remove",
@@ -382,7 +382,7 @@ fn move_toggles_between_main_and_maybeboard() {
 
     for (at, from, to, message) in [
         (0, Board::Deck, Board::Maybeboard, MOVED_TO_MAYBEBOARD),
-        (1, Board::Maybeboard, Board::Deck, MOVED_TO_MAIN),
+        (1, Board::Maybeboard, Board::Deck, MOVED_TO_MAINBOARD),
         (2, Board::Sideboard, Board::Maybeboard, MOVED_TO_MAYBEBOARD),
     ] {
         let effects = state.update(Action::Move);
@@ -480,7 +480,7 @@ fn moving_a_card_to_main_can_cross_the_budget() {
         toasts(&effects),
         [Toast::new(
             ToastKind::Warning,
-            "Deck at 105.00% of your $10.00 budget",
+            "Deck at 105% of your $10.00 budget",
             NORMAL
         )],
         "the budget warning outranks the emptied pile's line: one toast per action"

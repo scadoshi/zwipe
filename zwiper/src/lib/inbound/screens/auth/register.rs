@@ -1,5 +1,5 @@
-//! Create profile: the hero, then the four fields and `Create profile` in
-//! a panel headed with the screen's name, `Back to login` as a chip along
+//! Create account: the hero, then the four fields and `Create account` in
+//! a panel headed with the screen's name, `Back to log in` as a chip along
 //! its foot, then the featured flavor card.
 
 use components::{Button, ButtonVariant, TOAST_NORMAL, TextInput, ToastOptions, Toasts, use_toast};

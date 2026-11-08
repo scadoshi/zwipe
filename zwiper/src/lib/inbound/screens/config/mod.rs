@@ -19,7 +19,6 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user;
 use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_core::domain::user::settings::PipStyle;
-use zwipe_core::text::sentence_case;
 use zwipe_ui::screens::config::{self as model, Action, Destination, Effect, Sheet, State};
 
 use crate::inbound::components::auth::authed::{Authed, use_authed};
@@ -32,6 +31,9 @@ use crate::inbound::components::theme_save::{self, ThemeSaveSheet, theme_config_
 use crate::inbound::components::{hint_dialog, ui_toast};
 use crate::outbound::app_icon;
 use crate::outbound::session::Persist;
+
+/// The toast when the OS turns down an app icon change.
+pub(crate) const APP_ICON_FAILED: &str = "Couldn't change the app icon";
 
 /// Config's model with the handles that perform its effects. Copy, so every
 /// handler and task holds its own.
@@ -209,7 +211,7 @@ pub fn Config() -> Element {
             }
             Err(e) => {
                 tracing::error!("failed to set app icon: {e}");
-                toast.error(sentence_case(&e.to_string()), ToastOptions::default());
+                toast.error(APP_ICON_FAILED.to_owned(), ToastOptions::default());
             }
         }
     };

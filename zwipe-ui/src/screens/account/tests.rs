@@ -364,7 +364,7 @@ fn save_with_a_bad_field_shows_every_line_and_sends_nothing() {
     assert_eq!(state.update(Action::Save(Sheet::Email)), none());
     assert_eq!(
         state.error(Sheet::Email, Field::NewEmail).as_deref(),
-        Some("Missing @ symbol")
+        Some("Enter a valid email address")
     );
     assert_eq!(
         state.error(Sheet::Email, Field::Password).as_deref(),
@@ -835,15 +835,15 @@ fn the_copy_matches_the_app() {
         ),
         (
             "Delete account",
-            "This will permanently delete your account, all decks, and all card data. This cannot be undone.",
+            "This will permanently delete your account, all decks, and all card data. This can't be undone.",
             "Delete"
         )
     );
     assert_eq!(VERIFICATION_SENT, "Verification email sent");
-    assert_eq!(RESEND_LIMITED, "Please wait a moment");
+    assert_eq!(RESEND_LIMITED, "Wait a moment and try again");
     assert_eq!(EMAIL_VERIFIED, "Email verified");
     assert_eq!(NOT_VERIFIED, "Not verified yet. Check your inbox");
-    assert_eq!(PASSWORD_CHANGED, "Password change successful");
+    assert_eq!(PASSWORD_CHANGED, "Password changed");
 }
 
 #[test]

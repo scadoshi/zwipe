@@ -1,7 +1,7 @@
 //! Forgot password: the email field as a panel headed with the screen's
 //! name, under the hero and beside the featured flavor card on a wide
 //! window, over it below the breakpoint, `Send reset link` full width under it, then `Back to
-//! login` and `Create profile` as chips beneath. A sent link returns to
+//! login` and `Create account` as chips beneath. A sent link returns to
 //! Login in this screen's place with the email filled in and says a link is
 //! on its way.
 //!
@@ -16,7 +16,7 @@ use dioxus_primitives::toast::{ToastOptions, Toasts, use_toast};
 use zwipe_client::ZwipeClient;
 use zwipe_core::http::contracts::auth::HttpRequestPasswordReset;
 use zwipe_ui::screens::forgot_password::{
-    self, Action, BACK, CREATE_PROFILE, Destination, EMAIL, Effect, SEND, State,
+    self, Action, BACK, CREATE_ACCOUNT, Destination, EMAIL, Effect, SEND, State,
 };
 use zwipe_ui::text::sentence_case;
 
@@ -160,7 +160,7 @@ pub fn ForgotPassword() -> Element {
                             Button {
                                 variant: ButtonVariant::Action,
                                 onclick: move |_| driver.dispatch(Action::CreateProfile),
-                                {CREATE_PROFILE}
+                                {CREATE_ACCOUNT}
                             }
                         }
                     }

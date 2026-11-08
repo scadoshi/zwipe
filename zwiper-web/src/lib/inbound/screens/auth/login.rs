@@ -1,7 +1,7 @@
 //! Login: the form as a panel headed with the screen's name, under the hero
 //! and beside the featured flavor card on a wide window, over it below the
 //! breakpoint: the two fields, `Log in` full width under them, then
-//! `Create profile` and `Forgot password` as chips in one centered row.
+//! `Create account` and `Forgot password` as chips in one centered row.
 //!
 //! What the screen knows and does is `zwipe_ui::screens::login`; this file
 //! draws its state and performs its effects.
@@ -25,7 +25,7 @@ use crate::outbound::session_store::SessionStore;
 use crate::outbound::theme_store::ThemeStore;
 
 /// An identifier for the login form to fill in once, set by a screen that
-/// sends the user here (Create profile's username, Forgot password's
+/// sends the user here (Create account's username, Forgot password's
 /// email). Provided at the root, so it works while Login sits under them in
 /// the history.
 #[derive(Debug, Clone, Copy)]
@@ -204,7 +204,7 @@ pub fn Login() -> Element {
                             Button {
                                 variant: ButtonVariant::Action,
                                 onclick: move |_| driver.dispatch(Action::CreateProfile),
-                                {login::CREATE_PROFILE}
+                                {login::CREATE_ACCOUNT}
                             }
                             Button {
                                 variant: ButtonVariant::Action,

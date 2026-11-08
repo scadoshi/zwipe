@@ -69,7 +69,7 @@ pub const fn section_of(route: &Router) -> Option<Section> {
 /// The auth screens the signed-out menu lists, with their labels.
 const SIGNED_OUT: [(&str, Router); 3] = [
     ("Log in", Router::Login {}),
-    ("Create profile", Router::Register {}),
+    ("Create account", Router::Register {}),
     ("Forgot password", Router::ForgotPassword {}),
 ];
 

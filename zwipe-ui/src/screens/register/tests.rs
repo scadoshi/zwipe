@@ -43,7 +43,7 @@ fn a_new_screen_shows_no_lines_and_is_idle() {
     let state = State::new();
     assert_eq!(errors(&state), [None, None, None, None]);
     assert!(!state.is_loading());
-    assert_eq!(state.submit_label(), CREATE_PROFILE);
+    assert_eq!(state.submit_label(), CREATE_ACCOUNT);
 }
 
 #[test]
@@ -58,7 +58,7 @@ fn a_field_shows_its_line_while_it_holds_text() {
     type_in(&mut state, Field::Email, "me.zwipe.net");
     assert_eq!(
         state.error(Field::Email).as_deref(),
-        Some("Missing @ symbol")
+        Some("Enter a valid email address")
     );
     type_in(&mut state, Field::Username, "");
     type_in(&mut state, Field::Email, "");
@@ -124,7 +124,7 @@ fn a_submit_with_a_failing_field_judges_every_field_and_sends_nothing() {
         errors(&state),
         [
             Some("Must be at least 3 characters long".to_owned()),
-            Some("Missing @ symbol".to_owned()),
+            Some("Enter a valid email address".to_owned()),
             Some("Must be at least 8 characters long".to_owned()),
             None,
         ]
@@ -249,11 +249,11 @@ fn the_fields_keep_the_apps_labels() {
 #[test]
 fn the_copy_matches_the_app() {
     assert_eq!(
-        [TITLE, BACK, CREATE_PROFILE, CREATING, CHECK_INBOX],
+        [TITLE, BACK, CREATE_ACCOUNT, CREATING, CHECK_INBOX],
         [
-            "Create profile",
-            "Back to login",
-            "Create profile",
+            "Create account",
+            "Back to log in",
+            "Create account",
             "Creating...",
             "Check your inbox to verify your email, then log in"
         ]

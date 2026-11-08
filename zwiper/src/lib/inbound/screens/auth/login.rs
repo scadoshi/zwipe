@@ -1,5 +1,5 @@
 //! Login: the hero, then the two fields and `Log in` in a panel headed
-//! with the screen's name, `Create profile` and `Forgot password` as chips
+//! with the screen's name, `Create account` and `Forgot password` as chips
 //! along its foot, then the featured flavor card.
 
 use components::{
@@ -23,7 +23,7 @@ use crate::outbound::session::Persist;
 use crate::outbound::{app_icon, pending_settings_store, theme_store};
 
 /// An identifier for the login form to fill in once, set by a screen that
-/// sends the user here (Create profile's username, Forgot password's email).
+/// sends the user here (Create account's username, Forgot password's email).
 /// Provided at the root.
 #[derive(Debug, Clone, Copy)]
 pub struct LoginPrefill(pub Signal<Option<String>>);
@@ -204,7 +204,7 @@ pub fn Login() -> Element {
                     Button {
                         variant: ButtonVariant::Action,
                         onclick: move |_| driver.dispatch(Action::CreateProfile),
-                        {login::CREATE_PROFILE}
+                        {login::CREATE_ACCOUNT}
                     }
                     Button {
                         variant: ButtonVariant::Action,

@@ -68,7 +68,7 @@ pub const ADDED_TO_DECK: &str = "Added to deck";
 pub const ADDED_TO_MAYBEBOARD: &str = "Added to maybeboard";
 
 /// The toast for a right swipe on Maybeboard.
-pub const MOVED_TO_DECK: &str = "Moved to deck";
+pub use crate::screens::deck_cards::MOVED_TO_MAINBOARD;
 
 /// The toast for an up swipe on Maybeboard.
 pub const ALREADY_ON_MAYBEBOARD: &str = "Already on maybeboard";
@@ -88,18 +88,18 @@ pub const UNDID_ADD: &str = "Undid add";
 /// The toast for undoing an up swipe on Search.
 pub const UNDID_MAYBEBOARD: &str = "Undid maybeboard";
 
-/// The toast once an undone move to the deck lands.
-pub const UNDID_MOVE_TO_DECK: &str = "Undid move to deck";
+/// The toast once an undone move to the mainboard lands.
+pub const UNDID_MOVE_TO_MAINBOARD: &str = "Undid move to mainboard";
 
 /// The toast for undoing a move the deck cards view's Undo already reversed.
 pub const ALREADY_CHANGED: &str = "Already changed";
 
 /// The toast when paging stops at the stack's cap.
-pub const STACK_LIMIT_REACHED: &str = "Card stack limit reached, start a new search to continue";
+pub const STACK_LIMIT_REACHED: &str = "Card stack limit reached. Start a new search to continue.";
 
 /// The toast as the stack nears its cap.
 pub const STACK_LIMIT_NEAR: &str =
-    "Approaching the card stack limit, start a new search to continue";
+    "Approaching the card stack limit. Start a new search to continue.";
 
 /// The toast when Search has nothing to serve without a filter.
 pub const TRY_A_FILTER: &str = "Try a filter to start swiping";
@@ -913,7 +913,7 @@ impl State {
                         },
                     });
                 }
-                vec![confirm(ToastKind::Success, UNDID_MOVE_TO_DECK)]
+                vec![confirm(ToastKind::Success, UNDID_MOVE_TO_MAINBOARD)]
             }
             _ => Vec::new(),
         }
@@ -1288,7 +1288,7 @@ impl State {
                 deck_id,
                 card_id,
             },
-            confirm(ToastKind::Success, MOVED_TO_DECK),
+            confirm(ToastKind::Success, MOVED_TO_MAINBOARD),
         ]
     }
 

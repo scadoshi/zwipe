@@ -451,7 +451,7 @@ fn bar(key: &str, label: &str, count: u64, pct: u32) -> Bar {
 }
 
 #[test]
-fn role_bars_keep_the_order_sent_and_abbreviate_like_the_deck_chart() {
+fn role_bars_keep_the_order_sent_and_name_each_role() {
     let roles = [
         HttpProfileRole {
             role: "sacrifice".to_owned(),
@@ -469,8 +469,8 @@ fn role_bars_keep_the_order_sent_and_abbreviate_like_the_deck_chart() {
     assert_eq!(
         role_bars(&roles, &tags),
         vec![
-            bar("sacrifice", "sacrf", 50, 100),
-            bar("ramp", "ramp", 1, 4)
+            bar("sacrifice", "Sacrifice", 50, 100),
+            bar("ramp", "Ramp", 1, 4)
         ],
         "a nonzero bar is at least the 4% sliver"
     );

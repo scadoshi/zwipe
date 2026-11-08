@@ -840,7 +840,7 @@ fn the_copy_matches_the_app() {
     );
     assert_eq!(
         [ALL_DECKS, CREATE_DECK, DECKS_FAILED],
-        ["All decks", "Create a deck", "Could not load your decks"]
+        ["All decks", "Create a deck", "Couldn't load your decks"]
     );
     assert_eq!(
         [COLORS, PLAYSTYLE, NO_PLAY_STYLE, PLAY_STYLE_FAILED],
@@ -848,7 +848,7 @@ fn the_copy_matches_the_app() {
             "Colors",
             "Playstyle",
             "Your playstyle shows here",
-            "Could not load your playstyle"
+            "Couldn't load your playstyle"
         ]
     );
     assert_eq!(

@@ -627,7 +627,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                         }
                         d.maybeboard.push(DeckEntry { card, deck_card });
                     }
-                    confirm.success("Undid move to deck");
+                    confirm.success("Undid move to mainboard");
                 }
                 Err(e) => {
                     toast.error(format!("Failed to undo: {e}"), ToastOptions::default());
@@ -706,7 +706,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             }
             mb_stack.write().remove_current();
             let mut line = OneLine::default();
-            line.confirm(Tone::Success, "Moved to deck");
+            line.confirm(Tone::Success, "Moved to mainboard");
             if mb_stack.peek().is_empty() {
                 line.ran_out();
             }

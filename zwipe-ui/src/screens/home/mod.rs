@@ -42,7 +42,7 @@ pub const CREATE_DECK: &str = "Create a deck";
 pub const NO_DECKS: &str = "Your decks show here";
 
 /// The Decks panel's line when the decks failed to load and none are held.
-pub const DECKS_FAILED: &str = "Could not load your decks";
+pub const DECKS_FAILED: &str = "Couldn't load your decks";
 
 /// How many decks the Decks panel lists, the most recently updated first.
 pub const LATEST_DECKS: usize = 3;
@@ -57,10 +57,10 @@ pub const PLAYSTYLE: &str = "Playstyle";
 pub const NO_PLAY_STYLE: &str = "Your playstyle shows here";
 
 /// The Colors panel's line when the summary failed to load and none is held.
-pub const PLAY_STYLE_FAILED: &str = "Could not load your playstyle";
+pub const PLAY_STYLE_FAILED: &str = "Couldn't load your playstyle";
 
 /// The featured flavor panel's line when the card failed to load and none is held.
-pub const FLAVOR_FAILED: &str = "Could not load the featured flavor";
+pub const FLAVOR_FAILED: &str = "Couldn't load the featured flavor";
 
 /// The featured flavor panel's title.
 pub const FEATURED_FLAVOR: &str = "Featured flavor";

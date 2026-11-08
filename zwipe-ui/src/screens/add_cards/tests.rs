@@ -264,7 +264,7 @@ fn an_empty_search_says_why_on_the_ghost_alone() {
     );
     assert_eq!(
         state.ghost_synergy_note(),
-        Some("Synergy is on, turn it off to search everything"),
+        Some("Synergy is on. Turn it off to search everything."),
         "and that Synergy may be the reason"
     );
 
@@ -862,7 +862,7 @@ fn the_maybeboard_source_cycles_promotes_and_undoes() {
     else {
         panic!("{effects:?}");
     };
-    assert_eq!(*toast, Toast::quick(ToastKind::Success, MOVED_TO_DECK));
+    assert_eq!(*toast, Toast::quick(ToastKind::Success, MOVED_TO_MAINBOARD));
     let card_id = *card_id;
     assert_eq!(top(&state).as_deref(), Some("Maybe B"));
     let effects = state.update(Action::Landed { ticket: *ticket });
@@ -888,7 +888,7 @@ fn the_maybeboard_source_cycles_promotes_and_undoes() {
     });
     assert_eq!(
         toasts(&effects),
-        [Toast::quick(ToastKind::Success, UNDID_MOVE_TO_DECK)]
+        [Toast::quick(ToastKind::Success, UNDID_MOVE_TO_MAINBOARD)]
     );
 }
 
@@ -1111,14 +1111,14 @@ fn the_copy_matches_the_app() {
             SKIPPED,
             ADDED_TO_DECK,
             ADDED_TO_MAYBEBOARD,
-            MOVED_TO_DECK,
+            MOVED_TO_MAINBOARD,
             ALREADY_ON_MAYBEBOARD,
             NOTHING_TO_UNDO,
             NO_PREVIOUS_CARD,
             UNDID_SKIP,
             UNDID_ADD,
             UNDID_MAYBEBOARD,
-            UNDID_MOVE_TO_DECK,
+            UNDID_MOVE_TO_MAINBOARD,
             ALREADY_CHANGED,
             TRY_A_FILTER,
             FILTER_AT_DEFAULT,
@@ -1131,14 +1131,14 @@ fn the_copy_matches_the_app() {
             "Skipped",
             "Added to deck",
             "Added to maybeboard",
-            "Moved to deck",
+            "Moved to mainboard",
             "Already on maybeboard",
             "Nothing to undo",
             "No previous card",
             "Undid skip",
             "Undid add",
             "Undid maybeboard",
-            "Undid move to deck",
+            "Undid move to mainboard",
             "Already changed",
             "Try a filter to start swiping",
             "Filter already at default",
@@ -1150,11 +1150,11 @@ fn the_copy_matches_the_app() {
     );
     assert_eq!(
         STACK_LIMIT_REACHED,
-        "Card stack limit reached, start a new search to continue"
+        "Card stack limit reached. Start a new search to continue."
     );
     assert_eq!(
         STACK_LIMIT_NEAR,
-        "Approaching the card stack limit, start a new search to continue"
+        "Approaching the card stack limit. Start a new search to continue."
     );
     assert_eq!(
         SYNERGY_WARMING,

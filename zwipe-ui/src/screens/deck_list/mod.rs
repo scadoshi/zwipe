@@ -33,7 +33,7 @@ pub const SHOW_ALL: &str = "All";
 pub const TAGS: &str = "Tags";
 
 /// The line in place of the list when the decks failed to load.
-pub const LOAD_FAILED: &str = "Could not load decks";
+pub const LOAD_FAILED: &str = "Couldn't load decks";
 
 /// The line in place of the list when the user has no deck.
 pub const NO_DECKS: &str = "No decks";

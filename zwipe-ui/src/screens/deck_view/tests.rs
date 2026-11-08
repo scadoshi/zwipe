@@ -792,7 +792,7 @@ fn can_clone_needs_more_than_spaces() {
 #[test]
 fn the_copy_matches_the_app() {
     assert_eq!(TITLE, "Deck");
-    assert_eq!(LOAD_FAILED, "Could not load deck");
+    assert_eq!(LOAD_FAILED, "Couldn't load deck");
     assert_eq!([EDIT, CARDS], ["Edit", "Cards"]);
     assert_eq!(
         MoreItem::ALL.map(MoreItem::label),

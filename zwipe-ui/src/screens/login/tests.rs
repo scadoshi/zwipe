@@ -256,12 +256,12 @@ fn the_fields_keep_the_apps_labels() {
 #[test]
 fn the_copy_matches_the_app() {
     assert_eq!(
-        [TITLE, LOG_IN, LOGGING_IN, CREATE_PROFILE, FORGOT_PASSWORD],
+        [TITLE, LOG_IN, LOGGING_IN, CREATE_ACCOUNT, FORGOT_PASSWORD],
         [
-            "Login",
             "Log in",
-            "Logging in...",
-            "Create profile",
+            "Log in",
+            "Logging in",
+            "Create account",
             "Forgot password"
         ]
     );

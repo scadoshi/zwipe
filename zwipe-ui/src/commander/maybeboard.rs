@@ -16,7 +16,7 @@ pub const NO_COMMANDERS: &str = "No commanders";
 pub const NO_MATCH: &str = "No commanders match";
 
 /// The empty line when the maybeboard failed to load.
-pub const LOAD_FAILED: &str = "Could not load your commander maybeboard";
+pub const LOAD_FAILED: &str = "Couldn't load your commander maybeboard";
 
 /// Which way a highlight step moves through the Quick add results.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -149,6 +149,6 @@ mod tests {
         assert_eq!(LIST_TITLE, "Commanders");
         assert_eq!(NO_COMMANDERS, "No commanders");
         assert_eq!(NO_MATCH, "No commanders match");
-        assert_eq!(LOAD_FAILED, "Could not load your commander maybeboard");
+        assert_eq!(LOAD_FAILED, "Couldn't load your commander maybeboard");
     }
 }
