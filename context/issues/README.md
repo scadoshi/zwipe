@@ -58,6 +58,7 @@ Who checked, on which live build, what they saw.
 | [290](290-format-sheet-keeps-draft.md) | Format sheet keeps its search after Discard; Keep is unclear | merged | laptop | #423, #428 |
 | [291](291-logout-revokes-all-sessions.md) | Logging out on one device logs out every device | merged | halo | #427 |
 | [292](292-changelog-api-browser-cache.md) | Web app's About shows an old changelog for hours after a deploy | approved | halo | - |
+| [293](293-empty-swipe-pile-skeleton.md) | An empty Swipe pile stays on a skeleton card | reported | - | - |
 
 ## Waiting for live verification
 
