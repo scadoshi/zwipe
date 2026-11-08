@@ -370,6 +370,7 @@ pub(crate) fn DeckForm(open: Open) -> Element {
     let mode = state.mode();
     let status = state.status();
     let saving = state.is_saving();
+    let submit_held = state.submit_held();
     let save_label = state.save_label();
     let unchanged = state.picker_unchanged();
     let selected_format = state.values().format;
@@ -406,13 +407,14 @@ pub(crate) fn DeckForm(open: Open) -> Element {
             }
 
             // Save as the action dock's checkmark, pinned bottom right, while
-            // there is something to save; dimmed while the save is out.
+            // there is something to save; dimmed while the save is out or
+            // the name's error line shows.
             if let Some(label) = save_label {
                 div { class: "action-dock action-dock-right",
                     DockAction {
                         label,
                         icon: icons::CHECK,
-                        disabled: saving,
+                        disabled: saving || submit_held,
                         onclick: move |()| driver.dispatch(Action::Save),
                     }
                 }

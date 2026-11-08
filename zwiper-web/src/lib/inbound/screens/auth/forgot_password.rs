@@ -108,6 +108,7 @@ pub fn ForgotPassword() -> Element {
 
     let model = driver.model.read();
     let is_loading = model.is_loading();
+    let submit_held = model.submit_held();
     let email_error = model.error();
     drop(model);
 
@@ -145,7 +146,7 @@ pub fn ForgotPassword() -> Element {
                             // page.
                             div { class: "form-submit",
                                 Button {
-                                    disabled: is_loading,
+                                    disabled: is_loading || submit_held,
                                     onclick: move |evt: MouseEvent| {
                                         evt.prevent_default();
                                         driver.dispatch(Action::Submit);

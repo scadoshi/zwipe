@@ -331,6 +331,36 @@ fn a_stray_tick_changes_nothing() {
 }
 
 #[test]
+fn a_showing_error_holds_save_but_a_password_s_never_does() {
+    let mut state = opened();
+    let _ = state.update(Action::OpenSheet(Sheet::Username));
+    assert!(!state.submit_held(Sheet::Username), "nothing showing yet");
+    edit(&mut state, Sheet::Username, Field::NewUsername, "ab");
+    assert!(state.submit_held(Sheet::Username));
+    edit(
+        &mut state,
+        Sheet::Username,
+        Field::NewUsername,
+        "goblin_king",
+    );
+    assert!(!state.submit_held(Sheet::Username));
+    let _ = state.update(Action::Save(Sheet::Username));
+    assert!(
+        state.error(Sheet::Username, Field::Password).is_some(),
+        "the empty password's line shows"
+    );
+    assert!(
+        !state.submit_held(Sheet::Username),
+        "a password line never holds Save"
+    );
+    let _ = state.update(Action::OpenSheet(Sheet::Password));
+    edit(&mut state, Sheet::Password, Field::NewPassword, "one");
+    edit(&mut state, Sheet::Password, Field::ConfirmPassword, "two");
+    assert!(state.error(Sheet::Password, Field::NewPassword).is_some());
+    assert!(!state.submit_held(Sheet::Password));
+}
+
+#[test]
 fn the_username_sheet_judges_each_field_while_it_holds_text() {
     let mut state = opened();
     assert_eq!(

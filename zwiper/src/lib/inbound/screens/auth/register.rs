@@ -129,6 +129,7 @@ pub fn Register() -> Element {
 
     let model = driver.model.read();
     let is_loading = model.is_loading();
+    let submit_held = model.submit_held();
     let submit_label = model.submit_label();
     let username_error = model.error(Field::Username);
     let email_error = model.error(Field::Email);
@@ -190,7 +191,7 @@ pub fn Register() -> Element {
                     // the click handles the submit itself, never the page.
                     div { class: "form-submit",
                         Button {
-                            disabled: is_loading,
+                            disabled: is_loading || submit_held,
                             onclick: move |evt: MouseEvent| {
                                 evt.prevent_default();
                                 driver.dispatch(Action::Submit);

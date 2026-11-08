@@ -58,9 +58,9 @@ pub(super) fn DeleteAccountDialog(open: Signal<bool>) -> Element {
     let mut password = use_signal(String::new);
 
     use_effect(move || {
-        if open() {
-            password.set(String::new());
-        }
+        // Opening and closing both start the form over.
+        let _open = open();
+        password.set(String::new());
     });
 
     let label = use_memo(move || account::delete_label(u64::from(countdown())));

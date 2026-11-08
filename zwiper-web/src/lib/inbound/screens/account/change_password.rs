@@ -45,10 +45,10 @@ pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
         confirm.set(String::new());
     };
     use_effect(move || {
-        if open() {
-            clear();
-            submit_attempted.set(false);
-        }
+        // Opening and closing both start the form over.
+        let _open = open();
+        clear();
+        submit_attempted.set(false);
     });
 
     let error_now = move |attempted: bool| {
