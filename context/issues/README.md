@@ -71,7 +71,7 @@ Who checked, on which live build, what they saw.
 | [303](303-web-unstyled-flash-on-load.md) | The web app flashes unstyled on a hard refresh | approved | thinker | - |
 | [304](304-home-stats-chip-gap.md) | Web Home's stat chips sit far below the counters | merged | laptop | #443 |
 | [305](305-home-decks-create-label.md) | Home's Decks panel "+" should read "Create deck" | merged | laptop | #443 |
-| [306](306-openframe-reuse-shell.md) | About and Privacy draw a second app frame when signed in | approved | halo | - |
+| [306](306-openframe-reuse-shell.md) | About and Privacy draw a second app frame when signed in | fixing | halo | #444 |
 
 ## Waiting for live verification
 
