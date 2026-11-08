@@ -299,6 +299,7 @@ Also: P2-5 (two toasts when Remove's stack runs out) folds into 145's "Nothing l
 222. **The share dialog never shows the link.** [Droid p7, 2026-11-07, approved by Scotty] Show the URL (selectable, truncated if long) beside Copy link.
 223. **Web's 'See guide ↗' opens in the same tab.** [Droid p7, 2026-11-07, approved by Scotty] External guide links on web open in a new tab (target=_blank, rel=noopener) so the app keeps its state.
 224. **Match the web card preview to the app's size.** [Scotty, 2026-11-07, follow-up to 186] The web phone preview runs edge to edge (379px at 411) while the app's is 333px. Scotty prefers the app's size: web matches the app's preview width and margins at phone width.
+225. **A picked filter chip's × ignores real taps on Android.** [Droid p10, 2026-11-07, app] The × is a 10x16 button that isn't hit-testable (elementFromPoint returns the chip div); a scripted click works. Give it a real hit target (at least 32px, padding not size) and make it reachable, matching the bigger banner/toast × from earlier. App and web.
 Kept by Scotty: the "Oracle tags derived from your deck tags" toast over the Oracle tags row stays (without it people would think it's a bug). Closed: Surfer p7-11, the page-wide highlight, as a one-off.
 For Scotty: the picker's × discards picks that previewed live in the form (intended cancel, or should × keep them?); a toast covering the filter's Oracle tags row at 720.
 
