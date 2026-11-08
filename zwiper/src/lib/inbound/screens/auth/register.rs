@@ -147,6 +147,8 @@ pub fn Register() -> Element {
                     TextInput {
                         value: driver.username,
                         id: "username",
+                        name: "username",
+                        autocomplete: "username",
                         label: Field::Username.label(),
                         placeholder: Field::Username.placeholder(),
                         error: username_error.as_deref().map(sentence_case),
@@ -154,6 +156,8 @@ pub fn Register() -> Element {
                     TextInput {
                         value: driver.email,
                         id: "email",
+                        name: "email",
+                        autocomplete: "email",
                         label: Field::Email.label(),
                         placeholder: Field::Email.placeholder(),
                         input_type: "email",
@@ -162,6 +166,8 @@ pub fn Register() -> Element {
                     TextInput {
                         value: driver.password,
                         id: "password",
+                        name: "new-password",
+                        autocomplete: "new-password",
                         label: Field::Password.label(),
                         placeholder: Field::Password.placeholder(),
                         input_type: "password",
@@ -171,6 +177,8 @@ pub fn Register() -> Element {
                     TextInput {
                         value: driver.confirm_password,
                         id: "confirm_password",
+                        name: "confirm-password",
+                        autocomplete: "new-password",
                         label: Field::ConfirmPassword.label(),
                         placeholder: Field::ConfirmPassword.placeholder(),
                         input_type: "password",
