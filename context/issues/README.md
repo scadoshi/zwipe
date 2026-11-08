@@ -53,6 +53,9 @@ Who checked, on which live build, what they saw.
 | [286](286-portfolio-orangui-line-anchors.md) | Portfolio orangui source line ranges are stale | reported | - | - |
 | [265](265-partner-swipe-stack.md) | Partner Swipe stack still offers illegal partners | merged | laptop | #419 |
 | [287](287-split-1-18-changelog.md) | Split the 1.18 changelog into logical patches | approved | laptop | - |
+| [288](288-stack-refreshed-on-failed-refresh.md) | Add says Stack refreshed when the refresh failed | approved (easy) | laptop | - |
+| [289](289-top-color-sr-text.md) | Top color pip reads Mono-red to screen readers | approved (easy) | laptop | - |
+| [290](290-format-sheet-keeps-draft.md) | Format sheet keeps its search and pick after × | reported | - | - |
 
 ## Waiting for live verification
 
