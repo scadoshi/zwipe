@@ -2657,3 +2657,22 @@ footer.site-footer .site-footer-note {
     opacity: 1;
     color: var(--text-muted);
 }
+
+/* The Share dialog's link: one selectable line, cut with an ellipsis when it
+   runs past the dialog, in a sunk field so it reads as something to copy. */
+.share-url {
+    margin-top: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    background: var(--bg-sink);
+    max-width: 100%;
+    box-sizing: border-box;
+    color: var(--text-primary);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    user-select: all;
+    -webkit-user-select: all;
+}

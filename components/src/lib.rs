@@ -64,6 +64,7 @@ mod load_failed;
 mod menu_section;
 mod oracle_text;
 mod role_tags;
+mod share_url;
 mod site_footer;
 mod theme;
 
@@ -119,6 +120,7 @@ pub use orangui::{OpenUrlError, open_url, use_in_app_links};
 #[cfg(feature = "toast")]
 pub use orangui::{TOAST_CSS, ToastOptions, ToastStack, Toasts, use_toast};
 pub use role_tags::{OtagDef, RoleTags};
+pub use share_url::ShareUrl;
 pub use site_footer::SiteFooter;
 pub use theme::{pip_style_class, theme_from_settings};
 

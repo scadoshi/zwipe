@@ -1,7 +1,7 @@
 //! The deck view's Share and Clear skips dialogs, opened by the buttons on
 //! the screen itself.
 
-use components::{AlertDialog, DialogAction};
+use components::{AlertDialog, DialogAction, ShareUrl};
 use dioxus::prelude::*;
 use zwipe_ui::screens::deck_view::{self, Action, Dialog};
 
@@ -44,8 +44,8 @@ pub(crate) fn use_deck_dialogs() -> DeckDialogs {
 #[component]
 pub(crate) fn MoreButtons(
     dialogs: DeckDialogs,
-    /// Whether the deck has a public link.
-    shared: bool,
+    /// The deck's public link, `None` while it has none.
+    share_url: Option<String>,
     share_body: &'static str,
     ondispatch: EventHandler<Action>,
 ) -> Element {
@@ -71,7 +71,7 @@ pub(crate) fn MoreButtons(
         ondispatch.call(Action::ClearSkips);
     });
 
-    let share_actions = if shared {
+    let share_actions = if share_url.is_some() {
         vec![
             DialogAction::Dismiss(deck_view::CLOSE.into()),
             DialogAction::Confirm {
@@ -119,7 +119,10 @@ pub(crate) fn MoreButtons(
             open: show_share_dialog,
             title: Dialog::Share.title().to_string(),
             actions: share_actions,
-            "{share_body}"
+            div { "{share_body}" }
+            if let Some(url) = share_url {
+                ShareUrl { url }
+            }
         }
 
     }

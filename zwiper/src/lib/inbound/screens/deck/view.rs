@@ -484,7 +484,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         .filter(|item| state.is_enabled(*item))
         .collect();
     let buy_row = state.buy_links().is_some();
-    let shared = state.share_token().is_some();
+    let share_url = state.share_url();
     let share_body = state.share_body();
     let clone_name = state.clone_name();
     drop(state);
@@ -769,7 +769,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
 
             MoreButtons {
                 dialogs: driver.dialogs,
-                shared: shared,
+                share_url: share_url,
                 share_body: share_body,
                 ondispatch: move |action| driver.dispatch(action),
             }
