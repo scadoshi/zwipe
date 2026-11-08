@@ -1,6 +1,6 @@
 # 265. Partner Swipe stack still offers illegal partners
 
-State: merged | Owner: laptop | PR: #419 | Build seen: 1e03520ef
+State: verified | Owner: laptop | PR: #419 | Build seen: 1e03520ef
 
 ## Report
 Approved nit 265 (#399): the partner list offers only legal partners. Verification failed in part.

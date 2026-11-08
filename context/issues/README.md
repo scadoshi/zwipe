@@ -51,7 +51,7 @@ Who checked, on which live build, what they saw.
 | [283](283-collapsible-changelog-versions.md) | Collapsible versions in every changelog | merging | laptop | #417, portfolio#20 |
 | [285](285-generated-share-image.md) | Generated preview image for shared decks | merged | thinker | #424, #425, #426 |
 | [286](286-portfolio-orangui-line-anchors.md) | Portfolio orangui source line ranges are stale | merged | laptop | portfolio#21 |
-| [265](265-partner-swipe-stack.md) | Partner Swipe stack still offers illegal partners | merged | laptop | #419, #430, #437 |
+| [265](265-partner-swipe-stack.md) | Partner Swipe stack still offers illegal partners | verified | laptop | #419, #430, #437 |
 | [287](287-split-1-18-changelog.md) | Split the 1.18 changelog into logical patches | merged | laptop | #420 |
 | [288](288-stack-refreshed-on-failed-refresh.md) | Add says Stack refreshed when the refresh failed | merged | laptop | #421 |
 | [289](289-top-color-sr-text.md) | Top color pip reads Mono-red to screen readers | merged | laptop | #422 |
@@ -59,15 +59,15 @@ Who checked, on which live build, what they saw.
 | [291](291-logout-revokes-all-sessions.md) | Logging out on one device logs out every device | merged | halo | #427 |
 | [292](292-changelog-api-browser-cache.md) | Web app's About shows an old changelog for hours after a deploy | merged | halo | #431 |
 | [293](293-empty-swipe-pile-skeleton.md) | An empty Swipe pile stays on a skeleton card | merged | laptop | #432 |
-| [294](294-portfolio-zwipe-web-app.md) | Portfolio's Zwipe page leaves out the web app | merged | thinker | portfolio#22, #434 |
-| [295](295-changelog-whole-header-toggles.md) | Changelog versions only toggle from the caret | merged | scotland | #436, portfolio#23 |
-| [296](296-collapsed-group-tag-hover-border.md) | A collapsed group's tag loses its bottom border color on hover | merged | laptop | #433 |
-| [297](297-web-decks-tag-filters-collapsible.md) | Web Decks shows every deck tag filter up front | merged | laptop | #435 |
-| [298](298-web-header-at-150-zoom.md) | The web app's header breaks at 150% zoom | merged | laptop | #440 |
-| [299](299-leave-guard-dead-after-about.md) | Create deck's leave guard stops working after visiting About | merged | scotland | #442 |
-| [300](300-share-image-version-not-bumped.md) | Share image URL keeps its old ?v= after the image layout changes | merged | thinker | #438 |
-| [301](301-form-dirty-after-discard.md) | Edit deck still asks to leave after a picker change was discarded | merged | laptop | #439 |
-| [302](302-add-details-overlaps-card.md) | Add's card details panel overlaps the swipe card at 900 to 1060px | merged | laptop | #440 |
+| [294](294-portfolio-zwipe-web-app.md) | Portfolio's Zwipe page leaves out the web app | verified | thinker | portfolio#22, #434 |
+| [295](295-changelog-whole-header-toggles.md) | Changelog versions only toggle from the caret | verified | scotland | #436, portfolio#23 |
+| [296](296-collapsed-group-tag-hover-border.md) | A collapsed group's tag loses its bottom border color on hover | verified | laptop | #433 |
+| [297](297-web-decks-tag-filters-collapsible.md) | Web Decks shows every deck tag filter up front | verified | laptop | #435 |
+| [298](298-web-header-at-150-zoom.md) | The web app's header breaks at 150% zoom | verified | laptop | #440 |
+| [299](299-leave-guard-dead-after-about.md) | Create deck's leave guard stops working after visiting About | verified | scotland | #442 |
+| [300](300-share-image-version-not-bumped.md) | Share image URL keeps its old ?v= after the image layout changes | verified | thinker | #438 |
+| [301](301-form-dirty-after-discard.md) | Edit deck still asks to leave after a picker change was discarded | verified | laptop | #439 |
+| [302](302-add-details-overlaps-card.md) | Add's card details panel overlaps the swipe card at 900 to 1060px | verified | laptop | #440 |
 | [303](303-web-unstyled-flash-on-load.md) | The web app flashes unstyled on a hard refresh | merged | thinker | #445 |
 | [304](304-home-stats-chip-gap.md) | Web Home's stat chips sit far below the counters | merged | laptop | #443 |
 | [305](305-home-decks-create-label.md) | Home's Decks panel "+" should read "Create deck" | merged | laptop | #443 |
