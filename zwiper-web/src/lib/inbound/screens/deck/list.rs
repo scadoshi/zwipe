@@ -25,7 +25,7 @@ use crate::inbound::chrome::ghost::{GhostChipRow, GhostShowRow};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, open_and_record_hint};
 use crate::inbound::router::Route;
 use crate::inbound::screens::deck::skeletons::DeckListSkeleton;
-use crate::inbound::shell::ScreenFrame;
+use crate::inbound::shell::{DeckOpener, ScreenFrame};
 use crate::outbound::deck_sort_store::DeckSortStore;
 use crate::outbound::session_store::SessionStore;
 
@@ -330,6 +330,7 @@ fn DeckGroupSection(
 #[component]
 fn DeckRow(profile: DeckProfile) -> Element {
     let navigator = use_navigator();
+    let opener: DeckOpener = use_context();
     let count = card_count(&profile);
     let count_bad = !count_fits(&profile, count);
     let pips = list::identity_colors(&profile);
@@ -339,6 +340,7 @@ fn DeckRow(profile: DeckProfile) -> Element {
         Pressable {
             class: "card-row deck-row row-enter",
             onpress: move |()| {
+                opener.record(deck_id, Route::DeckList {});
                 navigator.push(Route::ViewDeck { deck_id });
             },
             div { class: "deck-list-row",

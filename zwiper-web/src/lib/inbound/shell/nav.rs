@@ -2,6 +2,7 @@
 //! back arrow goes.
 
 use dioxus::prelude::*;
+use uuid::Uuid;
 
 use crate::inbound::router::Route;
 
@@ -18,12 +19,15 @@ pub enum Back {
     Previous,
     /// The screen's fixed parent.
     To(Route),
+    /// The screen that opened this deck, or Decks when none is on record
+    /// (see [`DeckOpener`](super::DeckOpener)).
+    Opener(Uuid),
 }
 
 impl Back {
     /// The back arrow's target from `route`, or `None` on Home and the auth
-    /// screens, whose left corner is empty. A screen inside a deck goes up
-    /// the deck tree, the maybeboard to Playstyle, Privacy policy to About,
+    /// screens, whose left corner is empty. A deck goes back to the screen
+    /// that opened it, a screen inside a deck goes up the deck tree, the maybeboard to Playstyle, Privacy policy to About,
     /// and a section goes to the screen before it.
     pub fn of(route: &Route) -> Option<Back> {
         match route {
@@ -37,7 +41,8 @@ impl Back {
             | Route::Config {}
             | Route::About {}
             | Route::NotFound { .. } => Some(Back::Previous),
-            Route::CreateDeck {} | Route::ViewDeck { .. } => Some(Back::To(Route::DeckList {})),
+            Route::CreateDeck {} => Some(Back::To(Route::DeckList {})),
+            Route::ViewDeck { deck_id } => Some(Back::Opener(*deck_id)),
             Route::EditDeck { deck_id }
             | Route::ImportDeck { deck_id }
             | Route::ExportDeck { deck_id }
@@ -101,8 +106,6 @@ pub const fn section_of(route: &Route) -> Option<Section> {
 
 #[cfg(test)]
 mod tests {
-    use uuid::Uuid;
-
     use super::*;
 
     #[test]
@@ -141,7 +144,8 @@ mod tests {
         );
         assert_eq!(
             Back::of(&Route::ViewDeck { deck_id }),
-            Some(Back::To(Route::DeckList {}))
+            Some(Back::Opener(deck_id)),
+            "a deck asks who opened it"
         );
         assert_eq!(Back::of(&Route::Activity {}), Some(Back::Previous));
     }
