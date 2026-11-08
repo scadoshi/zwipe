@@ -446,6 +446,18 @@ struct Search {
     waiting: Option<Ticket>,
 }
 
+impl Search {
+    /// What the input shows and the text typed, as a pair [`Search::set_field`] puts back.
+    fn field(&self) -> (String, String) {
+        (self.display.clone(), self.query.clone())
+    }
+
+    fn set_field(&mut self, (display, query): (String, String)) {
+        self.display = display;
+        self.query = query;
+    }
+}
+
 impl Default for Search {
     fn default() -> Self {
         Self {
@@ -496,12 +508,16 @@ impl Searches {
     }
 }
 
-/// The land target, commander and signature spell as the format picker opened on them, which its Back puts back. The partner and background are not kept, so a format change that cleared them leaves them cleared.
+/// The land target and the command zone as the format picker opened on them, which its Discard puts back: a format pick clears the commander and, with it, the partner and the background.
 #[derive(Debug, Clone, PartialEq)]
 struct ZoneSnapshot {
     land_target: Option<i32>,
     commander: Option<Card>,
     commander_display: String,
+    partner: Option<Card>,
+    partner_field: (String, String),
+    background: Option<Card>,
+    background_field: (String, String),
     signature_spell: Option<Card>,
     signature_spell_display: String,
 }
@@ -516,6 +532,9 @@ enum OpenPicker {
     Tags {
         picker: TagPicker,
         draft: Draft<Vec<String>>,
+        /// The oracle tags and the seed they last took from the deck tags, as the picker opened on them.
+        oracle_tags: Vec<String>,
+        applied_seed: Vec<String>,
     },
 }
 
@@ -772,7 +791,9 @@ impl State {
     pub fn picker_unchanged(&self) -> bool {
         match &self.picker {
             Some(OpenPicker::Format { draft, .. }) => draft.is_unchanged(&self.values.format),
-            Some(OpenPicker::Tags { picker, draft }) => draft.is_unchanged(self.tag_list(*picker)),
+            Some(OpenPicker::Tags { picker, draft, .. }) => {
+                draft.is_unchanged(self.tag_list(*picker))
+            }
             None => true,
         }
     }
@@ -1206,6 +1227,10 @@ impl State {
                     land_target: self.values.land_target,
                     commander: self.values.commander.clone(),
                     commander_display: self.searches.commander.display.clone(),
+                    partner: self.values.partner.clone(),
+                    partner_field: self.searches.partner.field(),
+                    background: self.values.background.clone(),
+                    background_field: self.searches.background.field(),
                     signature_spell: self.values.signature_spell.clone(),
                     signature_spell_display: self.searches.signature_spell.display.clone(),
                 }),
@@ -1219,6 +1244,8 @@ impl State {
         OpenPicker::Tags {
             picker,
             draft: Draft::tags(picker, self.tags(picker).to_vec()),
+            oracle_tags: self.values.oracle_tags.clone(),
+            applied_seed: self.applied_seed.clone(),
         }
     }
 
@@ -1248,7 +1275,7 @@ impl State {
         Vec::new()
     }
 
-    /// Puts back what the open picker opened on and closes it. The format picker also puts back the land target its picks moved and the command zone its picks cleared, which a pick and a pick back can leave changed under the same format.
+    /// Puts back what the open picker opened on and closes it, so the form compares equal to how it stood before. The format picker also puts back the land target its picks moved and the command zone its picks cleared, which a pick and a pick back can leave changed under the same format; a tag picker puts back the oracle tags and their seed as well.
     fn revert_picker(&mut self) -> Vec<Effect> {
         self.asking_discard = false;
         match self.picker.take() {
@@ -1257,6 +1284,10 @@ impl State {
                     land_target,
                     commander,
                     commander_display,
+                    partner,
+                    partner_field,
+                    background,
+                    background_field,
                     signature_spell,
                     signature_spell_display,
                 } = *zone;
@@ -1264,18 +1295,25 @@ impl State {
                 self.values.land_target = land_target;
                 self.values.commander = commander;
                 self.searches.commander.display = commander_display;
+                self.values.partner = partner;
+                self.searches.partner.set_field(partner_field);
+                self.values.background = background;
+                self.searches.background.set_field(background_field);
                 self.values.signature_spell = signature_spell;
                 self.searches.signature_spell.display = signature_spell_display;
                 self.filters_on();
                 Vec::new()
             }
-            Some(OpenPicker::Tags { picker, draft }) => {
+            Some(OpenPicker::Tags {
+                picker,
+                draft,
+                oracle_tags,
+                applied_seed,
+            }) => {
                 *self.tags_mut(picker) = draft.into_snapshot();
-                if picker == TagPicker::DeckTags {
-                    self.reseed()
-                } else {
-                    Vec::new()
-                }
+                self.values.oracle_tags = oracle_tags;
+                self.applied_seed = applied_seed;
+                Vec::new()
             }
             None => Vec::new(),
         }
