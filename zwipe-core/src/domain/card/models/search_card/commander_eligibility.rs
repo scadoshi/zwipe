@@ -99,15 +99,21 @@ pub fn is_valid_commander(card: &Card, format: &Format) -> bool {
 
 // == Partner Eligibility ==
 
+/// What opens a partner variant's line in the rules text, before the variant's name.
+pub const PARTNER_VARIANT_PREFIX: &str = "Partner\u{2014}";
+
+/// The variant older printings carry as a keyword of its own.
+const FRIENDS_FOREVER: &str = "Friends forever";
+
 /// The kind of partner ability a card has, if any.
 #[derive(Debug, Clone, PartialEq)]
 pub enum PartnerKind {
-    /// Generic "Partner" keyword: compatible with any other Generic partner.
+    /// Plain "Partner": compatible with any other Generic partner.
     Generic,
     /// "Partner with \[Name\]": compatible only with the named card.
     Named(String),
-    /// "Friends forever": compatible with any other `FriendsForever` card.
-    FriendsForever,
+    /// A partner variant, as in "Partner\u{2014}Friends forever" or "Partner\u{2014}Character select", holding the variant's name: compatible only with the same variant.
+    Variant(String),
     /// "Doctor's companion": compatible with Time Lord Doctor cards.
     DoctorsCompanion,
 }
@@ -123,8 +129,13 @@ pub fn partner_kind(card: &Card) -> Option<PartnerKind> {
         return Some(PartnerKind::Named(name));
     }
 
-    if keywords.iter().any(|k| k == "Friends forever") {
-        return Some(PartnerKind::FriendsForever);
+    // Scryfall keys a variant as plain "Partner" and names it in the rules text
+    if let Some(variant) = extract_partner_variant(oracle_text) {
+        return Some(PartnerKind::Variant(variant));
+    }
+
+    if keywords.iter().any(|k| k == FRIENDS_FOREVER) {
+        return Some(PartnerKind::Variant(FRIENDS_FOREVER.to_owned()));
     }
 
     if keywords.iter().any(|k| k == "Doctor's companion") {
@@ -145,8 +156,10 @@ pub fn are_valid_partners(card_a: &Card, card_b: &Card) -> bool {
     let kind_b = partner_kind(card_b);
 
     match (kind_a, kind_b) {
-        (Some(PartnerKind::Generic), Some(PartnerKind::Generic))
-        | (Some(PartnerKind::FriendsForever), Some(PartnerKind::FriendsForever)) => true,
+        (Some(PartnerKind::Generic), Some(PartnerKind::Generic)) => true,
+        (Some(PartnerKind::Variant(a)), Some(PartnerKind::Variant(b))) => {
+            a.eq_ignore_ascii_case(&b)
+        }
         (Some(PartnerKind::Named(name)), _) => {
             card_b.scryfall_data.name.eq_ignore_ascii_case(&name)
         }
@@ -167,6 +180,19 @@ pub fn are_valid_partners(card_a: &Card, card_b: &Card) -> bool {
             .contains("Time Lord Doctor"),
         _ => false,
     }
+}
+
+/// The variant a rules-text line like "Partner\u{2014}Friends forever (You can have ...)" names, as in "Friends forever".
+fn extract_partner_variant(oracle_text: &str) -> Option<String> {
+    oracle_text.lines().find_map(|line| {
+        let variant = line
+            .trim()
+            .strip_prefix(PARTNER_VARIANT_PREFIX)?
+            .split('(')
+            .next()?
+            .trim();
+        (!variant.is_empty()).then(|| variant.to_owned())
+    })
 }
 
 /// Extracts the partner name from oracle text like "Partner with Brallin, Skyshark Rider".
@@ -640,6 +666,35 @@ mod tests {
         let a = make_partner("Cecily, Haunted Mage", "Friends forever");
         let b = make_partner("Kodama of the East Tree", "Partner");
         assert!(!are_valid_partners(&a, &b));
+    }
+
+    fn make_variant(name: &str, variant: &str) -> Card {
+        let mut card = make_partner(name, "Partner");
+        card.scryfall_data.oracle_text = Some(format!(
+            "Some ability.\nPartner\u{2014}{variant} (You can have two commanders if both have this ability.)"
+        ));
+        card
+    }
+
+    #[test]
+    fn a_variant_is_read_from_the_rules_text() {
+        let wernog = make_variant("Wernog, Rider's Chaplain", "Friends forever");
+        assert_eq!(
+            partner_kind(&wernog),
+            Some(PartnerKind::Variant("Friends forever".to_owned()))
+        );
+    }
+
+    #[test]
+    fn each_variant_pairs_only_with_its_own_kind() {
+        let wernog = make_variant("Wernog, Rider's Chaplain", "Friends forever");
+        let cecily = make_variant("Cecily, Haunted Mage", "Friends forever");
+        let joel = make_variant("Joel, Resolute Survivor", "Survivors");
+        let tymna = make_partner("Tymna the Weaver", "Partner");
+        assert!(are_valid_partners(&wernog, &cecily));
+        assert!(!are_valid_partners(&wernog, &joel));
+        assert!(!are_valid_partners(&wernog, &tymna));
+        assert!(!are_valid_partners(&tymna, &joel));
     }
 
     #[test]

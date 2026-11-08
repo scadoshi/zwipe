@@ -16,7 +16,7 @@ use zwipe_core::http::paths::{DECK_ROUTE, clone_deck_route, deck_profile_route, 
 mod common;
 
 use axum::http::StatusCode;
-use common::TestApp;
+use common::{TestApp, card, seed_cards};
 use serde_json::json;
 use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
 use zwipe_core::http::helpers::Patch;
@@ -350,5 +350,49 @@ async fn concurrent_clones_stop_at_the_deck_cap(pool: sqlx::PgPool) {
         deck_count(&pool, &uid).await,
         20,
         "statuses {first} and {second}"
+    );
+}
+
+#[sqlx::test]
+async fn a_mismatched_partner_pair_saves_with_a_warning(pool: sqlx::PgPool) {
+    let tymna = card("Tymna the Weaver")
+        .type_line("Legendary Creature \u{2014} Human Cleric")
+        .keywords(&["Lifelink", "Partner"])
+        .oracle_text("Lifelink\nPartner (You can have two commanders if both have partner.)");
+    let wernog = card("Wernog, Rider's Chaplain")
+        .type_line("Legendary Creature \u{2014} Human Cleric")
+        .keywords(&["Investigate", "Partner"])
+        .oracle_text(
+            "Investigate.\nPartner\u{2014}Friends forever (You can have two commanders if both have this ability.)",
+        );
+    let (tymna_id, wernog_id) = (tymna.id(), wernog.id());
+    seed_cards(&pool, &[tymna, wernog]).await;
+    let app = TestApp::new(pool);
+    let (token, _uid) = app.register("tymna").await;
+
+    let (status, deck) = app
+        .post(
+            DECK_ROUTE,
+            json!({
+                "name": "Weaver and Chaplain",
+                "format": "commander",
+                "commander_id": tymna_id,
+                "partner_commander_id": wernog_id,
+            }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED, "create: {deck}");
+
+    let id = deck["id"].as_str().unwrap().parse().unwrap();
+    let (status, full) = app.get(&deck_route(id), Some(&token)).await;
+    assert_eq!(status, StatusCode::OK, "get: {full}");
+    let warnings = full["warnings"].as_array().unwrap();
+    assert!(
+        warnings.iter().any(|w| w["message"]
+            .as_str()
+            .is_some_and(|m| m.contains("cannot be partners"))
+            && w["scryfall_data_id"] == json!(wernog_id)),
+        "no partner warning: {warnings:?}"
     );
 }
