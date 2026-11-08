@@ -1059,3 +1059,36 @@ fn a_failed_save_keeps_the_changes_unsaved() {
     let _ = state.update(Action::Failed { ticket: *ticket });
     assert!(state.has_unsaved_changes());
 }
+
+#[test]
+fn a_format_switch_moves_an_untouched_land_target_and_discard_puts_it_back() {
+    let mut state = create();
+    let _ = state.update(Action::OpenPicker(Picker::Format));
+    let _ = state.update(Action::TapFormat(Format::Commander));
+    let _ = state.update(Action::SavePicker);
+    let _ = state.update(Action::StepLand(Step::Up));
+    assert_eq!(
+        state.values().land_target,
+        Some(37),
+        "Commander's usual count"
+    );
+
+    let _ = state.update(Action::OpenPicker(Picker::Format));
+    let _ = state.update(Action::TapFormat(Format::Oathbreaker));
+    assert_eq!(
+        state.values().land_target,
+        Some(17),
+        "it follows to Oathbreaker's"
+    );
+    let _ = state.update(Action::DiscardPicker);
+    assert_eq!(state.values().land_target, Some(37), "Discard puts it back");
+
+    let _ = state.update(Action::StepLand(Step::Up));
+    let _ = state.update(Action::OpenPicker(Picker::Format));
+    let _ = state.update(Action::TapFormat(Format::Oathbreaker));
+    assert_eq!(
+        state.values().land_target,
+        Some(38),
+        "a target the user set stays"
+    );
+}

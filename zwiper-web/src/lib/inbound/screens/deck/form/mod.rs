@@ -17,7 +17,7 @@ use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::{DeckName, DeckOtherTag, DeckProfile, Format, PowerLevel};
-use zwipe_ui::deck::form::Slot;
+use zwipe_ui::deck::form::{Slot, follow_land_target};
 use zwipe_ui::screens::deck_form;
 
 use crate::domain::deck::FormValues;
@@ -173,8 +173,12 @@ impl DeckForm {
     }
 
     /// Sets the format from the picker: the commander goes, and the
-    /// signature spell unless the new format has one.
+    /// signature spell unless the new format has one. A land target still at
+    /// the old format's usual count moves to the new one's.
     pub fn select_format(mut self, format: Format) {
+        let target =
+            follow_land_target(*self.land_target.peek(), *self.format.peek(), Some(format));
+        self.land_target.set(target);
         self.format.set(Some(format));
         self.commander.clear_card();
         if !format.has_signature_spell() {
