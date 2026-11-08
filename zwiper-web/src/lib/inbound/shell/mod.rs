@@ -3,6 +3,7 @@
 //! footer below the breakpoint, and the screen header.
 
 mod deck_opener;
+mod footer_lift;
 mod frame;
 mod menu_footer;
 mod menu_theme;
@@ -10,6 +11,7 @@ pub mod nav;
 mod top_nav;
 
 pub use deck_opener::DeckOpener;
+pub use footer_lift::use_footer_lift;
 pub use frame::{OpenFrame, PublicFrame, ScreenFrame};
 pub use nav::MenuOpen;
 pub use top_nav::{Shell, use_overlay_nav};

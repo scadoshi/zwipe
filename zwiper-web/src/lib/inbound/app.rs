@@ -15,7 +15,7 @@ use crate::inbound::router::Route;
 use crate::inbound::screens::auth::login::LoginPrefill;
 use crate::inbound::screens::update_required::UpdateRequired;
 use crate::inbound::session::upkeep;
-use crate::inbound::shell::{DeckOpener, MenuOpen};
+use crate::inbound::shell::{DeckOpener, MenuOpen, use_footer_lift};
 use crate::inbound::{caches, card_stores, catalog, telemetry};
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
@@ -69,6 +69,7 @@ pub fn App() -> Element {
     use_context_provider(|| MenuOpen(Signal::new(false)));
     // Which screen opened the deck on screen, for the deck's back arrow.
     DeckOpener::use_provider();
+    use_footer_lift();
     // The router's history, with the leave guard in front of it.
     use_hook(GuardedHistory::provide);
 
