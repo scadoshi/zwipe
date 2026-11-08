@@ -35,8 +35,10 @@ use resvg::tiny_skia;
 use serde_json::{Value, json};
 use uuid::Uuid;
 use zwipe::inbound::http::share_preview::SharePreview;
+use zwipe::inbound::http::share_preview::layout::{Preview, Tone};
 use zwipe::outbound::scryfall_art::ArtSource;
 use zwipe_core::domain::card::Card;
+use zwipe_core::domain::deck::deck_tag::deck_tag_label;
 use zwipe_core::domain::deck::{Board, DeckCard, DeckEntry, Format, PowerLevel, Quantity};
 use zwipe_core::domain::user::theme::ThemeConfig;
 use zwipe_core::http::contracts::deck::HttpSharedDeck;
@@ -329,6 +331,70 @@ async fn golden_no_command_zone_in_a_light_theme() {
     assert_golden("modern-github-light", &modern(github_light())).await;
 }
 
+/// `deck`'s tags as the preview draws them: each label with its tone.
+fn tags(deck: &HttpSharedDeck) -> Vec<(String, Tone)> {
+    Preview::of(deck)
+        .tags
+        .into_iter()
+        .map(|t| (t.label, t.tone))
+        .collect()
+}
+
+/// The deck tags' labels, all muted.
+fn deck_tags(deck: &HttpSharedDeck) -> Vec<(String, Tone)> {
+    deck.tags
+        .iter()
+        .map(|t| (deck_tag_label(t), Tone::Muted))
+        .collect()
+}
+
+#[test]
+fn the_tags_follow_the_deck_list() {
+    let d = partners(gruvbox());
+    let mut want = vec![
+        (format!("{} cards", d.card_count()), Tone::Accent),
+        ("Commander".to_owned(), Tone::Palette3),
+        ("Optimized (4)".to_owned(), Tone::Palette5),
+        (format!("${:.2}", d.price_usd()), Tone::Money),
+        ("Tymna the Weaver".to_owned(), Tone::Palette3),
+        ("Kraum, Ludevic's Opus".to_owned(), Tone::Palette3),
+    ];
+    want.extend(deck_tags(&d));
+    assert_eq!(tags(&d), want, "partners: both commanders");
+
+    let d = oathbreaker(gruvbox());
+    let mut want = vec![
+        (format!("{} cards", d.card_count()), Tone::Accent),
+        ("Oathbreaker".to_owned(), Tone::Palette3),
+        (format!("${:.2}", d.price_usd()), Tone::Money),
+        ("Chandra, Torch of Defiance".to_owned(), Tone::Palette3),
+        ("Lightning Bolt".to_owned(), Tone::Palette3),
+    ];
+    want.extend(deck_tags(&d));
+    assert_eq!(tags(&d), want, "oathbreaker and signature spell");
+
+    let d = modern(gruvbox());
+    let mut want = vec![
+        (format!("{} cards", d.card_count()), Tone::Accent),
+        ("Modern".to_owned(), Tone::Palette3),
+        (format!("${:.2}", d.price_usd()), Tone::Money),
+    ];
+    want.extend(deck_tags(&d));
+    assert_eq!(tags(&d), want, "no command zone");
+}
+
+#[test]
+fn a_deck_with_no_priced_card_has_no_price_tag() {
+    let mut d = modern(gruvbox());
+    d.entries.clear();
+    assert!(
+        tags(&d).iter().all(|(_, tone)| *tone != Tone::Money),
+        "{:?}",
+        tags(&d)
+    );
+    assert_eq!(tags(&d)[0], ("0 cards".to_owned(), Tone::Accent));
+}
+
 #[tokio::test]
 async fn a_deck_whose_art_fails_still_draws() {
     let preview = SharePreview::new(ArtSource::fixed(None));
@@ -478,6 +544,11 @@ async fn the_preview_route_is_rate_limited_per_address(pool: sqlx::PgPool) {
     let app = TestApp::new(pool);
     let share = shared_deck(&app, "limited").await;
     let path = shared_deck_preview_route(share.parse().unwrap());
+    // The first request draws the image, long enough in a debug build for
+    // the bucket to refill, so the burst starts once it is cached.
+    let (status, _, _) = app.send_bytes(Method::GET, &path).await;
+    assert_eq!(status, StatusCode::OK, "warm-up");
+    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
     // A burst of 10 passes; the 11th from the same address is refused.
     for i in 0..10 {
         let (status, _, _) = app.send_bytes(Method::GET, &path).await;

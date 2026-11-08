@@ -1,9 +1,12 @@
 //! What a shared deck's preview image shows, and the SVG that draws it.
 //!
-//! The image is 1200x630. With command zone art, the art fills the left
-//! 500 pixels and the text sits to its right; without it, the text takes
-//! the full width. Every number comes from the same zwipe-core functions the
-//! share page uses, so the image never disagrees with the page.
+//! The image is 1200x630 and follows the site's own share image: the app's
+//! grid tiles on the sink, and one panel over them. Inside the panel the deck
+//! reads like a row of the app's deck list: the name, then the color pips and
+//! the same tags the list shows, with the mana curve under them and a footer
+//! holding the art credit and the brand. With command zone art, the art fills
+//! the panel's left side. Every number comes from the same zwipe-core
+//! functions the share page uses, so the image never disagrees with the page.
 
 use std::fmt::Write;
 use std::mem;
@@ -13,7 +16,7 @@ use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::deck::deck_tag::deck_tag_label;
 use zwipe_core::http::contracts::deck::HttpSharedDeck;
 
-use super::palette::Palette;
+use super::palette::{Palette, hex_rgb, mix, rgb_hex};
 
 /// The image's width in pixels, the size every link unfurler shows cleanly.
 pub const WIDTH: u32 = 1200;
@@ -21,11 +24,55 @@ pub const WIDTH: u32 = 1200;
 /// The image's height in pixels.
 pub const HEIGHT: u32 = 630;
 
-/// The art panel's width when the deck has command zone art.
-const ART_W: i64 = 500;
+/// The panel's left edge, the site's share image's margin.
+const PANEL_X: i64 = 60;
 
-/// The margin around the text.
-const PAD: i64 = 56;
+/// The panel's width, leaving the same margin on the right.
+const PANEL_W: i64 = 1080;
+
+/// The panel's height.
+const PANEL_H: i64 = 504;
+
+/// The panel's top edge, centering it.
+const PANEL_Y: i64 = 63;
+
+/// The panel's corner radius.
+const PANEL_R: i64 = 24;
+
+/// The art's width at the panel's left, above the footer, when the deck has
+/// command zone art.
+const ART_W: i64 = 380;
+
+/// The space between the panel's edges and its text, sideways.
+const PAD_X: i64 = 48;
+
+/// The space between the panel's top and the name.
+const PAD_Y: i64 = 40;
+
+/// The footer's height: the strip under the rule holding the art credit and
+/// the brand.
+const FOOTER_H: i64 = 84;
+
+/// The name's size.
+const NAME_SIZE: i64 = 48;
+
+/// A tag's height, which the pips match.
+const CHIP_H: i64 = 40;
+
+/// A tag's text size.
+const CHIP_SIZE: i64 = 21;
+
+/// The space between a tag's edge and its text.
+const CHIP_PAD: i64 = 14;
+
+/// The space between tags on a row.
+const CHIP_GAP: i64 = 10;
+
+/// The space between rows of tags.
+const ROW_GAP: i64 = 12;
+
+/// A tag's baseline below its top.
+const CHIP_BASELINE: i64 = 27;
 
 /// `JetBrains Mono`'s advance width as a share of its size: every character
 /// is 600 of the font's 1000 units wide.
@@ -40,32 +87,68 @@ const MANA_FONT: &str = "Mana";
 /// The most command zone cards drawn as art.
 const MAX_ART: usize = 2;
 
+/// The grid tiles' pitch, orangui's `--grid-size`.
+const CELL: i64 = 28;
+
+/// The tiles' opacities, orangui's `grid-cells.js` `SHADES`.
+const SHADES: [f64; 5] = [0.015, 0.03, 0.05, 0.075, 0.1];
+
+/// `grid-cells.js`'s seed, so the image shows the app's own field.
+const SEED: u32 = 0x9e37_79b9;
+
 /// One command zone card's art.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Art {
     /// The card's art crop on Scryfall's image host.
     pub url: String,
-    /// The artist, credited under the text.
+    /// The artist, credited in the footer.
     pub artist: Option<String>,
+}
+
+/// A tag's color, named after the deck list's chip class that sets it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Tone {
+    /// `stat-chip`: the card count.
+    Accent,
+    /// `stat-chip-p3`: the format and the command zone's cards.
+    Palette3,
+    /// `stat-chip-p5`: the power level.
+    Palette5,
+    /// `stat-chip-money`: the price.
+    Money,
+    /// `stat-chip-muted`: the deck tags and the art credit's label.
+    Muted,
+}
+
+/// One tag: a label drawn as the deck list's chip in a tone.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Tag {
+    /// The text.
+    pub label: String,
+    /// The color.
+    pub tone: Tone,
+}
+
+impl Tag {
+    fn new(label: impl Into<String>, tone: Tone) -> Self {
+        Self {
+            label: label.into(),
+            tone,
+        }
+    }
 }
 
 /// What the preview shows, read off a shared deck.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Preview {
-    /// The format, with the power level when set: "Commander · Upgraded (3)".
-    pub format_line: Option<String>,
     /// The deck's name.
     pub name: String,
-    /// The command zone's card names: "Led by Tymna the Weaver and Kraum".
-    pub led_by: Option<String>,
     /// The deck's colors in WUBRG order; empty is colorless.
     pub colors: Vec<Color>,
-    /// The share page's card count.
-    pub cards: i64,
-    /// The price in US dollars, when any card has one.
-    pub price: Option<f64>,
-    /// The deck tags' labels.
-    pub tags: Vec<String>,
+    /// The tags after the pips, in the deck list's order: the card count, the
+    /// format, the power level, the price, each command zone card and the
+    /// deck tags. The price is left out when no card has one.
+    pub tags: Vec<Tag>,
     /// Main board cards per mana value, 0 to 5 and 6+, lands left out.
     pub curve: [usize; 7],
     /// Up to two command zone cards' art: the commander, then its partner,
@@ -77,36 +160,44 @@ impl Preview {
     /// The preview of `deck`.
     #[must_use]
     pub fn of(deck: &HttpSharedDeck) -> Self {
-        let format_line = match (deck.format, deck.power_level) {
-            (Some(format), Some(power)) => Some(format!(
-                "{} · {}",
-                format.display_name(),
-                power.display_name()
-            )),
-            (Some(format), None) => Some(format.display_name().to_owned()),
-            (None, Some(power)) => Some(power.display_name().to_owned()),
-            (None, None) => None,
-        };
         let zone = deck.zone_cards();
-        let names: Vec<&str> = zone.iter().map(|c| c.scryfall_data.name.as_str()).collect();
-        let led_by = match names.as_slice() {
-            [] => None,
-            [only] => Some(format!("Led by {only}")),
-            [first @ .., last] => Some(format!("Led by {} and {last}", first.join(", "))),
-        };
+        let mut tags = vec![Tag::new(cards_label(deck.card_count()), Tone::Accent)];
+        if let Some(format) = deck.format {
+            tags.push(Tag::new(format.display_name(), Tone::Palette3));
+        }
+        if let Some(power) = deck.power_level {
+            tags.push(Tag::new(power.display_name(), Tone::Palette5));
+        }
         let price = deck.price_usd();
+        if price > 0.0 {
+            tags.push(Tag::new(format!("${price:.2}"), Tone::Money));
+        }
+        tags.extend(
+            zone.iter()
+                .map(|card| Tag::new(card.scryfall_data.name.as_str(), Tone::Palette3)),
+        );
+        tags.extend(
+            deck.tags
+                .iter()
+                .map(|slug| Tag::new(deck_tag_label(slug), Tone::Muted)),
+        );
         let bars = deck.metrics().mana_curve_bars();
         Self {
-            format_line,
             name: deck.name.clone(),
-            led_by,
             colors: deck.colors(),
-            cards: deck.card_count(),
-            price: (price > 0.0).then_some(price),
-            tags: deck.tags.iter().map(|t| deck_tag_label(t)).collect(),
+            tags,
             curve: bars.map(|(count, _)| count),
             art: zone.into_iter().filter_map(art).take(MAX_ART).collect(),
         }
+    }
+}
+
+/// "1 card" or "N cards", as the deck list words its count.
+fn cards_label(count: i64) -> String {
+    if count == 1 {
+        "1 card".to_owned()
+    } else {
+        format!("{count} cards")
     }
 }
 
@@ -127,112 +218,293 @@ fn art(card: &Card) -> Option<Art> {
 
 /// The SVG for `preview` in `palette`. `drawn` is the art that loaded, in
 /// order; the SVG refers to each by `href="art{i}"`, which the renderer
-/// resolves to its bytes. Without art the text takes the full width.
+/// resolves to its bytes. Without art the text takes the panel's width.
 #[must_use]
 pub fn svg(preview: &Preview, palette: &Palette, drawn: &[&Art]) -> String {
-    let mut out = String::with_capacity(8 * 1024);
+    let mut out = String::with_capacity(64 * 1024);
     let (w, h) = (i64::from(WIDTH), i64::from(HEIGHT));
+    let panel = format!(
+        r#"x="{PANEL_X}" y="{PANEL_Y}" width="{PANEL_W}" height="{PANEL_H}" rx="{PANEL_R}""#
+    );
     let _ = write!(
         out,
         r#"<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewBox="0 0 {w} {h}">"#
     );
     let _ = write!(
         out,
-        r#"<rect width="{w}" height="{h}" fill="{}"/>"#,
-        palette.bg
+        r#"<defs><clipPath id="panel"><rect {panel}/></clipPath></defs>"#
     );
-    let x0 = if drawn.is_empty() {
-        PAD
+    draw_grid(&mut out, palette);
+    draw_shadow(&mut out, palette);
+    let _ = write!(out, r#"<rect {panel} fill="{}"/>"#, palette.bg);
+
+    let text_left = if drawn.is_empty() {
+        PANEL_X
     } else {
-        ART_W.saturating_add(PAD)
-    };
-    if !drawn.is_empty() {
         draw_art(&mut out, palette, drawn);
-    }
-    let text_w = w.saturating_sub(x0).saturating_sub(PAD);
-    let mut y = PAD;
+        PANEL_X.saturating_add(ART_W)
+    };
+    let x0 = text_left.saturating_add(PAD_X);
+    let right = PANEL_X.saturating_add(PANEL_W).saturating_sub(PAD_X);
+    let text_w = right.saturating_sub(x0);
+    let rule_y = PANEL_Y.saturating_add(PANEL_H).saturating_sub(FOOTER_H);
 
-    if let Some(line) = &preview.format_line {
-        y = y.saturating_add(26);
-        text(
-            &mut out,
-            x0,
-            y,
-            26,
-            400,
-            &palette.accent_2,
-            &fit(line, text_w, 26),
-        );
-        y = y.saturating_add(16);
+    let mut y = PANEL_Y.saturating_add(PAD_Y);
+    for (i, line) in wrap(&preview.name, text_w, NAME_SIZE, 2).iter().enumerate() {
+        y = y.saturating_add(if i == 0 { 42 } else { 58 });
+        text(&mut out, x0, y, NAME_SIZE, 400, &palette.text, line);
     }
 
-    for line in wrap(&preview.name, text_w, 60, 2) {
-        y = y.saturating_add(66);
-        text(&mut out, x0, y, 60, 700, &palette.text, &line);
-    }
+    let curve_base = rule_y.saturating_sub(18);
+    let has_curve = preview.curve.iter().any(|count| *count > 0);
+    let area = Area {
+        left: x0,
+        top: y.saturating_add(24),
+        right,
+        beside_curve: if has_curve {
+            curve_base.saturating_sub(CURVE_TOP).saturating_sub(14)
+        } else {
+            i64::MAX
+        },
+        curve_left: right.saturating_sub(CURVE_W).saturating_sub(24),
+        floor: rule_y.saturating_sub(20),
+    };
+    draw_tags(&mut out, palette, &area, &preview.colors, &preview.tags);
+    draw_curve(&mut out, palette, right, curve_base, &preview.curve);
 
-    if let Some(led) = &preview.led_by {
-        y = y.saturating_add(46);
-        text(
-            &mut out,
-            x0,
-            y,
-            26,
-            400,
-            &palette.muted,
-            &fit(led, text_w, 26),
-        );
-    }
-
-    y = y.saturating_add(28);
-    draw_pips(&mut out, palette, x0, y, &preview.colors);
-    y = y.saturating_add(PIP).saturating_add(28);
-
-    draw_tags(&mut out, palette, x0, y, text_w, &preview.tags);
-
-    draw_bottom(&mut out, palette, preview, x0, text_w, drawn);
+    let _ = write!(
+        out,
+        r#"<rect x="{PANEL_X}" y="{rule_y}" width="{PANEL_W}" height="2" fill="{}"/>"#,
+        palette.border_soft
+    );
+    let footer_x = PANEL_X.saturating_add(PAD_X);
+    draw_footer(&mut out, palette, footer_x, right, rule_y, drawn);
+    let _ = write!(
+        out,
+        r#"<rect {panel} fill="none" stroke="{}" stroke-width="2"/>"#,
+        palette.border_soft
+    );
     out.push_str("</svg>");
     out
 }
 
-/// The art panel: one image the full height, or two stacked with a rule
-/// between them, each cropped to fill its box.
-fn draw_art(out: &mut String, palette: &Palette, drawn: &[&Art]) {
-    let h = i64::from(HEIGHT);
-    let count = i64::try_from(drawn.len()).unwrap_or(1).max(1);
-    let each = h.checked_div(count).unwrap_or(h);
-    for (i, _) in drawn.iter().enumerate() {
-        let top = each.saturating_mul(i64::try_from(i).unwrap_or(0));
+/// The panel's shadow, the app's `--shadow-md` (4px down, 12px soft): rings
+/// of black around the panel, each wider and fainter, which reads as a blur
+/// without the cost of a filter. Lighter under a light theme.
+fn draw_shadow(out: &mut String, palette: &Palette) {
+    let strength = if palette.light { 0.18 } else { 0.5 };
+    let rings: i64 = 6;
+    out.push_str(r##"<g fill="#000000">"##);
+    for ring in (1..=rings).rev() {
+        let grow = ring.saturating_mul(2);
+        let alpha = strength / f64_of(rings) * 1.4;
         let _ = write!(
             out,
-            r#"<image href="art{i}" x="0" y="{top}" width="{ART_W}" height="{each}" preserveAspectRatio="xMidYMid slice"/>"#
+            r#"<rect x="{}" y="{}" width="{}" height="{}" rx="{}" fill-opacity="{alpha:.3}"/>"#,
+            PANEL_X.saturating_sub(grow),
+            PANEL_Y.saturating_add(4).saturating_sub(grow),
+            PANEL_W.saturating_add(grow.saturating_mul(2)),
+            PANEL_H.saturating_add(grow.saturating_mul(2)),
+            PANEL_R.saturating_add(grow)
+        );
+    }
+    out.push_str("</g>");
+}
+
+/// The app's backdrop: the sink, and on it the grid tiles as orangui's
+/// `grid-cells.js` draws its settled field, brightest at the top and fading
+/// out down the image. Tiles the panel covers are left out.
+fn draw_grid(out: &mut String, palette: &Palette) {
+    let (w, h) = (i64::from(WIDTH), i64::from(HEIGHT));
+    let _ = write!(
+        out,
+        r#"<rect width="{w}" height="{h}" fill="{}"/><g fill="{}">"#,
+        palette.sink, palette.text
+    );
+    let side = CELL.saturating_sub(2);
+    let radius = f64_of(side) * 0.18;
+    let cols = w.saturating_add(CELL - 1).checked_div(CELL).unwrap_or(0);
+    let rows = h.saturating_add(CELL - 1).checked_div(CELL).unwrap_or(0);
+    let mut seed = SEED;
+    for row in 0..rows {
+        let y = row.saturating_mul(CELL);
+        let fade = grid_fade(f64_of(y) / f64_of(h));
+        for col in 0..cols {
+            seed = seed.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
+            let roll = usize::try_from(seed >> 8).unwrap_or(0);
+            let shade = SHADES
+                .get(roll.checked_rem(SHADES.len()).unwrap_or(0))
+                .copied()
+                .unwrap_or(0.0);
+            let alpha = shade * fade;
+            let x = col.saturating_mul(CELL);
+            if alpha < 0.002 || under_panel(x, y) {
+                continue;
+            }
+            let _ = write!(
+                out,
+                r#"<rect x="{}" y="{}" width="{side}" height="{side}" rx="{radius:.2}" fill-opacity="{alpha:.4}"/>"#,
+                x.saturating_add(1),
+                y.saturating_add(1)
+            );
+        }
+    }
+    out.push_str("</g>");
+}
+
+/// The tiles' opacity at `t` of the way down the image, orangui's mask: full
+/// at the top, 0.45 at 45%, gone at the bottom.
+fn grid_fade(t: f64) -> f64 {
+    if t < 0.45 {
+        1.0 - (t / 0.45) * 0.55
+    } else {
+        0.45 * (1.0 - (t - 0.45) / 0.55)
+    }
+}
+
+/// Whether the tile at (`x`, `y`) sits wholly under the panel, clear of its
+/// rounded corners.
+fn under_panel(x: i64, y: i64) -> bool {
+    let inside = |at: i64, start: i64, len: i64| {
+        at >= start.saturating_add(PANEL_R)
+            && at.saturating_add(CELL) <= start.saturating_add(len).saturating_sub(PANEL_R)
+    };
+    inside(x, PANEL_X, PANEL_W) && inside(y, PANEL_Y, PANEL_H)
+}
+
+/// The art on the panel's left above the footer: one image, or two stacked
+/// with a rule between them, each cropped to fill its box and clipped to the
+/// panel's corners.
+fn draw_art(out: &mut String, palette: &Palette, drawn: &[&Art]) {
+    let count = i64::try_from(drawn.len()).unwrap_or(1).max(1);
+    let height = PANEL_H.saturating_sub(FOOTER_H);
+    let each = height.checked_div(count).unwrap_or(height);
+    out.push_str(r#"<g clip-path="url(#panel)">"#);
+    for (i, _) in drawn.iter().enumerate() {
+        let top = PANEL_Y.saturating_add(each.saturating_mul(i64::try_from(i).unwrap_or(0)));
+        let _ = write!(
+            out,
+            r#"<image href="art{i}" x="{PANEL_X}" y="{top}" width="{ART_W}" height="{each}" preserveAspectRatio="xMidYMid slice"/>"#
         );
         if i > 0 {
             let _ = write!(
                 out,
-                r#"<rect x="0" y="{}" width="{ART_W}" height="4" fill="{}"/>"#,
+                r#"<rect x="{PANEL_X}" y="{}" width="{ART_W}" height="4" fill="{}"/>"#,
                 top.saturating_sub(2),
                 palette.bg
             );
         }
     }
+    out.push_str("</g>");
     let _ = write!(
         out,
-        r#"<rect x="{ART_W}" y="0" width="2" height="{h}" fill="{}"/>"#,
+        r#"<rect x="{}" y="{PANEL_Y}" width="2" height="{height}" fill="{}"/>"#,
+        PANEL_X.saturating_add(ART_W).saturating_sub(1),
         palette.border_soft
     );
 }
 
-/// A pip's side in pixels.
-const PIP: i64 = 44;
+/// The box the pips and tags flow in: rows start at `left` and `top`, wrap
+/// at `right`, and stop above `floor`. A row reaching below `beside_curve`
+/// wraps at `curve_left` instead, clear of the mana curve.
+#[derive(Debug, Clone, Copy)]
+struct Area {
+    left: i64,
+    top: i64,
+    right: i64,
+    beside_curve: i64,
+    curve_left: i64,
+    floor: i64,
+}
+
+impl Area {
+    /// Where the row starting at `row` wraps.
+    fn right_at(&self, row: i64) -> i64 {
+        if row.saturating_add(CHIP_H) > self.beside_curve {
+            self.curve_left
+        } else {
+            self.right
+        }
+    }
+}
+
+/// The pips, then the tags, flowing in rows across `area` like the deck
+/// list's chip row. When the rows run out, a "+N" counts the tags left.
+fn draw_tags(out: &mut String, palette: &Palette, area: &Area, colors: &[Color], tags: &[Tag]) {
+    let mut row = area.top;
+    let mut x = draw_pips(out, palette, area.left, row, colors);
+    let width = area.right.saturating_sub(area.left);
+    let last_row = |row: i64| {
+        row.saturating_add(CHIP_H)
+            .saturating_add(ROW_GAP)
+            .saturating_add(CHIP_H)
+            > area.floor
+    };
+    for (i, tag) in tags.iter().enumerate() {
+        let label = fit(&tag.label, width.saturating_sub(CHIP_PAD * 2), CHIP_SIZE);
+        let chip_w = text_width(&label, CHIP_SIZE).saturating_add(CHIP_PAD * 2);
+        let after = tags.len().saturating_sub(i).saturating_sub(1);
+        let more_w = text_width(&format!("+{after}"), CHIP_SIZE).saturating_add(CHIP_GAP);
+        let needs = |row: i64| {
+            if last_row(row) && after > 0 {
+                chip_w.saturating_add(more_w)
+            } else {
+                chip_w
+            }
+        };
+        if x > area.left && x.saturating_add(needs(row)) > area.right_at(row) && !last_row(row) {
+            row = row.saturating_add(CHIP_H).saturating_add(ROW_GAP);
+            x = area.left;
+        }
+        if x.saturating_add(needs(row)) > area.right_at(row) {
+            let rest = tags.len().saturating_sub(i);
+            let baseline = row.saturating_add(CHIP_BASELINE);
+            let more = format!("+{rest}");
+            text(out, x, baseline, CHIP_SIZE, 400, &palette.ink.muted, &more);
+            return;
+        }
+        chip(out, palette, x, row, &label, tag.tone);
+        x = x.saturating_add(chip_w).saturating_add(CHIP_GAP);
+    }
+}
+
+/// One tag as the deck list's chip: its tone's ink on a 12% tint of the tone,
+/// edged with the tone at 35% (30% for a muted tag). Returns its width.
+fn chip(out: &mut String, palette: &Palette, x: i64, top: i64, label: &str, tone: Tone) -> i64 {
+    let (color, ink, edge) = match tone {
+        Tone::Accent => (&palette.accent, &palette.ink.accent, 0.35),
+        Tone::Palette3 => (&palette.palette_3, &palette.ink.palette_3, 0.35),
+        Tone::Palette5 => (&palette.palette_5, &palette.ink.palette_5, 0.35),
+        Tone::Money => (&palette.money, &palette.ink.money, 0.35),
+        Tone::Muted => (&palette.muted, &palette.ink.muted, 0.30),
+    };
+    let tint = mix(&palette.bg, color, 0.12).unwrap_or_else(|| palette.bg.clone());
+    let border = mix(&palette.bg, color, edge).unwrap_or_else(|| color.clone());
+    let chip_w = text_width(label, CHIP_SIZE).saturating_add(CHIP_PAD * 2);
+    let _ = write!(
+        out,
+        r#"<rect x="{x}" y="{top}" width="{chip_w}" height="{CHIP_H}" rx="12" fill="{tint}" stroke="{border}" stroke-width="2"/>"#
+    );
+    text(
+        out,
+        x.saturating_add(CHIP_PAD),
+        top.saturating_add(CHIP_BASELINE),
+        CHIP_SIZE,
+        400,
+        ink,
+        label,
+    );
+    chip_w
+}
 
 /// The space between pips.
-const PIP_GAP: i64 = 10;
+const PIP_GAP: i64 = 6;
 
-/// The deck's colors as the app draws its pips: a rounded square in the
-/// theme's mana color, edged and inked with that color darkened. A colorless
-/// deck shows the colorless pip.
-fn draw_pips(out: &mut String, palette: &Palette, x0: i64, top: i64, colors: &[Color]) {
+/// The deck's colors as the app draws its pips, at a tag's height: a rounded
+/// square in the theme's mana color, edged and inked with that color
+/// darkened. A colorless deck shows the colorless pip. Returns where the
+/// next tag starts.
+fn draw_pips(out: &mut String, palette: &Palette, x0: i64, top: i64, colors: &[Color]) -> i64 {
     let pips: Vec<(&str, char)> = if colors.is_empty() {
         vec![(COLORLESS_FILL, '\u{e904}')]
     } else {
@@ -262,16 +534,17 @@ fn draw_pips(out: &mut String, palette: &Palette, x0: i64, top: i64, colors: &[C
         };
         let _ = write!(
             out,
-            r#"<rect x="{x}" y="{top}" width="{PIP}" height="{PIP}" rx="13" fill="{fill}" stroke="{ink}" stroke-width="2"/>"#
+            r#"<rect x="{x}" y="{top}" width="{CHIP_H}" height="{CHIP_H}" rx="12" fill="{fill}" stroke="{ink}" stroke-width="2"/>"#
         );
         let _ = write!(
             out,
-            r#"<text x="{}" y="{}" font-family="{MANA_FONT}" font-size="30" fill="{ink}" text-anchor="middle">{glyph}</text>"#,
-            x.saturating_add(PIP / 2),
-            top.saturating_add(33)
+            r#"<text x="{}" y="{}" font-family="{MANA_FONT}" font-size="27" fill="{ink}" text-anchor="middle">{glyph}</text>"#,
+            x.saturating_add(CHIP_H / 2),
+            top.saturating_add(30)
         );
-        x = x.saturating_add(PIP).saturating_add(PIP_GAP);
+        x = x.saturating_add(CHIP_H).saturating_add(PIP_GAP);
     }
+    x.saturating_sub(PIP_GAP).saturating_add(CHIP_GAP)
 }
 
 /// The colorless pip's fill, mana-font's own.
@@ -280,134 +553,88 @@ const COLORLESS_FILL: &str = "#beb9b2";
 /// The colorless pip's ink, the app's.
 const COLORLESS_INK: &str = "#393835";
 
-/// The deck tags as outlined chips on one line, with "+N" for those that
-/// don't fit.
-fn draw_tags(out: &mut String, palette: &Palette, x0: i64, top: i64, width: i64, tags: &[String]) {
-    const SIZE: i64 = 22;
-    const PAD_X: i64 = 14;
-    const GAP: i64 = 10;
-    const CHIP_H: i64 = 40;
-    let right = x0.saturating_add(width);
-    let mut x = x0;
-    for (i, tag) in tags.iter().enumerate() {
-        let left = tags.len().saturating_sub(i).saturating_sub(1);
-        let chip_w = text_width(tag, SIZE).saturating_add(PAD_X * 2);
-        let more_w = if left > 0 {
-            text_width(&format!("+{left}"), SIZE).saturating_add(GAP)
-        } else {
-            0
-        };
-        if x.saturating_add(chip_w).saturating_add(more_w) > right {
-            let rest = tags.len().saturating_sub(i);
-            text(
-                out,
-                x,
-                top.saturating_add(28),
-                SIZE,
-                400,
-                &palette.muted,
-                &format!("+{rest}"),
-            );
-            return;
-        }
-        let _ = write!(
-            out,
-            r#"<rect x="{x}" y="{top}" width="{chip_w}" height="{CHIP_H}" rx="10" fill="none" stroke="{}" stroke-width="2"/>"#,
-            palette.border
-        );
-        text(
-            out,
-            x.saturating_add(PAD_X),
-            top.saturating_add(28),
-            SIZE,
-            400,
-            &palette.accent_3,
-            tag,
-        );
-        x = x.saturating_add(chip_w).saturating_add(GAP);
-    }
-}
-
-/// The card count and price on the left, the mana curve on the right, and
-/// under them the art credit and the brand.
-fn draw_bottom(
+/// The footer under the rule: an "Art" label tag followed by the artists of
+/// the art drawn on the left, and the brand on the right.
+fn draw_footer(
     out: &mut String,
     palette: &Palette,
-    preview: &Preview,
     x0: i64,
-    width: i64,
+    right: i64,
+    rule_y: i64,
     drawn: &[&Art],
 ) {
-    let h = i64::from(HEIGHT);
-    let baseline = h.saturating_sub(PAD).saturating_add(4);
-    let right = x0.saturating_add(width);
-
-    let cards = if preview.cards == 1 {
-        "1 card".to_owned()
-    } else {
-        format!("{} cards", preview.cards)
-    };
-    // The count over the price, both left of the curve, so a long price
-    // never reaches the curve's labels.
-    let stats_y = baseline.saturating_sub(58);
-    match preview.price {
-        Some(price) => {
-            let count_y = stats_y.saturating_sub(44);
-            text(out, x0, count_y, 34, 700, &palette.stat, &cards);
-            let price = format!("${price:.2}");
-            text(out, x0, stats_y, 34, 700, &palette.money, &price);
-        }
-        None => text(out, x0, stats_y, 34, 700, &palette.stat, &cards),
-    }
-
-    draw_curve(out, palette, right, stats_y, &preview.curve);
-
-    let artists: Vec<&str> = drawn.iter().filter_map(|a| a.artist.as_deref()).collect();
-    if !artists.is_empty() {
-        let credit = format!("Art by {}", artists.join(" and "));
-        let room = width
-            .saturating_sub(text_width("zwipe.net", 26))
-            .saturating_sub(24);
-        text(
-            out,
-            x0,
-            baseline,
-            20,
-            400,
-            &palette.muted,
-            &fit(&credit, room, 20),
-        );
-    }
+    const BRAND: &str = "zwipe.net";
+    const BRAND_SIZE: i64 = 28;
+    const BRAND_SPACING: i64 = 4;
+    let bottom = PANEL_Y.saturating_add(PANEL_H);
+    let top = rule_y.saturating_add(
+        bottom
+            .saturating_sub(rule_y)
+            .saturating_sub(CHIP_H)
+            .checked_div(2)
+            .unwrap_or(0),
+    );
+    let baseline = top.saturating_add(CHIP_BASELINE);
     let _ = write!(
         out,
-        r#"<text x="{right}" y="{baseline}" font-family="{TEXT_FONT}" font-size="26" font-weight="700" fill="{}" text-anchor="end">zwipe.net</text>"#,
-        palette.accent
+        r#"<text x="{right}" y="{}" font-family="{TEXT_FONT}" font-size="{BRAND_SIZE}" font-weight="700" letter-spacing="{BRAND_SPACING}" fill="{}" text-anchor="end">{BRAND}</text>"#,
+        baseline.saturating_add(2),
+        palette.palette_6
+    );
+    let artists: Vec<&str> = drawn.iter().filter_map(|a| a.artist.as_deref()).collect();
+    if artists.is_empty() {
+        return;
+    }
+    let label_w = chip(out, palette, x0, top, "Art", Tone::Muted);
+    let names_x = x0.saturating_add(label_w).saturating_add(CHIP_GAP + 4);
+    let brand_w = text_width(BRAND, BRAND_SIZE).saturating_add(BRAND_SPACING.saturating_mul(9));
+    let room = right
+        .saturating_sub(brand_w)
+        .saturating_sub(24)
+        .saturating_sub(names_x);
+    let names = fit(&artists.join(" and "), room, CHIP_SIZE);
+    text(
+        out,
+        names_x,
+        baseline,
+        CHIP_SIZE,
+        400,
+        &palette.text,
+        &names,
     );
 }
 
-/// Seven bars, 0 to 6+, ending at `right` and standing on `base`, each as
-/// tall as its share of the tallest, with its mana value under it. Nothing
-/// when the main board has no nonland card.
+/// A curve bar's width.
+const BAR_W: i64 = 30;
+
+/// The space between curve bars.
+const BAR_GAP: i64 = 10;
+
+/// The curve's width: seven bars and the six gaps between them.
+const CURVE_W: i64 = BAR_W * 7 + BAR_GAP * 6;
+
+/// The tallest bar's height.
+const CURVE_MAX_H: i64 = 64;
+
+/// How far above its labels' baseline the curve reaches.
+const CURVE_TOP: i64 = CURVE_MAX_H + 24;
+
+/// Seven bars, 0 to 6+, ending at `right` with their labels on `base`, each
+/// as tall as its share of the tallest. Nothing when the main board has no
+/// nonland card.
 fn draw_curve(out: &mut String, palette: &Palette, right: i64, base: i64, curve: &[usize; 7]) {
-    const BAR_W: i64 = 30;
-    const GAP: i64 = 10;
-    const MAX_H: i64 = 72;
     let tallest = curve.iter().copied().max().unwrap_or(0);
     if tallest == 0 {
         return;
     }
     let tallest = i64::try_from(tallest).unwrap_or(i64::MAX);
-    let left = right.saturating_sub(
-        BAR_W
-            .saturating_mul(7)
-            .saturating_add(GAP.saturating_mul(6)),
-    );
+    let left = right.saturating_sub(CURVE_W);
     let floor = base.saturating_sub(24);
     for (i, count) in curve.iter().enumerate() {
         let i64_i = i64::try_from(i).unwrap_or(0);
-        let x = left.saturating_add(i64_i.saturating_mul(BAR_W.saturating_add(GAP)));
+        let x = left.saturating_add(i64_i.saturating_mul(BAR_W.saturating_add(BAR_GAP)));
         let count = i64::try_from(*count).unwrap_or(i64::MAX);
-        let bar = MAX_H
+        let bar = CURVE_MAX_H
             .saturating_mul(count)
             .checked_div(tallest)
             .unwrap_or(0)
@@ -545,32 +772,6 @@ fn pip_ink(fill: &str) -> String {
         (l * 0.42, 0.42)
     };
     rgb_hex(srgb([l2, a * scale, b * scale]))
-}
-
-/// `#rrggbb` as three 0 to 1 channels.
-fn hex_rgb(hex: &str) -> Option<[f64; 3]> {
-    let digits = hex.strip_prefix('#')?;
-    let channel = |at: usize| -> Option<f64> {
-        let pair = digits.get(at..at.saturating_add(2))?;
-        u8::from_str_radix(pair, 16)
-            .ok()
-            .map(|v| f64::from(v) / 255.0)
-    };
-    Some([channel(0)?, channel(2)?, channel(4)?])
-}
-
-/// Three 0 to 1 channels as `#rrggbb`, clamped.
-fn rgb_hex(rgb: [f64; 3]) -> String {
-    let byte = |v: f64| -> u8 {
-        let scaled = (v.clamp(0.0, 1.0) * 255.0).round();
-        u8::try_from(int_of(scaled)).unwrap_or(u8::MAX)
-    };
-    format!(
-        "#{:02x}{:02x}{:02x}",
-        byte(rgb[0]),
-        byte(rgb[1]),
-        byte(rgb[2])
-    )
 }
 
 /// sRGB to Oklab, per Björn Ottosson's reference.
