@@ -6,6 +6,7 @@ use crate::{Footer, Nav, Route};
 
 // Source-material links, used inside the architecture diagram (Wikipedia-style refs).
 const URL_ZWIPER: &str = "https://github.com/scadoshi/zwipe/tree/main/zwiper";
+const URL_ZWIPER_WEB: &str = "https://github.com/scadoshi/zwipe/tree/main/zwiper-web";
 const URL_ZITE: &str = "https://github.com/scadoshi/zwipe/tree/main/zite";
 const URL_ZERVER: &str = "https://github.com/scadoshi/zwipe/tree/main/zerver";
 const URL_ZWIPE_CORE: &str = "https://github.com/scadoshi/zwipe/tree/main/zwipe-core";
@@ -54,7 +55,7 @@ pub fn About() -> Element {
             div { class: "section",
                 div { class: "section-head",
                     Panel { title: "System architecture",
-                        p { class: "card-summary", "Seven Rust crates in one workspace, on top of orangui, the UI kit I built and share between this app, this site and two other apps of mine. What each one does, and where it pulls from." }
+                        p { class: "card-summary", "Eight Rust crates in one workspace, on top of orangui, the UI kit I built and share between this app, this site and two other apps of mine. What each one does, and where it pulls from." }
                     }
                 }
                 div { class: "arch-figure", ZwipeArchitecture {} }
@@ -73,6 +74,40 @@ pub fn About() -> Element {
                         }
                         ul { class: "card-bullets",
                             li { "Swipe to build, search cards, keep decks in sync" }
+                            li {
+                                "Talks to "
+                                a { href: URL_ZERVER, "zerver" }
+                                " over HTTPS"
+                            }
+                            li {
+                                "Imports "
+                                a { href: URL_ZWIPE_CORE, "zwipe-core" }
+                                ", "
+                                a { href: URL_ZWIPE_CLIENT, "zwipe-client" }
+                                ", "
+                                a { href: URL_ZWIPE_UI, "zwipe-ui" }
+                                " and "
+                                a { href: URL_COMPONENTS, "components" }
+                            }
+                        }
+                    }
+                    Panel {
+                        eyebrow: "Web app",
+                        title: "zwiper-web",
+                        actions: rsx! {
+                            a { class: "panel-action", href: URL_ZWIPER_WEB, "Source" span { class: "ext", "\u{2197}" } }
+                        },
+                        div { class: "arch-tags",
+                            span { class: "tag tag-p1", "web" }
+                            a { class: "tag tag-p2", href: URL_DIOXUS, "Dioxus" }
+                            a { class: "tag tag-p3", href: URL_WASM, "WASM" }
+                        }
+                        ul { class: "card-bullets",
+                            li {
+                                "The app on the web, at "
+                                a { href: "https://app.zwipe.net", "app.zwipe.net" }
+                                ": the same decks and swipes in a browser"
+                            }
                             li {
                                 "Talks to "
                                 a { href: URL_ZERVER, "zerver" }
@@ -211,7 +246,7 @@ pub fn About() -> Element {
                             span { class: "tag tag-p2", "Typed" }
                         }
                         ul { class: "card-bullets",
-                            li { "Every API call the app and the site make, described once and sent by one function" }
+                            li { "Every API call the app, the web app and the site make, described once and sent by one function" }
                             li {
                                 "Each endpoint declares its method, path and response type in "
                                 a { href: URL_ZWIPE_CORE, "zwipe-core" }
@@ -366,5 +401,50 @@ pub fn About() -> Element {
             }
         }
         Footer {}
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    const SOURCE: &str = include_str!("about.rs");
+
+    /// The workspace's members, read from its root `Cargo.toml`.
+    fn workspace() -> Vec<&'static str> {
+        let manifest = include_str!("../../../Cargo.toml");
+        let (_, after) = manifest.split_once("members = [").unwrap();
+        let (members, _) = after.split_once(']').unwrap();
+        let mut names: Vec<&str> = members.split('"').skip(1).step_by(2).collect();
+        names.sort_unstable();
+        names
+    }
+
+    /// The System architecture section: its summary, then the crate cards
+    /// up to the next section.
+    fn section() -> &'static str {
+        let (_, after) = SOURCE.split_once("title: \"System architecture\"").unwrap();
+        after.split_once("title: \"Under the hood\"").unwrap().0
+    }
+
+    #[test]
+    fn the_crate_cards_are_the_workspace_members() {
+        let mut cards: Vec<&str> = section()
+            .split("title: \"")
+            .skip(1)
+            .filter_map(|rest| rest.split('"').next())
+            .collect();
+        cards.sort_unstable();
+        assert_eq!(cards, workspace(), "one card per workspace crate");
+    }
+
+    #[test]
+    fn the_summary_counts_the_crates() {
+        let words = [
+            "Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten",
+        ];
+        let count = words.get(workspace().len()).unwrap();
+        assert!(
+            section().contains(&format!("\"{count} Rust crates in one workspace")),
+            "the summary says {count}"
+        );
     }
 }
