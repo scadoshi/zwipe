@@ -190,16 +190,24 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
 
     // The deck's context: what it holds, its land and price totals, and the
     // legality, colors, synergy and land rules the search starts from.
+    // Until it lands the pile ghosts; a failure toasts once and leaves
+    // Couldn't load cards with a Retry.
     let fetch_context = use_callback(move |()| {
         deck_failed.set(false);
+        if deck.peek().is_none() {
+            loading_cards.set(true);
+        }
         spawn(async move {
             let Some(full) = authed
-                .run_quiet("load_deck_context", |c, s| async move {
+                .run("load_deck_context", |c, s| async move {
                     c.fetch_deck(deck_id, &s).await
                 })
                 .await
             else {
                 deck_failed.set(true);
+                if deck.peek().is_none() {
+                    loading_cards.set(false);
+                }
                 return;
             };
             let add = AddDeck::from_deck(&full);
@@ -248,7 +256,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         }
         let ticket = searches.write().next_ticket();
         // Until the deck lands the search can't run, and the stack ghosts.
-        loading_cards.set(deck.peek().is_none());
+        loading_cards.set(deck.peek().is_none() && !*deck_failed.peek());
         search_failed.set(false);
         stack.write().reset();
         reset_image_ease();
@@ -274,12 +282,17 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         };
         loading_cards.set(true);
         let snapshot = filter.peek().clone();
+        // Ahead of the deck, the deck's own load toasts a failure for both.
+        let quiet = deck.peek().is_none();
         spawn(async move {
-            let reply = authed
-                .try_run("search_cards", |c, s| async move {
-                    c.search_deck_cards(deck_id, &query, &s).await
-                })
-                .await;
+            let call = |c: ZwipeClient, s: Session| async move {
+                c.search_deck_cards(deck_id, &query, &s).await
+            };
+            let reply = if quiet {
+                authed.try_run_quiet("search_cards", call).await
+            } else {
+                authed.try_run("search_cards", call).await
+            };
             if !searches.peek().is_current(ticket) {
                 return;
             }
@@ -818,6 +831,10 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                 }
             });
             toast.info("Maybeboard refreshed".to_string(), quick);
+            return;
+        }
+        if deck.peek().is_none() {
+            fetch_context.call(());
             return;
         }
         let Ok(query) = normalized(&filter.peek()).build() else {
