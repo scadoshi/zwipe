@@ -20,6 +20,7 @@ use zwipe_ui::screens::login::{self, Action, Destination, Effect, Field, State};
 use crate::inbound::chrome::toast::raise;
 use crate::inbound::router::Route;
 use crate::inbound::screens::auth::hero::{PublicFlavor, PublicHero};
+use crate::inbound::session::return_to;
 use crate::inbound::shell::ScreenFrame;
 use crate::outbound::session_store::SessionStore;
 use crate::outbound::theme_store::ThemeStore;
@@ -100,6 +101,10 @@ impl Driver {
                 theme.set(profile);
                 pip_style.set(new_session.settings.pip_style);
                 session.set(Some(*new_session));
+            }
+            Effect::Navigate(Destination::Home) => {
+                self.navigator
+                    .push(return_to::take().unwrap_or(Route::Home {}));
             }
             Effect::Navigate(to) => {
                 self.navigator.push(route(to));
