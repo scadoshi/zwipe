@@ -2142,18 +2142,19 @@ html.keyboard-up .web-dock-pair {
     text-align: left;
 }
 
-/* With the + beside All decks, the corner holds both buttons. */
+/* With Create deck beside All decks, the corner holds both buttons. */
 .home-decks > .home-decks-header-create {
-    --home-panel-action-width: 8.3rem;
+    --home-panel-action-width: 12.7rem;
 }
 
-/* A panel too narrow to center the title between the two reserves, a phone's,
-   starts the title at the left edge instead, so it never cuts off. */
+/* A panel too narrow to center the title between the two reserves (a phone's,
+   or a column beside Colors) starts the title at the left edge instead, so it
+   never cuts off. */
 .home-decks {
     container-type: inline-size;
 }
 
-@container (max-width: 26rem) {
+@container (max-width: 36rem) {
     .home-flavor.home-decks > .settings-list-header.home-decks-header-create {
         justify-content: flex-start;
         padding-left: 1rem;

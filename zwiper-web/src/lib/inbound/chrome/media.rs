@@ -8,6 +8,19 @@ use uuid::Uuid;
 /// breakpoint.
 pub const WIDE_PX: u32 = 900;
 
+/// The widest window whose header folds behind the hamburger. The full bar
+/// needs about 1110px on one row, so below that it folds rather than wrap.
+pub const NAV_FOLD_MAX_PX: u32 = 1109;
+
+/// The kit's nav fold rules under [`NAV_FOLD_MAX_PX`], mounted after its own
+/// sheet so the header folds up to that width and not only to 60rem.
+pub fn nav_fold_css() -> String {
+    format!(
+        "@media (max-width: {NAV_FOLD_MAX_PX}px) {{\n{}}}",
+        components::NAV_FOLD_CSS
+    )
+}
+
 /// The width, 60rem, from which the kit draws a sheet form as a modal.
 pub const KIT_MODAL_PX: u32 = 960;
 
@@ -53,3 +66,38 @@ const held = window['__zwipeWidth__ID__'];
 if (held) held[0].removeEventListener('change', held[1]);
 delete window['__zwipeWidth__ID__'];
 ";
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const WEB_CSS: &str = include_str!("../../../../assets/web.css");
+    const HEADER_HIDE_JS: &str = include_str!("../../../../assets/header_hide.js");
+
+    /// The query right before the first rule for `selector` in web.css.
+    fn query_for(selector: &str) -> &'static str {
+        let at = WEB_CSS
+            .find(&format!("    {selector} {{"))
+            .unwrap_or_else(|| panic!("no rule for {selector}"));
+        let head = WEB_CSS.get(..at).unwrap();
+        let query = head.rfind("@media").unwrap();
+        let line = head.get(query..).unwrap();
+        line.get(..line.find('{').unwrap()).unwrap().trim()
+    }
+
+    #[test]
+    fn the_header_folds_below_1110_and_never_wraps() {
+        assert_eq!(NAV_FOLD_MAX_PX, 1109);
+        assert!(nav_fold_css().starts_with("@media (max-width: 1109px) {"));
+        assert!(nav_fold_css().contains(components::NAV_FOLD_CSS));
+        for folded in [".web-nav-wide", ".web-nav-hint", ".web-shell"] {
+            assert_eq!(query_for(folded), "@media (max-width: 1109px)", "{folded}");
+        }
+        assert_eq!(query_for(".web-nav-narrow"), "@media (min-width: 1110px)");
+        assert!(HEADER_HIDE_JS.contains("matchMedia(\"(max-width: 1109px)\")"));
+        assert!(
+            !WEB_CSS.contains("and (max-width: 60rem)"),
+            "no band where the bar is held open to wrap"
+        );
+    }
+}

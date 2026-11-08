@@ -27,12 +27,15 @@ use crate::inbound::screens::playstyle::Playstyle;
 use crate::inbound::screens::privacy_policy::PrivacyPolicy;
 use crate::inbound::session::auth_gate::AuthGate;
 use crate::inbound::session::signed_out_gate::SignedOutGate;
-use crate::inbound::shell::{OpenFrame, PublicFrame, Shell};
+use crate::inbound::shell::{OpenFrame, PublicFrame};
 
-/// The app's routes. The public ones sit in [`PublicFrame`], Privacy policy,
-/// About and Not found in [`OpenFrame`] (either nav), and the rest need a session ([`AuthGate`])
-/// and sit under the top nav [`Shell`]. `/changelog` redirects to About and
-/// `/config` to Settings.
+/// The app's routes. Login, Register and Forgot password sit in
+/// [`PublicFrame`]; everything else sits in one [`OpenFrame`], so a
+/// signed-in user keeps the one top nav
+/// [`Shell`](crate::inbound::shell::Shell) from screen to screen, About and
+/// Privacy policy included. Privacy policy, About and Not found are open to
+/// everyone, and the rest need a session ([`AuthGate`]). `/changelog`
+/// redirects to About and `/config` to Settings.
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
 #[expect(missing_docs, reason = "each route field is the URL parameter its path names")]
@@ -54,7 +57,8 @@ pub enum Route {
     #[end_layout]
     #[end_layout]
 
-    // == open: the signed-in nav or the public one ==
+    // == the rest: the signed-in nav or the public one, the layout running
+    // to the end ==
     #[layout(OpenFrame)]
         /// The privacy policy, from Account, or from About signed out.
         #[route("/privacy")]
@@ -62,11 +66,9 @@ pub enum Route {
         /// The version, the links, the credits and the release history.
         #[route("/about")]
         About {},
-    #[end_layout]
 
     // == authed ==
     #[layout(AuthGate)]
-    #[layout(Shell)]
         /// The hero, the Decks and Colors panels and the featured flavor card.
         #[route("/")]
         Home {},
@@ -114,11 +116,8 @@ pub enum Route {
         #[route("/decks/:deck_id/remove")]
         RemoveDeckCard { deck_id: Uuid },
     #[end_layout]
-    #[end_layout]
 
-    // == anything else: zite's dead end, under either nav (the layout runs
-    // to the end) ==
-    #[layout(OpenFrame)]
+    // == anything else: zite's dead end ==
         /// Any path no route matches.
         #[route("/:..segments")]
         NotFound { segments: Vec<String> },
@@ -126,9 +125,100 @@ pub enum Route {
 
 #[cfg(test)]
 mod tests {
+    use std::rc::Rc;
     use std::str::FromStr;
 
+    use components::ThemeConfig;
+    use dioxus::history::{History, MemoryHistory};
+    use reqwest::Url;
+    use zwipe_client::ZwipeClient;
+    use zwipe_core::domain::auth::models::platform::ClientPlatform;
+    use zwipe_core::domain::auth::models::session::Session;
+    use zwipe_core::domain::user::models::settings::PipStyle;
+    use zwipe_ui::telemetry::SharedUsageBuffer;
+
     use super::*;
+    use crate::config::APP_VERSION;
+    use crate::inbound::chrome::hint_topic::HintTopic;
+    use crate::inbound::chrome::leave_guard;
+    use crate::inbound::shell::{DeckOpener, MenuOpen, use_footer_lift};
+    use crate::inbound::{caches, card_stores, catalog};
+    use crate::test_fixtures;
+
+    /// The app's root contexts and the router, opening at `/account`, with
+    /// `session` as the session.
+    #[component]
+    fn Root(session: Option<Session>) -> Element {
+        let history: Rc<dyn History> = Rc::new(MemoryHistory::with_initial_path("/account"));
+        use_hook(|| provide_context(history));
+        use_context_provider(|| Signal::new(session));
+        use_context_provider(|| {
+            Signal::new(ZwipeClient::new(Url::parse("http://127.0.0.1:9").unwrap()))
+        });
+        use_context_provider(|| SharedUsageBuffer::new(ClientPlatform::Web, APP_VERSION));
+        use_context_provider(|| Signal::new(ThemeConfig::default()));
+        use_context_provider(|| Signal::new(PipStyle::default()));
+        caches::use_root_caches();
+        catalog::use_catalog_cache();
+        card_stores::use_card_stores();
+        let overlays = components::use_overlay_back_stack();
+        use_context_provider(|| overlays);
+        let dialogs = components::use_dialog_host();
+        use_context_provider(|| dialogs);
+        use_context_provider(|| Signal::new(None::<HintTopic>));
+        use_context_provider(|| components::SplashGate(Signal::new(true)));
+        use_context_provider(|| MenuOpen(Signal::new(false)));
+        DeckOpener::use_provider();
+        use_footer_lift();
+        rsx! {
+            components::ToastStack { default_duration: components::TOAST_NORMAL, Router::<Route> {} }
+        }
+    }
+
+    /// The app at `/account` with `session`, rendered.
+    fn app(session: Option<Session>) -> VirtualDom {
+        let mut dom = VirtualDom::new_with_props(Root, RootProps { session });
+        dom.rebuild_in_place();
+        dom
+    }
+
+    /// Navigates to `route` and renders what it draws.
+    fn go(dom: &mut VirtualDom, route: Route) {
+        dom.in_scope(ScopeId::APP, || {
+            dioxus::router::root_router().unwrap().push(route);
+        });
+        // The router repaints once queued events run; this renders the new
+        // route now.
+        dom.mark_all_dirty();
+        dom.render_immediate_to_vec();
+    }
+
+    // Off the browser, screens start their timers on tokio. A dropped
+    // signal's Debug panics, so the dialogs compare with `==`.
+    #[tokio::test]
+    async fn a_signed_in_user_keeps_one_leave_dialog_through_about_and_privacy() {
+        let mut dom = app(Some(test_fixtures::session()));
+        let dialog = leave_guard::mounted_dialog().unwrap();
+
+        for route in [Route::About {}, Route::PrivacyPolicy {}, Route::Account {}] {
+            let path = route.to_string();
+            go(&mut dom, route);
+            assert!(
+                leave_guard::mounted_dialog() == Some(dialog),
+                "{path} draws in the Shell /account drew in"
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn a_signed_out_visit_to_about_has_no_leave_dialog() {
+        let mut dom = app(None);
+        go(&mut dom, Route::About {});
+        assert!(
+            leave_guard::mounted_dialog().is_none(),
+            "the public frame has no nav dialog"
+        );
+    }
 
     fn id() -> Uuid {
         Uuid::from_u128(0x0123_4567_89ab_cdef_0123_4567_89ab_cdef)

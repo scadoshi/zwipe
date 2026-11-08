@@ -1,17 +1,17 @@
-// The header follows the scroll at phone width, as the app's does: scrolling
+// The header follows the scroll while it is folded, as the app's does: scrolling
 // a screen down slides the header up, point for point, until it is gone, and
 // any scroll up slides it back the same way. At the top of the screen it is
 // always fully shown. The web's copy of zwiper's header_hide.js, keyed to the
 // shell: the header is `.web-shell > .web-app-nav` and the scroller is the
-// shell's `.web-scroll-screen`. On a wide window the header sits in the flow
-// and holds still. One listener, in the capture phase since scroll events do
+// shell's `.web-scroll-screen`. Where the full bar fits (from 1110px, the
+// fold's edge in media.rs) the header sits in the flow and holds still. One listener, in the capture phase since scroll events do
 // not bubble, serves every screen. It guards itself so a second load does
 // nothing.
 (() => {
     if (window.__zwipeWebHeaderHide) return;
     window.__zwipeWebHeaderHide = true;
 
-    const phone = window.matchMedia("(max-width: 899px)");
+    const phone = window.matchMedia("(max-width: 1109px)");
 
     // The last scroll position seen per scroll area, and how far each header is
     // pushed up, in pixels.

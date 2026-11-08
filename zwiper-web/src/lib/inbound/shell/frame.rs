@@ -29,17 +29,31 @@ pub fn PublicFrame() -> Element {
     }
 }
 
-/// The layout over a route open to everyone (Privacy policy): the
-/// signed-in nav with a live session, the public nav without one.
+/// The layout over every route but the auth screens: the signed-in nav
+/// with a live session, so the one [`Shell`] stays mounted from screen to
+/// screen. Without one, a route open to everyone (Privacy policy, About,
+/// Not found) gets the public nav, and an authed route draws nothing while
+/// its gate sends the user to Login.
 #[component]
 pub fn OpenFrame() -> Element {
     let session: Signal<Option<Session>> = use_context();
+    let route: Route = use_route();
     let signed_in = session.read().as_ref().is_some_and(|s| !s.is_expired());
     if signed_in {
         rsx! { Shell {} }
-    } else {
+    } else if is_open(&route) {
         rsx! { PublicFrame {} }
+    } else {
+        rsx! { Outlet::<Route> {} }
     }
+}
+
+/// Whether `route` is open to everyone, so a signed-out visit draws it.
+fn is_open(route: &Route) -> bool {
+    matches!(
+        route,
+        Route::PrivacyPolicy {} | Route::About {} | Route::NotFound { .. }
+    )
 }
 
 /// A screen under the top nav. `title` names the screen for assistive tech,

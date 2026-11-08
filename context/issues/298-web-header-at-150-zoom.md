@@ -1,6 +1,6 @@
 # 298. The web app's header breaks at 150% zoom
 
-State: fixing | Owner: laptop | PR: - | Build seen: 1d7053e88
+State: merged | Owner: laptop | PR: #440 | Build seen: 1d7053e88
 
 ## Report
 Scotty, 2026-11-08 (screenshot, app.zwipe.net/decks at 150% browser zoom, window ~1200 CSS px wide at that zoom): the header wraps into two rows, nav pills (Decks, Playstyle, Activity, Commander maybeboard) on top and the icon row plus Log out underneath, with an empty dark block filling the left of the header beside the logo and Back. The header takes about a third of the viewport. "A little crazy."
@@ -40,3 +40,6 @@ Shots on halo: ~/Developer/surfer-shots/298-decks-1120-one-row.png, 298-decks-11
 
 ## Decision
 Scotty, 2026-11-08: switch to the hamburger below 1110 CSS px (instead of 890) so the header never wraps. Recheck 302 after.
+
+## Fix
+Branch `nits/laptop-298`, with orangui#28. The header folds behind the hamburger below 1110 CSS px (`media::NAV_FOLD_MAX_PX = 1109`), so it is one row from 1110 up and the folded bar below, with no wrapped two- or three-row band. orangui now exports its NavBar fold rules as `NAV_FOLD_CSS` (its own `COMPONENTS_CSS` still applies them at 60rem, so portfolio and cairn are unchanged); web mounts them again under `@media (max-width: 1109px)`. Web's own header queries moved with it (the folded app-nav block, `.web-nav-wide`/`.web-nav-narrow`, the bar's `?`, header_hide.js) and the 900px-to-60rem block that held the bar open to wrap is gone. Page layouts keep their 900px breakpoint. The wide drawer's top follows the measured nav height (`--web-nav-h` + 0.7rem) instead of a fixed 5.4rem, so sheets and Add's details panel start under whichever header shows. Test: `the_header_folds_below_1110_and_never_wraps`. Checked on a local stack in headless Chrome: Decks at 1120 and 1110 one row (71px, the bar ending at 1086 of 1110), 1100 and 960 folded (44px); the menu at 1100 drops as on a phone; Home folds the same.

@@ -839,8 +839,13 @@ fn the_copy_matches_the_app() {
         ["Home", "Live", "Activity", "Decks"]
     );
     assert_eq!(
-        [ALL_DECKS, CREATE_DECK, DECKS_FAILED],
-        ["All decks", "Create a deck", "Couldn't load your decks"]
+        [ALL_DECKS, CREATE_DECK, NEW_DECK, DECKS_FAILED],
+        [
+            "All decks",
+            "Create a deck",
+            "Create deck",
+            "Couldn't load your decks"
+        ]
     );
     assert_eq!(
         [COLORS, PLAYSTYLE, NO_PLAY_STYLE, PLAY_STYLE_FAILED],

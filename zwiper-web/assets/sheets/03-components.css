@@ -480,348 +480,6 @@ a.stat-chip {
     border-color: var(--accent-primary);
 }
 
-/* Below 60rem the panel collapses behind the hamburger. Above it the bar wraps
-   (flex-wrap) rather than clipping, so this is a mobile threshold, not a fit one.
-   Keep in sync with the banner-slide breakpoints below. */
-@media (max-width: 60rem) {
-    /* A grid, not a wrapping flex row: the header row (brand, persistent
-       slot, toggle) is row one and the panel is row two, so the nav's
-       max-height clamps the panel to the space under the header (a flex line
-       never shrinks). The fr row takes only what the panel needs while that
-       fits, so the menu is unclamped wherever its rows fit. */
-    .nav-wrapper nav {
-        display: grid;
-        grid-template-columns: auto minmax(0, 1fr) auto;
-        grid-template-rows: auto minmax(0, 1fr);
-        justify-items: center;
-        box-sizing: border-box;
-        max-height: 100vh;
-        max-height: 100dvh;
-        /* The header row's inset, the same on every side. */
-        --nav-pad: 0.75rem;
-        padding: var(--nav-pad);
-        /* no row-gap: the collapsed panel is a zero-height row, and a gap
-           would add phantom space below the toggle row */
-        gap: 0 0.5rem;
-    }
-    /* The header row's three items share one center line. */
-    .nav-wrapper nav > .nav-brand {
-        grid-column: 1;
-        grid-row: 1;
-        justify-self: start;
-        align-self: center;
-    }
-    .nav-wrapper nav > .nav-persistent {
-        grid-row: 1;
-        align-self: center;
-    }
-    .nav-toggle {
-        display: flex;
-        grid-column: 3;
-        grid-row: 1;
-        justify-self: end;
-        align-self: center;
-    }
-    .nav-panel {
-        /* One link row's vertical padding and the gap between rows; an
-           app that caps the link list in whole rows counts in these. */
-        --nav-row-pad: 0.65rem;
-        --nav-row-gap: 0.75rem;
-        /* The space between the panel's rule and the first link row, and
-           under the last row above the trailing rule. */
-        --nav-list-start: 1rem;
-        --nav-list-end: 1rem;
-        /* The theme row's trigger padding. */
-        --nav-trigger-pad: 0.55rem;
-        grid-column: 1 / -1;
-        grid-row: 2;
-        justify-self: stretch;
-        /* Its own stacking context, so the panel's sink paints over the
-           page and not under the sticky wrapper's fill. */
-        position: relative;
-        z-index: 0;
-        background-color: var(--bg-sink);
-        /* fill the row (the bar's align-items: center would let the panel
-           overflow it) and shrink to it instead of the content minimum */
-        align-self: stretch;
-        min-height: 0;
-        display: grid;
-        grid-template-rows: 0fr;
-        /* explicit full-width column: the implicit auto column would be
-           content-sized and pinned right by the desktop justify-content */
-        grid-template-columns: minmax(0, 1fr);
-        flex-basis: 100%;
-        /* bleed through the nav's side padding so the divider rules run
-           edge to edge; the inner re-adds the inset for content. Exactly the
-           nav's padding, so the panel never overhangs the screen. */
-        margin-left: calc(-1 * var(--nav-pad));
-        margin-right: calc(-1 * var(--nav-pad));
-        opacity: 0;
-        visibility: hidden;
-        /* The closed panel's 1px border hides under the header row, so the
-           row's inset below matches the one above. */
-        margin-top: -1px;
-        border-top: 1px solid transparent;
-        transition:
-            grid-template-rows 0.25s ease,
-            opacity 0.2s ease,
-            margin-top 0.25s ease,
-            border-top-color 0.2s ease,
-            visibility 0s linear 0.25s;
-    }
-    .nav-panel-open {
-        grid-template-rows: 1fr;
-        opacity: 1;
-        visibility: visible;
-        margin-top: 1.25rem;
-        border-top-color: var(--border-primary);
-        transition:
-            grid-template-rows 0.25s ease,
-            opacity 0.2s ease,
-            margin-top 0.25s ease,
-            border-top-color 0.2s ease,
-            visibility 0s;
-    }
-    /* nowrap + flex-start undo the desktop bar's flex-wrap/justify-end so the
-       collapsing column can't wrap into narrow columns while the open animation
-       grows the panel height. */
-    .nav-panel .nav-panel-inner {
-        flex-direction: column;
-        flex-wrap: nowrap;
-        align-items: stretch;
-        justify-content: flex-start;
-        gap: 0;
-        overflow: hidden;
-        min-height: 0;
-        padding-left: var(--nav-pad);
-        padding-right: var(--nav-pad);
-    }
-    /* The links show every row, capped only by the window: past the cap
-       they scroll a row at a time. The trailing item (the theme picker)
-       sits right under them as the panel's base and stays on screen. The
-       space above its rule is the list's own bottom padding, which scrolls
-       with the rows. */
-    .nav-panel .nav-links {
-        flex-direction: column;
-        flex-wrap: nowrap;
-        align-items: stretch;
-        justify-content: flex-start;
-        gap: var(--nav-row-gap);
-        height: auto;
-        box-sizing: border-box;
-        /* The space between the rule and the first row is the list's own
-           padding, so rows scroll under the rule itself and not under a
-           band below it; scroll-padding keeps the snap at the same inset. */
-        padding-top: var(--nav-list-start);
-        padding-bottom: var(--nav-list-end);
-        scroll-padding-top: var(--nav-list-start);
-        /* The window less the menu around the list: the header bar and the
-           panel's rule above it (73px on a phone) and the trailing row with
-           the nav's bottom inset below it (61px), with a little to spare. */
-        max-height: calc(100vh - 8.5rem);
-        max-height: calc(100dvh - 8.5rem);
-        scroll-snap-type: y mandatory;
-        /* The list keeps its own height while the panel grows around it
-           and the inner clips it: a scroller that grew from nothing came
-           up scrolled to its end in Safari, the first row cut off. */
-        flex: 0 0 auto;
-        overflow-y: auto;
-        overscroll-behavior: contain;
-        overflow-anchor: none;
-        -webkit-overflow-scrolling: touch;
-        /* Scrolls, but shows no scrollbar. */
-        scrollbar-width: none;
-    }
-    .nav-panel .nav-links::-webkit-scrollbar {
-        display: none;
-    }
-    .nav-panel .nav-panel-inner > :not(.nav-links) {
-        flex-shrink: 0;
-    }
-    .nav-panel .nav-links li {
-        width: 100%;
-        height: auto;
-        scroll-snap-align: start;
-    }
-    /* Every direct panel link item stretches — including composed widgets
-       (e.g. a NavDropdown wrapper div) that tag enumeration would miss. */
-    .nav-panel .nav-links > li > * {
-        width: 100%;
-    }
-    .nav-panel .nav-links > li > a,
-    .nav-panel .nav-links > li > button.nav-link {
-        height: auto;
-        text-align: center;
-        font-size: 0.95rem;
-        padding: var(--nav-row-pad) 1rem;
-        justify-content: center;
-    }
-    /* A dropdown in the links slot stretches its trigger with its siblings;
-       scoping under .nav-links leaves the trailing-slot picker's compact
-       centered row alone. */
-    .nav-panel .nav-links .nav-dropdown-trigger {
-        width: 100%;
-        justify-content: center;
-        padding-top: var(--nav-row-pad);
-        padding-bottom: var(--nav-row-pad);
-    }
-    /* The trailing slot is the folded menu's footer band: a solid fill over
-       the grid, under a rule, bleeding to the panel edges (inside the inner's
-       padding box, so overflow won't clip it; matches the inner's padding). */
-    .nav-panel .nav-trailing {
-        margin-left: calc(-1 * var(--nav-pad));
-        margin-right: calc(-1 * var(--nav-pad));
-        padding: 0.75rem var(--nav-pad) 0;
-        border-top: 1px solid var(--border-primary);
-        background-color: var(--bg-primary);
-    }
-    /* ThemePicker as the panel's trailing item. */
-    .nav-panel .theme-picker {
-        flex-direction: row;
-        align-items: center;
-        justify-content: center;
-        gap: 0.75rem;
-        height: auto;
-    }
-    .nav-panel .nav-dropdown-trigger,
-    .nav-panel .mode-toggle {
-        height: auto;
-        font-size: 0.95rem;
-        padding: var(--nav-trigger-pad) 1rem;
-    }
-    /* Make .nav-dropdown static so the open dropdown's containing block is the
-       relative <nav> (inside the sticky .nav-wrapper) rather than .nav-dropdown.
-       That keeps it pinned to the sticky nav while scrolling, and escapes the
-       panel's overflow:hidden clip since nav isn't a descendant of that clip. */
-    .nav-panel .nav-dropdown {
-        position: static;
-    }
-    .nav-panel .nav-dropdown-content {
-        position: absolute;
-        top: auto;
-        right: auto;
-        left: auto;
-        margin-top: 0.5rem;
-        max-height: 50vh;
-        overflow-y: auto;
-    }
-    /* A dropdown in the scrolling link list opens in flow, as a sub-list
-       under its own trigger: it scrolls with the list and grows it, so every
-       row is reachable by scrolling. Relative, not static, so its z-index
-       still lifts it over the click-away backdrop. */
-    .nav-panel .nav-links .nav-dropdown-content {
-        position: relative;
-        width: 100%;
-        max-height: none;
-        overflow: visible;
-        box-shadow: none;
-        padding: 0;
-        /* No margin of its own: closed it takes no space at all, so a row of
-           dropdowns spaces exactly like a row of plain links. */
-        margin-top: 0;
-        border: none;
-        background: none;
-        min-width: 0;
-        /* Always laid out, as a one-row grid that opens from 0fr to 1fr, so
-           the menu grows and shrinks over the transition instead of popping
-           in and out with display. */
-        display: grid;
-        grid-template-rows: 0fr;
-        opacity: 0;
-        visibility: hidden;
-        transition:
-            grid-template-rows 0.25s ease,
-            opacity 0.2s ease,
-            visibility 0s linear 0.25s;
-    }
-    .nav-panel .nav-links .nav-dropdown-open .nav-dropdown-content {
-        grid-template-rows: 1fr;
-        opacity: 1;
-        visibility: visible;
-        transition:
-            grid-template-rows 0.25s ease,
-            opacity 0.2s ease,
-            visibility 0s;
-    }
-    /* The rows become a wrapping row of chips, zwiper's chip look, so the
-       choices read apart from the full-width link buttons around them. The
-       box clips to the grid row's height while it animates, with padding
-       below for the chips' shadow, and slides down a touch as it opens. */
-    .nav-panel .nav-links .nav-dropdown-rows {
-        min-height: 0;
-        overflow: hidden;
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 0.5rem;
-        padding: 0;
-        transform: translateY(-0.4rem);
-        transition:
-            transform 0.25s ease,
-            padding 0.25s ease;
-    }
-    .nav-panel .nav-links .nav-dropdown-open .nav-dropdown-rows {
-        padding: 0.25rem 0.25rem 0.75rem;
-        transform: none;
-    }
-    .nav-panel .nav-links .nav-dropdown-item,
-    .nav-panel .nav-links a.nav-dropdown-item:visited {
-        display: inline-block;
-        width: auto;
-        padding: 0.3rem 0.65rem;
-        border: 1px solid var(--border-muted);
-        border-radius: 0.6rem;
-        background-color: var(--bg-primary);
-        box-shadow: var(--shadow-sm);
-        font-size: 0.8rem;
-        color: var(--ink-text-muted, var(--text-muted));
-        text-align: center;
-        transition:
-            color 0.15s,
-            border-color 0.15s;
-    }
-    .nav-panel .nav-links .nav-dropdown-item.active,
-    .nav-panel .nav-links a.nav-dropdown-item.active:visited {
-        border-color: var(--accent-secondary);
-        color: var(--ink-accent-secondary, var(--accent-secondary));
-    }
-    /* Same hover as the link buttons: text and border to the accent, no
-       fill, over the shared 0.15s transition. */
-    @media (hover: hover) {
-        .nav-panel .nav-links .nav-dropdown-item:hover,
-        .nav-panel .nav-links a.nav-dropdown-item:visited:hover {
-            background-color: var(--bg-primary);
-            border-color: var(--accent-primary);
-            color: var(--ink-accent-primary, var(--accent-primary));
-        }
-    }
-    .nav-panel .nav-links .nav-dropdown-label {
-        width: 100%;
-        text-align: center;
-    }
-    .nav-panel .nav-links .nav-dropdown::after {
-        display: none;
-    }
-}
-
-/* Short viewports (landscape phones): tighter rows so more of the menu fits
-   before the links have to scroll. */
-@media (max-width: 60rem) and (max-height: 30rem) {
-    .nav-panel-open {
-        margin-top: 0.75rem;
-    }
-    .nav-panel {
-        --nav-list-start: 0.5rem;
-        --nav-list-end: 0.5rem;
-        --nav-row-pad: 0.4rem;
-        --nav-row-gap: 0.4rem;
-        --nav-trigger-pad: 0.4rem;
-    }
-    .nav-panel .theme-picker {
-        padding-top: 0.5rem;
-    }
-}
-
 /* ---- NavBar calls to action (.nav-persistent, .nav-cta, .nav-cta-item) ----
    An outbound call to action (a store, a download) as a nav pill in palette
    slot 5. At hamburger widths NavBar's persistent slot shows the CTAs beside
@@ -875,24 +533,6 @@ a.stat-chip {
     gap: 0.5rem;
 }
 
-@media (max-width: 60rem) {
-    .nav-persistent {
-        display: flex;
-        gap: 0.35rem;
-    }
-
-    .nav-persistent .nav-cta {
-        /* The toggle's height, so the pills and the toggle line up. */
-        height: 1.7rem;
-        padding: 0 0.55rem;
-        font-size: 0.7rem;
-    }
-
-    .nav-panel .nav-cta-item {
-        display: none;
-    }
-}
-
 /* An icon-only call to action (a.nav-cta.nav-cta-icon): a square of the
    pill's height holding one SVG, drawn in the pill's color. Nothing names
    the icon in the markup, so the link carries aria-label and title. The
@@ -913,15 +553,6 @@ a.stat-chip {
 
 .nav-cta-icon svg:not(.action-dock-icon) {
     fill: currentColor;
-}
-
-@media (max-width: 60rem) {
-    /* padding repeated: .nav-persistent .nav-cta sets the text pill's
-       padding at higher specificity. */
-    .nav-persistent .nav-cta-icon {
-        width: 1.7rem;
-        padding: 0;
-    }
 }
 
 /* ---- NavDropdown (orangui::NavDropdown) +
@@ -1205,17 +836,6 @@ a.nav-dropdown-item.active:visited {
    (orangui::SheetWide::Drawer). */
 .theme-picker-sheet {
     display: contents;
-}
-
-@media (max-width: 60rem) {
-    /* The sheet is the folded menu's descendant, so the menu stays painted
-       while the sheet is up and folds in plain sight as the sheet rises. It
-       stays painted through the slide away too: its own fade would ghost
-       the sliding sheet and its visibility would cut the slide short. */
-    .nav-panel:has(.theme-picker-sheet .bottom-sheet:is(.show, .bottom-sheet-leaving)) {
-        opacity: 1;
-        visibility: visible;
-    }
 }
 
 /* The sheet's rows: filled, bordered pills like the app's settings rows,
@@ -1924,15 +1544,6 @@ a.nav-dropdown-item.active:visited {
     to {
         opacity: 1;
         transform: translateY(0);
-    }
-}
-
-/* Short viewports (landscape phones): the open menu spans the full height, so
-   there's no clear bottom edge to retreat to; slide the banners off-screen. */
-@media (max-width: 60rem) and (max-height: 500px) {
-    body:has(.nav-panel-open) .banner-stack {
-        transform: translateY(100vh);
-        transform: translateY(100dvh);
     }
 }
 
@@ -2749,18 +2360,6 @@ html[data-wipe="left"]::view-transition-new(root) {
     }
 }
 
-/* At hamburger widths the wipe runs down the screen instead, and light to
-   dark runs back up it. */
-@media (max-width: 60rem) {
-    ::view-transition-new(root) {
-        animation-name: theme-wipe-down;
-    }
-
-    html[data-wipe="left"]::view-transition-new(root) {
-        animation-name: theme-wipe-up;
-    }
-}
-
 @keyframes theme-wipe-down {
     from {
         clip-path: inset(0 0 100% 0);
@@ -2919,4 +2518,399 @@ html[data-wipe="left"]::view-transition-new(root) {
     height: 100%;
     mask-image: linear-gradient(to bottom, #000 0, rgba(0, 0, 0, 0.45) 45vh, transparent 100vh);
     -webkit-mask-image: linear-gradient(to bottom, #000 0, rgba(0, 0, 0, 0.45) 45vh, transparent 100vh);
+}
+
+@media (max-width: 60rem) {
+/* NavBar at hamburger widths: the panel folds behind the toggle, and the
+   pieces that live in or beside the folded menu take their narrow shape.
+   orangui's COMPONENTS_CSS applies these at the kit's 60rem breakpoint; a
+   host that folds wider adds NAV_FOLD_CSS under its own query as well. */
+
+/* A grid, not a wrapping flex row: the header row (brand, persistent
+   slot, toggle) is row one and the panel is row two, so the nav's
+   max-height clamps the panel to the space under the header (a flex line
+   never shrinks). The fr row takes only what the panel needs while that
+   fits, so the menu is unclamped wherever its rows fit. */
+.nav-wrapper nav {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-rows: auto minmax(0, 1fr);
+    justify-items: center;
+    box-sizing: border-box;
+    max-height: 100vh;
+    max-height: 100dvh;
+    /* The header row's inset, the same on every side. */
+    --nav-pad: 0.75rem;
+    padding: var(--nav-pad);
+    /* no row-gap: the collapsed panel is a zero-height row, and a gap
+       would add phantom space below the toggle row */
+    gap: 0 0.5rem;
+}
+/* The header row's three items share one center line. */
+.nav-wrapper nav > .nav-brand {
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: start;
+    align-self: center;
+}
+.nav-wrapper nav > .nav-persistent {
+    grid-row: 1;
+    align-self: center;
+}
+.nav-toggle {
+    display: flex;
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
+    align-self: center;
+}
+.nav-panel {
+    /* One link row's vertical padding and the gap between rows; an
+       app that caps the link list in whole rows counts in these. */
+    --nav-row-pad: 0.65rem;
+    --nav-row-gap: 0.75rem;
+    /* The space between the panel's rule and the first link row, and
+       under the last row above the trailing rule. */
+    --nav-list-start: 1rem;
+    --nav-list-end: 1rem;
+    /* The theme row's trigger padding. */
+    --nav-trigger-pad: 0.55rem;
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: stretch;
+    /* Its own stacking context, so the panel's sink paints over the
+       page and not under the sticky wrapper's fill. */
+    position: relative;
+    z-index: 0;
+    background-color: var(--bg-sink);
+    /* fill the row (the bar's align-items: center would let the panel
+       overflow it) and shrink to it instead of the content minimum */
+    align-self: stretch;
+    min-height: 0;
+    display: grid;
+    grid-template-rows: 0fr;
+    /* explicit full-width column: the implicit auto column would be
+       content-sized and pinned right by the desktop justify-content */
+    grid-template-columns: minmax(0, 1fr);
+    flex-basis: 100%;
+    /* bleed through the nav's side padding so the divider rules run
+       edge to edge; the inner re-adds the inset for content. Exactly the
+       nav's padding, so the panel never overhangs the screen. */
+    margin-left: calc(-1 * var(--nav-pad));
+    margin-right: calc(-1 * var(--nav-pad));
+    opacity: 0;
+    visibility: hidden;
+    /* The closed panel's 1px border hides under the header row, so the
+       row's inset below matches the one above. */
+    margin-top: -1px;
+    border-top: 1px solid transparent;
+    transition:
+        grid-template-rows 0.25s ease,
+        opacity 0.2s ease,
+        margin-top 0.25s ease,
+        border-top-color 0.2s ease,
+        visibility 0s linear 0.25s;
+}
+.nav-panel-open {
+    grid-template-rows: 1fr;
+    opacity: 1;
+    visibility: visible;
+    margin-top: 1.25rem;
+    border-top-color: var(--border-primary);
+    transition:
+        grid-template-rows 0.25s ease,
+        opacity 0.2s ease,
+        margin-top 0.25s ease,
+        border-top-color 0.2s ease,
+        visibility 0s;
+}
+/* nowrap + flex-start undo the desktop bar's flex-wrap/justify-end so the
+   collapsing column can't wrap into narrow columns while the open animation
+   grows the panel height. */
+.nav-panel .nav-panel-inner {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 0;
+    overflow: hidden;
+    min-height: 0;
+    padding-left: var(--nav-pad);
+    padding-right: var(--nav-pad);
+}
+/* The links show every row, capped only by the window: past the cap
+   they scroll a row at a time. The trailing item (the theme picker)
+   sits right under them as the panel's base and stays on screen. The
+   space above its rule is the list's own bottom padding, which scrolls
+   with the rows. */
+.nav-panel .nav-links {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: var(--nav-row-gap);
+    height: auto;
+    box-sizing: border-box;
+    /* The space between the rule and the first row is the list's own
+       padding, so rows scroll under the rule itself and not under a
+       band below it; scroll-padding keeps the snap at the same inset. */
+    padding-top: var(--nav-list-start);
+    padding-bottom: var(--nav-list-end);
+    scroll-padding-top: var(--nav-list-start);
+    /* The window less the menu around the list: the header bar and the
+       panel's rule above it (73px on a phone) and the trailing row with
+       the nav's bottom inset below it (61px), with a little to spare. */
+    max-height: calc(100vh - 8.5rem);
+    max-height: calc(100dvh - 8.5rem);
+    scroll-snap-type: y mandatory;
+    /* The list keeps its own height while the panel grows around it
+       and the inner clips it: a scroller that grew from nothing came
+       up scrolled to its end in Safari, the first row cut off. */
+    flex: 0 0 auto;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    overflow-anchor: none;
+    -webkit-overflow-scrolling: touch;
+    /* Scrolls, but shows no scrollbar. */
+    scrollbar-width: none;
+}
+.nav-panel .nav-links::-webkit-scrollbar {
+    display: none;
+}
+.nav-panel .nav-panel-inner > :not(.nav-links) {
+    flex-shrink: 0;
+}
+.nav-panel .nav-links li {
+    width: 100%;
+    height: auto;
+    scroll-snap-align: start;
+}
+/* Every direct panel link item stretches — including composed widgets
+   (e.g. a NavDropdown wrapper div) that tag enumeration would miss. */
+.nav-panel .nav-links > li > * {
+    width: 100%;
+}
+.nav-panel .nav-links > li > a,
+.nav-panel .nav-links > li > button.nav-link {
+    height: auto;
+    text-align: center;
+    font-size: 0.95rem;
+    padding: var(--nav-row-pad) 1rem;
+    justify-content: center;
+}
+/* A dropdown in the links slot stretches its trigger with its siblings;
+   scoping under .nav-links leaves the trailing-slot picker's compact
+   centered row alone. */
+.nav-panel .nav-links .nav-dropdown-trigger {
+    width: 100%;
+    justify-content: center;
+    padding-top: var(--nav-row-pad);
+    padding-bottom: var(--nav-row-pad);
+}
+/* The trailing slot is the folded menu's footer band: a solid fill over
+   the grid, under a rule, bleeding to the panel edges (inside the inner's
+   padding box, so overflow won't clip it; matches the inner's padding). */
+.nav-panel .nav-trailing {
+    margin-left: calc(-1 * var(--nav-pad));
+    margin-right: calc(-1 * var(--nav-pad));
+    padding: 0.75rem var(--nav-pad) 0;
+    border-top: 1px solid var(--border-primary);
+    background-color: var(--bg-primary);
+}
+/* ThemePicker as the panel's trailing item. */
+.nav-panel .theme-picker {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    height: auto;
+}
+.nav-panel .nav-dropdown-trigger,
+.nav-panel .mode-toggle {
+    height: auto;
+    font-size: 0.95rem;
+    padding: var(--nav-trigger-pad) 1rem;
+}
+/* Make .nav-dropdown static so the open dropdown's containing block is the
+   relative <nav> (inside the sticky .nav-wrapper) rather than .nav-dropdown.
+   That keeps it pinned to the sticky nav while scrolling, and escapes the
+   panel's overflow:hidden clip since nav isn't a descendant of that clip. */
+.nav-panel .nav-dropdown {
+    position: static;
+}
+.nav-panel .nav-dropdown-content {
+    position: absolute;
+    top: auto;
+    right: auto;
+    left: auto;
+    margin-top: 0.5rem;
+    max-height: 50vh;
+    overflow-y: auto;
+}
+/* A dropdown in the scrolling link list opens in flow, as a sub-list
+   under its own trigger: it scrolls with the list and grows it, so every
+   row is reachable by scrolling. Relative, not static, so its z-index
+   still lifts it over the click-away backdrop. */
+.nav-panel .nav-links .nav-dropdown-content {
+    position: relative;
+    width: 100%;
+    max-height: none;
+    overflow: visible;
+    box-shadow: none;
+    padding: 0;
+    /* No margin of its own: closed it takes no space at all, so a row of
+       dropdowns spaces exactly like a row of plain links. */
+    margin-top: 0;
+    border: none;
+    background: none;
+    min-width: 0;
+    /* Always laid out, as a one-row grid that opens from 0fr to 1fr, so
+       the menu grows and shrinks over the transition instead of popping
+       in and out with display. */
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    visibility: hidden;
+    transition:
+        grid-template-rows 0.25s ease,
+        opacity 0.2s ease,
+        visibility 0s linear 0.25s;
+}
+.nav-panel .nav-links .nav-dropdown-open .nav-dropdown-content {
+    grid-template-rows: 1fr;
+    opacity: 1;
+    visibility: visible;
+    transition:
+        grid-template-rows 0.25s ease,
+        opacity 0.2s ease,
+        visibility 0s;
+}
+/* The rows become a wrapping row of chips, zwiper's chip look, so the
+   choices read apart from the full-width link buttons around them. The
+   box clips to the grid row's height while it animates, with padding
+   below for the chips' shadow, and slides down a touch as it opens. */
+.nav-panel .nav-links .nav-dropdown-rows {
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0;
+    transform: translateY(-0.4rem);
+    transition:
+        transform 0.25s ease,
+        padding 0.25s ease;
+}
+.nav-panel .nav-links .nav-dropdown-open .nav-dropdown-rows {
+    padding: 0.25rem 0.25rem 0.75rem;
+    transform: none;
+}
+.nav-panel .nav-links .nav-dropdown-item,
+.nav-panel .nav-links a.nav-dropdown-item:visited {
+    display: inline-block;
+    width: auto;
+    padding: 0.3rem 0.65rem;
+    border: 1px solid var(--border-muted);
+    border-radius: 0.6rem;
+    background-color: var(--bg-primary);
+    box-shadow: var(--shadow-sm);
+    font-size: 0.8rem;
+    color: var(--ink-text-muted, var(--text-muted));
+    text-align: center;
+    transition:
+        color 0.15s,
+        border-color 0.15s;
+}
+.nav-panel .nav-links .nav-dropdown-item.active,
+.nav-panel .nav-links a.nav-dropdown-item.active:visited {
+    border-color: var(--accent-secondary);
+    color: var(--ink-accent-secondary, var(--accent-secondary));
+}
+/* Same hover as the link buttons: text and border to the accent, no
+   fill, over the shared 0.15s transition. */
+@media (hover: hover) {
+    .nav-panel .nav-links .nav-dropdown-item:hover,
+    .nav-panel .nav-links a.nav-dropdown-item:visited:hover {
+        background-color: var(--bg-primary);
+        border-color: var(--accent-primary);
+        color: var(--ink-accent-primary, var(--accent-primary));
+    }
+}
+.nav-panel .nav-links .nav-dropdown-label {
+    width: 100%;
+    text-align: center;
+}
+.nav-panel .nav-links .nav-dropdown::after {
+    display: none;
+}
+
+/* Short viewports (landscape phones): tighter rows so more of the menu fits
+   before the links have to scroll. */
+@media (max-height: 30rem) {
+    .nav-panel-open {
+        margin-top: 0.75rem;
+    }
+    .nav-panel {
+        --nav-list-start: 0.5rem;
+        --nav-list-end: 0.5rem;
+        --nav-row-pad: 0.4rem;
+        --nav-row-gap: 0.4rem;
+        --nav-trigger-pad: 0.4rem;
+    }
+    .nav-panel .theme-picker {
+        padding-top: 0.5rem;
+    }
+}
+
+.nav-persistent {
+    display: flex;
+    gap: 0.35rem;
+}
+
+.nav-persistent .nav-cta {
+    /* The toggle's height, so the pills and the toggle line up. */
+    height: 1.7rem;
+    padding: 0 0.55rem;
+    font-size: 0.7rem;
+}
+
+.nav-panel .nav-cta-item {
+    display: none;
+}
+
+/* padding repeated: .nav-persistent .nav-cta sets the text pill's
+   padding at higher specificity. */
+.nav-persistent .nav-cta-icon {
+    width: 1.7rem;
+    padding: 0;
+}
+
+/* The sheet is the folded menu's descendant, so the menu stays painted
+   while the sheet is up and folds in plain sight as the sheet rises. It
+   stays painted through the slide away too: its own fade would ghost
+   the sliding sheet and its visibility would cut the slide short. */
+.nav-panel:has(.theme-picker-sheet .bottom-sheet:is(.show, .bottom-sheet-leaving)) {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Short viewports (landscape phones): the open menu spans the full height, so
+   there's no clear bottom edge to retreat to; slide the banners off-screen. */
+@media (max-height: 500px) {
+    body:has(.nav-panel-open) .banner-stack {
+        transform: translateY(100vh);
+        transform: translateY(100dvh);
+    }
+}
+
+/* At hamburger widths the wipe runs down the screen instead, and light to
+   dark runs back up it. */
+::view-transition-new(root) {
+    animation-name: theme-wipe-down;
+}
+
+html[data-wipe="left"]::view-transition-new(root) {
+    animation-name: theme-wipe-up;
+}
 }

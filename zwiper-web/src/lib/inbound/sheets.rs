@@ -14,6 +14,7 @@
 //!
 //! dx writes the links in the order of the files' paths, so the file names
 //! carry the cascade order: the fonts, orangui's themes and components, the
+//! nav's fold under this app's width (`chrome::media::nav_fold_css`), the
 //! Magic UI, orangui's app sheet, the screens, the toasts, the filter, and
 //! last `web.css`.
 
@@ -21,37 +22,41 @@ use dioxus::prelude::*;
 
 /// Every stylesheet the app uses, in cascade order, each linked in the head
 /// of the built `index.html`.
-pub const SHEETS: [Asset; 9] = [
+pub const SHEETS: [Asset; 10] = [
     asset!(
-        "/assets/sheets/1-fonts.css",
+        "/assets/sheets/01-fonts.css",
         AssetOptions::css().with_static_head(true)
     ),
     asset!(
-        "/assets/sheets/2-themes.css",
+        "/assets/sheets/02-themes.css",
         AssetOptions::css().with_static_head(true)
     ),
     asset!(
-        "/assets/sheets/3-components.css",
+        "/assets/sheets/03-components.css",
         AssetOptions::css().with_static_head(true)
     ),
     asset!(
-        "/assets/sheets/4-magic.css",
+        "/assets/sheets/04-nav-fold.css",
         AssetOptions::css().with_static_head(true)
     ),
     asset!(
-        "/assets/sheets/5-app.css",
+        "/assets/sheets/05-magic.css",
         AssetOptions::css().with_static_head(true)
     ),
     asset!(
-        "/assets/sheets/6-screens.css",
+        "/assets/sheets/06-app.css",
         AssetOptions::css().with_static_head(true)
     ),
     asset!(
-        "/assets/sheets/7-toast.css",
+        "/assets/sheets/07-screens.css",
         AssetOptions::css().with_static_head(true)
     ),
     asset!(
-        "/assets/sheets/8-filter.css",
+        "/assets/sheets/08-toast.css",
+        AssetOptions::css().with_static_head(true)
+    ),
+    asset!(
+        "/assets/sheets/09-filter.css",
         AssetOptions::css().with_static_head(true)
     ),
     asset!(
@@ -60,7 +65,7 @@ pub const SHEETS: [Asset; 9] = [
     ),
 ];
 
-/// The fonts `1-fonts.css` names, bundled without a hash suffix so its
+/// The fonts `01-fonts.css` names, bundled without a hash suffix so its
 /// relative urls and `index.html`'s preloads can name them. Their contents
 /// never change, so they need no cache-busting name.
 pub const FONTS: [Asset; 3] = [
@@ -83,17 +88,21 @@ mod tests {
     use std::path::{Path, PathBuf};
 
     use super::*;
+    use crate::inbound::chrome::media;
 
-    /// Each copied sheet's file in `assets/sheets`, with the string it copies.
-    const COPIES: [(&str, &str); 7] = [
-        ("2-themes.css", components::THEMES_CSS),
-        ("3-components.css", components::COMPONENTS_CSS),
-        ("4-magic.css", components::MAGIC_CSS),
-        ("5-app.css", components::APP_CSS),
-        ("6-screens.css", components::SCREENS_CSS),
-        ("7-toast.css", components::TOAST_CSS),
-        ("8-filter.css", components::FILTER_CSS),
-    ];
+    /// Each copied sheet's file in `assets/sheets`, with the css it copies.
+    fn copies() -> [(&'static str, String); 8] {
+        [
+            ("02-themes.css", components::THEMES_CSS.to_owned()),
+            ("03-components.css", components::COMPONENTS_CSS.to_owned()),
+            ("04-nav-fold.css", media::nav_fold_css()),
+            ("05-magic.css", components::MAGIC_CSS.to_owned()),
+            ("06-app.css", components::APP_CSS.to_owned()),
+            ("07-screens.css", components::SCREENS_CSS.to_owned()),
+            ("08-toast.css", components::TOAST_CSS.to_owned()),
+            ("09-filter.css", components::FILTER_CSS.to_owned()),
+        ]
+    }
 
     fn crate_dir() -> &'static Path {
         Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -104,11 +113,11 @@ mod tests {
         let dir = crate_dir().join("assets/sheets");
         let update = std::env::var_os("ZWIPE_UPDATE_SHEETS").is_some();
         let mut stale = Vec::new();
-        for (file, css) in COPIES {
+        for (file, css) in copies() {
             let path = dir.join(file);
             if update {
-                std::fs::write(&path, css).unwrap();
-            } else if std::fs::read_to_string(&path).ok().as_deref() != Some(css) {
+                std::fs::write(&path, &css).unwrap();
+            } else if std::fs::read_to_string(&path).ok() != Some(css) {
                 stale.push(file);
             }
         }
@@ -138,8 +147,8 @@ mod tests {
                 sheet.bundled().absolute_source_path()
             );
         }
-        let linked: Vec<&str> = std::iter::once("1-fonts.css")
-            .chain(COPIES.iter().map(|(file, _)| *file))
+        let linked: Vec<&str> = std::iter::once("01-fonts.css")
+            .chain(copies().into_iter().map(|(file, _)| file))
             .collect();
         let mut on_disk: Vec<String> = std::fs::read_dir(crate_dir().join("assets/sheets"))
             .unwrap()
