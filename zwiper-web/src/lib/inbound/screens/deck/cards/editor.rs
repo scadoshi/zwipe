@@ -713,7 +713,7 @@ pub(crate) fn use_deck_editor(deck_id: Uuid, on_failure: LoadFailure) -> Editor 
                 spawn(async move {
                     authed
                         .run("undo", |c, s| async move {
-                            c.delete_deck_card(deck_id, card_id, &s).await
+                            c.delete_undone_deck_card(deck_id, card_id, &s).await
                         })
                         .await;
                 });

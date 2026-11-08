@@ -353,7 +353,13 @@ impl Driver {
                 spawn(async move {
                     let deleted = authed
                         .try_run(op.name(), |c, s| async move {
-                            c.delete_deck_card(deck_id, card_id, &s).await
+                            // An undone add goes back without a removal
+                            // suppression, so the card can serve in Add again.
+                            if op == Op::Undo {
+                                c.delete_undone_deck_card(deck_id, card_id, &s).await
+                            } else {
+                                c.delete_deck_card(deck_id, card_id, &s).await
+                            }
                         })
                         .await;
                     self.dispatch(match deleted {

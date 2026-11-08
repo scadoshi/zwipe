@@ -321,7 +321,7 @@ impl Driver {
         spawn(async move {
             let _ = authed
                 .run("undo_add", |c, s| async move {
-                    c.delete_deck_card(deck_id, card_id, &s).await
+                    c.delete_undone_deck_card(deck_id, card_id, &s).await
                 })
                 .await;
         });
@@ -392,7 +392,10 @@ impl Driver {
                 self.dispatch(Action::NotSent { ticket });
                 return;
             };
-            match client().delete_deck_card(deck_id, card_id, &session).await {
+            match client()
+                .delete_undone_deck_card(deck_id, card_id, &session)
+                .await
+            {
                 Ok(()) => self.dispatch(Action::Landed { ticket }),
                 Err(e) => {
                     if board.is_maybeboard() {
