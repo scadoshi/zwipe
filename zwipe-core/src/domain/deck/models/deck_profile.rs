@@ -1,5 +1,6 @@
 //! Deck metadata (profile without cards).
 
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -112,6 +113,18 @@ pub struct DeckProfile {
     /// Art-crop URL for the signature spell's printing (if set).
     #[serde(default)]
     pub signature_spell_art_url: Option<String>,
+    /// When the deck last changed: its profile, or a card added, edited or removed. `None` from a server that predates the field, which leaves it out.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub updated_at: Option<DateTime<Utc>>,
+    /// The deck's total price in USD, counted as [`DeckMetrics::total_price_usd`](crate::domain::deck::DeckMetrics) counts it: main board copies at each printing's nonfoil price, plus command zone cards not already on the main board. `None` when no card has a USD price, outside the deck list, or from a server that predates the field.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub total_price_usd: Option<f64>,
+    /// The deck's total price in EUR, counted as [`Self::total_price_usd`] is.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub total_price_eur: Option<f64>,
+    /// The deck's total price in MTGO Event Tickets, counted as [`Self::total_price_usd`] is.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub total_price_tix: Option<f64>,
 }
 
 #[cfg(test)]
@@ -123,6 +136,53 @@ mod tests {
     /// (an older client reading a payload that *has* the fields) needs no test:
     /// the struct doesn't set `deny_unknown_fields`, so serde skips what it
     /// doesn't know.
+    /// The deck list's sort fields: a payload from a server without them parses to `None`, a profile with them round-trips, and a profile without them leaves them out of the JSON.
+    #[test]
+    fn the_list_sort_fields_are_optional_both_ways() {
+        let old = serde_json::json!({
+            "id": Uuid::nil(),
+            "name": "Old server",
+            "commander_id": null,
+            "partner_commander_id": null,
+            "background_id": null,
+            "signature_spell_id": null,
+            "format": null,
+            "land_target": null,
+            "price_target": null,
+            "price_target_currency": null,
+            "share_token": null,
+            "user_id": Uuid::nil(),
+            "card_count": 0,
+            "commander_name": null,
+            "partner_commander_name": null,
+            "background_name": null,
+            "signature_spell_name": null,
+        });
+        let mut profile: DeckProfile = serde_json::from_value(old).unwrap();
+        assert_eq!(profile.updated_at, None);
+        assert_eq!(profile.total_price_usd, None);
+        assert_eq!(profile.total_price_eur, None);
+        assert_eq!(profile.total_price_tix, None);
+
+        let json = serde_json::to_value(&profile).unwrap();
+        for field in [
+            "updated_at",
+            "total_price_usd",
+            "total_price_eur",
+            "total_price_tix",
+        ] {
+            assert!(json.get(field).is_none(), "{field} is left out while None");
+        }
+
+        profile.updated_at = Some(DateTime::from_timestamp(1_762_560_000, 0).unwrap());
+        profile.total_price_usd = Some(182.12);
+        profile.total_price_eur = Some(160.5);
+        profile.total_price_tix = Some(12.25);
+        let json = serde_json::to_string(&profile).unwrap();
+        let back: DeckProfile = serde_json::from_str(&json).unwrap();
+        assert_eq!(back, profile);
+    }
+
     #[test]
     fn parses_payload_without_command_zone_art() {
         let json = serde_json::json!({
