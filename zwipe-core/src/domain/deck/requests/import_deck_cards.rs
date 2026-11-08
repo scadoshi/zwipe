@@ -9,7 +9,7 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::domain::deck::{Board, ImportMode};
+use crate::domain::deck::{Board, Format, ImportMode};
 
 /// Most copies one import line may ask for. Far above any real deck, low
 /// enough that summing every line of a request-sized body stays inside `i32`.
@@ -269,12 +269,21 @@ pub struct UnresolvedCard {
 }
 
 /// Import operation result.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ImportDeckCardsResult {
     /// Cards that were successfully imported, sorted by name.
     pub imported: Vec<ImportedCard>,
     /// Card names that couldn't be resolved.
     pub unresolved: Vec<UnresolvedCard>,
+    /// The format an Archidekt import set on a deck that had none. `None`
+    /// when it set nothing, from a text import, and from older servers.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub format_set: Option<Format>,
+    /// The cards an Archidekt import set as the deck's commander, partner or
+    /// background where those were empty, commander first. Empty when it set
+    /// none, from a text import, and from older servers.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub commanders_set: Vec<String>,
 }
 
 #[cfg(test)]
