@@ -66,7 +66,7 @@ Who checked, on which live build, what they saw.
 | [298](298-web-header-at-150-zoom.md) | The web app's header breaks at 150% zoom | reported | - | - |
 | [299](299-leave-guard-dead-after-about.md) | Create deck's leave guard stops working after visiting About | fixing | scotland | - |
 | [300](300-share-image-version-not-bumped.md) | Share image URL keeps its old ?v= after the image layout changes | merged | thinker | #438 |
-| [301](301-form-dirty-after-discard.md) | Edit deck still asks to leave after a picker change was discarded | fixing | laptop | #439 |
+| [301](301-form-dirty-after-discard.md) | Edit deck still asks to leave after a picker change was discarded | merged | laptop | #439 |
 | [302](302-add-details-overlaps-card.md) | Add's card details panel overlaps the swipe card at 900 to 1060px | reported | - | - |
 
 ## Waiting for live verification
