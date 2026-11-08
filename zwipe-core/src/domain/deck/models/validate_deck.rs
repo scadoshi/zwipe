@@ -607,6 +607,17 @@ mod tests {
         );
 
         let commander = test_profile(Some(Format::Commander));
+        let doom = make_entry("Crackling Doom", 2);
+        let warnings = validate_deck(&commander, &[doom], &empty_command_zone());
+        let lines: Vec<String> = warnings.iter().map(ToString::to_string).collect();
+        assert!(
+            lines
+                .iter()
+                .any(|l| l == "Crackling Doom has 2 copies, Commander allows 1"),
+            "{lines:?}"
+        );
+
+        let commander = test_profile(Some(Format::Commander));
         let warnings = validate_deck(&commander, &[], &empty_command_zone());
         let lines: Vec<String> = warnings.iter().map(ToString::to_string).collect();
         assert!(
