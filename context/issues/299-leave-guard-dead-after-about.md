@@ -11,3 +11,5 @@ Surfer, live web 1d7053e88, wide, 2026-11-08. Once About has been opened in the 
 3. Click header Back: nothing happens, URL stays /decks/new, no dialog. Same for the Decks link, the logo and browser Back.
 
 Control: load / or /decks, go to Create without visiting About, type a name, Back: the dialog shows (Stay / Leave). Format changes, picker Discard / Keep editing, Swipe piles (including empty ones), commander/partner picks and the Pir autofill don't break it; only About does.
+
+Scotty, 2026-11-08: not only About. Home, then Decks, then + (Create), type something, Back: no prompt either. So it may be any in-app navigation before Create (or Home specifically), not About alone.
