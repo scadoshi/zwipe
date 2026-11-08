@@ -390,3 +390,5 @@ Skipped with Scotty: S7 (no Image in the swipe screens' details, intended), S23 
 260. **Quick add doesn't rank the exact name first.** [Surfer p19, 2026-11-07, approved] Typing "Mountain" doesn't offer the basic Mountain or put it first. An exact (case-insensitive) name match always ranks first in Quick add suggestions, basics included. App and web.
 261. **Flip control sits over a DFC's mana cost.** [Surfer p19] Kept on the card for now (Scotty): there's no other place that works on every screen a card shows.
 262. **Activity heatmap days aren't keyboard reachable.** [Surfer p19] Skipped by Scotty: too much engineering for the gain.
+263. **Playstyle's two color lines don't say what they count.** [Surfer p19, 2026-11-07, approved] "Top colors" counts decks by color identity and "Top color" counts cards; relabel so each says which (e.g. "Decks with red: 6", "Red cards: 12"), human copy, icons where the copy already uses them. App and web.
+264. **Impact ranks one-card tags above broad ones.** [Surfer p19, approved] Oracle tags' Impact ranks only tags present in 2 or more decks (named const). App and web.
