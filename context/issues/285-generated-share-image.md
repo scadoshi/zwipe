@@ -6,3 +6,4 @@ State: approved (plan first) | Owner: thinker | PR: - | Build seen: -
 Scotty, 2026-11-07: a shared deck's link preview shows a generated image with basic deck stats, not just the commander's art crop. Step 2 of `context/plans/share_preview.md`. Plan only for now: write `context/plans/share_preview_image.md` and bring Scotty the open questions one at a time.
 
 Scotty's answers: 1. zerver draws it, Cloudflare caches it.
+2. The owner's theme (share API may carry the theme name).
