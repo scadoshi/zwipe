@@ -101,3 +101,12 @@ Left open as agreed. The design is sound: a rotated token presented again within
 - Only open PR: #336, held for Scotty's zwipe.net cutover (context/plans/share_preview.md).
 - Closed: 212 (Arzakon is WUBRG), the app promo printing (didn't reproduce on prod), synergy_applied (correct by contract).
 - Waiting on Scotty: deploy go; reqwest gzip/brotli on the app; Surfer p15-17 and p19 findings; Droid p11 (Activity 146 vs 303 swipes, Draw odds 'by turn 0').
+
+## Night of 2026-11-07 into 11-08 (Scotty asleep)
+
+- Live: `main` at 1e03520ef. zwipe.net is on Cloudflare Pages (`zwipe-site`), www redirects to the apex, GitHub Pages is gone (#416). No deploys until Scotty says.
+- The factory now runs through `context/issues/` (see `../development/factory.md`): at most two workers busy, every issue logged first, fixes need a failing test and a live verification.
+- Scotty's overnight word: Surfer and Droid work through `issues/verify-1e03520ef.md`. New findings get logged as `reported`. Only an obviously easy fix that can be verified next round goes to a worker; anything bigger stays logged.
+- In flight: thinker on #398's conflict then 285 (preview image); halo #406 and scotland #408 conflicts. Laptop idle.
+- ManaBox plan (`plans/collection.md`): Q1 answered (Add and Replace modes); Q2 to Q8 wait for Scotty one at a time.
+- Parked for Scotty: 282 (stale bundle after deploy), 284 (toast vs footer, reproduced).
