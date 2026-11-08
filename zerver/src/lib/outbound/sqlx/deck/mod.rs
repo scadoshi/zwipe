@@ -12,7 +12,7 @@ use zwipe_core::domain::deck::requests::commander_maybeboard::CommanderMaybeboar
 use zwipe_core::domain::deck::requests::create_deck_card::CreateDeckCard;
 use zwipe_core::domain::deck::requests::create_deck_profile::CreateDeckProfile;
 use zwipe_core::domain::deck::requests::delete_deck::DeleteDeck;
-use zwipe_core::domain::deck::requests::delete_deck_card::DeleteDeckCard;
+use zwipe_core::domain::deck::requests::delete_deck_card::{DeleteDeckCard, DeleteReason};
 use zwipe_core::domain::deck::requests::get_deck_profile::GetDeckProfile;
 use zwipe_core::domain::deck::requests::get_deck_profiles::GetDeckProfiles;
 use zwipe_core::domain::deck::requests::skip_deck_card::SkipDeckCard;
@@ -1259,19 +1259,22 @@ impl DeckRepository for Postgres {
             return Err(DeleteDeckCardError::NotFound);
         };
         // A deliberate single-card removal is a "doesn't fit" signal: suppress
-        // the card so the deck-aware search stops re-serving it. Bulk deletes
-        // (replace-mode imports) intentionally don't do this.
-        query!(
-            r#"INSERT INTO deck_card_suppressions (deck_id, oracle_id, source)
+        // the card so the deck-aware search stops re-serving it. An undo of an
+        // add puts things back as they were, and bulk deletes (replace-mode
+        // imports) intentionally don't suppress either.
+        if request.reason == DeleteReason::Removal {
+            query!(
+                r#"INSERT INTO deck_card_suppressions (deck_id, oracle_id, source)
                VALUES ($1, $2, 'removal')
                ON CONFLICT (deck_id, oracle_id) DO UPDATE SET
                    source = EXCLUDED.source,
                    suppressed_at = now()"#,
-            request.deck_id,
-            deleted.oracle_id,
-        )
-        .execute(&mut *tx)
-        .await?;
+                request.deck_id,
+                deleted.oracle_id,
+            )
+            .execute(&mut *tx)
+            .await?;
+        }
         touch_deck(&mut tx, request.deck_id).await?;
         tx.commit().await?;
         Ok(())

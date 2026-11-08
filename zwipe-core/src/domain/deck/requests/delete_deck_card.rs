@@ -14,6 +14,18 @@ pub enum InvalidDeleteDeckCard {
     ScryfallDataId(uuid::Error),
 }
 
+/// Why a card leaves the deck, which decides whether it is suppressed.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+pub enum DeleteReason {
+    /// A deliberate removal: the card is suppressed from the deck's swipe
+    /// pile for a while, as a "doesn't fit" signal.
+    #[default]
+    Removal,
+    /// The undo of an add: the card goes back to how it was before, with no
+    /// suppression.
+    Undo,
+}
+
 /// Request to delete a card from a deck (removes all copies).
 #[derive(Debug, Clone)]
 pub struct DeleteDeckCard {
@@ -23,6 +35,9 @@ pub struct DeleteDeckCard {
     pub deck_id: Uuid,
     /// Card to remove (Scryfall data ID).
     pub scryfall_data_id: Uuid,
+    /// A removal or an undo; [`DeleteReason::Removal`] unless
+    /// [`undone`](Self::undone) says otherwise.
+    pub reason: DeleteReason,
 }
 
 impl DeleteDeckCard {
@@ -43,6 +58,30 @@ impl DeleteDeckCard {
             user_id,
             deck_id,
             scryfall_data_id,
+            reason: DeleteReason::Removal,
         })
+    }
+
+    /// This request as the undo of an add when `undo`, else unchanged.
+    #[must_use]
+    pub fn undone(mut self, undo: bool) -> Self {
+        if undo {
+            self.reason = DeleteReason::Undo;
+        }
+        self
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_delete_is_a_removal_unless_undone() {
+        let id = Uuid::nil().to_string();
+        let request = DeleteDeckCard::new(Uuid::nil(), &id, &id).unwrap();
+        assert_eq!(request.reason, DeleteReason::Removal);
+        assert_eq!(request.clone().undone(false).reason, DeleteReason::Removal);
+        assert_eq!(request.undone(true).reason, DeleteReason::Undo);
     }
 }

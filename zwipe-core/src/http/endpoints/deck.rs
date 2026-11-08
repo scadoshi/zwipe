@@ -17,7 +17,7 @@ use crate::http::contracts::deck::{
     HttpSkipDeckCard, HttpUpdateDeckProfile,
 };
 use crate::http::contracts::deck_card::{
-    HttpCreateDeckCard, HttpImportDeckCards, HttpPatchDeckCard,
+    HttpCreateDeckCard, HttpImportDeckCards, HttpPatchDeckCard, UNDO_QUERY,
 };
 use crate::http::endpoint::{Endpoint, Method};
 use crate::http::paths;
@@ -252,6 +252,23 @@ impl Endpoint for UpdateDeckCard {
 /// Remove one deck card.
 #[derive(Debug)]
 pub struct DeleteDeckCard(pub Uuid, pub Uuid);
+
+/// Take back one deck card an undo reverses: [`DeleteDeckCard`] with
+/// [`UNDO_QUERY`], so the server leaves no removal suppression and the card
+/// can serve again.
+#[derive(Debug)]
+pub struct DeleteUndoneDeckCard(pub Uuid, pub Uuid);
+impl Endpoint for DeleteUndoneDeckCard {
+    const METHOD: Method = Method::Delete;
+    type Request = ();
+    type Response = ();
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Owned(paths::delete_deck_card_route(self.0, self.1))
+    }
+    fn query(&self) -> Option<String> {
+        Some(UNDO_QUERY.to_owned())
+    }
+}
 impl Endpoint for DeleteDeckCard {
     const METHOD: Method = Method::Delete;
     type Request = ();

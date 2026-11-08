@@ -1,8 +1,9 @@
 //! Remove card from deck handler.
 
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use zwipe_core::domain::deck::requests::delete_deck_card::{DeleteDeckCard, InvalidDeleteDeckCard};
+use zwipe_core::http::contracts::deck_card::HttpDeleteDeckCardQuery;
 
 use crate::domain::deck::models::deck_card::delete_deck_card::DeleteDeckCardError;
 use crate::domain::deck::ports::DeckService;
@@ -36,7 +37,9 @@ impl From<InvalidDeleteDeckCard> for ApiError {
     }
 }
 
-/// Removes a card from a deck.
+/// Removes a card from a deck. `?undo=true` marks it as the undo of an add,
+/// which leaves no removal suppression; without it (or with a value that
+/// isn't `true`), the card is suppressed as a deliberate removal.
 ///
 /// # Errors
 ///
@@ -46,8 +49,10 @@ pub async fn delete_deck_card(
     user: AuthenticatedUser,
     State(state): State<AppState>,
     Path((deck_id, scryfall_data_id)): Path<(String, String)>,
+    Query(query): Query<HttpDeleteDeckCardQuery>,
 ) -> Result<StatusCode, ApiError> {
-    let request = DeleteDeckCard::new(user.id, &deck_id, &scryfall_data_id)?;
+    let request = DeleteDeckCard::new(user.id, &deck_id, &scryfall_data_id)?
+        .undone(query.undo.unwrap_or(false));
 
     state
         .deck_service

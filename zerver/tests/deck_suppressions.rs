@@ -12,8 +12,10 @@
     reason = "a test: helpers outside #[test] fns unwrap and index, and the paging math multiplies small numbers; a panic is the failure report"
 )]
 
+use zwipe_core::http::contracts::deck_card::UNDO_QUERY;
 use zwipe_core::http::paths::{
-    DECK_ROUTE, search_deck_cards_route, skip_deck_card_route, unskip_deck_card_route,
+    DECK_ROUTE, create_deck_card_route, delete_deck_card_route, search_deck_cards_route,
+    skip_deck_card_route, unskip_deck_card_route,
 };
 mod common;
 
@@ -322,5 +324,141 @@ async fn returning_cards_serve_after_unseen_ones(pool: sqlx::PgPool) {
             .collect();
         assert_eq!(names.len(), 3, "{body}: {names:?}");
         assert_eq!(names.last(), Some(&"Alpha"), "{body}: {names:?}");
+    }
+}
+
+/// Surfer's chain on Add, through the same routes the client calls: add,
+/// skip, send to the maybeboard, add, then four undos in reverse (an undo
+/// delete, an undo delete, unskip, an undo delete). Every undo fully reverses
+/// its swipe, so all four cards serve again.
+#[sqlx::test]
+async fn undoing_every_swipe_serves_every_card_again(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, uid) = app.register("undoer").await;
+    app.verify_email(&uid).await;
+
+    let added = card("Champion Of Dusk").mono("B");
+    let skipped = card("Elenda The Dusk Rose").mono("B");
+    let maybe = card("Sorin Imperious Bloodlord").mono("B");
+    let added_last = card("Indulgent Aristocrat").mono("B");
+    seed_cards(
+        &pool,
+        &[
+            added.clone(),
+            skipped.clone(),
+            maybe.clone(),
+            added_last.clone(),
+        ],
+    )
+    .await;
+    let did = new_deck(&app, &token, "Undo Deck").await;
+    let deck_id: uuid::Uuid = did.parse().unwrap();
+
+    let add = |c: &common::CardFixture, board: &'static str| {
+        json!({
+            "scryfall_data_id": c.id().to_string(),
+            "oracle_id": c.oracle_id().unwrap().to_string(),
+            "quantity": 1,
+            "board": board,
+        })
+    };
+    for (body, what) in [
+        (add(&added, "deck"), "add"),
+        (add(&maybe, "maybeboard"), "maybe"),
+        (add(&added_last, "deck"), "add last"),
+    ] {
+        let (status, resp) = app
+            .post(&create_deck_card_route(deck_id), body, Some(&token))
+            .await;
+        assert_eq!(status, StatusCode::CREATED, "{what}: {resp}");
+    }
+    let (status, _) = app
+        .post(
+            &skip_deck_card_route(deck_id),
+            json!({ "oracle_id": skipped.oracle_id().unwrap().to_string() }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT, "skip");
+
+    // The undos, newest first, as the client sends them.
+    let undo_delete = |c: &common::CardFixture| {
+        format!("{}?{UNDO_QUERY}", delete_deck_card_route(deck_id, c.id()))
+    };
+    for c in [&added_last, &maybe] {
+        let (status, _) = app.delete(&undo_delete(c), Some(&token)).await;
+        assert_eq!(status, StatusCode::NO_CONTENT, "undo delete");
+    }
+    let (status, _) = app
+        .delete(
+            &unskip_deck_card_route(deck_id, skipped.oracle_id().unwrap()),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT, "undo skip");
+    let (status, _) = app.delete(&undo_delete(&added), Some(&token)).await;
+    assert_eq!(status, StatusCode::NO_CONTENT, "undo add");
+
+    let served = deck_search_names(&app, &did, &token).await;
+    for name in [
+        "Champion Of Dusk",
+        "Elenda The Dusk Rose",
+        "Sorin Imperious Bloodlord",
+        "Indulgent Aristocrat",
+    ] {
+        assert!(
+            served.contains(&name.to_string()),
+            "{name} hidden after its undo: {served:?}"
+        );
+    }
+}
+
+/// A delete without `?undo=true` is a deliberate removal and still
+/// suppresses the card: no flag, `false`, a malformed value and an unknown key
+/// all delete (204) and hide it, so an old client and a bad flag behave as
+/// before.
+#[sqlx::test]
+async fn a_delete_without_the_undo_flag_still_suppresses(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, uid) = app.register("remover").await;
+    app.verify_email(&uid).await;
+
+    let cards = [
+        card("Plain Removal").mono("G"),
+        card("False Flag").mono("G"),
+        card("Banana Flag").mono("G"),
+        card("Unknown Key").mono("G"),
+    ];
+    seed_cards(&pool, &cards).await;
+    let did = new_deck(&app, &token, "Removal Deck").await;
+    let deck_id: uuid::Uuid = did.parse().unwrap();
+
+    for (c, query) in cards
+        .iter()
+        .zip(["", "?undo=false", "?undo=banana", "?other=1"])
+    {
+        let (status, resp) = app
+            .post(
+                &create_deck_card_route(deck_id),
+                json!({
+                    "scryfall_data_id": c.id().to_string(),
+                    "oracle_id": c.oracle_id().unwrap().to_string(),
+                    "quantity": 1,
+                }),
+                Some(&token),
+            )
+            .await;
+        assert_eq!(status, StatusCode::CREATED, "{resp}");
+        let path = format!("{}{query}", delete_deck_card_route(deck_id, c.id()));
+        let (status, resp) = app.delete(&path, Some(&token)).await;
+        assert_eq!(status, StatusCode::NO_CONTENT, "{path}: {resp}");
+    }
+
+    let served = deck_search_names(&app, &did, &token).await;
+    for name in ["Plain Removal", "False Flag", "Banana Flag", "Unknown Key"] {
+        assert!(
+            !served.contains(&name.to_string()),
+            "{name} served after a removal: {served:?}"
+        );
     }
 }

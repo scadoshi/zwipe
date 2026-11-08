@@ -492,7 +492,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             if outcome == AddOutcome::Undo {
                 authed
                     .run("undo_add", |c, s| async move {
-                        c.delete_deck_card(deck_id, card_id, &s).await
+                        c.delete_undone_deck_card(deck_id, card_id, &s).await
                     })
                     .await;
                 return;
@@ -607,7 +607,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                 }
             };
             let http = client.peek().clone();
-            match http.delete_deck_card(deck_id, card_id, &fresh).await {
+            match http.delete_undone_deck_card(deck_id, card_id, &fresh).await {
                 Ok(()) => {
                     if let Some(d) = deck.write().as_mut() {
                         if let Some(oracle_id) = card.scryfall_data.oracle_id {

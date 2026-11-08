@@ -118,9 +118,60 @@ pub struct HttpImportDeckCards {
     pub mode: ImportMode,
 }
 
+/// The query string an undo's delete carries. Sent by
+/// [`DeleteUndoneDeckCard`](crate::http::endpoints::deck::DeleteUndoneDeckCard).
+pub const UNDO_QUERY: &str = "undo=true";
+
+/// Remove-card query: `?undo=true` marks the delete as the undo of an add,
+/// which takes the card back out without the 30-day "doesn't fit"
+/// suppression a deliberate removal leaves. Absent, it is an ordinary
+/// removal. Any value that isn't `true` or `false` reads as absent, so a
+/// malformed flag can't fail an ordinary delete.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Deserialize, Serialize)]
+pub struct HttpDeleteDeckCardQuery {
+    /// Whether this delete undoes an add.
+    #[serde(default, deserialize_with = "lenient_bool")]
+    pub undo: Option<bool>,
+}
+
+/// `Some` for a real `true`/`false` (a boolean, or the text `"true"` or
+/// `"false"` a query string carries), `None` for anything else.
+fn lenient_bool<'de, D>(deserializer: D) -> Result<Option<bool>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let value = serde_json::Value::deserialize(deserializer)?;
+    Ok(match value {
+        serde_json::Value::Bool(b) => Some(b),
+        serde_json::Value::String(text) => text.parse().ok(),
+        _ => None,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_undo_flag_reads_true_false_or_absent() {
+        let read = |json: &str| {
+            serde_json::from_str::<HttpDeleteDeckCardQuery>(json)
+                .unwrap()
+                .undo
+        };
+        assert_eq!(read(r#"{"undo":"true"}"#), Some(true));
+        assert_eq!(read(r#"{"undo":"false"}"#), Some(false));
+        assert_eq!(read(r#"{"undo":true}"#), Some(true));
+        assert_eq!(read("{}"), None);
+        assert_eq!(
+            read(r#"{"undo":"banana"}"#),
+            None,
+            "malformed reads as absent"
+        );
+        assert_eq!(read(r#"{"undo":"1"}"#), None);
+        assert_eq!(read(r#"{"other":"x"}"#), None, "unknown keys are ignored");
+        assert_eq!(UNDO_QUERY, "undo=true");
+    }
 
     #[test]
     fn patch_body_round_trips_absolute_quantity() {
