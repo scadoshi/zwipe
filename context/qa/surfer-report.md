@@ -864,3 +864,42 @@ App wasm `zwiper-web_bg-dxhfaaa4e686f4d373.wasm` and zite `zite_bg-dxh6528a09277
 1. 203: `Is promo: Yes` never matches, and a Config-only zero result shows a blank ghost with no "No cards match".
 2. 206: field and section hints (`.hint-line` / `.hint-bullets`) still vary from 320 to 1,113px at wide. Only `.hint-body` dialogs got 40rem.
 3. 207: share URL is HTTP 404 without JS (known, out of scope).
+
+## Part 20, release 66e364d7e rechecks plus walkthrough (2026-11-07)
+
+Signed in throughout, no logouts. Wide is 1450px in the main tab; 390 is a sized popup measured through the DOM only (no screenshots, transitions turned off so frozen background animations don't skew the numbers). I made a temp deck "Surfer p20", shared it, imported into it, then stopped sharing and deleted it. Universes Beyond went to Hide for the 219 test and back to Show. Surfer test is untouched (6 cards), and the theme stayed Zenburn dark. Shots are in `~/Developer/surfer-shots/p20-*`.
+
+### Rechecks
+
+| Nit | Result |
+|---|---|
+| 203 Config-only filters | **Fixed.** Is promo: Yes on its own sends `promo:true` and all 25 results are promo printings (Mockingbird, Quartzwood Crasher, …). Playable + digital + oversized + content warning on their own returns zero and the card says "No cards match your filters". |
+| 213 partner stack | **Fixed.** The server's stack for Tymna still contains Tymna (#18 of the first 24), but the client skips her: I stepped through 30 cards in order and she never showed. See new finding 1 for the rest of that stack. |
+| 214 Couldn't load | **Fixed.** With api.zwipe.net failing, the deck page shows "Couldn't load deck" with Retry and one connection toast. Retry while still offline adds exactly one more toast. Firing `online` with the network back reloads the deck without a tap. Add does the same with "Couldn't load cards". |
+| 215 Is legal in Any / All | **Fixed.** Name "bolt" + Commander and Pauper: Any returns a mix of Commander-only and both-legal cards; All returns 19, every one legal in both. Request carries `legalities_contains_any` and the new all field. See new finding 6 for Any on its own. |
+| 216 Replace asks | **Fixed.** "Replace the mainboard?" with "Every card on the mainboard comes off… You can't undo this." Cancel keeps the pasted list. In-app dialog, not a browser confirm. |
+| 217 command-zone rows | **Fixed** on web. Create with no format shows no Commander/Partner rows; Format label at 262px, Power level at 362px. Edit switched to Modern shows the same 262/362, no gap. Commander adds Commander, then Partner after Tymna; Oathbreaker shows Oathbreaker + Signature spell. |
+| 218 land target | **Fixed.** + from Not set gives 37 on Commander; switching to Oathbreaker moves it to 17. Set to 18 by hand, then back to Commander: stays 18. |
+| 219 toast over Exceptions | **Fixed** at 390 (DOM): with one toast up, the sheet pads its content to 168px and the last chip row ends at 609px, 12px above the toast (621px). At wide the sheet is a centered modal and the toast sits bottom left, no overlap. |
+| 220 import printing | **Fixed.** "1 Lightning Bolt" imports at $0.10 (was $28.99); Sol Ring $1.22, Counterspell $2.18. |
+| 221 Back origin | App-only, as specced (the commit touches `zwiper` and `zwipe-ui`). On web, Back from a deck opened on Home still lands on Decks. Noting in case web should match. |
+| 222 share link shown | **Fixed.** After Create link, reopening Share shows `https://zwipe.net/deck/…` on one selectable line (`user-select: all`, ellipsis). At 390 it truncates at 254 of 507px and the three buttons wrap to two rows, which reads fine. Create link itself copies and closes, so the link only shows on the second open. |
+| 223 See guide | **Fixed.** `target=_blank rel="noopener noreferrer"` on the deck page hint's "See guide ↗". |
+| 224 web preview size | **Fixed.** At 390×777 the Image preview is 306px wide, exactly `min(100vw − 2rem, 55vh × 63/88)`. |
+| 225 chip × | **Fixed** for touch. With the `pointer: coarse` rules applied, the × has a 44px `::after` box and wins hit tests 20px either side of its center. With a mouse it stays a 10×16 target (by design). It still has no accessible name beyond "×". |
+| Web Quick add (202) | **Fixed.** Results sit in flow under the box as chips and close on a pick. Typing "Mountain" still offers no basic Mountain (Part 19). |
+| Copy pass, … | **Fixed** in source: every in-progress label ends with "…" (Saving…, Searching…, Logging in…), no "..." left. Part 18's flagged phrases are all gone from `origin/main`: Maybe pile, Moved to deck, Back to login, Missing @, Please enter a valid, Pull back, the Theme hint, Could not load, This cannot be undone, Filter button, three actions, grey, round. Live: "Moved to maybeboard" / "Moved to mainboard"; Create account everywhere; zwipe.net's maybeboard guide says four actions and draws the funnel. |
+
+### New findings
+
+1. **The partner stack offers partners Tymna can't pair with.** Tymna has plain Partner, but the stack includes "Partner with" cards (Toothy, Slurrk, Ukkima, Pir, Brallin, Shabraz), Doctor's companions (Ian Chesterton, Jo Grant, Clara Oswald, Donna Noble…), and The Prismatic Piper. Only plain-Partner cards (Thrasios, Akiri, Kraum, Vial Smasher…) are legal with her.
+2. **"1 cards"** in the deck head chip (`components/src/deck_page.rs:207`, `"{facts.cards} cards"`). Decks list already says "1 card". Shot p20-2.
+3. **The Archidekt bad-link error is raw server text:** "Could not parse an archidekt deck id from the url", with lowercase archidekt, "url", and "Could not" where the copy pass moved to "Couldn't". Something like "That isn't an Archidekt deck link" would match. The Archidekt placeholder also ends in "..." (`https://archidekt.com/decks/...`).
+4. **Import's URL panel drops down the page** once the Imported list is long: after a 21-card Archidekt import the input panel sits about 200px below the mode hint, beside the middle of the Imported panel. The import screen is a grid and the tall Imported panel stretches the row the input shares. Shot p20-3.
+5. **The command-zone typeahead floats over its own label.** Typing "Tymna" in Commander shows the "Tymna the Weaver" chip above the field, covering "Commander" and the Filter button (`.search-float-results`, absolute). Other typeaheads now sit under their box (202). Shot p20-1.
+6. **Is legal in Any with the deck's format plus another format, on its own, toasts "Filter cleared"** and "Try a filter to start swiping" while Commander and Pauper both stay highlighted in the drawer. That's logical, since Add already limits to Commander-legal cards, but the picks look applied. All with the same picks searches.
+7. **Delete deck's dialog** says "Are you sure you want to delete this deck?" with no name and no "This can't be undone", where Clear skips, Clear maybeboard and Delete account all end with it.
+8. **An empty command-zone field keeps its ×** after a format switch clears it (Commander "Not set" with ×, Oathbreaker "Not set" with ×).
+9. **A toast follows you to the next screen:** "Try a filter to start swiping" from Add was still up on the deck page after an in-app navigation.
+
+Also seen: Droid's "Droid tmp14" (Tymna) is now in the test account's Decks (13 total); I didn't touch it.
