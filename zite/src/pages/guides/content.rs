@@ -257,7 +257,7 @@ pub(crate) static GUIDES: &[Guide] = &[
             ),
             Block::H2("Filter, sort, and the maybeboard"),
             Block::P(
-                "The [[funnel]] decides which cards are dealt; a dot on it marks an active filter. Sorting only reorders. The Maybeboard chip after From deals your maybeboard instead; a right swipe there promotes a card into the deck. Each source keeps its own filter.",
+                "The [[funnel]] decides which cards are dealt; a dot on it marks an active filter. Sorting only reorders. The Maybeboard chip after From deals your maybeboard instead; a right swipe there moves a card to the mainboard. Each source keeps its own filter.",
             ),
             Block::Image {
                 file: "swipe-to-build/02-filter-sheet.webp",
@@ -293,7 +293,7 @@ pub(crate) static GUIDES: &[Guide] = &[
                 ("left", "keep it"),
                 (
                     "up",
-                    "move it between boards (to the maybeboard, or a maybeboard card up to main)",
+                    "move it between boards (to the maybeboard, or a maybeboard card up to the mainboard)",
                 ),
                 ("down", "undo your last swipe"),
             ]),
@@ -407,7 +407,7 @@ pub(crate) static GUIDES: &[Guide] = &[
             Block::Note("The built-in defaults never light the dot."),
             Block::H2("Card roles"),
             Block::P(
-                "A card can hold several roles (`Lightning Bolt` is `Burn` and `Removal`). Zwipe assigns them from the card's oracle tags; you pick the roles you want. See Read a card at a glance.",
+                "A card can hold several roles (`Lightning Bolt` is `Burn` and `Removal`). Zwipe assigns them from the card's Oracle tags; you pick the roles you want. See Read a card at a glance.",
             ),
         ],
     },
@@ -484,7 +484,7 @@ pub(crate) static GUIDES: &[Guide] = &[
             ),
             Block::H2("Oracle tags sharpen the order"),
             Block::P(
-                "Oracle tags selected on the deck shape the order too. See Sharpen suggestions with oracle tags.",
+                "Oracle tags selected on the deck shape the order too. See Sharpen suggestions with Oracle tags.",
             ),
         ],
     },
@@ -628,7 +628,7 @@ pub(crate) static GUIDES: &[Guide] = &[
             Block::H2("Finding it"),
             Block::Bullets(&[
                 "On the Home screen, tap Playstyle on the Colors panel. It's also in the menu.",
-                "Your colors, card roles and oracle tags come first.",
+                "Your colors, card roles and Oracle tags come first.",
                 "Under them, Suggested commanders lists your top 10 as card rows, best fit first. Its `?` explains the ranking.",
                 "Tap a color chip in the Show row to narrow to those colors; tap again to clear.",
                 "Staples, at the bottom, lists the cards in the most of your decks: each row shows the share of decks that run it, and an expanded row the count, like 4 of 6. Basic lands are left out. Type and Color chips narrow it, and it has a `?` too.",
@@ -652,7 +652,7 @@ pub(crate) static GUIDES: &[Guide] = &[
             ]),
             Block::H2("Why this commander"),
             Block::P(
-                "Expand a row and tap Why this commander? for the oracle tags it shares with your decks and the colors you keep building in. While you swipe, the card's details sheet shows the same reasons.",
+                "Expand a row and tap Why this commander? for the Oracle tags it shares with your decks and the colors you keep building in. While you swipe, the card's details sheet shows the same reasons.",
             ),
             Block::H2("What you can do with one"),
             Block::Bullets(&[
@@ -719,7 +719,7 @@ pub(crate) static GUIDES: &[Guide] = &[
             ),
             Block::H2("As it fills up"),
             Block::P(
-                "Zwipe alerts you once as the deck crosses 50%, 75%, and 100% of the budget (for example, \"Deck at 82.50% of your $50.00 budget\"), and a standing warning appears if you go over.",
+                "Zwipe alerts you once as the deck crosses 50%, 75%, and 100% of the budget (for example, \"Deck at 82% of your $50.00 budget\"), and a standing warning appears if you go over.",
             ),
             Block::Image {
                 file: "budgeting/01-budget-section.webp",
@@ -786,15 +786,15 @@ pub(crate) static GUIDES: &[Guide] = &[
             Block::P(
                 "Up to five per deck (shown as N/5), from one alphabetical list. Tags are never renamed, so old ones keep working.",
             ),
-            Block::H2("Tags seed oracle tags"),
+            Block::H2("Tags seed Oracle tags"),
             Block::P(
-                "Picking a deck tag auto-selects the oracle tags that define that archetype; Aggro pulls in haste and burn. Those oracle tags sharpen the cards Zwipe suggests. See Sharpen suggestions with oracle tags.",
+                "Picking a deck tag auto-selects the Oracle tags that define that archetype; Aggro pulls in haste and burn. Those Oracle tags sharpen the cards Zwipe suggests. See Sharpen suggestions with Oracle tags.",
             ),
         ],
     },
     Guide {
         slug: "oracle-tags",
-        title: "Sharpen suggestions with oracle tags",
+        title: "Sharpen suggestions with Oracle tags",
         summary: "Pick the specific things your deck does, spot removal, ramp, reanimation, and Zwipe suggests cards that fit them better.",
         tags: &["Oracle tags", "Cards"],
         related: &[
@@ -808,7 +808,7 @@ pub(crate) static GUIDES: &[Guide] = &[
             ),
             Block::H2("Where they come from"),
             Block::P(
-                "Picking a deck tag (Aggro, Reanimator, Voltron) auto-selects a starter set for that archetype. Open Tags on the edit form to add or remove oracle tags directly.",
+                "Picking a deck tag (Aggro, Reanimator, Voltron) auto-selects a starter set for that archetype. Open Tags on the edit form to add or remove Oracle tags directly.",
             ),
             Block::H2("Selecting them"),
             Block::P(
@@ -820,7 +820,7 @@ pub(crate) static GUIDES: &[Guide] = &[
                 caption: None,
             },
             Block::Note(
-                "Tap Dictionary in the picker to look a tag up. See Browse the oracle-tag dictionary.",
+                "Tap Dictionary in the picker to look a tag up. See Browse the Oracle tags dictionary.",
             ),
             Block::H2("What they do"),
             Block::P(
@@ -828,23 +828,23 @@ pub(crate) static GUIDES: &[Guide] = &[
             ),
             Block::Image {
                 file: "oracle-tags/02-tags-section.webp",
-                alt: "The deck view's Tags section: deck tags, the oracle tags they seeded, and other tags below",
+                alt: "The deck view's Tags section: deck tags, the Oracle tags they seeded, and other tags below",
                 caption: None,
             },
             Block::Note(
-                "Deck tags are the quick start, oracle tags the fine-tune. See Deck tags, card roles, and oracle tags: how they fit.",
+                "Deck tags are the quick start, Oracle tags the fine-tune. See Deck tags, card roles, and Oracle tags: how they fit.",
             ),
         ],
     },
     Guide {
         slug: "oracle-tag-dictionary",
-        title: "Browse the oracle-tag dictionary",
-        summary: "A reference for every oracle tag: browse A to Z or search by name and description, see example cards, and use a tag on the spot.",
+        title: "Browse the Oracle tags dictionary",
+        summary: "A reference for every Oracle tag: browse A to Z or search by name and description, see example cards, and use a tag on the spot.",
         tags: &["Oracle tags"],
         related: &["oracle-tags", "card-roles"],
         blocks: &[
             Block::Lead(
-                "The oracle-tag dictionary describes every oracle tag, about 4,500 in all.",
+                "The Oracle tags dictionary describes every Oracle tag, about 4,500 in all.",
             ),
             Block::H2("Opening it"),
             Block::P(
@@ -872,66 +872,66 @@ pub(crate) static GUIDES: &[Guide] = &[
             Block::P(
                 "Each row lists the tag's name, description, and parent tags, then two buttons: Examples shows cards that carry the tag, and Use adopts it into the deck or filter you came from. A tag added since the last pass may read \"No description yet.\"",
             ),
-            Block::Note("See Sharpen suggestions with oracle tags for picking tags on a deck."),
+            Block::Note("See Sharpen suggestions with Oracle tags for picking tags on a deck."),
         ],
     },
     Guide {
         slug: "card-roles",
         title: "Read a card at a glance",
-        summary: "Every card shows chips for the roles it fills, Removal, Ramp, Card advantage, and so on, drawn straight from its oracle tags.",
+        summary: "Every card shows chips for the roles it fills, Removal, Ramp, Card advantage, and so on, drawn straight from its Oracle tags.",
         tags: &["Cards", "Oracle tags"],
         related: &["oracle-tags", "filtering"],
         blocks: &[
             Block::Lead(
-                "Card roles sum up a card's oracle tags in broad labels like Removal, Ramp, or Card advantage.",
+                "Card roles sum up a card's Oracle tags in broad labels like Removal, Ramp, or Card advantage.",
             ),
             Block::H2("The chips"),
             Block::P(
-                "Expand a card's row for its Card roles chips. Roles are computed from the card's oracle tags; you never pick them.",
+                "Expand a card's row for its Card roles chips. Roles are computed from the card's Oracle tags; you never pick them.",
             ),
             Block::H2("Drilling down"),
             Block::P(
-                "Tap a role chip to see the oracle tags under it. A trailing \"Other tags\" chip holds tags that fall under no role.",
+                "Tap a role chip to see the Oracle tags under it. A trailing \"Other tags\" chip holds tags that fall under no role.",
             ),
             Block::Image {
                 file: "card-roles/01-role-chips.webp",
-                alt: "An expanded card row with its Card roles chips, one opened to its oracle tags",
+                alt: "An expanded card row with its Card roles chips, one opened to its Oracle tags",
                 caption: None,
             },
             Block::H2("Roles"),
             Block::P(
-                "The deck view's Distributions section has a Roles chart, the same roles counted across the whole deck. Tap a role to see the oracle tags your cards carry under it.",
+                "The deck view's Distributions section has a Roles chart, the same roles counted across the whole deck. Tap a role to see the Oracle tags your cards carry under it.",
             ),
         ],
     },
     Guide {
         slug: "tags-roles-and-oracle-tags",
-        title: "Deck tags, card roles, and oracle tags: how they fit",
-        summary: "One mental model for Zwipe tagging: deck tags seed oracle tags, oracle tags sharpen suggestions, card roles show the read.",
+        title: "Deck tags, card roles, and Oracle tags: how they fit",
+        summary: "One mental model for Zwipe tagging: deck tags seed Oracle tags, Oracle tags sharpen suggestions, card roles show the read.",
         tags: &["Oracle tags", "Cards"],
         related: &["deck-tags", "card-roles", "oracle-tags"],
         blocks: &[
             Block::Lead(
-                "Deck tags seed oracle tags, oracle tags sharpen suggestions, and card roles sum up what a card's oracle tags say.",
+                "Deck tags seed Oracle tags, Oracle tags sharpen suggestions, and card roles sum up what a card's Oracle tags say.",
             ),
             Block::H2("Deck tags: the archetype you pick"),
             Block::P(
-                "Deck tags label your game plan: Aggro, Tokens, Reanimator. Picking one auto-selects the oracle tags that define it.",
+                "Deck tags label your game plan: Aggro, Tokens, Reanimator. Picking one auto-selects the Oracle tags that define it.",
             ),
             Block::H2("Oracle tags: the specific things your deck does"),
             Block::P(
-                "Oracle tags are specific: `spot-removal`, `ramp`, `sacrifice-outlet`. Add or remove them directly to fine-tune. Selected oracle tags sharpen which cards Zwipe suggests.",
+                "Oracle tags are specific: `spot-removal`, `ramp`, `sacrifice-outlet`. Add or remove them directly to fine-tune. Selected Oracle tags sharpen which cards Zwipe suggests.",
             ),
             Block::H2("Card roles: the summary"),
             Block::P(
-                "You never assign card roles; they're computed from a card's oracle tags and shown as chips (Removal, Ramp, Card advantage) when you expand a card's row or open its rules. Tap a role to see the oracle tags under it. You can filter the stack by role.",
+                "You never assign card roles; they're computed from a card's Oracle tags and shown as chips (Removal, Ramp, Card advantage) when you expand a card's row or open its rules. Tap a role to see the Oracle tags under it. You can filter the stack by role.",
             ),
             Block::H2("How it flows"),
             Block::Diagram(
                 "You configure\n  Deck tags\n     │ seed\n     ▼\n  Oracle tags  (refine freely)\n     │ match\n     ▼\nZwipe serves\n  cards that fit your deck",
             ),
             Block::Note(
-                "See Tag decks by archetype, Sharpen suggestions with oracle tags, and Read a card at a glance.",
+                "See Tag decks by archetype, Sharpen suggestions with Oracle tags, and Read a card at a glance.",
             ),
         ],
     },
@@ -1029,7 +1029,7 @@ pub(crate) static GUIDES: &[Guide] = &[
             Block::Lead("A deck's stats update as you build. They count the mainboard only."),
             Block::H2("Profile, Budget & Tags"),
             Block::P(
-                "Profile: name, format, command zone, Cards count, and Power level, the Commander bracket from Exhibition (1) to cEDH (5). Budget: price target, Total price, and Average card price, with a USD / EUR / TIX chip in its header. Tags: deck tags and oracle tags. The land target lives in Mana.",
+                "Profile: name, format, command zone, Cards count, and Power level, the Commander bracket from Exhibition (1) to cEDH (5). Budget: price target, Total price, and Average card price, with a USD / EUR / TIX chip in its header. Tags: deck tags and Oracle tags. The land target lives in Mana.",
             ),
             Block::H2("Charts"),
             Block::P(

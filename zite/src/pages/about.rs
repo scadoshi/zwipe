@@ -215,7 +215,7 @@ pub fn About() -> Element {
                             li {
                                 "Each endpoint declares its method, path and response type in "
                                 a { href: URL_ZWIPE_CORE, "zwipe-core" }
-                                ", so a client cannot call it the wrong way"
+                                ", so a client can't call it the wrong way"
                             }
                             li { "No UI framework and no platform code, so it compiles for phones and the browser alike" }
                         }

@@ -172,7 +172,7 @@ pub fn Home() -> Element {
         ),
         (
             DEMO_ORACLE_TAGS,
-            "Browse the tag dictionary and filter by oracle tag",
+            "Browse the tag dictionary and filter by Oracle tag",
             "Demo: Oracle tags",
         ),
         (

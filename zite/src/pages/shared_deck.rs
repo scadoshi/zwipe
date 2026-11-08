@@ -80,7 +80,7 @@ fn CardRow(
     /// Tap-to-open full-art overlay target. Set to this card's data + the face
     /// currently shown when the in-detail "Image" button is tapped.
     mut overlay_card: Signal<Option<(ScryfallData, usize)>>,
-    /// Resolve an oracle tag's description, so the card-role tags reveal their
+    /// Resolve an Oracle tag's description, so the card-role tags reveal their
     /// definition inline. No `on_examples` on the web (no swipe browse).
     describe_tag: Callback<String, Option<String>>,
     /// Art-crop thumbnail visibility (the "Art" chip in Show). Always
@@ -254,7 +254,7 @@ pub fn SharedDeck(token: String) -> Element {
                 }
                 div { class: "dead-end content-enter",
                     Panel {
-                        title: "Could not load this deck",
+                        title: "Couldn't load this deck",
                         title_h1: true,
                         // Retry rides the panel's own action row.
                         actions: rsx! {
