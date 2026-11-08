@@ -47,7 +47,7 @@ Who checked, on which live build, what they saw.
 | [278](278-add-tag-outline.md) | The Add title tag has no outline | verified | scotland | #413 |
 | [279](279-home-create-deck.md) | Create deck button on Home's Decks panel | verified | halo | #414 |
 | [280](280-panel-title-sizes.md) | Panel titles render at different sizes | verified | thinker | - |
-| [282](282-stale-bundle-after-deploy.md) | Web keeps the old bundle until a hard refresh | reported | - | - |
+| [282](282-stale-bundle-after-deploy.md) | Web keeps the old bundle until a hard refresh | approved | scotland | - |
 | [283](283-collapsible-changelog-versions.md) | Collapsible versions in every changelog | verified | laptop | #417, portfolio#20 |
 | [285](285-generated-share-image.md) | Generated preview image for shared decks | verified | thinker | #424, #425, #426 |
 | [286](286-portfolio-orangui-line-anchors.md) | Portfolio orangui source line ranges are stale | verified | laptop | portfolio#21 |
