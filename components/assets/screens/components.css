@@ -125,12 +125,6 @@
     color: var(--text-primary);
 }
 
-/* The chip keeps its whole border while folded; the folded rule below
-   that clears a group header's bottom edge does not apply to it. */
-.card-group.deck-group.collapsed > .card-group-header.group-collapsible {
-    border-bottom-color: var(--border-primary);
-}
-
 /* The decks sit a panel gap under their chip and over the next one. The
    padding opens and closes with the fold, so folded groups stack at the
    chip row's own spacing instead of holding two gaps of empty space. */
