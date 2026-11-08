@@ -7,7 +7,7 @@
 use std::collections::HashSet;
 
 use components::icons::{DockIcon, MINUS, PLUS, UNDO};
-use components::{Chip, DockFilter};
+use components::{Chip, DockFilter, IdentityPips};
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
@@ -72,14 +72,7 @@ fn CardGroup(
                 },
                 span { class: "card-row-arrow", "\u{25b8}" }
                 if let Some(pips) = pips.as_ref().filter(|p| !p.is_empty()) {
-                    span { class: "identity-pips",
-                        for color in pips.iter() {
-                            i {
-                                key: "{color.to_short_name()}",
-                                class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
-                            }
-                        }
-                    }
+                    IdentityPips { colors: pips.clone() }
                 }
                 "{title}"
             }

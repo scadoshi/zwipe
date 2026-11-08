@@ -16,7 +16,8 @@ use std::path::PathBuf;
 
 use components::{
     Bar, BarChart, BarOrientation, ChangelogFilter, ChangelogFilters, ChangelogLook,
-    ChangelogReleases, ColorBars, ColorChart, DeckCharts, DrawOdds, FlippableCardImage, LabelCase,
+    ChangelogReleases, ColorBars, ColorChart, DeckCharts, DrawOdds, FlippableCardImage,
+    IdentityPips, LabelCase,
 };
 use dioxus::dioxus_core::NoOpMutations;
 use dioxus::prelude::*;
@@ -70,6 +71,18 @@ fn color_bars() {
         "color_bars",
         &dioxus_ssr::render_element(rsx! {
             ColorBars { bars: counts.bars() }
+        }),
+    );
+}
+
+/// A group header's Azorius pips: the symbols hidden from a screen reader,
+/// which reads "Azorius" before the header's count.
+#[test]
+fn identity_pips() {
+    golden(
+        "identity_pips",
+        &dioxus_ssr::render_element(rsx! {
+            IdentityPips { colors: vec![Color::White, Color::Blue] }
         }),
     );
 }

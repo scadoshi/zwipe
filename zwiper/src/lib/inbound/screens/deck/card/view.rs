@@ -1,5 +1,7 @@
 use components::icons::{self};
-use components::{Button, ButtonVariant, Chip, DockAction, DockFilter, Toasts, use_toast};
+use components::{
+    Button, ButtonVariant, Chip, DockAction, DockFilter, IdentityPips, Toasts, use_toast,
+};
 use dioxus::core::spawn_forever;
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -479,14 +481,7 @@ fn CollapsibleGroup(
                 onclick: move |_| ontoggle(()),
                 span { class: "card-row-arrow", "▸" }
                 if let Some(pips) = pips.as_ref().filter(|p| !p.is_empty()) {
-                    span { class: "identity-pips",
-                        for color in pips.iter() {
-                            i {
-                                key: "{color.to_short_name()}",
-                                class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
-                            }
-                        }
-                    }
+                    IdentityPips { colors: pips.clone() }
                 }
                 "{title}"
             }
