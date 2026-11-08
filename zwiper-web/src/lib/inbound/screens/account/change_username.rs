@@ -5,6 +5,7 @@ use components::{BottomSheet, SheetFrame, SheetWide, TOAST_QUICK, TextInput};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::user::username;
 use zwipe_core::http::contracts::auth::HttpChangeUsername;
 use zwipe_ui::account;
 use zwipe_ui::text::sentence_case;
@@ -98,6 +99,9 @@ pub(super) fn ChangeUsernameSheet(mut open: Signal<bool>) -> Element {
                     TextInput {
                         value: new_username,
                         id: "new_username",
+                        name: "username",
+                        autocomplete: "username",
+                        maxlength: username::MAX_LENGTH,
                         label: "New username",
                         placeholder: "New username",
                         error: username_error.as_deref().map(sentence_case),
@@ -105,6 +109,8 @@ pub(super) fn ChangeUsernameSheet(mut open: Signal<bool>) -> Element {
                     TextInput {
                         value: password,
                         id: "password",
+                        name: "password",
+                        autocomplete: "current-password",
                         label: "Password",
                         placeholder: "Password",
                         input_type: "password",

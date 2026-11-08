@@ -2,6 +2,7 @@
 
 use components::{ActionDock, BottomSheet, DockAction, DockPlace, TextInput, icons};
 use dioxus::prelude::*;
+use zwipe_core::domain::user::username;
 use zwipe_ui::screens::account::{Action, Field, Sheet};
 use zwipe_ui::text::sentence_case;
 
@@ -33,6 +34,9 @@ pub fn ChangeUsernameSheet(open: Signal<bool>) -> Element {
                 TextInput {
                     value: driver.inputs.get(sheet, Field::NewUsername),
                     id: "new_username",
+                    name: "username",
+                    autocomplete: "username",
+                    maxlength: username::MAX_LENGTH,
                     label: Field::NewUsername.label(),
                     placeholder: Field::NewUsername.placeholder(),
                     error: username_error.as_deref().map(sentence_case),
@@ -41,6 +45,8 @@ pub fn ChangeUsernameSheet(open: Signal<bool>) -> Element {
                 TextInput {
                     value: driver.inputs.get(sheet, Field::Password),
                     id: "password",
+                    name: "password",
+                    autocomplete: "current-password",
                     label: Field::Password.label(),
                     placeholder: Field::Password.placeholder(),
                     input_type: "password",

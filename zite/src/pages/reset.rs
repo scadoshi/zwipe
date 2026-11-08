@@ -210,6 +210,7 @@ pub fn Reset(token: String) -> Element {
                             PasswordInput {
                                 value: password,
                                 id: "reset-password",
+                                maxlength: zwipe_core::domain::auth::password::MAX_LENGTH,
                                 name: "new-password",
                                 autocomplete: "new-password",
                                 placeholder: "New password",
@@ -221,6 +222,7 @@ pub fn Reset(token: String) -> Element {
                             PasswordInput {
                                 value: confirm,
                                 id: "reset-confirm",
+                                maxlength: zwipe_core::domain::auth::password::MAX_LENGTH,
                                 name: "confirm-password",
                                 autocomplete: "new-password",
                                 placeholder: "Confirm password",

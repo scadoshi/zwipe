@@ -100,6 +100,7 @@ pub(super) fn DeleteAccountDialog(open: Signal<bool>) -> Element {
             TextInput {
                 value: password,
                 input_type: "password".to_string(),
+                autocomplete: "current-password",
                 placeholder: "Password".to_string(),
             }
         }

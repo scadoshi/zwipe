@@ -10,6 +10,7 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::auth::password;
 use zwipe_core::http::contracts::auth::{HttpChangePassword, HttpRequestPasswordReset};
 use zwipe_ui::account;
 use zwipe_ui::screens::account::{FORGOT_PASSWORD, RESET_LINK_SENT};
@@ -159,6 +160,8 @@ pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
                     TextInput {
                         value: current,
                         id: "current_password",
+                        name: "current-password",
+                        autocomplete: "current-password",
                         label: "Current password",
                         placeholder: "Current password",
                         input_type: "password",
@@ -166,6 +169,9 @@ pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
                     TextInput {
                         value: new_password,
                         id: "new_password",
+                        name: "new-password",
+                        autocomplete: "new-password",
+                        maxlength: password::MAX_LENGTH,
                         label: "New password",
                         placeholder: "New password",
                         input_type: "password",
@@ -175,6 +181,9 @@ pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
                     TextInput {
                         value: confirm,
                         id: "confirm_password",
+                        name: "confirm-password",
+                        autocomplete: "new-password",
+                        maxlength: password::MAX_LENGTH,
                         label: "Confirm password",
                         placeholder: "Confirm new",
                         input_type: "password",

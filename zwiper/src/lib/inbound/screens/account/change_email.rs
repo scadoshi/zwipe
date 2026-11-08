@@ -2,6 +2,7 @@
 
 use components::{ActionDock, BottomSheet, DockAction, DockPlace, TextInput, icons};
 use dioxus::prelude::*;
+use zwipe_core::domain::user::email;
 use zwipe_ui::screens::account::{Action, Field, Sheet};
 use zwipe_ui::text::sentence_case;
 
@@ -33,6 +34,10 @@ pub fn ChangeEmailSheet(open: Signal<bool>) -> Element {
                 TextInput {
                     value: driver.inputs.get(sheet, Field::NewEmail),
                     id: "new_email",
+                    input_type: "email",
+                    name: "email",
+                    autocomplete: "email",
+                    maxlength: email::MAX_LENGTH,
                     label: Field::NewEmail.label(),
                     placeholder: Field::NewEmail.placeholder(),
                     error: email_error.as_deref().map(sentence_case),
@@ -41,6 +46,8 @@ pub fn ChangeEmailSheet(open: Signal<bool>) -> Element {
                 TextInput {
                     value: driver.inputs.get(sheet, Field::Password),
                     id: "password",
+                    name: "password",
+                    autocomplete: "current-password",
                     label: Field::Password.label(),
                     placeholder: Field::Password.placeholder(),
                     input_type: "password",

@@ -834,6 +834,22 @@ fn can_clone_needs_more_than_spaces() {
 }
 
 #[test]
+fn a_clone_name_is_judged_like_a_deck_name() {
+    assert_eq!(clone_name_error("Krenko (clone)"), None);
+    assert_eq!(
+        clone_name_error("  ").as_deref(),
+        Some("Deck name is required")
+    );
+    let longest = "x".repeat(64);
+    assert_eq!(clone_name_error(&longest), None);
+    assert_eq!(
+        clone_name_error(&format!("{longest}x")).as_deref(),
+        Some("Deck names are 1 to 64 characters")
+    );
+    assert!(!can_clone(&format!("{longest}x")));
+}
+
+#[test]
 fn the_copy_matches_the_app() {
     assert_eq!(TITLE, "Deck");
     assert_eq!(LOAD_FAILED, "Couldn't load deck");

@@ -16,7 +16,7 @@ use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use zwipe_core::domain::deck::{DeckName, DeckOtherTag, DeckProfile, Format, PowerLevel};
+use zwipe_core::domain::deck::{DeckOtherTag, DeckProfile, Format, PowerLevel};
 use zwipe_ui::deck::form::{Slot, follow_land_target};
 use zwipe_ui::screens::deck_form;
 
@@ -227,7 +227,7 @@ pub fn use_deck_form() -> DeckForm {
         }
         if *touched.peek() {
             let mut error = form.name_error;
-            error.set(DeckName::new(value).err().map(|e| e.to_string()));
+            error.set(deck_form::name_error(&value));
         }
     });
 

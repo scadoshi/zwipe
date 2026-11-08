@@ -13,6 +13,8 @@ use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use dioxus_primitives::toast::{ToastOptions, Toasts, use_toast};
 use zwipe_client::ZwipeClient;
+use zwipe_core::domain::auth::password;
+use zwipe_core::domain::user::{email, username};
 use zwipe_core::http::contracts::auth::HttpRegisterUser;
 use zwipe_core::http::contracts::metrics::AnonymousEventKind;
 use zwipe_ui::account::Password;
@@ -166,6 +168,7 @@ pub fn Register() -> Element {
                             TextInput {
                                 value: driver.username,
                                 id: "username",
+                                maxlength: username::MAX_LENGTH,
                                 name: "username",
                                 autocomplete: "username",
                                 label: Field::Username.label(),
@@ -175,6 +178,7 @@ pub fn Register() -> Element {
                             TextInput {
                                 value: driver.email,
                                 id: "email",
+                                maxlength: email::MAX_LENGTH,
                                 name: "email",
                                 autocomplete: "email",
                                 label: Field::Email.label(),
@@ -185,6 +189,7 @@ pub fn Register() -> Element {
                             TextInput {
                                 value: driver.password,
                                 id: "password",
+                                maxlength: password::MAX_LENGTH,
                                 name: "new-password",
                                 autocomplete: "new-password",
                                 label: Field::Password.label(),
@@ -196,6 +201,7 @@ pub fn Register() -> Element {
                             TextInput {
                                 value: driver.confirm_password,
                                 id: "confirm_password",
+                                maxlength: password::MAX_LENGTH,
                                 name: "confirm-password",
                                 autocomplete: "new-password",
                                 label: Field::ConfirmPassword.label(),
