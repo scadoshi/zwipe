@@ -281,3 +281,7 @@ Settings → VPN & Device Management → your Apple ID → Trust
 ## Developer Mode required (iOS 16+)
 
 Settings → Privacy & Security → Developer Mode → toggle on → restart device
+
+## Release build on the phone shows no icon
+
+The build has its icons (deploy.sh runs icons.sh), but iOS can keep a blank icon cached when a build installs over an older one. Delete the app from the phone and deploy again. Seen and fixed this way 2026-11-08.
