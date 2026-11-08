@@ -155,12 +155,14 @@ pub fn CommandZoneField(form: DeckForm, slot: Slot, label: String) -> Element {
             div { class: "label-row",
                 label { class: "label", r#for: input_id(slot), "{label}" }
                 InfoButton { topic: slot.hint((form.format)()) }
-                div {
+                button {
+                    r#type: "button",
                     class: if filter_on() { "chip-xs selected" } else { "chip-xs" },
                     onclick: move |_| filter_on.toggle(),
                     "Filter"
                 }
-                div {
+                button {
+                    r#type: "button",
                     class: "chip-xs chip-primary",
                     onclick: move |_| swipe_open.set(true),
                     "Swipe"

@@ -499,7 +499,11 @@ pub fn CommanderMaybeboard() -> Element {
                                             picked.insert(color);
                                         }
                                     },
-                                    i { class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost" }
+                                    i {
+                                        class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
+                                        "aria-hidden": "true",
+                                    }
+                                    span { class: "sr-only", "{color.to_long_name()}" }
                                 }
                             }
                             Chip {

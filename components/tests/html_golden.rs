@@ -17,6 +17,7 @@ use std::path::PathBuf;
 use components::{
     Bar, BarChart, BarOrientation, ChangelogFilter, ChangelogFilters, ChangelogLook,
     ChangelogReleases, ColorBars, ColorChart, DeckCharts, DrawOdds, FlippableCardImage, LabelCase,
+    Pressable,
 };
 use dioxus::dioxus_core::NoOpMutations;
 use dioxus::prelude::*;
@@ -70,6 +71,20 @@ fn color_bars() {
         "color_bars",
         &dioxus_ssr::render_element(rsx! {
             ColorBars { bars: counts.bars() }
+        }),
+    );
+}
+
+/// A folding header as a [`Pressable`]: a button in the tab order that says
+/// whether it is open.
+#[test]
+fn pressable_header() {
+    golden(
+        "pressable_header",
+        &render(|| {
+            rsx! {
+                Pressable { class: "card-group-header", expanded: true, onpress: move |()| {}, "Creatures (12)" }
+            }
         }),
     );
 }

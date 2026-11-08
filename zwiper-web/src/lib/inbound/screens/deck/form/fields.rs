@@ -3,7 +3,7 @@
 //! (deck, oracle and other tags). A wide window puts `Profile` and `Budget`
 //! in the left column and `Tags` in the right.
 
-use components::{ClearWrap, TextInput};
+use components::{Chip, ClearWrap, Pressable, TextInput};
 use dioxus::prelude::*;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::card::search_card::commander_eligibility;
@@ -98,9 +98,9 @@ fn ProfileFields(form: DeckForm, on_enter: EventHandler<()>) -> Element {
                         filled: format.is_some(),
                         on_clear: move |()| form.clear_format(),
                         if let Some(format) = format {
-                            div { class: "input input-tappable", onclick: move |_| format_open.set(true), "{format.display_name()}" }
+                            Pressable { class: "input input-tappable", onpress: move |()| format_open.set(true), "{format.display_name()}" }
                         } else {
-                            div { class: "input input-placeholder input-tappable", onclick: move |_| format_open.set(true), "Not set" }
+                            Pressable { class: "input input-placeholder input-tappable", onpress: move |()| format_open.set(true), "Not set" }
                         }
                     }
                 }
@@ -131,9 +131,9 @@ fn ProfileFields(form: DeckForm, on_enter: EventHandler<()>) -> Element {
                     }
                     div { class: "chip-row", style: "flex-wrap: wrap; justify-content: center;",
                         for level in PowerLevel::all().iter().copied() {
-                            div {
+                            Chip {
                                 key: "{level}",
-                                class: if power_level() == Some(level) { "chip selected" } else { "chip" },
+                                selected: power_level() == Some(level),
                                 onclick: move |_| {
                                     if power_level() == Some(level) {
                                         power_level.set(None);
@@ -209,9 +209,9 @@ fn BudgetFields(form: DeckForm) -> Element {
                         // The currencies on the label's line.
                         div { class: "label-row-chips",
                             for each in PriceCurrency::all().iter().copied() {
-                                div {
+                                Chip {
                                     key: "{each.label()}",
-                                    class: if currency() == each { "chip selected" } else { "chip" },
+                                    selected: currency() == each,
                                     onclick: move |_| currency.set(each),
                                     "{each.label()}"
                                 }
@@ -272,14 +272,16 @@ fn TagFields(form: DeckForm) -> Element {
                         }
                     }
                     if tags.read().is_empty() {
-                        div { class: "input input-placeholder input-tappable", onclick: move |_| tags_open.set(true), "Not set" }
+                        Pressable { class: "input input-placeholder input-tappable", onpress: move |()| tags_open.set(true), "Not set" }
                     } else {
-                        div { class: "chip-box input-tappable", onclick: move |_| tags_open.set(true),
+                        Pressable { class: "chip-box input-tappable", onpress: move |()| tags_open.set(true),
                             for tag in tags() {
                                 div { key: "{tag}", class: "chip selected flex items-center gap-05",
                                     "{deck_tag_label(&tag)}"
                                     button {
                                         class: "chip-remove",
+                                        // Its keys stay with it: Enter removes the chip without opening the picker.
+                                        onkeydown: move |evt| evt.stop_propagation(),
                                         r#type: "button",
                                         onclick: move |evt| {
                                             evt.stop_propagation();
@@ -307,14 +309,16 @@ fn TagFields(form: DeckForm) -> Element {
                         }
                     }
                     if oracle_tags.read().is_empty() {
-                        div { class: "input input-placeholder input-tappable", onclick: move |_| oracle_open.set(true), "Not set" }
+                        Pressable { class: "input input-placeholder input-tappable", onpress: move |()| oracle_open.set(true), "Not set" }
                     } else {
-                        div { class: "chip-box input-tappable", onclick: move |_| oracle_open.set(true),
+                        Pressable { class: "chip-box input-tappable", onpress: move |()| oracle_open.set(true),
                             for slug in oracle_tags() {
                                 div { key: "{slug}", class: "chip selected flex items-center gap-05",
                                     "{slug}"
                                     button {
                                         class: "chip-remove",
+                                        // Its keys stay with it: Enter removes the chip without opening the picker.
+                                        onkeydown: move |evt| evt.stop_propagation(),
                                         r#type: "button",
                                         onclick: move |evt| {
                                             evt.stop_propagation();
@@ -342,9 +346,9 @@ fn TagFields(form: DeckForm) -> Element {
                     }
                     div { class: "chip-row", style: "flex-wrap: wrap; justify-content: center;",
                         for tag in DeckOtherTag::all().iter().copied() {
-                            div {
+                            Chip {
                                 key: "{tag}",
-                                class: if other_tags.read().contains(&tag) { "chip selected" } else { "chip" },
+                                selected: other_tags.read().contains(&tag),
                                 onclick: move |_| {
                                     let mut picked = other_tags.write();
                                     if let Some(at) = picked.iter().position(|t| *t == tag) {

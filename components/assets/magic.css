@@ -2690,6 +2690,15 @@ footer.site-footer .site-footer-note {
     border-radius: 0.5rem;
 }
 
-.deck-fold-toggle:focus-visible {
+.deck-fold-toggle:focus-visible,
+.card-list-fold-title:focus-visible,
+.web-section-title:focus-visible {
     outline-offset: 0.3rem;
+}
+
+/* Any other element that acts as a button: a deck row, a picker field.
+   The ring follows the element's own corners. */
+:where([role="button"][tabindex="0"]):focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: -2px;
 }

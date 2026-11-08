@@ -6,7 +6,7 @@
 
 use components::icons::{CloneIcon, EditIcon, ShareIcon};
 use components::{
-    Button, ButtonVariant, ColorChart, DeckCharts, DrawOdds, ManaCurve, ManaFulfillment,
+    Button, ButtonVariant, Chip, ColorChart, DeckCharts, DrawOdds, ManaCurve, ManaFulfillment,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -132,9 +132,9 @@ pub fn CurrencyChips(mut currency: Signal<PriceCurrency>) -> Element {
     rsx! {
         div { class: "chip-row", style: "margin-bottom:0;",
             for each in PriceCurrency::all().iter().copied() {
-                div {
+                Chip {
                     key: "{each.label()}",
-                    class: if shown == each { "chip selected" } else { "chip" },
+                    selected: shown == each,
                     onclick: move |_| currency.set(each),
                     "{each.label()}"
                 }

@@ -1,5 +1,7 @@
 use components::icons::{self};
-use components::{Button, ButtonVariant, Chip, DockAction, DockFilter, Toasts, use_toast};
+use components::{
+    Button, ButtonVariant, Chip, DockAction, DockFilter, Pressable, Toasts, use_toast,
+};
 use dioxus::core::spawn_forever;
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -474,9 +476,10 @@ fn CollapsibleGroup(
     rsx! {
         div {
             class: if expanded { "card-group row-enter" } else { "card-group row-enter collapsed" },
-            div {
+            Pressable {
                 class: if expanded { "card-group-header group-collapsible expanded" } else { "card-group-header group-collapsible" },
-                onclick: move |_| ontoggle(()),
+                expanded,
+                onpress: move |()| ontoggle(()),
                 span { class: "card-row-arrow", "▸" }
                 if let Some(pips) = pips.as_ref().filter(|p| !p.is_empty()) {
                     span { class: "identity-pips",
@@ -492,6 +495,7 @@ fn CollapsibleGroup(
             }
             div {
                 class: if expanded { "collapsible open" } else { "collapsible" },
+                inert: (!expanded).then_some(true),
                 div { class: "collapsible-inner", {children} }
             }
         }

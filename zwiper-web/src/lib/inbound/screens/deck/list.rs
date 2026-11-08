@@ -8,7 +8,7 @@
 use std::collections::HashSet;
 
 use components::icons::{DockIcon, PLUS};
-use components::{Chip, LoadFailed, TOAST_LONG};
+use components::{Chip, LoadFailed, Pressable, TOAST_LONG};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::{ClientError, ZwipeClient};
@@ -154,7 +154,11 @@ pub fn DeckList() -> Element {
                                     key: "{color.to_short_name()}",
                                     selected: filter.colors.contains(&color),
                                     onclick: move |_| show.write().toggle_color(color),
-                                    i { class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost" }
+                                    i {
+                                        class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
+                                        "aria-hidden": "true",
+                                    }
+                                    span { class: "sr-only", "{color.to_long_name()}" }
                                 }
                             }
                             if !tags_present.is_empty() {
@@ -257,9 +261,10 @@ fn DeckGroupSection(
     rsx! {
         div {
             class: if expanded { "card-group deck-group row-enter" } else { "card-group deck-group row-enter collapsed" },
-            div {
+            Pressable {
                 class: if expanded { "card-group-header group-collapsible expanded" } else { "card-group-header group-collapsible" },
-                onclick: move |_| {
+                expanded,
+                onpress: move |()| {
                     let mut set = collapsed.write();
                     if !set.remove(&group_key) {
                         set.insert(group_key.clone());
@@ -280,7 +285,9 @@ fn DeckGroupSection(
                     "{header} ({count})"
                 }
             }
-            div { class: if expanded { "collapsible open" } else { "collapsible" },
+            div {
+                class: if expanded { "collapsible open" } else { "collapsible" },
+                inert: (!expanded).then_some(true),
                 div { class: "collapsible-inner", {children} }
             }
         }
@@ -297,9 +304,9 @@ fn DeckRow(profile: DeckProfile) -> Element {
     let art = command_zone::art(&profile).into_iter().map(str::to_owned);
     let deck_id = profile.id;
     rsx! {
-        div {
+        Pressable {
             class: "card-row deck-row row-enter",
-            onclick: move |_| {
+            onpress: move |()| {
                 navigator.push(Route::ViewDeck { deck_id });
             },
             div { class: "deck-list-row",
