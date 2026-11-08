@@ -9,7 +9,9 @@
 //! - a reload or a closed tab, which the browser asks about itself.
 //!
 //! Stay drops the move and leaves every layer on the screen as it was.
-//! Leave disarms the guard and makes the move.
+//! Leave disarms the guard and makes the move. Every move it lets through
+//! then goes past `fresh_build::after_move`, which loads the page in full
+//! once a newer build is live.
 //!
 //! The browser's back or forward with a sheet or dialog open closes the top
 //! one instead, armed or not, and puts the screen's URL back; the guard only
@@ -24,6 +26,7 @@ use components::OverlayBackStack;
 use dioxus::history::History;
 use dioxus::prelude::*;
 
+use crate::inbound::chrome::fresh_build;
 use crate::inbound::router::Route;
 
 /// A move the guard held back.
@@ -136,6 +139,15 @@ fn close_overlay_on_pop() -> bool {
     true
 }
 
+/// Whether a screen holds unsaved changes.
+#[cfg_attr(
+    not(target_arch = "wasm32"),
+    expect(dead_code, reason = "the browser build's fresh-build check reads it")
+)]
+pub(crate) fn is_armed() -> bool {
+    GUARD.with(|g| g.copy.get().is_some())
+}
+
 /// Records the platform's current route as the one on screen.
 fn show_current() {
     GUARD.with(|g| {
@@ -236,6 +248,7 @@ impl History for GuardedHistory {
         if route == self.inner.current_route() || !hold(Held::Push(route.clone())) {
             self.inner.push(route.clone());
             show(route);
+            fresh_build::after_move();
         }
     }
 
@@ -243,6 +256,7 @@ impl History for GuardedHistory {
         if !hold(Held::Replace(path.clone())) {
             self.inner.replace(path.clone());
             show(path);
+            fresh_build::after_move();
         }
     }
 
@@ -257,6 +271,7 @@ impl History for GuardedHistory {
             }
             show_current();
             callback();
+            fresh_build::after_move();
         }));
     }
 

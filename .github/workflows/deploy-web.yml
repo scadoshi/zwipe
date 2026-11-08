@@ -60,6 +60,9 @@ jobs:
     env:
       # The API the build talks to; build.rs bakes it in.
       BACKEND_URL: https://api.zwipe.net
+      # The build's name, baked in by build.rs and written to version.json
+      # below, which the app compares on a page change to find a newer build.
+      ZWIPER_BUILD: ${{ github.sha }}
       CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER: gcc
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -87,9 +90,11 @@ jobs:
         working-directory: zwiper-web
         run: dx build --release --platform web
 
-      - name: Add headers
+      - name: Add headers and the version file
         # No 404.html: Pages then serves index.html with a 200 for app routes.
-        run: cp zwiper-web/deploy/_headers target/dx/zwiper-web/release/web/public/_headers
+        run: |
+          cp zwiper-web/deploy/_headers target/dx/zwiper-web/release/web/public/_headers
+          printf '{"build":"%s"}\n' "$ZWIPER_BUILD" > target/dx/zwiper-web/release/web/public/version.json
 
       - name: Hand the site to the deploy job
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
