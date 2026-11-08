@@ -167,6 +167,8 @@ fn SummaryIdentityRow(
     value: SummaryValue,
     #[props(default)] name: Option<String>,
 ) -> Element {
+    // A shown name says the color, so the pips say nothing more.
+    let speak = name.is_none();
     rsx! {
         div { class: "settings-row",
             span { class: "settings-row-label", "{label}" }
@@ -174,7 +176,7 @@ fn SummaryIdentityRow(
                 if let Some(name) = name {
                     span { "{name}" }
                 }
-                IdentityPips { identity: value.pips, count: value.count }
+                IdentityPips { identity: value.pips, count: value.count, speak }
             }
         }
     }
