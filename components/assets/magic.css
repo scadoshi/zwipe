@@ -1464,7 +1464,30 @@ i.ms.ms-cost.ms-gp {
     display: flex;
     align-items: center;
     gap: 0.6rem;
-    margin-bottom: 0.75rem;
+}
+
+/* The caret leads the version, sized to the heading. */
+.changelog-version-row .collapse-caret {
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-left: -0.25rem;
+}
+
+/* The space under a card's version row is the notes' own, so a shut card
+   closes up to its header. */
+.changelog-card .changelog-bullets {
+    padding-top: 0.75rem;
+}
+
+/* Collapse all, at the right end over the releases. */
+.changelog-collapse-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: var(--panel-gap);
+}
+
+.changelog-collapse-row .collapse-all {
+    font-family: inherit;
 }
 
 .changelog-version {
@@ -1528,6 +1551,11 @@ i.ms.ms-cost.ms-gp {
     flex-direction: column;
     gap: var(--panel-gap);
     margin-top: var(--panel-gap);
+}
+
+.changelog-collapse-row + .changelog-panels,
+.changelog-collapse-row + .changelog-list {
+    margin-top: 0.75rem;
 }
 
 .changelog-panel {
