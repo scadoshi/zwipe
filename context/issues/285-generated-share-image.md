@@ -9,3 +9,4 @@ Scotty's answers: 1. zerver draws it, Cloudflare caches it.
 2. The owner's theme (share API may carry the theme name).
 3. Show the price as is (USD sum of priced cards; unpriced cards just don't count).
 4. Include the mana curve, and the deck tags too. Final set: name, art, format (with power level when set), card count, colors, price, deck tags, mana curve.
+5. Art only from the command zone (commander, partner, Oathbreaker and the like). A deck with no command zone gets no art; the text side takes the full width.
