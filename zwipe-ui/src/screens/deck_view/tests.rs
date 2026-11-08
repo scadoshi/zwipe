@@ -133,6 +133,11 @@ fn the_profile_lands_and_seeds_the_currency_and_share_link() {
     assert_eq!(state.currency(), PriceCurrency::Eur);
     assert_eq!(state.share_token(), Some(Uuid::nil()));
     assert_eq!(state.share_body(), SHARE_SHARED);
+    assert_eq!(
+        state.share_url(),
+        state.share_token().map(view::share_link),
+        "the dialog shows the live link"
+    );
     assert_eq!(state.clone_name(), "Budget (clone)");
     assert!(state.deck_loading(), "the deck is still out");
 }

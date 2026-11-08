@@ -1173,6 +1173,13 @@ impl State {
         self.share_token
     }
 
+    /// The live share link, which the Share dialog shows under its line: `Some` while the deck has
+    /// a public link.
+    #[must_use]
+    pub fn share_url(&self) -> Option<String> {
+        self.share_token.map(view::share_link)
+    }
+
     /// The Share dialog's line: [`SHARE_SHARED`] while the deck has a link, else [`SHARE_UNSHARED`].
     #[must_use]
     pub fn share_body(&self) -> &'static str {
