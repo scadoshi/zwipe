@@ -70,10 +70,10 @@ struct Guard {
     held: RefCell<Option<Held>>,
     /// The platform's history, under [`GuardedHistory`].
     inner: RefCell<Option<Rc<dyn History>>>,
-    /// The dialog's open state, from the mounted [`LeaveDialog`].
+    /// The dialog's open state, from the first [`LeaveDialog`] to mount.
     asking: Cell<Option<Signal<bool>>>,
-    /// Whether a screen is armed, which the mounted [`LeaveDialog`] marks for
-    /// the unload prompt.
+    /// Whether a screen is armed, which every mounted [`LeaveDialog`] marks
+    /// for the unload prompt.
     armed: Cell<Option<Signal<bool>>>,
     /// The open sheets and dialogs, from [`watch_overlays`].
     overlays: Cell<Option<OverlayBackStack>>,
@@ -322,39 +322,52 @@ const FOCUS_STAY_JS: &str = "(() => { const stay = document.querySelector('.web-
 /// Gives focus back to what had it before the dialog.
 const FOCUS_BACK_JS: &str = "(() => { const from = window.__zwipeLeaveFrom; window.__zwipeLeaveFrom = null; if (from && from.isConnected && from.focus) from.focus(); })()";
 
-/// Registers a mounted [`LeaveDialog`]'s open state and armed marker with
-/// the guard, and takes them back when it goes, unless a dialog mounted
-/// since has taken the slots: a frame that replaces another mounts its
-/// dialog before the last one drops. Returns `(asking, armed)`.
+/// The guard's dialog state, `(asking, armed)`, which every mounted
+/// [`LeaveDialog`] shares. The first one to mount creates it, owned by the
+/// root scope, so it outlives any one dialog: a frame that replaces another
+/// mounts its dialog before the last one drops, and the guard writes the
+/// state from whichever screen or nav button holds a move.
 fn use_dialog_slots() -> (Signal<bool>, Signal<bool>) {
-    let asking = use_hook(|| {
-        let asking = Signal::new(false);
-        GUARD.with(|g| g.asking.set(Some(asking)));
-        asking
-    });
-    let armed = use_hook(|| {
-        let armed = Signal::new(GUARD.with(|g| g.copy.get().is_some()));
-        GUARD.with(|g| g.armed.set(Some(armed)));
-        armed
-    });
-    use_drop(move || {
+    use_hook(|| {
         GUARD.with(|g| {
-            if g.asking.get() == Some(asking) {
-                g.asking.set(None);
-            }
-            if g.armed.get() == Some(armed) {
-                g.armed.set(None);
-            }
-        });
-    });
-    (asking, armed)
+            let asking = g.asking.get().unwrap_or_else(|| {
+                let asking = Signal::new_in_scope(false, ScopeId::ROOT);
+                g.asking.set(Some(asking));
+                asking
+            });
+            let armed = g.armed.get().unwrap_or_else(|| {
+                let armed = Signal::new_in_scope(g.copy.get().is_some(), ScopeId::ROOT);
+                g.armed.set(Some(armed));
+                armed
+            });
+            (asking, armed)
+        })
+    })
 }
 
-/// The open state of the [`LeaveDialog`] the guard asks through, which
-/// names the mounted dialog.
 #[cfg(test)]
-pub(crate) fn mounted_dialog() -> Option<Signal<bool>> {
-    GUARD.with(|g| g.asking.get())
+thread_local! {
+    /// The scopes of the mounted [`LeaveDialog`]s, oldest first.
+    static MOUNTED_DIALOGS: RefCell<Vec<ScopeId>> = const { RefCell::new(Vec::new()) };
+}
+
+/// The scope of the newest mounted [`LeaveDialog`], which names it: a frame
+/// drawn again mounts a dialog in a new scope.
+#[cfg(test)]
+pub(crate) fn mounted_dialog() -> Option<ScopeId> {
+    MOUNTED_DIALOGS.with(|m| m.borrow().last().copied())
+}
+
+/// Records the calling [`LeaveDialog`] in [`MOUNTED_DIALOGS`] while it is
+/// mounted.
+#[cfg(test)]
+fn use_mounted_record() {
+    let scope = use_hook(|| {
+        let scope = dioxus::core::current_scope_id();
+        MOUNTED_DIALOGS.with(|m| m.borrow_mut().push(scope));
+        scope
+    });
+    use_drop(move || MOUNTED_DIALOGS.with(|m| m.borrow_mut().retain(|s| *s != scope)));
 }
 
 /// The dialog the guard asks through, over every layer a screen can have
@@ -364,6 +377,8 @@ pub(crate) fn mounted_dialog() -> Option<Signal<bool>> {
 pub fn LeaveDialog() -> Element {
     let navigator = use_navigator();
     let (mut asking, armed) = use_dialog_slots();
+    #[cfg(test)]
+    use_mounted_record();
     use_hook(|| {
         document::eval(UNLOAD_JS);
         document::eval(TAB_JS);
@@ -533,6 +548,28 @@ mod tests {
         assert!(dom.in_runtime(|| *second.peek()), "and the dialog opens");
         GUARD.with(|g| g.held.borrow_mut().take());
         arm(None);
+    }
+
+    #[test]
+    fn the_dialog_signals_belong_to_the_root_and_outlive_any_dialog() {
+        let mut dom = VirtualDom::new(TwoFrames);
+        dom.rebuild_in_place();
+        let mut mounted = MOUNTED.with(|m| *m.borrow()).unwrap();
+        dom.in_runtime(|| mounted.set((false, false)));
+        dom.render_immediate_to_vec();
+
+        let asking = GUARD
+            .with(|g| g.asking.get())
+            .expect("the slot stays filled");
+        let armed = GUARD
+            .with(|g| g.armed.get())
+            .expect("the slot stays filled");
+        assert_eq!(asking.origin_scope(), ScopeId::ROOT, "asking is the root's");
+        assert_eq!(armed.origin_scope(), ScopeId::ROOT, "armed is the root's");
+        assert!(
+            dom.in_runtime(|| asking.try_peek().is_ok() && armed.try_peek().is_ok()),
+            "both still read with no dialog mounted"
+        );
     }
 
     #[test]

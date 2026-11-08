@@ -193,8 +193,7 @@ mod tests {
         dom.render_immediate_to_vec();
     }
 
-    // Off the browser, screens start their timers on tokio. A dropped
-    // signal's Debug panics, so the dialogs compare with `==`.
+    // Off the browser, screens start their timers on tokio.
     #[tokio::test]
     async fn a_signed_in_user_keeps_one_leave_dialog_through_about_and_privacy() {
         let mut dom = app(Some(test_fixtures::session()));
@@ -203,8 +202,9 @@ mod tests {
         for route in [Route::About {}, Route::PrivacyPolicy {}, Route::Account {}] {
             let path = route.to_string();
             go(&mut dom, route);
-            assert!(
-                leave_guard::mounted_dialog() == Some(dialog),
+            assert_eq!(
+                leave_guard::mounted_dialog(),
+                Some(dialog),
                 "{path} draws in the Shell /account drew in"
             );
         }
@@ -214,8 +214,9 @@ mod tests {
     async fn a_signed_out_visit_to_about_has_no_leave_dialog() {
         let mut dom = app(None);
         go(&mut dom, Route::About {});
-        assert!(
-            leave_guard::mounted_dialog().is_none(),
+        assert_eq!(
+            leave_guard::mounted_dialog(),
+            None,
             "the public frame has no nav dialog"
         );
     }
