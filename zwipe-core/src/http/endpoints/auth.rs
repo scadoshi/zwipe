@@ -4,15 +4,15 @@ use std::borrow::Cow;
 
 use crate::domain::auth::models::session::Session;
 use crate::http::contracts::auth::{
-    HttpAuthenticateUser, HttpConfirmEmailChange, HttpCookieRefresh, HttpRefreshSession,
-    HttpRegisterUser, HttpRegistrationAccepted, HttpRequestPasswordReset, HttpResetPassword,
-    HttpVerifyEmail,
+    HttpAuthenticateUser, HttpCheckResetToken, HttpConfirmEmailChange, HttpCookieRefresh,
+    HttpRefreshSession, HttpRegisterUser, HttpRegistrationAccepted, HttpRequestPasswordReset,
+    HttpResetPassword, HttpVerifyEmail,
 };
 use crate::http::endpoint::{Endpoint, Method};
 use crate::http::paths::{
-    CONFIRM_EMAIL_CHANGE_ROUTE, COOKIE_LOGIN_ROUTE, COOKIE_LOGOUT_ROUTE, COOKIE_REFRESH_ROUTE,
-    FORGOT_PASSWORD_ROUTE, LOGIN_ROUTE, LOGOUT_ROUTE, REFRESH_SESSION_ROUTE, REGISTER_ROUTE,
-    RESEND_VERIFICATION_ROUTE, RESET_PASSWORD_ROUTE, VERIFY_EMAIL_ROUTE,
+    CHECK_RESET_TOKEN_ROUTE, CONFIRM_EMAIL_CHANGE_ROUTE, COOKIE_LOGIN_ROUTE, COOKIE_LOGOUT_ROUTE,
+    COOKIE_REFRESH_ROUTE, FORGOT_PASSWORD_ROUTE, LOGIN_ROUTE, LOGOUT_ROUTE, REFRESH_SESSION_ROUTE,
+    REGISTER_ROUTE, RESEND_VERIFICATION_ROUTE, RESET_PASSWORD_ROUTE, VERIFY_EMAIL_ROUTE,
 };
 
 /// Exchange credentials for a session.
@@ -203,6 +203,26 @@ impl Endpoint for ResetPassword {
     type Response = ();
     fn path(&self) -> Cow<'static, str> {
         Cow::Borrowed(RESET_PASSWORD_ROUTE)
+    }
+    fn body(&self) -> Option<&Self::Request> {
+        Some(&self.0)
+    }
+}
+
+/// Check that a reset link's token is still live, without spending it, so the
+/// page can say a dead link is dead before a password is chosen.
+///
+/// Unauthenticated, for the same reason as [`VerifyEmail`]. A dead token
+/// answers 400.
+#[derive(Debug)]
+pub struct CheckResetToken(pub HttpCheckResetToken);
+impl Endpoint for CheckResetToken {
+    const METHOD: Method = Method::Post;
+    const AUTH: bool = false;
+    type Request = HttpCheckResetToken;
+    type Response = ();
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Borrowed(CHECK_RESET_TOKEN_ROUTE)
     }
     fn body(&self) -> Option<&Self::Request> {
         Some(&self.0)

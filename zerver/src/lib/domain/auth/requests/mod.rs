@@ -6,6 +6,7 @@
 //! # Module Organization
 //!
 //! - [`authenticate_user`]: User login requests and responses
+//! - [`check_reset_token`]: Whether a password reset token is still live
 //! - [`change_email`]: Email change requests with password verification
 //! - [`change_password`]: Password change requests with current password verification
 //! - [`change_username`]: Username change requests with password verification
@@ -24,6 +25,7 @@ pub mod authenticate_user;
 pub mod change_email;
 pub mod change_password;
 pub mod change_username;
+pub mod check_reset_token;
 pub mod confirm_email_change;
 pub mod create_session;
 pub mod delete_user;

@@ -49,6 +49,8 @@ pub enum ApiError {
     #[error("{0}")]
     InternalServerError(String),
     #[error("{0}")]
+    BadRequest(String),
+    #[error("{0}")]
     UnprocessableEntity(String),
     #[error("{0}")]
     Unauthorized(String),
@@ -90,6 +92,7 @@ impl IntoResponse for ApiError {
                     "internal server error".to_string(),
                 )
             }
+            ApiError::BadRequest(message) => (StatusCode::BAD_REQUEST, message),
             ApiError::UnprocessableEntity(message) => (StatusCode::UNPROCESSABLE_ENTITY, message),
             ApiError::Unauthorized(message) => (StatusCode::UNAUTHORIZED, message),
             ApiError::NotFound(message) => (StatusCode::NOT_FOUND, message),
