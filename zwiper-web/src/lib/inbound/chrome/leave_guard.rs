@@ -324,9 +324,8 @@ const FOCUS_BACK_JS: &str = "(() => { const from = window.__zwipeLeaveFrom; wind
 
 /// Registers a mounted [`LeaveDialog`]'s open state and armed marker with
 /// the guard, and takes them back when it goes, unless a dialog mounted
-/// since has taken the slots: moving between frames that each draw the nav
-/// (About's and the authed screens') mounts the next dialog before the last
-/// one drops. Returns `(asking, armed)`.
+/// since has taken the slots: a frame that replaces another mounts its
+/// dialog before the last one drops. Returns `(asking, armed)`.
 fn use_dialog_slots() -> (Signal<bool>, Signal<bool>) {
     let asking = use_hook(|| {
         let asking = Signal::new(false);
@@ -349,6 +348,13 @@ fn use_dialog_slots() -> (Signal<bool>, Signal<bool>) {
         });
     });
     (asking, armed)
+}
+
+/// The open state of the [`LeaveDialog`] the guard asks through, which
+/// names the mounted dialog.
+#[cfg(test)]
+pub(crate) fn mounted_dialog() -> Option<Signal<bool>> {
+    GUARD.with(|g| g.asking.get())
 }
 
 /// The dialog the guard asks through, over every layer a screen can have

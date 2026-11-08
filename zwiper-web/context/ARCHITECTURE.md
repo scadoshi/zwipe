@@ -20,7 +20,7 @@ src/
         ├── root_signal.rs  signals owned by the root scope, for state root tasks write
         ├── router.rs       Route, one variant per screen at the app's path
         ├── session/        ensure_fresh, the upkeep loop, the auth and signed-out gates, logout, the funnel events
-        ├── shell/          the top nav Shell (the app's header and menu below the breakpoint, with menu_footer and menu_theme), PublicFrame, ScreenFrame, nav
+        ├── shell/          the top nav Shell (the app's header and menu below the breakpoint, with menu_footer and menu_theme), PublicFrame, OpenFrame (the one frame over About, Privacy, the authed screens and Not found), ScreenFrame, nav
         └── screens/        one module per screen (the deck screens share `deck/`, the card screens are `deck/cards/`), plus not_found.rs
 ```
 
