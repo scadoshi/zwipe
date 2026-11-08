@@ -519,3 +519,40 @@ Release 80d5b43ab is live. Web: app.zwipe.net at 411px in the emulator's Chrome.
 ### Cleanup
 
 The web temp deck is deleted. The server has 13 decks: Droid test plus Surfer's "Surfer p19 renamed" and the rest. Server settings are unchanged (zenburn, dark, theme pips, chip, Universes Beyond shown with the same four exceptions), and the maybeboard is empty. The emulator runs the 9665fd9e3 debug build, signed in.
+
+## Pass 12
+
+Release 66e364d7e is live (bundle `zwiper-web-dxh99f335c127a64cbc.js`). Web only: app.zwipe.net at 411px in the emulator's Chrome, signed in as `test`. Shots are in ~/Developer/droid/shots/web13-<name>.png (the web12 names were taken by the promo capture). One throwaway Commander deck ("Droid tmp14", Tymna), deleted at the end. Taps were real `adb input tap`s unless noted.
+
+### Nits 213 to 225 on web
+
+| # | Status | What I saw | Shots |
+|---|---|---|---|
+| 213 | fixed | Create, Commander, Tymna, then Partner Swipe. The server reply still includes Tymna (the fix filters on the client, by oracle id), but 40 skips through the pile never dealt her. Tokens in the reply (Rock, Clue, Experience) never showed either. | web13-partner-swipe |
+| 214 | partly | Deck page: opening a deck in airplane mode shows "Couldn't load deck" with Retry and one connection toast. Back online, it loads on its own within 3 s. Add is not covered: offline it sits on a bare ghost for 45 s with no "Couldn't load cards", no Retry and no toast, and Refresh offline toasts "Filter is empty", which is misleading. It does recover on its own once back online. | web13-offline-deck, web13-add-offline |
+| 215 | fixed | Is legal in has an Any / All toggle. Commander + Pauper Commander on All sends `legalities_contains_all: ["commander","paupercommander"]` and deals Pauper Commander cards. Back on Any, it sends `legalities_contains_any` and deals rares again. | web13-all |
+| 216 | fixed | Replace mode: the button reads Replace and asks "Replace the mainboard? Every card on the mainboard comes off and the imported cards go in their place. You can't undo this." Cancel leaves the deck as it was (checked on the server). | web13-replace-confirm |
+| 217 | fixed | Create and Edit both hide Commander, Partner, Background and Signature spell with no format, with no gap. Commander as the format shows the Commander row, then Partner once Tymna is in. | web13-create, web13-cmd, web13-z |
+| 218 | fixed | Edit: Land target + from "Not set" gives 37. Switching to Oathbreaker moves it to 17. Set to 20 and switched back to Commander, it stays 20. | |
+| 219 | not fixed on web | Hide Universes Beyond, then open Exceptions right away. The sheet makes room at the bottom, but the "Universes Beyond hidden" toast draws over the middle of the chips instead (CSS y 407 to 490, over Assassin's Creed, Doctor Who, Jurassic World and Marvel). Same on a second run. The container is `position: fixed; bottom: 72px`, but the toast sits about 300px above it. | web13-exc-sheet, web13-exc-b |
+| 220 | fixed, one data outlier | No set given: Counterspell imports as Mystery Booster 2 ($2.18) and Sol Ring as Foundations Commander ($1.22), the cheapest priced printings per Scryfall. Lightning Bolt imports as Summer Magic / Edgar 162, because Scryfall prices it at $0.10 USD (its EUR is 5017). The rule works, but the data lets a very rare printing win. Maybe skip printings whose USD and EUR disagree wildly. | |
+| 221 | app nit, web note | On web, opening a deck from Home's tile and tapping the header ‹ still lands on Decks. The nit says app, so this is only a note. | |
+| 222 | fixed | Before a link exists, the dialog offers Create link, which copies the link and closes with "Share link copied". Reopened, it shows `https://zwipe.net/deck/b1a9…` truncated in a `div.share-url` (`user-select: all`) above Copy link and Stop sharing. I stopped sharing ("Link disabled"). | web13-share2 |
+| 223 | fixed | The Decks and Add hints' "See guide ↗" links have `target=_blank rel="noopener noreferrer"`. A real tap opened zwipe.net/guides/swipe-to-build/ in a new tab, and the app tab stayed on Add. I closed the guide tab. | |
+| 224 | fixed | The web Add preview is 347px wide at x=32 on a 411px viewport. The app's Add preview measures the same, 347px at x=32. | web13-preview |
+| 225 | fixed | The picked chip's × is still 10x16, but an `::after` gives it a 44x44 hit area and `elementFromPoint` now returns it. A real tap about 8 CSS px off its centre removed the chip. | web13-chip |
+
+### Quick add
+
+- **Deck Cards page: fixed.** "Plains" lists Chaplain's Blessing, Mistveil Plains, Plains and Snow-Covered Plains as buttons in flow under the box. The exact basic is there. Picking Plains toasts "Added Plains", empties the box and closes the results. Shot: web13-deck-qa.
+- **Commander maybeboard: still floats.** "Tymna" shows its result as a `div.chip-unselected` laid over the Show row's color pips, not in flow under the box. The 202 web fix only touched the deck page. I didn't pick it, so the maybeboard stays empty. Shot: web13-maybe-qa.
+- **Create deck's Commander box floats too.** "Tymna" put its "Tymna the Weaver" pill above the box, over the Commander label and its Filter button. Shot: web13-pill-above.
+
+### New on web
+
+- **Android Back on Swipe select asks to leave the deck form.** With Partner Swipe open on Create, the system Back gesture shows "Leave without saving?" when it should close the sheet. Stay keeps everything; the header ‹ closes the sheet as expected. Shot: web13-back-guard.
+- **The ⚡ in Add's dock is Synergy, not Quick add.** It toggles "Synergy on" / "Synergy off". I turned it back off. That's fine, just worth knowing when reading older notes.
+
+### Cleanup
+
+Droid tmp14 is deleted, and its share link was stopped first. The server has 12 decks again, the maybeboard is empty, and settings are unchanged (zenburn, dark, theme pips, chip, Universes Beyond shown with the same four exceptions). Universes Beyond went Hide → Show twice for 219 and ended on Show. The emulator's app is still the 9665fd9e3 debug build, signed in.
