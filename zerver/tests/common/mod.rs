@@ -163,6 +163,9 @@ impl TestApp {
             min_client_version: Arc::from("0.0.0"),
             web_base_url: Arc::from("http://localhost"),
             swipe_cap: Arc::new(zwipe::inbound::http::swipe_cap::SwipeCap::new()),
+            share_preview: Arc::new(zwipe::inbound::http::share_preview::SharePreview::new(
+                zwipe::outbound::scryfall_art::ArtSource::fixed(None),
+            )),
         };
 
         let router = build_router(
@@ -269,6 +272,26 @@ impl TestApp {
             serde_json::from_slice(&bytes).unwrap_or(Value::Null)
         };
         (status, response_headers, value)
+    }
+
+    /// A bodyless request, answered with the response's status, headers and
+    /// raw body, for routes that don't answer JSON.
+    pub(crate) async fn send_bytes(
+        &self,
+        method: Method,
+        path: &str,
+    ) -> (StatusCode, header::HeaderMap, axum::body::Bytes) {
+        let mut request = Request::builder()
+            .method(method)
+            .uri(path)
+            .body(Body::empty())
+            .unwrap();
+        request.extensions_mut().insert(ConnectInfo(self.fake_ip));
+        let response = self.router.clone().oneshot(request).await.unwrap();
+        let status = response.status();
+        let headers = response.headers().clone();
+        let bytes = response.into_body().collect().await.unwrap().to_bytes();
+        (status, headers, bytes)
     }
 
     pub(crate) async fn post(

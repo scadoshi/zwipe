@@ -54,6 +54,18 @@ mod tests {
         assert_eq!(core::RENAMED_THEMES, orangui::RETIRED_THEMES);
     }
 
+    /// zerver draws share preview images from its own copy of the theme
+    /// palettes, since it can't depend on orangui. The copy must be orangui's
+    /// file exactly; after `cargo update -p orangui`, copy it over again.
+    #[test]
+    fn the_share_preview_themes_match_orangui() {
+        let vendored = include_str!("../../zerver/assets/share_preview/themes.css");
+        assert!(
+            vendored == orangui::THEMES_CSS,
+            "zerver/assets/share_preview/themes.css differs from orangui's assets/themes.css; copy it over"
+        );
+    }
+
     #[test]
     fn saved_settings_always_name_a_theme_with_a_palette() {
         let settings = |theme: &str| core::UserSettings {
