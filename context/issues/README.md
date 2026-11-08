@@ -50,7 +50,7 @@ Who checked, on which live build, what they saw.
 | [282](282-stale-bundle-after-deploy.md) | Web keeps the old bundle until a hard refresh | reported | - | - |
 | [283](283-collapsible-changelog-versions.md) | Collapsible versions in every changelog | merging | laptop | #417, portfolio#20 |
 | [285](285-generated-share-image.md) | Generated preview image for shared decks | fixing (part 2) | thinker | #424, #425 |
-| [286](286-portfolio-orangui-line-anchors.md) | Portfolio orangui source line ranges are stale | fixing | laptop | - |
+| [286](286-portfolio-orangui-line-anchors.md) | Portfolio orangui source line ranges are stale | merged | laptop | portfolio#21 |
 | [265](265-partner-swipe-stack.md) | Partner Swipe stack still offers illegal partners | merged | laptop | #419 |
 | [287](287-split-1-18-changelog.md) | Split the 1.18 changelog into logical patches | merged | laptop | #420 |
 | [288](288-stack-refreshed-on-failed-refresh.md) | Add says Stack refreshed when the refresh failed | merged | laptop | #421 |

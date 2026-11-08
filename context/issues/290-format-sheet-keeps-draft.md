@@ -1,6 +1,6 @@
 # 290. The Format sheet keeps its search and pick after ×
 
-State: reproduced | Owner: laptop (part 1) | PR: - | Build seen: 1e03520ef
+State: reproduced | Owner: laptop | PR: - | Build seen: 1e03520ef
 
 ## Report
 Surfer, live web, Create/Edit deck: type 'pau', tap Pauper, close with ×, reopen: the search still says 'pau' and Pauper is still selected. Account sheets clear on close (254). Unclear whether the Keep/Discard prompt appeared and which was chosen; needs a careful repro before anything is built.
@@ -13,3 +13,6 @@ Part 2 (for Scotty): Keep reads as "keep the change" but only returns to the ope
 
 ## Fix
 Part 1, branch `nits/laptop-290`. The Format, Deck tags and Oracle tags pickers stay mounted while shut, in the app and on web, and none of them cleared its search, so a reopened picker showed the old text and a filtered list. `components::use_picker_search(open)` holds a picker's search and empties it whenever the picker closes, by ✓, Discard or a quiet close. All six pickers (three per client) use it. Failing test first: `closing_a_picker_empties_its_search`. The pick itself still follows the form: Discard puts the format back, ✓ keeps it. Part 2 (the Keep wording) waits for Scotty.
+
+## Decision (part 2)
+Scotty, 2026-11-08: rename Keep to "Keep editing". Changes still apply only on ✓, so people can click through formats and read the descriptions without the sheet closing.
