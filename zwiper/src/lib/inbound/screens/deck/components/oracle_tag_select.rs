@@ -8,7 +8,9 @@
 //! these (handled by the host screen); here the user tunes the set.
 
 use components::hint::ContentHintDialog;
-use components::{Button, ButtonVariant, DialogAction, DockAction, icons, use_overlay_back_action};
+use components::{
+    Button, ButtonVariant, Chip, DialogAction, DockAction, icons, use_overlay_back_action,
+};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::oracle_tag::OracleTag;
@@ -155,9 +157,9 @@ pub(crate) fn OracleTagSelect(
                                     let is_sel = sel.contains(&slug);
                                     let tag_for_focus = t.clone();
                                     rsx! {
-                                        div {
+                                        Chip {
                                             key: "{slug}",
-                                            class: if is_sel { "chip selected" } else { "chip" },
+                                            selected: is_sel,
                                             onclick: move |_| {
                                                 focused.set(Some(tag_for_focus.clone()));
                                                 // Clear the search so the curated grid returns after picking.

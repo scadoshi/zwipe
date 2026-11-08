@@ -8,7 +8,7 @@
 //! filters the grid by name for quick jumps.
 
 use components::hint::ContentHintDialog;
-use components::{DockAction, icons, use_overlay_back_action};
+use components::{Chip, DockAction, icons, use_overlay_back_action};
 use dioxus::prelude::*;
 use zwipe_core::domain::deck::{DeckTagView, MAX_DECK_TAGS};
 use zwipe_ui::deck::pickers::{self, Picker};
@@ -123,9 +123,9 @@ pub(crate) fn TagSelect(
                                     let view = tag;
                                     let is_selected = selected.contains(&slug);
                                     rsx! {
-                                        div {
+                                        Chip {
                                             key: "{slug}",
-                                            class: if is_selected { "chip selected" } else { "chip" },
+                                            selected: is_selected,
                                             onclick: move |_| {
                                                 focused.set(Some(view.clone()));
                                                 // Clear the search so the full grid returns after picking.

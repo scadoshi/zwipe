@@ -15,7 +15,7 @@
 use std::iter;
 
 use components::icons::{self};
-use components::{Chip, DockAction, IdentityPips, LoadFailed};
+use components::{Chip, DockAction, IdentityPips, LoadFailed, Pressable};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use dioxus_primitives::toast::{Toasts, use_toast};
@@ -160,9 +160,10 @@ fn DeckGroupSection(
     rsx! {
         div {
             class: if expanded { "card-group deck-group row-enter" } else { "card-group deck-group row-enter collapsed" },
-            div {
+            Pressable {
                 class: if expanded { "card-group-header group-collapsible expanded" } else { "card-group-header group-collapsible" },
-                onclick: move |_| ontoggle.call(()),
+                expanded,
+                onpress: move |()| ontoggle.call(()),
                 span { class: "card-row-arrow", "▸" }
                 if let Some(pips) = pips.as_ref().filter(|p| !p.is_empty()) {
                     // Same wrapper the deck rows use, so a group's pips are the
@@ -175,6 +176,7 @@ fn DeckGroupSection(
             }
             div {
                 class: if expanded { "collapsible open" } else { "collapsible" },
+                inert: (!expanded).then_some(true),
                 div { class: "collapsible-inner", {children} }
             }
         }
@@ -190,9 +192,9 @@ fn DeckRow(profile: DeckProfile, onopen: EventHandler) -> Element {
     let pips = list::identity_colors(&profile);
     let art = command_zone::art(&profile);
     rsx! {
-        div {
+        Pressable {
             class: "card-row deck-row row-enter",
-            onclick: move |_| onopen.call(()),
+            onpress: move |()| onopen.call(()),
             div { class: "deck-list-row",
                 // The command zone's art leads the row beside the name. Two
                 // crops (a pair of partners, or oathbreaker + signature spell)
@@ -383,7 +385,11 @@ pub fn DeckList() -> Element {
                                     key: "{color.to_short_name()}",
                                     selected: picked_colors.contains(&color),
                                     onclick: move |_| driver.dispatch(Action::ToggleColor(color)),
-                                    i { class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost" }
+                                    i {
+                                        class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
+                                        "aria-hidden": "true",
+                                    }
+                                    span { class: "sr-only", "{color.to_long_name()}" }
                                 }
                             }
                             // The Tags fold chip shows only when some deck has a tag.

@@ -4,7 +4,7 @@
 //! the whitelist. The server applies both at serve time.
 
 use components::icons::CHECK;
-use components::{ActionDock, BottomSheet, DockAction, DockPlace};
+use components::{ActionDock, BottomSheet, Chip, DockAction, DockPlace};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::user::hints::OneTimeHint;
@@ -87,8 +87,8 @@ pub fn UniversesBeyondExceptionsSheet(
                                 let is_selected = draft.contains(&franchise.slug);
                                 let slug = franchise.slug.clone();
                                 rsx! {
-                                    div {
-                                        class: if is_selected { "chip selected" } else { "chip" },
+                                    Chip {
+                                        selected: is_selected,
                                         onclick: move |_| on.call(Action::ToggleException(slug.clone())),
                                         { franchise.name }
                                     }
