@@ -1930,6 +1930,39 @@ impl CardRepository for MyPostgres {
         Ok(cards)
     }
 
+    async fn fetch_cheapest_printings(
+        &self,
+        oracle_ids: &[uuid::Uuid],
+    ) -> Result<Vec<ScryfallData>, SearchCardsError> {
+        if oracle_ids.is_empty() {
+            return Ok(vec![]);
+        }
+        // The USD price is a decimal string; one that won't parse as a number
+        // is treated as no price.
+        let sql = format!(
+            "SELECT DISTINCT ON (sd.oracle_id) sd.* FROM scryfall_data sd \
+             JOIN card_profiles cp ON sd.id = cp.scryfall_data_id \
+             WHERE sd.oracle_id = ANY($1) AND {IMPORTABLE_PRINTING} \
+               AND sd.lang = 'en' AND NOT sd.digital AND NOT sd.oversized \
+               AND NOT sd.promo AND 'nonfoil' = ANY(sd.finishes) \
+               AND sd.prices->>'usd' ~ '^[0-9]+(\\.[0-9]+)?$' \
+             ORDER BY sd.oracle_id, (sd.prices->>'usd')::numeric, \
+                      sd.released_at DESC, sd.id"
+        );
+        // Built from string constants only; every value is bound.
+        let db_rows: Vec<DatabaseScryfallData> = query_as(sqlx::AssertSqlSafe(sql))
+            .bind(oracle_ids)
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|e| SearchScryfallDataError::Database(e.into()))?;
+        let printings: Vec<ScryfallData> = db_rows
+            .into_iter()
+            .map(ScryfallData::try_from)
+            .collect::<Result<_, _>>()
+            .map_err(SearchScryfallDataError::Database)?;
+        Ok(printings)
+    }
+
     async fn fetch_printings_in_sets(
         &self,
         oracle_ids: &[uuid::Uuid],
