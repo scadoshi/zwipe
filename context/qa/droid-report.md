@@ -452,3 +452,35 @@ Production still runs the main-branch server, so fixes that changed zerver or th
 ### Cleanup
 
 The temp deck is deleted (12 decks, Droid test untouched). Server settings are unchanged (zenburn, dark, theme pips, chip, Universes Beyond shown with the same four exceptions), and the maybeboard is empty. The emulator now runs the 1cb240dd0 debug build, still signed in.
+
+## Pass 10
+
+Build: debug APK from origin/release at 9665fd9e3 (includes #351, #350 and 209's #342), app only, against production, on the Pixel_9a emulator, installed with `-r` so `test` stayed signed in. Shots are in ~/Developer/droid/shots/pass10-<n>.png. One throwaway deck (Modern, then Commander with Kozilek), deleted at the end. I made all taps below with real `adb input tap`; the scripts only found where to tap.
+
+| # | Status | What I saw | Shots |
+|---|---|---|---|
+| 202 | fixed | Set, Artist, Oracle tags, Oracle words, Keywords and Type line: the pills sit under their box, none above it or over a section header. A tap on a pill adds the chip, empties the box and closes the pills. Quick add on Cards: pills start under the box (box 99..135, first pill at 151) and the header ‹ is clear (hit test lands on the back button). Picking Goblin Mountaineer adds it, empties the box, and ‹ then works. | pass10-4 to pass10-6 |
+| 204 | fixed | Mana value "4" and Price Max "0.10", typed with the real keyboard and left focused, show the section's × within 1.5s. Apply while still focused applies them (mana value 4 cards; Swift Maneuver and other cheap cards). | |
+| 203 | fixed | A no-result filter shows "No cards match" in the ghost card with no toast. With Synergy on (⚡ pressed) it adds "Synergy is on, turn it off to search everything". With Synergy off, only the first line shows. | pass10-11, pass10-12 |
+| 209 | fixed | The share dialog's button and body say "Stop sharing". A Modern deck's Show row has Show, Tokens and Art, no Command zone. The maybeboard hint covers its Swipe (left skips, up saves, right starts a deck) and the row actions (Quick add, Create deck, Remove). Its See guide link (zwipe.net/guides/commander-maybeboard/) returns 200. | pass10-1, pass10-2 |
+
+### A picked filter chip's × ignores real taps (bug, app)
+
+Laptop's report reproduces. After picking Innistrad in Set, a real tap on the chip's × (at 368,1509, the button's centre) does nothing, and neither does a tap on the chip body. The × is `button.chip-remove`, 10x16 CSS px, and `document.elementFromPoint` at its centre returns the parent `div.chip.selected`, not the button. So touches never reach the button, even though its click handler works (a scripted `.click()` removes the chip). That target is also far under 44px.
+
+### Colorless commander (composer's add)
+
+Droid tmp10 with Kozilek, the Great Distortion as Commander: after I removed an off-color card, the Decks row shows no color pips (pass 7's Arzakon deck showed all five). After Reset, Add's filter starts with Color identity set to nothing (colorless) plus synergy Oracle tags. The stack is all colorless: Expedition Map, Planar Bridge, Eldrazi Temple, Hedron Archive, Basalt Monolith, Void Winnower, Dreamstone Hedron, Ugin, the Spirit Dragon, Stonespeaker Crystal, Everflowing Chalice, Geode Golem, Sanctum of Ugin, Kozilek, Butcher of Truth, Ulamog, the Infinite Gyre, Gilded Lotus, Artisan of Kozilek. Before the Reset, a Price filter left over from my 204 check had no color limit and dealt white, red and green cards. That's expected for a hand-set filter, but worth knowing.
+
+### Nit 217 correction
+
+Pass 7 item 10 said the app's Create deck shows the Commander, Partner, Background and Signature rows with no format set. That came from page text, not a screenshot. On 9665fd9e3 the rows are in the DOM but collapsed to 0 height, so Create hides them like Edit does (pass10-7). The web half stands: app.zwipe.net's Create leaves an empty gap where the rows collapse (web7-3).
+
+### Other
+
+- The swipe chip "Skipped" stays on screen after a new filter returns no cards (nit). Shot: pass10-11.
+- Quick add still doesn't list the basic Mountain for "Mountain" (pass 9).
+
+### Cleanup
+
+The temp deck is deleted (12 decks, Droid test untouched). Server settings are unchanged, the maybeboard is empty, and the emulator runs the 9665fd9e3 debug build, still signed in.
