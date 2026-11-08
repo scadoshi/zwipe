@@ -56,7 +56,7 @@ Who checked, on which live build, what they saw.
 | [288](288-stack-refreshed-on-failed-refresh.md) | Add says Stack refreshed when the refresh failed | merged | laptop | #421 |
 | [289](289-top-color-sr-text.md) | Top color pip reads Mono-red to screen readers | merged | laptop | #422 |
 | [290](290-format-sheet-keeps-draft.md) | Format sheet keeps its search after Discard; Keep is unclear | part 1 merged (#423); part 2 for Scotty | laptop | #423 |
-| [291](291-logout-revokes-all-sessions.md) | Logging out on one device logs out every device | reported | - | - |
+| [291](291-logout-revokes-all-sessions.md) | Logging out on one device logs out every device | approved | halo | - |
 
 ## Waiting for live verification
 
