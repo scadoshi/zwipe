@@ -26,7 +26,7 @@ pub fn QuickAdd(
             // Label sits inline-left like the Group by / Boards / Show rows,
             // in the same accent-tertiary `chip-row-label`; the input fills the rest.
             div { class: "chip-row",
-                span { class: "stat-chip stat-chip-p1 chip-row-label", "{deck_cards::QUICK_ADD}" }
+                label { class: "stat-chip stat-chip-p1 chip-row-label", r#for: "quick-add", "{deck_cards::QUICK_ADD}" }
                 ClearWrap {
                     filled: !query.is_empty(),
                     on_clear: move |()| onclear(()),
