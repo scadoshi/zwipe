@@ -871,7 +871,7 @@ code {
     flex: 0 0 auto;
 }
 
-/* The demo clips all share one shape (482x908), so the video reserves exactly
+/* The demo clips all share one shape (540x1110), so the video reserves exactly
    that box before it loads: as tall as 70vh allows, no wider than its column.
    The panel ends at the video instead of at a 70vh floor, which left empty
    space around it when zoomed out. The panel-body prefix outranks site.css's
@@ -881,8 +881,8 @@ code {
 }
 
 .demo-col .gallery-video {
-    aspect-ratio: 482 / 908;
-    width: min(100%, calc(70vh * 482 / 908));
+    aspect-ratio: 540 / 1110;
+    width: min(100%, calc(70vh * 540 / 1110));
     max-height: none;
 }
 
@@ -902,7 +902,7 @@ code {
     /* Phone-scale demo: capped at 55vh so the autoplaying block doesn't
        swallow the screen. */
     .demo-col .gallery-video {
-        width: min(100%, calc(55vh * 482 / 908));
+        width: min(100%, calc(55vh * 540 / 1110));
     }
 }
 

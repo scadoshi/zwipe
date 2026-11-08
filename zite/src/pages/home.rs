@@ -132,88 +132,64 @@ fn Testimonials() -> Element {
     }
 }
 
-const DEMO_CREATE_DECK: Asset = asset!("/assets/demo/1_create_deck.mp4");
-const DEMO_IMPORT: Asset = asset!("/assets/demo/2_import.mp4");
-const DEMO_ADD_CARDS: Asset = asset!("/assets/demo/3_add_cards.mp4");
-const DEMO_REMOVE_CARDS: Asset = asset!("/assets/demo/4_remove_cards.mp4");
-const DEMO_FILTER: Asset = asset!("/assets/demo/5_filter.mp4");
-const DEMO_CARD_DETAILS: Asset = asset!("/assets/demo/6_card_details.mp4");
-const DEMO_ORACLE_TAGS: Asset = asset!("/assets/demo/7_oracle_tags.mp4");
-const DEMO_DECK_CARDS_VIEW: Asset = asset!("/assets/demo/8_deck_cards.mp4");
-const DEMO_MVPS: Asset = asset!("/assets/demo/9_mvps.mp4");
-const DEMO_DECK_STATS: Asset = asset!("/assets/demo/10_deck_stats.mp4");
-const DEMO_SHARE_DECK: Asset = asset!("/assets/demo/11_share_deck.mp4");
-const DEMO_PROFILE: Asset = asset!("/assets/demo/12_profile.mp4");
+const DEMO_SWIPE: Asset = asset!("/assets/demo/1_swipe.mp4");
+const DEMO_SWIPE_POSTER: Asset = asset!("/assets/demo/1_swipe.jpg");
+const DEMO_STATS: Asset = asset!("/assets/demo/2_stats.mp4");
+const DEMO_STATS_POSTER: Asset = asset!("/assets/demo/2_stats.jpg");
+const DEMO_PLAYSTYLE: Asset = asset!("/assets/demo/3_playstyle.mp4");
+const DEMO_PLAYSTYLE_POSTER: Asset = asset!("/assets/demo/3_playstyle.jpg");
+const DEMO_ACTIVITY: Asset = asset!("/assets/demo/4_activity.mp4");
+const DEMO_ACTIVITY_POSTER: Asset = asset!("/assets/demo/4_activity.jpg");
+
+/// One demo clip: the video, its first frame as the poster, the caption
+/// under it and its label for screen readers.
+#[derive(Clone, Copy)]
+struct Demo {
+    video: Asset,
+    poster: Asset,
+    caption: &'static str,
+    label: &'static str,
+}
+
+/// The demo clips, in the order they play: build a deck, read it, then what
+/// the app learns about how you play.
+const DEMOS: [Demo; 4] = [
+    Demo {
+        video: DEMO_SWIPE,
+        poster: DEMO_SWIPE_POSTER,
+        caption: "Swipe right to add a card, left to skip it",
+        label: "Demo: Swipe to build",
+    },
+    Demo {
+        video: DEMO_STATS,
+        poster: DEMO_STATS_POSTER,
+        caption: "Price and mana curve for the deck you're building",
+        label: "Demo: Deck stats",
+    },
+    Demo {
+        video: DEMO_PLAYSTYLE,
+        poster: DEMO_PLAYSTYLE_POSTER,
+        caption: "The colors and Oracle tags you play most, and commanders that fit them",
+        label: "Demo: Playstyle",
+    },
+    Demo {
+        video: DEMO_ACTIVITY,
+        poster: DEMO_ACTIVITY_POSTER,
+        caption: "Your swipes and searches over the year, and the cards you skip most",
+        label: "Demo: Activity",
+    },
+];
 
 #[component]
 pub fn Home() -> Element {
     let latest = latest_release();
-    // Ordered as the build flow: start a deck, fill it, refine it, read it.
-    let demos: Vec<(Asset, &'static str, &'static str)> = vec![
-        (
-            DEMO_CREATE_DECK,
-            "Create a deck and pick your commander",
-            "Demo: Create a deck",
-        ),
-        (
-            DEMO_ADD_CARDS,
-            "Swipe new cards into your deck",
-            "Demo: Swipe to build",
-        ),
-        (
-            DEMO_FILTER,
-            "Filter the card pool, then swipe to add",
-            "Demo: Filters",
-        ),
-        (
-            DEMO_CARD_DETAILS,
-            "Open full card details while you swipe",
-            "Demo: Card details",
-        ),
-        (
-            DEMO_ORACLE_TAGS,
-            "Browse the tag dictionary and filter by Oracle tag",
-            "Demo: Oracle tags",
-        ),
-        (
-            DEMO_REMOVE_CARDS,
-            "Swipe cards back out of your deck",
-            "Demo: Swipe to remove",
-        ),
-        (
-            DEMO_DECK_CARDS_VIEW,
-            "Browse your deck: art, printings, and groupings",
-            "Demo: Deck card view",
-        ),
-        (
-            DEMO_MVPS,
-            "Star MVPs so your key cards lead the deck",
-            "Demo: Deck MVPs",
-        ),
-        (DEMO_IMPORT, "Import a decklist from a link", "Demo: Import"),
-        (
-            DEMO_DECK_STATS,
-            "Check your deck's stats, curve, and draw odds",
-            "Demo: Deck stats",
-        ),
-        (
-            DEMO_SHARE_DECK,
-            "Share any deck with a public link",
-            "Demo: Share your deck",
-        ),
-        (
-            DEMO_PROFILE,
-            "Switch themes and catch up on the changelog",
-            "Demo: Themes and changelog",
-        ),
-    ];
-    let total = demos.len();
+    let total = DEMOS.len();
     let index = use_signal(|| 0usize);
     #[expect(
         clippy::indexing_slicing,
-        reason = "orangui's GalleryFrame keeps index below total, the length of demos"
+        reason = "orangui's GalleryFrame keeps index below total, the length of DEMOS"
     )]
-    let (current_src, current_caption, current_label) = demos[index()];
+    let current = DEMOS[index()];
 
     // Featured flavor's full-art overlay state. The overlay is rendered HERE,
     // at the page's top level outside the `content-enter` tree, mirroring
@@ -334,8 +310,9 @@ pub fn Home() -> Element {
                                     // for the new src instead of the browser keeping the old video.
                                     key: "{index()}",
                                     class: "gallery-video",
-                                    src: current_src,
-                                    "aria-label": "{current_label}",
+                                    src: current.video,
+                                    poster: current.poster,
+                                    "aria-label": "{current.label}",
                                     autoplay: true,
                                     muted: true,
                                     "loop": true,
@@ -345,7 +322,7 @@ pub fn Home() -> Element {
                                 }
                             }
                             hr { class: "gallery-rule" }
-                            GalleryFooter { index: index(), total, caption: current_caption.to_string() }
+                            GalleryFooter { index: index(), total, caption: current.caption.to_string() }
                         }
                     }
                     // The three core sells: swiping, synergy-ordered serving,
@@ -384,5 +361,52 @@ pub fn Home() -> Element {
             }
         }
         Footer {}
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::path::{Path, PathBuf};
+
+    use super::*;
+
+    /// The most a demo clip may weigh: it autoplays on the home page.
+    const MAX_CLIP_BYTES: u64 = 2 * 1024 * 1024;
+
+    fn source(asset: Asset) -> PathBuf {
+        PathBuf::from(asset.bundled().absolute_source_path())
+    }
+
+    #[test]
+    fn every_demo_file_is_shown_and_every_clip_is_light() {
+        let mut used: Vec<PathBuf> = Vec::new();
+        for demo in DEMOS {
+            let (video, poster) = (source(demo.video), source(demo.poster));
+            let bytes = std::fs::metadata(&video).unwrap().len();
+            assert!(
+                bytes <= MAX_CLIP_BYTES,
+                "{} is {bytes} bytes",
+                video.display()
+            );
+            assert_eq!(
+                video.with_extension("jpg"),
+                poster,
+                "a clip's poster is its first frame beside it"
+            );
+            used.push(video);
+            used.push(poster);
+        }
+        let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("assets/demo");
+        let mut on_disk: Vec<PathBuf> = std::fs::read_dir(&dir)
+            .unwrap()
+            .map(|entry| entry.unwrap().path().canonicalize().unwrap())
+            .filter(|path| path.file_name().is_some_and(|name| name != ".gitignore"))
+            .collect();
+        on_disk.sort();
+        used.sort();
+        assert_eq!(
+            on_disk, used,
+            "assets/demo holds only the clips the page shows"
+        );
     }
 }
