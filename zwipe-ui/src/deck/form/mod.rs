@@ -7,7 +7,7 @@ use zwipe_core::domain::card::search_card::card_filter::CardQuery;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::card_filter::error::InvalidCardCriteria;
 use zwipe_core::domain::card::search_card::commander_eligibility::{
-    self, PartnerKind, partner_kind,
+    self, PARTNER_VARIANT_PREFIX, PartnerKind, partner_kind,
 };
 use zwipe_core::domain::deck::deck_profile::MAX_LAND_TARGET;
 use zwipe_core::domain::deck::{Format, MAX_DECK_ORACLE_TAGS};
@@ -170,10 +170,13 @@ pub fn narrow_to_partners(builder: &mut CardQueryBuilder, commander: Option<&Car
             if builder.keywords_excludes().is_none() {
                 builder.set_keywords_excludes(["Partner with"]);
             }
+            if builder.oracle_text_not_contains().is_none() {
+                builder.set_oracle_text_not_contains(PARTNER_VARIANT_PREFIX);
+            }
         }
-        Some(PartnerKind::FriendsForever) => {
-            if keywords_free {
-                builder.set_keywords_contains_all(["Friends forever"]);
+        Some(PartnerKind::Variant(variant)) => {
+            if builder.oracle_text_contains().is_none() {
+                builder.set_oracle_text_contains(format!("{PARTNER_VARIANT_PREFIX}{variant}"));
             }
         }
         Some(PartnerKind::DoctorsCompanion) => {
@@ -356,6 +359,64 @@ mod tests {
         )
     }
 
+    /// A partner variant as Scryfall serves it: the keyword is plain Partner, and the rules text names the variant.
+    fn variant(name: &str, variant: &str) -> Card {
+        commander(
+            name,
+            &["Partner"],
+            &format!(
+                "Some ability.\nPartner\u{2014}{variant} (You can have two commanders if both have this ability.)"
+            ),
+            "Legendary Creature \u{2014} Human",
+        )
+    }
+
+    fn wernog() -> Card {
+        variant("Wernog, Rider's Chaplain", "Friends forever")
+    }
+
+    /// One plain partner and one of each variant.
+    fn variant_pile() -> Vec<Card> {
+        vec![
+            commander(
+                "Thrasios, Triton Hero",
+                &["Partner"],
+                "Partner (You can have two commanders if both have partner.)",
+                "Legendary Creature \u{2014} Merfolk Wizard",
+            ),
+            variant("Cecily, Haunted Mage", "Friends forever"),
+            variant("Donatello, the Brains", "Character select"),
+            variant("Atreus, Impulsive Son", "Father & son"),
+            variant("Joel, Resolute Survivor", "Survivors"),
+        ]
+    }
+
+    #[test]
+    fn tymnas_pile_excludes_every_partner_variant() {
+        assert_eq!(
+            names(&legal_partners(&tymna(), variant_pile())),
+            ["Thrasios, Triton Hero"]
+        );
+    }
+
+    #[test]
+    fn wernogs_pile_holds_only_friends_forever() {
+        assert_eq!(
+            names(&legal_partners(&wernog(), variant_pile())),
+            ["Cecily, Haunted Mage"]
+        );
+    }
+
+    #[test]
+    fn a_variant_search_narrows_by_its_rules_text() {
+        let mut builder = CardQueryBuilder::new();
+        narrow_to_partners(&mut builder, Some(&wernog()));
+        assert_eq!(
+            builder.oracle_text_contains(),
+            Some("Partner\u{2014}Friends forever")
+        );
+    }
+
     fn names(cards: &[Card]) -> Vec<&str> {
         cards
             .iter()
@@ -416,6 +477,7 @@ mod tests {
             builder.keywords_excludes(),
             Some(&["Partner with".to_owned()][..])
         );
+        assert_eq!(builder.oracle_text_not_contains(), Some("Partner\u{2014}"));
         let pir = commander(
             "Pir, Imaginative Rascal",
             &["Partner with", "Partner"],
