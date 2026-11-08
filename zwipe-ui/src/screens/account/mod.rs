@@ -53,7 +53,7 @@ pub const CANCEL: &str = "Cancel";
 pub const DELETE_PASSWORD: &str = "Password";
 
 /// The Delete account dialog's button label while the delete is out.
-pub const DELETING: &str = "Deleting...";
+pub const DELETING: &str = "Deleting…";
 
 /// The toast once a verification email went out.
 pub const VERIFICATION_SENT: &str = "Verification email sent";

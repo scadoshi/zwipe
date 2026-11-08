@@ -249,7 +249,7 @@ fn resend_holds_the_cooldown_from_the_press_and_runs_it_from_the_reply() {
     let effects = state.update(Action::Resend);
     let ticket = ticket_of(&effects);
     assert_eq!(effects, vec![Effect::ResendVerification(ticket)]);
-    assert_eq!(state.resend_label(), "Sending...");
+    assert_eq!(state.resend_label(), "Sending…");
     assert_eq!(state.cooldown_secs(), 60);
     assert!(!state.can_resend());
     assert_eq!(
@@ -769,8 +769,8 @@ fn the_copy_matches_the_app() {
     assert_eq!(MoreItem::DeleteAccount.label(), "Delete account");
     assert_eq!(CANCEL, "Cancel");
     assert_eq!(DELETE_PASSWORD, "Password");
-    assert_eq!(DELETING, "Deleting...");
-    assert_eq!((SAVE, SAVING), ("Save changes", "Saving..."));
+    assert_eq!(DELETING, "Deleting…");
+    assert_eq!((SAVE, SAVING), ("Save changes", "Saving…"));
     let labels: Vec<&str> = [
         Row::Username,
         Row::Email,

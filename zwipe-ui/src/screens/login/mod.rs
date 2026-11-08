@@ -18,7 +18,7 @@ pub const TITLE: &str = "Log in";
 pub const LOG_IN: &str = "Log in";
 
 /// The submit button's label while a login is out.
-pub const LOGGING_IN: &str = "Logging in";
+pub const LOGGING_IN: &str = "Logging in…";
 
 /// The button that opens Register.
 pub const CREATE_ACCOUNT: &str = "Create account";

@@ -294,7 +294,7 @@ pub fn Playstyle() -> Element {
                     PlaystyleSkeleton { wide: wide() }
                 } else if load_failed() {
                     div { class: "message-empty",
-                        span { class: "chip-note", "Could not load your suggestions" }
+                        span { class: "chip-note", "Couldn't load your suggestions" }
                     }
                 } else if cold_start {
                     div { class: "message-empty",

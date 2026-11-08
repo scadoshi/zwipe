@@ -42,6 +42,7 @@ use zwipe_ui::stack::{
 use zwipe_ui::stores::filters::FilterScope;
 use zwipe_ui::stores::in_flight::AddOutcome;
 use zwipe_ui::stores::parked::ParkedStack;
+use zwipe_ui::stores::undo;
 use zwipe_ui::stores::undo::UndoAction;
 use zwipe_ui::timing::LOAD_MORE_AT;
 
@@ -358,7 +359,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
     let load_more = use_callback(move |()| {
         if stack.peek().len() >= MAX_CARDS_IN_STACK {
             toast.warning(
-                "Card stack limit reached, please refresh your search to continue".to_string(),
+                add_cards::STACK_LIMIT_REACHED.to_owned(),
                 ToastOptions::default().duration(TOAST_NORMAL),
             );
             return;
@@ -424,10 +425,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         if (CARDS_WARNING_THRESHOLD..MAX_CARDS_IN_STACK).contains(&total)
             && total.checked_rem(STACK_WARNING_EVERY) == Some(0)
         {
-            said.push((
-                Level::Info,
-                "Approaching the card stack limit, refresh your search to continue".to_string(),
-            ));
+            said.push((Level::Info, add_cards::STACK_LIMIT_NEAR.to_owned()));
         }
         if index >= total && *exhausted.peek() {
             said.push((Level::Info, NO_CARDS_LEFT.to_owned()));
@@ -591,7 +589,8 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                     confirm.success(message);
                 }
                 Err(e) => {
-                    toast.error(format!("Failed to undo: {e}"), ToastOptions::default());
+                    tracing::warn!("undo failed: {e}");
+                    toast.error(undo::UNDO_FAILED.to_owned(), ToastOptions::default());
                     if let Some(entry) = taken {
                         undo.write().push(deck_id, entry);
                     }
@@ -658,7 +657,8 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                     confirm.success("Undid move to mainboard");
                 }
                 Err(e) => {
-                    toast.error(format!("Failed to undo: {e}"), ToastOptions::default());
+                    tracing::warn!("undo failed: {e}");
+                    toast.error(undo::UNDO_FAILED.to_owned(), ToastOptions::default());
                     if let Some(entry) = taken {
                         undo.write().push(deck_id, entry);
                     }

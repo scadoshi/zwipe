@@ -894,7 +894,7 @@ fn the_copy_matches_the_app() {
     );
     assert_eq!(
         [CLONE_PLACEHOLDER, CLONE_SAVE, CLONE_BUSY],
-        ["New deck name", "Save", "Cloning..."]
+        ["New deck name", "Save", "Cloning…"]
     );
     assert_eq!(
         SHARE_SHARED,

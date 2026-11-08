@@ -234,7 +234,8 @@ impl Driver {
                 }),
                 Err(e) => {
                     tracing::warn!("undo remove (create deck card) failed: {e}");
-                    toast.error(format!("Failed to undo: {e}"), ToastOptions::default());
+                    tracing::warn!("undo failed: {e}");
+                    toast.error(shared_undo::UNDO_FAILED.to_owned(), ToastOptions::default());
                     self.dispatch(Action::Failed { ticket });
                 }
             }
@@ -259,7 +260,8 @@ impl Driver {
                 Ok(_) => self.dispatch(Action::Landed { ticket }),
                 Err(e) => {
                     tracing::warn!("undo board move (update deck card) failed: {e}");
-                    toast.error(format!("Failed to undo: {e}"), ToastOptions::default());
+                    tracing::warn!("undo failed: {e}");
+                    toast.error(shared_undo::UNDO_FAILED.to_owned(), ToastOptions::default());
                     self.dispatch(Action::Failed { ticket });
                 }
             }

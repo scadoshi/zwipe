@@ -170,7 +170,7 @@ pub fn CommandZoneField(form: DeckForm, slot: Slot, label: String) -> Element {
                 div { class: "search-float-anchor",
                     div { class: "search-float-results",
                         if searching() {
-                            div { class: "chip-unselected search-float-chip", "Searching..." }
+                            div { class: "chip-unselected search-float-chip", "Searching…" }
                         } else if found.is_empty() {
                             div { class: "chip-unselected search-float-chip", "No results" }
                         } else {

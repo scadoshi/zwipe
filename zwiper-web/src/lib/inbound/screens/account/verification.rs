@@ -94,7 +94,7 @@ pub(super) fn VerificationActions() -> Element {
                 ),
                 // One went out recently, so the countdown keeps running.
                 Err(ClientError::TooManyRequests(_)) => toast.info(
-                    "Please wait a moment".to_string(),
+                    "Wait a moment and try again".to_string(),
                     ToastOptions::default().duration(TOAST_NORMAL),
                 ),
                 Err(e) => {

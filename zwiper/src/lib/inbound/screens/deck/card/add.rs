@@ -23,7 +23,7 @@ use zwipe_ui::screens::add_cards::{
     self, Action, Destination, Effect, Pile, Source, State, UndoClaim,
 };
 use zwipe_ui::stack;
-use zwipe_ui::stores::parked;
+use zwipe_ui::stores::{parked, undo};
 
 use super::components::card_info::{CardDetailsSheet, CardSkeleton};
 use super::components::printing_sheet::PrintingSheet;
@@ -400,7 +400,8 @@ impl Driver {
                     } else {
                         tracing::warn!("undo add (delete deck card) failed: {e}");
                     }
-                    toast.error(format!("Failed to undo: {e}"), ToastOptions::default());
+                    tracing::warn!("undo failed: {e}");
+                    toast.error(undo::UNDO_FAILED.to_owned(), ToastOptions::default());
                     self.dispatch(Action::Failed { ticket });
                 }
             }
@@ -425,7 +426,8 @@ impl Driver {
                 Ok(_) => self.dispatch(Action::Landed { ticket }),
                 Err(e) => {
                     tracing::warn!("undo promote failed: {e}");
-                    toast.error(format!("Failed to undo: {e}"), ToastOptions::default());
+                    tracing::warn!("undo failed: {e}");
+                    toast.error(undo::UNDO_FAILED.to_owned(), ToastOptions::default());
                     self.dispatch(Action::Failed { ticket });
                 }
             }

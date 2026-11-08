@@ -174,7 +174,7 @@ pub(crate) fn QuickAdd(
             if show() {
                 div { class: "card-filter-results quick-add-results",
                     if searching() {
-                        div { class: "chip-unselected", "Searching..." }
+                        div { class: "chip-unselected", "Searching…" }
                     } else if shown.is_empty() {
                         div { class: "chip-unselected", "No results" }
                     } else {

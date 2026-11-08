@@ -465,7 +465,7 @@ pub fn CommanderMaybeboard() -> Element {
                             div { class: "search-float-anchor",
                                 div { class: "search-float-results search-float-below",
                                     if is_searching() {
-                                        div { class: "chip-unselected search-float-chip", "Searching..." }
+                                        div { class: "chip-unselected search-float-chip", "Searching…" }
                                     } else if results.is_empty() {
                                         div { class: "chip-unselected search-float-chip", "No results" }
                                     } else {
@@ -522,7 +522,7 @@ pub fn CommanderMaybeboard() -> Element {
                                 }
                             },
                             if load_failed() {
-                                div { class: "card-row card-row-note", "Could not load your commander maybeboard" }
+                                div { class: "card-row card-row-note", "Couldn't load your commander maybeboard" }
                             } else if !has_entries {
                                 div { class: "card-row card-row-note", "No commanders" }
                             } else if filtered.is_empty() {

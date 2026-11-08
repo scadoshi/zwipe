@@ -156,7 +156,7 @@ pub fn Activity() -> Element {
                         ActivitySkeleton {}
                     } else if load_failed() {
                         div { class: "message-empty",
-                            span { class: "chip-note", "Could not load your activity" }
+                            span { class: "chip-note", "Couldn't load your activity" }
                         }
                     } else if let Some(found) = activity().filter(has_anything) {
                         ActivityYear { activity: found.clone(), open_section }

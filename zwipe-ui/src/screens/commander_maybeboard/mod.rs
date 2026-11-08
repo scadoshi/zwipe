@@ -34,7 +34,7 @@ pub const QUICK_ADD: &str = "Quick add";
 pub const QUICK_ADD_PLACEHOLDER: &str = "Search a commander to add";
 
 /// The one result chip while a search waits or is out.
-pub const SEARCHING: &str = "Searching...";
+pub const SEARCHING: &str = "Searching…";
 
 /// The one result chip when the search found nothing that isn't saved yet.
 pub const NO_RESULTS: &str = "No results";

@@ -19,7 +19,7 @@ pub const BACK: &str = "Back to log in";
 pub const CREATE_ACCOUNT: &str = "Create account";
 
 /// The submit button's label while a registration is out.
-pub const CREATING: &str = "Creating...";
+pub const CREATING: &str = "Creating…";
 
 /// The toast once the server took the registration. The server answers the same whether or not the email already has an account, so this says the same either way.
 pub const CHECK_INBOX: &str = "Check your inbox to verify your email, then log in";

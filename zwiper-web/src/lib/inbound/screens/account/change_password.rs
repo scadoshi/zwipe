@@ -92,7 +92,7 @@ pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
                 .is_some()
             {
                 toast.success(
-                    "Password change successful".to_string(),
+                    "Password changed".to_string(),
                     ToastOptions::default().duration(TOAST_QUICK),
                 );
                 clear();
@@ -185,7 +185,7 @@ pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
                 div { class: "action-dock action-dock-right sheet-dock",
                     button {
                         class: "action-dock-btn",
-                        "aria-label": if is_loading() { "Saving..." } else { "Save changes" },
+                        "aria-label": if is_loading() { "Saving…" } else { "Save changes" },
                         disabled: is_loading(),
                         onclick: move |_| ask_to_confirm(),
                         DockIcon { path: CHECK }

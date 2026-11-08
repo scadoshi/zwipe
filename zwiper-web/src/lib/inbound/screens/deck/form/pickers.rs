@@ -419,7 +419,7 @@ fn DeckTagChip(
                     current.push(tag.slug.clone());
                 } else {
                     toast.warning(
-                        format!("You may only choose up to {MAX_DECK_TAGS} tags"),
+                        format!("Up to {MAX_DECK_TAGS} deck tags"),
                         ToastOptions::default().duration(TOAST_QUICK),
                     );
                 }
@@ -482,7 +482,7 @@ pub fn OracleTagPicker(form: DeckForm) -> Element {
             );
         } else {
             toast.warning(
-                format!("You may only choose up to {MAX_DECK_ORACLE_TAGS} oracle tags"),
+                format!("Up to {MAX_DECK_ORACLE_TAGS} Oracle tags"),
                 ToastOptions::default().duration(TOAST_QUICK),
             );
         }
@@ -612,7 +612,7 @@ fn OracleTagChip(
                     current.push(tag.slug.clone());
                 } else {
                     toast.warning(
-                        format!("You may only choose up to {MAX_DECK_ORACLE_TAGS} oracle tags"),
+                        format!("Up to {MAX_DECK_ORACLE_TAGS} Oracle tags"),
                         ToastOptions::default().duration(TOAST_QUICK),
                     );
                 }

@@ -8,9 +8,9 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
 use zwipe_client::{ClientError, ZwipeClient};
-use zwipe_core::domain::deck::requests::update_deck_profile::InvalidUpdateDeckProfile;
 use zwipe_core::domain::deck::{Deck, DeckName};
 use zwipe_ui::deck::form::Slot;
+use zwipe_ui::screens::deck_form;
 
 use super::form::fields::DeckFields;
 use super::form::overlays::DeckFormOverlays;
@@ -103,12 +103,12 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         }
         if let Err(e) = DeckName::new(form.name.peek().clone()) {
             let mut error = form.name_error;
-            error.set(Some(e.to_string()));
+            error.set(Some(deck_form::name_message(&e).to_owned()));
             return;
         }
         let Some(request) = domain::deck::update_request(&original.peek(), &form.values()) else {
             toast.error(
-                InvalidUpdateDeckProfile::NoUpdates.to_string(),
+                deck_form::NO_CHANGES.to_owned(),
                 ToastOptions::default().duration(TOAST_NORMAL),
             );
             return;
@@ -146,7 +146,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                         DeckFields { form, on_enter: move |()| submit.call(()) }
                     },
                     Some(false) => rsx! {
-                        p { class: "text-muted", "Could not load deck" }
+                        p { class: "text-muted", "Couldn't load deck" }
                     },
                     None => rsx! {
                         EditDeckSkeleton {}
@@ -159,7 +159,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                 div { class: "action-dock action-dock-right",
                     button {
                         class: "action-dock-btn",
-                        "aria-label": if saving() { "Saving..." } else { "Save changes" },
+                        "aria-label": if saving() { "Saving…" } else { "Save changes" },
                         disabled: saving(),
                         onclick: move |_| submit.call(()),
                         DockIcon { path: CHECK }
