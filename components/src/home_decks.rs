@@ -1,4 +1,4 @@
-//! Home's Decks panel: the deck count and the Create and All decks buttons in
+//! Home's Decks panel: the deck count and the Create deck and All decks buttons in
 //! its header, the latest decks as tiles under it, each a tap into the deck.
 //! With no deck the one button is Create a deck over one muted line.
 
@@ -8,11 +8,10 @@ use uuid::Uuid;
 use zwipe_ui::screens::home::{self, DeckPanel, DeckTile, Decks, DecksAction, LATEST_DECKS};
 
 use crate::LoadFailed;
-use crate::icons::{DockIcon, PLUS};
 
 /// The panel between the hero and the Colors panel, in the Colors panel's
-/// style: Decks and the count chip centered in its header with a + (Create a
-/// deck) and the All decks chip in the right corner, then the [`LATEST_DECKS`] most recently updated decks
+/// style: Decks and the count chip centered in its header with the Create
+/// deck and All decks chips in the right corner, then the [`LATEST_DECKS`] most recently updated decks
 /// as three tiles across, each opening its deck. With no deck the count chip
 /// hides, the corner chip is Create a deck and a muted line sits under the
 /// header, the Colors panel's shape before it has counts; while the fetch is
@@ -20,7 +19,7 @@ use crate::icons::{DockIcon, PLUS};
 /// line under the All decks chip. Home's model decides which.
 ///
 /// `onopen` is the All decks chip, `ondeck` a tile's tap with the deck's id
-/// and `oncreate` the + or the Create a deck chip; the host routes each. With
+/// and `oncreate` the Create deck or the Create a deck chip; the host routes each. With
 /// `onretry` the failed line offers Retry.
 #[component]
 pub fn HomeDecks(
@@ -73,9 +72,8 @@ pub fn HomeDecks(
 }
 
 /// The panel's header: the title and the count chip (when there is a
-/// count) centered as one unit, the action chip in the right corner. Beside
-/// All decks sits a + that creates a deck; with no deck the one chip is
-/// Create a deck.
+/// count) centered as one unit, the action chip in the right corner. Before
+/// All decks sits Create deck; with no deck the one chip is Create a deck.
 #[component]
 fn PanelHeader(
     count: Option<u32>,
@@ -101,10 +99,8 @@ fn PanelHeader(
                 if offers_create {
                     Button {
                         variant: ButtonVariant::Action,
-                        class: "btn-icon",
                         onclick: move |_| oncreate.call(()),
-                        DockIcon { path: PLUS }
-                        span { class: "sr-only", {home::CREATE_DECK} }
+                        {home::NEW_DECK}
                     }
                 }
                 Button {

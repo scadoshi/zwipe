@@ -38,6 +38,9 @@ pub const ALL_DECKS: &str = "All decks";
 /// The Decks panel's corner chip while the user has no deck; it opens Create deck.
 pub const CREATE_DECK: &str = "Create a deck";
 
+/// The Decks panel's button beside All decks, which opens Create deck.
+pub const NEW_DECK: &str = "Create deck";
+
 /// The Decks panel's line while the user has no deck.
 pub const NO_DECKS: &str = "Your decks show here";
 
