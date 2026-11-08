@@ -279,6 +279,18 @@ pub fn public_routes() -> Router<AppState> {
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
+    // 30 req / minute per IP, burst 10: shared decks' preview images. A
+    // render costs ~100ms of CPU plus art fetches, so this sits inside the
+    // share routes' own limit; Cloudflare's edge serves repeat requests, so
+    // origin only sees a link's first unfurls.
+    let share_preview_config = Arc::new(
+        GovernorConfigBuilder::default()
+            .period(Duration::from_secs(2))
+            .burst_size(10)
+            .key_extractor(CfConnectingIpKeyExtractor)
+            .finish()
+            .expect("rate limit config: burst_size and period must be non-zero"),
+    );
     // 30 req / 2s per IP: health checks. Generous for frequent polling
     // (manual curls, uptime monitors) while capping unauthenticated floods,
     // notably /health/database which pings Postgres.
@@ -456,7 +468,10 @@ pub fn public_routes() -> Router<AppState> {
                         .route("/deck/{token}", get(deck::get_shared_deck))
                         .route(
                             "/deck/{token}/preview.png",
-                            get(deck::get_shared_deck_preview),
+                            get(deck::get_shared_deck_preview).layer(
+                                GovernorLayer::new(share_preview_config)
+                                    .error_handler(stable_rate_limit),
+                            ),
                         )
                         .layer(
                             GovernorLayer::new(public_share_config)

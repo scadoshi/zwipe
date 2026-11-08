@@ -472,3 +472,18 @@ async fn an_unknown_or_malformed_token_has_no_preview(pool: sqlx::PgPool) {
         .await;
     assert_eq!(status, StatusCode::NOT_FOUND);
 }
+
+#[sqlx::test]
+async fn the_preview_route_is_rate_limited_per_address(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool);
+    let share = shared_deck(&app, "limited").await;
+    let path = shared_deck_preview_route(share.parse().unwrap());
+    // A burst of 10 passes; the 11th from the same address is refused.
+    for i in 0..10 {
+        let (status, _, _) = app.send_bytes(Method::GET, &path).await;
+        assert_eq!(status, StatusCode::OK, "request {i}");
+    }
+    let (status, headers, _) = app.send_bytes(Method::GET, &path).await;
+    assert_eq!(status, StatusCode::TOO_MANY_REQUESTS);
+    assert!(headers.contains_key(header::RETRY_AFTER), "{headers:?}");
+}
