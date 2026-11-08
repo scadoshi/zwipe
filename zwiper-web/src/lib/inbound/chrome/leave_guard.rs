@@ -324,9 +324,9 @@ const FOCUS_BACK_JS: &str = "(() => { const from = window.__zwipeLeaveFrom; wind
 
 /// The guard's dialog state, `(asking, armed)`, which every mounted
 /// [`LeaveDialog`] shares. The first one to mount creates it, owned by the
-/// root scope, so it outlives any one dialog: About and the authed screens
-/// each draw the nav and its dialog, and the guard writes the state from
-/// whichever screen or nav button holds a move.
+/// root scope, so it outlives any one dialog: a frame that replaces another
+/// mounts its dialog before the last one drops, and the guard writes the
+/// state from whichever screen or nav button holds a move.
 fn use_dialog_slots() -> (Signal<bool>, Signal<bool>) {
     use_hook(|| {
         GUARD.with(|g| {
@@ -345,6 +345,31 @@ fn use_dialog_slots() -> (Signal<bool>, Signal<bool>) {
     })
 }
 
+#[cfg(test)]
+thread_local! {
+    /// The scopes of the mounted [`LeaveDialog`]s, oldest first.
+    static MOUNTED_DIALOGS: RefCell<Vec<ScopeId>> = const { RefCell::new(Vec::new()) };
+}
+
+/// The scope of the newest mounted [`LeaveDialog`], which names it: a frame
+/// drawn again mounts a dialog in a new scope.
+#[cfg(test)]
+pub(crate) fn mounted_dialog() -> Option<ScopeId> {
+    MOUNTED_DIALOGS.with(|m| m.borrow().last().copied())
+}
+
+/// Records the calling [`LeaveDialog`] in [`MOUNTED_DIALOGS`] while it is
+/// mounted.
+#[cfg(test)]
+fn use_mounted_record() {
+    let scope = use_hook(|| {
+        let scope = dioxus::core::current_scope_id();
+        MOUNTED_DIALOGS.with(|m| m.borrow_mut().push(scope));
+        scope
+    });
+    use_drop(move || MOUNTED_DIALOGS.with(|m| m.borrow_mut().retain(|s| *s != scope)));
+}
+
 /// The dialog the guard asks through, over every layer a screen can have
 /// open, with the kit's alert dialog's look. Mount it once inside the
 /// router.
@@ -352,6 +377,8 @@ fn use_dialog_slots() -> (Signal<bool>, Signal<bool>) {
 pub fn LeaveDialog() -> Element {
     let navigator = use_navigator();
     let (mut asking, armed) = use_dialog_slots();
+    #[cfg(test)]
+    use_mounted_record();
     use_hook(|| {
         document::eval(UNLOAD_JS);
         document::eval(TAB_JS);
