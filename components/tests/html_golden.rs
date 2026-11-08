@@ -15,9 +15,9 @@ use std::fs;
 use std::path::PathBuf;
 
 use components::{
-    Bar, BarChart, BarOrientation, ChangelogFilter, ChangelogFilters, ChangelogLook,
-    ChangelogReleases, ColorBars, ColorChart, DeckCharts, DeckFacts, DeckHead, DrawOdds,
-    FlippableCardImage, IdentityPips, LabelCase, Pressable,
+    Bar, BarChart, BarOrientation, ChangelogCollapseAll, ChangelogFilter, ChangelogFilters,
+    ChangelogLook, ChangelogReleases, ColorBars, ColorChart, DeckCharts, DeckFacts, DeckHead,
+    DrawOdds, FlippableCardImage, IdentityPips, LabelCase, Pressable, use_collapse_set,
 };
 use dioxus::dioxus_core::NoOpMutations;
 use dioxus::prelude::*;
@@ -145,9 +145,11 @@ fn changelog_latest() {
         "changelog_latest",
         &render(|| {
             let selection = use_signal(|| ChangelogFilter::Latest);
+            let collapse = use_collapse_set();
             rsx! {
+                ChangelogCollapseAll { data: two_years(), selection, set: collapse }
                 ChangelogFilters { data: two_years(), selection }
-                ChangelogReleases { data: two_years(), selection }
+                ChangelogReleases { data: two_years(), selection, collapse }
             }
         }),
     );
@@ -159,9 +161,10 @@ fn changelog_anchored_with_links() {
         "changelog_anchored",
         &render(|| {
             let selection = use_signal(|| ChangelogFilter::Latest);
+            let collapse = use_collapse_set();
             rsx! {
                 ChangelogFilters { data: two_years(), selection, anchor: "#v1-14-1" }
-                ChangelogReleases { data: two_years(), selection, link_versions: true }
+                ChangelogReleases { data: two_years(), selection, collapse, link_versions: true }
             }
         }),
     );
@@ -173,9 +176,10 @@ fn changelog_app_panels() {
         "changelog_app_panels",
         &render(|| {
             let selection = use_signal(|| ChangelogFilter::Latest);
+            let collapse = use_collapse_set();
             rsx! {
                 ChangelogFilters { data: two_years(), selection, look: ChangelogLook::App }
-                ChangelogReleases { data: two_years(), selection, look: ChangelogLook::App }
+                ChangelogReleases { data: two_years(), selection, collapse, look: ChangelogLook::App }
             }
         }),
     );
@@ -187,9 +191,10 @@ fn changelog_anchored_upcoming() {
         "changelog_anchored_upcoming",
         &render(|| {
             let selection = use_signal(|| ChangelogFilter::Latest);
+            let collapse = use_collapse_set();
             rsx! {
                 ChangelogFilters { data: two_years(), selection, anchor: "v1-16-0" }
-                ChangelogReleases { data: two_years(), selection }
+                ChangelogReleases { data: two_years(), selection, collapse }
             }
         }),
     );

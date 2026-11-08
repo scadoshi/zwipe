@@ -34,13 +34,15 @@
 //! [`ChangelogReleases`], sharing a `Signal<Filter>` the caller owns, so the
 //! chips can sit in the caller's titled panel while the releases stack under
 //! it on their own. Two looks share the one rendering path, [`ChangelogLook`]:
-//! zite's floating cards and the app's panels. Each version's caret shuts
-//! its notes, and one Collapse all over the list shuts or opens them all.
+//! zite's floating cards and the app's panels. A click anywhere on a
+//! version's header shuts its notes, and [`ChangelogCollapseAll`], which the
+//! caller puts at the right end of its Changelog title, shuts or opens them
+//! all; the caller owns the [`CollapseSet`] the two share.
 
 use std::ptr;
 
 use dioxus::prelude::*;
-use orangui::{CollapseAll, CollapseBody, CollapseCaret, use_collapse_set};
+use orangui::{CollapseAll, CollapseBody, CollapseHeader, CollapseSet};
 use zwipe_core::http::contracts::changelog::HttpChangelog;
 pub use zwipe_ui::changelog::Filter;
 use zwipe_ui::changelog::{Listed, Tag, listed, minors, months, visible, years};
@@ -204,9 +206,38 @@ pub fn ChangelogFilters(
     }
 }
 
+/// The versions `selection` shows, newest first, past any page cap, so
+/// Collapse all covers the ones a "Show more" has yet to reveal.
+fn collapse_keys(data: &HttpChangelog, selection: &Filter) -> Vec<String> {
+    visible(&listed(data), selection)
+        .iter()
+        .map(|item| item.release.version.clone())
+        .collect()
+}
+
+/// The Collapse all icon for a changelog, for the caller to put at the right
+/// end of its Changelog title row. `set` is the one the caller hands
+/// [`ChangelogReleases`]; it covers every release `selection` shows.
+#[component]
+pub fn ChangelogCollapseAll(
+    #[props(default = HttpChangelog::current())] data: HttpChangelog,
+    selection: Signal<Filter>,
+    set: CollapseSet,
+) -> Element {
+    let keys = collapse_keys(&data, &selection());
+    rsx! {
+        if !keys.is_empty() {
+            CollapseAll { set, keys }
+        }
+    }
+}
+
 /// The newest-first list of the releases `selection` shows, each with its
 /// date and notes. `data` is the same copy [`ChangelogFilters`] draws.
-/// `link_versions` makes each version heading a link to its card.
+/// `link_versions` makes each version heading a link to its card. `collapse`
+/// holds which releases are shut; a click anywhere on a release's header
+/// opens or shuts it, and [`ChangelogCollapseAll`] over the same set shuts
+/// or opens them all.
 /// `page_size` caps the list at that many releases, with a "Show more"
 /// button under it that reveals that many more; a new selection starts
 /// back at one page. `None` shows every release.
@@ -214,14 +245,13 @@ pub fn ChangelogFilters(
 pub fn ChangelogReleases(
     #[props(default = HttpChangelog::current())] data: HttpChangelog,
     selection: Signal<Filter>,
+    collapse: CollapseSet,
     #[props(default)] link_versions: bool,
     #[props(default)] look: ChangelogLook,
     #[props(default)] page_size: Option<usize>,
 ) -> Element {
     // The selection the reveal was made under, and how many it reveals.
     let mut revealed = use_signal(|| None::<(Filter, usize)>);
-    // Every version starts open; a caret or Collapse all shuts them.
-    let collapse = use_collapse_set();
     let listed = listed(&data);
     let current = selection();
     let mut shown = visible(&listed, &current);
@@ -239,7 +269,6 @@ pub fn ChangelogReleases(
     // Included in each card's key so switching filters remounts the visible
     // cards, replaying their ease-in animation.
     let filter_key = format!("{current:?}");
-    let shown_versions: Vec<String> = shown.iter().map(|s| s.release.version.clone()).collect();
     let (list_class, release_class, header_class, body_class) = match look {
         ChangelogLook::Site => (
             "changelog-list",
@@ -256,11 +285,6 @@ pub fn ChangelogReleases(
     };
 
     rsx! {
-        if !shown_versions.is_empty() {
-            div { class: "changelog-collapse-row",
-                CollapseAll { set: collapse, keys: shown_versions }
-            }
-        }
         div { class: list_class,
             for (item , release) in listed.iter().map(|item| (item, item.release)) {
                 if show(item) {
@@ -268,17 +292,18 @@ pub fn ChangelogReleases(
                         key: "{filter_key}-{release.version}",
                         id: anchor_id(&release.version),
                         class: release_class,
-                        div { class: header_class,
-                            CollapseCaret {
-                                set: collapse,
-                                section: release.version.clone(),
-                                label: release.version.clone(),
-                            }
+                        CollapseHeader {
+                            set: collapse,
+                            section: release.version.clone(),
+                            label: release.version.clone(),
+                            class: header_class,
                             h2 { class: "changelog-version",
                                 if link_versions {
                                     a {
                                         class: "changelog-anchor",
                                         href: "#{anchor_id(&release.version)}",
+                                        // Following the link leaves the card as it is.
+                                        onclick: |event: MouseEvent| event.stop_propagation(),
                                         "{release.version}"
                                     }
                                 } else {
@@ -396,6 +421,16 @@ mod tests {
 
     fn rows(data: &HttpChangelog, selection: &Filter) -> Vec<Vec<Chip>> {
         chip_rows(&listed(data), selection)
+    }
+
+    #[test]
+    fn collapse_all_covers_every_release_the_selection_shows() {
+        let data = two_years();
+        assert_eq!(collapse_keys(&data, &Filter::Latest), ["1.16.0", "1.15.1"]);
+        assert_eq!(
+            collapse_keys(&data, &year("2026")),
+            ["1.14.2", "1.14.1", "1.14.0"]
+        );
     }
 
     #[test]
