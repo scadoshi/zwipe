@@ -44,21 +44,21 @@ Who checked, on which live build, what they saw.
 
 | # | Title | State | Owner | PR |
 |---|---|---|---|---|
-| [278](278-add-tag-outline.md) | The Add title tag has no outline | merging | scotland | #413 |
-| [279](279-home-create-deck.md) | Create deck button on Home's Decks panel | merging | halo | #414 |
-| [280](280-panel-title-sizes.md) | Panel titles render at different sizes | fixing | thinker | - |
+| [278](278-add-tag-outline.md) | The Add title tag has no outline | verified | scotland | #413 |
+| [279](279-home-create-deck.md) | Create deck button on Home's Decks panel | verified | halo | #414 |
+| [280](280-panel-title-sizes.md) | Panel titles render at different sizes | verified | thinker | - |
 | [282](282-stale-bundle-after-deploy.md) | Web keeps the old bundle until a hard refresh | reported | - | - |
-| [283](283-collapsible-changelog-versions.md) | Collapsible versions in every changelog | merging | laptop | #417, portfolio#20 |
-| [285](285-generated-share-image.md) | Generated preview image for shared decks | merged | thinker | #424, #425, #426 |
-| [286](286-portfolio-orangui-line-anchors.md) | Portfolio orangui source line ranges are stale | merged | laptop | portfolio#21 |
+| [283](283-collapsible-changelog-versions.md) | Collapsible versions in every changelog | verified | laptop | #417, portfolio#20 |
+| [285](285-generated-share-image.md) | Generated preview image for shared decks | verified | thinker | #424, #425, #426 |
+| [286](286-portfolio-orangui-line-anchors.md) | Portfolio orangui source line ranges are stale | verified | laptop | portfolio#21 |
 | [265](265-partner-swipe-stack.md) | Partner Swipe stack still offers illegal partners | verified | laptop | #419, #430, #437 |
-| [287](287-split-1-18-changelog.md) | Split the 1.18 changelog into logical patches | merged | laptop | #420 |
-| [288](288-stack-refreshed-on-failed-refresh.md) | Add says Stack refreshed when the refresh failed | merged | laptop | #421 |
-| [289](289-top-color-sr-text.md) | Top color pip reads Mono-red to screen readers | merged | laptop | #422 |
-| [290](290-format-sheet-keeps-draft.md) | Format sheet keeps its search after Discard; Keep is unclear | merged | laptop | #423, #428 |
-| [291](291-logout-revokes-all-sessions.md) | Logging out on one device logs out every device | merged | halo | #427 |
-| [292](292-changelog-api-browser-cache.md) | Web app's About shows an old changelog for hours after a deploy | merged | halo | #431 |
-| [293](293-empty-swipe-pile-skeleton.md) | An empty Swipe pile stays on a skeleton card | merged | laptop | #432 |
+| [287](287-split-1-18-changelog.md) | Split the 1.18 changelog into logical patches | verified | laptop | #420 |
+| [288](288-stack-refreshed-on-failed-refresh.md) | Add says Stack refreshed when the refresh failed | verified | laptop | #421 |
+| [289](289-top-color-sr-text.md) | Top color pip reads Mono-red to screen readers | verified | laptop | #422 |
+| [290](290-format-sheet-keeps-draft.md) | Format sheet keeps its search after Discard; Keep is unclear | verified | laptop | #423, #428 |
+| [291](291-logout-revokes-all-sessions.md) | Logging out on one device logs out every device | verified | halo | #427 |
+| [292](292-changelog-api-browser-cache.md) | Web app's About shows an old changelog for hours after a deploy | verified | halo | #431 |
+| [293](293-empty-swipe-pile-skeleton.md) | An empty Swipe pile stays on a skeleton card | verified | laptop | #432 |
 | [294](294-portfolio-zwipe-web-app.md) | Portfolio's Zwipe page leaves out the web app | verified | thinker | portfolio#22, #434 |
 | [295](295-changelog-whole-header-toggles.md) | Changelog versions only toggle from the caret | verified | scotland | #436, portfolio#23 |
 | [296](296-collapsed-group-tag-hover-border.md) | A collapsed group's tag loses its bottom border color on hover | verified | laptop | #433 |

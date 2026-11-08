@@ -1,6 +1,6 @@
 # 285. Generated preview image for shared decks
 
-State: merged | Owner: thinker | PR: #424, #425, #426 | Build seen: -
+State: verified | Owner: thinker | PR: #424, #425, #426 | Build seen: -
 
 ## Report
 Scotty, 2026-11-07: a shared deck's link preview shows a generated image with basic deck stats, not just the commander's art crop. Step 2 of `context/plans/share_preview.md`. Plan only for now: write `context/plans/share_preview_image.md` and bring Scotty the open questions one at a time.
