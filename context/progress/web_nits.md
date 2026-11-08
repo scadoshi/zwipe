@@ -1,5 +1,8 @@
 # zwiper-web nits from the live click-through
 
+> Closed to new entries on 2026-11-07. New issues live in [`../issues/`](../issues/README.md), numbered from 278.
+
+
 Logged while Scotty clicks through app.zwipe.net after launch (2026-11-06). Each is a line until it is picked up; mark it done with the commit.
 
 ## Plan (2026-11-06)
