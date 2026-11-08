@@ -74,7 +74,7 @@ Who checked, on which live build, what they saw.
 | [306](306-openframe-reuse-shell.md) | About and Privacy draw a second app frame when signed in | merged | halo | #444 |
 | [307](307-about-cards-skip-zwiper-web.md) | zwipe.net About's crate cards leave out zwiper-web | merged | laptop | #447 |
 | [308](308-share-image-size-for-whatsapp.md) | Share preview images may be too big for WhatsApp | parked | - | - |
-| [309](309-robots-blocks-share-unfurls.md) | X shows no card for shared deck links (robots.txt) | approved | laptop | - |
+| [309](309-robots-blocks-share-unfurls.md) | X shows no card for shared deck links (robots.txt) | fixing | laptop | #449 |
 
 ## Waiting for live verification
 

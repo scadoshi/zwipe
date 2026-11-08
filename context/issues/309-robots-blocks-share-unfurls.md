@@ -1,6 +1,6 @@
 # 309. X shows no card for shared deck links
 
-State: approved | Owner: laptop | PR: - | Build seen: 02102ab5e
+State: fixing | Owner: laptop | PR: #449 | Build seen: 02102ab5e
 
 ## Report
 Scotty, 2026-11-08: pasting zwipe.net/deck/... links into X shows no image. Composer: the page and image serve fine to a Twitterbot user agent (200, twitter:card summary_large_image, PNG 200), but zwipe.net/robots.txt has `User-agent: *` ... `Disallow: /deck/` (meant to keep shared decks out of search). Twitterbot honors robots.txt, so it never fetches the page. Other unfurlers that honor robots (LinkedInBot, Slackbot, Discordbot, facebookexternalhit) are blocked the same way.
