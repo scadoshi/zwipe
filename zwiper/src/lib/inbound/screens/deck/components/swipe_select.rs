@@ -249,8 +249,8 @@ pub(crate) fn SwipeSelect(
     host_screen: &'static str,
     /// Oracle ids kept out of the pile. The commander maybeboard passes its
     /// own saves here (its Swipe is discovery: a saved commander is a wasted
-    /// deal); deck create/edit pass nothing, so saves still serve where the
-    /// user goes to actually pick one.
+    /// deal); deck create/edit pass the cards already in the command zone, so
+    /// the partner stack never offers the commander.
     #[props(default)]
     exclude_oracle_ids: Option<ReadSignal<HashSet<Uuid>>>,
     /// The ranking the suggested mode deals, snapshotted on each open so the

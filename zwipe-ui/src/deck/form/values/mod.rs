@@ -1,5 +1,7 @@
 //! What the deck form holds and what it sends, as the app's Create and Edit screens do it: the values, Create's request, Edit's sparse update against the deck as saved, the knock-on clears a format or commander change makes, and which command-zone slots show.
 
+use std::collections::HashSet;
+
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
@@ -9,7 +11,7 @@ use zwipe_core::http::contracts::deck::{HttpCreateDeckProfile, HttpUpdateDeckPro
 use zwipe_core::http::helpers::Patch;
 
 use super::{parse_price, price_text};
-use crate::deck::command_zone::Slot;
+use crate::deck::command_zone::{self, Slot};
 
 /// Every field the Create and Edit forms hold.
 ///
@@ -45,6 +47,18 @@ pub struct FormValues {
 }
 
 impl FormValues {
+    /// The oracle ids of the commander, partner, background and signature
+    /// spell picked so far, which every slot's Swipe select leaves out.
+    #[must_use]
+    pub fn command_zone_oracle_ids(&self) -> HashSet<Uuid> {
+        command_zone::zone_oracle_ids([
+            self.commander.as_ref(),
+            self.partner.as_ref(),
+            self.background.as_ref(),
+            self.signature_spell.as_ref(),
+        ])
+    }
+
     /// A saved deck's values before its command-zone cards load: every field but the command zone, which each card fills as it arrives ([`FormValues::slot_mut`]). A missing currency reads as USD.
     #[must_use]
     pub fn saved(profile: &DeckProfile) -> Self {
