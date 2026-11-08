@@ -1,6 +1,6 @@
 # 285. Generated preview image for shared decks
 
-State: merged | Owner: thinker | PR: #424, #425 | Build seen: -
+State: fixing | Owner: thinker | PR: #424, #425, part 2 pending | Build seen: -
 
 ## Report
 Scotty, 2026-11-07: a shared deck's link preview shows a generated image with basic deck stats, not just the commander's art crop. Step 2 of `context/plans/share_preview.md`. Plan only for now: write `context/plans/share_preview_image.md` and bring Scotty the open questions one at a time.
@@ -19,3 +19,6 @@ Scotty's answers: 1. zerver draws it, Cloudflare caches it.
 thinker, 2026-11-07:
 - Server: https://github.com/scadoshi/zwipe/pull/424. zerver draws the 1200x630 preview with resvg at `/api/share/deck/{token}/preview.png?v={updated_at}` in the owner's theme; `HttpSharedDeck` gains `updated_at` and `theme`.
 - Pages Function: the share page's `og:image` points at that URL (art crop when the payload has no `updated_at`), stacked on the server PR.
+
+## Part 2
+Scotty, 2026-11-08, after the samples: lay it out like the deck list. Name first, then all the info as tags, the same tags the deck list uses: format, card count, price, and the command zone (both partners, Oathbreaker plus signature spell, or the one commander). The artist line becomes a label tag reading "Art" followed by the artist names.
