@@ -1,6 +1,6 @@
 # 307. zwipe.net About's crate cards leave out zwiper-web
 
-State: approved | Owner: laptop | PR: - | Build seen: 02102ab5e
+State: fixing | Owner: laptop | PR: #447 | Build seen: 02102ab5e
 
 ## Report
 Surfer, live zwipe.net/about, 2026-11-08, while verifying 294. The architecture diagram now has zwiper-web, and its caption says eight crates, but the crate cards under "How it fits together" are only seven: zwiper, zite, zerver, zwipe-ui, components, zwipe-client, zwipe-core. There's no card for zwiper-web, the web app.
