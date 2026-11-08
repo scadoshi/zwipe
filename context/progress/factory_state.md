@@ -95,3 +95,9 @@ Left open as agreed. The design is sound: a rotated token presented again within
 - Held: #336 (207 og tags via a zwipe.net move to Cloudflare Pages), waiting on Scotty's OK and his dashboard cutover (steps in deploy_web.md).
 - Waiting on Scotty: triage of Droid p7 + p8 and Surfer p15, p16, p17 findings; reqwest gzip/brotli on the app; 186 (web preview 379 vs app 333); Cloudflare zone cache settings (stats_second_source.md, also 211).
 - Running: Droid pass 9 (release APK, merged fixes incl. 210), Surfer Part 18 (copy proofread).
+
+### Late 2026-11-07
+- Deployed 80d5b43ab (Scotty's go). Merged since, not deployed: 213, 214, 215 (Any/All, additive wire field), 216 to 225, 203 and 206 follow-ups, web Quick add (#370), Config flags as filters (#373), copy pass #369 #372 #374, orangui#21 + pin (#366).
+- Only open PR: #336, held for Scotty's zwipe.net cutover (context/plans/share_preview.md).
+- Closed: 212 (Arzakon is WUBRG), the app promo printing (didn't reproduce on prod), synergy_applied (correct by contract).
+- Waiting on Scotty: deploy go; reqwest gzip/brotli on the app; Surfer p15-17 and p19 findings; Droid p11 (Activity 146 vs 303 swipes, Draw odds 'by turn 0').
