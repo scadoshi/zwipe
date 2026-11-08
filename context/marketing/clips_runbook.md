@@ -44,7 +44,7 @@ d notifications -e visible false; d network -e wifi show -e level 4
 d exit; adb shell settings put global sysui_demo_allowed 0
 ```
 
-The app draws its own grey band over the status bar, so demo mode makes no visible difference: the top 142px record as flat grey with no clock or icons. The fix is to crop it off, along with the gesture bar at the bottom (y 2360 to 2400), giving 1080x2218. Keep both versions: full frame in the dated folder and cropped in `cropped/`.
+The app draws its own grey band over the status bar, so demo mode makes no visible difference: the top 142px record as flat grey with no clock or icons. The fix is to crop it off, along with the gesture bar at the bottom (y 2360 to 2400). The emulator's screen also records with black edges: 6px down each side and 22px above the gesture bar. A web page shows those as a black frame around the clip, so the crop takes them too: `crop=1068:2196:6:142`, giving 1068x2196. Keep both versions: full frame in the dated folder and cropped in `cropped/`.
 
 ## 4. Record
 
@@ -74,7 +74,7 @@ ffmpeg -i raw/c1.mp4 -vf "fps=30,trim=start=START,setpts=PTS-STARTPTS,tpad=stop_
   -t LEN -c:v libx264 -crf 16 -preset slow -pix_fmt yuv420p -movflags +faststart -an 1_swipe.mp4
 
 # cropped copy: same command plus the crop
-ffmpeg -i raw/c1.mp4 -vf "fps=30,trim=start=START,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=3,crop=1080:2218:0:142" \
+ffmpeg -i raw/c1.mp4 -vf "fps=30,trim=start=START,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=3,crop=1068:2196:6:142" \
   -t LEN -c:v libx264 -crf 16 -preset slow -pix_fmt yuv420p -movflags +faststart -an cropped/1_swipe.mp4
 ```
 
@@ -85,7 +85,7 @@ Folder layout:
 ```
 ~/Developer/droid-clips/YYYY-MM-DD/
   1_swipe.mp4  2_stats.mp4  3_playstyle.mp4  4_activity.mp4   # 1080x2400
-  cropped/     # same names, 1080x2218
+  cropped/     # same names, 1068x2196
   raw/         # untrimmed takes c1..c4.mp4
 ```
 
@@ -107,7 +107,7 @@ These are vertical posts for TikTok, Reels and Shorts. Each takes 15 to 25s: abo
 1. Record each beat as its own short take (sections 4 and 5). One take per beat makes the edit a plain concat.
 2. Turn each beat into 9:16 (1080x1920). There are two ways:
    - **Fit (default).** Scale the cropped take to 1920 tall and pad the sides with the theme background. This keeps the bottom toolbar (Add's swipe controls). ```bash ffmpeg -i cropped/beat1.mp4 -vf "scale=-2:1920,pad=1080:1920:(ow-iw)/2:0:color=0x282828,fps=30,format=yuv420p" -c:v libx264 -crf 16 -an tt/beat1.mp4 ```
-   - **Crop.** Fills the frame but cuts the bottom 298px, so use it only when nothing important is down there. ```bash ffmpeg -i cropped/beat1.mp4 -vf "crop=1080:1920:0:0,fps=30,format=yuv420p" -c:v libx264 -crf 16 -an tt/beat1.mp4 ```
+   - **Crop.** Fills the frame but cuts the bottom 298px, so use it only when nothing important is down there. ```bash ffmpeg -i cropped/beat1.mp4 -vf "crop=1068:1898:0:0,scale=1080:1920,setsar=1,fps=30,format=yuv420p" -c:v libx264 -crf 16 -an tt/beat1.mp4 ```
 3. Make the end card a 3 to 4s clip from `context/marketing/video_end_card.png`, which is already 1080x1920:
    ```bash
    ffmpeg -loop 1 -t 3 -i context/marketing/video_end_card.png -vf "fps=30,format=yuv420p" -c:v libx264 -crf 16 tt/end.mp4
@@ -127,9 +127,14 @@ These are vertical posts for TikTok, Reels and Shorts. Each takes 15 to 25s: abo
 
 ## 9. Publishing to zwipe.net and the portfolio
 
-Both galleries use the **cropped** takes (1080x2218), shrunk for the web. The full frame is for the store listings and the 9:16 cuts are for TikTok, so neither goes on a site.
+Both galleries use the **cropped** takes (1068x2196), shrunk for the web. The full frame is for the store listings and the 9:16 cuts are for TikTok, so neither goes on a site.
 
-1. Encode each cropped take at half size, with no audio track, plus its first frame as a poster:
+1. Check that no take has a black edge left. A clean take reports its own size, `crop=1068:2196:0:0`:
+   ```bash
+   for f in cropped/*.mp4; do echo "$f $(ffmpeg -i $f -vf cropdetect=limit=24:round=2:reset=0 -f null - 2>&1 | grep -o 'crop=[0-9:]*' | sort | uniq -c | sort -rn | head -1)"; done
+   ```
+   A take cropped before 2026-11-08 is 1080x2218 and still has the edges. Put `crop=1068:2196:6:0,` at the front of the `-vf` below for those.
+2. Encode each cropped take to 540 wide (540x1110), with no audio track, plus its first frame as a poster:
    ```bash
    for n in 1_swipe 2_stats 3_playstyle 4_activity; do
      ffmpeg -i cropped/$n.mp4 -an -vf "scale=540:-2:flags=lanczos" -c:v libx264 -profile:v high \
@@ -138,7 +143,7 @@ Both galleries use the **cropped** takes (1080x2218), shrunk for the web. The fu
    done
    ```
    The 2026-11-08 set came out at 152 to 477 KB a clip. The ceiling is 2 MB, because a clip autoplays on the home page. Card text is still crisp at 540 wide, since the gallery draws the clip at most 700px tall.
-2. **zwipe.net.** Put the `.mp4` and `.jpg` pairs in `zite/assets/demo/`, and delete the files they replace. Each clip is a row in `DEMOS` in `zite/src/pages/home.rs`: video, poster, the caption under it, and a screen-reader label ("Demo: Deck stats"). Write captions with the human-copy skill: one short line that says what the clip shows. If the clips change shape, update the 540 / 1110 ratio in `.demo-col .gallery-video` in `zite/assets/style.css`. The test `every_demo_file_is_shown_and_every_clip_is_light` fails on a file no row uses, a clip over 2 MB, or a poster that isn't beside its clip.
-3. **Portfolio.** Put the same `.mp4` files, without posters, in `assets/projects/zwipe/` in the portfolio repo, and delete the old ones. Each clip is a `MediaItem` in the Zwipe project in `src/data.rs`, with alt text that describes the clip and the same caption as zwipe.net.
-4. Check both galleries at 1440 and 390 wide with a local `dx serve`, and step through every clip. If the page still shows the old clips, the dev server is serving a stale pre-render: delete `target/dx/<crate>/debug/web/public` and serve again.
-5. Deploy: open a PR to `release` for zite and a PR to `main` for the portfolio. The portfolio publishes to GitHub Pages when its PR merges. zwipe.net publishes when release reaches zwipe's `main`, through `deploy-zite.yml`.
+3. **zwipe.net.** Put the `.mp4` and `.jpg` pairs in `zite/assets/demo/`, and delete the files they replace. Each clip is a row in `DEMOS` in `zite/src/pages/home.rs`: video, poster, the caption under it, and a screen-reader label ("Demo: Deck stats"). Write captions with the human-copy skill: one short line that says what the clip shows. If the clips change shape, update the 540 / 1110 ratio in `.demo-col .gallery-video` in `zite/assets/style.css`. The test `every_demo_file_is_shown_and_every_clip_is_light` fails on a file no row uses, a clip over 2 MB, or a poster that isn't beside its clip.
+4. **Portfolio.** Put the same `.mp4` files, without posters, in `assets/projects/zwipe/` in the portfolio repo, and delete the old ones. Each clip is a `MediaItem` in the Zwipe project in `src/data.rs`, with alt text that describes the clip and the same caption as zwipe.net.
+5. Check both galleries at 1440 and 390 wide with a local `dx serve`, and step through every clip. If the page still shows the old clips, the dev server is serving a stale pre-render: delete `target/dx/<crate>/debug/web/public` and serve again.
+6. Deploy: open a PR to `release` for zite and a PR to `main` for the portfolio. The portfolio publishes to GitHub Pages when its PR merges. zwipe.net publishes when release reaches zwipe's `main`, through `deploy-zite.yml`.
