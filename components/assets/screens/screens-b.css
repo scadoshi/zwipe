@@ -287,8 +287,9 @@
 }
 
 /* Collapsed: the header's rule fades out in step with the closing body,
-   since nothing sits under it once shut. */
-.card-group.collapsed .card-group-header {
+   since nothing sits under it once shut. A deck group's header is a chip
+   and keeps its whole border. */
+.card-group.collapsed:not(.deck-group) .card-group-header {
     border-bottom-color: transparent;
 }
 
