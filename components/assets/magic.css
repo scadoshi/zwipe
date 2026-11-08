@@ -2402,13 +2402,6 @@ html.keyboard-up .web-dock-pair {
     gap: var(--panel-gap);
 }
 
-/* A header taking a dragged row. */
-.deck-fold-head.deck-drop-over {
-    color: var(--ink-accent-primary, var(--accent-primary));
-    outline: 1px dashed var(--accent-primary);
-    outline-offset: -2px;
-}
-
 .deck-empty {
     margin: 0;
     padding: 1rem;
@@ -2675,4 +2668,28 @@ footer.site-footer .site-footer-note {
     text-overflow: ellipsis;
     user-select: all;
     -webkit-user-select: all;
+}
+
+/* A fold's toggle fills the header up to its accessory. */
+.deck-fold-toggle {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: center;
+    gap: 0.4rem;
+    min-width: 0;
+}
+
+/* The keyboard's ring on a row head or a group header, drawn inside so
+   the rounded clip never cuts it, and on a fold's toggle, out in the
+   header's padding. */
+.card-row-compact:focus-visible,
+.card-group-header:focus-visible,
+.deck-fold-toggle:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: -2px;
+    border-radius: 0.5rem;
+}
+
+.deck-fold-toggle:focus-visible {
+    outline-offset: 0.3rem;
 }
