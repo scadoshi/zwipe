@@ -266,6 +266,16 @@ fn toast_line(effect: &Effect) -> Option<Line<'_>> {
     }
 }
 
+/// The line in place of the card when a search dealt no card, as in "No partners to show", or "No partners match your filters" while the user's filter is `filtered`. `noun` is the mode's, [`Mode::noun`].
+#[must_use]
+pub fn empty_pile_line(noun: &str, filtered: bool) -> String {
+    if filtered {
+        format!("No {noun}s match your filters")
+    } else {
+        format!("No {noun}s to show")
+    }
+}
+
 /// Whether the Filter button's dot lights for the client's `filter`: any user filter or explicit sort, since popularity order with no sort is the default.
 #[must_use]
 pub fn filter_lit(filter: &CardQueryBuilder) -> bool {
@@ -355,14 +365,7 @@ impl State {
             && self.status() == Status::Empty
             && self.message().is_none()
         {
-            let noun = self.noun();
-            // Cards still in the stack were dealt and swiped past; none means the search found nothing.
-            let line = if self.stack.is_empty() {
-                format!("No {noun}s match your filters")
-            } else {
-                NO_CARDS_LEFT.to_owned()
-            };
-            effects.push(Effect::Toast(Toast::quick(ToastKind::Info, line)));
+            effects.push(Effect::Toast(Toast::quick(ToastKind::Info, NO_CARDS_LEFT)));
         }
         keep_one(&mut effects, toast_line);
         effects
@@ -735,16 +738,22 @@ impl State {
         }
     }
 
-    /// The line in place of the card when the host's suggested pile has nothing under its Show chip, "No Jeskai commanders in your top 100".
+    /// The line in place of the card when the pile holds nothing: the host's suggested pile with nothing under its Show chip, "No Jeskai commanders in your top 100", or a search that dealt no card, [`empty_pile_line`].
     #[must_use]
     pub fn message(&self) -> Option<String> {
-        if !self.is_suggested() || !self.pile.suggestions.is_empty() {
-            return None;
+        if self.is_suggested() {
+            if !self.pile.suggestions.is_empty() {
+                return None;
+            }
+            return self
+                .pile
+                .identity
+                .as_deref()
+                .map(playstyle::empty_identity_line);
         }
-        self.pile
-            .identity
-            .as_deref()
-            .map(playstyle::empty_identity_line)
+        let dealt_nothing =
+            self.mode.is_some() && self.stack.is_empty() && self.status() == Status::Empty;
+        dealt_nothing.then(|| empty_pile_line(self.noun(), filter_lit(&self.filter)))
     }
 
     /// The mode the overlay last opened with.
