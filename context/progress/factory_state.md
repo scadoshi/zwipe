@@ -116,4 +116,4 @@ Left open as agreed. The design is sound: a rotated token presented again within
 - Verify 1e03520ef: every line checked. All pass except 265 (Partner Swipe stack, fixed in #419) and an extra "Stack refreshed" toast (288, fixed in #421). 336 (share previews) checked by curl.
 - Merged since the deploy (not live): 221 web, 258, 270, 273, 278, 279, 280, 283, 287 (changelog split, workspace 1.18.8), 265, 288, 289, 290 part 1, #416 (GitHub Pages job removed).
 - New, waiting on Scotty: 282 (stale bundle after deploy), 284 (toast vs footer, reproduced), 286 (portfolio orangui line anchors), 290 part 2 (what Keep means on the discard prompt), 291 (logout revokes every session).
-- In flight: thinker on 285 (share preview image).
+- 285 (share preview image) merged in #424 and #425; samples sent to Scotty. Deploy note: zerver must deploy before zite (the zite build waits for it). Workers all idle.
