@@ -8,7 +8,7 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
 use zwipe_client::{ClientError, ZwipeClient};
-use zwipe_core::domain::deck::{Deck, DeckName};
+use zwipe_core::domain::deck::Deck;
 use zwipe_ui::deck::form::Slot;
 use zwipe_ui::screens::deck_form;
 
@@ -101,9 +101,9 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         if *saving.peek() || deck.peek().as_ref().is_none_or(Result::is_err) {
             return;
         }
-        if let Err(e) = DeckName::new(form.name.peek().clone()) {
+        if let Some(message) = deck_form::name_error(&form.name.peek()) {
             let mut error = form.name_error;
-            error.set(Some(deck_form::name_message(&e).to_owned()));
+            error.set(Some(message));
             return;
         }
         let Some(request) = domain::deck::update_request(&original.peek(), &form.values()) else {

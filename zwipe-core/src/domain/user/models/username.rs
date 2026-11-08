@@ -12,10 +12,11 @@ use thiserror::Error;
 use crate::domain::moderation::ContainsBadWord;
 
 /// Fewest characters a trimmed username may have.
-const MIN_LENGTH: usize = 3;
+pub const MIN_LENGTH: usize = 3;
 
-/// Most characters a trimmed username may have.
-const MAX_LENGTH: usize = 20;
+/// Most characters a trimmed username may have. Clients cap the username
+/// field at it.
+pub const MAX_LENGTH: usize = 20;
 
 /// Zero-width characters that `char::is_whitespace` misses but that render as
 /// nothing, so a username containing one would look like another user's.

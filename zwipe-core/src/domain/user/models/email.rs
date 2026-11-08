@@ -23,6 +23,11 @@ use serde::{Deserialize, Serialize};
 /// don't need to depend on that crate directly.
 pub type InvalidEmail = email_address::Error;
 
+/// Longest address [`Email::new`] can accept: the parser's 64-character
+/// local part, the `@`, and its 254-character domain. Clients cap the email
+/// field at it; the parser still judges each part.
+pub const MAX_LENGTH: usize = 64 + 1 + 254;
+
 /// A validated email address whose textual form is the canonical
 /// `local-part@sub.domain.tld` shape, nothing more, nothing less.
 ///
@@ -143,6 +148,28 @@ impl<'de> Deserialize<'de> for Email {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_longest_address_the_parser_takes_is_max_length() {
+        let domain = format!(
+            "{}.{}.{}.{}",
+            "a".repeat(63),
+            "b".repeat(63),
+            "c".repeat(63),
+            "d".repeat(62)
+        );
+        let longest = format!("{}@{domain}", "u".repeat(64));
+        assert_eq!(longest.len(), MAX_LENGTH);
+        assert!(Email::new(&longest).is_ok());
+        assert!(
+            Email::new(format!("u{longest}")).is_err(),
+            "a longer local part"
+        );
+        assert!(
+            Email::new(format!("{longest}d")).is_err(),
+            "a longer domain"
+        );
+    }
 
     #[test]
     fn accepts_standard_address() {

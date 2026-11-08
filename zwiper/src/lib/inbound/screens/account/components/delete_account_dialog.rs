@@ -43,6 +43,7 @@ pub(crate) fn DeleteAccountDialog(open: Signal<bool>) -> Element {
             {dialog.body()}
             TextInput {
                 value: delete_password,
+                autocomplete: "current-password",
                 input_type: "password".to_string(),
                 placeholder: DELETE_PASSWORD.to_string(),
             }

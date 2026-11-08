@@ -7,13 +7,6 @@ use zwipe_ui::text::sentence_case;
 use crate::components::PageMeta;
 use crate::{Nav, api};
 
-/// Validate a candidate password against the shared password policy.
-fn validate_password(pw: &str) -> Option<String> {
-    zwipe_core::domain::auth::password::validate(pw)
-        .err()
-        .map(|e| format!("Password {e}"))
-}
-
 #[derive(Clone, PartialEq)]
 enum ResetState {
     Form,
@@ -36,12 +29,14 @@ enum SubmitCheck {
 }
 
 /// Decides a submit from the page state, the two fields and the link's token.
+/// The password policy is the server's alone, so a rule it changes later can
+/// never stop the page from sending; only an empty or mismatched pair is held.
 fn check_submit(state: &ResetState, pw: &str, cf: &str, token: &str) -> SubmitCheck {
     if *state == ResetState::Loading {
         return SubmitCheck::Ignore;
     }
-    if let Some(err) = validate_password(pw) {
-        return SubmitCheck::Reject(err);
+    if pw.is_empty() {
+        return SubmitCheck::Reject("Password is required".to_string());
     }
     if pw != cf {
         return SubmitCheck::Reject("Passwords do not match".to_string());
@@ -52,6 +47,17 @@ fn check_submit(state: &ResetState, pw: &str, cf: &str, token: &str) -> SubmitCh
         );
     }
     SubmitCheck::Send
+}
+
+/// The line a failed reset shows: the server's reason for a password it
+/// turns down (422), the connection message for a request that never landed,
+/// and a dead link for anything else.
+fn failure_message(error: &ClientError) -> String {
+    match error {
+        ClientError::UnprocessableEntity(reason) => format!("Password {reason}"),
+        ClientError::Network(_) | ClientError::Decode(_) => error.to_user_message(),
+        _ => "This link is invalid or has expired. Request a new one from the app.".to_string(),
+    }
 }
 
 /// Whether the check on load says the link is dead: only a 400, the
@@ -107,14 +113,7 @@ pub fn Reset(token: String) -> Element {
         spawn(async move {
             match api::client().reset_password(token, Secret::new(pw)).await {
                 Ok(()) => state.set(ResetState::Success),
-                // A request that never landed is not a bad token; say so.
-                Err(e @ (ClientError::Network(_) | ClientError::Decode(_))) => {
-                    state.set(ResetState::Error(e.to_user_message()));
-                }
-                Err(_) => state.set(ResetState::Error(
-                    "This link is invalid or has expired. Request a new one from the app."
-                        .to_string(),
-                )),
+                Err(e) => state.set(ResetState::Error(failure_message(&e))),
             }
         });
     };
@@ -284,5 +283,34 @@ mod tests {
             check_submit(&ResetState::Form, GOOD, GOOD, ""),
             SubmitCheck::Reject(_)
         ));
+        assert_eq!(
+            check_submit(&ResetState::Form, "", "", "token"),
+            SubmitCheck::Reject("Password is required".to_string())
+        );
+    }
+
+    #[test]
+    fn the_password_policy_is_left_to_the_server() {
+        for weak in ["short", "alllowercase", "a"] {
+            assert_eq!(
+                check_submit(&ResetState::Form, weak, weak, "token"),
+                SubmitCheck::Send,
+                "{weak:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_password_the_server_turns_down_shows_its_reason() {
+        assert_eq!(
+            failure_message(&ClientError::UnprocessableEntity(
+                "must be at least 8 characters long".to_string()
+            )),
+            "Password must be at least 8 characters long"
+        );
+        assert_eq!(
+            failure_message(&ClientError::Unauthorized(String::new())),
+            "This link is invalid or has expired. Request a new one from the app."
+        );
     }
 }

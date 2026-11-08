@@ -5,6 +5,7 @@ use components::{BottomSheet, SheetFrame, SheetWide, TOAST_NORMAL, TextInput};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::user::email;
 use zwipe_core::http::contracts::auth::HttpChangeEmail;
 use zwipe_ui::account;
 use zwipe_ui::text::sentence_case;
@@ -99,13 +100,19 @@ pub(super) fn ChangeEmailSheet(mut open: Signal<bool>) -> Element {
                     TextInput {
                         value: new_email,
                         id: "new_email",
+                        input_type: "email",
+                        name: "email",
+                        autocomplete: "email",
+                        maxlength: email::MAX_LENGTH,
                         label: "New email",
                         placeholder: "New email",
                         error: email_error.as_deref().map(sentence_case),
                     }
                     TextInput {
                         value: password,
-                        id: "password",
+                        id: "email_password",
+                        name: "password",
+                        autocomplete: "current-password",
                         label: "Password",
                         placeholder: "Password",
                         input_type: "password",

@@ -51,6 +51,8 @@ pub fn ChangePasswordSheet(open: Signal<bool>) -> Element {
                 TextInput {
                     value: driver.inputs.get(sheet, Field::CurrentPassword),
                     id: "current_password",
+                    name: "current-password",
+                    autocomplete: "current-password",
                     label: Field::CurrentPassword.label(),
                     placeholder: Field::CurrentPassword.placeholder(),
                     input_type: "password",
@@ -59,6 +61,8 @@ pub fn ChangePasswordSheet(open: Signal<bool>) -> Element {
                 TextInput {
                     value: driver.inputs.get(sheet, Field::NewPassword),
                     id: "new_password",
+                    name: "new-password",
+                    autocomplete: "new-password",
                     label: Field::NewPassword.label(),
                     placeholder: Field::NewPassword.placeholder(),
                     input_type: "password",
@@ -69,6 +73,8 @@ pub fn ChangePasswordSheet(open: Signal<bool>) -> Element {
                 TextInput {
                     value: driver.inputs.get(sheet, Field::ConfirmPassword),
                     id: "confirm_password",
+                    name: "confirm-password",
+                    autocomplete: "new-password",
                     label: Field::ConfirmPassword.label(),
                     placeholder: Field::ConfirmPassword.placeholder(),
                     input_type: "password",

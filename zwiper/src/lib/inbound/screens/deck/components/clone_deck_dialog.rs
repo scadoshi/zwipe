@@ -2,6 +2,7 @@
 
 use components::{ActionButton, AlertDialog, DialogAction};
 use dioxus::prelude::*;
+use zwipe_core::domain::deck::deck_name;
 use zwipe_ui::screens::deck_view::{self, Dialog};
 
 use crate::inbound::screens::deck::view::Driver;
@@ -40,20 +41,26 @@ pub(crate) fn CloneDeckDialog(driver: Driver, default_name: String, open: Signal
     }
 }
 
-/// The new name field. Its own component so it reads the name where the
-/// dialog host draws it.
+/// The new name field and its line. Its own component so it reads the name
+/// where the dialog host draws it.
 #[component]
 fn CloneNameInput(mut name: Signal<String>) -> Element {
+    let error = deck_view::clone_name_error(&name());
+    let error_shown = error.is_some();
     rsx! {
         input {
             r#type: "text",
-            class: "input",
+            class: if error_shown { "input input-error" } else { "input" },
             placeholder: deck_view::CLONE_PLACEHOLDER,
+            maxlength: deck_name::MAX_LENGTH.to_string(),
             value: "{name}",
             autocapitalize: "none",
             autocorrect: "off",
             spellcheck: "false",
             oninput: move |evt| name.set(evt.value()),
+        }
+        if let Some(error) = error {
+            div { class: "message-error", "{error}" }
         }
     }
 }

@@ -25,7 +25,8 @@ pub enum InvalidDeckname {
 }
 
 /// Longest name [`DeckName::new`] accepts, counted in characters after trimming.
-const MAX_LENGTH: usize = 64;
+/// Clients cap the name field at it.
+pub const MAX_LENGTH: usize = 64;
 
 /// Validated deck name (1-64 characters, no profanity).
 ///
