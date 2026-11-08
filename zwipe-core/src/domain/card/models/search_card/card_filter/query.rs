@@ -314,4 +314,34 @@ mod tests {
         assert_eq!(Limit::new(10_000).get(), 250);
         assert_eq!(Limit::new(25).get(), 25);
     }
+
+    #[test]
+    fn a_query_without_the_all_legality_field_still_parses() {
+        let query: CardQuery =
+            serde_json::from_str(r#"{"legalities_contains_any":["modern","legacy"]}"#).unwrap();
+        assert_eq!(
+            query.criteria().legalities_contains_any(),
+            Some(&["modern".to_owned(), "legacy".to_owned()][..])
+        );
+        assert_eq!(query.criteria().legalities_contains_all(), None);
+        let wire = serde_json::to_value(&query).unwrap();
+        assert!(
+            wire.get("legalities_contains_all").is_none(),
+            "an unset field stays off the wire: {wire}"
+        );
+    }
+
+    #[test]
+    fn the_all_legality_field_round_trips() {
+        let mut builder = CardQueryBuilder::new();
+        builder.set_legalities_contains_all(["modern", "pioneer"]);
+        let query = builder.build().unwrap();
+        let wire = serde_json::to_value(&query).unwrap();
+        assert_eq!(
+            wire.get("legalities_contains_all"),
+            Some(&serde_json::json!(["modern", "pioneer"]))
+        );
+        let read: CardQuery = serde_json::from_value(wire).unwrap();
+        assert_eq!(read, query);
+    }
 }

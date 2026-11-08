@@ -54,8 +54,10 @@ pub enum StrList {
     SetInclude,
     /// The builder's `set_excludes_any`.
     SetExclude,
-    /// `legalities_contains_any`, the formats a card must be legal in.
-    Legal,
+    /// The builder's `legalities_contains_any`: a card legal in any of these formats.
+    LegalAny,
+    /// The builder's `legalities_contains_all`: a card legal in every one of these formats.
+    LegalAll,
 }
 
 impl StrList {
@@ -84,7 +86,8 @@ impl StrList {
             Self::ArtistExclude => b.artist_excludes_any(),
             Self::SetInclude => b.set_equals_any(),
             Self::SetExclude => b.set_excludes_any(),
-            Self::Legal => b.legalities_contains_any(),
+            Self::LegalAny => b.legalities_contains_any(),
+            Self::LegalAll => b.legalities_contains_all(),
         };
         values.map(<[String]>::to_vec).unwrap_or_default()
     }
@@ -118,7 +121,8 @@ impl StrList {
             Self::ArtistExclude => b.set_artist_excludes_any(values),
             Self::SetInclude => b.set_set_equals_any(values),
             Self::SetExclude => b.set_set_excludes_any(values),
-            Self::Legal => b.set_legalities_contains_any(values),
+            Self::LegalAny => b.set_legalities_contains_any(values),
+            Self::LegalAll => b.set_legalities_contains_all(values),
         };
     }
 
@@ -147,7 +151,8 @@ impl StrList {
             Self::ArtistExclude => b.unset_artist_excludes_any(),
             Self::SetInclude => b.unset_set_equals_any(),
             Self::SetExclude => b.unset_set_excludes_any(),
-            Self::Legal => b.unset_legalities_contains_any(),
+            Self::LegalAny => b.unset_legalities_contains_any(),
+            Self::LegalAll => b.unset_legalities_contains_all(),
         };
     }
 }
@@ -333,6 +338,8 @@ pub enum MatchGroup {
     Tags,
     /// The basic card types.
     BasicTypes,
+    /// The formats a card is legal in. It has no exclude list.
+    Legal,
 }
 
 impl MatchGroup {
@@ -345,6 +352,7 @@ impl MatchGroup {
             Self::Produced => (StrList::ProducedAny, StrList::ProducedAll),
             Self::Roles => (StrList::RolesAny, StrList::RolesAll),
             Self::Tags => (StrList::TagsAny, StrList::TagsAll),
+            Self::Legal => (StrList::LegalAny, StrList::LegalAll),
             Self::BasicTypes => return None,
         })
     }
@@ -407,10 +415,10 @@ impl MatchGroup {
         }
     }
 
-    /// The matching exclude list.
+    /// The matching exclude list, `None` for [`Self::Legal`], which has none.
     #[must_use]
-    pub fn exclude(self) -> Exclude {
-        match self {
+    pub fn exclude(self) -> Option<Exclude> {
+        Some(match self {
             Self::OracleWords => Exclude::List(StrList::OracleWordsExclude),
             Self::Keywords => Exclude::List(StrList::KeywordsExclude),
             Self::TypeLine => Exclude::List(StrList::TypeLineExclude),
@@ -418,6 +426,22 @@ impl MatchGroup {
             Self::Roles => Exclude::List(StrList::RolesExclude),
             Self::Tags => Exclude::List(StrList::TagsExclude),
             Self::BasicTypes => Exclude::BasicTypes,
+            Self::Legal => return None,
+        })
+    }
+
+    /// The excluded values, empty for a group with no exclude list.
+    #[must_use]
+    pub fn excluded(self, b: &CardQueryBuilder) -> Vec<String> {
+        self.exclude()
+            .map(|exclude| exclude.values(b))
+            .unwrap_or_default()
+    }
+
+    /// Writes the excludes; a group with no exclude list keeps nothing.
+    pub fn write_excludes(self, b: &mut CardQueryBuilder, values: Vec<String>) {
+        if let Some(exclude) = self.exclude() {
+            exclude.write(b, values);
         }
     }
 }
@@ -918,9 +942,7 @@ mod tests {
             MatchGroup::BasicTypes.values(&b),
             words(&["Creature", "Land"])
         );
-        MatchGroup::BasicTypes
-            .exclude()
-            .write(&mut b, words(&["Instant"]));
+        MatchGroup::BasicTypes.write_excludes(&mut b, words(&["Instant"]));
         assert_eq!(b.card_type_excludes_any(), Some(&[CardType::Instant][..]));
     }
 

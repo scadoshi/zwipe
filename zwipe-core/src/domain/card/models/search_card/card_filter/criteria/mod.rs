@@ -89,6 +89,7 @@ pub struct CardCriteria {
     pub(super) language: Option<String>,
     // legalities
     pub(super) legalities_contains_any: Option<Vec<String>>,
+    pub(super) legalities_contains_all: Option<Vec<String>>,
     // commander
     pub(super) is_commander_in_format: Option<Format>,
     // partner/background/spell
