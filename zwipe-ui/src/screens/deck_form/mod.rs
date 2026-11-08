@@ -107,6 +107,21 @@ pub const SEARCHING: &str = "Searching…";
 /// A command-zone search's one chip when it found nothing.
 pub const NO_RESULTS: &str = "No results";
 
+/// The search for the partner a "Partner with" `commander` names, or `None` for any other commander.
+fn find_partner(commander: &Card) -> Option<Effect> {
+    let Some(PartnerKind::Named(mate)) = commander_eligibility::partner_kind(commander) else {
+        return None;
+    };
+    let mut builder = CardQueryBuilder::with_name_contains(&mate);
+    builder.set_limit(PARTNER_RESULT_LIMIT);
+    let query = builder.build().ok()?;
+    Some(Effect::FindPartner {
+        picked: commander.scryfall_data.id,
+        mate,
+        query: Box::new(query),
+    })
+}
+
 /// The toast after closing the deck tag picker adds oracle tags the deck tags seed.
 pub const ORACLE_TAGS_SEEDED: &str = "Oracle tags derived from your deck tags";
 
@@ -118,7 +133,7 @@ const PARTNER_RESULT_LIMIT: u32 = 5;
 pub enum Open {
     /// A new deck, starting from the commander the commander maybeboard seeded, if any.
     Create {
-        /// The seeded commander. It comes in with the format set to Commander and no knock-on clear or partner autofill.
+        /// The seeded commander. It comes in with the format set to Commander and no knock-on clear; a "Partner with" commander still has its partner filled in.
         seed: Option<Box<Card>>,
     },
     /// The saved deck with this id.
@@ -600,13 +615,7 @@ impl State {
             }
             Action::Debounced { ticket } => self.debounced(ticket),
             Action::Searched { ticket, cards } => {
-                if let Some(slot) = self.searches.holding(ticket) {
-                    let search = self.searches.get_mut(slot);
-                    search.waiting = None;
-                    search.searching = false;
-                    search.open = true;
-                    search.results = cards;
-                }
+                self.searched(ticket, cards);
                 Vec::new()
             }
             Action::PartnerSearched {
@@ -780,6 +789,12 @@ impl State {
         self.tag_list(picker)
     }
 
+    /// Whether the name's error line is showing, which holds Save.
+    #[must_use]
+    pub fn submit_held(&self) -> bool {
+        self.name_error.is_some()
+    }
+
     /// Whether a save is out, which turns Back and Save off.
     #[must_use]
     pub fn is_saving(&self) -> bool {
@@ -825,16 +840,18 @@ impl State {
             Open::Create { seed } => {
                 self.mode = Mode::Create;
                 self.status = Status::Ready;
+                let mut effects = vec![Effect::OfferHint(self.mode.hint())];
                 if let Some(card) = seed {
                     self.values.format = Some(Format::Commander);
                     self.searches
                         .commander
                         .display
                         .clone_from(&card.scryfall_data.name);
+                    effects.extend(find_partner(&card));
                     self.values.commander = Some(*card);
                 }
                 self.saved = self.values.clone();
-                vec![Effect::OfferHint(self.mode.hint())]
+                effects
             }
             Open::Edit(deck_id) => {
                 self.mode = Mode::Edit(deck_id);
@@ -1033,25 +1050,28 @@ impl State {
             *self.values.slot_mut(slot) = Some(card);
             return Vec::new();
         }
-        let named = match commander_eligibility::partner_kind(&card) {
-            Some(PartnerKind::Named(mate)) => Some((card.scryfall_data.id, mate)),
-            _ => None,
-        };
+        let find = find_partner(&card);
         let cascade = self.values.set_commander(Some(card));
         self.apply(&cascade);
-        let Some((picked, mate)) = named else {
-            return Vec::new();
+        find.into_iter().collect()
+    }
+
+    /// Lands the typeahead results for the search holding `ticket`. With its Filter on, Partner lists only the cards the commander can pair with.
+    fn searched(&mut self, ticket: Ticket, cards: Vec<Card>) {
+        let Some(slot) = self.searches.holding(ticket) else {
+            return;
         };
-        let mut builder = CardQueryBuilder::with_name_contains(&mate);
-        builder.set_limit(PARTNER_RESULT_LIMIT);
-        let Ok(query) = builder.build() else {
-            return Vec::new();
+        let cards = match (&self.values.commander, slot) {
+            (Some(commander), Slot::Partner) if self.searches.get(slot).filter_on => {
+                form::legal_partners(commander, cards)
+            }
+            _ => cards,
         };
-        vec![Effect::FindPartner {
-            picked,
-            mate,
-            query: Box::new(query),
-        }]
+        let search = self.searches.get_mut(slot);
+        search.waiting = None;
+        search.searching = false;
+        search.open = true;
+        search.results = cards;
     }
 
     fn partner_searched(&mut self, picked: Uuid, mate: &str, cards: &[Card]) -> Vec<Effect> {

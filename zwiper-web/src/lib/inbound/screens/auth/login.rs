@@ -16,12 +16,14 @@ use zwipe_core::domain::user::models::settings::PipStyle;
 use zwipe_core::http::contracts::auth::HttpAuthenticateUser;
 use zwipe_ui::account::Password;
 use zwipe_ui::screens::login::{self, Action, Destination, Effect, Field, State};
+use zwipe_ui::telemetry::vocabulary::{AuthScreen, Screen};
 
 use crate::inbound::chrome::toast::raise;
 use crate::inbound::router::Route;
 use crate::inbound::screens::auth::hero::{PublicFlavor, PublicHero};
 use crate::inbound::session::return_to;
 use crate::inbound::shell::ScreenFrame;
+use crate::inbound::telemetry;
 use crate::outbound::session_store::SessionStore;
 use crate::outbound::theme_store::ThemeStore;
 
@@ -126,6 +128,7 @@ fn route(destination: Destination) -> Route {
 /// The login screen. Return in either field runs `Log in`.
 #[component]
 pub fn Login() -> Element {
+    telemetry::use_telemetry_screen(Screen::Auth(AuthScreen::Login));
     let driver = Driver {
         model: use_signal(State::new),
         identifier: use_signal(String::new),

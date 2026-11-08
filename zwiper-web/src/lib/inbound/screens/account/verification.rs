@@ -9,10 +9,12 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::session::Session;
+use zwipe_ui::telemetry::vocabulary::component;
 use zwipe_ui::timing::RESEND_COOLDOWN;
 
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::session::ensure_fresh::ensure_fresh;
+use crate::inbound::telemetry;
 use crate::outbound::timer;
 
 /// The Email row's value: the address, `Verified` or `Unverified`, and
@@ -58,6 +60,8 @@ pub(super) fn VerificationActions() -> Element {
     let client: Signal<ZwipeClient> = use_context();
     let toast = use_toast();
     let authed = use_authed();
+    let usage = telemetry::use_usage();
+    let screen = telemetry::screen_name();
     let mut is_resending = use_signal(|| false);
     let mut is_checking = use_signal(|| false);
     let mut cooldown = use_signal(|| 0u32);
@@ -72,6 +76,12 @@ pub(super) fn VerificationActions() -> Element {
         spawn(async move {
             let failed = |e: &ClientError| {
                 tracing::warn!("resend_verification failed: {e}");
+                usage.peek().report_error(
+                    screen,
+                    component::EMAIL_VERIFICATION,
+                    "resend_verification",
+                    &telemetry::failure(e),
+                );
                 toast.error(
                     e.to_user_message(),
                     ToastOptions::default().duration(TOAST_LONG),

@@ -1,0 +1,18 @@
+{
+  "id": 1004,
+  "name": "Vampires with a backup",
+  "deckFormat": 3,
+  "categories": [
+    {"id": 1, "name": "Backup Commander", "includedInDeck": false, "includedInPrice": false},
+    {"id": 2, "name": "Commander", "includedInDeck": true, "includedInPrice": true},
+    {"id": 3, "name": "Lords", "includedInDeck": true, "includedInPrice": true}
+  ],
+  "cards": [
+    {"quantity": 1, "categories": ["Backup Commander"],
+     "card": {"uid": "3c5d0a71-5f3e-4b2a-9e2b-6c1f8d4e2a10", "oracleCard": {"name": "Sorin, Vengeful Bloodlord"}}},
+    {"quantity": 1, "categories": ["Commander"],
+     "card": {"uid": "8d94b8ec-ecda-43c8-a60e-1ba33e6a54a4", "oracleCard": {"name": "Edgar Markov"}}},
+    {"quantity": 1, "categories": ["Lords"],
+     "card": {"uid": "5b0b8d5e-2c3a-4f6a-8b1e-7d9c0a2b3c4d", "oracleCard": {"name": "Captivating Vampire"}}}
+  ]
+}

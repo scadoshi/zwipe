@@ -824,13 +824,16 @@ impl MetricsRepository for Postgres {
         &self,
         session_id: Uuid,
         kind: AnonymousEventKind,
+        platform: Option<ClientPlatform>,
     ) -> Result<(), MetricsError> {
         let kind_str = kind.as_str();
+        let platform_str = platform.map(|p| p.as_str());
         query!(
-            r#"INSERT INTO anonymous_events (session_id, kind)
-               VALUES ($1, $2)"#,
+            r#"INSERT INTO anonymous_events (session_id, kind, platform)
+               VALUES ($1, $2, $3)"#,
             session_id,
             kind_str,
+            platform_str,
         )
         .execute(&self.pool)
         .await

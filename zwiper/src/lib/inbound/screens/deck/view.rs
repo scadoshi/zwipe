@@ -5,7 +5,7 @@
 
 use components::icons::{CloneIcon, EditIcon, ShareIcon};
 use components::{
-    AlertDialog, Button, ButtonVariant, DialogAction, LoadFailed, TOAST_NORMAL, ToastOptions,
+    AlertDialog, Button, ButtonVariant, Chip, DialogAction, LoadFailed, TOAST_NORMAL, ToastOptions,
     Toasts, use_back_online, use_toast,
 };
 use dioxus::prelude::*;
@@ -578,8 +578,8 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                                 rsx! {
                                                     div { class: "chip-row", style: "margin-bottom:0;",
                                                         for option in PriceCurrency::all().iter().copied() {
-                                                            div {
-                                                                class: if currency == option { "chip selected" } else { "chip" },
+                                                            Chip {
+                                                                selected: currency == option,
                                                                 onclick: move |_| driver.dispatch(Action::PickCurrency(option)),
                                                                 "{option.label()}"
                                                             }

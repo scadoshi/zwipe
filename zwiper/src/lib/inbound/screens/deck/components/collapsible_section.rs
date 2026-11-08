@@ -3,6 +3,7 @@
 //! left arrow that rotates like the deck cards screen. Accordion-style: a shared
 //! `open_section` signal keeps only one section open at a time.
 
+use components::is_press;
 use dioxus::prelude::*;
 
 /// The card's style around `border`, shared with the loading ghost so the two
@@ -38,6 +39,7 @@ pub(crate) fn CollapsibleSection(
     children: Element,
 ) -> Element {
     let id = title.clone();
+    let id_for_keys = title.clone();
     let is_open = open_section() == Some(id.clone());
     let border = if warn {
         "var(--border-warning)"
@@ -66,6 +68,18 @@ pub(crate) fn CollapsibleSection(
                 style: HEADER_STYLE,
                 div {
                     style: TITLE_GROUP_STYLE,
+                    role: "button",
+                    tabindex: "0",
+                    "aria-expanded": "{is_open}",
+                    onkeydown: move |evt: KeyboardEvent| {
+                        if is_press(&evt) {
+                            if is_open {
+                                open_section.set(None);
+                            } else {
+                                open_section.set(Some(id_for_keys.clone()));
+                            }
+                        }
+                    },
                     span {
                         class: "card-row-arrow",
                         style: if is_open { "transform:rotate(90deg);" } else { "transform:rotate(0deg);" },
@@ -94,6 +108,7 @@ pub(crate) fn CollapsibleSection(
             // borders) bleed to the card edges; each child supplies its own inset.
             div {
                 class: if is_open { "collapsible open" } else { "collapsible" },
+                inert: (!is_open).then_some(true),
                 style: "cursor:default;",
                 onclick: move |evt| evt.stop_propagation(),
                 div { class: "collapsible-inner",

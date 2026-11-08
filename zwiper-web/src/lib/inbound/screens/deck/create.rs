@@ -4,9 +4,12 @@
 
 use components::icons::{CHECK, DockIcon};
 use dioxus::prelude::*;
+use dioxus_primitives::toast::use_toast;
 use zwipe_core::domain::deck::Format;
 use zwipe_ui::screens::deck_form;
+use zwipe_ui::telemetry::vocabulary::{DeckScreen, Screen};
 
+use super::form::command_zone::autofill_named_partner;
 use super::form::fields::DeckFields;
 use super::form::overlays::DeckFormOverlays;
 use super::form::{DECK_LEAVE, use_deck_form};
@@ -18,10 +21,12 @@ use crate::inbound::chrome::leave_guard::use_leave_guard;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::router::Route;
 use crate::inbound::shell::ScreenFrame;
+use crate::inbound::telemetry;
 
 /// The Create deck screen.
 #[component]
 pub fn CreateDeck() -> Element {
+    telemetry::use_telemetry_screen(Screen::Deck(DeckScreen::Create));
     let navigator = use_navigator();
     let authed = use_authed();
     let hint_open = use_one_time_hint(OneTimeHint::CreateDeck);
@@ -29,14 +34,17 @@ pub fn CreateDeck() -> Element {
     let mut saving = use_signal(|| false);
 
     // The handed-over commander, taken once. The format is set directly so
-    // the picker's cascade cannot clear the commander.
+    // the picker's cascade cannot clear the commander; a "Partner with"
+    // commander still has its partner filled in.
     let seed: CreateDeckSeed = use_context();
+    let toast = use_toast();
     use_hook(move || {
         let mut slot = seed.0;
         let taken = slot.write().take();
         if let Some(card) = taken {
             let mut format = form.format;
             format.set(Some(Format::Commander));
+            autofill_named_partner(form, &card, authed, toast);
             form.commander.pick(card);
         }
     });

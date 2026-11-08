@@ -296,17 +296,28 @@ impl CardQueryBuilder {
         *self == default
     }
 
-    /// Like `is_empty()` but ignores auto-populated deck-context filters.
-    ///
-    /// `legalities_contains_any` and `color_identity_within` are auto-populated
-    /// from the deck's format and commander color identity on the add screen.
-    /// Commander eligibility, partner, background, and signature spell filters are
-    /// user-set via the filter UI and should count as non-empty.
-    pub fn is_empty_ignoring_deck_context(&self) -> bool {
+    /// This filter without what a deck's swipe pile fills in by itself: the
+    /// commander's color identity, and a `legalities_contains_any` holding
+    /// exactly `deck_format`. Any other legality pick, even one beside the
+    /// deck's format, stays, since it narrows the search.
+    fn without_deck_default(&self, deck_format: Option<Format>) -> Self {
         let mut test = self.clone();
-        test.unset_legalities_contains_any();
         test.unset_color_identity_within();
-        test.is_empty()
+        if let Some(format) = deck_format
+            && test.legalities_contains_any() == Some(&[format.to_legality_key().to_owned()][..])
+        {
+            test.unset_legalities_contains_any();
+        }
+        test
+    }
+
+    /// Like `is_empty()` but ignores the deck context Add fills in by itself:
+    /// the commander's color identity, and "Is legal in" holding only
+    /// `deck_format`. Another format picked, even beside the deck's own,
+    /// counts. Commander eligibility, partner, background and signature spell
+    /// filters are user-set and count too. Pass `None` off a deck.
+    pub fn is_empty_ignoring_deck_context(&self, deck_format: Option<Format>) -> bool {
+        self.without_deck_default(deck_format).is_empty()
     }
 
     /// Like [`is_empty_ignoring_deck_context`](Self::is_empty_ignoring_deck_context),
@@ -316,10 +327,12 @@ impl CardQueryBuilder {
     /// target is met, a default rather than a user choice, so it should not read as
     /// an active filter. Pass `lands_auto_excluded = true` when that default is
     /// in effect (the target is met) so a lone `Land` exclude doesn't count.
-    pub fn is_empty_ignoring_deck_context_and_auto_lands(&self, lands_auto_excluded: bool) -> bool {
-        let mut test = self.clone();
-        test.unset_legalities_contains_any();
-        test.unset_color_identity_within();
+    pub fn is_empty_ignoring_deck_context_and_auto_lands(
+        &self,
+        deck_format: Option<Format>,
+        lands_auto_excluded: bool,
+    ) -> bool {
+        let mut test = self.without_deck_default(deck_format);
         if lands_auto_excluded && let Some(excludes) = test.card_type_excludes_any() {
             let kept: Vec<CardType> = excludes
                 .iter()
@@ -332,17 +345,17 @@ impl CardQueryBuilder {
     }
 
     /// True when the filter expresses something worth serving or re-running:
-    /// a real user filter (beyond the auto deck context), an explicit sort, or
-    /// synergy mode.
+    /// a real user filter (beyond the deck context `deck_format` fills in),
+    /// an explicit sort, or synergy mode.
     ///
     /// This is the lenient gate for "should we serve / re-search," distinct
     /// from [`is_empty`](Self::is_empty). Config-only settings (playable,
-    /// language, currency, ...) and a bare deck-context filter (format legality
+    /// language, currency, ...) and a bare deck context (the deck's own format
     /// or commander colors) do not count on their own: alone they're the
     /// unbounded full pool the add screen nudges the user past. A sort, or
     /// synergy mode's bounded pool, is intent enough to serve and reorder.
-    pub fn has_search_intent(&self) -> bool {
-        !self.is_empty_ignoring_deck_context() || self.sort.is_some() || self.synergy
+    pub fn has_search_intent(&self, deck_format: Option<Format>) -> bool {
+        !self.is_empty_ignoring_deck_context(deck_format) || self.sort.is_some() || self.synergy
     }
 
     // == Quick Constructors (with_*) ==
@@ -1004,7 +1017,7 @@ mod tests {
             let mut b = CardQueryBuilder::new();
             change(&mut b);
             assert!(!b.is_empty(), "{what} is a filter");
-            assert!(b.has_search_intent(), "{what} searches");
+            assert!(b.has_search_intent(None), "{what} searches");
             assert!(b.build().is_ok(), "{what} builds on its own");
             b.retain_config();
             assert!(b.is_empty(), "clearing the filter resets {what}");
@@ -1015,34 +1028,65 @@ mod tests {
     }
 
     #[test]
+    fn only_the_deck_format_alone_is_deck_context() {
+        let deck = Some(Format::Commander);
+        let mut own = CardQueryBuilder::new();
+        own.set_legalities_contains_any(vec!["commander"]);
+        assert!(own.is_empty_ignoring_deck_context(deck));
+
+        let mut both = CardQueryBuilder::new();
+        both.set_legalities_contains_any(vec!["commander", "pauper"]);
+        assert!(
+            !both.is_empty_ignoring_deck_context(deck),
+            "Commander + Pauper narrows the search"
+        );
+        assert!(both.has_search_intent(deck));
+
+        let mut other = CardQueryBuilder::new();
+        other.set_legalities_contains_any(vec!["pauper"]);
+        assert!(!other.is_empty_ignoring_deck_context(deck));
+
+        let mut all = CardQueryBuilder::new();
+        all.set_legalities_contains_all(vec!["commander"]);
+        assert!(
+            !all.is_empty_ignoring_deck_context(deck),
+            "an All pick is the user's"
+        );
+    }
+
+    #[test]
     fn has_search_intent_counts_sort_and_synergy() {
         // Bare builder (config only) is the firehose: no intent.
         let bare = CardQueryBuilder::new();
-        assert!(!bare.has_search_intent());
+        assert!(!bare.has_search_intent(None));
 
         // Deck context alone (format legality) is still the firehose.
         let mut ctx = CardQueryBuilder::new();
         ctx.set_legalities_contains_any(vec!["commander"]);
-        assert!(!ctx.has_search_intent());
+        assert!(!ctx.has_search_intent(Some(Format::Commander)));
+        assert!(
+            ctx.has_search_intent(None),
+            "off a deck, a legality pick is a filter"
+        );
 
         // A sort is intent, even with no filter.
         let mut sorted = CardQueryBuilder::new();
         sorted.set_sort(CardSortKey::PriceUsd);
-        assert!(sorted.has_search_intent());
+        assert!(sorted.has_search_intent(None));
 
         // Synergy mode is intent on its own, and stays intent alongside
         // deck context (the video-5 "sort within synergy" case).
         let mut synergy = CardQueryBuilder::new();
         synergy.set_synergy(true);
-        assert!(synergy.has_search_intent());
+        assert!(synergy.has_search_intent(None));
         synergy.set_legalities_contains_any(vec!["commander"]);
         synergy.set_sort(CardSortKey::PriceUsd);
-        assert!(synergy.has_search_intent());
+        assert!(synergy.has_search_intent(None));
 
         // A real user filter is intent.
         let mut named = CardQueryBuilder::new();
         named.set_name_contains("bolt");
-        assert!(named.has_search_intent());
+        assert!(named.has_search_intent(None));
     }
 
     #[test]
@@ -1071,13 +1115,14 @@ mod tests {
         let mut b = CardQueryBuilder::new();
         b.set_legalities_contains_any(vec!["commander"]);
         b.set_card_type_excludes_any(vec![CardType::Land]);
-        assert!(b.is_empty_ignoring_deck_context_and_auto_lands(true));
-        assert!(!b.is_empty_ignoring_deck_context_and_auto_lands(false));
+        let deck = Some(Format::Commander);
+        assert!(b.is_empty_ignoring_deck_context_and_auto_lands(deck, true));
+        assert!(!b.is_empty_ignoring_deck_context_and_auto_lands(deck, false));
 
         // A real card-type exclude alongside Land still counts as active.
         let mut b2 = CardQueryBuilder::new();
         b2.set_card_type_excludes_any(vec![CardType::Land, CardType::Creature]);
-        assert!(!b2.is_empty_ignoring_deck_context_and_auto_lands(true));
+        assert!(!b2.is_empty_ignoring_deck_context_and_auto_lands(None, true));
     }
 
     #[test]

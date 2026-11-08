@@ -24,12 +24,14 @@ use dioxus::router::Navigator;
 use zwipe_core::legal::{FAN_CONTENT_HTML, SCRYFALL_CREDIT_HTML};
 use zwipe_ui::changelog::ChangelogCache;
 use zwipe_ui::screens::about::{self, Action, Destination, Effect, Row, State, Status};
+use zwipe_ui::telemetry::vocabulary::Screen;
 
 use crate::config::APP_VERSION;
 use crate::inbound::chrome::ghost::{GhostChip, GhostText, GhostWords};
 use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
 use crate::inbound::router::Route;
 use crate::inbound::shell::ScreenFrame;
+use crate::inbound::telemetry;
 use crate::outbound::browser;
 
 /// How many releases the Changelog shows before its "Show more" button, and
@@ -77,6 +79,7 @@ impl Driver {
 /// The About screen, in the menu's footer.
 #[component]
 pub fn About() -> Element {
+    telemetry::use_telemetry_screen(Screen::Changelog);
     let cache: Signal<ChangelogCache> = use_context();
     // Loads inside the initializer so the first render already shows the
     // cache as it stands.

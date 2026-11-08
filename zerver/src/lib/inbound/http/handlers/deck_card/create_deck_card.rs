@@ -7,6 +7,7 @@ use zwipe_core::domain::deck::DeckCard;
 use zwipe_core::domain::deck::requests::create_deck_card::{CreateDeckCard, InvalidCreateDeckCard};
 use zwipe_core::domain::user::requests::get_user::GetUser;
 use zwipe_core::http::contracts::deck_card::HttpCreateDeckCard;
+use zwipe_core::http::messages;
 
 use crate::domain::deck::models::deck_card::create_deck_card::CreateDeckCardError;
 use crate::domain::deck::ports::DeckService;
@@ -19,7 +20,7 @@ impl From<CreateDeckCardError> for ApiError {
     fn from(value: CreateDeckCardError) -> Self {
         match value {
             CreateDeckCardError::Duplicate => {
-                Self::Conflict("card and deck combination already exist".to_string())
+                Self::Conflict(messages::CARD_ALREADY_IN_DECK.to_string())
             }
             CreateDeckCardError::UnknownCard => {
                 Self::UnprocessableEntity(CreateDeckCardError::UnknownCard.to_string())
@@ -27,14 +28,12 @@ impl From<CreateDeckCardError> for ApiError {
             CreateDeckCardError::IsCommander => {
                 Self::UnprocessableEntity(CreateDeckCardError::IsCommander.to_string())
             }
-            CreateDeckCardError::LimitReached => Self::UnprocessableEntity(
-                "card limit reached (mainboard, maybeboard, and sideboard all count toward it)"
-                    .to_string(),
-            ),
-            CreateDeckCardError::UnverifiedLimitReached => Self::UnprocessableEntity(
-                "card limit reached across all boards, verify your email to unlock more"
-                    .to_string(),
-            ),
+            CreateDeckCardError::LimitReached => {
+                Self::UnprocessableEntity(messages::CARD_LIMIT.to_string())
+            }
+            CreateDeckCardError::UnverifiedLimitReached => {
+                Self::UnprocessableEntity(messages::UNVERIFIED_CARD_LIMIT.to_string())
+            }
             CreateDeckCardError::Database(e) | CreateDeckCardError::DeckCardFromDb(e) => e.to_500(),
             CreateDeckCardError::GetDeckProfileError(e) => ApiError::from(e),
             // Someone else's deck and no deck at all read the same, as on

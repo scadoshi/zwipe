@@ -297,10 +297,16 @@ impl State {
         self.group_by
     }
 
-    /// The list's order.
+    /// The list's order: the picked sort, or Name in its direction while the decks can't sort on the picked key (see [`Self::sort_keys`]).
     #[must_use]
     pub fn sort(&self) -> Sort {
-        self.sort
+        self.sort.within(&self.sort_keys())
+    }
+
+    /// The Sort row's key chips: Name, Size and Format, then Last changed and Price when the decks carry them.
+    #[must_use]
+    pub fn sort_keys(&self) -> Vec<SortBy> {
+        SortBy::offered(self.decks())
     }
 
     /// The picked colors and tags.
@@ -392,7 +398,7 @@ impl State {
     pub fn groups(&self) -> Vec<DeckGroup> {
         match &self.decks {
             Decks::Loaded(decks) => {
-                list::group(&list::shown(decks, &self.show, self.sort), self.group_by)
+                list::group(&list::shown(decks, &self.show, self.sort()), self.group_by)
             }
             Decks::Loading | Decks::Failed | Decks::Empty => Vec::new(),
         }

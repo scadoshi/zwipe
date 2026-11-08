@@ -3,7 +3,7 @@
 
 use components::Chip;
 use dioxus::prelude::*;
-use zwipe_core::domain::card::scryfall_data::colors::Color;
+use zwipe_core::domain::card::scryfall_data::colors::{Color, identity_name};
 use zwipe_ui::playstyle::identity_label;
 
 /// A chip's stable key: the identity's codes, `C` for colorless.
@@ -17,7 +17,8 @@ pub(crate) fn identity_key(identity: &[Color]) -> String {
 
 /// An identity's name, then its pips in the deck list's group-header
 /// grammar, then `count` when given. A single color is its pip alone;
-/// colorless is the name alone.
+/// colorless is the name alone. The pips are hidden from a screen reader,
+/// which reads the name in their place when it isn't shown.
 #[component]
 pub fn IdentityPips(
     identity: Vec<Color>,
@@ -25,15 +26,19 @@ pub fn IdentityPips(
     #[props(default = true)] show_name: bool,
 ) -> Element {
     let name = identity_label(&identity).filter(|_| show_name);
+    let spoken = identity_name(&identity);
     rsx! {
         span { class: "identity-pips",
             if let Some(name) = name {
                 span { "{name}" }
+            } else if !identity.is_empty() {
+                span { class: "sr-only", "{spoken}" }
             }
             for color in identity.iter() {
                 i {
                     key: "{color.to_short_name()}",
                     class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
+                    "aria-hidden": "true",
                 }
             }
             if let Some(count) = count {

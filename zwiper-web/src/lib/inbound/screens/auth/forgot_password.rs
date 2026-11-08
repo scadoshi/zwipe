@@ -18,6 +18,7 @@ use zwipe_core::http::contracts::auth::HttpRequestPasswordReset;
 use zwipe_ui::screens::forgot_password::{
     self, Action, BACK, CREATE_ACCOUNT, Destination, EMAIL, Effect, SEND, State,
 };
+use zwipe_ui::telemetry::vocabulary::{AuthScreen, Screen};
 use zwipe_ui::text::sentence_case;
 
 use crate::inbound::chrome::toast::raise;
@@ -26,6 +27,7 @@ use crate::inbound::screens::auth::hero::{PublicFlavor, PublicHero};
 use crate::inbound::screens::auth::login::LoginPrefill;
 use crate::inbound::screens::auth::register::go_back_or_login;
 use crate::inbound::shell::ScreenFrame;
+use crate::inbound::telemetry;
 
 /// Forgot password's model with the handles that perform its effects. Copy,
 /// so every handler and task holds its own.
@@ -91,6 +93,7 @@ impl Driver {
 /// is on its way. Return in the field runs `Send reset link`.
 #[component]
 pub fn ForgotPassword() -> Element {
+    telemetry::use_telemetry_screen(Screen::Auth(AuthScreen::ForgotPassword));
     let LoginPrefill(login_prefill) = use_context();
     let driver = Driver {
         model: use_signal(State::new),
@@ -108,6 +111,7 @@ pub fn ForgotPassword() -> Element {
 
     let model = driver.model.read();
     let is_loading = model.is_loading();
+    let submit_held = model.submit_held();
     let email_error = model.error();
     drop(model);
 
@@ -145,7 +149,7 @@ pub fn ForgotPassword() -> Element {
                             // page.
                             div { class: "form-submit",
                                 Button {
-                                    disabled: is_loading,
+                                    disabled: is_loading || submit_held,
                                     onclick: move |evt: MouseEvent| {
                                         evt.prevent_default();
                                         driver.dispatch(Action::Submit);

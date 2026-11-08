@@ -16,8 +16,8 @@ use std::path::PathBuf;
 
 use components::{
     Bar, BarChart, BarOrientation, ChangelogFilter, ChangelogFilters, ChangelogLook,
-    ChangelogReleases, ColorBars, ColorChart, DeckCharts, DrawOdds, FlippableCardImage,
-    IdentityPips, LabelCase,
+    ChangelogReleases, ColorBars, ColorChart, DeckCharts, DeckFacts, DeckHead, DrawOdds,
+    FlippableCardImage, IdentityPips, LabelCase, Pressable,
 };
 use dioxus::dioxus_core::NoOpMutations;
 use dioxus::prelude::*;
@@ -83,6 +83,33 @@ fn identity_pips() {
         "identity_pips",
         &dioxus_ssr::render_element(rsx! {
             IdentityPips { colors: vec![Color::White, Color::Blue] }
+        }),
+    );
+}
+
+/// A folding header as a [`Pressable`]: a button in the tab order that says
+/// whether it is open.
+#[test]
+fn pressable_header() {
+    golden(
+        "pressable_header",
+        &render(|| {
+            rsx! {
+                Pressable { class: "card-group-header", expanded: true, onpress: move |()| {}, "Creatures (12)" }
+            }
+        }),
+    );
+}
+
+/// A deck of one card reads "1 card" in its header.
+#[test]
+fn deck_head_one_card() {
+    golden(
+        "deck_head_one_card",
+        &render(|| {
+            rsx! {
+                DeckHead { facts: DeckFacts { cards: 1, ..DeckFacts::default() } }
+            }
         }),
     );
 }

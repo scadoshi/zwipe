@@ -489,7 +489,11 @@ pub fn CommanderMaybeboard() -> Element {
                                     key: "{color.to_short_name()}",
                                     selected: picked,
                                     onclick: move |_| driver.dispatch(Action::ToggleColor(color)),
-                                    i { class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost" }
+                                    i {
+                                        class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
+                                        "aria-hidden": "true",
+                                    }
+                                    span { class: "sr-only", "{color.to_long_name()}" }
                                 }
                             }
                             Chip {

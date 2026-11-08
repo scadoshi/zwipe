@@ -13,10 +13,12 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::http::contracts::auth::{HttpChangePassword, HttpRequestPasswordReset};
 use zwipe_ui::account;
 use zwipe_ui::screens::account::{FORGOT_PASSWORD, RESET_LINK_SENT};
+use zwipe_ui::telemetry::vocabulary::{ProfileScreen, Screen};
 use zwipe_ui::text::sentence_case;
 
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::hint_topic::{self, HintTopic};
+use crate::inbound::telemetry;
 
 /// Current, new and confirm. Only the new password is judged, once it or the
 /// confirmation has held text or after an attempt; the current one never
@@ -27,6 +29,7 @@ use crate::inbound::chrome::hint_topic::{self, HintTopic};
 /// user who no longer knows the current one.
 #[component]
 pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
+    telemetry::use_telemetry_screen(Screen::Profile(ProfileScreen::ChangePassword));
     let authed = use_authed();
     let toast = use_toast();
     let client: Signal<ZwipeClient> = use_context();
@@ -45,10 +48,10 @@ pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
         confirm.set(String::new());
     };
     use_effect(move || {
-        if open() {
-            clear();
-            submit_attempted.set(false);
-        }
+        // Opening and closing both start the form over.
+        let _open = open();
+        clear();
+        submit_attempted.set(false);
     });
 
     let error_now = move |attempted: bool| {

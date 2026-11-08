@@ -12,7 +12,7 @@
 use components::hint::{ContentHintDialog, HintBody, guide_for_screen};
 use components::icons::CHECK;
 use components::{
-    AlertDialog, Button, ButtonVariant, ClearWrap, DialogAction, DockAction, DrawerSheet,
+    AlertDialog, Button, ButtonVariant, Chip, ClearWrap, DialogAction, DockAction, DrawerSheet,
     HintDialog, TOAST_NORMAL, TOAST_QUICK, use_overlay_back_action,
 };
 use dioxus::prelude::*;
@@ -240,9 +240,9 @@ pub fn FormatPicker(form: DeckForm) -> Element {
                     div { class: "chip-unselected", "No results" }
                 } else {
                     for format in results {
-                        div {
+                        Chip {
                             key: "{format.display_name()}",
-                            class: if (form.format)() == Some(format) { "chip selected" } else { "chip" },
+                            selected: (form.format)() == Some(format),
                             onclick: move |_| {
                                 focused.set(Some(format));
                                 if *form.format.peek() == Some(format) {
@@ -407,8 +407,8 @@ fn DeckTagChip(
     let picked = tags.read().contains(&tag.slug);
     let label = tag.display_name.clone();
     rsx! {
-        div {
-            class: if picked { "chip selected" } else { "chip" },
+        Chip {
+            selected: picked,
             onclick: move |_| {
                 focused.set(Some(tag.clone()));
                 query.set(String::new());
@@ -600,8 +600,8 @@ fn OracleTagChip(
     let picked = selected.read().contains(&tag.slug);
     let slug = tag.slug.clone();
     rsx! {
-        div {
-            class: if picked { "chip selected" } else { "chip" },
+        Chip {
+            selected: picked,
             onclick: move |_| {
                 focused.set(Some(tag.clone()));
                 query.set(String::new());

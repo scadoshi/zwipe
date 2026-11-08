@@ -237,7 +237,8 @@ fn ChipRow(mut draft: Signal<FilterDraft>, set: ChipSet, catalog: ReadSignal<Cat
                                     filter_chips::tap(set, &mut d.draft, &d.modes, &value);
                                 },
                                 if let Some(symbol) = option.symbol.as_ref() {
-                                    i { class: "ms ms-{symbol} ms-cost" }
+                                    i { class: "ms ms-{symbol} ms-cost", "aria-hidden": "true" }
+                                    span { class: "sr-only", "{option.label}" }
                                 } else {
                                     "{option.label}"
                                 }

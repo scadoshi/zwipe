@@ -41,6 +41,7 @@ use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, open_and_record_hint};
 use crate::inbound::chrome::page_keys::{focus_by_id, use_page_keys, use_undo_key};
 use crate::inbound::screens::deck::view::cards::zone as zone_of;
+use crate::inbound::telemetry;
 use crate::outbound::timer;
 
 /// What a row is, which decides its actions.
@@ -266,6 +267,7 @@ pub(crate) enum LoadFailure {
 pub(crate) fn use_deck_editor(deck_id: Uuid, on_failure: LoadFailure) -> Editor {
     let toast = use_toast();
     let authed = use_authed();
+    let usage = telemetry::use_usage();
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
     let CardStores {
@@ -445,6 +447,9 @@ pub(crate) fn use_deck_editor(deck_id: Uuid, on_failure: LoadFailure) -> Editor 
             else {
                 return;
             };
+            usage
+                .peek()
+                .record_removal(deck_id, entry.card.scryfall_data.oracle_id);
             removed_rows.write().insert(card_id, entry.clone());
             if record {
                 let baseline = bursts.peek().baseline(card_id).unwrap_or(current);

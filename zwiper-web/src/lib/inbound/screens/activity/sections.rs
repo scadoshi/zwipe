@@ -181,6 +181,7 @@ pub fn ActivityYear(activity: HttpActivity, open_section: Signal<Option<String>>
             div { class: "web-activity-year",
                 CollapsibleSection {
                     title: ACTIVITY_TITLE,
+                    open_when_wide: true,
                     open_section,
                     header_accessory: rsx! { InfoButton { topic: HintTopic::Activity } },
                     div { class: "web-activity-year-body",
@@ -251,6 +252,7 @@ pub fn ActivityRates(activity: HttpActivity, open_section: Signal<Option<String>
         div { class: "web-activity-rates",
             CollapsibleSection {
                 title: ROLES_TITLE,
+                open_when_wide: true,
                 open_section,
                 header_accessory: rsx! { InfoButton { topic: HintTopic::RoleRates } },
                 if activity.roles.is_empty() {
@@ -283,6 +285,7 @@ pub fn ActivityRates(activity: HttpActivity, open_section: Signal<Option<String>
             }
             CollapsibleSection {
                 title: TAGS_TITLE,
+                open_when_wide: true,
                 open_section,
                 header_accessory: rsx! { InfoButton { topic: HintTopic::TagRates } },
                 if activity.tags.is_empty() {

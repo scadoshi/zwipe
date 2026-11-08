@@ -594,3 +594,131 @@ async fn import_result_is_sorted_by_name(pool: sqlx::PgPool) {
     sorted.sort_unstable();
     assert_eq!(imported, sorted);
 }
+
+/// The deck in `list` with this id.
+fn listed<'a>(list: &'a serde_json::Value, id: &str) -> &'a serde_json::Value {
+    list.as_array()
+        .unwrap()
+        .iter()
+        .find(|d| d["id"] == id)
+        .unwrap()
+}
+
+/// A deck's `updated_at` as the list gives it.
+fn changed_at(list: &serde_json::Value, id: &str) -> chrono::DateTime<chrono::Utc> {
+    listed(list, id)["updated_at"]
+        .as_str()
+        .unwrap()
+        .parse()
+        .unwrap()
+}
+
+#[sqlx::test]
+async fn the_deck_list_carries_prices_and_card_writes_move_last_changed(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, uid) = app.register("sorter").await;
+    app.verify_email(&uid).await;
+
+    let boss = card("Krenko, Mob Boss")
+        .mono("R")
+        .type_line("Legendary Creature — Goblin Warrior")
+        .usd("10.00");
+    let bolt = card("Lightning Bolt")
+        .mono("R")
+        .type_line("Instant")
+        .usd("1.50");
+    let opt = card("Opt").mono("U").type_line("Instant").usd("0.25");
+    let unpriced = card("Mountain").type_line("Basic Land — Mountain");
+    let (boss_id, bolt_id, opt_id) = (boss.id(), bolt.id(), opt.id());
+    let (bolt_oid, opt_oid, land_oid) = (
+        bolt.oracle_id().unwrap(),
+        opt.oracle_id().unwrap(),
+        unpriced.oracle_id().unwrap(),
+    );
+    let land_id = unpriced.id();
+    seed_cards(&pool, &[boss, bolt, opt, unpriced]).await;
+
+    let create = |name: &str| json!({ "name": name, "format": "commander", "commander_id": boss_id.to_string() });
+    let (status, older) = app.post(DECK_ROUTE, create("Older"), Some(&token)).await;
+    assert_eq!(status, StatusCode::CREATED, "{older}");
+    let older = older["id"].as_str().unwrap().to_string();
+    let (status, newer) = app.post(DECK_ROUTE, create("Newer"), Some(&token)).await;
+    assert_eq!(status, StatusCode::CREATED, "{newer}");
+    let newer = newer["id"].as_str().unwrap().to_string();
+
+    let (_, list) = app.get(DECK_ROUTE, Some(&token)).await;
+    let ids: Vec<&str> = list
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|d| d["id"].as_str().unwrap())
+        .collect();
+    assert_eq!(ids, [newer.as_str(), older.as_str()], "newest change first");
+    assert_eq!(
+        listed(&list, &older)["total_price_usd"],
+        10.0,
+        "the commander alone"
+    );
+    assert!(
+        listed(&list, &older).get("total_price_eur").is_none(),
+        "nothing priced in EUR"
+    );
+    let created = changed_at(&list, &older);
+
+    let did: uuid::Uuid = older.parse().unwrap();
+    for (sid, oid) in [(bolt_id, bolt_oid), (opt_id, opt_oid), (land_id, land_oid)] {
+        let (status, body) = app
+            .post(
+                &create_deck_card_route(did),
+                json!({ "scryfall_data_id": sid.to_string(), "oracle_id": oid.to_string(), "quantity": 1 }),
+                Some(&token),
+            )
+            .await;
+        assert_eq!(status, StatusCode::CREATED, "{body}");
+    }
+    let (_, list) = app.get(DECK_ROUTE, Some(&token)).await;
+    let added = changed_at(&list, &older);
+    assert!(added > created, "an add moves last changed");
+    let ids: Vec<&str> = list
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|d| d["id"].as_str().unwrap())
+        .collect();
+    assert_eq!(
+        ids[0], older,
+        "a card edit puts the deck first, as Home's recent decks read it"
+    );
+
+    let (status, body) = app
+        .patch(
+            &update_deck_card_route(did, bolt_id),
+            json!({ "quantity": 3 }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "{body}");
+    let (_, list) = app.get(DECK_ROUTE, Some(&token)).await;
+    let edited = changed_at(&list, &older);
+    assert!(edited > added, "a quantity change moves last changed");
+    let total = listed(&list, &older)["total_price_usd"].as_f64().unwrap();
+    assert!(
+        (total - 14.75).abs() < 1e-9,
+        "3 x 1.50 + 0.25 + the commander's 10.00: {total}"
+    );
+
+    let (status, body) = app
+        .delete(
+            &zwipe_core::http::paths::delete_deck_card_route(did, opt_id),
+            Some(&token),
+        )
+        .await;
+    assert!(status.is_success(), "{status} {body}");
+    let (_, list) = app.get(DECK_ROUTE, Some(&token)).await;
+    assert!(
+        changed_at(&list, &older) > edited,
+        "a removal moves last changed"
+    );
+    let total = listed(&list, &older)["total_price_usd"].as_f64().unwrap();
+    assert!((total - 14.5).abs() < 1e-9, "{total}");
+}

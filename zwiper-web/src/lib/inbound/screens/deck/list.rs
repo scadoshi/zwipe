@@ -8,7 +8,7 @@
 use std::collections::HashSet;
 
 use components::icons::{DockIcon, PLUS};
-use components::{Chip, IdentityPips, LoadFailed, TOAST_LONG};
+use components::{Chip, IdentityPips, LoadFailed, Pressable, TOAST_LONG};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::{ClientError, ZwipeClient};
@@ -19,6 +19,7 @@ use zwipe_core::domain::deck::deck_tag::deck_tag_label;
 use zwipe_ui::deck::list::{self, GroupBy, Show, SortBy};
 use zwipe_ui::deck::{card_count, cards_label, command_zone, count_fits};
 use zwipe_ui::screens::deck_list;
+use zwipe_ui::telemetry::vocabulary::{DeckScreen, Screen};
 
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::ghost::{GhostChipRow, GhostShowRow};
@@ -26,12 +27,14 @@ use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, open
 use crate::inbound::router::Route;
 use crate::inbound::screens::deck::skeletons::DeckListSkeleton;
 use crate::inbound::shell::ScreenFrame;
+use crate::inbound::telemetry;
 use crate::outbound::deck_sort_store::DeckSortStore;
 use crate::outbound::session_store::SessionStore;
 
 /// The deck list screen.
 #[component]
 pub fn DeckList() -> Element {
+    telemetry::use_telemetry_screen(Screen::Deck(DeckScreen::List));
     let navigator = use_navigator();
     let client: Signal<ZwipeClient> = use_context();
     let mut session: Signal<Option<Session>> = use_context();
@@ -123,8 +126,13 @@ pub fn DeckList() -> Element {
     let tags_present: Vec<(String, String)> =
         profiles.as_deref().map(list::all_tags).unwrap_or_default();
     let filter = show();
-    let shown: Option<Vec<DeckProfile>> =
-        profiles.as_deref().map(|p| list::shown(p, &filter, sort()));
+    // Last changed and Price only when the server sends them; a remembered
+    // key it doesn't send sorts by name until it does.
+    let sort_keys = profiles.as_deref().map(SortBy::offered).unwrap_or_default();
+    let shown_sort = sort().within(&sort_keys);
+    let shown: Option<Vec<DeckProfile>> = profiles
+        .as_deref()
+        .map(|p| list::shown(p, &filter, shown_sort));
 
     rsx! {
         ScreenFrame {
@@ -154,10 +162,10 @@ pub fn DeckList() -> Element {
                         // The key chips pick, the last chip turns the order around.
                         div { class: "chip-row",
                             span { class: "stat-chip stat-chip-p1 chip-row-label", {deck_list::SORT} }
-                            for by in SortBy::ALL {
+                            for by in sort_keys {
                                 Chip {
                                     key: "{by.label()}",
-                                    selected: sort().by == by,
+                                    selected: shown_sort.by == by,
                                     onclick: move |_| {
                                         let mut next = sort();
                                         next.by = by;
@@ -188,7 +196,11 @@ pub fn DeckList() -> Element {
                                     key: "{color.to_short_name()}",
                                     selected: filter.colors.contains(&color),
                                     onclick: move |_| show.write().toggle_color(color),
-                                    i { class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost" }
+                                    i {
+                                        class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
+                                        "aria-hidden": "true",
+                                    }
+                                    span { class: "sr-only", "{color.to_long_name()}" }
                                 }
                             }
                             if !tags_present.is_empty() {
@@ -291,9 +303,10 @@ fn DeckGroupSection(
     rsx! {
         div {
             class: if expanded { "card-group deck-group row-enter" } else { "card-group deck-group row-enter collapsed" },
-            div {
+            Pressable {
                 class: if expanded { "card-group-header group-collapsible expanded" } else { "card-group-header group-collapsible" },
-                onclick: move |_| {
+                expanded,
+                onpress: move |()| {
                     let mut set = collapsed.write();
                     if !set.remove(&group_key) {
                         set.insert(group_key.clone());
@@ -307,7 +320,9 @@ fn DeckGroupSection(
                     "{header} ({count})"
                 }
             }
-            div { class: if expanded { "collapsible open" } else { "collapsible" },
+            div {
+                class: if expanded { "collapsible open" } else { "collapsible" },
+                inert: (!expanded).then_some(true),
                 div { class: "collapsible-inner", {children} }
             }
         }
@@ -324,9 +339,9 @@ fn DeckRow(profile: DeckProfile) -> Element {
     let art = command_zone::art(&profile).into_iter().map(str::to_owned);
     let deck_id = profile.id;
     rsx! {
-        div {
+        Pressable {
             class: "card-row deck-row row-enter",
-            onclick: move |_| {
+            onpress: move |()| {
                 navigator.push(Route::ViewDeck { deck_id });
             },
             div { class: "deck-list-row",

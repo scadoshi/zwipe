@@ -15,6 +15,7 @@ use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
 use zwipe_core::domain::card::search_card::group_cards::GroupByOption;
 use zwipe_core::domain::deck::{Format, PowerLevel};
+use zwipe_ui::deck::cards_label;
 use zwipe_ui::deck::command_zone::Slot;
 use zwipe_ui::deck_cards::Display;
 
@@ -204,7 +205,7 @@ pub fn DeckHead(
                     }
                 }
                 div { class: "deck-head-meta",
-                    span { class: "stat-chip stat-chip-p5", "{facts.cards} cards" }
+                    span { class: "stat-chip stat-chip-p5", {cards_label(facts.cards)} }
                     if let Some(format) = facts.format {
                         span { class: "stat-chip stat-chip-p3", "{format.display_name()}" }
                     }

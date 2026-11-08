@@ -143,6 +143,12 @@ impl State {
         account::reset_email_error(&self.email)
     }
 
+    /// Whether the email's error line is showing, which holds Send reset link.
+    #[must_use]
+    pub fn submit_held(&self) -> bool {
+        self.error().is_some()
+    }
+
     /// Whether the spinner turns under the field.
     #[must_use]
     pub fn is_loading(&self) -> bool {

@@ -372,6 +372,10 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
                     text(" to an Archidekt deck link"),
                 ]),
                 bullet(vec![
+                    key("Archidekt"),
+                    text(" also sets the deck's format and commander, if the deck has none yet"),
+                ]),
+                bullet(vec![
                     key("Add"),
                     text(" keeps your current cards. "),
                     key_in("Replace", Role::Warning),

@@ -8,15 +8,18 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user::username;
 use zwipe_core::http::contracts::auth::HttpChangeUsername;
 use zwipe_ui::account;
+use zwipe_ui::telemetry::vocabulary::{ProfileScreen, Screen};
 use zwipe_ui::text::sentence_case;
 
 use crate::inbound::chrome::authed::use_authed;
+use crate::inbound::telemetry;
 
 /// New username and password. Every open starts empty; each field shows its
 /// error line once it has held text or after a submit attempt. Enter runs
 /// `Save changes`.
 #[component]
 pub(super) fn ChangeUsernameSheet(mut open: Signal<bool>) -> Element {
+    telemetry::use_telemetry_screen(Screen::Profile(ProfileScreen::ChangeUsername));
     let mut session: Signal<Option<Session>> = use_context();
     let authed = use_authed();
     let toast = use_toast();
@@ -27,11 +30,11 @@ pub(super) fn ChangeUsernameSheet(mut open: Signal<bool>) -> Element {
     let mut is_loading = use_signal(|| false);
 
     use_effect(move || {
-        if open() {
-            new_username.set(String::new());
-            password.set(String::new());
-            submit_attempted.set(false);
-        }
+        // Opening and closing both start the form over.
+        let _open = open();
+        new_username.set(String::new());
+        password.set(String::new());
+        submit_attempted.set(false);
     });
 
     let attempted = submit_attempted();
@@ -123,7 +126,8 @@ pub(super) fn ChangeUsernameSheet(mut open: Signal<bool>) -> Element {
                     button {
                         class: "action-dock-btn",
                         "aria-label": if is_loading() { "Saving…" } else { "Save changes" },
-                        disabled: is_loading(),
+                        // An error line showing holds Save; the password's never does.
+                        disabled: is_loading() || username_error.is_some(),
                         onclick: move |_| attempt_submit(),
                         DockIcon { path: CHECK }
                     }
