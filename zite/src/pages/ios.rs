@@ -29,7 +29,7 @@ pub fn Ios() -> Element {
         }
         document::Meta { http_equiv: "refresh", content: "0; url={APP_STORE_URL}" }
         Nav {}
-        div { class: "page content-enter",
+        main { id: "content", class: "page content-enter",
             div { class: "section",
                 Panel { title: "Opening the App Store…", title_h1: true,
                     p {

@@ -47,7 +47,7 @@ pub fn Changelog() -> Element {
             path: "/changelog/",
         }
         Nav {}
-        div { class: "page content-enter",
+        main { id: "content", class: "page content-enter",
             div { class: "page-header",
                 Panel { title: "Changelog", title_h1: true,
                     p { class: "tagline", "Every release, newest first." }

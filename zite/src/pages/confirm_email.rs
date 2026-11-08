@@ -2,6 +2,7 @@ use components::{HintKey, Panel};
 use dioxus::prelude::*;
 use zwipe_client::ClientError;
 
+use crate::components::PageMeta;
 use crate::{Nav, api};
 
 /// Why a confirmation didn't go through, and what the page says about it.
@@ -42,8 +43,13 @@ pub fn ConfirmEmail(token: String) -> Element {
     });
 
     rsx! {
+        PageMeta {
+            title: "Confirm email",
+            description: "Confirm the new email address on your Zwipe account.",
+            path: "/confirm-email",
+        }
         Nav {}
-        div { class: "form-page content-enter",
+        main { id: "content", class: "form-page content-enter",
             match &*result.read() {
                 None => rsx! {
                     Panel { title: "Confirming", title_h1: true, centered: true,
