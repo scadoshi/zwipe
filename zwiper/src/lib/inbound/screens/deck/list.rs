@@ -14,7 +14,7 @@
 use std::iter;
 
 use components::icons::{self};
-use components::{Chip, DockAction, LoadFailed};
+use components::{Chip, DockAction, IdentityPips, LoadFailed};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use dioxus_primitives::toast::{Toasts, use_toast};
@@ -154,14 +154,7 @@ fn DeckGroupSection(
                 if let Some(pips) = pips.as_ref().filter(|p| !p.is_empty()) {
                     // Same wrapper the deck rows use, so a group's pips are the
                     // size of the pips on the decks beneath it.
-                    span { class: "identity-pips",
-                        for color in pips.iter() {
-                            i {
-                                key: "{color.to_short_name()}",
-                                class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
-                            }
-                        }
-                    }
+                    IdentityPips { colors: pips.clone() }
                     "({count})"
                 } else {
                     "{header} ({count})"

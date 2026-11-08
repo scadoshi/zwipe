@@ -8,7 +8,7 @@
 use std::collections::HashSet;
 
 use components::icons::{DockIcon, PLUS};
-use components::{Chip, LoadFailed, TOAST_LONG};
+use components::{Chip, IdentityPips, LoadFailed, TOAST_LONG};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::{ClientError, ZwipeClient};
@@ -267,14 +267,7 @@ fn DeckGroupSection(
                 },
                 span { class: "card-row-arrow", "\u{25b8}" }
                 if let Some(pips) = pips.as_ref().filter(|p| !p.is_empty()) {
-                    span { class: "identity-pips",
-                        for color in pips.iter() {
-                            i {
-                                key: "{color.to_short_name()}",
-                                class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
-                            }
-                        }
-                    }
+                    IdentityPips { colors: pips.clone() }
                     "({count})"
                 } else {
                     "{header} ({count})"

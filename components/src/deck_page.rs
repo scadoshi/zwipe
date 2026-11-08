@@ -19,7 +19,7 @@ use zwipe_ui::deck::command_zone::Slot;
 use zwipe_ui::deck_cards::Display;
 
 use crate::icons::{DockIcon, FOLD, UNFOLD};
-use crate::{Button, ButtonVariant, Chip, FlippableCardImage};
+use crate::{Button, ButtonVariant, Chip, FlippableCardImage, IdentityPips};
 
 /// The line under an empty card list.
 pub const NO_CARDS: &str = "No cards found";
@@ -419,14 +419,7 @@ pub fn DeckFold(
                 },
                 span { class: "card-row-arrow", "\u{25b8}" }
                 if let Some(pips) = pips.as_ref().filter(|p| !p.is_empty()) {
-                    span { class: "identity-pips",
-                        for color in pips.iter() {
-                            i {
-                                key: "{color.to_short_name()}",
-                                class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
-                            }
-                        }
-                    }
+                    IdentityPips { colors: pips.clone() }
                 }
                 "{title}"
                 if let Some(accessory) = accessory {
