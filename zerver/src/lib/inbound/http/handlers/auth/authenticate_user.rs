@@ -27,6 +27,9 @@ impl From<AuthenticateUserError> for ApiError {
             | AuthenticateUserError::AccountLocked => {
                 Self::Unauthorized("invalid credentials".to_string())
             }
+            AuthenticateUserError::PasswordTooLong => {
+                Self::UnprocessableEntity("password too long".to_string())
+            }
             AuthenticateUserError::Database(e)
             | AuthenticateUserError::UserFromDb(e)
             | AuthenticateUserError::FailedToVerify(e)
