@@ -75,6 +75,7 @@ Who checked, on which live build, what they saw.
 | [307](307-about-cards-skip-zwiper-web.md) | zwipe.net About's crate cards leave out zwiper-web | verified | laptop | #447 |
 | [308](308-share-image-size-for-whatsapp.md) | Share preview images may be too big for WhatsApp | parked | - | - |
 | [309](309-robots-blocks-share-unfurls.md) | X shows no card for shared deck links (robots.txt) | verified | laptop | #449 |
+| [310](310-guide-screenshots-refresh.md) | zwipe.net guides use old screenshots | approved | droid (queued) | - |
 
 ## Waiting for live verification
 
