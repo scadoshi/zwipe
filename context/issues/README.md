@@ -68,6 +68,7 @@ Who checked, on which live build, what they saw.
 | [300](300-share-image-version-not-bumped.md) | Share image URL keeps its old ?v= after the image layout changes | merged | thinker | #438 |
 | [301](301-form-dirty-after-discard.md) | Edit deck still asks to leave after a picker change was discarded | merged | laptop | #439 |
 | [302](302-add-details-overlaps-card.md) | Add's card details panel overlaps the swipe card at 900 to 1060px | reported | - | - |
+| [303](303-web-unstyled-flash-on-load.md) | The web app flashes unstyled on a hard refresh | approved | thinker | - |
 
 ## Waiting for live verification
 
