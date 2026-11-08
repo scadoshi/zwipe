@@ -1,6 +1,8 @@
 //! Bakes `BACKEND_URL` into the build from the process env or this crate's
 //! `.env`, failing the build on a malformed one. Unset, the build keeps the
-//! site default in `config.rs`.
+//! site default in `config.rs`. Also bakes in `ZWIPER_BUILD`, the commit the
+//! deploy builds and writes to `/version.json`, which the fresh-build check
+//! compares against; unset, the check never runs.
 
 #![expect(
     clippy::panic,
@@ -8,6 +10,8 @@
 )]
 
 const BACKEND_URL_KEY: &str = "BACKEND_URL";
+
+const BUILD_KEY: &str = "ZWIPER_BUILD";
 
 fn main() {
     // No .env is fine: the variable may come from the process env, or not at all.
@@ -34,6 +38,15 @@ fn main() {
         println!("cargo:info=setting {BACKEND_URL_KEY} to {backend_url}");
     }
 
+    if let Ok(build) = std::env::var(BUILD_KEY) {
+        assert!(
+            !build.trim().is_empty() && build.chars().all(|c| c.is_ascii_alphanumeric()),
+            "{BUILD_KEY} must be a commit hash, got {build:?}"
+        );
+        println!("cargo:rustc-env={BUILD_KEY}={build}");
+    }
+
     println!("cargo:rerun-if-changed=.env");
+    println!("cargo:rerun-if-env-changed={BUILD_KEY}");
     println!("cargo:rerun-if-env-changed={BACKEND_URL_KEY}");
 }
