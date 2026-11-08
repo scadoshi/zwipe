@@ -6,7 +6,7 @@ The product side is in `context/product/premium/collection_tracking.md`: the col
 
 ## Open questions for Scotty
 
-1. **Re-import:** a second ManaBox import replaces the collection (the export is the whole truth) or adds on top (two binders imported one after the other)? Proposed default: Replace, with Add as the second choice in the import screen, the same Add / Replace pair deck import has.
+1. **Re-import (answered: both modes, Add and Replace, like deck import).** a second ManaBox import replaces the collection (the export is the whole truth) or adds on top (two binders imported one after the other)? Proposed default: Replace, with Add as the second choice in the import screen, the same Add / Replace pair deck import has.
 2. **Owned means which printing?** Proposed: a card counts as owned when any printing of it is owned (oracle id), since a deck rarely cares which Sol Ring is in the box. A printing-exact view can come later.
 3. **Binders:** keep ManaBox's binder or list name per row (a "Binder" filter later), or flatten everything into one pile? Proposed: store it, show nothing for it in phase 1.
 4. **Condition, language, purchase price:** store them (cheap, and a later "collection value" needs price and currency) or drop them? Proposed: store all three, show none in phase 1.
