@@ -1,0 +1,637 @@
+/* App shell styles, for the apps only (zwiper and cairn).
+ *
+ * Opt-in through the crate's APP_CSS constant, after COMPONENTS_CSS. The
+ * website and the portfolio never load it; zite defines .page-header itself,
+ * differently.
+ *
+ * Holds the rules both apps had word for word, plus the base the shared app
+ * components need (PageHeader, ThemeSheet, the hint pieces).
+ * Where the apps differ, the base here is what they share and each app keeps
+ * its own difference in its own stylesheet. The values an app tunes sit in
+ * :where() rules, so an app rule of class specificity or higher wins over
+ * them whether the app's sheet loads before or after this one. An app's
+ * universal or element reset goes in @layer reset { ... } so it stays under
+ * them. */
+
+/* ---- Screen ---- */
+
+.screen-content {
+    flex: 1;
+    overflow-x: hidden;
+    /* Always a scroller, so a page that fits still rubber-bands and its
+       trailing padding can lift the last panel clear of the home indicator. */
+    overflow-y: scroll;
+    -webkit-overflow-scrolling: touch;
+    /* WebKit bounces only a scroller whose content outgrows it, so the content
+       always does, by one pixel, through the pseudo-element below. */
+    overscroll-behavior-y: auto;
+    /* The containing block of the pixel below. */
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    min-height: 0;
+    padding-top: 1rem;
+    /* No fill: the host's GridCells layer under the screen is the backdrop. */
+    background-color: transparent;
+}
+
+/* One pixel past the scroller's own box, so a page that fits the screen
+   still rubber-bands at both ends on iOS. Out of the flex flow, where
+   justify-content: center or a child's auto margins absorb a flex item's
+   pixel as free space and the content fits exactly. */
+.screen-content::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 1px;
+    height: 1px;
+    pointer-events: none;
+}
+
+/* A screen that carries its own GridCells layer sits over another screen,
+   and that layer is all that hides the one beneath. The screen isolates, so
+   its layer paints over this fill, and a layer that stops drawing leaves the
+   screen solid. */
+.screen:has(> .grid-cells) {
+    isolation: isolate;
+    background-color: var(--bg-sink);
+}
+
+/* The screen's safe-area padding sits outside the header, so the layer
+   would show in the status bar strip. A fixed band in the primary color
+   fills it. Nothing sits over the home indicator: the content scrolls
+   under it. */
+.screen::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: env(safe-area-inset-top, 0px);
+    z-index: 1;
+    pointer-events: none;
+    background-color: var(--bg-primary);
+}
+
+/* A screen with a dock ends its content with room to scroll the last row
+   clear of it, as .bottom-sheet:has(.sheet-dock) does for a sheet's content
+   in components.css. Soft: an app that adds its own trailing padding sets
+   it on .screen-content. */
+:where(.screen:has(> .action-dock) > .screen-content) {
+    padding-bottom: 5rem;
+}
+
+/* An app's header (.app-nav) sits over the top of the screen, so each
+   screen's scroll area opens with a spacer the header's height and nothing
+   moves at rest. Soft: the height is the bar's 0.5rem padding around a
+   1.7rem row and its 1px rule; an app with a taller bar sets --app-nav-h on
+   .screen. */
+:where(.screen) {
+    --app-nav-h: calc(2.7rem + 1px);
+}
+
+.screen > .app-nav ~ .screen-content::before {
+    content: "";
+    display: block;
+    flex: 0 0 var(--app-nav-h);
+    width: 100%;
+}
+
+.screen-content.centered {
+    justify-content: center;
+}
+
+.flex-col {
+    display: flex;
+    flex-direction: column;
+}
+
+/* ---- Page header (orangui::PageHeader) ---- */
+
+.page-header {
+    position: relative;
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--border-secondary);
+    background-color: var(--bg-primary);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+}
+
+/* Direct child only: a dialog mounted inside the header would otherwise
+   restyle its own h2 title. */
+.page-header > h2 {
+    font-size: 1rem;
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    margin: 0;
+    color: var(--ink-accent-primary, var(--accent-primary));
+}
+
+/* The corner buttons: the app's own on the left, the hint "?" on the right.
+   Both are action buttons made smaller and faded; this sheet loads after
+   components.css, so the padding here wins over .btn-action's. */
+.page-header-support,
+.page-header-corner {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 1.7rem;
+    opacity: var(--fade-corner);
+    padding: 0.2rem 0.6rem;
+}
+
+.page-header-support {
+    left: 1rem;
+}
+
+.page-header-corner {
+    right: 1rem;
+}
+
+/* A pressed corner lights up. */
+.page-header-corner:active {
+    opacity: 1;
+}
+
+/* ---- Hints (orangui::HintDialog, HintLine, HintBullets, HintChip) ---- */
+
+/* The body's padding is a soft default. */
+:where(.hint-body) {
+    padding: 1rem 0;
+}
+
+.hint-line {
+    margin: 0 0 0.5rem 0;
+    text-align: left;
+}
+
+.hint-bullets {
+    margin: 0 0 0.5rem 0;
+    padding-left: 1.2rem;
+    text-align: left;
+}
+
+.hint-bullets li {
+    margin-bottom: 0.4rem;
+}
+
+/* A real chip shown as an example mid-sentence, inert since the hint points
+   at the real one. Its size and weight are soft defaults. */
+:where(.stat-chip.hint-chip) {
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.hint-chip {
+    white-space: nowrap;
+    pointer-events: none;
+    vertical-align: baseline;
+}
+
+/* ---- Inputs ---- */
+
+.input {
+    width: 100%;
+    text-align: left;
+    padding: 0.75rem 1rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 0.4rem;
+    color: var(--text-primary);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 1rem;
+    font-weight: 400;
+    transition: all 0.2s ease;
+    margin-bottom: 1rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.input:focus {
+    outline: none;
+    background-color: var(--border-muted);
+    color: var(--text-primary);
+    border-color: var(--accent-primary);
+}
+
+.input::placeholder {
+    color: var(--ink-text-muted, var(--text-muted));
+    font-weight: 400;
+}
+
+/* PasswordInput's wrapper takes the field's bottom margin, so the wrapper is
+   exactly the field's height and the Show/Hide toggle centers on it. */
+.password-input-wrapper {
+    margin-bottom: 1rem;
+}
+
+.password-input-wrapper .input {
+    margin-bottom: 0;
+}
+
+/* After .input:focus, so an errored field keeps its border while focused. */
+.input-error,
+.input-error:focus {
+    border-color: var(--color-error);
+    box-shadow: 0 0 0 1px var(--color-error);
+}
+
+/* ---- Labels and field errors (orangui::FieldLabel, TextInput) ---- */
+
+/* The label's type, color and gap below are soft defaults. */
+:where(.label) {
+    font-size: 1rem;
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    color: var(--ink-accent-tertiary, var(--accent-tertiary));
+    margin-bottom: 0.4rem;
+}
+
+.label {
+    display: block;
+}
+
+/* A label with a "?": the label and the "?" are centered together as one
+   group. The button stands taller than the label's text, so the row owns
+   the gap below rather than the label: otherwise the "?" sits almost on the
+   input. The gap between them is the button's own margin-left. */
+.label-hint {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 0.7rem;
+}
+
+.label-hint-anchor {
+    display: flex;
+    align-items: center;
+}
+
+.label-hint .label {
+    margin-bottom: 0;
+}
+
+/* The error line under a field. Its type and gap below are soft defaults. */
+:where(.message-error) {
+    font-size: 0.9rem;
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    padding-bottom: 1rem;
+}
+
+.message-error {
+    text-align: center;
+    color: var(--ink-color-error, var(--color-error));
+}
+
+/* ---- Alert dialog (orangui::AlertDialog, DialogHostView) ---- */
+
+.alert-dialog-overlay {
+    position: fixed;
+    z-index: 1000;
+    inset: 0;
+    background: var(--bg-overlay);
+}
+
+/* The dim and the dialog fade in together and out together. Opacity only:
+   any transform left on the dialog by an animation would fight its
+   centering. */
+.alert-dialog-overlay[data-state="open"],
+.alert-dialog[data-state="open"] {
+    animation: alert-dialog-in 150ms ease-out forwards;
+}
+
+.alert-dialog-overlay[data-state="closed"],
+.alert-dialog[data-state="closed"] {
+    animation: alert-dialog-out 150ms ease-in forwards;
+    pointer-events: none;
+}
+
+@keyframes alert-dialog-in {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes alert-dialog-out {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}
+
+/* Leaves a band above and below for the app's header and footer, so a tall
+   dialog never reaches them; env() adds room where the device reports safe
+   insets. --dialog-pad-x is the side padding, which the rules break out of;
+   it and the padding are soft defaults an app sets with a rule of any
+   specificity. */
+:where(.alert-dialog) {
+    --dialog-pad-x: 2rem;
+    padding: 2rem var(--dialog-pad-x);
+}
+
+.alert-dialog {
+    position: fixed;
+    z-index: 1001;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: calc(100% - 2rem);
+    max-width: 20rem;
+    max-height: calc(
+        100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 16rem
+    );
+    box-sizing: border-box;
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 400;
+    text-align: center;
+}
+
+/* A long unbroken word in a title or body wraps rather than running out
+   through the side. break-word splits only a word too long for a line of its
+   own. */
+.alert-dialog-title,
+.alert-dialog-description {
+    overflow-wrap: break-word;
+}
+
+/* The title's color and type are soft defaults. */
+:where(.alert-dialog-title) {
+    color: var(--ink-accent-tertiary, var(--accent-tertiary));
+    font-size: 1.25rem;
+    letter-spacing: 0.1em;
+}
+
+.alert-dialog-title {
+    margin: 0;
+    font-weight: 400;
+}
+
+/* The body scrolls on its own when it is tall, so the title and the actions
+   stay pinned. It scrolls edge to edge between the two rules: it reaches out
+   through the side padding and the gaps beside the rules, and takes them
+   back as its own padding, so its lines scroll right up to the rules. */
+.alert-dialog-description {
+    margin: -0.5rem calc(-1 * var(--dialog-pad-x));
+    padding: 0.5rem var(--dialog-pad-x);
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-weight: 400;
+    opacity: 0.8;
+}
+
+/* A field in a dialog's body sits a line below the text above it. */
+.alert-dialog-description > .input,
+.alert-dialog-description > .password-input-wrapper {
+    margin-top: 1rem;
+}
+
+/* The dialog's gap spaces its children, so a Button inside drops its form
+   margin. */
+.alert-dialog .btn {
+    margin-bottom: 0;
+    flex-shrink: 0;
+}
+
+/* Full width under the title and above the actions, out through the side
+   padding. */
+.alert-dialog-rule {
+    align-self: stretch;
+    margin: 0 calc(-1 * var(--dialog-pad-x));
+    border: none;
+    border-top: 1px solid var(--border-secondary);
+}
+
+.alert-dialog-actions {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+/* Filled and lifted like the action bar's buttons. A link takes the same
+   classes, so the text rules are set here too. */
+.alert-dialog-cancel,
+.alert-dialog-action,
+.alert-dialog-action-danger {
+    display: inline-block;
+    padding: 0.35rem 0.9rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.6rem;
+    background-color: var(--bg-primary);
+    box-shadow: var(--shadow-sm);
+    color: var(--text-primary);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.8rem;
+    font-weight: 400;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.alert-dialog-cancel:focus-visible,
+.alert-dialog-action:focus-visible,
+.alert-dialog-action-danger:focus-visible {
+    outline: 1px solid var(--accent-secondary);
+    outline-offset: 2px;
+}
+
+/* An action that cannot be undone. */
+.alert-dialog-action-danger {
+    border-color: var(--color-error);
+    color: var(--ink-color-error, var(--color-error));
+}
+
+/* A disabled action looks like a disabled Button: faded, with a not-allowed
+   cursor. Every action is disabled while one runs its busy work. */
+.alert-dialog-cancel:disabled,
+.alert-dialog-action:disabled,
+.alert-dialog-action-danger:disabled,
+.alert-dialog-cancel[aria-disabled="true"] {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* The action whose work is running keeps full strength, so its busy label
+   reads as working rather than off. */
+.alert-dialog-cancel[aria-busy="true"],
+.alert-dialog-action[aria-busy="true"],
+.alert-dialog-action-danger[aria-busy="true"] {
+    opacity: 1;
+    cursor: progress;
+}
+
+/* ---- Settings lists and the theme sheet (orangui::ThemeSheet) ---- */
+
+/* The column of boxed lists on a settings or detail screen. The width is a
+   soft default. */
+:where(.settings-sections) {
+    width: calc(100% - 2rem);
+}
+
+.settings-sections {
+    display: flex;
+    flex-direction: column;
+    gap: var(--panel-gap);
+    max-width: 40rem;
+    padding-bottom: 1rem;
+}
+
+/* One boxed list: an optional header, then settings rows. */
+.settings-list {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    overflow: hidden;
+    width: 100%;
+    max-width: 40rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.settings-list-header {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-secondary);
+}
+
+/* A long unbroken name wraps instead of pushing the header wide. */
+.settings-list-title {
+    font-size: 1rem;
+    letter-spacing: 0.1em;
+    color: var(--ink-accent-primary, var(--accent-primary));
+    overflow-wrap: break-word;
+    min-width: 0;
+}
+
+.settings-list > .action-bar {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+}
+
+.settings-row {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-secondary);
+    gap: 0.75rem;
+}
+
+.settings-row:last-child {
+    border-bottom: none;
+}
+
+.settings-row-label {
+    font-size: 1rem;
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    opacity: 0.5;
+    flex-shrink: 0;
+}
+
+/* The row's value, on the right: text, chips or a control, wrapping onto
+   more lines rather than pushing the label out. */
+.settings-row-value {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    font-size: 1rem;
+    font-weight: 400;
+    flex-shrink: 1;
+    min-width: 0;
+    text-align: right;
+    overflow-wrap: anywhere;
+}
+
+/* A miniature of the theme: its background as the chip, its muted text as the
+   border, and the six palette slots inside. */
+.theme-swatches {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+    flex-shrink: 0;
+    padding: 0.2rem 0.25rem;
+    border-radius: 0.35rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--text-muted);
+}
+
+.theme-dot {
+    width: 0.7rem;
+    height: 0.7rem;
+    border-radius: 0.22rem;
+    flex-shrink: 0;
+}
+
+/* A quiet line under a group of preference rows. A path or an error has no
+   spaces to wrap at, so it breaks anywhere. The size and margin are soft
+   defaults. */
+:where(.pref-note) {
+    font-size: 0.75rem;
+    margin: 0 0 0.6rem;
+}
+
+.pref-note {
+    color: var(--ink-text-muted, var(--text-muted));
+    text-align: center;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+}
+
+/* ---- Splash (orangui::Splash) ----
+   The opening overlay: over everything while the first screen mounts under
+   it. Its GridCells rains in, the host's mark resolves in the middle, then
+   the whole overlay fades and unmounts. The fade length matches FADE_MS. */
+.splash {
+    position: fixed;
+    inset: 0;
+    z-index: 400;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.splash-out {
+    opacity: 0;
+}
+
+.splash-mark {
+    display: flex;
+    justify-content: center;
+}

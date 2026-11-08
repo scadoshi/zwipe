@@ -1,0 +1,2916 @@
+/* The shared component rules.
+ *
+ * Inlined by every host through orangui's COMPONENTS_CSS constant, after
+ * THEMES_CSS. Rules reference theme CSS variables only, never color literals,
+ * so a component resolves to whichever theme the host has active. */
+
+/* The space between stacked panels on every screen of every app and site. */
+:root {
+    --panel-gap: 1rem;
+}
+
+/* ---- Chip (orangui::Chip) ---- */
+
+/* Set on the themed element so everything under it follows. The ASCII
+   logo's color: the text color on a dark theme, the primary accent on a
+   light one, where the block letters in plain text look like a smudge. The
+   corner controls' resting fade (the hamburger, a sheet's ×, a page
+   header's corner buttons): half strength on a dark theme, where that still
+   reads, firmer on a light one, where it washes out. */
+:root,
+[class*="theme-"][class*="-dark"] {
+    --logo: var(--text-primary);
+    --fade-corner: 0.55;
+}
+
+[class*="theme-"][class*="-light"] {
+    --logo: var(--accent-primary);
+    --fade-corner: 0.75;
+}
+
+.chip {
+    display: inline-block;
+    padding: 0.3rem 0.6rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.6rem;
+    /* A button element, so the host's face has to be named. */
+    font-family: inherit;
+    font-size: 0.75rem;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-color: var(--bg-primary);
+    box-shadow: var(--shadow-sm);
+}
+
+.chip.selected {
+    border-color: var(--accent-secondary);
+    color: var(--ink-accent-secondary, var(--accent-secondary));
+}
+
+/* Inert chip: the toggle's target is empty/inapplicable right now. */
+.chip.disabled {
+    color: var(--text-muted);
+    border-color: var(--border-primary);
+    background-color: var(--bg-primary);
+    opacity: 0.45;
+    cursor: default;
+    box-shadow: none;
+}
+
+/* A disabled control on a light theme keeps its border and dims its text
+   to the muted color instead of fading out: at half opacity a cream button
+   vanishes into a cream panel. Dark themes keep the fade. */
+[class*="theme-"][class*="-light"] :is(.btn, .btn-xs, .btn-action):disabled,
+[class*="theme-"][class*="-light"] .chip.disabled {
+    opacity: 1;
+    color: var(--text-muted);
+    border-color: var(--border-primary);
+}
+
+/* ---- Tinted tags (.tag, .stat-chip) ----
+   Colored text on a faint tint of the same color with a soft outline of it.
+   One tone drives all three: --tone is the color, a modifier sets it, and the
+   number in a -pN modifier is the palette slot, so tag-p2 and stat-chip-p2
+   are the same color on every host. The text is the tone's ink, the theme's
+   --ink-<tone>: the tone itself where it reads at 4.5:1 on its tint, else
+   the nearest color that does. A rule that sets --tone sets --tone-ink with
+   it. The tint mixes into --tone-base, which is transparent unless an
+   ancestor sets an opaque background for chips that sit over a pattern. */
+
+.tag,
+.stat-chip {
+    --tone: var(--accent-primary);
+    --tone-ink: var(--ink-accent-primary, var(--accent-primary));
+    color: var(--tone-ink, var(--tone));
+    background-color: color-mix(in srgb, var(--tone) 12%, var(--tone-base, transparent));
+    border: 1px solid color-mix(in srgb, var(--tone) var(--tone-edge, 35%), var(--tone-base, transparent));
+}
+
+/* A label on a project, a guide, a source row. The size and shape are soft
+   defaults, so a host rule of any specificity resizes a tag. */
+:where(.tag) {
+    border-radius: 0.6rem;
+    padding: 0.2rem 0.7rem;
+    font-size: 0.78rem;
+    letter-spacing: 0.02em;
+}
+
+.tag {
+    display: inline-block;
+    transition:
+        border-color 0.15s,
+        color 0.15s,
+        filter 0.15s;
+}
+
+/* A figure or attribute beside a name. Capped at the row width, so a long
+   label wraps onto a second line, centered, instead of overflowing the
+   border. The size and shape are soft defaults, as on .tag. */
+:where(.stat-chip) {
+    padding: 0.2rem 0.55rem;
+    border-radius: 0.6rem;
+    font-size: 0.75rem;
+}
+
+.stat-chip {
+    display: inline-block;
+    max-width: 100%;
+    text-align: center;
+}
+
+a.tag,
+a.stat-chip {
+    text-decoration: none;
+}
+
+/* A link inside a tag keeps the tag's color. */
+.tag a,
+.stat-chip a {
+    color: inherit;
+}
+
+.tag-p1,
+.stat-chip-p1 {
+    --tone: var(--palette-1);
+    --tone-ink: var(--ink-palette-1, var(--palette-1));
+}
+
+.tag-p2,
+.stat-chip-p2 {
+    --tone: var(--palette-2);
+    --tone-ink: var(--ink-palette-2, var(--palette-2));
+}
+
+.tag-p3,
+.stat-chip-p3 {
+    --tone: var(--palette-3);
+    --tone-ink: var(--ink-palette-3, var(--palette-3));
+}
+
+.tag-p4,
+.stat-chip-p4 {
+    --tone: var(--palette-4);
+    --tone-ink: var(--ink-palette-4, var(--palette-4));
+}
+
+.tag-p5,
+.stat-chip-p5 {
+    --tone: var(--palette-5);
+    --tone-ink: var(--ink-palette-5, var(--palette-5));
+}
+
+.tag-p6,
+.stat-chip-p6 {
+    --tone: var(--palette-6);
+    --tone-ink: var(--ink-palette-6, var(--palette-6));
+}
+
+/* A label, not a figure: gray, with a fainter outline. */
+.tag-muted,
+.stat-chip-muted {
+    --tone: var(--text-muted);
+    --tone-ink: var(--ink-text-muted, var(--text-muted));
+    --tone-edge: 30%;
+}
+
+.tag-money,
+.stat-chip-money {
+    --tone: var(--color-money);
+    --tone-ink: var(--ink-color-money, var(--color-money));
+}
+
+/* The outcome tones: met, short of it, failed. */
+.tag-success,
+.stat-chip-success {
+    --tone: var(--color-success);
+    --tone-ink: var(--ink-color-success, var(--color-success));
+}
+
+.tag-warning,
+.stat-chip-warning {
+    --tone: var(--color-warning);
+    --tone-ink: var(--ink-color-warning, var(--color-warning));
+}
+
+.tag-error,
+.stat-chip-error {
+    --tone: var(--color-error);
+    --tone-ink: var(--ink-color-error, var(--color-error));
+}
+
+/* ---- Button (orangui::Button) ---- */
+
+/* Primary: full-width form/dialog button. */
+.btn {
+    width: 100%;
+    padding: 1rem;
+    background-color: var(--bg-primary);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-primary);
+    border-radius: 1rem;
+    color: var(--text-primary);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 1rem;
+    font-weight: 400;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: 2rem;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Small: compact inline button. */
+.btn-xs {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.75rem;
+    border-radius: 0.5rem;
+    margin-bottom: 0.5rem;
+    width: auto;
+    background: none;
+    border: 1px solid var(--palette-2);
+    color: var(--ink-palette-2, var(--palette-2));
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 400;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-xs:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Action: compact ActionBar button. */
+.btn-action {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+    border-radius: 0.5rem;
+    width: auto;
+    margin: 0;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    color: var(--text-primary);
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 400;
+    cursor: pointer;
+    transition: all 0.1s ease;
+    white-space: nowrap;
+}
+
+.btn-action:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Danger modifier (destructive actions), shared by .btn/.btn-xs and .btn-action. */
+.btn-danger,
+.btn-action-danger {
+    border-color: var(--color-error);
+    color: var(--ink-color-error, var(--color-error));
+}
+
+/* ---- ActionBar (orangui::ActionBar) ---- */
+
+.action-bar {
+    flex-shrink: 0;
+    border-top: 1px solid var(--border-secondary);
+    background-color: var(--bg-primary);
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding-bottom: 1rem;
+    padding-top: 1rem;
+
+    /* Force GPU acceleration to fix iOS keyboard repositioning bug */
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+}
+
+/* ---- NavBar (orangui::NavBar) ---- */
+
+.nav-wrapper {
+    position: sticky;
+    top: 0;
+    /* One above the fixed .banner-stack (100). At a tie the banner, later in
+       the page, won, and every nav menu opened underneath it: the sticky nav is
+       the menus' stacking context, so their own z-index cannot lift them. */
+    z-index: 101;
+    background-color: var(--bg-primary);
+    /* 1rem to the first panel, the gap the apps leave under their header. */
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--border-primary);
+    box-shadow: var(--shadow-sm);
+}
+
+/* The open menu is a raised sheet over the page: the medium shadow under
+   the wrapper's bottom rule, the way a bottom sheet sits over a screen. */
+.nav-wrapper:has(.nav-panel-open) {
+    box-shadow: var(--shadow-md);
+}
+
+/* Scoped to the shell's wrapper so a consumer's other semantic <nav>
+   (breadcrumbs, a TOC) doesn't inherit site-header layout. The bar spans
+   the page; a host that wants it to match a content column sets
+   --nav-max-width or a max-width of its own. */
+:where(.nav-wrapper nav) {
+    max-width: var(--nav-max-width, none);
+}
+
+.nav-wrapper nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+    padding: 1.25rem 1.5rem;
+    margin: 0 auto;
+    position: relative;
+}
+
+.nav-panel {
+    display: flex;
+    flex: 1;
+    justify-content: flex-end;
+}
+
+.nav-panel-inner {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+/* The hamburger: a small faded box with short 2px bars, at full strength
+   while pressed or open. The open X's arms move by one gap plus one bar, so
+   the outer bars cross on the middle one. */
+.nav-toggle {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    box-sizing: border-box;
+    gap: 0.22rem;
+    width: 2.1rem;
+    height: 1.7rem;
+    padding: 0.2rem 0.6rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 0.4rem;
+    opacity: var(--fade-corner);
+    cursor: pointer;
+    transition: border-color 0.15s;
+}
+
+.nav-toggle:hover {
+    border-color: var(--accent-primary);
+}
+
+.nav-toggle:active,
+.nav-toggle.nav-toggle-open {
+    opacity: 1;
+}
+
+.nav-toggle-bar {
+    display: block;
+    width: 0.9rem;
+    height: 2px;
+    border-radius: 1px;
+    background: var(--text-primary);
+    transition:
+        transform 0.2s,
+        opacity 0.2s;
+}
+
+.nav-toggle-open .nav-toggle-bar:nth-child(1) {
+    transform: translateY(calc(0.22rem + 2px)) rotate(45deg);
+}
+.nav-toggle-open .nav-toggle-bar:nth-child(2) {
+    opacity: 0;
+}
+.nav-toggle-open .nav-toggle-bar:nth-child(3) {
+    transform: translateY(calc(-0.22rem - 2px)) rotate(-45deg);
+}
+
+/* The brand's type is a soft default; each site sets its own. */
+:where(.nav-brand) {
+    font-weight: 400;
+    font-size: 1.1rem;
+    letter-spacing: 0.05em;
+}
+
+.nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.nav-links {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    min-height: 1.85rem;
+    line-height: 1;
+}
+
+.nav-links li {
+    display: flex;
+    align-items: center;
+    height: 1.85rem;
+    margin: 0;
+    padding: 0;
+    line-height: 1;
+}
+
+/* Pill look for nav items — direct anchors, and button-based items (e.g. a
+   dropdown trigger) opted in via .nav-link. Child combinators on purpose:
+   anchors nested inside a composed widget (a dropdown's menu) are that
+   widget's business, not pills. */
+.nav-links > li > a,
+.nav-links > li > button.nav-link {
+    display: inline-flex;
+    align-items: center;
+    box-sizing: border-box;
+    height: 1.85rem;
+    text-decoration: none;
+    color: var(--text-primary);
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 0.4rem;
+    padding: 0 0.8rem;
+    font-family: inherit;
+    font-size: 0.8rem;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    transition:
+        color 0.15s,
+        border-color 0.15s;
+}
+
+@media (hover: hover) {
+    .nav-links > li > a:hover,
+    .nav-links > li > button.nav-link:hover {
+        color: var(--ink-accent-primary, var(--accent-primary));
+        border-color: var(--accent-primary);
+    }
+}
+
+.nav-links > li > a.active,
+.nav-links > li > button.nav-link.active {
+    color: var(--ink-accent-primary, var(--accent-primary));
+    border-color: var(--accent-primary);
+}
+
+/* ---- NavBar calls to action (.nav-persistent, .nav-cta, .nav-cta-item) ----
+   An outbound call to action (a store, a download) as a nav pill in palette
+   slot 5. At hamburger widths NavBar's persistent slot shows the CTAs beside
+   the toggle, smaller, and the panel's own copies, each in an
+   li.nav-cta-item, hide; above it the slot hides and the panel shows them.
+   :visited rides along so a site's own a:visited never recolors a pill. */
+
+.nav-cta,
+.nav-cta:visited {
+    display: inline-flex;
+    align-items: center;
+    box-sizing: border-box;
+    height: 1.85rem;
+    text-decoration: none;
+    color: var(--ink-palette-5, var(--palette-5));
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 0.4rem;
+    padding: 0 0.8rem;
+    font-family: inherit;
+    font-size: 0.8rem;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    transition:
+        color 0.15s,
+        border-color 0.15s;
+}
+
+/* In the panel the pill rule above gives the shape; this keeps the color. */
+.nav-links > li > a.nav-cta,
+.nav-links > li > a.nav-cta:visited {
+    color: var(--ink-palette-5, var(--palette-5));
+}
+
+@media (hover: hover) {
+    .nav-cta:hover,
+    .nav-cta:visited:hover,
+    .nav-links > li > a.nav-cta:hover,
+    .nav-links > li > a.nav-cta:visited:hover {
+        color: var(--ink-palette-5, var(--palette-5));
+        border-color: var(--palette-5);
+    }
+}
+
+.nav-persistent {
+    display: none;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* An icon-only call to action (a.nav-cta.nav-cta-icon): a square of the
+   pill's height holding one SVG, drawn in the pill's color. Nothing names
+   the icon in the markup, so the link carries aria-label and title. The
+   persistent copies are the toggle's height, like the text pills there. */
+.nav-cta-icon,
+.nav-links > li > a.nav-cta-icon {
+    width: 1.85rem;
+    padding: 0;
+    justify-content: center;
+}
+
+/* Soft: the icon's size in the pill. A stroked dock icon keeps its own
+   fill: none. */
+:where(.nav-cta-icon svg) {
+    width: 1.25em;
+    height: 1.25em;
+}
+
+.nav-cta-icon svg:not(.action-dock-icon) {
+    fill: currentColor;
+}
+
+/* ---- NavDropdown (orangui::NavDropdown) +
+        ThemePicker (orangui::ThemePicker) ----
+   The dropdown (trigger pill, floating menu, backdrop, hover bridge) is the
+   generic component. The picker borrows its trigger pill and opens a sheet;
+   .theme-picker and .mode-toggle are its own. */
+
+.theme-picker {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    height: 1.85rem;
+    line-height: 1;
+}
+
+/* Pill look shared by the dropdown trigger and the mode toggle — self-contained
+   so both render correctly outside any particular nav's button styling. */
+.nav-dropdown-trigger,
+.mode-toggle {
+    display: inline-flex;
+    align-items: center;
+    box-sizing: border-box;
+    height: 1.85rem;
+    color: var(--text-primary);
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 0.4rem;
+    padding: 0 0.8rem;
+    font-family: inherit;
+    font-size: 0.8rem;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    transition:
+        color 0.15s,
+        border-color 0.15s;
+}
+
+/* A mode's solid sun or moon (orangui::ModeIcon) and the palette
+   (orangui::PaletteIcon): one text-line size, in the text color. The
+   palette leads the theme's name in the picker's trigger and a settings
+   row's value; the row's own gap spaces it there. */
+.mode-icon,
+.palette-icon {
+    width: 1.1em;
+    height: 1.1em;
+    flex-shrink: 0;
+    vertical-align: -0.2em;
+}
+
+.theme-picker .nav-dropdown-trigger > .palette-icon {
+    margin-right: 0.45em;
+}
+
+.mode-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+}
+
+@media (hover: hover) {
+    .nav-dropdown-trigger:hover,
+    .mode-toggle:hover {
+        color: var(--ink-accent-primary, var(--accent-primary));
+        border-color: var(--accent-primary);
+    }
+}
+
+.nav-dropdown {
+    position: relative;
+}
+
+.nav-dropdown-trigger {
+    user-select: none;
+    position: relative;
+    z-index: 200;
+}
+
+/* The trigger is a flex box, which would drop the space before the caret. */
+.nav-dropdown-caret {
+    white-space: pre;
+}
+
+/* Click-away layer for the open hamburger panel: under the nav (101), over the
+   page. The pointer cursor is what makes iOS Safari send taps on a plain div
+   to the delegated click handler. A host transform on an ancestor shrinks it
+   to that ancestor; NavBar's document listener closes the panel past it. */
+.nav-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: transparent;
+    cursor: pointer;
+}
+
+.nav-dropdown-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 150;
+    background: transparent;
+}
+
+/* Invisible hover bridge so the dropdown doesn't close while the cursor
+   travels from the trigger to the menu. */
+.nav-dropdown::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    height: 0.5rem;
+}
+
+/* A menu hangs from its trigger's right edge by default; a host that wants
+   it to jut right sets `left: 0; right: auto`. */
+:where(.nav-dropdown-content) {
+    right: 0;
+}
+
+.nav-dropdown-content {
+    display: none;
+    position: absolute;
+    top: 100%;
+    margin-top: 0.5rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 0.4rem;
+    min-width: 11rem;
+    padding: 0.5rem 0;
+    /* One above the triggers (200). In the hamburger panel a menu drops over
+       the stacked triggers below its own, which won the tie and covered it. */
+    z-index: 201;
+    flex-direction: column;
+    max-height: 70vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-md);
+    /* Scrollable but no visible scrollbar, keeping the menu clean. */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.nav-dropdown-content::-webkit-scrollbar {
+    display: none;
+}
+
+.nav-dropdown-open .nav-dropdown-content {
+    display: flex;
+}
+
+/* Menu rows: buttons or anchors alike. The `a.…:visited` selector rides in
+   the color declarations so a host's global `a:visited` never recolors menu
+   items — consumers need zero overrides. */
+.nav-dropdown-item,
+a.nav-dropdown-item:visited {
+    background: none;
+    border: none;
+    color: var(--ink-text-muted, var(--text-muted));
+    font-family: inherit;
+    font-size: 0.85rem;
+    padding: 0.4rem 1rem;
+    text-align: left;
+    cursor: pointer;
+    width: 100%;
+    transition:
+        background-color 0.15s,
+        color 0.15s;
+}
+
+/* Anchor items (router links) match the button layout. */
+a.nav-dropdown-item {
+    display: block;
+    text-decoration: none;
+}
+
+.nav-dropdown-item:hover,
+a.nav-dropdown-item:visited:hover {
+    background-color: var(--border-primary);
+    color: var(--text-primary);
+}
+
+/* Accent-2 so the selection reads apart from the accent-1 subtitles. */
+.nav-dropdown-item.active,
+a.nav-dropdown-item.active:visited {
+    color: var(--ink-accent-secondary, var(--accent-secondary));
+}
+
+/* A miniature of the theme: its background as the chip, its muted text as the
+   border, and the six palette slots inside. */
+.theme-picker-sheet .theme-swatches {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+    flex-shrink: 0;
+    padding: 0.2rem 0.25rem;
+    border-radius: 0.35rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--text-muted);
+}
+
+/* A preference row, as the app's theme sheet lists its themes: a filled,
+   bordered button that lights its border when selected. Here rather than
+   app.css so a site's settings sheet gets it too. */
+/* Soft: the padding, radius and font. */
+:where(.pref-row) {
+    padding: 0.6rem 1rem;
+    border-radius: 0.4rem;
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 400;
+    font-size: 0.85rem;
+}
+
+.pref-row {
+    display: block;
+    width: 100%;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    color: var(--ink-text-muted, var(--text-muted));
+    text-align: left;
+    cursor: pointer;
+    transition:
+        border-color 0.15s,
+        color 0.15s;
+}
+
+/* A row that cannot be picked fades; on a light theme it keeps its place
+   and its muted text, as the disabled buttons and chips do. */
+.pref-row:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+[class*="theme-"][class*="-light"] .pref-row:disabled {
+    opacity: 1;
+    color: var(--text-muted);
+}
+
+.pref-row.selected {
+    border-color: var(--accent-secondary);
+    color: var(--text-primary);
+}
+
+.pref-row-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+.pref-section-label {
+    font-size: 1rem;
+    color: var(--ink-accent-primary, var(--accent-primary));
+    letter-spacing: 0.1em;
+    text-align: center;
+    margin: 0.75rem 0 0.4rem;
+}
+
+/* A theme group's name, a chip centered over its rows; the first sits
+   right under the title bar. */
+.theme-group-label {
+    display: flex;
+    justify-content: center;
+    margin: 0.5rem 0 0.1rem;
+}
+
+.theme-group-label:first-child {
+    margin-top: 0;
+}
+
+.theme-picker-sheet .theme-dot {
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 0.2rem;
+    flex-shrink: 0;
+}
+
+/* ThemePicker's sheet, a drawer under the bar on a wide window
+   (orangui::SheetWide::Drawer). */
+.theme-picker-sheet {
+    display: contents;
+}
+
+/* The sheet's rows: filled, bordered pills like the app's settings rows,
+   roomier than a drop-down's for a thumb, the picked one outlined in the
+   accent. */
+/* Soft: the row's gap, padding, radius and font size. */
+:where(.theme-picker-sheet .nav-dropdown-item) {
+    gap: 1rem;
+    padding: 0.65rem 1rem;
+    border-radius: 0.4rem;
+    font-size: 0.95rem;
+}
+
+.theme-picker-sheet .nav-dropdown-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    white-space: nowrap;
+    transition:
+        border-color 0.15s,
+        color 0.15s;
+}
+
+.theme-picker-sheet .nav-dropdown-item:hover {
+    background-color: var(--bg-primary);
+}
+
+.theme-picker-sheet .nav-dropdown-item.active {
+    border-color: var(--accent-secondary);
+    color: var(--text-primary);
+}
+
+/* The group chip sits centered above its rows, as the app's sheet has it. */
+.theme-picker-sheet .nav-dropdown-label {
+    margin: 0.5rem 0 0.1rem;
+    padding: 0;
+}
+
+/* The first chip sits the body's own padding under the title bar, the
+   same distance a later chip sits under the row before it. */
+.theme-picker-sheet .nav-dropdown-label:first-child {
+    margin-top: 0;
+}
+
+/* Section subtitles ("Themes" / "Color blind") that group the picker. The
+   gap above each later section carries the separation (no divider line). */
+.nav-dropdown-label {
+    margin-top: 0.85rem;
+    padding: 0.4rem 1rem 0.25rem;
+    color: var(--ink-accent-primary, var(--accent-primary));
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+}
+
+/* The first subtitle sits flush at the top of the menu. */
+.nav-dropdown-rows > .nav-dropdown-label:first-child {
+    margin-top: 0;
+    padding-top: 0;
+}
+
+/* ---- Nav trailing row (.nav-trailing-row) ----
+   An app's menu footer in the NavBar's trailing slot: one row of small icon
+   buttons (each a .btn-action.nav-icon) grouped at the left end, with room
+   at the right for a text button. The icon for the screen on view is lit
+   like the list's own entry; the kit's lit nav-link rule reaches only the
+   list, so the row carries its own. */
+
+/* Soft: the row's bottom padding. */
+:where(.nav-trailing-row) {
+    padding-bottom: 0.6rem;
+}
+
+.nav-trailing-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* Soft: the gap between the group's icons. */
+:where(.nav-trailing-group) {
+    gap: 0.4rem;
+}
+
+.nav-trailing-group {
+    display: flex;
+    align-items: center;
+}
+
+/* Plain, after .btn-action, so the icon's box wins over the text button's
+   padding and font at equal specificity. */
+.nav-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.2rem;
+    height: 1.7rem;
+    padding: 0;
+    font-size: 1rem;
+    opacity: var(--fade-corner);
+}
+
+/* Plain, so it beats .mode-icon's own text-line size and baseline shift. */
+.nav-icon .action-dock-icon,
+.nav-icon .mode-icon {
+    width: 1.1em;
+    height: 1.1em;
+    vertical-align: 0;
+}
+
+.nav-icon.active {
+    opacity: 1;
+    color: var(--ink-accent-primary, var(--accent-primary));
+    border-color: var(--accent-primary);
+}
+
+/* ---- Action dock (.action-dock) ----
+   A screen's icon actions as one floating squircle bar just above the bottom
+   edge, with no bar behind it: icons only, a thin divider between groups that
+   runs the bar's full height. It sits on the raised surface with the medium
+   shadow, so it stays a bar over a same-color panel, and the content scrolls
+   under it. --keyboard-inset, set by KEYBOARD_INSET_JS, lifts it over the
+   keyboard. Inside a BottomSheet the sheet's transform is its containing
+   block, so it floats at the sheet's bottom; .sheet-dock marks that one. */
+
+/* Soft: the bar's gap, padding and radius. */
+:where(.action-dock) {
+    gap: 0.25rem;
+    padding: 0 0.4rem;
+    border-radius: 0.9rem;
+}
+
+.action-dock {
+    position: fixed;
+    left: 0;
+    right: 0;
+    /* One gap from the bottom edge and from the side, so the bar sits on a
+       45 degree line from the corner: half the home indicator's safe area
+       plus a margin, which puts it over the indicator's strip rather than
+       stacked above it and clears the phone's rounded corner. */
+    --dock-gap: calc(env(safe-area-inset-bottom, 0px) / 2 + 0.6rem);
+    bottom: calc(var(--dock-gap) + var(--keyboard-inset, 0px));
+    z-index: 50;
+    width: fit-content;
+    margin: 0 auto;
+    display: flex;
+    align-items: stretch;
+    border: 1px solid var(--border-primary);
+    background-color: var(--bg-raised);
+    box-shadow: var(--shadow-md);
+    transition: bottom 0.25s ease;
+}
+
+/* Pinned to the bottom right instead of centered. */
+.action-dock.action-dock-right {
+    margin-right: var(--dock-gap);
+}
+
+/* Soft: a button's size, margin and radius. */
+:where(.action-dock-btn) {
+    width: 2.4rem;
+    height: 2.4rem;
+    margin: 0.3rem 0;
+    border-radius: 0.6rem;
+}
+
+.action-dock-btn {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.action-dock-btn:active {
+    background-color: var(--bg-primary);
+}
+
+/* A dock toggle while it is on: the icon in the accent color. */
+.action-dock-btn.action-dock-on {
+    color: var(--ink-accent-primary, var(--accent-primary));
+}
+
+/* Soft: the disabled fade. */
+:where(.action-dock-btn:disabled) {
+    opacity: 0.35;
+}
+
+.action-dock-btn:disabled {
+    cursor: default;
+}
+
+/* On a light theme a disabled dock button keeps its place and dims its
+   glyph to the muted text, as the buttons and chips do. */
+[class*="theme-"][class*="-light"] .action-dock-btn:disabled {
+    opacity: 1;
+    color: var(--text-muted);
+}
+
+/* Soft: the icon's size and stroke. */
+:where(.action-dock-icon) {
+    width: 1.3rem;
+    height: 1.3rem;
+    stroke-width: 2;
+}
+
+.action-dock-icon {
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* An icon button, such as a panel header's edit pencil: the nav icons'
+   box, so every small icon button is one size, with the dock icon sized
+   to the button's text. */
+.btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.2rem;
+    height: 1.7rem;
+    padding: 0;
+    font-size: 1rem;
+}
+
+/* Soft: the icon's size in a text-height button. */
+:where(.btn-icon .action-dock-icon) {
+    width: 1.1em;
+    height: 1.1em;
+}
+
+/* Soft: the divider's side margin. */
+:where(.action-dock-divider) {
+    margin: 0 0.25rem;
+}
+
+.action-dock-divider {
+    flex: 0 0 1px;
+    align-self: stretch;
+    background-color: var(--border-primary);
+}
+
+/* A button with a badge on its corner, such as a filter with its reset. */
+.action-dock-group {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+/* The group's reset: a small x on the button's top right corner, shown
+   while there is something to reset. */
+/* Soft: the badge's offset, size, radius and font size. */
+:where(.action-dock-reset) {
+    top: -0.35rem;
+    right: -0.35rem;
+    width: 1.2rem;
+    height: 1.2rem;
+    border-radius: 0.35rem;
+    font-size: 0.8rem;
+}
+
+.action-dock-reset {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 1px solid var(--border-primary);
+    background-color: var(--bg-raised);
+    color: var(--text-primary);
+    line-height: 1;
+    cursor: pointer;
+}
+
+/* ---- Bottom sheet (orangui::BottomSheet) ----
+   Shared by the apps and the sites: the sites' ThemePicker opens one at
+   hamburger widths. */
+
+.sheet-backdrop {
+    position: fixed;
+    inset: 0;
+    background: transparent;
+    pointer-events: none;
+    transition: background 0.3s ease;
+    z-index: 200;
+}
+
+.sheet-backdrop.show {
+    background: var(--bg-overlay);
+    pointer-events: auto;
+}
+
+.bottom-sheet {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    max-height: 85vh;
+    background: var(--bg-primary);
+    border-radius: 1rem 1rem 0 0;
+    box-shadow: var(--shadow-md);
+    transform: translateY(100%);
+    visibility: hidden;
+    transition: transform 0.3s ease, visibility 0s linear 0.3s;
+    display: flex;
+    flex-direction: column;
+    z-index: 201;
+    /* Clips the fill to the rounded corners. */
+    overflow: hidden;
+}
+
+/* On a light theme the sheet lifts off the page: its shadow doubles up,
+   since a light shadow alone barely marks a cream edge on a cream page. */
+[class*="theme-"][class*="-light"] .bottom-sheet {
+    box-shadow: var(--shadow-md), var(--shadow-md);
+}
+
+.bottom-sheet > .sheet-header,
+.bottom-sheet > .action-bar {
+    background-color: var(--bg-primary);
+}
+
+.bottom-sheet.show {
+    transform: translateY(0);
+    visibility: visible;
+    transition: transform 0.3s ease;
+}
+
+/* The first render, before the slide is allowed to animate. */
+.bottom-sheet.bottom-sheet-premount {
+    transition: none;
+}
+
+/* Pulled off screen with no slide, so a theme wipe's new snapshot is taken
+   without the sheet. */
+.bottom-sheet.snap,
+.sheet-backdrop.snap {
+    transition: none;
+}
+
+.bottom-sheet .action-bar {
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+}
+
+.sheet-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border-secondary);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+/* Relative so the corner "?" parks inside the header rather than against
+   the sheet. The header is the drag handle: the pointer moves it rather
+   than scrolling the page or selecting the title. */
+.bottom-sheet .sheet-header {
+    position: relative;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* The closable sheet's × in the header's left corner, as gentle as the
+   nav's hamburger: a small faded box at full strength while pressed. */
+/* Soft: the box's inset, size, radius, font size and resting fade. */
+:where(.sheet-close) {
+    left: 1rem;
+    width: 2.1rem;
+    height: 1.7rem;
+    border-radius: 0.4rem;
+    font-size: 1.1rem;
+    opacity: var(--fade-corner);
+}
+
+.sheet-close {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    color: var(--text-primary);
+    font-family: inherit;
+    line-height: 1;
+    cursor: pointer;
+    transition: border-color 0.15s;
+}
+
+@media (hover: hover) {
+    .sheet-close:hover {
+        border-color: var(--accent-primary);
+    }
+}
+
+.sheet-close:active {
+    opacity: 1;
+}
+
+.sheet-title {
+    font-size: 1rem;
+    color: var(--ink-accent-tertiary, var(--accent-tertiary));
+}
+
+/* The body starts as close under the title bar as a panel's body under
+   its header. */
+.sheet-content {
+    padding: 1rem 1.5rem 1.5rem;
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+/* A sheet with no action bar ends on its content, which keeps clear of
+   the home indicator itself. */
+.bottom-sheet > .sheet-content:last-child {
+    padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+/* ---- Sheet forms on a wide window (orangui::SheetFrame) ----
+   The frame has no box; above the bar breakpoint it moves the sheet it
+   wraps. A modal centers and settles in. A drawer is an inset panel along
+   the right edge under the bar, --sheet-drawer-top from the top (a host
+   sets it to its bar's height plus the page gutter), the page gutter from
+   the right and the bottom, the panel's corners and border, sliding in
+   from the right; the page dims only a little so the sheet's changes show
+   on it. Its dock floats inside its bottom right corner. */
+.sheet-form {
+    display: contents;
+}
+
+@media (min-width: 60rem) {
+    .sheet-form-modal > .bottom-sheet {
+        top: 50%;
+        left: 50%;
+        right: auto;
+        bottom: auto;
+        width: min(32rem, calc(100vw - 4rem));
+        max-height: 85vh;
+        border-radius: 1rem;
+        border: 1px solid var(--border-secondary);
+        opacity: 0;
+        transform: translate(-50%, calc(-50% + 0.75rem)) scale(0.98);
+        transition: opacity 0.2s ease, transform 0.2s ease, visibility 0s linear 0.2s;
+    }
+
+    .sheet-form-modal > .bottom-sheet.show {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+        transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .sheet-form-drawer > .bottom-sheet {
+        top: var(--sheet-drawer-top, 5.5rem);
+        bottom: 1rem;
+        left: auto;
+        right: 1rem;
+        width: min(24rem, calc(100vw - 2rem));
+        max-height: none;
+        border-radius: 1rem;
+        border: 1px solid var(--border-secondary);
+        box-shadow: var(--shadow-md), var(--shadow-md);
+        transform: translateX(calc(100% + 1rem));
+    }
+
+    .sheet-form-drawer > .bottom-sheet.show {
+        transform: translateX(0);
+    }
+
+    /* On the backdrop at rest, not only while shown, so closing fades
+       the color alone and the opacity never snaps back to full. */
+    .sheet-form-drawer > .sheet-backdrop {
+        opacity: 0.4;
+    }
+
+    .sheet-form-drawer > .bottom-sheet .sheet-dock {
+        position: absolute;
+        right: 1rem;
+        bottom: 1rem;
+    }
+}
+
+@media (min-width: 60rem) and (prefers-reduced-motion: reduce) {
+    .sheet-form-modal > .bottom-sheet,
+    .sheet-form-modal > .bottom-sheet.show,
+    .sheet-form-drawer > .bottom-sheet,
+    .sheet-form-drawer > .bottom-sheet.show {
+        transition: none;
+    }
+}
+
+/* A sheet's dock (.action-dock.sheet-dock) floats over the sheet's content,
+   which ends with room to scroll its last row clear of it. */
+.bottom-sheet .sheet-dock {
+    position: fixed;
+    z-index: 2;
+}
+
+.bottom-sheet:has(.sheet-dock) > .sheet-content {
+    padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+}
+
+/* A sheet's body sits a step into the sink under its title bar and its
+   dock, the way the folded menu's rows sit under the menu's bands. */
+:where(.sheet-content) {
+    background-color: var(--bg-sink);
+}
+
+/* The content column, for a host that loads no app sheet. */
+.sheet-content > .flex-col {
+    display: flex;
+    flex-direction: column;
+}
+
+/* ---- Banner (orangui::Banner) ---- */
+
+/* Fixed toast column at the bottom-left, clear of the nav and the page's first
+   content. Each site renders this wrapper and drops Banners inside. */
+.banner-stack {
+    position: fixed;
+    bottom: 1.5rem;
+    left: 1.5rem;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    /* Viewport-aware cap: 420px on desktop, viewport minus 3rem on phones so
+       the stack keeps a 1.5rem right margin mirroring the 1.5rem left offset
+       instead of running off the edge when a banner's copy is long. */
+    max-width: min(420px, calc(100vw - 3rem));
+    transition: transform 0.25s ease;
+}
+
+.banner {
+    position: relative;
+    overflow: hidden;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 0.4rem;
+    padding: 0.8rem 2.4rem 0.9rem 1.2rem;
+    font-size: 0.75rem;
+    color: var(--text-primary);
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    animation: banner-rise-in 0.5s ease-out both;
+    animation-delay: 1s;
+    box-shadow: var(--shadow-md);
+}
+
+.banner-header {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.banner-category {
+    font-size: 0.7rem;
+    color: var(--ink-accent-tertiary, var(--accent-tertiary));
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.banner-text {
+    line-height: 1.45;
+}
+
+.banner .banner-dismiss {
+    position: absolute;
+    top: 0.25rem;
+    right: 0.35rem;
+}
+
+.banner + .banner {
+    animation-delay: 1.2s;
+}
+
+/* Fade out, then collapse so a remaining toast slides up instead of jumping;
+   the element leaves the DOM when this animation ends. Compound selector +
+   placement after the slide-in rules so it overrides them. */
+.banner.banner-leaving {
+    animation: banner-leave 0.45s ease forwards;
+    animation-delay: 0s;
+    pointer-events: none;
+}
+
+@keyframes banner-leave {
+    0% {
+        opacity: 1;
+        max-height: 10rem;
+    }
+    45% {
+        opacity: 0;
+        max-height: 10rem;
+    }
+    100% {
+        opacity: 0;
+        max-height: 0;
+        margin-bottom: -0.6rem;
+        padding-top: 0;
+        padding-bottom: 0;
+        border-top-width: 0;
+        border-bottom-width: 0;
+    }
+}
+
+/* Auto-dismiss countdown. Duration is set inline per banner (auto_dismiss_secs);
+   the shorthand's 10s is the fallback. */
+.banner-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 2px;
+    width: 100%;
+    background: var(--accent-primary);
+    transform-origin: left;
+    animation: banner-countdown 10s linear forwards;
+    animation-delay: 1s;
+}
+
+.banner + .banner .banner-progress {
+    animation-delay: 1.2s;
+}
+
+.banner:hover .banner-progress {
+    animation-play-state: paused;
+}
+
+@keyframes banner-countdown {
+    from {
+        transform: scaleX(1);
+    }
+    to {
+        transform: scaleX(0);
+    }
+}
+
+.banner a,
+.banner a:visited {
+    color: var(--ink-accent-primary, var(--accent-primary));
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+/* The ✕: a 2rem box, a squircle filled softly on hover and press; on touch
+   its hit area reaches 2.75rem around it without changing how it looks. */
+.banner-dismiss {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    background: transparent;
+    border: none;
+    border-radius: 0.6rem;
+    color: var(--ink-text-muted, var(--text-muted));
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 1.15rem;
+    font-weight: 700;
+    padding: 0;
+    line-height: 1;
+    transition:
+        color 0.2s ease,
+        background-color 0.2s ease;
+}
+
+.banner-dismiss:active {
+    color: var(--text-primary);
+    background-color: color-mix(in srgb, var(--text-primary) 14%, transparent);
+}
+
+@media (hover: hover) {
+    .banner-dismiss:hover {
+        color: var(--text-primary);
+        background-color: color-mix(in srgb, var(--text-primary) 10%, transparent);
+    }
+}
+
+@media (pointer: coarse) {
+    .banner-dismiss::before {
+        content: "";
+        position: absolute;
+        inset: -0.375rem;
+    }
+}
+
+@keyframes banner-rise-in {
+    from {
+        opacity: 0;
+        transform: translateY(80px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Status pills, shared with the banner header. Filled to match the app's stat
+   chips: the status color as text over a 12% tint, with a 35% border. */
+/* Same height and radius as .chip, so a status pill and the chips beside it
+   read as one family. */
+.status-tag {
+    display: inline-block;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    padding: 0.3rem 0.6rem;
+    border: 1px solid transparent;
+    border-radius: 0.6rem;
+    vertical-align: middle;
+    text-transform: none;
+}
+
+.status-done {
+    color: var(--ink-color-success, var(--color-success));
+    background-color: color-mix(in srgb, var(--color-success) 12%, transparent);
+    border-color: color-mix(in srgb, var(--color-success) 35%, transparent);
+}
+
+.status-doing {
+    color: var(--ink-color-warning, var(--color-warning));
+    background-color: color-mix(in srgb, var(--color-warning) 12%, transparent);
+    border-color: color-mix(in srgb, var(--color-warning) 35%, transparent);
+}
+
+/* ---- Panel (orangui::Panel) ---- */
+
+/* The canonical card shape: header <hr> body <hr> actions. Self-contained so it
+   renders identically on the site, in the app, and on the portfolio. */
+
+.panel-card {
+    display: flex;
+    flex-direction: column;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    transition: border-color 0.2s;
+}
+
+.panel-card:hover {
+    border-color: var(--accent-primary);
+}
+
+.panel-eyebrow-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.4rem;
+}
+
+.panel-eyebrow {
+    font-size: 0.75rem;
+    color: var(--ink-accent-tertiary, var(--accent-tertiary));
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.panel-title {
+    font-size: 1.1rem;
+    color: var(--ink-accent-primary, var(--accent-primary));
+    font-weight: 700;
+    margin: 0;
+}
+
+/* The title with a control at the row's right end (Panel's title_end). */
+.panel-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+/* Full-bleed divider to the card edges, matching the dialogs. */
+.panel-rule {
+    border: none;
+    border-top: 1px solid var(--border-secondary);
+    margin: 1rem -1.5rem;
+}
+
+/* Grow the body so the footer rule + actions pin to the bottom. In a normal
+   block context this is a no-op; when the card is stretched (e.g. equal-height
+   grid rows) it lines the action rows up across the row. */
+.panel-body {
+    flex-grow: 1;
+}
+
+.panel-body > :first-child {
+    margin-top: 0;
+}
+
+.panel-body > :last-child {
+    margin-bottom: 0;
+}
+
+.panel-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+/* A dialog-style panel: title and actions centered, body left to read, as the
+   apps' hint dialogs are. */
+.panel-centered .panel-eyebrow-row,
+.panel-centered .panel-actions {
+    justify-content: center;
+}
+
+.panel-centered .panel-title {
+    text-align: center;
+}
+
+/* Footer action buttons/links — pill buttons with the action-bar look. Works on
+   both <a> (external links) and <button>; add "\u{2197}" to external labels. */
+.panel-action {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.35rem 0.9rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.6rem;
+    background-color: var(--bg-primary);
+    box-shadow: var(--shadow-sm);
+    color: var(--text-primary);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.8rem;
+    text-decoration: none;
+    cursor: pointer;
+    transition:
+        border-color 0.2s,
+        color 0.2s;
+}
+
+.panel-action:hover {
+    border-color: var(--accent-primary);
+    color: var(--ink-accent-primary, var(--accent-primary));
+}
+
+/* Stepper button (DrawOdds turn stepper; the app's combat filter reuses it).
+   Solid background gives native press feedback and suppresses WKWebView's
+   focus ring. */
+.stepper-btn {
+    padding: 0.3rem 0.6rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.4rem;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-family: "JetBrains Mono", monospace;
+    transition: all 0.2s ease;
+}
+
+/* ---- PasswordInput (orangui::PasswordInput) ---- */
+
+/* The Show/Hide toggle sits over the field's right edge; the field's padding
+   keeps the typed text clear of it. */
+.password-input-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.password-input-wrapper .input-password {
+    padding-right: 4rem;
+}
+
+.password-toggle-btn {
+    position: absolute;
+    top: 50%;
+    right: 0.6rem;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--ink-text-muted, var(--text-muted));
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.85rem;
+    padding: 0.25rem 0.5rem;
+    cursor: pointer;
+    border-radius: 0.3rem;
+}
+
+.password-toggle-btn:hover {
+    color: var(--ink-palette-1, var(--palette-1));
+}
+
+/* ---- Collapse (orangui::CollapseHeader, CollapseCaret, CollapseBody, CollapseAll) ---- */
+
+/* A header row that toggles from anywhere on it. */
+.collapse-header {
+    cursor: pointer;
+}
+
+/* Soft: the caret's size and color. */
+:where(.collapse-caret) {
+    width: 1.75rem;
+    height: 1.75rem;
+    color: var(--ink-accent-primary, var(--accent-primary));
+}
+
+.collapse-caret {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    padding: 0;
+    border: none;
+    background: none;
+    font: inherit;
+    cursor: pointer;
+}
+
+.collapse-caret-glyph {
+    display: inline-block;
+    transition: transform 0.2s ease;
+}
+
+.collapse-caret[aria-expanded="true"] .collapse-caret-glyph {
+    transform: rotate(90deg);
+}
+
+/* The body eases between its height and none, through grid rows. */
+.collapse-body {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.25s ease;
+}
+
+.collapse-body.open {
+    grid-template-rows: 1fr;
+}
+
+.collapse-body-inner {
+    min-height: 0;
+    overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .collapse-caret-glyph,
+    .collapse-body {
+        transition: none;
+    }
+}
+
+/* ---- ClearWrap (orangui::ClearWrap) ----
+   The × beside a field's right end while it holds something: the field
+   gives up the button's width as it slides in and takes it back when the
+   field empties. The wrap carries the field's bottom margin so the row
+   centers on the box, not the box and its margin. */
+.input-clear-wrap {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 1rem;
+}
+
+.input-clear-wrap > :first-child {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+}
+
+/* The button is the icon button's box, centered on the field, the × at
+   text size in it. */
+.input-clear-btn {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 0;
+    height: 1.7rem;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+    cursor: pointer;
+    text-align: center;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 1.1rem;
+    line-height: 1;
+    color: var(--ink-text-muted, var(--text-muted));
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 0.5rem;
+    transition:
+        width 0.2s ease,
+        margin-left 0.2s ease,
+        opacity 0.2s ease;
+}
+
+.input-clear-wrap.has-text > .input-clear-btn {
+    width: 2.2rem;
+    margin-left: 0.5rem;
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.input-clear-btn:hover {
+    color: var(--ink-palette-1, var(--palette-1));
+}
+
+/* ==============================
+   diagram: boxes and arrows in an inline svg
+   ============================== */
+
+.diagram {
+    display: block;
+    width: 100%;
+    /* Never narrower than a readable figure: on a phone the wrapper below
+       scrolls sideways instead of the boxes shrinking to a smear. */
+    min-width: 40rem;
+    height: auto;
+    font-family: inherit;
+}
+
+/* Wraps a .diagram so one wider than the screen scrolls sideways. */
+.diagram-scroll {
+    overflow-x: auto;
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
+}
+
+.diagram-node rect {
+    fill: color-mix(in srgb, var(--bg-primary), #000 10%);
+    stroke-width: 1.5;
+}
+
+.diagram-muted rect {
+    stroke: var(--text-muted);
+}
+
+.diagram-primary rect {
+    stroke: var(--accent-primary);
+}
+
+.diagram-secondary rect {
+    stroke: var(--accent-secondary);
+}
+
+.diagram-tertiary rect {
+    stroke: var(--accent-tertiary);
+}
+
+.diagram-success rect {
+    stroke: var(--palette-3);
+}
+
+.diagram-title {
+    fill: var(--text-primary);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.diagram-sub,
+.diagram-arrow text {
+    fill: var(--text-muted);
+    font-size: 11px;
+}
+
+/* A halo in the page's color so a label stays readable where it crosses its
+   own arrow. */
+.diagram-arrow text {
+    paint-order: stroke;
+    stroke: var(--bg-primary);
+    stroke-width: 5px;
+    stroke-linejoin: round;
+}
+
+.diagram-arrow line {
+    stroke: var(--text-muted);
+    stroke-width: 1.5;
+}
+
+#diagram-head path {
+    fill: var(--text-muted);
+}
+
+/* A dashed frame around boxes that belong together. */
+.diagram-group rect {
+    fill: none;
+    stroke: var(--border-primary);
+    stroke-width: 1;
+    stroke-dasharray: 4 4;
+}
+
+.diagram-group text {
+    fill: var(--text-muted);
+    font-size: 11px;
+}
+
+/* ==============================
+   scroll fade: a sideways scroller fades out at the edge that has more
+   content past it, instead of cutting it off
+   ============================== */
+
+/* The fade widths follow the scroll position: none on the left at the start,
+   none on the right at the end, both in between. A box that does not
+   overflow keeps both at zero. A browser without scroll timelines (Firefox)
+   gets the same widths from SCROLL_FADE_JS on the sites, hard edges elsewhere. */
+@property --fade-left {
+    syntax: "<length>";
+    inherits: false;
+    initial-value: 0px;
+}
+
+@property --fade-right {
+    syntax: "<length>";
+    inherits: false;
+    initial-value: 0px;
+}
+
+.diagram-scroll,
+.scroll-fade-x {
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 var(--fade-left), #000 calc(100% - var(--fade-right)), transparent);
+    mask-image: linear-gradient(to right, transparent, #000 var(--fade-left), #000 calc(100% - var(--fade-right)), transparent);
+}
+
+@supports (animation-timeline: scroll()) {
+    .diagram-scroll,
+    .scroll-fade-x {
+        animation: scroll-fade-x linear both;
+        animation-timeline: scroll(self inline);
+    }
+}
+
+@keyframes scroll-fade-x {
+    from {
+        --fade-left: 0px;
+        --fade-right: 1.5rem;
+    }
+
+    8% {
+        --fade-left: 1.5rem;
+    }
+
+    92% {
+        --fade-right: 1.5rem;
+    }
+
+    to {
+        --fade-left: 1.5rem;
+        --fade-right: 0px;
+    }
+}
+
+/* The same for a box that scrolls up and down: the rows dissolve into the
+   edge they are leaving instead of being cut. */
+@property --fade-top {
+    syntax: "<length>";
+    inherits: false;
+    initial-value: 0px;
+}
+
+@property --fade-bottom {
+    syntax: "<length>";
+    inherits: false;
+    initial-value: 0px;
+}
+
+.scroll-fade-y {
+    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 var(--fade-top), #000 calc(100% - var(--fade-bottom)), transparent);
+    mask-image: linear-gradient(to bottom, transparent, #000 var(--fade-top), #000 calc(100% - var(--fade-bottom)), transparent);
+}
+
+@supports (animation-timeline: scroll()) {
+    .scroll-fade-y {
+        animation: scroll-fade-y linear both;
+        animation-timeline: scroll(self block);
+    }
+}
+
+@keyframes scroll-fade-y {
+    from {
+        --fade-top: 0px;
+        --fade-bottom: 1.5rem;
+    }
+
+    8% {
+        --fade-top: 1.5rem;
+    }
+
+    92% {
+        --fade-bottom: 1.5rem;
+    }
+
+    to {
+        --fade-top: 1.5rem;
+        --fade-bottom: 0px;
+    }
+}
+
+/* ==============================
+   heat grid: a year of days, a column per week (HeatGrid)
+   ============================== */
+
+/* Wraps a chart wider than a phone so it scrolls sideways. Stops at either
+   end rather than rubber-banding the chart's edge into empty space. */
+.chart-scroll {
+    overflow-x: auto;
+    overscroll-behavior-x: none;
+    scrollbar-width: thin;
+}
+
+.heat-grid {
+    display: block;
+    width: 100%;
+    height: auto;
+    font-family: inherit;
+    /* A peak's halo on the last column or bottom row reaches past the
+       viewBox and draws whole. */
+    overflow: visible;
+}
+
+.heat-label {
+    fill: var(--text-muted);
+    font-size: 9px;
+}
+
+/* GitHub's five shades, in the primary accent: an empty day is a faint box,
+   the rest rise to the full color. The cells sweep in a column at a time on
+   the delay each carries, with a brightening band on the leading edge.
+   `backwards` holds the start state through the delay and lets the resting
+   style take over after, so a host's hover rules still apply. */
+.heat-cell {
+    fill: var(--border-secondary);
+    cursor: default;
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: heat-sweep 0.4s ease-out backwards;
+}
+
+.heat-1 {
+    fill: color-mix(in srgb, var(--accent-primary) 30%, var(--bg-primary));
+}
+
+.heat-2 {
+    fill: color-mix(in srgb, var(--accent-primary) 55%, var(--bg-primary));
+}
+
+.heat-3 {
+    fill: color-mix(in srgb, var(--accent-primary) 80%, var(--bg-primary));
+}
+
+.heat-4 {
+    fill: var(--accent-primary);
+}
+
+/* The year's outlier days: a lit edge in a lighter shade of the accent, and a
+   soft square of the accent behind the cell, drawn as a shape so every
+   browser shows it. The halo sweeps in with its cell. */
+.heat-peak {
+    stroke: color-mix(in srgb, var(--accent-primary) 60%, #fff);
+    stroke-width: 1;
+}
+
+.heat-halo {
+    fill: color-mix(in srgb, var(--accent-primary) 45%, transparent);
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: heat-sweep 0.4s ease-out backwards;
+}
+
+@keyframes heat-sweep {
+    from {
+        opacity: 0;
+        transform: scale(0.5);
+        filter: brightness(1.8);
+    }
+    55% {
+        opacity: 1;
+        transform: scale(1.12);
+        filter: brightness(1.8);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+        filter: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .heat-cell,
+    .heat-halo {
+        animation: none;
+    }
+}
+
+/* The tags under a heatmap. At rest they name what the grid adds up to. On a
+   touch or narrow screen a picked cell's tags take their place for a few
+   seconds; a hover device with room keeps them at rest and names the cell
+   under the pointer in a floating .chart-tip.heat-float instead. One muted
+   tone, so the grid stays the colorful part. */
+.heat-readout {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.heat-readout-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+:where(.heat-readout) {
+    margin-top: 0.5rem;
+}
+
+:where(.heat-readout-row) {
+    gap: 0.4rem;
+}
+
+:where(.heat-readout-tag) {
+    --tone: var(--text-muted);
+    --tone-ink: var(--ink-text-muted, var(--text-muted));
+}
+
+.heat-readout-pick {
+    display: none;
+}
+
+@media (hover: none), (max-width: 40rem) {
+    .heat-readout.picking .heat-readout-pick {
+        display: flex;
+    }
+
+    .heat-readout.picking .heat-readout-rest {
+        display: none;
+    }
+
+    .chart-tip.heat-float {
+        display: none;
+    }
+}
+
+/* ---- Entrance (.content-enter, .content-enter-delayed, .chip-in) ----
+   A block fades up into place as it mounts; the delayed one follows the
+   first. A chip fades up a shorter way, for a chip that swaps its text.
+   Each ends on `transform: none` rather than translateY(0): `both` keeps the
+   end state, and any other transform makes the element a containing block
+   that traps a position: fixed overlay inside it. */
+
+@keyframes content-enter {
+    from {
+        opacity: 0;
+        transform: translateY(0.625rem);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes chip-in {
+    from {
+        opacity: 0;
+        transform: translateY(0.35rem);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+/* The keyframes and fill are the entrance; the timing is a soft default a
+   host retimes with a rule of any specificity. */
+.content-enter,
+.content-enter-delayed {
+    animation-name: content-enter;
+    animation-fill-mode: both;
+}
+
+.chip-in {
+    animation-name: chip-in;
+    animation-fill-mode: both;
+}
+
+:where(.content-enter, .content-enter-delayed, .chip-in) {
+    animation-duration: 0.3s;
+    animation-timing-function: ease-out;
+}
+
+:where(.content-enter-delayed) {
+    animation-delay: 0.15s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .content-enter,
+    .content-enter-delayed,
+    .chip-in {
+        animation: none;
+    }
+}
+
+/* ---- Charts (orangui::ChartTip, .chart-line) ---- */
+
+/* The point's chip, anchored above it; tip_anchor's tip-start and tip-end
+   hang it from an edge near either side of the chart. */
+.chart-tip {
+    position: absolute;
+    transform: translate(-50%, calc(-100% - 0.4rem));
+    background-color: var(--bg-primary);
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 1;
+    animation: chart-tip-in 0.18s ease-out;
+    transition:
+        left 0.12s ease-out,
+        top 0.12s ease-out;
+}
+
+.chart-tip.tip-start {
+    transform: translate(-0.5rem, calc(-100% - 0.4rem));
+}
+
+.chart-tip.tip-end {
+    transform: translate(calc(-100% + 0.5rem), calc(-100% - 0.4rem));
+}
+
+@keyframes chart-tip-in {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* A line that draws itself left to right on mount. The path carries
+   pathLength="1", so one dash the length of the line slides into place
+   whatever its real length. `backwards` holds the undrawn state through a
+   delay and hands back to the resting style after. The series color is
+   `--chart-series` on the path or any ancestor, else the path's `color`,
+   which is the accent until a host rule of any specificity sets it. The
+   width and the draw's timing are soft defaults the same way. */
+:where(.chart-line) {
+    color: var(--accent-primary);
+    stroke-width: 2;
+    animation-duration: 1.1s;
+    animation-timing-function: ease-out;
+    animation-delay: 0s;
+}
+
+.chart-line {
+    fill: none;
+    stroke: var(--chart-series, currentColor);
+    stroke-linejoin: round;
+    stroke-linecap: round;
+    stroke-dasharray: 1;
+    animation-name: chart-draw;
+    animation-fill-mode: backwards;
+}
+
+@keyframes chart-draw {
+    from {
+        stroke-dashoffset: 1;
+    }
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .chart-tip {
+        animation: none;
+        transition: none;
+    }
+
+    .chart-line {
+        animation: none;
+    }
+}
+
+/* ---- Theme wipe (orangui::use_theme_wipe) ----
+   A picked theme sweeps across the page: the new page's snapshot is unclipped
+   over the old one, left to right except from light to dark, which runs right
+   to left, as the root's data-wipe says. These are the only view transitions
+   on any host, so they style the root snapshot directly. */
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
+}
+
+::view-transition-new(root) {
+    animation: theme-wipe 0.4s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+html[data-wipe="left"]::view-transition-new(root) {
+    animation-name: theme-wipe-left;
+}
+
+@keyframes theme-wipe {
+    from {
+        clip-path: inset(0 100% 0 0);
+    }
+    to {
+        clip-path: inset(0 0 0 0);
+    }
+}
+
+@keyframes theme-wipe-left {
+    from {
+        clip-path: inset(0 0 0 100%);
+    }
+    to {
+        clip-path: inset(0 0 0 0);
+    }
+}
+
+@keyframes theme-wipe-down {
+    from {
+        clip-path: inset(0 0 100% 0);
+    }
+    to {
+        clip-path: inset(0 0 0 0);
+    }
+}
+
+@keyframes theme-wipe-up {
+    from {
+        clip-path: inset(100% 0 0 0);
+    }
+    to {
+        clip-path: inset(0 0 0 0);
+    }
+}
+
+/* ---- StatsStrip (orangui::StatsStrip) ----
+   The figures' box and sizes. The numbers scale with the viewport so three
+   seven-digit figures share a phone's panel, and top out at the desktop
+   size; a host with less room sets smaller ones, and the padding and sizes
+   are soft defaults so any host rule does. The source row's spacing is each
+   host's. */
+
+.stats-strip {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+    margin: 0;
+}
+
+.stats-strip .stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
+    min-width: 0;
+    border: 1px solid var(--border-secondary);
+    border-radius: 0.8rem;
+    background-color: var(--bg-sink);
+    box-shadow: var(--shadow-sm);
+}
+
+:where(.stats-strip .stat) {
+    padding: 0.7rem 0.35rem 0.6rem;
+}
+
+:where(.stats-strip .stat-num) {
+    font-size: clamp(0.9rem, 3.8vw, 1.5rem);
+}
+
+:where(.stats-strip .stat-label) {
+    font-size: clamp(0.6rem, 2.4vw, 0.75rem);
+    letter-spacing: 0.06em;
+}
+
+.stats-strip .stat-num {
+    font-weight: 600;
+    color: var(--ink-palette-5, var(--palette-5));
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+}
+
+/* A label that wraps stays centered under its figure. */
+.stats-strip .stat-label {
+    color: var(--text-primary);
+    opacity: 0.7;
+    text-align: center;
+}
+
+/* ---- InfoButton (orangui::InfoButton) ----
+   The "?" beside a label, faded like the header corners but sized for a
+   label row. Shared by the apps' hints and the sites. */
+
+.info-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.5rem;
+    min-height: 1.5rem;
+    margin-left: 0.35rem;
+    padding: 0;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.5rem;
+    background: var(--bg-primary);
+    color: var(--ink-text-muted, var(--text-muted));
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.75rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+:where(.info-button) {
+    cursor: pointer;
+}
+
+/* ---- HintKey (orangui::HintKey) ----
+   Shared by the apps' hints and the site. Colored by its inline style. The
+   line height keeps the bordered box the height of the text it sits in, so
+   its padding spills over the line rather than pushing the line above it up. */
+
+.hint-key {
+    border: 1px solid var(--accent-tertiary);
+    color: var(--ink-accent-tertiary, var(--accent-tertiary));
+    border-radius: 0.5rem;
+    padding: 0.05rem 0.45rem;
+    font-size: 0.8rem;
+    line-height: 1;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+/* A button's icon inside a key: a dock, mode or palette icon at the key's text
+   height, centered on the line. A key that is only the icon pads evenly,
+   so it reads as the button's own squircle. */
+.hint-key > .action-dock-icon,
+.hint-key > .mode-icon,
+.hint-key > .palette-icon {
+    width: 1.1em;
+    height: 1.1em;
+    vertical-align: -0.2em;
+}
+
+.hint-key:has(> .action-dock-icon:only-child),
+.hint-key:has(> .mode-icon:only-child),
+.hint-key:has(> .palette-icon:only-child) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.2rem 0.3rem;
+    vertical-align: -0.3em;
+}
+
+/* ---- Grid cells (orangui::GridCells) ----
+   The backdrop as shaded squares on a fixed layer under everything. The
+   layer paints the sink and sets the ink; grid-cells.js draws the field on
+   the canvas, which carries the fade, so the sink stays solid where the
+   cells fade out. Brightest at the top, fading out down the viewport. A host
+   that keeps a line grid of its own drops it; the cells are the grid. The
+   cells sit on the stylesheet's cell size, --grid-size. */
+.grid-cells {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    overflow: hidden;
+    background-color: var(--bg-sink);
+    color: var(--text-primary);
+}
+
+.grid-cells-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    mask-image: linear-gradient(to bottom, #000 0, rgba(0, 0, 0, 0.45) 45vh, transparent 100vh);
+    -webkit-mask-image: linear-gradient(to bottom, #000 0, rgba(0, 0, 0, 0.45) 45vh, transparent 100vh);
+}
+
+@media (max-width: 60rem) {
+/* NavBar at hamburger widths: the panel folds behind the toggle, and the
+   pieces that live in or beside the folded menu take their narrow shape.
+   orangui's COMPONENTS_CSS applies these at the kit's 60rem breakpoint; a
+   host that folds wider adds NAV_FOLD_CSS under its own query as well. */
+
+/* A grid, not a wrapping flex row: the header row (brand, persistent
+   slot, toggle) is row one and the panel is row two, so the nav's
+   max-height clamps the panel to the space under the header (a flex line
+   never shrinks). The fr row takes only what the panel needs while that
+   fits, so the menu is unclamped wherever its rows fit. */
+.nav-wrapper nav {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-rows: auto minmax(0, 1fr);
+    justify-items: center;
+    box-sizing: border-box;
+    max-height: 100vh;
+    max-height: 100dvh;
+    /* The header row's inset, the same on every side. */
+    --nav-pad: 0.75rem;
+    padding: var(--nav-pad);
+    /* no row-gap: the collapsed panel is a zero-height row, and a gap
+       would add phantom space below the toggle row */
+    gap: 0 0.5rem;
+}
+/* The header row's three items share one center line. */
+.nav-wrapper nav > .nav-brand {
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: start;
+    align-self: center;
+}
+.nav-wrapper nav > .nav-persistent {
+    grid-row: 1;
+    align-self: center;
+}
+.nav-toggle {
+    display: flex;
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
+    align-self: center;
+}
+.nav-panel {
+    /* One link row's vertical padding and the gap between rows; an
+       app that caps the link list in whole rows counts in these. */
+    --nav-row-pad: 0.65rem;
+    --nav-row-gap: 0.75rem;
+    /* The space between the panel's rule and the first link row, and
+       under the last row above the trailing rule. */
+    --nav-list-start: 1rem;
+    --nav-list-end: 1rem;
+    /* The theme row's trigger padding. */
+    --nav-trigger-pad: 0.55rem;
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: stretch;
+    /* Its own stacking context, so the panel's sink paints over the
+       page and not under the sticky wrapper's fill. */
+    position: relative;
+    z-index: 0;
+    background-color: var(--bg-sink);
+    /* fill the row (the bar's align-items: center would let the panel
+       overflow it) and shrink to it instead of the content minimum */
+    align-self: stretch;
+    min-height: 0;
+    display: grid;
+    grid-template-rows: 0fr;
+    /* explicit full-width column: the implicit auto column would be
+       content-sized and pinned right by the desktop justify-content */
+    grid-template-columns: minmax(0, 1fr);
+    flex-basis: 100%;
+    /* bleed through the nav's side padding so the divider rules run
+       edge to edge; the inner re-adds the inset for content. Exactly the
+       nav's padding, so the panel never overhangs the screen. */
+    margin-left: calc(-1 * var(--nav-pad));
+    margin-right: calc(-1 * var(--nav-pad));
+    opacity: 0;
+    visibility: hidden;
+    /* The closed panel's 1px border hides under the header row, so the
+       row's inset below matches the one above. */
+    margin-top: -1px;
+    border-top: 1px solid transparent;
+    transition:
+        grid-template-rows 0.25s ease,
+        opacity 0.2s ease,
+        margin-top 0.25s ease,
+        border-top-color 0.2s ease,
+        visibility 0s linear 0.25s;
+}
+.nav-panel-open {
+    grid-template-rows: 1fr;
+    opacity: 1;
+    visibility: visible;
+    margin-top: 1.25rem;
+    border-top-color: var(--border-primary);
+    transition:
+        grid-template-rows 0.25s ease,
+        opacity 0.2s ease,
+        margin-top 0.25s ease,
+        border-top-color 0.2s ease,
+        visibility 0s;
+}
+/* nowrap + flex-start undo the desktop bar's flex-wrap/justify-end so the
+   collapsing column can't wrap into narrow columns while the open animation
+   grows the panel height. */
+.nav-panel .nav-panel-inner {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 0;
+    overflow: hidden;
+    min-height: 0;
+    padding-left: var(--nav-pad);
+    padding-right: var(--nav-pad);
+}
+/* The links show every row, capped only by the window: past the cap
+   they scroll a row at a time. The trailing item (the theme picker)
+   sits right under them as the panel's base and stays on screen. The
+   space above its rule is the list's own bottom padding, which scrolls
+   with the rows. */
+.nav-panel .nav-links {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: var(--nav-row-gap);
+    height: auto;
+    box-sizing: border-box;
+    /* The space between the rule and the first row is the list's own
+       padding, so rows scroll under the rule itself and not under a
+       band below it; scroll-padding keeps the snap at the same inset. */
+    padding-top: var(--nav-list-start);
+    padding-bottom: var(--nav-list-end);
+    scroll-padding-top: var(--nav-list-start);
+    /* The window less the menu around the list: the header bar and the
+       panel's rule above it (73px on a phone) and the trailing row with
+       the nav's bottom inset below it (61px), with a little to spare. */
+    max-height: calc(100vh - 8.5rem);
+    max-height: calc(100dvh - 8.5rem);
+    scroll-snap-type: y mandatory;
+    /* The list keeps its own height while the panel grows around it
+       and the inner clips it: a scroller that grew from nothing came
+       up scrolled to its end in Safari, the first row cut off. */
+    flex: 0 0 auto;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    overflow-anchor: none;
+    -webkit-overflow-scrolling: touch;
+    /* Scrolls, but shows no scrollbar. */
+    scrollbar-width: none;
+}
+.nav-panel .nav-links::-webkit-scrollbar {
+    display: none;
+}
+.nav-panel .nav-panel-inner > :not(.nav-links) {
+    flex-shrink: 0;
+}
+.nav-panel .nav-links li {
+    width: 100%;
+    height: auto;
+    scroll-snap-align: start;
+}
+/* Every direct panel link item stretches — including composed widgets
+   (e.g. a NavDropdown wrapper div) that tag enumeration would miss. */
+.nav-panel .nav-links > li > * {
+    width: 100%;
+}
+.nav-panel .nav-links > li > a,
+.nav-panel .nav-links > li > button.nav-link {
+    height: auto;
+    text-align: center;
+    font-size: 0.95rem;
+    padding: var(--nav-row-pad) 1rem;
+    justify-content: center;
+}
+/* A dropdown in the links slot stretches its trigger with its siblings;
+   scoping under .nav-links leaves the trailing-slot picker's compact
+   centered row alone. */
+.nav-panel .nav-links .nav-dropdown-trigger {
+    width: 100%;
+    justify-content: center;
+    padding-top: var(--nav-row-pad);
+    padding-bottom: var(--nav-row-pad);
+}
+/* The trailing slot is the folded menu's footer band: a solid fill over
+   the grid, under a rule, bleeding to the panel edges (inside the inner's
+   padding box, so overflow won't clip it; matches the inner's padding). */
+.nav-panel .nav-trailing {
+    margin-left: calc(-1 * var(--nav-pad));
+    margin-right: calc(-1 * var(--nav-pad));
+    padding: 0.75rem var(--nav-pad) 0;
+    border-top: 1px solid var(--border-primary);
+    background-color: var(--bg-primary);
+}
+/* ThemePicker as the panel's trailing item. */
+.nav-panel .theme-picker {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    height: auto;
+}
+.nav-panel .nav-dropdown-trigger,
+.nav-panel .mode-toggle {
+    height: auto;
+    font-size: 0.95rem;
+    padding: var(--nav-trigger-pad) 1rem;
+}
+/* Make .nav-dropdown static so the open dropdown's containing block is the
+   relative <nav> (inside the sticky .nav-wrapper) rather than .nav-dropdown.
+   That keeps it pinned to the sticky nav while scrolling, and escapes the
+   panel's overflow:hidden clip since nav isn't a descendant of that clip. */
+.nav-panel .nav-dropdown {
+    position: static;
+}
+.nav-panel .nav-dropdown-content {
+    position: absolute;
+    top: auto;
+    right: auto;
+    left: auto;
+    margin-top: 0.5rem;
+    max-height: 50vh;
+    overflow-y: auto;
+}
+/* A dropdown in the scrolling link list opens in flow, as a sub-list
+   under its own trigger: it scrolls with the list and grows it, so every
+   row is reachable by scrolling. Relative, not static, so its z-index
+   still lifts it over the click-away backdrop. */
+.nav-panel .nav-links .nav-dropdown-content {
+    position: relative;
+    width: 100%;
+    max-height: none;
+    overflow: visible;
+    box-shadow: none;
+    padding: 0;
+    /* No margin of its own: closed it takes no space at all, so a row of
+       dropdowns spaces exactly like a row of plain links. */
+    margin-top: 0;
+    border: none;
+    background: none;
+    min-width: 0;
+    /* Always laid out, as a one-row grid that opens from 0fr to 1fr, so
+       the menu grows and shrinks over the transition instead of popping
+       in and out with display. */
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    visibility: hidden;
+    transition:
+        grid-template-rows 0.25s ease,
+        opacity 0.2s ease,
+        visibility 0s linear 0.25s;
+}
+.nav-panel .nav-links .nav-dropdown-open .nav-dropdown-content {
+    grid-template-rows: 1fr;
+    opacity: 1;
+    visibility: visible;
+    transition:
+        grid-template-rows 0.25s ease,
+        opacity 0.2s ease,
+        visibility 0s;
+}
+/* The rows become a wrapping row of chips, zwiper's chip look, so the
+   choices read apart from the full-width link buttons around them. The
+   box clips to the grid row's height while it animates, with padding
+   below for the chips' shadow, and slides down a touch as it opens. */
+.nav-panel .nav-links .nav-dropdown-rows {
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0;
+    transform: translateY(-0.4rem);
+    transition:
+        transform 0.25s ease,
+        padding 0.25s ease;
+}
+.nav-panel .nav-links .nav-dropdown-open .nav-dropdown-rows {
+    padding: 0.25rem 0.25rem 0.75rem;
+    transform: none;
+}
+.nav-panel .nav-links .nav-dropdown-item,
+.nav-panel .nav-links a.nav-dropdown-item:visited {
+    display: inline-block;
+    width: auto;
+    padding: 0.3rem 0.65rem;
+    border: 1px solid var(--border-muted);
+    border-radius: 0.6rem;
+    background-color: var(--bg-primary);
+    box-shadow: var(--shadow-sm);
+    font-size: 0.8rem;
+    color: var(--ink-text-muted, var(--text-muted));
+    text-align: center;
+    transition:
+        color 0.15s,
+        border-color 0.15s;
+}
+.nav-panel .nav-links .nav-dropdown-item.active,
+.nav-panel .nav-links a.nav-dropdown-item.active:visited {
+    border-color: var(--accent-secondary);
+    color: var(--ink-accent-secondary, var(--accent-secondary));
+}
+/* Same hover as the link buttons: text and border to the accent, no
+   fill, over the shared 0.15s transition. */
+@media (hover: hover) {
+    .nav-panel .nav-links .nav-dropdown-item:hover,
+    .nav-panel .nav-links a.nav-dropdown-item:visited:hover {
+        background-color: var(--bg-primary);
+        border-color: var(--accent-primary);
+        color: var(--ink-accent-primary, var(--accent-primary));
+    }
+}
+.nav-panel .nav-links .nav-dropdown-label {
+    width: 100%;
+    text-align: center;
+}
+.nav-panel .nav-links .nav-dropdown::after {
+    display: none;
+}
+
+/* Short viewports (landscape phones): tighter rows so more of the menu fits
+   before the links have to scroll. */
+@media (max-height: 30rem) {
+    .nav-panel-open {
+        margin-top: 0.75rem;
+    }
+    .nav-panel {
+        --nav-list-start: 0.5rem;
+        --nav-list-end: 0.5rem;
+        --nav-row-pad: 0.4rem;
+        --nav-row-gap: 0.4rem;
+        --nav-trigger-pad: 0.4rem;
+    }
+    .nav-panel .theme-picker {
+        padding-top: 0.5rem;
+    }
+}
+
+.nav-persistent {
+    display: flex;
+    gap: 0.35rem;
+}
+
+.nav-persistent .nav-cta {
+    /* The toggle's height, so the pills and the toggle line up. */
+    height: 1.7rem;
+    padding: 0 0.55rem;
+    font-size: 0.7rem;
+}
+
+.nav-panel .nav-cta-item {
+    display: none;
+}
+
+/* padding repeated: .nav-persistent .nav-cta sets the text pill's
+   padding at higher specificity. */
+.nav-persistent .nav-cta-icon {
+    width: 1.7rem;
+    padding: 0;
+}
+
+/* The sheet is the folded menu's descendant, so the menu stays painted
+   while the sheet is up and folds in plain sight as the sheet rises. It
+   stays painted through the slide away too: its own fade would ghost
+   the sliding sheet and its visibility would cut the slide short. */
+.nav-panel:has(.theme-picker-sheet .bottom-sheet:is(.show, .bottom-sheet-leaving)) {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Short viewports (landscape phones): the open menu spans the full height, so
+   there's no clear bottom edge to retreat to; slide the banners off-screen. */
+@media (max-height: 500px) {
+    body:has(.nav-panel-open) .banner-stack {
+        transform: translateY(100vh);
+        transform: translateY(100dvh);
+    }
+}
+
+/* At hamburger widths the wipe runs down the screen instead, and light to
+   dark runs back up it. */
+::view-transition-new(root) {
+    animation-name: theme-wipe-down;
+}
+
+html[data-wipe="left"]::view-transition-new(root) {
+    animation-name: theme-wipe-up;
+}
+}

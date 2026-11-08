@@ -1,0 +1,2740 @@
+/* The Magic rules for the components crate, on top of orangui's COMPONENTS_CSS.
+ * Inlined by zwiper and zite through the MAGIC_CSS constant, after orangui's
+ * THEMES_CSS and COMPONENTS_CSS. Rules reference theme CSS variables, so a
+ * component resolves to whichever theme the host has active. The one set of
+ * color literals is the mana pips' classic look (`.pips-classic` and the
+ * colorless ink). */
+
+/* ---- Chip (orangui::Chip): the mana glyph inside a chip ---- */
+
+.chip .ms {
+    font-size: 1.1rem;
+    vertical-align: middle;
+}
+
+/* ---- OracleText (components::OracleText) ---- */
+
+/* Inline mana/tap/energy glyphs inside oracle text — sized to sit with the
+   surrounding text rather than dominate it. The host page styles the text
+   block itself via the class it passes in (e.g. .card-detail-oracle). */
+.oracle-sym {
+    font-size: 0.85em;
+    vertical-align: -0.05em;
+    margin: 0 0.04em;
+}
+
+/* ---- KeywordChips (components::KeywordChips) ---- */
+
+/* Keyword abilities (Flying, Trample, …) with a tap-to-reveal reminder. */
+.keyword-section {
+    margin-bottom: 0.5rem;
+}
+
+.keyword-chips {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* A tag row's label (Keywords, Card roles, Skipped under) is the kit's
+   row label chip at the row's head; the tags after it are the kit's chips,
+   selected while open, and a tag with nothing to open is a stat chip. */
+.keyword-chips > .chip-row-label {
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* Inline reminder reveal below the chip row — eases open via the grid-rows
+   0fr<->1fr technique. */
+.keyword-reveal {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    transition:
+        grid-template-rows 0.2s ease,
+        opacity 0.2s ease;
+}
+
+.keyword-reveal.open {
+    grid-template-rows: 1fr;
+    opacity: 1;
+}
+
+.keyword-reveal-inner {
+    overflow: hidden;
+    min-height: 0;
+}
+
+.keyword-reveal-text {
+    margin: 0.35rem 0 0;
+    padding: 0.35rem 0.5rem;
+    border-left: 2px solid var(--accent-tertiary);
+    border-radius: 0.25rem;
+    background-color: var(--bg-primary);
+    font-size: 0.75rem;
+    line-height: 1.4;
+    color: var(--ink-accent-tertiary, var(--accent-tertiary));
+}
+
+/* ---- Fold (components::Fold, components::SeeMore) ----
+   The rows past a chart's first five, eased open and shut with the grid-rows
+   0fr<->1fr technique like .keyword-reveal. Mounted shut with its rows inside. */
+.chart-fold {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    transition:
+        grid-template-rows 0.25s ease,
+        opacity 0.25s ease;
+}
+
+.chart-fold.open {
+    grid-template-rows: 1fr;
+    opacity: 1;
+}
+
+.chart-fold-inner {
+    overflow: hidden;
+    min-height: 0;
+}
+
+/* Inside a grid of chart rows: the fold and its inner span the row grid and
+   share its columns, so the folded rows line up with the shown ones and size
+   the chip column while shut. */
+.chart-fold.subgrid {
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+}
+
+.chart-fold.subgrid > .chart-fold-inner {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: subgrid;
+    align-items: center;
+}
+
+.chart-see-more {
+    display: flex;
+    justify-content: center;
+    margin-top: 0.35rem;
+}
+
+/* ---- CardRow (components::CardRow) ---- */
+
+.card-row {
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid var(--border-secondary);
+    transition:
+        background-color 0.15s ease,
+        transform 0.12s ease,
+        box-shadow 0.12s ease;
+    overflow: hidden;
+    min-width: 0;
+}
+
+.card-row:last-child {
+    border-bottom: none;
+}
+
+/* A row that only says why the list is empty, in the list's own panel:
+   its words, muted and centered, at a row's height. */
+.card-row.card-row-note {
+    padding: 0.75rem 1rem;
+    color: var(--ink-text-muted, var(--text-muted));
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+/* Emphasis (scale + shadow + tint) marks the expanded row; its own border
+   drops so the closing rule isn't doubled. */
+.card-row.expanded {
+    /* The chips inside tint over the panel's own background, not this row's
+       accent tint, so their text reads as their inks are made for. */
+    --tone-base: var(--bg-primary);
+    position: relative;
+    z-index: 2;
+    border-bottom: none;
+    transform: scale(1.02);
+    border-radius: 0.4rem;
+    background-color: color-mix(in srgb, var(--accent-primary) 8%, var(--bg-primary));
+    box-shadow: var(--shadow-sm);
+}
+
+/* The row: the art at the left, then the name and its tags flowing beside
+   it. The head (chevron, qty, name) is one item, so the three never part;
+   each tag (P/T or loyalty, the price, the pips) is its own item that stays
+   on the head's line while it fits and drops under it when it does not. A
+   head wider than the row takes the line alone and cuts its name. So a row
+   is one line when everything fits and two when it does not, whether the
+   art shows or not. */
+.card-row-compact {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+.card-row-body {
+    display: flex;
+    flex: 1 1 auto;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3rem 0.4rem;
+    min-width: 0;
+}
+
+.card-row-head {
+    display: flex;
+    flex: 0 1 auto;
+    align-items: center;
+    gap: 0.4rem;
+    min-width: 0;
+}
+
+.card-row-tags {
+    display: contents;
+}
+
+/* On a phone the colors, price and stat take their own line under the
+   name, so rows of one list share a shape whatever the name's length. */
+@media (max-width: 899px) {
+    .card-row-tags {
+        display: flex;
+        flex: 1 0 100%;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.3rem 0.4rem;
+        min-width: 0;
+    }
+
+    .card-row-tags:not(:has(> :not(:empty))) {
+        display: none;
+    }
+}
+
+/* Opt-in art-crop thumbnail at the far left of the row (CardRow `show_art`).
+   Art crops vary in aspect card to card, so a fixed box with cover-fit keeps
+   every row's thumb identical. Lazy-loaded by the img attribute. The
+   host's toggle flips `.art-hidden`, easing size + opacity instead of
+   clipping the DOM in and out; the negative margin swallows the flex gap so
+   a hidden thumb leaves no double-gap. */
+.card-row-art {
+    flex: 0 0 auto;
+    width: 4rem;
+    height: 2.9rem;
+    object-fit: cover;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-secondary);
+    box-shadow: var(--shadow-sm);
+    transition:
+        width 0.25s ease,
+        height 0.25s ease,
+        opacity 0.25s ease,
+        margin-right 0.25s ease,
+        border-width 0.25s ease;
+}
+
+.card-row-art.art-hidden {
+    width: 0;
+    height: 0;
+    opacity: 0;
+    margin-right: -0.4rem;
+    border-width: 0;
+}
+
+/* Disclosure chevron at the left of each row; rotates to point down when the
+   row is expanded. */
+.card-row-arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.2rem;
+    height: 1.2rem;
+    color: var(--ink-text-muted, var(--text-muted));
+    font-size: 1.2rem;
+    line-height: 1;
+    transform-origin: center;
+    transition: transform 0.2s ease;
+}
+
+.card-row.expanded .card-row-arrow {
+    transform: rotate(90deg);
+}
+
+.card-row-name {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 400;
+}
+
+.card-row-mvp {
+    display: inline-block;
+    color: var(--ink-palette-6, var(--palette-6));
+    font-size: 1.1rem;
+    margin-right: 0.3rem;
+    line-height: 1;
+    vertical-align: 0.02rem;
+}
+
+.card-row-qty {
+    text-align: center;
+    color: var(--ink-text-muted, var(--text-muted));
+    font-size: 0.75rem;
+}
+
+/* Price reads as a money tag: a small green (success) pill, right-aligned in
+   its column. */
+/* Compact-row metadata tags (price, P/T, loyalty) share the deck-list stat-chip
+   look: colored text on a faint tint with a soft same-hue outline. */
+.card-row-price,
+.card-row-stat {
+    flex: 0 0 auto;
+    padding: 0.1rem 0.4rem;
+    border: 1px solid transparent;
+    border-radius: 0.4rem;
+    font-size: 0.7rem;
+    white-space: nowrap;
+}
+
+/* Price is money: each theme picks its own money color. */
+.card-row-price {
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-color-money, var(--color-money));
+    background-color: color-mix(in srgb, var(--color-money) 12%, var(--tone-base, transparent));
+    border-color: color-mix(in srgb, var(--color-money) 35%, var(--tone-base, transparent));
+}
+
+/* P/T (creatures) and loyalty (planeswalkers): a number in the theme's stat
+   color, as legible as the price beside it: palette-5's tint under its ink. */
+.card-row-stat {
+    color: var(--ink-palette-5, var(--color-stat, var(--palette-5)));
+    background-color: color-mix(in srgb, var(--palette-5) 12%, var(--tone-base, transparent));
+    border-color: color-mix(in srgb, var(--palette-5) 35%, var(--tone-base, transparent));
+}
+
+.card-row-colors {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.75rem;
+    color: var(--ink-text-muted, var(--text-muted));
+    white-space: nowrap;
+}
+
+.card-row-colors .ms {
+    font-size: 0.95rem;
+    margin-left: 2px;
+    /* Align pip boxes by their middle, not baseline: the colorless numeral's
+       smaller ::before glyph shifts the flex box's synthesized baseline, so
+       baseline alignment drops the generic pip below the colored ones. */
+    vertical-align: middle;
+}
+
+/* Match the neighboring price/stat tags' corner radius (0.4rem) so the pips read
+   as part of the same tag row. Element+3-class selector beats the base pip's. */
+.card-row-colors i.ms.ms-cost {
+    border-radius: 0.4rem;
+}
+
+.card-row-detail {
+    --card-row-detail-pad-x: 1rem;
+    padding: 0.5rem var(--card-row-detail-pad-x) 0.25rem;
+    font-size: 0.75rem;
+    color: var(--ink-text-muted, var(--text-muted));
+    max-width: 100%;
+}
+
+/* Always-mounted wrapper for the expanded card detail. Eases open/closed via
+   the grid-template-rows 0fr<->1fr technique so the row shifts smoothly
+   instead of popping. Pulled out by the row's 1rem padding so it spans full
+   width; the inner clips the content as it collapses. */
+.card-row-collapse {
+    display: grid;
+    grid-template-rows: 0fr;
+    /* Clamp the single implicit column to the container width; without this the
+       auto track expands to the oracle text's max-content and blows the row
+       (and page) wider than the viewport on narrow screens. */
+    grid-template-columns: minmax(0, 1fr);
+    opacity: 0;
+    margin: 0 -1rem;
+    pointer-events: none;
+    transition:
+        grid-template-rows 0.22s ease,
+        opacity 0.22s ease;
+}
+
+.card-row-collapse.open {
+    grid-template-rows: 1fr;
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.card-row-collapse-inner {
+    overflow: hidden;
+    min-height: 0;
+    min-width: 0;
+}
+
+/* Dividers framing the expanded detail. Span the full row width — the collapse
+   wrapper already reaches the row edges, so no negative margin needed here. */
+.card-row-rule {
+    border: none;
+    border-top: 1px solid var(--border-secondary);
+    margin: 0.5rem 0 0 0;
+}
+
+/* The footer rule sits inside the padded detail; pull it out by that padding
+   so it spans the row edge to edge like the rules around it. */
+.card-row-detail > .card-row-rule {
+    margin-left: calc(-1 * var(--card-row-detail-pad-x));
+    margin-right: calc(-1 * var(--card-row-detail-pad-x));
+}
+
+/* Emphasis marks the expanded row, so the bottom rule is redundant. */
+.card-row-rule-bottom {
+    display: none;
+}
+
+/* Plain separator between the detail and the action buttons. */
+.card-row-rule-muted {
+    border-top-color: var(--border-secondary);
+}
+
+/* Action buttons below the second divider in an expanded card row. */
+.card-row-actions {
+    padding: 0.5rem 1rem 0.25rem;
+}
+
+.card-detail-cost {
+    margin: 0;
+    margin-left: auto;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+/* Match the mana pips on the compact card line (0.8rem). */
+.card-detail-cost .ms {
+    font-size: 0.8rem;
+    /* Middle-align for the same reason as .card-row-colors: baseline drops the
+       colorless numeral pip below the colored ones. */
+    vertical-align: middle;
+}
+
+/* Roomier gray pill around the number, closer to a real card. Applied to the
+   mana cost, the oracle-text symbols, and the compact-row color pips alike so
+   the glyph stays centered in the pill everywhere. */
+.card-detail-cost .ms-cost,
+.card-details-cost .ms-cost,
+.oracle-sym.ms-cost,
+.card-row-colors .ms-cost {
+    width: 1.5em;
+    height: 1.5em;
+    line-height: 1.5em;
+}
+
+/* A row under a mouse takes the expanded row's look. */
+@media (hover: hover) {
+    .card-row:not(.expanded):hover {
+        position: relative;
+        z-index: 2;
+        transform: scale(1.02);
+        border-radius: 0.4rem;
+        background-color: color-mix(in srgb, var(--accent-primary) 8%, var(--bg-primary));
+        box-shadow: var(--shadow-sm);
+    }
+}
+
+/* ---- HoverStack (components::HoverStackHost) ----
+   The hovered row's card, one at a time, pinned in the top left corner and
+   gliding to the right one (.pin-right) while the cursor works the
+   window's left half: a transform, so the move animates. Hidden below
+   1100px, where the corners hold no room beside the content. */
+
+.hover-stack {
+    position: fixed;
+    top: 5.5rem;
+    left: 1.5rem;
+    width: 18rem;
+    z-index: 50;
+    pointer-events: none;
+    transition: transform 0.35s ease;
+}
+
+.hover-stack.pin-right {
+    transform: translateX(calc(100vw - 100% - 3rem));
+}
+
+/* A newcomer drops in from above. */
+.hover-stack-card {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    filter: drop-shadow(0 0.4rem 1rem rgba(0, 0, 0, 0.6));
+    animation: hover-stack-in 0.35s ease-out both;
+}
+
+.hover-stack-card img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 4.75% / 3.5%;
+}
+
+/* A leaver fades out downward over PREVIEW_FADE_MS. */
+.hover-stack-card.leaving {
+    animation: hover-stack-out 0.4s ease forwards;
+}
+
+@keyframes hover-stack-in {
+    from {
+        opacity: 0;
+        transform: translateY(-40px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes hover-stack-out {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(28px);
+    }
+}
+
+@media (max-width: 1100px) {
+    .hover-stack {
+        display: none;
+    }
+}
+
+/* A run of color-identity pips standing in for a name: the deck row's colors,
+   and the group headers that group by color (deck list, deck cards, and the
+   share page). Shared rather than per-screen so a pip is one size wherever it
+   names a color, instead of shrinking to whatever text it sits beside. */
+.identity-pips {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+/* Square, at the stat-chip's height rather than the small inline glyph size. */
+.identity-pips i.ms.ms-cost {
+    box-sizing: border-box;
+    width: 1.55rem;
+    height: 1.55rem;
+    font-size: 1rem;
+    border-radius: 0.5rem;
+    padding: 0;
+}
+
+/* ---- Mana pips: every `i.ms.ms-cost` ---- */
+
+/* Pips draw in the five `--mana-*` colors each theme block sets from its own
+   palette. `pips-classic`, on the element that carries the theme class,
+   puts back mana-font's classic fills instead. It comes after the themes in
+   the cascade, so on the same element it wins. */
+.pips-classic {
+    --mana-white: #f0f2c0;
+    --mana-blue: #b5cde3;
+    --mana-black: #aca29a;
+    --mana-red: #db8664;
+    --mana-green: #93b483;
+}
+
+/* Squircle every mana pip so it shares the app's rounded-rect grammar (buttons,
+   mana filter boxes) instead of mana-font's default circle. The element+two-class
+   selector outranks mana-font's own border-radius; box-shadow follows the radius. */
+i.ms.ms-cost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    border-radius: 0.3em;
+    /* The ink is the outline and glyph. MTG's colorless gray stays the ink
+       for {C} and the generic numerals; a colored pip derives its own below. */
+    --pip-ink: #393835;
+    --pip-ink-2: #393835;
+    border: 1px solid var(--pip-ink);
+    color: var(--pip-ink);
+    padding: 0 1px;
+    /* Override mana-font's hard double `.ms-cost.ms-shadow` offset with a plain
+       soft drop shadow that follows the squircle. */
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+    /* mana-font paints hybrid halves from these, so a hybrid takes the same
+       five colors as a single pip. Colorless (`--ms-mana-c`) keeps its own. */
+    --ms-mana-w: var(--mana-white);
+    --ms-mana-u: var(--mana-blue);
+    --ms-mana-b: var(--mana-black);
+    --ms-mana-r: var(--mana-red);
+    --ms-mana-g: var(--mana-green);
+}
+
+/* Each colored pip names its fill, the `--mana-*` color the theme (or
+   `.pips-classic`) sets. A hybrid's fill is its first half and
+   `--pip-fill-2` its second; a twobrid ({2/W}) names only the second. */
+i.ms.ms-cost:is(.ms-w, .ms-wp, .ms-wu, .ms-wb, .ms-wup, .ms-wbp) {
+    --pip-fill: var(--mana-white);
+}
+i.ms.ms-cost:is(.ms-u, .ms-up, .ms-ub, .ms-ur, .ms-ubp, .ms-urp) {
+    --pip-fill: var(--mana-blue);
+}
+i.ms.ms-cost:is(.ms-b, .ms-bp, .ms-br, .ms-bg, .ms-brp, .ms-bgp) {
+    --pip-fill: var(--mana-black);
+}
+i.ms.ms-cost:is(.ms-r, .ms-rp, .ms-rw, .ms-rg, .ms-rwp, .ms-rgp) {
+    --pip-fill: var(--mana-red);
+}
+i.ms.ms-cost:is(.ms-g, .ms-gp, .ms-gw, .ms-gu, .ms-gwp, .ms-gup) {
+    --pip-fill: var(--mana-green);
+}
+i.ms.ms-cost:is(.ms-rw, .ms-gw, .ms-2w, .ms-cw, .ms-rwp, .ms-gwp) {
+    --pip-fill-2: var(--mana-white);
+}
+i.ms.ms-cost:is(.ms-wu, .ms-gu, .ms-2u, .ms-cu, .ms-wup, .ms-gup) {
+    --pip-fill-2: var(--mana-blue);
+}
+i.ms.ms-cost:is(.ms-wb, .ms-ub, .ms-2b, .ms-cb, .ms-wbp, .ms-ubp) {
+    --pip-fill-2: var(--mana-black);
+}
+i.ms.ms-cost:is(.ms-ur, .ms-br, .ms-2r, .ms-cr, .ms-urp, .ms-brp) {
+    --pip-fill-2: var(--mana-red);
+}
+i.ms.ms-cost:is(.ms-bg, .ms-rg, .ms-2g, .ms-cg, .ms-bgp, .ms-rgp) {
+    --pip-fill-2: var(--mana-green);
+}
+
+/* A single-color pip, Phyrexian included, is filled with its color in place
+   of mana-font's fixed fill. */
+i.ms.ms-cost:is(.ms-w, .ms-u, .ms-b, .ms-r, .ms-g, .ms-wp, .ms-up, .ms-bp, .ms-rp, .ms-gp) {
+    background-color: var(--pip-fill);
+}
+
+/* The ink is the fill mixed 42% into black, which lands on the classic
+   pips' own outline colors. Where relative colors work, a fill darker than
+   OKLab lightness 0.55 (black on a dark theme, the deeper colors on a light
+   one) takes a light ink instead, the fill mixed 30% into white, so the
+   glyph keeps at least 3:1 against its fill on every theme. The clamp is
+   that switch: 1 for a dark fill, 0 otherwise. A fill that matches the
+   background (white on a light theme, black on some dark ones) is still
+   edged by its ink, which contrasts with both. */
+i.ms.ms-cost:is(.ms-w, .ms-u, .ms-b, .ms-r, .ms-g, .ms-wp, .ms-up, .ms-bp, .ms-rp, .ms-gp),
+i.ms.ms-cost:is(.ms-wu, .ms-wb, .ms-ub, .ms-ur, .ms-br, .ms-bg, .ms-rw, .ms-rg, .ms-gw, .ms-gu),
+i.ms.ms-cost:is(.ms-wup, .ms-wbp, .ms-ubp, .ms-urp, .ms-brp, .ms-bgp, .ms-rwp, .ms-rgp, .ms-gwp, .ms-gup) {
+    --pip-ink: color-mix(in oklab, var(--pip-fill) 42%, black);
+}
+i.ms.ms-cost:is(.ms-wu, .ms-wb, .ms-ub, .ms-ur, .ms-br, .ms-bg, .ms-rw, .ms-rg, .ms-gw, .ms-gu),
+i.ms.ms-cost:is(.ms-wup, .ms-wbp, .ms-ubp, .ms-urp, .ms-brp, .ms-bgp, .ms-rwp, .ms-rgp, .ms-gwp, .ms-gup),
+i.ms.ms-cost:is(.ms-2w, .ms-2u, .ms-2b, .ms-2r, .ms-2g, .ms-cw, .ms-cu, .ms-cb, .ms-cr, .ms-cg) {
+    --pip-ink-2: color-mix(in oklab, var(--pip-fill-2) 42%, black);
+}
+@supports (color: oklab(from red calc(l * 0.42 + clamp(0, (0.55 - l) * 1000, 1)) a b)) {
+    i.ms.ms-cost:is(.ms-w, .ms-u, .ms-b, .ms-r, .ms-g, .ms-wp, .ms-up, .ms-bp, .ms-rp, .ms-gp),
+    i.ms.ms-cost:is(.ms-wu, .ms-wb, .ms-ub, .ms-ur, .ms-br, .ms-bg, .ms-rw, .ms-rg, .ms-gw, .ms-gu),
+    i.ms.ms-cost:is(.ms-wup, .ms-wbp, .ms-ubp, .ms-urp, .ms-brp, .ms-bgp, .ms-rwp, .ms-rgp, .ms-gwp, .ms-gup) {
+        --pip-ink: oklab(
+            from var(--pip-fill)
+            calc(l * 0.42 + clamp(0, (0.55 - l) * 1000, 1) * (0.7 - l * 0.12))
+            calc(a * (0.42 - clamp(0, (0.55 - l) * 1000, 1) * 0.12))
+            calc(b * (0.42 - clamp(0, (0.55 - l) * 1000, 1) * 0.12))
+        );
+    }
+    i.ms.ms-cost:is(.ms-wu, .ms-wb, .ms-ub, .ms-ur, .ms-br, .ms-bg, .ms-rw, .ms-rg, .ms-gw, .ms-gu),
+    i.ms.ms-cost:is(.ms-wup, .ms-wbp, .ms-ubp, .ms-urp, .ms-brp, .ms-bgp, .ms-rwp, .ms-rgp, .ms-gwp, .ms-gup),
+    i.ms.ms-cost:is(.ms-2w, .ms-2u, .ms-2b, .ms-2r, .ms-2g, .ms-cw, .ms-cu, .ms-cb, .ms-cr, .ms-cg) {
+        --pip-ink-2: oklab(
+            from var(--pip-fill-2)
+            calc(l * 0.42 + clamp(0, (0.55 - l) * 1000, 1) * (0.7 - l * 0.12))
+            calc(a * (0.42 - clamp(0, (0.55 - l) * 1000, 1) * 0.12))
+            calc(b * (0.42 - clamp(0, (0.55 - l) * 1000, 1) * 0.12))
+        );
+    }
+}
+
+/* A hybrid's two glyphs each take their own half's ink, and the outline
+   around the pair stays colorless. */
+i.ms.ms-cost:is(.ms-wu, .ms-wb, .ms-ub, .ms-ur, .ms-br, .ms-bg, .ms-rw, .ms-rg, .ms-gw, .ms-gu),
+i.ms.ms-cost:is(.ms-wup, .ms-wbp, .ms-ubp, .ms-urp, .ms-brp, .ms-bgp, .ms-rwp, .ms-rgp, .ms-gwp, .ms-gup),
+i.ms.ms-cost:is(.ms-2w, .ms-2u, .ms-2b, .ms-2r, .ms-2g, .ms-cw, .ms-cu, .ms-cb, .ms-cr, .ms-cg) {
+    border-color: #393835;
+}
+i.ms.ms-cost:is(.ms-wu, .ms-wb, .ms-ub, .ms-ur, .ms-br, .ms-bg, .ms-rw, .ms-rg, .ms-gw, .ms-gu)::before,
+i.ms.ms-cost:is(.ms-wup, .ms-wbp, .ms-ubp, .ms-urp, .ms-brp, .ms-bgp, .ms-rwp, .ms-rgp, .ms-gwp, .ms-gup)::before {
+    color: var(--pip-ink);
+}
+i.ms.ms-cost:is(.ms-wu, .ms-wb, .ms-ub, .ms-ur, .ms-br, .ms-bg, .ms-rw, .ms-rg, .ms-gw, .ms-gu)::after,
+i.ms.ms-cost:is(.ms-wup, .ms-wbp, .ms-ubp, .ms-urp, .ms-brp, .ms-bgp, .ms-rwp, .ms-rgp, .ms-gwp, .ms-gup)::after,
+i.ms.ms-cost:is(.ms-2w, .ms-2u, .ms-2b, .ms-2r, .ms-2g, .ms-cw, .ms-cu, .ms-cb, .ms-cr, .ms-cg)::after {
+    color: var(--pip-ink-2);
+}
+
+/* Colorless/generic pips render a numeral that crowds the squircle border.
+   Shrink just the glyph (the ::before) so the number sits inset; the badge box
+   itself (set on the element) keeps its size. Covers 0-20 plus X/Y/Z. */
+.ms-cost.ms-0::before,
+.ms-cost.ms-1::before,
+.ms-cost.ms-2::before,
+.ms-cost.ms-3::before,
+.ms-cost.ms-4::before,
+.ms-cost.ms-5::before,
+.ms-cost.ms-6::before,
+.ms-cost.ms-7::before,
+.ms-cost.ms-8::before,
+.ms-cost.ms-9::before,
+.ms-cost.ms-10::before,
+.ms-cost.ms-11::before,
+.ms-cost.ms-12::before,
+.ms-cost.ms-13::before,
+.ms-cost.ms-14::before,
+.ms-cost.ms-15::before,
+.ms-cost.ms-16::before,
+.ms-cost.ms-17::before,
+.ms-cost.ms-18::before,
+.ms-cost.ms-19::before,
+.ms-cost.ms-20::before,
+.ms-cost.ms-x::before,
+.ms-cost.ms-y::before,
+.ms-cost.ms-z::before {
+    font-size: 0.82em;
+}
+
+/* Hybrid/twobrid/Phyrexian pips ({W/U}->ms-wu, {2/W}->ms-2w, {W/P}->ms-wp) are drawn
+   by mana-font as TWO absolutely-positioned halves (::before + ::after) whose hardcoded
+   top/left are tuned for its native ~1.3em inline-block box. Our squircle override
+   (1.5em, inline-flex) shifts those halves toward the top-left, off-center. So for
+   hybrids only, restore mana-font's box geometry (inline-block, its dimensions +
+   line-height) so the halves land centered again; the border / radius / shadow / color
+   from `i.ms.ms-cost` above still apply, keeping the squircle look. TUNE HERE: if the
+   pip reads too small next to single-color pips, scale width/height/line-height up
+   together (keep the ratio so the halves stay centered). */
+i.ms.ms-cost.ms-wu,
+i.ms.ms-cost.ms-wb,
+i.ms.ms-cost.ms-ub,
+i.ms.ms-cost.ms-ur,
+i.ms.ms-cost.ms-br,
+i.ms.ms-cost.ms-bg,
+i.ms.ms-cost.ms-rg,
+i.ms.ms-cost.ms-rw,
+i.ms.ms-cost.ms-gw,
+i.ms.ms-cost.ms-gu,
+i.ms.ms-cost.ms-2w,
+i.ms.ms-cost.ms-2u,
+i.ms.ms-cost.ms-2b,
+i.ms.ms-cost.ms-2r,
+i.ms.ms-cost.ms-2g,
+i.ms.ms-cost.ms-wp,
+i.ms.ms-cost.ms-up,
+i.ms.ms-cost.ms-bp,
+i.ms.ms-cost.ms-rp,
+i.ms.ms-cost.ms-gp {
+    display: inline-block;
+    /* content-box so the 1.3em is the padding box the half-offsets target — our 1px
+       border sits outside it, matching mana-font's native (border-less) box. Under
+       the app's global border-box the border would eat 2px and re-offset the halves. */
+    box-sizing: content-box;
+    width: 1.3em;
+    height: 1.3em;
+    line-height: 1.35em;
+    padding: 0;
+}
+
+.card-detail-oracle {
+    margin: 0 0 0.5rem;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    line-height: 1.4;
+}
+
+.card-detail-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    color: var(--ink-text-muted, var(--text-muted));
+}
+
+/* Non-interactive info chip (type line, rarity, set) in an expanded card row. */
+.detail-chip {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.4rem;
+    font-size: 0.75rem;
+    color: var(--ink-text-muted, var(--text-muted));
+    background-color: var(--bg-primary);
+}
+
+/* Color-coded meta chips, consistent with the no-image card: type = accent-1,
+   rarity = accent-3, set = success-green, P/T-or-loyalty = warning-yellow. */
+.detail-chip-type {
+    color: var(--ink-palette-1, var(--palette-1));
+    background-color: color-mix(in srgb, var(--palette-1) 12%, var(--tone-base, transparent));
+    border-color: color-mix(in srgb, var(--palette-1) 35%, var(--tone-base, transparent));
+}
+
+.detail-chip-rarity {
+    color: var(--ink-palette-4, var(--palette-4));
+    background-color: color-mix(in srgb, var(--palette-4) 12%, var(--tone-base, transparent));
+    border-color: color-mix(in srgb, var(--palette-4) 35%, var(--tone-base, transparent));
+}
+
+.detail-chip-set {
+    color: var(--ink-palette-3, var(--palette-3));
+    background-color: color-mix(in srgb, var(--palette-3) 12%, var(--tone-base, transparent));
+    border-color: color-mix(in srgb, var(--palette-3) 35%, var(--tone-base, transparent));
+}
+
+/* The printing's release date and artist, shown by hosts that ask for them. */
+.detail-chip-date {
+    color: var(--ink-palette-1, var(--palette-1));
+    background-color: color-mix(in srgb, var(--palette-1) 12%, var(--tone-base, transparent));
+    border-color: color-mix(in srgb, var(--palette-1) 35%, var(--tone-base, transparent));
+}
+
+.detail-chip-artist {
+    color: var(--ink-palette-6, var(--palette-6));
+    background-color: color-mix(in srgb, var(--palette-6) 12%, var(--tone-base, transparent));
+    border-color: color-mix(in srgb, var(--palette-6) 35%, var(--tone-base, transparent));
+}
+
+.detail-chip-pt {
+    color: var(--ink-palette-5, var(--color-stat, var(--palette-5)));
+    background-color: color-mix(in srgb, var(--palette-5) 12%, var(--tone-base, transparent));
+    border-color: color-mix(in srgb, var(--palette-5) 35%, var(--tone-base, transparent));
+    font-weight: 700;
+}
+
+.card-action-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.card-action-btn {
+    padding: 0.2rem 0.6rem;
+    font-family: inherit;
+    font-size: 0.85rem;
+    border-radius: 0.4rem;
+    border: 1px solid var(--border-primary);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    cursor: pointer;
+    line-height: 1;
+    transition:
+        border-color 0.15s,
+        color 0.15s;
+}
+
+@media (hover: hover) {
+    .card-action-btn:hover {
+        border-color: var(--palette-2);
+        color: var(--ink-palette-2, var(--palette-2));
+    }
+}
+
+.card-action-count {
+    font-size: 0.85rem;
+    min-width: 1.2rem;
+    text-align: center;
+}
+
+.card-detail-otags {
+    margin-top: 0.5rem;
+}
+
+.card-detail-otags .detail-chip {
+    border-color: var(--palette-1);
+    color: var(--ink-palette-1, var(--palette-1));
+}
+
+/* Block-quote frame for a role's exposed otags, echoing .keyword-reveal-text. */
+.otag-reveal-block {
+    margin-top: 0.35rem;
+    padding: 0.4rem 0.5rem;
+    border-left: 2px solid var(--accent-tertiary);
+    border-radius: 0.25rem;
+    background-color: var(--bg-primary);
+}
+
+.otag-reveal-block .card-detail-otags {
+    margin: 0;
+}
+
+.otag-reveal-block .card-detail-meta {
+    margin-bottom: 0;
+}
+
+/* One exposed tag's definition, telescoped under it. Uses a secondary accent (the
+   outer role frame is tertiary) so the two nested block-quote rules read as
+   distinct levels rather than one doubled line. */
+.otag-def {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.4rem;
+    margin-top: 0.4rem;
+    padding: 0.35rem 0.5rem;
+    border-left: 2px solid var(--accent-secondary);
+    border-radius: 0.25rem;
+    background-color: var(--bg-sink);
+}
+
+.otag-def-text {
+    margin: 0;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    color: var(--text-primary);
+    opacity: 0.9;
+}
+
+.otag-examples-btn {
+    padding: 0.1rem 0.55rem;
+    border: 1px solid var(--palette-2);
+    border-radius: 0.4rem;
+    font-size: 0.72rem;
+    color: var(--ink-palette-2, var(--palette-2));
+    background-color: var(--bg-primary);
+    cursor: pointer;
+}
+
+.card-roles {
+    margin-bottom: 0.5rem;
+}
+
+.chips-label {
+    display: block;
+    margin-bottom: 0.25rem;
+    font-size: 0.7rem;
+    color: var(--ink-accent-tertiary, var(--accent-tertiary));
+}
+
+/* ---- CardDetailsPanel (components::CardDetailsPanel) ----
+   The card as a pane: the kit panel titled with the name, then one wrapping
+   chip row of the mana cost and the labeled facts, each label held to its
+   value, the rules text and its stats in the body, and the keywords, roles
+   and tags in the panel's foot. */
+.card-details-keys {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.9rem;
+}
+
+/* The drawer's header keeps the title clear of the ×: an inset on both
+   sides as wide as the button and its gap, so the title stays centered and
+   a long name wraps inside it, breaking a word only when it can't fit. */
+.card-details-drawer > .sheet-header {
+    padding-inline: 3.6rem;
+}
+
+.card-details-drawer > .sheet-header > .sheet-title {
+    min-width: 0;
+    text-align: center;
+    overflow-wrap: anywhere;
+}
+
+/* The cost's pips right after the name, on the title's line. */
+.card-details-panel .panel-title .card-details-cost,
+.card-details-drawer .sheet-title .card-details-cost {
+    display: inline-block;
+    margin: 0 0 0 0.5rem;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.card-details-cost .ms {
+    font-size: 0.8rem;
+    vertical-align: middle;
+}
+
+.card-details-panel {
+    text-align: left;
+}
+
+.card-details-panel .card-details-oracle {
+    margin-bottom: 0;
+    font-size: 0.85rem;
+}
+
+/* The set, the prices and the face's stats after the rules text. */
+.card-details-facts {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.9rem;
+}
+
+/* The keywords and the card roles after the set and prices. */
+.card-details-analysis {
+    margin-top: 0.9rem;
+}
+
+.card-details-analysis > :last-child {
+    margin-bottom: 0;
+}
+
+/* The host's rows (a staple's deck share, the suggestion reasons, Skipped
+   under) as their own section, spaced like the tag rows. */
+.card-details-host {
+    margin-top: 0.9rem;
+}
+
+.card-details-host > :first-child {
+    margin-top: 0;
+}
+
+.card-details-host > :last-child {
+    margin-bottom: 0;
+}
+
+/* A pane taller than the room its host gives it scrolls its body between
+   its head and its foot, which stay in view: the host bounds the panel's
+   height (a flex column with a max height), the panel shrinks to it, and
+   only the body scrolls. A pane that fits is unchanged. */
+.card-details-panel {
+    min-height: 0;
+    overflow: hidden;
+}
+
+.card-details-panel > .panel-head,
+.card-details-panel > .panel-rule,
+.card-details-panel > .panel-actions {
+    flex: none;
+}
+
+/* The body scrolls edge to edge between the two rules: it reaches out
+   through the panel's side padding and the rules' 1rem spacing, and takes
+   that spacing back as its own padding, so its rows scroll right up to the
+   lines and its scrollbar runs along the panel's edge. With no foot it
+   reaches the panel's bottom edge the same way. */
+.card-details-panel > .panel-body {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    margin: -1rem -1.5rem;
+    padding: 1rem 1.5rem;
+}
+
+.card-details-panel > .panel-body:last-child {
+    margin-bottom: -1.5rem;
+    padding-bottom: 1.5rem;
+}
+
+/* A headless pane's body opens the panel, so it reaches the panel's top
+   edge the same way: a drawer's body scrolls right up to its title bar. */
+.card-details-panel > .panel-body:first-child {
+    margin-top: -1.5rem;
+    padding-top: 1.5rem;
+}
+
+/* The foot stacks the host's content over the Flip and Image row at the
+   panel's left, not as one button row. */
+.card-details-panel > .panel-actions {
+    display: block;
+}
+
+.card-details-foot > :last-child {
+    margin-bottom: 0;
+}
+
+/* The host's content at the body's end sits a gap under the roles. */
+.card-details-body-end {
+    margin-top: 1rem;
+}
+
+.card-details-body-end > :last-child {
+    margin-bottom: 0;
+}
+
+/* The pane's ghost: the title's bar and the rules text's lines. */
+.card-details-ghost .card-details-ghost-title {
+    display: inline-block;
+    width: 12rem;
+    height: 1.1rem;
+    vertical-align: middle;
+}
+
+/* The kind and facts chips' ghosts are the loaded chips, empty: their
+   labels hold the size and draw nothing. */
+.card-details-ghost :is(.detail-chip, .card-row-price) > span {
+    visibility: hidden;
+}
+
+/* A rules text word's ghost, on the text's own line. */
+.card-details-ghost .card-details-ghost-word {
+    display: inline-block;
+    height: 0.8em;
+    vertical-align: middle;
+}
+
+/* A tag row's ghost at the loaded row's sizes: the label chip, then tag
+   chips, each an empty chip as tall as the kit's chip. */
+.card-details-ghost .card-details-ghost-label {
+    display: inline-block;
+    width: 5.25rem;
+    height: 1.725rem;
+    border-radius: 0.4rem;
+}
+
+.card-details-ghost .card-details-ghost-tag {
+    display: inline-block;
+    width: 4rem;
+    height: 1.725rem;
+    border-radius: 0.4rem;
+}
+
+.card-details-ghost .card-details-ghost-tag-wide {
+    width: 5.25rem;
+}
+
+/* The foot's buttons' ghosts, empty, at a .card-action-btn's size: Flip,
+   then the wider Printings. */
+.card-details-ghost .card-details-ghost-button {
+    display: inline-block;
+    width: 3.325rem;
+    height: 1.375rem;
+    border-radius: 0.4rem;
+}
+
+.card-details-ghost .card-details-ghost-button-wide {
+    width: 5.825rem;
+}
+
+/* ---- CardDetails footer ----
+   Host content under the chip clusters (the suggested commanders screen's
+   "Why this commander?" block): a heading over a bullet list whose items hold
+   plain text or a row of tag chips. */
+.card-detail-footer {
+    margin: 0.5rem 0;
+}
+
+.card-detail-bullets {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.card-detail-bullets li {
+    position: relative;
+    padding-left: 1rem;
+    margin-bottom: 0.35rem;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    color: var(--ink-text-muted, var(--text-muted));
+}
+
+.card-detail-bullets li:last-child {
+    margin-bottom: 0;
+}
+
+.card-detail-bullets li::before {
+    content: "\2022";
+    position: absolute;
+    left: 0;
+    color: var(--ink-accent-primary, var(--accent-primary));
+}
+
+.card-detail-bullets .keyword-chips {
+    margin-top: 0.25rem;
+}
+
+/* Role chips nested under a bullet's lead-in (the suggestion reasons). */
+.card-detail-bullets .card-roles {
+    margin-top: 0.25rem;
+    margin-bottom: 0;
+}
+
+/* ---- FlippableCardImage (components::FlippableCardImage) ----
+   Base wrapper/image/flip-button rules, shared by zwiper and zite. Hosts layer
+   their own per-context max bounds on `.flippable-card-wrapper.<host-class> img`. */
+.flippable-card-wrapper {
+    position: relative;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    line-height: 0;
+    flex: 0 0 auto;
+    min-height: 0;
+}
+
+/* Shrink-wraps the image so the flip button (absolute) pins to the image's own
+   corner without resizing the wrapper - no DFC-vs-single-face layout shift. */
+.flip-face {
+    position: relative;
+    display: flex;
+    min-height: 0;
+    max-width: 100%;
+    max-height: 100%;
+}
+
+/* Img owns its own sizing and rounding. Per-context max bounds are layered by
+   hosts. Hidden until the bytes actually arrive (`onload` adds .img-loaded),
+   then eased in - otherwise slow loads pop in a fully-formed card. */
+.flippable-card-wrapper img {
+    display: block;
+    width: auto;
+    height: auto;
+    max-width: calc(100vw - 2rem);
+    max-height: 100%;
+    min-height: 0;
+    border-radius: 1rem;
+    opacity: 0;
+    transition: opacity 250ms ease;
+}
+
+.flippable-card-wrapper img.img-loaded {
+    opacity: 1;
+}
+
+/* No-art fallback: a flat card shown in place of the image when a card has no
+   picture, laid out like a real card - title + mana pips, rule, boxed "No image"
+   marker, type/rarity/set line, rule, then oracle + flavor text. Continuous: only
+   the art marker is boxed; dividers are hairline rules, not filled panels. */
+.no-image-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    width: min(calc(100vw - 2rem), 20rem);
+    aspect-ratio: 5 / 7;
+    padding: 0.8rem;
+    gap: 0.45rem;
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    text-align: left;
+    overflow: hidden;
+}
+
+/* Title row: name (left) + mana pips (right, via card-detail-cost). */
+.nic-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+/* Right side of the title row: inline flip button (multi-faced) + mana pips. */
+.nic-head-right {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.nic-name {
+    font-weight: 700;
+    font-size: 1.05rem;
+    line-height: 1.25;
+    letter-spacing: 0.3px;
+    word-break: break-word;
+    color: var(--ink-palette-3, var(--palette-3));
+}
+
+/* Hairline divider between card sections, full-bleed to the card edges (negative
+   margins cancel the card's padding). */
+.nic-rule {
+    border: none;
+    border-top: 1px solid var(--border-secondary);
+    height: 0;
+    align-self: stretch;
+    margin: 0 -0.8rem;
+}
+
+/* Boxed marker where the art window would be. */
+.nic-art {
+    flex: 0 0 34%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.4rem;
+}
+
+.nic-noart {
+    color: var(--ink-text-muted, var(--text-muted));
+    font-size: 0.8rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+/* Type / rarity / set as chips. */
+.nic-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.nic-chip {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.35rem;
+    background-color: var(--bg-primary);
+    font-size: 0.7rem;
+    line-height: 1.25;
+    color: var(--ink-text-muted, var(--text-muted));
+}
+
+/* Type / rarity / set chips, each tinted with its own accent. */
+.nic-chip-type {
+    color: var(--ink-palette-1, var(--palette-1));
+    background-color: color-mix(in srgb, var(--palette-1) 12%, transparent);
+    border-color: color-mix(in srgb, var(--palette-1) 35%, transparent);
+}
+
+.nic-chip-rarity {
+    color: var(--ink-palette-4, var(--palette-4));
+    background-color: color-mix(in srgb, var(--palette-4) 12%, transparent);
+    border-color: color-mix(in srgb, var(--palette-4) 35%, transparent);
+}
+
+.nic-chip-set {
+    color: var(--ink-palette-3, var(--palette-3));
+    background-color: color-mix(in srgb, var(--palette-3) 12%, transparent);
+    border-color: color-mix(in srgb, var(--palette-3) 35%, transparent);
+}
+
+/* Power/toughness (or loyalty) tab pinned to the card's bottom-right corner. Warm
+   warning-yellow, and opaque (mixed into the card bg, not transparent) so the
+   oracle text behind it is cleanly covered instead of showing through. */
+.nic-pt {
+    position: absolute;
+    right: 0.6rem;
+    bottom: 0.6rem;
+    font-weight: 700;
+    color: var(--ink-palette-5, var(--palette-5));
+    background-color: color-mix(in srgb, var(--palette-5) 18%, var(--bg-primary));
+    border-color: color-mix(in srgb, var(--palette-5) 40%, var(--border-primary));
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+}
+
+/* Oracle + flavor fill the remaining space and scroll if long, fading out at the
+   top and bottom edges instead of hard-cutting (matches the app's masked scrolls). */
+.nic-textbox {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    -webkit-mask-image: linear-gradient(
+        to bottom,
+        transparent 0,
+        black 0.8rem,
+        black calc(100% - 0.9rem),
+        transparent 100%
+    );
+    mask-image: linear-gradient(
+        to bottom,
+        transparent 0,
+        black 0.8rem,
+        black calc(100% - 0.9rem),
+        transparent 100%
+    );
+}
+
+.nic-oracle {
+    font-size: 0.82rem;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    color: var(--text-primary);
+}
+
+.nic-flavor {
+    font-size: 0.8rem;
+    line-height: 1.35;
+    font-style: italic;
+    color: var(--ink-text-muted, var(--text-muted));
+    white-space: pre-wrap;
+}
+
+.card-flip-button {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.6rem;
+    z-index: 2;
+    padding: 0.35rem 0.7rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.6rem;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.75rem;
+    font-weight: 400;
+    letter-spacing: 0.05em;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0.5;
+    transition:
+        opacity 0.15s ease,
+        transform 0.15s ease;
+    box-shadow: var(--shadow-sm);
+}
+
+.card-flip-button:active {
+    transform: scale(0.95);
+}
+
+/* ---- Changelog (components::Changelog) ---- */
+
+/* Self-contained so it renders identically on the site and in the app: does
+   not lean on any host stylesheet's card/bullet rules. */
+
+/* The chip rows: years, then the picked year's months, then the picked
+   month's versions. On zite they close the page's Changelog panel. */
+.changelog-filters {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.changelog-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.changelog-filter .chip {
+    font-family: inherit;
+}
+
+.changelog-anchor {
+    color: inherit;
+    text-decoration: none;
+}
+
+.changelog-anchor:hover {
+    text-decoration: underline;
+}
+
+.changelog-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--panel-gap);
+}
+
+/* The button under a capped list that reveals the next page. */
+.changelog-more {
+    align-self: center;
+    font-family: inherit;
+}
+
+.changelog-card {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    animation: changelog-card-in 0.35s ease-out both;
+    /* An anchored card lands below zite's sticky nav. */
+    scroll-margin-top: calc(var(--nav-height, 0px) + 1rem);
+}
+
+/* Ease each release card in on mount and when a filter change remounts the
+   visible set. */
+@keyframes changelog-card-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.changelog-version-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+/* The caret leads the version, sized to the heading. */
+.changelog-version-row .collapse-caret {
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-left: -0.25rem;
+}
+
+/* The space under a card's version row is the notes' own, so a shut card
+   closes up to its header. */
+.changelog-card .changelog-bullets {
+    padding-top: 0.75rem;
+}
+
+.changelog-version {
+    font-size: 1.1rem;
+    color: var(--ink-accent-primary, var(--accent-primary));
+    font-weight: 700;
+    margin: 0;
+}
+
+.changelog-date {
+    color: var(--ink-text-muted, var(--text-muted));
+    font-size: 0.8rem;
+}
+
+.changelog-bullets {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.changelog-bullets li {
+    font-size: 0.8rem;
+    color: var(--text-subtle);
+    line-height: 1.7;
+    padding-left: 1rem;
+    position: relative;
+    margin-bottom: 0.35rem;
+}
+
+.changelog-bullets li:last-child {
+    margin-bottom: 0;
+}
+
+.changelog-bullets li::before {
+    content: "\203A";
+    position: absolute;
+    left: 0;
+    color: var(--ink-accent-primary, var(--accent-primary));
+}
+
+/* The panels look (ChangelogLook::App): the chip rows are a settings-row of
+   the Changelog panel the caller wraps them in, and each release is a
+   settings-list panel of its own under it, the version row as its header and
+   the bullets as its body. Compound selectors, since the kit's .settings-row
+   and .settings-list-header load after this sheet. */
+.settings-row.changelog-filters-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    text-align: left;
+}
+
+/* The failure note keeps a chip's own width instead of the row's. */
+.changelog-filters-row > .chip-note {
+    align-self: flex-start;
+}
+
+.changelog-panels {
+    display: flex;
+    flex-direction: column;
+    gap: var(--panel-gap);
+    margin-top: var(--panel-gap);
+}
+
+.changelog-panel {
+    animation: changelog-card-in 0.35s ease-out both;
+}
+
+/* The version and date sit together at the left; the Upcoming or Latest tag
+   goes to the right end, where a panel header keeps its trailing piece. */
+.settings-list-header.changelog-version-row {
+    justify-content: flex-start;
+    margin-bottom: 0;
+}
+
+.changelog-panel .status-tag {
+    margin-left: auto;
+}
+
+.changelog-panel-body {
+    padding: 0.75rem 1rem;
+    text-align: left;
+}
+
+
+/* ---- ColorBars (components::ColorBars) ---- */
+
+/* The pips and fills read `--mana-white` through `--mana-green`, so the bars
+   follow the pip style like every other pip. The panel's own padding is the
+   room above and below them. */
+.color-bars {
+    display: flex;
+    flex-direction: column;
+    padding: 0 1rem;
+}
+
+/* A deck chart of color rows: the label over the rows, in the Mana section's
+   side padding. */
+.color-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0 0.75rem;
+}
+
+/* Inside a deck chart the bars take the chart's own side padding. */
+.color-chart .color-bars {
+    padding: 0.25rem 0 0;
+}
+
+/* Rows space by their own padding, like the deck charts' Roles rows. */
+.color-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.175rem 0;
+}
+
+.color-bar-row > .ms {
+    flex: 0 0 auto;
+    font-size: 0.85rem;
+}
+
+/* The deck charts' bar: a blocky track the fill spans at full height. The
+   track shows under a short fill and stays visible under a white one on a
+   cream background. */
+.color-bar-track {
+    flex: 1;
+    height: 0.9rem;
+    border-radius: 0.15rem;
+    background-color: var(--border-secondary);
+    overflow: hidden;
+}
+
+.color-bar-fill {
+    box-sizing: border-box;
+    height: 100%;
+    border-radius: inherit;
+    border: 1px solid var(--border-primary);
+}
+
+.color-bar-count {
+    flex: 0 0 2.2rem;
+    text-align: right;
+    font-size: 0.85rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+}
+
+/* The ghost rows stand as tall as the real ones: the pip ghost is the pip's
+   box and the track keeps its height under the app's skeleton rule. */
+.color-bar-pip-ghost,
+.skeleton-bar.color-bar-pip-ghost {
+    flex: 0 0 auto;
+    width: 1.15rem;
+    height: 1.15rem;
+    border-radius: 0.25rem;
+}
+
+.skeleton-bar.color-bar-track {
+    height: 0.9rem;
+    border-radius: 0.15rem;
+}
+
+.color-bar-count-ghost {
+    flex: 0 0 auto;
+    width: 1.6rem;
+    height: 0.75rem;
+    margin-left: 0.6rem;
+}
+
+/* A bar chart's row: the track fills the row beside its label, and the fill
+   is the bar, its width set inline from the row's share. */
+.chart-track {
+    flex: 1;
+    height: 0.9rem;
+    background: var(--border-secondary);
+    border-radius: 0.15rem;
+    overflow: hidden;
+}
+
+.chart-fill {
+    height: 100%;
+    background: var(--text-primary);
+    opacity: 0.65;
+    border-radius: 0.15rem;
+}
+
+/* A chart's title: a chip in the theme's heading accent, centered over its
+   chart with its "?" beside it at the button's own margin. */
+.chart-label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    align-self: center;
+}
+
+.chart-label-chip {
+    --tone: var(--accent-tertiary);
+    --tone-ink: var(--ink-accent-tertiary, var(--accent-tertiary));
+}
+
+/* ---- Shared pieces the components emit: the narrow container, an icon
+   button's glyph and its screen-reader label, the empty line ---- */
+
+.container-sm {
+    width: 20rem;
+    padding: 2rem;
+}
+
+/* Text for screen readers only, the label of an icon button. */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.message-empty {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    opacity: 0.6;
+    letter-spacing: 0.1em;
+}
+
+/* A failed load: its chip, then Retry under it, the pair centered. The
+   button is a control, not a note, so the block's fade lifts. */
+.message-empty.load-failed {
+    flex-direction: column;
+    gap: 0.6rem;
+    opacity: 1;
+}
+
+/* ---- DockFilter (components::DockFilter): the dot that marks a live
+   filter on the funnel and on a filter button ---- */
+
+.filter-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: var(--palette-6);
+    flex-shrink: 0;
+    display: inline-block;
+    align-self: center;
+}
+
+.btn-action .filter-dot {
+    margin-left: 0.3rem;
+}
+
+/* The filter dot sits on the funnel's top left, clear of the reset. */
+.action-dock-btn .filter-dot {
+    position: absolute;
+    top: 0.35rem;
+    left: 0.45rem;
+}
+
+/* ---- The on-screen keyboard (KEYBOARD_JS) ----
+   While the keyboard is up the floating docks step aside instead of riding
+   up over the content above it; they come back as it closes. */
+html.keyboard-up .action-dock,
+html.keyboard-up .web-dock-pair {
+    visibility: hidden;
+}
+
+/* ---- CoverFlow (components::CoverFlow) ----
+   The printings in perspective between two step buttons: each card's left
+   edge at the stage's middle, its inline transform placing it, and one
+   shared transition gliding every card as the selection moves. On a phone
+   the stage keeps a near-square shape, so the middle card takes about
+   three fifths of its width and its neighbors show at the sides; a host
+   with a fixed height stretches it instead. In a bottom sheet the stage
+   is never taller than the sheet's 85vh less --flow-reserve, the sheet's
+   title bar, padding and what sits under the flow, so a short window
+   shrinks the cards and the whole sheet still fits. A sideways swipe is
+   the flow's; an up or down one still scrolls the page. */
+.cover-flow {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.cover-flow-step {
+    flex: none;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.7rem;
+}
+
+.cover-flow-step > .action-dock-icon {
+    width: 1.2rem;
+    height: 1.2rem;
+    stroke-width: 2.5;
+}
+
+/* The stack melts into its host at the sides: the outermost cards fade out
+   over the stage's outer ninth on each side, short of the selected card's
+   neighbors. */
+.cover-flow-stage {
+    --flow-fade: linear-gradient(to right, transparent, #000 11%, #000 89%, transparent);
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+    aspect-ratio: 1 / 0.95;
+    max-height: calc(85vh - var(--flow-reserve, 15rem) - env(safe-area-inset-bottom, 0px));
+    overflow: hidden;
+    perspective: 1600px;
+    cursor: grab;
+    user-select: none;
+    touch-action: pan-y;
+    -webkit-mask-image: var(--flow-fade);
+    mask-image: var(--flow-fade);
+    /* Clips the cards' 3D transforms too, which WebKit lets past
+       `overflow: hidden` into the sheet's scroll width; the sheet itself
+       never scrolls sideways. */
+    overflow: clip;
+    contain: paint;
+}
+
+.cover-flow-stage:active {
+    cursor: grabbing;
+}
+
+.cover-flow-card {
+    position: absolute;
+    top: 4%;
+    left: 50%;
+    height: 92%;
+    aspect-ratio: 488 / 680;
+    transform-origin: center center;
+    transition: transform 0.3s ease;
+    will-change: transform;
+    cursor: pointer;
+}
+
+/* A dark veil over each card, as dark as `--flow-dim` says: the selected
+   card's is clear, and each step out darker. */
+.cover-flow-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 4.75% / 3.5%;
+    background: #000;
+    opacity: var(--flow-dim, 0);
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.cover-flow-card img,
+.cover-flow-missing {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 4.75% / 3.5%;
+    box-shadow: var(--shadow-md);
+}
+
+.cover-flow-card img {
+    object-fit: contain;
+}
+
+.cover-flow-missing {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    box-sizing: border-box;
+    text-align: center;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    color: var(--ink-text-muted, var(--text-muted));
+}
+
+@media (min-width: 60rem) {
+    .cover-flow {
+        gap: 0.75rem;
+    }
+
+    .cover-flow-step {
+        width: 2.75rem;
+        height: 2.75rem;
+        border-radius: 0.8rem;
+    }
+
+    .cover-flow-step > .action-dock-icon {
+        width: 1.35rem;
+        height: 1.35rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cover-flow-card,
+    .cover-flow-card::after {
+        transition: none;
+    }
+}
+
+/* ---- DrawerSheet (components::DrawerSheet): a page's docks step aside ----
+   While a drawer is open its own dock sits at the bottom right, where the
+   page's floating dock is, which would show behind it as a second rounded
+   square. The page's docks slide down off the screen as they fade while
+   the drawer opens, and slide back up as it closes; with reduced motion
+   they only fade. They take no taps while away. */
+@media (min-width: 60rem) {
+    .action-dock:not(.sheet-dock) {
+        transition:
+            bottom 0.25s ease,
+            transform 0.3s ease,
+            opacity 0.3s ease,
+            visibility 0s linear 0s;
+    }
+
+    body:has(.sheet-form-drawer > .bottom-sheet.show) .action-dock:not(.sheet-dock) {
+        transform: translateY(calc(100% + 2rem));
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transition:
+            bottom 0.25s ease,
+            transform 0.3s ease,
+            opacity 0.3s ease,
+            visibility 0s linear 0.3s;
+    }
+}
+
+@media (min-width: 60rem) and (prefers-reduced-motion: reduce) {
+    body:has(.sheet-form-drawer > .bottom-sheet.show) .action-dock:not(.sheet-dock) {
+        transform: none;
+    }
+}
+
+/* ---- The ghosts the Home panels draw while they load: bars, chips and
+   the "?" button's ghost ---- */
+
+.skeleton-bar {
+    height: 0.65rem;
+    border-radius: 0.375rem;
+    background-color: var(--border-muted);
+    animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes skeleton-pulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    61.8% {
+        opacity: 0.4;
+    }
+}
+
+.skeleton-card-header {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-secondary);
+}
+
+/* Section label that sits above a skeleton-info-list. Matches .label. */
+.skeleton-section-label {
+    width: 22%;
+    height: 0.9rem;
+    margin-bottom: 0.4rem;
+}
+
+.skeleton-chip {
+    width: 3rem;
+    height: 1.7rem;
+    border-radius: 0.5rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Width variants so tag rows read like real mixed-length tags (xl stands in
+   for a commander name). Base chip look comes from .skeleton-chip above. */
+.skeleton-chip-sm {
+    width: 2.6rem;
+}
+
+.skeleton-chip-md {
+    width: 4rem;
+}
+
+.skeleton-chip-lg {
+    width: 5.5rem;
+}
+
+.skeleton-chip-xl {
+    width: 9rem;
+}
+
+/* The "?" button's ghost, its size as a bare chip. */
+.skeleton-info-button {
+    flex: none;
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
+/* ---- HomeColors and HomeDecks (components::HomeColors, HomeDecks):
+   the Home panels, their centered headers, the color bars and the deck
+   tiles ---- */
+
+/* Home's Colors panel: Colors and its "?" centered in its header, the
+   Playstyle chip in the right corner, then one compact bar per color. */
+.home-colors {
+    --home-panel-action-width: 5.4rem;
+    min-height: 0;
+    padding-bottom: 0;
+    text-align: left;
+}
+
+.home-colors > .settings-list-header {
+    padding: 0.6rem 1rem;
+}
+
+/* A Home panel header whose title group is centered on the panel, with one
+   action in the right corner. The action leaves the flow, so the group
+   centers on the whole panel rather than on the room beside the action;
+   --home-panel-action-width (the corner action's width, set per panel) is
+   reserved on both sides, so the group stays centered and clear of the
+   action, and the title ellipsizes instead of wrapping when it would not
+   fit. */
+.home-flavor > .settings-list-header.home-panel-header-centered {
+    position: relative;
+    justify-content: center;
+    flex-wrap: nowrap;
+    padding-left: calc(1rem + var(--home-panel-action-width, 0rem) + 0.5rem);
+    padding-right: calc(1rem + var(--home-panel-action-width, 0rem) + 0.5rem);
+}
+
+.home-panel-header-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.home-panel-header-title > .settings-list-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* The chip and the "?" keep the header the height of a plain one. */
+.home-panel-header-title > .stat-chip,
+.home-panel-header-title > .info-button,
+.home-panel-header-title > .skeleton-info-button {
+    flex: none;
+    margin: -0.25rem 0;
+}
+
+.home-panel-header-action {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+/* A color bar ghost's count (a 0.65rem bar) holds the count's text line,
+   0.85rem at the page's 1.6 line height, so a ghost row is as tall as a
+   real one. */
+.color-bar-row > .color-bar-count-ghost {
+    margin-top: calc((0.85rem * 1.6 - 0.65rem) / 2);
+    margin-bottom: calc((0.85rem * 1.6 - 0.65rem) / 2);
+}
+
+/* Home's deck tile ghost keeps the tile's square (the bar's own height
+   would flatten it to a strip), and under it the name and format chips'
+   two lines at the chips' height. */
+.skeleton-bar.home-deck-tile-art {
+    height: auto;
+}
+
+.home-deck-tile-chips > .home-deck-skeleton-chip {
+    height: 1.525rem;
+}
+
+.home-deck-tile-chips:has(> .home-deck-skeleton-chip)::after {
+    content: "";
+    width: 55%;
+    height: 1.525rem;
+    box-sizing: border-box;
+    border: 1px solid var(--border-secondary);
+    border-radius: 0.5rem;
+    background-color: var(--bg-primary);
+    animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Home's Colors ghost header at the live header's height, whose action
+   chip sits outside its flow. */
+.home-colors > .skeleton-card-header {
+    min-height: 2.8625rem;
+    box-sizing: border-box;
+}
+
+/* The ghost title is the word's width, not the section label's share. */
+.home-panel-skeleton-title {
+    width: 3.6rem;
+    margin-bottom: 0;
+}
+
+/* The bars sit as far under the header and over the panel's foot as the
+   Decks tiles do: the rows' own spacing around a track plus this padding
+   comes to the tiles' 0.75rem above and 1rem below. */
+.home-colors > .color-bars {
+    padding-top: 0.35rem;
+}
+
+.home-flavor.home-colors {
+    padding-bottom: 0.6rem;
+}
+
+.home-colors > .settings-list-header .btn-action {
+    padding: 0.3rem 0.6rem;
+}
+
+/* The panel's one line while it has no counts to draw. */
+.home-colors-line {
+    padding: 1rem;
+}
+
+.home-flavor {
+    /* As wide as the hero panel above it, with a gap between the two. In a
+       screen's column it keeps its full height instead of shrinking to the
+       minimum and spilling its row past the border. */
+    width: calc(100% - 2rem);
+    max-width: 24rem;
+    margin-top: var(--panel-gap);
+    min-height: 9rem;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    transition: min-height 0.3s ease;
+    padding: 0 0 1rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-md);
+}
+
+/* Home's Decks panel: the Colors panel's style, Decks and the count chip
+   centered in its header with All decks in the right corner, then three
+   tiles across at the Colors panel's row gap. The one row is Create a deck
+   while the user has no deck. */
+.home-decks {
+    --home-panel-action-width: 5.4rem;
+    min-height: 0;
+    padding-bottom: 0;
+    text-align: left;
+}
+
+/* With Create deck beside All decks, the corner holds both buttons. */
+.home-decks > .home-decks-header-create {
+    --home-panel-action-width: 12.7rem;
+}
+
+/* A panel too narrow to center the title between the two reserves (a phone's,
+   or a column beside Colors) starts the title at the left edge instead, so it
+   never cuts off. */
+.home-decks {
+    container-type: inline-size;
+}
+
+@container (max-width: 36rem) {
+    .home-flavor.home-decks > .settings-list-header.home-decks-header-create {
+        justify-content: flex-start;
+        padding-left: 1rem;
+    }
+}
+
+.home-decks > .settings-list-header {
+    padding: 0.6rem 1rem;
+}
+
+.home-decks > .settings-list-header .btn-action {
+    padding: 0.3rem 0.6rem;
+}
+
+/* The panel's one line while it has no deck to draw or the fetch failed. */
+.home-decks-line {
+    padding: 1rem;
+}
+
+.home-deck-tiles {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.4rem;
+    padding: 0.75rem 1rem 1rem;
+}
+
+/* A tile is the art square over its chips with nothing drawn around them;
+   the whole of it is the deck's button. */
+.home-deck-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    width: 100%;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--text-primary);
+    cursor: pointer;
+    text-align: center;
+}
+
+.home-deck-tile:active > .home-deck-tile-art {
+    filter: brightness(0.85);
+}
+
+/* The square, at the panels' corner radius: the art crop filling it, or
+   the raised fill with the pips centered as the placeholder. */
+.home-deck-tile-art {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: 1rem;
+    background-color: var(--bg-raised);
+    overflow: hidden;
+    font-size: 1.3rem;
+}
+
+.home-deck-tile-art > img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* The name chip and the muted format chip, wrapping and centered. */
+.home-deck-tile-chips {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.3rem;
+    width: 100%;
+    min-width: 0;
+}
+
+.home-deck-tile-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.home-deck-skeleton-chip {
+    width: 70%;
+    height: 1.35rem;
+}
+
+/* ---- DangerZone (components::DangerZone) ---- */
+
+
+/* The Danger zone panels, Account's and the deck view's, under a title in
+   the danger color. Compound selector so it outranks orangui's title color. */
+.settings-list-title.danger-zone-title {
+    color: var(--ink-color-error, var(--color-error));
+}
+
+/* Under an empty list's note, the Danger zone keeps the panel gap a list
+   would leave above it. */
+.message-empty + .danger-zone {
+    margin-top: var(--panel-gap);
+}
+
+/* ---- Note chip (.chip-note) ----
+   Every empty or error line, on every client: a gray chip that does not
+   act, centered by whatever holds it (.message-empty, .deck-empty,
+   .activity-total, .dict-empty). Same face as .chip-unselected, minus the
+   pointer. */
+.chip-note {
+    display: inline-block;
+    padding: 0.3rem 0.6rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-muted);
+    border-radius: 0.6rem;
+    font-size: 0.75rem;
+    color: var(--ink-text-muted, var(--text-muted));
+    box-shadow: var(--shadow-sm);
+}
+
+/* ---- DeckPage (components::DeckPage) ---- */
+
+/* The page: its parts one panel gap apart, each the page's width. */
+.deck-page {
+    display: flex;
+    flex-direction: column;
+    gap: var(--panel-gap);
+    width: 100%;
+    min-width: 0;
+}
+
+/* The head: the name and its chips, then the featured cards in a centered
+   row under them. */
+.deck-head {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.deck-head-featured {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: center;
+    gap: 1.25rem;
+}
+
+.deck-head-card {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 13rem;
+    text-align: center;
+}
+
+/* The image's footprint is reserved before it loads, so the head does not
+   jump when it lands. */
+.deck-head-card-image {
+    width: 100%;
+    aspect-ratio: 5 / 7;
+    cursor: pointer;
+}
+
+.deck-head-card .deck-head-card-image img {
+    width: 100%;
+    height: auto;
+    max-width: 100%;
+    border-radius: 4.75% / 3.5%;
+    border: 1px solid var(--border-secondary);
+    box-shadow: var(--shadow-md);
+}
+
+/* The name chip, then the role chip, wrapping and centered under the image
+   as Home's deck tiles set theirs. A long name ellipsizes inside its chip. */
+.deck-head-card-chips {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.3rem;
+    margin-top: 0.55rem;
+    min-width: 0;
+}
+
+.deck-head-card-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Compound selectors so the role colors outrank the chip's own tone. */
+.stat-chip.deck-head-card-role-zone {
+    color: var(--ink-palette-3, var(--palette-3));
+    background-color: color-mix(in srgb, var(--palette-3) 12%, var(--bg-primary));
+    border-color: color-mix(in srgb, var(--palette-3) 35%, var(--bg-primary));
+}
+
+.stat-chip.deck-head-card-role-mvp {
+    color: var(--ink-palette-6, var(--palette-6));
+    background-color: color-mix(in srgb, var(--palette-6) 12%, var(--bg-primary));
+    border-color: color-mix(in srgb, var(--palette-6) 35%, var(--bg-primary));
+}
+
+.deck-head-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+.deck-head-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.deck-head-title {
+    margin: 0;
+    font-size: 1.6rem;
+    letter-spacing: 0.02em;
+    overflow-wrap: anywhere;
+}
+
+.deck-head-actions {
+    display: flex;
+    flex: none;
+    gap: 0.5rem;
+}
+
+/* The chips tint over the page background, so the page's cells never show
+   through them. */
+.deck-head-meta {
+    --tone-base: var(--bg-primary);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+/* The three rows over the cards. */
+.deck-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.deck-controls .chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+}
+
+.deck-controls .chip-row-label {
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.deck-controls-name {
+    width: 10rem;
+    padding: 0.3rem 0.6rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.6rem;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.75rem;
+}
+
+.deck-controls-name:focus {
+    outline: none;
+    border-color: var(--accent-secondary);
+}
+
+.deck-bands {
+    display: flex;
+    flex-direction: column;
+    gap: var(--panel-gap);
+}
+
+.deck-empty {
+    margin: 0;
+    padding: 1rem;
+    text-align: center;
+    color: var(--ink-text-muted, var(--text-muted));
+}
+
+/* A folding panel: the header's arrow points down while open and sideways
+   once folded, and the body eases shut on its grid row. */
+.deck-fold {
+    overflow: hidden;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-sm);
+}
+
+/* A fold's title in the panels' own title type, the same as a card list's
+   (.card-group-header) and a settings list's: size, weight, letter spacing
+   and inset. */
+.deck-fold-head {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-secondary);
+    color: var(--ink-accent-tertiary, var(--accent-tertiary));
+    font-size: 1rem;
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    user-select: none;
+    transition: border-color 0.25s ease;
+}
+
+.deck-fold-head .card-row-arrow {
+    transform: rotate(90deg);
+}
+
+.deck-fold.folded .deck-fold-head .card-row-arrow {
+    transform: none;
+}
+
+.deck-fold.folded .deck-fold-head {
+    border-bottom-color: transparent;
+}
+
+.deck-fold-accessory {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: auto;
+}
+
+.deck-fold-body {
+    display: grid;
+    grid-template-rows: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+    opacity: 1;
+    transition:
+        grid-template-rows 0.25s ease,
+        opacity 0.25s ease;
+}
+
+.deck-fold.folded .deck-fold-body {
+    grid-template-rows: 0fr;
+    opacity: 0;
+}
+
+.deck-fold-inner {
+    overflow: hidden;
+    min-height: 0;
+    min-width: 0;
+}
+
+/* A band's rows, one under another the band's width, so no card is lost
+   among its neighbors. */
+.deck-band-rows {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+}
+
+.deck-band-rows > .card-row {
+    border-bottom: 1px solid var(--border-secondary);
+}
+
+.deck-band-rows > .card-row.expanded {
+    grid-column: 1 / -1;
+}
+
+/* The stat panels two across, and the host's foot likewise. */
+.deck-stats,
+.deck-foot {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--panel-gap);
+    align-items: start;
+}
+
+/* A stat panel's body: its blocks stacked at the app's section rhythm. */
+.deck-stat-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0.75rem 0;
+}
+
+@media (max-width: 56rem) {
+    .deck-head-featured {
+        gap: 0.5rem;
+    }
+
+    .deck-stats,
+    .deck-foot {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* The fold-all button follows the Show chips, in the row's flow. */
+.deck-fold-all {
+    margin-left: 0.25rem;
+}
+
+/* Text for screen readers only, the label of an icon button. */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* ---- Floating controls stop above the footer ----
+   The site footer carries a view timeline the whole page can see. A
+   floating control that runs `footer-rise` on it moves up pixel for pixel
+   as the footer scrolls in, so it keeps its gap above the footer instead of
+   covering it. Each site names its floating controls and gives them:
+
+     animation: footer-rise linear both;
+     animation-timeline: --site-footer;
+     animation-range: entry 0px entry 100vh;
+
+   inside `@supports (animation-timeline: view())`. Without scroll-driven
+   animations the controls stay at the window's foot. */
+@supports (animation-timeline: view()) {
+    :root {
+        timeline-scope: --site-footer;
+    }
+
+    footer.site-footer {
+        view-timeline: --site-footer block;
+    }
+}
+
+@keyframes footer-rise {
+    from {
+        translate: 0 0;
+    }
+
+    to {
+        translate: 0 -100vh;
+    }
+}
+
+/* ---- Site footer (SiteFooter) ----
+   zwipe.net's footer, which the web app draws too: the copyright and the
+   host's links as pills in one centered row, then the notes as one
+   paragraph across the footer's width. The web loads the kit's app sheet,
+   not its site sheet, so the bar is set here. zite loads the site sheet
+   after this one, so these rules name the footer element to outrank its
+   `.site-footer` and `.site-footer-note`. */
+
+footer.site-footer {
+    margin-top: 0;
+    padding: 1rem 1.5rem;
+    background-color: var(--bg-primary);
+    border-top: 1px solid var(--accent-primary);
+    box-shadow: var(--shadow-md);
+    text-align: center;
+    color: var(--ink-text-muted, var(--text-muted));
+    font-size: 0.78rem;
+}
+
+.site-footer-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem 1rem;
+}
+
+.site-footer-copyright {
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: var(--text-subtle);
+}
+
+.footer-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    margin: 0;
+}
+
+/* The footer's links are pills in the nav's colors: the text color at
+   rest, the accent under a mouse. */
+.footer-links > .nav-cta,
+.footer-links > .nav-cta:visited {
+    color: var(--text-primary);
+}
+
+@media (hover: hover) {
+    .footer-links > .nav-cta:hover,
+    .footer-links > .nav-cta:visited:hover {
+        color: var(--ink-accent-primary, var(--accent-primary));
+        border-color: var(--accent-primary);
+    }
+}
+
+footer.site-footer .site-footer-note {
+    max-width: none;
+    margin: 0.75rem 0 0;
+    font-size: 0.7rem;
+    line-height: 1.5;
+    color: var(--text-subtle);
+    opacity: 0.75;
+}
+
+.site-footer-note a {
+    color: var(--ink-palette-1, var(--palette-1));
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+/* A stepper's button at its bound is off: faded on a dark theme, its text
+   muted on a light one, as the kit's buttons are. */
+.stepper-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+[class*="theme-"][class*="-light"] .stepper-btn:disabled {
+    opacity: 1;
+    color: var(--text-muted);
+}
+
+/* The Share dialog's link: one selectable line, cut with an ellipsis when it
+   runs past the dialog, in a sunk field so it reads as something to copy. */
+.share-url {
+    margin-top: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    background: var(--bg-sink);
+    max-width: 100%;
+    box-sizing: border-box;
+    color: var(--text-primary);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    user-select: all;
+    -webkit-user-select: all;
+}
+
+/* A fold's toggle fills the header up to its accessory. */
+.deck-fold-toggle {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: center;
+    gap: 0.4rem;
+    min-width: 0;
+}
+
+/* The keyboard's ring on a row head or a group header, drawn inside so
+   the rounded clip never cuts it, and on a fold's toggle, out in the
+   header's padding. */
+.card-row-compact:focus-visible,
+.card-group-header:focus-visible,
+.deck-fold-toggle:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: -2px;
+    border-radius: 0.5rem;
+}
+
+.deck-fold-toggle:focus-visible,
+.card-list-fold-title:focus-visible,
+.web-section-title:focus-visible {
+    outline-offset: 0.3rem;
+}
+
+/* Any other element that acts as a button: a deck row, a picker field.
+   The ring follows the element's own corners. */
+:where([role="button"][tabindex="0"]):focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: -2px;
+}
