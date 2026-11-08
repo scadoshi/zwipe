@@ -210,7 +210,7 @@ pub fn ImportDeck(deck_id: Uuid) -> Element {
                                         "aria-label": "Archidekt deck URL",
                                         style: "width:100%;",
                                         r#type: "url",
-                                        placeholder: "https://archidekt.com/decks/...",
+                                        placeholder: "https://archidekt.com/decks/…",
                                         value: "{url}",
                                         autocapitalize: "none",
                                         autocorrect: "off",
