@@ -110,3 +110,10 @@ Left open as agreed. The design is sound: a rotated token presented again within
 - In flight: thinker on #398's conflict then 285 (preview image); halo #406 and scotland #408 conflicts. Laptop idle.
 - ManaBox plan (`plans/collection.md`): Q1 answered (Add and Replace modes); Q2 to Q8 wait for Scotty one at a time.
 - Parked for Scotty: 282 (stale bundle after deploy), 284 (toast vs footer, reproduced).
+
+### Morning summary (2026-11-08)
+
+- Verify 1e03520ef: every line checked. All pass except 265 (Partner Swipe stack, fixed in #419) and an extra "Stack refreshed" toast (288, fixed in #421). 336 (share previews) checked by curl.
+- Merged since the deploy (not live): 221 web, 258, 270, 273, 278, 279, 280, 283, 287 (changelog split, workspace 1.18.8), 265, 288, 289, 290 part 1, #416 (GitHub Pages job removed).
+- New, waiting on Scotty: 282 (stale bundle after deploy), 284 (toast vs footer, reproduced), 286 (portfolio orangui line anchors), 290 part 2 (what Keep means on the discard prompt), 291 (logout revokes every session).
+- In flight: thinker on 285 (share preview image).
