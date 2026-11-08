@@ -44,3 +44,14 @@ fn the_commander_formats_match() {
         );
     }
 }
+
+#[test]
+fn the_preview_image_path_matches_the_api() {
+    let token = uuid::Uuid::nil();
+    let route = zwipe_core::http::paths::shared_deck_preview_route(token);
+    let in_function = route.replace(&token.to_string(), "${token}");
+    assert!(
+        FUNCTION.contains(&format!("`${{apiBase}}{in_function}?v=")),
+        "the Function's preview URL differs from {route}"
+    );
+}
