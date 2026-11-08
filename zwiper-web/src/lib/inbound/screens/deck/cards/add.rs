@@ -172,7 +172,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         let parked_filter = last_search.peek().clone();
         let was_exhausted = exhausted.try_peek().is_ok_and(|e| *e);
         if let Some(parked_filter) = parked_filter
-            && !stack.peek().is_empty()
+            && stack.peek().has_served()
         {
             let (cards, index, history) = stack.peek().park_state();
             stacks.write().park(
@@ -213,7 +213,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             let add = AddDeck::from_deck(&full);
             add.seed(&mut filter.write(), had_restored);
             deck.set(Some(add));
-            if stack.peek().is_empty() {
+            if !stack.peek().has_served() {
                 bump();
             }
         });
@@ -258,7 +258,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         // Until the deck lands the search can't run, and the stack ghosts.
         loading_cards.set(deck.peek().is_none() && !*deck_failed.peek());
         search_failed.set(false);
-        stack.write().reset();
+        stack.write().clear_ahead();
         reset_image_ease();
         last_search.set(None);
         exhausted.set(false);
@@ -307,7 +307,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             let served: Vec<Card> = page.cards.into_iter().filter(|c| !holds(c)).collect();
             // An empty reply needs no toast: the ghost card says No cards
             // match.
-            stack.write().replace(served);
+            stack.write().replace_ahead(served);
             last_search.set(Some(snapshot));
         });
     });
@@ -928,7 +928,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             (
                 s.window().to_vec(),
                 s.entering(),
-                !s.is_empty() && s.current().is_none(),
+                s.has_served() && s.current().is_none(),
             )
         }
         AddSource::Maybeboard => {
@@ -940,7 +940,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
     // that came back empty, or maybeboard cards none of which match.
     let ghost_note = match at {
         AddSource::Search => {
-            (!loading_cards() && last_search.read().is_some() && stack.read().is_empty())
+            (!loading_cards() && last_search.read().is_some() && !stack.read().has_served())
                 .then_some(NO_CARDS_MATCH)
         }
         AddSource::Maybeboard => {
@@ -954,7 +954,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
     };
     // In place of the ghost, with a Retry, when the cards could not load.
     let load_failed = at == AddSource::Search
-        && stack.read().is_empty()
+        && !stack.read().has_served()
         && (search_failed() || (deck_failed() && deck.read().is_none()));
     // Under it, after an empty search with Synergy on, whether Synergy may
     // be the reason.
