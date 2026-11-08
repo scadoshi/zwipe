@@ -76,7 +76,7 @@ Who checked, on which live build, what they saw.
 | [308](308-share-image-size-for-whatsapp.md) | Share preview images may be too big for WhatsApp | parked | - | - |
 | [309](309-robots-blocks-share-unfurls.md) | X shows no card for shared deck links (robots.txt) | verified | laptop | #449 |
 | [310](310-guide-screenshots-refresh.md) | zwipe.net guides use old screenshots | fixing | scotland | - |
-| [311](311-guides-filter-chip-and-clear.md) | zwipe.net guides filter: plain label and a hand-rolled × | approved | thinker | - |
+| [311](311-guides-filter-chip-and-clear.md) | zwipe.net guides filter: plain label and a hand-rolled × | fixing | thinker | #455 |
 
 ## Waiting for live verification
 
