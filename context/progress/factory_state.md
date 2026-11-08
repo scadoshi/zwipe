@@ -126,3 +126,7 @@ Scotty raised the worker limit to 3 for now ("push it a little bit more"). Busy:
 2. Guide screenshots, issue 310 (droid) -> contact sheet -> swap.
 3. Store builds on halo (the halo worker; Scotty takes them there): IPA for Zwipe and Cairn (iOS), AAB for Zwipe (Play). Ask Scotty for the version at cut (changelog has 1.18.9-1.18.14 upcoming); date = cut day.
 4. Then: marketing video factory discussion (narrated shorts).
+
+## Scotty to-dos (when back)
+- Cairn 1.4.0 What's New in App Store Connect still has 1.3.0's notes. Replace with cairn context/operations/store-submissions/1.4.0/whats_new.md (474 chars). It's submitted, so: App Review, remove from review, paste, Save, Add for Review.
+- Swap the new store screenshots into App Store Connect and Play Console for Zwipe and Cairn (Droid's set, once approved).
