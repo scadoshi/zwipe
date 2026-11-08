@@ -207,7 +207,7 @@ fn DeckRow(profile: DeckProfile, onopen: EventHandler) -> Element {
                         alt: "",
                     }
                 }
-                h3 { class: "font-light text-base tracking-wide deck-list-name",
+                h2 { class: "font-light text-base tracking-wide deck-list-name",
                     {profile.name.to_string()}
                 }
                 // The pips, the count and the chips take the line under the name.
