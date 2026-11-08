@@ -54,6 +54,7 @@ use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::generation::Generation;
 use zwipe_ui::hint::{Role, SwipeSelectMode};
 use zwipe_ui::playstyle::empty_identity_line;
+use zwipe_ui::screens::swipe_select::{empty_pile_line, filter_lit};
 use zwipe_ui::stack::{CardStack, Direction, NO_CARDS_LEFT, StackAction};
 use zwipe_ui::telemetry::vocabulary::component;
 use zwipe_ui::timing::{LOAD_MORE_AT, MAYBEBOARD_TOAST, PAGE_SIZE};
@@ -198,6 +199,8 @@ struct Pile {
     exhausted: Signal<bool>,
     loading: Signal<bool>,
     loading_more: Signal<bool>,
+    /// Whether the search's first page has landed since the last deal.
+    searched: Signal<bool>,
     loads: Signal<Generation>,
 }
 
@@ -229,6 +232,7 @@ pub fn SwipeSelect(
         exhausted: use_signal(|| false),
         loading: use_signal(|| false),
         loading_more: use_signal(|| false),
+        searched: use_signal(|| false),
         loads: use_signal(Generation::default),
     };
     let Pile {
@@ -239,6 +243,7 @@ pub fn SwipeSelect(
         mut exhausted,
         mut loading,
         mut loading_more,
+        mut searched,
         mut loads,
     } = pile;
     // The card filter's applied filter for the search modes, kept while
@@ -354,6 +359,7 @@ pub fn SwipeSelect(
         stack.write().reset();
         offset.set(0);
         exhausted.set(false);
+        searched.set(false);
         if suggested {
             let held = suggested_pile
                 .map(|pile| pile.peek().clone())
@@ -388,6 +394,7 @@ pub fn SwipeSelect(
             let Some(found) = reply else {
                 return;
             };
+            searched.set(true);
             let raw_empty = found.is_empty();
             let skip = excluded_now();
             let page: Vec<Card> = found.into_iter().filter(|c| !excluded(c, &skip)).collect();
@@ -515,6 +522,7 @@ fn SwipeSelectBody(
         exhausted,
         loading,
         loading_more,
+        searched,
         ..
     } = pile;
     let mut hint_again = hint_open;
@@ -691,10 +699,19 @@ fn SwipeSelectBody(
             .find(|s| s.card.scryfall_data.id == card.scryfall_data.id)
             .map(|s| s.reasons.clone())
     });
-    let empty_line = (suggested && current.is_none() && pile_empty)
-        .then_some(suggested_identity.as_deref())
-        .flatten()
-        .map(empty_identity_line);
+    let dealt_nothing =
+        !suggested && searched() && !loading() && !loading_more() && stack.read().is_empty();
+    let empty_line = if dealt_nothing {
+        Some(empty_pile_line(
+            mode.noun(),
+            filter_lit(&user_filter.read()),
+        ))
+    } else {
+        (suggested && current.is_none() && pile_empty)
+            .then_some(suggested_identity.as_deref())
+            .flatten()
+            .map(empty_identity_line)
+    };
     let has_filter = suggested && suggested_filter.is_some();
     let has_card = current.is_some();
 

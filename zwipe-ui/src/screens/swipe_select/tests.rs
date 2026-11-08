@@ -71,13 +71,11 @@ fn loaded(pile: &[Card]) -> State {
         cards: pile.to_vec(),
     });
     if pile.is_empty() {
-        assert_eq!(
-            effects,
-            [Effect::Toast(Toast::quick(
-                ToastKind::Info,
-                "No commanders match your filters"
-            ))]
+        assert!(
+            effects.is_empty(),
+            "an empty pile says so in place of the card: {effects:?}"
         );
+        assert_eq!(state.message().as_deref(), Some("No commanders to show"));
     } else {
         assert!(
             effects.is_empty(),
@@ -378,6 +376,53 @@ fn a_first_page_all_excluded_pulls_the_next() {
         want_query(&Mode::Partner(None), PAGE_SIZE)
     );
     assert_eq!(state.status(), Status::Loading, "the next page is out");
+}
+
+#[test]
+fn a_partner_pile_with_its_one_card_picked_says_it_is_empty() {
+    let toothy = cards(&["Toothy, Imaginary Friend"]);
+    let mut state = State::new();
+    let ticket = ticket_of(&state.update(Action::Open {
+        mode: Some(Mode::Partner(None)),
+        filter: CardQueryBuilder::new(),
+        pile: SuggestedPile::default(),
+        excluded: toothy[0].scryfall_data.oracle_id.into_iter().collect(),
+    }));
+    let more = ticket_of(&state.update(Action::Found {
+        ticket,
+        cards: toothy,
+    }));
+    let effects = state.update(Action::Found {
+        ticket: more,
+        cards: Vec::new(),
+    });
+    assert_eq!(state.status(), Status::Empty);
+    assert_eq!(state.message().as_deref(), Some("No partners to show"));
+    assert!(
+        effects.is_empty(),
+        "the line says it, not a toast: {effects:?}"
+    );
+}
+
+#[test]
+fn an_empty_filtered_pile_blames_the_filter() {
+    let mut filter = CardQueryBuilder::new();
+    filter.set_name_contains("zzz");
+    let mut state = State::new();
+    let ticket = ticket_of(&state.update(Action::Open {
+        mode: Some(Mode::Background),
+        filter,
+        pile: SuggestedPile::default(),
+        excluded: HashSet::new(),
+    }));
+    let _ = state.update(Action::Found {
+        ticket,
+        cards: Vec::new(),
+    });
+    assert_eq!(
+        state.message().as_deref(),
+        Some("No backgrounds match your filters")
+    );
 }
 
 #[test]
