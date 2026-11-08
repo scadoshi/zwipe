@@ -172,10 +172,10 @@ body {
     }
 }
 
-/* The screen's `?` in the bar's icon row on a wide window. Below the
-   breakpoint the folded nav's title carries it, so the menu's footer row
-   leaves it out. */
-@media (max-width: 899px) {
+/* The screen's `?` in the bar's icon row where the full bar shows. Where
+   the header folds (below 1110px, media.rs's NAV_FOLD_MAX_PX) the folded
+   nav's title carries it, so the menu's footer row leaves it out. */
+@media (max-width: 1109px) {
     .web-nav-hint {
         display: none;
     }
@@ -575,83 +575,17 @@ body {
     }
 }
 
-/* The kit folds the nav at 60rem; zwiper-web's breakpoint is 900px, so
-   between the two the bar stays open as above 60rem. */
-@media (min-width: 900px) and (max-width: 60rem) {
-    .web-shell .nav-wrapper nav {
-        display: flex;
-        padding: 1.25rem 1.5rem;
-        gap: 2rem;
-        max-height: none;
-    }
-
-    .web-shell .nav-toggle,
-    .web-shell .nav-persistent {
-        display: none;
-    }
-
-    .web-shell .nav-panel,
-    .web-shell .nav-panel-open {
-        display: flex;
-        flex: 1;
-        justify-content: flex-end;
-        margin: 0;
-        padding: 0;
-        border-top: none;
-        opacity: 1;
-        visibility: visible;
-        transition: none;
-    }
-
-    .web-shell .nav-panel .nav-panel-inner {
-        flex-direction: row;
-        flex-wrap: wrap;
-        align-items: center;
-        justify-content: flex-end;
-        gap: 0.75rem 1.5rem;
-        overflow: visible;
-        padding: 0;
-    }
-
-    .web-shell .nav-panel .nav-links {
-        flex-direction: row;
-        flex-wrap: wrap;
-        align-items: center;
-        justify-content: flex-end;
-        gap: 0.75rem 1.5rem;
-        max-height: none;
-        overflow: visible;
-    }
-
-    .web-shell .nav-panel .nav-links li {
-        width: auto;
-        height: 1.85rem;
-    }
-
-    .web-shell .nav-panel .nav-links > li > a,
-    .web-shell .nav-panel .nav-links > li > button.nav-link {
-        width: auto;
-        height: 1.85rem;
-        font-size: 0.8rem;
-        padding: 0 0.8rem;
-    }
-
-    .web-shell .nav-wrapper nav > .nav-brand {
-        justify-self: auto;
-    }
-}
-
 /* The nav's width-only pieces keep their own boxes: a corner button, a
    list item, the footer row. */
-@media (max-width: 899px) {
+@media (max-width: 1109px) {
     .web-nav-wide {
         display: none !important;
     }
 }
 
-/* A wide window shows the app's list as pills, in the app's order, with the
-   menu footer's icons after them. */
-@media (min-width: 900px) {
+/* Where the full bar fits, it shows the app's list as pills, in the app's
+   order, with the menu footer's icons after them. */
+@media (min-width: 1110px) {
     .web-nav-narrow {
         display: none !important;
     }
@@ -741,7 +675,7 @@ body {
     }
 }
 
-/* ---- Header below the breakpoint ----
+/* ---- Header while folded (below 1110px, media.rs's NAV_FOLD_MAX_PX) ----
 
    The app's header from the kit's NavBar: the back arrow or an empty left
    corner, the screen's title and its `?` in the middle, the hamburger on
@@ -752,7 +686,7 @@ body {
    (.app-nav-back, .app-nav-title, the menu footer's buttons) come from
    components' SCREENS_CSS; these are the ones the app scopes to its
    .app-nav. */
-@media (max-width: 899px) {
+@media (max-width: 1109px) {
     .web-shell {
         position: relative;
     }
@@ -961,7 +895,7 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
    The kit's SheetFrame draws them; the drawer starts under the bar. */
 @media (min-width: 900px) {
     :root {
-        --sheet-drawer-top: 5.4rem;
+        --sheet-drawer-top: calc(var(--web-nav-h, 4.7rem) + 0.7rem);
     }
 
     /* The dock sits as far left of the scrollbar along the drawer's right
@@ -1983,6 +1917,28 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
         transform: translateX(calc(100% + 1rem));
         visibility: hidden;
         transition: transform 0.3s ease, visibility 0s linear 0.3s;
+    }
+
+    /* Where the window is too narrow for the card centered beside the shown
+       panel (details_eye.rs's beside_fits), the card moves left just far
+       enough to clear it, 1rem short of the panel; where both fit it stays
+       centered. The card's width is card_width's: the stack's
+       min(68vh, 42rem) less its 3.25rem, at a card's 63:88, at most 26rem. */
+    :is(.web-cards-swipe, .web-swipe-select-body) {
+        --web-card-w: min(calc((min(68vh, 42rem) - 3.25rem) * 63 / 88), 26rem);
+        --web-card-shift: min(
+            0px,
+            calc(100vw - 2rem - var(--web-dock-panel-width) - 50vw - var(--web-card-w) / 2)
+        );
+    }
+
+    :is(.web-cards-swipe, .web-swipe-select-body) .web-swipe-stack {
+        translate: var(--web-card-shift) 0;
+        transition: translate 0.3s ease;
+    }
+
+    :is(.web-cards-swipe, .web-swipe-select-body).web-details-hidden .web-swipe-stack {
+        translate: none;
     }
 
     /* A transform on the panel's block, even one mid-entrance, makes the

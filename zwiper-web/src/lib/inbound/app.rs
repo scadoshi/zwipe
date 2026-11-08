@@ -10,7 +10,7 @@ use zwipe_core::domain::user::models::settings::PipStyle;
 
 use crate::inbound::chrome::hint_topic::{HintHost, HintTopic};
 use crate::inbound::chrome::leave_guard::{self, GuardedHistory};
-use crate::inbound::chrome::splash;
+use crate::inbound::chrome::{media, splash};
 use crate::inbound::router::Route;
 use crate::inbound::screens::auth::login::LoginPrefill;
 use crate::inbound::screens::update_required::UpdateRequired;
@@ -88,6 +88,7 @@ pub fn App() -> Element {
         }
         document::Style { {components::THEMES_CSS} }
         document::Style { {components::COMPONENTS_CSS} }
+        document::Style { {media::nav_fold_css()} }
         document::Style { {components::MAGIC_CSS} }
         document::Style { {components::APP_CSS} }
         document::Style { {components::SCREENS_CSS} }
