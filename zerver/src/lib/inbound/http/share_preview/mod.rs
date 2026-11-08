@@ -1,11 +1,12 @@
 //! The generated preview image a shared deck's link unfurls with.
 //!
 //! zwipe.net's `/deck/:token` page points its `og:image` at
-//! `/api/share/deck/{token}/preview.png?v={updated_at}`. zerver draws the
-//! image here: [`layout`] turns the shared deck into an SVG in its owner's
-//! theme ([`palette`]), and [`render`] rasterizes it with resvg. Cloudflare
-//! caches the PNG by URL, and the version in the URL changes whenever the deck
-//! does, so each version is drawn about once per edge. Behind the edge,
+//! `/api/share/deck/{token}/preview.png?v={layout}-{updated_at}`. zerver
+//! draws the image here: [`layout`] turns the shared deck into an SVG in its
+//! owner's theme ([`palette`]), and [`render`] rasterizes it with resvg.
+//! Cloudflare caches the PNG by URL, and the version in the URL changes
+//! whenever the deck or the drawing does, so each version is drawn about once
+//! per edge. Behind the edge,
 //! [`SharePreview`] keeps the last few renders and makes concurrent requests
 //! for the same image share one render.
 
@@ -24,14 +25,16 @@ use tokio::sync::OnceCell;
 use uuid::Uuid;
 use zwipe_core::domain::user::theme::ThemeConfig;
 use zwipe_core::http::contracts::deck::HttpSharedDeck;
+use zwipe_core::http::paths::shared_deck_preview_version;
 
 use crate::outbound::scryfall_art::ArtSource;
 
 /// Most rendered images kept in memory. One is 0.5 to 1 MB.
 const RENDERED_ENTRIES: usize = 32;
 
-/// One image: the deck's share token, its version and the theme drawn in.
-type Key = (Uuid, i64, String);
+/// One image: the deck's share token, its version as the preview URL's `v`
+/// names it (the layout and the deck's update), and the theme drawn in.
+type Key = (Uuid, String, String);
 
 /// A render in flight or done: `None` inside when it failed.
 type Slot = Arc<OnceCell<Option<Bytes>>>;
@@ -58,7 +61,7 @@ impl SharePreview {
     /// again.
     pub async fn png(&self, token: Uuid, deck: &HttpSharedDeck) -> Option<Bytes> {
         let theme = deck.theme.clone().unwrap_or_default();
-        let version = deck.updated_at.map_or(0, |t| t.timestamp());
+        let version = shared_deck_preview_version(deck.updated_at.map_or(0, |t| t.timestamp()));
         let key: Key = (token, version, theme.css_class());
         let slot = self.slot(&key)?;
         let image = slot.get_or_init(|| self.draw(deck, &theme)).await.clone();
