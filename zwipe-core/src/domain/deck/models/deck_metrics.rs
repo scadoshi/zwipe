@@ -65,6 +65,12 @@ pub struct DeckMetrics {
     pub total_price_tix: Option<f64>,
     /// Average card price in MTGO Event Tickets. `None` if no cards priced.
     pub avg_price_tix: Option<f64>,
+    /// Copies with no USD price, which the USD total and average leave out.
+    pub unpriced_usd: usize,
+    /// Copies with no EUR price, which the EUR total and average leave out.
+    pub unpriced_eur: usize,
+    /// Copies with no MTGO Event Tickets price, which the tix total and average leave out.
+    pub unpriced_tix: usize,
     /// Non-empty mechanical category counts, sorted by count descending.
     pub card_role_counts: Vec<(&'static str, usize)>,
     /// Each charted role's oracle tags across the mainboard, keyed by the
@@ -84,6 +90,17 @@ pub struct DeckMetrics {
 }
 
 impl DeckMetrics {
+    /// Copies with no price in `currency`, which its total and average
+    /// leave out.
+    #[must_use]
+    pub fn unpriced(&self, currency: PriceCurrency) -> usize {
+        match currency {
+            PriceCurrency::Usd => self.unpriced_usd,
+            PriceCurrency::Eur => self.unpriced_eur,
+            PriceCurrency::Tix => self.unpriced_tix,
+        }
+    }
+
     /// The type chart's word for a type: the type's singular, or a short
     /// word for the long ones, so each fits its column on a phone.
     pub fn abbreviate_type(label: &str) -> &str {
@@ -285,6 +302,7 @@ impl DeckMetrics {
         let mut eur_copies = 0.0f64;
         let mut tix_sum = 0.0f64;
         let mut tix_copies = 0.0f64;
+        let mut unpriced = [0usize; 3];
         let mut power_sum = 0.0f64;
         let mut power_copies = 0.0f64;
         let mut toughness_sum = 0.0f64;
@@ -411,6 +429,7 @@ impl DeckMetrics {
                 tix_sum += p * qty_f;
                 tix_copies += qty_f;
             }
+            count_unpriced(&mut unpriced, &card.scryfall_data, qty);
         }
 
         let mana_balance: [(usize, usize); 5] = std::array::from_fn(|i| {
@@ -452,7 +471,9 @@ impl DeckMetrics {
                 tix_sum += p;
                 tix_copies += 1.0;
             }
+            count_unpriced(&mut unpriced, &card.scryfall_data, 1);
         }
+        let [unpriced_usd, unpriced_eur, unpriced_tix] = unpriced;
 
         let type_counts: Vec<(&'static str, usize)> = TYPE_LABELS
             .iter()
@@ -539,6 +560,9 @@ impl DeckMetrics {
             avg_price_eur,
             total_price_tix,
             avg_price_tix,
+            unpriced_usd,
+            unpriced_eur,
+            unpriced_tix,
             card_role_counts,
             card_role_tags,
             oracle_tag_counts,
@@ -688,6 +712,17 @@ fn count_color_pips(mana_cost: &str) -> [usize; 5] {
 /// Returns None for "C" (colorless), "S" (snow), or unknown values.
 fn produced_color_index(s: &str) -> Option<usize> {
     Color::try_from(s).ok().map(color_slot)
+}
+
+/// Adds `copies` to each currency's slot in `unpriced` (USD, EUR, tix) the
+/// printing has no price in.
+fn count_unpriced(unpriced: &mut [usize; 3], scryfall_data: &ScryfallData, copies: usize) {
+    let currencies = [PriceCurrency::Usd, PriceCurrency::Eur, PriceCurrency::Tix];
+    for (slot, currency) in unpriced.iter_mut().zip(currencies) {
+        if card_price(scryfall_data, currency).is_none() {
+            *slot = slot.saturating_add(copies);
+        }
+    }
 }
 
 /// Parse an optional price string (e.g. "1.50") into f64.
@@ -1190,6 +1225,27 @@ mod tests {
         let metrics = DeckMetrics::from_entries(&[priced, unpriced]);
         assert!((metrics.total_price_usd.unwrap() - 2.00).abs() < f64::EPSILON);
         assert!((metrics.avg_price_usd.unwrap() - 2.00).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn unpriced_counts_copies_per_currency() {
+        let mut priced = make_entry("Sol Ring", 1);
+        priced.card.scryfall_data.prices.usd = Some("2.00".to_string());
+        let unpriced = make_entry("Mystery Card", 3);
+
+        let metrics = DeckMetrics::from_entries(&[priced, unpriced]);
+        assert_eq!(metrics.unpriced(PriceCurrency::Usd), 3);
+        assert_eq!(metrics.unpriced(PriceCurrency::Eur), 4);
+        assert_eq!(metrics.unpriced(PriceCurrency::Tix), 4);
+    }
+
+    #[test]
+    fn an_unpriced_commander_counts_once() {
+        let spell = make_entry("Sol Ring", 1);
+        let commander = make_entry("Mystery Commander", 1).card;
+
+        let metrics = DeckMetrics::from_entries_and_command_zone(&[spell], &[commander]);
+        assert_eq!(metrics.unpriced(PriceCurrency::Usd), 2);
     }
 
     #[test]

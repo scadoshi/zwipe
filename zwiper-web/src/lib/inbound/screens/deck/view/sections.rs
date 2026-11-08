@@ -16,6 +16,7 @@ use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
 use zwipe_core::domain::deck::{DeckProfile, DeckWarning, deck_tag_label};
 use zwipe_ui::colors::ColorCounts;
 use zwipe_ui::deck::form::Slot;
+use zwipe_ui::deck::view::with_unpriced;
 use zwipe_ui::deck::warning::{self, Fix};
 use zwipe_ui::screens::deck_view::{BUY, EDIT, MoreItem};
 
@@ -158,13 +159,21 @@ pub fn BudgetBody(
         (Some(m), PriceCurrency::Usd) => (m.total_price_usd, m.avg_price_usd),
         (None, _) => (None, None),
     };
+    let unpriced = metrics.as_ref().map_or(0, |m| m.unpriced(shown));
     rsx! {
         div { style: "display:flex;flex-direction:column;",
-            InfoRow { label: "Total price", value: total_price_line(&profile, total, shown) }
+            InfoRow {
+                label: "Total price",
+                value: with_unpriced(total_price_line(&profile, total, shown), unpriced),
+            }
             if metrics.is_some() {
                 InfoRow {
                     label: "Average card price",
-                    value: average.map_or_else(|| "N/A".to_owned(), |v| shown.format_amount(v)),
+                    value: average
+                        .map_or_else(
+                            || "N/A".to_owned(),
+                            |v| with_unpriced(shown.format_amount(v), unpriced),
+                        ),
                 }
             }
             if let Some((tcgplayer, cardkingdom)) = buy {

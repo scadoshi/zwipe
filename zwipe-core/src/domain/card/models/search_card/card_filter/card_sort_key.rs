@@ -5,6 +5,7 @@ use std::cmp::Ordering;
 use serde::{Deserialize, Serialize};
 
 use crate::domain::card::scryfall_data::ScryfallData;
+use crate::domain::card::search_card::card_filter::sort_direction::SortDirection;
 
 /// The field a card search orders by.
 #[expect(missing_docs, reason = "each variant names the field it sorts by")]
@@ -90,6 +91,40 @@ impl CardSortKey {
                 .cmp(&b.edhrec_rank.unwrap_or(i32::MAX)),
             Self::Random => Ordering::Equal,
         }
+    }
+}
+
+impl CardSortKey {
+    /// [`compare`](Self::compare) in `direction`, except that a card with no
+    /// price under a price key sorts last both ways.
+    pub fn compare_in(
+        self,
+        a: &ScryfallData,
+        b: &ScryfallData,
+        direction: SortDirection,
+    ) -> Ordering {
+        match (self.lacks_price(a), self.lacks_price(b)) {
+            (true, false) => Ordering::Greater,
+            (false, true) => Ordering::Less,
+            _ => {
+                let ord = self.compare(a, b);
+                match direction {
+                    SortDirection::Ascending => ord,
+                    SortDirection::Descending => ord.reverse(),
+                }
+            }
+        }
+    }
+
+    /// Whether this is a price key and `data` has no readable price under it.
+    fn lacks_price(self, data: &ScryfallData) -> bool {
+        let price = match self {
+            Self::PriceUsd => data.prices.usd.as_deref(),
+            Self::PriceEur => data.prices.eur.as_deref(),
+            Self::PriceTix => data.prices.tix.as_deref(),
+            _ => return false,
+        };
+        price.and_then(|s| s.parse::<f64>().ok()).is_none()
     }
 }
 

@@ -448,6 +448,31 @@ fn the_budget_lines_follow_the_picked_currency() {
 }
 
 #[test]
+fn the_budget_lines_count_unpriced_cards() {
+    let profile = deck_profile("Budget");
+    let mut unpriced = card("Mystery Card");
+    unpriced.scryfall_data.prices.usd = None;
+    let state = loaded(
+        &profile,
+        deck(profile.clone(), vec![card("Sol Ring"), unpriced]),
+    );
+    let total = state.total_price_line();
+    let average = state.average_price_line();
+    assert!(
+        total
+            .as_deref()
+            .is_some_and(|t| t.ends_with(" (1 unpriced)")),
+        "{total:?}"
+    );
+    assert!(
+        average
+            .as_deref()
+            .is_some_and(|a| a.ends_with(" (1 unpriced)")),
+        "{average:?}"
+    );
+}
+
+#[test]
 fn the_average_lines_hide_without_metrics() {
     let profile = deck_profile("Empty");
     let state = loaded(&profile, deck(profile.clone(), Vec::new()));
