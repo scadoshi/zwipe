@@ -158,6 +158,18 @@ pub fn normalized(filter: &CardQueryBuilder) -> CardQueryBuilder {
     b
 }
 
+/// The query Add sends: [`normalized`], held to the deck's format when it has
+/// one ([`CardQueryBuilder::require_legal_in`]), so no "Is legal in" pick can
+/// serve a card the deck's format doesn't allow.
+#[must_use]
+pub fn outgoing(filter: &CardQueryBuilder, deck_format: Option<Format>) -> CardQueryBuilder {
+    let mut b = normalized(filter);
+    if let Some(format) = deck_format {
+        b.require_legal_in(format);
+    }
+    b
+}
+
 /// The printing IDs from where the server says related cards begin.
 #[must_use]
 pub fn related_ids(page: &HttpDeckCardSearch) -> HashSet<Uuid> {
@@ -187,6 +199,52 @@ mod tests {
 
     use super::*;
     use crate::test_support::{card, deck, deck_profile};
+
+    fn commander_context() -> AddContext {
+        AddContext {
+            format: Some(Format::Commander),
+            ..AddContext::default()
+        }
+    }
+
+    /// A card legal in Pauper and banned in Commander.
+    fn pauper_only_card() -> Card {
+        use zwipe_core::domain::card::scryfall_data::legalities::LegalityKind;
+        let mut c = card("Pauper Only");
+        c.scryfall_data.legalities.pauper = Some(LegalityKind::Legal);
+        c.scryfall_data.legalities.commander = Some(LegalityKind::Banned);
+        c
+    }
+
+    #[test]
+    fn another_format_picked_beside_the_deck_format_is_a_filter() {
+        let ctx = commander_context();
+        let mut b = CardQueryBuilder::default();
+        b.set_legalities_contains_any(["commander", "pauper"]);
+        assert!(ctx.shows_dot(&b), "Commander + Pauper is a filter");
+        assert!(b.has_search_intent(Some(Format::Commander)));
+        let mut own = CardQueryBuilder::default();
+        own.set_legalities_contains_any(["commander"]);
+        assert!(!ctx.shows_dot(&own), "the deck's own format is the default");
+    }
+
+    #[test]
+    fn an_any_pick_never_widens_the_deck_format() {
+        let mut b = CardQueryBuilder::default();
+        b.set_legalities_contains_any(["commander", "pauper"]);
+        let query = outgoing(&b, Some(Format::Commander)).build().unwrap();
+        assert!(
+            !query.criteria().matches(&pauper_only_card()),
+            "a Commander-banned Pauper card reaches a Commander deck"
+        );
+        let mut all = CardQueryBuilder::default();
+        all.set_legalities_contains_all(["pauper"]);
+        let query = outgoing(&all, Some(Format::Commander)).build().unwrap();
+        assert!(
+            !query.criteria().matches(&pauper_only_card()),
+            "an All pick is held to the deck format too"
+        );
+    }
 
     fn commander_deck() -> Deck {
         let mut commander = card("Commander");
@@ -234,7 +292,7 @@ mod tests {
         assert_eq!(
             all.legalities_contains_any(),
             None,
-            "an All pick is not narrowed by the deck's format"
+            "seeding leaves an All pick alone; outgoing holds it to the deck format"
         );
 
         let mut remembered = CardQueryBuilder::default();
@@ -264,7 +322,7 @@ mod tests {
         assert!(!add.lands_at_target());
         let mut filter = CardQueryBuilder::default();
         add.seed(&mut filter, false);
-        assert!(!filter.has_search_intent());
+        assert!(!filter.has_search_intent(add.format));
         assert!(!add.context().serves(&filter));
     }
 

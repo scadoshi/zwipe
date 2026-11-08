@@ -660,6 +660,7 @@ pub fn Add(deck_id: Uuid) -> Element {
         printing_card,
         shows_synergy,
         validates_apply,
+        sheet_deck_format,
         shows_dot,
     ) = {
         let model = driver.model.read();
@@ -674,6 +675,7 @@ pub fn Add(deck_id: Uuid) -> Element {
             model.printing_card().cloned(),
             model.shows_synergy(),
             model.validates_apply(),
+            model.sheet_deck_format(),
             model.shows_dot(&filter_builder.read()),
         )
     };
@@ -862,6 +864,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                 // client-side and its default is a blank filter, so an empty
                 // Apply there (e.g. right after Reset) must commit, not warn.
                 validate_before_apply: validates_apply,
+                deck_format: sheet_deck_format,
                 on_clear: move |()| {
                     let draft = filter_builder.peek().clone();
                     driver.dispatch(Action::ResetFilter(draft));

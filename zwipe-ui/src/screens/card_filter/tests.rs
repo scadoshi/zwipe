@@ -15,6 +15,7 @@ fn config(show_format: bool, validate: bool, reset: ResetRule) -> SheetConfig {
         validate,
         reset,
         sources: Sources::default(),
+        deck_format: None,
     }
 }
 
