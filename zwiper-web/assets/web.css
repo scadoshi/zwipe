@@ -220,7 +220,8 @@ body {
 /* The floating controls a scroll screen holds stop above the footer as it
    scrolls in (magic.css's footer rise): the action docks, the swipes' dock
    pair and a swipe screen's bottom row, but not the ones inside them, a
-   sheet or an overlay screen, and the toast stack at the bottom left. The
+   sheet or an overlay screen, and the toast stack at the bottom left while
+   no sheet is open, so a toast over a sheet stays at its foot. The
    docked details panel shrinks from its foot by as much, so it keeps ending
    above the docks. */
 @supports (animation-timeline: view()) {
@@ -229,6 +230,10 @@ body {
         animation: footer-rise linear both;
         animation-timeline: --site-footer;
         animation-range: entry 0px entry 100vh;
+    }
+
+    body:has(.bottom-sheet.show) .toast-container {
+        animation: none;
     }
 
     @media (min-width: 900px) {
