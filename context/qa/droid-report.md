@@ -484,3 +484,38 @@ Pass 7 item 10 said the app's Create deck shows the Commander, Partner, Backgrou
 ### Cleanup
 
 The temp deck is deleted (12 decks, Droid test untouched). Server settings are unchanged, the maybeboard is empty, and the emulator runs the 9665fd9e3 debug build, still signed in.
+
+## Pass 11
+
+Release 80d5b43ab is live. Web: app.zwipe.net at 411px in the emulator's Chrome. App: the 9665fd9e3 debug build against production (now on the new server). Signed in as `test`. Shots are in ~/Developer/droid/shots/web11-<n>.png and pass11-<n>.png. One throwaway web deck ("Droid web11"), deleted at the end. Every tap that mattered was a real `adb input tap`. Note that the web filter's accordion ignores scripted clicks; the app's does not.
+
+### Server-side fixes, now live
+
+| # | Status | What I saw | Shots |
+|---|---|---|---|
+| 200 | fixed | Web import of "1 Snapcaster Mage (ISD) 78" and "1 Bloodline Keeper (ISD) 90" lists "Bloodline Keeper // Lord of Lineage". Export writes "(ISD) 90" and "(ISD) 78" back, and Bloodline Keeper now shows its real art and groups as a Creature. | web11-13 |
+| 201 | fixed | Set: Innistrad on web shows Silent Departure as the Innistrad printing, no longer Innistrad Remastered. | web11-12 |
+| 203 promo | not fixed | Name "Sol Ring" with Is promo: Yes gives "No cards match" on web, though Scryfall lists 10 paper promo Sol Rings (soc 427, sld 910/912/913, pfdn 1, plg22 1 and more). | |
+| 208 | fixed | Web warnings on a Modern deck: "Deck has 8 cards, Modern requires at least 60", "Pyroblast is not legal in Modern", "Lightning Bolt has 5 copies, Modern allows 4". | web11-3 |
+| 197 (web) | fixed | Fix to 4 toasts "Quantity set to 4", and the count and warnings drop to 7 cards and 3 warnings at once. | |
+
+### Web rechecks (same nits as pass 10's app run)
+
+| # | Status | What I saw | Shots |
+|---|---|---|---|
+| 202 filters | fixed | Set: the pills (DIV chips) sit under the box (box 449..485, first pill 501) and close on a real-tap pick, which also empties the box. The pills can sit behind the open keyboard, so a tap aimed at one can land on a keyboard key. Closing the keyboard first keeps them up and tappable. | web11-6, web11-11 |
+| 202 Quick add | not fixed on web | On the web Cards page, "Mountain" pills float above the box (box 99..135, pills at -42..61 CSS px). They cover the deck title and the header ‹, whose hit test lands on a pill. The app's Quick add is fixed. | web11-13 |
+| 204 | fixed | Mana value "7" typed with the keyboard and left focused shows the section's ×. Apply while focused returns 7-drops (Dream Harvest, Conspiracy Unraveler, Never // Return, Terror Ballista). | |
+| 203 | fixed | No-result filter: "No cards match" with no toast. | |
+| 209 | fixed | The share dialog says "Stop sharing". A Modern deck's Show row has no Command zone. The maybeboard hint covers its Swipe and row actions. | |
+| 225 (chip ×) | not fixed on web | Same as the app: the picked chip's `button.chip-remove` is 10x16, `elementFromPoint` at its centre returns the chip DIV, and a real tap does nothing. | |
+
+### Free app run-through
+
+- **Activity totals don't add up to the swipe count** (question). The Activity panel reads 303 swipes, but its Totals bars are Added 25, Skipped 52, Maybeboard 5, Removed 64 = 146. My guess is that swipes on decks since deleted (lots of temp decks in passes 7 to 11) leave the bars but not the counter. Shot: pass11-2.
+- **Draw odds start at "by turn 0"** (question). The stepper works (+ to turn 3), but turn 0 is an odd default label; "opening hand" may read better.
+- Playstyle, Activity, Distributions, Mana and Draw odds all render with data. Printings opens the cover flow, → steps and updates the price chips (INR 328: $32.79 €27.47 1.72 TIX), and closing without picking toasts "Printing unchanged". Shots: pass11-1 to pass11-6.
+
+### Cleanup
+
+The web temp deck is deleted. The server has 13 decks: Droid test plus Surfer's "Surfer p19 renamed" and the rest. Server settings are unchanged (zenburn, dark, theme pips, chip, Universes Beyond shown with the same four exceptions), and the maybeboard is empty. The emulator runs the 9665fd9e3 debug build, signed in.
