@@ -8,6 +8,7 @@ use zwipe_core::domain::user::settings::PipStyle;
 use zwiper::config::Config;
 use zwiper::inbound::components::auth::session_upkeep;
 use zwiper::inbound::components::hint_host::HintHost;
+use zwiper::inbound::components::navigation::deck_opener::DeckOpener;
 use zwiper::inbound::components::navigation::leave_guard::GuardedHistory;
 use zwiper::inbound::components::navigation::menu::MenuOpen;
 use zwiper::inbound::components::update_required::UpdateRequired;
@@ -168,6 +169,9 @@ fn App() -> Element {
     // The main menu's open state, above the router so it carries across
     // screens.
     use_context_provider(|| MenuOpen(Signal::new(false)));
+    // Above the router too: the deck view's Back reads what Home or the deck
+    // list recorded before it mounted.
+    DeckOpener::use_provider();
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
         document::Style {

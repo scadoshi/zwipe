@@ -41,6 +41,7 @@ use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::hint_dialog::OneTimeHintDialog;
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::info_button::InfoButton;
+use crate::inbound::components::navigation::deck_opener::DeckOpener;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::flush_loop;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
@@ -63,6 +64,7 @@ pub(crate) struct Driver {
     client: Signal<ZwipeClient>,
     hint_open: Signal<bool>,
     dialogs: DeckDialogs,
+    opener: DeckOpener,
 }
 
 // By hand: the handles have no `PartialEq`. One model is one driver.
@@ -173,6 +175,14 @@ impl Driver {
             }
             Effect::OpenDialog(dialog) => self.dialogs.open(dialog),
             Effect::OpenUrl(url) => open_url::open(&url),
+            Effect::Navigate(Destination::Back) => {
+                let back = self
+                    .model
+                    .peek()
+                    .deck_id()
+                    .map_or(Router::DeckList {}, |id| self.opener.back_from(id));
+                self.navigator.push(back);
+            }
             Effect::Navigate(destination) => {
                 self.navigator.push(route(destination));
             }
@@ -399,7 +409,7 @@ impl Driver {
 /// The app's route for a place the deck view sends the user.
 fn route(destination: Destination) -> Router {
     match destination {
-        Destination::DeckList => Router::DeckList {},
+        Destination::Back | Destination::DeckList => Router::DeckList {},
         Destination::EditDeck(deck_id) => Router::EditDeck { deck_id },
         Destination::DeckCards(deck_id) => Router::ViewDeckCard { deck_id },
         Destination::AddCards(deck_id) => Router::AddDeckCard { deck_id },
@@ -422,6 +432,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         client,
         hint_open: use_signal(|| false),
         dialogs: use_deck_dialogs(),
+        opener: use_context(),
     };
     // First-deck tour: opens once per account when the model offers it on
     // the first Load; the header "?" reopens it on demand.

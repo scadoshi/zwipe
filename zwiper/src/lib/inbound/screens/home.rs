@@ -29,6 +29,7 @@ use crate::inbound::components::home_decks::{CachedDecks, HomeDecks};
 use crate::inbound::components::home_flavor::FlavorPanel;
 use crate::inbound::components::home_hero::{CachedCounts, CachedMyCounts, HomeHeroScoped};
 use crate::inbound::components::home_play_style::{CachedPlayStyle, HomePlayStyle};
+use crate::inbound::components::navigation::deck_opener::DeckOpener;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::Screen;
 use crate::inbound::components::{settings_sync, ui_toast};
@@ -127,6 +128,7 @@ struct Driver {
     session: Signal<Option<Session>>,
     client: Signal<ZwipeClient>,
     hint_open: Signal<bool>,
+    opener: DeckOpener,
     theme_config: Signal<ThemeConfig>,
     pip_style: Signal<PipStyle>,
     caches: Caches,
@@ -168,6 +170,9 @@ impl Driver {
             }
             Effect::MarkGreeted => GREETED.store(true, Ordering::Relaxed),
             Effect::Navigate(destination) => {
+                if let Destination::Deck(deck_id) = destination {
+                    self.opener.record(deck_id, Router::Home {});
+                }
                 self.navigator.push(route(destination));
             }
             Effect::Toast(raised) => ui_toast::raise(self.toast, raised),
@@ -411,6 +416,7 @@ pub fn Home() -> Element {
         navigator: use_navigator(),
         toast: use_toast(),
         authed: use_authed(Screen::Home),
+        opener: use_context(),
         session,
         client: use_context(),
         hint_open: use_signal(|| false),
