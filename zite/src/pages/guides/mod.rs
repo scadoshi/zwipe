@@ -10,7 +10,7 @@
 mod content;
 
 use components::hint::KeyGlyph;
-use components::{GalleryFooter, GalleryFrame, HintKey, Panel};
+use components::{ClearWrap, GalleryFooter, GalleryFrame, HintKey, Panel};
 use content::{Block, GUIDES, Guide};
 use dioxus::prelude::*;
 use zwipe_ui::hint::KeyIcon;
@@ -313,6 +313,52 @@ fn tag_color_class(tag: &str) -> &'static str {
         .unwrap_or(&"tag-p1")
 }
 
+/// The filter row above the guides, in the app's chip-row anatomy: the
+/// "Filter" label chip, the search box with the shared clear button, then a
+/// chip per tag. Search and tag narrow the same list.
+#[component]
+fn GuideFilter(query: Signal<String>, selected: Signal<Option<&'static str>>) -> Element {
+    rsx! {
+        div { class: "guide-filter",
+            span { class: "stat-chip stat-chip-p1 chip-row-label", "Filter" }
+            ClearWrap {
+                filled: !query().is_empty(),
+                on_clear: move |()| query.set(String::new()),
+                label: "Clear search".to_string(),
+                input {
+                    class: "guide-search-input",
+                    r#type: "text",
+                    placeholder: "Search guides",
+                    aria_label: "Search guides",
+                    value: "{query}",
+                    autocapitalize: "none",
+                    autocorrect: "off",
+                    spellcheck: "false",
+                    oninput: move |evt| query.set(evt.value()),
+                }
+            }
+            button {
+                class: if selected().is_none() { "chip selected" } else { "chip" },
+                onclick: move |_| selected.set(None),
+                "All"
+            }
+            for tag in GUIDE_TAGS.iter().copied() {
+                button {
+                    class: if selected() == Some(tag) { "chip selected" } else { "chip" },
+                    onclick: move |_| {
+                        if selected() == Some(tag) {
+                            selected.set(None);
+                        } else {
+                            selected.set(Some(tag));
+                        }
+                    },
+                    "{tag}"
+                }
+            }
+        }
+    }
+}
+
 #[component]
 pub fn Guides() -> Element {
     let mut selected = use_signal(|| Option::<&'static str>::None);
@@ -342,48 +388,7 @@ pub fn Guides() -> Element {
                     p { class: "tagline", "How Zwipe works, one feature at a time." }
                 }
             }
-            // One console row, the app's chip-row anatomy: inline label, the
-            // search input with its clear button, then the tag chips.
-            div { class: "guide-filter",
-                span { class: "guide-filter-label", "Filter" }
-                input {
-                    class: "guide-search-input",
-                    r#type: "text",
-                    placeholder: "Search guides",
-                    aria_label: "Search guides",
-                    value: "{query}",
-                    autocapitalize: "none",
-                    autocorrect: "off",
-                    spellcheck: "false",
-                    oninput: move |evt| query.set(evt.value()),
-                }
-                if !query().is_empty() {
-                    button {
-                        class: "guide-search-clear",
-                        aria_label: "Clear search",
-                        onclick: move |_| query.set(String::new()),
-                        "\u{00d7}"
-                    }
-                }
-                button {
-                    class: if selected().is_none() { "chip selected" } else { "chip" },
-                    onclick: move |_| selected.set(None),
-                    "All"
-                }
-                for tag in GUIDE_TAGS.iter().copied() {
-                    button {
-                        class: if selected() == Some(tag) { "chip selected" } else { "chip" },
-                        onclick: move |_| {
-                            if selected() == Some(tag) {
-                                selected.set(None);
-                            } else {
-                                selected.set(Some(tag));
-                            }
-                        },
-                        "{tag}"
-                    }
-                }
-            }
+            GuideFilter { query, selected }
             if hits.is_empty() {
                 div { class: "guide-empty",
                     p {
@@ -540,6 +545,35 @@ pub fn GuidePage(slug: String) -> Element {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The filter row's HTML with `typed` in the search box.
+    fn filter_html(typed: &'static str) -> String {
+        #[component]
+        fn Host(typed: &'static str) -> Element {
+            let query = use_signal(|| typed.to_owned());
+            let selected = use_signal(|| None);
+            rsx! {
+                GuideFilter { query, selected }
+            }
+        }
+        let mut dom = VirtualDom::new_with_props(Host, HostProps { typed });
+        dom.rebuild_in_place();
+        dioxus_ssr::render(&dom)
+    }
+
+    #[test]
+    fn the_filter_labels_with_a_chip_and_clears_through_the_shared_wrap() {
+        let empty = filter_html("");
+        assert!(
+            empty.contains(r#"class="stat-chip stat-chip-p1 chip-row-label">Filter<"#),
+            "{empty}"
+        );
+        assert!(empty.contains(r#"class="input-clear-wrap""#), "{empty}");
+        assert!(!empty.contains("guide-search-clear"), "{empty}");
+        let typed = filter_html("mana");
+        assert!(typed.contains("input-clear-wrap has-text"), "{typed}");
+        assert!(typed.contains(r#"aria-label="Clear search""#), "{typed}");
+    }
 
     #[test]
     fn a_heading_anchor_is_its_words_joined_by_dashes() {

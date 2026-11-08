@@ -1232,20 +1232,16 @@ h2.panel-title {
 /* Search input in the filter row, matching title, summary, tags, and body text
    of the compiled guide set. Input treatment from the share page's card filter;
    the row label and clear button follow the app's chip-row / clear-btn pair. */
-.guide-filter-label {
-    font-size: 0.75rem;
-    /* Same weight as the app's .chip-row-label: labels sitting straight on the
-       background grid get lost in the regular face. */
-    font-weight: 600;
-    color: var(--ink-accent-tertiary, var(--accent-tertiary));
-    white-space: nowrap;
-    margin-right: 0.25rem;
+/* The search box fills the row's middle inside the kit's clear wrap, whose
+   × slides in beside it while there is text. */
+.guide-filter > .input-clear-wrap {
+    flex: 1 1 12rem;
+    width: auto;
+    max-width: 21rem;
+    margin-bottom: 0;
 }
 
 .guide-search-input {
-    flex: 1 1 12rem;
-    min-width: 0;
-    max-width: 18rem;
     border: 1px solid var(--border-primary);
     border-radius: 0.4rem;
     background-color: var(--bg-primary);
@@ -1262,17 +1258,11 @@ h2.panel-title {
     border-color: var(--accent-primary);
 }
 
-.guide-search-clear {
-    cursor: pointer;
-    font-family: inherit;
-    font-size: 0.85rem;
-    line-height: 1;
-    color: var(--ink-text-muted, var(--text-muted));
-    padding: 0.3rem 0.5rem;
-    border: 1px solid currentColor;
-    border-radius: 0.4rem;
-    background-color: var(--bg-primary);
-    transition: all 0.2s ease;
+/* The label chip, as the app's chip rows draw it: zite skips the app's screen
+   sheet, so the weight is restated here. */
+.guide-filter > .chip-row-label {
+    font-weight: 600;
+    white-space: nowrap;
 }
 
 /* Nothing matched: the reason line plus a reset that clears search and tag. */

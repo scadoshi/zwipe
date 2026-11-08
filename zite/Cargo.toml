@@ -46,3 +46,7 @@ web-sys = { version = "0.3", features = ["Window", "Location", "UrlSearchParams"
 getrandom = { version = "0.4", features = ["wasm_js"] }
 # Timer for the hover-preview auto-hide (browser setTimeout as a future).
 gloo-timers = { version = "0.4", features = ["futures"] }
+
+# Renders components to HTML in tests.
+[dev-dependencies]
+dioxus-ssr = "0.7"
