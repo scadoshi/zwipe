@@ -124,5 +124,5 @@ Scotty raised the worker limit to 3 for now ("push it a little bit more"). Busy:
 ## Queue (2026-11-08, Scotty)
 1. Cairn clips (droid) -> Scotty review -> portfolio.
 2. Guide screenshots, issue 310 (droid) -> contact sheet -> swap.
-3. Store builds: IPA for Zwipe and Cairn (iOS), AAB for Zwipe (Play). Ask Scotty for the version at cut (changelog has 1.18.9-1.18.14 upcoming); date = cut day.
+3. Store builds on halo (the halo worker; Scotty takes them there): IPA for Zwipe and Cairn (iOS), AAB for Zwipe (Play). Ask Scotty for the version at cut (changelog has 1.18.9-1.18.14 upcoming); date = cut day.
 4. Then: marketing video factory discussion (narrated shorts).
