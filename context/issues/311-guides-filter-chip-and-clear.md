@@ -1,6 +1,6 @@
 # 311. zwipe.net guides filter: plain label and a hand-rolled ×
 
-State: merged | Owner: thinker | PR: #455 | Build seen: 69f38270e
+State: verified | Owner: thinker | PR: #455 | Build seen: 69f38270e
 
 ## Report
 Scotty, 2026-11-08 (screenshot of zwipe.net Guides, "Filter" + search box + × + All / Getting started... chips):

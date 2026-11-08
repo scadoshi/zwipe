@@ -47,7 +47,7 @@ Who checked, on which live build, what they saw.
 | [278](278-add-tag-outline.md) | The Add title tag has no outline | verified | scotland | #413 |
 | [279](279-home-create-deck.md) | Create deck button on Home's Decks panel | verified | halo | #414 |
 | [280](280-panel-title-sizes.md) | Panel titles render at different sizes | verified | thinker | - |
-| [282](282-stale-bundle-after-deploy.md) | Web keeps the old bundle until a hard refresh | merged | scotland | #454 |
+| [282](282-stale-bundle-after-deploy.md) | Web keeps the old bundle until a hard refresh | verified | scotland | #454 |
 | [283](283-collapsible-changelog-versions.md) | Collapsible versions in every changelog | verified | laptop | #417, portfolio#20 |
 | [285](285-generated-share-image.md) | Generated preview image for shared decks | verified | thinker | #424, #425, #426 |
 | [286](286-portfolio-orangui-line-anchors.md) | Portfolio orangui source line ranges are stale | verified | laptop | portfolio#21 |
@@ -75,9 +75,9 @@ Who checked, on which live build, what they saw.
 | [307](307-about-cards-skip-zwiper-web.md) | zwipe.net About's crate cards leave out zwiper-web | verified | laptop | #447 |
 | [308](308-share-image-size-for-whatsapp.md) | Share preview images may be too big for WhatsApp | parked | - | - |
 | [309](309-robots-blocks-share-unfurls.md) | X shows no card for shared deck links (robots.txt) | verified | laptop | #449 |
-| [310](310-guide-screenshots-refresh.md) | zwipe.net guides use old screenshots | merged | scotland | #456 |
-| [311](311-guides-filter-chip-and-clear.md) | zwipe.net guides filter: plain label and a hand-rolled × | merged | thinker | #455 |
-| [312](312-three-guides-without-screenshots.md) | Three guides have no screenshots | reported | - | - |
+| [310](310-guide-screenshots-refresh.md) | zwipe.net guides use old screenshots | verified | scotland | #456 |
+| [311](311-guides-filter-chip-and-clear.md) | zwipe.net guides filter: plain label and a hand-rolled × | verified | thinker | #455 |
+| [312](312-three-guides-without-screenshots.md) | Three guides have no screenshots | approved | droid (queued) | - |
 
 ## Waiting for live verification
 

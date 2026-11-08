@@ -1,6 +1,6 @@
 # 310. zwipe.net guides use old screenshots
 
-State: merged | Owner: scotland | PR: #456 | Build seen: 69f38270e
+State: verified | Owner: scotland | PR: #456 | Build seen: 69f38270e
 
 ## Report
 Scotty, 2026-11-08: once the base marketing content for the portfolio and zwipe.net is redone, refresh the guides' screenshots (they predate the grid tiles). 36 images under zite/assets/guides/<guide>/NN-*.webp across 19 guides.
