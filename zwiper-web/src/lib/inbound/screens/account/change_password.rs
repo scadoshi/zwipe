@@ -92,7 +92,7 @@ pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
                 .is_some()
             {
                 toast.success(
-                    "Password change successful".to_string(),
+                    "Password changed".to_string(),
                     ToastOptions::default().duration(TOAST_QUICK),
                 );
                 clear();

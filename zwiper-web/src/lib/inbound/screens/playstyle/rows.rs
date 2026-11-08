@@ -50,7 +50,7 @@ pub fn SuggestionReasons(
         ul { class: "card-detail-bullets",
             if !reasons.tags.is_empty() {
                 li {
-                    "Shares oracle tags with your decks"
+                    "Shares Oracle tags with your decks"
                     CardRoleChips {
                         roles: shared.roles,
                         tags_by_role: shared.by_role,

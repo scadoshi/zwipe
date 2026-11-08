@@ -96,7 +96,7 @@ pub(super) fn DeleteAccountDialog(open: Signal<bool>) -> Element {
             open,
             title: "Delete account",
             actions: vec![DialogAction::Dismiss("Cancel".into()), delete.into()],
-            "This will permanently delete your account, all decks, and all card data. This cannot be undone."
+            "This will permanently delete your account, all decks, and all card data. This can't be undone."
             TextInput {
                 value: password,
                 input_type: "password".to_string(),

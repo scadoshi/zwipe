@@ -103,7 +103,7 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                                 }
                             }
                         } else if failed {
-                            p { class: "text-muted", "Could not load deck" }
+                            p { class: "text-muted", "Couldn't load deck" }
                         } else {
                             div { class: "web-form-panel",
                                 div { class: "settings-list-header web-form-head",

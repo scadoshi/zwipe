@@ -354,7 +354,7 @@ fn edit_with_nothing_changed_says_so() {
         toasts(&effects),
         [Toast::new(
             ToastKind::Error,
-            "must update at least one field",
+            "No changes to save",
             NORMAL
         )]
     );

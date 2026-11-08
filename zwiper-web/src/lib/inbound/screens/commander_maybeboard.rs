@@ -522,7 +522,7 @@ pub fn CommanderMaybeboard() -> Element {
                                 }
                             },
                             if load_failed() {
-                                div { class: "card-row card-row-note", "Could not load your commander maybeboard" }
+                                div { class: "card-row card-row-note", "Couldn't load your commander maybeboard" }
                             } else if !has_entries {
                                 div { class: "card-row card-row-note", "No commanders" }
                             } else if filtered.is_empty() {

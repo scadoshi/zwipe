@@ -13,7 +13,6 @@ use zwipe_core::domain::card::search_card::card_filter::CardQuery;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::card::search_card::commander_eligibility::{self, PartnerKind};
-use zwipe_core::domain::deck::requests::update_deck_profile::InvalidUpdateDeckProfile;
 use zwipe_core::domain::deck::{
     self, DeckName, DeckOtherTag, DeckProfile, DeckTagView, Format, InvalidDeckname, PowerLevel,
 };
@@ -35,6 +34,9 @@ pub const EDIT_TITLE: &str = "Edit deck";
 
 /// The line in place of the form when Edit's deck failed to load.
 pub const LOAD_FAILED: &str = "Couldn't load deck";
+
+/// The toast for Save on Edit deck with nothing changed.
+pub const NO_CHANGES: &str = "No changes to save";
 
 /// The Back button.
 pub const BACK: &str = "Back";
@@ -1296,10 +1298,7 @@ impl State {
             Mode::Edit(deck_id) => {
                 let Some(request) = self.values.update_request(&self.saved) else {
                     self.saving = false;
-                    return vec![Effect::Toast(Toast::normal(
-                        ToastKind::Error,
-                        InvalidUpdateDeckProfile::NoUpdates.to_string(),
-                    ))];
+                    return vec![Effect::Toast(Toast::normal(ToastKind::Error, NO_CHANGES))];
                 };
                 let ticket = self.request(Request::Save);
                 vec![Effect::UpdateDeck {
@@ -1327,7 +1326,8 @@ impl State {
 
 /// The line under a deck name the validator turns down, in the app's words
 /// rather than the validator's.
-fn name_message(error: &InvalidDeckname) -> &'static str {
+#[must_use]
+pub fn name_message(error: &InvalidDeckname) -> &'static str {
     match error {
         InvalidDeckname::TooShort => "Deck name is required",
         InvalidDeckname::TooLong => "Deck names are 1 to 64 characters",

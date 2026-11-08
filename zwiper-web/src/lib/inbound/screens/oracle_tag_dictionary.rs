@@ -62,7 +62,7 @@ pub fn OracleTagDictionary(mut open: Signal<bool>, on_use: EventHandler<String>)
         if cache.0.read().oracle_tags.is_failed() && !*warned.peek() {
             warned.set(true);
             toast.error(
-                "Couldn't load the oracle-tag dictionary".to_string(),
+                "Couldn't load the Oracle tags dictionary".to_string(),
                 ToastOptions::default().duration(TOAST_NORMAL),
             );
         }
@@ -156,7 +156,7 @@ pub fn OracleTagDictionary(mut open: Signal<bool>, on_use: EventHandler<String>)
     } else if slot.is_failed() {
         rsx! {
             div { class: "dict-empty",
-                span { class: "chip-note", "Couldn't load the dictionary. Pull back and try again." }
+                span { class: "chip-note", "Couldn't load the dictionary. Close it and try again." }
             }
         }
     } else {

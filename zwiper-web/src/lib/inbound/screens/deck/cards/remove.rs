@@ -32,6 +32,7 @@ use zwipe_ui::hint::Role;
 use zwipe_ui::screens::remove_cards;
 use zwipe_ui::stack::{CardStack, RemoveAction, StackAction};
 use zwipe_ui::stores::filters::FilterScope;
+use zwipe_ui::stores::undo;
 use zwipe_ui::stores::undo::{UndoAction, create_board_field};
 
 use super::{OneLine, SwipeDetails, flip_top_card};
@@ -233,7 +234,8 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                         confirm.success("Undid remove");
                     }
                     Err(e) => {
-                        toast.error(format!("Failed to undo: {e}"), ToastOptions::default());
+                        tracing::warn!("undo failed: {e}");
+                        toast.error(undo::UNDO_FAILED.to_owned(), ToastOptions::default());
                         if let Some(entry) = taken {
                             undo.write().push(deck_id, entry);
                         }
@@ -333,7 +335,8 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                             confirm.success("Undid move");
                         }
                         Err(e) => {
-                            toast.error(format!("Failed to undo: {e}"), ToastOptions::default());
+                            tracing::warn!("undo failed: {e}");
+                            toast.error(undo::UNDO_FAILED.to_owned(), ToastOptions::default());
                             if let Some(entry) = taken {
                                 undo.write().push(deck_id, entry);
                             }

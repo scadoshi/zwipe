@@ -188,7 +188,7 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
                         } else {
                             div { class: "flex-col flex-center", style: "flex: 1; min-height: 0; width: 100%;",
                                 div { class: "dict-empty",
-                                    span { class: "chip-note", "No more cards. Swipe down to go back." }
+                                    span { class: "chip-note", "No cards left. Swipe down to go back." }
                                 }
                             }
                         }

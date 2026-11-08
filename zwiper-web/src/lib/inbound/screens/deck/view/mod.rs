@@ -282,7 +282,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                         }
                     }
                     Some(Err(())) => rsx! {
-                        p { class: "text-muted", "Could not load deck" }
+                        p { class: "text-muted", "Couldn't load deck" }
                     },
                     None => rsx! {
                         DeckViewGhost {}

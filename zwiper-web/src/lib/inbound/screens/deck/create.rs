@@ -5,6 +5,7 @@
 use components::icons::{CHECK, DockIcon};
 use dioxus::prelude::*;
 use zwipe_core::domain::deck::{DeckName, Format};
+use zwipe_ui::screens::deck_form;
 
 use super::form::fields::DeckFields;
 use super::form::overlays::DeckFormOverlays;
@@ -54,7 +55,7 @@ pub fn CreateDeck() -> Element {
         let values = form.values();
         if let Err(e) = DeckName::new(values.name.clone()) {
             let mut error = form.name_error;
-            error.set(Some(e.to_string()));
+            error.set(Some(deck_form::name_message(&e).to_owned()));
             return;
         }
         saving.set(true);
