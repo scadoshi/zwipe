@@ -1,5 +1,6 @@
-//! The root component: stylesheets, theme, session upkeep, toasts, dialogs
-//! and the router.
+//! The root component: icons, scripts, theme, session upkeep, toasts,
+//! dialogs and the router. The stylesheets are linked in `index.html`'s head
+//! at build ([`sheets`](crate::inbound::sheets)).
 
 use components::{
     DialogHostView, ThemeConfig, ToastStack, use_dialog_host, use_overlay_back_stack,
@@ -24,13 +25,9 @@ const FAVICON_32: Asset = asset!("/assets/favicon-32x32.png");
 const APPLE_TOUCH_ICON: Asset = asset!("/assets/icon-180.png");
 /// The install manifest; its 192 and 512 icons sit unhashed in `public/icons`.
 const MANIFEST: Asset = asset!("/assets/site.webmanifest");
-const WEB_CSS: Asset = asset!("/assets/web.css");
 /// The header's scroll follow at phone width: the web's own copy of the
 /// app's `header_hide.js`, keyed to the shell's header and scroller.
 const HEADER_HIDE_JS: &str = include_str!("../../../assets/header_hide.js");
-const FONT_JBM_400: Asset = asset!("/assets/fonts/jetbrains-mono-400.woff2");
-const FONT_JBM_500: Asset = asset!("/assets/fonts/jetbrains-mono-500.woff2");
-const FONT_JBM_700: Asset = asset!("/assets/fonts/jetbrains-mono-700.woff2");
 
 /// The app root. Launch it with a [`ZwipeClient`](zwipe_client::ZwipeClient)
 /// in the root context.
@@ -79,21 +76,6 @@ pub fn App() -> Element {
         document::Link { rel: "icon", r#type: "image/png", sizes: "32x32", href: FAVICON_32 }
         document::Link { rel: "apple-touch-icon", href: APPLE_TOUCH_ICON }
         document::Link { rel: "manifest", href: MANIFEST }
-        document::Style {
-            {format!(
-                "@font-face{{font-family:'JetBrains Mono';font-style:normal;font-weight:400;font-display:swap;src:url({FONT_JBM_400}) format('woff2');}}\
-                 @font-face{{font-family:'JetBrains Mono';font-style:normal;font-weight:500;font-display:swap;src:url({FONT_JBM_500}) format('woff2');}}\
-                 @font-face{{font-family:'JetBrains Mono';font-style:normal;font-weight:700;font-display:swap;src:url({FONT_JBM_700}) format('woff2');}}"
-            )}
-        }
-        document::Style { {components::THEMES_CSS} }
-        document::Style { {components::COMPONENTS_CSS} }
-        document::Style { {components::MAGIC_CSS} }
-        document::Style { {components::APP_CSS} }
-        document::Style { {components::SCREENS_CSS} }
-        document::Style { {components::TOAST_CSS} }
-        document::Style { {components::FILTER_CSS} }
-        document::Link { rel: "stylesheet", href: WEB_CSS }
         document::Script { {components::SCROLL_FADE_JS} }
         document::Script { {HEADER_HIDE_JS} }
         document::Script { {components::KEYBOARD_JS} }

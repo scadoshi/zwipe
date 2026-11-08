@@ -25,6 +25,11 @@
         <meta name="twitter:title" content="Zwipe | Magic: The Gathering deck builder">
         <meta name="twitter:description" content="Build Magic: The Gathering decks by swiping, in your browser. Right to add a card, left to skip it.">
         <meta name="twitter:image" content="https://app.zwipe.net/assets/og-app.png">
+        <!-- The app's face, fetched beside the stylesheets dx links below
+             (src/lib/inbound/sheets.rs) instead of after them, so text
+             rarely shows in the fallback font. -->
+        <link rel="preload" href="/assets/jetbrains-mono-400.woff2" as="font" type="font/woff2" crossorigin>
+        <link rel="preload" href="/assets/jetbrains-mono-700.woff2" as="font" type="font/woff2" crossorigin>
         <!-- The first frame, before the app's stylesheets and wasm arrive:
              html in the stored theme's page color (the footer's, which an
              overscroll past it shows) and body in its backdrop (its

@@ -11,5 +11,6 @@ pub mod root_signal;
 pub mod router;
 pub mod screens;
 pub mod session;
+pub mod sheets;
 pub mod shell;
 pub mod telemetry;

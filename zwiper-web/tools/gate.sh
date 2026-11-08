@@ -9,5 +9,10 @@ step clippy cargo clippy --workspace --all-targets -- -D warnings
 step clippy-wasm cargo clippy -p zwiper-web --target wasm32-unknown-unknown -- -D warnings
 step test cargo test -p zwiper-web
 step doc env RUSTDOCFLAGS="-D warnings" cargo doc --no-deps -p zwiper-web
-if [ "$1" = dx ]; then cd zwiper-web; step dx dx build --platform web; fi
+if [ "$1" = dx ]; then
+    cd zwiper-web; step dx dx build --platform web
+    # Every sheet in src/lib/inbound/sheets.rs is a blocking link in the built head.
+    built=$CARGO_TARGET_DIR/dx/zwiper-web/debug/web/public/index.html
+    step head-links test "$(sed -n '/<head>/,/<\/head>/p' "$built" | grep -o 'rel="stylesheet"' | wc -l)" -eq "$(grep -c 'with_static_head(true)' src/lib/inbound/sheets.rs)"
+fi
 echo GREEN
