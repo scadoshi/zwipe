@@ -4,6 +4,10 @@ A user's card collection in Zwipe: imported from ManaBox's CSV export, edited by
 
 The product side is in `context/product/premium/collection_tracking.md`: the collection and the "Cards I own" filter are free (decided 2026-06-10), and the shopping list and owned percentage are where it meets prices. This doc is the build plan.
 
+## Status
+
+Plan only, not scheduled (Scotty, 2026-11-07). The collection and ManaBox import are free. Card price trends will be premium and come later; price snapshots are out of scope here, and historical prices may be importable from an outside source instead of collected by Zwipe.
+
 ## Open questions for Scotty
 
 1. **Re-import (answered: both modes, Add and Replace, like deck import).** a second ManaBox import replaces the collection (the export is the whole truth) or adds on top (two binders imported one after the other)? Proposed default: Replace, with Add as the second choice in the import screen, the same Add / Replace pair deck import has.
