@@ -45,6 +45,9 @@ pub struct AuthenticatedUser {
     pub email: Email,
     /// Client platform from JWT claims, `None` for a token minted without one.
     pub platform: Option<ClientPlatform>,
+    /// Refresh token family of the session that minted the token, `None` for
+    /// a token minted without one.
+    pub family_id: Option<Uuid>,
 }
 
 /// Rate-limit key extractor that keys by authenticated user ID from the JWT.
@@ -170,6 +173,7 @@ impl From<UserClaims> for AuthenticatedUser {
             username: value.username,
             email: value.email,
             platform: value.platform,
+            family_id: value.family_id,
         }
     }
 }

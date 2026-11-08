@@ -24,7 +24,9 @@ use crate::domain::auth::requests::check_reset_token::CheckResetTokenError;
 use crate::domain::auth::requests::confirm_email_change::{
     ConfirmEmailChange, ConfirmEmailChangeError, ConfirmedEmailChange,
 };
-use crate::domain::auth::requests::create_session::{CreateSession, CreateSessionError};
+use crate::domain::auth::requests::create_session::{
+    CreateSession, CreateSessionError, IssuedRefreshToken,
+};
 use crate::domain::auth::requests::delete_user::{DeleteUser, DeleteUserError};
 use crate::domain::auth::requests::refresh_session::{
     RefreshSession, RefreshSessionError, RotatedRefreshToken,
@@ -36,7 +38,9 @@ use crate::domain::auth::requests::request_password_reset::{
     RequestPasswordReset, RequestPasswordResetError,
 };
 use crate::domain::auth::requests::reset_password::{ResetPassword, ResetPasswordError};
-use crate::domain::auth::requests::revoke_sessions::{RevokeSessions, RevokeSessionsError};
+use crate::domain::auth::requests::revoke_sessions::{
+    RevokeScope, RevokeSessions, RevokeSessionsError,
+};
 use crate::domain::auth::requests::verify_email::{VerifyEmail, VerifyEmailError};
 use crate::domain::email::models::SendEmail;
 use crate::domain::email::ports::EmailSender;
@@ -380,18 +384,22 @@ where
             .await
             .unwrap_or_default();
 
+        let IssuedRefreshToken {
+            refresh_token,
+            family_id,
+        } = self
+            .auth_repo
+            .create_refresh_token(user.id, request.platform, request.client_version.clone())
+            .await?;
+
         let access_token = AccessToken::generate(
             &user,
             request.platform,
+            Some(family_id),
             &self.jwt_secret,
             self.access_token_lifetime,
         )
         .map_err(|e| AuthenticateUserError::FailedAccessToken(anyhow!("{e}")))?;
-
-        let refresh_token = self
-            .auth_repo
-            .create_refresh_token(user.id, request.platform, request.client_version.clone())
-            .await?;
 
         Ok(Session {
             user,
@@ -409,7 +417,10 @@ where
             .await
             .unwrap_or_default();
 
-        let refresh_token = self
+        let IssuedRefreshToken {
+            refresh_token,
+            family_id,
+        } = self
             .auth_repo
             .create_refresh_token(
                 request.user_id,
@@ -421,6 +432,7 @@ where
         let access_token = AccessToken::generate(
             &user,
             request.platform,
+            Some(family_id),
             &self.jwt_secret,
             self.access_token_lifetime,
         )?;
@@ -448,12 +460,14 @@ where
 
         let RotatedRefreshToken {
             refresh_token,
+            family_id,
             platform,
         } = self.auth_repo.use_refresh_token(request).await?;
 
         let access_token = AccessToken::generate(
             &user,
             platform,
+            Some(family_id),
             &self.jwt_secret,
             self.access_token_lifetime,
         )?;
@@ -469,10 +483,25 @@ where
     }
 
     async fn revoke_sessions(&self, request: &RevokeSessions) -> Result<(), RevokeSessionsError> {
-        self.auth_repo
-            .delete_users_refresh_tokens(request.user_id)
-            .await?;
-        Ok(())
+        match request.scope {
+            RevokeScope::Everywhere => {
+                self.auth_repo
+                    .delete_users_refresh_tokens(request.user_id)
+                    .await
+            }
+            RevokeScope::Family(family_id) => {
+                self.auth_repo
+                    .delete_refresh_token_family(request.user_id, family_id)
+                    .await
+            }
+        }
+    }
+
+    async fn fetch_refresh_family(
+        &self,
+        request: &RefreshSession,
+    ) -> Result<Option<Uuid>, RevokeSessionsError> {
+        self.auth_repo.fetch_refresh_family(request).await
     }
 
     // == update ==

@@ -10,9 +10,7 @@ use sqlx::{Acquire, query, query_as, query_scalar};
 use uuid::Uuid;
 use zwipe_core::domain::Email;
 use zwipe_core::domain::auth::models::platform::ClientPlatform;
-use zwipe_core::domain::auth::models::refresh_token::{
-    REFRESH_ABSOLUTE_LIFESPAN, RefreshToken, Sha256Hash,
-};
+use zwipe_core::domain::auth::models::refresh_token::{REFRESH_ABSOLUTE_LIFESPAN, Sha256Hash};
 use zwipe_core::domain::user::User;
 use zwipe_core::domain::user::username::Username;
 
@@ -26,7 +24,7 @@ use crate::domain::auth::requests::change_username::{ChangeUsername, ChangeUsern
 use crate::domain::auth::requests::confirm_email_change::{
     ConfirmEmailChangeError, ConfirmedEmailChange,
 };
-use crate::domain::auth::requests::create_session::CreateSessionError;
+use crate::domain::auth::requests::create_session::{CreateSessionError, IssuedRefreshToken};
 use crate::domain::auth::requests::delete_user::{DeleteUser, DeleteUserError};
 use crate::domain::auth::requests::refresh_session::{
     RefreshSession, RefreshSessionError, RotatedRefreshToken,
@@ -69,14 +67,18 @@ impl AuthRepository for Postgres {
         user_id: Uuid,
         platform: Option<ClientPlatform>,
         client_version: Option<String>,
-    ) -> Result<RefreshToken, CreateSessionError> {
+    ) -> Result<IssuedRefreshToken, CreateSessionError> {
+        let family = RefreshFamily::start();
         let mut tx = self.pool.begin().await?;
         let refresh_token = tx
-            .create_refresh_token(user_id, RefreshFamily::start(), platform, client_version)
+            .create_refresh_token(user_id, family, platform, client_version)
             .await?;
         tx.commit().await?;
 
-        Ok(refresh_token)
+        Ok(IssuedRefreshToken {
+            refresh_token,
+            family_id: family.id,
+        })
     }
     // == get ==
     /// Looks up a user by ID, username, **or** email using a single `OR` query.
@@ -335,6 +337,7 @@ impl AuthRepository for Postgres {
             .await?;
         let rotated = RotatedRefreshToken {
             refresh_token,
+            family_id: family.id,
             platform: carried,
         };
         // Remembered before the commit, so a racing loser that wakes once it
@@ -376,6 +379,35 @@ impl AuthRepository for Postgres {
         tx.commit().await?;
 
         Ok(())
+    }
+
+    async fn delete_refresh_token_family(
+        &self,
+        user_id: Uuid,
+        family_id: Uuid,
+    ) -> Result<(), RevokeSessionsError> {
+        query!(
+            "DELETE FROM refresh_tokens WHERE user_id = $1 AND family_id = $2",
+            user_id,
+            family_id
+        )
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    async fn fetch_refresh_family(
+        &self,
+        request: &RefreshSession,
+    ) -> Result<Option<Uuid>, RevokeSessionsError> {
+        let family_id = query_scalar!(
+            "SELECT family_id FROM refresh_tokens WHERE value_hash = $1 AND user_id = $2",
+            request.refresh_token.sha256_hash(),
+            request.user_id
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+        Ok(family_id)
     }
 
     // == email verification ==

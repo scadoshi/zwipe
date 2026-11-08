@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT family_id FROM refresh_tokens WHERE value_hash = $1 AND user_id = $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "family_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "refresh_tokens",
+            "name": "family_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "67286715bb8aac5ac70de4b3b976d99c512499cde2bda01404068a901885cc6f"
+}

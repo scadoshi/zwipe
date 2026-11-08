@@ -18,7 +18,10 @@ impl From<RevokeSessionsError> for ApiError {
     }
 }
 
-/// Revokes all sessions for the authenticated user (logs out all devices).
+/// Logs out the session the access token belongs to, named by its
+/// `family_id` claim, and leaves the user's other sessions alone. A token
+/// minted without the claim names no session, so its logout ends every
+/// session the user holds.
 ///
 /// # Errors
 ///
@@ -27,13 +30,26 @@ pub async fn revoke_sessions(
     user: AuthenticatedUser,
     State(state): State<AppState>,
 ) -> Result<StatusCode, ApiError> {
+    let request = RevokeSessions::family(user.id, user.family_id);
+    end_sessions(&state, &request).await
+}
+
+/// Revokes what `request` names and records the logout.
+///
+/// # Errors
+///
+/// Returns 500 on a database failure.
+pub(super) async fn end_sessions(
+    state: &AppState,
+    request: &RevokeSessions,
+) -> Result<StatusCode, ApiError> {
     state
         .auth_service
-        .revoke_sessions(&RevokeSessions::new(user.id))
+        .revoke_sessions(request)
         .await
         .map_err(ApiError::from)?;
 
-    let user_id = user.id;
+    let user_id = request.user_id;
     let metrics = std::sync::Arc::clone(&state.metrics_service);
     // prime the debounce cache; logout is a deliberate user action, so it
     // counts as activity even though no authed request follows it

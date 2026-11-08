@@ -17,7 +17,7 @@
 //! - **Single-Use Tokens**: a replaced token used again ends its whole family
 //! - **Token Ownership**: Refresh token must belong to requesting user
 //! - **Expiry Check**: Tokens expire after 14 days, and a family 30 days after its login
-//! - **Revocation**: logout and credential changes delete the user's tokens
+//! - **Revocation**: logout deletes the session's family, and credential changes delete every token the user holds
 //!
 //! # Example
 //!
@@ -156,11 +156,14 @@ pub struct RefreshSession {
     pub client_version: Option<String>,
 }
 
-/// The refresh token a rotation mints, with the platform its family carries.
+/// The refresh token a rotation mints, with the family it continues and the
+/// platform that family carries.
 #[derive(Debug, Clone, PartialEq)]
 pub struct RotatedRefreshToken {
     /// The new refresh token.
     pub refresh_token: RefreshToken,
+    /// The family the token belongs to, the same as the token it replaced.
+    pub family_id: Uuid,
     /// Client platform stored on the family, `None` when it has none.
     pub platform: Option<ClientPlatform>,
 }

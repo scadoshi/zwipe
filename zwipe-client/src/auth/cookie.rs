@@ -37,7 +37,7 @@ impl ZwipeClient {
         self.call(CookieRefresh(request), None).await
     }
 
-    /// Logs the browser out: revokes the sessions and expires the cookie.
+    /// Logs the browser out: ends the cookie's session and expires the cookie.
     ///
     /// # Errors
     ///

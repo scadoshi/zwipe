@@ -1,30 +1,24 @@
-//! Session revocation operation (logout from all devices).
+//! Session revocation: logging out one session, or every session a user holds.
 //!
-//! Deletes all sessions for a user, effectively logging them out from all devices.
-//! This is the backend implementation of "logout everywhere" or "sign out all devices".
+//! A session is one refresh token family, the chain of tokens that one login
+//! starts and every rotation carries. [`RevokeScope::Family`] ends one of
+//! them, which is what a logout does. [`RevokeScope::Everywhere`] ends them
+//! all, which a logout falls back to when its request names no family.
 //!
-//! # Use Cases
-//!
-//! - **User-Initiated**: User clicks "logout all devices" in settings
-//! - **Security**: User suspects account compromise
-//! - **Password Change**: Optional auto-logout after password change
-//! - **Admin Action**: Support team revokes sessions for security
-//!
-//! # Security Note
-//!
-//! After revocation:
-//! - All access tokens become useless (JWTs still valid but session check fails)
-//! - All refresh tokens are deleted (cannot obtain new access tokens)
-//! - User must re-authenticate to create new sessions
+//! After revocation, a revoked session's access tokens still pass the
+//! signature check until they expire, but its refresh tokens are gone, so it
+//! cannot get new ones and must sign in again.
 //!
 //! # Example
 //!
 //! ```rust,ignore
-//! use zwipe::domain::auth::models::session::revoke_sessions::RevokeSessions;
+//! use zwipe::domain::auth::requests::revoke_sessions::RevokeSessions;
 //!
-//! // Revoke all sessions for a user
-//! let revoke = RevokeSessions::new(user_id);
-//! session_service.revoke_sessions(revoke).await?;
+//! // End the session the access token belongs to.
+//! session_service.revoke_sessions(&RevokeSessions::family(user_id, family_id)).await?;
+//!
+//! // End every session the user holds.
+//! session_service.revoke_sessions(&RevokeSessions::new(user_id)).await?;
 //! ```
 
 use std::str::FromStr;
@@ -54,33 +48,41 @@ pub enum RevokeSessionsError {
     Database(anyhow::Error),
 }
 
-/// Request to revoke all sessions for a user (logout everywhere).
-///
-/// This is a simple wrapper around a user ID that represents the intent
-/// to delete all active sessions for that user.
-///
-/// # Effect
-///
-/// - All sessions for this user are deleted from the database
-/// - All refresh tokens are deleted (cannot get new access tokens)
-/// - Access tokens become useless (session validation will fail)
-/// - User must re-authenticate to create new sessions
+/// Which of the user's sessions a revocation ends.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RevokeScope {
+    /// Every session the user holds.
+    Everywhere,
+    /// The one session whose refresh tokens share this family id. A family
+    /// the user does not hold ends nothing.
+    Family(Uuid),
+}
+
+/// Request to revoke a user's sessions: one family, or all of them.
 #[derive(Debug, Clone)]
 pub struct RevokeSessions {
     /// The user whose sessions should be revoked.
     pub user_id: Uuid,
+    /// Which of them.
+    pub scope: RevokeScope,
 }
 
 impl RevokeSessions {
-    /// Creates a new session revocation request.
-    ///
-    /// # Example
-    ///
-    /// ```rust,ignore
-    /// let revoke = RevokeSessions::new(user_id);
-    /// ```
+    /// Revokes every session `user_id` holds.
     pub fn new(user_id: Uuid) -> Self {
-        Self { user_id }
+        Self {
+            user_id,
+            scope: RevokeScope::Everywhere,
+        }
+    }
+
+    /// Revokes the session of `family_id`, or every session `user_id` holds
+    /// when there is no family to name.
+    pub fn family(user_id: Uuid, family_id: Option<Uuid>) -> Self {
+        Self {
+            user_id,
+            scope: family_id.map_or(RevokeScope::Everywhere, RevokeScope::Family),
+        }
     }
 }
 
@@ -94,7 +96,7 @@ impl FromStr for RevokeSessions {
     /// Returns [`InvalidRevokeSessions::UserId`] if the string is not a valid UUID.
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let user_id = Uuid::try_parse(s)?;
-        Ok(Self { user_id })
+        Ok(Self::new(user_id))
     }
 }
 
@@ -119,6 +121,20 @@ mod tests {
         let user_id = Uuid::new_v4();
         let req = RevokeSessions::new(user_id);
         assert_eq!(req.user_id, user_id);
+    }
+
+    #[test]
+    fn a_family_scopes_the_revocation_and_none_falls_back_to_everywhere() {
+        let (user_id, family) = (Uuid::new_v4(), Uuid::new_v4());
+        assert_eq!(
+            RevokeSessions::family(user_id, Some(family)).scope,
+            RevokeScope::Family(family)
+        );
+        assert_eq!(
+            RevokeSessions::family(user_id, None).scope,
+            RevokeScope::Everywhere
+        );
+        assert_eq!(RevokeSessions::new(user_id).scope, RevokeScope::Everywhere);
     }
 
     #[test]

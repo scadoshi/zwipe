@@ -31,6 +31,7 @@ use std::str::FromStr;
 use thiserror::Error;
 use uuid::Uuid;
 use zwipe_core::domain::auth::models::platform::ClientPlatform;
+use zwipe_core::domain::auth::models::refresh_token::RefreshToken;
 
 use crate::domain::auth::models::access_token::InvalidJwt;
 use crate::domain::auth::requests::enforce_session_maximum::EnforceSessionMaximumError;
@@ -129,6 +130,16 @@ pub struct CreateSession {
     /// Client app version of the session (e.g. `"1.6.1"`, recorded on the token).
     /// `None` for admin/impersonation paths and older clients.
     pub client_version: Option<String>,
+}
+
+/// The refresh token a login or registration mints, with the family it
+/// starts.
+#[derive(Debug, Clone, PartialEq)]
+pub struct IssuedRefreshToken {
+    /// The new refresh token.
+    pub refresh_token: RefreshToken,
+    /// The family the token starts, which every rotation of it carries.
+    pub family_id: Uuid,
 }
 
 impl From<Uuid> for CreateSession {

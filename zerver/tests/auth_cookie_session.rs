@@ -13,7 +13,9 @@ mod common;
 
 use axum::http::{HeaderMap, Method, StatusCode, header};
 use common::{TEST_ORIGIN, TestApp};
-use zwipe_core::http::paths::{COOKIE_LOGIN_ROUTE, COOKIE_LOGOUT_ROUTE, COOKIE_REFRESH_ROUTE};
+use zwipe_core::http::paths::{
+    COOKIE_LOGIN_ROUTE, COOKIE_LOGOUT_ROUTE, COOKIE_REFRESH_ROUTE, REFRESH_SESSION_ROUTE,
+};
 
 const COOKIE: &str = "__Host-zwipe_refresh";
 
@@ -245,4 +247,36 @@ async fn logout_expires_the_cookie_and_revokes_the_session(pool: sqlx::PgPool) {
         StatusCode::UNAUTHORIZED,
         "the revoked cookie no longer refreshes"
     );
+}
+
+#[sqlx::test]
+async fn logout_ends_the_browsers_session_and_keeps_the_app_signed_in(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool);
+    let (token, _, pair) = cookie_login(&app, "twoplaces").await;
+    let (status, phone) = app
+        .post(
+            "/api/auth/login",
+            serde_json::json!({ "identifier": "twoplaces", "password": "TestPass123!" }),
+            None,
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "app login: {phone}");
+
+    let (status, _, _) = app
+        .send_raw(
+            Method::POST,
+            COOKIE_LOGOUT_ROUTE,
+            None,
+            Some(&token),
+            &[origin(), cookie(&pair)],
+        )
+        .await;
+    assert!(status.is_success(), "logout: {status}");
+
+    let refresh = serde_json::json!({
+        "user_id": phone["user"]["id"],
+        "refresh_token": phone["refresh_token"]["value"],
+    });
+    let (status, body) = app.post(REFRESH_SESSION_ROUTE, refresh, None).await;
+    assert_eq!(status, StatusCode::OK, "the app's session survives: {body}");
 }
