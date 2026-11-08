@@ -37,10 +37,13 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[
+pub const UPCOMING: &[Release] = &[];
+
+/// Shipped releases, newest first.
+pub const RELEASES: &[Release] = &[
     Release {
         version: Version::new(1, 18, 14),
-        date: None,
+        date: NaiveDate::from_ymd_opt(2026, 11, 8),
         entries: &[
             "The web app no longer flashes unstyled on a hard refresh",
             "The web header folds behind the menu below 1110px wide instead of wrapping",
@@ -65,7 +68,7 @@ pub const UPCOMING: &[Release] = &[
     },
     Release {
         version: Version::new(1, 18, 13),
-        date: None,
+        date: NaiveDate::from_ymd_opt(2026, 11, 8),
         entries: &[
             "Sort on Decks, by name, size, format, price or last changed",
             "Home's Decks panel has a Create deck button beside All decks",
@@ -89,7 +92,7 @@ pub const UPCOMING: &[Release] = &[
     },
     Release {
         version: Version::new(1, 18, 12),
-        date: None,
+        date: NaiveDate::from_ymd_opt(2026, 11, 8),
         entries: &[
             "Buttons, links and menu items read clearly in every light theme",
             "Coming back to the app refreshes your session, Home's figures and your settings",
@@ -106,7 +109,7 @@ pub const UPCOMING: &[Release] = &[
     },
     Release {
         version: Version::new(1, 18, 11),
-        date: None,
+        date: NaiveDate::from_ymd_opt(2026, 11, 8),
         entries: &[
             "Quick add on a deck's cards and on the Commander maybeboard clears with the same × as the filter's fields",
             "About's changelog shows five releases at a time, with Show more for the rest",
@@ -131,7 +134,7 @@ pub const UPCOMING: &[Release] = &[
     },
     Release {
         version: Version::new(1, 18, 10),
-        date: None,
+        date: NaiveDate::from_ymd_opt(2026, 11, 8),
         entries: &[
             "Keywords, card roles and Oracle tags use the app's regular chips, each group named by a label chip",
             "The error under a field on the deck, Log in and account forms starts with a capital letter",
@@ -150,7 +153,7 @@ pub const UPCOMING: &[Release] = &[
     },
     Release {
         version: Version::new(1, 18, 9),
-        date: None,
+        date: NaiveDate::from_ymd_opt(2026, 11, 8),
         entries: &[
             "A deck's commander and MVPs show their names in chips beside their role",
             "Card details slide in from the right as a panel titled with the card and its cost, the prices included",
@@ -163,10 +166,6 @@ pub const UPCOMING: &[Release] = &[
             "Printings show as a cover flow, the neighbors at the sides, stepped by the arrows or a swipe",
         ],
     },
-];
-
-/// Shipped releases, newest first.
-pub const RELEASES: &[Release] = &[
     Release {
         version: Version::new(1, 18, 8),
         date: NaiveDate::from_ymd_opt(2026, 11, 5),
