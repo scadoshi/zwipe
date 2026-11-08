@@ -367,3 +367,5 @@ Skipped with Scotty: S7 (no Image in the swipe screens' details, intended), S23 
 237. **Portfolio stats don't say what they count.** [Surfer p15-12, approved] "14 repos · 88 stars" reads as the whole account; say they're showcased repos, in a few words.
 238. **Deck rows and group headers can't be reached by keyboard.** [Surfer p16, 2026-11-07, approved] Rows and group headers take Tab focus and open or toggle on Enter and Space, with a visible focus ring.
 239. **Collapsed groups still take focus.** [Surfer p16, approved] A collapsed group's rows are inert: Tab and screen readers skip them.
+240. **Deck rows are draggable but drop nowhere.** [Surfer p16-5, 2026-11-07, approved] Drag isn't a feature: remove `draggable` from rows (and any drag handlers that only fade the preview). Board moves stay on the row buttons.
+241. **Hover preview covers row actions.** [Surfer p16-4] Closed, not a bug (Scotty): moving toward the buttons moves the preview to the other side.
