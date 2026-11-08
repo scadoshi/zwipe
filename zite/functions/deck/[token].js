@@ -5,7 +5,10 @@
 // own title, description and image in place of the site-wide ones. The app
 // still hydrates and draws the deck in the browser.
 //
-// - A token the API knows: the deck's tags, 200.
+// - A token the API knows: the deck's tags, 200. Its image is the deck's
+//   generated preview (`/api/share/deck/:token/preview.png`), versioned by
+//   when the deck last changed so an edit gets a fresh image; from an API
+//   that predates `updated_at`, the commander's art crop.
 // - A malformed, revoked or unknown token: the generic tags, 404.
 // - The API unreachable or failing: the generic tags, 200, so a visitor still
 //   gets the app, which shows its own retry.
@@ -91,7 +94,27 @@ export async function onRequestGet({ params, request, env }) {
   } catch {
     return shell;
   }
-  return rewrite(shell, preview(deck, `${SITE}/deck/${token.toLowerCase()}`));
+  const meta = preview(deck, `${SITE}/deck/${token.toLowerCase()}`);
+  const generated = previewImage(apiBase, token.toLowerCase(), deck);
+  if (generated) {
+    meta.image = generated;
+    meta.imageSize = PREVIEW_SIZE;
+  }
+  return rewrite(shell, meta);
+}
+
+/// The generated preview image's size, as zerver draws it.
+const PREVIEW_SIZE = { width: 1200, height: 630 };
+
+/// The deck's generated preview image on the API, versioned by the unix
+/// seconds of its `updated_at` (the version zerver caches for a year), or
+/// null when the payload has no `updated_at`.
+function previewImage(apiBase, token, deck) {
+  const changed = Date.parse(deck.updated_at || "");
+  if (!Number.isFinite(changed)) {
+    return null;
+  }
+  return `${apiBase}/api/share/deck/${token}/preview.png?v=${Math.floor(changed / 1000)}`;
 }
 
 /// The shell as it is, under another status.
@@ -173,6 +196,17 @@ function rewrite(shell, meta) {
     .on('link[rel="canonical"]', {
       element(el) {
         el.setAttribute("href", meta.url);
+      },
+    })
+    .on("head", {
+      element(el) {
+        if (meta.imageSize) {
+          el.append(
+            `<meta property="og:image:width" content="${meta.imageSize.width}">` +
+              `<meta property="og:image:height" content="${meta.imageSize.height}">`,
+            { html: true },
+          );
+        }
       },
     })
     .transform(shell);
