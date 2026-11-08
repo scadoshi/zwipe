@@ -4,11 +4,12 @@ Deployed 2026-11-07. Surfer (web, wide and 390) and Droid (Android app, plus pho
 
 Hard-refresh the web app before starting (see 282).
 
+Not in this deploy (their PRs merged late): 221 on web, 258, 270, 273. They go in the next verify file.
+
 | Nit | What to check | Web | App | Result |
 |---|---|---|---|---|
 | 214 | Add offline shows "Couldn't load cards" + Retry, one toast | Surfer | Droid | |
 | 219 | Toast stays below the Exceptions chips with a sheet open | Droid (390) | | |
-| 221 | Back from a deck returns to the screen that opened it (Home or Decks) | Surfer | Droid | |
 | 226 | App downloads compressed (deck loads on slow network) | | Droid | |
 | 227 | Escape closes zwipe.net's phone menu, focus back on the toggle | Surfer | | |
 | 228-229 | zwipe.net focus ring visible; skip link on zwipe.net and the portfolio | Surfer | | |
@@ -30,17 +31,14 @@ Hard-refresh the web app before starting (see 282).
 | 253, 256 | Card row art alt=""; Quick add chip is the input's label | Surfer | | |
 | 254 | Save disabled while a field error shows; closing a sheet clears its draft | Surfer | Droid | |
 | 257 | Decks: deck names are h2 | Surfer | | |
-| 258 | Undoing an add or a maybeboard move brings the card back to Add | Surfer | Droid | |
 | 260 | Quick add "Mountain" offers the basic first | Surfer | Droid | |
 | 263-264 | Playstyle Summary labels; Impact ignores one-deck tags | Surfer | Droid | |
 | 265-266 | Tymna's partner list holds only plain Partner; Partner-with commanders autofill | Surfer | Droid | |
 | 267 | Deck header says "1 card" | Surfer | | |
 | 268 | Bad Archidekt link says "That isn't an Archidekt deck link" | Surfer | Droid | |
 | 269 | Web swipes show up in Activity and the stats counters | Surfer | | |
-| 270 | Import's link box stays put; Imported list scrolls in its own window | Surfer | Droid | |
 | 271 | Floating search chips have the accent outline | Surfer | Droid | |
 | 272 | Is legal in Commander + Pauper counts as a filter and widens the pool | Surfer | Droid | |
-| 273 | Delete deck dialog names the deck | Surfer | Droid | |
 | 275 | Android Back with a sheet open on the deck form closes the sheet | Droid (web) | Droid | |
 | 277 | Archidekt import sets format and commander on an empty deck | Surfer | Droid | |
 | 336 | Share links: zwipe-site.pages.dev/deck/<token> has the deck's own og tags | composer (curl) | | |
