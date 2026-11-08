@@ -159,6 +159,18 @@ pub fn shared_deck_preview_route(token: Uuid) -> String {
     format!("/api/share/deck/{token}/preview.png")
 }
 
+/// The preview image's layout version. Bump it whenever the drawing
+/// changes, along with `PREVIEW_LAYOUT` in zite's Pages Function: link
+/// unfurlers cache the image by URL, so a new layout needs a new `v`.
+pub const SHARE_PREVIEW_LAYOUT: u32 = 2;
+
+/// The `v` a preview URL carries for a deck last updated at `updated_at`
+/// (unix seconds): the layout version and the update, `2-1794023263`. zerver
+/// caches the image a year only under this exact value.
+pub fn shared_deck_preview_version(updated_at: i64) -> String {
+    format!("{SHARE_PREVIEW_LAYOUT}-{updated_at}")
+}
+
 pub fn clear_deck_suppressions_route(deck_id: Uuid) -> String {
     format!("{DECK_ROUTE}/{deck_id}/suppressions")
 }
@@ -303,6 +315,10 @@ mod tests {
         assert_eq!(
             shared_deck_preview_route(a),
             format!("/api/share/deck/{sa}/preview.png")
+        );
+        assert_eq!(
+            shared_deck_preview_version(1_794_023_263),
+            format!("{SHARE_PREVIEW_LAYOUT}-1794023263")
         );
         assert_eq!(
             clear_deck_suppressions_route(a),

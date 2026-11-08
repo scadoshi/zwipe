@@ -4,6 +4,7 @@ use axum::extract::{Path, Query, State};
 use axum::http::{StatusCode, header};
 use axum::response::{IntoResponse, Response};
 use serde::Deserialize;
+use zwipe_core::http::paths::shared_deck_preview_version;
 
 use super::get_shared_deck::{share_token, shared_body};
 use crate::inbound::http::{ApiError, AppState};
@@ -23,9 +24,10 @@ const FALLBACK_CACHE: &str = "public, max-age=60";
 /// The site-wide preview image, under the public web base URL.
 const FALLBACK_IMAGE: &str = "/assets/og-default.png";
 
-/// The preview URL's query: `v`, the deck version the page asked for, as
-/// the unix seconds of its `updated_at`. Any value parses; one that isn't
-/// the current version just gets the short cache.
+/// The preview URL's query: `v`, the version the page asked for, the layout
+/// and the unix seconds of the deck's `updated_at` as
+/// [`shared_deck_preview_version`] writes them. Any value parses; one that
+/// isn't the current version just gets the short cache.
 #[derive(Debug, Default, Deserialize)]
 pub struct PreviewQuery {
     /// The version the URL names.
@@ -34,8 +36,8 @@ pub struct PreviewQuery {
 }
 
 /// The deck's preview image: 1200x630 PNG in its owner's theme, cached a
-/// year when `v` names the deck's current version and five minutes
-/// otherwise. When drawing fails, a redirect to the site-wide image.
+/// year when `v` names the current layout and the deck's current version,
+/// and five minutes otherwise. When drawing fails, a redirect to the site-wide image.
 ///
 /// # Errors
 ///
@@ -48,7 +50,9 @@ pub async fn get_shared_deck_preview(
 ) -> Result<Response, ApiError> {
     let token = share_token(&token)?;
     let deck = shared_body(&state, token).await?;
-    let current = deck.updated_at.map(|t| t.timestamp().to_string());
+    let current = deck
+        .updated_at
+        .map(|t| shared_deck_preview_version(t.timestamp()));
     let fresh = current.is_some() && current == query.v;
     let Some(png) = state.share_preview.png(token, &deck).await else {
         let fallback = format!("{}{FALLBACK_IMAGE}", state.web_base_url);

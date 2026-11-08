@@ -1,6 +1,7 @@
-//! The share page's Pages Function (`functions/deck/[token].js`) names formats
-//! and picks which ones lead with a commander from its own copies of
-//! zwipe-core's lists. These keep the copies matched.
+//! The share page's Pages Function (`functions/deck/[token].js`) names formats,
+//! picks which ones lead with a commander and versions the preview image from
+//! its own copies of zwipe-core's lists and constants. These keep the copies
+//! matched.
 
 use zwipe_core::domain::deck::Format;
 
@@ -53,5 +54,18 @@ fn the_preview_image_path_matches_the_api() {
     assert!(
         FUNCTION.contains(&format!("`${{apiBase}}{in_function}?v=")),
         "the Function's preview URL differs from {route}"
+    );
+}
+
+#[test]
+fn the_preview_version_carries_the_layout() {
+    let layout = zwipe_core::http::paths::SHARE_PREVIEW_LAYOUT;
+    assert!(
+        FUNCTION.contains(&format!("\nconst PREVIEW_LAYOUT = {layout};\n")),
+        "the Function's PREVIEW_LAYOUT differs from zwipe-core's {layout}"
+    );
+    assert!(
+        FUNCTION.contains("preview.png?v=${PREVIEW_LAYOUT}-${Math.floor(changed / 1000)}`"),
+        "the Function's preview URL leaves the layout out of v"
     );
 }

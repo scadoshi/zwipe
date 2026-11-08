@@ -6,9 +6,10 @@
 // still hydrates and draws the deck in the browser.
 //
 // - A token the API knows: the deck's tags, 200. Its image is the deck's
-//   generated preview (`/api/share/deck/:token/preview.png`), versioned by
-//   when the deck last changed so an edit gets a fresh image; from an API
-//   that predates `updated_at`, the commander's art crop.
+//   generated preview (`/api/share/deck/:token/preview.png`), versioned by the
+//   layout and when the deck last changed, so a new drawing or an edit gets a
+//   fresh image; from an API that predates `updated_at`, the commander's art
+//   crop.
 // - A malformed, revoked or unknown token: the generic tags, 404.
 // - The API unreachable or failing: the generic tags, 200, so a visitor still
 //   gets the app, which shows its own retry.
@@ -106,15 +107,19 @@ export async function onRequestGet({ params, request, env }) {
 /// The generated preview image's size, as zerver draws it.
 const PREVIEW_SIZE = { width: 1200, height: 630 };
 
-/// The deck's generated preview image on the API, versioned by the unix
-/// seconds of its `updated_at` (the version zerver caches for a year), or
-/// null when the payload has no `updated_at`.
+/// The preview image's layout version, zwipe-core's `SHARE_PREVIEW_LAYOUT`.
+/// Unfurlers cache the image by URL, so a new drawing needs a new `v`.
+const PREVIEW_LAYOUT = 2;
+
+/// The deck's generated preview image on the API, versioned by the layout
+/// and the unix seconds of its `updated_at` (`2-1794023263`, the version
+/// zerver caches for a year), or null when the payload has no `updated_at`.
 function previewImage(apiBase, token, deck) {
   const changed = Date.parse(deck.updated_at || "");
   if (!Number.isFinite(changed)) {
     return null;
   }
-  return `${apiBase}/api/share/deck/${token}/preview.png?v=${Math.floor(changed / 1000)}`;
+  return `${apiBase}/api/share/deck/${token}/preview.png?v=${PREVIEW_LAYOUT}-${Math.floor(changed / 1000)}`;
 }
 
 /// The shell as it is, under another status.

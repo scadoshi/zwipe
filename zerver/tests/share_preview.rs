@@ -33,6 +33,7 @@ use axum::http::{Method, StatusCode, header};
 use common::TestApp;
 use resvg::tiny_skia;
 use serde_json::{Value, json};
+use sha2::{Digest, Sha256};
 use uuid::Uuid;
 use zwipe::inbound::http::share_preview::SharePreview;
 use zwipe::inbound::http::share_preview::layout::{Preview, Tone};
@@ -43,7 +44,8 @@ use zwipe_core::domain::deck::{Board, DeckCard, DeckEntry, Format, PowerLevel, Q
 use zwipe_core::domain::user::theme::ThemeConfig;
 use zwipe_core::http::contracts::deck::HttpSharedDeck;
 use zwipe_core::http::paths::{
-    DECK_ROUTE, share_deck_route, shared_deck_preview_route, shared_deck_route,
+    DECK_ROUTE, SHARE_PREVIEW_LAYOUT, share_deck_route, shared_deck_preview_route,
+    shared_deck_preview_version, shared_deck_route,
 };
 
 /// A real card's JSON, the template every fixture card is made from.
@@ -316,6 +318,41 @@ async fn assert_golden(name: &str, deck: &HttpSharedDeck) {
     );
 }
 
+/// The layout the goldens show, with the SHA-256 of the three golden files
+/// in order. Regenerating them means the drawing changed, so the layout
+/// must move with it: bump `SHARE_PREVIEW_LAYOUT` in zwipe-core and
+/// `PREVIEW_LAYOUT` in the Pages Function, then record both here.
+const GOLDEN_LAYOUT: (u32, &str) = (
+    2,
+    "24d4decf94a12c66e5a09994edabfce27c583a81cc6291c414500134d39812a0",
+);
+
+#[test]
+fn a_new_drawing_bumps_the_layout_version() {
+    let mut hasher = Sha256::new();
+    for name in [
+        "commander-partners-gruvbox",
+        "oathbreaker-gruvbox",
+        "modern-github-light",
+    ] {
+        let path: PathBuf = [
+            env!("CARGO_MANIFEST_DIR"),
+            "tests",
+            "golden",
+            &format!("{name}.png"),
+        ]
+        .iter()
+        .collect();
+        hasher.update(std::fs::read(&path).unwrap());
+    }
+    let goldens = hex::encode(hasher.finalize());
+    assert_eq!(
+        (SHARE_PREVIEW_LAYOUT, goldens.as_str()),
+        GOLDEN_LAYOUT,
+        "the goldens changed: bump SHARE_PREVIEW_LAYOUT (and the Function's PREVIEW_LAYOUT) and record the new layout and hash in GOLDEN_LAYOUT"
+    );
+}
+
 #[tokio::test]
 async fn golden_commander_with_partners() {
     assert_golden("commander-partners-gruvbox", &partners(gruvbox())).await;
@@ -501,7 +538,11 @@ async fn the_preview_route_caches_the_current_version_for_a_year(pool: sqlx::PgP
         .unwrap()
         .timestamp();
 
-    let path = format!("{}?v={version}", shared_deck_preview_route(token));
+    let path = format!(
+        "{}?v={}",
+        shared_deck_preview_route(token),
+        shared_deck_preview_version(version)
+    );
     let (status, headers, png) = app.send_bytes(Method::GET, &path).await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(headers[header::CONTENT_TYPE], "image/png");
@@ -514,6 +555,8 @@ async fn the_preview_route_caches_the_current_version_for_a_year(pool: sqlx::PgP
 
     for stale in [
         format!("{}?v=1", shared_deck_preview_route(token)),
+        // The deck's version under an older layout.
+        format!("{}?v={version}", shared_deck_preview_route(token)),
         shared_deck_preview_route(token),
     ] {
         let (status, headers, _) = app.send_bytes(Method::GET, &stale).await;
