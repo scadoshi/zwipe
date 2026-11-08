@@ -2154,7 +2154,13 @@ body {
     }
 }
 
-/* The Quick add result the arrow keys point at. */
+/* Quick add's results under its bar keep a row's gap from the row below. */
+.quick-add-results {
+    margin-bottom: 0.5rem;
+}
+
+/* The floating result the arrow keys point at, in the maybeboard's and the
+   command zone's searches. */
 .web-float-highlight {
     border-color: var(--accent-primary);
     color: var(--ink-accent-primary, var(--accent-primary));
