@@ -403,19 +403,34 @@ body {
         padding: 0;
     }
 
+    /* The counters and their tags sit together, centered beside the mark
+       with zite's 1rem between them, as one pair: the outer rows take the
+       mark's spare height so the pair's rows don't. */
     .web-hero .home-hero .hero-head {
         display: grid;
         grid-template-columns: auto minmax(0, 1fr);
+        grid-template-rows: 1fr auto auto 1fr;
         column-gap: 2.5rem;
-        row-gap: 1rem;
+        row-gap: 0;
         align-items: center;
         justify-content: center;
+    }
+
+    .web-hero .home-hero .stats-figures > :not(.stats-source) {
+        grid-column: 2;
+        grid-row: 2;
+    }
+
+    .web-hero .home-hero .stats-source {
+        grid-column: 2;
+        grid-row: 3;
+        margin-top: 1rem;
     }
 
     /* The mark and the counters at zite's sizes, as the hero has them
        from 480px. */
     .web-hero .home-hero .logo {
-        grid-row: span 2;
+        grid-row: 1 / -1;
         font-size: clamp(0.45rem, min(2.1vw, 2.2vh), 1.1rem);
     }
 
