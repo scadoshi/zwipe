@@ -389,3 +389,4 @@ Skipped with Scotty: S7 (no Image in the swipe screens' details, intended), S23 
 259. **Every toast is a focusable alertdialog.** [Surfer p17-11, 2026-11-07, approved] Info and success toasts are `role="status"`/`alert` only, not focusable; only a toast with an action (Undo, Retry) keeps its button in the tab order. App and web.
 260. **Quick add doesn't rank the exact name first.** [Surfer p19, 2026-11-07, approved] Typing "Mountain" doesn't offer the basic Mountain or put it first. An exact (case-insensitive) name match always ranks first in Quick add suggestions, basics included. App and web.
 261. **Flip control sits over a DFC's mana cost.** [Surfer p19] Kept on the card for now (Scotty): there's no other place that works on every screen a card shows.
+262. **Activity heatmap days aren't keyboard reachable.** [Surfer p19] Skipped by Scotty: too much engineering for the gain.
