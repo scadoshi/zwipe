@@ -1159,9 +1159,7 @@ impl State {
             self.name_touched = true;
         }
         if self.name_touched {
-            self.name_error = DeckName::new(self.values.name.as_str())
-                .err()
-                .map(|e| name_message(&e).to_owned());
+            self.name_error = name_error(&self.values.name);
         }
     }
 
@@ -1284,8 +1282,8 @@ impl State {
         if self.saving || self.status != Status::Ready {
             return Vec::new();
         }
-        if let Err(e) = DeckName::new(self.values.name.as_str()) {
-            self.name_error = Some(name_message(&e).to_owned());
+        if let Some(error) = name_error(&self.values.name) {
+            self.name_error = Some(error);
             return Vec::new();
         }
         self.saving = true;
@@ -1327,10 +1325,21 @@ impl State {
 /// The line under a deck name the validator turns down, in the app's words
 /// rather than the validator's.
 #[must_use]
-pub fn name_message(error: &InvalidDeckname) -> &'static str {
+pub fn name_message(error: &InvalidDeckname) -> String {
     match error {
-        InvalidDeckname::TooShort => "Deck name is required",
-        InvalidDeckname::TooLong => "Deck names are 1 to 64 characters",
-        InvalidDeckname::BadWord => "Pick a different name",
+        InvalidDeckname::TooShort => "Deck name is required".to_owned(),
+        InvalidDeckname::TooLong => format!(
+            "Deck names are 1 to {} characters",
+            deck::deck_name::MAX_LENGTH
+        ),
+        InvalidDeckname::BadWord => "Pick a different name".to_owned(),
     }
+}
+
+/// [`DeckName::new`]'s verdict on `raw` as the line under a deck name field
+/// ([`name_message`]), or `None` when it is a deck name. Create, Edit and
+/// Clone all judge a name with it.
+#[must_use]
+pub fn name_error(raw: &str) -> Option<String> {
+    DeckName::new(raw).err().map(|e| name_message(&e))
 }

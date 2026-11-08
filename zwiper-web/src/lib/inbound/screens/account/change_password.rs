@@ -159,6 +159,8 @@ pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
                     TextInput {
                         value: current,
                         id: "current_password",
+                        name: "current-password",
+                        autocomplete: "current-password",
                         label: "Current password",
                         placeholder: "Current password",
                         input_type: "password",
@@ -166,6 +168,8 @@ pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
                     TextInput {
                         value: new_password,
                         id: "new_password",
+                        name: "new-password",
+                        autocomplete: "new-password",
                         label: "New password",
                         placeholder: "New password",
                         input_type: "password",
@@ -175,6 +179,8 @@ pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
                     TextInput {
                         value: confirm,
                         id: "confirm_password",
+                        name: "confirm-password",
+                        autocomplete: "new-password",
                         label: "Confirm password",
                         placeholder: "Confirm new",
                         input_type: "password",

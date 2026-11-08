@@ -4,7 +4,7 @@ use components::{Chip, ClearWrap, Pressable, TextInput};
 use dioxus::prelude::*;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::{
-    self, DeckOtherTag, MAX_DECK_ORACLE_TAGS, MAX_DECK_TAGS, PowerLevel,
+    self, DeckOtherTag, MAX_DECK_ORACLE_TAGS, MAX_DECK_TAGS, PowerLevel, deck_name,
 };
 use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_ui::deck::form::{Slot, Step};
@@ -50,6 +50,7 @@ pub(crate) fn DeckFields(
                     on_info: info_button::open_topic(HintTopic::DeckName),
                     value: name,
                     id: "deck_name",
+                    maxlength: deck_name::MAX_LENGTH,
                     placeholder: model::NOT_SET,
                     error: name_error.as_deref().map(sentence_case),
                     on_clear: |()| {},

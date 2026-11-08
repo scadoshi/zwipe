@@ -8,7 +8,7 @@ use dioxus::prelude::*;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::card::search_card::commander_eligibility;
 use zwipe_core::domain::deck::{
-    DeckOtherTag, MAX_DECK_ORACLE_TAGS, MAX_DECK_TAGS, PowerLevel, deck_tag_label,
+    DeckOtherTag, MAX_DECK_ORACLE_TAGS, MAX_DECK_TAGS, PowerLevel, deck_name, deck_tag_label,
 };
 use zwipe_ui::deck::form::{self, Slot, Step};
 use zwipe_ui::text::sentence_case;
@@ -84,6 +84,7 @@ fn ProfileFields(form: DeckForm, on_enter: EventHandler<()>) -> Element {
                         on_info: open_topic(HintTopic::DeckName),
                         value: form.name,
                         id: DECK_NAME_ID,
+                        maxlength: deck_name::MAX_LENGTH,
                         placeholder: "Not set",
                         error: (form.name_error)().as_deref().map(sentence_case),
                         on_clear: |()| {},

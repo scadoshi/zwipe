@@ -2,6 +2,9 @@
 //!
 //! Two cursor disciplines share [`CardStack`]. A linear stack (Add's search source) walks forward through a paged list and keeps swiped cards behind the cursor, so undo steps back onto the card it undoes. A cycling stack (Add's maybeboard source, Remove) wraps around a fixed list and drops cards from it, so its actions carry the card for undo to put back.
 
+use std::collections::HashSet;
+
+use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::deck::Board;
 
@@ -127,6 +130,9 @@ pub struct CardStack<A> {
     index: usize,
     history: Vec<A>,
     entering: Option<Direction>,
+    /// How many of the first cards were swiped under an earlier search and
+    /// kept by [`CardStack::replace_ahead`] for undo to reach.
+    kept: usize,
 }
 
 impl<A> Default for CardStack<A> {
@@ -136,6 +142,7 @@ impl<A> Default for CardStack<A> {
             index: 0,
             history: Vec::new(),
             entering: None,
+            kept: 0,
         }
     }
 }
@@ -223,6 +230,31 @@ impl<A> CardStack<A> {
     pub fn replace(&mut self, cards: Vec<Card>) {
         self.cards = cards;
         self.index = 0;
+        self.kept = 0;
+    }
+
+    /// Swaps the cards ahead of the cursor for new ones and moves the cursor to the first of them. The swiped cards stay behind it with the history, so undo still reaches them; a new card already among them is dropped.
+    pub fn replace_ahead(&mut self, cards: Vec<Card>) {
+        self.cards.truncate(self.index);
+        self.kept = self.cards.len();
+        let swiped: HashSet<Uuid> = self.cards.iter().map(|c| c.scryfall_data.id).collect();
+        self.cards.extend(
+            cards
+                .into_iter()
+                .filter(|c| !swiped.contains(&c.scryfall_data.id)),
+        );
+        self.entering = None;
+    }
+
+    /// Drops the cards ahead of the cursor, keeping the swiped ones and the history for undo.
+    pub fn clear_ahead(&mut self) {
+        self.replace_ahead(Vec::new());
+    }
+
+    /// Whether the live search put any card on the stack, as against cards kept from an earlier one by [`CardStack::replace_ahead`].
+    #[must_use]
+    pub fn has_served(&self) -> bool {
+        self.cards.len() > self.kept
     }
 
     /// Appends a page of cards.
@@ -243,6 +275,7 @@ impl<A> CardStack<A> {
         self.index = 0;
         self.history.clear();
         self.entering = None;
+        self.kept = 0;
     }
 
     /// The cards, cursor and history, for parking.
@@ -260,6 +293,7 @@ impl<A> CardStack<A> {
         self.cards = cards;
         self.history = history;
         self.entering = None;
+        self.kept = 0;
     }
 
     /// Drops the card under the cursor so the next one slides in. Does nothing past the end.
@@ -366,6 +400,33 @@ mod tests {
 
     fn name(card: Option<&Card>) -> Option<&str> {
         card.map(|c| c.scryfall_data.name.as_str())
+    }
+
+    #[test]
+    fn replacing_ahead_keeps_the_swiped_cards_for_undo() {
+        let mut stack = stack(&["A", "B"]);
+        assert!(stack.advance());
+        stack.record(AddAction::Skip);
+        let a = stack.cards()[0].clone();
+        stack.replace_ahead(vec![card("C"), a]);
+        assert_eq!(name(stack.current()), Some("C"));
+        assert_eq!(stack.len(), 2, "B dropped, the swiped A not dealt twice");
+        assert!(stack.has_served());
+        let action = stack.pop_action().unwrap();
+        assert!(stack.step_back(&action));
+        assert_eq!(name(stack.current()), Some("A"));
+    }
+
+    #[test]
+    fn clearing_ahead_leaves_nothing_served() {
+        let mut stack = stack(&["A", "B"]);
+        assert!(stack.advance());
+        stack.clear_ahead();
+        assert!(!stack.has_served());
+        assert!(!stack.is_empty());
+        stack.reset();
+        stack.replace(vec![card("C")]);
+        assert!(stack.has_served());
     }
 
     #[test]

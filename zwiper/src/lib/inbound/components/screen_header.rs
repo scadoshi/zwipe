@@ -58,7 +58,7 @@ pub fn ScreenHeader(
                 },
                 persistent: rsx! {
                     div { class: "app-nav-title",
-                        h2 { class: "app-nav-title-text", "{title}" }
+                        h1 { class: "app-nav-title-text", "{title}" }
                         if let Some(mut hint) = hint {
                             InfoButton { onclick: move |_| hint.set(true) }
                         }

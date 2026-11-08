@@ -698,6 +698,66 @@ fn undo_with_nothing_to_undo_says_so() {
     );
 }
 
+/// `state` after the filter is applied again and its search serves `served`.
+fn refiltered(state: &mut State, served: &[Card]) {
+    let effects = state.update(Action::Filter(state.filter().clone()));
+    let ticket = ticket_of(&effects);
+    let _served = state.update(Action::Searched {
+        ticket,
+        page: page(served.to_vec()),
+    });
+}
+
+#[test]
+fn undo_reaches_a_skip_across_a_filter_change() {
+    let mut state = serving(&[card("A"), card("B")]);
+    let _skipped = state.update(Action::Swipe(Direction::Left));
+    refiltered(&mut state, &[card("C")]);
+    assert_eq!(top(&state).as_deref(), Some("C"));
+    let effects = state.update(Action::Undo);
+    assert_eq!(
+        toasts(&effects),
+        [Toast::quick(ToastKind::Info, UNDID_SKIP)]
+    );
+    assert_eq!(top(&state).as_deref(), Some("A"));
+}
+
+#[test]
+fn undo_reaches_an_add_across_a_filter_change() {
+    let mut state = serving(&[card("A"), card("B")]);
+    let effects = state.update(Action::Swipe(Direction::Right));
+    let Some(Effect::AddCard { card: added, .. }) = effects.first() else {
+        panic!("{effects:?}");
+    };
+    let deck_card = Box::new(serving_deck_card(added));
+    let _recorded = state.update(Action::Added {
+        ticket: ticket_of(&effects),
+        deck_card,
+    });
+    refiltered(&mut state, &[card("C")]);
+    let effects = state.update(Action::Undo);
+    assert!(
+        effects.iter().any(|e| matches!(
+            e,
+            Effect::TakeUndo {
+                claim: UndoClaim::Added { .. },
+                ..
+            }
+        )),
+        "{effects:?}"
+    );
+    assert_eq!(top(&state).as_deref(), Some("A"));
+}
+
+#[test]
+fn a_filter_change_that_matches_nothing_still_says_no_cards_match() {
+    let mut state = serving(&[card("A")]);
+    let _skipped = state.update(Action::Swipe(Direction::Left));
+    refiltered(&mut state, &[]);
+    assert_eq!(state.pile(), Pile::Empty);
+    assert!(state.ghost_note().is_some());
+}
+
 #[test]
 fn undoing_a_skip_brings_the_card_back_from_the_left() {
     let mut state = serving(&[card("A"), card("B")]);

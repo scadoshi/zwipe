@@ -3,7 +3,6 @@
 use std::fmt::{self, Debug, Formatter};
 
 use chrono::{DateTime, Utc};
-use zwipe_core::domain::auth::models::password;
 use zwipe_core::domain::user::{Email, InvalidUsername, Username};
 use zwipe_core::text::sentence_case;
 
@@ -98,17 +97,17 @@ pub fn missing_inputs_toast() -> Toast {
     Toast::normal(ToastKind::Error, MISSING_INPUTS)
 }
 
-/// Forgot password's check: the address as typed, untrimmed, with [`email_error`]'s lines.
+/// Forgot password's check: [`EMAIL_REQUIRED`] when nothing but spaces is typed, else none. The address belongs to an existing account, so its form is the server's to judge: one accepted under older rules must still get a link.
 #[must_use]
 pub fn reset_email_error(raw: &str) -> Option<String> {
-    email_error(raw)
+    raw.trim().is_empty().then(|| EMAIL_REQUIRED.to_owned())
 }
 
-/// Register's check of a new password and its confirmation: the policy's first failure, else [`PASSWORDS_DIFFER`]. A confirmation still shorter than the password is not judged until a submit was tried, since mid-typing it cannot match yet.
+/// Register's check of a new password and its confirmation: [`PASSWORD_REQUIRED`] once a submit was tried with both empty, else [`PASSWORDS_DIFFER`]. The password policy is the server's alone, so no rule a later policy changes can stop a client from sending. A confirmation still shorter than the password is not judged until a submit was tried, since mid-typing it cannot match yet.
 #[must_use]
 pub fn password_error(password: &str, confirm: &str, attempted: bool) -> Option<String> {
-    if let Err(e) = password::validate(password) {
-        return Some(sentence_case(&e.to_string()));
+    if password.is_empty() && confirm.is_empty() {
+        return attempted.then(|| PASSWORD_REQUIRED.to_owned());
     }
     let judged = attempted || confirm.chars().count() >= password.chars().count();
     (password != confirm && judged).then(|| PASSWORDS_DIFFER.to_owned())
@@ -256,20 +255,6 @@ mod tests {
     }
 
     #[test]
-    fn a_new_password_is_measured_in_characters_by_the_core_validator() {
-        let seven = "Aé1!bcd";
-        assert_eq!(
-            change_password_error("Old!pass1", seven, seven, true).as_deref(),
-            Some("Must be at least 8 characters long"),
-            "eight bytes but seven characters is too short"
-        );
-        assert_eq!(
-            change_password_error("Old!pass1", "Aé1!bcde", "Aé1!bcde", true),
-            None
-        );
-    }
-
-    #[test]
     fn change_password_waits_on_the_mismatch_until_the_confirmation_is_long_enough() {
         assert_eq!(
             password_required("").as_deref(),
@@ -413,28 +398,27 @@ mod tests {
     }
 
     #[test]
-    fn the_reset_form_has_one_line_and_does_not_trim() {
-        assert_eq!(reset_email_error("a@b.co"), None);
-        for raw in ["nope", " a@b.co", "a@b.co ", "a@localhost"] {
-            assert_eq!(
-                reset_email_error(raw).as_deref(),
-                Some(INVALID_EMAIL),
-                "address {raw:?}"
-            );
+    fn the_reset_form_leaves_an_address_to_the_server() {
+        for raw in ["a@b.co", "nope", " a@b.co", "a@localhost", "me@[127.0.0.1]"] {
+            assert_eq!(reset_email_error(raw), None, "address {raw:?}");
         }
     }
 
     #[test]
-    fn the_policy_wins_over_the_mismatch() {
+    fn no_password_policy_is_checked_in_the_client() {
+        assert_eq!(password_error("short", "short", true), None);
+        assert_eq!(password_error("a", "a", false), None);
         assert_eq!(
             password_error("short", "other", true).as_deref(),
-            Some("Must be at least 8 characters long")
+            Some(PASSWORDS_DIFFER)
         );
+        assert_eq!(password_error("", "", false), None, "nothing tried yet");
         assert_eq!(
             password_error("", "", true).as_deref(),
-            Some("Must be at least 8 characters long"),
-            "an empty password fails the policy, not the mismatch"
+            Some(PASSWORD_REQUIRED),
+            "an empty submit asks for one"
         );
+        assert_eq!(change_password_error(GOOD, "short", "short", true), None);
     }
 
     #[test]
@@ -480,10 +464,6 @@ mod tests {
 
     #[test]
     fn change_password_repeats_registers_checks_then_refuses_the_same_password() {
-        assert_eq!(
-            change_password_error(GOOD, "short", "short", true).as_deref(),
-            Some("Must be at least 8 characters long")
-        );
         assert_eq!(
             change_password_error(GOOD, GOOD, "Abc", true).as_deref(),
             Some(PASSWORDS_DIFFER),

@@ -418,7 +418,11 @@ pub fn CommanderMaybeboard() -> Element {
                         }
                     } else {
                         div { class: "chip-row",
-                            span { class: "stat-chip stat-chip-p1 chip-row-label", {model::QUICK_ADD} }
+                            label {
+                                class: "stat-chip stat-chip-p1 chip-row-label",
+                                r#for: "commander-maybeboard-search",
+                                {model::QUICK_ADD}
+                            }
                             ClearWrap {
                                 filled: !query.is_empty(),
                                 on_clear: move |()| driver.dispatch(Action::Type(String::new())),

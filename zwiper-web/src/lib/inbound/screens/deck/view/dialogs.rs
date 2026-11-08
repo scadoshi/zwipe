@@ -6,6 +6,7 @@ use components::{ActionButton, AlertDialog, DialogAction, ShareUrl, TOAST_QUICK}
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
+use zwipe_core::domain::deck::deck_name;
 use zwipe_core::http::contracts::deck::HttpCloneDeck;
 use zwipe_ui::screens::deck_view;
 
@@ -204,8 +205,9 @@ pub fn DeckDialogsHost(
 }
 
 /// Clone deck: a copy of the deck under a new name, prefilled with
-/// `{name} (clone)` on every open. `Save` stays off while the name is
-/// blank; a failure keeps the dialog open.
+/// `{name} (clone)` on every open. The name is judged like Create's, with
+/// its line under the field, and `Save` stays off until it passes; a failure
+/// keeps the dialog open.
 #[component]
 fn CloneDeckDialog(source_deck_id: Uuid, default_name: String, open: Signal<bool>) -> Element {
     let navigator = use_navigator();
@@ -217,7 +219,7 @@ fn CloneDeckDialog(source_deck_id: Uuid, default_name: String, open: Signal<bool
             name.set(default_name.clone());
         }
     });
-    let blank = use_memo(move || name().trim().is_empty());
+    let blank = use_memo(move || !deck_view::can_clone(&name()));
     let save = ActionButton::new("Save")
         .disabled(blank)
         .busy("Cloning…", move || {
@@ -255,20 +257,26 @@ fn CloneDeckDialog(source_deck_id: Uuid, default_name: String, open: Signal<bool
     }
 }
 
-/// The new name field, its own component so it reads the name where the
-/// dialog host draws it.
+/// The new name field and its line, its own component so it reads the name
+/// where the dialog host draws it.
 #[component]
 fn CloneNameInput(mut name: Signal<String>) -> Element {
+    let error = deck_view::clone_name_error(&name());
+    let error_shown = error.is_some();
     rsx! {
         input {
             r#type: "text",
-            class: "input",
+            class: if error_shown { "input input-error" } else { "input" },
             placeholder: "New deck name",
+            maxlength: deck_name::MAX_LENGTH.to_string(),
             value: "{name}",
             autocapitalize: "none",
             autocorrect: "off",
             spellcheck: "false",
             oninput: move |evt| name.set(evt.value()),
+        }
+        if let Some(error) = error {
+            div { class: "message-error", "{error}" }
         }
     }
 }

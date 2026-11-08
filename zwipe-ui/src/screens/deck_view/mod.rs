@@ -16,6 +16,7 @@ use crate::buy;
 use crate::deck::view::{self, Done};
 use crate::deck::warning::{self, Fix};
 use crate::generation::{Generation, Ticket};
+use crate::screens::deck_form;
 use crate::toast::{Line, Toast, keep_one};
 
 /// The screen's title.
@@ -550,10 +551,16 @@ pub fn fix_buttons(warning: &DeckWarning) -> Vec<(String, Action)> {
     warning::labels(fix).into_iter().zip(actions).collect()
 }
 
-/// Whether the Clone dialog's Save is on: the name has something besides spaces.
+/// The line under the Clone dialog's name, from the same check as Create and Edit ([`deck_form::name_error`]), or `None` when the name is a deck name.
+#[must_use]
+pub fn clone_name_error(name: &str) -> Option<String> {
+    deck_form::name_error(name)
+}
+
+/// Whether the Clone dialog's Save is on: the name passes [`clone_name_error`].
 #[must_use]
 pub fn can_clone(name: &str) -> bool {
-    !name.trim().is_empty()
+    clone_name_error(name).is_none()
 }
 
 /// One fetch's last result, and the ticket of the request still out for it.
