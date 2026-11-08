@@ -13,6 +13,7 @@ use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_ui::screens::account::{self as model, MoreItem};
+use zwipe_ui::telemetry::vocabulary::{ProfileScreen, Screen};
 
 use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
 use crate::inbound::chrome::logout_dialog::LogoutDialog;
@@ -26,12 +27,14 @@ use crate::inbound::screens::account::verification::{
 };
 use crate::inbound::session::logout;
 use crate::inbound::shell::ScreenFrame;
+use crate::inbound::telemetry;
 
 /// The account screen. Every visit fetches the user once with the session as
 /// it is, so the verification badge is current without logging in again; a
 /// failed fetch is only logged.
 #[component]
 pub fn Account() -> Element {
+    telemetry::use_telemetry_screen(Screen::Profile(ProfileScreen::Main));
     let mut session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
     let hint_open = use_one_time_hint(OneTimeHint::Profile);

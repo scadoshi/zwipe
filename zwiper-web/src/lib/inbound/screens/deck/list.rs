@@ -19,6 +19,7 @@ use zwipe_core::domain::deck::deck_tag::deck_tag_label;
 use zwipe_ui::deck::list::{self, GroupBy, Show, SortBy};
 use zwipe_ui::deck::{card_count, cards_label, command_zone, count_fits};
 use zwipe_ui::screens::deck_list;
+use zwipe_ui::telemetry::vocabulary::{DeckScreen, Screen};
 
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::ghost::{GhostChipRow, GhostShowRow};
@@ -26,12 +27,14 @@ use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, open
 use crate::inbound::router::Route;
 use crate::inbound::screens::deck::skeletons::DeckListSkeleton;
 use crate::inbound::shell::ScreenFrame;
+use crate::inbound::telemetry;
 use crate::outbound::deck_sort_store::DeckSortStore;
 use crate::outbound::session_store::SessionStore;
 
 /// The deck list screen.
 #[component]
 pub fn DeckList() -> Element {
+    telemetry::use_telemetry_screen(Screen::Deck(DeckScreen::List));
     let navigator = use_navigator();
     let client: Signal<ZwipeClient> = use_context();
     let mut session: Signal<Option<Session>> = use_context();

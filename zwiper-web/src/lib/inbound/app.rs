@@ -16,7 +16,7 @@ use crate::inbound::screens::auth::login::LoginPrefill;
 use crate::inbound::screens::update_required::UpdateRequired;
 use crate::inbound::session::upkeep;
 use crate::inbound::shell::MenuOpen;
-use crate::inbound::{caches, card_stores, catalog};
+use crate::inbound::{caches, card_stores, catalog, telemetry};
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 const FAVICON_16: Asset = asset!("/assets/favicon-16x16.png");
@@ -37,6 +37,7 @@ const FONT_JBM_700: Asset = asset!("/assets/fonts/jetbrains-mono-700.woff2");
 #[component]
 pub fn App() -> Element {
     let upgrade_required = upkeep::use_session_upkeep();
+    telemetry::use_telemetry(use_context(), use_context());
     caches::use_root_caches();
     catalog::use_catalog_cache();
     card_stores::use_card_stores();

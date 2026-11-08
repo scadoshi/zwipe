@@ -22,6 +22,7 @@ use zwipe_ui::timing::{QUICK_ADD_DEBOUNCE, QUICK_ADD_LIMIT, QUICK_ADD_MIN_CHARS}
 
 use crate::inbound::card_stores::CardStores;
 use crate::inbound::chrome::authed::use_authed;
+use crate::inbound::telemetry;
 use crate::outbound::timer;
 
 /// The input's id, for `/`.
@@ -36,6 +37,7 @@ pub(crate) fn QuickAdd(
     on_added: EventHandler<()>,
 ) -> Element {
     let authed = use_authed();
+    let usage = telemetry::use_usage();
     let toast = use_toast();
     let CardStores { mut undo, .. } = use_context();
     let mut query = use_signal(String::new);
@@ -71,6 +73,7 @@ pub(crate) fn QuickAdd(
                 show.set(false);
                 return;
             };
+            usage.peek().record_search();
             let reply = authed
                 .run_quiet("quick_add_search", |c, s| async move {
                     c.search_deck_cards(deck_id, &filter, &s).await

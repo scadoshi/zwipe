@@ -19,6 +19,7 @@ use zwipe_ui::deck::form::Slot;
 use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::filter::picker::Sources;
 use zwipe_ui::screens::deck_cards::TITLE;
+use zwipe_ui::telemetry::vocabulary::{DeckScreen, Screen};
 use zwipe_ui::{deck_cards, filter};
 
 use super::editor::{
@@ -38,6 +39,7 @@ use crate::inbound::router::Route;
 use crate::inbound::screens::deck::skeletons::ChipRowSkeleton;
 use crate::inbound::screens::deck::view::ViewDeck;
 use crate::inbound::shell::ScreenFrame;
+use crate::inbound::telemetry;
 
 /// A collapsible card group. Its header toggles it from a click, Enter or
 /// Space, and a shut group's rows are inert.
@@ -49,6 +51,7 @@ fn CardGroup(
     collapsed: Signal<HashSet<String>>,
     children: Element,
 ) -> Element {
+    telemetry::use_telemetry_screen(Screen::Deck(DeckScreen::CardView));
     let open = !collapsed().contains(&section_key);
     let header_class = if open {
         "card-group-header group-collapsible expanded"

@@ -55,6 +55,7 @@ use zwipe_ui::generation::Generation;
 use zwipe_ui::hint::{Role, SwipeSelectMode};
 use zwipe_ui::playstyle::empty_identity_line;
 use zwipe_ui::stack::{CardStack, Direction, NO_CARDS_LEFT, StackAction};
+use zwipe_ui::telemetry::vocabulary::component;
 use zwipe_ui::timing::{LOAD_MORE_AT, MAYBEBOARD_TOAST, PAGE_SIZE};
 
 use crate::domain::swipe_select::{card_key, redeal};
@@ -72,6 +73,7 @@ use crate::inbound::chrome::details_eye::{DockEye, Surface, use_details_eye};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, SwipeSelectHint, open_and_record_hint};
 use crate::inbound::screens::playstyle::SuggestionReasons;
 use crate::inbound::shell::use_overlay_nav;
+use crate::inbound::telemetry;
 
 /// Pages of commanders the search keeps pulling when the host's exclusions
 /// empty a page, before it waits for the next swipe.
@@ -216,7 +218,8 @@ pub fn SwipeSelect(
     use_overlay_back(open);
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
-    let authed = use_authed();
+    let authed = use_authed().in_component(component::SWIPE_SELECT);
+    let usage = telemetry::use_usage();
     let toast = use_toast();
     let pile = Pile {
         stack: use_signal(CardStack::default),
@@ -276,6 +279,9 @@ pub fn SwipeSelect(
                 else {
                     break;
                 };
+                if session.peek().is_some() {
+                    usage.peek().record_search();
+                }
                 let reply = authed
                     .run_quiet("swipe_select_more", |c, s| async move {
                         c.search_commanders(&filter, &s).await
@@ -364,6 +370,9 @@ pub fn SwipeSelect(
         else {
             return;
         };
+        if session.peek().is_some() {
+            usage.peek().record_search();
+        }
         loading.set(true);
         let commander_for_page = commander_for_deal.clone();
         spawn(async move {
@@ -495,7 +504,8 @@ fn SwipeSelectBody(
 ) -> Element {
     let toast = use_toast();
     let confirm = use_swipe_confirm();
-    let authed = use_authed();
+    let authed = use_authed().in_component(component::SWIPE_SELECT);
+    let usage = telemetry::use_usage();
     let describe_tag = use_describe_tag();
     let on_examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
     let Pile {
@@ -594,7 +604,7 @@ fn SwipeSelectBody(
         undo,
     );
 
-    let on_swipe = move |(swipe, card): (Swipe, Card)| match swipe {
+    let mut on_decision = move |(swipe, card): (Swipe, Card)| match swipe {
         Swipe::Left => {
             let action = match (suggested, card.scryfall_data.oracle_id) {
                 (true, Some(oracle_id)) => {
@@ -659,6 +669,15 @@ fn SwipeSelectBody(
             });
         }
         Swipe::Down => undo.call(()),
+    };
+    let on_swipe = move |(swipe, card): (Swipe, Card)| {
+        usage.peek().record_swipe(swipe.into());
+        if matches!(swipe, Swipe::Left | Swipe::Right) {
+            usage
+                .peek()
+                .record_select_signal(card.scryfall_data.oracle_id, swipe.into());
+        }
+        on_decision((swipe, card));
     };
 
     let (window, current, entering) = {

@@ -28,6 +28,7 @@ use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilde
 use zwipe_core::domain::card::search_card::cards::Cards;
 use zwipe_core::domain::deck::{Board, DeckEntry};
 use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard};
+use zwipe_core::http::contracts::metrics::PileEndKind;
 use zwipe_ui::add::{AddDeck, normalized, related_ids, synergy_note};
 use zwipe_ui::deck_signals::{Crossing, Level, budget_crossing, land_crossing, price_of};
 use zwipe_ui::filter::AddContext;
@@ -44,6 +45,7 @@ use zwipe_ui::stores::in_flight::AddOutcome;
 use zwipe_ui::stores::parked::ParkedStack;
 use zwipe_ui::stores::undo;
 use zwipe_ui::stores::undo::UndoAction;
+use zwipe_ui::telemetry::vocabulary::{DeckScreen, Screen};
 use zwipe_ui::timing::LOAD_MORE_AT;
 
 use super::{OneLine, SwipeDetails, flip_top_card};
@@ -62,6 +64,7 @@ use crate::inbound::chrome::page_keys::{use_page_keys, use_undo_key};
 use crate::inbound::root_signal::use_signal_for_root_tasks;
 use crate::inbound::session::ensure_fresh::ensure_fresh;
 use crate::inbound::shell::ScreenFrame;
+use crate::inbound::telemetry;
 
 /// A downward pull this long, in pixels, on the empty end of the pile
 /// undoes the last swipe, as in the app.
@@ -108,9 +111,11 @@ const ALL_SWIPES: [Swipe; 4] = [Swipe::Left, Swipe::Right, Swipe::Up, Swipe::Dow
 /// The Add cards screen for `deck_id`.
 #[component]
 pub fn AddDeckCard(deck_id: Uuid) -> Element {
+    telemetry::use_telemetry_screen(Screen::Deck(DeckScreen::CardAdd));
     let toast = use_toast();
     let confirm = use_swipe_confirm();
     let authed = use_authed();
+    let usage = telemetry::use_usage();
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
     let CardStores {
@@ -284,7 +289,11 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         let snapshot = filter.peek().clone();
         // Ahead of the deck, the deck's own load toasts a failure for both.
         let quiet = deck.peek().is_none();
+        usage.peek().record_search();
         spawn(async move {
+            // Buffered usage feeds synergy ordering, so it goes out before
+            // the search.
+            telemetry::flush_once(usage, session, client).await;
             let call = |c: ZwipeClient, s: Session| async move {
                 c.search_deck_cards(deck_id, &query, &s).await
             };
@@ -307,6 +316,11 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             let served: Vec<Card> = page.cards.into_iter().filter(|c| !holds(c)).collect();
             // An empty reply needs no toast: the ghost card says No cards
             // match.
+            if served.is_empty() {
+                usage
+                    .peek()
+                    .record_pile_end(deck_id, PileEndKind::Empty, snapshot.synergy());
+            }
             stack.write().replace_ahead(served);
             last_search.set(Some(snapshot));
         });
@@ -362,6 +376,9 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             && related.peek().contains(&top)
         {
             related_announced.set(true);
+            usage
+                .peek()
+                .record_pile_end(deck_id, PileEndKind::SynergyExhausted, true);
             toast.info(
                 "That's every synergy pick. Showing cards like your deck".to_string(),
                 ToastOptions::default().duration(TOAST_NORMAL),
@@ -385,6 +402,8 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         };
         loading_more.set(true);
         let ticket = searches.peek().current();
+        let synergy = filter.peek().synergy();
+        usage.peek().record_search();
         spawn(async move {
             let reply = authed
                 .try_run("load_more", |c, s| async move {
@@ -411,6 +430,9 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                     .collect();
                 if fresh.is_empty() {
                     exhausted.set(true);
+                    usage
+                        .peek()
+                        .record_pile_end(deck_id, PileEndKind::Empty, synergy);
                     // The cursor waits past the last card: the stack has run out.
                     if stack.peek().index() >= stack.peek().len() {
                         toast.info(
@@ -849,7 +871,9 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         loading_cards.set(true);
         search_failed.set(false);
         let snapshot = filter.peek().clone();
+        usage.peek().record_search();
         spawn(async move {
+            telemetry::flush_once(usage, session, client).await;
             let reply = authed
                 .try_run("search_cards", |c, s| async move {
                     c.search_deck_cards(deck_id, &query, &s).await
@@ -992,9 +1016,19 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                                     AddSource::Search => stack.write().cancel_entering(),
                                     AddSource::Maybeboard => mb_stack.write().cancel_entering(),
                                 },
-                                on_swipe: move |pair: (Swipe, Card)| match *source.peek() {
-                                    AddSource::Search => on_search_swipe(pair),
-                                    AddSource::Maybeboard => on_maybeboard_swipe(pair),
+                                on_swipe: move |pair: (Swipe, Card)| {
+                                    let (swipe, card) = &pair;
+                                    usage.peek().record_swipe((*swipe).into());
+                                    let at = *source.peek();
+                                    if at == AddSource::Search && *swipe != Swipe::Down {
+                                        usage
+                                            .peek()
+                                            .record_signal(deck_id, card.scryfall_data.oracle_id, (*swipe).into());
+                                    }
+                                    match at {
+                                        AddSource::Search => on_search_swipe(pair),
+                                        AddSource::Maybeboard => on_maybeboard_swipe(pair),
+                                    }
                                 },
                             }
                         } else if end_of_pile {
