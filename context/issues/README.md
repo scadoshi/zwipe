@@ -69,6 +69,8 @@ Who checked, on which live build, what they saw.
 | [301](301-form-dirty-after-discard.md) | Edit deck still asks to leave after a picker change was discarded | merged | laptop | #439 |
 | [302](302-add-details-overlaps-card.md) | Add's card details panel overlaps the swipe card at 900 to 1060px | reported | - | - |
 | [303](303-web-unstyled-flash-on-load.md) | The web app flashes unstyled on a hard refresh | approved | thinker | - |
+| [304](304-home-stats-chip-gap.md) | Web Home's stat chips sit far below the counters | approved | laptop (queued) | - |
+| [305](305-home-decks-create-label.md) | Home's Decks panel "+" should read "Create deck" | approved | laptop (queued) | - |
 
 ## Waiting for live verification
 
