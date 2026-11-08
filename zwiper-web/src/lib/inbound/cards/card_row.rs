@@ -1,8 +1,8 @@
 //! The app's card row over the kit's, with the screen-level overlays its
 //! `Image` and `Printing` buttons open. The kit's row feeds the screen's
-//! [`HoverStack`] itself.
+//! [`HoverStack`](components::HoverStack) itself.
 
-use components::{CardRow as SharedCardRow, HoverStack};
+use components::CardRow as SharedCardRow;
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
@@ -83,8 +83,8 @@ pub fn CardOverlaysHost(
 ///
 /// The deck cards view adds the editing actions: the quantity stepper
 /// (`on_qty_change`), the board moves (`on_move_to` from `current_board`)
-/// and the MVP star (`mvp`, `on_toggle_mvp`), prices in `price_currency`,
-/// and `on_drag_start`, which makes the row draggable onto a board.
+/// and the MVP star (`mvp`, `on_toggle_mvp`), with prices in
+/// `price_currency`.
 #[component]
 pub fn CardRow(
     card: Card,
@@ -99,7 +99,6 @@ pub fn CardRow(
     #[props(default)] mvp: Option<bool>,
     #[props(default)] on_toggle_mvp: Option<EventHandler<()>>,
     #[props(default)] price_currency: PriceCurrency,
-    #[props(default)] on_drag_start: Option<EventHandler<()>>,
     #[props(default)] on_printing: Option<EventHandler<Card>>,
 ) -> Element {
     let overlays = try_use_context::<CardOverlays>();
@@ -107,7 +106,6 @@ pub fn CardRow(
     let describe_tag = try_use_context::<OtagDescribe>().map(|d| d.0);
     let on_examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
     let show_art = try_use_context::<ShowRowArt>().map(|s| (s.0)());
-    let hover_stack = try_use_context::<HoverStack>();
     let sd_for_image = card.scryfall_data.clone();
     let on_image = overlays.map(|CardOverlays { mut preview, .. }| {
         EventHandler::new(move |()| preview.set(Some((sd_for_image.clone(), face()))))
@@ -120,15 +118,6 @@ pub fn CardRow(
     rsx! {
         div {
             class: "web-card-row",
-            draggable: on_drag_start.is_some(),
-            ondragstart: move |_| {
-                if let Some(stack) = hover_stack {
-                    stack.leave_held();
-                }
-                if let Some(handler) = on_drag_start {
-                    handler.call(());
-                }
-            },
             SharedCardRow {
                 card,
                 qty,
