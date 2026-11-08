@@ -358,21 +358,6 @@ impl CardQueryBuilder {
         !self.is_empty_ignoring_deck_context(deck_format) || self.sort.is_some() || self.synergy
     }
 
-    /// Holds the search to cards legal in `format`, whatever "Is legal in"
-    /// says: `format` joins `legalities_contains_all`, so an Any pick of other
-    /// formats can only narrow a deck's pool, never widen it past its format.
-    pub fn require_legal_in(&mut self, format: Format) -> &mut Self {
-        let key = format.to_legality_key();
-        let mut all: Vec<String> = self
-            .legalities_contains_all()
-            .map(<[String]>::to_vec)
-            .unwrap_or_default();
-        if !all.iter().any(|k| k == key) {
-            all.push(key.to_owned());
-        }
-        self.set_legalities_contains_all(all)
-    }
-
     // == Quick Constructors (with_*) ==
     // These create a new builder with default values plus one filter.
     // Useful for single-filter searches.
@@ -1066,31 +1051,6 @@ mod tests {
         assert!(
             !all.is_empty_ignoring_deck_context(deck),
             "an All pick is the user's"
-        );
-    }
-
-    #[test]
-    fn require_legal_in_adds_the_format_to_all_once() {
-        let mut b = CardQueryBuilder::new();
-        b.set_legalities_contains_any(vec!["commander", "pauper"]);
-        b.require_legal_in(Format::Commander);
-        assert_eq!(
-            b.legalities_contains_all(),
-            Some(&["commander".to_owned()][..])
-        );
-        assert_eq!(
-            b.legalities_contains_any().map(<[String]>::len),
-            Some(2),
-            "the Any pick stays"
-        );
-        b.require_legal_in(Format::Commander);
-        assert_eq!(b.legalities_contains_all().map(<[String]>::len), Some(1));
-        let mut picked = CardQueryBuilder::new();
-        picked.set_legalities_contains_all(vec!["pauper"]);
-        picked.require_legal_in(Format::Commander);
-        assert_eq!(
-            picked.legalities_contains_all(),
-            Some(&["pauper".to_owned(), "commander".to_owned()][..])
         );
     }
 

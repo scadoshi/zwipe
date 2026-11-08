@@ -755,7 +755,7 @@ impl State {
             )));
             return effects;
         }
-        let Ok(query) = add::outgoing(&self.filter, self.deck_format()).build() else {
+        let Ok(query) = add::normalized(&self.filter).build() else {
             // Nothing to search on, as with no deck format and no filter:
             // once the deck is in, say so rather than leave a blank ghost.
             if self.deck.is_some() {
@@ -1470,7 +1470,7 @@ impl State {
                 quick(ToastKind::Info, MAYBEBOARD_REFRESHED),
             ];
         }
-        let Ok(query) = add::outgoing(&self.filter, self.deck_format()).build() else {
+        let Ok(query) = add::normalized(&self.filter).build() else {
             return vec![quick(ToastKind::Warning, FILTER_EMPTY)];
         };
         let ticket = self.wait(Pending::Search {

@@ -158,18 +158,6 @@ pub fn normalized(filter: &CardQueryBuilder) -> CardQueryBuilder {
     b
 }
 
-/// The query Add sends: [`normalized`], held to the deck's format when it has
-/// one ([`CardQueryBuilder::require_legal_in`]), so no "Is legal in" pick can
-/// serve a card the deck's format doesn't allow.
-#[must_use]
-pub fn outgoing(filter: &CardQueryBuilder, deck_format: Option<Format>) -> CardQueryBuilder {
-    let mut b = normalized(filter);
-    if let Some(format) = deck_format {
-        b.require_legal_in(format);
-    }
-    b
-}
-
 /// The printing IDs from where the server says related cards begin.
 #[must_use]
 pub fn related_ids(page: &HttpDeckCardSearch) -> HashSet<Uuid> {
@@ -229,20 +217,20 @@ mod tests {
     }
 
     #[test]
-    fn an_any_pick_never_widens_the_deck_format() {
+    fn an_any_pick_widens_the_deck_format() {
+        let mut own = CardQueryBuilder::default();
+        own.set_legalities_contains_any(["commander"]);
+        let query = normalized(&own).build().unwrap();
+        assert!(
+            !query.criteria().matches(&pauper_only_card()),
+            "the deck's format alone keeps a Commander-banned card out"
+        );
         let mut b = CardQueryBuilder::default();
         b.set_legalities_contains_any(["commander", "pauper"]);
-        let query = outgoing(&b, Some(Format::Commander)).build().unwrap();
+        let query = normalized(&b).build().unwrap();
         assert!(
-            !query.criteria().matches(&pauper_only_card()),
-            "a Commander-banned Pauper card reaches a Commander deck"
-        );
-        let mut all = CardQueryBuilder::default();
-        all.set_legalities_contains_all(["pauper"]);
-        let query = outgoing(&all, Some(Format::Commander)).build().unwrap();
-        assert!(
-            !query.criteria().matches(&pauper_only_card()),
-            "an All pick is held to the deck format too"
+            query.criteria().matches(&pauper_only_card()),
+            "Commander + Pauper lets a Pauper card in; the deck only warns"
         );
     }
 
@@ -292,7 +280,7 @@ mod tests {
         assert_eq!(
             all.legalities_contains_any(),
             None,
-            "seeding leaves an All pick alone; outgoing holds it to the deck format"
+            "an All pick is not narrowed by the deck's format"
         );
 
         let mut remembered = CardQueryBuilder::default();

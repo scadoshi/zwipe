@@ -28,7 +28,7 @@ use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilde
 use zwipe_core::domain::card::search_card::cards::Cards;
 use zwipe_core::domain::deck::{Board, DeckEntry};
 use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard};
-use zwipe_ui::add::{AddDeck, outgoing, related_ids, synergy_note};
+use zwipe_ui::add::{AddDeck, normalized, related_ids, synergy_note};
 use zwipe_ui::deck_signals::{Crossing, Level, budget_crossing, land_crossing, price_of};
 use zwipe_ui::filter::AddContext;
 use zwipe_ui::filter::draft::{ResetRule, SheetConfig};
@@ -237,13 +237,13 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         if *source.peek() != AddSource::Search {
             return;
         }
-        let builder = outgoing(&filter.peek(), context().format);
+        let builder = normalized(&filter.peek());
         let first = *first_run.peek();
         if first {
             first_run.set(false);
             let parked = stacks.write().take(deck_id);
             if let Some(parked) = parked
-                && outgoing(&parked.filter, context().format) == builder
+                && normalized(&parked.filter) == builder
                 && !parked.cards.is_empty()
             {
                 exhausted.set(parked.exhausted);
@@ -380,7 +380,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         if *loading_more.peek() {
             return;
         }
-        let Ok(query) = outgoing(&filter.peek(), context().format).build() else {
+        let Ok(query) = normalized(&filter.peek()).build() else {
             return;
         };
         loading_more.set(true);
@@ -837,7 +837,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             fetch_context.call(());
             return;
         }
-        let Ok(query) = outgoing(&filter.peek(), context().format).build() else {
+        let Ok(query) = normalized(&filter.peek()).build() else {
             toast.warning("Filter is empty".to_string(), quick);
             return;
         };
