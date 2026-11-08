@@ -186,8 +186,10 @@
     min-width: 0;
 }
 
+/* A zero basis keeps the name on the art's line however long it is, so a
+   long name wraps beside the art instead of dropping under it. */
 .deck-list-name {
-    flex: 0 1 auto;
+    flex: 1 1 0;
     min-width: 0;
     margin-right: 0.25rem;
     overflow-wrap: anywhere;
