@@ -1216,21 +1216,53 @@ fn refresh_searches_again_without_explaining_an_empty_reply() {
     let mut state = serving(&[card("A")]);
     let effects = state.update(Action::Refresh);
     assert!(has_search(&effects));
-    assert_eq!(
-        toasts(&effects),
-        [Toast::quick(ToastKind::Info, STACK_REFRESHED)]
-    );
+    assert!(toasts(&effects).is_empty(), "nothing said until it lands");
     assert_eq!(state.pile(), Pile::Loading);
     let effects = state.update(Action::Searched {
         ticket: ticket_of(&effects),
         page: page(Vec::new()),
     });
-    assert_eq!(effects, NOTHING);
+    assert_eq!(
+        toasts(&effects),
+        [Toast::quick(ToastKind::Info, STACK_REFRESHED)],
+        "the refresh landed, and an empty reply is not explained"
+    );
 
     let (mut pile, _) = with_deck(&pile_deck());
     assert_eq!(
         toasts(&pile.update(Action::Refresh)),
         [Toast::quick(ToastKind::Warning, FILTER_EMPTY)]
+    );
+}
+
+#[test]
+fn a_failed_refresh_never_says_stack_refreshed() {
+    let mut state = serving(&[card("A")]);
+    let sent = state.update(Action::Refresh);
+    let failed = state.update(Action::Failed {
+        ticket: ticket_of(&sent),
+    });
+    let said: Vec<Toast> = toasts(&sent).into_iter().chain(toasts(&failed)).collect();
+    assert!(!said.iter().any(|t| t.text == STACK_REFRESHED), "{said:?}");
+}
+
+#[test]
+fn the_maybeboard_says_refreshed_only_once_its_deck_lands() {
+    let built = commander_deck(&[]);
+    let (mut state, _) = with_deck(&built);
+    let _picked = state.update(Action::PickSource {
+        source: Source::Maybeboard,
+        remembered: None,
+    });
+    let sent = state.update(Action::Refresh);
+    assert!(toasts(&sent).is_empty(), "{sent:?}");
+    let landed = state.update(Action::DeckLoaded {
+        ticket: ticket_of(&sent),
+        deck: Box::new(built),
+    });
+    assert_eq!(
+        toasts(&landed),
+        [Toast::quick(ToastKind::Info, MAYBEBOARD_REFRESHED)]
     );
 }
 

@@ -509,10 +509,10 @@ enum Pending {
     Deck,
     /// Refresh's fetch of the deck for its maybeboard.
     Maybeboard,
-    /// A search from the top; its ticket starts a new stack. `snapshot` is the filter as sent, recorded once it lands; `explains_empty` toasts an empty reply.
+    /// A search from the top; its ticket starts a new stack. `snapshot` is the filter as sent, recorded once it lands. A `refresh` says [`STACK_REFRESHED`] once it lands and leaves an empty reply to the ghost; any other search explains an empty reply.
     Search {
         snapshot: Box<CardQueryBuilder>,
-        explains_empty: bool,
+        refresh: bool,
     },
     /// The next page of the stack the search holding `epoch` started.
     Page { epoch: Ticket, synergy: bool },
@@ -726,7 +726,11 @@ impl State {
                     add_deck.maybeboard = AddDeck::from_deck(deck).maybeboard;
                 }
                 self.maybeboard.rewind();
-                vec![Effect::StopEnter(Source::Maybeboard), Effect::Rerun]
+                vec![
+                    Effect::StopEnter(Source::Maybeboard),
+                    Effect::Rerun,
+                    quick(ToastKind::Info, MAYBEBOARD_REFRESHED),
+                ]
             }
             _ => Vec::new(),
         }
@@ -771,7 +775,7 @@ impl State {
             ticket,
             Pending::Search {
                 snapshot: Box::new(self.filter.clone()),
-                explains_empty: true,
+                refresh: false,
             },
         ));
         effects.push(Effect::Search {
@@ -793,10 +797,7 @@ impl State {
             return Vec::new();
         };
         match self.take(ticket) {
-            Some(Pending::Search {
-                snapshot,
-                explains_empty,
-            }) => {
+            Some(Pending::Search { snapshot, refresh }) => {
                 if self.epoch != Some(ticket) {
                     return Vec::new();
                 }
@@ -806,7 +807,9 @@ impl State {
                 self.related_announced = false;
                 let served: Vec<Card> = page.cards.into_iter().filter(|c| !self.holds(c)).collect();
                 let mut effects = Vec::new();
-                if explains_empty && served.is_empty() {
+                if refresh {
+                    effects.push(quick(ToastKind::Info, STACK_REFRESHED));
+                } else if served.is_empty() {
                     let synergy = snapshot.synergy();
                     // The ghost card says No cards match, so no toast repeats it.
                     effects.push(Effect::PileEnd {
@@ -1465,17 +1468,14 @@ impl State {
         };
         if self.source == Source::Maybeboard {
             let ticket = self.wait(Pending::Maybeboard);
-            return vec![
-                Effect::RefreshMaybeboard { ticket, deck_id },
-                quick(ToastKind::Info, MAYBEBOARD_REFRESHED),
-            ];
+            return vec![Effect::RefreshMaybeboard { ticket, deck_id }];
         }
         let Ok(query) = add::normalized(&self.filter).build() else {
             return vec![quick(ToastKind::Warning, FILTER_EMPTY)];
         };
         let ticket = self.wait(Pending::Search {
             snapshot: Box::new(self.filter.clone()),
-            explains_empty: false,
+            refresh: true,
         });
         self.epoch = Some(ticket);
         self.stack.reset();
@@ -1491,7 +1491,6 @@ impl State {
                 deck_id,
                 query,
             },
-            quick(ToastKind::Info, STACK_REFRESHED),
         ]
     }
 
