@@ -454,6 +454,10 @@ pub fn public_routes() -> Router<AppState> {
                     "/share",
                     Router::new()
                         .route("/deck/{token}", get(deck::get_shared_deck))
+                        .route(
+                            "/deck/{token}/preview.png",
+                            get(deck::get_shared_deck_preview),
+                        )
                         .layer(
                             GovernorLayer::new(public_share_config)
                                 .error_handler(stable_rate_limit),

@@ -154,6 +154,11 @@ pub fn shared_deck_route(token: Uuid) -> String {
     format!("/api/share/deck/{token}")
 }
 
+/// A shared deck's preview image: the PNG its link unfurls with.
+pub fn shared_deck_preview_route(token: Uuid) -> String {
+    format!("/api/share/deck/{token}/preview.png")
+}
+
 pub fn clear_deck_suppressions_route(deck_id: Uuid) -> String {
     format!("{DECK_ROUTE}/{deck_id}/suppressions")
 }
@@ -295,6 +300,10 @@ mod tests {
         assert_eq!(clone_deck_route(a), format!("/api/deck/{sa}/clone"));
         assert_eq!(share_deck_route(a), format!("/api/deck/{sa}/share"));
         assert_eq!(shared_deck_route(a), format!("/api/share/deck/{sa}"));
+        assert_eq!(
+            shared_deck_preview_route(a),
+            format!("/api/share/deck/{sa}/preview.png")
+        );
         assert_eq!(
             clear_deck_suppressions_route(a),
             format!("/api/deck/{sa}/suppressions")

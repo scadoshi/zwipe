@@ -4,4 +4,6 @@ pub mod archidekt;
 
 pub mod resend;
 
+pub mod scryfall_art;
+
 pub mod sqlx;

@@ -61,3 +61,5 @@ rand = { workspace = true }
 hex = { workspace = true }
 reqwest = { workspace = true }
 flate2 = "1"
+# Draws shared decks' preview images. Only the embedded fonts: no system font scan.
+resvg = { version = "0.49", default-features = false, features = ["text", "raster-images"] }

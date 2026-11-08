@@ -4,6 +4,7 @@ pub mod cache;
 pub mod handlers;
 pub mod middleware;
 pub mod routes;
+pub mod share_preview;
 pub mod swipe_cap;
 
 use std::sync::Arc;
@@ -197,6 +198,8 @@ pub struct AppState {
     pub web_base_url: Arc<str>,
     /// Per-account swipe windows that cap usage batches.
     pub swipe_cap: Arc<swipe_cap::SwipeCap>,
+    /// Draws shared decks' preview images and keeps recent ones.
+    pub share_preview: Arc<share_preview::SharePreview>,
 }
 
 /// Axum HTTP server with pre-configured routes and middleware.
@@ -311,6 +314,9 @@ impl HttpServer {
             min_client_version: Arc::from(config.min_client_version.as_str()),
             web_base_url: Arc::from(config.web_base_url.as_str()),
             swipe_cap: Arc::new(swipe_cap::SwipeCap::new()),
+            share_preview: Arc::new(share_preview::SharePreview::new(
+                crate::outbound::scryfall_art::ArtSource::scryfall(&config.web_base_url),
+            )),
         };
 
         let router = build_router(state, jwt_secret, config.allowed_origins);

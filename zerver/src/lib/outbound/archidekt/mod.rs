@@ -22,7 +22,7 @@ use crate::domain::deck::models::deck::import_archidekt::{ArchidektCard, Archide
 
 /// Product token for the User-Agent; the contact URL is appended per-client
 /// from config so it tracks the deployment's public domain.
-const USER_AGENT_PRODUCT: &str = "ZwipeTCG/1.0";
+pub(crate) const USER_AGENT_PRODUCT: &str = "ZwipeTCG/1.0";
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(10);
 /// Most a deck response may be before it is dropped unread. A 250-card deck
 /// with Archidekt's full per-card payload is well under 2 MiB.

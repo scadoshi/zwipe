@@ -1,12 +1,16 @@
 //! Deck management HTTP request contracts.
 
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::domain::card::Card;
+use crate::domain::card::scryfall_data::colors::{Color, identity_of};
 use crate::domain::card::search_card::card_filter::price_currency::PriceCurrency;
+use crate::domain::deck::deck_metrics::{DeckMetrics, deck_price};
 use crate::domain::deck::format::Format;
-use crate::domain::deck::{DeckEntry, DeckOtherTag, ImportMode, PowerLevel};
+use crate::domain::deck::{Board, DeckEntry, DeckOtherTag, ImportMode, PowerLevel};
+use crate::domain::user::theme::ThemeConfig;
 use crate::http::helpers::Patch;
 
 /// Request to import an Archidekt deck's cards into an existing deck.
@@ -516,6 +520,106 @@ pub struct HttpSharedDeck {
     /// The price target's own stored currency (targets never convert).
     #[serde(default)]
     pub price_target_currency: Option<PriceCurrency>,
+    /// When the deck last changed, cards included. zwipe.net versions the
+    /// preview image's URL with it, so an edited deck gets a fresh image.
+    /// `#[serde(default)]` for payloads predating it.
+    #[serde(default)]
+    pub updated_at: Option<DateTime<Utc>>,
+    /// The owner's theme, which the preview image is drawn in. A display
+    /// setting, not an identity. `#[serde(default)]` for payloads predating it.
+    #[serde(default)]
+    pub theme: Option<ThemeConfig>,
+}
+
+impl HttpSharedDeck {
+    /// The command zone's cards in slot order: commander (or oathbreaker),
+    /// partner, background, signature spell.
+    #[must_use]
+    pub fn zone_cards(&self) -> Vec<&Card> {
+        [
+            &self.commander,
+            &self.partner_commander,
+            &self.background,
+            &self.signature_spell,
+        ]
+        .into_iter()
+        .flatten()
+        .collect()
+    }
+
+    /// The main board's entries without the command zone's cards, which the
+    /// share page shows in their own strip rather than in the groups.
+    #[must_use]
+    pub fn main_entries(&self) -> Vec<&DeckEntry> {
+        let zone: Vec<Uuid> = self
+            .zone_cards()
+            .into_iter()
+            .filter_map(|card| card.scryfall_data.oracle_id)
+            .collect();
+        self.entries
+            .iter()
+            .filter(|e| e.deck_card.board == Board::Deck && !zone.contains(&e.deck_card.oracle_id))
+            .collect()
+    }
+
+    /// The share page's card count: the main board without the command
+    /// zone's cards, plus one for each filled command zone slot (the
+    /// commander only in a format that has one). Saturates on a corrupt
+    /// quantity rather than wrapping.
+    #[must_use]
+    pub fn card_count(&self) -> i64 {
+        let main: i64 = self
+            .main_entries()
+            .iter()
+            .map(|e| i64::from(*e.deck_card.quantity))
+            .fold(0, i64::saturating_add);
+        let slots = [
+            self.format.is_some_and(|f| f.has_commander()) && self.commander.is_some(),
+            self.partner_commander.is_some(),
+            self.background.is_some(),
+            self.signature_spell.is_some(),
+        ]
+        .into_iter()
+        .filter(|filled| *filled)
+        .count();
+        i64::try_from(slots).map_or(main, |slots| main.saturating_add(slots))
+    }
+
+    /// The deck's price in US dollars, as the share page totals it: the main
+    /// board plus the command zone at each card's chosen printing. A card
+    /// with no USD price adds nothing.
+    #[must_use]
+    pub fn price_usd(&self) -> f64 {
+        let zone: Vec<Card> = self.zone_cards().into_iter().cloned().collect();
+        deck_price(&self.entries, &zone, PriceCurrency::Usd)
+    }
+
+    /// The deck's metrics as the share page computes them, the command zone
+    /// counted but kept out of the distributions.
+    #[must_use]
+    pub fn metrics(&self) -> DeckMetrics {
+        let zone: Vec<Card> = self.zone_cards().into_iter().cloned().collect();
+        DeckMetrics::from_entries_and_command_zone(&self.entries, &zone)
+    }
+
+    /// The deck's colors in WUBRG order: the command zone's combined color
+    /// identity when it holds a card, else the main board's. Empty is
+    /// colorless.
+    #[must_use]
+    pub fn colors(&self) -> Vec<Color> {
+        let zone = self.zone_cards();
+        let colors: Vec<Color> = if zone.is_empty() {
+            self.main_entries()
+                .iter()
+                .flat_map(|e| e.card.scryfall_data.color_identity.iter().copied())
+                .collect()
+        } else {
+            zone.iter()
+                .flat_map(|card| card.scryfall_data.color_identity.iter().copied())
+                .collect()
+        };
+        identity_of(&colors)
+    }
 }
 
 /// Deck-aware card search response.
@@ -544,6 +648,126 @@ pub struct HttpDeckCardSearch {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A shared deck as an older server sent it: no `updated_at`, no `theme`.
+    const OLD_SHARED_DECK: &str = r#"{"name":"Krenko","format":"commander","commander":null,"partner_commander":null,"background":null,"signature_spell":null,"entries":[]}"#;
+
+    fn shared(format: Option<Format>) -> HttpSharedDeck {
+        let mut deck: HttpSharedDeck = serde_json::from_str(OLD_SHARED_DECK).unwrap();
+        deck.format = format;
+        deck
+    }
+
+    fn priced(name: &str, usd: Option<&str>, colors: Vec<Color>) -> Card {
+        let mut card = crate::test_utils::make_card(name);
+        card.scryfall_data.prices.usd = usd.map(str::to_owned);
+        card.scryfall_data.color_identity = colors.into();
+        card
+    }
+
+    fn entry(card: Card, qty: i32, board: Board) -> DeckEntry {
+        let mut e = crate::test_utils::make_entry(&card.scryfall_data.name, qty);
+        e.deck_card.scryfall_data_id = card.scryfall_data.id;
+        e.deck_card.oracle_id = card.scryfall_data.oracle_id.unwrap();
+        e.deck_card.board = board;
+        e.card = card;
+        e
+    }
+
+    #[test]
+    fn the_count_and_price_match_the_share_page() {
+        let mut deck = shared(Some(Format::Commander));
+        let commander = priced("Krenko", Some("2.50"), vec![Color::Red]);
+        deck.entries = vec![
+            entry(commander.clone(), 1, Board::Deck),
+            entry(
+                priced("Goblin", Some("0.25"), vec![Color::Red]),
+                4,
+                Board::Deck,
+            ),
+            entry(priced("Unpriced", None, vec![]), 2, Board::Deck),
+            entry(
+                priced("Maybe", Some("100.00"), vec![Color::Blue]),
+                1,
+                Board::Maybeboard,
+            ),
+        ];
+        deck.commander = Some(commander);
+        assert_eq!(
+            deck.main_entries().len(),
+            2,
+            "the commander and the maybeboard leave"
+        );
+        assert_eq!(
+            deck.card_count(),
+            7,
+            "six main cards plus the commander's slot"
+        );
+        assert!(
+            (deck.price_usd() - 3.5).abs() < 1e-9,
+            "{}",
+            deck.price_usd()
+        );
+        assert_eq!(
+            deck.colors(),
+            vec![Color::Red],
+            "the command zone's identity"
+        );
+    }
+
+    #[test]
+    fn a_deck_without_a_command_zone_takes_its_colors_from_its_cards() {
+        let mut deck = shared(Some(Format::Modern));
+        deck.entries = vec![
+            entry(
+                priced("Bolt", Some("1.00"), vec![Color::Red]),
+                4,
+                Board::Deck,
+            ),
+            entry(
+                priced("Snapcaster", Some("10.00"), vec![Color::Blue]),
+                4,
+                Board::Deck,
+            ),
+            entry(
+                priced("Side", None, vec![Color::Green]),
+                1,
+                Board::Sideboard,
+            ),
+        ];
+        assert_eq!(deck.card_count(), 8);
+        assert_eq!(
+            deck.colors(),
+            vec![Color::Blue, Color::Red],
+            "WUBRG order, sideboard out"
+        );
+        assert_eq!(deck.zone_cards(), Vec::<&Card>::new());
+    }
+
+    #[test]
+    fn a_shared_deck_from_an_older_server_still_parses() {
+        let deck: HttpSharedDeck = serde_json::from_str(OLD_SHARED_DECK).unwrap();
+        assert_eq!(deck.name, "Krenko");
+        assert_eq!(deck.updated_at, None);
+        assert_eq!(deck.theme, None);
+    }
+
+    #[test]
+    fn a_shared_deck_round_trips_its_version_and_theme() {
+        let mut deck: HttpSharedDeck = serde_json::from_str(OLD_SHARED_DECK).unwrap();
+        deck.updated_at = DateTime::from_timestamp(1_762_560_000, 0);
+        deck.theme = Some(ThemeConfig {
+            name: "dracula".to_owned(),
+            is_dark: false,
+        });
+        let json = serde_json::to_string(&deck).unwrap();
+        assert!(
+            json.contains(r#""theme":{"name":"dracula","is_dark":false}"#),
+            "{json}"
+        );
+        let back: HttpSharedDeck = serde_json::from_str(&json).unwrap();
+        assert_eq!(back, deck);
+    }
 
     #[test]
     fn create_profile_defaults_land_and_price_target_to_none_when_omitted() {
