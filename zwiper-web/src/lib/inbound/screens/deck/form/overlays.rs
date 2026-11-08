@@ -14,8 +14,9 @@ use crate::inbound::cards::swipe_select::{SwipeMode, SwipeSelect};
 use crate::inbound::chrome::authed::use_authed;
 
 /// The pickers and the Swipe selects. The commander's Swipe select is keyed
-/// by the format and the signature spell's by the commander, so a change
-/// deals a fresh pile. The commander's waits for a format, and the
+/// by the format, and each pile that depends on the commander (partner and
+/// signature spell, [`Slot::pile_needs_commander`]) by the commander, so a
+/// change deals a fresh pile. The commander's waits for a format, and the
 /// signature spell's deals nothing without a commander, as in the app.
 #[component]
 pub fn DeckFormOverlays(form: DeckForm) -> Element {
@@ -63,12 +64,16 @@ pub fn DeckFormOverlays(form: DeckForm) -> Element {
                 on_close: move |()| close(Slot::Commander),
             }
         }
-        SwipeSelect {
-            open: form.partner.swipe_open,
-            mode: SwipeMode::Partner,
-            exclude_oracle_ids: Some(zone_ids.into()),
-            on_select: move |card: Card| pick(Slot::Partner, card),
-            on_close: move |()| close(Slot::Partner),
+        for key in [commander_key.clone()] {
+            SwipeSelect {
+                key: "{key}",
+                open: form.partner.swipe_open,
+                mode: SwipeMode::Partner,
+                exclude_oracle_ids: Some(zone_ids.into()),
+                commander: Slot::Partner.pile_needs_commander().then(|| commander.clone()).flatten(),
+                on_select: move |card: Card| pick(Slot::Partner, card),
+                on_close: move |()| close(Slot::Partner),
+            }
         }
         SwipeSelect {
             open: form.background.swipe_open,
@@ -83,7 +88,7 @@ pub fn DeckFormOverlays(form: DeckForm) -> Element {
                 open: form.signature_spell.swipe_open,
                 mode: SwipeMode::SignatureSpell,
                 exclude_oracle_ids: Some(zone_ids.into()),
-                commander: commander.clone(),
+                commander: Slot::SignatureSpell.pile_needs_commander().then(|| commander.clone()).flatten(),
                 on_select: move |card: Card| pick(Slot::SignatureSpell, card),
                 on_close: move |()| close(Slot::SignatureSpell),
             }
