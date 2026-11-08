@@ -16,9 +16,9 @@ pub(crate) fn CloneDeckDialog(driver: Driver, default_name: String, open: Signal
     // Reseed the prefill with the latest source deck name whenever the dialog
     // reopens.
     use_effect(move || {
-        if open() {
-            new_name.set(default_name.clone());
-        }
+        // Opening and closing both start the form over.
+        let _open = open();
+        new_name.set(default_name.clone());
     });
 
     let name_empty = use_memo(move || !deck_view::can_clone(&new_name()));

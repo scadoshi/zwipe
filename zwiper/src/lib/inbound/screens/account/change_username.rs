@@ -18,6 +18,7 @@ pub fn ChangeUsernameSheet(open: Signal<bool>) -> Element {
 
     let model = driver.model.read();
     let is_loading = model.is_saving(sheet);
+    let submit_held = model.submit_held(sheet);
     let save_label = model.save_label(sheet);
     let username_error = model.error(sheet, Field::NewUsername);
     let password_error = model.error(sheet, Field::Password);
@@ -58,7 +59,7 @@ pub fn ChangeUsernameSheet(open: Signal<bool>) -> Element {
                 DockAction {
                     label: save_label,
                     icon: icons::CHECK,
-                    disabled: is_loading,
+                    disabled: is_loading || submit_held,
                     onclick: move |()| driver.dispatch(Action::Save(sheet)),
                 }
             }

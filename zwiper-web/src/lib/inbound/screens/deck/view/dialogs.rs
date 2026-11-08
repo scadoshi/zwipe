@@ -215,9 +215,9 @@ fn CloneDeckDialog(source_deck_id: Uuid, default_name: String, open: Signal<bool
     let toast = use_toast();
     let mut name = use_signal(String::new);
     use_effect(move || {
-        if open() {
-            name.set(default_name.clone());
-        }
+        // Opening and closing both start the form over.
+        let _open = open();
+        name.set(default_name.clone());
     });
     let blank = use_memo(move || !deck_view::can_clone(&name()));
     let save = ActionButton::new("Save")

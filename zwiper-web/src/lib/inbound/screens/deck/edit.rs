@@ -154,13 +154,14 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                 }
             }
             // Save as the action dock's checkmark, pinned bottom right, while
-            // there is something to save; dimmed while the save is out.
+            // there is something to save; dimmed while the save is out or
+            // the name's error line shows.
             if has_changes {
                 div { class: "action-dock action-dock-right",
                     button {
                         class: "action-dock-btn",
                         "aria-label": if saving() { "Saving…" } else { "Save changes" },
-                        disabled: saving(),
+                        disabled: saving() || (form.name_error)().is_some(),
                         onclick: move |_| submit.call(()),
                         DockIcon { path: CHECK }
                     }

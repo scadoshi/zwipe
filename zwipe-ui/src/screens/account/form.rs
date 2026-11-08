@@ -71,6 +71,15 @@ pub enum Field {
 }
 
 impl Field {
+    /// Whether this field holds a password. The password policy is the server's, so a password field's error line never holds Save.
+    #[must_use]
+    pub fn is_password(self) -> bool {
+        matches!(
+            self,
+            Self::Password | Self::CurrentPassword | Self::NewPassword | Self::ConfirmPassword
+        )
+    }
+
     /// The label above the field.
     #[must_use]
     pub fn label(self) -> &'static str {

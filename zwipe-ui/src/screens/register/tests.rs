@@ -75,6 +75,20 @@ fn a_field_shows_its_line_while_it_holds_text() {
 }
 
 #[test]
+fn a_showing_error_holds_submit_but_the_password_s_never_does() {
+    let mut state = State::new();
+    assert!(!state.submit_held());
+    type_in(&mut state, Field::Email, "me.zwipe.net");
+    assert!(state.submit_held());
+    type_in(&mut state, Field::Email, "me@zwipe.net");
+    assert!(!state.submit_held());
+    type_in(&mut state, Field::Password, "one");
+    type_in(&mut state, Field::ConfirmPassword, "two");
+    assert!(state.error(Field::Password).is_some());
+    assert!(!state.submit_held());
+}
+
+#[test]
 fn the_email_is_checked_trimmed() {
     let mut state = State::new();
     type_in(&mut state, Field::Email, "  me@zwipe.net ");

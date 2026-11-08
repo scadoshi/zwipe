@@ -178,3 +178,11 @@ fn the_copy_matches_the_app() {
         ]
     );
 }
+
+#[test]
+fn the_email_error_holds_send_while_it_shows() {
+    let mut state = typed("me@zwipe.net");
+    assert!(!state.submit_held());
+    assert_eq!(state.update(Action::EditEmail("   ".to_owned())), []);
+    assert!(state.submit_held());
+}

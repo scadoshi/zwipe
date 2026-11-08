@@ -267,6 +267,17 @@ fn the_name_error_shows_once_the_name_held_text() {
 }
 
 #[test]
+fn the_name_error_holds_save_while_it_shows() {
+    let mut state = create();
+    assert!(!state.submit_held());
+    let _ = state.update(Action::SetName("Burn".to_owned()));
+    let _ = state.update(Action::SetName(String::new()));
+    assert!(state.submit_held());
+    let _ = state.update(Action::SetName("Burn".to_owned()));
+    assert!(!state.submit_held());
+}
+
+#[test]
 fn save_refuses_a_bad_name_inline() {
     let mut state = create();
     assert!(state.update(Action::Save).is_empty());

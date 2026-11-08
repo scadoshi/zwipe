@@ -214,6 +214,14 @@ impl State {
         }
     }
 
+    /// Whether an error line other than the password's is showing, which holds the submit button. The password policy is the server's, so its line never holds it.
+    #[must_use]
+    pub fn submit_held(&self) -> bool {
+        [Field::Username, Field::Email]
+            .into_iter()
+            .any(|field| self.error(field).is_some())
+    }
+
     /// Whether a registration is out. Both buttons are held meanwhile.
     #[must_use]
     pub fn is_loading(&self) -> bool {

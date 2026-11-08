@@ -29,11 +29,11 @@ pub(super) fn ChangeEmailSheet(mut open: Signal<bool>) -> Element {
     let mut is_loading = use_signal(|| false);
 
     use_effect(move || {
-        if open() {
-            new_email.set(String::new());
-            password.set(String::new());
-            submit_attempted.set(false);
-        }
+        // Opening and closing both start the form over.
+        let _open = open();
+        new_email.set(String::new());
+        password.set(String::new());
+        submit_attempted.set(false);
     });
 
     let attempted = submit_attempted();
@@ -125,7 +125,8 @@ pub(super) fn ChangeEmailSheet(mut open: Signal<bool>) -> Element {
                     button {
                         class: "action-dock-btn",
                         "aria-label": if is_loading() { "Saving…" } else { "Save changes" },
-                        disabled: is_loading(),
+                        // An error line showing holds Save; the password's never does.
+                        disabled: is_loading() || email_error.is_some(),
                         onclick: move |_| attempt_submit(),
                         DockIcon { path: CHECK }
                     }

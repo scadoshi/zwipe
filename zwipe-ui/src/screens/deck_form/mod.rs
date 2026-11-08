@@ -780,6 +780,12 @@ impl State {
         self.tag_list(picker)
     }
 
+    /// Whether the name's error line is showing, which holds Save.
+    #[must_use]
+    pub fn submit_held(&self) -> bool {
+        self.name_error.is_some()
+    }
+
     /// Whether a save is out, which turns Back and Save off.
     #[must_use]
     pub fn is_saving(&self) -> bool {
