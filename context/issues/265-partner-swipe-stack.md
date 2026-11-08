@@ -15,3 +15,6 @@ Fix: `Slot::pile_needs_commander()` in zwipe-ui says which piles depend on the c
 
 ## Verify 37d09dbf9: FAIL
 Surfer: Tymna's (plain Partner) pile drops Partner with and Doctor's companions but still offers other Partner variants: Father & son (Kratos), Character select (TMNT), Friends forever (Othelm, Wernog, Cecily...), Survivors (Joel). Wernog (Friends forever) gets the same plain-Partner pile. Each variant pairs only with its own kind: plain Partner with plain Partner, Friends forever with Friends forever, and so on. Back to laptop.
+
+## Decision (partner pairs)
+Scotty, 2026-11-08: a mismatched partner pair (e.g. Tymna + Wernog) only warns, like illegal cards. The server never refuses a save over it; the pile and typeahead still offer only matching kinds.
