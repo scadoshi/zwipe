@@ -32,6 +32,26 @@ pub fn step_land_target(current: Option<i32>, format: Option<Format>, step: Step
     }
 }
 
+/// The land target after the format changes from `old` to `new`. A target
+/// still at `old`'s usual count moves to `new`'s, since the user never set
+/// it; a target the user set, an unset one, and any target when the format
+/// is cleared stay as they are.
+#[must_use]
+pub fn follow_land_target(
+    current: Option<i32>,
+    old: Option<Format>,
+    new: Option<Format>,
+) -> Option<i32> {
+    let (Some(target), Some(new)) = (current, new) else {
+        return current;
+    };
+    if old.and_then(|f| f.default_land_target()) == Some(target) {
+        new.default_land_target().or(current)
+    } else {
+        current
+    }
+}
+
 /// Whether `c` may be typed into the price box: digits and dots only, as the app's filter keeps.
 #[must_use]
 pub fn price_char(c: char) -> bool {
@@ -249,6 +269,42 @@ pub enum ImportTone {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn a_default_land_target_follows_the_format_and_a_set_one_stays() {
+        let commander = Some(Format::Commander);
+        let oathbreaker = Some(Format::Oathbreaker);
+        assert_eq!(
+            super::follow_land_target(Some(37), commander, oathbreaker),
+            Some(17),
+            "Commander's 37 becomes Oathbreaker's 17"
+        );
+        assert_eq!(
+            super::follow_land_target(Some(17), oathbreaker, commander),
+            Some(37),
+            "and back"
+        );
+        assert_eq!(
+            super::follow_land_target(Some(36), commander, oathbreaker),
+            Some(36),
+            "a target the user set stays"
+        );
+        assert_eq!(
+            super::follow_land_target(None, commander, oathbreaker),
+            None,
+            "unset stays unset"
+        );
+        assert_eq!(
+            super::follow_land_target(Some(37), commander, None),
+            Some(37),
+            "clearing the format keeps it"
+        );
+        assert_eq!(
+            super::follow_land_target(Some(37), None, oathbreaker),
+            Some(37),
+            "with no format before, nothing was a default"
+        );
+    }
+
     use super::*;
     use crate::test_support::card;
 

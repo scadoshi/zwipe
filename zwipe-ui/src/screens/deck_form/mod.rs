@@ -480,9 +480,10 @@ impl Searches {
     }
 }
 
-/// The commander and signature spell as the format picker opened on them, which its Back puts back. The partner and background are not kept, so a format change that cleared them leaves them cleared.
+/// The land target, commander and signature spell as the format picker opened on them, which its Back puts back. The partner and background are not kept, so a format change that cleared them leaves them cleared.
 #[derive(Debug, Clone, PartialEq)]
 struct ZoneSnapshot {
+    land_target: Option<i32>,
     commander: Option<Card>,
     commander_display: String,
     signature_spell: Option<Card>,
@@ -1183,6 +1184,7 @@ impl State {
             Picker::Format => OpenPicker::Format {
                 draft: Draft::format(self.values.format),
                 zone: Box::new(ZoneSnapshot {
+                    land_target: self.values.land_target,
                     commander: self.values.commander.clone(),
                     commander_display: self.searches.commander.display.clone(),
                     signature_spell: self.values.signature_spell.clone(),
@@ -1227,18 +1229,20 @@ impl State {
         Vec::new()
     }
 
-    /// Puts back what the open picker opened on and closes it. The format picker also puts back the command zone its picks cleared, which a pick and a pick back can leave changed under the same format.
+    /// Puts back what the open picker opened on and closes it. The format picker also puts back the land target its picks moved and the command zone its picks cleared, which a pick and a pick back can leave changed under the same format.
     fn revert_picker(&mut self) -> Vec<Effect> {
         self.asking_discard = false;
         match self.picker.take() {
             Some(OpenPicker::Format { draft, zone }) => {
                 let ZoneSnapshot {
+                    land_target,
                     commander,
                     commander_display,
                     signature_spell,
                     signature_spell_display,
                 } = *zone;
                 self.values.format = draft.into_snapshot();
+                self.values.land_target = land_target;
                 self.values.commander = commander;
                 self.searches.commander.display = commander_display;
                 self.values.signature_spell = signature_spell;
