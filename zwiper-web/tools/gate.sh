@@ -7,6 +7,9 @@ step() { echo "== $1"; shift; "$@" > /tmp/webz-gate-step.log 2>&1 || { tail -40 
 step fmt cargo +nightly fmt --check
 step clippy cargo clippy --workspace --all-targets -- -D warnings
 step clippy-wasm cargo clippy -p zwiper-web --target wasm32-unknown-unknown -- -D warnings
+# Rewrites the shared-sheet copies (src/lib/inbound/sheets.rs) and stops when that changed them.
+step sheets env ZWIPE_UPDATE_SHEETS=1 cargo test -p zwiper-web --lib sheets
+[ -z "$(git status --porcelain zwiper-web/assets/sheets)" ] || { echo "sheet copies were stale and are rewritten; commit zwiper-web/assets/sheets"; echo FAIL; exit 1; }
 step test cargo test -p zwiper-web
 step doc env RUSTDOCFLAGS="-D warnings" cargo doc --no-deps -p zwiper-web
 if [ "$1" = dx ]; then
