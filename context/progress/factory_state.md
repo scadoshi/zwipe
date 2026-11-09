@@ -132,4 +132,4 @@ Scotty raised the worker limit to 3 for now ("push it a little bit more"). Busy:
 - Swap the new store screenshots into App Store Connect and Play Console for Zwipe and Cairn (Droid's set, once approved).
 
 ## Next deploy
-Surfer parked a tab on app.zwipe.net/decks at build 00ed27f59: after the next deploy, check 282 with that real stale tab (a screen change after 5 min loads the new build).
+Optional, low priority: whenever a deploy next happens, a stale-tab check of 282 is nice to have. Not blocking; 282 already passed with a simulated deploy.
