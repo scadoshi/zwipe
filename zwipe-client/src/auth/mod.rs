@@ -19,6 +19,8 @@ pub mod logout;
 pub mod refresh;
 /// New user registration endpoint.
 pub mod register;
+/// Resend a pending email change's link endpoint.
+pub mod resend_email_change;
 /// Resend email verification endpoint.
 pub mod resend_verification;
 /// Password reset completion endpoint.

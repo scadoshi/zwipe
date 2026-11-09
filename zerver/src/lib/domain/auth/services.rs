@@ -37,6 +37,7 @@ use crate::domain::auth::requests::register_user::{
 use crate::domain::auth::requests::request_password_reset::{
     RequestPasswordReset, RequestPasswordResetError,
 };
+use crate::domain::auth::requests::resend_email_change::ResendEmailChangeError;
 use crate::domain::auth::requests::reset_password::{ResetPassword, ResetPasswordError};
 use crate::domain::auth::requests::revoke_sessions::{
     RevokeScope, RevokeSessions, RevokeSessionsError,
@@ -581,6 +582,38 @@ where
         user.pending_email = Some(request.email.clone());
         user.pending_email_expires_at = Some(expires_at);
         Ok(user)
+    }
+
+    async fn resend_email_change(&self, user: &User) -> Result<(), ResendEmailChangeError> {
+        let Some(pending) = user.pending_email.as_ref() else {
+            return Err(ResendEmailChangeError::NoPendingChange);
+        };
+
+        let (raw, hash) = generate_hex_token();
+        let expires_at = expiry_from_now(EMAIL_CHANGE_LINK_LIFETIME)
+            .map_err(ResendEmailChangeError::Database)?;
+        self.auth_repo
+            .store_email_change_request(user.id, pending, hash, expires_at)
+            .await
+            .map_err(|e| ResendEmailChangeError::Database(e.into()))?;
+
+        // As in `request_email_change`: only a free address is mailed, off
+        // the request path, and the answer is the same either way.
+        let taken = self
+            .auth_repo
+            .fetch_user_id_by_email(pending.as_ref())
+            .await
+            .map_err(ResendEmailChangeError::Database)?
+            .is_some_and(|owner| owner != user.id);
+        if taken {
+            tracing::info!(event = "email_change_resend_taken", user_id = %user.id);
+        } else {
+            let this = self.clone();
+            let user_id = user.id;
+            let to = pending.to_string();
+            tokio::spawn(async move { this.send_email_change_link(user_id, &to, &raw).await });
+        }
+        Ok(())
     }
 
     async fn confirm_email_change(

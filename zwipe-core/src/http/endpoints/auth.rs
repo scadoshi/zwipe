@@ -12,7 +12,8 @@ use crate::http::endpoint::{Endpoint, Method};
 use crate::http::paths::{
     CHECK_RESET_TOKEN_ROUTE, CONFIRM_EMAIL_CHANGE_ROUTE, COOKIE_LOGIN_ROUTE, COOKIE_LOGOUT_ROUTE,
     COOKIE_REFRESH_ROUTE, FORGOT_PASSWORD_ROUTE, LOGIN_ROUTE, LOGOUT_ROUTE, REFRESH_SESSION_ROUTE,
-    REGISTER_ROUTE, RESEND_VERIFICATION_ROUTE, RESET_PASSWORD_ROUTE, VERIFY_EMAIL_ROUTE,
+    REGISTER_ROUTE, RESEND_EMAIL_CHANGE_ROUTE, RESEND_VERIFICATION_ROUTE, RESET_PASSWORD_ROUTE,
+    VERIFY_EMAIL_ROUTE,
 };
 
 /// Exchange credentials for a session.
@@ -136,6 +137,18 @@ impl Endpoint for ResendVerification {
     type Response = ();
     fn path(&self) -> Cow<'static, str> {
         Cow::Borrowed(RESEND_VERIFICATION_ROUTE)
+    }
+}
+
+/// Mail a fresh link for the signed-in user's pending email change.
+#[derive(Debug)]
+pub struct ResendEmailChange;
+impl Endpoint for ResendEmailChange {
+    const METHOD: Method = Method::Post;
+    type Request = ();
+    type Response = ();
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Borrowed(RESEND_EMAIL_CHANGE_ROUTE)
     }
 }
 
