@@ -80,6 +80,7 @@ Who checked, on which live build, what they saw.
 | [312](312-three-guides-without-screenshots.md) | Three guides have no screenshots | verified | scotland | #461 |
 | [313](313-decks-list-price-chip.md) | Decks list shows no price per deck | merged | scotland | #465 |
 | [314](314-theme-toggle-menu-flicker.md) | The menu sheet flickers when switching light/dark mode | reported | - | - |
+| [315](315-add-pile-flashes-stale-card.md) | Add's pile flashes a stale card after applying a filter | reported | - | - |
 
 ## Waiting for live verification
 
