@@ -141,4 +141,4 @@ Stores, 2026-11-08 evening: Zwipe iOS 1.18.14 (114) resubmitted with the new scr
 ## Upcoming (Scotty, 2026-11-08)
 - **Meld support:** show a meld card's melded result the way a double-sided card flips. Planned after usage resets, Wednesday 2026-11-11.
 - **ManaBox integration:** build this week (plan: context/plans/collection.md, all 8 questions answered).
-- **Videos:** make marketing videos for both once they ship (video factory on laptop, slate in context/marketing/plans/).
+- **Videos:** make marketing videos for both once they ship (video factory on laptop, slate in zwipe-context marketing/plans/).

@@ -157,12 +157,12 @@ A comment says what the code does, in the present tense, and only when the code 
 context/
 ├── README.md               # start-here orientation + the running progress log
 ├── CLAUDE.md               # this file
-├── product/                # what we're building (prd, monetization, premium/ feature catalog)
 ├── architecture/           # why things are built the way they are
 ├── operations/             # how to build, deploy & ship (infrastructure/, ios/, android/)
 ├── development/            # coding standards (commits, comments, changelog, release notes, docs, newtypes, dioxus)
 ├── plans/                  # specs for in-flight work (archive/ holds shipped and abandoned ones)
-├── marketing/              # promo art templates (html) + plans/ video scripts
-├── progress/               # what's next (todo.md, backlog.md, feature_requests.md)
+├── progress/               # what's next (todo.md, backlog.md)
 └── archive/                # no longer active (brain, complete-*, learning framework)
 ```
+
+Marketing, product ideas and business strategy live in the private `zwipe-context` repo, checked out beside zwipe: `marketing/`, `ideas/`, `business/` and `video-factory/`. Docs here name its files as `zwipe-context <path>`, without a link.

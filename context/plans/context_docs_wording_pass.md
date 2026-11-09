@@ -15,7 +15,7 @@ The real finds were two always-loaded files whose problem was accuracy, not voic
 
 Also done: the status tables in `context/README.md` (the web table listed 9 pages against zite's 14 routes), `progress/backlog.md` (five content-free stubs separated from the real entries), and `progress/todo.md`.
 
-Left, and probably fine as they are: `cloudflare.md`, `services.md` and `feature_requests.md`. Their labeled bullets are genuine key-value config and numbered request IDs.
+Left, and probably fine as they are: `cloudflare.md`, `services.md` and zwipe-context's `feature_requests.md`. Their labeled bullets are genuine key-value config and numbered request IDs.
 
 **One sentence:** sweep the prose docs for AI-tell wording (the humanizer rules) so the owner can actually read them, file by file, without changing any facts.
 
@@ -37,8 +37,8 @@ Left, and probably fine as they are: `cloudflare.md`, `services.md` and `feature
 
 1. `context/README.md` (orientation plus the progress log, so the longest and the most-read), root `README.md`, `context/CLAUDE.md`
 2. `context/architecture/` (structure.md lands separately via its own plan)
-3. `context/README.md` (it absorbed the progress log 2026-09-21: longest and most-read), then the rest of `context/progress/` (todo.md, backlog.md, feature_requests.md)
-4. `context/operations/`, `context/development/`, `context/product/`
+3. `context/README.md` (it absorbed the progress log 2026-09-21: longest and most-read), then the rest of `context/progress/` (todo.md, backlog.md)
+4. `context/operations/`, `context/development/`
 5. `context/plans/` active files last; archived plans are historical record and stay as written.
 
 ## Working rules

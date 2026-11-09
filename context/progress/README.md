@@ -6,7 +6,7 @@ The project's running state, split across three files plus triage. Each answers 
 |------|---------------------|-------|
 | [`todo.md`](todo.md) | **What's next?** Open, actionable items only. | Imperative, unchecked `[ ]` |
 | [`backlog.md`](backlog.md) | **What might we do someday?** Ideas not yet committed to. | Loose, unscheduled |
-| [`feature_requests.md`](feature_requests.md) | **What are users asking for?** Raw, sourced intake to weight before promoting. | Tabular, Impact × Effort |
+| zwipe-context `ideas/feature_requests.md` | **What are users asking for?** Raw, sourced intake to weight before promoting. It lives in the private repo. | Tabular, Impact × Effort |
 | [`triage/`](triage/) | **What just came in and needs a decision?** One file per item; promote or delete after a verdict. | Focused intake notes |
 
 ## The boundary

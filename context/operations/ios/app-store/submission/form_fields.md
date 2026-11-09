@@ -56,9 +56,7 @@ From 1.10.2 on, both stores get the same text. Releases through 1.10.1 are recor
 
 ## Keywords (max 100 characters, commas included)
 
-The field counts the separators, so a comma costs as much as a letter. This is 96. Do not pad it to the limit: a term added later has to fit.
-
-MTG,Magic the Gathering,commander,deck builder,EDH,card game,Scryfall,trading card,deck building
+The keyword field isn't shown on the listing, so its contents live in zwipe-context `business/store_keywords.md`.
 
 ---
 

@@ -2,11 +2,11 @@
 
 A user's card collection in Zwipe: imported from ManaBox's CSV export, edited by hand, and used to search ("In my collection" on Add and search) and to show what a deck already owns. Plan only; nothing here is built.
 
-The product side is in `context/product/premium/collection_tracking.md`: the collection and the "Cards I own" filter are free (decided 2026-06-10), and the shopping list and owned percentage are where it meets prices. This doc is the build plan.
+The product side, including what is free and what is premium, is in zwipe-context `business/premium/collection_tracking.md`. This doc is the build plan.
 
 ## Status
 
-Plan only, not scheduled (Scotty, 2026-11-07). The collection and ManaBox import are free. Card price trends will be premium and come later; price snapshots are out of scope here, and historical prices may be importable from an outside source instead of collected by Zwipe.
+Plan only, not scheduled (Scotty, 2026-11-07). Price snapshots are out of scope here, and historical prices may be importable from an outside source instead of collected by Zwipe.
 
 ## Open questions for Scotty
 
@@ -16,8 +16,8 @@ Plan only, not scheduled (Scotty, 2026-11-07). The collection and ManaBox import
 4. **Condition, language, purchase price: (answered: store all three.)** store them (cheap, and a later "collection value" needs price and currency) or drop them? Proposed: store all three, show none in phase 1.
 5. **Cards in decks: (answered: yes for now, owned means in the collection. Later, a separate feature: decks claim owned copies from a stock, so two Sol Rings cover only two decks and Sol Ring stops being suggested once the stock is used up.)** does a card in a deck still count as owned for another deck (one Sol Ring, five decks)? Proposed: yes; "owned" is the collection, not what's free. "Free to use" needs deck assignment, which is out of scope here.
 6. **Where import lives: (answered: web only; the app and web both use the collection in search.)** web only first (a file picker is natural there), or the app too (share sheet or file picker)? Proposed: web first, app in phase 2.
-7. **Prices first? (answered: build phases 1 to 3 now; price snapshots are a later, separate plan.)** `collection_tracking.md` sequences this after a price snapshot table, so owned percentage and the shopping list carry dollar amounts from day one. Phases 1 to 3 here don't need it; phase 4 uses the current card prices Zwipe already has. Build 1 to 3 now, or wait?
-8. **Printing level from the start? (answered: yes, people don't want to see printings they don't own.)** `collection_tracking.md` starts at the oracle level, with printings as a later refinement. ManaBox rows carry the exact printing for free, so this plan stores the printing and reads ownership by oracle id: no refinement migration later, same lookups. OK to diverge?
+7. **Prices first? (answered: build phases 1 to 3 now; price snapshots are a later, separate plan.)** zwipe-context's `collection_tracking.md` sequences this after a price snapshot table, so owned percentage and the shopping list carry dollar amounts from day one. Phases 1 to 3 here don't need it; phase 4 uses the current card prices Zwipe already has. Build 1 to 3 now, or wait?
+8. **Printing level from the start? (answered: yes, people don't want to see printings they don't own.)** zwipe-context's `collection_tracking.md` starts at the oracle level, with printings as a later refinement. ManaBox rows carry the exact printing for free, so this plan stores the printing and reads ownership by oracle id: no refinement migration later, same lookups. OK to diverge?
 
 ## Would a real export change anything?
 
