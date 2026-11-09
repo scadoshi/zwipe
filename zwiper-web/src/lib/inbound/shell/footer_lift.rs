@@ -83,6 +83,32 @@ while (true) {
 mod tests {
     use super::*;
 
+    /// The web's own sheet and the drawer sheet it loads from components.
+    const WEB_CSS: &str = include_str!("../../../../assets/web.css");
+    const FILTER_CSS: &str = include_str!("../../../../../components/assets/filter.css");
+
+    #[test]
+    fn every_drawer_stops_at_the_footer_s_top() {
+        assert!(
+            WEB_CSS.contains("--sheet-drawer-floor: var(--web-footer-lift, 0px);"),
+            "the kit's drawer floor is the footer in view"
+        );
+        let narrow = FILTER_CSS
+            .split(".sheet-form-drawer > .bottom-sheet.drawer-every-width {")
+            .nth(1)
+            .and_then(|rest| rest.split('}').next())
+            .expect("the narrow drawer rule");
+        let bottom = narrow
+            .lines()
+            .map(str::trim)
+            .find(|line| line.starts_with("bottom:"))
+            .expect("the narrow drawer sets its bottom");
+        assert!(
+            bottom.contains("var(--sheet-drawer-floor, 0px)"),
+            "the narrow drawer rises with the floor too: {bottom}"
+        );
+    }
+
     #[test]
     fn a_footer_below_the_fold_or_not_drawn_lifts_nothing() {
         assert_eq!(footer_lift(700.0, Some(900.0)), 0.0);

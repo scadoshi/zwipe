@@ -44,6 +44,9 @@ pub const UPCOMING: &[Release] = &[Release {
     entries: &[
         "Decks shows each deck's total price after its card count",
         "On iPhone the open menu no longer flickers when the theme changes",
+        "A pending email has Resend and refresh buttons, so a lost link can be sent again",
+        "Side drawers on the web stop above the footer instead of covering it",
+        "A pending email's link expiry on the web is a tag, as in the app",
     ],
 }];
 

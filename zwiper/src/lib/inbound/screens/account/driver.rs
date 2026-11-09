@@ -221,7 +221,8 @@ impl Driver {
             }
             Effect::FetchUser(ticket) => self.fetch_user(ticket),
             Effect::CheckVerification(ticket) => self.check_verification(ticket),
-            Effect::ResendVerification(ticket) => self.resend(ticket),
+            Effect::ResendVerification(ticket) => self.resend(ticket, Link::Verification),
+            Effect::ResendEmailChange(ticket) => self.resend(ticket, Link::EmailChange),
             Effect::Wait(ticket) => {
                 spawn(async move {
                     tokio::time::sleep(TICK).await;
@@ -328,7 +329,7 @@ impl Driver {
     }
 
     /// Sends the verification email. It stays off the runner: a 429 is an info toast that keeps the cooldown, and every other failure is a long error toast.
-    fn resend(self, ticket: Ticket) {
+    fn resend(self, ticket: Ticket, link: Link) {
         let Self {
             session,
             client,
@@ -340,7 +341,7 @@ impl Driver {
             usage_buffer.peek().report_error(
                 screen::PROFILE,
                 component::EMAIL_VERIFICATION,
-                "resend_verification",
+                link.operation(),
                 e,
             );
             toast.error(
@@ -357,7 +358,11 @@ impl Driver {
                     return;
                 }
             };
-            match client().resend_verification(&s).await {
+            let sent = match link {
+                Link::Verification => client().resend_verification(&s).await,
+                Link::EmailChange => client().resend_email_change(&s).await,
+            };
+            match sent {
                 Ok(()) => self.dispatch(Action::Resent { ticket }),
                 Err(ClientError::TooManyRequests(_)) => {
                     self.dispatch(Action::ResendLimited { ticket });
@@ -450,5 +455,24 @@ impl Driver {
                 Action::Failed { ticket }
             });
         });
+    }
+}
+
+/// Which link a resend mails.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Link {
+    /// The current address's verification link.
+    Verification,
+    /// The pending email change's confirmation link.
+    EmailChange,
+}
+
+impl Link {
+    /// The operation a failed send is reported under.
+    fn operation(self) -> &'static str {
+        match self {
+            Self::Verification => "resend_verification",
+            Self::EmailChange => "resend_email_change",
+        }
     }
 }

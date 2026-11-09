@@ -1273,9 +1273,11 @@ a.nav-dropdown-item.active:visited {
    wraps. A modal centers and settles in. A drawer is an inset panel along
    the right edge under the bar, --sheet-drawer-top from the top (a host
    sets it to its bar's height plus the page gutter), the page gutter from
-   the right and the bottom, the panel's corners and border, sliding in
+   the right and from its floor, the panel's corners and border, sliding in
    from the right; the page dims only a little so the sheet's changes show
-   on it. Its dock floats inside its bottom right corner. */
+   on it. The floor is the window's foot raised by --sheet-drawer-floor, 0
+   unless the host sets it (to a footer's height in view, say). Its dock
+   floats inside its bottom right corner, so it rises with the floor. */
 .sheet-form {
     display: contents;
 }
@@ -1303,7 +1305,7 @@ a.nav-dropdown-item.active:visited {
 
     .sheet-form-drawer > .bottom-sheet {
         top: var(--sheet-drawer-top, 5.5rem);
-        bottom: 1rem;
+        bottom: calc(1rem + var(--sheet-drawer-floor, 0px));
         left: auto;
         right: 1rem;
         width: min(24rem, calc(100vw - 2rem));

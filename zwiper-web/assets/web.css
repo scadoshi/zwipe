@@ -801,6 +801,12 @@ body .toast-container {
     translate: 0 calc(-1 * var(--web-footer-lift, 0px));
 }
 
+/* Every side drawer, the kit's and the narrow one, ends the same gap above
+   the footer while it is in view, its dock with it. */
+:root {
+    --sheet-drawer-floor: var(--web-footer-lift, 0px);
+}
+
 body:has(.bottom-sheet.show) .toast-container {
     translate: none;
 }

@@ -35,6 +35,7 @@ fn ticket_of(effects: &[Effect]) -> Ticket {
             Effect::FetchUser(t)
             | Effect::CheckVerification(t)
             | Effect::ResendVerification(t)
+            | Effect::ResendEmailChange(t)
             | Effect::Wait(t)
             | Effect::ChangeUsername { ticket: t, .. }
             | Effect::ChangeEmail { ticket: t, .. }
@@ -893,4 +894,128 @@ fn an_edit_keeps_what_was_typed_out_of_debug() {
     let printed = format!("{action:?}");
     assert!(!printed.contains("New!pass22"), "{printed}");
     assert!(printed.contains("Typed(10 chars)"), "{printed}");
+}
+
+/// A screen opened for a verified user whose change to new@zwipe.net waits on its link.
+fn pending_opened() -> State {
+    let mut pending = user(true);
+    pending.pending_email = Some(Email::new("new@zwipe.net").unwrap());
+    let mut state = State::new();
+    let _ = state.update(Action::Load(Some(Box::new(pending))));
+    state
+}
+
+#[test]
+fn the_pending_row_resends_its_link_behind_its_own_cooldown() {
+    let mut state = pending_opened();
+    assert_eq!(state.resend_change_label(), "Resend");
+    let effects = state.update(Action::ResendChange);
+    let ticket = ticket_of(&effects);
+    assert_eq!(effects, vec![Effect::ResendEmailChange(ticket)]);
+    assert_eq!(state.resend_change_label(), "Sending…");
+    assert!(!state.can_resend_change());
+    assert!(
+        state.can_resend(),
+        "the verification email keeps its own budget"
+    );
+    assert_eq!(
+        state.update(Action::ResendChange),
+        none(),
+        "a second press waits"
+    );
+
+    let effects = state.update(Action::Resent { ticket });
+    let wait = wait_of(&effects);
+    assert_eq!(
+        effects,
+        vec![
+            Effect::Toast(Toast::normal(
+                ToastKind::Success,
+                "Check new@zwipe.net for a new link"
+            )),
+            Effect::Wait(wait),
+        ]
+    );
+    assert_eq!(state.resend_change_label(), "Resend in 60s");
+    assert_eq!(run_down(&mut state, wait), 60);
+    assert!(state.can_resend_change());
+}
+
+#[test]
+fn a_limited_or_failed_change_resend_answers_like_the_verification_one() {
+    let mut state = pending_opened();
+    let ticket = ticket_of(&state.update(Action::ResendChange));
+    let effects = state.update(Action::ResendLimited { ticket });
+    let wait = wait_of(&effects);
+    assert_eq!(
+        effects,
+        vec![
+            Effect::Toast(Toast::normal(ToastKind::Info, RESEND_LIMITED)),
+            Effect::Wait(wait),
+        ]
+    );
+    assert!(!state.can_resend_change());
+
+    let mut state = pending_opened();
+    let ticket = ticket_of(&state.update(Action::ResendChange));
+    assert_eq!(state.update(Action::Failed { ticket }), none());
+    assert!(state.can_resend_change(), "a failed send frees the button");
+}
+
+#[test]
+fn the_pending_check_says_whether_the_change_went_through() {
+    let mut state = pending_opened();
+    let effects = state.update(Action::CheckPending);
+    let ticket = ticket_of(&effects);
+    assert_eq!(effects, vec![Effect::CheckVerification(ticket)]);
+    assert!(state.is_checking_pending());
+    assert_eq!(state.update(Action::CheckPending), none());
+
+    let mut waiting = user(true);
+    waiting.pending_email = Some(Email::new("new@zwipe.net").unwrap());
+    let effects = state.update(Action::UserLoaded {
+        ticket,
+        user: Box::new(waiting),
+    });
+    assert_eq!(
+        effects,
+        vec![Effect::Toast(Toast::normal(
+            ToastKind::Info,
+            "Not confirmed yet. Check new@zwipe.net"
+        ))]
+    );
+    assert!(!state.is_checking_pending());
+
+    let ticket = ticket_of(&state.update(Action::CheckPending));
+    let mut moved = user(true);
+    moved.email = Email::new("new@zwipe.net").unwrap();
+    let effects = state.update(Action::UserLoaded {
+        ticket,
+        user: Box::new(moved),
+    });
+    assert_eq!(
+        effects,
+        vec![Effect::Toast(Toast::normal(
+            ToastKind::Success,
+            "Email changed to new@zwipe.net"
+        ))]
+    );
+    assert!(!state.rows().contains(&Row::Pending));
+}
+
+#[test]
+fn a_pending_check_that_finds_the_link_expired_says_so() {
+    let mut state = pending_opened();
+    let ticket = ticket_of(&state.update(Action::CheckPending));
+    let effects = state.update(Action::UserLoaded {
+        ticket,
+        user: Box::new(user(true)),
+    });
+    assert_eq!(
+        effects,
+        vec![Effect::Toast(Toast::normal(
+            ToastKind::Info,
+            CHANGE_LINK_EXPIRED
+        ))]
+    );
 }

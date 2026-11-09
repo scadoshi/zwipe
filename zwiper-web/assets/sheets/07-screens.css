@@ -2493,6 +2493,19 @@ body .toast-container [role="alertdialog"] {
     flex-shrink: 0;
 }
 
+/* A pending email's link expiry, beside the Verified badge's look. */
+.badge-expiry {
+    display: inline-block;
+    padding: 0.15rem 0.4rem;
+    border: 1px solid color-mix(in srgb, var(--text-muted) 35%, transparent);
+    background-color: color-mix(in srgb, var(--text-muted) 12%, transparent);
+    border-radius: 0.4rem;
+    font-size: 0.7rem;
+    color: var(--ink-text-muted, var(--text-muted));
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
 .badge-unverified {
     display: inline-block;
     padding: 0.15rem 0.4rem;
