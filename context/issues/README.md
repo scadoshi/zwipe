@@ -81,6 +81,9 @@ Who checked, on which live build, what they saw.
 | [313](313-decks-list-price-chip.md) | Decks list shows no price per deck | merged | scotland | #465 |
 | [314](314-theme-toggle-menu-flicker.md) | The menu sheet flickers when switching light/dark mode | verified | and-droid | #474, #475 |
 | [315](315-add-pile-flashes-stale-card.md) | Add's pile flashes a stale card after applying a filter | reported | - | - |
+| [316](316-drawer-overlays-footer.md) | The web side drawer covers the footer | approved | scotland | - |
+| [317](317-pending-email-expiry-tag.md) | Pending email's 'Link expires' hint isn't a tag on web | approved | scotland | - |
+| [318](318-pending-email-refresh-resend.md) | Pending email has no Refresh or Resend on web | approved | scotland | - |
 
 ## Waiting for live verification
 
