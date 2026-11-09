@@ -41,7 +41,10 @@ pub struct Release {
 pub const UPCOMING: &[Release] = &[Release {
     version: Version::new(1, 18, 16),
     date: None,
-    entries: &["Account's refresh buttons have a name for screen readers"],
+    entries: &[
+        "Account's refresh buttons have a name for screen readers",
+        "Decks shows each deck's name and tags together beside its art",
+    ],
 }];
 
 /// Shipped releases, newest first.

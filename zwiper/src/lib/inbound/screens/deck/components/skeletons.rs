@@ -304,13 +304,17 @@ pub(crate) fn DeckListSkeleton() -> Element {
                 div { class: "collapsible-inner",
                     for (i , chips) in TILES.iter().enumerate() {
                         div { key: "{i}", class: "card-row deck-row",
-                            // One tile, like the live one: art, name, then
-                            // the chips under them.
+                            // One tile, like the live one: art, then the name
+                            // with the chips under it beside the art.
                             div { class: "deck-list-row",
                                 div { class: "skeleton-bar skeleton-deck-list-art" }
-                                div { class: "skeleton-bar skeleton-deck-list-title" }
-                                for (j , size) in chips.iter().enumerate() {
-                                    div { key: "{j}", class: "skeleton-bar skeleton-chip skeleton-chip-{size}" }
+                                div { class: "deck-row-text",
+                                    div { class: "skeleton-bar skeleton-deck-list-title" }
+                                    div { class: "deck-row-chips",
+                                        for (j , size) in chips.iter().enumerate() {
+                                            div { key: "{j}", class: "skeleton-bar skeleton-chip skeleton-chip-{size}" }
+                                        }
+                                    }
                                 }
                             }
                         }
