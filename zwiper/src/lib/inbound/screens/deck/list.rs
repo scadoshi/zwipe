@@ -209,51 +209,54 @@ fn DeckRow(profile: DeckProfile, onopen: EventHandler) -> Element {
                         alt: "",
                     }
                 }
-                h2 { class: "font-light text-base tracking-wide deck-list-name",
-                    {profile.name.to_string()}
-                }
-                // The pips, the count and the chips take the line under the name.
-                div { class: "deck-row-chips",
-                    if !pips.is_empty() {
-                        span { class: "identity-pips",
-                            for color in pips {
-                                i {
-                                    key: "{color.to_short_name()}",
-                                    class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
+                // The name, then the chips wrapping under it, in one column beside the art.
+                div { class: "deck-row-text",
+                    h2 { class: "font-light text-base tracking-wide deck-list-name",
+                        {profile.name.to_string()}
+                    }
+                    // The pips, the count and the chips take the line under the name.
+                    div { class: "deck-row-chips",
+                        if !pips.is_empty() {
+                            span { class: "identity-pips",
+                                for color in pips {
+                                    i {
+                                        key: "{color.to_short_name()}",
+                                        class: "ms ms-{color.to_short_name().to_lowercase()} ms-cost",
+                                    }
                                 }
                             }
                         }
-                    }
-                    span {
-                        class: if count_bad { "stat-chip stat-chip-warning" } else { "stat-chip" },
-                        {zwipe_ui::deck::cards_label(count)}
-                    }
-                    if let Some(price) = zwipe_ui::deck::price_label(&profile) {
-                        span { class: "stat-chip stat-chip-money", "{price}" }
-                    }
-                    if let Some(ref fmt) = profile.format {
-                        span { class: "stat-chip stat-chip-p3", "{fmt.display_name()}" }
-                    }
-                    if let Some(pl) = profile.power_level {
-                        span { class: "stat-chip stat-chip-p5", "{pl.display_name()}" }
-                    }
-                    if let Some(ref cmd) = profile.commander_name {
-                        span { class: "stat-chip stat-chip-p3", "{cmd}" }
-                    }
-                    if let Some(ref name) = profile.partner_commander_name {
-                        span { class: "stat-chip stat-chip-p3", "{name}" }
-                    }
-                    if let Some(ref name) = profile.background_name {
-                        span { class: "stat-chip stat-chip-p3", "{name}" }
-                    }
-                    if let Some(ref name) = profile.signature_spell_name {
-                        span { class: "stat-chip stat-chip-p3", "{name}" }
-                    }
-                    for tag in profile.tags.iter() {
-                        span { key: "{tag}", class: "stat-chip stat-chip-muted", "{deck::deck_tag_label(tag)}" }
-                    }
-                    for tag in profile.other_tags.iter() {
-                        span { key: "{tag}", class: "stat-chip stat-chip-p5", "{tag.display_name()}" }
+                        span {
+                            class: if count_bad { "stat-chip stat-chip-warning" } else { "stat-chip" },
+                            {zwipe_ui::deck::cards_label(count)}
+                        }
+                        if let Some(price) = zwipe_ui::deck::price_label(&profile) {
+                            span { class: "stat-chip stat-chip-money", "{price}" }
+                        }
+                        if let Some(ref fmt) = profile.format {
+                            span { class: "stat-chip stat-chip-p3", "{fmt.display_name()}" }
+                        }
+                        if let Some(pl) = profile.power_level {
+                            span { class: "stat-chip stat-chip-p5", "{pl.display_name()}" }
+                        }
+                        if let Some(ref cmd) = profile.commander_name {
+                            span { class: "stat-chip stat-chip-p3", "{cmd}" }
+                        }
+                        if let Some(ref name) = profile.partner_commander_name {
+                            span { class: "stat-chip stat-chip-p3", "{name}" }
+                        }
+                        if let Some(ref name) = profile.background_name {
+                            span { class: "stat-chip stat-chip-p3", "{name}" }
+                        }
+                        if let Some(ref name) = profile.signature_spell_name {
+                            span { class: "stat-chip stat-chip-p3", "{name}" }
+                        }
+                        for tag in profile.tags.iter() {
+                            span { key: "{tag}", class: "stat-chip stat-chip-muted", "{deck::deck_tag_label(tag)}" }
+                        }
+                        for tag in profile.other_tags.iter() {
+                            span { key: "{tag}", class: "stat-chip stat-chip-p5", "{tag.display_name()}" }
+                        }
                     }
                 }
             }
