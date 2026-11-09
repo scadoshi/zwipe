@@ -16,7 +16,7 @@ use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::deck::DeckProfile;
 use zwipe_core::domain::deck::deck_tag::deck_tag_label;
 use zwipe_ui::deck::list::{self, GroupBy, Show, SortBy};
-use zwipe_ui::deck::{card_count, cards_label, command_zone, count_fits};
+use zwipe_ui::deck::{card_count, cards_label, command_zone, count_fits, price_label};
 use zwipe_ui::screens::deck_list;
 use zwipe_ui::telemetry::vocabulary::{DeckScreen, Screen};
 
@@ -375,6 +375,9 @@ fn DeckRow(profile: DeckProfile) -> Element {
                     span {
                         class: if count_bad { "stat-chip stat-chip-warning" } else { "stat-chip" },
                         {cards_label(count)}
+                    }
+                    if let Some(price) = price_label(&profile) {
+                        span { class: "stat-chip stat-chip-money", "{price}" }
                     }
                     if let Some(format) = profile.format {
                         span { class: "stat-chip stat-chip-p3", "{format.display_name()}" }

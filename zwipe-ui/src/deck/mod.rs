@@ -1,4 +1,4 @@
-//! Deck rules the app keeps in its own crates: a deck row's count and pips here, and the command zone, list, form, pickers, export, buy, view and warning rules in the modules.
+//! Deck rules the app keeps in its own crates: a deck row's count, price and pips here, and the command zone, list, form, pickers, export, buy, view and warning rules in the modules.
 
 pub mod command_zone;
 mod create_gate;
@@ -10,6 +10,7 @@ pub mod view;
 pub mod warning;
 
 pub use create_gate::{VERIFY_TO_CREATE, create_gate};
+use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::DeckProfile;
 
 /// The deck's size as the app shows it: the cards in the deck, plus each command-zone card it has. The commander counts only in formats that have one.
@@ -39,6 +40,20 @@ pub fn cards_label(count: i64) -> String {
     } else {
         format!("{count} cards")
     }
+}
+
+/// The deck's total price for its list row, in the deck's own currency (its price target's, USD when it has none), formatted as the deck page shows it: `$27.80`, `€9.10`, `3.25 TIX`. `None` when no card is priced in that currency.
+#[must_use]
+pub fn price_label(profile: &DeckProfile) -> Option<String> {
+    let currency = profile.price_target_currency.unwrap_or_default();
+    let total = match currency {
+        PriceCurrency::Usd => profile.total_price_usd,
+        PriceCurrency::Eur => profile.total_price_eur,
+        PriceCurrency::Tix => profile.total_price_tix,
+    };
+    total
+        .filter(|&v| v > 0.0)
+        .map(|v| currency.format_amount(v))
 }
 
 /// `1 deck`, `2 decks`.
@@ -82,6 +97,33 @@ mod tests {
 
     use super::*;
     use crate::test_support::deck_profile;
+
+    #[test]
+    fn a_row_prices_the_deck_in_its_own_currency_and_only_when_priced() {
+        let mut profile = deck_profile("Priced");
+        profile.total_price_usd = Some(27.8);
+        profile.total_price_eur = Some(25.1);
+        profile.total_price_tix = Some(3.25);
+        assert_eq!(
+            price_label(&profile).as_deref(),
+            Some("$27.80"),
+            "USD with no target"
+        );
+        profile.price_target_currency = Some(PriceCurrency::Eur);
+        assert_eq!(price_label(&profile).as_deref(), Some("€25.10"));
+        profile.price_target_currency = Some(PriceCurrency::Tix);
+        assert_eq!(price_label(&profile).as_deref(), Some("3.25 TIX"));
+
+        profile.total_price_tix = None;
+        assert_eq!(price_label(&profile), None, "nothing priced in TIX");
+        profile.price_target_currency = None;
+        profile.total_price_usd = Some(0.0);
+        assert_eq!(
+            price_label(&profile),
+            None,
+            "a zero total is nothing priced"
+        );
+    }
 
     #[test]
     fn the_command_zone_counts_toward_the_deck() {
