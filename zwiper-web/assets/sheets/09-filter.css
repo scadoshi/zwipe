@@ -5,13 +5,14 @@
    breakpoint it is the kit's drawer. Below it the drawer floats along the
    right edge: under the status bar and the header (the kit's --app-nav-h),
    above the docks at the bottom (their gap from the edge plus their
-   height), one dock gap in from the right, with the panel's corners, border
-   and shadow, and slides in from the right as the wide one does. */
+   height) and the host's --sheet-drawer-floor, as the kit's drawer is, one
+   dock gap in from the right, with the panel's corners, border and shadow,
+   and slides in from the right as the wide one does. */
 @media (max-width: 59.99rem) {
     .sheet-form-drawer > .bottom-sheet.drawer-every-width {
         --drawer-float-gap: 0.6rem;
         top: calc(env(safe-area-inset-top, 0px) + var(--app-nav-h, 2.75rem) + var(--drawer-float-gap));
-        bottom: calc(env(safe-area-inset-bottom, 0px) / 2 + 0.6rem + 3.125rem + var(--drawer-float-gap));
+        bottom: calc(env(safe-area-inset-bottom, 0px) / 2 + 0.6rem + 3.125rem + var(--drawer-float-gap) + var(--sheet-drawer-floor, 0px));
         left: auto;
         right: var(--drawer-float-gap);
         width: min(calc(100vw - 3rem), 26rem);

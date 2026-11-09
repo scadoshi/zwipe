@@ -86,3 +86,46 @@ pub(crate) fn VerificationActions() -> Element {
         }
     }
 }
+
+/// Pending-row actions: a resend button that mails a fresh link for the
+/// pending change and grays out behind its own 60s countdown, and a
+/// refresh-icon button that re-fetches the user and says whether the change
+/// went through.
+#[component]
+pub(crate) fn PendingActions() -> Element {
+    let driver: Driver = use_context();
+    let state = driver.model.read();
+    let can_resend = state.can_resend_change();
+    let resend_label = state.resend_change_label();
+    let is_checking = state.is_checking_pending();
+    drop(state);
+
+    rsx! {
+        Button {
+            variant: ButtonVariant::Action,
+            disabled: !can_resend,
+            onclick: move |evt: MouseEvent| {
+                evt.stop_propagation();
+                driver.dispatch(Action::ResendChange);
+            },
+            "{resend_label}"
+        }
+        Button {
+            variant: ButtonVariant::Action,
+            class: "btn-action-eye",
+            disabled: is_checking,
+            onclick: move |evt: MouseEvent| {
+                evt.stop_propagation();
+                driver.dispatch(Action::CheckPending);
+            },
+            svg {
+                class: "refresh-icon",
+                view_box: "0 0 24 24",
+                xmlns: "http://www.w3.org/2000/svg",
+                polyline { points: "23 4 23 10 17 10" }
+                polyline { points: "1 20 1 14 7 14" }
+                path { d: "M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.63 4.36A9 9 0 0 0 20.49 15" }
+            }
+        }
+    }
+}

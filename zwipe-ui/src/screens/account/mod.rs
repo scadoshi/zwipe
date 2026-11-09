@@ -69,6 +69,30 @@ pub const NOT_VERIFIED: &str = "Not verified yet. Check your inbox";
 
 /// The toast once the password changed.
 pub const PASSWORD_CHANGED: &str = "Password changed";
+
+/// The toast after a pending email change's link expired unused: the address stays as it was.
+pub const CHANGE_LINK_EXPIRED: &str = "That link expired. Tap Change to send a new one";
+
+/// The toast after a fresh link for a pending email change went out to `address`.
+#[must_use]
+pub fn change_link_sent(address: &str) -> String {
+    format!("Check {address} for a new link")
+}
+
+/// The toast after the Pending row's refresh, which waited on `waited_for`, found `user`: the change went through, it still waits, or its link expired unused.
+#[must_use]
+pub fn pending_check_toast(waited_for: &str, user: &User) -> Toast {
+    if let Some(pending) = user.pending_email.as_ref() {
+        Toast::normal(
+            ToastKind::Info,
+            format!("Not confirmed yet. Check {pending}"),
+        )
+    } else if user.email.as_ref() == waited_for {
+        Toast::normal(ToastKind::Success, format!("Email changed to {waited_for}"))
+    } else {
+        Toast::normal(ToastKind::Info, CHANGE_LINK_EXPIRED)
+    }
+}
 /// The Change password sheet's header chip, for a user who no longer knows the current one.
 pub const FORGOT_PASSWORD: &str = "Forgot?";
 /// The toast once the reset link went out, before the address it went to.
@@ -225,6 +249,10 @@ pub enum Action {
     },
     /// Asks the server whether the email is verified yet, unless a check is out.
     CheckVerification,
+    /// Mails a fresh link for the pending email change, unless one is out or its cooldown runs. Answered with [`Action::Resent`], [`Action::ResendLimited`] or [`Action::Failed`], as the verification email is.
+    ResendChange,
+    /// Asks the server whether the pending email change went through, unless a check of it is out. Answered with [`Action::UserLoaded`] or [`Action::Failed`].
+    CheckPending,
     /// Opens a change sheet with every field empty.
     OpenSheet(Sheet),
     /// Sets a field on a sheet to what is typed.
@@ -295,10 +323,12 @@ pub enum Effect {
     OfferHint(OneTimeHint),
     /// Fetches the user, stores them in the session, and answers with [`Action::UserLoaded`] carrying this ticket. A failure only logs.
     FetchUser(Ticket),
-    /// Fetches the user, stores them in the session, and answers with [`Action::UserLoaded`] or [`Action::Failed`] carrying this ticket.
+    /// Fetches the user, stores them in the session, and answers with [`Action::UserLoaded`] or [`Action::Failed`] carrying this ticket. The verification check and the Pending row's check both send it.
     CheckVerification(Ticket),
     /// Sends the verification email and answers with [`Action::Resent`], [`Action::ResendLimited`] when the server says too many, or [`Action::Failed`].
     ResendVerification(Ticket),
+    /// Mails a fresh link for the pending email change and answers as [`Effect::ResendVerification`] does.
+    ResendEmailChange(Ticket),
     /// Waits one [`TICK`], then answers with [`Action::Tick`] carrying this ticket. A wait nobody needs any more is answered and ignored, so the client never cancels one.
     Wait(Ticket),
     /// Opens this sheet. Its fields are already empty in the model.
@@ -365,6 +395,10 @@ enum Request {
     Check,
     /// The verification email.
     Resend,
+    /// A fresh link for the pending change to this address.
+    ResendChange(String),
+    /// The check of the pending change to this address.
+    PendingCheck(String),
     /// A username change.
     Username,
     /// An email change to this address as typed.
@@ -384,7 +418,13 @@ impl Request {
             Self::Username => Some(Sheet::Username),
             Self::Email(_) => Some(Sheet::Email),
             Self::Password => Some(Sheet::Password),
-            Self::Refresh | Self::Check | Self::Resend | Self::Reset(_) | Self::Delete => None,
+            Self::Refresh
+            | Self::Check
+            | Self::Resend
+            | Self::ResendChange(_)
+            | Self::PendingCheck(_)
+            | Self::Reset(_)
+            | Self::Delete => None,
         }
     }
 }
@@ -418,6 +458,15 @@ impl Countdown {
         }
         Some(Effect::Wait(ticket))
     }
+}
+
+/// How the server answered a resend.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Sent {
+    /// The email went out.
+    Out,
+    /// One went out too recently; nothing was sent.
+    Limited,
 }
 
 /// Whether the visit has offered the one-time hint yet.
@@ -463,6 +512,8 @@ pub struct State {
     waiting: Vec<(Ticket, Request)>,
     /// The resend cooldown, while it runs.
     cooldown: Option<Countdown>,
+    /// The pending change's resend cooldown, while it runs. The server holds the two sends to separate budgets.
+    change_cooldown: Option<Countdown>,
     /// The Delete account dialog's countdown, while the dialog is open.
     delete: Option<Countdown>,
     forms: Forms,
@@ -491,10 +542,10 @@ impl State {
             }
             Action::Tick { ticket } => self.tick(ticket),
             Action::Resend => self.resend(),
-            Action::Resent { ticket } => self.resent(ticket, VERIFICATION_SENT, ToastKind::Success),
-            Action::ResendLimited { ticket } => {
-                self.resent(ticket, RESEND_LIMITED, ToastKind::Info)
-            }
+            Action::Resent { ticket } => self.resent(ticket, Sent::Out),
+            Action::ResendLimited { ticket } => self.resent(ticket, Sent::Limited),
+            Action::ResendChange => self.resend_change(),
+            Action::CheckPending => self.check_pending(),
             Action::CheckVerification => {
                 if self.is_checking() {
                     return Vec::new();
@@ -581,6 +632,7 @@ impl State {
     fn load(&mut self, user: Option<User>) -> Vec<Effect> {
         self.waiting.clear();
         self.cooldown = None;
+        self.change_cooldown = None;
         self.delete = None;
         let mut effects = Vec::new();
         if self.hint == HintOffer::Waiting {
@@ -597,8 +649,18 @@ impl State {
     }
 
     fn user_loaded(&mut self, ticket: Ticket, user: User) -> Vec<Effect> {
-        let wanted = |r: &Request| matches!(r, Request::Refresh | Request::Check);
+        let wanted = |r: &Request| {
+            matches!(
+                r,
+                Request::Refresh | Request::Check | Request::PendingCheck(_)
+            )
+        };
         match self.take(ticket, wanted) {
+            Some(Request::PendingCheck(address)) => {
+                let toast = pending_check_toast(&address, &user);
+                self.user = Some(user);
+                vec![Effect::Toast(toast)]
+            }
             Some(Request::Refresh) => {
                 self.user = Some(user);
                 Vec::new()
@@ -617,8 +679,10 @@ impl State {
     }
 
     fn failed(&mut self, ticket: Ticket) {
-        if self.take(ticket, |_| true) == Some(Request::Resend) {
-            self.cooldown = None;
+        match self.take(ticket, |_| true) {
+            Some(Request::Resend) => self.cooldown = None,
+            Some(Request::ResendChange(_)) => self.change_cooldown = None,
+            _ => {}
         }
     }
 
@@ -628,6 +692,12 @@ impl State {
             effects.extend(count.tick(ticket));
             if count.remaining == 0 {
                 self.cooldown = None;
+            }
+        }
+        if let Some(count) = self.change_cooldown.as_mut() {
+            effects.extend(count.tick(ticket));
+            if count.remaining == 0 {
+                self.change_cooldown = None;
             }
         }
         if let Some(count) = self.delete.as_mut() {
@@ -645,19 +715,55 @@ impl State {
         vec![Effect::ResendVerification(ticket)]
     }
 
-    /// Lands a resend's reply with `text` as its toast and starts the cooldown running.
-    fn resent(&mut self, ticket: Ticket, text: &str, kind: ToastKind) -> Vec<Effect> {
-        if self.take(ticket, |r| *r == Request::Resend).is_none() {
+    fn resend_change(&mut self) -> Vec<Effect> {
+        if !self.can_resend_change() {
             return Vec::new();
         }
-        let mut effects = vec![Effect::Toast(Toast::normal(kind, text))];
+        let Some(address) = self.pending_address() else {
+            return Vec::new();
+        };
+        self.change_cooldown = Some(Countdown::held(timing::RESEND_COOLDOWN));
+        let ticket = self.send(Request::ResendChange(address));
+        vec![Effect::ResendEmailChange(ticket)]
+    }
+
+    fn check_pending(&mut self) -> Vec<Effect> {
+        if self.is_checking_pending() {
+            return Vec::new();
+        }
+        let Some(address) = self.pending_address() else {
+            return Vec::new();
+        };
+        let ticket = self.send(Request::PendingCheck(address));
+        vec![Effect::CheckVerification(ticket)]
+    }
+
+    /// The address waiting on its link, if one is.
+    fn pending_address(&self) -> Option<String> {
+        self.user
+            .as_ref()
+            .and_then(|u| u.pending_email.as_ref())
+            .map(ToString::to_string)
+    }
+
+    /// Lands a resend's reply, the verification email's or the pending change's, with its toast, and starts that send's cooldown running.
+    fn resent(&mut self, ticket: Ticket, sent: Sent) -> Vec<Effect> {
+        let wanted = |r: &Request| matches!(r, Request::Resend | Request::ResendChange(_));
+        let (text, cooldown) = match self.take(ticket, wanted) {
+            Some(Request::Resend) => (VERIFICATION_SENT.to_owned(), &mut self.cooldown),
+            Some(Request::ResendChange(address)) => {
+                (change_link_sent(&address), &mut self.change_cooldown)
+            }
+            _ => return Vec::new(),
+        };
+        let toast = match sent {
+            Sent::Out => Toast::normal(ToastKind::Success, text),
+            Sent::Limited => Toast::normal(ToastKind::Info, RESEND_LIMITED),
+        };
         let wait = self.tickets.next_ticket();
-        let count = self
-            .cooldown
-            .get_or_insert_with(|| Countdown::held(timing::RESEND_COOLDOWN));
+        let count = cooldown.get_or_insert_with(|| Countdown::held(timing::RESEND_COOLDOWN));
         count.wait = Some(wait);
-        effects.push(Effect::Wait(wait));
-        effects
+        vec![Effect::Toast(toast), Effect::Wait(wait)]
     }
 
     fn save(&mut self, sheet: Sheet) -> Vec<Effect> {
@@ -854,6 +960,33 @@ impl State {
     #[must_use]
     pub fn resend_label(&self) -> String {
         account::resend_label(self.is_sending(), self.cooldown_secs())
+    }
+
+    /// Whether a fresh link for the pending change is on its way.
+    #[must_use]
+    pub fn is_sending_change(&self) -> bool {
+        self.is_waiting(|r| matches!(r, Request::ResendChange(_)))
+    }
+
+    /// Whether the Pending row's Resend takes a press: nothing on its way and no cooldown.
+    #[must_use]
+    pub fn can_resend_change(&self) -> bool {
+        !self.is_sending_change() && self.change_cooldown.map_or(0, |c| c.remaining) == 0
+    }
+
+    /// The Pending row's Resend label, [`account::resend_label`] for the pending change's send.
+    #[must_use]
+    pub fn resend_change_label(&self) -> String {
+        account::resend_label(
+            self.is_sending_change(),
+            self.change_cooldown.map_or(0, |c| c.remaining),
+        )
+    }
+
+    /// Whether the Pending row's check is out. Its button is off meanwhile.
+    #[must_use]
+    pub fn is_checking_pending(&self) -> bool {
+        self.is_waiting(|r| matches!(r, Request::PendingCheck(_)))
     }
 
     /// Whether the verification check is out. Its button is off meanwhile.

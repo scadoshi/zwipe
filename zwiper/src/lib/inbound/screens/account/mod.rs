@@ -23,7 +23,9 @@ use change_password::ChangePasswordSheet;
 use change_username::ChangeUsernameSheet;
 use chrono::Utc;
 use components::delete_account_dialog::DeleteAccountDialog;
-use components::email_verification::{EmailVerification, PendingEmail, VerificationActions};
+use components::email_verification::{
+    EmailVerification, PendingActions, PendingEmail, VerificationActions,
+};
 use dioxus::prelude::*;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user::hints::OneTimeHint;
@@ -107,9 +109,14 @@ pub fn Account() -> Element {
                                         class: "settings-row",
                                         span { class: "settings-row-label", {Row::Pending.label()} }
                                         div { class: "settings-row-value",
-                                            PendingEmail {
-                                                email: pending.email,
-                                                note: pending.note,
+                                            div { style: "display:flex;flex-direction:column;align-items:flex-end;gap:0.5rem;",
+                                                PendingEmail {
+                                                    email: pending.email,
+                                                    note: pending.note,
+                                                }
+                                                div { style: "display:flex;gap:0.5rem;",
+                                                    PendingActions {}
+                                                }
                                             }
                                         }
                                     }

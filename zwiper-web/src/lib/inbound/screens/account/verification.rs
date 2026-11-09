@@ -1,5 +1,6 @@
 //! The Account email rows: the address with its badge, the pending address
-//! with its link note, and the Verification row's resend and check buttons.
+//! with its link tag and its resend and check buttons, and the Verification
+//! row's resend and check buttons.
 
 use std::time::Duration;
 
@@ -9,10 +10,12 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::session::Session;
+use zwipe_ui::screens::account as account_screen;
 use zwipe_ui::telemetry::vocabulary::component;
 use zwipe_ui::timing::RESEND_COOLDOWN;
 
 use crate::inbound::chrome::authed::use_authed;
+use crate::inbound::chrome::toast::raise;
 use crate::inbound::session::ensure_fresh::ensure_fresh;
 use crate::inbound::telemetry;
 use crate::outbound::timer;
@@ -36,16 +39,138 @@ pub(super) fn EmailValue(email: String, is_verified: bool, on_change: EventHandl
     }
 }
 
-/// The Pending row's value: the address waiting on its link and, when the
-/// server sends it, how long the link has left.
+/// The Pending row's value: the address waiting on its link, a tag with how
+/// long the link has left when the server sends it, and the row's Resend and
+/// refresh.
 #[component]
 pub(super) fn PendingEmail(email: String, expires_at: Option<DateTime<Utc>>) -> Element {
     let note = expires_at.map(|at| zwipe_ui::account::pending_note(at, Utc::now()));
     rsx! {
-        div { style: "display:flex;flex-direction:column;align-items:flex-end;gap:0.25rem;",
+        div { style: "display:flex;flex-direction:column;align-items:flex-end;gap:0.5rem;",
             span { "{email}" }
             if let Some(note) = note {
-                span { class: "text-muted text-sm", "{note}" }
+                span { class: "badge-expiry", "{note}" }
+            }
+            div { style: "display:flex;gap:0.5rem;", PendingActions { email } }
+        }
+    }
+}
+
+/// The Pending row's `Resend`, which mails a fresh link for the change to
+/// `email` and goes gray behind its own 60 s countdown, and its refresh,
+/// which fetches the user and says whether the change went through.
+#[component]
+fn PendingActions(email: String) -> Element {
+    let mut session: Signal<Option<Session>> = use_context();
+    let client: Signal<ZwipeClient> = use_context();
+    let toast = use_toast();
+    let authed = use_authed();
+    let usage = telemetry::use_usage();
+    let screen = telemetry::screen_name();
+    let mut is_resending = use_signal(|| false);
+    let mut is_checking = use_signal(|| false);
+    let mut cooldown = use_signal(|| 0u32);
+    let waited_for = email.clone();
+
+    let resend = move |event: MouseEvent| {
+        event.stop_propagation();
+        is_resending.set(true);
+        cooldown.set(u32::try_from(RESEND_COOLDOWN.as_secs()).unwrap_or(u32::MAX));
+        let email = email.clone();
+        spawn(async move {
+            let failed = |e: &ClientError| {
+                tracing::warn!("resend_email_change failed: {e}");
+                usage.peek().report_error(
+                    screen,
+                    component::EMAIL_VERIFICATION,
+                    "resend_email_change",
+                    &telemetry::failure(e),
+                );
+                toast.error(
+                    e.to_user_message(),
+                    ToastOptions::default().duration(TOAST_LONG),
+                );
+            };
+            let current = match ensure_fresh(session, client).await {
+                Ok(current) => current,
+                Err(e) => {
+                    failed(&e);
+                    cooldown.set(0);
+                    is_resending.set(false);
+                    return;
+                }
+            };
+            let http = client.peek().clone();
+            match http.resend_email_change(&current).await {
+                Ok(()) => toast.success(
+                    account_screen::change_link_sent(&email),
+                    ToastOptions::default().duration(TOAST_NORMAL),
+                ),
+                // One went out recently, so the countdown keeps running.
+                Err(ClientError::TooManyRequests(_)) => toast.info(
+                    account_screen::RESEND_LIMITED.to_string(),
+                    ToastOptions::default().duration(TOAST_NORMAL),
+                ),
+                Err(e) => {
+                    failed(&e);
+                    cooldown.set(0);
+                    is_resending.set(false);
+                    return;
+                }
+            }
+            is_resending.set(false);
+            while *cooldown.peek() > 0 {
+                timer::sleep(Duration::from_secs(1)).await;
+                let left = *cooldown.peek();
+                cooldown.set(left.saturating_sub(1));
+            }
+        });
+    };
+
+    let check = move |event: MouseEvent| {
+        event.stop_propagation();
+        is_checking.set(true);
+        let waited_for = waited_for.clone();
+        spawn(async move {
+            if let Some(user) = authed
+                .run("check_pending_email", |c, s| async move {
+                    c.fetch_user(&s).await
+                })
+                .await
+            {
+                let found = account_screen::pending_check_toast(&waited_for, &user);
+                let latest = session.peek().clone();
+                if let Some(mut latest) = latest {
+                    latest.user = user;
+                    session.set(Some(latest));
+                }
+                raise(toast, &found);
+            }
+            is_checking.set(false);
+        });
+    };
+
+    rsx! {
+        Button {
+            variant: ButtonVariant::Action,
+            disabled: is_resending() || cooldown() > 0,
+            onclick: resend,
+            {zwipe_ui::account::resend_label(is_resending(), u64::from(cooldown()))}
+        }
+        span { title: "Check the new email", style: "display:inline-flex;",
+            Button {
+                variant: ButtonVariant::Action,
+                class: "btn-action-eye",
+                disabled: is_checking(),
+                onclick: check,
+                svg {
+                    class: "refresh-icon",
+                    view_box: "0 0 24 24",
+                    xmlns: "http://www.w3.org/2000/svg",
+                    polyline { points: "23 4 23 10 17 10" }
+                    polyline { points: "1 20 1 14 7 14" }
+                    path { d: "M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.63 4.36A9 9 0 0 0 20.49 15" }
+                }
             }
         }
     }
