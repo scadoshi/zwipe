@@ -84,6 +84,7 @@ Who checked, on which live build, what they saw.
 | [316](316-drawer-overlays-footer.md) | The web side drawer covers the footer | approved | scotland | - |
 | [317](317-pending-email-expiry-tag.md) | Pending email's 'Link expires' hint isn't a tag on web | approved | scotland | - |
 | [318](318-pending-email-refresh-resend.md) | Pending email has no Refresh or Resend on web | approved | scotland | - |
+| [319](319-account-pending-row-after-login.md) | Account shows no Pending row on the first visit after login | reported | - | - |
 
 ## Waiting for live verification
 
