@@ -38,17 +38,18 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[Release {
-    version: Version::new(1, 18, 16),
-    date: None,
-    entries: &[
-        "Account's refresh buttons have a name for screen readers",
-        "Decks shows each deck's name and tags together beside its art",
-    ],
-}];
+pub const UPCOMING: &[Release] = &[];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
+    Release {
+        version: Version::new(1, 18, 16),
+        date: NaiveDate::from_ymd_opt(2026, 11, 9),
+        entries: &[
+            "Account's refresh buttons have a name for screen readers",
+            "Decks shows each deck's name and tags together beside its art",
+        ],
+    },
     Release {
         version: Version::new(1, 18, 15),
         date: NaiveDate::from_ymd_opt(2026, 11, 9),
