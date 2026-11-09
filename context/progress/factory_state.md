@@ -149,3 +149,9 @@ Stores, 2026-11-08 evening: Zwipe iOS 1.18.14 (114) resubmitted with the new scr
 - 1.18.15 upcoming on release: 313 price chip, 314 menu flicker fix (verified on phone).
 - Private context moved to github.com/scadoshi/zwipe-context.
 - Next: ManaBox this week; meld after 2026-11-11.
+
+## Handoff 2026-11-09 morning
+- In flight: scotland on 316 (drawer stops at footer), 317 (pending-email expiry as a tag), 318 (Refresh + Resend on pending email; stop if a resend endpoint is missing). Changelog under 1.18.15. Merge on green.
+- Waiting on Scotty: whether to push halo zwipe scadoshi-rust (26 local commits, Oct 30).
+- Workers idle: laptop, droid, and-droid, halo, thinker; surfer stood down.
+- Videos: six approved in zwipe-context video-factory/finals + iCloud; goblin-build parked; 18 specs ready.
