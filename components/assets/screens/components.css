@@ -155,11 +155,9 @@
     border-bottom: 1px solid var(--border-secondary);
 }
 
-/* The command zone's art crops sit inline in the wrapping row, as flex items
-   beside the name rather than a fixed column, so the chips wrap onto the
-   next line under the art instead of into a narrow column beside it. Two
-   crops (partners, or oathbreaker and signature spell) follow one another.
-   The corners are the panel's at this size. */
+/* The command zone's art crops lead the row, top-aligned beside the text
+   column. Two crops (partners, or oathbreaker and signature spell) follow
+   one another. The corners are the panel's at this size. */
 .deck-row-art-img {
     flex: 0 0 auto;
     width: 3.6rem;
@@ -170,30 +168,36 @@
     box-shadow: var(--shadow-sm);
 }
 
+/* The art, then one column with the name over the chips, so the chips wrap
+   beside the art rather than under it. */
 .deck-list-row {
-    /* Unlike card rows (deliberately single-line for consistency), a deck
-       carries far more chips than a card does, so these wrap. */
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
+    align-items: flex-start;
+    gap: 0.6rem;
+    min-width: 0;
+}
+
+/* The column takes the rest of the row, the name on its first line and the
+   chips wrapping beneath it. */
+.deck-row-text {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
     gap: 0.4rem;
     min-width: 0;
 }
 
-/* A zero basis keeps the name on the art's line however long it is, so a
-   long name wraps beside the art instead of dropping under it. */
+/* A long name wraps inside the column instead of pushing it wider. */
 .deck-list-name {
-    flex: 1 1 0;
     min-width: 0;
-    margin-right: 0.25rem;
+    margin: 0;
     overflow-wrap: anywhere;
     word-break: break-word;
 }
 
-/* The pips, the count and the chips on their own line under the art and the
-   name, so every row has the same shape whatever the name's length. */
+/* The pips, the count and the chips, a deck carrying far more than a card
+   does, so they wrap. */
 .deck-row-chips {
-    flex: 1 0 100%;
     display: flex;
     flex-wrap: wrap;
     align-items: center;

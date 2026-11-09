@@ -41,9 +41,13 @@ pub fn DeckListSkeleton() -> Element {
                         div { key: "{i}", class: "card-row deck-row",
                             div { class: "deck-list-row",
                                 div { class: "skeleton-bar skeleton-deck-list-art" }
-                                div { class: "skeleton-bar skeleton-deck-list-title" }
-                                for (j, size) in chips.iter().enumerate() {
-                                    div { key: "{j}", class: "skeleton-bar skeleton-chip skeleton-chip-{size}" }
+                                div { class: "deck-row-text",
+                                    div { class: "skeleton-bar skeleton-deck-list-title" }
+                                    div { class: "deck-row-chips",
+                                        for (j, size) in chips.iter().enumerate() {
+                                            div { key: "{j}", class: "skeleton-bar skeleton-chip skeleton-chip-{size}" }
+                                        }
+                                    }
                                 }
                             }
                         }
