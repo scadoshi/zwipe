@@ -101,8 +101,7 @@ body {
    contents into its background, as the content scrolls down. The bar's height
    is the kit's --app-nav-h, and the kit opens each screen's scroll area with
    a spacer that tall. The box starts at the screen's top edge and pads the
-   status bar's inset in the strip's color: iOS WebKit draws a layer placed
-   by an inset offset one inset low on the frame a theme wipe captures. */
+   status bar's inset in the strip's color. */
 .screen > .app-nav {
     position: absolute;
     top: 0;
@@ -184,18 +183,6 @@ body {
 .app-nav .nav-panel .nav-links {
     max-height: none;
     overflow: visible;
-}
-
-/* The header holds still and unfaded while the sheet is up, as while the
-   menu is open: a transform would make it the sheet's containing block, and
-   the sheet is the bar's descendant, so a fade left from scrolling would
-   make the whole sheet see-through. It also rises over the status bar
-   strip, which otherwise paints over the sheet's backdrop inside the
-   header's layer and leaves the notch undimmed. */
-.screen > .app-nav:has(.theme-picker-sheet .bottom-sheet.show) {
-    transform: none !important;
-    --nav-fade: 1 !important;
-    z-index: 103;
 }
 
 /* =======================
