@@ -127,9 +127,11 @@ Scotty raised the worker limit to 3 for now ("push it a little bit more"). Busy:
 3. Store builds on halo (the halo worker; Scotty takes them there): IPA for Zwipe and Cairn (iOS), AAB for Zwipe (Play). Ask Scotty for the version at cut (changelog has 1.18.9-1.18.14 upcoming); date = cut day.
 4. Then: marketing video factory discussion (narrated shorts).
 
-## Scotty to-dos (when back)
-- Cairn 1.4.0 What's New in App Store Connect still has 1.3.0's notes. Replace with cairn context/operations/store-submissions/1.4.0/whats_new.md (474 chars). It's submitted, so: App Review, remove from review, paste, Save, Add for Review.
-- Swap the new store screenshots into App Store Connect and Play Console for Zwipe and Cairn (Droid's set, once approved).
+## Scotty to-dos
+Done 2026-11-08: Cairn 1.4.0 What's New, both apps' store screenshots and headers.
 
 ## Next deploy
 Optional, low priority: whenever a deploy next happens, a stale-tab check of 282 is nice to have. Not blocking; 282 already passed with a simulated deploy.
+
+## Next
+TikTok / marketing video factory discussion with Scotty.
