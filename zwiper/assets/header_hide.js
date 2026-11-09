@@ -33,7 +33,9 @@
             if (top > bottom || previous > bottom) return;
             if (top < previous && top >= bottom - 2) return;
 
-            const height = nav.offsetHeight;
+            // The bar's height: the header pads the status bar's inset above
+            // it, and that part stays over the strip.
+            const height = nav.offsetHeight - (parseFloat(getComputedStyle(nav).paddingTop) || 0);
             let pushed = (offset.get(nav) || 0) + (top - previous);
             pushed = top <= 0 ? 0 : Math.min(height, Math.max(0, pushed));
             offset.set(nav, pushed);
