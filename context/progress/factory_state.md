@@ -135,3 +135,5 @@ Optional, low priority: whenever a deploy next happens, a stale-tab check of 282
 
 ## Next
 TikTok / marketing video factory discussion with Scotty.
+
+Stores, 2026-11-08 evening: Zwipe iOS 1.18.14 (114) resubmitted with the new screenshots and header; Cairn iOS 1.4.0 (14) resubmitted with the corrected What's New, new screenshots and header; Zwipe Android 1.18.14 (vc76) submitted. All in review.
