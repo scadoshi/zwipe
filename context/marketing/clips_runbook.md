@@ -147,3 +147,24 @@ Both galleries use the **cropped** takes (1068x2196), shrunk for the web. The fu
 4. **Portfolio.** Put the same `.mp4` files, without posters, in `assets/projects/zwipe/` in the portfolio repo, and delete the old ones. Each clip is a `MediaItem` in the Zwipe project in `src/data.rs`, with alt text that describes the clip and the same caption as zwipe.net.
 5. Check both galleries at 1440 and 390 wide with a local `dx serve`, and step through every clip. If the page still shows the old clips, the dev server is serving a stale pre-render: delete `target/dx/<crate>/debug/web/public` and serve again.
 6. Deploy: open a PR to `release` for zite and a PR to `main` for the portfolio. The portfolio publishes to GitHub Pages when its PR merges. zwipe.net publishes when release reaches zwipe's `main`, through `deploy-zite.yml`.
+
+## 10. A busy year for the Activity clip
+
+The `test` account's real activity is thin, so the Activity shot records against a local zerver with a seeded year. Never seed prod: the swipes and searches would land in zwipe.net's public counters. `zcripts/seed/activity.sh` refuses any database that isn't on this machine.
+
+1. **Database and catalog.** On the Mac, `zcripts/dev-env/macos/setup.sh` installs Postgres, creates the `zerver` database, runs the migrations and writes `zerver/.env` with its `DATABASE_URL`. Fill the catalog once with the nightly sync, which downloads Scryfall's bulk data and takes a while: `cargo run --bin zervice`.
+2. **Server.** `cargo run --bin zerver`. It listens on `BIND_ADDRESS` from `zerver/.env`, port 3000 by default.
+3. **Emulator build.** The emulator reaches the Mac's localhost as `10.0.2.2`. In section 1, export `BACKEND_URL="http://10.0.2.2:3000"` instead of the prod URL, then build and install the APK as usual.
+4. **Account.** Register in the app against the local server. No verification email arrives locally, so mark the account verified, then sign in:
+   ```bash
+   set -a; source zerver/.env; set +a
+   psql "$DATABASE_URL" -c "UPDATE users SET email_verified_at = now() WHERE username = 'test'"
+   ```
+   Create a deck or two with a commander, as in section 2. The seed files its swipes under the account's commanders, and Card roles and Most skipped read from them. With no commander deck it uses the catalog's most played legendary creatures.
+5. **Seed.**
+   ```bash
+   zcripts/seed/activity.sh test        # DATABASE_URL from zerver/.env
+   ```
+   It replaces the account's activity with a year of it: about 200 active days with runs and gaps, busier weekends, a few binge days, about 6,700 swipes and 1,400 searches on real cards from the local catalog, and a set of cards it always skips, which fills Most skipped. Its lifetime swipe and search counters match the year. A rerun gives the same year. Pass a seed from -1 to 1 for a different one: `zcripts/seed/activity.sh test 0.7`.
+6. **Record** `4_activity` as in section 6. Re-measure the taps, since the panels are fuller than on prod.
+7. **Afterwards**, rebuild with the prod `BACKEND_URL` before recording anything else.
