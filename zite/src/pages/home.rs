@@ -140,6 +140,8 @@ const DEMO_PLAYSTYLE: Asset = asset!("/assets/demo/3_playstyle.mp4");
 const DEMO_PLAYSTYLE_POSTER: Asset = asset!("/assets/demo/3_playstyle.jpg");
 const DEMO_ACTIVITY: Asset = asset!("/assets/demo/4_activity.mp4");
 const DEMO_ACTIVITY_POSTER: Asset = asset!("/assets/demo/4_activity.jpg");
+const DEMO_DECK: Asset = asset!("/assets/demo/5_deck.mp4");
+const DEMO_DECK_POSTER: Asset = asset!("/assets/demo/5_deck.jpg");
 
 /// One demo clip: the video, its first frame as the poster, the caption
 /// under it and its label for screen readers.
@@ -151,9 +153,9 @@ struct Demo {
     label: &'static str,
 }
 
-/// The demo clips, in the order they play: build a deck, read it, then what
-/// the app learns about how you play.
-const DEMOS: [Demo; 4] = [
+/// The demo clips, in the order they play: build a deck, read it, what the
+/// app learns about how you play, then the deck itself.
+const DEMOS: [Demo; 5] = [
     Demo {
         video: DEMO_SWIPE,
         poster: DEMO_SWIPE_POSTER,
@@ -177,6 +179,12 @@ const DEMOS: [Demo; 4] = [
         poster: DEMO_ACTIVITY_POSTER,
         caption: "Your swipes and searches over the year, and the cards you skip most",
         label: "Demo: Activity",
+    },
+    Demo {
+        video: DEMO_DECK,
+        poster: DEMO_DECK_POSTER,
+        caption: "Your deck: commander and MVPs up top, every card a tap away",
+        label: "Demo: Deck",
     },
 ];
 
