@@ -228,6 +228,9 @@ fn DeckRow(profile: DeckProfile, onopen: EventHandler) -> Element {
                         class: if count_bad { "stat-chip stat-chip-warning" } else { "stat-chip" },
                         {zwipe_ui::deck::cards_label(count)}
                     }
+                    if let Some(price) = zwipe_ui::deck::price_label(&profile) {
+                        span { class: "stat-chip stat-chip-money", "{price}" }
+                    }
                     if let Some(ref fmt) = profile.format {
                         span { class: "stat-chip stat-chip-p3", "{fmt.display_name()}" }
                     }
