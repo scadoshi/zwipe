@@ -38,20 +38,21 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[Release {
-    version: Version::new(1, 18, 15),
-    date: None,
-    entries: &[
-        "Decks shows each deck's total price after its card count",
-        "On iPhone the open menu no longer flickers when the theme changes",
-        "A pending email has Resend and refresh buttons, so a lost link can be sent again",
-        "Side drawers on the web stop above the footer instead of covering it",
-        "A pending email's link expiry on the web is a tag, as in the app",
-    ],
-}];
+pub const UPCOMING: &[Release] = &[];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
+    Release {
+        version: Version::new(1, 18, 15),
+        date: NaiveDate::from_ymd_opt(2026, 11, 9),
+        entries: &[
+            "Decks shows each deck's total price after its card count",
+            "On iPhone the open menu no longer flickers when the theme changes",
+            "A pending email has Resend and refresh buttons, so a lost link can be sent again",
+            "Side drawers on the web stop above the footer instead of covering it",
+            "A pending email's link expiry on the web is a tag, as in the app",
+        ],
+    },
     Release {
         version: Version::new(1, 18, 14),
         date: NaiveDate::from_ymd_opt(2026, 11, 8),
