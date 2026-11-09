@@ -6,15 +6,17 @@
      zwipe.net's OG image style (og_default.html, zite/public/assets/og-default.png):
      the sites' backdrop of shaded squares on a darkened --bg-sink, and on it one
      panel holding, top to bottom, the Zwipe wordmark, a rule across the panel,
-     the tagline, the rating in a gold chip, the chips (Free and No ads as value chips, iOS,
+     the tagline, the chips (Free and No ads as value chips, iOS,
      Android and Web as store pills) and zwipe.net. Nothing sits on the open grid.
+     ?theme=<name> picks one of the app's dark themes from THEMES below (colors
+     copied from orangui's themes.css); gruvbox when absent.
      The block-glyph wordmark needs the app's self-hosted JetBrains Mono (the CDN
      fontsource subset drops U+2580-U+259F), so the font is loaded from
      ../../zwiper/assets/fonts. Render with:
        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless \
          --disable-gpu --hide-scrollbars --force-device-scale-factor=1 \
          --allow-file-access-from-files --window-size=1080,1920 \
-         --screenshot=video_end_card.png "file://$PWD/video_end_card.html" -->
+         --screenshot=video_end_card.png "file://$PWD/video_end_card.html?theme=gruvbox" -->
 <style>
 @font-face {
   font-family: 'JetBrains Mono';
@@ -31,7 +33,7 @@
 
 :root {
   --bg-primary: #282828;
-  --text-primary: #ebdba2;
+  --text-primary: #ebdbb2;
   --text-muted: #a89984;
   --border-secondary: #3c3836;
   --palette-1: #83a598;
@@ -39,7 +41,7 @@
   --palette-6: #8ec07c;
   --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.5);
-  --bg-sink: #222222;
+  --bg-sink: color-mix(in srgb, var(--bg-primary), #000 15%);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -98,17 +100,6 @@ body {
   text-underline-offset: 8px;
 }
 
-/* The rating in a gold value chip, stars and score together, a size up from
-   the chips under it. */
-.rating {
-  margin-top: 40px;
-}
-.rating.tag {
-  font-size: 36px;
-  padding: 12px 26px;
-}
-.stars { letter-spacing: 5px; margin-right: 14px; }
-
 /* The hero's chips: a value chip's --c is its text, tint and border; a store
    pill is plain text on the panel. */
 .tags {
@@ -150,6 +141,19 @@ body {
      way orangui's grid-cells.js draws its settled field. -->
 <canvas id="field" width="1080" height="1920" style="position:fixed;inset:0;z-index:-1"></canvas>
 <script>
+const THEMES = {
+  "gruvbox": {"bg-primary": "#282828", "text-primary": "#ebdbb2", "text-muted": "#a89984", "border-secondary": "#3c3836", "palette-1": "#83a598", "palette-5": "#fabd2f", "palette-6": "#8ec07c"},
+  "nord": {"bg-primary": "#2e3440", "text-primary": "#eceff4", "text-muted": "#9ca8c2", "border-secondary": "#3b4252", "palette-1": "#81a1c1", "palette-5": "#ebcb8b", "palette-6": "#88c0d0"},
+  "dracula": {"bg-primary": "#282a36", "text-primary": "#f8f8f2", "text-muted": "#9595a5", "border-secondary": "#343746", "palette-1": "#8be9fd", "palette-5": "#f1fa8c", "palette-6": "#ff79c6"},
+  "kanagawa": {"bg-primary": "#1f1f28", "text-primary": "#dcd7ba", "text-muted": "#8b8a81", "border-secondary": "#2a2a37", "palette-1": "#7e9cd8", "palette-5": "#e6c384", "palette-6": "#7aa89f"},
+  "nightfox": {"bg-primary": "#192330", "text-primary": "#cdcecf", "text-muted": "#71839b", "border-secondary": "#212e3f", "palette-1": "#719cd6", "palette-5": "#dbc074", "palette-6": "#63cdcf"},
+  "ayu": {"bg-primary": "#0f1419", "text-primary": "#bfbdb6", "text-muted": "#7a818f", "border-secondary": "#1c2128", "palette-1": "#59c2ff", "palette-5": "#ffb454", "palette-6": "#95e6cb"},
+  "matte-black": {"bg-primary": "#121212", "text-primary": "#e8e8e8", "text-muted": "#808080", "border-secondary": "#1c1c1c", "palette-1": "#bebebe", "palette-5": "#d35f5f", "palette-6": "#c02523"},
+  "melange": {"bg-primary": "#292522", "text-primary": "#ece1d7", "text-muted": "#867462", "border-secondary": "#34302c", "palette-1": "#7f91b2", "palette-5": "#ebc06d", "palette-6": "#89b3b6"},
+  "vscode": {"bg-primary": "#1e1e1e", "text-primary": "#d4d4d4", "text-muted": "#888888", "border-secondary": "#252526", "palette-1": "#569cd6", "palette-5": "#dcdcaa", "palette-6": "#4ec9b0"},
+};
+const theme = THEMES[new URLSearchParams(location.search).get("theme")] || THEMES.gruvbox;
+for (const [name, value] of Object.entries(theme)) document.documentElement.style.setProperty(`--${name}`, value);
 (() => {
   const c = document.getElementById("field"), ctx = c.getContext("2d");
   const cell = 40, shades = [0.015, 0.03, 0.05, 0.075, 0.1];
@@ -184,7 +188,6 @@ body {
                                    ▎▎▉▉</pre>
     <hr class="rule" />
     <div class="tagline">The <span class="link">Magic: The Gathering</span> deck builder built for mobile and web</div>
-    <div class="rating tag tag-value"><span class="stars">★★★★★</span>4.8</div>
     <div class="tags">
       <span class="tag tag-value">Free</span>
       <span class="tag tag-value">No ads</span>
