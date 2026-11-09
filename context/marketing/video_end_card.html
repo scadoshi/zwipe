@@ -5,7 +5,7 @@
 <!-- Vertical (9:16, 1080x1920) end card for the swipe-demo video. Mirrors
      og_default.html's look: the gruvbox-dark grid cells on a darkened --bg-sink, the
      Zwipe wordmark sitting on the grid, then a hero-style bubble panel with the
-     value-prop tagline, a star rating, the Free/No ads/iOS/Android tag chips,
+     value-prop tagline, a star rating, the Free/No ads/iOS/Android/Web tag chips,
      and zwipe.net. Sizes are scaled up from og_default for the taller canvas.
      The block-glyph wordmark needs the app's self-hosted JetBrains Mono (the CDN
      fontsource subset drops U+2580-U+259F), so the font is loaded from
@@ -81,7 +81,7 @@ body {
   align-items: center;
   gap: 44px;
   width: 940px;
-  padding: 72px 72px;
+  padding: 72px 56px;
   background-color: var(--bg-primary);
   border: 1px solid var(--border-secondary);
   border-radius: 32px;
@@ -89,7 +89,8 @@ body {
 }
 
 .tagline {
-  font-size: 44px;
+  font-size: 40px;
+  text-wrap: balance;
   font-weight: 400;
   line-height: 1.35;
   color: var(--text-muted);
@@ -109,10 +110,11 @@ body {
 
 .tags {
   display: flex;
-  gap: 20px;
+  gap: 14px;
 }
 .tag {
-  padding: 14px 30px;
+  white-space: nowrap;
+  padding: 14px 22px;
   border-radius: 16px;
   font-size: 34px;
   border: 1px solid;
@@ -174,7 +176,7 @@ body {
                                    ▎▎▉▉</pre>
 
   <div class="hero">
-    <div class="tagline">The <span class="hl">Magic: The Gathering</span> deck builder built for <span class="hl">mobile</span></div>
+    <div class="tagline">The <span class="hl">Magic: The Gathering</span> deck builder built for <span class="hl">mobile</span> and <span class="hl">web</span></div>
     <div class="meta">
       <span class="stars">★★★★★</span>
       <span class="score">4.8</span>
@@ -184,6 +186,7 @@ body {
       <span class="tag tag-value">No ads</span>
       <span class="tag tag-plat">iOS</span>
       <span class="tag tag-plat">Android</span>
+      <span class="tag tag-plat">Web</span>
     </div>
     <div class="site">zwipe.net</div>
   </div>
