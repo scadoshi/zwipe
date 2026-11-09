@@ -70,6 +70,12 @@ pub const NOT_VERIFIED: &str = "Not verified yet. Check your inbox";
 /// The toast once the password changed.
 pub const PASSWORD_CHANGED: &str = "Password changed";
 
+/// The accessible name of the Pending row's refresh button, which checks whether the change went through.
+pub const CHECK_PENDING: &str = "Check the new email";
+
+/// The accessible name of the Verification row's refresh button.
+pub const CHECK_VERIFICATION: &str = "Check verification";
+
 /// The toast after a pending email change's link expired unused: the address stays as it was.
 pub const CHANGE_LINK_EXPIRED: &str = "That link expired. Tap Change to send a new one";
 

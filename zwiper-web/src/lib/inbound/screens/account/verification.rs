@@ -157,7 +157,7 @@ fn PendingActions(email: String) -> Element {
             onclick: resend,
             {zwipe_ui::account::resend_label(is_resending(), u64::from(cooldown()))}
         }
-        span { title: "Check the new email", style: "display:inline-flex;",
+        span { title: account_screen::CHECK_PENDING, style: "display:inline-flex;",
             Button {
                 variant: ButtonVariant::Action,
                 class: "btn-action-eye",
@@ -165,12 +165,14 @@ fn PendingActions(email: String) -> Element {
                 onclick: check,
                 svg {
                     class: "refresh-icon",
+                    "aria-hidden": "true",
                     view_box: "0 0 24 24",
                     xmlns: "http://www.w3.org/2000/svg",
                     polyline { points: "23 4 23 10 17 10" }
                     polyline { points: "1 20 1 14 7 14" }
                     path { d: "M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.63 4.36A9 9 0 0 0 20.49 15" }
                 }
+                span { class: "sr-only", {account_screen::CHECK_PENDING} }
             }
         }
     }
@@ -288,7 +290,7 @@ pub(super) fn VerificationActions() -> Element {
             onclick: resend,
             {zwipe_ui::account::resend_label(is_resending(), u64::from(cooldown()))}
         }
-        span { title: "Check verification", style: "display:inline-flex;",
+        span { title: account_screen::CHECK_VERIFICATION, style: "display:inline-flex;",
             Button {
                 variant: ButtonVariant::Action,
                 class: "btn-action-eye",
@@ -296,12 +298,14 @@ pub(super) fn VerificationActions() -> Element {
                 onclick: check,
                 svg {
                     class: "refresh-icon",
+                    "aria-hidden": "true",
                     view_box: "0 0 24 24",
                     xmlns: "http://www.w3.org/2000/svg",
                     polyline { points: "23 4 23 10 17 10" }
                     polyline { points: "1 20 1 14 7 14" }
                     path { d: "M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.63 4.36A9 9 0 0 0 20.49 15" }
                 }
+                span { class: "sr-only", {account_screen::CHECK_VERIFICATION} }
             }
         }
     }
