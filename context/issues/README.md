@@ -78,7 +78,7 @@ Who checked, on which live build, what they saw.
 | [310](310-guide-screenshots-refresh.md) | zwipe.net guides use old screenshots | verified | scotland | #456 |
 | [311](311-guides-filter-chip-and-clear.md) | zwipe.net guides filter: plain label and a hand-rolled × | verified | thinker | #455 |
 | [312](312-three-guides-without-screenshots.md) | Three guides have no screenshots | verified | scotland | #461 |
-| [313](313-decks-list-price-chip.md) | Decks list shows no price per deck | fixing | scotland | #465 |
+| [313](313-decks-list-price-chip.md) | Decks list shows no price per deck | merged | scotland | #465 |
 
 ## Waiting for live verification
 
