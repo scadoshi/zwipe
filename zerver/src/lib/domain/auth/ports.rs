@@ -36,6 +36,7 @@ use crate::domain::auth::requests::register_user::{
 use crate::domain::auth::requests::request_password_reset::{
     RequestPasswordReset, RequestPasswordResetError,
 };
+use crate::domain::auth::requests::resend_email_change::ResendEmailChangeError;
 use crate::domain::auth::requests::reset_password::{ResetPassword, ResetPasswordError};
 use crate::domain::auth::requests::revoke_sessions::{RevokeSessions, RevokeSessionsError};
 use crate::domain::auth::requests::verify_email::{VerifyEmail, VerifyEmailError};
@@ -345,6 +346,18 @@ pub trait AuthService: Clone + Send + Sync + 'static {
         &self,
         request: &ConfirmEmailChange,
     ) -> impl Future<Output = Result<User, ConfirmEmailChangeError>> + Send;
+
+    /// Replaces `user`'s pending email change with a fresh link and expiry
+    /// for the same address, and mails the link when no other account has
+    /// the address, answering the same either way, as
+    /// [`Self::request_email_change`] does.
+    ///
+    /// Fails with [`ResendEmailChangeError::NoPendingChange`] when `user`
+    /// has no unexpired change waiting.
+    fn resend_email_change(
+        &self,
+        user: &User,
+    ) -> impl Future<Output = Result<(), ResendEmailChangeError>> + Send;
 
     // == delete ==
 

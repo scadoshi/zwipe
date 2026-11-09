@@ -17,6 +17,7 @@
 //! - [`refresh_session`]: Exchange refresh token for new access token
 //! - [`register_user`]: New user registration requests
 //! - [`request_password_reset`]: Password reset initiation
+//! - [`resend_email_change`]: A fresh link for a pending email change
 //! - [`reset_password`]: Password reset completion
 //! - [`revoke_sessions`]: Delete all user sessions (logout)
 //! - [`verify_email`]: Email verification
@@ -33,6 +34,7 @@ pub mod enforce_session_maximum;
 pub mod refresh_session;
 pub mod register_user;
 pub mod request_password_reset;
+pub mod resend_email_change;
 pub mod reset_password;
 pub mod revoke_sessions;
 pub mod verify_email;

@@ -13,7 +13,7 @@
 use zwipe_core::http::paths::{
     CHANGE_EMAIL_ROUTE, CHANGE_PASSWORD_ROUTE, CHANGE_USERNAME_ROUTE, CONFIRM_EMAIL_CHANGE_ROUTE,
     DECK_ROUTE, DELETE_USER_ROUTE, GET_USER_ROUTE, LEGACY_SETTINGS_ROUTE, LOGIN_ROUTE,
-    REFRESH_SESSION_ROUTE, RESEND_VERIFICATION_ROUTE, SETTINGS_ROUTE,
+    REFRESH_SESSION_ROUTE, RESEND_EMAIL_CHANGE_ROUTE, RESEND_VERIFICATION_ROUTE, SETTINGS_ROUTE,
 };
 mod common;
 
@@ -389,6 +389,110 @@ async fn resend_verification_leaves_a_pending_change_alone(pool: sqlx::PgPool) {
         .post(CONFIRM_EMAIL_CHANGE_ROUTE, json!({ "token": raw }), None)
         .await;
     assert_eq!(status, StatusCode::OK, "the change link still works");
+}
+
+#[sqlx::test]
+async fn resend_email_change_mails_a_fresh_link_that_replaces_the_old(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool);
+    let (token, _) = app.register("forgetful").await;
+
+    let before = app.emails.count();
+    let _ = request_change(&app, &token, "fresh@test.local").await;
+    app.emails.wait_for(before + 1).await;
+    let first = app.emails.last_token("confirm-email").unwrap();
+    let (_, me) = app.get(GET_USER_ROUTE, Some(&token)).await;
+    let first_expiry = me["pending_email_expires_at"].clone();
+
+    let (status, body) = app
+        .post(RESEND_EMAIL_CHANGE_ROUTE, json!({}), Some(&token))
+        .await;
+    assert_eq!(status, StatusCode::OK, "resend: {body}");
+    app.emails.wait_for(before + 2).await;
+    let second = app.emails.last_token("confirm-email").unwrap();
+    assert_ne!(first, second, "a new link");
+
+    let (_, me) = app.get(GET_USER_ROUTE, Some(&token)).await;
+    assert_eq!(
+        me["pending_email"], "fresh@test.local",
+        "the same address waits"
+    );
+    assert_ne!(
+        me["pending_email_expires_at"], first_expiry,
+        "with a new expiry"
+    );
+
+    let (status, _) = app
+        .post(CONFIRM_EMAIL_CHANGE_ROUTE, json!({ "token": first }), None)
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "the old link is dead"
+    );
+    let (status, _) = app
+        .post(CONFIRM_EMAIL_CHANGE_ROUTE, json!({ "token": second }), None)
+        .await;
+    assert_eq!(status, StatusCode::OK, "the new one confirms");
+    let (_, me) = app.get(GET_USER_ROUTE, Some(&token)).await;
+    assert_eq!(me["email"], "fresh@test.local");
+}
+
+#[sqlx::test]
+async fn resend_email_change_without_a_pending_change_is_not_found(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool);
+    let (token, uid) = app.register("settled").await;
+    app.verify_email(&uid).await;
+    let before = app.emails.count();
+
+    let (status, body) = app
+        .post(RESEND_EMAIL_CHANGE_ROUTE, json!({}), Some(&token))
+        .await;
+    assert_eq!(status, StatusCode::NOT_FOUND, "{body}");
+    settle().await;
+    assert_eq!(app.emails.count(), before, "nothing sent");
+}
+
+#[sqlx::test]
+async fn resend_email_change_to_a_taken_address_sends_nothing(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool);
+    let _ = app.register("keeper").await;
+    let (token, _) = app.register("hopeful").await;
+
+    let (status, _) = request_change(&app, &token, "keeper@test.local").await;
+    assert_eq!(status, StatusCode::OK);
+    settle().await;
+    let before = app.emails.count();
+
+    let (status, body) = app
+        .post(RESEND_EMAIL_CHANGE_ROUTE, json!({}), Some(&token))
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::OK,
+        "answers as for a free address: {body}"
+    );
+    settle().await;
+    assert_eq!(app.emails.count(), before, "no email to anyone");
+}
+
+#[sqlx::test]
+async fn resend_email_change_is_held_to_one_a_minute(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool);
+    let (token, _) = app.register("eager").await;
+    let _ = request_change(&app, &token, "eager-new@test.local").await;
+
+    let (status, _) = app
+        .post(RESEND_EMAIL_CHANGE_ROUTE, json!({}), Some(&token))
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    let (status, _) = app
+        .post(RESEND_EMAIL_CHANGE_ROUTE, json!({}), Some(&token))
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::TOO_MANY_REQUESTS,
+        "a second press waits"
+    );
 }
 
 #[sqlx::test]

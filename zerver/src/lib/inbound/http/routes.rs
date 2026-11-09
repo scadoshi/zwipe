@@ -528,6 +528,16 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
+    // The same for a pending email change's link, on its own budget so one
+    // resend does not hold up the other.
+    let resend_email_change_config = Arc::new(
+        GovernorConfigBuilder::default()
+            .period(Duration::from_secs(60))
+            .burst_size(1)
+            .key_extractor(UserIdKeyExtractor::new(jwt_secret.clone()))
+            .finish()
+            .expect("rate limit config: burst_size and period must be non-zero"),
+    );
     // 12 req/min: clients flush usage every ~30s; this gives ample headroom
     let metrics_usage_config = Arc::new(
         GovernorConfigBuilder::default()
@@ -561,6 +571,13 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
                             "/resend-verification",
                             post(auth::resend_verification).layer(
                                 GovernorLayer::new(resend_verification_config)
+                                    .error_handler(unauthorized_on_missing_key),
+                            ),
+                        )
+                        .route(
+                            "/resend-email-change",
+                            post(auth::resend_email_change).layer(
+                                GovernorLayer::new(resend_email_change_config)
                                     .error_handler(unauthorized_on_missing_key),
                             ),
                         ),
