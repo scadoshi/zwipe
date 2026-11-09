@@ -1,0 +1,72 @@
+<!doctype html>
+<!-- The App Store product page header: the app's grid-tiles backdrop as pure
+     texture, no text or logo. The tiles are drawn as orangui's grid-cells.js
+     draws its settled field (the same seed, shades, gap and corner radius), in
+     the theme the store screenshots use, but evenly across the image instead
+     of fading down a screen, with a soft vignette toward the edges.
+
+     Query: w and h (pixels), cols (tiles across), bg (the theme's
+     --bg-primary) and ink (its --text-primary), hex without the #. render.sh
+     opens it once per size and screenshots it. -->
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  html, body { margin: 0; padding: 0; overflow: hidden; }
+  canvas { display: block; }
+</style>
+</head>
+<body>
+<canvas id="field"></canvas>
+<script>
+(() => {
+  const q = new URLSearchParams(location.search);
+  const w = parseInt(q.get("w") || "5244", 10);
+  const h = parseInt(q.get("h") || "2950", 10);
+  const cols = parseFloat(q.get("cols") || "36");
+  const bg = "#" + (q.get("bg") || "282828");
+  const ink = "#" + (q.get("ink") || "ebdbb2");
+
+  const c = document.getElementById("field");
+  c.width = w; c.height = h;
+  const ctx = c.getContext("2d");
+
+  // --bg-sink: color-mix(in srgb, var(--bg-primary), #000 15%), as orangui's themes.css mixes it.
+  const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  const [r, g, b] = rgb(bg).map((v) => Math.round(v * 0.85));
+  ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+  ctx.fillRect(0, 0, w, h);
+
+  // orangui's grid-cells.js: a 28px cell holds a 26px tile with corners at
+  // 18% of its side; each tile takes one of five shades from a seeded LCG.
+  const cell = w / cols;
+  const side = cell * 26 / 28;
+  const radius = side * 0.18;
+  const shades = [0.015, 0.03, 0.05, 0.075, 0.1];
+  let seed = 0x9e3779b9;
+  const next = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed >>> 8; };
+  // Centered, so the crop Apple takes from the middle lands on whole tiles.
+  const across = Math.ceil(w / cell) + 1, down = Math.ceil(h / cell) + 1;
+  const x0 = (w - across * cell) / 2, y0 = (h - down * cell) / 2;
+  ctx.fillStyle = ink;
+  for (let row = 0; row < down; row++) {
+    for (let col = 0; col < across; col++) {
+      ctx.globalAlpha = shades[next() % 5];
+      ctx.beginPath();
+      ctx.roundRect(x0 + col * cell + (cell - side) / 2, y0 + row * cell + (cell - side) / 2, side, side, radius);
+      ctx.fill();
+    }
+  }
+  ctx.globalAlpha = 1;
+
+  // A soft vignette: clear in the middle, the corners a little darker.
+  const v = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.35, w / 2, h / 2, Math.hypot(w, h) / 2);
+  v.addColorStop(0, "rgba(0, 0, 0, 0)");
+  v.addColorStop(1, "rgba(0, 0, 0, 0.35)");
+  ctx.fillStyle = v;
+  ctx.fillRect(0, 0, w, h);
+  document.title = "ready";
+})();
+</script>
+</body>
+</html>
