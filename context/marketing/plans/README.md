@@ -33,6 +33,26 @@ Short vertical videos (TikTok, Reels, Shorts), one file per video. Each is built
 | 8 | [08_pick_your_commander.md](08_pick_your_commander.md) | Pick your commander | Epic, regal | Planned |
 | 9 | [09_import.md](09_import.md) | Import | Quick, mechanical | Planned |
 | 10 | [10_web_app.md](10_web_app.md) | The web app | Modern, confident | Planned |
+| 11 | (spec only) goblin-build | A Krenko goblin deck from nothing | Creepy (Goblin) | Spec written, paused |
+| 12 | (spec only) goblin-invasion | Import, the goblin way | Creepy (Goblin) | Spec written, paused |
+| 13 | (spec only) commander-maybeboard | Save commanders for later | Whimsical (Mouse Knight) | Spec written, paused |
+| 14 | (spec only) rules-keeper | The rules, none mandatory | Ceremonial (Rules Keeper) | Spec written, paused |
+| 15 | (spec only) card-deep-dive | Mini-series 1: one card dug into | Curious (Wizard) | Spec written, paused |
+| 16 | (spec only) teach-the-algorithm | Mini-series 2: the stack learns | Curious (Wizard) | Spec written, paused |
+| 17 | (spec only) synergy-explained | Mini-series 3: what Synergy weighs | Curious (Wizard) | Spec written, paused |
+| 18 | (spec only) remove-cards | Guide: Remove cards from a deck | Epic (Ogre) | Spec written |
+| 19 | (spec only) swipe-memory | Guide: Swipe memory | Creepy (Dark Sorcerer) | Spec written |
+| 20 | (spec only) filtering | Guide: Filter the card pool | Curious (Wizard) | Spec written |
+| 21 | (spec only) organize-and-browse | Guide: Group, filter, and browse your lists | Whimsical (Gnome) | Spec written |
+| 22 | (spec only) commander-swipe | Guide: Choose a commander and format | Epic (Ogre) | Spec written |
+| 23 | (spec only) budgeting | Guide: Set a budget with price targets | Ceremonial (Rules Keeper) | Spec written |
+| 24 | (spec only) land-targets | Guide: Set a land target | Ceremonial (Rules Keeper) | Spec written |
+| 25 | (spec only) deck-tags | Guide: Tag decks by archetype | Curious (Wizard) | Spec written |
+| 26 | (spec only) deck-mvps | Guide: Star your deck's MVPs | Heroic (Heroic Knight) | Spec written |
+| 27 | (spec only) share-your-deck | Guide: Share a deck with a link | Heroic (Heroic Knight) | Spec written |
+| 28 | (spec only) import-export | Guide: Import and export decklists | Creepy (Goblin) | Spec written |
+
+Rows 11-28 have no plan file yet: their spec and shot list live in `~/Developer/video-factory/videos/<slug>/` (spec.yaml, shots.md). Rows 18-28 come from zite's guides (the How-to pages), one video per guide that had none, each script built on its guide's text. Guides already covered: Getting started and Build a deck by swiping (01), Deck stats (02), Playstyle (03), the Oracle tags guides (04), Activity (05), Read a card at a glance (15), Synergy-ranked cards (17), Save commanders for later (13); Deck tags, card roles, and Oracle tags is covered by Oracle tags explained. Some overlap the plans above: 07 Share your deck with 26-27, 08 Pick your commander with 22, 09 Import with 12 and 28. Voices are Scotty's custom ElevenLabs voices (Mouse Knight, Gnome, Rules Keeper, Wizard, Goblin, Ogre, Dark Sorcerer, Heroic Knight and the rest); the mapping lives in video-factory's voices.yaml.
 
 ## Where the old plans went
 
