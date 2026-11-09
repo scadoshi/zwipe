@@ -14,6 +14,7 @@ on:
     paths:
       - "**/Cargo.toml"
       - "**/Cargo.lock"
+      - ".cargo/audit.toml"
       - ".github/workflows/audit.yml"
   workflow_dispatch:
 
@@ -30,4 +31,17 @@ jobs:
         with:
           tool: cargo-audit
       - name: Audit dependencies
+        # Reads .cargo/audit.toml, which ignores one advisory on a crate that
+        # is locked but never built; the next step keeps that true.
         run: cargo audit
+      - name: SQLite stays out of the build
+        # libsqlite3-sys is locked only as sqlx's unused optional SQLite
+        # driver (issue 320). If anything ever builds it, the advisory
+        # ignored in .cargo/audit.toml applies, so this fails.
+        run: |
+          cargo tree -i libsqlite3-sys --target all -e normal,build > sqlite-tree.txt 2> /dev/null || true
+          if [ -s sqlite-tree.txt ]; then
+            echo "libsqlite3-sys is now in the build graph:"
+            cat sqlite-tree.txt
+            exit 1
+          fi
