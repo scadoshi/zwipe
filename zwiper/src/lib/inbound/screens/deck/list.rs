@@ -209,12 +209,12 @@ fn DeckRow(profile: DeckProfile, onopen: EventHandler) -> Element {
                         alt: "",
                     }
                 }
-                // The name, then the chips wrapping under it, in one column beside the art.
+                // The name, then the chips flowing after it, in one column beside the art.
                 div { class: "deck-row-text",
                     h2 { class: "font-light text-base tracking-wide deck-list-name",
                         {profile.name.to_string()}
                     }
-                    // The pips, the count and the chips take the line under the name.
+                    // The pips, the count and the chips follow the name on its line.
                     div { class: "deck-row-chips",
                         if !pips.is_empty() {
                             span { class: "identity-pips",
