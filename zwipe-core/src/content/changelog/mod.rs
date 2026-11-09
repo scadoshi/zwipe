@@ -41,7 +41,10 @@ pub struct Release {
 pub const UPCOMING: &[Release] = &[Release {
     version: Version::new(1, 18, 15),
     date: None,
-    entries: &["Decks shows each deck's total price after its card count"],
+    entries: &[
+        "Decks shows each deck's total price after its card count",
+        "On iPhone the open menu no longer flickers when the theme changes",
+    ],
 }];
 
 /// Shipped releases, newest first.

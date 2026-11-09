@@ -96,15 +96,20 @@ body {
   header and main menu
  ==================== */
 
-/* The header sits over the top of the screen, just below the status bar
-   strip, and header_hide.js slides it up into that strip, fading its
-   contents into its background, as the content scrolls down. Its height is the kit's --app-nav-h, and the kit
-   opens each screen's scroll area with a spacer that tall. */
+/* The header sits over the top of the screen, its bar just below the status
+   bar strip, and header_hide.js slides the bar up into that strip, fading its
+   contents into its background, as the content scrolls down. The bar's height
+   is the kit's --app-nav-h, and the kit opens each screen's scroll area with
+   a spacer that tall. The box starts at the screen's top edge and pads the
+   status bar's inset in the strip's color: iOS WebKit draws a layer placed
+   by an inset offset one inset low on the frame a theme wipe captures. */
 .screen > .app-nav {
     position: absolute;
-    top: env(safe-area-inset-top, 0px);
+    top: 0;
     left: 0;
     right: 0;
+    padding-top: env(safe-area-inset-top, 0px);
+    background-color: var(--bg-primary);
     z-index: 101;
 }
 
