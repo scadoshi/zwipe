@@ -6,8 +6,11 @@
 //! save through the same path as Settings' Theme row (see
 //! [`theme_save`](crate::inbound::components::theme_save)), so none of them
 //! disagree: all draw the app-wide theme and all persist to the account's
-//! settings. The sheet mounts at the app root as [`MenuThemeSheet`], beside
-//! the router, and [`ThemeSheetOpen`] joins it to the palette. The header
+//! settings. The sheet mounts at the app root as
+//! [`MenuThemeSheet`](crate::inbound::components::navigation::menu_theme::MenuThemeSheet),
+//! beside the router, and
+//! [`ThemeSheetOpen`](crate::inbound::components::navigation::menu_theme::ThemeSheetOpen)
+//! joins it to the palette. The header
 //! holds no fixed layer of its own: on iOS a header holding one is drawn a
 //! status bar inset low on the frame a theme wipe captures.
 
