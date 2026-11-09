@@ -11,6 +11,7 @@ use zwiper::inbound::components::hint_host::HintHost;
 use zwiper::inbound::components::navigation::deck_opener::DeckOpener;
 use zwiper::inbound::components::navigation::leave_guard::GuardedHistory;
 use zwiper::inbound::components::navigation::menu::MenuOpen;
+use zwiper::inbound::components::navigation::menu_theme::{MenuThemeSheet, ThemeSheetOpen};
 use zwiper::inbound::components::update_required::UpdateRequired;
 use zwiper::inbound::router::Router;
 
@@ -169,6 +170,9 @@ fn App() -> Element {
     // The main menu's open state, above the router so it carries across
     // screens.
     use_context_provider(|| MenuOpen(Signal::new(false)));
+    // The menu's Themes sheet, raised from any screen's header and drawn
+    // beside the router.
+    use_context_provider(|| ThemeSheetOpen(Signal::new(false)));
     // Above the router too: the deck view's Back reads what Home or the deck
     // list recorded before it mounted.
     DeckOpener::use_provider();
@@ -214,6 +218,8 @@ fn App() -> Element {
                     Router::<Router> {}
                     // App-root receiver for on-demand "?" hints.
                     HintHost {}
+                    // The menu's Themes sheet, outside every header.
+                    MenuThemeSheet {}
                     // Every dialog draws here, beside the router, so its
                     // overlay escapes each screen's containing block.
                     DialogHostView {}

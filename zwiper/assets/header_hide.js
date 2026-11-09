@@ -22,7 +22,7 @@
             const nav = area.parentElement && area.parentElement.querySelector(":scope > .app-nav");
             if (!nav) return;
             // The menu or the theme sheet is open: leave the header where it is.
-            if (nav.querySelector(".nav-panel-open, .theme-picker-sheet .bottom-sheet.show")) return;
+            if (nav.querySelector(".nav-panel-open") || document.querySelector(".theme-picker-sheet .bottom-sheet.show")) return;
 
             const top = Math.max(0, area.scrollTop);
             const bottom = area.scrollHeight - area.clientHeight;

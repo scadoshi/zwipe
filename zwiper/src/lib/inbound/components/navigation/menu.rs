@@ -182,7 +182,7 @@ pub fn MenuFooter(open: Signal<bool>) -> Element {
                         icon: Section::About.icon(),
                     }
                 }
-                MenuTheme { open }
+                MenuTheme {}
             }
             if signed_in {
                 button {
