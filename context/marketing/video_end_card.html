@@ -6,7 +6,7 @@
      zwipe.net's OG image style (og_default.html, zite/public/assets/og-default.png):
      the sites' backdrop of shaded squares on a darkened --bg-sink, and on it one
      panel holding, top to bottom, the Zwipe wordmark, a rule across the panel,
-     the tagline, the rating, the chips (Free and No ads as value chips, iOS,
+     the tagline, the rating in a gold chip, the chips (Free and No ads as value chips, iOS,
      Android and Web as store pills) and zwipe.net. Nothing sits on the open grid.
      The block-glyph wordmark needs the app's self-hosted JetBrains Mono (the CDN
      fontsource subset drops U+2580-U+259F), so the font is loaded from
@@ -98,13 +98,16 @@ body {
   text-underline-offset: 8px;
 }
 
+/* The rating in a gold value chip, stars and score together, a size up from
+   the chips under it. */
 .rating {
   margin-top: 40px;
-  font-size: 40px;
-  font-weight: 700;
-  color: var(--palette-5);
 }
-.stars { letter-spacing: 6px; margin-right: 16px; }
+.rating.tag {
+  font-size: 36px;
+  padding: 12px 26px;
+}
+.stars { letter-spacing: 5px; margin-right: 14px; }
 
 /* The hero's chips: a value chip's --c is its text, tint and border; a store
    pill is plain text on the panel. */
@@ -181,7 +184,7 @@ body {
                                    ▎▎▉▉</pre>
     <hr class="rule" />
     <div class="tagline">The <span class="link">Magic: The Gathering</span> deck builder built for mobile and web</div>
-    <div class="rating"><span class="stars">★★★★★</span>4.8</div>
+    <div class="rating tag tag-value"><span class="stars">★★★★★</span>4.8</div>
     <div class="tags">
       <span class="tag tag-value">Free</span>
       <span class="tag tag-value">No ads</span>
