@@ -1,6 +1,6 @@
 # 314. The menu sheet flickers when switching light/dark mode
 
-State: reported | Owner: - | PR: - | Build seen: 1.18.14
+State: verified | Owner: and-droid | PR: #474, #475 | Build seen: 1.18.14
 
 ## Report
 Scotty, 2026-11-08, mobile app, signed in and signed out: open the hamburger menu sheet, tap the light/dark mode toggle. For a split second (a frame or two) the sheet disappears and the background shows through as the theme sweep starts, then it comes back. Happens both ways (light to dark and dark to light).
@@ -28,3 +28,6 @@ Ruled out:
 Stop placing the header with an inset offset, so there is nothing for the capture frame to apply twice. In `zwiper/assets/main.css`, `.screen > .app-nav` takes `top: 0` and `padding-top: env(safe-area-inset-top, 0px)` with the primary background, so the bar's box starts at the screen's top edge and its contents sit below the status bar as now. header_hide.js keeps working: it moves the bar by its own height, now including the inset, so `pushed` caps at the bar's height less the inset, keeping the strip covered. This is one CSS rule and a clamp in header_hide.js, checked on Scotty's phone in a release build: menu toggle both ways, a Themes sheet pick, and scroll-hide on a long screen.
 
 If the device still shows the frame, the fallback is in orangui's `WIPE_JS`: give `.app-nav` a `view-transition-name` so WebKit captures it as its own group from its live box. Last resort: skip the view transition where `CSS.supports("-webkit-touch-callout", "none")` (iOS WebKit), so iPhones get the instant swap and no sweep.
+
+## Verified
+Scotty, 2026-11-08: plan B (#475, Themes sheet mounted at the app root like Cairn) fixes it on his iPhone. Rides 1.18.15.
