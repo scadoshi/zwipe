@@ -1,6 +1,6 @@
 # 322. Deck list rows: the tags drop under the art instead of beside it
 
-State: fixing | Owner: thinker | PR: - | Build seen: 1.18.15
+State: fixing | Owner: thinker | PR: #486 | Build seen: 1.18.15
 
 ## Report
 Scotty, 2026-11-09. On Decks, in the app and on the web, a row's command zone art sits beside the deck name, but the tags (color pips, card count, price, format, bracket, the command zone's cards, deck tags) wrap onto lines under the art. That leaves empty space to the right of the art. The name and the tags should share one column beside the art: the name on the first line, the tags wrapping beneath it.
