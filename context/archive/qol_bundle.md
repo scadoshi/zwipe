@@ -2,7 +2,7 @@
 
 ## Goal
 
-Client-only (`zwiper`) quality-of-life fixes requested in the Reddit launch thread. Source list: `context/progress/feature_requests.md`.
+Client-only (`zwiper`) quality-of-life fixes requested in the Reddit launch thread. Source list: zwipe-context `ideas/feature_requests.md`.
 
 **Shipped already (removed from this plan):** B — always show the card name; C — per-field validation errors (red outline + message, via `TextInput`'s `error: Option<String>` prop; wired across register / change-email / change-password / forgot-password); E — browse-all-tags hint dialog (`DeckTag::description()` written, tag picker hint live).
 

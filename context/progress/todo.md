@@ -20,7 +20,7 @@ Only open, actionable items live here. When something ships, its outcome moves t
 
 - [ ] **Review the image-less text card (owner 2026-11-05).** The card-shaped text proxy drawn when a card has no art (`no-image-card` in `components/src/flippable_card_image.rs`, shipped in 1.7.1) predates the unified UI; look it over in the current look and decide what to change.
 
-- [ ] **Review the business card (owner 2026-11-05).** Look over `context/marketing/business_card.html` (last touched 2026-10-21) before the next reprint. Print notes are under Marketing & Discovery below.
+- [ ] **Review the business card (owner 2026-11-05).** Look over zwipe-context `marketing/business_card.html` (last touched 2026-10-21) before the next reprint. Print notes are in zwipe-context `marketing/todo.md`.
 
 
 - [x] ~~**Close the email enumeration oracle.**~~ DONE 2026-10-23: with the floor at 1.13.0, Phase 4 of [`../plans/archive/verify_first_registration.md`](../plans/archive/verify_first_registration.md) and [`../plans/archive/confirm_first_email_change.md`](../plans/archive/confirm_first_email_change.md) is on main. The old register and change-email paths and both flags are gone, and PR #32's 409s came in with it. Left: one live registration from the shipped app with a new address and one with a taken one.
@@ -31,7 +31,7 @@ Only open, actionable items live here. When something ships, its outcome moves t
 
 - [x] ~~**Sort direction wire plan, Phase 4.**~~ DONE 2026-10-23: `direction` is the only sort field on the wire, and a stray `ascending` is ignored. Checked in the live app; the plan is archived at [`../plans/archive/sort_direction_wire.md`](../plans/archive/sort_direction_wire.md).
 
-- [ ] **Refresh all the marketing content for the 1.12.0 look.** The backdrop is shaded squares now and the apps open on a splash, so every image and video still shows the grid lines. That covers zwipe's store screenshots (the current set is `context/operations/store-screenshots/2026-11-08/`) and the videos and art in `context/marketing/`, zite's images and copy on zwipe.net, and the zwipe and cairn shots and copy on the portfolio's project pages. Use the 17 Pro Max simulator on iOS 26.5. Cairn's current store screenshots are in cairn's `context/operations/store-screenshots/2026-11-08/`. This is the only open item from the 2026-10-19 session.
+- [ ] **Refresh all the marketing content for the 1.12.0 look.** The backdrop is shaded squares now and the apps open on a splash, so every image and video still shows the grid lines. That covers zwipe's store screenshots (the current set is `context/operations/store-screenshots/2026-11-08/`) and the videos and art in zwipe-context `marketing/`, zite's images and copy on zwipe.net, and the zwipe and cairn shots and copy on the portfolio's project pages. Use the 17 Pro Max simulator on iOS 26.5. Cairn's current store screenshots are in cairn's `context/operations/store-screenshots/2026-11-08/`. This is the only open item from the 2026-10-19 session.
 
 - [ ] **Consider dropping near-universal cards from Staples.** 2026-10-27: Staples leaves out basic lands only, so Sol Ring, Arcane Signet and Command Tower lead most lists. Maybe a commonness cutoff across all decks, maybe a preference the user turns on. Undecided; talk it through before building.
 
@@ -164,21 +164,9 @@ Once wasm compiles, build the authenticated experience into zite:
 
 ---
 
-## Marketing & Discovery
+## Marketing and monetization
 
-- [ ] **Discord testimonials, parked pending permission asks (owner call 2026-08-10).** The site's review panel now carries "Shipped in x.y.z" receipt tags; two Discord quotes would strengthen it if their authors consent (ask in-channel first, since Discord isn't published the way App Store reviews are): Ebany's 500-card verification ("no discernable performance change... handles 500 cards quite well" → Shipped in 1.7.0, request-to-ship same day) and hopeful_boy's beginner angle ("I've loved the app so far as a beginner deck builder", no tag). Mark provenance ("From the Discord") if added. Future: the companion-slot thread becomes a tagged Caed quote the day companions ship.
-- [ ] **Marketing posts, keep the cadence going.**
-  - **Wave 1, 2026-06-25 (Day 333):** build-in-public text posts to X, Reddit, Bluesky (1.1.0 features).
-  - **Wave 2, 2026-06-28 (Day 336): the swipe-demo video.** A vertical 9:16 screen-recording (Tinder-for-Magic hook: swipe a commander → build by swiping → filter → import → finished deck), captions + an end card built from `context/marketing/video_end_card.html`. Posted natively to **Instagram** (new `@scadoshi`), **YouTube Shorts**, **X**, **Bluesky**, and **Reddit r/EDH** (video + pinned dev comment, feedback-framed). **TikTok pending**: the old 8-yr personal account was compromised (password breach; rogue sessions cleared, no third-party apps, recovering via phone+email, needs new pw + 2FA before use); lean toward a fresh branded handle. Post-copy templates were drafted then deleted (kept out of the repo).
-  - r/EDH and r/magicTCG *posts* are karma/age-gated (comment first, build toward posting); reuse the r/EDH title + pinned comment for r/custommagic, r/SideProject, r/buildinpublic.
-- **Business cards, reference for reprints** (task done; card at `context/marketing/business_card.html`, `4d2c6606`). Standard playing-card stock is **2.5×3.5in (63×88mm)**. For a true card feel use a card printer (MakePlayingCards/MPC, PrinterStudio, Ad Magic, or a local shop with 300–350gsm + matte/linen): order a custom card / "custom card game" SKU. Export: open the HTML, print to PDF at 100% (no scaling), "background graphics" ON; add 1/8in bleed if the printer wants it. QR holds down to ~0.8in (current is well above).
-
----
-
-## Monetization
-
-- [ ] **TCGplayer affiliate**: status and next steps live in [`../product/affiliate/tcgplayer.md`](../product/affiliate/tcgplayer.md); check there rather than here. When approved: wire the tracking ID into `tcgplayer_url()` (`zwiper/.../outbound/buy_links.rs`), a zero UI change, then add per-card **"Buy ↗"** links (currently buy is whole-deck only).
-- [ ] **Card Kingdom affiliate**: **no public self-serve program**; it's a direct-outreach partnership. Email CK when ready (cite the Archidekt `?partner=` precedent). `cardkingdom_url()` stays untracked until then.
+These live in the private zwipe-context repo: `marketing/todo.md` (posts, testimonials, business card reprints) and `business/todo.md` (affiliate programs).
 
 ---
 
