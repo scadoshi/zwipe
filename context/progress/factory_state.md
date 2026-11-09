@@ -142,3 +142,10 @@ Stores, 2026-11-08 evening: Zwipe iOS 1.18.14 (114) resubmitted with the new scr
 - **Meld support:** show a meld card's melded result the way a double-sided card flips. Planned after usage resets, Wednesday 2026-11-11.
 - **ManaBox integration:** build this week (plan: context/plans/collection.md, all 8 questions answered).
 - **Videos:** make marketing videos for both once they ship (video factory on laptop, slate in zwipe-context marketing/plans/).
+
+## End of night 2026-11-08
+- Six marketing videos approved and saved (zwipe-context video-factory/finals + iCloud): swipe-to-build, deck-stats, playstyle, oracle-tags, oracle-tags-explained, activity. goblin-build parked (voice, choppiness). 18 more specs ready.
+- Stores: Zwipe iOS/Android 1.18.14 and Cairn 1.4.0 in review; Cairn 1.4.1 delivered, submit when 1.4.0 clears.
+- 1.18.15 upcoming on release: 313 price chip, 314 menu flicker fix (verified on phone).
+- Private context moved to github.com/scadoshi/zwipe-context.
+- Next: ManaBox this week; meld after 2026-11-11.
