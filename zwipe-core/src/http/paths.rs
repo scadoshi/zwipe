@@ -41,6 +41,8 @@ pub const CHECK_RESET_TOKEN_ROUTE: &str = "/api/auth/reset-password/check";
 pub const RESEND_VERIFICATION_ROUTE: &str = "/api/auth/resend-verification";
 /// Mails a fresh link for the signed-in user's pending email change.
 pub const RESEND_EMAIL_CHANGE_ROUTE: &str = "/api/auth/resend-email-change";
+/// Drops the signed-in user's pending email change, killing its link.
+pub const CANCEL_EMAIL_CHANGE_ROUTE: &str = "/api/auth/cancel-email-change";
 
 // == user ==
 
@@ -277,6 +279,7 @@ pub const FIXED_ROUTES: &[(Method, &str, bool)] = &[
     (Method::Post, REGISTER_ROUTE, false),
     (Method::Post, RESEND_VERIFICATION_ROUTE, true),
     (Method::Post, RESEND_EMAIL_CHANGE_ROUTE, true),
+    (Method::Post, CANCEL_EMAIL_CHANGE_ROUTE, true),
     (Method::Post, RESET_PASSWORD_ROUTE, false),
     (Method::Post, CHECK_RESET_TOKEN_ROUTE, false),
     (Method::Post, SEARCH_CARDS_ROUTE, true),

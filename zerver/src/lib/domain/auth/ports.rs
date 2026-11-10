@@ -16,6 +16,7 @@ use zwipe_core::domain::user::username::Username;
 use crate::domain::auth::models::UserWithPasswordHash;
 use crate::domain::auth::models::access_token::JwtSecret;
 use crate::domain::auth::requests::authenticate_user::{AuthenticateUser, AuthenticateUserError};
+use crate::domain::auth::requests::cancel_email_change::CancelEmailChangeError;
 use crate::domain::auth::requests::change_email::{ChangeEmail, ChangeEmailError};
 use crate::domain::auth::requests::change_password::{ChangePassword, ChangePasswordError};
 use crate::domain::auth::requests::change_username::{ChangeUsername, ChangeUsernameError};
@@ -134,6 +135,15 @@ pub trait AuthRepository: Clone + Send + Sync + 'static {
         &self,
         token_hash: &str,
     ) -> impl Future<Output = Result<ConfirmedEmailChange, ConfirmEmailChangeError>> + Send;
+
+    /// Deletes `user_id`'s pending email change, expired or not.
+    ///
+    /// Fails with [`CancelEmailChangeError::NoPendingChange`] when no
+    /// unexpired change was waiting.
+    fn delete_email_change_request(
+        &self,
+        user_id: Uuid,
+    ) -> impl Future<Output = Result<(), CancelEmailChangeError>> + Send;
 
     // == delete ==
 
@@ -358,6 +368,16 @@ pub trait AuthService: Clone + Send + Sync + 'static {
         &self,
         user: &User,
     ) -> impl Future<Output = Result<(), ResendEmailChangeError>> + Send;
+
+    /// Drops `user_id`'s pending email change, so its link no longer
+    /// confirms and the account keeps its address.
+    ///
+    /// Fails with [`CancelEmailChangeError::NoPendingChange`] when no
+    /// unexpired change is waiting.
+    fn cancel_email_change(
+        &self,
+        user_id: Uuid,
+    ) -> impl Future<Output = Result<(), CancelEmailChangeError>> + Send;
 
     // == delete ==
 

@@ -48,6 +48,9 @@ Who checked, on which live build, what they saw.
 | [313](313-decks-list-price-chip.md) | Decks list shows no price per deck | merged | scotland | #465 |
 | [315](315-add-pile-flashes-stale-card.md) | Add's pile flashes a stale card after applying a filter | merged | thinker | #501 |
 | [323](323-overview-lockout-columns.md) | overview.sql section 16 reads lockout columns that no longer exist | merged | thinker | #490 |
+| [325](325-drawer-bottom-border-clipped.md) | The card details drawer's bottom border vanishes at 100% zoom | fixing | scotland | #505 |
+| [326](326-printings-blank-tiles.md) | Printings shows blank cards until their images load | fixing | thinker | - |
+| [327](327-cancel-pending-email-change.md) | A pending email change can't be cancelled | fixing | scotland | #507 |
 | [328](328-generic-pip-ring.md) | Pip rings split on expanded and hovered card rows | fixing | thinker | - |
 
 ## Waiting for live verification
