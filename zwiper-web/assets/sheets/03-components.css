@@ -1576,6 +1576,128 @@ a.nav-dropdown-item.active:visited {
     border-color: color-mix(in srgb, var(--color-warning) 35%, transparent);
 }
 
+/* ---- ReleaseCard (orangui::ReleaseCard) ---- */
+
+/* One release: a boxed card whose header runs edge to edge over a full-width
+   rule, the notes under it. The card eases in on mount; backwards, not both,
+   so the hover lift still moves it. */
+.release-card {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    overflow: hidden;
+    width: 100%;
+    box-sizing: border-box;
+    box-shadow: var(--shadow-sm);
+    animation: release-card-in 0.35s ease-out backwards;
+    scroll-margin-top: var(--release-card-scroll-margin, calc(var(--nav-height, 0px) + 1rem));
+}
+
+@keyframes release-card-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Caret, version and date at the left; the tag at the right end. */
+.release-card-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-secondary);
+}
+
+.release-card-head .collapse-caret {
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-left: -0.25rem;
+}
+
+.release-card-version {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: var(--ink-accent-primary, var(--accent-primary));
+    font-weight: 700;
+    margin: 0;
+}
+
+.release-card-link {
+    color: inherit;
+    text-decoration: none;
+}
+
+.release-card-date {
+    color: var(--ink-text-muted, var(--text-muted));
+    font-size: 0.8rem;
+}
+
+.release-card-tag {
+    margin-left: auto;
+}
+
+.release-card-notes {
+    list-style: none;
+    margin: 0;
+    padding: 0.75rem 1rem;
+    text-align: left;
+}
+
+.release-card-notes li {
+    font-size: 0.8rem;
+    color: var(--text-subtle);
+    line-height: 1.7;
+    padding-left: 1rem;
+    position: relative;
+    margin-bottom: 0.35rem;
+}
+
+.release-card-notes li:last-child {
+    margin-bottom: 0;
+}
+
+.release-card-notes li::before {
+    content: "\203A";
+    position: absolute;
+    left: 0;
+    color: var(--ink-accent-primary, var(--accent-primary));
+}
+
+@media (hover: hover) {
+    .release-card {
+        transition:
+            border-color 0.4s ease,
+            transform 0.4s ease,
+            box-shadow 0.4s ease;
+    }
+
+    .release-card:hover {
+        border-color: var(--accent-primary);
+        transform: translateY(-3px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .release-card-link:hover {
+        text-decoration: underline;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .release-card {
+        animation: none;
+    }
+
+    .release-card:hover {
+        transform: none;
+    }
+}
+
 /* ---- Panel (orangui::Panel) ---- */
 
 /* The canonical card shape: header <hr> body <hr> actions. Self-contained so it
@@ -1738,7 +1860,9 @@ a.nav-dropdown-item.active:visited {
 
 /* ---- Collapse (orangui::CollapseHeader, CollapseCaret, CollapseBody, CollapseAll) ---- */
 
-/* A header row that toggles from anywhere on it. */
+/* A header row that toggles from anywhere on it. With
+   `collapse-header-quiet` it keeps its background on hover: for a header
+   that is a card's own head, where the card answers the mouse instead. */
 .collapse-header {
     cursor: pointer;
 }
@@ -2549,21 +2673,22 @@ html[data-wipe="left"]::view-transition-new(root) {
     }
 
     .pref-row:not(:disabled):hover,
-    .collapse-header:hover,
+    .collapse-header:not(.collapse-header-quiet):hover,
     .theme-picker-sheet .nav-dropdown-item:hover {
         background-color: var(--border-primary);
         color: var(--text-primary);
     }
 
-    /* An inline text link: the accent and a firmer underline. In :where(),
-       so a site's own link rule wins over it. */
-    :where(a:not([class])):hover {
+    /* An inline text link: the accent and a firmer underline. At (0,2,0) it
+       outranks a site's resting link rule such as `.tagline a` (0,1,1) and
+       loses to a site's own hover rule such as `.note a:hover` (0,2,1). */
+    :where(a):not([class]):hover {
         color: var(--ink-accent-primary, var(--accent-primary));
         text-decoration-thickness: 2px;
     }
 }
 
-:where(a:not([class])):focus-visible {
+:where(a):not([class]):focus-visible {
     color: var(--ink-accent-primary, var(--accent-primary));
     text-decoration-thickness: 2px;
 }

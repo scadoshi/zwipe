@@ -207,13 +207,13 @@ fn ChangelogSkeletonPanels() -> Element {
     rsx! {
         div { class: "changelog-panels",
             for (c , bullets) in SKELETON_BULLETS.into_iter().enumerate() {
-                div { key: "{c}", class: "settings-list changelog-panel",
-                    div { class: "settings-list-header changelog-version-row",
-                        h2 { class: "changelog-version", GhostText { chars: 6 } }
-                        span { class: "changelog-date", GhostText { chars: 11 } }
-                        span { class: "status-tag web-ghost-chip", GhostText { chars: 6 } }
+                div { key: "{c}", class: "release-card",
+                    div { class: "release-card-head",
+                        h2 { class: "release-card-version", GhostText { chars: 6 } }
+                        span { class: "release-card-date", GhostText { chars: 11 } }
+                        span { class: "status-tag web-ghost-chip release-card-tag", GhostText { chars: 6 } }
                     }
-                    ul { class: "changelog-bullets changelog-panel-body",
+                    ul { class: "release-card-notes",
                         for chars in SKELETON_BULLET_CHARS.into_iter().take(bullets) {
                             li { key: "{chars}", GhostWords { chars } }
                         }

@@ -492,7 +492,7 @@ body {
             box-shadow 0.4s ease;
     }
 
-    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold):is(.content-enter, .content-enter-delayed, .row-enter, .changelog-panel) {
+    .web-main :is(.panel-card, .home-flavor, .web-form-panel, .web-section, .settings-list, .deck-fold):is(.content-enter, .content-enter-delayed, .row-enter) {
         animation-fill-mode: backwards;
     }
 

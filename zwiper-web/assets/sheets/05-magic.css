@@ -1422,15 +1422,6 @@ i.ms.ms-cost.ms-gp {
     font-family: inherit;
 }
 
-.changelog-anchor {
-    color: inherit;
-    text-decoration: none;
-}
-
-.changelog-anchor:hover {
-    text-decoration: underline;
-}
-
 .changelog-list {
     display: flex;
     flex-direction: column;
@@ -1443,92 +1434,10 @@ i.ms.ms-cost.ms-gp {
     font-family: inherit;
 }
 
-.changelog-card {
-    background-color: var(--bg-primary);
-    border: 1px solid var(--border-secondary);
-    border-radius: 1rem;
-    padding: 1.5rem;
-    box-shadow: var(--shadow-sm);
-    animation: changelog-card-in 0.35s ease-out both;
-    /* An anchored card lands below zite's sticky nav. */
-    scroll-margin-top: calc(var(--nav-height, 0px) + 1rem);
-}
-
-/* Ease each release card in on mount and when a filter change remounts the
-   visible set. */
-@keyframes changelog-card-in {
-    from {
-        opacity: 0;
-        transform: translateY(8px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.changelog-version-row {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-}
-
-/* The caret leads the version, sized to the heading. */
-.changelog-version-row .collapse-caret {
-    width: 1.25rem;
-    height: 1.25rem;
-    margin-left: -0.25rem;
-}
-
-/* The space under a card's version row is the notes' own, so a shut card
-   closes up to its header. */
-.changelog-card .changelog-bullets {
-    padding-top: 0.75rem;
-}
-
-.changelog-version {
-    font-size: 1.1rem;
-    color: var(--ink-accent-primary, var(--accent-primary));
-    font-weight: 700;
-    margin: 0;
-}
-
-.changelog-date {
-    color: var(--ink-text-muted, var(--text-muted));
-    font-size: 0.8rem;
-}
-
-.changelog-bullets {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.changelog-bullets li {
-    font-size: 0.8rem;
-    color: var(--text-subtle);
-    line-height: 1.7;
-    padding-left: 1rem;
-    position: relative;
-    margin-bottom: 0.35rem;
-}
-
-.changelog-bullets li:last-child {
-    margin-bottom: 0;
-}
-
-.changelog-bullets li::before {
-    content: "\203A";
-    position: absolute;
-    left: 0;
-    color: var(--ink-accent-primary, var(--accent-primary));
-}
-
 /* The panels look (ChangelogLook::App): the chip rows are a settings-row of
-   the Changelog panel the caller wraps them in, and each release is a
-   settings-list panel of its own under it, the version row as its header and
-   the bullets as its body. Compound selectors, since the kit's .settings-row
-   and .settings-list-header load after this sheet. */
+   the Changelog panel the caller wraps them in, and the release cards stack
+   under it. A compound selector, since the kit's .settings-row loads after
+   this sheet. */
 .settings-row.changelog-filters-row {
     flex-direction: column;
     align-items: stretch;
@@ -1547,26 +1456,6 @@ i.ms.ms-cost.ms-gp {
     flex-direction: column;
     gap: var(--panel-gap);
     margin-top: var(--panel-gap);
-}
-
-.changelog-panel {
-    animation: changelog-card-in 0.35s ease-out both;
-}
-
-/* The version and date sit together at the left; the Upcoming or Latest tag
-   goes to the right end, where a panel header keeps its trailing piece. */
-.settings-list-header.changelog-version-row {
-    justify-content: flex-start;
-    margin-bottom: 0;
-}
-
-.changelog-panel .status-tag {
-    margin-left: auto;
-}
-
-.changelog-panel-body {
-    padding: 0.75rem 1rem;
-    text-align: left;
 }
 
 

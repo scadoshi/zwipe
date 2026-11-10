@@ -35,8 +35,9 @@
 //! The chips and the releases are two components, [`ChangelogFilters`] and
 //! [`ChangelogReleases`], sharing a `Signal<Filter>` the caller owns, so the
 //! chips can sit in the caller's titled panel while the releases stack under
-//! it on their own. Two looks share the one rendering path, [`ChangelogLook`]:
-//! zite's floating cards and the app's panels. A click anywhere on a
+//! it on their own. Every release is orangui's `ReleaseCard`, the card the
+//! portfolio's changelog draws too; the two [`ChangelogLook`]s differ only in
+//! where the chips sit. A click anywhere on a
 //! version's header shuts its notes, and [`ChangelogCollapseAll`], which the
 //! caller puts at the right end of its Changelog title, shuts or opens them
 //! all; the caller owns the [`CollapseSet`] the two share.
@@ -44,7 +45,7 @@
 use std::ptr;
 
 use dioxus::prelude::*;
-use orangui::{CollapseAll, CollapseBody, CollapseHeader, CollapseSet};
+use orangui::{BannerStatus, CollapseAll, CollapseSet, ReleaseCard, ReleaseTag};
 use zwipe_core::http::contracts::changelog::HttpChangelog;
 pub use zwipe_ui::changelog::Filter;
 use zwipe_ui::changelog::{Listed, Tag, listed, minors, months, visible, years};
@@ -130,6 +131,19 @@ pub(crate) fn anchor_id(version: &str) -> String {
     format!("v{}", version.replace('.', "-"))
 }
 
+/// The card pill for `tag`: amber while upcoming, green once it shipped.
+fn release_tag(tag: Tag) -> ReleaseTag {
+    let status = if tag == Tag::Upcoming {
+        BannerStatus::Doing
+    } else {
+        BannerStatus::Done
+    };
+    ReleaseTag {
+        status,
+        label: tag.label().to_owned(),
+    }
+}
+
 /// The selection down to the minor of the release `fragment` names, in that
 /// release's month. Takes the fragment with or without its `#`. `None` when
 /// no release has that anchor.
@@ -144,13 +158,12 @@ fn anchor_selection(fragment: &str, listed: &[Listed<'_>]) -> Option<Filter> {
 /// Which chrome the changelog's two halves take.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum ChangelogLook {
-    /// zite's: the chip rows sit in the page's own hero panel and each
-    /// release is a floating card.
+    /// zite's: the chip rows sit in the page's own hero panel and the
+    /// releases stack under it.
     #[default]
     Site,
     /// The app's: the chip rows are a `settings-row` of the Changelog panel
-    /// the caller wraps them in, and each release is a `settings-list` panel
-    /// of its own, the version row as its header.
+    /// the caller wraps them in, and the releases stack under it.
     App,
 }
 
@@ -271,62 +284,24 @@ pub fn ChangelogReleases(
     // Included in each card's key so switching filters remounts the visible
     // cards, replaying their ease-in animation.
     let filter_key = format!("{current:?}");
-    let (list_class, release_class, header_class, body_class) = match look {
-        ChangelogLook::Site => (
-            "changelog-list",
-            "changelog-card",
-            "changelog-version-row",
-            "changelog-bullets",
-        ),
-        ChangelogLook::App => (
-            "changelog-panels",
-            "settings-list changelog-panel",
-            "settings-list-header changelog-version-row",
-            "changelog-bullets changelog-panel-body",
-        ),
+    let list_class = match look {
+        ChangelogLook::Site => "changelog-list",
+        ChangelogLook::App => "changelog-panels",
     };
 
     rsx! {
         div { class: list_class,
             for (item , release) in listed.iter().map(|item| (item, item.release)) {
                 if show(item) {
-                    div {
+                    ReleaseCard {
                         key: "{filter_key}-{release.version}",
+                        set: collapse,
+                        version: release.version.clone(),
+                        date: (!release.date.is_empty()).then(|| release.date.clone()),
+                        tag: item.tag.map(release_tag),
+                        entries: release.entries.clone(),
                         id: anchor_id(&release.version),
-                        class: release_class,
-                        CollapseHeader {
-                            set: collapse,
-                            section: release.version.clone(),
-                            label: release.version.clone(),
-                            class: header_class,
-                            h2 { class: "changelog-version",
-                                if link_versions {
-                                    a {
-                                        class: "changelog-anchor",
-                                        href: "#{anchor_id(&release.version)}",
-                                        // Following the link leaves the card as it is.
-                                        onclick: |event: MouseEvent| event.stop_propagation(),
-                                        "{release.version}"
-                                    }
-                                } else {
-                                    "{release.version}"
-                                }
-                            }
-                            span { class: "changelog-date", "{release.date}" }
-                            if let Some(tag) = item.tag {
-                                span {
-                                    class: if tag == Tag::Upcoming { "status-tag status-doing" } else { "status-tag status-done" },
-                                    "{tag.label()}"
-                                }
-                            }
-                        }
-                        CollapseBody { set: collapse, section: release.version.clone(),
-                            ul { class: body_class,
-                                for entry in release.entries.iter() {
-                                    li { "{entry}" }
-                                }
-                            }
-                        }
+                        href: link_versions.then(|| format!("#{}", anchor_id(&release.version))),
                     }
                 }
             }
