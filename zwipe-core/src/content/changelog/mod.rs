@@ -64,6 +64,7 @@ pub const RELEASES: &[Release] = &[
             "Account's Pending row has Cancel, which drops a pending email change",
             "Expanded and hovered card rows keep their mana pips' outlines sharp",
             "On the web every button, link, field and row answers the mouse, disabled ones aside",
+            "A failed request always says something went wrong instead of showing an empty error",
             "Distributions, Mana and Draw odds leave room above and below their charts",
         ],
     },
