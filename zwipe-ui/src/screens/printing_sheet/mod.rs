@@ -26,6 +26,9 @@ pub const BACK: &str = "Back";
 /// The button that hands the showing printing to the host.
 pub const SAVE: &str = "Save";
 
+/// The body when the fetch failed, beside its Retry.
+pub const LOAD_FAILED: &str = "Couldn't load printings";
+
 /// Whether the sheet can hand a printing back.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Mode {
@@ -41,8 +44,11 @@ pub enum Mode {
 pub enum Status {
     /// The fetch is out: the skeleton.
     Loading,
-    /// Nothing to show: not opened yet, the card has no oracle id, or the first fetch failed.
+    /// Nothing to show: not opened yet, or the card has no oracle id.
     Empty,
+    /// The fetch failed or timed out: [`LOAD_FAILED`] with a Retry, which
+    /// sends [`Action::Retry`].
+    Failed,
     /// One printing: its image and info, no carousel.
     Single,
     /// Several printings: the carousel, its dots and the showing printing's info.
@@ -71,6 +77,8 @@ pub enum Action {
         /// The ticket from the [`Effect::FetchPrintings`] this answers.
         ticket: Ticket,
     },
+    /// Retry, under a failed fetch: sends it again.
+    Retry,
     /// The Back button, with printing `at` showing.
     Back {
         /// The index of the showing printing.
@@ -120,6 +128,9 @@ pub struct State {
     cached_for: Option<Uuid>,
     /// The oracle id and printing the newest fetch went out for.
     pending: Option<(Uuid, Uuid)>,
+    /// The oracle id and printing of a fetch that failed, which Retry sends
+    /// again.
+    failed: Option<(Uuid, Uuid)>,
     loading: bool,
     initial: usize,
     generation: Generation,
@@ -141,6 +152,7 @@ impl State {
             printings: Vec::new(),
             cached_for: None,
             pending: None,
+            failed: None,
             loading: false,
             initial: 0,
             generation: Generation::default(),
@@ -161,10 +173,14 @@ impl State {
             Action::Failed { ticket } => {
                 if self.generation.is_current(ticket) {
                     self.loading = false;
-                    self.pending = None;
+                    self.failed = self.pending.take();
                 }
                 Vec::new()
             }
+            Action::Retry => match self.failed.take() {
+                Some((oracle_id, printing_id)) => self.fetch(oracle_id, printing_id),
+                None => Vec::new(),
+            },
             Action::Back { at } => self.leave(at, ToastKind::Info),
             Action::Dismiss { at } => self.leave(at, ToastKind::Warning),
             Action::Save { at } => {
@@ -191,7 +207,13 @@ impl State {
             self.initial = position(&self.printings, printing_id);
             return vec![Effect::Rewind(self.initial)];
         }
+        self.fetch(oracle_id, printing_id)
+    }
+
+    /// Sends the fetch for `oracle_id`, to open on `printing_id`.
+    fn fetch(&mut self, oracle_id: Uuid, printing_id: Uuid) -> Vec<Effect> {
         self.loading = true;
+        self.failed = None;
         self.pending = Some((oracle_id, printing_id));
         vec![Effect::FetchPrintings {
             ticket: self.generation.next_ticket(),
@@ -228,6 +250,9 @@ impl State {
     pub fn status(&self) -> Status {
         if self.loading {
             return Status::Loading;
+        }
+        if self.failed.is_some() {
+            return Status::Failed;
         }
         match self.printings.len() {
             0 => Status::Empty,

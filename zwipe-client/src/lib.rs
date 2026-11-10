@@ -116,4 +116,37 @@ mod tests {
         assert!(accept.contains("gzip"), "request {request:?}");
         assert!(accept.contains("br"), "request {request:?}");
     }
+
+    #[tokio::test]
+    async fn a_call_within_a_timeout_gives_up_on_a_server_that_never_answers() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        // Accepts, reads the request, and never answers: a dead mobile link.
+        let _server = tokio::spawn(async move {
+            let (mut socket, _) = listener.accept().await.unwrap();
+            let mut buf = vec![0_u8; 4096];
+            let _ = socket.read(&mut buf).await;
+            tokio::time::sleep(Duration::from_secs(60)).await;
+        });
+        let client = ZwipeClient::new(Url::parse(&format!("http://{addr}")).unwrap());
+
+        let started = std::time::Instant::now();
+        let result = client
+            .call_within(
+                zwipe_core::http::endpoints::card::GetPrintings(uuid::Uuid::nil()),
+                None,
+                Duration::from_millis(300),
+            )
+            .await;
+
+        assert!(
+            matches!(result, Err(ClientError::Network(_))),
+            "a timed-out call is a network error: {result:?}"
+        );
+        assert!(
+            started.elapsed() < Duration::from_secs(5),
+            "gave up after {:?}",
+            started.elapsed()
+        );
+    }
 }
