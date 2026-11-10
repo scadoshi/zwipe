@@ -160,3 +160,16 @@ Stores, 2026-11-08 evening: Zwipe iOS 1.18.14 (114) resubmitted with the new scr
 - scotland: 316/317/318. orangui#29 merged (drawer floor var). zwipe #477 (server resend-email-change route) in CI: merge on green, then it needs a deploy (push release to main, ask Scotty for the go) BEFORE scotland's UI PR (316 floor, 317 tag, 318 Refresh+Resend, changelog 1.18.15) merges.
 - Videos: finals in zwipe-context video-factory/finals/<slug>/ (mp4 + post.md), iCloud mirrored. Scotty posting to YouTube Shorts; channel needs verification for clickable links.
 - Open with Scotty: push halo zwipe scadoshi-rust (26 local commits)? 
+
+## Composer handoff, 2026-11-09 evening (composer moving from laptop to scotland)
+
+Generic factory docs are being written in scotland-server (`context/factory/`); this section is zwipe's current state only.
+
+- Release = main at 679ef59ae plus docs. Web is 1.18.16 (cut #488). Floor 1.18.1.
+- Wire: pip names. Server accepts theme/natural in requests again (#494, issue 324 verified). Phase 2 is the 1.18.16 STORE build (first that writes classic/themed). Phase 3: floor to 1.18.16 once live in both stores. Phase 4: drop the request alias only then. Settings rename is done (#493); the app keeps a read fallback for stored sessions under `preferences` until 30 days after the floor reached 1.18.0.
+- Stores: Zwipe 1.18.15 (iOS 115, Android vc77) and Cairn 1.4.1 in review. Next Zwipe store build is 1.18.16 from release (halo), after 1.18.15 clears. Cairn 1.4.2 (Farquharson Meditations 8.36 quote) is undated on cairn main, rides the next Cairn cut.
+- Versioning: a version is cut when web ships it; stores take the latest cut later.
+- Videos: six finals scheduled on YouTube, TikTok, Instagram through Nov 20 (zwipe-context video-factory/finals/README.md). Batch 2026-11 (8 videos, doc approved: video-factory/batch-2026-11.md): Droid recording, laptop rendering; every final goes to Scotty before approval, then finals/<slug>/ + iCloud. New voices saved: Goblin r4TgR3IribRyPfJEA8TT, Starfleet Commander Qb5nz8nFZSXgHQQNmehP, Demon iAa729MjNE9cLScZ2mhS, Angel e6MTnMjBcwQoxLUPzRx7; artificer uses premade Daniel. Account at 10/10 custom voices.
+- Soapbox: Scotty talks to it directly now; composer stays out.
+- Usage (2026-11-10 00:18 UTC): 1,026 users, WAU 31, MAU 70, 12 signups in 7 days; zerver runs reports via `ssh -t zerver ./zwipe-usage.sh` (needs Scotty's sudo).
+- Workers idle except droid (recording) and laptop (rendering).
