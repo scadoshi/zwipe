@@ -62,6 +62,7 @@ pub const RELEASES: &[Release] = &[
             "Printings shows each card's outline while its image loads",
             "Card details' border shows on every edge and reads on dark themes",
             "Account's Pending row has Cancel, which drops a pending email change",
+            "Expanded and hovered card rows keep their mana pips' outlines sharp",
             "Distributions, Mana and Draw odds leave room above and below their charts",
         ],
     },
