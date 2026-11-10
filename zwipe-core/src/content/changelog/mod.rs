@@ -38,7 +38,13 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[];
+pub const UPCOMING: &[Release] = &[Release {
+    version: Version::new(1, 18, 17),
+    date: None,
+    entries: &[
+        "Account shows a pending email change right after you log in, and closing a hint no longer hides it",
+    ],
+}];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
