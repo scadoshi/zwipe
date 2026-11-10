@@ -20,7 +20,9 @@
 //! month adds a row of its minor versions (`1.12` for 1.12.0 to 1.12.2), so
 //! the row stays short however many patches ship. Picking a minor shows its
 //! releases in that month. Latest, the default, shows the upcoming
-//! release and the newest shipped one. The upcoming release counts in the
+//! release, the newest shipped one, and the one the stores serve when the web
+//! is ahead of it; each carries its tag (Upcoming, Web, Mobile; see
+//! [`Tag`]). The upcoming release counts in the
 //! newest shipped month. The day comes from [`HttpRelease::released_on`], which
 //! also reads the display string an older server sends; a release whose day
 //! cannot be read goes under a last "Earlier" chip rather than vanishing.
@@ -311,10 +313,11 @@ pub fn ChangelogReleases(
                                 }
                             }
                             span { class: "changelog-date", "{release.date}" }
-                            if item.tag == Some(Tag::Upcoming) {
-                                span { class: "status-tag status-doing", "Upcoming" }
-                            } else if item.tag == Some(Tag::Latest) {
-                                span { class: "status-tag status-done", "Latest" }
+                            if let Some(tag) = item.tag {
+                                span {
+                                    class: if tag == Tag::Upcoming { "status-tag status-doing" } else { "status-tag status-done" },
+                                    "{tag.label()}"
+                                }
                             }
                         }
                         CollapseBody { set: collapse, section: release.version.clone(),
@@ -340,6 +343,7 @@ pub fn ChangelogReleases(
 
 #[cfg(test)]
 mod tests {
+    use zwipe_core::content::changelog::MOBILE_STORE_VERSION;
     use zwipe_core::http::contracts::changelog::HttpRelease;
     use zwipe_ui::changelog::{EARLIER_LABEL, minor_of};
 
@@ -448,7 +452,15 @@ mod tests {
         let data = HttpChangelog::current();
         let chips = rows(&data, &Filter::Latest);
         assert_eq!(labels(&chips[0]), ["Latest", "2026"]);
-        assert_eq!(shown(&data, &Filter::Latest).len(), data.upcoming.len() + 1);
+        // Upcoming, the newest shipped, and the store's release when the web is ahead of it.
+        let web_ahead = data
+            .releases
+            .first()
+            .is_some_and(|r| r.version != MOBILE_STORE_VERSION.to_string());
+        assert_eq!(
+            shown(&data, &Filter::Latest).len(),
+            data.upcoming.len() + 1 + usize::from(web_ahead)
+        );
     }
 
     #[test]

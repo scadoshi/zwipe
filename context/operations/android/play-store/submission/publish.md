@@ -14,6 +14,7 @@ Listing + content forms must be complete (no errors) first; there is **no separa
 4. **Release name** `<versionName> (<versionCode>)`, e.g. `1.0.9 (1)` (internal only). **Release notes** inside `<en-US>…</en-US>` (≤500 chars, generic "TCG" wording).
 5. **Save → Review → Start rollout to closed testing.**
 6. **Testers** tab → add testers, then share the opt-in link. The 14-day clock runs from when ≥12 are opted in.
+7. On the day a release goes to Production review, set `MOBILE_STORE_VERSION` in `zwipe-core/src/content/changelog/mod.rs` to its version, in a PR to release, so the changelog marks it Mobile. Set it on submission, not when review clears. One change covers both stores, so set it once both builds are submitted (see the iOS [publish.md](../../../ios/app-store/submission/publish.md)).
 
 **Promoting to Production (after the 14-day gate):** create the release under **Test and release → Production**. (First hit 2026-07-11.)
 
