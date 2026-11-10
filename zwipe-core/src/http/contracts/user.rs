@@ -22,7 +22,7 @@ pub struct HttpUpdateSettings {
     #[serde(default)]
     pub universes_beyond_exceptions: Option<Vec<String>>,
     /// Pip style, or absent to leave unchanged. serde defaults keep payloads
-    /// from clients that predate the field.
+    /// from clients that predate the field. The earlier `theme` is refused.
     #[serde(default)]
     pub pip_style: Option<PipStyle>,
     /// Swipe confirmations, or absent to leave unchanged. serde defaults keep
@@ -39,4 +39,32 @@ pub struct HttpUpdateSettings {
 pub struct HttpMarkHintShown {
     /// Hint key (lowercase snake case, e.g. `"add_swipes"`).
     pub hint: String,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn pip_style(body: &str) -> Result<Option<PipStyle>, serde_json::Error> {
+        serde_json::from_str::<HttpUpdateSettings>(body).map(|request| request.pip_style)
+    }
+
+    #[test]
+    fn the_request_takes_themed() {
+        assert_eq!(
+            pip_style(r#"{"pip_style":"themed"}"#).unwrap(),
+            Some(PipStyle::Themed)
+        );
+    }
+
+    #[test]
+    fn the_request_refuses_the_earlier_theme() {
+        assert!(pip_style(r#"{"pip_style":"theme"}"#).is_err());
+    }
+
+    #[test]
+    fn an_absent_or_null_pip_style_leaves_it_unchanged() {
+        assert_eq!(pip_style("{}").unwrap(), None);
+        assert_eq!(pip_style(r#"{"pip_style":null}"#).unwrap(), None);
+    }
 }

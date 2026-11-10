@@ -111,11 +111,9 @@ pub fn display_theme_name(slug: &str) -> String {
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum PipStyle {
-    /// Pips in the current theme's own five mana colors. Stored as
-    /// `themed`; the wire writes `theme`, the name 1.15.0 to 1.18.0 parse,
-    /// and reads both.
+    /// Pips in the current theme's own five mana colors. Stored and sent
+    /// as `themed`.
     #[default]
-    #[serde(rename = "theme", alias = "themed")]
     Themed,
     /// Pips in Magic's classic fills, the same on every theme. Stored as
     /// `classic`; the wire still writes `natural`, the name 1.15.0 to 1.17.0 parse,
@@ -151,7 +149,7 @@ impl fmt::Display for PipStyle {
 }
 
 /// A pip color name that is none of `themed`, `classic` or the earlier
-/// `theme` and `natural`.
+/// `natural`.
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
 #[error("unknown pip color")]
 pub struct ParsePipStyleError;
@@ -161,7 +159,7 @@ impl FromStr for PipStyle {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "themed" | "theme" => Ok(Self::Themed),
+            "themed" => Ok(Self::Themed),
             "classic" | "natural" => Ok(Self::Classic),
             _ => Err(ParsePipStyleError),
         }
@@ -665,58 +663,56 @@ mod tests {
     }
 
     #[test]
-    fn themed_stores_as_themed_and_reads_either_name() {
+    fn themed_stores_and_writes_as_themed() {
         assert_eq!(PipStyle::Themed.as_str(), "themed");
-        for name in ["themed", "theme"] {
-            assert_eq!(name.parse::<PipStyle>(), Ok(PipStyle::Themed));
-            assert_eq!(
-                serde_json::from_str::<PipStyle>(&format!("\"{name}\"")).unwrap(),
-                PipStyle::Themed
-            );
-        }
-    }
-
-    /// The pip enum as 1.15.0 to 1.17.0 carry it: `theme` and `natural`
-    /// only. 1.17.1 to 1.18.0 read those two and `classic`.
-    #[derive(Debug, PartialEq, Deserialize)]
-    #[serde(rename_all = "lowercase")]
-    enum ShippedPipStyle {
-        Theme,
-        Natural,
-    }
-
-    /// The settings as 1.15.0 to 1.18.0 read them.
-    #[derive(Deserialize)]
-    struct ShippedSettings {
-        pip_style: ShippedPipStyle,
+        assert_eq!("themed".parse::<PipStyle>(), Ok(PipStyle::Themed));
+        assert_eq!(
+            serde_json::to_string(&PipStyle::Themed).unwrap(),
+            "\"themed\""
+        );
+        assert_eq!(
+            serde_json::from_str::<PipStyle>("\"themed\"").unwrap(),
+            PipStyle::Themed
+        );
     }
 
     #[test]
-    fn every_settings_value_parses_as_shipped_clients_read_it() {
-        for (style, shipped) in [
-            (PipStyle::Themed, ShippedPipStyle::Theme),
-            (PipStyle::Classic, ShippedPipStyle::Natural),
+    fn the_earlier_theme_name_no_longer_reads() {
+        assert_eq!("theme".parse::<PipStyle>(), Err(ParsePipStyleError));
+        assert!(serde_json::from_str::<PipStyle>("\"theme\"").is_err());
+    }
+
+    /// The pip enum as the client floor, 1.18.1, carries it: each value
+    /// under either of its names.
+    #[derive(Debug, PartialEq, Deserialize)]
+    #[serde(rename_all = "lowercase")]
+    enum FloorPipStyle {
+        #[serde(rename = "theme", alias = "themed")]
+        Themed,
+        #[serde(rename = "natural", alias = "classic")]
+        Classic,
+    }
+
+    /// The settings as 1.18.1 reads them.
+    #[derive(Deserialize)]
+    struct FloorSettings {
+        pip_style: FloorPipStyle,
+    }
+
+    #[test]
+    fn every_settings_value_parses_as_the_floor_client_reads_it() {
+        for (style, floor) in [
+            (PipStyle::Themed, FloorPipStyle::Themed),
+            (PipStyle::Classic, FloorPipStyle::Classic),
         ] {
             let settings = UserSettings {
                 pip_style: style,
                 ..UserSettings::default()
             };
             let json = serde_json::to_string(&settings).unwrap();
-            let read: ShippedSettings = serde_json::from_str(&json).unwrap();
-            assert_eq!(read.pip_style, shipped, "{json}");
+            let read: FloorSettings = serde_json::from_str(&json).unwrap();
+            assert_eq!(read.pip_style, floor, "{json}");
         }
-    }
-
-    #[test]
-    fn the_wire_writes_the_name_shipped_clients_parse() {
-        assert_eq!(
-            serde_json::to_string(&PipStyle::Classic).unwrap(),
-            "\"natural\""
-        );
-        assert_eq!(
-            serde_json::to_string(&PipStyle::Themed).unwrap(),
-            "\"theme\""
-        );
     }
 
     // == swipe confirmations ==
@@ -724,7 +720,7 @@ mod tests {
     #[test]
     fn a_payload_without_swipe_confirmations_reads_as_chip() {
         let settings: UserSettings =
-            serde_json::from_str(r#"{"theme":"gruvbox","dark_mode":true,"pip_style":"theme"}"#)
+            serde_json::from_str(r#"{"theme":"gruvbox","dark_mode":true,"pip_style":"themed"}"#)
                 .unwrap();
         assert_eq!(settings.swipe_confirmations, SwipeConfirmations::Chip);
     }
