@@ -90,15 +90,13 @@ impl ClientError {
 
     /// Returns a safe, user-facing message in sentence case: never leaks internal details like URLs or stack traces. The server's own lowercase message gets its first letter capitalized.
     pub fn to_user_message(&self) -> String {
-        match self {
+        let message = match self {
             ClientError::Network(_) => {
                 "Connection error, check your network and try again".to_string()
             }
             ClientError::BadRequest(_)
             | ClientError::Decode(_)
-            | ClientError::InternalServerError(_) => {
-                "Something went wrong, please try again".to_string()
-            }
+            | ClientError::InternalServerError(_) => SOMETHING_WENT_WRONG.to_string(),
             ClientError::PayloadTooLarge(_) => {
                 "Request too large, try importing fewer cards".to_string()
             }
@@ -108,9 +106,19 @@ impl ClientError {
                 plain_message(message).unwrap_or_else(|| sentence_case(message))
             }
             other => sentence_case(&other.to_string()),
+        };
+        // A status with an empty body (a route the server doesn't have
+        // yet answers 404 with none) would otherwise toast nothing.
+        if message.trim().is_empty() {
+            SOMETHING_WENT_WRONG.to_string()
+        } else {
+            message
         }
     }
 }
+
+/// What a failure says when nothing more specific can be said.
+const SOMETHING_WENT_WRONG: &str = "Something went wrong, please try again";
 
 /// Plain words for a server message about a mistake the user can fix, or
 /// `None` for any other message, which shows as the server wrote it.
@@ -170,6 +178,37 @@ impl From<(StatusCode, String)> for ClientError {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_failure_with_no_message_still_says_something() {
+        // A route the server doesn't have yet answers 404 with an empty body.
+        for message in ["", "   ", "\n"] {
+            let errors = [
+                ClientError::Unauthorized(message.to_owned()),
+                ClientError::Forbidden(message.to_owned()),
+                ClientError::NotFound(message.to_owned()),
+                ClientError::Conflict(message.to_owned()),
+                ClientError::UnprocessableEntity(message.to_owned()),
+                ClientError::TooManyRequests(message.to_owned()),
+                ClientError::InternalServerError(message.to_owned()),
+                ClientError::BadRequest(message.to_owned()),
+                ClientError::PayloadTooLarge(message.to_owned()),
+            ];
+            for error in errors {
+                let shown = error.to_user_message();
+                assert!(!shown.trim().is_empty(), "{error:?} shows nothing");
+            }
+        }
+        assert_eq!(
+            ClientError::NotFound(String::new()).to_user_message(),
+            "Something went wrong, please try again"
+        );
+        assert_eq!(
+            ClientError::NotFound("deck not found".to_owned()).to_user_message(),
+            "Deck not found",
+            "a message the server sent still shows"
+        );
+    }
 
     #[test]
     fn a_mistake_the_user_can_fix_reads_plainly() {
