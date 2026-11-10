@@ -2522,6 +2522,72 @@ html[data-wipe="left"]::view-transition-new(root) {
     -webkit-mask-image: linear-gradient(to bottom, #000 0, rgba(0, 0, 0, 0.45) 45vh, transparent 100vh);
 }
 
+/* ---- Hover and keyboard focus ----
+
+   Under a mouse, everything clickable answers, the way the panel's action
+   and the nav's dropdown rows already do. A bordered button or stepper
+   lights its text and border in the accent; the action dock's borderless
+   buttons light the glyph. A destructive button keeps its red, which is
+   what it says, and takes the red's tint behind it, the tint a status tag
+   wears. An inline text link takes the accent and a firmer underline.
+   A row (a theme in either picker, a fold's header) fills with the
+   border color, as a dropdown row does, which reads apart from a selected
+   theme's accent border. Disabled things stay still; a selected or active
+   one keeps its look. Keyboard focus gets the same look, on any device. */
+@media (hover: hover) {
+    :is(.btn, .btn-xs, .btn-action, .stepper-btn):not(:disabled, [aria-disabled="true"], .selected, .active, .btn-danger, .btn-action-danger):hover {
+        color: var(--ink-accent-primary, var(--accent-primary));
+        border-color: var(--accent-primary);
+    }
+
+    .action-dock-btn:not(:disabled, [aria-disabled="true"]):hover {
+        color: var(--ink-accent-primary, var(--accent-primary));
+    }
+
+    :is(.btn-danger, .btn-action-danger, .alert-dialog-action-danger):not(:disabled, [aria-disabled="true"]):hover {
+        background-color: color-mix(in srgb, var(--color-error) 12%, transparent);
+    }
+
+    .pref-row:not(:disabled):hover,
+    .collapse-header:hover,
+    .theme-picker-sheet .nav-dropdown-item:hover {
+        background-color: var(--border-primary);
+        color: var(--text-primary);
+    }
+
+    /* An inline text link: the accent and a firmer underline. In :where(),
+       so a site's own link rule wins over it. */
+    :where(a:not([class])):hover {
+        color: var(--ink-accent-primary, var(--accent-primary));
+        text-decoration-thickness: 2px;
+    }
+}
+
+:where(a:not([class])):focus-visible {
+    color: var(--ink-accent-primary, var(--accent-primary));
+    text-decoration-thickness: 2px;
+}
+
+:is(.btn, .btn-xs, .btn-action, .stepper-btn):not(:disabled, [aria-disabled="true"], .selected, .active, .btn-danger, .btn-action-danger):focus-visible {
+    color: var(--ink-accent-primary, var(--accent-primary));
+    border-color: var(--accent-primary);
+}
+
+.action-dock-btn:not(:disabled, [aria-disabled="true"]):focus-visible {
+    color: var(--ink-accent-primary, var(--accent-primary));
+}
+
+:is(.btn-danger, .btn-action-danger, .alert-dialog-action-danger):not(:disabled, [aria-disabled="true"]):focus-visible {
+    background-color: color-mix(in srgb, var(--color-error) 12%, transparent);
+}
+
+.pref-row:not(:disabled):focus-visible,
+.collapse-caret:focus-visible,
+.theme-picker-sheet .nav-dropdown-item:focus-visible {
+    background-color: var(--border-primary);
+    color: var(--text-primary);
+}
+
 @media (max-width: 60rem) {
 /* NavBar at hamburger widths: the panel folds behind the toggle, and the
    pieces that live in or beside the folded menu take their narrow shape.

@@ -63,6 +63,7 @@ pub const RELEASES: &[Release] = &[
             "Card details' border shows on every edge and reads on dark themes",
             "Account's Pending row has Cancel, which drops a pending email change",
             "Expanded and hovered card rows keep their mana pips' outlines sharp",
+            "On the web every button, link, field and row answers the mouse, disabled ones aside",
         ],
     },
     Release {

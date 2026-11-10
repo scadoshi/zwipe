@@ -377,6 +377,14 @@ body .toast-container [role="alertdialog"] {
     opacity: var(--fade-corner);
 }
 
+/* Under a mouse the back arrow lights as a button does. */
+@media (hover: hover) {
+    .app-nav-back:hover {
+        color: var(--ink-accent-primary, var(--accent-primary));
+        border-color: var(--accent-primary);
+    }
+}
+
 .app-nav-back:active {
     opacity: 1;
 }
