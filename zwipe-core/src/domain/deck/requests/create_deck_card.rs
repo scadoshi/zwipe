@@ -1,5 +1,6 @@
 //! Add card to deck operation.
 
+use chrono::{DateTime, Utc};
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -46,6 +47,8 @@ pub struct CreateDeckCard {
     pub board: Board,
     /// Whether the requesting user's email is verified.
     pub email_verified: bool,
+    /// The star time of a removed row this create restores, if it was starred.
+    pub mvp_at: Option<DateTime<Utc>>,
 }
 
 impl CreateDeckCard {
@@ -78,6 +81,13 @@ impl CreateDeckCard {
             board: board.unwrap_or_default(),
             user_id,
             email_verified,
+            mvp_at: None,
         })
+    }
+
+    /// The request with `mvp_at`, the star time of the row it restores.
+    #[must_use]
+    pub fn with_mvp_at(self, mvp_at: Option<DateTime<Utc>>) -> Self {
+        Self { mvp_at, ..self }
     }
 }

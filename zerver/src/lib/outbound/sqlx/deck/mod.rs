@@ -221,14 +221,31 @@ impl DeckRepository for Postgres {
                 CreateDeckCardError::UnverifiedLimitReached
             });
         }
+        // A restored star needs room on the podium, counted under the same
+        // lock as the stars a patch sets; without room the card comes in
+        // unstarred.
+        let mvp_at = match request.mvp_at {
+            Some(at) => {
+                let starred = query_scalar!(
+                    r#"SELECT count(*) AS "count!" FROM deck_cards
+                       WHERE deck_id = $1 AND board = 'deck' AND mvp_at IS NOT NULL"#,
+                    request.deck_id
+                )
+                .fetch_one(&mut *tx)
+                .await?;
+                (starred < 3).then_some(at)
+            }
+            None => None,
+        };
         let database_deck_card = query_as!(
             DatabaseDeckCard,
-            "INSERT INTO deck_cards (deck_id, scryfall_data_id, oracle_id, quantity, board) VALUES ($1, $2, $3, $4, $5) RETURNING deck_id, scryfall_data_id, oracle_id, quantity, board, mvp_at",
+            "INSERT INTO deck_cards (deck_id, scryfall_data_id, oracle_id, quantity, board, mvp_at) VALUES ($1, $2, $3, $4, $5, $6) RETURNING deck_id, scryfall_data_id, oracle_id, quantity, board, mvp_at",
             request.deck_id,
             request.scryfall_data_id,
             request.oracle_id,
             *request.quantity,
-            request.board.display_name()
+            request.board.display_name(),
+            mvp_at
         )
         .fetch_one(&mut *tx)
         .await?;

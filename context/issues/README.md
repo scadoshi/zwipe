@@ -49,6 +49,7 @@ Who checked, on which live build, what they saw.
 | [315](315-add-pile-flashes-stale-card.md) | Add's pile flashes a stale card after applying a filter | merged | thinker | #501 |
 | [323](323-overview-lockout-columns.md) | overview.sql section 16 reads lockout columns that no longer exist | merged | thinker | #490 |
 | [326](326-printings-blank-tiles.md) | Printings shows blank cards until their images load | fixing | thinker | - |
+| [330](330-undo-remove-drops-star.md) | Undo of a remove brings the card back without its star | fixing | thinker | - |
 
 ## Waiting for live verification
 

@@ -722,3 +722,141 @@ async fn the_deck_list_carries_prices_and_card_writes_move_last_changed(pool: sq
     let total = listed(&list, &older)["total_price_usd"].as_f64().unwrap();
     assert!((total - 14.5).abs() < 1e-9, "{total}");
 }
+
+/// Adds `sid`/`oid` to `deck_id` with the extra `fields` merged into the body, and returns the
+/// status and the created deck card.
+async fn create_with(
+    app: &TestApp,
+    token: &str,
+    deck_id: uuid::Uuid,
+    (sid, oid): (uuid::Uuid, uuid::Uuid),
+    fields: serde_json::Value,
+) -> (StatusCode, serde_json::Value) {
+    let mut body =
+        json!({ "scryfall_data_id": sid.to_string(), "oracle_id": oid.to_string(), "quantity": 1 });
+    if let (Some(body), Some(fields)) = (body.as_object_mut(), fields.as_object()) {
+        body.extend(fields.clone());
+    }
+    app.post(&create_deck_card_route(deck_id), body, Some(token))
+        .await
+}
+
+/// Seeds `names` as artifacts and returns each one's `(scryfall_data_id, oracle_id)`.
+async fn seeded(pool: &sqlx::PgPool, names: &[&str]) -> Vec<(uuid::Uuid, uuid::Uuid)> {
+    let cards: Vec<_> = names
+        .iter()
+        .map(|n| card(n).type_line("Artifact"))
+        .collect();
+    seed_cards(pool, &cards).await;
+    cards
+        .iter()
+        .map(|c| (c.id(), c.oracle_id().unwrap()))
+        .collect()
+}
+
+#[sqlx::test]
+async fn a_create_with_a_past_mvp_at_keeps_the_star_and_its_time(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, did) = deck_for(&app, "restorer").await;
+    let deck_id = did.parse().unwrap();
+    let ids = seeded(&pool, &["Sol Ring", "Mind Stone"]).await;
+
+    let starred_at = "2026-01-02T03:04:05Z";
+    let (status, body) = create_with(
+        &app,
+        &token,
+        deck_id,
+        ids[0],
+        json!({ "mvp_at": starred_at }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{body}");
+    let kept: chrono::DateTime<chrono::Utc> =
+        serde_json::from_value(body["mvp_at"].clone()).unwrap();
+    assert_eq!(
+        kept,
+        starred_at.parse::<chrono::DateTime<chrono::Utc>>().unwrap(),
+        "{body}"
+    );
+
+    // The request without the field is unchanged: the card comes in unstarred.
+    let (status, body) = create_with(&app, &token, deck_id, ids[1], json!({})).await;
+    assert_eq!(status, StatusCode::CREATED, "{body}");
+    assert!(body["mvp_at"].is_null(), "{body}");
+}
+
+#[sqlx::test]
+async fn a_future_mvp_at_creates_the_card_unstarred(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, did) = deck_for(&app, "timetraveler").await;
+    let deck_id = did.parse().unwrap();
+    let ids = seeded(&pool, &["Sol Ring"]).await;
+
+    let tomorrow = (chrono::Utc::now() + chrono::Duration::days(1)).to_rfc3339();
+    let (status, body) =
+        create_with(&app, &token, deck_id, ids[0], json!({ "mvp_at": tomorrow })).await;
+    assert_eq!(status, StatusCode::CREATED, "{body}");
+    assert!(body["mvp_at"].is_null(), "{body}");
+}
+
+#[sqlx::test]
+async fn an_mvp_at_off_the_mainboard_creates_the_card_unstarred(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, did) = deck_for(&app, "sideboarder").await;
+    let deck_id = did.parse().unwrap();
+    let ids = seeded(&pool, &["Sol Ring"]).await;
+
+    let (status, body) = create_with(
+        &app,
+        &token,
+        deck_id,
+        ids[0],
+        json!({ "board": "maybeboard", "mvp_at": "2026-01-02T03:04:05Z" }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{body}");
+    assert!(body["mvp_at"].is_null(), "{body}");
+}
+
+#[sqlx::test]
+async fn a_full_podium_creates_the_card_unstarred(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, did) = deck_for(&app, "podium").await;
+    let deck_id = did.parse().unwrap();
+    let ids = seeded(
+        &pool,
+        &["Sol Ring", "Arcane Signet", "Mind Stone", "Fellwar Stone"],
+    )
+    .await;
+    for pair in &ids[..3] {
+        let (status, body) = create_with(&app, &token, deck_id, *pair, json!({})).await;
+        assert_eq!(status, StatusCode::CREATED, "{body}");
+        let (status, body) = app
+            .patch(
+                &update_deck_card_route(deck_id, pair.0),
+                json!({ "mvp": true }),
+                Some(&token),
+            )
+            .await;
+        assert_eq!(status, StatusCode::OK, "star: {body}");
+    }
+
+    let (status, body) = create_with(
+        &app,
+        &token,
+        deck_id,
+        ids[3],
+        json!({ "mvp_at": "2026-01-02T03:04:05Z" }),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED, "{body}");
+    assert!(body["mvp_at"].is_null(), "{body}");
+    let starred: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM deck_cards WHERE deck_id = $1 AND mvp_at IS NOT NULL",
+    )
+    .bind(deck_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(starred, 3);
+}

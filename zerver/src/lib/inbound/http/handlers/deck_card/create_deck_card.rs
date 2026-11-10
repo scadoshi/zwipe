@@ -94,7 +94,8 @@ pub async fn create_deck_card(
         body.quantity,
         board,
         email_verified,
-    )?;
+    )?
+    .with_mvp_at(body.mvp_at);
 
     let deck_card = state
         .deck_service
