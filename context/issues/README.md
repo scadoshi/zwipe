@@ -89,8 +89,8 @@ Who checked, on which live build, what they saw.
 | [321](321-pending-refresh-no-name.md) | Account's Pending refresh button has no accessible name | fixing | scotland | - |
 | [322](322-deck-row-tags-beside-art.md) | Deck list rows: the tags drop under the art instead of beside it | fixing | thinker | #486, #489 |
 | [323](323-overview-lockout-columns.md) | overview.sql section 16 reads lockout columns that no longer exist | fixing | thinker | #490 |
+| [324](324-pip-style-old-names-refused.md) | Store apps could not change pip style after the Phase 4 cleanup | verified | thinker | #494 |
 
 ## Waiting for live verification
 
 [`verify-1f354453d.md`](verify-1f354453d.md): everything in the 1f354453d deploy. Earlier lists: [verify-69f38270e.md](verify-69f38270e.md), [verify-02102ab5e.md](verify-02102ab5e.md), [verify-1d7053e88.md](verify-1d7053e88.md), [verify-37d09dbf9.md](verify-37d09dbf9.md), [verify-1e03520ef.md](verify-1e03520ef.md).
-| [324](324-pip-style-old-names-refused.md) | Store apps could not change pip style after the Phase 4 cleanup | verified |
