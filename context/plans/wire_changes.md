@@ -4,8 +4,8 @@ Every change a shipped client can see, where it stands, and the floor it waits o
 
 | Change | Plan | Where it is | Waits on |
 | --- | --- | --- | --- |
-| Pip value `natural` to `classic` | [`pip_color_wire.md`](pip_color_wire.md) | Phase 4 merged (#491): the server writes `classic`. The settings request still takes `natural`, because builds through 1.18.16 send it | Floor at the first store build after 1.18.16 (the first that writes `classic`), then drop the request alias (Phase 5) |
-| Pip value `theme` to `themed` | [`pip_themed_wire.md`](pip_themed_wire.md) | Phase 4 merged (#492): the server writes `themed`. The settings request still takes `theme`, because builds through 1.18.16 send it | Floor at the first store build after 1.18.16 (the first that writes `themed`), then drop the request alias (Phase 5) |
+| Pip value `natural` to `classic` | [`pip_color_wire.md`](pip_color_wire.md) | Phase 2 is the 1.18.16 store build, the first app that writes `classic`. Phase 4 half done: the server writes `classic` (#491); the settings request still takes `natural` (#494) | Phase 3: floor at 1.18.16 once that build is live in both stores. Only then drop the request alias (rest of Phase 4) |
+| Pip value `theme` to `themed` | [`pip_themed_wire.md`](pip_themed_wire.md) | Phase 2 is the 1.18.16 store build, the first app that writes `themed`. Phase 4 half done: the server writes `themed` (#492); the settings request still takes `theme` (#494) | Phase 3: floor at 1.18.16 once that build is live in both stores. Only then drop the request alias (rest of Phase 4) |
 
 ## Additive, no floor
 

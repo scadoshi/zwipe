@@ -25,6 +25,8 @@ Deploy order matters in one direction only: **server first**. An old server sile
 
 Changes that alter the meaning of existing fields or responses (wire-format changes, auth-flow changes) can't be expressed as additive fields. Those need the propagation-wait + min-version gate pattern instead. Reach for that only when additive genuinely can't work; it costs weeks, additive costs nothing.
 
+A floor only allows dropping an old value when a store build at or above it *writes* the new value, not just reads it. Clients send values back too, serialized with their own core: requests keep accepting the old value until the floor reaches the first store build that serializes the new one. Raising the floor to a build that only reads the new name, then refusing the old one, broke every live client's settings changes (pip style, 2026-11-09, fixed by #494).
+
 ## Corollaries
 
 - New response fields are fine for the same reason (old clients ignore them), but never remove or re-type an existing response field while old clients read it.

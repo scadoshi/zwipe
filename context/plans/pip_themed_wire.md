@@ -1,6 +1,6 @@
 # Pip style on the wire: `theme` to `themed`
 
-**Status: Phase 4 merged (#492, 2026-11-09): the server writes `themed` and stores it. The settings request still takes `theme`, because every build through 1.18.16 sends it (the hotfix below). Phase 5, dropping that alias, waits on the floor reaching the first store build after 1.18.16.**
+**Status: Phase 1 shipped; clients read `themed` from 1.18.1. Phase 2 is the 1.18.16 store build, the first app that writes `themed`. Phase 3, the floor at 1.18.16, waits on that build being live in both stores. Phase 4 is half done: the server writes and stores `themed` (#492), and the settings request keeps taking `theme` (#494) until Phase 3.**
 
 **One sentence:** the pip setting's first value is renamed from `theme` to `themed`; the database stores `themed` now, the wire keeps writing `theme` because 1.15.0 through 1.18.0 can only parse that, and once the client floor is past a release that reads both, the server writes `themed` and stops accepting `theme`.
 
@@ -45,17 +45,15 @@ The settings' own `theme` field (the color theme's name) is a different field an
 
 The field keeps its name, `pip_style`, on the wire and in the column.
 
-## Phase 2: ship the client
+## Phase 2: a store build that writes `themed`
 
-The next cut after Phase 1 is deployed carries the new core, so the app reads both names. No client code beyond what Phase 1 changed.
+Reading the new name is not enough: a client also sends the setting back in `PATCH /api/user/settings`, serialized with its own core. Clients from 1.18.1 read `themed`, but every build through the 1.18.16 web cut still serializes `theme`, because that core's serde writes the wire name. The first app that writes `themed` is the **1.18.16 store build**, cut from release after #492 merged, which carries the core that serializes `themed`.
 
-Record the version here when it is cut: **client reads both from 1.18.1**.
+## Phase 3: raise the floor to 1.18.16
 
-## Phase 3: raise the floor and wait
+When the 1.18.16 store build is live in both stores and rolled out, set `MIN_CLIENT_VERSION` to 1.18.16 in `/etc/zwipe/zerver.env` and restart zerver. Every build that still writes `theme` then gets the update screen. Wait a few quiet days and watch `zcripts/metrics/errors.sql`.
 
-When Phase 2 is live on both stores and rolled out, set `MIN_CLIENT_VERSION` to that version in `/etc/zwipe/zerver.env` and restart zerver. 1.15.0 through 1.18.0 get the update screen. Wait a few quiet days and watch `zcripts/metrics/errors.sql`.
-
-This floor also covers [`pip_color_wire.md`](pip_color_wire.md)'s Phase 4, which waits on 1.17.1 or later; both Phase 4s can merge after it.
+The floor at 1.18.1 (2026-11-09) covered reading `themed`, not writing it. Treating it as Phase 3 is what let the request refuse `theme` early and broke settings changes on every live build (fixed by #494).
 
 ## Phase 4: `themed` only. Rebuilt on `server/pip-themed-only`
 
@@ -63,8 +61,8 @@ First built 2026-11-07 on `server/pip-themed` (`ad0cffd5a`), which fell 828 comm
 
 - `Themed` serializes as `themed` under `rename_all = "lowercase"` and stays the `#[default]`, so the wire writes `themed`. Deserializing keeps `theme` as a read-only alias, for client-side copies written under it (see Stored data below).
 - `FromStr` drops the `theme` arm: it takes only the current names, which is what the database holds.
-- `HttpUpdateSettings.pip_style` first deserialized through `FromStr`, so `PATCH` with `theme` was a 422. That broke settings changes on every live build: through 1.18.16 the client serializes `PipStyle` with Phase 1's serde, which writes `theme`, so the floor at 1.18.1 covered reading the new name but not writing it. Hotfix 2026-11-09: the request deserializes with plain serde again, which takes `theme` through the alias. Responses keep writing `themed`, which those builds read.
-- Tests: `themed_stores_and_writes_as_themed`, `the_earlier_theme_name_no_longer_parses` and `a_stored_theme_still_reads_as_themed` in core; request-body tests in `http/contracts/user.rs` (takes `themed`, refuses `theme`); and the zerver round trip expects `themed` by default, PATCHes `themed`, expects `themed` back and a 422 for `theme`. The shipped-client parse tests model the floor client, 1.18.1, which reads either name for each value, so every settings response still parses for every supported client.
+- The settings request keeps taking `theme` until Phase 3. #492 first made `HttpUpdateSettings.pip_style` deserialize through `FromStr`, which 422'd `theme` from every live build; #494 put plain serde back, which takes `theme` through the alias and answers `themed`. **Only after Phase 3**: deserialize the request through `FromStr` again, and the zerver test expects a 422 for `theme`. The serde read alias for stored client copies stays until those copies have had a save; drop it then only if a release has passed since.
+- Tests: `themed_stores_and_writes_as_themed`, `the_earlier_theme_name_no_longer_parses` (`FromStr`) and `a_stored_theme_still_reads_as_themed` (serde) in core; request-body tests in `http/contracts/user.rs` (takes `themed`, takes `theme` as shipped clients send it); and the zerver round trip expects `themed` by default, PATCHes `themed` and expects `themed` back, and PATCHes `theme` and expects 200 with `themed` back and stored. The shipped-client parse tests model the floor client, 1.18.1, which reads either name for each value.
 
 ### Stored data
 
@@ -72,10 +70,6 @@ First built 2026-11-07 on `server/pip-themed` (`ad0cffd5a`), which fell 828 comm
 - Clients: every store that serializes `PipStyle` with serde wrote the wire name, `theme`, before this phase: zite's `zwipe.pips`, zwiper-web's stored session, the app's stored session and its pending settings. They keep reading through the alias and write `themed` on their next save; zite's `pip_store` rewrites the stored value as soon as it loads it. Themed draws no CSS class, so zite's `index.html` needs nothing. No sign-out and no lost choice.
 
 Access token claims carry no settings (`user_id`, `username`, `email`, `exp`, `iat`), so tokens are not a concern.
-
-## Phase 5: the request stops taking `theme`
-
-Phase 2 shipped a client that reads `themed` but still writes `theme`: the first client that writes `themed` is the first store build cut after Phase 4 merged (the next one after 1.18.16), since it carries Phase 4's core. When that build is the floor, `HttpUpdateSettings.pip_style` can take the current names only again (deserialize through `FromStr`), and the zerver test expects a 422 for `theme`. The serde read alias for stored client copies stays until those copies have had a save; drop it in the same change only if a release has passed since.
 
 ## Verification
 
