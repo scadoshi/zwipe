@@ -81,11 +81,7 @@ Who checked, on which live build, what they saw.
 | [313](313-decks-list-price-chip.md) | Decks list shows no price per deck | merged | scotland | #465 |
 | [314](314-theme-toggle-menu-flicker.md) | The menu sheet flickers when switching light/dark mode | verified | and-droid | #474, #475 |
 | [315](315-add-pile-flashes-stale-card.md) | Add's pile flashes a stale card after applying a filter | reported | - | - |
-| [316](316-drawer-overlays-footer.md) | The web side drawer covers the footer | verified | scotland | #478 |
-| [317](317-pending-email-expiry-tag.md) | Pending email's 'Link expires' hint isn't a tag on web | verified | scotland | #478 |
-| [318](318-pending-email-refresh-resend.md) | Pending email has no Refresh or Resend on web | verified | scotland | #477, #478 |
 | [319](319-account-pending-row-after-login.md) | Account shows no Pending row on the first visit after login | reported | - | - |
-| [320](320-libsqlite3-sys-advisory.md) | Security audit fails on RUSTSEC-2026-0459 (libsqlite3-sys) | verified | scotland | #480 |
 | [321](321-pending-refresh-no-name.md) | Account's Pending refresh button has no accessible name | verified | scotland | #485 |
 | [322](322-deck-row-tags-beside-art.md) | Deck list rows: the tags drop under the art instead of beside it | verified | thinker | #486, #489 |
 | [323](323-overview-lockout-columns.md) | overview.sql section 16 reads lockout columns that no longer exist | merged | thinker | #490 |
@@ -93,4 +89,4 @@ Who checked, on which live build, what they saw.
 
 ## Waiting for live verification
 
-[`verify-1f354453d.md`](verify-1f354453d.md): everything in the 1f354453d deploy. Earlier lists: [verify-69f38270e.md](verify-69f38270e.md), [verify-02102ab5e.md](verify-02102ab5e.md), [verify-1d7053e88.md](verify-1d7053e88.md), [verify-37d09dbf9.md](verify-37d09dbf9.md), [verify-1e03520ef.md](verify-1e03520ef.md).
+[`verify-bb566fc4b.md`](verify-bb566fc4b.md): everything in the bb566fc4b deploy. Earlier lists: [verify-aeda394a4.md](verify-aeda394a4.md), [verify-1f354453d.md](verify-1f354453d.md), [verify-69f38270e.md](verify-69f38270e.md), [verify-02102ab5e.md](verify-02102ab5e.md), [verify-1d7053e88.md](verify-1d7053e88.md), [verify-37d09dbf9.md](verify-37d09dbf9.md), [verify-1e03520ef.md](verify-1e03520ef.md).
