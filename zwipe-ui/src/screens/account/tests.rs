@@ -36,6 +36,7 @@ fn ticket_of(effects: &[Effect]) -> Ticket {
             | Effect::CheckVerification(t)
             | Effect::ResendVerification(t)
             | Effect::ResendEmailChange(t)
+            | Effect::CancelEmailChange(t)
             | Effect::Wait(t)
             | Effect::ChangeUsername { ticket: t, .. }
             | Effect::ChangeEmail { ticket: t, .. }
@@ -1017,5 +1018,91 @@ fn a_pending_check_that_finds_the_link_expired_says_so() {
             ToastKind::Info,
             CHANGE_LINK_EXPIRED
         ))]
+    );
+}
+
+#[test]
+fn the_pending_row_s_cancel_asks_first() {
+    let mut state = pending_opened();
+    assert_eq!(
+        state.update(Action::CancelChange),
+        vec![Effect::OpenDialog(Dialog::CancelChange)]
+    );
+    assert_eq!(
+        opened().update(Action::CancelChange),
+        none(),
+        "nothing to cancel without a pending change"
+    );
+}
+
+#[test]
+fn a_confirmed_cancel_drops_the_pending_row() {
+    let mut state = pending_opened();
+    let resent = ticket_of(&state.update(Action::ResendChange));
+    let _ = state.update(Action::Resent { ticket: resent });
+    assert!(!state.can_resend_change());
+
+    let effects = state.update(Action::ConfirmCancelChange);
+    let ticket = ticket_of(&effects);
+    assert_eq!(effects, vec![Effect::CancelEmailChange(ticket)]);
+    assert!(state.is_cancelling_change());
+    assert_eq!(
+        state.update(Action::ConfirmCancelChange),
+        none(),
+        "a second press waits"
+    );
+
+    let effects = state.update(Action::ChangeCancelled { ticket });
+    assert_eq!(
+        effects,
+        vec![Effect::Toast(Toast::normal(
+            ToastKind::Success,
+            CHANGE_CANCELLED
+        ))]
+    );
+    assert!(!state.is_cancelling_change());
+    assert!(!state.rows().contains(&Row::Pending));
+    assert_eq!(state.pending(Utc::now()), None);
+    assert_eq!(
+        state.user().map(|u| u.email.to_string()),
+        Some("scotty@zwipe.net".to_owned()),
+        "the address stays"
+    );
+    assert!(
+        state.can_resend_change(),
+        "the change's cooldown goes with it"
+    );
+}
+
+#[test]
+fn a_failed_cancel_keeps_the_pending_row() {
+    let mut state = pending_opened();
+    let ticket = ticket_of(&state.update(Action::ConfirmCancelChange));
+    assert_eq!(state.update(Action::Failed { ticket }), none());
+    assert!(!state.is_cancelling_change());
+    assert!(state.rows().contains(&Row::Pending));
+    assert_eq!(
+        state.update(Action::ChangeCancelled { ticket }),
+        none(),
+        "a late reply to a failed cancel lands nowhere"
+    );
+    assert!(state.rows().contains(&Row::Pending));
+}
+
+#[test]
+fn the_cancel_copy_reads_as_the_app_s() {
+    assert_eq!(CANCEL_CHANGE, "Cancel");
+    assert_eq!(CHANGE_CANCELLED, "Email change cancelled");
+    assert_eq!(
+        (
+            Dialog::CancelChange.title(),
+            Dialog::CancelChange.body(),
+            Dialog::CancelChange.confirm()
+        ),
+        (
+            "Cancel email change",
+            "Your email stays as it is. The link sent to the new address stops working.",
+            "Cancel change"
+        )
     );
 }

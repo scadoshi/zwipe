@@ -38,6 +38,7 @@ pub(crate) struct Overlays {
     pub(crate) log_out: Signal<bool>,
     pub(crate) delete: Signal<bool>,
     pub(crate) confirm_password: Signal<bool>,
+    pub(crate) cancel_change: Signal<bool>,
     pub(crate) username: Signal<bool>,
     pub(crate) email: Signal<bool>,
     pub(crate) password: Signal<bool>,
@@ -111,6 +112,7 @@ pub(crate) fn use_driver() -> Driver {
             log_out: use_signal(|| false),
             delete: use_signal(|| false),
             confirm_password: use_signal(|| false),
+            cancel_change: use_signal(|| false),
             username: use_signal(|| false),
             email: use_signal(|| false),
             password: use_signal(|| false),
@@ -223,6 +225,7 @@ impl Driver {
             Effect::CheckVerification(ticket) => self.check_verification(ticket),
             Effect::ResendVerification(ticket) => self.resend(ticket, Link::Verification),
             Effect::ResendEmailChange(ticket) => self.resend(ticket, Link::EmailChange),
+            Effect::CancelEmailChange(ticket) => self.cancel_change(ticket),
             Effect::Wait(ticket) => {
                 spawn(async move {
                     tokio::time::sleep(TICK).await;
@@ -263,6 +266,7 @@ impl Driver {
                     Dialog::ConfirmPassword => overlays.confirm_password,
                     Dialog::LogOut => overlays.log_out,
                     Dialog::DeleteAccount => overlays.delete,
+                    Dialog::CancelChange => overlays.cancel_change,
                 };
                 open.set(true);
             }
@@ -324,6 +328,30 @@ impl Driver {
                     }
                 }
                 None => Action::Failed { ticket },
+            });
+        });
+    }
+
+    /// Drops the pending email change, clearing it from the session's user once the server has.
+    fn cancel_change(self, ticket: Ticket) {
+        let authed = self.runners.main;
+        spawn(async move {
+            let cancelled = authed
+                .run_at(
+                    component::EMAIL_VERIFICATION,
+                    "cancel_email_change",
+                    |c, s| async move { c.cancel_email_change(&s).await },
+                )
+                .await
+                .is_some();
+            self.dispatch(if cancelled {
+                self.store_user(|current| {
+                    current.user.pending_email = None;
+                    current.user.pending_email_expires_at = None;
+                });
+                Action::ChangeCancelled { ticket }
+            } else {
+                Action::Failed { ticket }
             });
         });
     }

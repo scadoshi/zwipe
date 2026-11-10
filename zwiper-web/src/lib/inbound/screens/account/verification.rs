@@ -1,11 +1,11 @@
 //! The Account email rows: the address with its badge, the pending address
-//! with its link tag and its resend and check buttons, and the Verification
+//! with its link tag and its resend, check and cancel buttons, and the Verification
 //! row's resend and check buttons.
 
 use std::time::Duration;
 
 use chrono::{DateTime, Utc};
-use components::{Button, ButtonVariant, TOAST_LONG, TOAST_NORMAL};
+use components::{AlertDialog, Button, ButtonVariant, DialogAction, TOAST_LONG, TOAST_NORMAL};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_client::{ClientError, ZwipeClient};
@@ -57,8 +57,9 @@ pub(super) fn PendingEmail(email: String, expires_at: Option<DateTime<Utc>>) -> 
 }
 
 /// The Pending row's `Resend`, which mails a fresh link for the change to
-/// `email` and goes gray behind its own 60 s countdown, and its refresh,
-/// which fetches the user and says whether the change went through.
+/// `email` and goes gray behind its own 60 s countdown, its refresh, which
+/// fetches the user and says whether the change went through, and `Cancel`,
+/// which asks first and then drops the change, taking the row with it.
 #[component]
 fn PendingActions(email: String) -> Element {
     let mut session: Signal<Option<Session>> = use_context();
@@ -70,6 +71,8 @@ fn PendingActions(email: String) -> Element {
     let mut is_resending = use_signal(|| false);
     let mut is_checking = use_signal(|| false);
     let mut cooldown = use_signal(|| 0u32);
+    let mut cancel_open = use_signal(|| false);
+    let mut is_cancelling = use_signal(|| false);
     let waited_for = email.clone();
 
     let resend = move |event: MouseEvent| {
@@ -150,6 +153,35 @@ fn PendingActions(email: String) -> Element {
         });
     };
 
+    // The toast goes up before the session drops the change, since clearing
+    // it unmounts this row and the task with it.
+    let cancel = use_callback(move |()| {
+        is_cancelling.set(true);
+        spawn(async move {
+            let cancelled = authed
+                .run("cancel_email_change", |c, s| async move {
+                    c.cancel_email_change(&s).await
+                })
+                .await
+                .is_some();
+            if !cancelled {
+                is_cancelling.set(false);
+                return;
+            }
+            toast.success(
+                account_screen::CHANGE_CANCELLED.to_string(),
+                ToastOptions::default().duration(TOAST_NORMAL),
+            );
+            let latest = session.peek().clone();
+            if let Some(mut latest) = latest {
+                latest.user.pending_email = None;
+                latest.user.pending_email_expires_at = None;
+                session.set(Some(latest));
+            }
+        });
+    });
+    let dialog = account_screen::Dialog::CancelChange;
+
     rsx! {
         Button {
             variant: ButtonVariant::Action,
@@ -174,6 +206,29 @@ fn PendingActions(email: String) -> Element {
                 }
                 span { class: "sr-only", {account_screen::CHECK_PENDING} }
             }
+        }
+        Button {
+            variant: ButtonVariant::Action,
+            danger: true,
+            disabled: is_cancelling(),
+            onclick: move |event: MouseEvent| {
+                event.stop_propagation();
+                cancel_open.set(true);
+            },
+            {account_screen::CANCEL_CHANGE}
+        }
+        AlertDialog {
+            open: cancel_open,
+            title: dialog.title(),
+            actions: vec![
+                DialogAction::Dismiss(account_screen::CANCEL.into()),
+                DialogAction::Confirm {
+                    label: dialog.confirm().into(),
+                    danger: true,
+                    on_confirm: cancel,
+                },
+            ],
+            {dialog.body()}
         }
     }
 }
