@@ -1,6 +1,6 @@
 # 325. The card details drawer's bottom border vanishes at 100% zoom
 
-State: reproduced | Owner: scotland | PR: - | Build seen: live 1.18.15+ (Surfer), local release 3a627a7c1+ (scotland)
+State: fixing | Owner: scotland | PR: #505 | Build seen: live 1.18.15+ (Surfer), local release 3a627a7c1+ (scotland)
 
 ## Report
 Scotty, 2026-11-10, web, desktop Chrome at about 1260x800: the card details side drawer (Dreamtide Whale, opened from a deck) shows no bottom border at 100% browser zoom; zooming in brings it back. Screenshot `target/scotty-shots/325-drawer-no-bottom-border.webp`.
@@ -23,9 +23,12 @@ Scotty's screenshot is `.card-details-drawer` (`zwiper-web/src/lib/inbound/cards
 - Bottom of `.web-swipe-details`: the box is as tall as its content (441.484 px here), so its bottom stays fractional even with a whole top.
 - Not hover: no `:hover` rule touches either element. The old hover lift excludes `.web-swipe-details` (`web.css:499`, `:506`).
 
-## Proposed fix (not started)
+## Proposed fix
 1. Snap the measured offsets to whole pixels: `NAV_HEIGHT_JS` writes `Math.round(height)`, and `footer_lift` returns a whole number. Both drawer edges, the docked pane's top, and the toast lift (284) then land on whole pixels at DPR 1.
 2. For the content-sized `.web-swipe-details` bottom, and as insurance at fractional DPRs, raise the panel border's contrast against `--bg-sink` / `--bg-primary` so a half-strength row still reads, or give the panel a whole-pixel height.
 3. Check the border color against each theme's body. 40,39,39 on 20,19,19 is too faint even when crisp.
 
 Test: a failing-first unit test in `footer_lift.rs` that `footer_lift` returns whole pixels for fractional inputs (for example 700.0 and 522.4 give 178.0). The nav height snap lives in a JS string and the visual result needs a browser, so that part gets a headless check (edges are whole numbers at DPR 1, the border shows in a crop) rather than a unit test.
+
+## Fix
+scotland, #505: `NAV_HEIGHT_JS` writes `--web-nav-h` as `Math.round` of the nav's height, and web.css rounds `--sheet-drawer-top` (the nav plus 0.7rem) to a whole pixel with `round(..., 1px)`, since 0.7rem alone is fractional. `footer_lift` rounds the footer's reach up to a whole pixel, so the drawer's floor clears the footer; failing-first test `a_fractional_footer_top_lifts_by_whole_pixels`. The card details panel (`magic.css`) and the card details drawer (`filter.css`, after the narrow drawer's border rule it has to beat) take `--border-primary` in place of `--border-secondary`, the border chips and buttons use, so a content-sized bottom edge that stays fractional still reads. Headless at 1260x800, DPR 1: the docked pane's top is 82 (was 82.19) and its border is rgb(98,94,90) on Kanagawa Dragon dark (was rgb(40,39,39)); the border shows on all four edges on Kanagawa Dragon dark and light, Matte Black dark and Material dark and light, at 1260 and 390. Not a wire change. Verify: the Repro shows the bottom border at 100% zoom.

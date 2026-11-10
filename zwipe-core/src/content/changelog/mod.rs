@@ -49,6 +49,7 @@ pub const RELEASES: &[Release] = &[
             "Account's refresh buttons have a name for screen readers",
             "Decks shows each deck's name and tags together beside its art",
             "Account shows a pending email change right after you log in, and closing a hint no longer hides it",
+            "Card details' border shows on every edge and reads on dark themes",
         ],
     },
     Release {

@@ -49,7 +49,7 @@ Who checked, on which live build, what they saw.
 | [315](315-add-pile-flashes-stale-card.md) | Add's pile flashes a stale card after applying a filter | reported | - | - |
 | [319](319-account-pending-row-after-login.md) | Account shows no Pending row on the first visit after login | reported | - | - |
 | [323](323-overview-lockout-columns.md) | overview.sql section 16 reads lockout columns that no longer exist | merged | thinker | #490 |
-| [325](325-drawer-bottom-border-clipped.md) | The card details drawer's bottom border vanishes at 100% zoom | reproduced | scotland | - |
+| [325](325-drawer-bottom-border-clipped.md) | The card details drawer's bottom border vanishes at 100% zoom | fixing | scotland | #505 |
 
 ## Waiting for live verification
 

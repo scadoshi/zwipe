@@ -965,6 +965,12 @@ i.ms.ms-cost.ms-gp {
     text-align: left;
 }
 
+/* The card details' edge takes the strong border so it reads on the
+   darkest and the palest themes. */
+.card-details-panel {
+    border-color: var(--border-primary);
+}
+
 .card-details-panel .card-details-oracle {
     margin-bottom: 0;
     font-size: 0.85rem;
