@@ -86,9 +86,9 @@ Who checked, on which live build, what they saw.
 | [318](318-pending-email-refresh-resend.md) | Pending email has no Refresh or Resend on web | approved | scotland | - |
 | [319](319-account-pending-row-after-login.md) | Account shows no Pending row on the first visit after login | reported | - | - |
 | [320](320-libsqlite3-sys-advisory.md) | Security audit fails on RUSTSEC-2026-0459 (libsqlite3-sys) | fixing | scotland | - |
-| [321](321-pending-refresh-no-name.md) | Account's Pending refresh button has no accessible name | fixing | scotland | - |
-| [322](322-deck-row-tags-beside-art.md) | Deck list rows: the tags drop under the art instead of beside it | fixing | thinker | #486, #489 |
-| [323](323-overview-lockout-columns.md) | overview.sql section 16 reads lockout columns that no longer exist | fixing | thinker | #490 |
+| [321](321-pending-refresh-no-name.md) | Account's Pending refresh button has no accessible name | verified | scotland | #485 |
+| [322](322-deck-row-tags-beside-art.md) | Deck list rows: the tags drop under the art instead of beside it | verified | thinker | #486, #489 |
+| [323](323-overview-lockout-columns.md) | overview.sql section 16 reads lockout columns that no longer exist | merged | thinker | #490 |
 | [324](324-pip-style-old-names-refused.md) | Store apps could not change pip style after the Phase 4 cleanup | verified | thinker | #494 |
 
 ## Waiting for live verification
