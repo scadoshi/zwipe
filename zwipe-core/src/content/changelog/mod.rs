@@ -66,6 +66,7 @@ pub const RELEASES: &[Release] = &[
             "On the web every button, link, field and row answers the mouse, disabled ones aside",
             "A failed request always says something went wrong instead of showing an empty error",
             "Distributions, Mana and Draw odds leave room above and below their charts",
+            "Undoing a remove brings the card back with its MVP star",
             "Printings says when it couldn't load and has Retry, instead of sitting empty on a slow network",
         ],
     },

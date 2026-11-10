@@ -4,6 +4,7 @@
 
 use std::collections::HashSet;
 
+use chrono::{DateTime, Utc};
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::deck::Board;
@@ -101,6 +102,8 @@ pub enum RemoveAction {
         board: Board,
         /// The copies the deck held, so undo restores all of them.
         quantity: i32,
+        /// When it was starred as an MVP, so undo restores the star.
+        mvp_at: Option<DateTime<Utc>>,
     },
     /// Up: moved between the main board and the maybeboard.
     MoveBoard {
