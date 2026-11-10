@@ -12,8 +12,8 @@
 
 use zwipe_core::http::paths::{
     CHANGE_EMAIL_ROUTE, CHANGE_PASSWORD_ROUTE, CHANGE_USERNAME_ROUTE, CONFIRM_EMAIL_CHANGE_ROUTE,
-    DECK_ROUTE, DELETE_USER_ROUTE, GET_USER_ROUTE, LEGACY_SETTINGS_ROUTE, LOGIN_ROUTE,
-    REFRESH_SESSION_ROUTE, RESEND_EMAIL_CHANGE_ROUTE, RESEND_VERIFICATION_ROUTE, SETTINGS_ROUTE,
+    DECK_ROUTE, DELETE_USER_ROUTE, GET_USER_ROUTE, LOGIN_ROUTE, REFRESH_SESSION_ROUTE,
+    RESEND_EMAIL_CHANGE_ROUTE, RESEND_VERIFICATION_ROUTE, SETTINGS_ROUTE,
 };
 mod common;
 
@@ -533,40 +533,6 @@ async fn delete_user_cascades_decks(pool: sqlx::PgPool) {
         .await
         .unwrap();
     assert_eq!(decks, 0, "decks cascaded on user delete");
-}
-
-/// A client before 1.18.0 reads the settings route under its old name and the
-/// login reply's settings under `preferences`. Both go when
-/// `MIN_CLIENT_VERSION` reaches 1.18.0.
-#[sqlx::test]
-async fn legacy_settings_names_still_answer(pool: sqlx::PgPool) {
-    let app = TestApp::new(pool);
-    let login = app.register_on("legacyuser", None).await;
-    assert_eq!(
-        login["preferences"], login["settings"],
-        "login carries both keys: {login}"
-    );
-    assert!(
-        login["settings"].is_object(),
-        "settings is an object: {login}"
-    );
-    let token = login["access_token"]["value"].as_str().unwrap();
-
-    let (status, updated) = app
-        .patch(
-            LEGACY_SETTINGS_ROUTE,
-            json!({ "theme": "dracula", "dark_mode": false }),
-            Some(token),
-        )
-        .await;
-    assert_eq!(status, StatusCode::OK, "legacy patch: {updated}");
-    assert_eq!(updated["theme"], "dracula");
-
-    let (status, legacy) = app.get(LEGACY_SETTINGS_ROUTE, Some(token)).await;
-    assert_eq!(status, StatusCode::OK, "legacy get: {legacy}");
-    let (status, current) = app.get(SETTINGS_ROUTE, Some(token)).await;
-    assert_eq!(status, StatusCode::OK, "get: {current}");
-    assert_eq!(legacy, current, "both routes read the same row");
 }
 
 #[sqlx::test]

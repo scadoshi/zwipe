@@ -6,7 +6,6 @@
 
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
-use thiserror::Error;
 
 use crate::domain::auth::models::access_token::AccessToken;
 use crate::domain::auth::models::refresh_token::RefreshToken;
@@ -19,13 +18,7 @@ use crate::domain::user::models::settings::UserSettings;
 pub const MAXIMUM_SESSION_COUNT: u8 = 10;
 
 /// A successful authentication response containing user data and tokens.
-///
-/// Serializes with the settings under `settings`. Deserializes from that key
-/// or from `preferences`, the name before 1.18.0, so a session a 1.17 app
-/// stored and the server's reply that carries both keys load. The fallback
-/// goes with the legacy settings route.
 #[derive(Debug, Clone, Serialize, PartialEq, Deserialize)]
-#[serde(try_from = "SessionWire")]
 pub struct Session {
     /// The authenticated user's public profile information.
     pub user: User,
@@ -38,38 +31,6 @@ pub struct Session {
 
     /// User's display settings (theme, dark mode).
     pub settings: UserSettings,
-}
-
-/// The session as it reads off the wire: `settings`, or `preferences` from
-/// before 1.18.0, or both. Goes with the legacy settings route.
-#[derive(Deserialize)]
-struct SessionWire {
-    user: User,
-    access_token: AccessToken,
-    refresh_token: RefreshToken,
-    #[serde(default)]
-    settings: Option<UserSettings>,
-    #[serde(default)]
-    preferences: Option<UserSettings>,
-}
-
-/// Neither `settings` nor `preferences` was present.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Error)]
-#[error("missing field `settings`")]
-pub struct MissingSettings;
-
-impl TryFrom<SessionWire> for Session {
-    type Error = MissingSettings;
-
-    fn try_from(wire: SessionWire) -> Result<Self, Self::Error> {
-        let settings = wire.settings.or(wire.preferences).ok_or(MissingSettings)?;
-        Ok(Self {
-            user: wire.user,
-            access_token: wire.access_token,
-            refresh_token: wire.refresh_token,
-            settings,
-        })
-    }
 }
 
 impl Session {
@@ -126,43 +87,5 @@ mod tests {
         let future = Utc::now() + Duration::days(14);
         let session = make_session(future);
         assert!(!session.is_expired());
-    }
-
-    #[test]
-    fn serializes_settings_under_the_new_key_only() {
-        let session = make_session(Utc::now() + Duration::days(14));
-        let wire = serde_json::to_value(&session).unwrap();
-        assert!(wire.get("settings").is_some(), "settings key: {wire}");
-        assert!(wire.get("preferences").is_none(), "no legacy key: {wire}");
-        let back: Session = serde_json::from_value(wire).unwrap();
-        assert_eq!(back, session);
-    }
-
-    #[test]
-    fn loads_a_session_stored_under_the_legacy_key() {
-        let session = make_session(Utc::now() + Duration::days(14));
-        let mut wire = serde_json::to_value(&session).unwrap();
-        let settings = wire.as_object_mut().unwrap().remove("settings").unwrap();
-        wire["preferences"] = settings;
-        let back: Session = serde_json::from_value(wire).unwrap();
-        assert_eq!(back, session);
-    }
-
-    #[test]
-    fn loads_a_reply_carrying_both_keys() {
-        let session = make_session(Utc::now() + Duration::days(14));
-        let mut wire = serde_json::to_value(&session).unwrap();
-        wire["preferences"] = wire["settings"].clone();
-        let back: Session = serde_json::from_value(wire).unwrap();
-        assert_eq!(back, session);
-    }
-
-    #[test]
-    fn refuses_a_session_with_neither_key() {
-        let session = make_session(Utc::now() + Duration::days(14));
-        let mut wire = serde_json::to_value(&session).unwrap();
-        wire.as_object_mut().unwrap().remove("settings");
-        let err = serde_json::from_value::<Session>(wire).unwrap_err();
-        assert!(err.to_string().contains("settings"), "{err}");
     }
 }

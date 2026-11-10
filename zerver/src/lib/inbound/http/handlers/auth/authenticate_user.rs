@@ -4,7 +4,7 @@ use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::http::contracts::auth::{HttpAuthenticateUser, HttpSession};
+use zwipe_core::http::contracts::auth::HttpAuthenticateUser;
 use zwipe_core::http::messages;
 use zwipe_core::version::Version;
 
@@ -68,9 +68,9 @@ pub async fn authenticate_user(
     State(state): State<AppState>,
     ClientIp(client_ip): ClientIp,
     Json(body): Json<HttpAuthenticateUser>,
-) -> Result<(StatusCode, Json<HttpSession>), ApiError> {
+) -> Result<(StatusCode, Json<Session>), ApiError> {
     let session = login(&state, client_ip, &body).await?;
-    Ok((StatusCode::OK, Json(HttpSession::from(session))))
+    Ok((StatusCode::OK, Json(session)))
 }
 
 /// The login both the app's route and the browser's run: checks the

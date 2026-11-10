@@ -4,7 +4,7 @@ use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::http::contracts::auth::{HttpRefreshSession, HttpSession};
+use zwipe_core::http::contracts::auth::HttpRefreshSession;
 use zwipe_core::version::Version;
 
 use crate::domain::auth::ports::AuthService;
@@ -79,10 +79,10 @@ impl TryFrom<HttpRefreshSession> for RefreshSession {
 pub async fn refresh_session(
     State(state): State<AppState>,
     Json(body): Json<HttpRefreshSession>,
-) -> Result<(StatusCode, Json<HttpSession>), ApiError> {
+) -> Result<(StatusCode, Json<Session>), ApiError> {
     let request = RefreshSession::try_from(body)?;
     let session = refresh(&state, &request).await?;
-    Ok((StatusCode::OK, Json(HttpSession::from(session))))
+    Ok((StatusCode::OK, Json(session)))
 }
 
 /// The rotation both the app's route and the browser's run: consumes the

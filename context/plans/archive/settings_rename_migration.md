@@ -1,12 +1,12 @@
 # Settings rename on the wire: `preferences` to `settings`
 
-**Status: Phase 1 deployed to production, 2026-11-05. Phase 2 rides 1.18.0. Phase 3 waits for the floor.**
+**Status: done. Phase 1 deployed to production 2026-11-05, Phase 2 rode 1.18.0, and Phase 3 landed 2026-11-10 with `MIN_CLIENT_VERSION` at 1.18.1 in production (branch `nits/scotland-settings-phase3`). Archived.**
 
 **One sentence:** every identifier, module, table and doc that said preference says setting, and the two places a shipped client can see the old name, the route `/api/user/preferences` and the login reply's `preferences` key, keep answering under both names until `MIN_CLIENT_VERSION` is 1.18.0.
 
 ## The rule this follows
 
-[`../development/api_evolution.md`](../development/api_evolution.md): a renamed route or key is a wire change, so the server goes lenient first, the client switches once the server is deployed, and the old name goes only behind the version floor. The precedent is [`pip_color_wire.md`](pip_color_wire.md), which is in flight on the same floor.
+[`../development/api_evolution.md`](../../development/api_evolution.md): a renamed route or key is a wire change, so the server goes lenient first, the client switches once the server is deployed, and the old name goes only behind the version floor. The precedent is [`pip_color_wire.md`](../pip_color_wire.md), which is in flight on the same floor.
 
 ## What a 1.17 client needs
 
@@ -34,7 +34,10 @@ Nothing beyond what is on main: `zwipe-client` calls `SETTINGS_ROUTE`, and the a
 
 Deploy order is server first, as always. The server on main already answers both names, so there is no window where a 1.18.0 build can meet a server that lacks `/api/user/settings`.
 
-## Phase 3: the server narrows
+## Phase 3: the server narrows. DONE 2026-11-10
+
+Landed with the floor at 1.18.1 in production, on `nits/scotland-settings-phase3`: `LEGACY_SETTINGS_ROUTE` and its two `FIXED_ROUTES` rows, `LEGACY_SETTINGS_SEGMENT` and its route, `HttpSession` (the login, refresh and cookie handlers answer `Json<Session>` again), `SessionWire` and `MissingSettings` are gone, `Session` is a plain derive, and the five Phase 1 tests are deleted. The leftover-name grep hits only changelog entries, the telemetry strings and one ordinary use of the word in a card query comment. The steps as planned:
+
 
 When 1.18.0 is live on both stores and the rollout has settled, set `MIN_CLIENT_VERSION=1.18.0` in `/etc/zwipe/zerver.env` and restart zerver, then wait a few quiet days on `zcripts/metrics/errors.sql`. Then, in one commit:
 
@@ -53,8 +56,8 @@ The web crate `zwiper-web` lives only on `feat/web`, so this branch leaves it al
 
 ## Other migrations on the same floor
 
-- [`pip_color_wire.md`](pip_color_wire.md): Phase 3 raises the floor to a build that reads both pip names (1.17.1 or later; 1.18.0 qualifies), and Phase 4, built on `server/pip-color-classic`, writes `classic` only. Raising the floor to 1.18.0 for this plan satisfies that plan's Phase 3 too, so merge `server/pip-color-classic` in the same window as Phase 3 above.
-- [`access_token_window.md`](access_token_window.md): one open item, Android's plaintext `session.json`, which is its own task and not tied to the floor.
+- [`pip_color_wire.md`](../pip_color_wire.md): Phase 3 raises the floor to a build that reads both pip names (1.17.1 or later; 1.18.0 qualifies), and Phase 4, built on `server/pip-color-classic`, writes `classic` only. Raising the floor to 1.18.0 for this plan satisfies that plan's Phase 3 too, so merge `server/pip-color-classic` in the same window as Phase 3 above.
+- [`access_token_window.md`](../access_token_window.md): one open item, Android's plaintext `session.json`, which is its own task and not tied to the floor.
 - `zerver/migrations/`: nothing else pending. Every migration up to `20261105120000` is applied locally and deploys with the next zerver push.
 
 ## Release day, in order
