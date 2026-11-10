@@ -288,18 +288,15 @@ ORDER BY card_rows DESC;
 
 -- ───────────────────────────────────────────────────────────────────
 \echo
-\echo ── 16. ACCOUNT ACTIVITY — credential changes + lockouts ──
--- Identity churn (from the audit log) and any accounts currently locked out.
+\echo ── 16. ACCOUNT ACTIVITY — credential changes ──
+-- Identity churn, from the audit log. Login lockouts are not in the database:
+-- since the 2026-10-10 security audit they live in zerver's memory, per
+-- address, and the users table's lockout columns are gone (migration
+-- 20261022120000).
 SELECT action, count(*) AS events
 FROM user_audit_log
 GROUP BY action
 ORDER BY events DESC;
-
-\echo
-SELECT
-    count(*) FILTER (WHERE lockout_until > now())     AS currently_locked_out,
-    count(*) FILTER (WHERE failed_login_attempts > 0) AS users_with_failed_logins
-FROM users;
 
 \echo
 \echo ════════════════════════════════════════════════════════════════
