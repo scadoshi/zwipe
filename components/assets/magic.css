@@ -1846,6 +1846,22 @@ html.keyboard-up .web-dock-pair {
 
 .cover-flow-card img {
     object-fit: contain;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.cover-flow-card img.shown {
+    opacity: 1;
+}
+
+/* A printing's own ghost in the card's shape, over its image until the
+   image arrives. */
+.cover-flow-ghost {
+    position: absolute;
+    inset: 0;
+    border-radius: 4.75% / 3.5%;
+    background-color: var(--border-muted);
+    animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 .cover-flow-missing {
