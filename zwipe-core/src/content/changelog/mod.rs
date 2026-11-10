@@ -36,6 +36,13 @@ pub struct Release {
     pub entries: &'static [&'static str],
 }
 
+/// The version the App Store and Play both serve now: the changelog marks
+/// it Mobile, and a newer shipped release Web, since the web deploys ahead
+/// of store review. Bump it when a mobile store build clears review on both
+/// stores, to the version they then both serve. Compiled in, not served:
+/// each client reads its own copy.
+pub const MOBILE_STORE_VERSION: Version = Version::new(1, 18, 14);
+
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
 pub const UPCOMING: &[Release] = &[];
@@ -49,6 +56,7 @@ pub const RELEASES: &[Release] = &[
             "Account's refresh buttons have a name for screen readers",
             "Decks shows each deck's name and tags together beside its art",
             "Account shows a pending email change right after you log in, and closing a hint no longer hides it",
+            "The changelog marks the release on the web Web and the one in the app stores Mobile",
         ],
     },
     Release {
@@ -1096,5 +1104,13 @@ mod tests {
             .filter(|(_, entry)| entry.trim().is_empty() || entry.contains('\u{2014}'))
             .collect();
         assert!(offenders.is_empty(), "{offenders:#?}");
+    }
+
+    #[test]
+    fn the_mobile_store_version_names_a_shipped_release() {
+        assert!(
+            RELEASES.iter().any(|r| r.version == MOBILE_STORE_VERSION),
+            "{MOBILE_STORE_VERSION} is in RELEASES"
+        );
     }
 }
