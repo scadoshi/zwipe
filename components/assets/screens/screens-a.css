@@ -16,6 +16,45 @@
     -webkit-user-select: none;
 }
 
+/* Holds the stack in the screen's flex slot. While a new pile reveals, the
+   stack loads its images hidden under the ghost card, which already shows,
+   so it does not play its entrance again. */
+.swipe-reveal {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+}
+
+.swipe-reveal.revealing > .swipe-stack {
+    position: absolute;
+    inset: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.swipe-reveal.revealing > .skeleton-card {
+    animation: none;
+}
+
+/* The stack fades in as one piece once the pile shows, and its images skip
+   their own fade, so the top card is opaque over the cards under it. */
+.swipe-reveal > .swipe-stack .flippable-card-wrapper img {
+    transition: none;
+}
+
+.swipe-reveal:not(.revealing) > .swipe-stack {
+    animation: swipe-reveal-in 250ms ease;
+}
+
+@keyframes swipe-reveal-in {
+    from {
+        opacity: 0;
+    }
+}
+
 /* Each card in the stack — absolutely positioned so peeking layers overlap.
    The transform transition drives the subtle "new top slides up into place"
    animation when the slice shifts, and also carries the exit transform. */

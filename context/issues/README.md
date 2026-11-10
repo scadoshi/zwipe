@@ -46,7 +46,7 @@ Who checked, on which live build, what they saw.
 |---|---|---|---|---|
 | [308](308-share-image-size-for-whatsapp.md) | Share preview images may be too big for WhatsApp | parked | - | - |
 | [313](313-decks-list-price-chip.md) | Decks list shows no price per deck | merged | scotland | #465 |
-| [315](315-add-pile-flashes-stale-card.md) | Add's pile flashes a stale card after applying a filter | reported | - | - |
+| [315](315-add-pile-flashes-stale-card.md) | Add's pile flashes a stale card after applying a filter | fixing | thinker | - |
 | [319](319-account-pending-row-after-login.md) | Account shows no Pending row on the first visit after login | reported | - | - |
 | [323](323-overview-lockout-columns.md) | overview.sql section 16 reads lockout columns that no longer exist | merged | thinker | #490 |
 
