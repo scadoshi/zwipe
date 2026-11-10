@@ -18,6 +18,7 @@ use crate::domain::auth::models::UserWithPasswordHash;
 use crate::domain::auth::models::password::HashedPassword;
 use crate::domain::auth::ports::AuthRepository;
 use crate::domain::auth::requests::authenticate_user::{AuthenticateUser, AuthenticateUserError};
+use crate::domain::auth::requests::cancel_email_change::CancelEmailChangeError;
 use crate::domain::auth::requests::change_email::ChangeEmailError;
 use crate::domain::auth::requests::change_password::{ChangePassword, ChangePasswordError};
 use crate::domain::auth::requests::change_username::{ChangeUsername, ChangeUsernameError};
@@ -176,6 +177,27 @@ impl AuthRepository for Postgres {
         .await
         .map_err(|e| ChangeEmailError::Database(e.into()))?;
         Ok(())
+    }
+
+    async fn delete_email_change_request(
+        &self,
+        user_id: Uuid,
+    ) -> Result<(), CancelEmailChangeError> {
+        let live = query_scalar!(
+            r#"WITH gone AS (
+                   DELETE FROM email_change_requests WHERE user_id = $1 RETURNING expires_at
+               )
+               SELECT EXISTS (SELECT 1 FROM gone WHERE expires_at > NOW()) AS "live!""#,
+            user_id
+        )
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|e| CancelEmailChangeError::Database(e.into()))?;
+        if live {
+            Ok(())
+        } else {
+            Err(CancelEmailChangeError::NoPendingChange)
+        }
     }
 
     async fn use_email_change_request(
