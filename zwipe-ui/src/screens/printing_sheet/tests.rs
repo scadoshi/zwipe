@@ -148,7 +148,7 @@ fn retry_sends_the_failed_fetch_again_and_the_sheet_recovers() {
     let all = printings();
     let mut state = State::default();
     let first = ticket_of(&open(&mut state, &all[1]));
-    state.update(Action::Failed { ticket: first });
+    assert_eq!(state.update(Action::Failed { ticket: first }), NONE);
 
     let effects = state.update(Action::Retry);
     let again = ticket_of(&effects);
@@ -183,9 +183,9 @@ fn a_retry_can_fail_again_and_be_retried() {
     let all = printings();
     let mut state = State::default();
     let ticket = ticket_of(&open(&mut state, &all[0]));
-    state.update(Action::Failed { ticket });
+    assert_eq!(state.update(Action::Failed { ticket }), NONE);
     let ticket = ticket_of(&state.update(Action::Retry));
-    state.update(Action::Failed { ticket });
+    assert_eq!(state.update(Action::Failed { ticket }), NONE);
     assert_eq!(state.status(), Status::Failed);
     assert!(matches!(
         state.update(Action::Retry)[..],
@@ -198,7 +198,7 @@ fn opening_another_card_after_a_failure_fetches_that_card() {
     let all = printings();
     let mut state = State::default();
     let ticket = ticket_of(&open(&mut state, &all[0]));
-    state.update(Action::Failed { ticket });
+    assert_eq!(state.update(Action::Failed { ticket }), NONE);
     let other = card("Arcane Signet");
     let effects = open(&mut state, &other);
     assert!(
