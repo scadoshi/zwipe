@@ -305,7 +305,7 @@ pub(crate) fn DeckListSkeleton() -> Element {
                     for (i , chips) in TILES.iter().enumerate() {
                         div { key: "{i}", class: "card-row deck-row",
                             // One tile, like the live one: art, then the name
-                            // with the chips under it beside the art.
+                            // with the chips flowing after it beside the art.
                             div { class: "deck-list-row",
                                 div { class: "skeleton-bar skeleton-deck-list-art" }
                                 div { class: "deck-row-text",

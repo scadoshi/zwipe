@@ -168,7 +168,7 @@
     box-shadow: var(--shadow-sm);
 }
 
-/* The art, then one column with the name over the chips, so the chips wrap
+/* The art, then one column with the name and the chips, so the chips wrap
    beside the art rather than under it. */
 .deck-list-row {
     display: flex;
@@ -177,32 +177,33 @@
     min-width: 0;
 }
 
-/* The column takes the rest of the row, the name on its first line and the
-   chips wrapping beneath it. */
+/* The column takes the rest of the row as one wrapping line: the name
+   first, then the pips, the count and the chips flowing right after it and
+   onto the lines below. */
 .deck-row-text {
     flex: 1 1 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
-    min-width: 0;
-}
-
-/* A long name wraps inside the column instead of pushing it wider. */
-.deck-list-name {
-    min-width: 0;
-    margin: 0;
-    overflow-wrap: anywhere;
-    word-break: break-word;
-}
-
-/* The pips, the count and the chips, a deck carrying far more than a card
-   does, so they wrap. */
-.deck-row-chips {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 0.4rem;
     min-width: 0;
+}
+
+/* A name longer than the column wraps inside it, and the chips follow on
+   the next line. */
+.deck-list-name {
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: 100%;
+    margin: 0 0.25rem 0 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+/* The chips' box steps aside, so each chip is an item of the name's line
+   and wraps with it. */
+.deck-row-chips {
+    display: contents;
 }
 
 /* Tag chips inside a deck-detail info row wrap instead of forcing one line. */
