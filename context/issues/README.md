@@ -50,7 +50,8 @@ Who checked, on which live build, what they saw.
 | [323](323-overview-lockout-columns.md) | overview.sql section 16 reads lockout columns that no longer exist | merged | thinker | #490 |
 | [325](325-drawer-bottom-border-clipped.md) | The card details drawer's bottom border vanishes at 100% zoom | fixing | scotland | #505 |
 | [326](326-printings-blank-tiles.md) | Printings shows blank cards until their images load | fixing | thinker | - |
-| [327](327-cancel-pending-email-change.md) | A pending email change can't be cancelled | fixing | scotland | #507 |
+| [327](327-cancel-pending-email-change.md) | A pending email change can't be cancelled | fixing | scotland | #507, #508 |
+| [328](328-generic-pip-ring.md) | Pip rings split on expanded and hovered card rows | fixing | thinker | - |
 | [330](330-undo-remove-drops-star.md) | Undo of a remove brings the card back without its star | fixing | thinker | - |
 
 ## Waiting for live verification
