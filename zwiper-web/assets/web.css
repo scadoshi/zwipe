@@ -913,10 +913,11 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 }
 
 /* ---- Sheets on a wide window ----
-   The kit's SheetFrame draws them; the drawer starts under the bar. */
+   The kit's SheetFrame draws them; the drawer starts under the bar, on a
+   whole pixel so its border draws crisp. */
 @media (min-width: 900px) {
     :root {
-        --sheet-drawer-top: calc(var(--web-nav-h, 4.7rem) + 0.7rem);
+        --sheet-drawer-top: round(calc(var(--web-nav-h, 4.7rem) + 0.7rem), 1px);
     }
 
     /* The dock sits as far left of the scrollbar along the drawer's right

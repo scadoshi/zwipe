@@ -17,6 +17,7 @@ use crate::domain::auth::models::password::{self, HashedPassword, Password};
 use crate::domain::auth::notice_cooldown::NoticeCooldown;
 use crate::domain::auth::ports::{AuthRepository, AuthService};
 use crate::domain::auth::requests::authenticate_user::{AuthenticateUser, AuthenticateUserError};
+use crate::domain::auth::requests::cancel_email_change::CancelEmailChangeError;
 use crate::domain::auth::requests::change_email::{ChangeEmail, ChangeEmailError};
 use crate::domain::auth::requests::change_password::{ChangePassword, ChangePasswordError};
 use crate::domain::auth::requests::change_username::{ChangeUsername, ChangeUsernameError};
@@ -582,6 +583,12 @@ where
         user.pending_email = Some(request.email.clone());
         user.pending_email_expires_at = Some(expires_at);
         Ok(user)
+    }
+
+    async fn cancel_email_change(&self, user_id: Uuid) -> Result<(), CancelEmailChangeError> {
+        self.auth_repo.delete_email_change_request(user_id).await?;
+        tracing::info!(event = "email_change_cancelled", user_id = %user_id);
+        Ok(())
     }
 
     async fn resend_email_change(&self, user: &User) -> Result<(), ResendEmailChangeError> {

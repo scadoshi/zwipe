@@ -60,6 +60,7 @@ pub const RELEASES: &[Release] = &[
             "Add no longer flashes another card before a new pile's top card shows",
             "The changelog shows which release is on the web and which is in the app stores",
             "Printings shows each card's outline while its image loads",
+            "Card details' border shows on every edge and reads on dark themes",
         ],
     },
     Release {

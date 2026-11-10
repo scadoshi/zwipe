@@ -11,9 +11,10 @@
 )]
 
 use zwipe_core::http::paths::{
-    CHANGE_EMAIL_ROUTE, CHANGE_PASSWORD_ROUTE, CHANGE_USERNAME_ROUTE, CONFIRM_EMAIL_CHANGE_ROUTE,
-    DECK_ROUTE, DELETE_USER_ROUTE, GET_USER_ROUTE, LOGIN_ROUTE, MARK_HINT_SHOWN_ROUTE,
-    REFRESH_SESSION_ROUTE, RESEND_EMAIL_CHANGE_ROUTE, RESEND_VERIFICATION_ROUTE, SETTINGS_ROUTE,
+    CANCEL_EMAIL_CHANGE_ROUTE, CHANGE_EMAIL_ROUTE, CHANGE_PASSWORD_ROUTE, CHANGE_USERNAME_ROUTE,
+    CONFIRM_EMAIL_CHANGE_ROUTE, DECK_ROUTE, DELETE_USER_ROUTE, GET_USER_ROUTE, LOGIN_ROUTE,
+    MARK_HINT_SHOWN_ROUTE, REFRESH_SESSION_ROUTE, RESEND_EMAIL_CHANGE_ROUTE,
+    RESEND_VERIFICATION_ROUTE, SETTINGS_ROUTE,
 };
 mod common;
 
@@ -493,6 +494,73 @@ async fn resend_email_change_is_held_to_one_a_minute(pool: sqlx::PgPool) {
         StatusCode::TOO_MANY_REQUESTS,
         "a second press waits"
     );
+}
+
+#[sqlx::test]
+async fn cancel_email_change_drops_the_pending_change_and_kills_its_link(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool);
+    let (token, _) = app.register("changeable").await;
+
+    let before = app.emails.count();
+    let _ = request_change(&app, &token, "second-thoughts@test.local").await;
+    app.emails.wait_for(before + 1).await;
+    let link = app.emails.last_token("confirm-email").unwrap();
+
+    let (status, body) = app
+        .post(CANCEL_EMAIL_CHANGE_ROUTE, json!({}), Some(&token))
+        .await;
+    assert_eq!(status, StatusCode::OK, "cancel: {body}");
+
+    let (_, me) = app.get(GET_USER_ROUTE, Some(&token)).await;
+    assert!(me["pending_email"].is_null(), "nothing pending: {me}");
+    assert_eq!(me["email"], "changeable@test.local", "the address stays");
+
+    let (status, _) = app
+        .post(CONFIRM_EMAIL_CHANGE_ROUTE, json!({ "token": link }), None)
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "the cancelled link is dead"
+    );
+    let (_, me) = app.get(GET_USER_ROUTE, Some(&token)).await;
+    assert_eq!(me["email"], "changeable@test.local");
+}
+
+#[sqlx::test]
+async fn cancel_email_change_without_a_pending_change_is_not_found(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool);
+    let (token, _) = app.register("unchanged").await;
+
+    let (status, body) = app
+        .post(CANCEL_EMAIL_CHANGE_ROUTE, json!({}), Some(&token))
+        .await;
+    assert_eq!(status, StatusCode::NOT_FOUND, "{body}");
+}
+
+#[sqlx::test]
+async fn cancel_email_change_twice_is_not_found_the_second_time(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool);
+    let (token, _) = app.register("decisive").await;
+    let (status, _) = request_change(&app, &token, "decisive-new@test.local").await;
+    assert_eq!(status, StatusCode::OK);
+
+    let (status, _) = app
+        .post(CANCEL_EMAIL_CHANGE_ROUTE, json!({}), Some(&token))
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    let (status, body) = app
+        .post(CANCEL_EMAIL_CHANGE_ROUTE, json!({}), Some(&token))
+        .await;
+    assert_eq!(status, StatusCode::NOT_FOUND, "already gone: {body}");
+}
+
+#[sqlx::test]
+async fn cancel_email_change_needs_a_session(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool);
+
+    let (status, _) = app.post(CANCEL_EMAIL_CHANGE_ROUTE, json!({}), None).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
 }
 
 #[sqlx::test]
