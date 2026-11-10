@@ -183,7 +183,8 @@ impl Drag {
 /// The stack: `cards` top first, of which only the top takes input. A swipe
 /// in `allowed` calls `on_swipe` with the top card; any other springs back.
 /// `entering` names the side the top card comes back from after an undo,
-/// and `on_entered` clears it once that keyframe ends.
+/// and `on_entered` clears it once that keyframe ends. `on_top_shown` fires
+/// once the top card's image has its bytes, failed, or has no art.
 #[component]
 pub fn SwipeStack(
     cards: Vec<Card>,
@@ -192,6 +193,7 @@ pub fn SwipeStack(
     on_swipe: EventHandler<(Swipe, Card)>,
     #[props(default)] entering: Option<Direction>,
     #[props(default)] on_entered: Option<EventHandler<()>>,
+    #[props(default)] on_top_shown: Option<EventHandler<()>>,
 ) -> Element {
     let mut drag: Signal<Option<Drag>> = use_signal(|| None);
     let mut exiting: Signal<Vec<Exiting>> = use_signal(Vec::new);
@@ -313,6 +315,11 @@ pub fn SwipeStack(
                                 class: "card-image".to_string(),
                                 draggable: false,
                                 flippable: is_top,
+                                on_load: move |()| {
+                                    if is_top && let Some(handler) = on_top_shown {
+                                        handler.call(());
+                                    }
+                                },
                             }
                         }
                     }

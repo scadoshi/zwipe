@@ -1,6 +1,6 @@
 # 315. Add's pile flashes a stale card after applying a filter
 
-State: investigating | Owner: thinker | PR: - | Build seen: 1.18.14
+State: fixing | Owner: thinker | PR: - | Build seen: 1.18.14
 
 ## Report
 Droid, 2026-11-08, Android app (prod): on Add, applying a filter shows one card for about 0.3s (Deadly Rollick), then a different top card (Drakuseth) replaces it. Same in an earlier take (Abrade, then Rakdos Charm), so it isn't new. Likely the old pile's next card renders before the filtered pile arrives. Footage: ~/Developer/video-factory/videos/oracle-tags/footage/raw/o4.mp4 at ~9.6s.
@@ -42,4 +42,11 @@ In `zwipe-ui/src/screens/add_cards/tests.rs`: `a_new_pile_stays_ghosted_until_it
 - Add a second test: a swipe while revealing clears the flag.
 
 Today the first assertion fails, because `pile()` is `Cards` as soon as the page lands.
+
+## Fix
+thinker, 2026-11-09, as proposed above, on `nits/thinker-315`.
+- Model: `State::revealing` holds the ticket of a pile that landed but whose top card is not on screen yet. `pile()` reads `Loading` and `current()` is `None` meanwhile. `Action::TopShown { ticket }` ends it, and so do undo, a source switch and every new search.
+- App and web: the stack renders hidden under `CardSkeleton` while the pile reveals. The top card's `on_load` sends `TopShown`, with `timing::PILE_REVEAL_FALLBACK` (1.5s) as a ceiling.
+- Inside the reveal, the stack fades in as one piece and its images skip their own fade. Otherwise the top image, still easing in from transparent, would show the card under it for a frame or two.
+- Reproduced on web with mocked replies and the top image held 0.9s. On release, an under-card showed for 46 to 53 frames on load and redeal. On the branch: 0 frames, the ghost held about 0.95s, then the real top faded in.
 

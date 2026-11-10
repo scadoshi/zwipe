@@ -33,7 +33,7 @@ use zwipe_ui::add::{AddDeck, normalized, related_ids, synergy_note};
 use zwipe_ui::deck_signals::{Crossing, Level, budget_crossing, land_crossing, price_of};
 use zwipe_ui::filter::AddContext;
 use zwipe_ui::filter::draft::{ResetRule, SheetConfig};
-use zwipe_ui::generation::Generation;
+use zwipe_ui::generation::{Generation, Ticket};
 use zwipe_ui::hint::Role;
 use zwipe_ui::screens::add_cards;
 use zwipe_ui::stack::{
@@ -46,7 +46,7 @@ use zwipe_ui::stores::parked::ParkedStack;
 use zwipe_ui::stores::undo;
 use zwipe_ui::stores::undo::UndoAction;
 use zwipe_ui::telemetry::vocabulary::{DeckScreen, Screen};
-use zwipe_ui::timing::LOAD_MORE_AT;
+use zwipe_ui::timing::{LOAD_MORE_AT, PILE_REVEAL_FALLBACK};
 
 use super::{OneLine, SwipeDetails, flip_top_card};
 use crate::inbound::card_filter::CardFilterPanel;
@@ -65,6 +65,7 @@ use crate::inbound::root_signal::use_signal_for_root_tasks;
 use crate::inbound::session::ensure_fresh::ensure_fresh;
 use crate::inbound::shell::ScreenFrame;
 use crate::inbound::telemetry;
+use crate::outbound::timer;
 
 /// A downward pull this long, in pixels, on the empty end of the pile
 /// undoes the last swipe, as in the app.
@@ -146,6 +147,9 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
     let mut search_failed = use_signal(|| false);
     let mut loading_more = use_signal(|| false);
     let mut searches = use_signal(Generation::default);
+    // The search whose new pile waits under the ghost until its top card's
+    // image shows.
+    let mut revealing: Signal<Option<Ticket>> = use_signal(|| None);
     let mut first_run = use_signal(|| true);
     let mut show_details = use_signal(|| false);
     let eye = use_details_eye(show_details, Surface::Window);
@@ -242,6 +246,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         if *source.peek() != AddSource::Search {
             return;
         }
+        revealing.set(None);
         let builder = normalized(&filter.peek());
         let first = *first_run.peek();
         if first {
@@ -322,6 +327,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                     .record_pile_end(deck_id, PileEndKind::Empty, snapshot.synergy());
             }
             stack.write().replace_ahead(served);
+            revealing.set(stack.peek().current().is_some().then_some(ticket));
             last_search.set(Some(snapshot));
         });
     });
@@ -543,6 +549,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
     };
 
     let undo_search = use_callback(move |()| {
+        revealing.set(None);
         let popped = stack.write().pop_action();
         let Some(action) = popped else {
             toast.info("Nothing to undo".to_string(), ToastOptions::default());
@@ -825,6 +832,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             (AddSource::Search, None) => context().fresh_search(),
         };
         filter.set(next);
+        revealing.set(None);
         source.set(to);
         mb_stack.write().rewind();
         bump();
@@ -864,6 +872,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             return;
         };
         let ticket = searches.write().next_ticket();
+        revealing.set(None);
         stack.write().reset();
         reset_image_ease();
         last_search.set(None);
@@ -892,14 +901,33 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
             related_announced.set(false);
             let served: Vec<Card> = page.cards.into_iter().filter(|c| !holds(c)).collect();
             stack.write().replace(served);
+            revealing.set(stack.peek().current().is_some().then_some(ticket));
             last_search.set(Some(snapshot));
             toast.info(add_cards::STACK_REFRESHED.to_owned(), quick);
         });
     });
 
+    // A pile under the ghost shows once its top card's image does, or after
+    // the fallback, so a stalled image never hides it.
+    let shown = use_callback(move |ticket: Ticket| {
+        if *revealing.peek() == Some(ticket) {
+            revealing.set(None);
+        }
+    });
+    let reveal = revealing();
+    use_effect(use_reactive!(|reveal| {
+        if let Some(ticket) = reveal {
+            spawn(async move {
+                timer::sleep(PILE_REVEAL_FALLBACK).await;
+                shown.call(ticket);
+            });
+        }
+    }));
+
     let at = source();
+    // While the ghost holds a new pile, no card is described.
     let current: Option<Card> = match at {
-        AddSource::Search => stack.read().current().cloned(),
+        AddSource::Search => stack.read().current().filter(|_| reveal.is_none()).cloned(),
         AddSource::Maybeboard => mb_stack.read().current_wrapping().cloned(),
     };
     let has_current = current.is_some();
@@ -907,7 +935,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         control,
         ALL_SWIPES.to_vec(),
         Callback::new(move |()| match *source.peek() {
-            AddSource::Search => stack.peek().current().is_some(),
+            AddSource::Search => stack.peek().current().is_some() && revealing.peek().is_none(),
             AddSource::Maybeboard => mb_stack.peek().current_wrapping().is_some(),
         }),
         undo_now,
@@ -916,7 +944,10 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
     use_page_keys(Callback::new(move |key: String| match key.as_str() {
         "f" | "F" => flip_top_card(),
         "p" | "P" => {
-            if *source.peek() == AddSource::Search && stack.peek().current().is_some() {
+            if *source.peek() == AddSource::Search
+                && stack.peek().current().is_some()
+                && revealing.peek().is_none()
+            {
                 printing_open.set(true);
             }
         }
@@ -1010,30 +1041,42 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                 SwipeScreenChips { title: add_cards::TITLE, tone: Role::Success, confirm, at_end: current.is_none() }
                 div { class: "web-cards-swipe-main",
                     div { class: "form-container",
-                        if current.is_some() {
-                            SwipeStack {
-                                cards: window,
-                                allowed: ALL_SWIPES.to_vec(),
-                                control,
-                                entering,
-                                on_entered: move |()| match *source.peek() {
-                                    AddSource::Search => stack.write().cancel_entering(),
-                                    AddSource::Maybeboard => mb_stack.write().cancel_entering(),
-                                },
-                                on_swipe: move |pair: (Swipe, Card)| {
-                                    let (swipe, card) = &pair;
-                                    usage.peek().record_swipe((*swipe).into());
-                                    let at = *source.peek();
-                                    if at == AddSource::Search && *swipe != Swipe::Down {
-                                        usage
-                                            .peek()
-                                            .record_signal(deck_id, card.scryfall_data.oracle_id, (*swipe).into());
-                                    }
-                                    match at {
-                                        AddSource::Search => on_search_swipe(pair),
-                                        AddSource::Maybeboard => on_maybeboard_swipe(pair),
-                                    }
-                                },
+                        if current.is_some() || reveal.is_some() {
+                            // While the pile reveals, the stack loads its
+                            // images hidden under the ghost.
+                            div { class: if reveal.is_some() { "swipe-reveal revealing" } else { "swipe-reveal" },
+                                SwipeStack {
+                                    cards: window,
+                                    allowed: ALL_SWIPES.to_vec(),
+                                    control,
+                                    entering,
+                                    on_entered: move |()| match *source.peek() {
+                                        AddSource::Search => stack.write().cancel_entering(),
+                                        AddSource::Maybeboard => mb_stack.write().cancel_entering(),
+                                    },
+                                    on_swipe: move |pair: (Swipe, Card)| {
+                                        let (swipe, card) = &pair;
+                                        usage.peek().record_swipe((*swipe).into());
+                                        let at = *source.peek();
+                                        if at == AddSource::Search && *swipe != Swipe::Down {
+                                            usage
+                                                .peek()
+                                                .record_signal(deck_id, card.scryfall_data.oracle_id, (*swipe).into());
+                                        }
+                                        match at {
+                                            AddSource::Search => on_search_swipe(pair),
+                                            AddSource::Maybeboard => on_maybeboard_swipe(pair),
+                                        }
+                                    },
+                                    on_top_shown: move |()| {
+                                        if let Some(ticket) = reveal {
+                                            shown.call(ticket);
+                                        }
+                                    },
+                                }
+                                if reveal.is_some() {
+                                    CardSkeleton {}
+                                }
                             }
                         } else if end_of_pile {
                             if loading_more() {
@@ -1070,7 +1113,8 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                 SwipeDetails {
                     card: current.clone(),
                     on_printings: (at == AddSource::Search).then(|| EventHandler::new(move |()| printing_open.set(true))),
-                    loading: (end_of_pile && loading_more()) || (at == AddSource::Search && loading_cards()),
+                    loading: (end_of_pile && loading_more())
+                        || (at == AddSource::Search && (loading_cards() || reveal.is_some())),
                 }
             }
             // The bottom row: From and the chip naming the current source on

@@ -310,6 +310,11 @@ pub enum Action {
     SwapPrinting(Box<Card>),
     /// Searches again from the top, or reloads the maybeboard.
     Refresh,
+    /// The top card of the pile [`State::revealing`] holds behind the ghost is on screen: its image arrived, failed or has no art, or the client stopped waiting for it.
+    TopShown {
+        /// The ticket from [`State::revealing`].
+        ticket: Ticket,
+    },
     /// Tries a failed load again, from Retry or the connection coming back: the deck's first fetch and the search from the top, whichever failed. Does nothing when neither did.
     Retry,
     /// Goes back to where the user came from.
@@ -574,6 +579,8 @@ pub struct State {
     maybeboard: CardStack<MaybeboardAction>,
     /// The ticket of the search that started the stack.
     epoch: Option<Ticket>,
+    /// The ticket of a search whose pile landed but whose top card is not on screen yet.
+    revealing: Option<Ticket>,
     run: Run,
     failed: Failed,
     /// The filter that produced the stack, which parking records.
@@ -626,7 +633,10 @@ impl State {
                 effects
             }
             Action::ResetFilter(draft) => self.reset_filter(draft),
-            Action::PickSource { source, remembered } => self.pick_source(source, remembered),
+            Action::PickSource { source, remembered } => {
+                self.revealing = None;
+                self.pick_source(source, remembered)
+            }
             Action::ToggleSynergy => {
                 let on = !self.filter.synergy();
                 self.filter.set_synergy(on);
@@ -637,16 +647,28 @@ impl State {
                     Effect::Toast(Toast::quick(ToastKind::Info, said)),
                 ]
             }
-            Action::Swipe(direction) => self.swipe(direction),
-            Action::Undo => match self.source {
-                Source::Search => self.undo_search(),
-                Source::Maybeboard => self.undo_maybeboard(),
-            },
+            Action::Swipe(direction) => {
+                self.revealing = None;
+                self.swipe(direction)
+            }
+            Action::Undo => {
+                self.revealing = None;
+                match self.source {
+                    Source::Search => self.undo_search(),
+                    Source::Maybeboard => self.undo_maybeboard(),
+                }
+            }
             Action::SwapPrinting(card) => {
                 self.stack.replace_current(*card);
                 Vec::new()
             }
             Action::Refresh => self.refresh(),
+            Action::TopShown { ticket } => {
+                if self.revealing == Some(ticket) {
+                    self.revealing = None;
+                }
+                Vec::new()
+            }
             Action::Retry => self.retry(),
             Action::Back => vec![Effect::Navigate(Destination::Previous)],
         };
@@ -743,6 +765,7 @@ impl State {
         };
         let ticket = self.generation.next_ticket();
         self.epoch = Some(ticket);
+        self.revealing = None;
         self.run.searching = false;
         self.failed.search = false;
         self.stack.clear_ahead();
@@ -819,6 +842,8 @@ impl State {
                     });
                 }
                 self.stack.replace_ahead(served);
+                // The ghost stays over the new pile until its top card is on screen.
+                self.revealing = self.stack.current().map(|_| ticket);
                 self.last_search = Some(*snapshot);
                 self.run.searching = false;
                 effects.extend(warned);
@@ -1478,6 +1503,7 @@ impl State {
             refresh: true,
         });
         self.epoch = Some(ticket);
+        self.revealing = None;
         self.stack.reset();
         self.last_search = None;
         self.run.exhausted = false;
@@ -1626,6 +1652,7 @@ impl State {
     #[must_use]
     pub fn pile(&self) -> Pile {
         match self.source {
+            Source::Search if self.revealing.is_some() => Pile::Loading,
             Source::Search if self.stack.current().is_some() => Pile::Cards,
             Source::Search if self.stack.has_served() => {
                 if self.run.loading_more {
@@ -1649,19 +1676,25 @@ impl State {
         }
     }
 
-    /// The card on top of the live pile, which the card info and the details sheet describe.
+    /// The card on top of the live pile, which the card info and the details sheet describe. `None` while [`Self::revealing`] holds the ghost over it.
     #[must_use]
     pub fn current(&self) -> Option<&Card> {
         match self.source {
-            Source::Search => self.stack.current(),
+            Source::Search => self.printing_card(),
             Source::Maybeboard => self.maybeboard.current_wrapping(),
         }
     }
 
-    /// The Search card on top, which the printings sheet re-skins.
+    /// The Search card on top, which the printings sheet re-skins. `None` while [`Self::revealing`] holds the ghost over it.
     #[must_use]
     pub fn printing_card(&self) -> Option<&Card> {
-        self.stack.current()
+        self.stack.current().filter(|_| self.revealing.is_none())
+    }
+
+    /// The ticket of a Search pile that landed while its top card is not on screen yet. The pile reads [`Pile::Loading`] meanwhile: the client draws [`Self::window`] hidden under the ghost, so its images load, and sends [`Action::TopShown`] with this ticket once the top card's image arrives, fails or has no art, or after [`crate::timing::PILE_REVEAL_FALLBACK`].
+    #[must_use]
+    pub fn revealing(&self) -> Option<Ticket> {
+        self.revealing
     }
 
     /// The Search stack to park on leave: a served stack with the filter that produced it.
