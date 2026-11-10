@@ -200,12 +200,12 @@ fn ChangelogSkeletonPanels() -> Element {
     rsx! {
         div { class: "changelog-panels",
             for (c , bullets) in CARD_BULLETS.iter().enumerate() {
-                div { key: "{c}", class: "settings-list changelog-panel",
-                    div { class: "settings-list-header changelog-skeleton-row",
+                div { key: "{c}", class: "release-card",
+                    div { class: "release-card-head changelog-skeleton-row",
                         div { class: "skeleton-bar changelog-skeleton-version" }
                         div { class: "skeleton-bar changelog-skeleton-date" }
                     }
-                    div { class: "changelog-skeleton-bullets changelog-panel-body",
+                    div { class: "release-card-notes changelog-skeleton-bullets",
                         for b in 0..*bullets {
                             div { key: "{b}", class: "skeleton-bar changelog-skeleton-bullet" }
                         }

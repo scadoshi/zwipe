@@ -69,6 +69,8 @@ pub const RELEASES: &[Release] = &[
             "Undoing a remove brings the card back with its MVP star",
             "Printings says when it couldn't load and has Retry, instead of sitting empty on a slow network",
             "The deck page on the web shows the deck's name over its chips",
+            "Changelog releases look the same on the site and in the app, with the tag at the right end and no fill on hover",
+            "Links inside text on the web answer the mouse too",
         ],
     },
     Release {

@@ -52,7 +52,7 @@ Who checked, on which live build, what they saw.
 | [326](326-printings-blank-tiles.md) | Printings shows blank cards until their images load | reproduced | scotland | #503, #516 |
 | [327](327-cancel-pending-email-change.md) | A pending email change can't be cancelled | fixing | scotland | #507, #508 |
 | [328](328-generic-pip-ring.md) | Pip rings split on expanded and hovered card rows | fixing | thinker | - |
-| [329](329-buttons-without-hover.md) | Buttons and other clickables without a hover on desktop web | fixing | halo | orangui#30, orangui#31, #510 |
+| [329](329-buttons-without-hover.md) | Buttons and other clickables without a hover on desktop web | fixing | halo | orangui#30, orangui#31, #510, orangui#32, #519 |
 | [330](330-undo-remove-drops-star.md) | Undo of a remove brings the card back without its star | fixing | thinker | - |
 | [331](331-stats-panel-padding.md) | Deck stats panels let their content touch the rules | fixing | scotland | #511 |
 | [332](332-empty-error-toast.md) | A failed request can toast an empty red box | fixing | halo | - |
