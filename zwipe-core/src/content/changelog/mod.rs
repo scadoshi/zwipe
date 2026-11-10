@@ -56,7 +56,7 @@ pub const RELEASES: &[Release] = &[
             "Account's refresh buttons have a name for screen readers",
             "Decks shows each deck's name and tags together beside its art",
             "Account shows a pending email change right after you log in, and closing a hint no longer hides it",
-            "The changelog marks the release on the web Web and the one in the app stores Mobile",
+            "The changelog shows which release is on the web and which is in the app stores",
         ],
     },
     Release {
