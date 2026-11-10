@@ -38,13 +38,7 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[Release {
-    version: Version::new(1, 18, 17),
-    date: None,
-    entries: &[
-        "Account shows a pending email change right after you log in, and closing a hint no longer hides it",
-    ],
-}];
+pub const UPCOMING: &[Release] = &[];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
@@ -54,6 +48,7 @@ pub const RELEASES: &[Release] = &[
         entries: &[
             "Account's refresh buttons have a name for screen readers",
             "Decks shows each deck's name and tags together beside its art",
+            "Account shows a pending email change right after you log in, and closing a hint no longer hides it",
         ],
     },
     Release {
