@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 
+use chrono::Utc;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::CardQuery;
@@ -229,8 +230,14 @@ where
         {
             return Err(CreateDeckCardError::IsCommander);
         }
+        // A restored star stays only on the mainboard and never from the
+        // future; the repo checks the three-star cap under the deck lock.
+        let mvp_at = request
+            .mvp_at
+            .filter(|at| request.board == Board::Deck && *at <= Utc::now());
         let request = CreateDeckCard {
             oracle_id,
+            mvp_at,
             ..request.clone()
         };
         // The limit VALUE is policy and stays here; the count + check runs

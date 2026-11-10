@@ -1,5 +1,6 @@
 //! Deck card operation HTTP request contracts.
 
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 use crate::domain::card::scryfall_data::ScryfallData;
@@ -17,6 +18,12 @@ pub struct HttpCreateDeckCard {
     pub quantity: i32,
     /// Board to place the card on ("deck", "maybeboard", "sideboard"). Defaults to "deck" if absent.
     pub board: Option<String>,
+    /// When the card was starred as a deck MVP, sent by an undo that restores a removed row.
+    /// Absent creates it unstarred. The server keeps it only on the mainboard, only when it is
+    /// not in the future and only while the deck has room under the three-star cap; otherwise the
+    /// card comes in unstarred.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mvp_at: Option<DateTime<Utc>>,
 }
 
 impl HttpCreateDeckCard {
@@ -33,7 +40,14 @@ impl HttpCreateDeckCard {
                 .unwrap_or_default(),
             quantity,
             board,
+            mvp_at: None,
         }
+    }
+
+    /// The request with `mvp_at`, the star time of the row it restores.
+    #[must_use]
+    pub fn with_mvp_at(self, mvp_at: Option<DateTime<Utc>>) -> Self {
+        Self { mvp_at, ..self }
     }
 }
 
@@ -215,5 +229,38 @@ mod tests {
                 && mvp.board.is_unchanged()
                 && mvp.scryfall_data_id.is_unchanged()
         );
+    }
+
+    #[test]
+    fn a_create_without_a_star_keeps_its_old_shape() {
+        let old = serde_json::json!({
+            "scryfall_data_id": "7673784e-db4b-43a1-8d55-1bb9fc1e284f",
+            "oracle_id": "",
+            "quantity": 1,
+            "board": null,
+        });
+        let parsed: HttpCreateDeckCard = serde_json::from_value(old.clone()).unwrap();
+        assert_eq!(parsed.mvp_at, None);
+        assert_eq!(
+            serde_json::to_value(&parsed).unwrap(),
+            old,
+            "an unstarred create writes no mvp_at"
+        );
+    }
+
+    #[test]
+    fn a_create_carries_the_star_it_restores() {
+        let at: chrono::DateTime<chrono::Utc> = "2026-01-02T03:04:05Z".parse().unwrap();
+        let restore = HttpCreateDeckCard {
+            scryfall_data_id: "7673784e-db4b-43a1-8d55-1bb9fc1e284f".to_owned(),
+            oracle_id: String::new(),
+            quantity: 1,
+            board: None,
+            mvp_at: None,
+        }
+        .with_mvp_at(Some(at));
+        let back: HttpCreateDeckCard =
+            serde_json::from_value(serde_json::to_value(&restore).unwrap()).unwrap();
+        assert_eq!(back.mvp_at, Some(at));
     }
 }

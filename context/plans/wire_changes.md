@@ -11,6 +11,8 @@ Every change a shipped client can see, where it stands, and the floor it waits o
 
 - `swipe_confirmations` on `UserSettings` and `HttpUpdateSettings` (nit 153): `chip` (the default), `toasts` or `off`. `#[serde(default)]` on both, and no shipped `UserSettings` sets `deny_unknown_fields`, so 1.15.0 to 1.18.0 skip it in a session or settings reply and never send it; a PATCH without it leaves the column alone. Migration `20261107130000_user_settings_swipe_confirmations.sql` adds the column with `DEFAULT 'chip'`. Built 2026-11-07 on `nits/thinker-153`.
 
+- `mvp_at` on `HttpCreateDeckCard` (issue 330): an undo that restores a removed card sends the row's star time so the star comes back exactly. `#[serde(default)]`, and an unstarred create omits it (`skip_serializing_if`), so the request a shipped client sends is unchanged and reads as unstarred. The server keeps it only on the mainboard, only when it is not in the future and only while the deck has room under the three-star cap; otherwise it creates the card unstarred rather than failing. Server first (PR 1, built 2026-11-09 on `nits/thinker-330`); the clients send it only after that deploys (PR 2).
+
 - Cookie sessions for the browser: `/api/auth/cookie/login`, `/cookie/refresh` and `/cookie/logout` keep the refresh token in an `HttpOnly` cookie for zwiper-web. New routes beside the app's, so no shipped client changes. Built 2026-11-06, not committed, under review.
 
 ## Done
