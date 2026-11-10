@@ -59,6 +59,7 @@ pub const RELEASES: &[Release] = &[
             "Account shows a pending email change right after you log in, and closing a hint no longer hides it",
             "Add no longer flashes another card before a new pile's top card shows",
             "The changelog shows which release is on the web and which is in the app stores",
+            "Expanded and hovered card rows keep their mana pips' outlines sharp",
         ],
     },
     Release {
