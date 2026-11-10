@@ -7,6 +7,7 @@
 #[cfg(test)]
 mod tests;
 
+use chrono::{DateTime, Utc};
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
@@ -298,6 +299,8 @@ pub enum Effect {
         board: Board,
         /// The copies it had.
         quantity: i32,
+        /// When it was starred as an MVP, if it was.
+        mvp_at: Option<DateTime<Utc>>,
     },
     /// Undoes a move: sends the card back to `board` with [`board_request`] and answers with [`Action::Landed`] or [`Action::Failed`]. A failure here is the undo's own: the client words it as one.
     RestoreBoard {
@@ -340,14 +343,21 @@ fn toast_line(effect: &Effect) -> Option<Line<'_>> {
     }
 }
 
-/// The create request that puts `quantity` copies of `card` back on `board`.
+/// The create request that puts `quantity` copies of `card` back on `board`, starred at `mvp_at`
+/// when it was an MVP.
 #[must_use]
-pub fn restore_request(card: &Card, board: Board, quantity: i32) -> HttpCreateDeckCard {
+pub fn restore_request(
+    card: &Card,
+    board: Board,
+    quantity: i32,
+    mvp_at: Option<DateTime<Utc>>,
+) -> HttpCreateDeckCard {
     HttpCreateDeckCard::new(
         &card.scryfall_data,
         quantity,
         undo::create_board_field(board),
     )
+    .with_mvp_at(mvp_at)
 }
 
 /// The update request that moves a card to `board`.
@@ -411,6 +421,7 @@ struct HeldUndo {
     card: Box<Card>,
     board: Board,
     quantity: i32,
+    mvp_at: Option<DateTime<Utc>>,
 }
 
 /// Remove cards for one visit. Starts loading with no card; send [`Action::Load`] with the deck.
@@ -635,24 +646,27 @@ impl State {
             card,
             board,
             quantity,
+            mvp_at,
         }) = self.take_held_undo(card_id)
         {
             self.stack.record(RemoveAction::Remove {
                 card,
                 board,
                 quantity,
+                mvp_at,
             });
             self.stack.remove_current();
             return vec![Effect::Confirm(Toast::quick(ToastKind::Success, REMOVED))];
         }
         let entry = self.entry(card_id).cloned();
-        let (board, quantity) = entry.as_ref().map_or((Board::Deck, 1), |e| {
-            (e.deck_card.board, *e.deck_card.quantity)
+        let (board, quantity, mvp_at) = entry.as_ref().map_or((Board::Deck, 1, None), |e| {
+            (e.deck_card.board, *e.deck_card.quantity, e.deck_card.mvp_at)
         });
         self.stack.record(RemoveAction::Remove {
             card: Box::new(card),
             board,
             quantity,
+            mvp_at,
         });
         let ticket = self.wait(Pending::Remove {
             card_id,
@@ -749,6 +763,7 @@ impl State {
                 card,
                 board,
                 quantity,
+                mvp_at,
             } = action
             else {
                 return Vec::new();
@@ -759,6 +774,7 @@ impl State {
                     card,
                     board,
                     quantity,
+                    mvp_at,
                 });
             }
             return vec![Effect::Enter(entered)];
@@ -804,6 +820,7 @@ impl State {
                 card,
                 board,
                 quantity,
+                mvp_at,
             } => {
                 let card_id = card.scryfall_data.id;
                 if taken.is_none() && self.entry(card_id).is_some() {
@@ -822,6 +839,7 @@ impl State {
                         card,
                         board,
                         quantity,
+                        mvp_at,
                     },
                 ]
             }
@@ -865,6 +883,7 @@ impl State {
                     card,
                     board,
                     quantity,
+                    mvp_at,
                 } = held;
                 let ticket = self.wait(Pending::UndoRemove {
                     card: card.clone(),
@@ -876,6 +895,7 @@ impl State {
                     card,
                     board,
                     quantity,
+                    mvp_at,
                 }]
             }
             Some(Pending::Remove {

@@ -1482,7 +1482,8 @@ impl State {
             &entry.card.scryfall_data,
             baseline,
             create_board_field(entry.deck_card.board),
-        );
+        )
+        .with_mvp_at(entry.deck_card.mvp_at);
         let mut restored = entry;
         if let Ok(quantity) = Quantity::new(baseline) {
             restored.deck_card.quantity = quantity;

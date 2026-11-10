@@ -733,7 +733,8 @@ pub(crate) fn use_deck_editor(deck_id: Uuid, on_failure: LoadFailure) -> Editor 
                     &entry.card.scryfall_data,
                     baseline,
                     create_board_field(entry.deck_card.board),
-                );
+                )
+                .with_mvp_at(entry.deck_card.mvp_at);
                 entries.write().push(entry);
                 spawn(async move {
                     let reply = authed

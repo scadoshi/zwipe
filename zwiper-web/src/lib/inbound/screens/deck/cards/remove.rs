@@ -8,6 +8,7 @@
 
 use std::collections::{HashMap, HashSet};
 
+use chrono::{DateTime, Utc};
 use components::icons::{DockIcon, REFRESH};
 use components::{Chip, DockFilter, SheetFrame, SheetWide, TOAST_QUICK};
 use dioxus::core::spawn_forever;
@@ -82,6 +83,9 @@ impl BoardFilter {
 const ALL_SWIPES: [Swipe; 4] = [Swipe::Left, Swipe::Right, Swipe::Up, Swipe::Down];
 
 /// The Remove cards screen for `deck_id`.
+/// A removed card to put back: the card, its board, its copies and its star time.
+type Restore = (Card, Board, i32, Option<DateTime<Utc>>);
+
 #[component]
 pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
     telemetry::use_telemetry_screen(Screen::Deck(DeckScreen::CardRemove));
@@ -112,7 +116,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
     // the meantime: a held undo's restore goes out once its delete lands, so
     // the two requests never race.
     let mut deleting: Signal<HashSet<Uuid>> = use_signal(HashSet::new);
-    let mut held: Signal<HashMap<Uuid, (Card, Board, i32)>> = use_signal(HashMap::new);
+    let mut held: Signal<HashMap<Uuid, Restore>> = use_signal(HashMap::new);
     let mut board_filter = use_signal(|| BoardFilter::Deck);
     let mut counter = use_signal(|| 0u32);
     let show_details = use_signal(|| false);
@@ -213,7 +217,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
     // Puts a removed card back on the server and in the entries; a failure
     // gives `taken` back to the undo log.
     let restore = use_callback(
-        move |(card, board, quantity, taken): (Card, Board, i32, Option<UndoAction>)| {
+        move |((card, board, quantity, mvp_at), taken): (Restore, Option<UndoAction>)| {
             spawn(async move {
                 let fresh = match ensure_fresh(session, client).await {
                     Ok(fresh) => fresh,
@@ -230,7 +234,8 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                     &card.scryfall_data,
                     quantity,
                     create_board_field(board),
-                );
+                )
+                .with_mvp_at(mvp_at);
                 let http = client.peek().clone();
                 match http.create_deck_card(deck_id, &request, &fresh).await {
                     Ok(deck_card) => {
@@ -268,6 +273,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                 card,
                 board,
                 quantity,
+                mvp_at,
             } => {
                 let card = *card;
                 let card_id = card.scryfall_data.id;
@@ -287,11 +293,12 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                     // Its delete is still out: the card comes back now and the
                     // restore waits for the delete to land.
                     stack.write().insert_current(card.clone());
-                    held.write().insert(card_id, (card, board, quantity));
+                    held.write()
+                        .insert(card_id, (card, board, quantity, mvp_at));
                     return;
                 }
                 stack.write().insert_current(card.clone());
-                restore.call((card, board, quantity, taken));
+                restore.call(((card, board, quantity, mvp_at), taken));
             }
             RemoveAction::MoveBoard { card, from, .. } => {
                 let card = *card;
@@ -371,13 +378,15 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                 stack.write().advance_wrapping();
             }
             Swipe::Right => {
-                let (board, quantity) = entry.as_ref().map_or((Board::Deck, 1), |e| {
-                    (e.deck_card.board, *e.deck_card.quantity)
-                });
+                let (board, quantity, mvp_at) =
+                    entry.as_ref().map_or((Board::Deck, 1, None), |e| {
+                        (e.deck_card.board, *e.deck_card.quantity, e.deck_card.mvp_at)
+                    });
                 stack.write().record(RemoveAction::Remove {
                     card: Box::new(card),
                     board,
                     quantity,
+                    mvp_at,
                 });
                 if let Some(entry) = entry {
                     deleting.write().insert(card_id);
@@ -394,8 +403,8 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                         let waiting = held.try_write().ok().and_then(|mut h| h.remove(&card_id));
                         match (waiting, deleted) {
                             // Undone while out, and gone now: put it back.
-                            (Some((card, board, quantity)), true) => {
-                                restore.call((card, board, quantity, None));
+                            (Some(held_back), true) => {
+                                restore.call((held_back, None));
                             }
                             // Undone while out, and never deleted: it is still
                             // in the deck.

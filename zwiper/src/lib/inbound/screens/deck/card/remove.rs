@@ -4,6 +4,7 @@
 //! file draws its state, performs its effects and keeps the gestures, the
 //! card's entrance and the sheets.
 
+use chrono::{DateTime, Utc};
 use components::icons::{self, EyeIcon};
 use components::{Chip, DockAction, DockFilter, ToastOptions, Toasts, use_toast};
 use dioxus::prelude::*;
@@ -160,7 +161,8 @@ impl Driver {
                 card,
                 board,
                 quantity,
-            } => self.restore_card(ticket, deck_id, &card, board, quantity),
+                mvp_at,
+            } => self.restore_card(ticket, deck_id, &card, (board, quantity, mvp_at)),
             Effect::RestoreBoard {
                 ticket,
                 deck_id,
@@ -216,10 +218,16 @@ impl Driver {
         });
     }
 
-    /// Undoes a remove: creates the card again on its board.
-    fn restore_card(self, ticket: Ticket, deck_id: Uuid, card: &Card, board: Board, quantity: i32) {
+    /// Undoes a remove: creates the card again with its board, copies and star.
+    fn restore_card(
+        self,
+        ticket: Ticket,
+        deck_id: Uuid,
+        card: &Card,
+        (board, quantity, mvp_at): (Board, i32, Option<DateTime<Utc>>),
+    ) {
         let Self { toast, client, .. } = self;
-        let request = remove_cards::restore_request(card, board, quantity);
+        let request = remove_cards::restore_request(card, board, quantity, mvp_at);
         // Facade holdout: staged compensation (refresh failure cancels the
         // entrance; a failed call leaves the removal standing).
         spawn(async move {

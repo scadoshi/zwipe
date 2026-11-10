@@ -1181,3 +1181,55 @@ fn the_copy_matches_the_app() {
         ]
     );
 }
+
+#[test]
+fn remove_then_undo_keeps_the_star_quantity_board_and_printing() {
+    let (mut state, cards) = loaded();
+    let ring = id(&cards[0]);
+    let starred_at: DateTime<Utc> = "2026-01-02T03:04:05Z".parse().unwrap();
+    state.entries[0].deck_card.mvp_at = Some(starred_at);
+    let before = state.row(ring).unwrap();
+    assert!(before.mvp);
+
+    let removal = state.update(Action::ChangeQuantity {
+        card_id: ring,
+        delta: -before.quantity,
+    });
+    let [recorded] = undo_records(&removal).try_into().unwrap();
+    assert!(state.row(ring).is_none());
+
+    let effects = state.update(Action::Undo(Box::new(recorded)));
+    let Some(Effect::CreateCard {
+        ticket, request, ..
+    }) = effects.last()
+    else {
+        panic!("undo re-creates the card: {effects:?}");
+    };
+    assert_eq!(
+        request.mvp_at,
+        Some(starred_at),
+        "the create restores the star"
+    );
+    assert_eq!(request.quantity, before.quantity);
+    assert_eq!(request.board, create_board_field(before.board));
+    assert_eq!(
+        request.scryfall_data_id,
+        ring.to_string(),
+        "the same printing"
+    );
+
+    // The server keeps the star it was sent and answers with the row.
+    let mut saved = state
+        .entries
+        .iter()
+        .find(|e| e.card.scryfall_data.id == ring)
+        .unwrap()
+        .deck_card
+        .clone();
+    saved.mvp_at = Some(starred_at);
+    let _ = state.update(Action::Created {
+        ticket: *ticket,
+        deck_card: Box::new(saved),
+    });
+    assert_eq!(state.row(ring), Some(before), "the row is back as it was");
+}
