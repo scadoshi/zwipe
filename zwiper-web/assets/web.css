@@ -1427,9 +1427,9 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 
     /* The floating card details drawer rises over both docks: one more
        dock's height and the pair's gap above where the kit's single dock
-       would put it. */
+       would put it, on a whole pixel as the kit's offsets are. */
     body:has(.web-dock-pair) .sheet-form-drawer > .bottom-sheet.drawer-every-width {
-        bottom: calc(env(safe-area-inset-bottom, 0px) / 2 + 0.6rem + 2 * 3.125rem + 0.5rem + var(--drawer-float-gap));
+        bottom: round(calc(env(safe-area-inset-bottom, 0px) / 2 + 0.6rem + 2 * 3.125rem + 0.5rem + var(--drawer-float-gap)), 1px);
     }
 
     .web-dock-pair > .action-dock {

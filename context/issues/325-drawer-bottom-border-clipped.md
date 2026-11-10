@@ -1,6 +1,6 @@
 # 325. The card details drawer's bottom border vanishes at 100% zoom
 
-State: fixing | Owner: scotland | PR: #505 | Build seen: live 1.18.15+ (Surfer), local release 3a627a7c1+ (scotland)
+State: fixing | Owner: scotland | PR: #505, #513 | Build seen: live 1.18.15+ (Surfer), local release 3a627a7c1+ (scotland)
 
 ## Report
 Scotty, 2026-11-10, web, desktop Chrome at about 1260x800: the card details side drawer (Dreamtide Whale, opened from a deck) shows no bottom border at 100% browser zoom; zooming in brings it back. Screenshot `target/scotty-shots/325-drawer-no-bottom-border.webp`.
@@ -32,3 +32,8 @@ Test: a failing-first unit test in `footer_lift.rs` that `footer_lift` returns w
 
 ## Fix
 scotland, #505: `NAV_HEIGHT_JS` writes `--web-nav-h` as `Math.round` of the nav's height, and web.css rounds `--sheet-drawer-top` (the nav plus 0.7rem) to a whole pixel with `round(..., 1px)`, since 0.7rem alone is fractional. `footer_lift` rounds the footer's reach up to a whole pixel, so the drawer's floor clears the footer; failing-first test `a_fractional_footer_top_lifts_by_whole_pixels`. The card details panel (`magic.css`) and the card details drawer (`filter.css`, after the narrow drawer's border rule it has to beat) take `--border-primary` in place of `--border-secondary`, the border chips and buttons use, so a content-sized bottom edge that stays fractional still reads. Headless at 1260x800, DPR 1: the docked pane's top is 82 (was 82.19) and its border is rgb(98,94,90) on Kanagawa Dragon dark (was rgb(40,39,39)); the border shows on all four edges on Kanagawa Dragon dark and light, Matte Black dark and Material dark and light, at 1260 and 390. Not a wire change. Verify: the Repro shows the bottom border at 100% zoom.
+
+## Follow-up
+Surfer, live after #505: the wide drawer and panels are crisp, but below 960 the floating drawer is still fractional (left .406, top 53.594, bottom 612.813 at 800 wide; `~/Developer/surfer-shots/325v-drawer-bottom-800.png` on halo). Its rule (components `filter.css`, `.drawer-every-width` below 60rem) offsets by `2.75rem + 0.6rem` at the top and a 0.6rem gap at the right, and only the wide `--sheet-drawer-top` was rounded.
+
+scotland, #513: the narrow drawer's top, bottom and right go through `round(..., 1px)`, and so does web.css's bottom for the drawer over Add and Remove's two docks, which overrides the kit's. The width (`min(100vw - 3rem, 26rem)`) is already whole, so the left edge is too. Headless, the card details drawer on Remove, now: left 374, top 54, right 790, bottom 593 at 800x720, and 38, 54, 380, 717 at 390x844. Rounding only the kit's rule left the bottom at 592.81 there, from the two-dock override. Not a wire change; no changelog line beyond 325's.
