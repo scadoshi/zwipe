@@ -38,16 +38,17 @@ pub struct Release {
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[Release {
-    version: Version::new(1, 18, 17),
-    date: None,
-    entries: &[
-        "Account shows a pending email change right after you log in, and closing a hint no longer hides it",
-    ],
-}];
+pub const UPCOMING: &[Release] = &[];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
+    Release {
+        version: Version::new(1, 18, 17),
+        date: NaiveDate::from_ymd_opt(2026, 11, 9),
+        entries: &[
+            "Account shows a pending email change right after you log in, and closing a hint no longer hides it",
+        ],
+    },
     Release {
         version: Version::new(1, 18, 16),
         date: NaiveDate::from_ymd_opt(2026, 11, 9),
