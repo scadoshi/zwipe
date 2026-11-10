@@ -1,6 +1,6 @@
 # 333. Printings sits empty after a slow fetch, with no error or retry
 
-State: fixing | Owner: halo | PR: (this PR) | Build seen: droid, aea5d98c4
+State: fixing | Owner: halo | PR: #515 | Build seen: droid, aea5d98c4
 
 ## Report
 Droid, on the app with the network throttled to EDGE or GPRS (also UMTS). Opening Printings showed the skeleton for 20 seconds or more, then the sheet sat empty with no error and no Retry, and stayed empty after the network came back. Closing and reopening the sheet fixed it.
