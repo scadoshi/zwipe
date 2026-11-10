@@ -61,13 +61,15 @@ This floor also covers [`pip_color_wire.md`](pip_color_wire.md)'s Phase 4, which
 
 First built 2026-11-07 on `server/pip-themed` (`ad0cffd5a`), which fell 828 commits behind release. Rebuilt 2026-11-09 on `server/pip-themed-only`, with the floor at 1.18.1:
 
-- `Themed` is plain `Themed` under `rename_all = "lowercase"`, with no rename and no alias, so the wire writes and reads `themed`.
-- `FromStr` drops the `theme` arm. The database has held only `themed` since Phase 1, so no migration.
-- `PATCH` with `theme` is a 422.
-- A session stored on a device before the update that still says `theme` no longer parses, and the app treats that as signed out (`zwiper/src/lib/outbound/session.rs`). That is accepted, as it was for `natural`. A zite visitor whose localStorage says `"theme"` falls back to the default, Themed, which is the same look.
-- Tests: `themed_stores_and_writes_as_themed` and `the_earlier_theme_name_no_longer_reads` in core, request-body tests in `http/contracts/user.rs`, and the zerver round trip PATCHes `themed`, expects `themed` back and expects `theme` to be a 422. The shipped-client parse tests now model the floor client, 1.18.1, which reads either name for each value, so every settings response still parses for every supported client.
-- Grep gate holds: `"theme"` as a pip value appears only in the tests that assert it is refused and in the floor client's enum.
-- `server/pip-classic-only` (the `classic` Phase 4) touches the same enum and tests; whichever merges second takes release in first.
+- `Themed` serializes as `themed` under `rename_all = "lowercase"` and stays the `#[default]`, so the wire writes `themed`. Deserializing keeps `theme` as a read-only alias, for client-side copies written under it (see Stored data below).
+- `FromStr` drops the `theme` arm: it takes only the current names, which is what the database holds.
+- `HttpUpdateSettings.pip_style` deserializes through `FromStr` (added with the `classic` Phase 4), so `PATCH` with `theme` is a 422.
+- Tests: `themed_stores_and_writes_as_themed`, `the_earlier_theme_name_no_longer_parses` and `a_stored_theme_still_reads_as_themed` in core; request-body tests in `http/contracts/user.rs` (takes `themed`, refuses `theme`); and the zerver round trip expects `themed` by default, PATCHes `themed`, expects `themed` back and a 422 for `theme`. The shipped-client parse tests model the floor client, 1.18.1, which reads either name for each value, so every settings response still parses for every supported client.
+
+### Stored data
+
+- Postgres: `user_settings.pip_style` holds no `theme`. Phase 1's migration `20261107120000_pip_style_themed.sql` rewrote every `theme` row to `themed`, set the default to `themed` and narrowed the CHECK to (`themed`, `classic`), which refuses the old name. zerver writes the column with `as_str`, the current names.
+- Clients: every store that serializes `PipStyle` with serde wrote the wire name, `theme`, before this phase: zite's `zwipe.pips`, zwiper-web's stored session, the app's stored session and its pending settings. They keep reading through the alias and write `themed` on their next save; zite's `pip_store` rewrites the stored value as soon as it loads it. Themed draws no CSS class, so zite's `index.html` needs nothing. No sign-out and no lost choice.
 
 Access token claims carry no settings (`user_id`, `username`, `email`, `exp`, `iat`), so tokens are not a concern.
 

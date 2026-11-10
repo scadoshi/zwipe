@@ -108,17 +108,23 @@ pub fn display_theme_name(slug: &str) -> String {
 }
 
 /// How mana pips are colored, app-wide.
+///
+/// Serialized under its current name. Deserializing also takes the earlier
+/// name each value had, because a client's stored copy (zite's `zwipe.pips`,
+/// a stored session, the app's pending settings) was written under it and
+/// still reads back. [`FromStr`] takes the current names only, which is what
+/// the database holds and what a settings request may send.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum PipStyle {
     /// Pips in the current theme's own five mana colors. Stored and sent
-    /// as `themed`.
+    /// as `themed`; a stored `theme`, its earlier name, still reads.
     #[default]
+    #[serde(alias = "theme")]
     Themed,
-    /// Pips in Magic's classic fills, the same on every theme. Stored as
-    /// `classic`; the wire still writes `natural`, the name 1.15.0 to 1.17.0 parse,
-    /// and reads both.
-    #[serde(rename = "natural", alias = "classic")]
+    /// Pips in Magic's classic fills, the same on every theme. Stored and
+    /// sent as `classic`; a stored `natural`, its earlier name, still reads.
+    #[serde(alias = "natural")]
     Classic,
 }
 
@@ -148,8 +154,8 @@ impl fmt::Display for PipStyle {
     }
 }
 
-/// A pip color name that is none of `themed`, `classic` or the earlier
-/// `natural`.
+/// A pip color name that is neither `themed` nor `classic`. The earlier
+/// `theme` and `natural` are refused too.
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
 #[error("unknown pip color")]
 pub struct ParsePipStyleError;
@@ -160,7 +166,7 @@ impl FromStr for PipStyle {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "themed" => Ok(Self::Themed),
-            "classic" | "natural" => Ok(Self::Classic),
+            "classic" => Ok(Self::Classic),
             _ => Err(ParsePipStyleError),
         }
     }
@@ -651,15 +657,40 @@ mod tests {
     }
 
     #[test]
-    fn classic_stores_as_classic_and_reads_either_name() {
+    fn classic_stores_and_writes_as_classic() {
         assert_eq!(PipStyle::Classic.as_str(), "classic");
-        for name in ["classic", "natural"] {
-            assert_eq!(name.parse::<PipStyle>(), Ok(PipStyle::Classic));
-            assert_eq!(
-                serde_json::from_str::<PipStyle>(&format!("\"{name}\"")).unwrap(),
-                PipStyle::Classic
-            );
-        }
+        assert_eq!("classic".parse::<PipStyle>(), Ok(PipStyle::Classic));
+        assert_eq!(
+            serde_json::to_string(&PipStyle::Classic).unwrap(),
+            "\"classic\""
+        );
+        assert_eq!(
+            serde_json::from_str::<PipStyle>("\"classic\"").unwrap(),
+            PipStyle::Classic
+        );
+    }
+
+    #[test]
+    fn the_earlier_natural_name_no_longer_parses() {
+        assert_eq!("natural".parse::<PipStyle>(), Err(ParsePipStyleError));
+    }
+
+    #[test]
+    fn a_stored_natural_still_reads_as_classic() {
+        assert_eq!(
+            serde_json::from_str::<PipStyle>("\"natural\"").unwrap(),
+            PipStyle::Classic
+        );
+        let settings: UserSettings =
+            serde_json::from_str(r#"{"theme":"gruvbox","dark_mode":true,"pip_style":"natural"}"#)
+                .unwrap();
+        assert_eq!(settings.pip_style, PipStyle::Classic);
+        assert!(
+            serde_json::to_string(&settings)
+                .unwrap()
+                .contains(r#""pip_style":"classic""#),
+            "it writes back under the current name"
+        );
     }
 
     #[test]
@@ -670,16 +701,29 @@ mod tests {
             serde_json::to_string(&PipStyle::Themed).unwrap(),
             "\"themed\""
         );
-        assert_eq!(
-            serde_json::from_str::<PipStyle>("\"themed\"").unwrap(),
-            PipStyle::Themed
-        );
     }
 
     #[test]
-    fn the_earlier_theme_name_no_longer_reads() {
+    fn the_earlier_theme_name_no_longer_parses() {
         assert_eq!("theme".parse::<PipStyle>(), Err(ParsePipStyleError));
-        assert!(serde_json::from_str::<PipStyle>("\"theme\"").is_err());
+    }
+
+    #[test]
+    fn a_stored_theme_still_reads_as_themed() {
+        assert_eq!(
+            serde_json::from_str::<PipStyle>("\"theme\"").unwrap(),
+            PipStyle::Themed
+        );
+        let settings: UserSettings =
+            serde_json::from_str(r#"{"theme":"gruvbox","dark_mode":true,"pip_style":"theme"}"#)
+                .unwrap();
+        assert_eq!(settings.pip_style, PipStyle::Themed);
+        assert!(
+            serde_json::to_string(&settings)
+                .unwrap()
+                .contains(r#""pip_style":"themed""#),
+            "it writes back under the current name"
+        );
     }
 
     /// The pip enum as the client floor, 1.18.1, carries it: each value
@@ -720,7 +764,7 @@ mod tests {
     #[test]
     fn a_payload_without_swipe_confirmations_reads_as_chip() {
         let settings: UserSettings =
-            serde_json::from_str(r#"{"theme":"gruvbox","dark_mode":true,"pip_style":"themed"}"#)
+            serde_json::from_str(r#"{"theme":"gruvbox","dark_mode":true,"pip_style":"theme"}"#)
                 .unwrap();
         assert_eq!(settings.swipe_confirmations, SwipeConfirmations::Chip);
     }
