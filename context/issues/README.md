@@ -58,6 +58,7 @@ Who checked, on which live build, what they saw.
 | [332](332-empty-error-toast.md) | A failed request can toast an empty red box | fixing | halo | - |
 | [333](333-printings-stuck-on-slow-network.md) | Printings sits empty after a slow fetch, with no error or retry | fixing | halo | #515 |
 | [334](334-deck-page-missing-name.md) | The web deck page shows no deck name | fixing | thinker | - |
+| [335](335-selector-drawer-space.md) | Selector drawers waste space above the chips | reported | - | - |
 
 ## Waiting for live verification
 
