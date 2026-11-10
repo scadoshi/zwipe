@@ -792,7 +792,10 @@ async fn a_future_mvp_at_creates_the_card_unstarred(pool: sqlx::PgPool) {
     let deck_id = did.parse().unwrap();
     let ids = seeded(&pool, &["Sol Ring"]).await;
 
-    let tomorrow = (chrono::Utc::now() + chrono::Duration::days(1)).to_rfc3339();
+    let tomorrow = chrono::Utc::now()
+        .checked_add_signed(chrono::Duration::days(1))
+        .unwrap()
+        .to_rfc3339();
     let (status, body) =
         create_with(&app, &token, deck_id, ids[0], json!({ "mvp_at": tomorrow })).await;
     assert_eq!(status, StatusCode::CREATED, "{body}");
