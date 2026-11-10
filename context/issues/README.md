@@ -88,7 +88,7 @@ Who checked, on which live build, what they saw.
 | [320](320-libsqlite3-sys-advisory.md) | Security audit fails on RUSTSEC-2026-0459 (libsqlite3-sys) | fixing | scotland | - |
 | [321](321-pending-refresh-no-name.md) | Account's Pending refresh button has no accessible name | fixing | scotland | - |
 | [322](322-deck-row-tags-beside-art.md) | Deck list rows: the tags drop under the art instead of beside it | fixing | thinker | #486, #489 |
-| [323](323-overview-lockout-columns.md) | overview.sql section 16 reads lockout columns that no longer exist | fixing | thinker | - |
+| [323](323-overview-lockout-columns.md) | overview.sql section 16 reads lockout columns that no longer exist | fixing | thinker | #490 |
 
 ## Waiting for live verification
 

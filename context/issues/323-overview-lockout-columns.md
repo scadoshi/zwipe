@@ -1,6 +1,6 @@
 # 323. overview.sql section 16 reads lockout columns that no longer exist
 
-State: fixing | Owner: thinker | PR: - | Build seen: prod, 2026-11-09
+State: fixing | Owner: thinker | PR: #490 | Build seen: prod, 2026-11-09
 
 ## Report
 Running `zcripts/metrics/overview.sql` against prod stops in section 16 with `column "lockout_until" does not exist`.
