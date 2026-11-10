@@ -1,8 +1,8 @@
 //! The Account email row: the address, its verification badge and the resend actions.
 
-use components::{Button, ButtonVariant};
+use components::{AlertDialog, Button, ButtonVariant, DialogAction};
 use dioxus::prelude::*;
-use zwipe_ui::screens::account::{self as model, Action};
+use zwipe_ui::screens::account::{self as model, Action, Dialog};
 
 use crate::inbound::screens::account::driver::Driver;
 
@@ -90,9 +90,9 @@ pub(crate) fn VerificationActions() -> Element {
 }
 
 /// Pending-row actions: a resend button that mails a fresh link for the
-/// pending change and grays out behind its own 60s countdown, and a
-/// refresh-icon button that re-fetches the user and says whether the change
-/// went through.
+/// pending change and grays out behind its own 60s countdown, a refresh-icon
+/// button that re-fetches the user and says whether the change went through,
+/// and Cancel, which asks [`CancelChangeDialog`] before dropping the change.
 #[component]
 pub(crate) fn PendingActions() -> Element {
     let driver: Driver = use_context();
@@ -100,6 +100,7 @@ pub(crate) fn PendingActions() -> Element {
     let can_resend = state.can_resend_change();
     let resend_label = state.resend_change_label();
     let is_checking = state.is_checking_pending();
+    let is_cancelling = state.is_cancelling_change();
     drop(state);
 
     rsx! {
@@ -130,6 +131,39 @@ pub(crate) fn PendingActions() -> Element {
                 path { d: "M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.63 4.36A9 9 0 0 0 20.49 15" }
             }
             span { class: "sr-only", {model::CHECK_PENDING} }
+        }
+        Button {
+            variant: ButtonVariant::Action,
+            danger: true,
+            disabled: is_cancelling,
+            onclick: move |evt: MouseEvent| {
+                evt.stop_propagation();
+                driver.dispatch(Action::CancelChange);
+            },
+            {model::CANCEL_CHANGE}
+        }
+    }
+}
+
+/// Asks before dropping the pending email change; confirming sends the cancel.
+#[component]
+pub(crate) fn CancelChangeDialog() -> Element {
+    let driver: Driver = use_context();
+    let dialog = Dialog::CancelChange;
+    let confirm = use_callback(move |()| driver.dispatch(Action::ConfirmCancelChange));
+    rsx! {
+        AlertDialog {
+            open: driver.overlays.cancel_change,
+            title: dialog.title(),
+            actions: vec![
+                DialogAction::Dismiss(model::CANCEL.into()),
+                DialogAction::Confirm {
+                    label: dialog.confirm().into(),
+                    danger: true,
+                    on_confirm: confirm,
+                },
+            ],
+            {dialog.body()}
         }
     }
 }

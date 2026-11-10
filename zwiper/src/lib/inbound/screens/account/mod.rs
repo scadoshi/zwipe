@@ -24,7 +24,7 @@ use change_username::ChangeUsernameSheet;
 use chrono::Utc;
 use components::delete_account_dialog::DeleteAccountDialog;
 use components::email_verification::{
-    EmailVerification, PendingActions, PendingEmail, VerificationActions,
+    CancelChangeDialog, EmailVerification, PendingActions, PendingEmail, VerificationActions,
 };
 use dioxus::prelude::*;
 use zwipe_core::domain::auth::models::session::Session;
@@ -185,6 +185,7 @@ pub fn Account() -> Element {
                     on_confirm: move |()| driver.dispatch(Action::ConfirmLogOut),
                 }
                 DeleteAccountDialog { open: driver.overlays.delete }
+                CancelChangeDialog {}
                 ChangeUsernameSheet { open: driver.overlays.username }
                 ChangeEmailSheet { open: driver.overlays.email }
                 ChangePasswordSheet { open: driver.overlays.password }
