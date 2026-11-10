@@ -3,6 +3,8 @@
 //! Methods for user authentication:
 //! login, logout, token refresh, and registration.
 
+/// Pending email change cancellation endpoint.
+pub mod cancel_email_change;
 /// Reset link check endpoint.
 pub mod check_reset_token;
 /// Pending email change confirmation endpoint.

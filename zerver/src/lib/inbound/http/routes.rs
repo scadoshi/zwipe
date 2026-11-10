@@ -569,6 +569,7 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
                                     .error_handler(unauthorized_on_missing_key),
                             ),
                         )
+                        .route("/cancel-email-change", post(auth::cancel_email_change))
                         .route(
                             "/resend-email-change",
                             post(auth::resend_email_change).layer(

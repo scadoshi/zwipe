@@ -6,6 +6,7 @@
 //! # Module Organization
 //!
 //! - [`authenticate_user`]: User login requests and responses
+//! - [`cancel_email_change`]: Drop a pending email change
 //! - [`check_reset_token`]: Whether a password reset token is still live
 //! - [`change_email`]: Email change requests with password verification
 //! - [`change_password`]: Password change requests with current password verification
@@ -23,6 +24,7 @@
 //! - [`verify_email`]: Email verification
 
 pub mod authenticate_user;
+pub mod cancel_email_change;
 pub mod change_email;
 pub mod change_password;
 pub mod change_username;

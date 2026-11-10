@@ -1,6 +1,7 @@
 //! Authentication and account management handlers.
 
 pub mod authenticate_user;
+pub mod cancel_email_change;
 pub mod change_email;
 pub mod change_password;
 pub mod change_username;
@@ -18,6 +19,7 @@ pub mod revoke_sessions;
 pub mod verify_email;
 
 pub use authenticate_user::authenticate_user;
+pub use cancel_email_change::cancel_email_change;
 pub use change_email::change_email;
 pub use change_password::change_password;
 pub use change_username::change_username;

@@ -49,6 +49,7 @@ Who checked, on which live build, what they saw.
 | [315](315-add-pile-flashes-stale-card.md) | Add's pile flashes a stale card after applying a filter | merged | thinker | #501 |
 | [323](323-overview-lockout-columns.md) | overview.sql section 16 reads lockout columns that no longer exist | merged | thinker | #490 |
 | [326](326-printings-blank-tiles.md) | Printings shows blank cards until their images load | fixing | thinker | - |
+| [327](327-cancel-pending-email-change.md) | A pending email change can't be cancelled | fixing | scotland | #507 |
 
 ## Waiting for live verification
 
