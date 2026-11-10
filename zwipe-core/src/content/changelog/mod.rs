@@ -50,6 +50,7 @@ pub const RELEASES: &[Release] = &[
             "Decks shows each deck's name and tags together beside its art",
             "Account shows a pending email change right after you log in, and closing a hint no longer hides it",
             "Add no longer flashes another card before a new pile's top card shows",
+            "Printings shows each card's outline while its image loads",
         ],
     },
     Release {

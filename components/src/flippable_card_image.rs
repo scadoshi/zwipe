@@ -24,6 +24,18 @@ fn seen_urls() -> &'static Mutex<HashSet<String>> {
     SEEN.get_or_init(|| Mutex::new(HashSet::new()))
 }
 
+/// Whether the image at `url` has already arrived once this session.
+pub(crate) fn image_seen(url: &str) -> bool {
+    seen_urls().lock().is_ok_and(|seen| seen.contains(url))
+}
+
+/// Records that the image at `url` has arrived.
+pub(crate) fn mark_image_seen(url: &str) {
+    if let Ok(mut seen) = seen_urls().lock() {
+        seen.insert(url.to_owned());
+    }
+}
+
 /// Forgets all seen URLs so every image's next render eases in again. Called
 /// on deliberate stack refreshes, where the fade doubles as feedback that fresh
 /// results arrived.
@@ -138,9 +150,7 @@ pub fn FlippableCardImage(
         (None, None, None, None, None, None, None)
     };
 
-    let already_loaded = image_url
-        .as_ref()
-        .is_some_and(|u| seen_urls().lock().is_ok_and(|seen| seen.contains(u)));
+    let already_loaded = image_url.as_deref().is_some_and(image_seen);
 
     // A cached image or a no-art card is settled before any load event.
     let settled = already_loaded || is_no_image;
@@ -169,9 +179,7 @@ pub fn FlippableCardImage(
                         draggable,
                         class: if already_loaded { "img-loaded" } else { "" },
                         onload: move |_| {
-                            if let Ok(mut seen) = seen_urls().lock() {
-                                seen.insert(url.clone());
-                            }
+                            mark_image_seen(&url);
                             load_nudge += 1;
                             announce();
                         },
