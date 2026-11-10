@@ -1598,6 +1598,12 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
         display: flex;
         flex-direction: column;
     }
+
+    /* The panel's border sits a pixel inside the scroll's clip edge, so a
+       content height on a fractional pixel never cuts it at any zoom. */
+    :is(.web-swipe-details, .web-examples-details) > .card-details-panel {
+        margin: 1px;
+    }
 }
 
 /* ---- Buy links ---- */
