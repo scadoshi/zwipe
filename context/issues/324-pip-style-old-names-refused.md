@@ -1,6 +1,6 @@
 # 324. Released apps can't change pip style: the server refuses theme and natural
 
-State: reported | Owner: thinker | PR: - | Build seen: bd233324a
+State: verified | Owner: thinker | PR: #494 | Build seen: bd233324a | Fixed: 679ef59ae (verified by Droid via API and Scotty on his phone, 2026-11-09)
 
 ## Report
 Scotty, 2026-11-09, on a 1.18.16 app build: changing the pip style fails with "Failed to deserialize the JSON body ... pip_style: unknown variant". Droid confirmed it the same day on an older app build, in both directions.
