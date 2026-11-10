@@ -1,6 +1,6 @@
 # Pip color on the wire: `natural` to `classic`
 
-**Status: Phase 1 committed on main `c089dcc1f`, 2026-11-02, riding 1.17.1. Phase 4 built on `server/pip-color-classic` (`32428253f`), not merged. Phases 2 and 3 not started.**
+**Status: Phase 1 committed on main `c089dcc1f`, 2026-11-02, riding 1.17.1. Phases 2 and 3 done: the floor is 1.18.1 in production (2026-11-09). Phase 4 rebuilt on `server/pip-classic-only` from release, PR to release.**
 
 **One sentence:** the pip setting's second value is renamed from `natural` to `classic`; the database stores `classic` now, the wire keeps writing `natural` because 1.15.0 through 1.17.0 can only parse that, and once the client floor is past a release that reads both, the server writes `classic` and stops accepting `natural`.
 
@@ -53,16 +53,19 @@ Record the version here when it is cut: **client reads both from 1.17.1**.
 
 When Phase 2 is live on both stores and rolled out, set `MIN_CLIENT_VERSION` to that version in `/etc/zwipe/zerver.env` and restart zerver. 1.15.0 through 1.17.0 get the update screen. Wait a few quiet days and watch `zcripts/metrics/errors.sql`.
 
-## Phase 4: `classic` only. BUILT on `server/pip-color-classic`
+## Phase 4: `classic` only. Rebuilt on `server/pip-classic-only`
 
-Built 2026-11-02 (`32428253f`), not merged. Merge after Phase 3 is quiet:
+First built 2026-11-02 on `server/pip-color-classic` (`32428253f`), which fell 1,889 commits behind release. Rebuilt 2026-11-09 on `server/pip-classic-only`, with the floor at 1.18.1:
 
-- `Classic` is plain `Classic` under `rename_all = "lowercase"`, with no rename and no alias, so the wire writes and reads `classic`.
-- `FromStr` drops the `natural` arm. The database has held only `classic` since Phase 1, so no migration.
-- `PATCH` with `natural` is a 422.
-- A session stored on a device before the update that still says `natural` no longer parses, and the app treats that as signed out (`zwiper/src/lib/outbound/session.rs`). That is accepted: those users sign in again, and nothing waits for old sessions to age out. A zite visitor whose localStorage says `"natural"` falls back to Theme, and `index.html` checks `"classic"` only.
-- Tests: `classic_stores_and_writes_as_classic` and `the_earlier_natural_name_no_longer_reads` in core, three request-body tests in `http/contracts/user.rs`, and the zerver test PATCHes `classic`, expects `classic` back and expects `natural` to be refused.
-- Grep gate holds: `natural` appears only in the tests that assert it is refused.
+- `Classic` serializes as `classic` under `rename_all = "lowercase"`, so the wire writes `classic`. Deserializing keeps `natural` as a read-only alias, for client-side copies written under it (see Stored data below).
+- `FromStr` drops the `natural` arm: it takes only the current names, which is what the database holds.
+- `HttpUpdateSettings.pip_style` deserializes through `FromStr`, so `PATCH` with `natural` is a 422.
+- Tests: `classic_stores_and_writes_as_classic`, `the_earlier_natural_name_no_longer_parses` and `a_stored_natural_still_reads_as_classic` in core; request-body tests in `http/contracts/user.rs` (takes `classic`, refuses `natural`, absent or null is unchanged); and the zerver round trip PATCHes `classic`, expects `classic` back and a 422 for `natural`. The shipped-client parse tests model the floor client, 1.18.1, which reads either name for each value, so every settings response still parses for every supported client.
+
+### Stored data
+
+- Postgres: `user_settings.pip_style` holds no `natural`. Phase 1's migration `20261102130000_pip_style_classic.sql` rewrote every `natural` row to `classic`, and the CHECK (`themed`, `classic` since `20261107120000`) refuses the old name. zerver writes the column with `as_str`, the current names.
+- Clients: every store that serializes `PipStyle` with serde wrote the wire name, `natural`, before this phase: zite's `zwipe.pips`, zwiper-web's stored session, the app's stored session and its pending settings. They keep reading through the alias and write `classic` on their next save. zite's `pip_store` rewrites a stored `natural` as soon as it loads it, and its `index.html` still honors `"natural"` before first paint. No sign-out and no lost choice.
 
 Access token claims carry no settings (`user_id`, `username`, `email`, `exp`, `iat`, checked 2026-11-02), so tokens are not a concern.
 

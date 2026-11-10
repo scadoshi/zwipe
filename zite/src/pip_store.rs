@@ -22,9 +22,15 @@ mod imp {
         web_sys::window()?.local_storage().ok().flatten()
     }
 
+    /// The stored style. A style stored under an earlier name reads back and
+    /// is written again under its current one.
     pub(super) fn load(key: &str) -> Option<PipStyle> {
         let raw = storage()?.get_item(key).ok().flatten()?;
-        serde_json::from_str(&raw).ok()
+        let style: PipStyle = serde_json::from_str(&raw).ok()?;
+        if serde_json::to_string(&style).is_ok_and(|current| current != raw) {
+            save(key, style);
+        }
+        Some(style)
     }
 
     pub(super) fn save(key: &str, style: PipStyle) {
