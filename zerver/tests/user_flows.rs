@@ -629,30 +629,33 @@ async fn universes_beyond_setting_round_trips(pool: sqlx::PgPool) {
     );
 }
 
-/// Whether `pip_style` is a value every client from 1.15.0 to 1.18.0
-/// parses: their enum knows only `theme` and `natural`.
-fn shipped_clients_parse(pip_style: &serde_json::Value) -> bool {
-    matches!(pip_style.as_str(), Some("theme" | "natural"))
+/// Whether `pip_style` is a value the client floor, 1.18.1, parses: its enum
+/// reads each value under either name.
+fn floor_clients_parse(pip_style: &serde_json::Value) -> bool {
+    matches!(
+        pip_style.as_str(),
+        Some("theme" | "themed" | "natural" | "classic")
+    )
 }
 
 #[sqlx::test]
-async fn settings_responses_parse_as_shipped_clients_read_them(pool: sqlx::PgPool) {
+async fn settings_responses_parse_as_the_floor_client_reads_them(pool: sqlx::PgPool) {
     let app = TestApp::new(pool);
     let (token, user_id) = app.register("shippeduser").await;
-    for sent in ["themed", "theme", "classic", "natural"] {
+    for sent in ["themed", "theme", "classic"] {
         let (status, updated) = app
             .patch(SETTINGS_ROUTE, json!({ "pip_style": sent }), Some(&token))
             .await;
         assert_eq!(status, StatusCode::OK, "patch {sent}: {updated}");
         assert!(
-            shipped_clients_parse(&updated["pip_style"]),
+            floor_clients_parse(&updated["pip_style"]),
             "patch {sent}: {updated}"
         );
 
         let (status, settings) = app.get(SETTINGS_ROUTE, Some(&token)).await;
         assert_eq!(status, StatusCode::OK, "get after {sent}: {settings}");
         assert!(
-            shipped_clients_parse(&settings["pip_style"]),
+            floor_clients_parse(&settings["pip_style"]),
             "get after {sent}: {settings}"
         );
 
@@ -665,7 +668,7 @@ async fn settings_responses_parse_as_shipped_clients_read_them(pool: sqlx::PgPoo
             .await;
         assert_eq!(status, StatusCode::OK, "login after {sent}: {session}");
         assert!(
-            shipped_clients_parse(&session["settings"]["pip_style"]),
+            floor_clients_parse(&session["settings"]["pip_style"]),
             "login after {sent}: {session}"
         );
 
@@ -682,7 +685,7 @@ async fn settings_responses_parse_as_shipped_clients_read_them(pool: sqlx::PgPoo
             .await;
         assert_eq!(status, StatusCode::OK, "refresh after {sent}: {refreshed}");
         assert!(
-            shipped_clients_parse(&refreshed["settings"]["pip_style"]),
+            floor_clients_parse(&refreshed["settings"]["pip_style"]),
             "refresh after {sent}: {refreshed}"
         );
     }
@@ -714,7 +717,7 @@ async fn swipe_confirmations_setting_round_trips(pool: sqlx::PgPool) {
     let (status, updated) = app
         .patch(
             SETTINGS_ROUTE,
-            json!({ "theme": "dracula", "dark_mode": false, "pip_style": "natural" }),
+            json!({ "theme": "dracula", "dark_mode": false, "pip_style": "classic" }),
             Some(&token),
         )
         .await;
@@ -759,7 +762,7 @@ async fn pip_style_setting_round_trips(pool: sqlx::PgPool) {
         )
         .await;
     assert_eq!(status, StatusCode::OK, "update: {updated}");
-    assert_eq!(updated["pip_style"], "natural");
+    assert_eq!(updated["pip_style"], "classic");
 
     // An old client's payload, without the field, leaves it alone.
     let (status, updated) = app
@@ -770,13 +773,13 @@ async fn pip_style_setting_round_trips(pool: sqlx::PgPool) {
         )
         .await;
     assert_eq!(status, StatusCode::OK, "theme-only update: {updated}");
-    assert_eq!(updated["pip_style"], "natural");
+    assert_eq!(updated["pip_style"], "classic");
 
     let (status, settings) = app.get(SETTINGS_ROUTE, Some(&token)).await;
     assert_eq!(status, StatusCode::OK, "get settings: {settings}");
-    assert_eq!(settings["pip_style"], "natural");
+    assert_eq!(settings["pip_style"], "classic");
 
-    // The stored row is the new name; the wire keeps the one 1.15.0 to 1.17.0 parse.
+    // The stored row and the wire both say classic.
     let stored: String = sqlx::query_scalar("SELECT pip_style FROM user_settings")
         .fetch_one(&pool)
         .await
@@ -810,16 +813,19 @@ async fn pip_style_setting_round_trips(pool: sqlx::PgPool) {
     assert_eq!(status, StatusCode::OK, "new name: {updated}");
     assert_eq!(updated["pip_style"], "theme");
 
-    // A 1.15.0 to 1.17.0 client sending the earlier name still lands on classic.
-    let (status, updated) = app
+    // The earlier name, which only clients below the floor send, is refused.
+    let (status, body) = app
         .patch(
             SETTINGS_ROUTE,
             json!({ "pip_style": "natural" }),
             Some(&token),
         )
         .await;
-    assert_eq!(status, StatusCode::OK, "earlier name: {updated}");
-    assert_eq!(updated["pip_style"], "natural");
+    assert_eq!(
+        status,
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "earlier name: {body}"
+    );
 
     // A color that does not exist is rejected.
     let (status, body) = app

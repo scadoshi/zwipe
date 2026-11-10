@@ -112,9 +112,9 @@
                     }
                 } catch (e) {}
                 try {
-                    // zite's pip_store: "classic", or the earlier "natural", puts back the classic pips.
+                    // zite's pip_store: "classic" puts back the classic pips.
                     var pips = JSON.parse(localStorage.getItem("zwipe.pips"));
-                    if (pips === "classic" || pips === "natural") {
+                    if (pips === "classic") {
                         document.body.classList.add("pips-classic");
                     }
                 } catch (e) {}
