@@ -568,6 +568,7 @@ fn undo_puts_a_removed_card_back() {
                 card: Box::new(opt.card.clone()),
                 board: Board::Deck,
                 quantity: 1,
+                mvp_at: None,
             },
         ]
     );
@@ -628,6 +629,7 @@ fn undo_at_the_end_of_the_stack_while_the_last_remove_is_out_waits_then_restores
             card: Box::new(opt.card.clone()),
             board: Board::Deck,
             quantity: 1,
+            mvp_at: None,
         }]
     );
     assert_eq!(
@@ -949,19 +951,56 @@ fn a_claim_matches_only_its_own_entry() {
 #[test]
 fn the_requests_put_the_card_back_where_it_was() {
     let opt = card("Opt");
-    let on_side = restore_request(&opt, Board::Sideboard, 3);
+    let on_side = restore_request(&opt, Board::Sideboard, 3, None);
     assert_eq!(
         (on_side.quantity, on_side.board.as_deref()),
         (3, Some("sideboard")),
         "all removed copies come back on their old board"
     );
     assert_eq!(
-        restore_request(&opt, Board::Deck, 2).board,
+        restore_request(&opt, Board::Deck, 2, None).board,
         None,
         "the main deck is the server default"
     );
     assert_eq!(
         board_request(Board::Maybeboard).board,
         Patch::Set(Some("maybeboard".to_owned()))
+    );
+}
+
+#[test]
+fn undo_puts_a_removed_card_back_with_its_star() {
+    let mut built = deck_of(&["Opt", "Shock"]);
+    let starred_at: chrono::DateTime<chrono::Utc> = "2026-01-02T03:04:05Z".parse().unwrap();
+    built.entries[0].deck_card.mvp_at = Some(starred_at);
+    built.entries[0].deck_card.quantity = Quantity::new(2).unwrap();
+    let opt = built.entries[0].clone();
+    let mut state = loaded(built);
+    let recorded = swipe_and_land(&mut state, Action::Remove);
+
+    let effects = state.update(Action::Undo);
+    let effects = state.update(Action::Taken {
+        ticket: ticket_of(&effects),
+        taken: Some(recorded),
+    });
+    let Some(Effect::RestoreDeckCard {
+        card,
+        board,
+        quantity,
+        mvp_at,
+        ..
+    }) = effects.last()
+    else {
+        panic!("undo restores the card: {effects:?}");
+    };
+    assert_eq!(
+        (card.scryfall_data.id, *board, *quantity, *mvp_at),
+        (opt.card.scryfall_data.id, Board::Deck, 2, Some(starred_at))
+    );
+    let request = restore_request(card, *board, *quantity, *mvp_at);
+    assert_eq!(
+        request.mvp_at,
+        Some(starred_at),
+        "the create restores the star"
     );
 }
