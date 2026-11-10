@@ -94,7 +94,11 @@ impl AuthRepository for Postgres {
         .fetch_one(&self.pool)
         .await?;
 
-        let user: UserWithPasswordHash = database_user.try_into()?;
+        let mut user: UserWithPasswordHash = database_user.try_into()?;
+        if let Some((email, expires_at)) = self.fetch_pending_email(user.id).await? {
+            user.pending_email = Some(email);
+            user.pending_email_expires_at = Some(expires_at);
+        }
 
         Ok(user)
     }
@@ -143,11 +147,9 @@ impl AuthRepository for Postgres {
             request.user_id
         ).fetch_one(&mut *tx).await?;
 
-        let user = User::from(database_user);
-
         tx.commit().await?;
 
-        Ok(user)
+        Ok(self.with_pending_email(User::from(database_user)).await?)
     }
 
     async fn store_email_change_request(

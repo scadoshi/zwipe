@@ -44,6 +44,10 @@ pub struct UserWithPasswordHash {
     pub email_verified_at: Option<DateTime<Utc>>,
     /// One-time UI hints already shown, keyed by hint id.
     pub hints_shown: std::collections::HashMap<String, bool>,
+    /// The address a live email change is waiting on, if any.
+    pub pending_email: Option<Email>,
+    /// When that change's link expires.
+    pub pending_email_expires_at: Option<DateTime<Utc>>,
 }
 
 impl UserWithPasswordHash {
@@ -56,6 +60,8 @@ impl UserWithPasswordHash {
             password_hash,
             email_verified_at,
             hints_shown,
+            pending_email,
+            pending_email_expires_at,
         } = self;
         let user = User {
             id,
@@ -63,8 +69,8 @@ impl UserWithPasswordHash {
             email,
             email_verified_at,
             hints_shown,
-            pending_email: None,
-            pending_email_expires_at: None,
+            pending_email,
+            pending_email_expires_at,
         };
         (user, password_hash)
     }
@@ -103,6 +109,8 @@ mod tests {
             password_hash,
             email_verified_at: None,
             hints_shown: std::collections::HashMap::new(),
+            pending_email: None,
+            pending_email_expires_at: None,
         };
 
         let user: User = with_hash.into();

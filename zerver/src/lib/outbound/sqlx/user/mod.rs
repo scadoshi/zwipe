@@ -3,6 +3,7 @@
 pub mod error;
 pub mod models;
 
+use chrono::{DateTime, Utc};
 use sqlx::{query, query_as};
 use uuid::Uuid;
 use zwipe_core::domain::Email;
@@ -62,6 +63,34 @@ impl TryFrom<DatabaseUserSettings> for UserSettings {
     }
 }
 
+impl Postgres {
+    /// The user's live email change, if one is waiting: the new address and
+    /// when its link expires. The one place this lookup lives, so every
+    /// response that returns a [`User`] says the same thing about it.
+    pub(crate) async fn fetch_pending_email(
+        &self,
+        user_id: Uuid,
+    ) -> Result<Option<(Email, DateTime<Utc>)>, sqlx::Error> {
+        let row = query!(
+            "SELECT new_email, expires_at FROM email_change_requests WHERE user_id = $1 AND expires_at > NOW()",
+            user_id
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+        Ok(row.map(|row| (Email::from_stored(row.new_email), row.expires_at)))
+    }
+
+    /// `user` with its pending email change filled in, as
+    /// [`Self::fetch_pending_email`] finds it.
+    pub(crate) async fn with_pending_email(&self, mut user: User) -> Result<User, sqlx::Error> {
+        if let Some((email, expires_at)) = self.fetch_pending_email(user.id).await? {
+            user.pending_email = Some(email);
+            user.pending_email_expires_at = Some(expires_at);
+        }
+        Ok(user)
+    }
+}
+
 impl UserRepository for Postgres {
     // == get ==
 
@@ -74,20 +103,7 @@ impl UserRepository for Postgres {
         .fetch_one(&self.pool)
         .await?;
 
-        let mut user = User::from(database_user);
-
-        if let Some(row) = query!(
-            "SELECT new_email, expires_at FROM email_change_requests WHERE user_id = $1 AND expires_at > NOW()",
-            user_id
-        )
-        .fetch_optional(&self.pool)
-        .await?
-        {
-            user.pending_email = Some(Email::from_stored(row.new_email));
-            user.pending_email_expires_at = Some(row.expires_at);
-        }
-
-        Ok(user)
+        Ok(self.with_pending_email(User::from(database_user)).await?)
     }
 
     // == hints ==
@@ -109,7 +125,9 @@ impl UserRepository for Postgres {
             other => MarkHintShownError::Database(other.into()),
         })?;
 
-        Ok(User::from(database_user))
+        self.with_pending_email(User::from(database_user))
+            .await
+            .map_err(|e| MarkHintShownError::Database(e.into()))
     }
 
     // == settings ==

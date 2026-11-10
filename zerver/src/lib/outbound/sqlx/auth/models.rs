@@ -39,6 +39,9 @@ impl TryFrom<DatabaseUserWithPasswordHash> for UserWithPasswordHash {
             email_verified_at: value.email_verified_at,
             // lenient: a malformed map degrades to "no hints shown"
             hints_shown: serde_json::from_value(value.hints_shown).unwrap_or_default(),
+            // Filled from email_change_requests by the repository.
+            pending_email: None,
+            pending_email_expires_at: None,
         })
     }
 }
