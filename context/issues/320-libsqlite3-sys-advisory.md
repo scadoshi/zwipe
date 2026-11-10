@@ -1,6 +1,6 @@
 # 320. Security audit fails on RUSTSEC-2026-0459 (libsqlite3-sys)
 
-State: fixing | Owner: scotland | PR: - | Build seen: release 3a627a7c1
+State: verified | Owner: scotland | PR: #480 | Build seen: release 3a627a7c1
 
 ## Report
 Composer, 2026-11-09: the Security audit workflow fails on RUSTSEC-2026-0459, libsqlite3-sys 0.30.1 (C SQLite CVE-2026-119375), fixed in 0.39.0 and later.
@@ -15,3 +15,6 @@ Composer, 2026-11-09: the Security audit workflow fails on RUSTSEC-2026-0459, li
 
 ## Fix
 Option A, the composer's call. `.cargo/audit.toml` ignores RUSTSEC-2026-0459 with the reason and a note to drop it on the next sqlx release. audit.yml gains a "SQLite stays out of the build" step that fails if libsqlite3-sys ever enters the build graph, so the ignore cannot go stale silently. No code or behavior change.
+
+## Verification
+The Security audit workflow failed on main at aeda394a4, before #480, and passed on main at bb566fc4b and cc3014ef3, after it, including the "SQLite stays out of the build" step.
