@@ -479,6 +479,12 @@
     background: transparent;
 }
 
+/* The drawer, as the one card, takes the panel's strong border at every
+   width. */
+.sheet-form-drawer > .bottom-sheet.card-details-drawer {
+    border-color: var(--border-primary);
+}
+
 /* The sheet's `?`, in the header's right corner at the title's height,
    faded like a hint button. */
 .drawer-sheet-hint {

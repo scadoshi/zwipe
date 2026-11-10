@@ -34,14 +34,14 @@ pub(super) struct PageTitle {
     pub(super) on_back: Option<Callback<()>>,
 }
 
-/// Keeps `--web-nav-h` on the root at the nav's height, which grows when
-/// its row wraps, for screens that sit under the nav while covering the
-/// page.
+/// Keeps `--web-nav-h` on the root at the nav's height, rounded to whole
+/// pixels and grown when its row wraps, for screens that sit under the nav
+/// while covering the page.
 const NAV_HEIGHT_JS: &str = r"
 const nav = document.querySelector('.web-shell > .web-app-nav');
 if (window.__zwipeNavHeight) window.__zwipeNavHeight.disconnect();
 if (nav) {
-    const set = () => document.documentElement.style.setProperty('--web-nav-h', nav.getBoundingClientRect().height + 'px');
+    const set = () => document.documentElement.style.setProperty('--web-nav-h', Math.round(nav.getBoundingClientRect().height) + 'px');
     window.__zwipeNavHeight = new ResizeObserver(set);
     window.__zwipeNavHeight.observe(nav);
     set();

@@ -6,13 +6,16 @@
 
 use dioxus::prelude::*;
 
-/// How far, in CSS pixels, the footer reaches up into a viewport
+/// How far, in whole CSS pixels, the footer reaches up into a viewport
 /// `viewport_height` tall when its top edge sits at `footer_top` from the
 /// viewport's top: none while it is below the fold or not drawn, never
-/// more than the whole viewport.
+/// more than the whole viewport. A fractional reach rounds up, so what
+/// rests on the lift clears the footer and keeps its edges on whole pixels.
 fn footer_lift(viewport_height: f64, footer_top: Option<f64>) -> f64 {
     footer_top.map_or(0.0, |top| {
-        (viewport_height - top).clamp(0.0, viewport_height.max(0.0))
+        (viewport_height - top)
+            .ceil()
+            .clamp(0.0, viewport_height.max(0.0))
     })
 }
 
@@ -119,7 +122,13 @@ mod tests {
     #[test]
     fn a_footer_in_view_lifts_by_as_much_as_shows() {
         assert_eq!(footer_lift(700.0, Some(522.0)), 178.0);
-        assert_eq!(footer_lift(600.0, Some(599.5)), 0.5);
+    }
+
+    #[test]
+    fn a_fractional_footer_top_lifts_by_whole_pixels() {
+        assert_eq!(footer_lift(700.0, Some(522.4)), 178.0);
+        assert_eq!(footer_lift(700.0, Some(522.9)), 178.0);
+        assert_eq!(footer_lift(600.0, Some(599.5)), 1.0);
     }
 
     #[test]
