@@ -2530,7 +2530,7 @@ html[data-wipe="left"]::view-transition-new(root) {
    buttons light the glyph. A destructive button keeps its red, which is
    what it says, and takes the red's tint behind it, the tint a status tag
    wears. An inline text link takes the accent and a firmer underline.
-   A row (a theme in the picker, a fold's header) fills with the
+   A row (a theme in either picker, a fold's header) fills with the
    border color, as a dropdown row does, which reads apart from a selected
    theme's accent border. Disabled things stay still; a selected or active
    one keeps its look. Keyboard focus gets the same look, on any device. */
@@ -2549,7 +2549,8 @@ html[data-wipe="left"]::view-transition-new(root) {
     }
 
     .pref-row:not(:disabled):hover,
-    .collapse-header:hover {
+    .collapse-header:hover,
+    .theme-picker-sheet .nav-dropdown-item:hover {
         background-color: var(--border-primary);
         color: var(--text-primary);
     }
@@ -2581,7 +2582,8 @@ html[data-wipe="left"]::view-transition-new(root) {
 }
 
 .pref-row:not(:disabled):focus-visible,
-.collapse-caret:focus-visible {
+.collapse-caret:focus-visible,
+.theme-picker-sheet .nav-dropdown-item:focus-visible {
     background-color: var(--border-primary);
     color: var(--text-primary);
 }

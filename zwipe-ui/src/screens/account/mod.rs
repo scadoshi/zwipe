@@ -1,4 +1,4 @@
-//! Account: the user's username, email and password with a sheet to change each, the email's verification with its resend cooldown, logging out, and deleting the account behind its countdown.
+//! Account: the user's username, email and password with a sheet to change each, the email's verification with its resend cooldown, a pending email change to resend or cancel, logging out, and deleting the account behind its countdown.
 //!
 //! The client keeps a [`State`] while the screen is up and sends [`Action::Load`] with the session's user when it opens. Every check and label comes from [`crate::account`] and the two waits from [`crate::timing`]. The client keeps the clock: each [`Effect::Wait`] asks it to wait one [`TICK`] and send [`Action::Tick`] back, so the model counts whole seconds and never reads the time. The sheets' and dialogs' visibility, the password typed into Delete account, and the version string stay in the client.
 
@@ -72,6 +72,12 @@ pub const PASSWORD_CHANGED: &str = "Password changed";
 
 /// The accessible name of the Pending row's refresh button, which checks whether the change went through.
 pub const CHECK_PENDING: &str = "Check the new email";
+
+/// The Pending row's button that asks to drop the change.
+pub const CANCEL_CHANGE: &str = "Cancel";
+
+/// The toast once a pending email change is dropped.
+pub const CHANGE_CANCELLED: &str = "Email change cancelled";
 
 /// The accessible name of the Verification row's refresh button.
 pub const CHECK_VERIFICATION: &str = "Check verification";
@@ -172,6 +178,8 @@ pub enum Dialog {
     LogOut,
     /// The password and the countdown before the account is deleted.
     DeleteAccount,
+    /// Confirms dropping the pending email change, from the Pending row's Cancel.
+    CancelChange,
 }
 
 impl Dialog {
@@ -182,6 +190,7 @@ impl Dialog {
             Self::ConfirmPassword => "Change password",
             Self::LogOut => "Log out",
             Self::DeleteAccount => "Delete account",
+            Self::CancelChange => "Cancel email change",
         }
     }
 
@@ -196,6 +205,9 @@ impl Dialog {
             Self::DeleteAccount => {
                 "This will permanently delete your account, all decks, and all card data. This can't be undone."
             }
+            Self::CancelChange => {
+                "Your email stays as it is. The link sent to the new address stops working."
+            }
         }
     }
 
@@ -206,6 +218,7 @@ impl Dialog {
             Self::ConfirmPassword => "Confirm",
             Self::LogOut => "Log out",
             Self::DeleteAccount => "Delete",
+            Self::CancelChange => "Cancel change",
         }
     }
 }
@@ -259,6 +272,15 @@ pub enum Action {
     ResendChange,
     /// Asks the server whether the pending email change went through, unless a check of it is out. Answered with [`Action::UserLoaded`] or [`Action::Failed`].
     CheckPending,
+    /// Asks to drop the pending email change, while one waits.
+    CancelChange,
+    /// Drops the pending email change, from [`Dialog::CancelChange`], unless a cancel is out.
+    ConfirmCancelChange,
+    /// The cancel holding `ticket` went through. The client has already cleared the change from its session's user.
+    ChangeCancelled {
+        /// The ticket from the [`Effect::CancelEmailChange`] this answers.
+        ticket: Ticket,
+    },
     /// Opens a change sheet with every field empty.
     OpenSheet(Sheet),
     /// Sets a field on a sheet to what is typed.
@@ -335,6 +357,8 @@ pub enum Effect {
     ResendVerification(Ticket),
     /// Mails a fresh link for the pending email change and answers as [`Effect::ResendVerification`] does.
     ResendEmailChange(Ticket),
+    /// Drops the pending email change, clears it from the session's user, and answers with [`Action::ChangeCancelled`] or [`Action::Failed`].
+    CancelEmailChange(Ticket),
     /// Waits one [`TICK`], then answers with [`Action::Tick`] carrying this ticket. A wait nobody needs any more is answered and ignored, so the client never cancels one.
     Wait(Ticket),
     /// Opens this sheet. Its fields are already empty in the model.
@@ -405,6 +429,8 @@ enum Request {
     ResendChange(String),
     /// The check of the pending change to this address.
     PendingCheck(String),
+    /// The pending change's cancel.
+    CancelChange,
     /// A username change.
     Username,
     /// An email change to this address as typed.
@@ -429,6 +455,7 @@ impl Request {
             | Self::Resend
             | Self::ResendChange(_)
             | Self::PendingCheck(_)
+            | Self::CancelChange
             | Self::Reset(_)
             | Self::Delete => None,
         }
@@ -552,6 +579,9 @@ impl State {
             Action::ResendLimited { ticket } => self.resent(ticket, Sent::Limited),
             Action::ResendChange => self.resend_change(),
             Action::CheckPending => self.check_pending(),
+            Action::CancelChange => self.cancel_change(),
+            Action::ConfirmCancelChange => self.confirm_cancel_change(),
+            Action::ChangeCancelled { ticket } => self.change_cancelled(ticket),
             Action::CheckVerification => {
                 if self.is_checking() {
                     return Vec::new();
@@ -742,6 +772,39 @@ impl State {
         };
         let ticket = self.send(Request::PendingCheck(address));
         vec![Effect::CheckVerification(ticket)]
+    }
+
+    /// Asks before dropping the pending change, while one waits.
+    fn cancel_change(&self) -> Vec<Effect> {
+        if self.pending_address().is_none() {
+            return Vec::new();
+        }
+        vec![Effect::OpenDialog(Dialog::CancelChange)]
+    }
+
+    /// Sends the cancel, unless nothing waits or a cancel is out.
+    fn confirm_cancel_change(&mut self) -> Vec<Effect> {
+        if self.pending_address().is_none() || self.is_cancelling_change() {
+            return Vec::new();
+        }
+        let ticket = self.send(Request::CancelChange);
+        vec![Effect::CancelEmailChange(ticket)]
+    }
+
+    /// Clears the pending change once its cancel went through, with its resend cooldown.
+    fn change_cancelled(&mut self, ticket: Ticket) -> Vec<Effect> {
+        if self.take(ticket, |r| *r == Request::CancelChange).is_none() {
+            return Vec::new();
+        }
+        if let Some(user) = self.user.as_mut() {
+            user.pending_email = None;
+            user.pending_email_expires_at = None;
+        }
+        self.change_cooldown = None;
+        vec![Effect::Toast(Toast::normal(
+            ToastKind::Success,
+            CHANGE_CANCELLED,
+        ))]
     }
 
     /// The address waiting on its link, if one is.
@@ -993,6 +1056,12 @@ impl State {
     #[must_use]
     pub fn is_checking_pending(&self) -> bool {
         self.is_waiting(|r| matches!(r, Request::PendingCheck(_)))
+    }
+
+    /// Whether the pending change's cancel is out. The dialog's confirm is busy meanwhile.
+    #[must_use]
+    pub fn is_cancelling_change(&self) -> bool {
+        self.is_waiting(|r| *r == Request::CancelChange)
     }
 
     /// Whether the verification check is out. Its button is off meanwhile.
