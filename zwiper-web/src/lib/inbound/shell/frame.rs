@@ -61,11 +61,14 @@ fn is_open(route: &Route) -> bool {
 /// the `?` (`on_hint`) sit centered in the folded nav; on a wide window the
 /// `?` sits in the nav's icon row. The screen scrolls as one column, and a
 /// wide window ends it with zwipe.net's footer; a swipe screen fills the
-/// window, so its footer starts below the fold.
+/// window, so its footer starts below the fold. `titled` says the screen
+/// draws its own heading with the title, so the frame's screen-reader one
+/// stays out.
 #[component]
 pub fn ScreenFrame(
     title: String,
     #[props(default)] on_hint: Option<Callback<()>>,
+    #[props(default)] titled: bool,
     children: Element,
 ) -> Element {
     let page = try_use_context::<Signal<Option<PageTitle>>>();
@@ -89,7 +92,9 @@ pub fn ScreenFrame(
         div { class: "screen web-screen web-scroll-screen",
             // Under the nav a screen has no header bar; the title stays for
             // assistive tech.
-            h1 { class: "sr-only", "{title}" }
+            if !titled {
+                h1 { class: "sr-only", "{title}" }
+            }
             {children}
             WebFooter {}
         }

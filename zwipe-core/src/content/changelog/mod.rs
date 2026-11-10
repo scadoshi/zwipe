@@ -68,6 +68,7 @@ pub const RELEASES: &[Release] = &[
             "Distributions, Mana and Draw odds leave room above and below their charts",
             "Undoing a remove brings the card back with its MVP star",
             "Printings says when it couldn't load and has Retry, instead of sitting empty on a slow network",
+            "The deck page on the web shows the deck's name over its chips",
         ],
     },
     Release {

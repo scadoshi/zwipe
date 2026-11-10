@@ -26,14 +26,16 @@ fn GhostActions(count: usize) -> Element {
     }
 }
 
-/// The head: the facts as tinted chips, then one featured card with its
-/// name and role chips. The name sits in the page head and the icons in
-/// the dock, so the head has no title row.
+/// The head: the deck name's bar over the facts as tinted chips, then one
+/// featured card with its name and role chips. The icons sit in the dock.
 #[component]
 pub fn DeckHeadGhost() -> Element {
     rsx! {
         div { class: "deck-head",
             div { class: "deck-head-text",
+                div { class: "deck-head-title-row",
+                    div { class: "deck-head-title", GhostText { chars: 12 } }
+                }
                 div { class: "deck-head-meta",
                     for (i, (tone, chars)) in [("p5", 8), ("p3", 9), ("p3", 15), ("money", 7)].into_iter().enumerate() {
                         span { key: "{i}", class: "stat-chip stat-chip-{tone} web-ghost-chip", GhostText { chars } }

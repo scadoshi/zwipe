@@ -1,6 +1,6 @@
 //! The deck on a wide window: the deck page both sites share, editing. The
-//! head opens on the deck's facts and featured cards, with no name (the tab
-//! and the nav carry it, and the page's `?` sits in the nav); the controls
+//! head names the deck over its facts and featured cards, as the shared page
+//! does (the page's `?` sits in the nav); the controls
 //! add Quick add and the Boards row; the bands are the editor's rows,
 //! opening inline with their actions as on the phone, the hover preview
 //! pinned to the side the cursor is not on; the stats fold under the cards;
@@ -327,6 +327,7 @@ pub fn DeckWidePage(
         PriceCurrency::Tix => m.total_price_tix,
         PriceCurrency::Usd => m.total_price_usd,
     });
+    let name = held_profile.as_ref().map(|p| p.name.to_string());
     let facts = held_profile.as_ref().map(|p| DeckFacts {
         cards: metrics.as_ref().map_or_else(
             || p.card_count,
@@ -365,6 +366,7 @@ pub fn DeckWidePage(
                 head: rsx! {
                 if let Some(facts) = facts {
                     DeckHead {
+                        name,
                         facts,
                         has_featured: !featured.is_empty(),
                         for (card, role) in featured.iter().cloned() {
