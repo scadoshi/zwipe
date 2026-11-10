@@ -1,6 +1,6 @@
 # Pip color on the wire: `natural` to `classic`
 
-**Status: Phase 1 committed on main `c089dcc1f`, 2026-11-02, riding 1.17.1. Phases 2 and 3 done: the floor is 1.18.1 in production (2026-11-09). Phase 4 rebuilt on `server/pip-classic-only` from release, PR to release.**
+**Status: Phase 1 shipped; clients read `classic` from 1.17.1. Phase 2 is the 1.18.16 store build, the first app that writes `classic`. Phase 3, the floor at 1.18.16, waits on that build being live in both stores. Phase 4 is half done: the server writes and stores `classic` (#491), and the settings request keeps taking `natural` (#494) until Phase 3.**
 
 **One sentence:** the pip setting's second value is renamed from `natural` to `classic`; the database stores `classic` now, the wire keeps writing `natural` because 1.15.0 through 1.17.0 can only parse that, and once the client floor is past a release that reads both, the server writes `classic` and stops accepting `natural`.
 
@@ -43,15 +43,15 @@ Note, 2026-11-06: the type went back to `PipStyle` (and `ParsePipStyleError`, `p
 
 The field keeps its name, `pip_style`, on the wire and in the column. Renaming it is a separate wire change and not part of this plan.
 
-## Phase 2: ship the client
+## Phase 2: a store build that writes `classic`
 
-The next cut after Phase 1 is deployed carries the new core, so the app reads both names. No client code beyond what Phase 1 changed.
+Reading the new name is not enough: a client also sends the setting back in `PATCH /api/user/settings`, serialized with its own core. Clients from 1.17.1 read `classic`, but every build through the 1.18.16 web cut still serializes `natural`, because that core's serde writes the wire name. The first app that writes `classic` is the **1.18.16 store build**, cut from release after #491 merged, which carries the core that serializes `classic`.
 
-Record the version here when it is cut: **client reads both from 1.17.1**.
+## Phase 3: raise the floor to 1.18.16
 
-## Phase 3: raise the floor and wait
+When the 1.18.16 store build is live in both stores and rolled out, set `MIN_CLIENT_VERSION` to 1.18.16 in `/etc/zwipe/zerver.env` and restart zerver. Every build that still writes `natural` then gets the update screen. Wait a few quiet days and watch `zcripts/metrics/errors.sql`.
 
-When Phase 2 is live on both stores and rolled out, set `MIN_CLIENT_VERSION` to that version in `/etc/zwipe/zerver.env` and restart zerver. 1.15.0 through 1.17.0 get the update screen. Wait a few quiet days and watch `zcripts/metrics/errors.sql`.
+The floor at 1.18.1 (2026-11-09) covered reading `classic`, not writing it. Treating it as Phase 3 is what let the request refuse `natural` early and broke settings changes on every live build (fixed by #494).
 
 ## Phase 4: `classic` only. Rebuilt on `server/pip-classic-only`
 
@@ -59,8 +59,8 @@ First built 2026-11-02 on `server/pip-color-classic` (`32428253f`), which fell 1
 
 - `Classic` serializes as `classic` under `rename_all = "lowercase"`, so the wire writes `classic`. Deserializing keeps `natural` as a read-only alias, for client-side copies written under it (see Stored data below).
 - `FromStr` drops the `natural` arm: it takes only the current names, which is what the database holds.
-- `HttpUpdateSettings.pip_style` deserializes through `FromStr`, so `PATCH` with `natural` is a 422.
-- Tests: `classic_stores_and_writes_as_classic`, `the_earlier_natural_name_no_longer_parses` and `a_stored_natural_still_reads_as_classic` in core; request-body tests in `http/contracts/user.rs` (takes `classic`, refuses `natural`, absent or null is unchanged); and the zerver round trip PATCHes `classic`, expects `classic` back and a 422 for `natural`. The shipped-client parse tests model the floor client, 1.18.1, which reads either name for each value, so every settings response still parses for every supported client.
+- The settings request keeps taking `natural` until Phase 3. #491 first made `HttpUpdateSettings.pip_style` deserialize through `FromStr`, which 422'd `natural` from every live build; #494 put plain serde back, which takes `natural` through the alias and answers `classic`. **Only after Phase 3**: deserialize the request through `FromStr` again, and the zerver test expects a 422 for `natural`. The serde read alias for stored client copies stays until those copies have had a save; drop it then only if a release has passed since.
+- Tests: `classic_stores_and_writes_as_classic`, `the_earlier_natural_name_no_longer_parses` (`FromStr`) and `a_stored_natural_still_reads_as_classic` (serde) in core; request-body tests in `http/contracts/user.rs` (takes `classic`, takes `natural` as shipped clients send it, refuses an unknown name, absent or null is unchanged); and the zerver round trip PATCHes `classic` and expects `classic` back, and PATCHes `natural` and expects 200 with `classic` back and stored. The shipped-client parse tests model the floor client, 1.18.1, which reads either name for each value.
 
 ### Stored data
 
