@@ -36,12 +36,13 @@ pub struct Release {
     pub entries: &'static [&'static str],
 }
 
-/// The version the App Store and Play both serve now: the changelog marks
-/// it Mobile, and a newer shipped release Web, since the web deploys ahead
-/// of store review. Bump it when a mobile store build clears review on both
-/// stores, to the version they then both serve. Compiled in, not served:
-/// each client reads its own copy.
-pub const MOBILE_STORE_VERSION: Version = Version::new(1, 18, 14);
+/// The version last submitted to the App Store and Play: the changelog
+/// marks it Mobile, and a newer shipped release Web, since the web deploys
+/// ahead of the stores. Bump it when the mobile build is submitted, on
+/// submission day, not when review clears; until Apple and Google release
+/// it, a phone may still offer the version before. Compiled in, not
+/// served: each client reads its own copy.
+pub const MOBILE_STORE_VERSION: Version = Version::new(1, 18, 15);
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
