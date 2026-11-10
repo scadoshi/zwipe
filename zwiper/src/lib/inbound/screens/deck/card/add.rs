@@ -10,6 +10,7 @@ use components::{
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
+use tokio::time;
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
@@ -24,6 +25,7 @@ use zwipe_ui::screens::add_cards::{
 };
 use zwipe_ui::stack;
 use zwipe_ui::stores::{parked, undo};
+use zwipe_ui::timing::PILE_REVEAL_FALLBACK;
 
 use super::components::card_info::{CardDetailsSheet, CardSkeleton};
 use super::components::printing_sheet::PrintingSheet;
@@ -612,6 +614,18 @@ pub fn Add(deck_id: Uuid) -> Element {
         driver.dispatch(Action::Filter(filter));
     });
 
+    // A new pile stays behind the ghost until its top card's image shows, or
+    // until the fallback, so a stalled image never hides the pile.
+    let revealing = driver.model.read().revealing();
+    use_effect(use_reactive!(|revealing| {
+        if let Some(ticket) = revealing {
+            spawn(async move {
+                time::sleep(PILE_REVEAL_FALLBACK).await;
+                driver.dispatch(Action::TopShown { ticket });
+            });
+        }
+    }));
+
     // Park this screen's filter under the live source, and the search stack
     // so returning resumes mid-stack, on leave.
     use_drop(move || {
@@ -700,17 +714,28 @@ pub fn Add(deck_id: Uuid) -> Element {
 
                 div { class : "form-container",
                     if source == Source::Search {
-                        if pile == Pile::Cards {
-                            SwipeStack {
-                                cards: window,
-                                config: swipe_config,
-                                entering,
-                                on_swipe_left: move |card: Card| on_swipe(Direction::Left, &card),
-                                on_swipe_right: move |card: Card| on_swipe(Direction::Right, &card),
-                                on_swipe_up: move |card: Card| on_swipe(Direction::Up, &card),
-                                on_swipe_down: move |card: Card| on_swipe(Direction::Down, &card),
+                        if pile == Pile::Cards || revealing.is_some() {
+                            // While the pile reveals, the stack loads its
+                            // images hidden under the ghost.
+                            div { class: if revealing.is_some() { "swipe-reveal revealing" } else { "swipe-reveal" },
+                                SwipeStack {
+                                    cards: window,
+                                    config: swipe_config,
+                                    entering,
+                                    on_swipe_left: move |card: Card| on_swipe(Direction::Left, &card),
+                                    on_swipe_right: move |card: Card| on_swipe(Direction::Right, &card),
+                                    on_swipe_up: move |card: Card| on_swipe(Direction::Up, &card),
+                                    on_swipe_down: move |card: Card| on_swipe(Direction::Down, &card),
+                                    on_top_shown: move |()| {
+                                        if let Some(ticket) = revealing {
+                                            driver.dispatch(Action::TopShown { ticket });
+                                        }
+                                    },
+                                }
+                                if revealing.is_some() {
+                                    CardSkeleton {}
+                                }
                             }
-
                         } else if pile == Pile::End {
                             // Cursor sits one past the last card with nothing
                             // more coming: the skeleton stays down-swipeable so

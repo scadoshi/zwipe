@@ -81,6 +81,9 @@ pub fn SwipeStack(
     /// When `Some(dir)`, the new top card plays a keyframe entering from
     /// `dir`. The stack clears this signal on `animationend`.
     entering: Signal<Option<Direction>>,
+    /// Fires once the top card's image has its bytes, failed, or has no art.
+    #[props(default)]
+    on_top_shown: Option<EventHandler<()>>,
 ) -> Element {
     let mut state = use_signal(SwipeState::new);
     // In-flight exiting cards. Each entry is rendered as an overlay layer
@@ -292,6 +295,11 @@ pub fn SwipeStack(
                                 class: "card-image".to_string(),
                                 draggable: false,
                                 flippable: is_top,
+                                on_load: move |()| {
+                                    if is_top && let Some(handler) = on_top_shown {
+                                        handler.call(());
+                                    }
+                                },
                             }
                         }
                     }

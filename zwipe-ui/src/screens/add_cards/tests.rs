@@ -101,7 +101,14 @@ fn with_deck(built: &Deck) -> (State, Vec<Effect>) {
     (state, effects)
 }
 
-/// A commander deck's screen serving `served`, the client having applied the seeded filter.
+/// Sends [`Action::TopShown`] for the pile held behind the ghost, as the client does once its top card's image is on screen.
+fn shown(state: &mut State) {
+    if let Some(ticket) = state.revealing() {
+        assert_eq!(state.update(Action::TopShown { ticket }), NOTHING);
+    }
+}
+
+/// A commander deck's screen serving `served`, the client having applied the seeded filter and shown its top card.
 fn serving(served: &[Card]) -> State {
     let (mut state, _) = with_deck(&commander_deck(&[]));
     let effects = state.update(Action::Filter(state.filter().clone()));
@@ -111,6 +118,7 @@ fn serving(served: &[Card]) -> State {
         page: page(served.to_vec()),
     });
     assert!(toasts(&effects).is_empty(), "{effects:?}");
+    shown(&mut state);
     state
 }
 
@@ -226,6 +234,7 @@ fn a_search_serves_cards_the_deck_does_not_hold() {
         ticket,
         page: page(vec![held, card("Bear")]),
     });
+    shown(&mut state);
     assert_eq!(state.pile(), Pile::Cards);
     assert_eq!(top(&state).as_deref(), Some("Bear"));
     assert_eq!(state.window().len(), 1);
@@ -353,6 +362,7 @@ fn a_late_search_reply_is_ignored() {
         ticket: newer,
         page: page(vec![card("New")]),
     });
+    shown(&mut state);
     assert_eq!(top(&state).as_deref(), Some("New"));
 }
 
@@ -698,7 +708,7 @@ fn undo_with_nothing_to_undo_says_so() {
     );
 }
 
-/// `state` after the filter is applied again and its search serves `served`.
+/// `state` after the filter is applied again, its search serves `served` and its top card shows.
 fn refiltered(state: &mut State, served: &[Card]) {
     let effects = state.update(Action::Filter(state.filter().clone()));
     let ticket = ticket_of(&effects);
@@ -706,6 +716,7 @@ fn refiltered(state: &mut State, served: &[Card]) {
         ticket,
         page: page(served.to_vec()),
     });
+    shown(state);
 }
 
 #[test]
@@ -1397,4 +1408,114 @@ fn the_maybeboard_pile_running_out_under_a_swipe_says_no_cards_left_alone() {
         [Toast::quick(ToastKind::Info, NO_CARDS_LEFT)],
         "the move's own line gives way"
     );
+}
+
+/// The names of the cards the swipe stack draws.
+fn window_names(state: &State) -> Vec<String> {
+    state
+        .window()
+        .iter()
+        .map(|c| c.scryfall_data.name.clone())
+        .collect()
+}
+
+/// Asserts that the pile `effects` asked for lands ghosted, with `served` drawn under the ghost and
+/// no card described, and shows once the client says its top card is on screen.
+fn lands_ghosted_then_shows(state: &mut State, effects: &[Effect], served: &[&str]) {
+    assert!(has_search(effects), "{effects:?}");
+    let ticket = ticket_of(effects);
+    let _landed = state.update(Action::Searched {
+        ticket,
+        page: page(served.iter().map(|n| card(n)).collect()),
+    });
+    assert_eq!(state.pile(), Pile::Loading, "the new pile stays ghosted");
+    assert_eq!(state.revealing(), Some(ticket));
+    assert_eq!(
+        window_names(state),
+        served,
+        "the stack is drawn under the ghost"
+    );
+    assert_eq!(top(state), None, "nothing describes a card the ghost hides");
+    assert_eq!(state.printing_card(), None);
+
+    assert_eq!(state.update(Action::TopShown { ticket }), NOTHING);
+    assert_eq!(state.pile(), Pile::Cards);
+    assert_eq!(state.revealing(), None);
+    assert_eq!(top(state).as_deref(), served.first().copied());
+}
+
+#[test]
+fn a_new_pile_stays_ghosted_until_its_top_card_shows() {
+    let mut state = serving(&[card("Deadly Rollick"), card("Arabella")]);
+
+    let mut narrowed = state.filter().clone();
+    narrowed.set_name_contains("dra");
+    let effects = state.update(Action::Filter(narrowed));
+    lands_ghosted_then_shows(&mut state, &effects, &["Drakuseth", "Dragonlord"]);
+
+    let effects = state.update(Action::Refresh);
+    lands_ghosted_then_shows(&mut state, &effects, &["Drakuseth", "Zurgo"]);
+
+    let toggled = state.update(Action::ToggleSynergy);
+    assert!(toggled.contains(&Effect::Rerun), "{toggled:?}");
+    let effects = state.update(Action::Filter(state.filter().clone()));
+    lands_ghosted_then_shows(&mut state, &effects, &["Arabella", "Zurgo"]);
+}
+
+#[test]
+fn only_the_live_pile_reveals() {
+    let mut state = serving(&[card("A")]);
+    let first = state.update(Action::Refresh);
+    let older = ticket_of(&first);
+    let second = state.update(Action::Refresh);
+    let ticket = ticket_of(&second);
+    let _landed = state.update(Action::Searched {
+        ticket,
+        page: page(vec![card("B"), card("C")]),
+    });
+    let _shown = state.update(Action::TopShown { ticket: older });
+    assert_eq!(
+        state.pile(),
+        Pile::Loading,
+        "an older pile's image changes nothing"
+    );
+    let _shown = state.update(Action::TopShown { ticket });
+    assert_eq!(top(&state).as_deref(), Some("B"));
+}
+
+#[test]
+fn an_empty_reply_skips_the_ghost_hold() {
+    let mut state = serving(&[card("A")]);
+    let effects = state.update(Action::Refresh);
+    let _landed = state.update(Action::Searched {
+        ticket: ticket_of(&effects),
+        page: page(Vec::new()),
+    });
+    assert_eq!(state.revealing(), None);
+    assert_eq!(state.pile(), Pile::Empty);
+}
+
+#[test]
+fn undo_or_a_source_switch_ends_the_ghost_hold() {
+    let mut state = serving(&[card("A")]);
+    let _skipped = state.update(Action::Swipe(Direction::Left));
+    let effects = state.update(Action::Refresh);
+    let _landed = state.update(Action::Searched {
+        ticket: ticket_of(&effects),
+        page: page(vec![card("B")]),
+    });
+    let _undone = state.update(Action::Undo);
+    assert_eq!(state.revealing(), None);
+    assert_eq!(state.pile(), Pile::Cards);
+
+    let effects = state.update(Action::Refresh);
+    let _landed = state.update(Action::Searched {
+        ticket: ticket_of(&effects),
+        page: page(vec![card("B")]),
+    });
+    let _picked = state.update(Action::PickSource {
+        source: Source::Maybeboard,
+        remembered: None,
+    });
+    assert_eq!(state.revealing(), None);
 }
