@@ -6,6 +6,7 @@
 
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
 use crate::domain::auth::models::access_token::AccessToken;
 use crate::domain::auth::models::refresh_token::RefreshToken;
@@ -18,7 +19,16 @@ use crate::domain::user::models::settings::UserSettings;
 pub const MAXIMUM_SESSION_COUNT: u8 = 10;
 
 /// A successful authentication response containing user data and tokens.
+///
+/// Serializes with the settings under `settings`. Deserializes from that key
+/// or from `preferences`, the name before 1.18.0, so a session an app before
+/// 1.18.0 stored on the device still loads after the update; a build only
+/// rewrites its stored copy on its next refresh. Reading both keys at once
+/// also keeps a reply from a server before the rename's last phase loading.
+/// The fallback can go once no session an app before 1.18.0 stored can still
+/// be live: 30 days, a login's longest life, after the floor reached 1.18.0.
 #[derive(Debug, Clone, Serialize, PartialEq, Deserialize)]
+#[serde(try_from = "SessionWire")]
 pub struct Session {
     /// The authenticated user's public profile information.
     pub user: User,
@@ -31,6 +41,39 @@ pub struct Session {
 
     /// User's display settings (theme, dark mode).
     pub settings: UserSettings,
+}
+
+/// The session as it reads off the wire or out of storage: `settings`, or
+/// `preferences` from before 1.18.0, or both. A serde alias would not do: it
+/// refuses a document that carries both keys.
+#[derive(Deserialize)]
+struct SessionWire {
+    user: User,
+    access_token: AccessToken,
+    refresh_token: RefreshToken,
+    #[serde(default)]
+    settings: Option<UserSettings>,
+    #[serde(default)]
+    preferences: Option<UserSettings>,
+}
+
+/// Neither `settings` nor `preferences` was present.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Error)]
+#[error("missing field `settings`")]
+pub struct MissingSettings;
+
+impl TryFrom<SessionWire> for Session {
+    type Error = MissingSettings;
+
+    fn try_from(wire: SessionWire) -> Result<Self, Self::Error> {
+        let settings = wire.settings.or(wire.preferences).ok_or(MissingSettings)?;
+        Ok(Self {
+            user: wire.user,
+            access_token: wire.access_token,
+            refresh_token: wire.refresh_token,
+            settings,
+        })
+    }
 }
 
 impl Session {
@@ -87,5 +130,43 @@ mod tests {
         let future = Utc::now() + Duration::days(14);
         let session = make_session(future);
         assert!(!session.is_expired());
+    }
+
+    #[test]
+    fn serializes_settings_under_the_new_key_only() {
+        let session = make_session(Utc::now() + Duration::days(14));
+        let wire = serde_json::to_value(&session).unwrap();
+        assert!(wire.get("settings").is_some(), "settings key: {wire}");
+        assert!(wire.get("preferences").is_none(), "no legacy key: {wire}");
+        let back: Session = serde_json::from_value(wire).unwrap();
+        assert_eq!(back, session);
+    }
+
+    #[test]
+    fn loads_a_session_stored_under_the_legacy_key() {
+        let session = make_session(Utc::now() + Duration::days(14));
+        let mut wire = serde_json::to_value(&session).unwrap();
+        let settings = wire.as_object_mut().unwrap().remove("settings").unwrap();
+        wire["preferences"] = settings;
+        let back: Session = serde_json::from_value(wire).unwrap();
+        assert_eq!(back, session);
+    }
+
+    #[test]
+    fn loads_a_reply_carrying_both_keys() {
+        let session = make_session(Utc::now() + Duration::days(14));
+        let mut wire = serde_json::to_value(&session).unwrap();
+        wire["preferences"] = wire["settings"].clone();
+        let back: Session = serde_json::from_value(wire).unwrap();
+        assert_eq!(back, session);
+    }
+
+    #[test]
+    fn refuses_a_session_with_neither_key() {
+        let session = make_session(Utc::now() + Duration::days(14));
+        let mut wire = serde_json::to_value(&session).unwrap();
+        wire.as_object_mut().unwrap().remove("settings");
+        let err = serde_json::from_value::<Session>(wire).unwrap_err();
+        assert!(err.to_string().contains("settings"), "{err}");
     }
 }

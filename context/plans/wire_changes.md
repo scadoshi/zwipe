@@ -15,4 +15,4 @@ Every change a shipped client can see, where it stands, and the floor it waits o
 
 ## Done
 
-- Route `/api/user/preferences` and key `preferences` to `settings`, [`archive/settings_rename_migration.md`](archive/settings_rename_migration.md): Phase 3 landed 2026-11-10 with the floor at 1.18.1. The legacy route, the login reply's `preferences` key and `Session`'s fallback are gone.
+- Route `/api/user/preferences` and key `preferences` to `settings`, [`archive/settings_rename_migration.md`](archive/settings_rename_migration.md): Phase 3's server half landed 2026-11-10 with the floor at 1.18.1; the legacy route and the login reply's `preferences` key are gone. `Session` keeps reading `preferences` (`SessionWire`) because app builds before 1.18.0 stored their session with it; that read fallback goes 30 days after the floor reached 1.18.0.

@@ -1,6 +1,6 @@
 # Settings rename on the wire: `preferences` to `settings`
 
-**Status: done. Phase 1 deployed to production 2026-11-05, Phase 2 rode 1.18.0, and Phase 3 landed 2026-11-10 with `MIN_CLIENT_VERSION` at 1.18.1 in production (branch `nits/scotland-settings-phase3`). Archived.**
+**Status: server side done. Phase 1 deployed to production 2026-11-05, Phase 2 rode 1.18.0, and Phase 3's server half landed 2026-11-10 with `MIN_CLIENT_VERSION` at 1.18.1 in production (branch `nits/scotland-settings-phase3`). One leftover: `Session`'s read fallback (`SessionWire`) stays until 30 days after the floor reached 1.18.0. Archived.**
 
 **One sentence:** every identifier, module, table and doc that said preference says setting, and the two places a shipped client can see the old name, the route `/api/user/preferences` and the login reply's `preferences` key, keep answering under both names until `MIN_CLIENT_VERSION` is 1.18.0.
 
@@ -36,7 +36,9 @@ Deploy order is server first, as always. The server on main already answers both
 
 ## Phase 3: the server narrows. DONE 2026-11-10
 
-Landed with the floor at 1.18.1 in production, on `nits/scotland-settings-phase3`: `LEGACY_SETTINGS_ROUTE` and its two `FIXED_ROUTES` rows, `LEGACY_SETTINGS_SEGMENT` and its route, `HttpSession` (the login, refresh and cookie handlers answer `Json<Session>` again), `SessionWire` and `MissingSettings` are gone, `Session` is a plain derive, and the five Phase 1 tests are deleted. The leftover-name grep hits only changelog entries, the telemetry strings and one ordinary use of the word in a card query comment. The steps as planned:
+Landed with the floor at 1.18.1 in production, on `nits/scotland-settings-phase3`: `LEGACY_SETTINGS_ROUTE` and its two `FIXED_ROUTES` rows, `LEGACY_SETTINGS_SEGMENT` and its route, and `HttpSession` are gone (the login, refresh and cookie handlers answer `Json<Session>` again), with the test `legacy_settings_names_still_answer`.
+
+`SessionWire` stays, against the plan below. The plan only weighed the server's reply, but `Session` is also how the app reads its stored session (keyring on iOS, the sealed file on Android). Every app build before 1.18.0 stored it with `preferences`, and 1.18.x rewrites a stored copy only on its next refresh, so a 1.17 user whose login is still live and who updates straight to a build without the fallback would fail to load it and be signed out. zwiper-web never stored the old key: its first deploy (2026-11-06) came after the rename. A `#[serde(alias = "preferences")]` would not do in its place, since serde refuses a document carrying both keys and the server's reply carried both until this deploy. The fallback can go once no pre-1.18.0 session can still be live, 30 days (a login's longest life) after the floor reached 1.18.0; its tests (`loads_a_session_stored_under_the_legacy_key`, `loads_a_reply_carrying_both_keys`, `refuses_a_session_with_neither_key`, `serializes_settings_under_the_new_key_only`) stay with it. The leftover-name grep hits only changelog entries, the telemetry strings and one ordinary use of the word in a card query comment. The steps as planned:
 
 
 When 1.18.0 is live on both stores and the rollout has settled, set `MIN_CLIENT_VERSION=1.18.0` in `/etc/zwipe/zerver.env` and restart zerver, then wait a few quiet days on `zcripts/metrics/errors.sql`. Then, in one commit:
