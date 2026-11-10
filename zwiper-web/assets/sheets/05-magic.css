@@ -2221,6 +2221,18 @@ html.keyboard-up .web-dock-pair {
     text-align: center;
 }
 
+/* Under a mouse a tile names its deck in the accent and rings its art, as
+   a panel lights its border. */
+@media (hover: hover) {
+    .home-deck-tile:hover > .home-deck-tile-art {
+        box-shadow: 0 0 0 1px var(--accent-primary);
+    }
+
+    .home-deck-tile:hover .home-deck-tile-name {
+        color: var(--ink-accent-primary, var(--accent-primary));
+    }
+}
+
 .home-deck-tile:active > .home-deck-tile-art {
     filter: brightness(0.85);
 }
@@ -2706,6 +2718,20 @@ footer.site-footer .site-footer-note {
     color: var(--ink-palette-1, var(--palette-1));
     text-decoration: underline;
     text-underline-offset: 3px;
+}
+
+/* The kit's link hover, which this rule's class outranks: the accent and a
+   firmer underline, and the same for keyboard focus. */
+@media (hover: hover) {
+    .site-footer-note a:hover {
+        color: var(--ink-accent-primary, var(--accent-primary));
+        text-decoration-thickness: 2px;
+    }
+}
+
+.site-footer-note a:focus-visible {
+    color: var(--ink-accent-primary, var(--accent-primary));
+    text-decoration-thickness: 2px;
 }
 
 /* A stepper's button at its bound is off: faded on a dark theme, its text

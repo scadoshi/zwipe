@@ -307,6 +307,15 @@
   }
 }
 
+/* Under a mouse a section's header lights as a button does: the accent on
+   its text and border. */
+@media (hover: hover) {
+  .accordion-trigger:not(:disabled, [aria-disabled="true"]):hover {
+    color: var(--ink-accent-primary, var(--accent-primary));
+    border-color: var(--accent-primary);
+  }
+}
+
 /* Accordion trigger - simple button-like style */
 .accordion-trigger {
   display: flex;

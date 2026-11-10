@@ -690,6 +690,27 @@ body {
     }
 }
 
+/* ---- Hover the kit leaves to the app ----
+
+   orangui lights every button, row and field under a mouse; these are the
+   web app's own. A warning's fix (the deck's Add cards and Import) wears
+   the warning color inline, so it keeps it and takes the warning's tint
+   behind it, the tint a status tag of that tone wears. The logo fades a
+   step. */
+@media (hover: hover) {
+    .deck-warning-fixes .btn-xs:not(:disabled):hover {
+        background-color: color-mix(in srgb, var(--color-warning) 12%, transparent);
+    }
+
+    .web-nav-mark:hover {
+        opacity: 0.8;
+    }
+}
+
+.deck-warning-fixes .btn-xs:not(:disabled):focus-visible {
+    background-color: color-mix(in srgb, var(--color-warning) 12%, transparent);
+}
+
 /* ---- Header while folded (below 1110px, media.rs's NAV_FOLD_MAX_PX) ----
 
    The app's header from the kit's NavBar: the back arrow or an empty left
