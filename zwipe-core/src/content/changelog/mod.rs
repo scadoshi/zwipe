@@ -61,6 +61,7 @@ pub const RELEASES: &[Release] = &[
             "The changelog shows which release is on the web and which is in the app stores",
             "Printings shows each card's outline while its image loads",
             "Card details' border shows on every edge and reads on dark themes",
+            "On the web every button, link, field and row answers the mouse, disabled ones aside",
         ],
     },
     Release {

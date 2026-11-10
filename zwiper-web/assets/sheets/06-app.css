@@ -237,6 +237,14 @@
     margin-bottom: 0;
 }
 
+/* Under a mouse, a field's border brightens a step; focus keeps its own
+   look, and an errored or disabled field stays as it is. */
+@media (hover: hover) {
+    .input:not(:focus, :disabled, .input-error):hover {
+        border-color: var(--text-muted);
+    }
+}
+
 /* After .input:focus, so an errored field keeps its border while focused. */
 .input-error,
 .input-error:focus {
