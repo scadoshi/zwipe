@@ -1,7 +1,10 @@
 //! The one place an API request is built, sent and decoded.
 //!
-//! Every endpoint goes through [`ZwipeClient::call`]; the per-endpoint files
+//! Every endpoint goes through [`ZwipeClient::call`] (or [`ZwipeClient::call_within`],
+//! the same with its own timeout); the per-endpoint files
 //! describe the call and hold no transport code.
+
+use std::time::Duration;
 
 use chrono::{DateTime, TimeDelta, Utc};
 use reqwest::header::{AGE, HeaderMap, HeaderName, LAST_MODIFIED};
@@ -28,7 +31,25 @@ impl ZwipeClient {
         endpoint: E,
         session: Option<&Session>,
     ) -> Result<E::Response, ClientError> {
-        let response = self.send(&endpoint, session).await?;
+        let response = self.send(&endpoint, session, None).await?;
+        decode::<E>(response).await
+    }
+
+    /// [`Self::call`] that gives up after `timeout`, on every platform: the
+    /// browser's fetch has no timeout of its own, and the native client's
+    /// is longer than a screen should wait before offering Retry.
+    ///
+    /// # Errors
+    ///
+    /// As [`Self::call`]; a call that runs past `timeout` is a
+    /// [`ClientError::Network`].
+    pub async fn call_within<E: Endpoint>(
+        &self,
+        endpoint: E,
+        session: Option<&Session>,
+        timeout: Duration,
+    ) -> Result<E::Response, ClientError> {
+        let response = self.send(&endpoint, session, Some(timeout)).await?;
         decode::<E>(response).await
     }
 
@@ -46,17 +67,19 @@ impl ZwipeClient {
         endpoint: E,
         session: Option<&Session>,
     ) -> Result<Dated<E::Response>, ClientError> {
-        let response = self.send(&endpoint, session).await?;
+        let response = self.send(&endpoint, session, None).await?;
         let made_at = made_at(response.headers(), Utc::now());
         let value = decode::<E>(response).await?;
         Ok(Dated { value, made_at })
     }
 
-    /// Builds and sends `endpoint`'s request.
+    /// Builds and sends `endpoint`'s request, giving up after `timeout`
+    /// when one is set.
     async fn send<E: Endpoint>(
         &self,
         endpoint: &E,
         session: Option<&Session>,
+        timeout: Option<Duration>,
     ) -> Result<reqwest::Response, ClientError> {
         let mut url = self.base_url.clone();
         url.set_path(&endpoint.path());
@@ -79,6 +102,10 @@ impl ZwipeClient {
 
         if let Some(body) = endpoint.body() {
             request = request.json(body);
+        }
+
+        if let Some(timeout) = timeout {
+            request = request.timeout(timeout);
         }
 
         // The browser keeps cross-origin cookies out of a fetch unless asked;

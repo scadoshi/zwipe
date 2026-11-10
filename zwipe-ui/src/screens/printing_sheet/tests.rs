@@ -51,6 +51,7 @@ fn the_copy_matches_the_app() {
     assert_eq!(UNCHANGED, "Printing unchanged");
     assert_eq!(BACK, "Back");
     assert_eq!(SAVE, "Save");
+    assert_eq!(LOAD_FAILED, "Couldn't load printings");
 }
 
 #[test]
@@ -134,11 +135,83 @@ fn an_empty_reply_is_empty() {
 }
 
 #[test]
-fn a_failed_fetch_stops_loading_and_keeps_what_showed() {
+fn a_failed_fetch_says_so_instead_of_sitting_empty() {
     let all = printings();
     let mut state = State::default();
     let ticket = ticket_of(&open(&mut state, &all[0]));
     assert_eq!(state.update(Action::Failed { ticket }), NONE);
+    assert_eq!(state.status(), Status::Failed);
+}
+
+#[test]
+fn retry_sends_the_failed_fetch_again_and_the_sheet_recovers() {
+    let all = printings();
+    let mut state = State::default();
+    let first = ticket_of(&open(&mut state, &all[1]));
+    state.update(Action::Failed { ticket: first });
+
+    let effects = state.update(Action::Retry);
+    let again = ticket_of(&effects);
+    assert_ne!(again, first, "a fresh ticket");
+    assert!(
+        matches!(&effects[..], [Effect::FetchPrintings { oracle_id, .. }] if Some(*oracle_id) == all[1].scryfall_data.oracle_id),
+        "{effects:?}"
+    );
+    assert_eq!(state.status(), Status::Loading);
+    assert_eq!(
+        state.update(Action::Failed { ticket: first }),
+        NONE,
+        "the first fetch answering late changes nothing"
+    );
+    assert_eq!(state.status(), Status::Loading);
+
+    let effects = state.update(Action::Loaded {
+        ticket: again,
+        printings: all.clone(),
+    });
+    assert_eq!(
+        effects,
+        [Effect::Show(1)],
+        "opens on the card's own printing"
+    );
+    assert_eq!(state.status(), Status::Several);
+    assert_eq!(state.update(Action::Retry), NONE, "nothing failed");
+}
+
+#[test]
+fn a_retry_can_fail_again_and_be_retried() {
+    let all = printings();
+    let mut state = State::default();
+    let ticket = ticket_of(&open(&mut state, &all[0]));
+    state.update(Action::Failed { ticket });
+    let ticket = ticket_of(&state.update(Action::Retry));
+    state.update(Action::Failed { ticket });
+    assert_eq!(state.status(), Status::Failed);
+    assert!(matches!(
+        state.update(Action::Retry)[..],
+        [Effect::FetchPrintings { .. }]
+    ));
+}
+
+#[test]
+fn opening_another_card_after_a_failure_fetches_that_card() {
+    let all = printings();
+    let mut state = State::default();
+    let ticket = ticket_of(&open(&mut state, &all[0]));
+    state.update(Action::Failed { ticket });
+    let other = card("Arcane Signet");
+    let effects = open(&mut state, &other);
+    assert!(
+        matches!(&effects[..], [Effect::FetchPrintings { oracle_id, .. }] if Some(*oracle_id) == other.scryfall_data.oracle_id),
+        "{effects:?}"
+    );
+    assert_eq!(state.status(), Status::Loading);
+}
+
+#[test]
+fn a_new_sheet_retries_nothing() {
+    let mut state = State::default();
+    assert_eq!(state.update(Action::Retry), NONE);
     assert_eq!(state.status(), Status::Empty);
 }
 

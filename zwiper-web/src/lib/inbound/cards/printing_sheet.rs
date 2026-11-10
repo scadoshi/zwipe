@@ -12,13 +12,14 @@
 
 use components::icons::{CHECK, DockIcon};
 use components::{
-    BottomSheet, Button, ButtonVariant, CoverFlow, SheetFrame, SheetWide, TOAST_QUICK,
+    BottomSheet, Button, ButtonVariant, CoverFlow, LoadFailed, SheetFrame, SheetWide, TOAST_QUICK,
     use_overlay_back_action,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use zwipe_core::domain::card::Card;
 use zwipe_ui::card::info;
+use zwipe_ui::screens::printing_sheet as model;
 use zwipe_ui::telemetry::vocabulary::component;
 
 use crate::inbound::cards::card_info::{CardInfoDisplay, PrintingSheetSkeleton};
@@ -51,12 +52,17 @@ pub fn PrintingSheet(
     let flow = use_min_width(KIT_MODAL_PX);
     let mut printings: Signal<Vec<Card>> = use_signal(Vec::new);
     let mut loading = use_signal(|| false);
+    // The fetch failed or timed out: the body offers Retry, which bumps
+    // `attempt` and so runs the fetch again.
+    let mut failed = use_signal(|| false);
+    let mut attempt = use_signal(|| 0u32);
     let mut index = use_signal(|| 0usize);
     let mut initial = use_signal(|| 0usize);
     let shown_id = card.scryfall_data.id;
     let oracle_id = card.scryfall_data.oracle_id;
 
     use_effect(move || {
+        let _ = attempt();
         if !open() {
             return;
         }
@@ -64,13 +70,14 @@ pub fn PrintingSheet(
             return;
         };
         loading.set(true);
+        failed.set(false);
         spawn(async move {
-            if let Some(cards) = authed
+            let fetched = authed
                 .run("load_printings", |c, _| async move {
                     c.fetch_printings(oracle_id).await
                 })
-                .await
-            {
+                .await;
+            if let Some(cards) = fetched {
                 let at = cards
                     .iter()
                     .position(|p| p.scryfall_data.id == shown_id)
@@ -78,6 +85,8 @@ pub fn PrintingSheet(
                 printings.set(cards);
                 index.set(at);
                 initial.set(at);
+            } else {
+                failed.set(true);
             }
             loading.set(false);
         });
@@ -125,6 +134,11 @@ pub fn PrintingSheet(
         }
     });
 
+    let retry = use_callback(move |()| {
+        let next = attempt.peek().wrapping_add(1);
+        attempt.set(next);
+    });
+
     if flow() {
         return rsx! {
             CoverFlowSheet {
@@ -132,6 +146,8 @@ pub fn PrintingSheet(
                 printings: all,
                 index,
                 loading: loading(),
+                failed: failed(),
+                on_retry: retry,
                 changed,
                 read_only,
                 on_leave: leave,
@@ -160,6 +176,8 @@ pub fn PrintingSheet(
                     },
                     if loading() {
                         PrintingSheetSkeleton {}
+                    } else if failed() {
+                        LoadFailed { message: model::LOAD_FAILED, on_retry: retry }
                     } else if let Some(card) = visible {
                         CoverFlow { printings: all, index }
                         // The prices with Save at their right, at the
@@ -200,6 +218,8 @@ fn CoverFlowSheet(
     printings: Vec<Card>,
     mut index: Signal<usize>,
     loading: bool,
+    failed: bool,
+    on_retry: Callback<()>,
     changed: bool,
     read_only: bool,
     on_leave: Callback<()>,
@@ -268,6 +288,8 @@ fn CoverFlowSheet(
                         },
                         if loading {
                             PrintingSheetSkeleton {}
+                        } else if failed {
+                            LoadFailed { message: model::LOAD_FAILED, on_retry: move |()| on_retry.call(()) }
                         } else {
                             CoverFlow {
                                 printings,

@@ -5,7 +5,8 @@
 //! index, and performs its effects.
 
 use components::{
-    BottomSheet, CoverFlow, DockAction, TOAST_NORMAL, ToastOptions, Toasts, icons, use_toast,
+    BottomSheet, CoverFlow, DockAction, LoadFailed, TOAST_NORMAL, ToastOptions, Toasts, icons,
+    use_toast,
 };
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
@@ -165,6 +166,8 @@ pub(crate) fn PrintingSheet(
                 div { class: "printing-sheet-body",
                     if status == Status::Loading {
                         PrintingSheetSkeleton {}
+                    } else if status == Status::Failed {
+                        LoadFailed { message: model::LOAD_FAILED, on_retry: move |()| driver.dispatch(Action::Retry) }
                     } else if status == Status::Several {
                         CoverFlow { printings, index }
 
