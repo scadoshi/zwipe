@@ -1,6 +1,6 @@
 //! User account HTTP request contracts.
 
-use serde::{Deserialize, Deserializer, Serialize, de};
+use serde::{Deserialize, Serialize};
 
 use crate::domain::user::settings::{PipStyle, SwipeConfirmations};
 
@@ -22,27 +22,14 @@ pub struct HttpUpdateSettings {
     #[serde(default)]
     pub universes_beyond_exceptions: Option<Vec<String>>,
     /// Pip style, or absent to leave unchanged. serde defaults keep payloads
-    /// from clients that predate the field. Only the current names are taken
-    /// ([`PipStyle`]'s `FromStr`), so the earlier `theme` and `natural` are
-    /// refused.
-    #[serde(default, deserialize_with = "current_pip_style")]
+    /// from clients that predate the field. The earlier `theme` and `natural`
+    /// are taken too: every build through 1.18.16 sends them.
+    #[serde(default)]
     pub pip_style: Option<PipStyle>,
     /// Swipe confirmations, or absent to leave unchanged. serde defaults keep
     /// payloads from clients that predate the field.
     #[serde(default)]
     pub swipe_confirmations: Option<SwipeConfirmations>,
-}
-
-/// A request's pip style under its current name only. The earlier names a
-/// client's stored copy may hold read through serde, but a request naming one
-/// is refused.
-fn current_pip_style<'de, D>(deserializer: D) -> Result<Option<PipStyle>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let name: Option<String> = Option::deserialize(deserializer)?;
-    name.map(|name| name.parse().map_err(de::Error::custom))
-        .transpose()
 }
 
 /// HTTP request body for marking a one-time UI hint as shown.
@@ -72,8 +59,11 @@ mod tests {
     }
 
     #[test]
-    fn the_request_refuses_the_earlier_natural() {
-        assert!(pip_style(r#"{"pip_style":"natural"}"#).is_err());
+    fn the_request_takes_natural_as_shipped_clients_send_it() {
+        assert_eq!(
+            pip_style(r#"{"pip_style":"natural"}"#).unwrap(),
+            Some(PipStyle::Classic)
+        );
     }
 
     #[test]
@@ -85,8 +75,16 @@ mod tests {
     }
 
     #[test]
-    fn the_request_refuses_the_earlier_theme() {
-        assert!(pip_style(r#"{"pip_style":"theme"}"#).is_err());
+    fn the_request_takes_theme_as_shipped_clients_send_it() {
+        assert_eq!(
+            pip_style(r#"{"pip_style":"theme"}"#).unwrap(),
+            Some(PipStyle::Themed)
+        );
+    }
+
+    #[test]
+    fn the_request_refuses_an_unknown_pip_style() {
+        assert!(pip_style(r#"{"pip_style":"bogus"}"#).is_err());
     }
 
     #[test]

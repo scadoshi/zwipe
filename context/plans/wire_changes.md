@@ -4,8 +4,8 @@ Every change a shipped client can see, where it stands, and the floor it waits o
 
 | Change | Plan | Where it is | Waits on |
 | --- | --- | --- | --- |
-| Pip value `natural` to `classic` | [`pip_color_wire.md`](pip_color_wire.md) | Phase 1 on main, riding 1.17.1. Floor at 1.18.1 in production. Phase 4 rebuilt on `server/pip-classic-only`, PR to release | Merge Phase 4, then deploy zerver and zite |
-| Pip value `theme` to `themed` | [`pip_themed_wire.md`](pip_themed_wire.md) | Phase 1 merged, riding 1.18.1. Floor at 1.18.1 in production. Phase 4 rebuilt on `server/pip-themed-only`, PR to release | Merge Phase 4, then deploy zerver |
+| Pip value `natural` to `classic` | [`pip_color_wire.md`](pip_color_wire.md) | Phase 4 merged (#491): the server writes `classic`. The settings request still takes `natural`, because builds through 1.18.16 send it | Floor at the first store build after 1.18.16 (the first that writes `classic`), then drop the request alias (Phase 5) |
+| Pip value `theme` to `themed` | [`pip_themed_wire.md`](pip_themed_wire.md) | Phase 4 merged (#492): the server writes `themed`. The settings request still takes `theme`, because builds through 1.18.16 send it | Floor at the first store build after 1.18.16 (the first that writes `themed`), then drop the request alias (Phase 5) |
 
 ## Additive, no floor
 

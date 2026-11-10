@@ -1,6 +1,6 @@
 # Pip color on the wire: `natural` to `classic`
 
-**Status: Phase 1 committed on main `c089dcc1f`, 2026-11-02, riding 1.17.1. Phases 2 and 3 done: the floor is 1.18.1 in production (2026-11-09). Phase 4 rebuilt on `server/pip-classic-only` from release, PR to release.**
+**Status: Phase 4 merged (#491, 2026-11-09): the server writes `classic` and stores it. The settings request still takes `natural`, because every build through 1.18.16 sends it (the hotfix below). Phase 5, dropping that alias, waits on the floor reaching the first store build after 1.18.16.**
 
 **One sentence:** the pip setting's second value is renamed from `natural` to `classic`; the database stores `classic` now, the wire keeps writing `natural` because 1.15.0 through 1.17.0 can only parse that, and once the client floor is past a release that reads both, the server writes `classic` and stops accepting `natural`.
 
@@ -59,7 +59,7 @@ First built 2026-11-02 on `server/pip-color-classic` (`32428253f`), which fell 1
 
 - `Classic` serializes as `classic` under `rename_all = "lowercase"`, so the wire writes `classic`. Deserializing keeps `natural` as a read-only alias, for client-side copies written under it (see Stored data below).
 - `FromStr` drops the `natural` arm: it takes only the current names, which is what the database holds.
-- `HttpUpdateSettings.pip_style` deserializes through `FromStr`, so `PATCH` with `natural` is a 422.
+- `HttpUpdateSettings.pip_style` first deserialized through `FromStr`, so `PATCH` with `natural` was a 422. That broke settings changes on every live build: through 1.18.16 the client serializes `PipStyle` with Phase 1's serde, which writes `natural`, so the floor at 1.18.1 covered reading the new name but not writing it. Hotfix 2026-11-09: the request deserializes with plain serde again, which takes `natural` through the alias. Responses keep writing `classic`, which those builds read.
 - Tests: `classic_stores_and_writes_as_classic`, `the_earlier_natural_name_no_longer_parses` and `a_stored_natural_still_reads_as_classic` in core; request-body tests in `http/contracts/user.rs` (takes `classic`, refuses `natural`, absent or null is unchanged); and the zerver round trip PATCHes `classic`, expects `classic` back and a 422 for `natural`. The shipped-client parse tests model the floor client, 1.18.1, which reads either name for each value, so every settings response still parses for every supported client.
 
 ### Stored data
@@ -68,6 +68,10 @@ First built 2026-11-02 on `server/pip-color-classic` (`32428253f`), which fell 1
 - Clients: every store that serializes `PipStyle` with serde wrote the wire name, `natural`, before this phase: zite's `zwipe.pips`, zwiper-web's stored session, the app's stored session and its pending settings. They keep reading through the alias and write `classic` on their next save. zite's `pip_store` rewrites a stored `natural` as soon as it loads it, and its `index.html` still honors `"natural"` before first paint. No sign-out and no lost choice.
 
 Access token claims carry no settings (`user_id`, `username`, `email`, `exp`, `iat`, checked 2026-11-02), so tokens are not a concern.
+
+## Phase 5: the request stops taking `natural`
+
+Phase 2 shipped a client that reads `classic` but still writes `natural`: the first client that writes `classic` is the first store build cut after Phase 4 merged (the next one after 1.18.16), since it carries Phase 4's core. When that build is the floor, `HttpUpdateSettings.pip_style` can take the current names only again (deserialize through `FromStr`), and the zerver test expects a 422 for `natural`. The serde read alias for stored client copies stays until those copies have had a save; drop it in the same change only if a release has passed since.
 
 ## Verification
 
