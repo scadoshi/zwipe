@@ -36,6 +36,25 @@ pub(crate) fn mark_image_seen(url: &str) {
     }
 }
 
+/// Waits for the images showing `url` to decode, so they paint on the next
+/// frame once shown. Returns at once where the browser can't say, or when a
+/// decode fails.
+pub(crate) async fn decoded(url: &str) {
+    let mut decode = document::eval(DECODE_JS);
+    if decode.send(url).is_ok() {
+        let _settled: Result<bool, _> = decode.recv().await;
+    }
+}
+
+/// Takes an image URL, awaits the decode of every image showing it, where
+/// the browser has one, then answers.
+const DECODE_JS: &str = r#"
+const url = await dioxus.recv();
+const imgs = [...document.querySelectorAll("img")].filter((img) => img.src === url && img.decode);
+await Promise.allSettled(imgs.map((img) => img.decode()));
+dioxus.send(true);
+"#;
+
 /// Forgets all seen URLs so every image's next render eases in again. Called
 /// on deliberate stack refreshes, where the fade doubles as feedback that fresh
 /// results arrived.
@@ -79,8 +98,9 @@ pub fn FlippableCardImage(
     /// shows the last.
     #[props(default)]
     face: Option<Signal<usize>>,
-    /// Fires once, when the first face shown has its bytes (or failed, or has
-    /// no art), so a host can hold an entrance until every image is real.
+    /// Fires once, when the first face shown has its bytes and is decoded (or
+    /// failed, or has no art), so a host can hold an entrance until every
+    /// image is real.
     #[props(default)]
     on_load: Option<EventHandler<()>>,
 ) -> Element {
@@ -95,8 +115,9 @@ pub fn FlippableCardImage(
             }
         }
     };
-    // Bumped by the img's load event so the seen-URL check below re-runs.
-    let mut load_nudge: Signal<u32> = use_signal(|| 0);
+    // Bumped once the img has loaded and decoded, so the seen-URL check below
+    // re-runs.
+    let load_nudge: Signal<u32> = use_signal(|| 0);
     let _ = load_nudge();
     let total = sd.read().face_count();
     // Clamp so a stale/over-large `initial_face` still resolves to a real face.
@@ -178,10 +199,20 @@ pub fn FlippableCardImage(
                         alt: "{alt}",
                         draggable,
                         class: if already_loaded { "img-loaded" } else { "" },
-                        onload: move |_| {
-                            mark_image_seen(&url);
-                            load_nudge += 1;
-                            announce();
+                        // Shown only once decoded, so it never paints half
+                        // drawn or a frame late.
+                        onload: {
+                            move |_| {
+                                let url = url.clone();
+                                let mut load_nudge = load_nudge;
+                                let mut announce = announce;
+                                spawn(async move {
+                                    decoded(&url).await;
+                                    mark_image_seen(&url);
+                                    load_nudge += 1;
+                                    announce();
+                                });
+                            }
                         },
                         onerror: move |_| announce(),
                     }

@@ -1043,8 +1043,10 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                     div { class: "form-container",
                         if current.is_some() || reveal.is_some() {
                             // While the pile reveals, the stack loads its
-                            // images hidden under the ghost.
+                            // images hidden under the ghost; after, the ghost
+                            // stays under it until the top card's image is in.
                             div { class: if reveal.is_some() { "swipe-reveal revealing" } else { "swipe-reveal" },
+                                CardSkeleton {}
                                 SwipeStack {
                                     cards: window,
                                     allowed: ALL_SWIPES.to_vec(),
@@ -1073,9 +1075,6 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                                             shown.call(ticket);
                                         }
                                     },
-                                }
-                                if reveal.is_some() {
-                                    CardSkeleton {}
                                 }
                             }
                         } else if end_of_pile {

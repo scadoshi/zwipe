@@ -14,7 +14,7 @@ use dioxus::prelude::*;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ImageSize;
 
-use crate::flippable_card_image::{image_seen, mark_image_seen};
+use crate::flippable_card_image::{decoded, image_seen, mark_image_seen};
 use crate::icons::{ARROW_LEFT, ARROW_RIGHT, DockIcon};
 
 /// How far a wheel or trackpad scrolls, in pixels, to move one printing.
@@ -81,24 +81,51 @@ fn wheel_steps(carried: f64, px: f64, limit: usize) -> (Option<Step>, usize, f64
     (Some(way), steps, rest % WHEEL_STEP_PX)
 }
 
+/// How far one printing's image has come.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Arrival {
+    /// Loaded and decoded, so it paints as soon as it shows.
+    Decoded,
+    /// Shown and done fading in.
+    Faded,
+    /// It failed to load.
+    Failed,
+}
+
 /// What one printing's card draws.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Tile {
     /// A card-shaped ghost, its image loading hidden under it.
     Ghost,
+    /// The image fading in over its ghost.
+    Fading,
     /// The image.
     Image,
     /// The set name on a plain card: no art, or the image failed.
     Missing,
 }
 
-/// The tile for a printing that `has_art`, its image `settled` as loaded (`true`), failed
-/// (`false`) or still on its way (`None`).
-fn tile(has_art: bool, settled: Option<bool>) -> Tile {
-    match (has_art, settled) {
+impl Tile {
+    /// Whether the ghost draws.
+    fn ghost(self) -> bool {
+        matches!(self, Self::Ghost | Self::Fading)
+    }
+
+    /// Whether the image shows, fading in or done.
+    fn image_shown(self) -> bool {
+        matches!(self, Self::Fading | Self::Image)
+    }
+}
+
+/// The tile for a printing that `has_art`, its image at `arrival` (`None` while on its way).
+/// The ghost stays under the image until the image has faded in, so no frame
+/// shows an empty card.
+fn tile(has_art: bool, arrival: Option<Arrival>) -> Tile {
+    match (has_art, arrival) {
         (true, None) => Tile::Ghost,
-        (true, Some(true)) => Tile::Image,
-        (true, Some(false)) | (false, _) => Tile::Missing,
+        (true, Some(Arrival::Decoded)) => Tile::Fading,
+        (true, Some(Arrival::Faded)) => Tile::Image,
+        (true, Some(Arrival::Failed)) | (false, _) => Tile::Missing,
     }
 }
 
@@ -114,9 +141,9 @@ pub fn CoverFlow(
     let mut wheel = use_signal(|| 0.0_f64);
     let mut drag_from: Signal<Option<f64>> = use_signal(|| None);
     let mut dragged = use_signal(|| false);
-    // Each image URL once it loaded (`true`) or failed (`false`); every card
-    // ghosts on its own until its image settles.
-    let mut settled: Signal<HashMap<String, bool>> = use_signal(HashMap::new);
+    // How far each image URL has come; every card ghosts on its own until
+    // its image has faded in.
+    let mut arrived: Signal<HashMap<String, Arrival>> = use_signal(HashMap::new);
     let count = printings.len();
     let at = index().min(count.saturating_sub(1));
 
@@ -204,32 +231,42 @@ pub fn CoverFlow(
                         },
                         {
                             let url = card.scryfall_data.primary_image_url(ImageSize::Large).map(str::to_owned);
-                            let state = url.as_deref().and_then(|u| {
-                                settled.read().get(u).copied().or_else(|| image_seen(u).then_some(true))
+                            let arrival = url.as_deref().and_then(|u| {
+                                arrived.read().get(u).copied().or_else(|| image_seen(u).then_some(Arrival::Faded))
                             });
-                            match (tile(url.is_some(), state), url) {
+                            match (tile(url.is_some(), arrival), url) {
                                 (Tile::Missing, _) | (_, None) => rsx! {
                                     div { class: "cover-flow-missing", "{card.scryfall_data.set_name}" }
                                 },
                                 (shown, Some(url)) => {
                                     let loaded = url.clone();
                                     let failed = url.clone();
+                                    let faded = url.clone();
                                     rsx! {
-                                        if shown == Tile::Ghost {
+                                        if shown.ghost() {
                                             div { class: "cover-flow-ghost" }
                                         }
                                         img {
-                                            class: if shown == Tile::Image { "shown" } else { "" },
+                                            class: if shown.image_shown() { "shown" } else { "" },
                                             src: "{url}",
                                             alt: "{card.scryfall_data.name}, {card.scryfall_data.set_name}",
                                             loading: "lazy",
                                             draggable: false,
                                             onload: move |_| {
-                                                mark_image_seen(&loaded);
-                                                settled.write().insert(loaded.clone(), true);
+                                                let loaded = loaded.clone();
+                                                spawn(async move {
+                                                    decoded(&loaded).await;
+                                                    mark_image_seen(&loaded);
+                                                    arrived.write().insert(loaded, Arrival::Decoded);
+                                                });
+                                            },
+                                            ontransitionend: move |_| {
+                                                if arrived.peek().get(&faded) == Some(&Arrival::Decoded) {
+                                                    arrived.write().insert(faded.clone(), Arrival::Faded);
+                                                }
                                             },
                                             onerror: move |_| {
-                                                settled.write().insert(failed.clone(), false);
+                                                arrived.write().insert(failed.clone(), Arrival::Failed);
                                             },
                                         }
                                     }
@@ -471,9 +508,25 @@ mod tests {
     #[test]
     fn a_printing_ghosts_until_its_own_image_arrives() {
         assert_eq!(tile(true, None), Tile::Ghost, "loading");
-        assert_eq!(tile(true, Some(true)), Tile::Image, "loaded");
-        assert_eq!(tile(true, Some(false)), Tile::Missing, "failed");
+        assert_eq!(tile(true, Some(Arrival::Failed)), Tile::Missing, "failed");
         assert_eq!(tile(false, None), Tile::Missing, "no art");
+    }
+
+    #[test]
+    fn the_ghost_stays_under_the_image_until_it_has_faded_in() {
+        assert_eq!(
+            tile(true, Some(Arrival::Decoded)),
+            Tile::Fading,
+            "decoded: the image fades in over its ghost"
+        );
+        assert_eq!(tile(true, Some(Arrival::Faded)), Tile::Image, "faded in");
+        for arrival in [None, Some(Arrival::Decoded), Some(Arrival::Faded)] {
+            let drawn = tile(true, arrival);
+            assert!(
+                drawn.ghost() || drawn.image_shown(),
+                "{arrival:?} leaves neither a ghost nor an image"
+            );
+        }
     }
 
     #[test]

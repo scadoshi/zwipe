@@ -608,11 +608,15 @@ pub fn Add(deck_id: Uuid) -> Element {
     use_back_online(Callback::new(move |()| driver.dispatch(Action::Retry)));
 
     // Every bump after the first render is an applied filter or a rerun the
-    // model asked for: hand the filter to the model.
+    // model asked for: hand the filter to the model. Until it has, the screen
+    // draws the ghost, so the frame after Apply never shows the old top card.
+    let mut handled_bump = use_signal(|| *filter_reset_counter.peek());
     use_on_bump(filter_reset_counter, move || {
+        handled_bump.set(*filter_reset_counter.peek());
         let filter = filter_builder.peek().clone();
         driver.dispatch(Action::Filter(filter));
     });
+    let filter_pending = filter_reset_counter() != handled_bump();
 
     // A new pile stays behind the ghost until its top card's image shows, or
     // until the fallback, so a stalled image never hides the pile.
@@ -714,10 +718,14 @@ pub fn Add(deck_id: Uuid) -> Element {
 
                 div { class : "form-container",
                     if source == Source::Search {
-                        if pile == Pile::Cards || revealing.is_some() {
+                        if filter_pending {
+                            CardSkeleton {}
+                        } else if pile == Pile::Cards || revealing.is_some() {
                             // While the pile reveals, the stack loads its
-                            // images hidden under the ghost.
+                            // images hidden under the ghost; after, the ghost
+                            // stays under it until the top card's image is in.
                             div { class: if revealing.is_some() { "swipe-reveal revealing" } else { "swipe-reveal" },
+                                CardSkeleton {}
                                 SwipeStack {
                                     cards: window,
                                     config: swipe_config,
@@ -731,9 +739,6 @@ pub fn Add(deck_id: Uuid) -> Element {
                                             driver.dispatch(Action::TopShown { ticket });
                                         }
                                     },
-                                }
-                                if revealing.is_some() {
-                                    CardSkeleton {}
                                 }
                             }
                         } else if pile == Pile::End {
