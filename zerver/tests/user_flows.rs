@@ -12,8 +12,8 @@
 
 use zwipe_core::http::paths::{
     CHANGE_EMAIL_ROUTE, CHANGE_PASSWORD_ROUTE, CHANGE_USERNAME_ROUTE, CONFIRM_EMAIL_CHANGE_ROUTE,
-    DECK_ROUTE, DELETE_USER_ROUTE, GET_USER_ROUTE, LOGIN_ROUTE, REFRESH_SESSION_ROUTE,
-    RESEND_EMAIL_CHANGE_ROUTE, RESEND_VERIFICATION_ROUTE, SETTINGS_ROUTE,
+    DECK_ROUTE, DELETE_USER_ROUTE, GET_USER_ROUTE, LOGIN_ROUTE, MARK_HINT_SHOWN_ROUTE,
+    REFRESH_SESSION_ROUTE, RESEND_EMAIL_CHANGE_ROUTE, RESEND_VERIFICATION_ROUTE, SETTINGS_ROUTE,
 };
 mod common;
 
@@ -822,4 +822,77 @@ async fn visual_studio_moves_to_vs_code(pool: sqlx::PgPool) {
     let (status, settings) = app.get(SETTINGS_ROUTE, Some(&token)).await;
     assert_eq!(status, StatusCode::OK, "get settings: {settings}");
     assert_eq!(settings["theme"], "vscode");
+}
+
+/// A verified user with a live email change to `new@test.local`.
+async fn with_pending_change(app: &TestApp, username: &str) -> String {
+    let (token, user_id) = app.register(username).await;
+    app.verify_email(&user_id).await;
+    let (status, body) = request_change(app, &token, "new@test.local").await;
+    assert_eq!(status, StatusCode::OK, "change: {body}");
+    token
+}
+
+/// The pending address and its expiry on a user in a response.
+fn pending(user: &serde_json::Value) -> (&serde_json::Value, bool) {
+    (
+        &user["pending_email"],
+        user["pending_email_expires_at"].is_string(),
+    )
+}
+
+#[sqlx::test]
+async fn login_returns_the_pending_email_change(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool);
+    let _ = with_pending_change(&app, "pendlogin").await;
+
+    let (status, session) = app
+        .post(
+            LOGIN_ROUTE,
+            json!({ "identifier": "pendlogin", "password": "TestPass123!" }),
+            None,
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "login: {session}");
+    assert_eq!(
+        pending(&session["user"]),
+        (&json!("new@test.local"), true),
+        "the session's user carries the pending change: {session}"
+    );
+}
+
+#[sqlx::test]
+async fn marking_a_hint_keeps_the_pending_email_change(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool);
+    let token = with_pending_change(&app, "penhint").await;
+
+    let (status, user) = app
+        .patch(
+            MARK_HINT_SHOWN_ROUTE,
+            json!({ "hint": "add_swipes" }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "hint: {user}");
+    assert_eq!(
+        pending(&user),
+        (&json!("new@test.local"), true),
+        "the clients store this user as the session's: {user}"
+    );
+}
+
+#[sqlx::test]
+async fn changing_the_username_keeps_the_pending_email_change(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool);
+    let token = with_pending_change(&app, "penname").await;
+
+    let (status, user) = app
+        .patch(
+            CHANGE_USERNAME_ROUTE,
+            json!({ "new_username": "penrenamed", "password": "TestPass123!" }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "rename: {user}");
+    assert_eq!(pending(&user), (&json!("new@test.local"), true), "{user}");
 }
