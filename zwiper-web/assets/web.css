@@ -1098,6 +1098,11 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
     gap: 0.75rem;
 }
 
+/* The section's own padding is most of a stat body's foot here. */
+.web-section-body > .deck-stat-body {
+    padding-bottom: 0.5rem;
+}
+
 /* A wide window shows every section open, with no arrow to toggle. */
 @media (min-width: 900px) {
     .web-sections-open .web-section {

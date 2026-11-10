@@ -2148,6 +2148,16 @@ body .toast-container [role="alertdialog"] {
 .collapsible-section-body > .settings-row + .settings-row {
     margin-top: -0.75rem;
 }
+
+/* A stat body spaces its own top, and the section's padding is most of its
+   foot. */
+.collapsible-section-body:has(> .deck-stat-body) {
+    padding-top: 0;
+}
+
+.collapsible-section-body > .deck-stat-body {
+    padding-bottom: 0.5rem;
+}
 /* The screen rules the app and the web share, from main.css's label row section through the Playstyle heatmap. */
 
 /* =========================

@@ -634,64 +634,68 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                         CollapsibleSection {
                                             title: Section::Distributions.title().to_string(),
                                             open_section: open_section,
-                                            if let Some(value) = pt_line {
-                                                div { class: "settings-row",
-                                                    span { class: "settings-row-label", {deck_view::AVERAGE_PT} }
-                                                    span { class: "info-row-value", style: "white-space:nowrap;", "{value}" }
+                                            div { class: "deck-stat-body",
+                                                if let Some(value) = pt_line {
+                                                    div { class: "settings-row",
+                                                        span { class: "settings-row-label", {deck_view::AVERAGE_PT} }
+                                                        span { class: "info-row-value", style: "white-space:nowrap;", "{value}" }
+                                                    }
                                                 }
+                                                // Keyed by deck so the charts' folds and open
+                                                // rows start over when the route moves to
+                                                // another deck. In its own block because a
+                                                // key goes on a block's first node.
+                                                {rsx! {
+                                                    DeckCharts {
+                                                        key: "{deck_id}",
+                                                        type_bars: type_bars.clone(),
+                                                        category_bars: category_bars.clone(),
+                                                        oracle_tag_bars,
+                                                        role_tags: role_tags.clone(),
+                                                        describe_tag,
+                                                        on_examples: open_examples,
+                                                        type_hint: rsx! { InfoButton { topic: HintTopic::TypeChart } },
+                                                        role_hint: rsx! { InfoButton { topic: HintTopic::RoleChart } },
+                                                        oracle_tag_hint: rsx! { InfoButton { topic: HintTopic::OracleTagChart } },
+                                                    }
+                                                }}
                                             }
-                                            // Keyed by deck so the charts' folds and open
-                                            // rows start over when the route moves to
-                                            // another deck. In its own block because a
-                                            // key goes on a block's first node.
-                                            {rsx! {
-                                                DeckCharts {
-                                                    key: "{deck_id}",
-                                                    type_bars: type_bars.clone(),
-                                                    category_bars: category_bars.clone(),
-                                                    oracle_tag_bars,
-                                                    role_tags: role_tags.clone(),
-                                                    describe_tag,
-                                                    on_examples: open_examples,
-                                                    type_hint: rsx! { InfoButton { topic: HintTopic::TypeChart } },
-                                                    role_hint: rsx! { InfoButton { topic: HintTopic::RoleChart } },
-                                                    oracle_tag_hint: rsx! { InfoButton { topic: HintTopic::OracleTagChart } },
-                                                }
-                                            }}
                                         }
                                     }
 
                                     CollapsibleSection {
                                         title: Section::Mana.title().to_string(),
                                         open_section: open_section,
-                                        // Lands: actual count, shown as `actual / target`
-                                        // when a land target is set.
-                                        div { class: "settings-row",
-                                            span { class: "settings-row-label", {deck_view::LANDS} }
-                                            span { class: "info-row-value", "{lands_line}" }
-                                        }
-                                        if let Some(value) = mana_value_line {
+                                        div { class: "deck-stat-body",
+                                            // Lands: actual count, shown as `actual / target`
+                                            // when a land target is set.
                                             div { class: "settings-row",
-                                                span { class: "settings-row-label", {deck_view::AVERAGE_MANA_VALUE} }
-                                                span { class: "info-row-value", "{value}" }
+                                                span { class: "settings-row-label", {deck_view::LANDS} }
+                                                span { class: "info-row-value", "{lands_line}" }
                                             }
-                                        }
-                                        if let Some(mana_curve_bars) = mana_curve_bars.as_ref() {
-                                            ManaCurve {
-                                                mana_curve_bars: *mana_curve_bars,
-                                                hint: rsx! { InfoButton { topic: HintTopic::ManaCurve } },
+                                            if let Some(value) = mana_value_line {
+                                                div { class: "settings-row",
+                                                    span { class: "settings-row-label", {deck_view::AVERAGE_MANA_VALUE} }
+                                                    span { class: "info-row-value", "{value}" }
+                                                }
                                             }
-                                        }
-                                        if let Some(bars) = color_bars {
-                                            ColorChart {
-                                                bars,
-                                                hint: rsx! { InfoButton { topic: HintTopic::ColorChart } },
+                                            if let Some(mana_curve_bars) = mana_curve_bars.as_ref() {
+                                                ManaCurve {
+                                                    mana_curve_bars: *mana_curve_bars,
+                                                    hint: rsx! { InfoButton { topic: HintTopic::ManaCurve } },
+                                                }
                                             }
-                                        }
-                                        if let Some(rows) = mana_balance_rows {
-                                            ManaFulfillment {
-                                                rows: rows,
-                                                hint: rsx! { InfoButton { topic: HintTopic::ManaFulfillment } },
+                                            if let Some(bars) = color_bars {
+                                                ColorChart {
+                                                    bars,
+                                                    hint: rsx! { InfoButton { topic: HintTopic::ColorChart } },
+                                                }
+                                            }
+                                            if let Some(rows) = mana_balance_rows {
+                                                ManaFulfillment {
+                                                    rows: rows,
+                                                    hint: rsx! { InfoButton { topic: HintTopic::ManaFulfillment } },
+                                                }
                                             }
                                         }
                                     }
@@ -701,10 +705,12 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                             title: Section::DrawOdds.title().to_string(),
                                             open_section: open_section,
                                             header_accessory: rsx! { InfoButton { topic: HintTopic::DrawOdds } },
-                                            DrawOdds {
-                                                key: "{deck_id}",
-                                                deck_size: deck_size,
-                                                buckets: buckets,
+                                            div { class: "deck-stat-body",
+                                                DrawOdds {
+                                                    key: "{deck_id}",
+                                                    deck_size: deck_size,
+                                                    buckets: buckets,
+                                                }
                                             }
                                         }
                                     }
