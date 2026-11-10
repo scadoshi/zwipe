@@ -117,11 +117,10 @@ pub fn display_theme_name(slug: &str) -> String {
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum PipStyle {
-    /// Pips in the current theme's own five mana colors. Stored as
-    /// `themed`; the wire writes `theme`, the name 1.15.0 to 1.18.0 parse,
-    /// and reads both.
+    /// Pips in the current theme's own five mana colors. Stored and sent
+    /// as `themed`; a stored `theme`, its earlier name, still reads.
     #[default]
-    #[serde(rename = "theme", alias = "themed")]
+    #[serde(alias = "theme")]
     Themed,
     /// Pips in Magic's classic fills, the same on every theme. Stored and
     /// sent as `classic`; a stored `natural`, its earlier name, still reads.
@@ -155,8 +154,8 @@ impl fmt::Display for PipStyle {
     }
 }
 
-/// A pip color name that is none of `themed`, `classic` or the earlier
-/// `theme`.
+/// A pip color name that is neither `themed` nor `classic`. The earlier
+/// `theme` and `natural` are refused too.
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
 #[error("unknown pip color")]
 pub struct ParsePipStyleError;
@@ -166,7 +165,7 @@ impl FromStr for PipStyle {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "themed" | "theme" => Ok(Self::Themed),
+            "themed" => Ok(Self::Themed),
             "classic" => Ok(Self::Classic),
             _ => Err(ParsePipStyleError),
         }
@@ -695,15 +694,36 @@ mod tests {
     }
 
     #[test]
-    fn themed_stores_as_themed_and_reads_either_name() {
+    fn themed_stores_and_writes_as_themed() {
         assert_eq!(PipStyle::Themed.as_str(), "themed");
-        for name in ["themed", "theme"] {
-            assert_eq!(name.parse::<PipStyle>(), Ok(PipStyle::Themed));
-            assert_eq!(
-                serde_json::from_str::<PipStyle>(&format!("\"{name}\"")).unwrap(),
-                PipStyle::Themed
-            );
-        }
+        assert_eq!("themed".parse::<PipStyle>(), Ok(PipStyle::Themed));
+        assert_eq!(
+            serde_json::to_string(&PipStyle::Themed).unwrap(),
+            "\"themed\""
+        );
+    }
+
+    #[test]
+    fn the_earlier_theme_name_no_longer_parses() {
+        assert_eq!("theme".parse::<PipStyle>(), Err(ParsePipStyleError));
+    }
+
+    #[test]
+    fn a_stored_theme_still_reads_as_themed() {
+        assert_eq!(
+            serde_json::from_str::<PipStyle>("\"theme\"").unwrap(),
+            PipStyle::Themed
+        );
+        let settings: UserSettings =
+            serde_json::from_str(r#"{"theme":"gruvbox","dark_mode":true,"pip_style":"theme"}"#)
+                .unwrap();
+        assert_eq!(settings.pip_style, PipStyle::Themed);
+        assert!(
+            serde_json::to_string(&settings)
+                .unwrap()
+                .contains(r#""pip_style":"themed""#),
+            "it writes back under the current name"
+        );
     }
 
     /// The pip enum as the client floor, 1.18.1, carries it: each value

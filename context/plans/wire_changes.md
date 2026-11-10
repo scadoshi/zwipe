@@ -5,7 +5,7 @@ Every change a shipped client can see, where it stands, and the floor it waits o
 | Change | Plan | Where it is | Waits on |
 | --- | --- | --- | --- |
 | Pip value `natural` to `classic` | [`pip_color_wire.md`](pip_color_wire.md) | Phase 1 on main, riding 1.17.1. Floor at 1.18.1 in production. Phase 4 rebuilt on `server/pip-classic-only`, PR to release | Merge Phase 4, then deploy zerver and zite |
-| Pip value `theme` to `themed` | [`pip_themed_wire.md`](pip_themed_wire.md) | Phase 1 on `nits/thinker-143`, riding 1.18.1. Phase 4 built on `server/pip-themed`, not merged | Floor at 1.18.1 or later, then merge Phase 4 |
+| Pip value `theme` to `themed` | [`pip_themed_wire.md`](pip_themed_wire.md) | Phase 1 merged, riding 1.18.1. Floor at 1.18.1 in production. Phase 4 rebuilt on `server/pip-themed-only`, PR to release | Merge Phase 4, then deploy zerver |
 | Route `/api/user/preferences` and key `preferences` to `settings` | [`settings_rename_migration.md`](settings_rename_migration.md) | Phase 1 in production 2026-11-05. Phase 2 rides 1.18.0 | Floor at 1.18.0, then drop the legacy route and key |
 
 ## Additive, no floor

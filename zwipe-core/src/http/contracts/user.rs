@@ -23,7 +23,8 @@ pub struct HttpUpdateSettings {
     pub universes_beyond_exceptions: Option<Vec<String>>,
     /// Pip style, or absent to leave unchanged. serde defaults keep payloads
     /// from clients that predate the field. Only the current names are taken
-    /// ([`PipStyle`]'s `FromStr`), so the earlier `natural` is refused.
+    /// ([`PipStyle`]'s `FromStr`), so the earlier `theme` and `natural` are
+    /// refused.
     #[serde(default, deserialize_with = "current_pip_style")]
     pub pip_style: Option<PipStyle>,
     /// Swipe confirmations, or absent to leave unchanged. serde defaults keep
@@ -73,6 +74,19 @@ mod tests {
     #[test]
     fn the_request_refuses_the_earlier_natural() {
         assert!(pip_style(r#"{"pip_style":"natural"}"#).is_err());
+    }
+
+    #[test]
+    fn the_request_takes_themed() {
+        assert_eq!(
+            pip_style(r#"{"pip_style":"themed"}"#).unwrap(),
+            Some(PipStyle::Themed)
+        );
+    }
+
+    #[test]
+    fn the_request_refuses_the_earlier_theme() {
+        assert!(pip_style(r#"{"pip_style":"theme"}"#).is_err());
     }
 
     #[test]
