@@ -127,7 +127,6 @@
     border-bottom: 1px solid var(--border-secondary);
     transition:
         background-color 0.15s ease,
-        transform 0.12s ease,
         box-shadow 0.12s ease;
     overflow: hidden;
     min-width: 0;
@@ -146,8 +145,9 @@
     text-align: center;
 }
 
-/* Emphasis (scale + shadow + tint) marks the expanded row; its own border
-   drops so the closing rule isn't doubled. */
+/* Emphasis (shadow + tint) marks the expanded row; its own border drops so
+   the closing rule isn't doubled. It never scales: a scaled row puts its
+   pips' 1px rings on fractional pixels, which splits them. */
 .card-row.expanded {
     /* The chips inside tint over the panel's own background, not this row's
        accent tint, so their text reads as their inks are made for. */
@@ -155,7 +155,6 @@
     position: relative;
     z-index: 2;
     border-bottom: none;
-    transform: scale(1.02);
     border-radius: 0.4rem;
     background-color: color-mix(in srgb, var(--accent-primary) 8%, var(--bg-primary));
     box-shadow: var(--shadow-sm);
@@ -442,7 +441,6 @@
     .card-row:not(.expanded):hover {
         position: relative;
         z-index: 2;
-        transform: scale(1.02);
         border-radius: 0.4rem;
         background-color: color-mix(in srgb, var(--accent-primary) 8%, var(--bg-primary));
         box-shadow: var(--shadow-sm);
@@ -561,10 +559,12 @@ i.ms.ms-cost {
     justify-content: center;
     line-height: 1;
     border-radius: 0.3em;
-    /* The ink is the outline and glyph. MTG's colorless gray stays the ink
-       for {C} and the generic numerals; a colored pip derives its own below. */
-    --pip-ink: #393835;
-    --pip-ink-2: #393835;
+    /* The ink is the outline and glyph, derived from the fill below as every
+       pip's is. `--pip-fill` starts as mana-font's own fill for {C} and the
+       generic numerals; a colored pip names its own. */
+    --pip-fill: #beb9b2;
+    --pip-ink: color-mix(in oklab, var(--pip-fill) 42%, black);
+    --pip-ink-2: var(--pip-ink);
     border: 1px solid var(--pip-ink);
     color: var(--pip-ink);
     padding: 0 1px;
@@ -639,6 +639,7 @@ i.ms.ms-cost:is(.ms-2w, .ms-2u, .ms-2b, .ms-2r, .ms-2g, .ms-cw, .ms-cu, .ms-cb, 
     --pip-ink-2: color-mix(in oklab, var(--pip-fill-2) 42%, black);
 }
 @supports (color: oklab(from red calc(l * 0.42 + clamp(0, (0.55 - l) * 1000, 1)) a b)) {
+    i.ms.ms-cost,
     i.ms.ms-cost:is(.ms-w, .ms-u, .ms-b, .ms-r, .ms-g, .ms-wp, .ms-up, .ms-bp, .ms-rp, .ms-gp),
     i.ms.ms-cost:is(.ms-wu, .ms-wb, .ms-ub, .ms-ur, .ms-br, .ms-bg, .ms-rw, .ms-rg, .ms-gw, .ms-gu),
     i.ms.ms-cost:is(.ms-wup, .ms-wbp, .ms-ubp, .ms-urp, .ms-brp, .ms-bgp, .ms-rwp, .ms-rgp, .ms-gwp, .ms-gup) {
@@ -2220,6 +2221,18 @@ html.keyboard-up .web-dock-pair {
     text-align: center;
 }
 
+/* Under a mouse a tile names its deck in the accent and rings its art, as
+   a panel lights its border. */
+@media (hover: hover) {
+    .home-deck-tile:hover > .home-deck-tile-art {
+        box-shadow: 0 0 0 1px var(--accent-primary);
+    }
+
+    .home-deck-tile:hover .home-deck-tile-name {
+        color: var(--ink-accent-primary, var(--accent-primary));
+    }
+}
+
 .home-deck-tile:active > .home-deck-tile-art {
     filter: brightness(0.85);
 }
@@ -2695,6 +2708,20 @@ footer.site-footer .site-footer-note {
     color: var(--ink-palette-1, var(--palette-1));
     text-decoration: underline;
     text-underline-offset: 3px;
+}
+
+/* The kit's link hover, which this rule's class outranks: the accent and a
+   firmer underline, and the same for keyboard focus. */
+@media (hover: hover) {
+    .site-footer-note a:hover {
+        color: var(--ink-accent-primary, var(--accent-primary));
+        text-decoration-thickness: 2px;
+    }
+}
+
+.site-footer-note a:focus-visible {
+    color: var(--ink-accent-primary, var(--accent-primary));
+    text-decoration-thickness: 2px;
 }
 
 /* A stepper's button at its bound is off: faded on a dark theme, its text

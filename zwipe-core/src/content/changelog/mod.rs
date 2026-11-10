@@ -62,6 +62,8 @@ pub const RELEASES: &[Release] = &[
             "Printings shows each card's outline while its image loads",
             "Card details' border shows on every edge and reads on dark themes",
             "Account's Pending row has Cancel, which drops a pending email change",
+            "Expanded and hovered card rows keep their mana pips' outlines sharp",
+            "On the web every button, link, field and row answers the mouse, disabled ones aside",
             "A failed request always says something went wrong instead of showing an empty error",
         ],
     },
