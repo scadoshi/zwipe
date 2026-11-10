@@ -74,6 +74,9 @@ pub const ORACLE_TAG_PICKER_LIMIT: usize = 40;
 /// [`stack::MAX_CARDS_IN_STACK`], as the app's examples screen uses it.
 pub const EXAMPLES_MAX_CARDS: usize = stack::MAX_CARDS_IN_STACK;
 
+/// How long a newly dealt pile waits behind the ghost for its top card's image before it shows anyway.
+pub const PILE_REVEAL_FALLBACK: Duration = Duration::from_millis(1500);
+
 #[cfg(test)]
 mod tests {
     use super::*;

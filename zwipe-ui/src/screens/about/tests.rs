@@ -1,3 +1,4 @@
+use zwipe_core::content::changelog::MOBILE_STORE_VERSION;
 use zwipe_core::http::contracts::changelog::HttpRelease;
 
 use super::*;
@@ -184,9 +185,14 @@ fn latest_shows_upcoming_and_the_newest_release() {
 fn one_year_still_gets_a_year_chip() {
     let data = HttpChangelog::current();
     let upcoming = data.upcoming.len();
+    // The store's release shows beside the newest shipped while the web is ahead of it.
+    let web_ahead = data
+        .releases
+        .first()
+        .is_some_and(|r| r.version != MOBILE_STORE_VERSION.to_string());
     let state = on(data, Filter::Latest);
     assert_eq!(labels(&state.chip_rows()[0]), ["Latest", "2026"]);
-    assert_eq!(shown(&state).len(), upcoming + 1);
+    assert_eq!(shown(&state).len(), upcoming + 1 + usize::from(web_ahead));
 }
 
 #[test]

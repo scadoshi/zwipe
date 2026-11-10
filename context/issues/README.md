@@ -46,11 +46,13 @@ Who checked, on which live build, what they saw.
 |---|---|---|---|---|
 | [308](308-share-image-size-for-whatsapp.md) | Share preview images may be too big for WhatsApp | parked | - | - |
 | [313](313-decks-list-price-chip.md) | Decks list shows no price per deck | merged | scotland | #465 |
-| [315](315-add-pile-flashes-stale-card.md) | Add's pile flashes a stale card after applying a filter | reported | - | - |
-| [319](319-account-pending-row-after-login.md) | Account shows no Pending row on the first visit after login | reported | - | - |
+| [315](315-add-pile-flashes-stale-card.md) | Add's pile flashes a stale card after applying a filter | merged | thinker | #501 |
 | [323](323-overview-lockout-columns.md) | overview.sql section 16 reads lockout columns that no longer exist | merged | thinker | #490 |
 | [325](325-drawer-bottom-border-clipped.md) | The card details drawer's bottom border vanishes at 100% zoom | fixing | scotland | #505 |
+| [326](326-printings-blank-tiles.md) | Printings shows blank cards until their images load | fixing | thinker | - |
 
 ## Waiting for live verification
+
+Next deploy: [`verify-next.md`](verify-next.md), renamed to `verify-<sha>.md` when it deploys.
 
 [`verify-bb566fc4b.md`](verify-bb566fc4b.md): everything in the bb566fc4b deploy. Earlier lists: [verify-aeda394a4.md](verify-aeda394a4.md), [verify-1f354453d.md](verify-1f354453d.md), [verify-69f38270e.md](verify-69f38270e.md), [verify-02102ab5e.md](verify-02102ab5e.md), [verify-1d7053e88.md](verify-1d7053e88.md), [verify-37d09dbf9.md](verify-37d09dbf9.md), [verify-1e03520ef.md](verify-1e03520ef.md).

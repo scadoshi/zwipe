@@ -7,11 +7,14 @@
 //! stage; a tap on a side card brings it to the middle. The host keeps the
 //! selection in `index`, so its own keys and Save read the same one.
 
+use std::collections::HashMap;
+
 use dioxus::html::geometry::WheelDelta;
 use dioxus::prelude::*;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ImageSize;
 
+use crate::flippable_card_image::{image_seen, mark_image_seen};
 use crate::icons::{ARROW_LEFT, ARROW_RIGHT, DockIcon};
 
 /// How far a wheel or trackpad scrolls, in pixels, to move one printing.
@@ -78,6 +81,27 @@ fn wheel_steps(carried: f64, px: f64, limit: usize) -> (Option<Step>, usize, f64
     (Some(way), steps, rest % WHEEL_STEP_PX)
 }
 
+/// What one printing's card draws.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Tile {
+    /// A card-shaped ghost, its image loading hidden under it.
+    Ghost,
+    /// The image.
+    Image,
+    /// The set name on a plain card: no art, or the image failed.
+    Missing,
+}
+
+/// The tile for a printing that `has_art`, its image `settled` as loaded (`true`), failed
+/// (`false`) or still on its way (`None`).
+fn tile(has_art: bool, settled: Option<bool>) -> Tile {
+    match (has_art, settled) {
+        (true, None) => Tile::Ghost,
+        (true, Some(true)) => Tile::Image,
+        (true, Some(false)) | (false, _) => Tile::Missing,
+    }
+}
+
 /// The printings in a cover flow, the one at `index` in the middle. A tap
 /// on the middle card calls `on_pick`, when given (a host that only shows
 /// printings leaves it out).
@@ -90,6 +114,9 @@ pub fn CoverFlow(
     let mut wheel = use_signal(|| 0.0_f64);
     let mut drag_from: Signal<Option<f64>> = use_signal(|| None);
     let mut dragged = use_signal(|| false);
+    // Each image URL once it loaded (`true`) or failed (`false`); every card
+    // ghosts on its own until its image settles.
+    let mut settled: Signal<HashMap<String, bool>> = use_signal(HashMap::new);
     let count = printings.len();
     let at = index().min(count.saturating_sub(1));
 
@@ -175,15 +202,39 @@ pub fn CoverFlow(
                                 go(i);
                             }
                         },
-                        if let Some(url) = card.scryfall_data.primary_image_url(ImageSize::Large) {
-                            img {
-                                src: "{url}",
-                                alt: "{card.scryfall_data.name}, {card.scryfall_data.set_name}",
-                                loading: "lazy",
-                                draggable: false,
+                        {
+                            let url = card.scryfall_data.primary_image_url(ImageSize::Large).map(str::to_owned);
+                            let state = url.as_deref().and_then(|u| {
+                                settled.read().get(u).copied().or_else(|| image_seen(u).then_some(true))
+                            });
+                            match (tile(url.is_some(), state), url) {
+                                (Tile::Missing, _) | (_, None) => rsx! {
+                                    div { class: "cover-flow-missing", "{card.scryfall_data.set_name}" }
+                                },
+                                (shown, Some(url)) => {
+                                    let loaded = url.clone();
+                                    let failed = url.clone();
+                                    rsx! {
+                                        if shown == Tile::Ghost {
+                                            div { class: "cover-flow-ghost" }
+                                        }
+                                        img {
+                                            class: if shown == Tile::Image { "shown" } else { "" },
+                                            src: "{url}",
+                                            alt: "{card.scryfall_data.name}, {card.scryfall_data.set_name}",
+                                            loading: "lazy",
+                                            draggable: false,
+                                            onload: move |_| {
+                                                mark_image_seen(&loaded);
+                                                settled.write().insert(loaded.clone(), true);
+                                            },
+                                            onerror: move |_| {
+                                                settled.write().insert(failed.clone(), false);
+                                            },
+                                        }
+                                    }
+                                }
                             }
-                        } else {
-                            div { class: "cover-flow-missing", "{card.scryfall_data.set_name}" }
                         }
                     }
                 }
@@ -415,6 +466,14 @@ mod tests {
         assert_eq!(window.first(), Some(&(40, -10)));
         assert_eq!(window.get(10), Some(&(50, 0)));
         assert_eq!(window.last(), Some(&(60, 10)));
+    }
+
+    #[test]
+    fn a_printing_ghosts_until_its_own_image_arrives() {
+        assert_eq!(tile(true, None), Tile::Ghost, "loading");
+        assert_eq!(tile(true, Some(true)), Tile::Image, "loaded");
+        assert_eq!(tile(true, Some(false)), Tile::Missing, "failed");
+        assert_eq!(tile(false, None), Tile::Missing, "no art");
     }
 
     #[test]

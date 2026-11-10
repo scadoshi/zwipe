@@ -17,3 +17,8 @@ History note: numbers through 1.13.0 were chosen under older rules (feature-carr
 - Bump the version in the workspace `Cargo.toml` (`[workspace.package]`).
 - Move the changelog block from `UPCOMING` to `RELEASES`, which also gives the release its date.
 - iOS build numbers and Android versionCodes increment on their own per upload (see the submission `history.md` files).
+
+## At store submission
+
+- On the day the mobile builds are submitted to the App Store and Play, set `MOBILE_STORE_VERSION` in `zwipe-core/src/content/changelog/mod.rs` to the submitted version, in a PR to release. The changelog marks that release Mobile, and a newer one Web.
+- Set it on submission day, not when review clears: until Apple and Google release it, a phone may still offer the version before. The publish steps for each store say the same ([iOS](../operations/ios/app-store/submission/publish.md), [Android](../operations/android/play-store/submission/publish.md)).
