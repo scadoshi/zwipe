@@ -57,6 +57,7 @@ Who checked, on which live build, what they saw.
 | [331](331-stats-panel-padding.md) | Deck stats panels let their content touch the rules | fixing | scotland | #511 |
 | [332](332-empty-error-toast.md) | A failed request can toast an empty red box | fixing | halo | - |
 | [333](333-printings-stuck-on-slow-network.md) | Printings sits empty after a slow fetch, with no error or retry | fixing | halo | #515 |
+| [334](334-deck-page-missing-name.md) | The web deck page shows no deck name | fixing | thinker | - |
 
 ## Waiting for live verification
 
