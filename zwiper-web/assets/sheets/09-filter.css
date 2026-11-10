@@ -7,14 +7,15 @@
    above the docks at the bottom (their gap from the edge plus their
    height) and the host's --sheet-drawer-floor, as the kit's drawer is, one
    dock gap in from the right, with the panel's corners, border and shadow,
-   and slides in from the right as the wide one does. */
+   and slides in from the right as the wide one does. Its offsets round to
+   whole pixels so its border draws crisp. */
 @media (max-width: 59.99rem) {
     .sheet-form-drawer > .bottom-sheet.drawer-every-width {
         --drawer-float-gap: 0.6rem;
-        top: calc(env(safe-area-inset-top, 0px) + var(--app-nav-h, 2.75rem) + var(--drawer-float-gap));
-        bottom: calc(env(safe-area-inset-bottom, 0px) / 2 + 0.6rem + 3.125rem + var(--drawer-float-gap) + var(--sheet-drawer-floor, 0px));
+        top: round(calc(env(safe-area-inset-top, 0px) + var(--app-nav-h, 2.75rem) + var(--drawer-float-gap)), 1px);
+        bottom: round(calc(env(safe-area-inset-bottom, 0px) / 2 + 0.6rem + 3.125rem + var(--drawer-float-gap) + var(--sheet-drawer-floor, 0px)), 1px);
         left: auto;
-        right: var(--drawer-float-gap);
+        right: round(var(--drawer-float-gap), 1px);
         width: min(calc(100vw - 3rem), 26rem);
         max-height: none;
         border-radius: 1rem;
