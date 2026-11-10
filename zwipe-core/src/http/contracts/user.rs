@@ -1,6 +1,6 @@
 //! User account HTTP request contracts.
 
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, de};
 
 use crate::domain::user::settings::{PipStyle, SwipeConfirmations};
 
@@ -22,13 +22,26 @@ pub struct HttpUpdateSettings {
     #[serde(default)]
     pub universes_beyond_exceptions: Option<Vec<String>>,
     /// Pip style, or absent to leave unchanged. serde defaults keep payloads
-    /// from clients that predate the field. The earlier `natural` is refused.
-    #[serde(default)]
+    /// from clients that predate the field. Only the current names are taken
+    /// ([`PipStyle`]'s `FromStr`), so the earlier `natural` is refused.
+    #[serde(default, deserialize_with = "current_pip_style")]
     pub pip_style: Option<PipStyle>,
     /// Swipe confirmations, or absent to leave unchanged. serde defaults keep
     /// payloads from clients that predate the field.
     #[serde(default)]
     pub swipe_confirmations: Option<SwipeConfirmations>,
+}
+
+/// A request's pip style under its current name only. The earlier names a
+/// client's stored copy may hold read through serde, but a request naming one
+/// is refused.
+fn current_pip_style<'de, D>(deserializer: D) -> Result<Option<PipStyle>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let name: Option<String> = Option::deserialize(deserializer)?;
+    name.map(|name| name.parse().map_err(de::Error::custom))
+        .transpose()
 }
 
 /// HTTP request body for marking a one-time UI hint as shown.

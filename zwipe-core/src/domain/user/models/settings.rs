@@ -108,6 +108,12 @@ pub fn display_theme_name(slug: &str) -> String {
 }
 
 /// How mana pips are colored, app-wide.
+///
+/// Serialized under its current name. Deserializing also takes the earlier
+/// name each value had, because a client's stored copy (zite's `zwipe.pips`,
+/// a stored session, the app's pending settings) was written under it and
+/// still reads back. [`FromStr`] takes the current names only, which is what
+/// the database holds and what a settings request may send.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum PipStyle {
@@ -118,7 +124,8 @@ pub enum PipStyle {
     #[serde(rename = "theme", alias = "themed")]
     Themed,
     /// Pips in Magic's classic fills, the same on every theme. Stored and
-    /// sent as `classic`.
+    /// sent as `classic`; a stored `natural`, its earlier name, still reads.
+    #[serde(alias = "natural")]
     Classic,
 }
 
@@ -665,9 +672,26 @@ mod tests {
     }
 
     #[test]
-    fn the_earlier_natural_name_no_longer_reads() {
+    fn the_earlier_natural_name_no_longer_parses() {
         assert_eq!("natural".parse::<PipStyle>(), Err(ParsePipStyleError));
-        assert!(serde_json::from_str::<PipStyle>("\"natural\"").is_err());
+    }
+
+    #[test]
+    fn a_stored_natural_still_reads_as_classic() {
+        assert_eq!(
+            serde_json::from_str::<PipStyle>("\"natural\"").unwrap(),
+            PipStyle::Classic
+        );
+        let settings: UserSettings =
+            serde_json::from_str(r#"{"theme":"gruvbox","dark_mode":true,"pip_style":"natural"}"#)
+                .unwrap();
+        assert_eq!(settings.pip_style, PipStyle::Classic);
+        assert!(
+            serde_json::to_string(&settings)
+                .unwrap()
+                .contains(r#""pip_style":"classic""#),
+            "it writes back under the current name"
+        );
     }
 
     #[test]
