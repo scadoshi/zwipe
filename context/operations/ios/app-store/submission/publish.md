@@ -44,6 +44,7 @@ API key file: `~/.private_keys/AuthKey_<KEY_ID>.p8`
 3. Select the build
 4. Export Compliance → **No**
 5. **Submit for Review**
+6. The same day, set `MOBILE_STORE_VERSION` in `zwipe-core/src/content/changelog/mod.rs` to the version just submitted, in a PR to release, so the changelog marks it Mobile. Set it on submission, not when review clears. One change covers both stores, so set it once both builds are submitted.
 
 ---
 
