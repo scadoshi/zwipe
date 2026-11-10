@@ -305,22 +305,24 @@ pub fn DistributionsBody(metrics: DeckMetrics) -> Element {
         )
     });
     rsx! {
-        if let Some(value) = average_pt {
-            div { class: "settings-row",
-                span { class: "settings-row-label", "Average P/T" }
-                span { class: "info-row-value", style: "white-space:nowrap;", "{value}" }
+        div { class: "deck-stat-body",
+            if let Some(value) = average_pt {
+                div { class: "settings-row",
+                    span { class: "settings-row-label", "Average P/T" }
+                    span { class: "info-row-value", style: "white-space:nowrap;", "{value}" }
+                }
             }
-        }
-        DeckCharts {
-            type_bars: metrics.type_bars(),
-            category_bars: metrics.card_role_bars(),
-            oracle_tag_bars: metrics.oracle_tag_bars(),
-            role_tags: metrics.card_role_tags.clone(),
-            describe_tag,
-            on_examples,
-            type_hint: rsx! { InfoButton { topic: HintTopic::TypeChart } },
-            role_hint: rsx! { InfoButton { topic: HintTopic::RoleChart } },
-            oracle_tag_hint: rsx! { InfoButton { topic: HintTopic::OracleTagChart } },
+            DeckCharts {
+                type_bars: metrics.type_bars(),
+                category_bars: metrics.card_role_bars(),
+                oracle_tag_bars: metrics.oracle_tag_bars(),
+                role_tags: metrics.card_role_tags.clone(),
+                describe_tag,
+                on_examples,
+                type_hint: rsx! { InfoButton { topic: HintTopic::TypeChart } },
+                role_hint: rsx! { InfoButton { topic: HintTopic::RoleChart } },
+                oracle_tag_hint: rsx! { InfoButton { topic: HintTopic::OracleTagChart } },
+            }
         }
     }
 }
@@ -338,20 +340,22 @@ pub fn ManaBody(
         None => land_count.to_string(),
     };
     rsx! {
-        InfoRow { label: "Lands", value: lands }
-        if let Some(m) = charts {
-            InfoRow { label: "Average mana value", value: format!("{:.1}", m.avg_cmc) }
-            ManaCurve {
-                mana_curve_bars: m.mana_curve_bars(),
-                hint: rsx! { InfoButton { topic: HintTopic::ManaCurve } },
-            }
-            ColorChart {
-                bars: ColorCounts::from(&m).bars(),
-                hint: rsx! { InfoButton { topic: HintTopic::ColorChart } },
-            }
-            ManaFulfillment {
-                rows: m.mana_balance_rows(),
-                hint: rsx! { InfoButton { topic: HintTopic::ManaFulfillment } },
+        div { class: "deck-stat-body",
+            InfoRow { label: "Lands", value: lands }
+            if let Some(m) = charts {
+                InfoRow { label: "Average mana value", value: format!("{:.1}", m.avg_cmc) }
+                ManaCurve {
+                    mana_curve_bars: m.mana_curve_bars(),
+                    hint: rsx! { InfoButton { topic: HintTopic::ManaCurve } },
+                }
+                ColorChart {
+                    bars: ColorCounts::from(&m).bars(),
+                    hint: rsx! { InfoButton { topic: HintTopic::ColorChart } },
+                }
+                ManaFulfillment {
+                    rows: m.mana_balance_rows(),
+                    hint: rsx! { InfoButton { topic: HintTopic::ManaFulfillment } },
+                }
             }
         }
     }
@@ -398,6 +402,7 @@ pub fn DrawOddsStepper(metrics: DeckMetrics) -> Element {
     rsx! {
         div {
             id: "web-draw-odds",
+            class: "deck-stat-body",
             onkeydown: move |event: Event<KeyboardData>| {
                 let at = match event.key() {
                     Key::ArrowLeft => 0,

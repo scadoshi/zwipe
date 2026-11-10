@@ -2556,12 +2556,22 @@ html.keyboard-up .web-dock-pair {
     align-items: start;
 }
 
-/* A stat panel's body: its blocks stacked at the app's section rhythm. */
+/* A stat panel's body: its blocks stacked at the app's section rhythm, a
+   chart that opens it 1rem under the rule, and room at its foot. A row that
+   opens it carries its own padding, and rows stack on their own borders. */
 .deck-stat-body {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
-    padding: 0.75rem 0;
+    padding: 1rem 0 1.25rem;
+}
+
+.deck-stat-body:has(> .settings-row:first-child) {
+    padding-top: 0;
+}
+
+.deck-stat-body > .settings-row + .settings-row {
+    margin-top: -0.75rem;
 }
 
 @media (max-width: 56rem) {

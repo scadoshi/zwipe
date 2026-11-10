@@ -51,6 +51,7 @@ Who checked, on which live build, what they saw.
 | [325](325-drawer-bottom-border-clipped.md) | The card details drawer's bottom border vanishes at 100% zoom | fixing | scotland | #505 |
 | [326](326-printings-blank-tiles.md) | Printings shows blank cards until their images load | fixing | thinker | - |
 | [327](327-cancel-pending-email-change.md) | A pending email change can't be cancelled | fixing | scotland | #507, #508 |
+| [331](331-stats-panel-padding.md) | Deck stats panels let their content touch the rules | fixing | scotland | #511 |
 
 ## Waiting for live verification
 
