@@ -1851,7 +1851,10 @@ html.keyboard-up .web-dock-pair {
     box-shadow: var(--shadow-md);
 }
 
+/* Positioned so it paints over its ghost, which comes before it, while it
+   fades in. */
 .cover-flow-card img {
+    position: relative;
     object-fit: contain;
     opacity: 0;
     transition: opacity 0.2s ease;
@@ -1861,14 +1864,20 @@ html.keyboard-up .web-dock-pair {
     opacity: 1;
 }
 
-/* A printing's own ghost in the card's shape, over its image until the
-   image arrives. */
+/* A printing's own ghost in the card's shape, under its image until the
+   image has decoded and faded in, so the card is never empty. */
 .cover-flow-ghost {
     position: absolute;
     inset: 0;
     border-radius: 4.75% / 3.5%;
     background-color: var(--border-muted);
     animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Under a shown image the ghost holds still: it is covered, and stays only
+   until the image's fade ends (or for good if that end is never reported). */
+.cover-flow-ghost:has(+ img.shown) {
+    animation: none;
 }
 
 .cover-flow-missing {

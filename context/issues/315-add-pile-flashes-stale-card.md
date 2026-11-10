@@ -1,6 +1,6 @@
 # 315. Add's pile flashes a stale card after applying a filter
 
-State: merged | Owner: thinker | PR: #501 | Build seen: 1.18.14
+State: reproduced | Owner: scotland | PR: #501, #516 | Build seen: 1.18.14
 
 ## Report
 Droid, 2026-11-08, Android app (prod): on Add, applying a filter shows one card for about 0.3s (Deadly Rollick), then a different top card (Drakuseth) replaces it. Same in an earlier take (Abrade, then Rakdos Charm), so it isn't new. Likely the old pile's next card renders before the filtered pile arrives. Footage: ~/Developer/video-factory/videos/oracle-tags/footage/raw/o4.mp4 at ~9.6s.
@@ -50,3 +50,15 @@ thinker, 2026-11-09, as proposed above, on `nits/thinker-315`.
 - Inside the reveal, the stack fades in as one piece and its images skip their own fade. Otherwise the top image, still easing in from transparent, would show the card under it for a frame or two.
 - Reproduced on web with mocked replies and the top image held 0.9s. On release, an under-card showed for 46 to 53 frames on load and redeal. On the branch: 0 frames, the ghost held about 0.95s, then the real top faded in.
 
+## Verification
+Droid, live aea5d98c4, 2026-11-10 (clips on the laptop, `~/Developer/droid-clips/2026-11-10-verify-aea5d/clips/315-*`): back to reproduced.
+- Web, phone width in the emulator's Chrome: on every redeal the ghost goes about 0.3 to 0.4s before any card shows; other cards flash first, and the top card draws half way while it streams in.
+- App: passes, but right after the filter's Apply the old top card shows for one frame as the sheet slides away.
+
+## Second fix
+scotland, #516.
+- Cause, web: the ghost goes when the pile reveals, and the reveal also comes from the 1.5s fallback. On a slow phone network that fires before the top card's image is in, so the slot shows nothing, then whichever card under it loaded first, then the top card still arriving. A load event also comes before the image is decoded, so even an on-time reveal could leave a frame before it paints.
+- `FlippableCardImage` counts an image as loaded (its `img-loaded` class and `on_load`) only once `img.decode()` resolves, where the browser has it.
+- On Add, app and web, the ghost stays mounted under the stack after the reveal and hides only once the top card's image is loaded (or the card has no art), and the cards under the top stay hidden until then (`screens-a.css`). A pile the fallback shows early shows the ghost, never an empty slot or another card.
+- App: Apply bumps the filter counter, and the screen hands the filter to the model from an effect a frame later. Until it has, the screen draws the ghost, so the frame after Apply never shows the old top card.
+- Measured on web, 390 wide, headless with each pile's image requests held (the top card's 3s, the others 0.4s, so the fallback fires first), three fresh loads each: release showed a card from under the top for 95 to 96 frames per load; this branch 0, with the ghost held until the top card shows. No unit test: this is render and CSS; the probe is the check. The app is not run on scotland.
