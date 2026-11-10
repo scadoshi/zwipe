@@ -21,9 +21,12 @@ pub const MAXIMUM_SESSION_COUNT: u8 = 10;
 /// A successful authentication response containing user data and tokens.
 ///
 /// Serializes with the settings under `settings`. Deserializes from that key
-/// or from `preferences`, the name before 1.18.0, so a session a 1.17 app
-/// stored and the server's reply that carries both keys load. The fallback
-/// goes with the legacy settings route.
+/// or from `preferences`, the name before 1.18.0, so a session an app before
+/// 1.18.0 stored on the device still loads after the update; a build only
+/// rewrites its stored copy on its next refresh. Reading both keys at once
+/// also keeps a reply from a server before the rename's last phase loading.
+/// The fallback can go once no session an app before 1.18.0 stored can still
+/// be live: 30 days, a login's longest life, after the floor reached 1.18.0.
 #[derive(Debug, Clone, Serialize, PartialEq, Deserialize)]
 #[serde(try_from = "SessionWire")]
 pub struct Session {
@@ -40,8 +43,9 @@ pub struct Session {
     pub settings: UserSettings,
 }
 
-/// The session as it reads off the wire: `settings`, or `preferences` from
-/// before 1.18.0, or both. Goes with the legacy settings route.
+/// The session as it reads off the wire or out of storage: `settings`, or
+/// `preferences` from before 1.18.0, or both. A serde alias would not do: it
+/// refuses a document that carries both keys.
 #[derive(Deserialize)]
 struct SessionWire {
     user: User,

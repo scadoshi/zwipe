@@ -50,10 +50,6 @@ pub const CHANGE_USERNAME_ROUTE: &str = "/api/user/change-username";
 pub const CHANGE_EMAIL_ROUTE: &str = "/api/user/change-email";
 pub const DELETE_USER_ROUTE: &str = "/api/user/delete-user";
 pub const SETTINGS_ROUTE: &str = "/api/user/settings";
-/// [`SETTINGS_ROUTE`] under its name before 1.18.0. Serves clients before
-/// 1.18.0 and goes, with its [`FIXED_ROUTES`] rows, when `MIN_CLIENT_VERSION`
-/// reaches 1.18.0.
-pub const LEGACY_SETTINGS_ROUTE: &str = "/api/user/preferences";
 pub const MARK_HINT_SHOWN_ROUTE: &str = "/api/user/hint";
 pub const GET_MY_METRICS_ROUTE: &str = "/api/user/metrics";
 /// The user's swiping and searching over the last year, and what they add,
@@ -273,8 +269,6 @@ pub const FIXED_ROUTES: &[(Method, &str, bool)] = &[
     (Method::Get, ACTIVITY_ROUTE, true),
     (Method::Get, SETTINGS_ROUTE, true),
     (Method::Patch, SETTINGS_ROUTE, true),
-    (Method::Get, LEGACY_SETTINGS_ROUTE, true),
-    (Method::Patch, LEGACY_SETTINGS_ROUTE, true),
     (Method::Get, PUBLIC_METRICS_ROUTE, false),
     (Method::Post, RECORD_ANONYMOUS_EVENT_ROUTE, false),
     (Method::Post, RECORD_CRASH_ROUTE, false),

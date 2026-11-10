@@ -25,7 +25,7 @@ use axum_extra::extract::cookie::{Cookie, CookieJar, SameSite};
 use chrono::Utc;
 use uuid::Uuid;
 use zwipe_core::domain::auth::models::session::Session;
-use zwipe_core::http::contracts::auth::{HttpAuthenticateUser, HttpCookieRefresh, HttpSession};
+use zwipe_core::http::contracts::auth::{HttpAuthenticateUser, HttpCookieRefresh};
 use zwipe_core::version::Version;
 
 use super::authenticate_user::login;
@@ -59,7 +59,7 @@ pub async fn cookie_login(
     ClientIp(client_ip): ClientIp,
     jar: CookieJar,
     Json(body): Json<HttpAuthenticateUser>,
-) -> Result<(CookieJar, Json<HttpSession>), ApiError> {
+) -> Result<(CookieJar, Json<Session>), ApiError> {
     let session = login(&state, client_ip, &body).await?;
     Ok((jar.add(session_cookie(&session)), Json(redacted(session))))
 }
@@ -78,7 +78,7 @@ pub async fn cookie_refresh(
     headers: HeaderMap,
     jar: CookieJar,
     Json(body): Json<HttpCookieRefresh>,
-) -> (CookieJar, Result<Json<HttpSession>, ApiError>) {
+) -> (CookieJar, Result<Json<Session>, ApiError>) {
     if let Err(e) = check_origin(&headers, &origins) {
         return (jar, Err(e));
     }
@@ -194,9 +194,9 @@ fn parse(value: &str) -> Option<(String, String)> {
 
 /// The session as the browser gets it: everything but the refresh token,
 /// which stays in the cookie.
-fn redacted(mut session: Session) -> HttpSession {
+fn redacted(mut session: Session) -> Session {
     session.refresh_token.value = String::new();
-    HttpSession::from(session)
+    session
 }
 
 /// One answer for every unusable cookie, as the app's refresh gives one for

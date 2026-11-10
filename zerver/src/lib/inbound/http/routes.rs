@@ -28,11 +28,6 @@ const CRASH_REPORT_BODY_LIMIT: usize = 4096;
 /// from any deck site is about 15 KB.
 const IMPORT_BODY_LIMIT: usize = 64 * 1024;
 
-/// The settings route's last segment under its name before 1.18.0, the tail
-/// of `zwipe_core::http::paths::LEGACY_SETTINGS_ROUTE`. Serves clients before
-/// 1.18.0 and goes when `MIN_CLIENT_VERSION` reaches 1.18.0.
-const LEGACY_SETTINGS_SEGMENT: &str = "/preferences";
-
 /// Rate-limit error handler for the routes keyed by user id
 /// (`UserIdKeyExtractor`).
 ///
@@ -616,10 +611,6 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
                         )
                         .route(
                             "/settings",
-                            get(user::fetch_settings).patch(user::update_settings),
-                        )
-                        .route(
-                            LEGACY_SETTINGS_SEGMENT,
                             get(user::fetch_settings).patch(user::update_settings),
                         )
                         .route("/hint", patch(user::mark_hint_shown))

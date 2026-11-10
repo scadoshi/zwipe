@@ -6,8 +6,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::domain::auth::models::platform::ClientPlatform;
 use crate::domain::auth::models::secret::Secret;
-use crate::domain::auth::models::session::Session;
-use crate::domain::user::models::settings::UserSettings;
 
 /// Login request body.
 ///
@@ -131,29 +129,6 @@ pub struct HttpCookieRefresh {
     /// The app version running now, if the client sends one.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub client_version: Option<String>,
-}
-
-/// Login and refresh reply: the session, with its settings written a second
-/// time under `preferences`, the key clients before 1.18.0 read. The second
-/// key goes with the legacy settings route once `MIN_CLIENT_VERSION` reaches
-/// 1.18.0.
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
-pub struct HttpSession {
-    /// The session, serialized with its settings under `settings`.
-    #[serde(flatten)]
-    pub session: Session,
-    /// The same settings under the pre-1.18.0 key.
-    pub preferences: UserSettings,
-}
-
-impl From<Session> for HttpSession {
-    fn from(session: Session) -> Self {
-        let preferences = session.settings.clone();
-        Self {
-            session,
-            preferences,
-        }
-    }
 }
 
 /// Password change request body. Requires current password for re-verification.
