@@ -272,6 +272,8 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         ScreenFrame {
             title: deck_title,
             on_hint,
+            // The wide page's head names the deck once its profile is in.
+            titled: wide() && matches!(loaded_profile, Some(Ok(_))),
             div { class: "screen-content",
                 match loaded_profile {
                     Some(Err(())) => rsx! {
