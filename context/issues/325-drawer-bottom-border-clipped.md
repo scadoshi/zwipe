@@ -1,6 +1,6 @@
 # 325. The card details drawer's bottom border vanishes at 100% zoom
 
-State: fixing | Owner: scotland | PR: #505, #513 | Build seen: live 1.18.15+ (Surfer), local release 3a627a7c1+ (scotland)
+State: fixing | Owner: scotland | PR: #505, #513, #517 | Build seen: live 1.18.15+ (Surfer), local release 3a627a7c1+ (scotland)
 
 ## Report
 Scotty, 2026-11-10, web, desktop Chrome at about 1260x800: the card details side drawer (Dreamtide Whale, opened from a deck) shows no bottom border at 100% browser zoom; zooming in brings it back. Screenshot `target/scotty-shots/325-drawer-no-bottom-border.webp`.
@@ -37,3 +37,8 @@ scotland, #505: `NAV_HEIGHT_JS` writes `--web-nav-h` as `Math.round` of the nav'
 Surfer, live after #505: the wide drawer and panels are crisp, but below 960 the floating drawer is still fractional (left .406, top 53.594, bottom 612.813 at 800 wide; `~/Developer/surfer-shots/325v-drawer-bottom-800.png` on halo). Its rule (components `filter.css`, `.drawer-every-width` below 60rem) offsets by `2.75rem + 0.6rem` at the top and a 0.6rem gap at the right, and only the wide `--sheet-drawer-top` was rounded.
 
 scotland, #513: the narrow drawer's top, bottom and right go through `round(..., 1px)`, and so does web.css's bottom for the drawer over Add and Remove's two docks, which overrides the kit's. The width (`min(100vw - 3rem, 26rem)`) is already whole, so the left edge is too. Headless, the card details drawer on Remove, now: left 374, top 54, right 790, bottom 593 at 800x720, and 38, 54, 380, 717 at 390x844. Rounding only the kit's rule left the bottom at 592.81 there, from the two-dock override. Not a wire change; no changelog line beyond 325's.
+
+## Second follow-up
+Scotty, live 21ca16a04, Chrome at 130% zoom, wide: Add's docked details (`.web-swipe-details > .card-details-panel`) show no bottom border on Whirler Rogue, while Aetherize's shows. Surfer: the docked box scrolls (`overflow-y: auto` with a max height) and the panel inside ends at its edge; the panel's bottom follows its content (417.953 on one card).
+
+scotland, #517: the box's clip edge lands on a whole pixel while the panel's bottom does not, so the border sat 0.05 to 0.5px inside the clip; at a fractional zoom its lower antialiased row was cut, on every card, by an amount that depends on the text's height. The panel now has a 1px margin inside the box (web.css, the docked details' scroll section), so its border always sits a full pixel inside the clip edge. Padding on the box itself would not hold: an earlier web.css rule zeroes the bottom padding of the screen's children. Headless, 1260x800 at device scale 1, 1.25, 1.3 and 1.5, eight cards from Sol Ring to Dreamtide Whale: border to clip edge was 0.05 to 0.5px on all 32, now 1.05 to 1.5px; at 1260x560, where the panel scrolls its body, exactly 1px. The narrow floating drawer draws its border on itself, not inside a scroll, so this does not reach it; Scotty's 434-wide shot shows its border. No changelog line beyond 325's.
