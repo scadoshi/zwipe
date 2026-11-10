@@ -61,6 +61,7 @@ pub const RELEASES: &[Release] = &[
             "The changelog shows which release is on the web and which is in the app stores",
             "Printings shows each card's outline while its image loads",
             "Card details' border shows on every edge and reads on dark themes",
+            "Account's Pending row has Cancel, which drops a pending email change",
         ],
     },
     Release {
