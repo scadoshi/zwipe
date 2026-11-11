@@ -481,6 +481,19 @@ fn flippable_card_image_controlled_face() {
 }
 
 /// A stack of three: the first on top, the second revealed so the third
+/// The cart button: an icon button with its name for a screen reader.
+#[test]
+fn cart_button() {
+    golden(
+        "cart_button",
+        &render(|| {
+            rsx! {
+                components::CartButton { onclick: move |_| {} }
+            }
+        }),
+    );
+}
+
 /// drops below it, the third open with a copies badge but unmarked while a
 /// card covers it, and a card without art showing its name.
 #[test]

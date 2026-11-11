@@ -55,6 +55,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "On the web, u and Ctrl+Z undo on the deck page and the swipe screens",
         "On the web's deck page, d opens or closes a card's details",
         "Flipping a card on the web's deck page turns its stack image and row preview too",
+        "A cart on each stack of the web's deck page buys that stack's cards",
         "The web's deck page runs the window's width, its list in two columns on a wide screen",
     ],
 }];

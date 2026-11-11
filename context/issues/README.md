@@ -70,6 +70,8 @@ Who checked, on which live build, what they saw.
 | [345](345-narrow-swipe-chip.md) | Add's last-action chip is missing below the full nav | fixing | scotland | #537 |
 | [347](347-swipe-fly-off-hidden.md) | Add's left, right and up swipes play no fly-off | fixing | scotland | #542, #545 |
 | [350](350-deck-page-wide.md) | The web deck page leaves a wide window's sides empty | fixing | scotland | #547 |
+| [353](353-stack-cart.md) | A stack has no way to buy its cards | fixing | thinker | - |
+| [354](354-one-buy-dialog.md) | Buying is a different control in every spot, and the wide deck page hides it | fixing | thinker | - |
 
 ## Waiting for live verification
 
