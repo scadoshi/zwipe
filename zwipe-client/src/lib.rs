@@ -85,6 +85,7 @@ mod tests {
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
     use tokio::net::TcpListener;
 
+    use super::deck::search_deck_cards::SEARCH_TIMEOUT;
     use super::*;
 
     #[tokio::test]
@@ -190,8 +191,8 @@ mod tests {
             "a stalled search is a network error: {result:?}"
         );
         assert!(
-            started.elapsed() <= Duration::from_secs(21),
-            "gave up after {:?}, past the search's 20 seconds",
+            started.elapsed() <= SEARCH_TIMEOUT.saturating_add(Duration::from_secs(1)),
+            "gave up after {:?}, past the search's {SEARCH_TIMEOUT:?}",
             started.elapsed()
         );
     }

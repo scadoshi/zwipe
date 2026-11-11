@@ -131,13 +131,13 @@ mod tests {
 
     #[test]
     fn every_hover_key_is_listed_for_the_drawer() {
-        for key in HOVER_KEYS {
-            assert!(hover_key(key).is_some(), "{key}");
-        }
-        for key in [
-            "p", "P", "i", "I", "v", "V", "m", "M", "s", "S", "-", "+", "=",
-        ] {
-            assert!(HOVER_KEYS.contains(&key), "{key}");
+        for byte in b' '..=b'~' {
+            let key = char::from(byte).to_string();
+            assert_eq!(
+                hover_key(&key).is_some(),
+                HOVER_KEYS.contains(&key.as_str()),
+                "{key}"
+            );
         }
     }
 

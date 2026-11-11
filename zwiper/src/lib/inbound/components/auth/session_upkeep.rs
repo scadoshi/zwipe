@@ -26,9 +26,9 @@ use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::home_decks::CachedDecks;
 use crate::inbound::components::home_hero::{CachedCounts, CachedMyCounts};
 use crate::inbound::components::home_play_style::CachedPlayStyle;
-use crate::inbound::components::settings_sync;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::{anonymous, flush_loop};
+use crate::inbound::components::{meld_source, settings_sync};
 use crate::inbound::screens::auth::login::LoginPrefill;
 use crate::inbound::screens::deck::card::components::add_stack_cache::use_add_stack_cache;
 use crate::inbound::screens::deck::card::components::filter_store::use_filter_store;
@@ -153,7 +153,7 @@ fn use_session_and_client() -> (Signal<Option<Session>>, Signal<ZwipeClient>) {
     let client =
         use_hook(|| Signal::new_in_scope(ZwipeClient::new(config.backend_url), ScopeId::ROOT));
     use_context_provider(|| client);
-    crate::inbound::components::meld_source::use_meld_source(client);
+    meld_source::use_meld_source(client);
 
     (session, client)
 }

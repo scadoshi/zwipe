@@ -219,9 +219,11 @@ pub fn sheet_note(screen: &ShortcutsScreen) -> Option<&'static str> {
 /// Element tags that take typing: a key pressed while one has focus never reaches a screen.
 pub const TYPING_TAGS: [&str; 3] = ["INPUT", "TEXTAREA", "SELECT"];
 
+/// An open sheet or drawer.
+const OPEN_SHEET: &str = ".bottom-sheet.show";
+
 /// Open overlays that keep the screen's keys to themselves: a dialog and a sheet or drawer.
-pub const OVERLAY_SELECTORS: [&str; 2] =
-    [".alert-dialog[data-state=\"open\"]", ".bottom-sheet.show"];
+pub const OVERLAY_SELECTORS: [&str; 2] = [".alert-dialog[data-state=\"open\"]", OPEN_SHEET];
 
 /// The class of the Stacks view's card details drawer, the one sheet the deck cards screen's
 /// hover keys pass through ([`guard_js_through`]).
@@ -282,7 +284,7 @@ pub fn guard_js_through(sheet_class: &str, keys: &[&str]) -> String {
         .collect::<Vec<_>>()
         .join(", ");
     let passing = format!(
-        "(!document.querySelector('.bottom-sheet.show.{sheet_class}') || [{keys}].includes(e.key))"
+        "(!document.querySelector('{OPEN_SHEET}.{sheet_class}') || [{keys}].includes(e.key))"
     );
     let overlays = format!("{} && {passing}", overlays_closed(Some(sheet_class)));
     browser_guard(Modifiers::Refused, &overlays)
@@ -294,7 +296,7 @@ fn overlays_closed(except_class: Option<&str>) -> String {
     OVERLAY_SELECTORS
         .iter()
         .map(|selector| match except_class {
-            Some(class) if *selector == ".bottom-sheet.show" => {
+            Some(class) if *selector == OPEN_SHEET => {
                 format!("!document.querySelector('{selector}:not(.{class})')")
             }
             _ => format!("!document.querySelector('{selector}')"),

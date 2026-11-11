@@ -169,13 +169,13 @@ pub(crate) fn stack_details(
     }
 }
 
-/// Drops focus from the stack card the drawer opened from, so its focus
-/// outline goes with the drawer.
 /// The details drawer's classes: the card details drawer's own, then
 /// [`STACK_DETAILS_CLASS`](crate::inbound::chrome::shortcuts::STACK_DETAILS_CLASS), so
 /// the deck cards screen's hover keys reach the screen through it.
 const DRAWER_CLASSES: &str = "card-details-drawer deck-stack-details";
 
+/// Drops focus from the stack card the drawer opened from, so its focus
+/// outline goes with the drawer.
 const BLUR_STACK_CARD_JS: &str = "if (document.activeElement?.classList.contains('card-stack-card')) document.activeElement.blur();";
 
 /// Keeps the drawer and the reveal state agreeing: a drawer closed by its
