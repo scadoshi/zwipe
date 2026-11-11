@@ -1193,6 +1193,32 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
     margin-bottom: 0.75rem;
 }
 
+/* Printings primes its flow under an opaque cover rather than at 1%
+   opacity: the stage stays fully shown, so its layers never change
+   opacity, while the flat ghost sits over it and its spread shadow, in the
+   sheet's body color, hides the rest of the stage until the middle image is in.
+   Each printing sheet is its own isolated, painted surface, so nothing on
+   the page behind it can show through while the browser paints the flow. */
+.cover-flow-frame {
+    overflow: hidden;
+    background-color: var(--bg-sink);
+}
+
+.cover-flow-stage.priming {
+    opacity: 1;
+}
+
+.cover-flow-frame > .cover-flow-primer {
+    z-index: 2;
+    box-shadow: 0 0 0 100vmax var(--bg-sink);
+}
+
+.web-printing-sheet .bottom-sheet,
+.web-flow-sheet {
+    isolation: isolate;
+    contain: paint;
+}
+
 /* The body takes the arrow keys once clicked, with no focus ring. */
 .web-printing-body:focus {
     outline: none;

@@ -1765,14 +1765,11 @@ html.keyboard-up .web-dock-pair {
     animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-/* The stage's frame, which holds the primer under the stage. It is filled
-   with the sheet's own color, so nothing behind the sheet can show through
-   the stage while a phone paints it. */
+/* The stage's frame, which holds the primer under the stage. */
 .cover-flow-frame {
     position: relative;
     flex: 1 1 auto;
     min-width: 0;
-    background-color: var(--bg-primary);
 }
 
 /* While the flow primes, the stage is all but invisible and a flat ghost
