@@ -49,14 +49,22 @@ impl CardsView {
 pub const VIEW_LABEL: &str = "View";
 
 /// For each of a stack's `count` cards, whether it tucks under the card
-/// above it, showing only its title strip over that card. The first card
-/// sits on top of the pile; every later one tucks, except the card right
-/// after `revealed`, which drops below the revealed card so it shows in
-/// full.
+/// above it, showing only its title strip over that card: every card after
+/// the first. This is the stack's layout, which a reveal never changes; the
+/// reveal moves cards with [`shifted`].
 #[must_use]
-pub fn tucked(count: usize, revealed: Option<usize>) -> Vec<bool> {
+pub fn tucked(count: usize) -> Vec<bool> {
+    (0..count).map(|i| i > 0).collect()
+}
+
+/// For each of a stack's `count` cards, whether it moves down to make room
+/// for `revealed`: every card after the revealed one does, by the height its
+/// tuck hid, so the revealed card shows whole. The move is a transform, which
+/// leaves the stack's layout alone.
+#[must_use]
+pub fn shifted(count: usize, revealed: Option<usize>) -> Vec<bool> {
     (0..count)
-        .map(|i| i > 0 && revealed.is_none_or(|r| r.checked_add(1) != Some(i)))
+        .map(|i| revealed.is_some_and(|r| i > r))
         .collect()
 }
 
@@ -65,31 +73,44 @@ pub fn tucked(count: usize, revealed: Option<usize>) -> Vec<bool> {
 pub enum Gesture {
     /// The pointer is over a card (web): it reveals in place.
     Hover(Uuid),
-    /// The pointer left a card (web): it tucks back unless it is open.
+    /// The pointer left a card (web): the reveal goes back to the open card,
+    /// or to none.
     Leave(Uuid),
-    /// A click on a card (web): its details open, in place of any open one.
+    /// A click on a card (web): its details open, in place of any open one;
+    /// a click on the open card closes them.
     Click(Uuid),
     /// A tap on a card (phones): the first reveals it, a second on the same
-    /// card opens its details.
+    /// card opens its details, and one more closes them.
     Tap(Uuid),
     /// The details closed (their ×, Escape, the backdrop, the back gesture).
     Close,
 }
 
-/// Which card shows in full and which card's details are open. The details
-/// never follow the reveal: hovering across a stack while they are open
-/// leaves the open card where it is.
+/// Which card shows in full and which card's details are open. The open
+/// card is pinned: it stays revealed when the pointer leaves it, a card under
+/// the pointer is revealed in its place (one at a time), and leaving every
+/// card brings the reveal back to it. The details never follow the reveal;
+/// only a click (or a second tap) moves them to another card, and a click
+/// on the open card closes them.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct Reveal {
-    revealed: Option<Uuid>,
+    /// The card under the pointer, or the last tapped.
+    hovered: Option<Uuid>,
+    /// The card whose details are open, the pin.
     open: Option<Uuid>,
+    /// The last card whose details opened, kept through a close.
+    drawn: Option<Uuid>,
 }
 
 impl Reveal {
-    /// The card shown in full in its stack.
+    /// The card shown in full in its stack: the one under the pointer, else
+    /// the open one.
     #[must_use]
     pub const fn revealed(&self) -> Option<Uuid> {
-        self.revealed
+        match self.hovered {
+            Some(card) => Some(card),
+            None => self.open,
+        }
     }
 
     /// The card whose details are open.
@@ -98,21 +119,38 @@ impl Reveal {
         self.open
     }
 
+    /// The card the details drawer shows: the open one, or after a close the
+    /// last one opened, so the drawer eases out with its card still in it.
+    #[must_use]
+    pub const fn drawn(&self) -> Option<Uuid> {
+        self.drawn
+    }
+
+    /// Opens `card`'s details, or closes them when they are already open.
+    fn pin(&mut self, card: Uuid) {
+        if self.open == Some(card) {
+            self.open = None;
+        } else {
+            self.open = Some(card);
+            self.drawn = Some(card);
+        }
+    }
+
     /// Applies `gesture`.
     pub fn apply(&mut self, gesture: Gesture) {
         match gesture {
-            Gesture::Hover(card) => self.revealed = Some(card),
+            Gesture::Hover(card) => self.hovered = Some(card),
             Gesture::Leave(card) => {
-                if self.revealed == Some(card) {
-                    self.revealed = None;
+                if self.hovered == Some(card) {
+                    self.hovered = None;
                 }
             }
-            Gesture::Click(card) => self.open = Some(card),
+            Gesture::Click(card) => self.pin(card),
             Gesture::Tap(card) => {
-                if self.revealed == Some(card) {
-                    self.open = Some(card);
+                if self.revealed() == Some(card) {
+                    self.pin(card);
                 } else {
-                    self.revealed = Some(card);
+                    self.hovered = Some(card);
                 }
             }
             Gesture::Close => self.open = None,
@@ -123,6 +161,132 @@ impl Reveal {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_cards_after_the_revealed_one_move_down() {
+        assert_eq!(shifted(4, None), [false, false, false, false]);
+        assert_eq!(shifted(4, Some(1)), [false, false, true, true]);
+        assert_eq!(shifted(4, Some(0)), [false, true, true, true]);
+        assert_eq!(
+            shifted(4, Some(3)),
+            [false, false, false, false],
+            "nothing under the last card"
+        );
+        assert_eq!(
+            shifted(4, Some(9)),
+            [false, false, false, false],
+            "a stale index moves nothing"
+        );
+    }
+
+    #[test]
+    fn hovering_over_a_pinned_card_reveals_the_hovered_one() {
+        let mut reveal = Reveal::default();
+        reveal.apply(Gesture::Click(id(1)));
+        reveal.apply(Gesture::Leave(id(1)));
+        assert_eq!(
+            reveal.revealed(),
+            Some(id(1)),
+            "the clicked card stays revealed after the cursor leaves it"
+        );
+        reveal.apply(Gesture::Hover(id(2)));
+        assert_eq!(
+            reveal.revealed(),
+            Some(id(2)),
+            "only one card is revealed at a time"
+        );
+        assert_eq!(
+            reveal.open(),
+            Some(id(1)),
+            "the drawer keeps the clicked card"
+        );
+    }
+
+    #[test]
+    fn leaving_every_card_returns_to_the_pinned_one() {
+        let mut reveal = Reveal::default();
+        reveal.apply(Gesture::Click(id(1)));
+        reveal.apply(Gesture::Hover(id(2)));
+        reveal.apply(Gesture::Leave(id(2)));
+        assert_eq!(reveal.revealed(), Some(id(1)));
+    }
+
+    #[test]
+    fn a_click_on_another_card_repins_it() {
+        let mut reveal = Reveal::default();
+        reveal.apply(Gesture::Click(id(1)));
+        reveal.apply(Gesture::Hover(id(2)));
+        reveal.apply(Gesture::Click(id(2)));
+        reveal.apply(Gesture::Leave(id(2)));
+        assert_eq!(
+            (reveal.revealed(), reveal.open()),
+            (Some(id(2)), Some(id(2)))
+        );
+    }
+
+    #[test]
+    fn the_drawer_keeps_its_last_card_through_a_close() {
+        let mut reveal = Reveal::default();
+        assert_eq!(reveal.drawn(), None, "nothing drawn before a click");
+        reveal.apply(Gesture::Click(id(1)));
+        reveal.apply(Gesture::Click(id(2)));
+        assert_eq!(reveal.drawn(), Some(id(2)), "a second click swaps the card");
+        reveal.apply(Gesture::Hover(id(3)));
+        assert_eq!(reveal.drawn(), Some(id(2)), "hovering never swaps it");
+        reveal.apply(Gesture::Close);
+        assert_eq!(
+            (reveal.open(), reveal.drawn()),
+            (None, Some(id(2))),
+            "the closing drawer still shows its card as it eases out"
+        );
+    }
+
+    #[test]
+    fn clicking_the_pinned_card_closes_it() {
+        let mut reveal = Reveal::default();
+        reveal.apply(Gesture::Click(id(1)));
+        reveal.apply(Gesture::Click(id(1)));
+        assert_eq!(reveal.open(), None, "a second click closes, as Escape does");
+        assert_eq!(
+            reveal.drawn(),
+            Some(id(1)),
+            "the drawer eases out with its card"
+        );
+        reveal.apply(Gesture::Click(id(1)));
+        reveal.apply(Gesture::Click(id(2)));
+        assert_eq!(reveal.open(), Some(id(2)), "another card still swaps");
+    }
+
+    #[test]
+    fn tapping_the_pinned_card_closes_it() {
+        let mut reveal = Reveal::default();
+        reveal.apply(Gesture::Tap(id(1)));
+        reveal.apply(Gesture::Tap(id(1)));
+        assert_eq!(reveal.open(), Some(id(1)), "the second tap opens");
+        reveal.apply(Gesture::Tap(id(1)));
+        assert_eq!(reveal.open(), None, "a tap on the open card closes it");
+    }
+
+    #[test]
+    fn closing_clears_the_pin() {
+        let mut reveal = Reveal::default();
+        reveal.apply(Gesture::Click(id(1)));
+        reveal.apply(Gesture::Leave(id(1)));
+        reveal.apply(Gesture::Close);
+        assert_eq!(
+            (reveal.revealed(), reveal.open()),
+            (None, None),
+            "with the drawer closed, leaving tucks back as before"
+        );
+        reveal.apply(Gesture::Click(id(1)));
+        reveal.apply(Gesture::Hover(id(3)));
+        reveal.apply(Gesture::Close);
+        assert_eq!(
+            reveal.revealed(),
+            Some(id(3)),
+            "closing under the cursor keeps the hovered card revealed"
+        );
+    }
 
     fn id(n: u128) -> Uuid {
         Uuid::from_u128(n)
@@ -143,25 +307,9 @@ mod tests {
 
     #[test]
     fn every_card_after_the_first_tucks() {
-        assert_eq!(tucked(0, None), Vec::<bool>::new());
-        assert_eq!(tucked(1, None), [false]);
-        assert_eq!(tucked(4, None), [false, true, true, true]);
-    }
-
-    #[test]
-    fn the_card_after_the_revealed_one_drops_below_it() {
-        assert_eq!(tucked(4, Some(1)), [false, true, false, true]);
-        assert_eq!(tucked(4, Some(0)), [false, false, true, true]);
-        assert_eq!(
-            tucked(4, Some(3)),
-            [false, true, true, true],
-            "the last card shows in full anyway"
-        );
-        assert_eq!(
-            tucked(4, Some(9)),
-            [false, true, true, true],
-            "a stale index changes nothing"
-        );
+        assert_eq!(tucked(0), Vec::<bool>::new());
+        assert_eq!(tucked(1), [false]);
+        assert_eq!(tucked(4), [false, true, true, true]);
     }
 
     #[test]

@@ -73,7 +73,7 @@ use crate::inbound::chrome::back_arrow::BackArrow;
 use crate::inbound::chrome::details_eye::{DockEye, Surface, use_details_eye};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, SwipeSelectHint, open_and_record_hint};
 use crate::inbound::chrome::page_keys::use_page_keys;
-use crate::inbound::chrome::shortcuts::{self, Shortcut};
+use crate::inbound::chrome::shortcuts::{self, SELECT_LABELS, Shortcut, ShortcutsScreen};
 use crate::inbound::chrome::shortcuts_sheet::{
     DockShortcuts, use_global_keys, use_offer_shortcuts,
 };
@@ -543,7 +543,12 @@ fn SwipeSelectBody(
     };
     let control: SwipeControl = use_swipe_control();
     // A swipe screen: Shift+H opens the shortcuts sheet here.
-    use_offer_shortcuts();
+    let labels = if mode.saves_up() {
+        SELECT_LABELS
+    } else {
+        SELECT_LABELS.without_up()
+    };
+    use_offer_shortcuts(ShortcutsScreen::Swipe(labels));
 
     // Moves past the swiped card, fetching the next page near the end, and
     // says whether the pile ran out under it: no card left and none to come.
@@ -823,15 +828,7 @@ fn SwipeSelectBody(
         // lights the dot. Back is the header's arrow.
         SwipeDock {
             control,
-            buttons: [
-                (Swipe::Left, "Skip"),
-                (Swipe::Up, "Save"),
-                (Swipe::Down, "Undo"),
-                (Swipe::Right, "Pick"),
-            ]
-                .into_iter()
-                .filter(|(swipe, _)| *swipe != Swipe::Up || mode.saves_up())
-                .collect(),
+            buttons: labels.buttons(),
             card_on_top: has_card,
             on_undo: move |()| undo.call(()),
             div { class: "action-dock action-dock-right",

@@ -17,8 +17,8 @@
 }
 
 /* Holds the stack in the screen's flex slot. While a new pile reveals, the
-   stack loads its images hidden under the ghost card, which already shows,
-   so it does not play its entrance again. */
+   stack keeps its place, holds its own ghost and loads its cards' images
+   hidden, so the ghost sits exactly where the top card will. */
 .swipe-reveal {
     position: relative;
     display: flex;
@@ -29,14 +29,11 @@
 }
 
 .swipe-reveal.revealing > .swipe-stack {
-    position: absolute;
-    inset: 0;
-    visibility: hidden;
     pointer-events: none;
 }
 
-.swipe-reveal.revealing > .skeleton-card {
-    animation: none;
+.swipe-reveal.revealing > .swipe-stack > .swipe-stack-card {
+    visibility: hidden;
 }
 
 /* The stack's images show without a fade, and the stack shows without one
@@ -45,6 +42,15 @@
    painted it, an empty frame over the ghost. */
 .swipe-reveal > .swipe-stack .flippable-card-wrapper img {
     transition: none;
+}
+
+/* The ghost under a held swipe stack, and the ghost while a pile is on its
+   way, match the top card's box: the card image's shape (Scryfall's 672 by
+   936) and the card's own margins (`.card-image`). */
+.swipe-stack-ghost .skeleton-image,
+.card-swipe .form-container > .skeleton-card .skeleton-image {
+    aspect-ratio: 672 / 936;
+    margin: 1rem 0 0.75rem;
 }
 
 /* On a swipe screen the ghost shows at full strength the frame it mounts,
@@ -56,9 +62,9 @@
 
 /* While the stack holds its ghost (`ghost-held`: the top card's image is
    not in, or has not had time to paint), the ghost sits under the cards and
-   the cards under the top do not paint, so a pile never shows an empty slot
-   or another card through the top. The stack decides when, from each
-   image's load. */
+   the cards waiting under the top do not paint, so a pile never shows an
+   empty slot or another card through the top. A card flying off always
+   shows. The stack decides when, from each image's load. */
 .swipe-stack-ghost {
     position: absolute;
     inset: 0;
@@ -70,7 +76,7 @@
     animation: none;
 }
 
-.swipe-stack.ghost-held > .swipe-stack-card:not(.top) {
+.swipe-stack.ghost-held > .swipe-stack-card:not(.top, .swipe-stack-exiting) {
     visibility: hidden;
 }
 

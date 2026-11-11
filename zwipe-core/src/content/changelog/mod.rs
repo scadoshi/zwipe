@@ -51,6 +51,7 @@ pub const UPCOMING: &[Release] = &[Release {
     date: None,
     entries: &[
         "The deck page on the web can show its cards as stacks, one per group, beside the list",
+        "Keyboard shortcuts on the web's deck page for the hovered or open card, with Shift+H to list them",
         "A shared deck's link names its owner and the deck",
         "A shared deck shows who shared it under its name",
         "The deck page on the web deals its featured cards in, as a shared deck does",
@@ -72,6 +73,7 @@ pub const RELEASES: &[Release] = &[
             "Meld, a button on a meld card and in its details that shows the card it melds into",
             "Keyboard shortcuts on the web, with the arrows or hjkl to swipe and Shift+H to list them",
             "On a narrower web window, Add and Remove show the last swipe's chip at the top left under the nav",
+            "A swiped card flies off again on Add, and the card's ghost sits exactly under it",
         ],
     },
     Release {

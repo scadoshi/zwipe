@@ -721,10 +721,10 @@ pub fn Add(deck_id: Uuid) -> Element {
                         if filter_pending {
                             CardSkeleton {}
                         } else if pile == Pile::Cards || revealing.is_some() {
-                            // While the pile reveals, the stack loads its
-                            // images hidden under the ghost; after, the stack
-                            // draws the ghost under its cards until the top
-                            // card's image is in and painted.
+                            // While the pile reveals, the stack holds its own
+                            // ghost, in the top card's box, and loads its
+                            // images hidden; after, it holds the ghost until
+                            // the top card's image is in and painted.
                             div { class: if revealing.is_some() { "swipe-reveal revealing" } else { "swipe-reveal" },
                                 SwipeStack {
                                     cards: window,
@@ -740,9 +740,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                         }
                                     },
                                     ghost: rsx! { CardSkeleton {} },
-                                }
-                                if revealing.is_some() {
-                                    CardSkeleton {}
+                                    hold: revealing.is_some(),
                                 }
                             }
                         } else if pile == Pile::End {

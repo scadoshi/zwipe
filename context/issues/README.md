@@ -68,6 +68,7 @@ Who checked, on which live build, what they saw.
 | [344](344-meld-support.md) | Meld cards show their melded card | fixing | scotland | #534 |
 | [343](343-web-keyboard-shortcuts.md) | Keyboard shortcuts on the web | fixing | thinker | - |
 | [345](345-narrow-swipe-chip.md) | Add's last-action chip is missing below the full nav | fixing | scotland | #537 |
+| [347](347-swipe-fly-off-hidden.md) | Add's left, right and up swipes play no fly-off | fixing | scotland | #542 |
 | [348](348-github-style-share-links.md) | GitHub-style shared deck links, "by <username>", the deal on the web deck page | fixing | thinker | - |
 
 ## Waiting for live verification

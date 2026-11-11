@@ -1,7 +1,8 @@
 //! The web's keyboard shortcuts (`context/plans/keyboard_shortcuts.md`): which key does what on
-//! the swipe screens, in Printings and everywhere, the rows the shortcuts sheet lists, and when
-//! a key reaches a screen at all. The listeners in `page_keys` and `swipe_stack` run the guard as browser script
-//! built from the same constants, so the two cannot drift.
+//! the swipe screens, in Printings and everywhere, the rows the shortcuts sheet lists on each
+//! screen that offers it, and when a key reaches a screen at all. The listeners in `page_keys`
+//! and `swipe_stack` run the guard as browser script built from the same constants, so the two
+//! cannot drift.
 
 use crate::inbound::cards::swipe_stack::Swipe;
 
@@ -86,25 +87,133 @@ pub fn global_key(key: &str) -> Option<GlobalKey> {
     }
 }
 
-/// The rows the shortcuts sheet lists: each key, with its vim letter if it has one, and what it
-/// does, the swipe screens' keys first.
+/// What one swipe screen calls its four swipes, as its dock buttons say them, and whether it has
+/// Synergy. `up` is `None` on a screen with no up swipe.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SwipeLabels {
+    /// The right swipe.
+    pub right: &'static str,
+    /// The left swipe.
+    pub left: &'static str,
+    /// The up swipe, if the screen has one.
+    pub up: Option<&'static str>,
+    /// The down swipe.
+    pub down: &'static str,
+    /// Whether the screen has Synergy, which `s` turns on or off.
+    pub synergy: bool,
+}
+
+impl SwipeLabels {
+    /// The labels without the up swipe, for a screen that offers none.
+    #[must_use]
+    pub const fn without_up(self) -> Self {
+        Self { up: None, ..self }
+    }
+
+    /// The screen's swipe dock: left, up, down, right, each with its label.
+    #[must_use]
+    pub fn buttons(self) -> Vec<(Swipe, &'static str)> {
+        [
+            Some((Swipe::Left, self.left)),
+            self.up.map(|up| (Swipe::Up, up)),
+            Some((Swipe::Down, self.down)),
+            Some((Swipe::Right, self.right)),
+        ]
+        .into_iter()
+        .flatten()
+        .collect()
+    }
+}
+
+/// Add's swipes.
+pub const ADD_LABELS: SwipeLabels = SwipeLabels {
+    right: "Add",
+    left: "Skip",
+    up: Some("Maybeboard"),
+    down: "Undo",
+    synergy: true,
+};
+
+/// Remove's swipes.
+pub const REMOVE_LABELS: SwipeLabels = SwipeLabels {
+    right: "Remove",
+    left: "Keep",
+    up: Some("Move"),
+    down: "Undo",
+    synergy: false,
+};
+
+/// Commander swipe's swipes; a mode that saves nothing for later has no up swipe.
+pub const SELECT_LABELS: SwipeLabels = SwipeLabels {
+    right: "Pick",
+    left: "Skip",
+    up: Some("Save"),
+    down: "Undo",
+    synergy: false,
+};
+
+/// A screen that offers the shortcuts sheet, which decides the keys the sheet lists.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ShortcutsScreen {
+    /// A swipe screen, its swipes named as its dock names them.
+    Swipe(SwipeLabels),
+    /// The deck cards screen, whose keys act on the card under the cursor, else the open one.
+    DeckCards,
+}
+
+/// The rows the shortcuts sheet lists on `screen`: each key, with its vim letter if it has one,
+/// and what it does, the screen's own keys first and then the keys every screen answers.
 #[must_use]
-pub fn sheet_rows() -> Vec<(&'static [&'static str], &'static str)> {
-    vec![
-        (&["→", "l"], "Add"),
-        (&["←", "h"], "Skip"),
-        (&["↑", "k"], "Maybeboard"),
-        (&["↓", "j"], "Undo"),
-        (&["p"], "Printings"),
-        (&["d"], "Card details"),
-        (&["v"], "Flip card"),
-        (&["f"], "Filter"),
-        (&["r"], "Refresh"),
-        (&["s"], "Synergy on or off"),
+pub fn sheet_rows(screen: &ShortcutsScreen) -> Vec<(&'static [&'static str], &'static str)> {
+    let everywhere: [(&'static [&'static str], &'static str); 3] = [
         (&["Esc"], "Close the open sheet"),
         (&["?"], "This page's hint"),
         (&["Shift+H"], "These shortcuts"),
-    ]
+    ];
+    let own: Vec<(&'static [&'static str], &'static str)> = match screen {
+        ShortcutsScreen::Swipe(labels) => {
+            let swipes = [
+                Some((&["→", "l"][..], labels.right)),
+                Some((&["←", "h"][..], labels.left)),
+                labels.up.map(|up| (&["↑", "k"][..], up)),
+                Some((&["↓", "j"][..], labels.down)),
+            ];
+            let rest: [(&'static [&'static str], &'static str); 5] = [
+                (&["p"], "Printings"),
+                (&["d"], "Card details"),
+                (&["v"], "Flip card"),
+                (&["f"], "Filter"),
+                (&["r"], "Refresh"),
+            ];
+            let synergy = labels.synergy.then_some((&["s"][..], "Synergy on or off"));
+            swipes
+                .into_iter()
+                .flatten()
+                .chain(rest)
+                .chain(synergy)
+                .collect()
+        }
+        ShortcutsScreen::DeckCards => vec![
+            (&["p"], "Printings"),
+            (&["i"], "Image"),
+            (&["v"], "Flip card"),
+            (&["m"], "Maybeboard"),
+            (&["s"], "Sideboard"),
+            (&["Shift+S"], "Star"),
+            (&["-"], "One fewer"),
+            (&["+"], "One more"),
+        ],
+    };
+    own.into_iter().chain(everywhere).collect()
+}
+
+/// The line the shortcuts sheet shows above the keys on `screen`, if it needs one.
+#[must_use]
+pub fn sheet_note(screen: &ShortcutsScreen) -> Option<&'static str> {
+    match screen {
+        ShortcutsScreen::Swipe(_) => None,
+        ShortcutsScreen::DeckCards => Some("Hover or open a card, then press its key"),
+    }
 }
 
 /// Element tags that take typing: a key pressed while one has focus never reaches a screen.
@@ -113,6 +222,10 @@ pub const TYPING_TAGS: [&str; 3] = ["INPUT", "TEXTAREA", "SELECT"];
 /// Open overlays that keep the screen's keys to themselves: a dialog and a sheet or drawer.
 pub const OVERLAY_SELECTORS: [&str; 2] =
     [".alert-dialog[data-state=\"open\"]", ".bottom-sheet.show"];
+
+/// The class of the Stacks view's card details drawer, the one sheet the deck cards screen's
+/// hover keys pass through ([`guard_js_through`]).
+pub const STACK_DETAILS_CLASS: &str = "deck-stack-details";
 
 /// One keydown, as the browser saw it.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -140,14 +253,14 @@ pub fn reaches_screen(press: &KeyPress) -> bool {
 /// should reach the screen: [`reaches_screen`] over [`TYPING_TAGS`] and [`OVERLAY_SELECTORS`].
 #[must_use]
 pub fn guard_js() -> String {
-    browser_guard(Modifiers::Refused)
+    browser_guard(Modifiers::Refused, &overlays_closed(None))
 }
 
 /// [`guard_js`] without the modifier check, for a listener that wants a combo such as Ctrl+Z
 /// and checks the modifiers itself.
 #[must_use]
 pub fn guard_js_with_modifiers() -> String {
-    browser_guard(Modifiers::Allowed)
+    browser_guard(Modifiers::Allowed, &overlays_closed(None))
 }
 
 /// Whether the browser guard turns a key with Ctrl, Alt or Meta away.
@@ -159,18 +272,45 @@ enum Modifiers {
     Allowed,
 }
 
-/// The browser guard's expression under `modifiers`.
-fn browser_guard(modifiers: Modifiers) -> String {
+/// [`guard_js`], except that while the open sheet is the one with `sheet_class`, `keys` still
+/// reach the screen. Any other sheet or a dialog keeps every key, as [`guard_js`] does.
+#[must_use]
+pub fn guard_js_through(sheet_class: &str, keys: &[&str]) -> String {
+    let keys = keys
+        .iter()
+        .map(|key| format!("'{key}'"))
+        .collect::<Vec<_>>()
+        .join(", ");
+    let passing = format!(
+        "(!document.querySelector('.bottom-sheet.show.{sheet_class}') || [{keys}].includes(e.key))"
+    );
+    let overlays = format!("{} && {passing}", overlays_closed(Some(sheet_class)));
+    browser_guard(Modifiers::Refused, &overlays)
+}
+
+/// The expression that holds while no overlay in [`OVERLAY_SELECTORS`] is open, a sheet with
+/// `except_class` not counting.
+fn overlays_closed(except_class: Option<&str>) -> String {
+    OVERLAY_SELECTORS
+        .iter()
+        .map(|selector| match except_class {
+            Some(class) if *selector == ".bottom-sheet.show" => {
+                format!("!document.querySelector('{selector}:not(.{class})')")
+            }
+            _ => format!("!document.querySelector('{selector}')"),
+        })
+        .collect::<Vec<_>>()
+        .join(" && ")
+}
+
+/// The browser guard's expression under `modifiers`, with `overlays` the check that no overlay
+/// keeps the key.
+fn browser_guard(modifiers: Modifiers, overlays: &str) -> String {
     let tags = TYPING_TAGS
         .iter()
         .map(|tag| format!("'{tag}'"))
         .collect::<Vec<_>>()
         .join(", ");
-    let overlays = OVERLAY_SELECTORS
-        .iter()
-        .map(|selector| format!("!document.querySelector('{selector}')"))
-        .collect::<Vec<_>>()
-        .join(" && ");
     let combo = match modifiers {
         Modifiers::Refused => " && !(e.ctrlKey || e.altKey || e.metaKey)",
         Modifiers::Allowed => "",
@@ -183,6 +323,7 @@ fn browser_guard(modifiers: Modifiers) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::inbound::screens::deck::cards::hover_keys;
 
     #[test]
     fn arrows_and_vim_letters_swipe() {
@@ -261,8 +402,107 @@ mod tests {
     }
 
     #[test]
+    fn the_sheet_names_each_swipe_as_its_screen_s_dock_does() {
+        let names = |labels: &SwipeLabels| -> Vec<&'static str> {
+            sheet_rows(&ShortcutsScreen::Swipe(*labels))
+                .iter()
+                .take_while(|(keys, _)| keys.len() == 2)
+                .map(|(_, does)| *does)
+                .collect()
+        };
+        assert_eq!(names(&ADD_LABELS), ["Add", "Skip", "Maybeboard", "Undo"]);
+        assert_eq!(names(&REMOVE_LABELS), ["Remove", "Keep", "Move", "Undo"]);
+        assert_eq!(names(&SELECT_LABELS), ["Pick", "Skip", "Save", "Undo"]);
+        assert_eq!(
+            names(&SELECT_LABELS.without_up()),
+            ["Pick", "Skip", "Undo"],
+            "a screen with no up swipe lists no up key"
+        );
+    }
+
+    #[test]
+    fn a_screen_s_dock_buttons_come_from_its_labels() {
+        assert_eq!(
+            REMOVE_LABELS.buttons(),
+            [
+                (Swipe::Left, "Keep"),
+                (Swipe::Up, "Move"),
+                (Swipe::Down, "Undo"),
+                (Swipe::Right, "Remove"),
+            ]
+        );
+        assert_eq!(
+            SELECT_LABELS.without_up().buttons(),
+            [
+                (Swipe::Left, "Skip"),
+                (Swipe::Down, "Undo"),
+                (Swipe::Right, "Pick"),
+            ]
+        );
+    }
+
+    #[test]
+    fn only_a_screen_with_synergy_lists_s() {
+        let lists_synergy = |labels: SwipeLabels| {
+            sheet_rows(&ShortcutsScreen::Swipe(labels))
+                .iter()
+                .any(|(keys, _)| *keys == ["s"])
+        };
+        assert!(lists_synergy(ADD_LABELS));
+        assert!(!lists_synergy(REMOVE_LABELS), "Remove has no Synergy");
+        assert!(
+            !lists_synergy(SELECT_LABELS),
+            "Commander swipe has no Synergy"
+        );
+        assert!(!lists_synergy(SELECT_LABELS.without_up()));
+    }
+
+    #[test]
+    fn the_deck_cards_sheet_lists_only_that_screen_s_keys() {
+        let rows = sheet_rows(&ShortcutsScreen::DeckCards);
+        let listed: Vec<(&[&str], &str)> = rows.clone();
+        assert_eq!(
+            listed,
+            [
+                (&["p"][..], "Printings"),
+                (&["i"][..], "Image"),
+                (&["v"][..], "Flip card"),
+                (&["m"][..], "Maybeboard"),
+                (&["s"][..], "Sideboard"),
+                (&["Shift+S"][..], "Star"),
+                (&["-"][..], "One fewer"),
+                (&["+"][..], "One more"),
+                (&["Esc"][..], "Close the open sheet"),
+                (&["?"][..], "This page's hint"),
+                (&["Shift+H"][..], "These shortcuts"),
+            ]
+        );
+        assert_eq!(
+            sheet_note(&ShortcutsScreen::DeckCards),
+            Some("Hover or open a card, then press its key")
+        );
+        assert_eq!(sheet_note(&ShortcutsScreen::Swipe(ADD_LABELS)), None);
+        // Every listed key really does what its row says on the deck cards screen.
+        for (keys, does) in &rows {
+            for label in *keys {
+                let key = if *label == "Shift+H" {
+                    "H"
+                } else if *label == "Shift+S" {
+                    "S"
+                } else {
+                    label
+                };
+                let known = hover_keys::hover_key(key).is_some()
+                    || global_key(key).is_some()
+                    || key == "Esc";
+                assert!(known, "{label} for {does}");
+            }
+        }
+    }
+
+    #[test]
     fn the_sheet_lists_every_key() {
-        let rows = sheet_rows();
+        let rows = sheet_rows(&ShortcutsScreen::Swipe(ADD_LABELS));
         let actions: Vec<&str> = rows.iter().map(|(_, does)| *does).collect();
         assert_eq!(
             actions,
@@ -341,6 +581,27 @@ mod tests {
             ..KeyPress::default()
         };
         assert!(!reaches_screen(&behind), "a sheet is open");
+    }
+
+    #[test]
+    fn the_stack_details_drawer_lets_only_the_hover_keys_through() {
+        let through = guard_js_through(STACK_DETAILS_CLASS, &hover_keys::HOVER_KEYS);
+        assert!(
+            through.contains(&format!(".bottom-sheet.show:not(.{STACK_DETAILS_CLASS})")),
+            "every other sheet still blocks: {through}"
+        );
+        assert!(
+            through.contains(".alert-dialog[data-state=\"open\"]"),
+            "a dialog still blocks: {through}"
+        );
+        for key in hover_keys::HOVER_KEYS {
+            assert!(through.contains(&format!("'{key}'")), "{key} in {through}");
+        }
+        assert!(!through.contains("'/'"), "/ stays blocked: {through}");
+        assert!(
+            !guard_js().contains(STACK_DETAILS_CLASS),
+            "the other screens' guard lets nothing through"
+        );
     }
 
     #[test]
