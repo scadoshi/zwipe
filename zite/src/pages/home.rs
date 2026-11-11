@@ -405,10 +405,29 @@ mod tests {
             used.push(poster);
         }
         let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("assets/demo");
+        // Only what the repo holds counts: a dotfile (the folder's
+        // .gitignore, a .DS_Store) and the raw captures its .gitignore keeps
+        // local (`*.mov`) may sit beside the clips on one machine.
+        let ignored: Vec<String> = std::fs::read_to_string(dir.join(".gitignore"))
+            .unwrap()
+            .lines()
+            .filter_map(|line| line.trim().strip_prefix("*."))
+            .map(str::to_owned)
+            .collect();
         let mut on_disk: Vec<PathBuf> = std::fs::read_dir(&dir)
             .unwrap()
             .map(|entry| entry.unwrap().path().canonicalize().unwrap())
-            .filter(|path| path.file_name().is_some_and(|name| name != ".gitignore"))
+            .filter(|path| {
+                let dotfile = path
+                    .file_name()
+                    .and_then(|name| name.to_str())
+                    .is_some_and(|name| name.starts_with('.'));
+                let local_only = path
+                    .extension()
+                    .and_then(|ext| ext.to_str())
+                    .is_some_and(|ext| ignored.iter().any(|kept| kept == ext));
+                !dotfile && !local_only
+            })
             .collect();
         on_disk.sort();
         used.sort();
