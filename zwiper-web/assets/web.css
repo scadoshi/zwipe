@@ -854,6 +854,20 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
     }
 }
 
+/* Below the kit's modal breakpoint every sheet is a bottom sheet across the
+   window, where the stack stands at its foot. While a toast is up, a sheet
+   with no .sheet-dock (Printings keeps its checkmark in its own foot) ends
+   its content above the toast band too, as a docked sheet's does in
+   07-screens.css, so a sheet sized to its content grows upward and its
+   text and buttons (Couldn't load printings and its Retry, say) clear the
+   toast: the stack stands 4.5rem up and a three-line toast is about
+   6.75rem tall. */
+@media (max-width: 59.99rem) {
+    body:has(.toast-container li) .bottom-sheet.show:not(:has(.sheet-dock)) > .sheet-content {
+        padding-bottom: calc(12.5rem + env(safe-area-inset-bottom, 0px));
+    }
+}
+
 /* ---- Settings lists (Account, Config) ---- */
 
 /* Two lists side by side on a wide window, at the page's width under its

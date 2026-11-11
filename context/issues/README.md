@@ -58,9 +58,11 @@ Who checked, on which live build, what they saw.
 | [332](332-empty-error-toast.md) | A failed request can toast an empty red box | fixing | halo | - |
 | [333](333-printings-stuck-on-slow-network.md) | Printings sits empty after a slow fetch, with no error or retry | fixing | halo | #515 |
 | [334](334-deck-page-missing-name.md) | The web deck page shows no deck name | fixing | thinker | - |
-| [335](335-selector-drawer-space.md) | Selector drawers waste space above the chips | reported | - | - |
 | [336](336-search-no-timeout.md) | A deck card search that never answers leaves Add on the skeleton | fixing | thinker | - |
 | [335](335-selector-drawer-space.md) | Selector drawers waste space above the chips | fixing | laptop | #520 |
+| [341](341-printings-failed-images-never-retry.md) | Printings that failed on a slow network stay set-name cards | fixing | scotland | #525 |
+| [340](340-toasts-over-load-error.md) | Stacked error toasts cover the "Couldn't load" box | fixing | laptop | #522 |
+| [337](337-zite-tap-highlight.md) | Taps on zwipe.net flash Chrome's blue highlight | fixing | thinker | - |
 | [338](338-link-hover-inconsistent.md) | Text links hover differently across the three sites | fixing | thinker | - |
 
 ## Waiting for live verification

@@ -9,10 +9,14 @@
 //! and the hint recorder have shapes that don't fit a screen-scoped facade
 //! and keep calling `ensure_fresh` directly. The facade is for screens.
 
+use std::sync::Mutex;
+
+use chrono::Utc;
 use components::{TOAST_NORMAL, ToastOptions, Toasts, use_toast};
 use dioxus::prelude::*;
 use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::session::Session;
+use zwipe_ui::toast::RepeatGate;
 
 use crate::inbound::components::auth::ensure_session::EnsureFresh;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
@@ -201,10 +205,22 @@ impl Authed {
             .peek()
             .report_error(self.screen.as_str(), component, op, e);
         if toasting == Toasting::Toast {
-            self.toast.error(
-                e.to_user_message(),
-                ToastOptions::default().duration(TOAST_NORMAL),
-            );
+            let message = e.to_user_message();
+            if admit_error_toast(&message) {
+                self.toast
+                    .error(message, ToastOptions::default().duration(TOAST_NORMAL));
+            }
         }
     }
+}
+
+/// The error toasts up across every screen, so a failure retried shows once.
+static ERROR_TOASTS: Mutex<RepeatGate> = Mutex::new(RepeatGate::new());
+
+/// Whether an error toast saying `message` shows: not while one with the same
+/// words is still up. A poisoned gate lets the toast through.
+fn admit_error_toast(message: &str) -> bool {
+    ERROR_TOASTS.lock().map_or(true, |mut gate| {
+        gate.admit(message, Utc::now(), TOAST_NORMAL)
+    })
 }
