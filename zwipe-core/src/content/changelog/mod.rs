@@ -72,7 +72,7 @@ pub const RELEASES: &[Release] = &[
             "Changelog releases look the same on the site and in the app, with the tag at the right end and no fill on hover",
             "Links inside text on the web answer the mouse too",
             "Format, Deck tags and Oracle tags show more chips, with a hint box that hugs its text until you pick and, on the web, chips that scroll under the checkmark",
-            "A failure that repeats shows one error toast instead of a stack that covers the Couldn't load box",
+            "A failure that repeats shows one error toast instead of a stack, and on the web Printings keeps Couldn't load printings and Retry clear of the toast",
         ],
     },
     Release {
