@@ -164,13 +164,13 @@ pub fn CoverFlow(
     // painted them. A middle image that never settles shows the flow anyway
     // after `PRIME_LIMIT_JS`.
     let mut primed = use_signal(|| false);
-    let centre_settled = printings.get(at).is_none_or(|card| {
+    let center_settled = printings.get(at).is_none_or(|card| {
         card.scryfall_data
             .primary_image_url(ImageSize::Large)
             .is_none_or(|u| arrived.read().contains_key(u))
     });
-    use_effect(use_reactive!(|centre_settled| {
-        if centre_settled && !*primed.peek() {
+    use_effect(use_reactive!(|center_settled| {
+        if center_settled && !*primed.peek() {
             spawn(async move {
                 let mut frames = document::eval(PRIME_JS);
                 let _drawn: Result<bool, _> = frames.recv().await;
