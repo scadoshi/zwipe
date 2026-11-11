@@ -739,7 +739,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                                             driver.dispatch(Action::TopShown { ticket });
                                         }
                                     },
-                                    ghost: rsx! { CardSkeleton {} },
+                                    ghost: true,
                                     hold: revealing.is_some(),
                                 }
                             }
