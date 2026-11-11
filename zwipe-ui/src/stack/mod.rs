@@ -3,6 +3,7 @@
 //! Two cursor disciplines share [`CardStack`]. A linear stack (Add's search source) walks forward through a paged list and keeps swiped cards behind the cursor, so undo steps back onto the card it undoes. A cycling stack (Add's maybeboard source, Remove) wraps around a fixed list and drops cards from it, so its actions carry the card for undo to put back.
 
 use std::collections::HashSet;
+use std::hash::BuildHasher;
 
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
@@ -29,6 +30,21 @@ pub const NO_CARDS_MATCH: &str = "No cards match your filters";
 
 /// The cards a swipe surface shows at once, the top one taking input.
 pub const STACK_DEPTH: usize = 10;
+
+/// Whether a swipe stack whose top card is `top` still draws its ghost
+/// under that card and keeps the cards under it hidden: until the top's id
+/// is in `shown` (cards whose image has loaded and decoded, failed, or that
+/// have no art) and then until it is `painted` (the top that has been shown
+/// for [`crate::timing::TOP_PAINT_GRACE`]). Neither an empty slot nor
+/// another card then shows while the top's image arrives.
+#[must_use]
+pub fn ghost_held<S: BuildHasher>(
+    top: Option<Uuid>,
+    shown: &HashSet<Uuid, S>,
+    painted: Option<Uuid>,
+) -> bool {
+    top.is_some_and(|id| !shown.contains(&id) || painted != Some(id))
+}
 
 /// A swipe direction.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -394,6 +410,32 @@ impl<A: StackAction> CardStack<A> {
 mod tests {
     use super::*;
     use crate::test_support::card;
+
+    #[test]
+    fn the_ghost_holds_until_the_top_card_shows_and_has_had_time_to_paint() {
+        let (top, under) = (Uuid::from_u128(1), Uuid::from_u128(2));
+        let mut shown = HashSet::new();
+        assert!(ghost_held(Some(top), &shown, None), "nothing shown yet");
+        shown.insert(under);
+        assert!(
+            ghost_held(Some(top), &shown, None),
+            "a card under the top showing does not release it"
+        );
+        shown.insert(top);
+        assert!(
+            ghost_held(Some(top), &shown, None),
+            "shown, but not yet given time to paint"
+        );
+        assert!(
+            !ghost_held(Some(top), &shown, Some(top)),
+            "shown and painted"
+        );
+        assert!(
+            ghost_held(Some(under), &shown, Some(top)),
+            "a new top waits again"
+        );
+        assert!(!ghost_held(None, &shown, None), "no top, no ghost");
+    }
 
     fn stack(names: &[&str]) -> CardStack<AddAction> {
         let mut stack = CardStack::default();

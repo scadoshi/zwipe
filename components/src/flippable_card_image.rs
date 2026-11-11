@@ -103,6 +103,13 @@ pub fn FlippableCardImage(
     /// image is real.
     #[props(default)]
     on_load: Option<EventHandler<()>>,
+    /// Whether an image already loaded once this session shows at once, as
+    /// arrived. A host that must not show an image before this element has
+    /// its bytes (a swipe stack, whose top card would otherwise draw while
+    /// still downloading) passes `false`, so the image waits for its own
+    /// load.
+    #[props(default = true)]
+    trust_seen: bool,
 ) -> Element {
     let own_face: Signal<usize> = use_signal(move || initial_face);
     let mut face_idx = face.unwrap_or(own_face);
@@ -115,10 +122,8 @@ pub fn FlippableCardImage(
             }
         }
     };
-    // Bumped once the img has loaded and decoded, so the seen-URL check below
-    // re-runs.
-    let load_nudge: Signal<u32> = use_signal(|| 0);
-    let _ = load_nudge();
+    // The image URL this element has loaded and decoded itself.
+    let loaded_here: Signal<Option<String>> = use_signal(|| None);
     let total = sd.read().face_count();
     // Clamp so a stale/over-large `initial_face` still resolves to a real face.
     let cur = face_idx().min(total.saturating_sub(1));
@@ -171,7 +176,9 @@ pub fn FlippableCardImage(
         (None, None, None, None, None, None, None)
     };
 
-    let already_loaded = image_url.as_deref().is_some_and(image_seen);
+    let already_loaded = image_url
+        .as_deref()
+        .is_some_and(|u| loaded_here.read().as_deref() == Some(u) || (trust_seen && image_seen(u)));
 
     // A cached image or a no-art card is settled before any load event.
     let settled = already_loaded || is_no_image;
@@ -204,12 +211,12 @@ pub fn FlippableCardImage(
                         onload: {
                             move |_| {
                                 let url = url.clone();
-                                let mut load_nudge = load_nudge;
+                                let mut loaded_here = loaded_here;
                                 let mut announce = announce;
                                 spawn(async move {
                                     decoded(&url).await;
                                     mark_image_seen(&url);
-                                    load_nudge += 1;
+                                    loaded_here.set(Some(url.clone()));
                                     announce();
                                 });
                             }

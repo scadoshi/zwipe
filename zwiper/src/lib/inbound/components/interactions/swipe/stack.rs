@@ -19,11 +19,15 @@
 //! restored top card plays a keyframe animation entering from `dir`, then the
 //! stack clears the signal on `animationend`.
 
+use std::collections::HashSet;
+
 use dioxus::html::geometry::euclid::{Point2D, UnknownUnit};
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ImageSize;
+use zwipe_ui::stack::ghost_held;
+use zwipe_ui::timing::TOP_PAINT_GRACE;
 
 use crate::inbound::components::interactions::gesture_math;
 use crate::inbound::components::interactions::swipe::axis::Axis;
@@ -84,7 +88,16 @@ pub fn SwipeStack(
     /// Fires once the top card's image has its bytes, failed, or has no art.
     #[props(default)]
     on_top_shown: Option<EventHandler<()>>,
+    /// Drawn under the cards until the top card's image is in and has had
+    /// [`TOP_PAINT_GRACE`] to paint, while the cards under the top stay
+    /// hidden, so neither an empty slot nor another card shows.
+    #[props(default)]
+    ghost: Option<Element>,
 ) -> Element {
+    // The cards whose image has loaded and decoded, failed, or has no art,
+    // and the top that has been shown long enough to have painted.
+    let mut shown_cards: Signal<HashSet<Uuid>> = use_signal(HashSet::new);
+    let mut painted: Signal<Option<Uuid>> = use_signal(|| None);
     let mut state = use_signal(SwipeState::new);
     // In-flight exiting cards. Each entry is rendered as an overlay layer
     // playing a one-shot CSS keyframe and removes itself on animationend.
@@ -93,9 +106,27 @@ pub fn SwipeStack(
 
     let visible = cards.into_iter().take(STACK_DEPTH).collect::<Vec<_>>();
     let n = visible.len();
+    let top_id = visible.first().map(|c| c.scryfall_data.id);
+    let top_in = top_id.is_some_and(|id| shown_cards.read().contains(&id));
+    let held = ghost_held(top_id, &shown_cards.read(), painted());
+    // Once the top's image is in, it has the grace to paint before the
+    // ghost goes and the cards under it may show.
+    use_effect(use_reactive!(|top_id, top_in| {
+        if let Some(id) = top_id.filter(|_| top_in)
+            && *painted.peek() != Some(id)
+        {
+            spawn(async move {
+                tokio::time::sleep(TOP_PAINT_GRACE).await;
+                painted.set(Some(id));
+            });
+        }
+    }));
 
     rsx! {
-        div { class: "swipe-stack",
+        div { class: if held { "swipe-stack ghost-held" } else { "swipe-stack" },
+            if held && let Some(ghost) = ghost {
+                div { class: "swipe-stack-ghost", {ghost} }
+            }
             // Render back-to-front so the DOM order matches z-index painting.
             for (i, card) in visible.into_iter().enumerate().rev() {
                 {
@@ -295,7 +326,9 @@ pub fn SwipeStack(
                                 class: "card-image".to_string(),
                                 draggable: false,
                                 flippable: is_top,
+                                trust_seen: false,
                                 on_load: move |()| {
+                                    shown_cards.write().insert(card_id);
                                     if is_top && let Some(handler) = on_top_shown {
                                         handler.call(());
                                     }

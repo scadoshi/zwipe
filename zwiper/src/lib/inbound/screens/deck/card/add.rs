@@ -722,10 +722,10 @@ pub fn Add(deck_id: Uuid) -> Element {
                             CardSkeleton {}
                         } else if pile == Pile::Cards || revealing.is_some() {
                             // While the pile reveals, the stack loads its
-                            // images hidden under the ghost; after, the ghost
-                            // stays under it until the top card's image is in.
+                            // images hidden under the ghost; after, the stack
+                            // draws the ghost under its cards until the top
+                            // card's image is in and painted.
                             div { class: if revealing.is_some() { "swipe-reveal revealing" } else { "swipe-reveal" },
-                                CardSkeleton {}
                                 SwipeStack {
                                     cards: window,
                                     config: swipe_config,
@@ -739,6 +739,10 @@ pub fn Add(deck_id: Uuid) -> Element {
                                             driver.dispatch(Action::TopShown { ticket });
                                         }
                                     },
+                                    ghost: rsx! { CardSkeleton {} },
+                                }
+                                if revealing.is_some() {
+                                    CardSkeleton {}
                                 }
                             }
                         } else if pile == Pile::End {
