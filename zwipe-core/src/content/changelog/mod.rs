@@ -52,6 +52,9 @@ pub const UPCOMING: &[Release] = &[Release {
     entries: &[
         "The deck page on the web can show its cards as stacks, one per group, beside the list",
         "Keyboard shortcuts on the web's deck page for the hovered or open card, with Shift+H to list them",
+        "A shared deck's link names its owner and the deck",
+        "A shared deck shows who shared it under its name",
+        "The deck page on the web deals its featured cards in, as a shared deck does",
         "On the web, u and Ctrl+Z undo on the deck page and the swipe screens",
         "On the web's deck page, d opens or closes a card's details",
         "Flipping a card on the web's deck page turns its stack image and row preview too",

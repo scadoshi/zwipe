@@ -69,3 +69,22 @@ fn the_preview_version_carries_the_layout() {
         "the Function's preview URL leaves the layout out of v"
     );
 }
+
+const OWNER_FORM: &str = include_str!("../functions/[owner]/deck/[slug]/[token].js");
+
+#[test]
+fn the_owner_and_slug_link_shares_the_handler() {
+    assert!(
+        OWNER_FORM.contains(r#"export { onRequestGet } from "../../../deck/[token].js";"#),
+        "{OWNER_FORM}"
+    );
+}
+
+#[test]
+fn the_slug_cap_matches_zwipe_core() {
+    let line = format!(
+        "const SLUG_MAX = {};",
+        zwipe_core::domain::share_link::SLUG_MAX
+    );
+    assert!(FUNCTION.contains(&line), "the function lacks {line:?}");
+}

@@ -14,7 +14,7 @@ mod pages;
 mod pip_store;
 use pages::{
     About, Android, Changelog, Community, ConfirmEmail, Contribute, GuidePage, Guides, Home, Ios,
-    NotFound, Privacy, Reset, SharedDeck, Verify,
+    NotFound, Privacy, Reset, SharedDeck, SharedDeckPage, Verify,
 };
 // Base URLs + contact points live in zwipe-core's `site` module (shared with
 // zwiper and zerver so they can't drift); re-exported so pages keep importing
@@ -89,6 +89,14 @@ enum Route {
     Ios {},
     #[route("/privacy/")]
     Privacy {},
+    // A shared deck, GitHub style. Only the token identifies it; the page
+    // swaps a stale owner or slug for the current ones. The four-segment
+    // shape is the only shared-deck form, clear of the one- and two-segment
+    // pages above.
+    #[route("/:owner/deck/:slug/:token")]
+    SharedDeckPage { owner: String, slug: String, token: String },
+    // The links shipped apps share: the same page, which then moves to the
+    // owner, slug and token form.
     #[route("/deck/:token")]
     SharedDeck { token: String },
     #[route("/verify/:token")]
@@ -346,7 +354,10 @@ pub fn Nav() -> Element {
     let pip_style = use_context::<Signal<PipStyle>>();
     // The pip style only shows on a shared deck with cards, the one page
     // that draws pips.
-    let on_shared_deck = matches!(use_route::<Route>(), Route::SharedDeck { .. });
+    let on_shared_deck = matches!(
+        use_route::<Route>(),
+        Route::SharedDeck { .. } | Route::SharedDeckPage { .. }
+    );
     let shows_pips = use_context::<ShowsPips>().0;
     let mut open = use_signal(|| false);
     // Escape closes the phone menu and gives focus back to its toggle.

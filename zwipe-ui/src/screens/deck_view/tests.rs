@@ -1,4 +1,5 @@
 use zwipe_core::domain::deck::{DeckOtherTag, Format, WarningAction};
+use zwipe_core::domain::site::WEB_BASE;
 
 use super::*;
 use crate::test_support::{card, deck, deck_profile};
@@ -6,7 +7,7 @@ use crate::toast::{QUICK, ToastKind};
 
 /// A state that has sent `Load` for `profile`'s deck, with the profile and deck tickets.
 fn loading(profile: &DeckProfile) -> (State, Ticket, Ticket) {
-    let mut state = State::new();
+    let mut state = State::for_owner("scotty".to_owned());
     let effects = state.update(Action::Load(profile.id));
     let [
         Effect::FetchProfile {
@@ -134,9 +135,11 @@ fn the_profile_lands_and_seeds_the_currency_and_share_link() {
     assert_eq!(state.share_token(), Some(Uuid::nil()));
     assert_eq!(state.share_body(), SHARE_SHARED);
     assert_eq!(
-        state.share_url(),
-        state.share_token().map(view::share_link),
-        "the dialog shows the live link"
+        state.share_url().as_deref(),
+        Some(
+            format!("{WEB_BASE}/scotty/deck/budget/00000000-0000-0000-0000-000000000000").as_str()
+        ),
+        "the dialog shows the live link, owner and deck name first"
     );
     assert_eq!(state.clone_name(), "Budget (clone)");
     assert!(state.deck_loading(), "the deck is still out");
@@ -727,7 +730,7 @@ fn sharing_copies_the_new_link_and_stopping_disables_it() {
     let effects = state.update(Action::Share);
     let token = Uuid::new_v4();
     let copied = Effect::Copy {
-        text: view::share_link(token),
+        text: format!("{WEB_BASE}/scotty/deck/elves/{token}"),
         done: Toast::new(ToastKind::Info, "Share link copied", QUICK),
     };
     assert_eq!(

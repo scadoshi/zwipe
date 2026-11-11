@@ -1,4 +1,5 @@
-// Cloudflare Pages Function for GET /deck/:token on zwipe.net.
+// Cloudflare Pages Function for GET /deck/:token on zwipe.net, and for the
+// owner and slug form /:owner/deck/:slug/:token, whose file re-exports this one.
 //
 // Link previews (iMessage, Discord, Slack) read the page's tags without
 // running the wasm app, so this serves the site shell with the shared deck's
@@ -68,6 +69,39 @@ const COMMANDER_FORMATS = new Set([
   "oathbreaker",
 ]);
 
+/// The longest a deck name's slug runs, as zwipe-core's `SLUG_MAX`.
+const SLUG_MAX = 60;
+
+/// Letters a slug folds by hand: what Unicode decomposition leaves whole.
+const FOLDS = { "ß": "ss", "æ": "ae", "œ": "oe", "þ": "th", "ø": "o", "đ": "d", "ł": "l", "ı": "i", "ð": "d" };
+
+/// The deck name's slug, as zwipe-core's `deck_slug` makes it: lower case,
+/// accented letters folded to ASCII, every other run one dash, at most
+/// `SLUG_MAX` characters cut at a dash, `deck` when nothing is left.
+function deckSlug(name) {
+  const folded = Array.from(String(name).toLowerCase())
+    .map((c) => FOLDS[c] ?? c.normalize("NFKD").replace(/[\u0300-\u036f]/g, ""))
+    .join("");
+  let slug = folded.replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  if (slug.length > SLUG_MAX) {
+    const head = slug.slice(0, SLUG_MAX);
+    const dash = head.lastIndexOf("-");
+    slug = (dash > 0 ? head.slice(0, dash) : head).replace(/-+$/, "");
+  }
+  return slug || "deck";
+}
+
+/// The deck's canonical link: the owner and slug form, from the deck's
+/// current owner and name, when the API names the owner; else the bare token
+/// link.
+function canonicalUrl(deck, token) {
+  const lower = token.toLowerCase();
+  if (typeof deck.owner !== "string" || !deck.owner) {
+    return `${SITE}/deck/${lower}`;
+  }
+  return `${SITE}/${encodeURIComponent(deck.owner)}/deck/${deckSlug(deck.name)}/${lower}`;
+}
+
 export async function onRequestGet({ params, request, env }) {
   const shell = await env.ASSETS.fetch(new URL("/", request.url));
   const token = String(params.token);
@@ -95,7 +129,7 @@ export async function onRequestGet({ params, request, env }) {
   } catch {
     return shell;
   }
-  const meta = preview(deck, `${SITE}/deck/${token.toLowerCase()}`);
+  const meta = preview(deck, canonicalUrl(deck, token));
   const generated = previewImage(apiBase, token.toLowerCase(), deck);
   if (generated) {
     meta.image = generated;
