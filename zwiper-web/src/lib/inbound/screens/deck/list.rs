@@ -290,8 +290,8 @@ pub fn DeckList() -> Element {
 /// One group of the list: a header chip that folds it, then its rows, which
 /// stay mounted while folded. The chip reads `header (count)`, or the pips
 /// and `(count)` for a color group; with no `count` it reads `header` as
-/// given. `trailing` sits at the chip's end (the deck page's stacks put the
-/// group's price there).
+/// given. The words sit in a `.card-group-label` span. `trailing` sits at
+/// the chip's end (the deck page's stacks put the group's price there).
 #[component]
 pub(crate) fn DeckGroupSection(
     group_key: String,
@@ -318,15 +318,17 @@ pub(crate) fn DeckGroupSection(
                 span { class: "card-row-arrow", "\u{25b8}" }
                 if let Some(pips) = pips.as_ref().filter(|p| !p.is_empty()) {
                     IdentityPips { colors: pips.clone() }
-                    if let Some(count) = count {
-                        "({count})"
-                    } else {
-                        "{header}"
+                    span { class: "card-group-label",
+                        if let Some(count) = count {
+                            "({count})"
+                        } else {
+                            "{header}"
+                        }
                     }
                 } else if let Some(count) = count {
-                    "{header} ({count})"
+                    span { class: "card-group-label", "{header} ({count})" }
                 } else {
-                    "{header}"
+                    span { class: "card-group-label", "{header}" }
                 }
                 {trailing}
             }
