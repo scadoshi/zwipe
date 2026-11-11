@@ -4,6 +4,9 @@ use components::SiteFooter;
 use dioxus::prelude::*;
 use zwipe_core::domain::auth::models::session::Session;
 
+use crate::inbound::chrome::shortcuts_sheet::{
+    ShortcutsSheet, use_global_keys, use_shortcuts_root,
+};
 use crate::inbound::router::Route;
 use crate::inbound::shell::top_nav::{PageTitle, PublicNav, Shell};
 
@@ -33,18 +36,23 @@ pub fn PublicFrame() -> Element {
 /// with a live session, so the one [`Shell`] stays mounted from screen to
 /// screen. Without one, a route open to everyone (Privacy policy, About,
 /// Not found) gets the public nav, and an authed route draws nothing while
-/// its gate sends the user to Login.
+/// its gate sends the user to Login. The keyboard shortcuts sheet sits over
+/// all of them, opened by Shift+H or a swipe screen's dock button.
 #[component]
 pub fn OpenFrame() -> Element {
     let session: Signal<Option<Session>> = use_context();
     let route: Route = use_route();
+    let shortcuts_open = use_shortcuts_root();
     let signed_in = session.read().as_ref().is_some_and(|s| !s.is_expired());
-    if signed_in {
-        rsx! { Shell {} }
-    } else if is_open(&route) {
-        rsx! { PublicFrame {} }
-    } else {
-        rsx! { Outlet::<Route> {} }
+    rsx! {
+        if signed_in {
+            Shell {}
+        } else if is_open(&route) {
+            PublicFrame {}
+        } else {
+            Outlet::<Route> {}
+        }
+        ShortcutsSheet { open: shortcuts_open }
     }
 }
 
@@ -72,6 +80,8 @@ pub fn ScreenFrame(
     children: Element,
 ) -> Element {
     let page = try_use_context::<Signal<Option<PageTitle>>>();
+    // `?` opens the same hint the `?` button does.
+    use_global_keys(on_hint);
     let nav_title = title.clone();
     use_effect(use_reactive!(|nav_title, on_hint| {
         if let Some(mut page) = page {

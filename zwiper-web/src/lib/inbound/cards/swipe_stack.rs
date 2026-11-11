@@ -21,6 +21,7 @@ use zwipe_ui::stack::{Direction, STACK_DEPTH, ghost_held};
 use zwipe_ui::telemetry::SwipeDirection;
 use zwipe_ui::timing::TOP_PAINT_GRACE;
 
+use crate::inbound::chrome::shortcuts::{self, Shortcut};
 use crate::outbound::timer;
 
 /// A drag this far along its axis, in pixels, commits; the app's distance.
@@ -454,8 +455,9 @@ pub fn use_swipe_keys_or_undo(
     card_on_top: Callback<(), bool>,
     on_undo: Callback<()>,
 ) {
-    use_swipe_key_handler(
+    use_swipe_key_listener(
         keys,
+        Letters::Vim,
         Callback::new(
             move |swipe: Swipe| match SwipeRoute::of(swipe, card_on_top.call(())) {
                 SwipeRoute::Stack => control.press(swipe),
@@ -477,19 +479,47 @@ pub fn use_swipe_keys(control: SwipeControl, keys: Vec<Swipe>) {
 /// that answers a key itself when no card is on top, such as undo at the
 /// end of the results.
 pub fn use_swipe_key_handler(keys: Vec<Swipe>, on_key: Callback<Swipe>) {
+    use_swipe_key_listener(keys, Letters::Arrows, on_key);
+}
+
+/// Which keys stand for a swipe.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Letters {
+    /// The arrow keys alone.
+    Arrows,
+    /// The arrow keys and the swipe screens' `hjkl`
+    /// ([`shortcuts::swipe_screen_shortcut`]).
+    Vim,
+}
+
+/// The keys that swipe in `keys`' directions under `letters`.
+fn swipe_keys(keys: &[Swipe], letters: Letters) -> Vec<&'static str> {
+    let vim: &[&'static str] = match letters {
+        Letters::Arrows => &[],
+        Letters::Vim => &["h", "j", "k", "l", "J", "K", "L"],
+    };
+    keys.iter()
+        .map(|s| s.key())
+        .chain(vim.iter().copied().filter(|key| {
+            matches!(shortcuts::swipe_screen_shortcut(key), Some(Shortcut::Swipe(s)) if keys.contains(&s))
+        }))
+        .collect()
+}
+
+/// Calls `on_key` with the swipe each of `keys`' keys stands for, under
+/// `letters`, while this surface is the newest and the key reaches it.
+fn use_swipe_key_listener(keys: Vec<Swipe>, letters: Letters, on_key: Callback<Swipe>) {
     let id = use_hook(Uuid::new_v4);
     use_hook(move || {
-        let wanted: Vec<&'static str> = keys.iter().map(|s| s.key()).collect();
+        let wanted = swipe_keys(&keys, letters);
         let script = SWIPE_KEYS_JS
             .replace("__ID__", &id.to_string())
-            .replace("__KEYS__", &format!("{wanted:?}"));
+            .replace("__KEYS__", &format!("{wanted:?}"))
+            .replace("__GUARD__", &shortcuts::guard_js());
         spawn(async move {
             let mut keys_in = document::eval(&script);
             while let Ok(key) = keys_in.recv::<String>().await {
-                let swipe = [Swipe::Left, Swipe::Right, Swipe::Up, Swipe::Down]
-                    .into_iter()
-                    .find(|s| s.key() == key);
-                if let Some(swipe) = swipe {
+                if let Some(Shortcut::Swipe(swipe)) = shortcuts::swipe_screen_shortcut(&key) {
                     on_key.call(swipe);
                 }
             }
@@ -503,25 +533,21 @@ pub fn use_swipe_key_handler(keys: Vec<Swipe>, on_key: Callback<Swipe>) {
 /// Registers a key listener for one surface. Only the newest registered
 /// surface answers, never while a text field has focus or a dialog is open,
 /// and never to a held key's repeats.
-const SWIPE_KEYS_JS: &str = r#"
+const SWIPE_KEYS_JS: &str = r"
 window.__zwipeSwipe = window.__zwipeSwipe || [];
 window.__zwipeSwipe.push('__ID__');
 const wanted = __KEYS__;
 const onKey = (e) => {
     const stack = window.__zwipeSwipe;
     if (!stack.length || stack[stack.length - 1] !== '__ID__') return;
-    if (!wanted.includes(e.key) || e.altKey || e.ctrlKey || e.metaKey) return;
-    const focus = document.activeElement;
-    if (focus && (focus.tagName === 'INPUT' || focus.tagName === 'TEXTAREA' || focus.isContentEditable)) return;
-    if (document.querySelector('.alert-dialog[data-state="open"]')) return;
-    if (document.querySelector('.bottom-sheet.show')) return;
+    if (!wanted.includes(e.key) || !__GUARD__) return;
     e.preventDefault();
     if (e.repeat) return;
     dioxus.send(e.key);
 };
 window['__zwipeSwipeKey__ID__'] = onKey;
 document.addEventListener('keydown', onKey);
-"#;
+";
 
 /// Removes one surface's key listener.
 const SWIPE_KEYS_DROP_JS: &str = r"

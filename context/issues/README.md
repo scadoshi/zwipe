@@ -65,6 +65,7 @@ Who checked, on which live build, what they saw.
 | [337](337-zite-tap-highlight.md) | Taps on zwipe.net flash Chrome's blue highlight | fixing | thinker | - |
 | [338](338-link-hover-inconsistent.md) | Text links hover differently across the three sites | fixing | thinker | - |
 | [342](342-no-link-underlines.md) | No underlines on links | fixing | thinker | - |
+| [343](343-web-keyboard-shortcuts.md) | Keyboard shortcuts on the web | fixing | thinker | - |
 
 ## Waiting for live verification
 

@@ -25,6 +25,7 @@ use zwipe_ui::telemetry::vocabulary::component;
 use crate::inbound::cards::card_info::{CardInfoDisplay, PrintingSheetSkeleton};
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::media::{KIT_MODAL_PX, use_min_width};
+use crate::inbound::chrome::shortcuts::{self, FlowKey};
 
 /// Which way a step through the printings goes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -168,11 +169,11 @@ pub fn PrintingSheet(
                 div {
                     class: "web-printing-body",
                     tabindex: "-1",
-                    onkeydown: move |e: Event<KeyboardData>| match e.key() {
-                        Key::ArrowLeft => step(Step::Back),
-                        Key::ArrowRight => step(Step::Forward),
-                        Key::Enter => save.call(()),
-                        _ => {}
+                    onkeydown: move |e: Event<KeyboardData>| match flow_press(&e) {
+                        Some(FlowKey::Back) => step(Step::Back),
+                        Some(FlowKey::Forward) => step(Step::Forward),
+                        Some(FlowKey::Select) => save.call(()),
+                        None => {}
                     },
                     if loading() {
                         PrintingSheetSkeleton {}
@@ -274,16 +275,16 @@ fn CoverFlowSheet(
                     div {
                         class: "sheet-content web-flow-body",
                         tabindex: "-1",
-                        onkeydown: move |e: Event<KeyboardData>| match e.key() {
-                            Key::ArrowLeft => {
+                        onkeydown: move |e: Event<KeyboardData>| match flow_press(&e) {
+                            Some(FlowKey::Back) => {
                                 e.prevent_default();
                                 step(Step::Back);
                             }
-                            Key::ArrowRight => {
+                            Some(FlowKey::Forward) => {
                                 e.prevent_default();
                                 step(Step::Forward);
                             }
-                            Key::Enter if !read_only => on_select.call(()),
+                            Some(FlowKey::Select) if !read_only => on_select.call(()),
                             _ => {}
                         },
                         if loading {
@@ -321,4 +322,16 @@ fn CoverFlowSheet(
             }
         }
     }
+}
+
+/// The cover-flow action a keydown stands for ([`shortcuts::flow_key`]); a combo with Ctrl, Alt
+/// or Meta is the browser's.
+fn flow_press(e: &Event<KeyboardData>) -> Option<FlowKey> {
+    let combo = e
+        .modifiers()
+        .intersects(Modifiers::CONTROL | Modifiers::ALT | Modifiers::META);
+    if combo {
+        return None;
+    }
+    shortcuts::flow_key(&e.key().to_string())
 }

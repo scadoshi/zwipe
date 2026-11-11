@@ -48,7 +48,7 @@ use zwipe_ui::stores::undo::UndoAction;
 use zwipe_ui::telemetry::vocabulary::{DeckScreen, Screen};
 use zwipe_ui::timing::{LOAD_MORE_AT, PILE_REVEAL_FALLBACK};
 
-use super::{OneLine, SwipeDetails, flip_top_card};
+use super::{OneLine, SwipeDetails};
 use crate::inbound::card_filter::CardFilterPanel;
 use crate::inbound::card_stores::CardStores;
 use crate::inbound::cards::card_info::{CardDetailsSheet, CardSkeleton};
@@ -61,6 +61,8 @@ use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::details_eye::{DockEye, Surface, use_details_eye};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::chrome::page_keys::{use_page_keys, use_undo_key};
+use crate::inbound::chrome::shortcuts::{self, Shortcut};
+use crate::inbound::chrome::shortcuts_sheet::DockShortcuts;
 use crate::inbound::root_signal::use_signal_for_root_tasks;
 use crate::inbound::session::ensure_fresh::ensure_fresh;
 use crate::inbound::shell::ScreenFrame;
@@ -941,18 +943,59 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         undo_now,
     );
     use_undo_key(Callback::new(move |()| undo_now.call(())));
-    use_page_keys(Callback::new(move |key: String| match key.as_str() {
-        "f" | "F" => flip_top_card(),
-        "p" | "P" => {
-            if *source.peek() == AddSource::Search
-                && stack.peek().current().is_some()
-                && revealing.peek().is_none()
-            {
-                printing_open.set(true);
-            }
+    // Synergy on or off, from its dock button or `s`: only on Search, and
+    // only for a deck with a commander, where the button shows.
+    let toggle_synergy = use_callback(move |()| {
+        let shown = *source.peek() == AddSource::Search
+            && deck
+                .peek()
+                .as_ref()
+                .is_some_and(|d| d.context().has_commander);
+        if !shown {
+            return;
         }
-        "r" | "R" => refresh.call(()),
-        _ => {}
+        let on = !filter.peek().synergy();
+        filter.write().set_synergy(on);
+        bump();
+        let said = if on {
+            add_cards::SYNERGY_ON
+        } else {
+            add_cards::SYNERGY_OFF
+        };
+        toast.info(
+            said.to_string(),
+            ToastOptions::default().duration(TOAST_QUICK),
+        );
+    });
+    // The swipe screen's letter keys, each the same action as its dock
+    // button; the swipes come through the swipe keys above.
+    use_page_keys(Callback::new(move |key: String| {
+        match shortcuts::swipe_screen_shortcut(&key) {
+            Some(Shortcut::Printings) => {
+                if *source.peek() == AddSource::Search
+                    && stack.peek().current().is_some()
+                    && revealing.peek().is_none()
+                {
+                    printing_open.set(true);
+                }
+            }
+            Some(Shortcut::Details) => {
+                // As the eye button, which is off while no card shows.
+                let has_card = match *source.peek() {
+                    AddSource::Search => {
+                        stack.peek().current().is_some() && revealing.peek().is_none()
+                    }
+                    AddSource::Maybeboard => mb_stack.peek().current_wrapping().is_some(),
+                };
+                if has_card {
+                    eye.press();
+                }
+            }
+            Some(Shortcut::Filter) => filter_open.set(true),
+            Some(Shortcut::Refresh) => refresh.call(()),
+            Some(Shortcut::Synergy) => toggle_synergy.call(()),
+            Some(Shortcut::Swipe(_)) | None => {}
+        }
     }));
 
     let ctx = deck
@@ -1146,16 +1189,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                                 class: if synergy_on { "action-dock-btn action-dock-on" } else { "action-dock-btn" },
                                 "aria-label": "Synergy",
                                 "aria-pressed": "{synergy_on}",
-                                onclick: move |_| {
-                                    let on = !filter.peek().synergy();
-                                    filter.write().set_synergy(on);
-                                    bump();
-                                    let said = if on { add_cards::SYNERGY_ON } else { add_cards::SYNERGY_OFF };
-                                    toast.info(
-                                        said.to_string(),
-                                        ToastOptions::default().duration(TOAST_QUICK),
-                                    );
-                                },
+                                onclick: move |_| toggle_synergy.call(()),
                                 BoltIcon {}
                             }
                         }
@@ -1172,6 +1206,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                         }
                         span { class: "action-dock-divider" }
                         DockEye { eye, disabled: !has_current }
+                        DockShortcuts {}
                     }
                 }
             }

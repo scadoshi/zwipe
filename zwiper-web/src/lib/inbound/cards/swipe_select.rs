@@ -72,6 +72,9 @@ use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::back_arrow::BackArrow;
 use crate::inbound::chrome::details_eye::{DockEye, Surface, use_details_eye};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, SwipeSelectHint, open_and_record_hint};
+use crate::inbound::chrome::page_keys::use_page_keys;
+use crate::inbound::chrome::shortcuts::{self, Shortcut};
+use crate::inbound::chrome::shortcuts_sheet::{DockShortcuts, use_global_keys};
 use crate::inbound::screens::playstyle::SuggestionReasons;
 use crate::inbound::shell::use_overlay_nav;
 use crate::inbound::telemetry;
@@ -612,6 +615,48 @@ fn SwipeSelectBody(
         undo,
     );
 
+    // Refresh, from its dock button or `r`.
+    let refresh = use_callback(move |()| {
+        on_refresh.call(());
+        toast.info(
+            "Stack refreshed".to_string(),
+            ToastOptions::default().duration(TOAST_QUICK),
+        );
+    });
+    // Whether the dock offers Filter, kept in a signal for the keys, which
+    // register once.
+    let offers_filter = !suggested || suggested_filter.is_some();
+    let mut filter_offered = use_signal(|| offers_filter);
+    use_effect(use_reactive!(
+        |offers_filter| filter_offered.set(offers_filter)
+    ));
+    // The swipe screen's letter keys, each the same action as its dock
+    // button; the swipes come through the swipe keys above, and there is no
+    // Synergy here.
+    use_page_keys(Callback::new(
+        move |key: String| match shortcuts::swipe_screen_shortcut(&key) {
+            Some(Shortcut::Printings) => {
+                if stack.peek().current().is_some() {
+                    printing_open.set(true);
+                }
+            }
+            Some(Shortcut::Details) => {
+                if stack.peek().current().is_some() {
+                    eye.press();
+                }
+            }
+            Some(Shortcut::Filter) => {
+                if *filter_offered.peek() {
+                    filter_open.set(true);
+                }
+            }
+            Some(Shortcut::Refresh) => refresh.call(()),
+            Some(Shortcut::Synergy | Shortcut::Swipe(_)) | None => {}
+        },
+    ));
+    // `?` opens this screen's hint, as its `?` button does.
+    use_global_keys(Some(use_callback(move |()| hint_again.set(true))));
+
     let mut on_decision = move |(swipe, card): (Swipe, Card)| match swipe {
         Swipe::Left => {
             let action = match (suggested, card.scryfall_data.oracle_id) {
@@ -801,17 +846,12 @@ fn SwipeSelectBody(
                 button {
                     class: "action-dock-btn",
                     "aria-label": "Refresh",
-                    onclick: move |_| {
-                        on_refresh.call(());
-                        toast.info(
-                            "Stack refreshed".to_string(),
-                            ToastOptions::default().duration(TOAST_QUICK),
-                        );
-                    },
+                    onclick: move |_| refresh.call(()),
                     DockIcon { path: REFRESH }
                 }
                 span { class: "action-dock-divider" }
                 DockEye { eye, disabled: !has_card }
+                DockShortcuts {}
             }
         }
         if let Some(card) = current {
