@@ -48,6 +48,7 @@ use super::components::swipe_select::{SwipeMode, SwipeSelect};
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::hint_dialog::{self, OneTimeHintDialog};
+use crate::inbound::components::navigation::back_handler;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::{Screen, screen};
@@ -222,11 +223,11 @@ impl Driver {
                 let mut slot = self.seed.0;
                 slot.set(Some(*card));
             }
-            Effect::Navigate(destination) => {
-                self.navigator.push(match destination {
-                    Destination::DeckList => Router::DeckList {},
-                    Destination::CreateDeck => Router::CreateDeck,
-                });
+            Effect::Navigate(Destination::DeckList) => {
+                back_handler::back_or(self.navigator, Router::DeckList {});
+            }
+            Effect::Navigate(Destination::CreateDeck) => {
+                self.navigator.push(Router::CreateDeck);
             }
             Effect::Toast(toast) => ui_toast::raise(self.toast, toast),
         }

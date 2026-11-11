@@ -52,6 +52,8 @@ pub const UPCOMING: &[Release] = &[Release {
     entries: &[
         "The deck page on the web can show its cards as stacks, one per group, beside the list",
         "Keyboard shortcuts on the web's deck page for the hovered or open card, with Shift+H to list them",
+        "Back returns to the screen you came from instead of looping between Create deck and Decks",
+        "On the web, a cloned deck shows its own name as soon as it opens, and back and forward between two decks show the right one",
     ],
 }];
 

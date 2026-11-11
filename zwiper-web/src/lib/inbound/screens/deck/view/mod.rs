@@ -14,6 +14,8 @@ pub mod panels;
 pub mod sections;
 mod stacks;
 
+use std::iter;
+
 use components::{Button, ButtonVariant, LoadFailed, TOAST_NORMAL, TOAST_QUICK, use_back_online};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -50,9 +52,23 @@ use crate::inbound::telemetry;
 /// The screen's title, in the tab and the folded nav.
 const TITLE: &str = "Deck";
 
-/// The deck view for `deck_id`.
+/// The deck view for `deck_id`, mounted afresh for each deck, so a deck that
+/// opens another (a clone) or the browser's back and forward between two
+/// decks never shows one deck's state under the other's address.
 #[component]
 pub fn ViewDeck(deck_id: Uuid) -> Element {
+    // A key takes effect only among a list's items, so the body renders as a
+    // list of one.
+    rsx! {
+        for deck_id in iter::once(deck_id) {
+            DeckViewScreen { key: "{deck_id}", deck_id }
+        }
+    }
+}
+
+/// The deck view's body for one deck.
+#[component]
+fn DeckViewScreen(deck_id: Uuid) -> Element {
     telemetry::use_telemetry_screen(Screen::Deck(DeckScreen::View));
     let navigator = use_navigator();
     let wide = use_wide();
