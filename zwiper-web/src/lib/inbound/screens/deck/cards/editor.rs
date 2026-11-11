@@ -36,7 +36,7 @@ use super::hover_keys::{self, HoverAction};
 use super::quick_add::QUICK_ADD_ID;
 use super::signal_toast;
 use crate::inbound::card_stores::CardStores;
-use crate::inbound::cards::card_row::{CardRow, ShowRowArt};
+use crate::inbound::cards::card_row::{CardOverlays, CardRow, ShowRowArt};
 use crate::inbound::cards::swipe_stack::{Swipe, use_swipe_key_handler};
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, open_and_record_hint};
@@ -57,9 +57,8 @@ const KEY_CARD_JS: &str = "const under = document.querySelectorAll('[data-row]:h
 const ROW_TOGGLE_JS: &str = "const line = document.querySelector('.web-deck-row[data-row=\"__ID__\"] .card-row-compact'); if (line) line.click();";
 
 /// Clicks the details button labeled `__LABEL__` of card `__ID__`: in the Stacks view's drawer
-/// while that card is open there, else in its list row. Nothing where the card shows no such
-/// button.
-const PRESS_JS: &str = "const open = document.querySelector('.bottom-sheet.show.__DRAWER__') && document.querySelector('.card-stack-slot.open[data-row=\"__ID__\"]'); const host = open ? document.querySelector('.bottom-sheet.show.__DRAWER__') : document.querySelector('.web-deck-row[data-row=\"__ID__\"]'); const button = host && [...host.querySelectorAll('button.card-action-btn')].find((b) => b.textContent.trim() === '__LABEL__'); if (button) button.click();";
+/// while that card is open there, else in its list row. Sends whether it found the button.
+const PRESS_JS: &str = "const open = document.querySelector('.bottom-sheet.show.__DRAWER__') && document.querySelector('.card-stack-slot.open[data-row=\"__ID__\"]'); const host = open ? document.querySelector('.bottom-sheet.show.__DRAWER__') : document.querySelector('.web-deck-row[data-row=\"__ID__\"]'); const button = host && [...host.querySelectorAll('button.card-action-btn')].find((b) => b.textContent.trim() === '__LABEL__'); if (button) button.click(); dioxus.send(!!button);";
 
 /// What a row is, which decides its actions.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -286,6 +285,8 @@ pub(crate) enum LoadFailure {
 )]
 pub(crate) fn use_deck_editor(deck_id: Uuid, on_failure: LoadFailure) -> Editor {
     let toast = use_toast();
+    // The screen's image preview, which `i` opens for a card that shows no Image button.
+    let overlays = try_use_context::<CardOverlays>();
     let authed = use_authed();
     let usage = telemetry::use_usage();
     let session: Signal<Option<Session>> = use_context();
@@ -951,12 +952,21 @@ pub(crate) fn use_deck_editor(deck_id: Uuid, on_failure: LoadFailure) -> Editor 
                             }
                         },
                         Some(HoverAction::Press(card_id, label)) => {
-                            document::eval(
+                            let mut pressed = document::eval(
                                 &PRESS_JS
                                     .replace("__DRAWER__", shortcuts::STACK_DETAILS_CLASS)
                                     .replace("__ID__", &card_id.to_string())
                                     .replace("__LABEL__", label),
                             );
+                            let found = pressed.recv::<bool>().await.unwrap_or(true);
+                            // A stack card with its drawer shut shows no Image
+                            // button: its image opens on the face it shows.
+                            if !found
+                                && hover == hover_keys::HoverKey::Image
+                                && let Some(CardOverlays { mut preview, .. }) = overlays
+                            {
+                                preview.set(Some((row.card.scryfall_data.clone(), shown_face)));
+                            }
                         }
                         None => {}
                     }

@@ -78,6 +78,8 @@ pub fn DeckWidePage(
         ..
     } = dialogs;
     // Quiet: the deck view's own profile fetch raises the one toast.
+    // Before the editor, whose `i` opens the image preview.
+    let overlays = use_card_overlays();
     // The stacks' reveal and the open card, before the editor, whose `d` moves them as a click.
     let reveal = use_signal(Reveal::default);
     let details_open = use_signal(|| false);
@@ -114,7 +116,6 @@ pub fn DeckWidePage(
     } = ed;
     let CardStores { undo, .. } = use_context();
     let examples = use_otag_reveals();
-    let overlays = use_card_overlays();
     let CardOverlays { mut preview, .. } = overlays;
     // The rows' hover stack, drawn outside the rows and the page's entrance,
     // whose transforms would pin it to them instead of the window.
@@ -637,7 +638,7 @@ pub fn DeckWidePage(
         }
         HoverStackHost { stack: hover_stack }
         if view() == CardsView::Stacks {
-            {stack_details(&ed, &all_rows, &row_meta, stack_details_state)}
+            {stack_details(&ed, &all_rows, &row_meta, stack_details_state, overlays)}
         }
         CardOverlaysHost { overlays, on_printing_save: move |_| {} }
         OtagExamplesHost { examples }

@@ -61,6 +61,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "On the web's deck page, d opens or closes a card's details",
         "Flipping a card on the web's deck page turns its stack image and row preview too",
         "The web's deck page runs the window's width, its list in two columns on a wide screen",
+        "Image in a stack card's details on the web's deck page",
     ],
 }];
 
