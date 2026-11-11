@@ -1,14 +1,15 @@
-//! The deck page's Stacks view: each section as a [`CardStack`] under a
-//! [`DeckFold`] header (its name and count, its total price in a money chip
-//! at the right end), floating on the page's grid with no panel around it,
-//! the stacks flowing into as many columns as the page fits. Hover
+//! The deck page's Stacks view: each section as a [`CardStack`] under the
+//! decks list's own group chip ([`DeckGroupSection`]: the group's pips,
+//! name and count, folding it, its total price in a money chip nested at
+//! its end), the cards floating on the page's grid under it, the stacks
+//! flowing into as many columns as the page fits. Hover
 //! reveals a card in place; a click opens its details in the card details
 //! drawer with the actions its row has, and a click on another card swaps
 //! it in. The reveal and open state is zwipe-ui's [`Reveal`].
 
 use std::collections::{HashMap, HashSet};
 
-use components::{CardBoardMoves, CardEditButtons, CardStack, DeckFold, DeckSection, StackCard};
+use components::{CardBoardMoves, CardEditButtons, CardStack, DeckSection, StackCard};
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
@@ -17,6 +18,7 @@ use zwipe_ui::deck_cards::stacks::{Gesture, Reveal};
 
 use crate::inbound::cards::card_info::CardDetailsSheet;
 use crate::inbound::screens::deck::cards::editor::{Editor, Meta, RowInfo, RowKind};
+use crate::inbound::screens::deck::list::DeckGroupSection;
 
 /// The total of `rows` in `currency`, each card's price times its copies;
 /// `None` when no card has a price in it.
@@ -52,12 +54,13 @@ pub(crate) fn stacks_view(
                         .collect();
                     rsx! {
                         div { key: "{section.key}", class: "deck-stack",
-                            DeckFold {
-                                fold_key: section.key,
-                                title: section.title,
+                            DeckGroupSection {
+                                group_key: section.key.clone(),
+                                header: section.title,
                                 pips: section.pips,
-                                folded: collapsed,
-                                accessory: price.map(|p| rsx! { span { class: "stat-chip stat-chip-money", "{p}" } }),
+                                count: None,
+                                collapsed,
+                                trailing: price.map(|p| rsx! { span { class: "stat-chip stat-chip-money", "{p}" } }),
                                 CardStack {
                                     cards,
                                     revealed: shown.revealed(),
