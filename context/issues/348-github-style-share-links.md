@@ -1,4 +1,4 @@
-# 346. GitHub-style shared deck links, "by <username>", and the deal on the web deck page
+# 348. GitHub-style shared deck links, "by <username>", and the deal on the web deck page
 
 State: fixing | Owner: thinker | PR: - | Build seen: release 1.18.17 (ships in 1.19.0)
 

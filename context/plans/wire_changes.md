@@ -9,7 +9,7 @@ Every change a shipped client can see, where it stands, and the floor it waits o
 
 ## Additive, no floor
 
-- `owner` on `HttpSharedDeck` (issue 346): the shared deck's owner's username, for the link's first segment and the page's "by <username>". `#[serde(default)]`; shipped apps never read the share payload, and zite treats a missing owner as no byline and no link change. Scotty approved publishing the username on shared decks, 2026-11-11.
+- `owner` on `HttpSharedDeck` (issue 348): the shared deck's owner's username, for the link's first segment and the page's "by <username>". `#[serde(default)]`; shipped apps never read the share payload, and zite treats a missing owner as no byline and no link change. Scotty approved publishing the username on shared decks, 2026-11-11.
 
 - `swipe_confirmations` on `UserSettings` and `HttpUpdateSettings` (nit 153): `chip` (the default), `toasts` or `off`. `#[serde(default)]` on both, and no shipped `UserSettings` sets `deny_unknown_fields`, so 1.15.0 to 1.18.0 skip it in a session or settings reply and never send it; a PATCH without it leaves the column alone. Migration `20261107130000_user_settings_swipe_confirmations.sql` adds the column with `DEFAULT 'chip'`. Built 2026-11-07 on `nits/thinker-153`.
 
