@@ -1,6 +1,6 @@
 # 335. Selector drawers waste space above the chips
 
-State: fixing | Owner: laptop | PR: - | Build seen: 7d3edf896
+State: fixing | Owner: laptop | PR: #520 | Build seen: 7d3edf896
 
 ## Report
 Scotty, 2026-11-10, side-drawer selectors (Format, Deck tags, Oracle tags): two things keep fewer chips on screen than there could be.
