@@ -73,6 +73,7 @@ pub const RELEASES: &[Release] = &[
             "Links inside text on the web answer the mouse too",
             "Add says it couldn't load cards and offers Retry when a search never answers",
             "Format, Deck tags and Oracle tags show more chips, with a hint box that hugs its text until you pick and, on the web, chips that scroll under the checkmark",
+            "Text links on zwipe.net hover to the accent with a firmer underline, as on app.zwipe.net",
         ],
     },
     Release {

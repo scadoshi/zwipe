@@ -164,9 +164,11 @@ a {
     transition: transform 0.25s ease;
 }
 
-/* Hover states that answer the cursor: links brighten toward the text color
-   (the old rule hovered to its own resting color), panels lift a few pixels
-   with a deeper shadow.
+/* Hover states that answer the cursor: links with a class (cards, the
+   brand, pills) brighten toward the text color, panels lift a few pixels
+   with a deeper shadow. An inline text link has no class and takes the
+   kit's hover instead, the accent and a firmer underline, as on
+   app.zwipe.net.
 
    The panel rules carry the body prefix on purpose: the crate's
    components.css is inlined in a <style> block AFTER this sheet's <link>, so
@@ -175,7 +177,7 @@ a {
    all. The extra selector outranks it regardless of order. */
 @media (hover: hover) {
     /* Tags keep their own color on hover. */
-    a:not(.tag):hover {
+    a[class]:not(.tag):hover {
         color: color-mix(in srgb, var(--palette-1) 30%, var(--text-primary));
     }
 

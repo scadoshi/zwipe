@@ -61,6 +61,7 @@ Who checked, on which live build, what they saw.
 | [335](335-selector-drawer-space.md) | Selector drawers waste space above the chips | reported | - | - |
 | [336](336-search-no-timeout.md) | A deck card search that never answers leaves Add on the skeleton | fixing | thinker | - |
 | [335](335-selector-drawer-space.md) | Selector drawers waste space above the chips | fixing | laptop | #520 |
+| [338](338-link-hover-inconsistent.md) | Text links hover differently across the three sites | fixing | thinker | - |
 
 ## Waiting for live verification
 
