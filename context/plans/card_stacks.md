@@ -27,3 +27,8 @@ Two columns. First tap reveals a card in place (as hover does on the web); a sec
 ## Not in v1
 
 Fan-out animation when a stack is clicked, custom groups, drag between groups, inline quantity controls on the stack.
+
+## Later: height cap with a fisheye
+
+Scotty, 2026-11-11, to try after v1: cap each stack at a share of the window (about 70%). A taller stack compresses its spacing: cards near the cursor keep their title strip (the hovered card shows in full) and cards farther away pile almost on top of each other. As the cursor moves down the stack the spacing follows it, so the stack's height never changes and the page never jumps. With no cursor, a tall stack shows evenly compressed. The cost is fewer titles visible at once. Phones use the same math on tap.
+
