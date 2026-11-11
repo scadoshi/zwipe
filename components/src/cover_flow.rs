@@ -253,12 +253,12 @@ pub fn CoverFlow(
             arrived.write().retry_failed();
         }
     }));
-    let centre_url = printings
+    let center_url = printings
         .get(at)
         .and_then(|card| card.scryfall_data.primary_image_url(ImageSize::Large))
         .map(str::to_owned);
-    use_effect(use_reactive!(|centre_url| {
-        if let Some(url) = centre_url
+    use_effect(use_reactive!(|center_url| {
+        if let Some(url) = center_url
             && arrived.peek().get(&url) == Some(Arrival::Failed)
         {
             arrived.write().retry(&url);

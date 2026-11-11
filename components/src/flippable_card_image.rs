@@ -127,18 +127,16 @@ pub fn FlippableCardImage(
     let loaded_here: Signal<Option<String>> = use_signal(|| None);
     // A meld half can show its melded card in its place.
     let meld = use_meld(&sd.read());
-    let view: ScryfallData = meld.shown().cloned().unwrap_or_else(|| sd.read().clone());
+    let sd_now = sd.read();
+    let view: &ScryfallData = meld.shown().unwrap_or(&sd_now);
     let total = view.face_count();
     // Clamp so a stale/over-large `initial_face` still resolves to a real face.
     let cur = face_idx().min(total.saturating_sub(1));
-    let alt = {
-        let sd_read = &view;
-        sd_read
-            .card_faces
-            .as_ref()
-            .and_then(|f| f.get(cur))
-            .map_or_else(|| sd_read.name.clone(), |f| f.name.clone())
-    };
+    let alt = view
+        .card_faces
+        .as_ref()
+        .and_then(|f| f.get(cur))
+        .map_or_else(|| view.name.clone(), |f| f.name.clone());
     let image_url: Option<String> = view.face_image_url(cur, size).map(str::to_owned);
     let is_no_image = image_url.is_none();
 
@@ -146,7 +144,7 @@ pub fn FlippableCardImage(
     // (so a flipped DFC shows the back's text, not the front's). Rarity/set are
     // card-level. Read only when there's no image, so an art card pays nothing.
     let (mana_cost, type_line, rarity, set_name, oracle_text, flavor_text, pt) = if is_no_image {
-        let sd_read = &view;
+        let sd_read = view;
         let face = sd_read.card_faces.as_ref().and_then(|f| f.get(cur));
         let mana = face.map_or_else(
             || sd_read.mana_cost.clone().unwrap_or_default(),
@@ -179,6 +177,7 @@ pub fn FlippableCardImage(
     } else {
         (None, None, None, None, None, None, None)
     };
+    drop(sd_now);
 
     let already_loaded = image_url
         .as_deref()

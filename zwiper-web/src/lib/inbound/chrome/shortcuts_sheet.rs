@@ -77,8 +77,8 @@ pub fn use_global_keys(on_hint: Option<Callback<()>>) {
                         }
                     }
                     Some(GlobalKey::Shortcuts) => {
-                        let on_swipe_screen = offered.is_some_and(|stack| !stack.peek().is_empty());
-                        if let Some(mut open) = open.filter(|_| on_swipe_screen) {
+                        let offered_here = offered.is_some_and(|stack| !stack.peek().is_empty());
+                        if let Some(mut open) = open.filter(|_| offered_here) {
                             open.set(true);
                         }
                     }
