@@ -69,7 +69,7 @@ pub(crate) fn stacks_view(
                                     on_leave: move |id| reveal.write().apply(Gesture::Leave(id)),
                                     on_select: move |id| {
                                         reveal.write().apply(Gesture::Click(id));
-                                        details_open.set(true);
+                                        details_open.set(reveal.peek().open().is_some());
                                     },
                                 }
                             }

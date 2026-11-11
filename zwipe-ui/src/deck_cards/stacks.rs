@@ -76,10 +76,11 @@ pub enum Gesture {
     /// The pointer left a card (web): the reveal goes back to the open card,
     /// or to none.
     Leave(Uuid),
-    /// A click on a card (web): its details open, in place of any open one.
+    /// A click on a card (web): its details open, in place of any open one;
+    /// a click on the open card closes them.
     Click(Uuid),
     /// A tap on a card (phones): the first reveals it, a second on the same
-    /// card opens its details.
+    /// card opens its details, and one more closes them.
     Tap(Uuid),
     /// The details closed (their ×, Escape, the backdrop, the back gesture).
     Close,
@@ -89,7 +90,8 @@ pub enum Gesture {
 /// card is pinned: it stays revealed when the pointer leaves it, a card under
 /// the pointer is revealed in its place (one at a time), and leaving every
 /// card brings the reveal back to it. The details never follow the reveal;
-/// only a click (or a second tap) moves them to another card.
+/// only a click (or a second tap) moves them to another card, and a click
+/// on the open card closes them.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct Reveal {
     /// The card under the pointer, or the last tapped.
@@ -124,10 +126,14 @@ impl Reveal {
         self.drawn
     }
 
-    /// Opens `card`'s details.
-    const fn pin(&mut self, card: Uuid) {
-        self.open = Some(card);
-        self.drawn = Some(card);
+    /// Opens `card`'s details, or closes them when they are already open.
+    fn pin(&mut self, card: Uuid) {
+        if self.open == Some(card) {
+            self.open = None;
+        } else {
+            self.open = Some(card);
+            self.drawn = Some(card);
+        }
     }
 
     /// Applies `gesture`.
@@ -233,6 +239,32 @@ mod tests {
             (None, Some(id(2))),
             "the closing drawer still shows its card as it eases out"
         );
+    }
+
+    #[test]
+    fn clicking_the_pinned_card_closes_it() {
+        let mut reveal = Reveal::default();
+        reveal.apply(Gesture::Click(id(1)));
+        reveal.apply(Gesture::Click(id(1)));
+        assert_eq!(reveal.open(), None, "a second click closes, as Escape does");
+        assert_eq!(
+            reveal.drawn(),
+            Some(id(1)),
+            "the drawer eases out with its card"
+        );
+        reveal.apply(Gesture::Click(id(1)));
+        reveal.apply(Gesture::Click(id(2)));
+        assert_eq!(reveal.open(), Some(id(2)), "another card still swaps");
+    }
+
+    #[test]
+    fn tapping_the_pinned_card_closes_it() {
+        let mut reveal = Reveal::default();
+        reveal.apply(Gesture::Tap(id(1)));
+        reveal.apply(Gesture::Tap(id(1)));
+        assert_eq!(reveal.open(), Some(id(1)), "the second tap opens");
+        reveal.apply(Gesture::Tap(id(1)));
+        assert_eq!(reveal.open(), None, "a tap on the open card closes it");
     }
 
     #[test]
