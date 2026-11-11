@@ -2162,6 +2162,22 @@ body:has(.deck-stacks) .sheet-form-drawer:has(> .card-details-drawer) > .sheet-b
     }
 }
 
+/* From the wide layout's 900px up to the fold (media.rs's
+   NAV_FOLD_MAX_PX), the folded nav lies over the window's top and names the
+   screen, so on Add and Remove the last swipe's chip sits under it, at the
+   nav's height, and the title tag stays hidden as it does on a phone. Swipe
+   select already starts under the nav. */
+@media (min-width: 900px) and (max-width: 1109px) {
+    .web-cards-swipe > .web-screen-chips {
+        top: calc(var(--web-nav-h, 2.75rem) + 0.5rem);
+        left: 1rem;
+    }
+
+    .web-cards-swipe > .web-screen-chips > .stat-chip.web-screen-chip {
+        display: none;
+    }
+}
+
 @media (min-width: 900px) and (prefers-reduced-motion: reduce) {
     .web-swipe-details,
     .web-examples-details,
