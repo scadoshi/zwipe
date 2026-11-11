@@ -33,6 +33,7 @@ Read-only usage reports you run against the production database, then paste the 
 | `signal.sql` | Is the suggestion-signal substrate filling in? What does it say? | Before Phase 3 (ranking) work |
 | `swipe-memory.sql` | Are durable skips used? Any deck near the 5k cap? | Occasional |
 | `errors.sql` | What's breaking for users in the field? Any contract drift? | After each release, then weekly |
+| `platforms.sql` | Who is on iOS, Android and the web: users, new users, usage and the signup funnel by platform | Weekly |
 
 All of them are **read-only** (no writes, no locks) and print `── header ──` sections so the output is self-describing. Run any of them the same way:
 
