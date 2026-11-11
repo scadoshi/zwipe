@@ -1,6 +1,6 @@
 # 315. Add's pile flashes a stale card after applying a filter
 
-State: reproduced | Owner: scotland | PR: #501, #516, #528 | Build seen: 1.18.14
+State: reproduced | Owner: scotland | PR: #501, #516, #530 | Build seen: 1.18.14
 
 ## Report
 Droid, 2026-11-08, Android app (prod): on Add, applying a filter shows one card for about 0.3s (Deadly Rollick), then a different top card (Drakuseth) replaces it. Same in an earlier take (Abrade, then Rakdos Charm), so it isn't new. Likely the old pile's next card renders before the filtered pile arrives. Footage: ~/Developer/video-factory/videos/oracle-tags/footage/raw/o4.mp4 at ~9.6s.
@@ -69,7 +69,7 @@ Droid, live 21ca16a04 (with #516), emulator Chrome 145 at 411px, 2026-11-11: sti
 - Once the top card's image counted as in, the cards under it could show while a phone had yet to paint the top.
 - A fading element gets a layer of its own, which mobile Chrome draws as the page's background until it has painted it: the pile's fade-in and the ghost's fade-in each left an empty frame.
 
-scotland, #528:
+scotland, #530:
 - Each stack (web and app) tracks the cards whose own image has loaded and decoded (`on_load`). Until the top card's has, and for `TOP_PAINT_GRACE` (0.4s) after, the stack draws its ghost under its cards and the cards under the top do not paint (`zwipe_ui::stack::ghost_held`, class `ghost-held`).
 - Stack images no longer take the seen set (`FlippableCardImage` `trust_seen: false`), and every image counts as loaded from its own load, `loaded_here`.
 - The pile no longer fades in, and the ghost on the swipe screens shows at full strength the frame it mounts.
