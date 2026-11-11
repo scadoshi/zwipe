@@ -63,6 +63,7 @@ Who checked, on which live build, what they saw.
 | [341](341-printings-failed-images-never-retry.md) | Printings that failed on a slow network stay set-name cards | fixing | scotland | #525 |
 | [340](340-toasts-over-load-error.md) | Stacked error toasts cover the "Couldn't load" box | fixing | laptop | #522 |
 | [337](337-zite-tap-highlight.md) | Taps on zwipe.net flash Chrome's blue highlight | fixing | thinker | - |
+| [338](338-link-hover-inconsistent.md) | Text links hover differently across the three sites | fixing | thinker | - |
 
 ## Waiting for live verification
 

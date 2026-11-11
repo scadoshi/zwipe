@@ -76,6 +76,7 @@ pub const RELEASES: &[Release] = &[
             "Printings tries a failed card image again once the connection is back",
             "A failure that repeats shows one error toast instead of a stack, and on the web Printings keeps Couldn't load printings and Retry clear of the toast",
             "Tapping a link or button on zwipe.net no longer flashes a blue highlight",
+            "Text links on zwipe.net hover to the accent with a firmer underline, as on app.zwipe.net",
         ],
     },
     Release {
