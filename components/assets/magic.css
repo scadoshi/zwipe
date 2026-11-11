@@ -1765,6 +1765,23 @@ html.keyboard-up .web-dock-pair {
     animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
+/* While the flow primes, its cards are all but invisible and a flat ghost
+   (no 3D, so no layer of its own) holds the middle card's place under them. */
+.cover-flow-primer {
+    position: absolute;
+    top: 4%;
+    left: 50%;
+    height: 92%;
+    aspect-ratio: 488 / 680;
+    transform: translateX(-50%);
+    border-radius: 4.75% / 3.5%;
+    background-color: var(--border-muted);
+}
+
+.cover-flow-stage.priming > .cover-flow-card {
+    opacity: 0.01;
+}
+
 /* Under a shown image the ghost holds still: it is covered. */
 .cover-flow-ghost:has(+ img.shown) {
     animation: none;

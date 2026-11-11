@@ -17,6 +17,13 @@ use zwipe_core::domain::card::scryfall_data::ImageSize;
 use crate::flippable_card_image::{decoded, mark_image_seen};
 use crate::icons::{ARROW_LEFT, ARROW_RIGHT, DockIcon};
 
+/// Answers once the browser has drawn three frames, by then the flow's
+/// card layers are painted.
+const PRIME_JS: &str = r"
+await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(done))));
+dioxus.send(true);
+";
+
 /// How far a wheel or trackpad scrolls, in pixels, to move one printing.
 const WHEEL_STEP_PX: f64 = 60.0;
 
@@ -143,6 +150,18 @@ pub fn CoverFlow(
     let mut arrived: Signal<HashMap<String, Arrival>> = use_signal(HashMap::new);
     let count = printings.len();
     let at = index().min(count.saturating_sub(1));
+    // For its first frames the flow draws its cards all but invisible, so a
+    // phone's browser paints their layers before they show, with a flat
+    // ghost under the middle card meanwhile; a card's layer the browser has
+    // not painted yet draws as the page's background.
+    let mut primed = use_signal(|| false);
+    use_hook(move || {
+        spawn(async move {
+            let mut frames = document::eval(PRIME_JS);
+            let _drawn: Result<bool, _> = frames.recv().await;
+            primed.set(true);
+        });
+    });
 
     let mut go = move |next: usize| {
         if count > 0 {
@@ -179,7 +198,7 @@ pub fn CoverFlow(
                 }
             }
             div {
-                class: "cover-flow-stage",
+                class: if primed() { "cover-flow-stage" } else { "cover-flow-stage priming" },
                 onwheel: move |e: Event<WheelData>| {
                     let (way, steps, rest) = wheel_steps(*wheel.peek(), wheel_px(&e.delta()), count);
                     if let Some(way) = way {
@@ -209,6 +228,9 @@ pub fn CoverFlow(
                 onpointerup: move |_| drag_from.set(None),
                 onpointercancel: move |_| drag_from.set(None),
                 onpointerleave: move |_| drag_from.set(None),
+                if !primed() {
+                    div { class: "cover-flow-primer" }
+                }
                 for (i, offset, card) in cards {
                     div {
                         key: "{card.scryfall_data.id}",
