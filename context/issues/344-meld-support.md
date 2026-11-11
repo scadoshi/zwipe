@@ -1,4 +1,4 @@
-# 343. Meld cards show their melded card
+# 344. Meld cards show their melded card
 
 State: fixing | Owner: scotland | PR: #534 | Build seen: release (feature, spec `context/plans/meld.md`)
 
