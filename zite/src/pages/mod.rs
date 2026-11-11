@@ -28,5 +28,5 @@ pub(crate) use ios::Ios;
 pub(crate) use not_found::NotFound;
 pub(crate) use privacy::Privacy;
 pub(crate) use reset::Reset;
-pub(crate) use shared_deck::SharedDeck;
+pub(crate) use shared_deck::{SharedDeck, SharedDeckPage};
 pub(crate) use verify::Verify;

@@ -8,6 +8,7 @@
 //! remove, the filter and undo, then Edit, Clone and Share.
 
 use std::collections::HashSet;
+use std::time::Duration;
 
 use components::icons::{CloneIcon, DockIcon, EditIcon, MINUS, PLUS, ShareIcon, UNDO};
 use components::{
@@ -51,9 +52,14 @@ use crate::inbound::screens::deck::cards::editor::{
 };
 use crate::inbound::screens::deck::cards::quick_add::QuickAdd;
 use crate::outbound::cards_view_store::CardsViewStore;
+use crate::outbound::timer;
 
 /// The stat panels' fold keys, shut when the page opens.
 const FOLDED_STATS: [&str; 5] = ["Budget", "Tags", "Distributions", "Mana", "Draw odds"];
+
+/// How long the featured cards wait for their images before they deal anyway, as on
+/// zwipe.net's shared deck.
+const FEATURED_WAIT: Duration = Duration::from_secs(4);
 
 /// The page for `deck_id`. `fixes` are the warnings' fixes, and `fixed`
 /// counts the ones that have landed: each reloads the deck.
@@ -72,6 +78,8 @@ pub fn DeckWidePage(
         ..
     } = dialogs;
     // Quiet: the deck view's own profile fetch raises the one toast.
+    // Before the editor, whose `i` opens the image preview.
+    let overlays = use_card_overlays();
     // The stacks' reveal and the open card, before the editor, whose `d` moves them as a click.
     let reveal = use_signal(Reveal::default);
     let details_open = use_signal(|| false);
@@ -108,7 +116,6 @@ pub fn DeckWidePage(
     } = ed;
     let CardStores { undo, .. } = use_context();
     let examples = use_otag_reveals();
-    let overlays = use_card_overlays();
     let CardOverlays { mut preview, .. } = overlays;
     // The rows' hover stack, drawn outside the rows and the page's entrance,
     // whose transforms would pin it to them instead of the window.
@@ -164,6 +171,25 @@ pub fn DeckWidePage(
         .iter()
         .any(|e| e.deck_card.board.is_sideboard());
     let featured = deck_cards::featured(&zone.read(), &entries.read(), oathbreaker);
+    // The featured cards with their image bytes in hand. The row stays unseen
+    // until every card reports in, or the wait runs out, then deals, as on
+    // zwipe.net's shared deck.
+    let mut featured_loaded = use_signal(|| 0usize);
+    let mut featured_timed_out = use_signal(|| false);
+    use_future(move || async move {
+        timer::sleep(FEATURED_WAIT).await;
+        featured_timed_out.set(true);
+    });
+    let featured_ready = featured_timed_out() || featured_loaded() >= featured.len();
+    let featured_class = if featured_ready {
+        "deck-head-deal ready"
+    } else {
+        "deck-head-deal"
+    };
+    let on_featured_load = move |()| {
+        let loaded = *featured_loaded.peek();
+        featured_loaded.set(loaded.saturating_add(1));
+    };
     let sources = Sources::deck(
         &entries
             .read()
@@ -390,12 +416,14 @@ pub fn DeckWidePage(
                         name,
                         facts,
                         has_featured: !featured.is_empty(),
+                        featured_class: featured_class.to_string(),
                         for (card, role) in featured.iter().cloned() {
                             FeaturedCard {
                                 key: "{card.scryfall_data.id}-{role}",
                                 card,
                                 role: role.to_string(),
                                 on_open: move |(sd, shown_face)| preview.set(Some((sd, shown_face))),
+                                on_load: on_featured_load,
                             }
                         }
                     }
@@ -611,7 +639,7 @@ pub fn DeckWidePage(
         }
         HoverStackHost { stack: hover_stack }
         if view() == CardsView::Stacks {
-            {stack_details(&ed, &all_rows, &row_meta, stack_details_state)}
+            {stack_details(&ed, &all_rows, &row_meta, stack_details_state, overlays)}
         }
         CardOverlaysHost { overlays, on_printing_save: move |_| {} }
         OtagExamplesHost { examples }

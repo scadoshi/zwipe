@@ -29,6 +29,7 @@ use super::swipe_select::{SwipeMode, SwipeSelect};
 use super::tag_select::TagSelect;
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::catalog_cache::CatalogCache;
+use crate::inbound::components::navigation::back_handler;
 use crate::inbound::components::navigation::leave_guard::{LeaveCopy, LeaveGuard, use_leave_guard};
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
@@ -179,9 +180,11 @@ impl Driver {
                     });
                 });
             }
+            // The form navigates only from Back and Edit's save, both to the
+            // screen it came from.
             Effect::Navigate(destination) => match route(destination) {
                 Some(route) => {
-                    self.navigator.push(route);
+                    back_handler::back_or(self.navigator, route);
                 }
                 None => self.navigator.go_back(),
             },

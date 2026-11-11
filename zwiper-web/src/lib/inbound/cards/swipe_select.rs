@@ -896,3 +896,29 @@ fn SwipeSelectBody(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    /// The web's own sheet.
+    const WEB_CSS: &str = include_str!("../../../../assets/web.css");
+
+    #[test]
+    fn a_skipped_or_picked_commander_flies_past_the_body_s_edge() {
+        let selector = ".screen-content.card-swipe.web-swipe-select-body {";
+        let at = WEB_CSS
+            .find(selector)
+            .expect("a rule for the wide swipe select body");
+        let rule = WEB_CSS.get(at..).unwrap();
+        let rule = rule.get(..rule.find('}').unwrap()).unwrap();
+        assert!(rule.contains("overflow: visible"), "{rule}");
+        let screen = WEB_CSS
+            .find(".swipe-select-screen.web-swipe-select {")
+            .and_then(|i| WEB_CSS.get(i..))
+            .expect("a rule for the screen around it");
+        let screen = screen.get(..screen.find('}').unwrap()).unwrap();
+        assert!(
+            screen.contains("overflow: hidden"),
+            "the screen clips at the window: {screen}"
+        );
+    }
+}

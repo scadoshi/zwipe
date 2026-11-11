@@ -44,13 +44,15 @@ pub fn use_deck_dialogs() -> DeckDialogs {
 }
 
 /// The dialogs for `deck_id`. `share_token` is the deck's live link, which
-/// Share and Stop sharing update in place. `delete_body` is the Delete
+/// Share and Stop sharing update in place, and `deck_name` names it in that
+/// link after the signed-in user's username. `delete_body` is the Delete
 /// dialog's line, naming the deck.
 #[component]
 pub fn DeckDialogsHost(
     deck_id: Uuid,
     dialogs: DeckDialogs,
     mut share_token: Signal<Option<Uuid>>,
+    deck_name: String,
     clone_name: String,
     delete_body: String,
 ) -> Element {
@@ -64,8 +66,20 @@ pub fn DeckDialogsHost(
         delete: delete_open,
     } = dialogs;
 
+    // The link's owner and deck name, read when a link is shown or copied.
+    let session: Signal<Option<Session>> = use_context();
+    let mut name = use_signal(|| deck_name.clone());
+    use_effect(use_reactive!(|deck_name| name.set(deck_name)));
+    let link = move |token: Uuid| {
+        let owner = session
+            .peek()
+            .as_ref()
+            .map(|s| s.user.username.to_string())
+            .unwrap_or_default();
+        share_link(&owner, &name.peek(), token)
+    };
     let copy_link = move |token: Uuid| {
-        browser::copy_to_clipboard(&share_link(token));
+        browser::copy_to_clipboard(&link(token));
         toast.info(
             "Share link copied".to_string(),
             ToastOptions::default().duration(TOAST_QUICK),
@@ -108,7 +122,6 @@ pub fn DeckDialogsHost(
     });
     // Pending skips go out first, so this window's skips clear too.
     let usage = telemetry::use_usage();
-    let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
     let clear_skips = use_callback(move |()| {
         spawn(async move {
@@ -181,7 +194,7 @@ pub fn DeckDialogsHost(
             actions: share_actions,
             div { "{share_body}" }
             if let Some(token) = share_token() {
-                ShareUrl { url: share_link(token) }
+                ShareUrl { url: link(token) }
             }
         }
         AlertDialog {

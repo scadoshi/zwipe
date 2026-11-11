@@ -1913,54 +1913,6 @@ body[class$="-dark"] .chip-value {
     --tone-base: var(--bg-primary);
 }
 
-/* The featured cards deal in from above once every image has loaded (the
-   page adds `.ready`), each a beat after the one before, at the size they
-   keep. Same motion as the app's .deck-head-card. The components
-   crate's DeckHead lays the row out. */
-.sd-featured .deck-head-card {
-    opacity: 0;
-}
-
-.sd-featured.ready .deck-head-card {
-    animation: sd-featured-deal 0.78s cubic-bezier(0.33, 1, 0.68, 1) both;
-}
-
-.sd-featured.ready .deck-head-card:nth-child(2) {
-    animation-delay: 180ms;
-}
-.sd-featured.ready .deck-head-card:nth-child(3) {
-    animation-delay: 360ms;
-}
-.sd-featured.ready .deck-head-card:nth-child(4) {
-    animation-delay: 540ms;
-}
-.sd-featured.ready .deck-head-card:nth-child(5) {
-    animation-delay: 720ms;
-}
-.sd-featured.ready .deck-head-card:nth-child(6) {
-    animation-delay: 900ms;
-}
-
-@keyframes sd-featured-deal {
-    from {
-        opacity: 0;
-        transform: translateY(-1.5rem) rotate(-3deg);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0) rotate(0deg);
-    }
-}
-
-/* Reduced motion: the cards are simply there, no deal. */
-@media (prefers-reduced-motion: reduce) {
-    .sd-featured .deck-head-card,
-    .sd-featured.ready .deck-head-card {
-        opacity: 1;
-        animation: none;
-    }
-}
-
 /* The app's chip-row: chips in a wrapping row with breathing room. */
 .chip-row {
     display: flex;

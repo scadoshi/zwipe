@@ -18,3 +18,4 @@ pub mod shortcuts;
 pub mod shortcuts_sheet;
 pub mod splash;
 pub mod toast;
+pub mod trail;

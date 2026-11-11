@@ -23,7 +23,7 @@ use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::leave_guard::use_leave_guard;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::router::Route;
-use crate::inbound::shell::ScreenFrame;
+use crate::inbound::shell::{ScreenFrame, nav};
 use crate::inbound::telemetry;
 
 /// The Edit deck screen for `deck_id`.
@@ -126,7 +126,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             saving.set(false);
             if saved.is_ok() {
                 guard.release();
-                navigator.push(Route::ViewDeck { deck_id });
+                nav::back_or(navigator, Route::ViewDeck { deck_id });
             }
         });
     });
