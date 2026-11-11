@@ -1206,6 +1206,12 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
     margin-bottom: 0.75rem;
 }
 
+/* The flow's frame is filled with the sheet body's own color, so nothing
+   behind the sheet shows through the stage while a phone paints it. */
+.cover-flow-frame {
+    background-color: var(--bg-sink);
+}
+
 /* The body takes the arrow keys once clicked, with no focus ring. */
 .web-printing-body:focus {
     outline: none;
