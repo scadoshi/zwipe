@@ -86,15 +86,77 @@ pub fn global_key(key: &str) -> Option<GlobalKey> {
     }
 }
 
+/// What one swipe screen calls its four swipes, as its dock buttons say them. `up` is `None`
+/// on a screen with no up swipe.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SwipeLabels {
+    /// The right swipe.
+    pub right: &'static str,
+    /// The left swipe.
+    pub left: &'static str,
+    /// The up swipe, if the screen has one.
+    pub up: Option<&'static str>,
+    /// The down swipe.
+    pub down: &'static str,
+}
+
+impl SwipeLabels {
+    /// The labels without the up swipe, for a screen that offers none.
+    #[must_use]
+    pub const fn without_up(self) -> Self {
+        Self { up: None, ..self }
+    }
+
+    /// The screen's swipe dock: left, up, down, right, each with its label.
+    #[must_use]
+    pub fn buttons(self) -> Vec<(Swipe, &'static str)> {
+        [
+            Some((Swipe::Left, self.left)),
+            self.up.map(|up| (Swipe::Up, up)),
+            Some((Swipe::Down, self.down)),
+            Some((Swipe::Right, self.right)),
+        ]
+        .into_iter()
+        .flatten()
+        .collect()
+    }
+}
+
+/// Add's swipes.
+pub const ADD_LABELS: SwipeLabels = SwipeLabels {
+    right: "Add",
+    left: "Skip",
+    up: Some("Maybeboard"),
+    down: "Undo",
+};
+
+/// Remove's swipes.
+pub const REMOVE_LABELS: SwipeLabels = SwipeLabels {
+    right: "Remove",
+    left: "Keep",
+    up: Some("Move"),
+    down: "Undo",
+};
+
+/// Commander swipe's swipes; a mode that saves nothing for later has no up swipe.
+pub const SELECT_LABELS: SwipeLabels = SwipeLabels {
+    right: "Pick",
+    left: "Skip",
+    up: Some("Save"),
+    down: "Undo",
+};
+
 /// The rows the shortcuts sheet lists: each key, with its vim letter if it has one, and what it
-/// does, the swipe screens' keys first.
+/// does, the swipe screen's own swipes (`labels`) first.
 #[must_use]
-pub fn sheet_rows() -> Vec<(&'static [&'static str], &'static str)> {
-    vec![
-        (&["→", "l"], "Add"),
-        (&["←", "h"], "Skip"),
-        (&["↑", "k"], "Maybeboard"),
-        (&["↓", "j"], "Undo"),
+pub fn sheet_rows(labels: &SwipeLabels) -> Vec<(&'static [&'static str], &'static str)> {
+    let swipes = [
+        Some((&["→", "l"][..], labels.right)),
+        Some((&["←", "h"][..], labels.left)),
+        labels.up.map(|up| (&["↑", "k"][..], up)),
+        Some((&["↓", "j"][..], labels.down)),
+    ];
+    let rest: [(&'static [&'static str], &'static str); 9] = [
         (&["p"], "Printings"),
         (&["d"], "Card details"),
         (&["v"], "Flip card"),
@@ -104,7 +166,8 @@ pub fn sheet_rows() -> Vec<(&'static [&'static str], &'static str)> {
         (&["Esc"], "Close the open sheet"),
         (&["?"], "This page's hint"),
         (&["Shift+H"], "These shortcuts"),
-    ]
+    ];
+    swipes.into_iter().flatten().chain(rest).collect()
 }
 
 /// Element tags that take typing: a key pressed while one has focus never reaches a screen.
@@ -261,8 +324,48 @@ mod tests {
     }
 
     #[test]
+    fn the_sheet_names_each_swipe_as_its_screen_s_dock_does() {
+        let names = |labels: &SwipeLabels| -> Vec<&'static str> {
+            sheet_rows(labels)
+                .iter()
+                .take_while(|(keys, _)| keys.len() == 2)
+                .map(|(_, does)| *does)
+                .collect()
+        };
+        assert_eq!(names(&ADD_LABELS), ["Add", "Skip", "Maybeboard", "Undo"]);
+        assert_eq!(names(&REMOVE_LABELS), ["Remove", "Keep", "Move", "Undo"]);
+        assert_eq!(names(&SELECT_LABELS), ["Pick", "Skip", "Save", "Undo"]);
+        assert_eq!(
+            names(&SELECT_LABELS.without_up()),
+            ["Pick", "Skip", "Undo"],
+            "a screen with no up swipe lists no up key"
+        );
+    }
+
+    #[test]
+    fn a_screen_s_dock_buttons_come_from_its_labels() {
+        assert_eq!(
+            REMOVE_LABELS.buttons(),
+            [
+                (Swipe::Left, "Keep"),
+                (Swipe::Up, "Move"),
+                (Swipe::Down, "Undo"),
+                (Swipe::Right, "Remove"),
+            ]
+        );
+        assert_eq!(
+            SELECT_LABELS.without_up().buttons(),
+            [
+                (Swipe::Left, "Skip"),
+                (Swipe::Down, "Undo"),
+                (Swipe::Right, "Pick"),
+            ]
+        );
+    }
+
+    #[test]
     fn the_sheet_lists_every_key() {
-        let rows = sheet_rows();
+        let rows = sheet_rows(&ADD_LABELS);
         let actions: Vec<&str> = rows.iter().map(|(_, does)| *does).collect();
         assert_eq!(
             actions,

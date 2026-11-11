@@ -1323,6 +1323,13 @@ body:has(.deck-stacks) .sheet-form-drawer:has(> .card-details-drawer) > .sheet-b
         min-height: 0;
     }
 
+    /* The frame between the step buttons stretches to the flow's height and
+       lays its stage out, so the stage stretches with it. */
+    .web-flow-body .cover-flow-frame {
+        align-self: stretch;
+        display: flex;
+    }
+
     .web-flow-body .cover-flow-stage {
         align-self: stretch;
         aspect-ratio: auto;
@@ -2977,6 +2984,16 @@ body:has(.deck-stacks) .sheet-form-drawer:has(> .card-details-drawer) > .sheet-b
 
 .web-shortcut-does {
     color: var(--text-primary);
+}
+
+/* The shortcuts sheet opens over any screen: the full-window Commander
+   swipe (210) and the dictionary and examples overlays (220, 230) too. */
+.web-shortcuts-layer .sheet-backdrop {
+    z-index: 240;
+}
+
+.web-shortcuts-layer .bottom-sheet {
+    z-index: 241;
 }
 
 /* The swipe screens' keyboard button shows only on a computer's wide
