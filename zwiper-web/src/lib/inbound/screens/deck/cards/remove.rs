@@ -37,19 +37,21 @@ use zwipe_ui::stores::undo;
 use zwipe_ui::stores::undo::{UndoAction, create_board_field};
 use zwipe_ui::telemetry::vocabulary::{DeckScreen, Screen};
 
-use super::{OneLine, SwipeDetails, flip_top_card};
+use super::{OneLine, SwipeDetails};
 use crate::inbound::card_filter::CardFilterPanel;
 use crate::inbound::card_stores::CardStores;
 use crate::inbound::cards::card_info::{CardDetailsSheet, CardSkeleton};
 use crate::inbound::cards::printing_sheet::PrintingSheet;
 use crate::inbound::cards::swipe_confirm::{SwipeScreenChips, Tone, use_swipe_confirm};
 use crate::inbound::cards::swipe_stack::{
-    Swipe, SwipeDock, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
+    self, Swipe, SwipeDock, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
 };
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::details_eye::{DockEye, Surface, use_details_eye};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::chrome::page_keys::{use_page_keys, use_undo_key};
+use crate::inbound::chrome::shortcuts::{self, Shortcut};
+use crate::inbound::chrome::shortcuts_sheet::DockShortcuts;
 use crate::inbound::session::ensure_fresh::ensure_fresh;
 use crate::inbound::shell::ScreenFrame;
 use crate::inbound::telemetry;
@@ -519,16 +521,26 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
         undo_last,
     );
     use_undo_key(Callback::new(move |()| undo_last.call(())));
-    use_page_keys(Callback::new(move |key: String| match key.as_str() {
-        "f" | "F" => flip_top_card(),
-        "p" | "P" => {
-            if stack.peek().current_wrapping().is_some() {
-                printing_open.set(true);
+    // The swipe screen's letter keys, each the same action as its dock
+    // button; Remove has no Synergy, so `s` does nothing here.
+    use_page_keys(Callback::new(
+        move |key: String| match shortcuts::swipe_screen_shortcut(&key) {
+            Some(Shortcut::Printings) => {
+                if stack.peek().current_wrapping().is_some() {
+                    printing_open.set(true);
+                }
             }
-        }
-        "r" | "R" => refresh.call(()),
-        _ => {}
-    }));
+            Some(Shortcut::Details) => {
+                if stack.peek().current_wrapping().is_some() {
+                    eye.press();
+                }
+            }
+            Some(Shortcut::Flip) => swipe_stack::flip_top_card(),
+            Some(Shortcut::Filter) => filter_open.set(true),
+            Some(Shortcut::Refresh) => refresh.call(()),
+            Some(Shortcut::Synergy | Shortcut::Swipe(_)) | None => {}
+        },
+    ));
 
     let current = stack.read().current_wrapping().cloned();
     let (window, entering) = {
@@ -628,6 +640,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                         }
                         span { class: "action-dock-divider" }
                         DockEye { eye, disabled: current.is_none() }
+                        DockShortcuts {}
                     }
                 }
             }

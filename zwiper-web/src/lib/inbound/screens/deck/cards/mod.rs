@@ -94,13 +94,6 @@ impl OneLine {
     }
 }
 
-/// Presses the flip control of the top swipe card, if it has one.
-fn flip_top_card() {
-    document::eval(
-        r#"const flip = document.querySelector('.swipe-stack-card.top [aria-label="Flip card"]'); if (flip) flip.click();"#,
-    );
-}
-
 /// The top card's details beside it on a wide window, what the phone keeps
 /// behind the eye button, or their ghost while the cards load. With
 /// `on_printings` the pane offers Printings, as the drawer does.

@@ -8,6 +8,8 @@
 use dioxus::prelude::*;
 use uuid::Uuid;
 
+use crate::inbound::chrome::shortcuts;
+
 /// Calls `on_key` with each key (`KeyboardEvent.key`, such as `"/"` or
 /// `"a"`) pressed while this registration is the newest and no text field,
 /// dialog or sheet has focus. The browser's default for the key is kept
@@ -15,7 +17,9 @@ use uuid::Uuid;
 pub fn use_page_keys(on_key: Callback<String>) {
     let id = use_hook(Uuid::new_v4);
     use_hook(move || {
-        let script = PAGE_KEYS_JS.replace("__ID__", &id.to_string());
+        let script = PAGE_KEYS_JS
+            .replace("__ID__", &id.to_string())
+            .replace("__GUARD__", &shortcuts::guard_js());
         spawn(async move {
             let mut keys = document::eval(&script);
             while let Ok(key) = keys.recv::<String>().await {
@@ -34,7 +38,9 @@ pub fn use_page_keys(on_key: Callback<String>) {
 pub fn use_undo_key(on_undo: Callback<()>) {
     let id = use_hook(Uuid::new_v4);
     use_hook(move || {
-        let script = UNDO_KEY_JS.replace("__ID__", &id.to_string());
+        let script = UNDO_KEY_JS
+            .replace("__ID__", &id.to_string())
+            .replace("__GUARD__", &shortcuts::guard_js_with_modifiers());
         spawn(async move {
             let mut presses = document::eval(&script);
             while presses.recv::<bool>().await.is_ok() {
@@ -55,23 +61,19 @@ pub fn focus_by_id(id: &str) {
 }
 
 /// Registers one screen's key listener.
-const PAGE_KEYS_JS: &str = r#"
+const PAGE_KEYS_JS: &str = r"
 window.__zwipePageKeys = window.__zwipePageKeys || [];
 window.__zwipePageKeys.push('__ID__');
 const onKey = (e) => {
     const stack = window.__zwipePageKeys;
     if (!stack.length || stack[stack.length - 1] !== '__ID__') return;
-    if (e.altKey || e.ctrlKey || e.metaKey || e.isComposing || e.key.length !== 1) return;
-    const focus = document.activeElement;
-    if (focus && (focus.tagName === 'INPUT' || focus.tagName === 'TEXTAREA' || focus.isContentEditable)) return;
-    if (document.querySelector('.alert-dialog[data-state="open"]')) return;
-    if (document.querySelector('.bottom-sheet.show')) return;
+    if (e.key.length !== 1 || !__GUARD__) return;
     if (e.key === '/') e.preventDefault();
     dioxus.send(e.key);
 };
 window['__zwipePageKey__ID__'] = onKey;
 document.addEventListener('keydown', onKey);
-"#;
+";
 
 /// Removes one screen's key listener.
 const PAGE_KEYS_DROP_JS: &str = r"
@@ -82,23 +84,20 @@ window.__zwipePageKeys = (window.__zwipePageKeys || []).filter((id) => id !== '_
 ";
 
 /// Registers one screen's Ctrl+Z listener.
-const UNDO_KEY_JS: &str = r#"
+const UNDO_KEY_JS: &str = r"
 window.__zwipeUndoKeys = window.__zwipeUndoKeys || [];
 window.__zwipeUndoKeys.push('__ID__');
 const onKey = (e) => {
     const stack = window.__zwipeUndoKeys;
     if (!stack.length || stack[stack.length - 1] !== '__ID__') return;
     if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey || e.key.toLowerCase() !== 'z') return;
-    const focus = document.activeElement;
-    if (focus && (focus.tagName === 'INPUT' || focus.tagName === 'TEXTAREA' || focus.isContentEditable)) return;
-    if (document.querySelector('.alert-dialog[data-state="open"]')) return;
-    if (document.querySelector('.bottom-sheet.show')) return;
+    if (!__GUARD__) return;
     e.preventDefault();
     dioxus.send(true);
 };
 window['__zwipeUndoKey__ID__'] = onKey;
 document.addEventListener('keydown', onKey);
-"#;
+";
 
 /// Removes one screen's Ctrl+Z listener.
 const UNDO_KEY_DROP_JS: &str = r"

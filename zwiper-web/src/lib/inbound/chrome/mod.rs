@@ -14,5 +14,7 @@ pub mod media;
 pub mod one_time_hint;
 pub mod page_keys;
 pub mod section;
+pub mod shortcuts;
+pub mod shortcuts_sheet;
 pub mod splash;
 pub mod toast;
