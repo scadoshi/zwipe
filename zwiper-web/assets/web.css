@@ -2358,10 +2358,11 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 }
 
 /* A picker's body in its sheet: the controls on top and the chip grid
-   under them, the grid scrolling on its own and ending above a band at
-   the sheet's foot that holds the dock, so the dock never covers a chip. */
+   under them, the grid scrolling on its own right down to the sheet's
+   foot and running under the dock, as the app's pickers do. The grid's
+   own trailing padding scrolls its last row clear of the dock. */
 .bottom-sheet.web-picker-sheet:has(.sheet-dock) > .sheet-content {
-    padding: 0 0 calc(5rem + env(safe-area-inset-bottom, 0px));
+    padding: 0;
 }
 
 .web-picker-body {
@@ -2385,11 +2386,10 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 }
 
 /* The chips are cut at the definition bar's bottom border, where the grid
-   starts, and fade out above the band the dock sits in, which has no rule.
-   The grid's own bottom padding scrolls the last row clear of the fade. */
+   starts, and at the sheet's foot. The room the dock takes goes through
+   --content-pad-bottom, which the grid's trailing padding adds to. */
 .web-picker-body > .tag-grid {
-    -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 1rem), transparent);
-    mask-image: linear-gradient(to bottom, #000 calc(100% - 1rem), transparent);
+    --content-pad-bottom: 5rem;
 }
 
 /* A picker is a drawer down to a window that keeps some page beside it.
