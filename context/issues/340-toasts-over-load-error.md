@@ -1,6 +1,6 @@
 # 340. Stacked error toasts cover the "Couldn't load" box
 
-State: fixing | Owner: laptop | PR: #522, then (this PR) | Build seen: live 21ca16a04, failed on 1a5e45a44
+State: fixing | Owner: laptop | PR: #522, #528 | Build seen: live 21ca16a04, failed on 1a5e45a44
 
 ## Report
 Droid, 2026-11-11, live 21ca16a04, phone web. When cards or printings fail to load, error toasts stack up and sit over the text of the "Couldn't load cards" / "Couldn't load printings" box for as long as they're up.
