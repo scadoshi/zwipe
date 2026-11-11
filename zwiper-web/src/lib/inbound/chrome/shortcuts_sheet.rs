@@ -7,7 +7,7 @@ use components::{BottomSheet, HintKey, SheetFrame, SheetWide};
 use dioxus::prelude::*;
 use uuid::Uuid;
 
-use crate::inbound::chrome::shortcuts::{self, GlobalKey};
+use crate::inbound::chrome::shortcuts::{self, ADD_LABELS, GlobalKey, SwipeLabels};
 
 /// The dock button's icon: a keyboard, its keys and space bar.
 const KEYBOARD: &str = "M3 7h18v10H3zM7 10.5h.01M10.5 10.5h.01M14 10.5h.01M17.5 10.5h.01M8 14h8";
@@ -17,34 +17,36 @@ const KEYBOARD: &str = "M3 7h18v10H3zM7 10.5h.01M10.5 10.5h.01M14 10.5h.01M17.5 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ShortcutsOpen(pub Signal<bool>);
 
-/// How many swipe screens are mounted, which [`use_offer_shortcuts`] counts: Shift+H opens the
-/// sheet only while one is.
+/// The mounted swipe screens' labels, newest last, which [`use_offer_shortcuts`] keeps: Shift+H
+/// opens the sheet only while one is mounted, and the sheet names the swipes as the newest does.
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct ShortcutsOffered(pub Signal<u32>);
+pub struct ShortcutsOffered(pub Signal<Vec<SwipeLabels>>);
 
 /// Provides [`ShortcutsOpen`] and [`ShortcutsOffered`] to the routes under it and answers the
 /// keys of a page with no hint of its own. Call once, in the frame around every route.
 pub fn use_shortcuts_root() -> Signal<bool> {
     let open = use_context_provider(|| ShortcutsOpen(Signal::new(false))).0;
-    use_context_provider(|| ShortcutsOffered(Signal::new(0)));
+    use_context_provider(|| ShortcutsOffered(Signal::new(Vec::new())));
     use_global_keys(None);
     open
 }
 
-/// Marks this screen as a swipe screen while it is mounted, so Shift+H opens the shortcuts
-/// sheet; elsewhere Shift+H does nothing.
-pub fn use_offer_shortcuts() {
-    let offered = try_use_context::<ShortcutsOffered>().map(|ShortcutsOffered(count)| count);
+/// Marks this screen as a swipe screen whose swipes are `labels` while it is mounted, so
+/// Shift+H opens the shortcuts sheet, which names the swipes as its dock does. Elsewhere Shift+H
+/// does nothing.
+pub fn use_offer_shortcuts(labels: SwipeLabels) {
+    let offered = try_use_context::<ShortcutsOffered>().map(|ShortcutsOffered(stack)| stack);
     use_hook(move || {
-        if let Some(mut count) = offered {
-            let now = *count.peek();
-            count.set(now.saturating_add(1));
+        if let Some(mut stack) = offered {
+            stack.write().push(labels);
         }
     });
     use_drop(move || {
-        if let Some(mut count) = offered {
-            let now = *count.peek();
-            count.set(now.saturating_sub(1));
+        if let Some(mut stack) = offered {
+            let at = stack.peek().iter().rposition(|l| *l == labels);
+            if let Some(at) = at {
+                stack.write().remove(at);
+            }
         }
     });
 }
@@ -55,7 +57,7 @@ pub fn use_offer_shortcuts() {
 /// `None`, and `?` does nothing there.
 pub fn use_global_keys(on_hint: Option<Callback<()>>) {
     let open = try_use_context::<ShortcutsOpen>().map(|ShortcutsOpen(open)| open);
-    let offered = try_use_context::<ShortcutsOffered>().map(|ShortcutsOffered(count)| count);
+    let offered = try_use_context::<ShortcutsOffered>().map(|ShortcutsOffered(stack)| stack);
     // The page's current hint, which can change between renders.
     let mut hint = use_signal(|| on_hint);
     use_effect(use_reactive!(|on_hint| hint.set(on_hint)));
@@ -75,7 +77,7 @@ pub fn use_global_keys(on_hint: Option<Callback<()>>) {
                         }
                     }
                     Some(GlobalKey::Shortcuts) => {
-                        let on_swipe_screen = offered.is_some_and(|count| *count.peek() > 0);
+                        let on_swipe_screen = offered.is_some_and(|stack| !stack.peek().is_empty());
                         if let Some(mut open) = open.filter(|_| on_swipe_screen) {
                             open.set(true);
                         }
@@ -90,17 +92,24 @@ pub fn use_global_keys(on_hint: Option<Callback<()>>) {
     });
 }
 
-/// The shortcuts sheet: every key with what it does, in the hint's key style.
+/// The shortcuts sheet: every key with what it does, in the hint's key style, the swipes named
+/// as the swipe screen on top names them. It sits above every screen, the full-window Commander
+/// swipe included.
 #[component]
 pub fn ShortcutsSheet(open: Signal<bool>) -> Element {
+    let offered = try_use_context::<ShortcutsOffered>().map(|ShortcutsOffered(stack)| stack);
+    let labels = offered
+        .and_then(|stack| stack.read().last().copied())
+        .unwrap_or(ADD_LABELS);
     rsx! {
+        div { class: "web-shortcuts-layer",
         SheetFrame { wide: SheetWide::Modal,
             BottomSheet {
                 open,
                 title: "Keyboard shortcuts".to_string(),
                 closable: true,
                 ul { class: "web-shortcuts",
-                    for (keys, does) in shortcuts::sheet_rows() {
+                    for (keys, does) in shortcuts::sheet_rows(&labels) {
                         li { key: "{does}", class: "web-shortcut",
                             span { class: "web-shortcut-keys",
                                 for (i, label) in keys.iter().copied().enumerate() {
@@ -118,6 +127,7 @@ pub fn ShortcutsSheet(open: Signal<bool>) -> Element {
                 }
             }
         }
+    }
     }
 }
 
