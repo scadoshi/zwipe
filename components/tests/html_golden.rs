@@ -15,14 +15,17 @@ use std::fs;
 use std::path::PathBuf;
 
 use components::{
-    Bar, BarChart, BarOrientation, ChangelogCollapseAll, ChangelogFilter, ChangelogFilters,
-    ChangelogLook, ChangelogReleases, ColorBars, ColorChart, DeckCharts, DeckFacts, DeckHead,
-    DrawOdds, FlippableCardImage, IdentityPips, LabelCase, Pressable, use_collapse_set,
+    Bar, BarChart, BarOrientation, CardBoardMoves, CardEditButtons, CardStack,
+    ChangelogCollapseAll, ChangelogFilter, ChangelogFilters, ChangelogLook, ChangelogReleases,
+    ColorBars, ColorChart, DeckCharts, DeckFacts, DeckHead, DrawOdds, FlippableCardImage,
+    IdentityPips, LabelCase, Pressable, StackCard, use_collapse_set,
 };
 use dioxus::dioxus_core::NoOpMutations;
 use dioxus::prelude::*;
+use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
+use zwipe_core::domain::deck::Board;
 use zwipe_core::http::contracts::changelog::{HttpChangelog, HttpRelease};
 use zwipe_ui::colors::Bar as ColorBar;
 
@@ -472,6 +475,71 @@ fn flippable_card_image_controlled_face() {
             rsx! {
                 FlippableCardImage { sd, size: ImageSize::Normal, face }
                 FlippableCardImage { sd, size: ImageSize::Normal, face: past_the_end }
+            }
+        }),
+    );
+}
+
+/// A stack of three: the first on top, the second revealed so the third
+/// drops below it, the third open with a copies badge, and a card without
+/// art showing its name.
+#[test]
+fn card_stack_revealed() {
+    golden(
+        "card_stack_revealed",
+        &render(|| {
+            let base: Card = serde_json::from_str(CARD_JSON).unwrap();
+            let named = |n: u128, name: &str| {
+                let mut card = base.clone();
+                card.scryfall_data.id = uuid::Uuid::from_u128(n);
+                card.scryfall_data.name = name.to_owned();
+                card
+            };
+            let mut artless = named(4, "No Art");
+            artless.scryfall_data.image_uris = None;
+            artless.scryfall_data.card_faces = None;
+            let cards = vec![
+                StackCard {
+                    card: named(1, "Top"),
+                    qty: 1,
+                },
+                StackCard {
+                    card: named(2, "Middle"),
+                    qty: 1,
+                },
+                StackCard {
+                    card: named(3, "Bottom"),
+                    qty: 4,
+                },
+                StackCard {
+                    card: artless,
+                    qty: 1,
+                },
+            ];
+            rsx! {
+                CardStack {
+                    cards,
+                    revealed: Some(uuid::Uuid::from_u128(2)),
+                    open: Some(uuid::Uuid::from_u128(3)),
+                    on_hover: move |_| {},
+                    on_leave: move |_| {},
+                    on_select: move |_| {},
+                }
+            }
+        }),
+    );
+}
+
+/// The editing buttons a deck card's drawer shows: the stepper at three,
+/// Unstar for an MVP, and the moves off the maybeboard.
+#[test]
+fn card_edit_actions() {
+    golden(
+        "card_edit_actions",
+        &render(|| {
+            rsx! {
+                CardEditButtons { qty: 3, on_qty_change: move |_| {}, mvp: Some(true), on_toggle_mvp: move |()| {} }
+                CardBoardMoves { current_board: Some(Board::Maybeboard), on_move_to: move |_| {} }
             }
         }),
     );

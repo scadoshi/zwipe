@@ -42,11 +42,13 @@
 
 mod architecture;
 mod back_online;
+mod card_actions;
 mod card_details;
 mod card_filter;
 mod card_list_fold;
 mod card_role_chips;
 mod card_row;
+mod card_stack;
 mod changelog;
 mod charts;
 mod color_bars;
@@ -74,6 +76,7 @@ mod theme;
 
 pub use architecture::ZwipeArchitecture;
 pub use back_online::use_back_online;
+pub use card_actions::{CardBoardMoves, CardEditButtons};
 pub use card_details::{
     CardDetails, CardDetailsCost, CardDetailsPanel, CardDetailsPanelSkeleton, card_face_count,
 };
@@ -81,6 +84,7 @@ pub use card_filter::{CardFilterPanel, DictionarySlot};
 pub use card_list_fold::CardListFold;
 pub use card_role_chips::CardRoleChips;
 pub use card_row::CardRow;
+pub use card_stack::{CardStack, StackCard};
 pub use changelog::{
     ChangelogCollapseAll, ChangelogFilters, ChangelogLook, ChangelogReleases,
     Filter as ChangelogFilter,

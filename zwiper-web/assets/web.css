@@ -867,6 +867,47 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
     }
 }
 
+/* ---- The deck page's Stacks view ----
+   The stacks flow into as many columns as the page fits, each at least a
+   card's readable width, their headers the bands' fold headers with the
+   group's total price at the right end. */
+.deck-stacks {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr));
+    gap: 1rem 1.25rem;
+    align-items: start;
+}
+
+.deck-stack .deck-fold-inner {
+    padding: 0.5rem 0.25rem 0.75rem;
+}
+
+/* A stack's header keeps its name and count whole on one line; in a narrow
+   column the price wraps under them, at the right end. */
+.deck-stack .deck-fold-head {
+    flex-wrap: wrap;
+    row-gap: 0.15rem;
+    padding: 0.6rem 0.75rem;
+    letter-spacing: 0.05em;
+}
+
+.deck-stack .deck-fold-toggle {
+    white-space: nowrap;
+}
+
+/* A card's details drawer opened from the stacks leaves the stacks live:
+   its backdrop neither dims nor catches a click, so a click on another card
+   swaps that card in. Escape and the drawer's × close it. */
+body:has(.deck-stacks) .sheet-form-drawer:has(> .card-details-drawer) > .sheet-backdrop {
+    background: transparent;
+    pointer-events: none;
+}
+
+.deck-stack-price {
+    font-size: 0.85rem;
+    color: var(--ink-text-muted, var(--text-muted));
+}
+
 /* ---- Settings lists (Account, Config) ---- */
 
 /* Two lists side by side on a wide window, at the page's width under its

@@ -19,6 +19,7 @@ use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCur
 use zwipe_core::domain::deck::{Board, deck_metrics};
 
 use crate::CardDetails;
+use crate::card_actions::{CardBoardMoves, CardEditButtons};
 use crate::hover_stack::{HeldEntry, HoverStack};
 
 /// Opens the row's detail, letting go of its hover preview, or shuts it
@@ -308,85 +309,12 @@ pub fn CardRow(
                                     }
                                 }
                             }
-                            if let Some(handler) = on_qty_change {
-                                button {
-                                    class: "card-action-btn",
-                                    onclick: move |evt| {
-                                        evt.stop_propagation();
-                                        handler.call(-1);
-                                    },
-                                    "-"
-                                }
-                                span { class: "card-action-count", "{qty}" }
-                                button {
-                                    class: "card-action-btn",
-                                    onclick: move |evt| {
-                                        evt.stop_propagation();
-                                        handler.call(1);
-                                    },
-                                    "+"
-                                }
-                            }
-                            if let (Some(is_mvp), Some(handler)) = (mvp, on_toggle_mvp) {
-                                button {
-                                    class: "card-action-btn",
-                                    onclick: move |evt| {
-                                        evt.stop_propagation();
-                                        handler.call(());
-                                    },
-                                    if is_mvp { "Unstar" } else { "Star" }
-                                }
-                            }
+                            CardEditButtons { qty, on_qty_change, mvp, on_toggle_mvp }
                             {extra_actions}
                     },
                     action_rows: rsx! {
                         if let Some(handler) = on_move_to {
-                            div { class: "card-action-row",
-                                match current_board.unwrap_or(Board::Deck) {
-                                    Board::Deck => rsx! {
-                                        button {
-                                            class: "card-action-btn",
-                                            style: "white-space:nowrap;",
-                                            onclick: move |evt| { evt.stop_propagation(); handler.call(Board::Maybeboard); },
-                                            "To maybeboard"
-                                        }
-                                        button {
-                                            class: "card-action-btn",
-                                            style: "white-space:nowrap;",
-                                            onclick: move |evt| { evt.stop_propagation(); handler.call(Board::Sideboard); },
-                                            "To sideboard"
-                                        }
-                                    },
-                                    Board::Maybeboard => rsx! {
-                                        button {
-                                            class: "card-action-btn",
-                                            style: "white-space:nowrap;",
-                                            onclick: move |evt| { evt.stop_propagation(); handler.call(Board::Deck); },
-                                            "To mainboard"
-                                        }
-                                        button {
-                                            class: "card-action-btn",
-                                            style: "white-space:nowrap;",
-                                            onclick: move |evt| { evt.stop_propagation(); handler.call(Board::Sideboard); },
-                                            "To sideboard"
-                                        }
-                                    },
-                                    Board::Sideboard => rsx! {
-                                        button {
-                                            class: "card-action-btn",
-                                            style: "white-space:nowrap;",
-                                            onclick: move |evt| { evt.stop_propagation(); handler.call(Board::Deck); },
-                                            "To mainboard"
-                                        }
-                                        button {
-                                            class: "card-action-btn",
-                                            style: "white-space:nowrap;",
-                                            onclick: move |evt| { evt.stop_propagation(); handler.call(Board::Maybeboard); },
-                                            "To maybeboard"
-                                        }
-                                    },
-                                }
-                            }
+                            CardBoardMoves { current_board, on_move_to: handler }
                         }
                     },
                 }
