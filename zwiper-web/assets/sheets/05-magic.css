@@ -1765,11 +1765,14 @@ html.keyboard-up .web-dock-pair {
     animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-/* The stage's frame, which holds the primer under the stage. */
+/* The stage's frame, which holds the primer under the stage. It is filled
+   with the sheet's own color, so nothing behind the sheet can show through
+   the stage while a phone paints it. */
 .cover-flow-frame {
     position: relative;
     flex: 1 1 auto;
     min-width: 0;
+    background-color: var(--bg-primary);
 }
 
 /* While the flow primes, the stage is all but invisible and a flat ghost
@@ -1788,6 +1791,14 @@ html.keyboard-up .web-dock-pair {
 
 .cover-flow-stage.priming {
     opacity: 0.01;
+}
+
+/* The stage is a layer of its own from the start, so priming's opacity
+   changes only that layer's opacity: without it, the change regroups the
+   page's layers and a phone redraws the sheet, showing the page behind it
+   through for a few frames. */
+.cover-flow-stage {
+    will-change: opacity;
 }
 
 /* Under a shown image the ghost holds still: it is covered. */
