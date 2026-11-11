@@ -2,6 +2,7 @@
 //! its timer, leaving for another page and the clipboard.
 
 pub mod browser;
+pub mod cards_view_store;
 pub mod counts_store;
 pub mod deck_sort_store;
 pub mod details_store;

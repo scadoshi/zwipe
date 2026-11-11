@@ -2737,3 +2737,83 @@ footer.site-footer .site-footer-note {
     outline: 2px solid var(--accent-primary);
     outline-offset: -2px;
 }
+
+/* ==================
+  card stacks
+ ==================== */
+
+/* One group's cards overlapping top to bottom (CardStack), each tucked under
+   the card above it so only its title strip shows, the last card in full. A
+   tucked slot pulls up by the card's height less its strip. The card is
+   680/488 of its width tall and its strip 13% of that, and a percentage
+   margin follows the stack's width, which is the card's. The slot after a
+   revealed card keeps its place, so the revealed card shows whole and the
+   cards below make room. */
+.card-stack {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.card-stack-slot {
+    position: relative;
+    transition: margin-top 160ms ease;
+}
+
+.card-stack-slot.tucked {
+    margin-top: calc(-680 / 488 * 87%);
+}
+
+.card-stack-card {
+    display: block;
+    position: relative;
+    width: 100%;
+    aspect-ratio: 488 / 680;
+    padding: 0;
+    border: none;
+    border-radius: 4.75% / 3.4%;
+    overflow: hidden;
+    background-color: var(--bg-raised);
+    box-shadow: var(--shadow-md);
+    cursor: pointer;
+}
+
+.card-stack-card img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.card-stack-name {
+    display: block;
+    padding: 0.5rem 0.6rem;
+    text-align: left;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+}
+
+.card-stack-qty {
+    position: absolute;
+    top: 0.35rem;
+    right: 0.35rem;
+    padding: 0.05rem 0.4rem;
+    border: 1px solid var(--border-secondary);
+    border-radius: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    background-color: color-mix(in srgb, var(--bg-primary) 85%, transparent);
+}
+
+.card-stack-card:focus-visible,
+.card-stack-slot.open > .card-stack-card {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .card-stack-slot {
+        transition: none;
+    }
+}

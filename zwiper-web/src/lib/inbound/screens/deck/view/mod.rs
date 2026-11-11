@@ -12,6 +12,7 @@ mod ghost;
 pub mod page;
 pub mod panels;
 pub mod sections;
+mod stacks;
 
 use components::{Button, ButtonVariant, LoadFailed, TOAST_NORMAL, TOAST_QUICK, use_back_online};
 use dioxus::prelude::*;

@@ -46,7 +46,13 @@ pub const MOBILE_STORE_VERSION: Version = Version::new(1, 18, 15);
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[];
+pub const UPCOMING: &[Release] = &[Release {
+    version: Version::new(1, 19, 0),
+    date: None,
+    entries: &[
+        "The deck page on the web can show its cards as stacks, one per group, beside the list",
+    ],
+}];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
