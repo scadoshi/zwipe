@@ -25,14 +25,19 @@ Each key does exactly what its dock button or swipe does today, through the same
 ## Everywhere
 
 - Esc closes the open sheet or drawer.
-- `?` opens a panel listing the shortcuts for the current screen (only the global ones where a screen has none).
+- `?` opens the page's existing hint, the same one its `?` button opens.
+- `H` (Shift+H) opens the shortcuts sheet: the four directions with `hjkl`, `p`, `d`, `f`, `r`, `s`, Esc, `?` and `H`. Lowercase `h` stays Skip; with Caps Lock on, `h` opens the sheet instead (accepted).
+
+## Showing the shortcuts
+
+No key labels on buttons and no settings toggle: they would clutter the screens for people who never use a keyboard. Instead, the swipe screens get one keyboard icon in the dock, on computers only (`(hover: hover) and (pointer: fine)`), which opens the same shortcuts sheet as `H`.
 
 ## Rules
 
 - Shortcuts are off while focus is in a text field, select or contenteditable, so typing never swipes.
 - Modifier combos (Ctrl, Cmd, Alt) pass through to the browser.
 - While a sheet is open, only its own keys and Esc work; the swipe keys don't reach the screen behind it.
-- Keys show in the existing HintKey style in the `?` panel; the panel is the existing sheet, nothing new.
+- Keys show in the existing HintKey style in the shortcuts sheet; the sheet is the existing sheet component, nothing new.
 
 ## Not in v1
 
