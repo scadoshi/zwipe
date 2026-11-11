@@ -254,6 +254,11 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         .and_then(|r| r.as_ref().ok())
         .map(|p| format!("{} (clone)", p.name))
         .unwrap_or_default();
+    let deck_name = loaded_profile
+        .as_ref()
+        .and_then(|r| r.as_ref().ok())
+        .map(|p| p.name.to_string())
+        .unwrap_or_default();
     let delete_body = delete_body(
         loaded_profile
             .as_ref()
@@ -333,7 +338,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                 }
             }
         }
-        DeckDialogsHost { deck_id, dialogs, share_token, clone_name, delete_body }
+        DeckDialogsHost { deck_id, dialogs, share_token, deck_name, clone_name, delete_body }
         FirstDeckHintDialog { open: hint_open, wide: wide() }
         CardOverlaysHost { overlays, on_printing_save: move |_: Card| {}, read_only: true }
         OtagExamplesHost { examples }

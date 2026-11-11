@@ -691,6 +691,8 @@ enum HintOffer {
 /// Every request takes a fresh [`Ticket`] from one [`Generation`], so a ticket names exactly one request. A fetch's reply lands only while its ticket is the one still out for that fetch; a request that changes the deck lands only while no [`Action::Load`] has come since.
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct State {
+    /// The signed-in user's username, the first segment of the deck's share link.
+    owner: String,
     deck_id: Option<Uuid>,
     profile: Fetch<DeckProfile>,
     deck: Fetch<Loaded>,
@@ -709,6 +711,15 @@ impl State {
     #[must_use]
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// A state for decks `owner`, the signed-in user's username, shares: their share links start with it.
+    #[must_use]
+    pub fn for_owner(owner: String) -> Self {
+        Self {
+            owner,
+            ..Self::default()
+        }
     }
 
     /// Applies `action` and returns what the client must do, in order.
@@ -759,7 +770,7 @@ impl State {
                 .map(Effect::OpenUrl)
                 .into_iter()
                 .collect(),
-            Action::CopyLink => self.share_token.map(copy_link).into_iter().collect(),
+            Action::CopyLink => self.share_url().map(copy_link).into_iter().collect(),
             Action::SetQuantity { card, quantity } => {
                 self.mutate(Mutation::SetQuantity { card, quantity })
             }
@@ -826,7 +837,7 @@ impl State {
             ],
             (Mutation::Share, Landed::Shared(token)) => {
                 self.share_token = Some(token);
-                vec![copy_link(token)]
+                self.share_url().map(copy_link).into_iter().collect()
             }
             (Mutation::Unshare, Landed::Unshared) => {
                 self.share_token = None;
@@ -1210,7 +1221,12 @@ impl State {
     /// a public link.
     #[must_use]
     pub fn share_url(&self) -> Option<String> {
-        self.share_token.map(view::share_link)
+        let name = self
+            .profile()
+            .map(|p| p.name.to_string())
+            .unwrap_or_default();
+        self.share_token
+            .map(|token| view::share_link(&self.owner, &name, token))
     }
 
     /// The Share dialog's line: [`SHARE_SHARED`] while the deck has a link, else [`SHARE_UNSHARED`].
@@ -1238,10 +1254,10 @@ impl State {
     }
 }
 
-/// Copies the link for `token` and says so.
-fn copy_link(token: Uuid) -> Effect {
+/// Copies the share link `url` and says so.
+fn copy_link(url: String) -> Effect {
     Effect::Copy {
-        text: view::share_link(token),
+        text: url,
         done: Done::LinkCopied.toast(),
     }
 }

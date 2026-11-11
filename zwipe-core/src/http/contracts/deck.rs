@@ -474,8 +474,10 @@ pub struct HttpDeckShareToken {
 
 /// Public shared-deck response body (GET `/api/share/deck/{token}`).
 ///
-/// Deliberately carries **no user identity**: no username, user id, or
-/// email. The page shows a deck, not an account.
+/// Of the owner's identity it carries only the username, as [`Self::owner`]:
+/// Scotty made that public on shared decks on 2026-11-11, in the link and
+/// as "by <username>". No user id, email or anything else about the
+/// account.
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct HttpSharedDeck {
     /// Deck display name.
@@ -529,6 +531,11 @@ pub struct HttpSharedDeck {
     /// setting, not an identity. `#[serde(default)]` for payloads predating it.
     #[serde(default)]
     pub theme: Option<ThemeConfig>,
+    /// The owner's username, for the link's first segment and the page's
+    /// "by <username>". `#[serde(default)]`: a server that predates it sends
+    /// none, and the page then shows no byline and keeps its link.
+    #[serde(default)]
+    pub owner: Option<String>,
 }
 
 impl HttpSharedDeck {

@@ -3,7 +3,7 @@
 use uuid::Uuid;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::{DeckProfile, Format};
-use zwipe_core::domain::site::WEB_BASE;
+use zwipe_core::domain::share_link;
 
 use crate::deck::command_zone::Slot;
 use crate::toast::{Toast, ToastKind};
@@ -34,10 +34,10 @@ pub fn metrics_possible(profile: &DeckProfile) -> bool {
         || profile.signature_spell_id.is_some()
 }
 
-/// The public link to a shared deck: `{WEB_BASE}/deck/{token}`. Debug builds point at the local site, release builds at zwipe.net.
+/// The public link to the deck `owner` shares as `deck_name` under `token`: `{WEB_BASE}/<owner>/deck/<slug>/<token>`, from [`share_link::shared_deck_url`]. Debug builds point at the local site, release builds at zwipe.net.
 #[must_use]
-pub fn share_link(token: Uuid) -> String {
-    format!("{WEB_BASE}/deck/{token}")
+pub fn share_link(owner: &str, deck_name: &str, token: Uuid) -> String {
+    share_link::shared_deck_url(owner, deck_name, token)
 }
 
 /// The `Total price` row's value: the running total in `currency`, then ` / ` and the price target in its own stored currency when the deck has one.
@@ -116,6 +116,7 @@ impl Done {
 #[cfg(test)]
 mod tests {
     use zwipe_core::domain::deck::DeckOtherTag;
+    use zwipe_core::domain::site::WEB_BASE;
 
     use super::*;
     use crate::test_support::deck_profile;
@@ -192,11 +193,11 @@ mod tests {
     }
 
     #[test]
-    fn the_share_link_ends_in_the_token() {
+    fn the_share_link_names_the_owner_and_the_deck_then_the_token() {
         let token = Uuid::nil();
         assert_eq!(
-            share_link(token),
-            format!("{WEB_BASE}/deck/00000000-0000-0000-0000-000000000000")
+            share_link("scotty", "Elves Go Wide", token),
+            format!("{WEB_BASE}/scotty/deck/elves-go-wide/00000000-0000-0000-0000-000000000000")
         );
     }
 

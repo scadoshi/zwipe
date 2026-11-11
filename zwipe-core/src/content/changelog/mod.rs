@@ -61,6 +61,9 @@ pub const RELEASES: &[Release] = &[
             "Tapping a link or button on zwipe.net no longer flashes a blue highlight",
             "Links on zwipe.net and app.zwipe.net are the accent color with no underline, brightening slightly under a mouse",
             "Keyboard shortcuts on the web, with the arrows or hjkl to swipe and Shift+H to list them",
+            "A shared deck's link names its owner and the deck",
+            "A shared deck shows who shared it under its name",
+            "The deck page on the web deals its featured cards in, as a shared deck does",
         ],
     },
     Release {

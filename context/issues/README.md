@@ -66,6 +66,7 @@ Who checked, on which live build, what they saw.
 | [338](338-link-hover-inconsistent.md) | Text links hover differently across the three sites | fixing | thinker | - |
 | [342](342-no-link-underlines.md) | No underlines on links | fixing | thinker | - |
 | [343](343-web-keyboard-shortcuts.md) | Keyboard shortcuts on the web | fixing | thinker | - |
+| [346](346-github-style-share-links.md) | GitHub-style shared deck links, "by <username>", the deal on the web deck page | fixing | thinker | - |
 
 ## Waiting for live verification
 

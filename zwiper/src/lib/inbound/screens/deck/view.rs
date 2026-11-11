@@ -425,13 +425,20 @@ fn route(destination: Destination) -> Router {
 #[component]
 pub fn ViewDeck(deck_id: Uuid) -> Element {
     let client: Signal<ZwipeClient> = use_context();
+    let session: Signal<Option<Session>> = use_context();
+    // The share link starts with the signed-in user's username.
+    let owner = session
+        .peek()
+        .as_ref()
+        .map(|s| s.user.username.to_string())
+        .unwrap_or_default();
     let driver = Driver {
-        model: use_signal(State::new),
+        model: use_signal(|| State::for_owner(owner)),
         navigator: use_navigator(),
         toast: use_toast(),
         authed: use_authed(Screen::Deck(DeckScreen::View)),
         usage_buffer: use_context(),
-        session: use_context(),
+        session,
         client,
         hint_open: use_signal(|| false),
         dialogs: use_deck_dialogs(),
