@@ -83,8 +83,9 @@ pub(crate) fn stacks_view(
 
 /// The open card's details drawer, from `rows` (every listed row), with
 /// the actions its kind allows: Printings in the panel's foot, then the
-/// quantity stepper and the star, then the board moves. Nothing when no
-/// card is open or the open one has left the list.
+/// quantity stepper and the star, then the board moves. It shows the
+/// [`Reveal::drawn`] card and is mounted, closed, on the first row before
+/// any click; nothing when the list is empty.
 pub(crate) fn stack_details(
     ed: &Editor,
     rows: &[RowInfo],
@@ -92,12 +93,13 @@ pub(crate) fn stack_details(
     reveal: Signal<Reveal>,
     details_open: Signal<bool>,
 ) -> Element {
-    let Some(open_id) = reveal().open() else {
-        return rsx! {};
-    };
+    // The sheet stays mounted on a card so it slides in and out on its
+    // `show` class: the drawn card, else the first row before any click.
+    let drawn = reveal().drawn();
     let Some(row) = rows
         .iter()
-        .find(|r| r.card.scryfall_data.id == open_id)
+        .find(|r| Some(r.card.scryfall_data.id) == drawn)
+        .or_else(|| rows.first())
         .cloned()
     else {
         return rsx! {};
@@ -135,29 +137,28 @@ pub(crate) fn stack_details(
     let editable = matches!(kind, RowKind::Main { .. } | RowKind::Board(_));
     let footer = editable.then(|| {
         rsx! {
-            div { class: "card-row-actions deck-stack-actions",
-                div { class: "card-action-row",
-                    CardEditButtons {
-                        qty,
-                        on_qty_change: move |d| change_quantity.call((card_id, d, true)),
-                        mvp,
-                        on_toggle_mvp: move |()| {
-                            if let Some(is_mvp) = mvp {
-                                toggle_mvp.call((card_id, is_mvp));
-                            }
-                        },
-                    }
+            // Plain action rows, as the panel's own foot lays out Printings, so
+            // every row starts at the same left edge.
+            div { class: "card-action-row",
+                CardEditButtons {
+                    qty,
+                    on_qty_change: move |d| change_quantity.call((card_id, d, true)),
+                    mvp,
+                    on_toggle_mvp: move |()| {
+                        if let Some(is_mvp) = mvp {
+                            toggle_mvp.call((card_id, is_mvp));
+                        }
+                    },
                 }
-                CardBoardMoves {
-                    current_board: board,
-                    on_move_to: move |to: Board| move_to_board.call((card_id, to, true)),
-                }
+            }
+            CardBoardMoves {
+                current_board: board,
+                on_move_to: move |to: Board| move_to_board.call((card_id, to, true)),
             }
         }
     });
     rsx! {
         CardDetailsSheet {
-            key: "{card_id}",
             open: details_open,
             card,
             on_printings,
@@ -166,9 +167,14 @@ pub(crate) fn stack_details(
     }
 }
 
+/// Drops focus from the stack card the drawer opened from, so its focus
+/// outline goes with the drawer.
+const BLUR_STACK_CARD_JS: &str = "if (document.activeElement?.classList.contains('card-stack-card')) document.activeElement.blur();";
+
 /// Keeps the drawer and the reveal state agreeing: a drawer closed by its
-/// ×, Escape, the backdrop or the back gesture closes the open card, and an
-/// open card that left the list (its last copy removed) closes the drawer.
+/// ×, Escape, the backdrop or the back gesture closes the open card and
+/// clears its outline, and an open card that left the list (its last copy
+/// removed) closes the drawer.
 pub(crate) fn use_stack_details_sync(
     mut reveal: Signal<Reveal>,
     mut details_open: Signal<bool>,
@@ -179,6 +185,7 @@ pub(crate) fn use_stack_details_sync(
         let card = reveal.peek().open();
         if !open && card.is_some() {
             reveal.write().apply(Gesture::Close);
+            document::eval(BLUR_STACK_CARD_JS);
         }
         if open && card.is_some_and(|id| !listed().contains(&id)) {
             details_open.set(false);

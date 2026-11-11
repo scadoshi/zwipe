@@ -879,17 +879,63 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 .deck-stacks {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr));
-    gap: 1.25rem;
+    gap: 0.6rem 1.25rem;
     align-items: start;
 }
 
+/* Each stack takes two of the grid's rows, its header chip and its cards,
+   through a subgrid, so the headers of one row of stacks share the tallest
+   one's height and every stack's cards start level, whether or not its price
+   wrapped. The group wrapper steps aside (display: contents) so the chip and
+   the cards are the subgrid's own items. */
+.deck-stack {
+    display: grid;
+    grid-row: span 2;
+    grid-template-rows: subgrid;
+    row-gap: 0;
+    margin-bottom: 0.65rem;
+}
+
+.deck-stack > .card-group.deck-group {
+    display: contents;
+}
+
+/* The header is exactly the stack's width, the cards' width under it. It
+   wears the deck page's fold heads below it (.deck-fold's box,
+   .deck-fold-head's ink and type) and flows as text, so the name wraps at
+   its spaces with the arrow kept on the first word and the price tag
+   dropping to the next line when the column is too narrow for it. */
 .deck-stack > .deck-group > .card-group-header.group-collapsible {
-    max-width: 100%;
-    margin-top: 0;
-    flex-wrap: wrap;
-    gap: 0.25rem;
-    padding: 0.3rem 0.4rem;
+    display: block;
+    align-self: stretch;
+    box-sizing: border-box;
+    width: 100%;
+    margin: 0 0 0.6rem;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    background-color: var(--bg-primary);
+    box-shadow: var(--shadow-sm);
+    color: var(--ink-accent-tertiary, var(--accent-tertiary));
+    font-size: 1rem;
+    letter-spacing: 0.1em;
+    line-height: 1.6;
+    text-align: left;
+}
+
+.deck-stack > .deck-group > .card-group-header .card-row-arrow {
+    display: inline-block;
+    margin-right: 0.4rem;
+    color: inherit;
+}
+
+/* The price tag keeps the decks list chip's type. */
+.deck-stack > .deck-group > .card-group-header > .stat-chip {
+    margin-left: 0.4rem;
+    font-size: 0.75rem;
     letter-spacing: 0.02em;
+    line-height: normal;
+    vertical-align: 0.1em;
 }
 
 /* A stack is one column of cards, under the decks list's rule that pairs a

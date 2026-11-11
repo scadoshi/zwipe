@@ -2746,22 +2746,40 @@ footer.site-footer .site-footer-note {
    the card above it so only its title strip shows, the last card in full. A
    tucked slot pulls up by the card's height less its strip. The card is
    680/488 of its width tall and its strip 13% of that, and a percentage
-   margin follows the stack's width, which is the card's. The slot after a
-   revealed card keeps its place, so the revealed card shows whole and the
-   cards below make room. */
+   margin follows the stack's width, which is the card's. That tuck is the
+   layout and never changes. A reveal moves the cards after the revealed one
+   down by the same 87% with a transform (a percentage of the slot's own
+   height, the card's), which runs on the compositor and leaves the layout
+   alone, so the stack slides rather than reflowing. */
 .card-stack {
+    position: relative;
     display: flex;
     flex-direction: column;
     width: 100%;
 }
 
+/* The stack under the pointer sits over its neighbors, so its moved cards
+   pass over whatever is below the stack, and its slots are promoted for the
+   move only while the pointer is on it. */
+.card-stack:hover {
+    z-index: 2;
+}
+
+.card-stack:hover > .card-stack-slot {
+    will-change: transform;
+}
+
 .card-stack-slot {
     position: relative;
-    transition: margin-top 160ms ease;
+    transition: transform 180ms ease-out;
 }
 
 .card-stack-slot.tucked {
     margin-top: calc(-680 / 488 * 87%);
+}
+
+.card-stack-slot.shifted {
+    transform: translateY(87%);
 }
 
 .card-stack-card {
