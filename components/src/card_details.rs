@@ -18,6 +18,7 @@ use dioxus::prelude::*;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ImageSize;
 
+use crate::meld::use_meld;
 use crate::{CardRoleChips, KeywordChips, OracleText, Panel};
 
 /// One card face's rules text, extracted for display. Single-faced cards yield
@@ -332,7 +333,14 @@ pub fn CardDetailsPanel(
     headless: bool,
 ) -> Element {
     let sd = &card.scryfall_data;
-    let name = sd.name.clone();
+    // A meld half can show its melded card's name, type, rules and stats in
+    // its place; the set, prices and tags stay the half's own.
+    let meld = use_meld(sd);
+    let melded = meld
+        .shown()
+        .map(|result| Card::new(card.card_profile.clone(), result.clone()));
+    let shown_card = melded.as_ref().unwrap_or(&card);
+    let name = shown_card.scryfall_data.name.clone();
     let rarity = sd.rarity.to_long_name();
     let set_name = sd.set_name.clone();
     let prices = if show_prices {
@@ -342,7 +350,11 @@ pub fn CardDetailsPanel(
     };
     let has_image = sd.primary_image_url(ImageSize::Large).is_some();
 
-    let faces = build_rules(&card);
+    let faces = build_rules(shown_card);
+    let meld_line = melded.as_ref().map(|result| {
+        let partner = meld.partner().map(|p| format!("Melds with {p}"));
+        (result.scryfall_data.name.clone(), partner)
+    });
     let face_count = faces.as_ref().map_or(0, Vec::len);
     let internal_face = use_signal(|| 0usize);
     let face_idx = face.unwrap_or(internal_face);
@@ -355,7 +367,9 @@ pub fn CardDetailsPanel(
     let stats = current_face.as_ref().and_then(|f| f.stats.clone());
     let show_flip_btn = face_count > 1 && show_flip;
     let show_image = has_image && on_image.is_some();
-    let has_foot = footer.is_some() || show_flip_btn || show_image || on_printings.is_some();
+    let show_meld = meld.available();
+    let has_foot =
+        footer.is_some() || show_flip_btn || show_image || show_meld || on_printings.is_some();
     let class = match class {
         Some(extra) => format!("card-details-panel {extra}"),
         None => "card-details-panel".to_string(),
@@ -371,10 +385,24 @@ pub fn CardDetailsPanel(
             actions: has_foot.then(|| rsx! {
                 div { class: "card-details-foot",
                     {footer}
-                    if show_flip_btn || show_image || on_printings.is_some() {
+                    if show_flip_btn || show_image || show_meld || on_printings.is_some() {
                         div { class: "card-action-row",
                             if show_flip_btn {
                                 FlipButton { face_idx, current: cur, face_count, on_face_change }
+                            }
+                            if show_meld {
+                                button {
+                                    class: if meld.on() { "card-action-btn selected" } else { "card-action-btn" },
+                                    "aria-pressed": "{meld.on()}",
+                                    onclick: {
+                                        let meld = meld.clone();
+                                        move |evt: MouseEvent| {
+                                            evt.stop_propagation();
+                                            meld.toggle();
+                                        }
+                                    },
+                                    "Meld"
+                                }
                             }
                             if let (true, Some(handler)) = (show_image, on_image) {
                                 FootButton { label: "Image", on_click: handler }
@@ -389,6 +417,16 @@ pub fn CardDetailsPanel(
             KindChips {
                 type_line: current_face.as_ref().map(|f| f.type_line.clone()).unwrap_or_default(),
                 rarity,
+            }
+            if let Some((result_name, partner)) = meld_line {
+                p { class: "card-details-meld",
+                    if headless {
+                        span { class: "card-details-meld-name", "{result_name}" }
+                    }
+                    if let Some(partner) = partner {
+                        span { "{partner}" }
+                    }
+                }
             }
             if let Some(face) = current_face.filter(|f| !f.oracle.is_empty()) {
                 OracleText { text: face.oracle, class: "card-detail-oracle card-details-oracle".to_string() }

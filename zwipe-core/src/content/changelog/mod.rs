@@ -60,6 +60,7 @@ pub const RELEASES: &[Release] = &[
             "A failure that repeats shows one error toast instead of a stack, and on the web Printings keeps Couldn't load printings and Retry clear of the toast",
             "Tapping a link or button on zwipe.net no longer flashes a blue highlight",
             "Links on zwipe.net and app.zwipe.net are the accent color with no underline, brightening slightly under a mouse",
+            "Meld, a button on a meld card and in its details that shows the card it melds into",
         ],
     },
     Release {
