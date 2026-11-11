@@ -172,7 +172,7 @@ pub fn DeckPage(
     }
 }
 
-/// The head: the `name`, then `byline` as "by <byline>" when given, over the
+/// The head: the `name`, then `byline` as `by <byline>` when given, over the
 /// facts as chips, with the host's `actions` at the name's right end, then
 /// the featured cards (`children`,
 /// [`FeaturedCard`]s) in a centered row under them. Without a name or

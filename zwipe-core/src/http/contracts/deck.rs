@@ -474,10 +474,9 @@ pub struct HttpDeckShareToken {
 
 /// Public shared-deck response body (GET `/api/share/deck/{token}`).
 ///
-/// Of the owner's identity it carries only the username, as [`Self::owner`]:
-/// Scotty made that public on shared decks on 2026-11-11, in the link and
-/// as "by <username>". No user id, email or anything else about the
-/// account.
+/// Of the owner's identity it carries only the username, as [`Self::owner`],
+/// public on a shared deck in its link and as `by <username>`. No user id,
+/// email or anything else about the account.
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct HttpSharedDeck {
     /// Deck display name.
@@ -532,7 +531,7 @@ pub struct HttpSharedDeck {
     #[serde(default)]
     pub theme: Option<ThemeConfig>,
     /// The owner's username, for the link's first segment and the page's
-    /// "by <username>". `#[serde(default)]`: a server that predates it sends
+    /// `by <username>`. `#[serde(default)]`: a server that predates it sends
     /// none, and the page then shows no byline and keeps its link.
     #[serde(default)]
     pub owner: Option<String>,
