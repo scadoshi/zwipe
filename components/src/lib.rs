@@ -63,6 +63,7 @@ mod hover_stack;
 mod identity_pips;
 mod keyword_chips;
 mod load_failed;
+mod meld;
 mod menu_section;
 mod oracle_text;
 mod picker_search;
@@ -105,6 +106,7 @@ pub use hover_stack::{HoverStack, HoverStackHost, use_hover_stack};
 pub use identity_pips::IdentityPips;
 pub use keyword_chips::{KeywordChips, KeywordReminders};
 pub use load_failed::LoadFailed;
+pub use meld::{MeldFetch, MeldSource, MeldToggle, use_meld};
 pub use menu_section::MenuSection;
 pub use oracle_text::OracleText;
 pub use orangui::{

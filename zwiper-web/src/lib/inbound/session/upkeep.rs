@@ -46,6 +46,7 @@ pub fn use_session_upkeep() -> UpgradeRequired {
     let built: ZwipeClient = use_context();
     let client = use_root_signal(|| built);
     use_context_provider(|| client);
+    crate::inbound::cards::meld::use_meld_source(client);
 
     let theme: Signal<ThemeConfig> = use_signal(|| {
         let stored = ThemeStore::browser().load();

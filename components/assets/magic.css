@@ -1395,6 +1395,27 @@ i.ms.ms-cost.ms-gp {
     box-shadow: var(--shadow-sm);
 }
 
+/* The meld toggle sits where Flip does (a meld half never flips) and wears
+   the accent while the melded card shows. */
+.card-flip-button.card-meld-button.selected {
+    opacity: 1;
+    border-color: var(--accent-primary);
+    color: var(--ink-accent-primary, var(--accent-primary));
+}
+
+/* A details action that toggles, such as Meld, wears the accent while on. */
+.card-action-btn.selected {
+    border-color: var(--accent-primary);
+    color: var(--ink-accent-primary, var(--accent-primary));
+}
+
+/* Card details showing a melded card: which card it melds with. */
+.card-details-meld {
+    margin: 0 0 0.75rem;
+    font-size: 0.85rem;
+    color: var(--ink-text-muted, var(--text-muted));
+}
+
 .card-flip-button:active {
     transform: scale(0.95);
 }

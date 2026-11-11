@@ -32,6 +32,8 @@ pub mod interactions;
 pub mod lifecycle;
 /// Logout confirmation dialog.
 pub mod logout_dialog;
+/// The melded cards behind meld halves, for the shared meld toggle.
+pub mod meld_source;
 /// Navigation plumbing (OS back-intent bridge).
 pub mod navigation;
 /// Runs a closure on each counter bump after mount.

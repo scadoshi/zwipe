@@ -30,6 +30,19 @@ pub struct RelatedCard {
     pub uri: String,
 }
 
+/// What a meld half melds into, read from its `all_parts`: the melded
+/// card, which is a card of its own with its own image and text, and the
+/// other half it melds with.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Meld {
+    /// Scryfall id of the melded card.
+    pub result_id: Uuid,
+    /// Name of the melded card.
+    pub result_name: String,
+    /// Name of the other half, when `all_parts` names it.
+    pub partner_name: Option<String>,
+}
+
 /// Collection of related cards (wrapper around `Vec<RelatedCard>`).
 ///
 /// Used in [`ScryfallData`](super::ScryfallData) to link multi-part cards,

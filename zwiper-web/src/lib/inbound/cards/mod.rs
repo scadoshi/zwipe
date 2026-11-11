@@ -7,6 +7,7 @@ pub mod card_info;
 pub mod card_row;
 pub mod charts;
 pub mod image_preview;
+pub mod meld;
 pub mod otag;
 pub mod printing_sheet;
 pub mod swipe_confirm;
