@@ -15,11 +15,27 @@ use crate::inbound::chrome::shortcuts;
 /// dialog or sheet has focus. The browser's default for the key is kept
 /// unless `on_key` is registered for `/`, which never types into the page.
 pub fn use_page_keys(on_key: Callback<String>) {
+    use_keys_under_guard(shortcuts::guard_js(), on_key);
+}
+
+/// [`use_page_keys`], except that while the open sheet is the one with `sheet_class`, `keys`
+/// still reach `on_key` ([`shortcuts::guard_js_through`]). Any other sheet or a dialog keeps
+/// every key.
+pub fn use_page_keys_through(
+    sheet_class: &'static str,
+    keys: &'static [&'static str],
+    on_key: Callback<String>,
+) {
+    use_keys_under_guard(shortcuts::guard_js_through(sheet_class, keys), on_key);
+}
+
+/// Registers `on_key` for the keys `guard` (a browser expression) lets reach the screen.
+fn use_keys_under_guard(guard: String, on_key: Callback<String>) {
     let id = use_hook(Uuid::new_v4);
     use_hook(move || {
         let script = PAGE_KEYS_JS
             .replace("__ID__", &id.to_string())
-            .replace("__GUARD__", &shortcuts::guard_js());
+            .replace("__GUARD__", &guard);
         spawn(async move {
             let mut keys = document::eval(&script);
             while let Ok(key) = keys.recv::<String>().await {

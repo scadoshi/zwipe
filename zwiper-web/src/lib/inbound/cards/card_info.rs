@@ -28,8 +28,9 @@ pub fn CardInfoDisplay(card: Card) -> Element {
 /// body's end, under the title bar. It closes from its title bar's ×, a backdrop tap,
 /// Escape or the back gesture. The panel's foot has `Flip` for a
 /// multi-faced card and a `Printings` pill when the host passes
-/// `on_printings`, as the wide pane does. Mount it at the screen root
-/// beside the printing sheet.
+/// `on_printings`, as the wide pane does. `class` names the drawer, and a
+/// host that adds its own class keeps `card-details-drawer` in it. Mount it
+/// at the screen root beside the printing sheet.
 #[component]
 pub fn CardDetailsSheet(
     open: Signal<bool>,
@@ -37,6 +38,7 @@ pub fn CardDetailsSheet(
     #[props(default)] on_printings: Option<EventHandler<()>>,
     #[props(default)] footer: Option<Element>,
     #[props(default)] body_end: Option<Element>,
+    #[props(default = "card-details-drawer")] class: &'static str,
 ) -> Element {
     let describe_tag = use_describe_tag();
     use_overlay_back(open);
@@ -57,7 +59,7 @@ pub fn CardDetailsSheet(
                 open.set(false);
             },
             every_width: true,
-            class: "card-details-drawer",
+            class,
             CardDetailsPanel {
                 card,
                 headless: true,

@@ -5,6 +5,7 @@
 pub mod add;
 pub(crate) mod editor;
 mod featured;
+pub(crate) mod hover_keys;
 pub(crate) mod quick_add;
 pub mod remove;
 pub mod view;

@@ -32,6 +32,7 @@ use zwipe_ui::stores::filters::FilterScope;
 use zwipe_ui::stores::undo::{UndoAction, create_board_field};
 use zwipe_ui::timing::QUANTITY_FLUSH;
 
+use super::hover_keys::{self, HoverAction};
 use super::quick_add::QUICK_ADD_ID;
 use super::signal_toast;
 use crate::inbound::card_stores::CardStores;
@@ -39,10 +40,22 @@ use crate::inbound::cards::card_row::{CardRow, ShowRowArt};
 use crate::inbound::cards::swipe_stack::{Swipe, use_swipe_key_handler};
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, open_and_record_hint};
-use crate::inbound::chrome::page_keys::{focus_by_id, use_page_keys, use_undo_key};
+use crate::inbound::chrome::page_keys::{focus_by_id, use_page_keys_through, use_undo_key};
+use crate::inbound::chrome::shortcuts::{self, ShortcutsScreen};
+use crate::inbound::chrome::shortcuts_sheet::use_offer_shortcuts;
 use crate::inbound::screens::deck::view::cards::zone as zone_of;
 use crate::inbound::telemetry;
 use crate::outbound::timer;
+
+/// Sends the id of the card the deck cards screen's keys act on: the deepest card row or stack
+/// card under the cursor, else the card open in the Stacks view's details drawer, else the list
+/// row whose details are open, else an empty string.
+const KEY_CARD_JS: &str = "const under = document.querySelectorAll('[data-row]:hover'); const drawer = document.querySelector('.bottom-sheet.show.__DRAWER__') && document.querySelector('.card-stack-slot.open[data-row]'); const row = document.querySelector('.web-deck-row.selected[data-row]'); const card = under.length ? under[under.length - 1] : drawer || row; dioxus.send(card ? card.getAttribute('data-row') : '');";
+
+/// Clicks the details button labeled `__LABEL__` of card `__ID__`: in the Stacks view's drawer
+/// while that card is open there, else in its list row. Nothing where the card shows no such
+/// button.
+const PRESS_JS: &str = "const open = document.querySelector('.bottom-sheet.show.__DRAWER__') && document.querySelector('.card-stack-slot.open[data-row=\"__ID__\"]'); const host = open ? document.querySelector('.bottom-sheet.show.__DRAWER__') : document.querySelector('.web-deck-row[data-row=\"__ID__\"]'); const button = host && [...host.querySelectorAll('button.card-action-btn')].find((b) => b.textContent.trim() === '__LABEL__'); if (button) button.click();";
 
 /// What a row is, which decides its actions.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -298,7 +311,7 @@ pub(crate) fn use_deck_editor(deck_id: Uuid, on_failure: LoadFailure) -> Editor 
     let mut bursts = use_signal(Bursts::default);
     let mut removed_rows: Signal<HashMap<Uuid, DeckEntry>> = use_signal(HashMap::new);
     let mut printing: Signal<Option<(Card, Option<Slot>)>> = use_signal(|| None);
-    let printing_open = use_signal(|| false);
+    let mut printing_open = use_signal(|| false);
     let filter_open = use_signal(|| false);
     let hint_open = use_signal(|| false);
     let mut hint_fired = use_signal(|| false);
@@ -858,42 +871,97 @@ pub(crate) fn use_deck_editor(deck_id: Uuid, on_failure: LoadFailure) -> Editor 
             }
         }),
     );
-    use_page_keys(Callback::new(move |key: String| {
-        let row = selected.peek().and_then(|id| {
-            listing
-                .peek()
-                .rows
-                .iter()
-                .find(|r| r.card.scryfall_data.id == id)
-                .cloned()
-        });
-        match key.as_str() {
-            "/" => focus_by_id(QUICK_ADD_ID),
-            "+" | "=" | "-" => {
-                let Some(row) = row else {
-                    return;
-                };
-                if matches!(row.kind, RowKind::Main { .. } | RowKind::Board(_)) {
-                    let delta = if key == "-" { -1 } else { 1 };
-                    change_quantity.call((row.card.scryfall_data.id, delta, true));
-                }
+    // Shift+H opens the shortcuts sheet with this screen's keys.
+    use_offer_shortcuts(ShortcutsScreen::DeckCards);
+    // The hover keys also reach the screen through the Stacks view's details
+    // drawer; every other key waits for it to close.
+    use_page_keys_through(
+        shortcuts::STACK_DETAILS_CLASS,
+        &hover_keys::HOVER_KEYS,
+        Callback::new(move |key: String| {
+            // `p`, `i`, `v`, `m`, `s`, Shift+S, `-` and `+` act on the card
+            // under the cursor, else the open one, as its own buttons do; with
+            // neither they do nothing.
+            if let Some(hover) = hover_keys::hover_key(&key) {
+                spawn(async move {
+                    let mut found = document::eval(
+                        &KEY_CARD_JS.replace("__DRAWER__", shortcuts::STACK_DETAILS_CLASS),
+                    );
+                    let Ok(found) = found.recv::<String>().await else {
+                        return;
+                    };
+                    let Ok(id) = Uuid::try_parse(&found) else {
+                        return;
+                    };
+                    let row = listing
+                        .peek()
+                        .rows
+                        .iter()
+                        .find(|r| r.card.scryfall_data.id == id)
+                        .cloned();
+                    let Some(row) = row else {
+                        return;
+                    };
+                    let board = match row.kind {
+                        RowKind::Board(board) => board,
+                        RowKind::Main { .. } | RowKind::Zone(_) | RowKind::Token => {
+                            meta.peek().get(&id).map_or(Board::Deck, |m| m.board)
+                        }
+                    };
+                    match hover_keys::hover_action(hover, &row, board) {
+                        Some(HoverAction::Printings(card, slot)) => {
+                            printing.set(Some((*card, slot)));
+                            printing_open.set(true);
+                        }
+                        Some(HoverAction::Move(card_id, target)) => {
+                            move_to_board.call((card_id, target, true));
+                        }
+                        Some(HoverAction::Star(card_id, starred)) => {
+                            toggle_mvp.call((card_id, starred));
+                        }
+                        Some(HoverAction::Quantity(card_id, step)) => {
+                            change_quantity.call((card_id, step, true));
+                        }
+                        Some(HoverAction::Press(card_id, label)) => {
+                            document::eval(
+                                &PRESS_JS
+                                    .replace("__DRAWER__", shortcuts::STACK_DETAILS_CLASS)
+                                    .replace("__ID__", &card_id.to_string())
+                                    .replace("__LABEL__", label),
+                            );
+                        }
+                        None => {}
+                    }
+                });
+                return;
             }
-            "f" | "F" => {
-                if let Some(row) = row {
-                    let count = components::card_face_count(&row.card);
-                    if count > 1 {
-                        let next = face
-                            .peek()
-                            .saturating_add(1)
-                            .checked_rem(count)
-                            .unwrap_or(0);
-                        face.set(next);
+            let row = selected.peek().and_then(|id| {
+                listing
+                    .peek()
+                    .rows
+                    .iter()
+                    .find(|r| r.card.scryfall_data.id == id)
+                    .cloned()
+            });
+            match key.as_str() {
+                "/" => focus_by_id(QUICK_ADD_ID),
+                "f" | "F" => {
+                    if let Some(row) = row {
+                        let count = components::card_face_count(&row.card);
+                        if count > 1 {
+                            let next = face
+                                .peek()
+                                .saturating_add(1)
+                                .checked_rem(count)
+                                .unwrap_or(0);
+                            face.set(next);
+                        }
                     }
                 }
+                _ => {}
             }
-            _ => {}
-        }
-    }));
+        }),
+    );
     use_undo_key(Callback::new(move |()| apply_undo.call(())));
 
     Editor {

@@ -54,7 +54,9 @@ pub fn CardStack(
                     }
                     let label = if qty > 1 { format!("{name}, {qty} copies") } else { name.clone() };
                     rsx! {
-                        div { key: "{id}", role: "listitem", class: "{class}",
+                        // `data-row` names the card, as a list row does, so a
+                        // host can find the card under the cursor.
+                        div { key: "{id}", role: "listitem", class: "{class}", "data-row": "{id}",
                             button {
                                 r#type: "button",
                                 class: "card-stack-card",
