@@ -39,14 +39,12 @@
     animation: none;
 }
 
-/* The stack fades in as one piece once the pile shows, and its images skip
-   their own fade, so the top card is opaque over the cards under it. */
+/* The stack's images show without a fade, and the stack shows without one
+   once the pile is in: a fade puts what it fades on a layer of its own,
+   which a phone's browser draws as the page's background until it has
+   painted it, an empty frame over the ghost. */
 .swipe-reveal > .swipe-stack .flippable-card-wrapper img {
     transition: none;
-}
-
-.swipe-reveal:not(.revealing) > .swipe-stack {
-    animation: swipe-reveal-in 250ms ease;
 }
 
 /* While the stack holds its ghost (`ghost-held`: the top card's image is
@@ -67,12 +65,6 @@
 
 .swipe-stack.ghost-held > .swipe-stack-card:not(.top) {
     visibility: hidden;
-}
-
-@keyframes swipe-reveal-in {
-    from {
-        opacity: 0;
-    }
 }
 
 /* Each card in the stack — absolutely positioned so peeking layers overlap.

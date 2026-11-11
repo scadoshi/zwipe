@@ -1740,13 +1740,14 @@ html.keyboard-up .web-dock-pair {
     box-shadow: var(--shadow-md);
 }
 
-/* Positioned so it paints over its ghost, which comes before it, while it
-   fades in. */
+/* Positioned so it paints over its ghost, which comes before it. It shows
+   without a fade: a fade puts it on a layer of its own, which a phone's
+   browser draws as the page's background until it has painted it, hiding
+   the ghost for a few frames. */
 .cover-flow-card img {
     position: relative;
     object-fit: contain;
     opacity: 0;
-    transition: opacity 0.2s ease;
 }
 
 .cover-flow-card img.shown {
