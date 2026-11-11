@@ -35,10 +35,13 @@ pub struct MeldSource {
     pub request: Callback<Uuid>,
 }
 
-/// Whether the melded card shows: only once it is wanted and fetched. A
-/// fetch on its way or failed leaves the half showing.
-fn shows_result(wanted: bool, fetch: Option<&MeldFetch>) -> bool {
-    wanted && matches!(fetch, Some(MeldFetch::Ready(_)))
+/// The melded card that shows: only once it is wanted and fetched. A fetch
+/// on its way or failed leaves the half showing.
+fn shown_result(wanted: bool, fetch: Option<&MeldFetch>) -> Option<&ScryfallData> {
+    match fetch {
+        Some(MeldFetch::Ready(card)) if wanted => Some(card),
+        _ => None,
+    }
 }
 
 /// One meld half's toggle, from [`use_meld`].
@@ -122,15 +125,7 @@ pub fn use_meld(sd: &ScryfallData) -> MeldToggle {
     });
     let result = meld.as_ref().zip(source).and_then(|(m, s)| {
         let results = s.results.read();
-        let fetch = results.get(&m.result_id);
-        if shows_result(*wanted.read(), fetch) {
-            match fetch {
-                Some(MeldFetch::Ready(card)) => Some((**card).clone()),
-                _ => None,
-            }
-        } else {
-            None
-        }
+        shown_result(*wanted.read(), results.get(&m.result_id)).cloned()
     });
     MeldToggle {
         meld,
@@ -153,16 +148,16 @@ mod tests {
         let ready = MeldFetch::Ready(Box::new(
             serde_json::from_value(card["scryfall_data"].clone()).unwrap(),
         ));
-        assert!(shows_result(true, Some(&ready)), "wanted and in");
-        assert!(!shows_result(false, Some(&ready)), "turned off");
+        assert!(shown_result(true, Some(&ready)).is_some(), "wanted and in");
+        assert!(shown_result(false, Some(&ready)).is_none(), "turned off");
         assert!(
-            !shows_result(true, Some(&MeldFetch::Loading)),
+            shown_result(true, Some(&MeldFetch::Loading)).is_none(),
             "on its way: the half"
         );
         assert!(
-            !shows_result(true, Some(&MeldFetch::Failed)),
+            shown_result(true, Some(&MeldFetch::Failed)).is_none(),
             "failed: the half, quietly"
         );
-        assert!(!shows_result(true, None), "not asked for yet");
+        assert!(shown_result(true, None).is_none(), "not asked for yet");
     }
 }

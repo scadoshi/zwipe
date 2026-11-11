@@ -8,7 +8,7 @@
 use uuid::Uuid;
 
 /// How the deck page lists its cards.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum CardsView {
     /// The grouped rows, the default.
     #[default]
@@ -80,7 +80,7 @@ pub fn shifted(count: usize, revealed: Option<usize>) -> Vec<bool> {
 }
 
 /// One step of the stacks' reveal and open state.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Gesture {
     /// The pointer is over a card (web): it reveals in place.
     Hover(Uuid),
@@ -103,7 +103,7 @@ pub enum Gesture {
 /// card brings the reveal back to it. The details never follow the reveal;
 /// only a click (or a second tap) moves them to another card, and a click
 /// on the open card closes them.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub struct Reveal {
     /// The card under the pointer, or the last tapped.
     hovered: Option<Uuid>,

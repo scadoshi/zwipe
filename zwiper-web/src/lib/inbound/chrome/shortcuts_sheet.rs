@@ -7,7 +7,7 @@ use components::{BottomSheet, HintKey, SheetFrame, SheetWide};
 use dioxus::prelude::*;
 use uuid::Uuid;
 
-use crate::inbound::chrome::shortcuts::{self, ADD_LABELS, GlobalKey, ShortcutsScreen};
+use crate::inbound::chrome::shortcuts::{self, GlobalKey, ShortcutsScreen};
 
 /// The dock button's icon: a keyboard, its keys and space bar.
 const KEYBOARD: &str = "M3 7h18v10H3zM7 10.5h.01M10.5 10.5h.01M14 10.5h.01M17.5 10.5h.01M8 14h8";
@@ -65,6 +65,7 @@ pub fn use_global_keys(on_hint: Option<Callback<()>>) {
     use_hook(move || {
         let script = GLOBAL_KEYS_JS
             .replace("__ID__", &id.to_string())
+            .replace("__KEYS__", &format!("{:?}", shortcuts::GLOBAL_KEYS))
             .replace("__GUARD__", &shortcuts::guard_js());
         spawn(async move {
             let mut keys = document::eval(&script);
@@ -98,9 +99,10 @@ pub fn use_global_keys(on_hint: Option<Callback<()>>) {
 #[component]
 pub fn ShortcutsSheet(open: Signal<bool>) -> Element {
     let offered = try_use_context::<ShortcutsOffered>().map(|ShortcutsOffered(stack)| stack);
-    let screen = offered
-        .and_then(|stack| stack.read().last().copied())
-        .unwrap_or(ShortcutsScreen::Swipe(ADD_LABELS));
+    // No screen offering the sheet (the one that did has gone): nothing to list.
+    let Some(screen) = offered.and_then(|stack| stack.read().last().copied()) else {
+        return rsx! {};
+    };
     rsx! {
         div { class: "web-shortcuts-layer",
         SheetFrame { wide: SheetWide::Modal,
@@ -162,7 +164,7 @@ window.__zwipeGlobalKeys.push('__ID__');
 const onKey = (e) => {
     const stack = window.__zwipeGlobalKeys;
     if (!stack.length || stack[stack.length - 1] !== '__ID__') return;
-    if ((e.key !== '?' && e.key !== 'H') || !__GUARD__) return;
+    if (!__KEYS__.includes(e.key) || !__GUARD__) return;
     e.preventDefault();
     dioxus.send(e.key);
 };
@@ -177,3 +179,22 @@ if (onKey) document.removeEventListener('keydown', onKey);
 delete window['__zwipeGlobalKey__ID__'];
 window.__zwipeGlobalKeys = (window.__zwipeGlobalKeys || []).filter((id) => id !== '__ID__');
 ";
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_global_listener_takes_its_keys_from_global_keys() {
+        assert!(
+            GLOBAL_KEYS_JS.contains("__KEYS__.includes(e.key)"),
+            "{GLOBAL_KEYS_JS}"
+        );
+        for key in shortcuts::GLOBAL_KEYS {
+            assert!(
+                !GLOBAL_KEYS_JS.contains(&format!("'{key}'")),
+                "{key} hard-coded"
+            );
+        }
+    }
+}

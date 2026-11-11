@@ -106,11 +106,11 @@ struct Layer {
     style: String,
     /// Whether this stack already had the card's image in.
     loaded: bool,
-    card_touch: Card,
-    card_mouse: Card,
     sd: ScryfallData,
-    config_touch: SwipeConfig,
-    config_mouse: SwipeConfig,
+    /// The card and config a touch release dispatches, on the top card only.
+    touch: Option<(Card, SwipeConfig)>,
+    /// The card and config a mouse release dispatches, on the top card only.
+    mouse: Option<(Card, SwipeConfig)>,
 }
 
 /// Dispatches the committed latest swipe from `state` for `card`. For an
@@ -311,11 +311,9 @@ pub fn SwipeStack(
             class,
             style,
             loaded: shown_cards.read().contains(&card_id),
-            card_touch: card.clone(),
-            card_mouse: card.clone(),
+            touch: is_top.then(|| (card.clone(), config.clone())),
+            mouse: is_top.then(|| (card.clone(), config.clone())),
             sd: card.scryfall_data,
-            config_touch: config.clone(),
-            config_mouse: config.clone(),
         }
     });
 
@@ -346,9 +344,10 @@ pub fn SwipeStack(
                         state.ontouchmove(e);
                     },
                     ontouchend: move |e: Event<TouchData>| {
-                        if !layer.is_top || entering.peek().is_some() { return; }
-                        state.ontouchend(e, &layer.config_touch);
-                        dispatch_latest(state, exiting_overlay, handlers, &layer.card_touch);
+                        let Some((card, config)) = &layer.touch else { return; };
+                        if entering.peek().is_some() { return; }
+                        state.ontouchend(e, config);
+                        dispatch_latest(state, exiting_overlay, handlers, card);
                     },
 
                     onmousedown: move |e: Event<MouseData>| {
@@ -360,9 +359,10 @@ pub fn SwipeStack(
                         state.onmousemove(e);
                     },
                     onmouseup: move |e: Event<MouseData>| {
-                        if !layer.is_top || entering.peek().is_some() { return; }
-                        state.onmouseup(e, &layer.config_mouse);
-                        dispatch_latest(state, exiting_overlay, handlers, &layer.card_mouse);
+                        let Some((card, config)) = &layer.mouse else { return; };
+                        if entering.peek().is_some() { return; }
+                        state.onmouseup(e, config);
+                        dispatch_latest(state, exiting_overlay, handlers, card);
                     },
 
                     onanimationend: move |_| {

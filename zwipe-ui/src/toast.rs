@@ -150,7 +150,7 @@ impl RepeatGate {
 
     /// Whether a toast saying `text` at `now`, up for `lasts`, should show:
     /// `false` while a toast with the same words is still up. A shown one is
-    /// remembered until it goes.
+    /// remembered until it goes, for good when `lasts` runs past the calendar.
     #[must_use]
     pub fn admit(&mut self, text: &str, now: DateTime<Utc>, lasts: Duration) -> bool {
         self.up.retain(|(_, goes)| *goes > now);
@@ -160,7 +160,7 @@ impl RepeatGate {
         let goes = TimeDelta::from_std(lasts)
             .ok()
             .and_then(|lasts| now.checked_add_signed(lasts))
-            .unwrap_or(now);
+            .unwrap_or(DateTime::<Utc>::MAX_UTC);
         self.up.push((text.to_owned(), goes));
         true
     }
@@ -281,5 +281,12 @@ mod repeat_gate_tests {
             gate.admit(OFFLINE, at(6), NORMAL),
             "the first toast went at 5s"
         );
+    }
+
+    #[test]
+    fn a_toast_too_long_to_time_is_held_for_good() {
+        let mut gate = RepeatGate::new();
+        assert!(gate.admit(OFFLINE, at(0), Duration::MAX));
+        assert!(!gate.admit(OFFLINE, at(1), NORMAL), "still up 1s later");
     }
 }

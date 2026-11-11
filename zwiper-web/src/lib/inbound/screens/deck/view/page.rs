@@ -491,7 +491,7 @@ pub fn DeckWidePage(
                     DeckBandsGhost {}
                 }
                 if view() == CardsView::Stacks {
-                    {stacks_view(&sections, cur, collapsed, stack_details_state, ed.faces)}
+                    {stacks_view(sections, cur, collapsed, stack_details_state, ed.faces)}
                 } else {
                     for (section, rows) in sections {
                         DeckBand {
@@ -601,6 +601,7 @@ pub fn DeckWidePage(
             button {
                 class: "action-dock-btn",
                 "aria-label": "Undo",
+                "data-action": components::data_action::UNDO,
                 disabled: !undo_ready,
                 onclick: move |_| apply_undo.call(()),
                 DockIcon { path: UNDO }

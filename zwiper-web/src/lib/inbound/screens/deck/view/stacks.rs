@@ -18,7 +18,7 @@ use zwipe_ui::deck_cards::stacks::{Gesture, Reveal};
 
 use crate::inbound::cards::card_info::CardDetailsSheet;
 use crate::inbound::cards::card_row::CardOverlays;
-use crate::inbound::screens::deck::cards::editor::{Editor, Meta, RowInfo, RowKind};
+use crate::inbound::screens::deck::cards::editor::{Editor, Meta, RowInfo, RowKind, board_of};
 use crate::inbound::screens::deck::list::DeckGroupSection;
 
 /// The total of `rows` in `currency`, each card's price times its copies;
@@ -29,6 +29,7 @@ fn total_price(rows: &[RowInfo], currency: PriceCurrency) -> Option<String> {
     for row in rows {
         if let Some(each) = deck_metrics::card_price(&row.card.scryfall_data, currency) {
             priced = true;
+            // A row holds at least one copy (`Quantity` is positive; a zone or token row is 1).
             sum += each * f64::from(row.qty.max(1));
         }
     }
@@ -61,7 +62,7 @@ impl StackDetails {
 /// The stacks for `sections`, folding by `collapsed` as the bands do, each card on its face in
 /// `faces` (the front where it has none).
 pub(crate) fn stacks_view(
-    sections: &[(DeckSection, Vec<RowInfo>)],
+    sections: Vec<(DeckSection, Vec<RowInfo>)>,
     currency: PriceCurrency,
     collapsed: Signal<HashSet<String>>,
     details: StackDetails,
@@ -72,7 +73,7 @@ pub(crate) fn stacks_view(
     let shown_faces = faces();
     rsx! {
         div { class: "deck-stacks",
-            for (section, rows) in sections.iter().cloned() {
+            for (section, rows) in sections {
                 {
                     let price = total_price(&rows, currency);
                     let ids: Vec<Uuid> = rows.iter().map(|r| r.card.scryfall_data.id).collect();
@@ -167,7 +168,7 @@ pub(crate) fn stack_details(
     });
     let board = match kind {
         RowKind::Board(b) => Some(b),
-        RowKind::Main { .. } => Some(row_meta.get(&card_id).map_or(Board::Deck, |m| m.board)),
+        RowKind::Main { .. } => Some(board_of(row_meta, card_id)),
         RowKind::Zone(_) | RowKind::Token => None,
     };
     let mvp = match kind {
@@ -182,7 +183,7 @@ pub(crate) fn stack_details(
             div { class: "card-action-row",
                 CardEditButtons {
                     qty,
-                    on_qty_change: move |d| change_quantity.call((card_id, d, true)),
+                    on_qty_change: move |d| change_quantity.call((card_id, d, /* record */ true)),
                     mvp,
                     on_toggle_mvp: move |()| {
                         if let Some(is_mvp) = mvp {
@@ -193,7 +194,7 @@ pub(crate) fn stack_details(
             }
             CardBoardMoves {
                 current_board: board,
-                on_move_to: move |to: Board| move_to_board.call((card_id, to, true)),
+                on_move_to: move |to: Board| move_to_board.call((card_id, to, /* record */ true)),
             }
         }
     });

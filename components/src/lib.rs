@@ -54,6 +54,7 @@ mod charts;
 mod color_bars;
 mod cover_flow;
 mod danger_zone;
+pub mod data_action;
 mod deck_page;
 mod drawer_sheet;
 mod flippable_card_image;

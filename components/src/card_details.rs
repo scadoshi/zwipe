@@ -19,7 +19,7 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ImageSize;
 
 use crate::meld::{MeldToggle, use_meld};
-use crate::{CardRoleChips, KeywordChips, OracleText, Panel};
+use crate::{CardRoleChips, KeywordChips, OracleText, Panel, data_action};
 
 /// One card face's rules text, extracted for display. Single-faced cards yield
 /// one of these; multi-faced cards (DFCs, split, etc.) yield one per face.
@@ -268,7 +268,7 @@ pub fn CardDetails(
                         FlipButton { face_idx, current: cur, face_count, on_face_change }
                     }
                     if let (true, Some(handler)) = (show_image, on_image) {
-                        FootButton { label: "Image", on_click: handler }
+                        FootButton { label: "Image", action: data_action::IMAGE, on_click: handler }
                     }
                     {actions}
                 }
@@ -403,6 +403,7 @@ pub fn CardDetailsPanel(
                             if show_meld {
                                 button {
                                     class: if meld.on() { "card-action-btn selected" } else { "card-action-btn" },
+                                    "data-action": data_action::MELD,
                                     "aria-pressed": "{meld.on()}",
                                     onclick: {
                                         let meld = meld.clone();
@@ -415,10 +416,10 @@ pub fn CardDetailsPanel(
                                 }
                             }
                             if let (true, Some(handler)) = (show_image, on_image) {
-                                FootButton { label: "Image", on_click: handler }
+                                FootButton { label: "Image", action: data_action::IMAGE, on_click: handler }
                             }
                             if let Some(handler) = on_printings {
-                                FootButton { label: "Printings", on_click: handler }
+                                FootButton { label: "Printings", action: data_action::PRINTINGS, on_click: handler }
                             }
                         }
                     }
@@ -481,6 +482,7 @@ fn FlipButton(
     rsx! {
         button {
             class: "card-action-btn",
+            "data-action": data_action::FLIP,
             onclick: move |evt| {
                 evt.stop_propagation();
                 let next = current.saturating_add(1).checked_rem(face_count).unwrap_or(0);
@@ -494,13 +496,14 @@ fn FlipButton(
     }
 }
 
-/// A foot button labeled `label` that calls `on_click`, keeping the tap off
-/// the row.
+/// A foot button labeled `label`, marked `action` for the keys
+/// ([`data_action`]), that calls `on_click`, keeping the tap off the row.
 #[component]
-fn FootButton(label: &'static str, on_click: EventHandler<()>) -> Element {
+fn FootButton(label: &'static str, action: &'static str, on_click: EventHandler<()>) -> Element {
     rsx! {
         button {
             class: "card-action-btn",
+            "data-action": action,
             onclick: move |evt| {
                 evt.stop_propagation();
                 on_click.call(());
