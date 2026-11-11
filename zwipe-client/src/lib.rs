@@ -149,4 +149,50 @@ mod tests {
             started.elapsed()
         );
     }
+
+    #[tokio::test(start_paused = true)]
+    async fn a_deck_card_search_gives_up_on_a_server_that_never_answers() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        // Accepts, reads the request, and never answers.
+        let _server = tokio::spawn(async move {
+            let (mut socket, _) = listener.accept().await.unwrap();
+            let mut buf = vec![0_u8; 8192];
+            let _ = socket.read(&mut buf).await;
+            tokio::time::sleep(Duration::from_secs(3600)).await;
+        });
+        let client = ZwipeClient::new(Url::parse(&format!("http://{addr}")).unwrap());
+        let mut filter =
+            zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder::default(
+            );
+        filter.set_name_contains("elf");
+        let query = filter.build().unwrap();
+        let session: zwipe_core::domain::auth::models::session::Session = serde_json::from_value(serde_json::json!({
+                "user": {
+                    "id": "00000000-0000-0000-0000-000000000001",
+                    "username": "scotty",
+                    "email": "scotty@zwipe.net",
+                    "email_verified_at": null,
+                },
+                "access_token": {"value": "aGVhZA.cGF5bG9hZA.c2ln", "expires_at": "2030-01-01T01:00:00Z"},
+                "refresh_token": {"value": "r", "expires_at": "2030-01-15T00:00:00Z"},
+                "settings": zwipe_core::domain::user::UserSettings::default(),
+            }))
+            .unwrap();
+
+        let started = tokio::time::Instant::now();
+        let result = client
+            .search_deck_cards(uuid::Uuid::nil(), &query, &session)
+            .await;
+
+        assert!(
+            matches!(result, Err(ClientError::Network(_))),
+            "a stalled search is a network error: {result:?}"
+        );
+        assert!(
+            started.elapsed() <= Duration::from_secs(21),
+            "gave up after {:?}, past the search's 20 seconds",
+            started.elapsed()
+        );
+    }
 }

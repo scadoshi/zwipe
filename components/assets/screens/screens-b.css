@@ -582,8 +582,9 @@
     gap: 0.4rem;
 }
 
+/* The bar hugs its text: the hint's two lines when nothing is picked, a
+   picked tag's name and description once one is. */
 .tag-def-bar {
-    min-height: 3.5rem;
     margin-top: 0.5rem;
     padding: 0.5rem 0.75rem;
     text-align: left;
@@ -593,17 +594,22 @@
     box-shadow: var(--shadow-sm);
 }
 
-/* The format picker's bar keeps one height, so a tapped format's details
-   never push the chips down under the finger. Details longer than the bar
-   scroll inside it edge to edge: the bar's padding is the scroller's own,
-   so the lines run right up to its border and are cut there. */
+/* The format picker's bar hugs its hint while nothing is picked. Once a
+   format's details fill it, it keeps one height, so the next tapped
+   format's details never push the chips down under the finger. Details
+   longer than the bar scroll inside it edge to edge: the bar's padding is
+   the scroller's own, so the lines run right up to its border and are cut
+   there. */
 .tag-def-bar.format-def-bar {
-    height: 11rem;
     padding: 0;
     display: flex;
     flex-direction: column;
     overflow: hidden;
     box-sizing: border-box;
+}
+
+.tag-def-bar.format-def-bar:has(.tag-def-list) {
+    height: 11rem;
 }
 
 .format-def-scroll {
