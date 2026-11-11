@@ -1,6 +1,6 @@
 # 315. Add's pile flashes a stale card after applying a filter
 
-State: reproduced | Owner: scotland | PR: #501, #516 | Build seen: 1.18.14
+State: reproduced | Owner: scotland | PR: #501, #516, #528 | Build seen: 1.18.14
 
 ## Report
 Droid, 2026-11-08, Android app (prod): on Add, applying a filter shows one card for about 0.3s (Deadly Rollick), then a different top card (Drakuseth) replaces it. Same in an earlier take (Abrade, then Rakdos Charm), so it isn't new. Likely the old pile's next card renders before the filtered pile arrives. Footage: ~/Developer/video-factory/videos/oracle-tags/footage/raw/o4.mp4 at ~9.6s.
@@ -62,3 +62,17 @@ scotland, #516.
 - On Add, app and web, the ghost stays mounted under the stack after the reveal and hides only once the top card's image is loaded (or the card has no art), and the cards under the top stay hidden until then (`screens-a.css`). A pile the fallback shows early shows the ghost, never an empty slot or another card.
 - App: Apply bumps the filter counter, and the screen hands the filter to the model from an effect a frame later. Until it has, the screen draws the ghost, so the frame after Apply never shows the old top card.
 - Measured on web, 390 wide, headless with each pile's image requests held (the top card's 3s, the others 0.4s, so the fallback fires first), three fresh loads each: release showed a card from under the top for 95 to 96 frames per load; this branch 0, with the ghost held until the top card shows. No unit test: this is render and CSS; the probe is the check. The app is not run on scotland.
+
+## Phone width, third fix
+Droid, live 21ca16a04 (with #516), emulator Chrome 145 at 411px, 2026-11-11: still failing on the web at phone width. First load showed another card, then the top half drawn; Apply and Refresh showed a card from under the top half drawn while it downloaded. Desktop passed. Cause, from droid's clips and three tailnet candidates:
+- An image that had loaded once this session counted as loaded in any new element (`FlippableCardImage`'s seen set), so a stack card could show at full opacity while its own copy was still downloading, drawn top-down.
+- Once the top card's image counted as in, the cards under it could show while a phone had yet to paint the top.
+- A fading element gets a layer of its own, which mobile Chrome draws as the page's background until it has painted it: the pile's fade-in and the ghost's fade-in each left an empty frame.
+
+scotland, #528:
+- Each stack (web and app) tracks the cards whose own image has loaded and decoded (`on_load`). Until the top card's has, and for `TOP_PAINT_GRACE` (0.4s) after, the stack draws its ghost under its cards and the cards under the top do not paint (`zwipe_ui::stack::ghost_held`, class `ghost-held`).
+- Stack images no longer take the seen set (`FlippableCardImage` `trust_seen: false`), and every image counts as loaded from its own load, `loaded_here`.
+- The pile no longer fades in, and the ghost on the swipe screens shows at full strength the frame it mounts.
+- Failing-first test: `the_ghost_holds_until_the_top_card_shows_and_has_had_time_to_paint`.
+- Droid, candidates 2 to 4 at full speed with the cache cleared: web and app first load, Apply and Refresh PASS (ghost straight to the full card, no other card, nothing half drawn, no empty frame), while live failed. Throttled runs were inconclusive: the emulator's search failed at UMTS over the tailnet, and at HSDPA both builds stayed on the ghost.
+- Printings (326) is split out.

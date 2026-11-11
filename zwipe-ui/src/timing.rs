@@ -77,6 +77,11 @@ pub const EXAMPLES_MAX_CARDS: usize = stack::MAX_CARDS_IN_STACK;
 /// How long a newly dealt pile waits behind the ghost for its top card's image before it shows anyway.
 pub const PILE_REVEAL_FALLBACK: Duration = Duration::from_millis(1500);
 
+/// How long a swipe stack keeps its ghost under a top card whose image has
+/// just loaded and decoded, so a phone's browser has painted it before the
+/// cards under it may show.
+pub const TOP_PAINT_GRACE: Duration = Duration::from_millis(400);
+
 #[cfg(test)]
 mod tests {
     use super::*;
