@@ -16,3 +16,6 @@ One rule everywhere: a text link is its ink, underlined with a 3px offset, at re
 - **zite** (this PR): the brighten-on-hover rule only applies to classed links (cards, the brand, pills), so text links fall through to the kit's hover.
 - **Portfolio** (its own PR): unclassed links get the resting underline, the brighten rule skips them, and the footer's classed "This site" link takes the same hover.
 - On gruvbox the ink and the accent are one color, so the hover's visible change there is the thicker underline; on themes where they differ, the color moves to the accent too.
+
+## Superseded
+Scotty, 2026-11-11: no underlines anywhere. 342 replaces this issue's underlined standard with the accent alone and a slight brighten on hover.

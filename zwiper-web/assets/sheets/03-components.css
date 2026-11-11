@@ -1491,8 +1491,7 @@ a.nav-dropdown-item.active:visited {
 .banner a,
 .banner a:visited {
     color: var(--ink-accent-primary, var(--accent-primary));
-    text-decoration: underline;
-    text-underline-offset: 3px;
+    text-decoration: none;
 }
 
 /* The ✕: a 2rem box, a squircle filled softly on hover and press; on touch
@@ -1684,7 +1683,7 @@ a.nav-dropdown-item.active:visited {
     }
 
     .release-card-link:hover {
-        text-decoration: underline;
+        color: color-mix(in srgb, var(--ink-accent-primary, var(--accent-primary)) 70%, var(--text-primary));
     }
 }
 
@@ -2646,6 +2645,18 @@ html[data-wipe="left"]::view-transition-new(root) {
     -webkit-mask-image: linear-gradient(to bottom, #000 0, rgba(0, 0, 0, 0.45) 45vh, transparent 100vh);
 }
 
+/* ---- Text links ----
+
+   A link in running text, which has no class: the accent, with no
+   underline at rest, under a mouse or on focus; the color is what marks it
+   as a link. A soft default, so a host's own link rule wins. */
+:where(a:not([class])),
+:where(a:not([class]):visited) {
+    color: var(--ink-accent-primary, var(--accent-primary));
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+
 /* ---- Hover and keyboard focus ----
 
    Under a mouse, everything clickable answers, the way the panel's action
@@ -2653,7 +2664,8 @@ html[data-wipe="left"]::view-transition-new(root) {
    lights its text and border in the accent; the action dock's borderless
    buttons light the glyph. A destructive button keeps its red, which is
    what it says, and takes the red's tint behind it, the tint a status tag
-   wears. An inline text link takes the accent and a firmer underline.
+   wears. An inline text link moves a little from the accent toward the
+   text color.
    A row (a theme in either picker, a fold's header) fills with the
    border color, as a dropdown row does, which reads apart from a selected
    theme's accent border. Disabled things stay still; a selected or active
@@ -2679,18 +2691,23 @@ html[data-wipe="left"]::view-transition-new(root) {
         color: var(--text-primary);
     }
 
-    /* An inline text link: the accent and a firmer underline. At (0,2,0) it
-       outranks a site's resting link rule such as `.tagline a` (0,1,1) and
-       loses to a site's own hover rule such as `.note a:hover` (0,2,1). */
+    /* An inline text link: a slight brighten, the accent mixed 30% toward
+       the text color, so it lifts on a dark theme and deepens on a light one
+       without losing contrast. At (0,2,0) it outranks a site's resting link
+       rule such as `.tagline a` (0,1,1) and loses to a site's own hover rule
+       such as `.note a:hover` (0,2,1). */
     :where(a):not([class]):hover {
-        color: var(--ink-accent-primary, var(--accent-primary));
-        text-decoration-thickness: 2px;
+        color: color-mix(in srgb, var(--ink-accent-primary, var(--accent-primary)) 70%, var(--text-primary));
     }
 }
 
+/* Keyboard focus: the hover's color and a ring, which shows without an
+   underline. */
 :where(a):not([class]):focus-visible {
-    color: var(--ink-accent-primary, var(--accent-primary));
-    text-decoration-thickness: 2px;
+    color: color-mix(in srgb, var(--ink-accent-primary, var(--accent-primary)) 70%, var(--text-primary));
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+    border-radius: 0.2em;
 }
 
 :is(.btn, .btn-xs, .btn-action, .stepper-btn):not(:disabled, [aria-disabled="true"], .selected, .active, .btn-danger, .btn-action-danger):focus-visible {

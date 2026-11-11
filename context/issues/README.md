@@ -64,6 +64,7 @@ Who checked, on which live build, what they saw.
 | [340](340-toasts-over-load-error.md) | Stacked error toasts cover the "Couldn't load" box | fixing | laptop | #522, #528 |
 | [337](337-zite-tap-highlight.md) | Taps on zwipe.net flash Chrome's blue highlight | fixing | thinker | - |
 | [338](338-link-hover-inconsistent.md) | Text links hover differently across the three sites | fixing | thinker | - |
+| [342](342-no-link-underlines.md) | No underlines on links | fixing | thinker | - |
 
 ## Waiting for live verification
 

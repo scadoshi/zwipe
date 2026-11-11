@@ -2612,24 +2612,11 @@ footer.site-footer .site-footer-note {
     opacity: 0.75;
 }
 
+/* The accent marks the note's links, with no underline; they take the
+   kit's hover and focus. */
 .site-footer-note a {
-    color: var(--ink-palette-1, var(--palette-1));
-    text-decoration: underline;
-    text-underline-offset: 3px;
-}
-
-/* The kit's link hover, which this rule's class outranks: the accent and a
-   firmer underline, and the same for keyboard focus. */
-@media (hover: hover) {
-    .site-footer-note a:hover {
-        color: var(--ink-accent-primary, var(--accent-primary));
-        text-decoration-thickness: 2px;
-    }
-}
-
-.site-footer-note a:focus-visible {
     color: var(--ink-accent-primary, var(--accent-primary));
-    text-decoration-thickness: 2px;
+    text-decoration: none;
 }
 
 /* A stepper's button at its bound is off: faded on a dark theme, its text
