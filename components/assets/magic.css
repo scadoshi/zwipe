@@ -1740,21 +1740,23 @@ html.keyboard-up .web-dock-pair {
     box-shadow: var(--shadow-md);
 }
 
-/* Positioned so it paints over its ghost, which comes before it, while it
-   fades in. */
+/* Positioned so it paints over its ghost, which comes before it. It shows
+   without a fade: a fade puts it on a layer of its own, which a phone's
+   browser draws as the page's background until it has painted it, hiding
+   the ghost for a few frames. */
 .cover-flow-card img {
     position: relative;
     object-fit: contain;
     opacity: 0;
-    transition: opacity 0.2s ease;
 }
 
 .cover-flow-card img.shown {
     opacity: 1;
 }
 
-/* A printing's own ghost in the card's shape, under its image until the
-   image has decoded and faded in, so the card is never empty. */
+/* A printing's own ghost in the card's shape, under its image from the
+   start and for good, so the card is never empty, even while a phone has
+   yet to paint an image it has decoded. */
 .cover-flow-ghost {
     position: absolute;
     inset: 0;
@@ -1763,8 +1765,40 @@ html.keyboard-up .web-dock-pair {
     animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-/* Under a shown image the ghost holds still: it is covered, and stays only
-   until the image's fade ends (or for good if that end is never reported). */
+/* The stage's frame, which holds the primer under the stage. */
+.cover-flow-frame {
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+/* While the flow primes, the stage is all but invisible and a flat ghost
+   (no 3D or mask, so no layer of its own) holds the middle card's place
+   under it, outside the stage. */
+.cover-flow-primer {
+    position: absolute;
+    top: 4%;
+    left: 50%;
+    height: 92%;
+    aspect-ratio: 488 / 680;
+    transform: translateX(-50%);
+    border-radius: 4.75% / 3.5%;
+    background-color: var(--border-muted);
+}
+
+.cover-flow-stage.priming {
+    opacity: 0.01;
+}
+
+/* The stage is a layer of its own from the start, so priming's opacity
+   changes only that layer's opacity: without it, the change regroups the
+   page's layers and a phone redraws the sheet, showing the page behind it
+   through for a few frames. */
+.cover-flow-stage {
+    will-change: opacity;
+}
+
+/* Under a shown image the ghost holds still: it is covered. */
 .cover-flow-ghost:has(+ img.shown) {
     animation: none;
 }

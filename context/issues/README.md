@@ -49,7 +49,7 @@ Who checked, on which live build, what they saw.
 | [315](315-add-pile-flashes-stale-card.md) | Add's pile flashes a stale card after applying a filter | reproduced | scotland | #501, #516, #530 |
 | [323](323-overview-lockout-columns.md) | overview.sql section 16 reads lockout columns that no longer exist | merged | thinker | #490 |
 | [325](325-drawer-bottom-border-clipped.md) | The card details drawer's bottom border vanishes at 100% zoom | fixing | scotland | #505 |
-| [326](326-printings-blank-tiles.md) | Printings shows blank cards until their images load | reproduced | scotland | #503, #516 |
+| [326](326-printings-blank-tiles.md) | Printings shows blank cards until their images load | reproduced | scotland | #503, #516, #531 |
 | [327](327-cancel-pending-email-change.md) | A pending email change can't be cancelled | fixing | scotland | #507, #508 |
 | [328](328-generic-pip-ring.md) | Pip rings split on expanded and hovered card rows | fixing | thinker | - |
 | [329](329-buttons-without-hover.md) | Buttons and other clickables without a hover on desktop web | fixing | halo | orangui#30, orangui#31, #510, orangui#32, #519 |

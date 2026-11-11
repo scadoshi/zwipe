@@ -15,8 +15,22 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ImageSize;
 
 use crate::back_online::use_back_online;
-use crate::flippable_card_image::{decoded, image_seen, mark_image_seen};
+use crate::flippable_card_image::{decoded, mark_image_seen};
 use crate::icons::{ARROW_LEFT, ARROW_RIGHT, DockIcon};
+
+/// Answers once the browser has drawn three frames, by then the flow's
+/// layers are painted.
+const PRIME_JS: &str = r"
+await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(done))));
+dioxus.send(true);
+";
+
+/// Answers after three seconds: the longest the flow waits on its middle
+/// image before it shows.
+const PRIME_LIMIT_JS: &str = r"
+await new Promise((done) => setTimeout(done, 3000));
+dioxus.send(true);
+";
 
 /// How far a wheel or trackpad scrolls, in pixels, to move one printing.
 const WHEEL_STEP_PX: f64 = 60.0;
@@ -87,8 +101,6 @@ fn wheel_steps(carried: f64, px: f64, limit: usize) -> (Option<Step>, usize, f64
 enum Arrival {
     /// Loaded and decoded, so it paints as soon as it shows.
     Decoded,
-    /// Shown and done fading in.
-    Faded,
     /// It failed to load.
     Failed,
 }
@@ -152,10 +164,10 @@ impl Arrivals {
 enum Tile {
     /// A card-shaped ghost, its image loading hidden under it.
     Ghost,
-    /// The image fading in over its ghost.
-    Fading,
-    /// The image.
-    Image,
+    /// The image, fading in and then shown over its ghost, which stays
+    /// under it still: an image a phone has not painted yet shows the ghost,
+    /// never an empty card.
+    Shown,
     /// The set name on a plain card: no art, or the image failed.
     Missing,
 }
@@ -163,23 +175,22 @@ enum Tile {
 impl Tile {
     /// Whether the ghost draws.
     fn ghost(self) -> bool {
-        matches!(self, Self::Ghost | Self::Fading)
+        matches!(self, Self::Ghost | Self::Shown)
     }
 
-    /// Whether the image shows, fading in or done.
+    /// Whether the image shows.
     fn image_shown(self) -> bool {
-        matches!(self, Self::Fading | Self::Image)
+        self == Self::Shown
     }
 }
 
 /// The tile for a printing that `has_art`, its image at `arrival` (`None` while on its way).
-/// The ghost stays under the image until the image has faded in, so no frame
-/// shows an empty card.
+/// The ghost stays under the image once it shows, so no frame shows an
+/// empty card.
 fn tile(has_art: bool, arrival: Option<Arrival>) -> Tile {
     match (has_art, arrival) {
         (true, None) => Tile::Ghost,
-        (true, Some(Arrival::Decoded)) => Tile::Fading,
-        (true, Some(Arrival::Faded)) => Tile::Image,
+        (true, Some(Arrival::Decoded)) => Tile::Shown,
         (true, Some(Arrival::Failed)) | (false, _) => Tile::Missing,
     }
 }
@@ -197,10 +208,38 @@ pub fn CoverFlow(
     let mut drag_from: Signal<Option<f64>> = use_signal(|| None);
     let mut dragged = use_signal(|| false);
     // How far each image URL has come; every card ghosts on its own until
-    // its image has faded in.
+    // its own image has loaded and decoded, then keeps the ghost under it.
     let mut arrived: Signal<Arrivals> = use_signal(Arrivals::default);
     let count = printings.len();
     let at = index().min(count.saturating_sub(1));
+    // Until the middle printing's image is in and has had a few frames to
+    // paint, the flow's stage is all but invisible over a flat ghost in the
+    // middle card's place: the stage and its cards are layers of their own,
+    // which a phone's browser draws as the page's background until it has
+    // painted them. A middle image that never settles shows the flow anyway
+    // after `PRIME_LIMIT_JS`.
+    let mut primed = use_signal(|| false);
+    let center_settled = printings.get(at).is_none_or(|card| {
+        card.scryfall_data
+            .primary_image_url(ImageSize::Large)
+            .is_none_or(|u| arrived.read().get(u).is_some())
+    });
+    use_effect(use_reactive!(|center_settled| {
+        if center_settled && !*primed.peek() {
+            spawn(async move {
+                let mut frames = document::eval(PRIME_JS);
+                let _drawn: Result<bool, _> = frames.recv().await;
+                primed.set(true);
+            });
+        }
+    }));
+    use_hook(move || {
+        spawn(async move {
+            let mut limit = document::eval(PRIME_LIMIT_JS);
+            let _waited: Result<bool, _> = limit.recv().await;
+            primed.set(true);
+        });
+    });
 
     // An image that failed tries again once the connection is back, and
     // when its printing comes to the middle.
@@ -260,8 +299,12 @@ pub fn CoverFlow(
                     DockIcon { path: ARROW_LEFT }
                 }
             }
+            div { class: "cover-flow-frame",
+            if !primed() {
+                div { class: "cover-flow-primer" }
+            }
             div {
-                class: "cover-flow-stage",
+                class: if primed() { "cover-flow-stage" } else { "cover-flow-stage priming" },
                 onwheel: move |e: Event<WheelData>| {
                     let (way, steps, rest) = wheel_steps(*wheel.peek(), wheel_px(&e.delta()), count);
                     if let Some(way) = way {
@@ -311,7 +354,7 @@ pub fn CoverFlow(
                         {
                             let url = card.scryfall_data.primary_image_url(ImageSize::Large).map(str::to_owned);
                             let arrival = url.as_deref().and_then(|u| {
-                                arrived.read().get(u).or_else(|| image_seen(u).then_some(Arrival::Faded))
+                                arrived.read().get(u)
                             });
                             match (tile(url.is_some(), arrival), url) {
                                 (Tile::Missing, _) | (_, None) => rsx! {
@@ -321,8 +364,7 @@ pub fn CoverFlow(
                                     let src = arrived.read().src(&url);
                                     let decode_src = src.clone();
                                     let loaded = url.clone();
-                                    let failed = url.clone();
-                                    let faded = url;
+                                    let failed = url;
                                     rsx! {
                                         if shown.ghost() {
                                             div { class: "cover-flow-ghost" }
@@ -331,7 +373,10 @@ pub fn CoverFlow(
                                             class: if shown.image_shown() { "shown" } else { "" },
                                             src: "{src}",
                                             alt: "{card.scryfall_data.name}, {card.scryfall_data.set_name}",
-                                            loading: "lazy",
+                                            // The middle loads at once, the sheet
+                                            // sliding in from off screen; the rest
+                                            // as they come near.
+                                            loading: if offset == 0 { "eager" } else { "lazy" },
                                             draggable: false,
                                             onload: move |_| {
                                                 let loaded = loaded.clone();
@@ -341,11 +386,6 @@ pub fn CoverFlow(
                                                     mark_image_seen(&loaded);
                                                     arrived.write().set(&loaded, Arrival::Decoded);
                                                 });
-                                            },
-                                            ontransitionend: move |_| {
-                                                if arrived.peek().get(&faded) == Some(Arrival::Decoded) {
-                                                    arrived.write().set(&faded, Arrival::Faded);
-                                                }
                                             },
                                             onerror: move |_| {
                                                 arrived.write().set(&failed, Arrival::Failed);
@@ -357,6 +397,7 @@ pub fn CoverFlow(
                         }
                     }
                 }
+            }
             }
             if count > 1 {
                 button {
@@ -599,7 +640,7 @@ mod tests {
         let (sol, bolt) = ("https://img/sol.jpg", "https://img/bolt.jpg");
         let mut arrivals = Arrivals::default();
         arrivals.set(sol, Arrival::Failed);
-        arrivals.set(bolt, Arrival::Faded);
+        arrivals.set(bolt, Arrival::Decoded);
         assert_eq!(
             tile(true, arrivals.get(sol)),
             Tile::Missing,
@@ -620,7 +661,7 @@ mod tests {
         );
         assert_eq!(
             arrivals.get(bolt),
-            Some(Arrival::Faded),
+            Some(Arrival::Decoded),
             "a shown image stays"
         );
         assert!(!arrivals.retry_failed(), "nothing left to retry");
@@ -633,18 +674,12 @@ mod tests {
     }
 
     #[test]
-    fn the_ghost_stays_under_the_image_until_it_has_faded_in() {
-        assert_eq!(
-            tile(true, Some(Arrival::Decoded)),
-            Tile::Fading,
-            "decoded: the image fades in over its ghost"
-        );
-        assert_eq!(tile(true, Some(Arrival::Faded)), Tile::Image, "faded in");
-        for arrival in [None, Some(Arrival::Decoded), Some(Arrival::Faded)] {
+    fn a_shown_image_always_has_its_ghost_under_it() {
+        for arrival in [None, Some(Arrival::Decoded)] {
             let drawn = tile(true, arrival);
             assert!(
-                drawn.ghost() || drawn.image_shown(),
-                "{arrival:?} leaves neither a ghost nor an image"
+                drawn.ghost() || !drawn.image_shown(),
+                "{arrival:?} shows the image with nothing under it"
             );
         }
     }
