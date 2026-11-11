@@ -61,6 +61,7 @@ Who checked, on which live build, what they saw.
 | [335](335-selector-drawer-space.md) | Selector drawers waste space above the chips | reported | - | - |
 | [336](336-search-no-timeout.md) | A deck card search that never answers leaves Add on the skeleton | fixing | thinker | - |
 | [335](335-selector-drawer-space.md) | Selector drawers waste space above the chips | fixing | laptop | #520 |
+| [341](341-printings-failed-images-never-retry.md) | Printings that failed on a slow network stay set-name cards | fixing | scotland | #525 |
 
 ## Waiting for live verification
 

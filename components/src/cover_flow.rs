@@ -14,6 +14,7 @@ use dioxus::prelude::*;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ImageSize;
 
+use crate::back_online::use_back_online;
 use crate::flippable_card_image::{decoded, image_seen, mark_image_seen};
 use crate::icons::{ARROW_LEFT, ARROW_RIGHT, DockIcon};
 
@@ -92,6 +93,60 @@ enum Arrival {
     Failed,
 }
 
+/// How far each printing's image has come, and how often a failed one was
+/// tried again, so a retry gives the image a new `src` the browser fetches
+/// afresh.
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+struct Arrivals {
+    states: HashMap<String, Arrival>,
+    retries: HashMap<String, u32>,
+}
+
+impl Arrivals {
+    /// How far the image at `url` has come; `None` while on its way.
+    fn get(&self, url: &str) -> Option<Arrival> {
+        self.states.get(url).copied()
+    }
+
+    fn set(&mut self, url: &str, arrival: Arrival) {
+        self.states.insert(url.to_owned(), arrival);
+    }
+
+    /// The `src` for `url`: the URL itself on the first try, then with a
+    /// fragment naming the retry, which the server never sees.
+    fn src(&self, url: &str) -> String {
+        match self.retries.get(url) {
+            Some(n) => format!("{url}#retry-{n}"),
+            None => url.to_owned(),
+        }
+    }
+
+    /// Tries the image at `url` again if it failed. Returns whether it did.
+    fn retry(&mut self, url: &str) -> bool {
+        if self.get(url) != Some(Arrival::Failed) {
+            return false;
+        }
+        self.states.remove(url);
+        let n = self.retries.entry(url.to_owned()).or_insert(0);
+        *n = n.saturating_add(1);
+        true
+    }
+
+    /// Tries every failed image again. Returns whether any had failed.
+    fn retry_failed(&mut self) -> bool {
+        let failed: Vec<String> = self
+            .states
+            .iter()
+            .filter(|(_, arrival)| **arrival == Arrival::Failed)
+            .map(|(url, _)| url.clone())
+            .collect();
+        for url in &failed {
+            self.retry(url);
+        }
+        !failed.is_empty()
+    }
+}
+
 /// What one printing's card draws.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Tile {
@@ -143,9 +198,33 @@ pub fn CoverFlow(
     let mut dragged = use_signal(|| false);
     // How far each image URL has come; every card ghosts on its own until
     // its image has faded in.
-    let mut arrived: Signal<HashMap<String, Arrival>> = use_signal(HashMap::new);
+    let mut arrived: Signal<Arrivals> = use_signal(Arrivals::default);
     let count = printings.len();
     let at = index().min(count.saturating_sub(1));
+
+    // An image that failed tries again once the connection is back, and
+    // when its printing comes to the middle.
+    use_back_online(Callback::new(move |()| {
+        if arrived
+            .peek()
+            .states
+            .values()
+            .any(|a| *a == Arrival::Failed)
+        {
+            arrived.write().retry_failed();
+        }
+    }));
+    let centre_url = printings
+        .get(at)
+        .and_then(|card| card.scryfall_data.primary_image_url(ImageSize::Large))
+        .map(str::to_owned);
+    use_effect(use_reactive!(|centre_url| {
+        if let Some(url) = centre_url
+            && arrived.peek().get(&url) == Some(Arrival::Failed)
+        {
+            arrived.write().retry(&url);
+        }
+    }));
 
     let mut go = move |next: usize| {
         if count > 0 {
@@ -232,41 +311,44 @@ pub fn CoverFlow(
                         {
                             let url = card.scryfall_data.primary_image_url(ImageSize::Large).map(str::to_owned);
                             let arrival = url.as_deref().and_then(|u| {
-                                arrived.read().get(u).copied().or_else(|| image_seen(u).then_some(Arrival::Faded))
+                                arrived.read().get(u).or_else(|| image_seen(u).then_some(Arrival::Faded))
                             });
                             match (tile(url.is_some(), arrival), url) {
                                 (Tile::Missing, _) | (_, None) => rsx! {
                                     div { class: "cover-flow-missing", "{card.scryfall_data.set_name}" }
                                 },
                                 (shown, Some(url)) => {
+                                    let src = arrived.read().src(&url);
+                                    let decode_src = src.clone();
                                     let loaded = url.clone();
                                     let failed = url.clone();
-                                    let faded = url.clone();
+                                    let faded = url;
                                     rsx! {
                                         if shown.ghost() {
                                             div { class: "cover-flow-ghost" }
                                         }
                                         img {
                                             class: if shown.image_shown() { "shown" } else { "" },
-                                            src: "{url}",
+                                            src: "{src}",
                                             alt: "{card.scryfall_data.name}, {card.scryfall_data.set_name}",
                                             loading: "lazy",
                                             draggable: false,
                                             onload: move |_| {
                                                 let loaded = loaded.clone();
+                                                let decode_src = decode_src.clone();
                                                 spawn(async move {
-                                                    decoded(&loaded).await;
+                                                    decoded(&decode_src).await;
                                                     mark_image_seen(&loaded);
-                                                    arrived.write().insert(loaded, Arrival::Decoded);
+                                                    arrived.write().set(&loaded, Arrival::Decoded);
                                                 });
                                             },
                                             ontransitionend: move |_| {
-                                                if arrived.peek().get(&faded) == Some(&Arrival::Decoded) {
-                                                    arrived.write().insert(faded.clone(), Arrival::Faded);
+                                                if arrived.peek().get(&faded) == Some(Arrival::Decoded) {
+                                                    arrived.write().set(&faded, Arrival::Faded);
                                                 }
                                             },
                                             onerror: move |_| {
-                                                arrived.write().insert(failed.clone(), Arrival::Failed);
+                                                arrived.write().set(&failed, Arrival::Failed);
                                             },
                                         }
                                     }
@@ -510,6 +592,44 @@ mod tests {
         assert_eq!(tile(true, None), Tile::Ghost, "loading");
         assert_eq!(tile(true, Some(Arrival::Failed)), Tile::Missing, "failed");
         assert_eq!(tile(false, None), Tile::Missing, "no art");
+    }
+
+    #[test]
+    fn a_failed_printing_loads_again_on_retry() {
+        let (sol, bolt) = ("https://img/sol.jpg", "https://img/bolt.jpg");
+        let mut arrivals = Arrivals::default();
+        arrivals.set(sol, Arrival::Failed);
+        arrivals.set(bolt, Arrival::Faded);
+        assert_eq!(
+            tile(true, arrivals.get(sol)),
+            Tile::Missing,
+            "failed: the set name"
+        );
+        assert_eq!(arrivals.src(sol), sol, "first try: the plain URL");
+
+        assert!(arrivals.retry_failed(), "the connection is back");
+        assert_eq!(
+            tile(true, arrivals.get(sol)),
+            Tile::Ghost,
+            "ghosts while it tries again"
+        );
+        assert_ne!(
+            arrivals.src(sol),
+            sol,
+            "a new src, so the browser asks again"
+        );
+        assert_eq!(
+            arrivals.get(bolt),
+            Some(Arrival::Faded),
+            "a shown image stays"
+        );
+        assert!(!arrivals.retry_failed(), "nothing left to retry");
+
+        arrivals.set(sol, Arrival::Failed);
+        let before = arrivals.src(sol);
+        assert!(arrivals.retry(sol), "brought to the middle again");
+        assert_ne!(arrivals.src(sol), before, "each retry asks anew");
+        assert!(!arrivals.retry(bolt), "only a failed image retries");
     }
 
     #[test]
