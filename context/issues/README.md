@@ -67,6 +67,7 @@ Who checked, on which live build, what they saw.
 | [342](342-no-link-underlines.md) | No underlines on links | fixing | thinker | - |
 | [344](344-meld-support.md) | Meld cards show their melded card | fixing | scotland | #534 |
 | [343](343-web-keyboard-shortcuts.md) | Keyboard shortcuts on the web | fixing | thinker | - |
+| [346](346-chart-entrance.md) | Charts animate in when they open | fixing | laptop | - |
 
 ## Waiting for live verification
 
