@@ -266,9 +266,8 @@ body {
 }
 
 .web-hero-tagline a {
-    color: var(--ink-palette-1, var(--palette-1));
-    text-decoration: underline;
-    text-underline-offset: 3px;
+    color: var(--ink-accent-primary, var(--accent-primary));
+    text-decoration: none;
 }
 
 .web-hero,

@@ -3077,26 +3077,29 @@ body .toast-container [role="alertdialog"] {
     margin-bottom: 0.4rem;
 }
 
-/* Links in body text: the privacy policy's and About's credits. */
+/* Links in body text: the privacy policy's and About's credits. The accent
+   marks them, with no underline. */
 .privacy-content a,
 .privacy-content .privacy-link,
 .about-credits a {
-    color: var(--ink-palette-1, var(--palette-1));
-    text-decoration: underline;
+    color: var(--ink-accent-primary, var(--accent-primary));
+    text-decoration: none;
     cursor: pointer;
 }
 
-/* The kit's link hover, which these rules' classes outrank. */
+/* The kit's link hover and focus, which these rules' classes outrank: a
+   slight brighten toward the text color, and a ring on focus. */
 @media (hover: hover) {
     :is(.privacy-content a, .privacy-content .privacy-link, .about-credits a):hover {
-        color: var(--ink-accent-primary, var(--accent-primary));
-        text-decoration-thickness: 2px;
+        color: color-mix(in srgb, var(--ink-accent-primary, var(--accent-primary)) 70%, var(--text-primary));
     }
 }
 
 :is(.privacy-content a, .privacy-content .privacy-link, .about-credits a):focus-visible {
-    color: var(--ink-accent-primary, var(--accent-primary));
-    text-decoration-thickness: 2px;
+    color: color-mix(in srgb, var(--ink-accent-primary, var(--accent-primary)) 70%, var(--text-primary));
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+    border-radius: 0.2em;
 }
 
 /* ==============================

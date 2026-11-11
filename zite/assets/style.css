@@ -151,8 +151,13 @@ body {
 
 a {
     color: var(--ink-palette-1, var(--palette-1));
-    text-decoration: underline;
-    text-underline-offset: 3px;
+    text-decoration: none;
+}
+
+/* A text link, which has no class: the accent marks it, with no underline,
+   and it takes the kit's hover and focus. */
+a:not([class]) {
+    color: var(--ink-accent-primary, var(--accent-primary));
 }
 
 /* Selected text in the accent tint instead of the browser's default blue,
@@ -175,8 +180,7 @@ a {
 /* Hover states that answer the cursor: links with a class (cards, the
    brand, pills) brighten toward the text color, panels lift a few pixels
    with a deeper shadow. An inline text link has no class and takes the
-   kit's hover instead, the accent and a firmer underline, as on
-   app.zwipe.net.
+   kit's hover instead, a slight brighten, as on app.zwipe.net.
 
    The panel rules carry the body prefix on purpose: the crate's
    components.css is inlined in a <style> block AFTER this sheet's <link>, so
