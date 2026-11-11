@@ -27,11 +27,14 @@ Each key does exactly what its dock button or swipe does today, through the same
 
 - Esc closes the open sheet or drawer.
 - `?` opens the page's existing hint, the same one its `?` button opens.
-- `H` (Shift+H) opens the shortcuts sheet: the four directions with `hjkl`, `p`, `d`, `v`, `f`, `r`, `s`, Esc, `?` and `H`. Lowercase `h` stays Skip; with Caps Lock on, `h` opens the sheet instead (accepted).
+
+## Swipe screens only
+
+- `H` (Shift+H) opens the shortcuts sheet: the four directions with `hjkl`, `p`, `d`, `v`, `f`, `r`, `s`, Esc, `?` and `H`. Lowercase `h` stays Skip; with Caps Lock on, `h` opens the sheet instead (accepted). On every other screen Shift+H does nothing.
 
 ## Showing the shortcuts
 
-No key labels on buttons and no settings toggle: they would clutter the screens for people who never use a keyboard. Instead, the swipe screens get one keyboard icon in the dock, on computers only (`(hover: hover) and (pointer: fine)`), which opens the same shortcuts sheet as `H`.
+No key labels on buttons and no settings toggle: they would clutter the screens for people who never use a keyboard. Instead, the swipe screens get one keyboard icon in the dock, on a computer's wide layout only (`(hover: hover) and (pointer: fine)` and the web's 900px layout switch), which opens the same shortcuts sheet as `H`. Shift+H works at any width.
 
 ## Rules
 

@@ -1,6 +1,6 @@
-//! The keyboard shortcuts on screen: the sheet that lists them, the keys that work everywhere
-//! (`?` for the page's hint, Shift+H for the sheet), and the swipe screens' dock button that
-//! opens the sheet on a computer.
+//! The keyboard shortcuts on screen: the sheet that lists them, the keys that open things (`?`
+//! the page's hint everywhere, Shift+H the sheet on the swipe screens), and the swipe screens'
+//! dock button that opens the sheet on a computer.
 
 use components::icons::DockIcon;
 use components::{BottomSheet, HintKey, SheetFrame, SheetWide};
@@ -17,19 +17,45 @@ const KEYBOARD: &str = "M3 7h18v10H3zM7 10.5h.01M10.5 10.5h.01M14 10.5h.01M17.5 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ShortcutsOpen(pub Signal<bool>);
 
-/// Provides [`ShortcutsOpen`] to the routes under it and answers the keys that work everywhere
-/// with no hint of their own: Shift+H. Call once, in the frame around every route.
+/// How many swipe screens are mounted, which [`use_offer_shortcuts`] counts: Shift+H opens the
+/// sheet only while one is.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ShortcutsOffered(pub Signal<u32>);
+
+/// Provides [`ShortcutsOpen`] and [`ShortcutsOffered`] to the routes under it and answers the
+/// keys of a page with no hint of its own. Call once, in the frame around every route.
 pub fn use_shortcuts_root() -> Signal<bool> {
     let open = use_context_provider(|| ShortcutsOpen(Signal::new(false))).0;
+    use_context_provider(|| ShortcutsOffered(Signal::new(0)));
     use_global_keys(None);
     open
 }
 
+/// Marks this screen as a swipe screen while it is mounted, so Shift+H opens the shortcuts
+/// sheet; elsewhere Shift+H does nothing.
+pub fn use_offer_shortcuts() {
+    let offered = try_use_context::<ShortcutsOffered>().map(|ShortcutsOffered(count)| count);
+    use_hook(move || {
+        if let Some(mut count) = offered {
+            let now = *count.peek();
+            count.set(now.saturating_add(1));
+        }
+    });
+    use_drop(move || {
+        if let Some(mut count) = offered {
+            let now = *count.peek();
+            count.set(now.saturating_sub(1));
+        }
+    });
+}
+
 /// Answers `?` with `on_hint`, the page's own hint as its `?` button opens it, and Shift+H with
-/// the shortcuts sheet, while this registration is the newest and the key reaches the screen.
-/// A page without a hint passes `None`, and `?` does nothing there.
+/// the shortcuts sheet while a swipe screen is mounted ([`use_offer_shortcuts`]), while this
+/// registration is the newest and the key reaches the screen. A page without a hint passes
+/// `None`, and `?` does nothing there.
 pub fn use_global_keys(on_hint: Option<Callback<()>>) {
     let open = try_use_context::<ShortcutsOpen>().map(|ShortcutsOpen(open)| open);
+    let offered = try_use_context::<ShortcutsOffered>().map(|ShortcutsOffered(count)| count);
     // The page's current hint, which can change between renders.
     let mut hint = use_signal(|| on_hint);
     use_effect(use_reactive!(|on_hint| hint.set(on_hint)));
@@ -49,7 +75,8 @@ pub fn use_global_keys(on_hint: Option<Callback<()>>) {
                         }
                     }
                     Some(GlobalKey::Shortcuts) => {
-                        if let Some(mut open) = open {
+                        let on_swipe_screen = offered.is_some_and(|count| *count.peek() > 0);
+                        if let Some(mut open) = open.filter(|_| on_swipe_screen) {
                             open.set(true);
                         }
                     }
@@ -76,8 +103,13 @@ pub fn ShortcutsSheet(open: Signal<bool>) -> Element {
                     for (keys, does) in shortcuts::sheet_rows() {
                         li { key: "{does}", class: "web-shortcut",
                             span { class: "web-shortcut-keys",
-                                for label in keys.iter().copied() {
-                                    HintKey { key: "{label}", "{label}" }
+                                for (i, label) in keys.iter().copied().enumerate() {
+                                    span { key: "{label}",
+                                        if i > 0 {
+                                            " "
+                                        }
+                                        HintKey { "{label}" }
+                                    }
                                 }
                             }
                             span { class: "web-shortcut-does", "{does}" }
