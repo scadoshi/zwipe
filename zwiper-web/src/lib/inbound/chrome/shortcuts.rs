@@ -157,7 +157,7 @@ pub const SELECT_LABELS: SwipeLabels = SwipeLabels {
 pub enum ShortcutsScreen {
     /// A swipe screen, its swipes named as its dock names them.
     Swipe(SwipeLabels),
-    /// The deck cards screen, whose keys act on the card under the cursor.
+    /// The deck cards screen, whose keys act on the card under the cursor, else the open one.
     DeckCards,
 }
 
@@ -195,6 +195,8 @@ pub fn sheet_rows(screen: &ShortcutsScreen) -> Vec<(&'static [&'static str], &'s
         }
         ShortcutsScreen::DeckCards => vec![
             (&["p"], "Printings"),
+            (&["i"], "Image"),
+            (&["v"], "Flip card"),
             (&["m"], "Maybeboard"),
             (&["s"], "Sideboard"),
             (&["Shift+S"], "Star"),
@@ -210,7 +212,7 @@ pub fn sheet_rows(screen: &ShortcutsScreen) -> Vec<(&'static [&'static str], &'s
 pub fn sheet_note(screen: &ShortcutsScreen) -> Option<&'static str> {
     match screen {
         ShortcutsScreen::Swipe(_) => None,
-        ShortcutsScreen::DeckCards => Some("Hover a card, then press its key"),
+        ShortcutsScreen::DeckCards => Some("Hover or open a card, then press its key"),
     }
 }
 
@@ -220,6 +222,10 @@ pub const TYPING_TAGS: [&str; 3] = ["INPUT", "TEXTAREA", "SELECT"];
 /// Open overlays that keep the screen's keys to themselves: a dialog and a sheet or drawer.
 pub const OVERLAY_SELECTORS: [&str; 2] =
     [".alert-dialog[data-state=\"open\"]", ".bottom-sheet.show"];
+
+/// The class of the Stacks view's card details drawer, the one sheet the deck cards screen's
+/// hover keys pass through ([`guard_js_through`]).
+pub const STACK_DETAILS_CLASS: &str = "deck-stack-details";
 
 /// One keydown, as the browser saw it.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -247,14 +253,14 @@ pub fn reaches_screen(press: &KeyPress) -> bool {
 /// should reach the screen: [`reaches_screen`] over [`TYPING_TAGS`] and [`OVERLAY_SELECTORS`].
 #[must_use]
 pub fn guard_js() -> String {
-    browser_guard(Modifiers::Refused)
+    browser_guard(Modifiers::Refused, &overlays_closed(None))
 }
 
 /// [`guard_js`] without the modifier check, for a listener that wants a combo such as Ctrl+Z
 /// and checks the modifiers itself.
 #[must_use]
 pub fn guard_js_with_modifiers() -> String {
-    browser_guard(Modifiers::Allowed)
+    browser_guard(Modifiers::Allowed, &overlays_closed(None))
 }
 
 /// Whether the browser guard turns a key with Ctrl, Alt or Meta away.
@@ -266,18 +272,45 @@ enum Modifiers {
     Allowed,
 }
 
-/// The browser guard's expression under `modifiers`.
-fn browser_guard(modifiers: Modifiers) -> String {
+/// [`guard_js`], except that while the open sheet is the one with `sheet_class`, `keys` still
+/// reach the screen. Any other sheet or a dialog keeps every key, as [`guard_js`] does.
+#[must_use]
+pub fn guard_js_through(sheet_class: &str, keys: &[&str]) -> String {
+    let keys = keys
+        .iter()
+        .map(|key| format!("'{key}'"))
+        .collect::<Vec<_>>()
+        .join(", ");
+    let passing = format!(
+        "(!document.querySelector('.bottom-sheet.show.{sheet_class}') || [{keys}].includes(e.key))"
+    );
+    let overlays = format!("{} && {passing}", overlays_closed(Some(sheet_class)));
+    browser_guard(Modifiers::Refused, &overlays)
+}
+
+/// The expression that holds while no overlay in [`OVERLAY_SELECTORS`] is open, a sheet with
+/// `except_class` not counting.
+fn overlays_closed(except_class: Option<&str>) -> String {
+    OVERLAY_SELECTORS
+        .iter()
+        .map(|selector| match except_class {
+            Some(class) if *selector == ".bottom-sheet.show" => {
+                format!("!document.querySelector('{selector}:not(.{class})')")
+            }
+            _ => format!("!document.querySelector('{selector}')"),
+        })
+        .collect::<Vec<_>>()
+        .join(" && ")
+}
+
+/// The browser guard's expression under `modifiers`, with `overlays` the check that no overlay
+/// keeps the key.
+fn browser_guard(modifiers: Modifiers, overlays: &str) -> String {
     let tags = TYPING_TAGS
         .iter()
         .map(|tag| format!("'{tag}'"))
         .collect::<Vec<_>>()
         .join(", ");
-    let overlays = OVERLAY_SELECTORS
-        .iter()
-        .map(|selector| format!("!document.querySelector('{selector}')"))
-        .collect::<Vec<_>>()
-        .join(" && ");
     let combo = match modifiers {
         Modifiers::Refused => " && !(e.ctrlKey || e.altKey || e.metaKey)",
         Modifiers::Allowed => "",
@@ -432,6 +465,8 @@ mod tests {
             listed,
             [
                 (&["p"][..], "Printings"),
+                (&["i"][..], "Image"),
+                (&["v"][..], "Flip card"),
                 (&["m"][..], "Maybeboard"),
                 (&["s"][..], "Sideboard"),
                 (&["Shift+S"][..], "Star"),
@@ -444,7 +479,7 @@ mod tests {
         );
         assert_eq!(
             sheet_note(&ShortcutsScreen::DeckCards),
-            Some("Hover a card, then press its key")
+            Some("Hover or open a card, then press its key")
         );
         assert_eq!(sheet_note(&ShortcutsScreen::Swipe(ADD_LABELS)), None);
         // Every listed key really does what its row says on the deck cards screen.
@@ -546,6 +581,27 @@ mod tests {
             ..KeyPress::default()
         };
         assert!(!reaches_screen(&behind), "a sheet is open");
+    }
+
+    #[test]
+    fn the_stack_details_drawer_lets_only_the_hover_keys_through() {
+        let through = guard_js_through(STACK_DETAILS_CLASS, &hover_keys::HOVER_KEYS);
+        assert!(
+            through.contains(&format!(".bottom-sheet.show:not(.{STACK_DETAILS_CLASS})")),
+            "every other sheet still blocks: {through}"
+        );
+        assert!(
+            through.contains(".alert-dialog[data-state=\"open\"]"),
+            "a dialog still blocks: {through}"
+        );
+        for key in hover_keys::HOVER_KEYS {
+            assert!(through.contains(&format!("'{key}'")), "{key} in {through}");
+        }
+        assert!(!through.contains("'/'"), "/ stays blocked: {through}");
+        assert!(
+            !guard_js().contains(STACK_DETAILS_CLASS),
+            "the other screens' guard lets nothing through"
+        );
     }
 
     #[test]

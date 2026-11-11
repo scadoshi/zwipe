@@ -1,8 +1,8 @@
-//! The deck cards screen's keys for the card under the cursor (`context/plans/keyboard_shortcuts.md`,
-//! "Deck cards screen"): `p` opens its Printings, `m` and `s` move it to the maybeboard and the
-//! sideboard, Shift+S stars or unstars it, and `-` and `+` (or `=`) step its quantity. Each does
-//! exactly what that row's own button does, and nothing where the row has no such button. With no
-//! card hovered, `-` and `+` step the card whose details are open instead.
+//! The deck cards screen's keys for one card (`context/plans/keyboard_shortcuts.md`, "Deck cards
+//! screen"): `p` opens its Printings, `i` its image, `v` flips it, `m` and `s` move it to the
+//! maybeboard and the sideboard, Shift+S stars or unstars it, and `-` and `+` (or `=`) step its
+//! quantity. Each does exactly what that card's own button does, and nothing where it has no such
+//! button. The card is the one under the cursor, else the one whose details are open.
 
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
@@ -11,11 +11,21 @@ use zwipe_ui::deck::form::Slot;
 
 use super::editor::{RowInfo, RowKind};
 
+/// Every key [`hover_key`] answers, as `KeyboardEvent.key`: the keys that still reach the screen
+/// while the Stacks view's card details drawer is open.
+pub(crate) const HOVER_KEYS: [&str; 13] = [
+    "p", "P", "i", "I", "v", "V", "m", "M", "s", "S", "-", "+", "=",
+];
+
 /// A key the deck cards screen answers for the hovered card.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum HoverKey {
     /// `p`: the card's Printings.
     Printings,
+    /// `i`: the card's image, as its Image button opens it.
+    Image,
+    /// `v`: the card's other face, as its Flip button turns it.
+    Flip,
     /// `m`: to the maybeboard.
     ToMaybeboard,
     /// `s`: to the sideboard.
@@ -28,19 +38,13 @@ pub(crate) enum HoverKey {
     More,
 }
 
-impl HoverKey {
-    /// Whether the key acts on the card whose details are open when no card is hovered.
-    #[must_use]
-    pub(crate) fn falls_back_to_open_card(self) -> bool {
-        matches!(self, Self::Fewer | Self::More)
-    }
-}
-
 /// The hover key `key` (a `KeyboardEvent.key`) stands for. `s` and `S` differ: Shift+S stars.
 #[must_use]
 pub(crate) fn hover_key(key: &str) -> Option<HoverKey> {
     match key {
         "p" | "P" => Some(HoverKey::Printings),
+        "i" | "I" => Some(HoverKey::Image),
+        "v" | "V" => Some(HoverKey::Flip),
         "m" | "M" => Some(HoverKey::ToMaybeboard),
         "s" => Some(HoverKey::ToSideboard),
         "S" => Some(HoverKey::Star),
@@ -61,6 +65,9 @@ pub(crate) enum HoverAction {
     Star(Uuid, bool),
     /// Change the card's quantity by the step, as the stepper's `-` or `+` does.
     Quantity(Uuid, i32),
+    /// Press the card's own details button with this label, which does nothing where the card
+    /// shows none (a single-faced card has no Flip).
+    Press(Uuid, &'static str),
 }
 
 /// What `key` does to `row`, a card on `board`: the action of the row's matching button, or
@@ -91,6 +98,8 @@ pub(crate) fn hover_action(key: HoverKey, row: &RowInfo, board: Board) -> Option
             RowKind::Main { mvp } => Some(HoverAction::Star(card_id, mvp)),
             RowKind::Board(_) | RowKind::Zone(_) | RowKind::Token => None,
         },
+        HoverKey::Image => Some(HoverAction::Press(card_id, "Image")),
+        HoverKey::Flip => Some(HoverAction::Press(card_id, "Flip")),
         HoverKey::Fewer => movable.then_some(HoverAction::Quantity(card_id, -1)),
         HoverKey::More => movable.then_some(HoverAction::Quantity(card_id, 1)),
     }
@@ -121,13 +130,25 @@ mod tests {
     }
 
     #[test]
+    fn every_hover_key_is_listed_for_the_drawer() {
+        for key in HOVER_KEYS {
+            assert!(hover_key(key).is_some(), "{key}");
+        }
+        for key in [
+            "p", "P", "i", "I", "v", "V", "m", "M", "s", "S", "-", "+", "=",
+        ] {
+            assert!(HOVER_KEYS.contains(&key), "{key}");
+        }
+    }
+
+    #[test]
     fn the_keys_are_p_m_s_and_shift_s() {
         assert_eq!(hover_key("p"), Some(HoverKey::Printings));
         assert_eq!(hover_key("P"), Some(HoverKey::Printings));
         assert_eq!(hover_key("m"), Some(HoverKey::ToMaybeboard));
         assert_eq!(hover_key("s"), Some(HoverKey::ToSideboard));
         assert_eq!(hover_key("S"), Some(HoverKey::Star));
-        for key in ["d", "f", "/", "Enter", " ", "_"] {
+        for key in ["d", "f", "/", "Enter", " ", "_", "r"] {
             assert_eq!(hover_key(key), None, "{key}");
         }
     }
@@ -222,16 +243,25 @@ mod tests {
     }
 
     #[test]
-    fn only_the_quantity_keys_fall_back_to_the_open_card() {
-        assert!(HoverKey::Fewer.falls_back_to_open_card());
-        assert!(HoverKey::More.falls_back_to_open_card());
-        for key in [
-            HoverKey::Printings,
-            HoverKey::ToMaybeboard,
-            HoverKey::ToSideboard,
-            HoverKey::Star,
+    fn i_and_v_press_the_card_s_own_image_and_flip_buttons() {
+        assert_eq!(hover_key("i"), Some(HoverKey::Image));
+        assert_eq!(hover_key("v"), Some(HoverKey::Flip));
+        for kind in [
+            RowKind::Main { mvp: false },
+            RowKind::Board(Board::Maybeboard),
+            RowKind::Zone(Slot::Commander),
+            RowKind::Token,
         ] {
-            assert!(!key.falls_back_to_open_card(), "{key:?}");
+            let any = row(kind);
+            let id = any.card.scryfall_data.id;
+            assert_eq!(
+                hover_action(HoverKey::Image, &any, Board::Deck),
+                Some(HoverAction::Press(id, "Image"))
+            );
+            assert_eq!(
+                hover_action(HoverKey::Flip, &any, Board::Deck),
+                Some(HoverAction::Press(id, "Flip"))
+            );
         }
     }
 

@@ -163,12 +163,18 @@ pub(crate) fn stack_details(
             card,
             on_printings,
             footer,
+            class: DRAWER_CLASSES,
         }
     }
 }
 
 /// Drops focus from the stack card the drawer opened from, so its focus
 /// outline goes with the drawer.
+/// The details drawer's classes: the card details drawer's own, then
+/// [`STACK_DETAILS_CLASS`](crate::inbound::chrome::shortcuts::STACK_DETAILS_CLASS), so
+/// the deck cards screen's hover keys reach the screen through it.
+const DRAWER_CLASSES: &str = "card-details-drawer deck-stack-details";
+
 const BLUR_STACK_CARD_JS: &str = "if (document.activeElement?.classList.contains('card-stack-card')) document.activeElement.blur();";
 
 /// Keeps the drawer and the reveal state agreeing: a drawer closed by its
@@ -191,4 +197,17 @@ pub(crate) fn use_stack_details_sync(
             details_open.set(false);
         }
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::inbound::chrome::shortcuts::STACK_DETAILS_CLASS;
+
+    #[test]
+    fn the_drawer_names_the_class_the_keys_pass_through() {
+        let classes: Vec<&str> = DRAWER_CLASSES.split_whitespace().collect();
+        assert!(classes.contains(&"card-details-drawer"));
+        assert!(classes.contains(&STACK_DETAILS_CLASS));
+    }
 }
