@@ -51,6 +51,7 @@ pub const UPCOMING: &[Release] = &[Release {
     date: None,
     entries: &[
         "The deck page on the web can show its cards as stacks, one per group, beside the list",
+        "Keyboard shortcuts on the web's deck page for the card under the cursor, with Shift+H to list them",
     ],
 }];
 

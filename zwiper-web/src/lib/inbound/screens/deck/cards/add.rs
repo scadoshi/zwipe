@@ -61,7 +61,7 @@ use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::details_eye::{DockEye, Surface, use_details_eye};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::chrome::page_keys::{use_page_keys, use_undo_key};
-use crate::inbound::chrome::shortcuts::{self, ADD_LABELS, Shortcut};
+use crate::inbound::chrome::shortcuts::{self, ADD_LABELS, Shortcut, ShortcutsScreen};
 use crate::inbound::chrome::shortcuts_sheet::{DockShortcuts, use_offer_shortcuts};
 use crate::inbound::root_signal::use_signal_for_root_tasks;
 use crate::inbound::session::ensure_fresh::ensure_fresh;
@@ -161,7 +161,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
     let mut hint_open = use_one_time_hint(OneTimeHint::AddDeckCards);
     let control = use_swipe_control();
     // A swipe screen: Shift+H opens the shortcuts sheet here.
-    use_offer_shortcuts(ADD_LABELS);
+    use_offer_shortcuts(ShortcutsScreen::Swipe(ADD_LABELS));
 
     let context = move || -> AddContext {
         deck.peek()

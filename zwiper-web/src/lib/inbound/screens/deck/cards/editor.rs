@@ -32,6 +32,7 @@ use zwipe_ui::stores::filters::FilterScope;
 use zwipe_ui::stores::undo::{UndoAction, create_board_field};
 use zwipe_ui::timing::QUANTITY_FLUSH;
 
+use super::hover_keys::{self, HoverAction};
 use super::quick_add::QUICK_ADD_ID;
 use super::signal_toast;
 use crate::inbound::card_stores::CardStores;
@@ -40,9 +41,14 @@ use crate::inbound::cards::swipe_stack::{Swipe, use_swipe_key_handler};
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, open_and_record_hint};
 use crate::inbound::chrome::page_keys::{focus_by_id, use_page_keys, use_undo_key};
+use crate::inbound::chrome::shortcuts::ShortcutsScreen;
+use crate::inbound::chrome::shortcuts_sheet::use_offer_shortcuts;
 use crate::inbound::screens::deck::view::cards::zone as zone_of;
 use crate::inbound::telemetry;
 use crate::outbound::timer;
+
+/// Sends the id of the deepest card row or stack card under the cursor, or an empty string.
+const HOVERED_ROW_JS: &str = "const under = document.querySelectorAll('[data-row]:hover'); dioxus.send(under.length ? under[under.length - 1].getAttribute('data-row') : '');";
 
 /// What a row is, which decides its actions.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -298,7 +304,7 @@ pub(crate) fn use_deck_editor(deck_id: Uuid, on_failure: LoadFailure) -> Editor 
     let mut bursts = use_signal(Bursts::default);
     let mut removed_rows: Signal<HashMap<Uuid, DeckEntry>> = use_signal(HashMap::new);
     let mut printing: Signal<Option<(Card, Option<Slot>)>> = use_signal(|| None);
-    let printing_open = use_signal(|| false);
+    let mut printing_open = use_signal(|| false);
     let filter_open = use_signal(|| false);
     let hint_open = use_signal(|| false);
     let mut hint_fired = use_signal(|| false);
@@ -858,7 +864,56 @@ pub(crate) fn use_deck_editor(deck_id: Uuid, on_failure: LoadFailure) -> Editor 
             }
         }),
     );
+    // Shift+H opens the shortcuts sheet with this screen's keys.
+    use_offer_shortcuts(ShortcutsScreen::DeckCards);
     use_page_keys(Callback::new(move |key: String| {
+        // `p`, `m`, `s`, Shift+S, `-` and `+` act on the card under the
+        // cursor, in the list or the stacks, as its own buttons do. With none
+        // hovered, `-` and `+` step the open card and the rest do nothing.
+        if let Some(hover) = hover_keys::hover_key(&key) {
+            spawn(async move {
+                let mut under = document::eval(HOVERED_ROW_JS);
+                let Ok(hovered) = under.recv::<String>().await else {
+                    return;
+                };
+                let open_card = (*selected.peek()).filter(|_| hover.falls_back_to_open_card());
+                let Some(id) = Uuid::try_parse(&hovered).ok().or(open_card) else {
+                    return;
+                };
+                let row = listing
+                    .peek()
+                    .rows
+                    .iter()
+                    .find(|r| r.card.scryfall_data.id == id)
+                    .cloned();
+                let Some(row) = row else {
+                    return;
+                };
+                let board = match row.kind {
+                    RowKind::Board(board) => board,
+                    RowKind::Main { .. } | RowKind::Zone(_) | RowKind::Token => {
+                        meta.peek().get(&id).map_or(Board::Deck, |m| m.board)
+                    }
+                };
+                match hover_keys::hover_action(hover, &row, board) {
+                    Some(HoverAction::Printings(card, slot)) => {
+                        printing.set(Some((*card, slot)));
+                        printing_open.set(true);
+                    }
+                    Some(HoverAction::Move(card_id, target)) => {
+                        move_to_board.call((card_id, target, true));
+                    }
+                    Some(HoverAction::Star(card_id, starred)) => {
+                        toggle_mvp.call((card_id, starred));
+                    }
+                    Some(HoverAction::Quantity(card_id, step)) => {
+                        change_quantity.call((card_id, step, true));
+                    }
+                    None => {}
+                }
+            });
+            return;
+        }
         let row = selected.peek().and_then(|id| {
             listing
                 .peek()
@@ -869,15 +924,6 @@ pub(crate) fn use_deck_editor(deck_id: Uuid, on_failure: LoadFailure) -> Editor 
         });
         match key.as_str() {
             "/" => focus_by_id(QUICK_ADD_ID),
-            "+" | "=" | "-" => {
-                let Some(row) = row else {
-                    return;
-                };
-                if matches!(row.kind, RowKind::Main { .. } | RowKind::Board(_)) {
-                    let delta = if key == "-" { -1 } else { 1 };
-                    change_quantity.call((row.card.scryfall_data.id, delta, true));
-                }
-            }
             "f" | "F" => {
                 if let Some(row) = row {
                     let count = components::card_face_count(&row.card);

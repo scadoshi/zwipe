@@ -2986,6 +2986,12 @@ body:has(.deck-stacks) .sheet-form-drawer:has(> .card-details-drawer) > .sheet-b
     color: var(--text-primary);
 }
 
+/* The line above the keys on a screen whose keys need one. */
+.web-shortcuts-note {
+    margin: 0 0 0.75rem;
+    color: var(--ink-text-muted, var(--text-muted));
+}
+
 /* The shortcuts sheet opens over any screen: the full-window Commander
    swipe (210) and the dictionary and examples overlays (220, 230) too. */
 .web-shortcuts-layer .sheet-backdrop {

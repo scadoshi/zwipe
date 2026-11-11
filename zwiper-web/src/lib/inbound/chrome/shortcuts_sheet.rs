@@ -1,13 +1,13 @@
 //! The keyboard shortcuts on screen: the sheet that lists them, the keys that open things (`?`
-//! the page's hint everywhere, Shift+H the sheet on the swipe screens), and the swipe screens'
-//! dock button that opens the sheet on a computer.
+//! the page's hint everywhere, Shift+H the sheet on the swipe screens and the deck cards screen),
+//! and the swipe screens' dock button that opens the sheet on a computer.
 
 use components::icons::DockIcon;
 use components::{BottomSheet, HintKey, SheetFrame, SheetWide};
 use dioxus::prelude::*;
 use uuid::Uuid;
 
-use crate::inbound::chrome::shortcuts::{self, ADD_LABELS, GlobalKey, SwipeLabels};
+use crate::inbound::chrome::shortcuts::{self, ADD_LABELS, GlobalKey, ShortcutsScreen};
 
 /// The dock button's icon: a keyboard, its keys and space bar.
 const KEYBOARD: &str = "M3 7h18v10H3zM7 10.5h.01M10.5 10.5h.01M14 10.5h.01M17.5 10.5h.01M8 14h8";
@@ -17,10 +17,10 @@ const KEYBOARD: &str = "M3 7h18v10H3zM7 10.5h.01M10.5 10.5h.01M14 10.5h.01M17.5 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ShortcutsOpen(pub Signal<bool>);
 
-/// The mounted swipe screens' labels, newest last, which [`use_offer_shortcuts`] keeps: Shift+H
-/// opens the sheet only while one is mounted, and the sheet names the swipes as the newest does.
+/// The mounted screens that offer the sheet, newest last, which [`use_offer_shortcuts`] keeps:
+/// Shift+H opens the sheet only while one is mounted, and the sheet lists the newest one's keys.
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct ShortcutsOffered(pub Signal<Vec<SwipeLabels>>);
+pub struct ShortcutsOffered(pub Signal<Vec<ShortcutsScreen>>);
 
 /// Provides [`ShortcutsOpen`] and [`ShortcutsOffered`] to the routes under it and answers the
 /// keys of a page with no hint of its own. Call once, in the frame around every route.
@@ -31,19 +31,19 @@ pub fn use_shortcuts_root() -> Signal<bool> {
     open
 }
 
-/// Marks this screen as a swipe screen whose swipes are `labels` while it is mounted, so
-/// Shift+H opens the shortcuts sheet, which names the swipes as its dock does. Elsewhere Shift+H
+/// Marks this screen as `screen` while it is mounted, so Shift+H opens the shortcuts sheet with
+/// that screen's keys, a swipe screen's swipes named as its dock names them. Elsewhere Shift+H
 /// does nothing.
-pub fn use_offer_shortcuts(labels: SwipeLabels) {
+pub fn use_offer_shortcuts(screen: ShortcutsScreen) {
     let offered = try_use_context::<ShortcutsOffered>().map(|ShortcutsOffered(stack)| stack);
     use_hook(move || {
         if let Some(mut stack) = offered {
-            stack.write().push(labels);
+            stack.write().push(screen);
         }
     });
     use_drop(move || {
         if let Some(mut stack) = offered {
-            let at = stack.peek().iter().rposition(|l| *l == labels);
+            let at = stack.peek().iter().rposition(|s| *s == screen);
             if let Some(at) = at {
                 stack.write().remove(at);
             }
@@ -52,7 +52,7 @@ pub fn use_offer_shortcuts(labels: SwipeLabels) {
 }
 
 /// Answers `?` with `on_hint`, the page's own hint as its `?` button opens it, and Shift+H with
-/// the shortcuts sheet while a swipe screen is mounted ([`use_offer_shortcuts`]), while this
+/// the shortcuts sheet while a screen that offers it is mounted ([`use_offer_shortcuts`]), while this
 /// registration is the newest and the key reaches the screen. A page without a hint passes
 /// `None`, and `?` does nothing there.
 pub fn use_global_keys(on_hint: Option<Callback<()>>) {
@@ -92,15 +92,15 @@ pub fn use_global_keys(on_hint: Option<Callback<()>>) {
     });
 }
 
-/// The shortcuts sheet: every key with what it does, in the hint's key style, the swipes named
-/// as the swipe screen on top names them. It sits above every screen, the full-window Commander
-/// swipe included.
+/// The shortcuts sheet: every key of the screen on top with what it does, in the hint's key
+/// style, a swipe screen's swipes named as it names them. It sits above every screen, the
+/// full-window Commander swipe included.
 #[component]
 pub fn ShortcutsSheet(open: Signal<bool>) -> Element {
     let offered = try_use_context::<ShortcutsOffered>().map(|ShortcutsOffered(stack)| stack);
-    let labels = offered
+    let screen = offered
         .and_then(|stack| stack.read().last().copied())
-        .unwrap_or(ADD_LABELS);
+        .unwrap_or(ShortcutsScreen::Swipe(ADD_LABELS));
     rsx! {
         div { class: "web-shortcuts-layer",
         SheetFrame { wide: SheetWide::Modal,
@@ -108,8 +108,11 @@ pub fn ShortcutsSheet(open: Signal<bool>) -> Element {
                 open,
                 title: "Keyboard shortcuts".to_string(),
                 closable: true,
+                if let Some(note) = shortcuts::sheet_note(&screen) {
+                    p { class: "web-shortcuts-note", "{note}" }
+                }
                 ul { class: "web-shortcuts",
-                    for (keys, does) in shortcuts::sheet_rows(&labels) {
+                    for (keys, does) in shortcuts::sheet_rows(&screen) {
                         li { key: "{does}", class: "web-shortcut",
                             span { class: "web-shortcut-keys",
                                 for (i, label) in keys.iter().copied().enumerate() {

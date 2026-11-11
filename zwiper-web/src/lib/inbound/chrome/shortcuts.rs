@@ -1,7 +1,8 @@
 //! The web's keyboard shortcuts (`context/plans/keyboard_shortcuts.md`): which key does what on
-//! the swipe screens, in Printings and everywhere, the rows the shortcuts sheet lists, and when
-//! a key reaches a screen at all. The listeners in `page_keys` and `swipe_stack` run the guard as browser script
-//! built from the same constants, so the two cannot drift.
+//! the swipe screens, in Printings and everywhere, the rows the shortcuts sheet lists on each
+//! screen that offers it, and when a key reaches a screen at all. The listeners in `page_keys`
+//! and `swipe_stack` run the guard as browser script built from the same constants, so the two
+//! cannot drift.
 
 use crate::inbound::cards::swipe_stack::Swipe;
 
@@ -86,8 +87,8 @@ pub fn global_key(key: &str) -> Option<GlobalKey> {
     }
 }
 
-/// What one swipe screen calls its four swipes, as its dock buttons say them. `up` is `None`
-/// on a screen with no up swipe.
+/// What one swipe screen calls its four swipes, as its dock buttons say them, and whether it has
+/// Synergy. `up` is `None` on a screen with no up swipe.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SwipeLabels {
     /// The right swipe.
@@ -98,6 +99,8 @@ pub struct SwipeLabels {
     pub up: Option<&'static str>,
     /// The down swipe.
     pub down: &'static str,
+    /// Whether the screen has Synergy, which `s` turns on or off.
+    pub synergy: bool,
 }
 
 impl SwipeLabels {
@@ -128,6 +131,7 @@ pub const ADD_LABELS: SwipeLabels = SwipeLabels {
     left: "Skip",
     up: Some("Maybeboard"),
     down: "Undo",
+    synergy: true,
 };
 
 /// Remove's swipes.
@@ -136,6 +140,7 @@ pub const REMOVE_LABELS: SwipeLabels = SwipeLabels {
     left: "Keep",
     up: Some("Move"),
     down: "Undo",
+    synergy: false,
 };
 
 /// Commander swipe's swipes; a mode that saves nothing for later has no up swipe.
@@ -144,30 +149,69 @@ pub const SELECT_LABELS: SwipeLabels = SwipeLabels {
     left: "Skip",
     up: Some("Save"),
     down: "Undo",
+    synergy: false,
 };
 
-/// The rows the shortcuts sheet lists: each key, with its vim letter if it has one, and what it
-/// does, the swipe screen's own swipes (`labels`) first.
+/// A screen that offers the shortcuts sheet, which decides the keys the sheet lists.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ShortcutsScreen {
+    /// A swipe screen, its swipes named as its dock names them.
+    Swipe(SwipeLabels),
+    /// The deck cards screen, whose keys act on the card under the cursor.
+    DeckCards,
+}
+
+/// The rows the shortcuts sheet lists on `screen`: each key, with its vim letter if it has one,
+/// and what it does, the screen's own keys first and then the keys every screen answers.
 #[must_use]
-pub fn sheet_rows(labels: &SwipeLabels) -> Vec<(&'static [&'static str], &'static str)> {
-    let swipes = [
-        Some((&["→", "l"][..], labels.right)),
-        Some((&["←", "h"][..], labels.left)),
-        labels.up.map(|up| (&["↑", "k"][..], up)),
-        Some((&["↓", "j"][..], labels.down)),
-    ];
-    let rest: [(&'static [&'static str], &'static str); 9] = [
-        (&["p"], "Printings"),
-        (&["d"], "Card details"),
-        (&["v"], "Flip card"),
-        (&["f"], "Filter"),
-        (&["r"], "Refresh"),
-        (&["s"], "Synergy on or off"),
+pub fn sheet_rows(screen: &ShortcutsScreen) -> Vec<(&'static [&'static str], &'static str)> {
+    let everywhere: [(&'static [&'static str], &'static str); 3] = [
         (&["Esc"], "Close the open sheet"),
         (&["?"], "This page's hint"),
         (&["Shift+H"], "These shortcuts"),
     ];
-    swipes.into_iter().flatten().chain(rest).collect()
+    let own: Vec<(&'static [&'static str], &'static str)> = match screen {
+        ShortcutsScreen::Swipe(labels) => {
+            let swipes = [
+                Some((&["→", "l"][..], labels.right)),
+                Some((&["←", "h"][..], labels.left)),
+                labels.up.map(|up| (&["↑", "k"][..], up)),
+                Some((&["↓", "j"][..], labels.down)),
+            ];
+            let rest: [(&'static [&'static str], &'static str); 5] = [
+                (&["p"], "Printings"),
+                (&["d"], "Card details"),
+                (&["v"], "Flip card"),
+                (&["f"], "Filter"),
+                (&["r"], "Refresh"),
+            ];
+            let synergy = labels.synergy.then_some((&["s"][..], "Synergy on or off"));
+            swipes
+                .into_iter()
+                .flatten()
+                .chain(rest)
+                .chain(synergy)
+                .collect()
+        }
+        ShortcutsScreen::DeckCards => vec![
+            (&["p"], "Printings"),
+            (&["m"], "Maybeboard"),
+            (&["s"], "Sideboard"),
+            (&["Shift+S"], "Star"),
+            (&["-"], "One fewer"),
+            (&["+"], "One more"),
+        ],
+    };
+    own.into_iter().chain(everywhere).collect()
+}
+
+/// The line the shortcuts sheet shows above the keys on `screen`, if it needs one.
+#[must_use]
+pub fn sheet_note(screen: &ShortcutsScreen) -> Option<&'static str> {
+    match screen {
+        ShortcutsScreen::Swipe(_) => None,
+        ShortcutsScreen::DeckCards => Some("Hover a card, then press its key"),
+    }
 }
 
 /// Element tags that take typing: a key pressed while one has focus never reaches a screen.
@@ -246,6 +290,7 @@ fn browser_guard(modifiers: Modifiers) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::inbound::screens::deck::cards::hover_keys;
 
     #[test]
     fn arrows_and_vim_letters_swipe() {
@@ -326,7 +371,7 @@ mod tests {
     #[test]
     fn the_sheet_names_each_swipe_as_its_screen_s_dock_does() {
         let names = |labels: &SwipeLabels| -> Vec<&'static str> {
-            sheet_rows(labels)
+            sheet_rows(&ShortcutsScreen::Swipe(*labels))
                 .iter()
                 .take_while(|(keys, _)| keys.len() == 2)
                 .map(|(_, does)| *does)
@@ -364,8 +409,65 @@ mod tests {
     }
 
     #[test]
+    fn only_a_screen_with_synergy_lists_s() {
+        let lists_synergy = |labels: SwipeLabels| {
+            sheet_rows(&ShortcutsScreen::Swipe(labels))
+                .iter()
+                .any(|(keys, _)| *keys == ["s"])
+        };
+        assert!(lists_synergy(ADD_LABELS));
+        assert!(!lists_synergy(REMOVE_LABELS), "Remove has no Synergy");
+        assert!(
+            !lists_synergy(SELECT_LABELS),
+            "Commander swipe has no Synergy"
+        );
+        assert!(!lists_synergy(SELECT_LABELS.without_up()));
+    }
+
+    #[test]
+    fn the_deck_cards_sheet_lists_only_that_screen_s_keys() {
+        let rows = sheet_rows(&ShortcutsScreen::DeckCards);
+        let listed: Vec<(&[&str], &str)> = rows.clone();
+        assert_eq!(
+            listed,
+            [
+                (&["p"][..], "Printings"),
+                (&["m"][..], "Maybeboard"),
+                (&["s"][..], "Sideboard"),
+                (&["Shift+S"][..], "Star"),
+                (&["-"][..], "One fewer"),
+                (&["+"][..], "One more"),
+                (&["Esc"][..], "Close the open sheet"),
+                (&["?"][..], "This page's hint"),
+                (&["Shift+H"][..], "These shortcuts"),
+            ]
+        );
+        assert_eq!(
+            sheet_note(&ShortcutsScreen::DeckCards),
+            Some("Hover a card, then press its key")
+        );
+        assert_eq!(sheet_note(&ShortcutsScreen::Swipe(ADD_LABELS)), None);
+        // Every listed key really does what its row says on the deck cards screen.
+        for (keys, does) in &rows {
+            for label in *keys {
+                let key = if *label == "Shift+H" {
+                    "H"
+                } else if *label == "Shift+S" {
+                    "S"
+                } else {
+                    label
+                };
+                let known = hover_keys::hover_key(key).is_some()
+                    || global_key(key).is_some()
+                    || key == "Esc";
+                assert!(known, "{label} for {does}");
+            }
+        }
+    }
+
+    #[test]
     fn the_sheet_lists_every_key() {
-        let rows = sheet_rows(&ADD_LABELS);
+        let rows = sheet_rows(&ShortcutsScreen::Swipe(ADD_LABELS));
         let actions: Vec<&str> = rows.iter().map(|(_, does)| *does).collect();
         assert_eq!(
             actions,
