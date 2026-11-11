@@ -44,7 +44,7 @@ use crate::inbound::cards::card_info::{CardDetailsSheet, CardSkeleton};
 use crate::inbound::cards::printing_sheet::PrintingSheet;
 use crate::inbound::cards::swipe_confirm::{SwipeScreenChips, Tone, use_swipe_confirm};
 use crate::inbound::cards::swipe_stack::{
-    Swipe, SwipeDock, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
+    self, Swipe, SwipeDock, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
 };
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::details_eye::{DockEye, Surface, use_details_eye};
@@ -535,6 +535,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                     eye.press();
                 }
             }
+            Some(Shortcut::Flip) => swipe_stack::flip_top_card(),
             Some(Shortcut::Filter) => filter_open.set(true),
             Some(Shortcut::Refresh) => refresh.call(()),
             Some(Shortcut::Synergy | Shortcut::Swipe(_)) | None => {}

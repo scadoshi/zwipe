@@ -446,6 +446,14 @@ pub fn SwipeDock(
     }
 }
 
+/// Presses the flip control of the top swipe card, which a card with two
+/// faces has; a single-faced card has none, and nothing happens.
+pub fn flip_top_card() {
+    document::eval(
+        r#"const flip = document.querySelector('.swipe-stack-card.top [aria-label="Flip card"]'); if (flip) flip.click();"#,
+    );
+}
+
 /// Listens for arrow keys like [`use_swipe_keys`], routed by
 /// [`SwipeRoute::of`]: through `control` while `card_on_top` says a card is
 /// on top, else down calls `on_undo` and the rest do nothing.

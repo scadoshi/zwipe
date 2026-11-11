@@ -66,7 +66,7 @@ use crate::inbound::cards::otag::{OtagExamplesOpen, use_describe_tag};
 use crate::inbound::cards::printing_sheet::PrintingSheet;
 use crate::inbound::cards::swipe_confirm::{SwipeScreenChips, use_swipe_confirm};
 use crate::inbound::cards::swipe_stack::{
-    Swipe, SwipeControl, SwipeDock, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
+    self, Swipe, SwipeControl, SwipeDock, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
 };
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::back_arrow::BackArrow;
@@ -650,6 +650,7 @@ fn SwipeSelectBody(
                     filter_open.set(true);
                 }
             }
+            Some(Shortcut::Flip) => swipe_stack::flip_top_card(),
             Some(Shortcut::Refresh) => refresh.call(()),
             Some(Shortcut::Synergy | Shortcut::Swipe(_)) | None => {}
         },

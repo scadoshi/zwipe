@@ -7,10 +7,10 @@ Scotty, 2026-11-11 (feature, approved): keyboard shortcuts for the web, v1. The 
 
 ## Fix
 thinker, 2026-11-11, on `nits/thinker-keyboard`. Web only (zwiper-web).
-- **Swipe screens** (Add, Remove, Commander swipe): the arrows and `hjkl` swipe; `p` Printings, `d` card details, `f` Filter, `r` Refresh, `s` Synergy.
+- **Swipe screens** (Add, Remove, Commander swipe): the arrows and `hjkl` swipe; `p` Printings, `d` card details, `v` flips the card to its other face, `f` Filter, `r` Refresh, `s` Synergy.
   - Each key calls the same callback as its dock button or swipe. Synergy's toggle became one callback for the bolt and `s`.
   - A key whose action isn't offered there does nothing: `s` on Remove or Commander swipe, `f` where the dock has no Filter.
-  - `f` was Flip on Add and Remove; per the spec it is Filter now, and the flip key is gone.
+  - `f` was Flip on Add and Remove; per the spec it is Filter now, and Flip moved to `v` ("view the back"), on Commander swipe too.
 - **Printings:** ← → and `h`/`l` move, Enter selects, Esc closes.
 - **Everywhere:** Esc closes the open sheet, as it already did. `?` opens the page's own hint, the same callback as its `?` button: `ScreenFrame`'s `on_hint`, and Commander swipe's own. Shift+H opens the shortcuts sheet, which lists every key in the `HintKey` style inside the existing `BottomSheet` (a modal on a wide window).
 - **Dock button:** the swipe screens' docks get a keyboard button that opens the same sheet. It shows only for `(hover: hover) and (pointer: fine)`.

@@ -15,6 +15,8 @@ pub enum Shortcut {
     Printings,
     /// Shows or hides the card details.
     Details,
+    /// Flips the card on top to its other face, for a card with two.
+    Flip,
     /// Opens the filter.
     Filter,
     /// Deals the pile again.
@@ -34,6 +36,7 @@ pub fn swipe_screen_shortcut(key: &str) -> Option<Shortcut> {
         "ArrowDown" | "j" | "J" => Shortcut::Swipe(Swipe::Down),
         "p" | "P" => Shortcut::Printings,
         "d" | "D" => Shortcut::Details,
+        "v" | "V" => Shortcut::Flip,
         "f" | "F" => Shortcut::Filter,
         "r" | "R" => Shortcut::Refresh,
         "s" | "S" => Shortcut::Synergy,
@@ -94,6 +97,7 @@ pub fn sheet_rows() -> Vec<(&'static [&'static str], &'static str)> {
         (&["↓", "j"], "Undo"),
         (&["p"], "Printings"),
         (&["d"], "Card details"),
+        (&["v"], "Flip card"),
         (&["f"], "Filter"),
         (&["r"], "Refresh"),
         (&["s"], "Synergy on or off"),
@@ -203,6 +207,8 @@ mod tests {
         for (key, shortcut) in [
             ("p", Shortcut::Printings),
             ("d", Shortcut::Details),
+            ("v", Shortcut::Flip),
+            ("V", Shortcut::Flip),
             ("f", Shortcut::Filter),
             ("r", Shortcut::Refresh),
             ("s", Shortcut::Synergy),
@@ -267,6 +273,7 @@ mod tests {
                 "Undo",
                 "Printings",
                 "Card details",
+                "Flip card",
                 "Filter",
                 "Refresh",
                 "Synergy on or off",

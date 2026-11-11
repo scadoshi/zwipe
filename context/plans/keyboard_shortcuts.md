@@ -12,6 +12,7 @@ Decided with Scotty on 2026-11-11. Web only: phones have no keyboard. Keep it to
 | ↓ | `j` | Undo (swipe down) |
 | `p` | | Open Printings |
 | `d` | | Card details |
+| `v` | | Flip the card to its other face ("view the back"), for a card with two |
 | `f` | | Filter |
 | `r` | | Refresh the pile |
 | `s` | | Synergy on or off |
@@ -26,7 +27,7 @@ Each key does exactly what its dock button or swipe does today, through the same
 
 - Esc closes the open sheet or drawer.
 - `?` opens the page's existing hint, the same one its `?` button opens.
-- `H` (Shift+H) opens the shortcuts sheet: the four directions with `hjkl`, `p`, `d`, `f`, `r`, `s`, Esc, `?` and `H`. Lowercase `h` stays Skip; with Caps Lock on, `h` opens the sheet instead (accepted).
+- `H` (Shift+H) opens the shortcuts sheet: the four directions with `hjkl`, `p`, `d`, `v`, `f`, `r`, `s`, Esc, `?` and `H`. Lowercase `h` stays Skip; with Caps Lock on, `h` opens the sheet instead (accepted).
 
 ## Showing the shortcuts
 
