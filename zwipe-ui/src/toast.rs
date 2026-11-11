@@ -6,6 +6,7 @@
 
 use std::time::Duration;
 
+use chrono::{DateTime, TimeDelta, Utc};
 pub use orangui_core::toast::{LONG, NORMAL, QUICK};
 
 use crate::confirm;
@@ -130,6 +131,41 @@ pub fn keep_one<E>(effects: &mut Vec<E>, line: impl for<'e> Fn(&'e E) -> Option<
     });
 }
 
+/// Holds back a toast whose words are already up. A failed load raises its
+/// error toast again on every retry (a Retry tap, the connection coming
+/// back, a second load beside the first); without the gate the copies stack
+/// up the screen and over its own "Couldn't load" box. With it, a message
+/// shows once until its toast has gone, and a different message still shows.
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+pub struct RepeatGate {
+    /// Each message up and when its toast goes.
+    up: Vec<(String, DateTime<Utc>)>,
+}
+
+impl RepeatGate {
+    /// A gate with nothing up.
+    #[must_use]
+    pub const fn new() -> Self {
+        Self { up: Vec::new() }
+    }
+
+    /// Whether a toast saying `text` at `now`, up for `lasts`, should show:
+    /// `false` while a toast with the same words is still up. A shown one is
+    /// remembered until it goes.
+    pub fn admit(&mut self, text: &str, now: DateTime<Utc>, lasts: Duration) -> bool {
+        self.up.retain(|(_, goes)| *goes > now);
+        if self.up.iter().any(|(words, _)| words == text) {
+            return false;
+        }
+        let goes = TimeDelta::from_std(lasts)
+            .ok()
+            .and_then(|lasts| now.checked_add_signed(lasts))
+            .unwrap_or(now);
+        self.up.push((text.to_owned(), goes));
+        true
+    }
+}
+
 #[cfg(test)]
 mod keep_one_tests {
     use super::*;
@@ -195,5 +231,55 @@ mod keep_one_tests {
         let mut none = vec![Effect::Fetch];
         keep_one(&mut none, line);
         assert_eq!(none, [Effect::Fetch]);
+    }
+}
+
+#[cfg(test)]
+mod repeat_gate_tests {
+    use super::*;
+
+    const OFFLINE: &str = "Couldn't reach Zwipe. Check your connection.";
+
+    fn at(seconds: i64) -> DateTime<Utc> {
+        DateTime::from_timestamp(seconds, 0).expect("a small timestamp is in range")
+    }
+
+    #[test]
+    fn a_repeat_while_the_first_is_up_is_held_back() {
+        let mut gate = RepeatGate::new();
+        assert!(gate.admit(OFFLINE, at(0), NORMAL));
+        assert!(!gate.admit(OFFLINE, at(1), NORMAL), "a retry 1s later");
+        assert!(
+            !gate.admit(OFFLINE, at(4), NORMAL),
+            "the connection coming back 4s later"
+        );
+    }
+
+    #[test]
+    fn the_same_words_show_again_once_the_toast_has_gone() {
+        let mut gate = RepeatGate::new();
+        assert!(gate.admit(OFFLINE, at(0), NORMAL));
+        assert!(
+            gate.admit(OFFLINE, at(6), NORMAL),
+            "NORMAL is 5s, so it has gone by 6s"
+        );
+    }
+
+    #[test]
+    fn different_words_still_show() {
+        let mut gate = RepeatGate::new();
+        assert!(gate.admit(OFFLINE, at(0), NORMAL));
+        assert!(gate.admit("Something went wrong. Try again.", at(1), NORMAL));
+    }
+
+    #[test]
+    fn a_held_back_repeat_does_not_extend_the_first() {
+        let mut gate = RepeatGate::new();
+        assert!(gate.admit(OFFLINE, at(0), NORMAL));
+        assert!(!gate.admit(OFFLINE, at(4), NORMAL));
+        assert!(
+            gate.admit(OFFLINE, at(6), NORMAL),
+            "the first toast went at 5s"
+        );
     }
 }
