@@ -2752,7 +2752,7 @@ footer.site-footer .site-footer-note {
    height, the card's), which runs on the compositor and leaves the layout
    alone, so the stack slides rather than reflowing. */
 .card-stack {
-    --card-stack-move: 250ms;
+    --card-stack-move: 500ms;
     --card-stack-ease: cubic-bezier(0.22, 1, 0.36, 1);
     position: relative;
     display: flex;
