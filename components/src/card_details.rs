@@ -179,10 +179,12 @@ fn TagRows(
 /// card's rarity, the face's rules text, the Keywords and Card roles rows
 /// (roles when `show_classification`), a chip row of the set, the prices and
 /// the face's stats, then the host's `footer` in its own section. Under a
-/// rule, the action bar holds Flip for a multi-faced card, Image when the
-/// card has art and `on_image` is given, then the host's `actions` in the
-/// same row, and the host's `action_rows` under it. A multi-faced card shows one face at a
-/// time behind Flip.
+/// rule, the action bar holds Flip for a multi-faced card, Meld for a meld
+/// half when the host provides a [`MeldSource`](crate::MeldSource), Image when
+/// the card has art and `on_image` is given, then the host's `actions` in the
+/// same row, and the host's `action_rows` under it. A multi-faced card shows
+/// one face at a time behind Flip; a meld half shows its melded card while
+/// Meld is on.
 #[component]
 pub fn CardDetails(
     card: Card,
@@ -225,6 +227,10 @@ pub fn CardDetails(
     #[props(default)]
     footer: Option<Element>,
 ) -> Element {
+    // A meld half shows its melded card in its place while Meld is on.
+    let meld = use_meld(&card.scryfall_data);
+    let show_meld = meld.available();
+    let card = meld.apply(&card);
     let sd = &card.scryfall_data;
     let rarity = sd.rarity.to_long_name();
     let set_name = sd.set_name.clone();
@@ -244,7 +250,7 @@ pub fn CardDetails(
 
     let show_flip_btn = face_count > 1;
     let show_image = has_image && on_image.is_some();
-    let show_bar = show_flip_btn || show_image || has_actions;
+    let show_bar = show_flip_btn || show_image || show_meld || has_actions;
 
     rsx! {
         div { class: "card-row-detail card-details-row",
@@ -266,6 +272,9 @@ pub fn CardDetails(
                 div { class: "card-action-row",
                     if show_flip_btn {
                         FlipButton { face_idx, current: cur, face_count, on_face_change }
+                    }
+                    if show_meld {
+                        MeldButton { meld }
                     }
                     if let (true, Some(handler)) = (show_image, on_image) {
                         FootButton { label: "Image", action: data_action::IMAGE, on_click: handler }
@@ -401,19 +410,7 @@ pub fn CardDetailsPanel(
                                 FlipButton { face_idx, current: cur, face_count, on_face_change }
                             }
                             if show_meld {
-                                button {
-                                    class: if meld.on() { "card-action-btn selected" } else { "card-action-btn" },
-                                    "data-action": data_action::MELD,
-                                    "aria-pressed": "{meld.on()}",
-                                    onclick: {
-                                        let meld = meld.clone();
-                                        move |evt: MouseEvent| {
-                                            evt.stop_propagation();
-                                            meld.toggle();
-                                        }
-                                    },
-                                    "Meld"
-                                }
+                                MeldButton { meld: meld.clone() }
                             }
                             if let (true, Some(handler)) = (show_image, on_image) {
                                 FootButton { label: "Image", action: data_action::IMAGE, on_click: handler }
@@ -492,6 +489,24 @@ fn FlipButton(
                 }
             },
             "Flip"
+        }
+    }
+}
+
+/// A meld half's Meld toggle: on, the melded card shows in the half's place.
+#[component]
+fn MeldButton(meld: MeldToggle) -> Element {
+    let on = meld.on();
+    rsx! {
+        button {
+            class: if on { "card-action-btn selected" } else { "card-action-btn" },
+            "data-action": data_action::MELD,
+            "aria-pressed": "{on}",
+            onclick: move |evt: MouseEvent| {
+                evt.stop_propagation();
+                meld.toggle();
+            },
+            "Meld"
         }
     }
 }
