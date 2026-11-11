@@ -56,53 +56,34 @@ pub fn CardEditButtons(
 /// two, as one `card-action-row`.
 #[component]
 pub fn CardBoardMoves(current_board: Option<Board>, on_move_to: EventHandler<Board>) -> Element {
-    let handler = on_move_to;
+    let targets = match current_board.unwrap_or(Board::Deck) {
+        Board::Deck => [Board::Maybeboard, Board::Sideboard],
+        Board::Maybeboard => [Board::Deck, Board::Sideboard],
+        Board::Sideboard => [Board::Deck, Board::Maybeboard],
+    };
     rsx! {
         div { class: "card-action-row",
-            match current_board.unwrap_or(Board::Deck) {
-                Board::Deck => rsx! {
-                    button {
-                        class: "card-action-btn",
-                        style: "white-space:nowrap;",
-                        onclick: move |evt| { evt.stop_propagation(); handler.call(Board::Maybeboard); },
-                        "To maybeboard"
-                    }
-                    button {
-                        class: "card-action-btn",
-                        style: "white-space:nowrap;",
-                        onclick: move |evt| { evt.stop_propagation(); handler.call(Board::Sideboard); },
-                        "To sideboard"
-                    }
-                },
-                Board::Maybeboard => rsx! {
-                    button {
-                        class: "card-action-btn",
-                        style: "white-space:nowrap;",
-                        onclick: move |evt| { evt.stop_propagation(); handler.call(Board::Deck); },
-                        "To mainboard"
-                    }
-                    button {
-                        class: "card-action-btn",
-                        style: "white-space:nowrap;",
-                        onclick: move |evt| { evt.stop_propagation(); handler.call(Board::Sideboard); },
-                        "To sideboard"
-                    }
-                },
-                Board::Sideboard => rsx! {
-                    button {
-                        class: "card-action-btn",
-                        style: "white-space:nowrap;",
-                        onclick: move |evt| { evt.stop_propagation(); handler.call(Board::Deck); },
-                        "To mainboard"
-                    }
-                    button {
-                        class: "card-action-btn",
-                        style: "white-space:nowrap;",
-                        onclick: move |evt| { evt.stop_propagation(); handler.call(Board::Maybeboard); },
-                        "To maybeboard"
-                    }
-                },
+            for target in targets {
+                button {
+                    key: "{move_label(target)}",
+                    class: "card-action-btn",
+                    style: "white-space:nowrap;",
+                    onclick: move |evt| {
+                        evt.stop_propagation();
+                        on_move_to.call(target);
+                    },
+                    {move_label(target)}
+                }
             }
         }
+    }
+}
+
+/// The button that moves a card to `board`.
+const fn move_label(board: Board) -> &'static str {
+    match board {
+        Board::Deck => "To mainboard",
+        Board::Maybeboard => "To maybeboard",
+        Board::Sideboard => "To sideboard",
     }
 }

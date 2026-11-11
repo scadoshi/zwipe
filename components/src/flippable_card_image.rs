@@ -13,8 +13,8 @@ use std::sync::{Mutex, OnceLock};
 use dioxus::prelude::*;
 use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
 
-use crate::OracleText;
 use crate::meld::use_meld;
+use crate::{OracleText, data_action};
 
 /// Image URLs whose bytes have already arrived once this session. These
 /// render instantly; only first-time loads play the ease-in. Keyed by URL
@@ -237,6 +237,7 @@ pub fn FlippableCardImage(
                                     button {
                                         class: "card-action-btn",
                                         "aria-label": "Flip card",
+                                        "data-action": data_action::FLIP,
                                         onclick: move |e| {
                                             e.stop_propagation();
                                             let next = (cur + 1) % total;
@@ -290,6 +291,7 @@ pub fn FlippableCardImage(
                 if flippable && meld.available() && !is_no_image {
                     button {
                         class: if meld.on() { "card-flip-button card-meld-button selected" } else { "card-flip-button card-meld-button" },
+                        "data-action": data_action::MELD,
                         "aria-label": if meld.on() { "Show this half" } else { "Show the melded card" },
                         "aria-pressed": "{meld.on()}",
                         onclick: move |e: MouseEvent| {
@@ -306,6 +308,7 @@ pub fn FlippableCardImage(
                     button {
                         class: "card-flip-button",
                         "aria-label": "Flip card",
+                        "data-action": data_action::FLIP,
                         onclick: move |e| {
                             e.stop_propagation();
                             let next = (cur + 1) % total;

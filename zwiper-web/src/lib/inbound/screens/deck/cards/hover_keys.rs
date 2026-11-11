@@ -4,12 +4,14 @@
 //! quantity. Each does exactly what that card's own button does, and nothing where it has no such
 //! button. The card is the one under the cursor, else the one whose details are open.
 
+use components::data_action;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::deck::Board;
 use zwipe_ui::deck::form::Slot;
 
 use super::editor::{RowInfo, RowKind};
+use crate::inbound::chrome::shortcuts::{self, CardKey};
 
 /// Every key [`hover_key`] answers, as `KeyboardEvent.key`: the keys that still reach the screen
 /// while the Stacks view's card details drawer is open.
@@ -41,10 +43,12 @@ pub(crate) enum HoverKey {
 /// The hover key `key` (a `KeyboardEvent.key`) stands for. `s` and `S` differ: Shift+S stars.
 #[must_use]
 pub(crate) fn hover_key(key: &str) -> Option<HoverKey> {
+    if shortcuts::card_key(key) == Some(CardKey::Flip) {
+        return Some(HoverKey::Flip);
+    }
     match key {
         "p" | "P" => Some(HoverKey::Printings),
         "i" | "I" => Some(HoverKey::Image),
-        "v" | "V" => Some(HoverKey::Flip),
         "m" | "M" => Some(HoverKey::ToMaybeboard),
         "s" => Some(HoverKey::ToSideboard),
         "S" => Some(HoverKey::Star),
@@ -65,9 +69,9 @@ pub(crate) enum HoverAction {
     Star(Uuid, bool),
     /// Change the card's quantity by the step, as the stepper's `-` or `+` does.
     Quantity(Uuid, i32),
-    /// Press the card's own details button with this label, which does nothing where the card
-    /// shows none (a single-faced card has no Flip).
-    Press(Uuid, &'static str),
+    /// Press the first of the card's own details buttons marked with these [`data_action`]s,
+    /// which does nothing where the card shows none (a single-faced card with no meld).
+    Press(Uuid, &'static [&'static str]),
 }
 
 /// What `key` does to `row`, a card on `board`: the action of the row's matching button, or
@@ -98,8 +102,8 @@ pub(crate) fn hover_action(key: HoverKey, row: &RowInfo, board: Board) -> Option
             RowKind::Main { mvp } => Some(HoverAction::Star(card_id, mvp)),
             RowKind::Board(_) | RowKind::Zone(_) | RowKind::Token => None,
         },
-        HoverKey::Image => Some(HoverAction::Press(card_id, "Image")),
-        HoverKey::Flip => Some(HoverAction::Press(card_id, "Flip")),
+        HoverKey::Image => Some(HoverAction::Press(card_id, &[data_action::IMAGE])),
+        HoverKey::Flip => Some(HoverAction::Press(card_id, &data_action::FLIP_OR_MELD)),
         HoverKey::Fewer => movable.then_some(HoverAction::Quantity(card_id, -1)),
         HoverKey::More => movable.then_some(HoverAction::Quantity(card_id, 1)),
     }
@@ -136,6 +140,18 @@ mod tests {
             assert_eq!(
                 hover_key(&key).is_some(),
                 HOVER_KEYS.contains(&key.as_str()),
+                "{key}"
+            );
+        }
+    }
+
+    #[test]
+    fn v_flips_here_as_on_every_screen() {
+        for byte in b' '..=b'~' {
+            let key = char::from(byte).to_string();
+            assert_eq!(
+                hover_key(&key) == Some(HoverKey::Flip),
+                shortcuts::card_key(&key) == Some(CardKey::Flip),
                 "{key}"
             );
         }
@@ -256,11 +272,11 @@ mod tests {
             let id = any.card.scryfall_data.id;
             assert_eq!(
                 hover_action(HoverKey::Image, &any, Board::Deck),
-                Some(HoverAction::Press(id, "Image"))
+                Some(HoverAction::Press(id, &[data_action::IMAGE]))
             );
             assert_eq!(
                 hover_action(HoverKey::Flip, &any, Board::Deck),
-                Some(HoverAction::Press(id, "Flip"))
+                Some(HoverAction::Press(id, &data_action::FLIP_OR_MELD))
             );
         }
     }

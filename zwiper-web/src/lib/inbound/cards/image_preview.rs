@@ -7,6 +7,7 @@ use components::use_overlay_back;
 use dioxus::prelude::*;
 use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
 
+use crate::inbound::chrome::shortcuts::{self, CardKey};
 use crate::outbound::timer;
 
 /// How long the dismiss animation plays before the preview clears.
@@ -50,7 +51,9 @@ pub fn ImagePreview(mut card: Signal<Option<(ScryfallData, usize)>>) -> Element 
                     let _ = e.set_focus(true).await;
                 },
                 onkeydown: move |e: Event<KeyboardData>| {
-                    if e.key() == Key::Character("f".into()) || e.key() == Key::Character("F".into()) {
+                    if let Key::Character(key) = e.key()
+                        && shortcuts::card_key(&key) == Some(CardKey::Flip)
+                    {
                         flip_shown_card();
                     }
                 },
@@ -68,9 +71,10 @@ pub fn ImagePreview(mut card: Signal<Option<(ScryfallData, usize)>>) -> Element 
     }
 }
 
-/// Presses the flip control of the open preview, if the card has one.
+/// Presses the open preview's flip control, else its Meld toggle, if the card has either.
 fn flip_shown_card() {
-    document::eval(
-        r#"const flip = document.querySelector('.image-preview-container [aria-label="Flip card"]'); if (flip) flip.click();"#,
-    );
+    document::eval(&shortcuts::press_first_js(
+        ".image-preview-container",
+        &components::data_action::FLIP_OR_MELD,
+    ));
 }

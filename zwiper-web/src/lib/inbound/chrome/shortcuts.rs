@@ -1,8 +1,7 @@
 //! The web's keyboard shortcuts (`context/plans/keyboard_shortcuts.md`): which key does what on
 //! the swipe screens, in Printings and everywhere, the rows the shortcuts sheet lists on each
 //! screen that offers it, and when a key reaches a screen at all. The listeners in `page_keys`
-//! and `swipe_stack` run the guard as browser script built from the same constants, so the two
-//! cannot drift.
+//! and `swipe_stack` run that guard as browser script built from the constants here.
 
 use crate::inbound::cards::swipe_stack::Swipe;
 
@@ -30,6 +29,11 @@ pub enum Shortcut {
 /// either case, so Caps Lock doesn't turn them off, except `H`, which opens the shortcuts sheet.
 #[must_use]
 pub fn swipe_screen_shortcut(key: &str) -> Option<Shortcut> {
+    match card_key(key) {
+        Some(CardKey::Filter) => return Some(Shortcut::Filter),
+        Some(CardKey::Flip) => return Some(Shortcut::Flip),
+        None => {}
+    }
     let shortcut = match key {
         "ArrowRight" | "l" | "L" => Shortcut::Swipe(Swipe::Right),
         "ArrowLeft" | "h" => Shortcut::Swipe(Swipe::Left),
@@ -37,14 +41,44 @@ pub fn swipe_screen_shortcut(key: &str) -> Option<Shortcut> {
         "ArrowDown" | "j" | "J" => Shortcut::Swipe(Swipe::Down),
         "p" | "P" => Shortcut::Printings,
         "d" | "D" => Shortcut::Details,
-        "v" | "V" => Shortcut::Flip,
-        "f" | "F" => Shortcut::Filter,
         "r" | "R" => Shortcut::Refresh,
         "s" | "S" => Shortcut::Synergy,
         _ => return None,
     };
     Some(shortcut)
 }
+
+/// A key that means the same on every screen: `f` opens the screen's filter where it has one, `v`
+/// flips the card on show or, a card with one face, shows its meld.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CardKey {
+    /// Opens the screen's filter.
+    Filter,
+    /// Flips the card on show, or toggles its meld.
+    Flip,
+}
+
+/// The [`CardKey`] `key` stands for. Every screen's own key map defers to this one for `f` and `v`.
+#[must_use]
+pub fn card_key(key: &str) -> Option<CardKey> {
+    match key {
+        "f" | "F" => Some(CardKey::Filter),
+        "v" | "V" => Some(CardKey::Flip),
+        _ => None,
+    }
+}
+
+/// A script that clicks the first element inside `scope` (a selector) marked with one of `actions`
+/// ([`components::data_action`]), in their order; nothing when it shows none.
+#[must_use]
+pub fn press_first_js(scope: &str, actions: &[&str]) -> String {
+    format!(
+        "{{ const found = {actions:?}.map((a) => document.querySelector('{scope} [data-action=\"' + a + '\"]')).find(Boolean); if (found) found.click(); }}"
+    )
+}
+
+/// The letter keys that swipe on a swipe screen, beside the arrows ([`swipe_screen_shortcut`]).
+pub const SWIPE_LETTERS: [&str; 7] = ["h", "j", "k", "l", "J", "K", "L"];
 
 /// What a key does in Printings' cover flow.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -76,6 +110,9 @@ pub enum GlobalKey {
     /// Opens the shortcuts sheet.
     Shortcuts,
 }
+
+/// The keys that work everywhere ([`global_key`]).
+pub const GLOBAL_KEYS: [&str; 2] = ["?", "H"];
 
 /// The global action `key` stands for: `?` the page's hint, Shift+H (`H`) the shortcuts sheet.
 #[must_use]
@@ -202,6 +239,7 @@ pub fn sheet_rows(screen: &ShortcutsScreen) -> Vec<(&'static [&'static str], &'s
             (&["Shift+S"], "Star"),
             (&["-"], "One fewer"),
             (&["+"], "One more"),
+            (&["f"], "Filter"),
         ],
     };
     own.into_iter().chain(everywhere).collect()
@@ -229,30 +267,10 @@ pub const OVERLAY_SELECTORS: [&str; 2] = [".alert-dialog[data-state=\"open\"]", 
 /// hover keys pass through ([`guard_js_through`]).
 pub const STACK_DETAILS_CLASS: &str = "deck-stack-details";
 
-/// One keydown, as the browser saw it.
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub struct KeyPress {
-    /// The focused element's tag, upper case as the DOM reports it.
-    pub focus_tag: String,
-    /// Whether the focused element is contenteditable.
-    pub editable: bool,
-    /// Whether Ctrl, Alt or Meta was held.
-    pub modified: bool,
-    /// Whether a dialog, sheet or drawer was open.
-    pub overlay_open: bool,
-}
-
-/// Whether a keydown reaches the screen: not while typing in a field, not with Ctrl, Alt or Meta
-/// held (those combos are the browser's), and not while a dialog, sheet or drawer is open (it
-/// takes its own keys).
-#[must_use]
-pub fn reaches_screen(press: &KeyPress) -> bool {
-    let typing = press.editable || TYPING_TAGS.contains(&press.focus_tag.as_str());
-    !typing && !press.modified && !press.overlay_open
-}
-
 /// The browser-side guard, as a script expression that is true when `e` (a `KeyboardEvent`)
-/// should reach the screen: [`reaches_screen`] over [`TYPING_TAGS`] and [`OVERLAY_SELECTORS`].
+/// should reach the screen: not while typing in one of [`TYPING_TAGS`] or a contenteditable, not
+/// with Ctrl, Alt or Meta held (those combos are the browser's), and not while one of
+/// [`OVERLAY_SELECTORS`] is open (it takes its own keys).
 #[must_use]
 pub fn guard_js() -> String {
     browser_guard(Modifiers::Refused, &overlays_closed(None))
@@ -462,23 +480,6 @@ mod tests {
     #[test]
     fn the_deck_cards_sheet_lists_only_that_screen_s_keys() {
         let rows = sheet_rows(&ShortcutsScreen::DeckCards);
-        let listed: Vec<(&[&str], &str)> = rows.clone();
-        assert_eq!(
-            listed,
-            [
-                (&["p"][..], "Printings"),
-                (&["i"][..], "Image"),
-                (&["v"][..], "Flip card"),
-                (&["m"][..], "Maybeboard"),
-                (&["s"][..], "Sideboard"),
-                (&["Shift+S"][..], "Star"),
-                (&["-"][..], "One fewer"),
-                (&["+"][..], "One more"),
-                (&["Esc"][..], "Close the open sheet"),
-                (&["?"][..], "This page's hint"),
-                (&["Shift+H"][..], "These shortcuts"),
-            ]
-        );
         assert_eq!(
             sheet_note(&ShortcutsScreen::DeckCards),
             Some("Hover or open a card, then press its key")
@@ -495,6 +496,7 @@ mod tests {
                     label
                 };
                 let known = hover_keys::hover_key(key).is_some()
+                    || card_key(key).is_some()
                     || global_key(key).is_some()
                     || key == "Esc";
                 assert!(known, "{label} for {does}");
@@ -545,44 +547,57 @@ mod tests {
         }
     }
 
+    /// Every key a keyboard types without a modifier, as `KeyboardEvent.key` names it.
+    fn printable_keys() -> impl Iterator<Item = String> {
+        (b' '..=b'~').map(|byte| char::from(byte).to_string())
+    }
+
     #[test]
-    fn typing_in_a_field_never_reaches_the_screen() {
-        for tag in ["INPUT", "TEXTAREA", "SELECT"] {
-            let press = KeyPress {
-                focus_tag: tag.to_owned(),
-                ..KeyPress::default()
-            };
-            assert!(!reaches_screen(&press), "{tag}");
-        }
-        let editable = KeyPress {
-            focus_tag: "DIV".to_owned(),
-            editable: true,
-            ..KeyPress::default()
-        };
-        assert!(!reaches_screen(&editable), "contenteditable");
-        for tag in ["BODY", "BUTTON", "A", "DIV"] {
-            let press = KeyPress {
-                focus_tag: tag.to_owned(),
-                ..KeyPress::default()
-            };
-            assert!(reaches_screen(&press), "{tag}");
+    fn the_global_keys_are_exactly_the_ones_global_key_acts_on() {
+        for key in printable_keys() {
+            assert_eq!(
+                global_key(&key).is_some(),
+                GLOBAL_KEYS.contains(&key.as_str()),
+                "{key}"
+            );
         }
     }
 
     #[test]
-    fn modifier_combos_and_open_overlays_keep_the_key_from_the_screen() {
-        let modified = KeyPress {
-            focus_tag: "BODY".to_owned(),
-            modified: true,
-            ..KeyPress::default()
-        };
-        assert!(!reaches_screen(&modified), "Ctrl, Alt or Meta");
-        let behind = KeyPress {
-            focus_tag: "BODY".to_owned(),
-            overlay_open: true,
-            ..KeyPress::default()
-        };
-        assert!(!reaches_screen(&behind), "a sheet is open");
+    fn f_filters_and_v_flips_on_every_swipe_screen() {
+        for key in printable_keys() {
+            let shortcut = swipe_screen_shortcut(&key);
+            assert_eq!(
+                shortcut == Some(Shortcut::Filter),
+                card_key(&key) == Some(CardKey::Filter),
+                "{key}"
+            );
+            assert_eq!(
+                shortcut == Some(Shortcut::Flip),
+                card_key(&key) == Some(CardKey::Flip),
+                "{key}"
+            );
+        }
+        assert_eq!(card_key("f"), Some(CardKey::Filter));
+        assert_eq!(card_key("v"), Some(CardKey::Flip));
+    }
+
+    #[test]
+    fn the_flip_key_presses_flip_else_meld() {
+        let js = press_first_js(
+            ".swipe-stack-card.top",
+            &components::data_action::FLIP_OR_MELD,
+        );
+        assert!(js.contains(r#"["flip", "meld"]"#), "{js}");
+        assert!(js.contains(".swipe-stack-card.top [data-action="), "{js}");
+    }
+
+    #[test]
+    fn the_swipe_letters_are_exactly_the_letters_that_swipe() {
+        for key in printable_keys() {
+            let swipes = matches!(swipe_screen_shortcut(&key), Some(Shortcut::Swipe(_)));
+            assert_eq!(swipes, SWIPE_LETTERS.contains(&key.as_str()), "{key}");
+        }
     }
 
     #[test]

@@ -41,7 +41,7 @@ use crate::inbound::cards::swipe_stack::{Swipe, use_swipe_key_handler};
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, open_and_record_hint};
 use crate::inbound::chrome::page_keys::{focus_by_id, use_page_keys_through, use_undo_key};
-use crate::inbound::chrome::shortcuts::{self, ShortcutsScreen};
+use crate::inbound::chrome::shortcuts::{self, CardKey, ShortcutsScreen};
 use crate::inbound::chrome::shortcuts_sheet::use_offer_shortcuts;
 use crate::inbound::screens::deck::view::cards::zone as zone_of;
 use crate::inbound::telemetry;
@@ -52,10 +52,37 @@ use crate::outbound::timer;
 /// row whose details are open, else an empty string.
 const KEY_CARD_JS: &str = "const under = document.querySelectorAll('[data-row]:hover'); const drawer = document.querySelector('.bottom-sheet.show.__DRAWER__') && document.querySelector('.card-stack-slot.open[data-row]'); const row = document.querySelector('.web-deck-row.selected[data-row]'); const card = under.length ? under[under.length - 1] : drawer || row; dioxus.send(card ? card.getAttribute('data-row') : '');";
 
-/// Clicks the details button labeled `__LABEL__` of card `__ID__`: in the Stacks view's drawer
+/// Clicks the first details button marked with one of `__ACTIONS__` ([`components::data_action`])
+/// of card `__ID__`: in the Stacks view's drawer
 /// while that card is open there, else in its list row. Nothing where the card shows no such
 /// button.
-const PRESS_JS: &str = "const open = document.querySelector('.bottom-sheet.show.__DRAWER__') && document.querySelector('.card-stack-slot.open[data-row=\"__ID__\"]'); const host = open ? document.querySelector('.bottom-sheet.show.__DRAWER__') : document.querySelector('.web-deck-row[data-row=\"__ID__\"]'); const button = host && [...host.querySelectorAll('button.card-action-btn')].find((b) => b.textContent.trim() === '__LABEL__'); if (button) button.click();";
+const PRESS_JS: &str = "const open = document.querySelector('.bottom-sheet.show.__DRAWER__') && document.querySelector('.card-stack-slot.open[data-row=\"__ID__\"]'); const host = open ? document.querySelector('.bottom-sheet.show.__DRAWER__') : document.querySelector('.web-deck-row[data-row=\"__ID__\"]'); const button = host && __ACTIONS__.map((a) => host.querySelector('button.card-action-btn[data-action=\"' + a + '\"]')).find(Boolean); if (button) button.click();";
+
+/// What a key does on the deck cards screen besides the hover keys.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ScreenKey {
+    /// Focuses Quick add's search.
+    QuickAdd,
+    /// Opens the filter.
+    Filter,
+}
+
+/// The screen action `key` stands for: `/` Quick add, `f` the filter ([`shortcuts::card_key`]).
+/// Flipping a card is `v`, a hover key.
+fn screen_key(key: &str) -> Option<ScreenKey> {
+    if shortcuts::card_key(key) == Some(CardKey::Filter) {
+        return Some(ScreenKey::Filter);
+    }
+    match key {
+        "/" => Some(ScreenKey::QuickAdd),
+        _ => None,
+    }
+}
+
+/// The board the card `id` is on, by `meta`; the main board for a card it does not list.
+pub(crate) fn board_of(meta: &HashMap<Uuid, Meta>, id: Uuid) -> Board {
+    meta.get(&id).map_or(Board::Deck, |m| m.board)
+}
 
 /// What a row is, which decides its actions.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -770,10 +797,10 @@ pub(crate) fn use_deck_editor(deck_id: Uuid, on_failure: LoadFailure) -> Editor 
                 });
             }
             UndoAction::QuantityChanged { card_id, net, .. } => {
-                change_quantity.call((card_id, net.saturating_neg(), false));
+                change_quantity.call((card_id, net.saturating_neg(), /* record */ false));
             }
             UndoAction::MovedBoard { card_id, from, .. } => {
-                move_to_board.call((card_id, from, false));
+                move_to_board.call((card_id, from, /* record */ false));
             }
             UndoAction::PrintingChanged { old_card, new_id } => {
                 let old_card = *old_card;
@@ -905,7 +932,7 @@ pub(crate) fn use_deck_editor(deck_id: Uuid, on_failure: LoadFailure) -> Editor 
                     let board = match row.kind {
                         RowKind::Board(board) => board,
                         RowKind::Main { .. } | RowKind::Zone(_) | RowKind::Token => {
-                            meta.peek().get(&id).map_or(Board::Deck, |m| m.board)
+                            board_of(&meta.peek(), id)
                         }
                     };
                     match hover_keys::hover_action(hover, &row, board) {
@@ -914,20 +941,20 @@ pub(crate) fn use_deck_editor(deck_id: Uuid, on_failure: LoadFailure) -> Editor 
                             printing_open.set(true);
                         }
                         Some(HoverAction::Move(card_id, target)) => {
-                            move_to_board.call((card_id, target, true));
+                            move_to_board.call((card_id, target, /* record */ true));
                         }
                         Some(HoverAction::Star(card_id, starred)) => {
                             toggle_mvp.call((card_id, starred));
                         }
                         Some(HoverAction::Quantity(card_id, step)) => {
-                            change_quantity.call((card_id, step, true));
+                            change_quantity.call((card_id, step, /* record */ true));
                         }
-                        Some(HoverAction::Press(card_id, label)) => {
+                        Some(HoverAction::Press(card_id, actions)) => {
                             document::eval(
                                 &PRESS_JS
                                     .replace("__DRAWER__", shortcuts::STACK_DETAILS_CLASS)
                                     .replace("__ID__", &card_id.to_string())
-                                    .replace("__LABEL__", label),
+                                    .replace("__ACTIONS__", &format!("{actions:?}")),
                             );
                         }
                         None => {}
@@ -935,30 +962,13 @@ pub(crate) fn use_deck_editor(deck_id: Uuid, on_failure: LoadFailure) -> Editor 
                 });
                 return;
             }
-            let row = selected.peek().and_then(|id| {
-                listing
-                    .peek()
-                    .rows
-                    .iter()
-                    .find(|r| r.card.scryfall_data.id == id)
-                    .cloned()
-            });
-            match key.as_str() {
-                "/" => focus_by_id(QUICK_ADD_ID),
-                "f" | "F" => {
-                    if let Some(row) = row {
-                        let count = components::card_face_count(&row.card);
-                        if count > 1 {
-                            let next = face
-                                .peek()
-                                .saturating_add(1)
-                                .checked_rem(count)
-                                .unwrap_or(0);
-                            face.set(next);
-                        }
-                    }
+            match screen_key(&key) {
+                Some(ScreenKey::QuickAdd) => focus_by_id(QUICK_ADD_ID),
+                Some(ScreenKey::Filter) => {
+                    let mut filter_open = filter_open;
+                    filter_open.set(true);
                 }
-                _ => {}
+                None => {}
             }
         }),
     );
@@ -1029,12 +1039,12 @@ pub(crate) fn row_view(
         } = match kind {
             RowKind::Main { mvp } => RowActions {
                 on_qty: Some(EventHandler::new(move |d| {
-                    change_quantity.call((card_id, d, true));
+                    change_quantity.call((card_id, d, /* record */ true));
                 })),
                 on_move: Some(EventHandler::new(move |b| {
-                    move_to_board.call((card_id, b, true));
+                    move_to_board.call((card_id, b, /* record */ true));
                 })),
-                board: Some(meta_for_rows.get(&card_id).map_or(Board::Deck, |m| m.board)),
+                board: Some(board_of(&meta_for_rows, card_id)),
                 mvp: Some(mvp),
                 on_star: Some(EventHandler::new(move |()| toggle_mvp.call((card_id, mvp)))),
                 on_print: Some(EventHandler::new(move |c: Card| {
@@ -1044,10 +1054,10 @@ pub(crate) fn row_view(
             },
             RowKind::Board(b) => RowActions {
                 on_qty: Some(EventHandler::new(move |d| {
-                    change_quantity.call((card_id, d, true));
+                    change_quantity.call((card_id, d, /* record */ true));
                 })),
                 on_move: Some(EventHandler::new(move |t| {
-                    move_to_board.call((card_id, t, true));
+                    move_to_board.call((card_id, t, /* record */ true));
                 })),
                 board: Some(b),
                 on_print: Some(EventHandler::new(move |c: Card| {
@@ -1085,5 +1095,30 @@ pub(crate) fn row_view(
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn slash_focuses_quick_add_and_f_opens_the_filter_as_everywhere() {
+        assert_eq!(screen_key("/"), Some(ScreenKey::QuickAdd));
+        for byte in b' '..=b'~' {
+            let key = char::from(byte).to_string();
+            assert_eq!(
+                screen_key(&key) == Some(ScreenKey::Filter),
+                shortcuts::card_key(&key) == Some(CardKey::Filter),
+                "{key}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_key_presses_its_button_by_data_action_not_its_words() {
+        assert!(PRESS_JS.contains("__ACTIONS__.map("), "{PRESS_JS}");
+        assert!(PRESS_JS.contains("[data-action="), "{PRESS_JS}");
+        assert!(!PRESS_JS.contains("textContent"), "{PRESS_JS}");
     }
 }

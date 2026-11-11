@@ -396,6 +396,7 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
                 button {
                     class: "action-dock-btn",
                     "aria-label": "Undo",
+                    "data-action": components::data_action::UNDO,
                     disabled: !undo_ready,
                     onclick: move |_| apply_undo.call(()),
                     DockIcon { path: UNDO }
