@@ -86,6 +86,22 @@ mod tests {
     }
 
     #[test]
+    fn the_swipe_chips_clear_the_folded_nav() {
+        // From the wide layout's 900px up to the fold, the folded nav
+        // overlays the swipe screen's top, so its chips drop by its height.
+        let band = "@media (min-width: 900px) and (max-width: 1109px) {";
+        let at = WEB_CSS.find(band).expect("a rule for the folded wide band");
+        let rules = WEB_CSS.get(at..).unwrap();
+        let rules = rules.get(..rules.find("\n}\n").unwrap()).unwrap();
+        let chips = rules
+            .find("    .web-cards-swipe > .web-screen-chips {")
+            .and_then(|i| rules.get(i..))
+            .expect("the chips' rule in that band");
+        let chips = chips.get(..chips.find('}').unwrap()).unwrap();
+        assert!(chips.contains("var(--web-nav-h"), "{chips}");
+    }
+
+    #[test]
     fn the_header_folds_below_1110_and_never_wraps() {
         assert_eq!(NAV_FOLD_MAX_PX, 1109);
         assert!(nav_fold_css().starts_with("@media (max-width: 1109px) {"));

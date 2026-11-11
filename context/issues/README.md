@@ -67,6 +67,7 @@ Who checked, on which live build, what they saw.
 | [342](342-no-link-underlines.md) | No underlines on links | fixing | thinker | - |
 | [344](344-meld-support.md) | Meld cards show their melded card | fixing | scotland | #534 |
 | [343](343-web-keyboard-shortcuts.md) | Keyboard shortcuts on the web | fixing | thinker | - |
+| [345](345-narrow-swipe-chip.md) | Add's last-action chip is missing below the full nav | fixing | scotland | #537 |
 
 ## Waiting for live verification
 
