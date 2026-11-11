@@ -1,6 +1,6 @@
 # 352. Back loops between Create deck and Decks
 
-State: fixing | Owner: laptop | PR: - | Build seen: live (recording `target/352-back-loop.mov`)
+State: fixing | Owner: laptop | PR: #553 | Build seen: live (recording `target/352-back-loop.mov`)
 
 ## Report
 Scotty, 2026-11-11, web: on Playstyle, Suggested commanders, a swipe right opens Create deck. The header's Back then goes to Decks instead of back to Playstyle. Back on Decks returns to Create deck, and Back again to Decks: a loop. Surfer also saw that moving between two deck pages could leave the URL and title on one deck and the page on the other until a reload.
@@ -19,7 +19,7 @@ Scotty, 2026-11-11, web: on Playstyle, Suggested commanders, a swipe right opens
 4. A deck, Clone, Save: the clone's URL and title, the original's name in the heading. Browser back and forward keep the stale heading.
 
 ## Fix
-laptop, `issue/352-back-loop`:
+laptop, #553:
 - Web: `chrome/trail.rs` keeps the tab's own trail of app screens over the router's history (above the leave guard), so `can_go_back` is true only with an app screen behind. Every header Back goes back when there is one and otherwise replaces this screen with its parent (`nav::back_or`); Back never pushes.
 - Web: Create's save replaces the form with the new deck; Edit's save goes back to the deck (or replaces Edit with it on a deep link).
 - Web: the deck page mounts afresh per deck (`ViewDeck` keys its body by the deck id), so a clone or the browser's back and forward between two decks shows the right deck.
