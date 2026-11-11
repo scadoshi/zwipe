@@ -66,6 +66,11 @@ struct ExitingCard {
     from_rot: f64,
 }
 
+/// A blank in a card image's shape (Scryfall's 672 by 936), which the ghost
+/// card's image shows so it sizes as the card's image does.
+pub(crate) const CARD_GHOST_SRC: &str =
+    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='672' height='936'/%3E";
+
 /// The stack's swipe callbacks, one per direction.
 #[derive(Clone, Copy)]
 struct SwipeHandlers {
@@ -158,11 +163,12 @@ pub fn SwipeStack(
     /// Fires once the top card's image has its bytes, failed, or has no art.
     #[props(default)]
     on_top_shown: Option<EventHandler<()>>,
-    /// Drawn under the cards until the top card's image is in and has had
-    /// [`TOP_PAINT_GRACE`] to paint, while the cards under the top stay
-    /// hidden, so neither an empty slot nor another card shows.
+    /// Whether to draw the ghost card under the cards until the top card's
+    /// image is in and has had [`TOP_PAINT_GRACE`] to paint, while the cards
+    /// under the top stay hidden, so neither an empty slot nor another card
+    /// shows. The ghost is a stack card in the top card's own box.
     #[props(default)]
-    ghost: Option<Element>,
+    ghost: bool,
     /// Keeps the ghost up regardless, for a pile the host has yet to show.
     #[props(default)]
     hold: bool,
@@ -302,8 +308,16 @@ pub fn SwipeStack(
 
     rsx! {
         div { class: if held { "swipe-stack ghost-held" } else { "swipe-stack" },
-            if held && let Some(ghost) = ghost {
-                div { class: "swipe-stack-ghost", {ghost} }
+            if held && ghost {
+                // A stack card holding a card-shaped blank in the card's own
+                // wrapper, so the card's own rules give it the top card's box.
+                div { class: "swipe-stack-card swipe-stack-ghost-card", "aria-hidden": "true",
+                    div { class: "flippable-card-wrapper card-image",
+                        div { class: "flip-face",
+                            img { class: "img-loaded card-ghost", src: CARD_GHOST_SRC, alt: "", draggable: false }
+                        }
+                    }
+                }
             }
             // Render back-to-front so the DOM order matches z-index painting.
             // Keyed by card, the loop's own node, so a swipe drops the top and
