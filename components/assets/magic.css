@@ -2752,26 +2752,33 @@ footer.site-footer .site-footer-note {
    height, the card's), which runs on the compositor and leaves the layout
    alone, so the stack slides rather than reflowing. */
 .card-stack {
+    --card-stack-move: 250ms;
+    --card-stack-ease: cubic-bezier(0.22, 1, 0.36, 1);
     position: relative;
     display: flex;
     flex-direction: column;
     width: 100%;
+    z-index: 0;
+    transition: z-index 0s linear var(--card-stack-move);
 }
 
 /* The stack under the pointer sits over its neighbors, so its moved cards
-   pass over whatever is below the stack, and its slots are promoted for the
+   pass over whatever is below the stack, and stays over them until the cards
+   have settled back after the pointer leaves. Its slots are promoted for the
    move only while the pointer is on it. */
 .card-stack:hover {
     z-index: 2;
+    transition-delay: 0s;
 }
 
 .card-stack:hover > .card-stack-slot {
     will-change: transform;
 }
 
+/* Every moving card shares one duration and curve. */
 .card-stack-slot {
     position: relative;
-    transition: transform 180ms ease-out;
+    transition: transform var(--card-stack-move) var(--card-stack-ease);
 }
 
 .card-stack-slot.tucked {
@@ -2831,6 +2838,7 @@ footer.site-footer .site-footer-note {
 }
 
 @media (prefers-reduced-motion: reduce) {
+    .card-stack,
     .card-stack-slot {
         transition: none;
     }

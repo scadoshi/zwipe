@@ -48,6 +48,7 @@ pub(crate) fn stacks_view(
             for (section, rows) in sections.iter().cloned() {
                 {
                     let price = total_price(&rows, currency);
+                    let ids: Vec<Uuid> = rows.iter().map(|r| r.card.scryfall_data.id).collect();
                     let cards: Vec<StackCard> = rows
                         .into_iter()
                         .map(|row| StackCard { card: row.card, qty: row.qty })
@@ -63,7 +64,7 @@ pub(crate) fn stacks_view(
                                 trailing: price.map(|p| rsx! { span { class: "stat-chip stat-chip-money", "{p}" } }),
                                 CardStack {
                                     cards,
-                                    revealed: shown.revealed(),
+                                    revealed: shown.revealed_in(&ids),
                                     open: shown.open(),
                                     on_hover: move |id| reveal.write().apply(Gesture::Hover(id)),
                                     on_leave: move |id| reveal.write().apply(Gesture::Leave(id)),
