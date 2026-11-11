@@ -534,7 +534,7 @@ pub fn use_swipe_key_handler(keys: Vec<Swipe>, on_key: Callback<Swipe>) {
 enum Letters {
     /// The arrow keys alone.
     Arrows,
-    /// The arrow keys and the swipe screens' `hjkl`
+    /// The arrow keys and the swipe screens' `hjkl` and `u`
     /// ([`shortcuts::swipe_screen_shortcut`]).
     Vim,
 }
@@ -543,7 +543,7 @@ enum Letters {
 fn swipe_keys(keys: &[Swipe], letters: Letters) -> Vec<&'static str> {
     let vim: &[&'static str] = match letters {
         Letters::Arrows => &[],
-        Letters::Vim => &["h", "j", "k", "l", "J", "K", "L"],
+        Letters::Vim => &["h", "j", "k", "l", "u", "J", "K", "L", "U"],
     };
     keys.iter()
         .map(|s| s.key())
@@ -620,6 +620,18 @@ mod tests {
         assert!(
             rule.contains(".swipe-stack-exiting"),
             "the exiting card is exempt, or every fly-off is invisible: {rule}"
+        );
+    }
+
+    #[test]
+    fn u_undoes_with_the_vim_letters() {
+        let down = swipe_keys(&[Swipe::Down], Letters::Vim);
+        for key in ["j", "J", "u", "U"] {
+            assert!(down.contains(&key), "{key} in {down:?}");
+        }
+        assert!(
+            !swipe_keys(&[Swipe::Down], Letters::Arrows).contains(&"u"),
+            "a surface without the letters keeps u off"
         );
     }
 

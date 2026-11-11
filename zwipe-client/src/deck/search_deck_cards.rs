@@ -18,8 +18,7 @@ impl ZwipeClient {
     /// Deck-aware card search: the page of cards, whether synergy applied
     /// (false while the commander's cache is still warming, so the server
     /// served the full pool), and where related cards begin when the synergy
-    /// pool ran out. Gives up after [`SEARCH_TIMEOUT`], so a stalled link ends
-    /// in the screen's Retry rather than a skeleton that never resolves.
+    /// pool ran out. Gives up after [`SEARCH_TIMEOUT`].
     ///
     /// # Errors
     ///

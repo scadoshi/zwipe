@@ -68,8 +68,24 @@ struct ExitingCard {
 
 /// A blank in a card image's shape (Scryfall's 672 by 936), which the ghost
 /// card's image shows so it sizes as the card's image does.
-pub(crate) const CARD_GHOST_SRC: &str =
+const CARD_GHOST_SRC: &str =
     "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='672' height='936'/%3E";
+
+/// The ghost of the top card: a stack card holding a card-shaped blank in
+/// the card's own wrapper, so the card's own rules give it the top card's
+/// box. Drawn in a `.swipe-stack`.
+#[component]
+pub(crate) fn GhostCard() -> Element {
+    rsx! {
+        div { class: "swipe-stack-card swipe-stack-ghost-card", "aria-hidden": "true",
+            div { class: "flippable-card-wrapper card-image",
+                div { class: "flip-face",
+                    img { class: "img-loaded card-ghost", src: CARD_GHOST_SRC, alt: "", draggable: false }
+                }
+            }
+        }
+    }
+}
 
 /// The stack's swipe callbacks, one per direction.
 #[derive(Clone, Copy)]
@@ -213,13 +229,10 @@ pub fn SwipeStack(
         // i < n, so this never floors.
         let z = n.saturating_sub(i);
 
-        // Build the inline transform for this card. We let the
-        // `.swipe-stack-card` CSS class own the default transform
-        // transition (0.12s ease-out) so peek→top promotion and
-        // sub-threshold return-to-origin both interpolate without
-        // per-card bookkeeping. The ONLY case we override with
-        // `transition: transform 0s` is during an active drag,
-        // where the card must follow the finger 1:1.
+        // The peeking cards take the `.swipe-stack-card` class's
+        // transition (0.12s ease-out), so a promotion to the top
+        // interpolates. The top card sets its own: none while it is
+        // dragged, an overshoot back to rest once it is let go short.
         let style = if is_top {
             // Top card, following the gesture (or sitting at rest).
             let s = state();
@@ -309,15 +322,7 @@ pub fn SwipeStack(
     rsx! {
         div { class: if held { "swipe-stack ghost-held" } else { "swipe-stack" },
             if held && ghost {
-                // A stack card holding a card-shaped blank in the card's own
-                // wrapper, so the card's own rules give it the top card's box.
-                div { class: "swipe-stack-card swipe-stack-ghost-card", "aria-hidden": "true",
-                    div { class: "flippable-card-wrapper card-image",
-                        div { class: "flip-face",
-                            img { class: "img-loaded card-ghost", src: CARD_GHOST_SRC, alt: "", draggable: false }
-                        }
-                    }
-                }
+                GhostCard {}
             }
             // Render back-to-front so the DOM order matches z-index painting.
             // Keyed by card, the loop's own node, so a swipe drops the top and

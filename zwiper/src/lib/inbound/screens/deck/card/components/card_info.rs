@@ -5,7 +5,7 @@ use zwipe_core::domain::card::Card;
 use zwipe_ui::card::info;
 
 use crate::inbound::components::catalog_cache::CatalogCache;
-use crate::inbound::components::interactions::swipe::stack::CARD_GHOST_SRC;
+use crate::inbound::components::interactions::swipe::stack::GhostCard;
 
 /// A card's prices as money chips on one line: USD, EUR then TIX, whichever
 /// it has, under a printing in the printing sheet. A swipe card's prices are
@@ -160,13 +160,7 @@ pub(crate) fn StackGhost() -> Element {
     rsx! {
         div { class: "skeleton-card",
             div { class: "swipe-stack",
-                div { class: "swipe-stack-card swipe-stack-ghost-card", "aria-hidden": "true",
-                    div { class: "flippable-card-wrapper card-image",
-                        div { class: "flip-face",
-                            img { class: "img-loaded card-ghost", src: CARD_GHOST_SRC, alt: "", draggable: false }
-                        }
-                    }
-                }
+                GhostCard {}
             }
         }
     }

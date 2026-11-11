@@ -35,15 +35,41 @@ fn total_price(rows: &[RowInfo], currency: PriceCurrency) -> Option<String> {
     priced.then(|| currency.format_amount(sum))
 }
 
-/// The stacks for `sections`, folding by `collapsed` as the bands do.
+/// The stacks' reveal and whether the open card's drawer shows, which a click on a card and the
+/// deck cards screen's `d` both move. The page provides it as context, ahead of the deck editor.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) struct StackDetails {
+    /// Which card shows in full and which card's details are open.
+    pub(crate) reveal: Signal<Reveal>,
+    /// Whether the open card's details drawer shows.
+    pub(crate) details_open: Signal<bool>,
+}
+
+impl StackDetails {
+    /// A click on card `id`: its details open, in place of any open one, or close where they are
+    /// open.
+    pub(crate) fn click(self, id: Uuid) {
+        let Self {
+            mut reveal,
+            mut details_open,
+        } = self;
+        reveal.write().apply(Gesture::Click(id));
+        details_open.set(reveal.peek().open().is_some());
+    }
+}
+
+/// The stacks for `sections`, folding by `collapsed` as the bands do, each card on its face in
+/// `faces` (the front where it has none).
 pub(crate) fn stacks_view(
     sections: &[(DeckSection, Vec<RowInfo>)],
     currency: PriceCurrency,
     collapsed: Signal<HashSet<String>>,
-    mut reveal: Signal<Reveal>,
-    mut details_open: Signal<bool>,
+    details: StackDetails,
+    faces: Signal<HashMap<Uuid, usize>>,
 ) -> Element {
+    let mut reveal = details.reveal;
     let shown = reveal();
+    let shown_faces = faces();
     rsx! {
         div { class: "deck-stacks",
             for (section, rows) in sections.iter().cloned() {
@@ -52,7 +78,10 @@ pub(crate) fn stacks_view(
                     let ids: Vec<Uuid> = rows.iter().map(|r| r.card.scryfall_data.id).collect();
                     let cards: Vec<StackCard> = rows
                         .into_iter()
-                        .map(|row| StackCard { card: row.card, qty: row.qty })
+                        .map(|row| {
+                            let face = shown_faces.get(&row.card.scryfall_data.id).copied().unwrap_or(0);
+                            StackCard { card: row.card, qty: row.qty, face }
+                        })
                         .collect();
                     rsx! {
                         div { key: "{section.key}", class: "deck-stack",
@@ -69,10 +98,7 @@ pub(crate) fn stacks_view(
                                     open: shown.open(),
                                     on_hover: move |id| reveal.write().apply(Gesture::Hover(id)),
                                     on_leave: move |id| reveal.write().apply(Gesture::Leave(id)),
-                                    on_select: move |id| {
-                                        reveal.write().apply(Gesture::Click(id));
-                                        details_open.set(reveal.peek().open().is_some());
-                                    },
+                                    on_select: move |id| details.click(id),
                                 }
                             }
                         }
@@ -94,10 +120,13 @@ pub(crate) fn stack_details(
     ed: &Editor,
     rows: &[RowInfo],
     row_meta: &HashMap<Uuid, Meta>,
-    reveal: Signal<Reveal>,
-    details_open: Signal<bool>,
+    details: StackDetails,
     overlays: CardOverlays,
 ) -> Element {
+    let StackDetails {
+        reveal,
+        details_open,
+    } = details;
     // The sheet stays mounted on a card so it slides in and out on its
     // `show` class: the drawn card, else the first row before any click.
     let drawn = reveal().drawn();
@@ -115,10 +144,12 @@ pub(crate) fn stack_details(
         change_quantity,
         move_to_board,
         toggle_mvp,
+        mut faces,
         ..
     } = *ed;
     let RowInfo { card, qty, kind } = row;
     let card_id = card.scryfall_data.id;
+    let shown_face = faces.read().get(&card_id).copied().unwrap_or(0);
     let print_card = card.clone();
     let image_of = card.scryfall_data.clone();
     let CardOverlays { mut preview, .. } = overlays;
@@ -174,17 +205,21 @@ pub(crate) fn stack_details(
             on_printings,
             footer,
             class: DRAWER_CLASSES,
+            face: Some(shown_face),
+            on_face_change: move |face: usize| {
+                faces.write().insert(card_id, face);
+            },
         }
     }
 }
 
-/// Drops focus from the stack card the drawer opened from, so its focus
-/// outline goes with the drawer.
 /// The details drawer's classes: the card details drawer's own, then
 /// [`STACK_DETAILS_CLASS`](crate::inbound::chrome::shortcuts::STACK_DETAILS_CLASS), so
 /// the deck cards screen's hover keys reach the screen through it.
 const DRAWER_CLASSES: &str = "card-details-drawer deck-stack-details";
 
+/// Drops focus from the stack card the drawer opened from, so its focus
+/// outline goes with the drawer.
 const BLUR_STACK_CARD_JS: &str = "if (document.activeElement?.classList.contains('card-stack-card')) document.activeElement.blur();";
 
 /// Keeps the drawer and the reveal state agreeing: a drawer closed by its

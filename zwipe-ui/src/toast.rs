@@ -133,9 +133,8 @@ pub fn keep_one<E>(effects: &mut Vec<E>, line: impl for<'e> Fn(&'e E) -> Option<
 
 /// Holds back a toast whose words are already up. A failed load raises its
 /// error toast again on every retry (a Retry tap, the connection coming
-/// back, a second load beside the first); without the gate the copies stack
-/// up the screen and over its own "Couldn't load" box. With it, a message
-/// shows once until its toast has gone, and a different message still shows.
+/// back, a second load beside the first). A message shows once until its
+/// toast has gone, and a different message still shows.
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct RepeatGate {
     /// Each message up and when its toast goes.
@@ -152,6 +151,7 @@ impl RepeatGate {
     /// Whether a toast saying `text` at `now`, up for `lasts`, should show:
     /// `false` while a toast with the same words is still up. A shown one is
     /// remembered until it goes.
+    #[must_use]
     pub fn admit(&mut self, text: &str, now: DateTime<Utc>, lasts: Duration) -> bool {
         self.up.retain(|(_, goes)| *goes > now);
         if self.up.iter().any(|(words, _)| words == text) {
