@@ -14,6 +14,7 @@ use dioxus::prelude::*;
 use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
 
 use crate::OracleText;
+use crate::meld::use_meld;
 
 /// Image URLs whose bytes have already arrived once this session. These
 /// render instantly; only first-time loads play the ease-in. Keyed by URL
@@ -124,25 +125,28 @@ pub fn FlippableCardImage(
     };
     // The image URL this element has loaded and decoded itself.
     let loaded_here: Signal<Option<String>> = use_signal(|| None);
-    let total = sd.read().face_count();
+    // A meld half can show its melded card in its place.
+    let meld = use_meld(&sd.read());
+    let view: ScryfallData = meld.shown().cloned().unwrap_or_else(|| sd.read().clone());
+    let total = view.face_count();
     // Clamp so a stale/over-large `initial_face` still resolves to a real face.
     let cur = face_idx().min(total.saturating_sub(1));
     let alt = {
-        let sd_read = sd.read();
+        let sd_read = &view;
         sd_read
             .card_faces
             .as_ref()
             .and_then(|f| f.get(cur))
             .map_or_else(|| sd_read.name.clone(), |f| f.name.clone())
     };
-    let image_url: Option<String> = sd.read().face_image_url(cur, size).map(str::to_owned);
+    let image_url: Option<String> = view.face_image_url(cur, size).map(str::to_owned);
     let is_no_image = image_url.is_none();
 
     // Identity fields for the no-image placeholder, resolved for the shown face
     // (so a flipped DFC shows the back's text, not the front's). Rarity/set are
     // card-level. Read only when there's no image, so an art card pays nothing.
     let (mana_cost, type_line, rarity, set_name, oracle_text, flavor_text, pt) = if is_no_image {
-        let sd_read = sd.read();
+        let sd_read = &view;
         let face = sd_read.card_faces.as_ref().and_then(|f| f.get(cur));
         let mana = face.map_or_else(
             || sd_read.mana_cost.clone().unwrap_or_default(),
@@ -282,6 +286,21 @@ pub fn FlippableCardImage(
                         if let Some(p) = pt {
                             span { class: "nic-chip nic-pt", "{p}" }
                         }
+                    }
+                }
+                if flippable && meld.available() && !is_no_image {
+                    button {
+                        class: if meld.on() { "card-flip-button card-meld-button selected" } else { "card-flip-button card-meld-button" },
+                        "aria-label": if meld.on() { "Show this half" } else { "Show the melded card" },
+                        "aria-pressed": "{meld.on()}",
+                        onclick: move |e: MouseEvent| {
+                            e.stop_propagation();
+                            meld.toggle();
+                        },
+                        onpointerdown: move |e| { e.stop_propagation(); },
+                        onmousedown: move |e| { e.stop_propagation(); },
+                        ontouchstart: move |e| { e.stop_propagation(); },
+                        "Meld"
                     }
                 }
                 if flippable && total > 1 && !is_no_image {

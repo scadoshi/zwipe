@@ -22,6 +22,7 @@ use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilde
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::{Board, deck_tag_label};
 use zwipe_ui::deck::form::Slot;
+use zwipe_ui::deck_cards::stacks::{CardsView, Reveal, VIEW_LABEL};
 use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::filter::picker::Sources;
 use zwipe_ui::screens::deck_view::{EDIT, MoreItem};
@@ -36,6 +37,7 @@ use super::sections::{
     BudgetBody, CurrencyChips, DistributionsBody, DrawOddsStepper, ManaBody, TagsBody,
     WarningFixes, WarningsBody, charted,
 };
+use super::stacks::{stack_details, stacks_view, use_stack_details_sync};
 use crate::domain::deck::{has_budget, tag_count};
 use crate::inbound::card_filter::CardFilterPanel;
 use crate::inbound::card_stores::CardStores;
@@ -49,17 +51,18 @@ use crate::inbound::screens::deck::cards::editor::{
     Editor, Listed, LoadFailure, RowInfo, RowKind, main_row_of, row_view, use_deck_editor,
 };
 use crate::inbound::screens::deck::cards::quick_add::QuickAdd;
+use crate::outbound::cards_view_store::CardsViewStore;
 use crate::outbound::timer;
 
 /// The stat panels' fold keys, shut when the page opens.
 const FOLDED_STATS: [&str; 5] = ["Budget", "Tags", "Distributions", "Mana", "Draw odds"];
 
-/// The page for `deck_id`. `fixes` are the warnings' fixes, and `fixed`
-/// counts the ones that have landed: each reloads the deck.
 /// How long the featured cards wait for their images before they deal anyway, as on
 /// zwipe.net's shared deck.
 const FEATURED_WAIT: Duration = Duration::from_secs(4);
 
+/// The page for `deck_id`. `fixes` are the warnings' fixes, and `fixed`
+/// counts the ones that have landed: each reloads the deck.
 #[component]
 pub fn DeckWidePage(
     deck_id: Uuid,
@@ -111,6 +114,18 @@ pub fn DeckWidePage(
     let hover_stack = use_hover_stack();
     let folded: Signal<HashSet<String>> =
         use_signal(|| FOLDED_STATS.into_iter().map(String::from).collect());
+    // List or Stacks, as last left; the stacks' reveal and the open card.
+    let mut view = use_signal(|| CardsViewStore::browser().load());
+    let reveal = use_signal(Reveal::default);
+    let details_open = use_signal(|| false);
+    let listed_ids = use_memo(move || {
+        listing()
+            .rows
+            .iter()
+            .map(|r| r.card.scryfall_data.id)
+            .collect::<Vec<_>>()
+    });
+    use_stack_details_sync(reveal, details_open, listed_ids);
     // A fix made at the foot reloads the deck once it has landed, so the
     // rows, the counts and the warnings follow.
     use_effect(move || {
@@ -119,6 +134,7 @@ pub fn DeckWidePage(
         }
     });
 
+    let all_rows = listing().rows;
     let Listed {
         tokens: token_rows,
         maybe: maybe_rows,
@@ -444,6 +460,21 @@ pub fn DeckWidePage(
                                     }
                                 }
                             }
+                            div { class: "chip-row deck-view-switch",
+                                span { class: "stat-chip stat-chip-p1 chip-row-label", "{VIEW_LABEL}" }
+                                for choice in [CardsView::List, CardsView::Stacks] {
+                                    Chip {
+                                        key: "{choice.key()}",
+                                        selected: view() == choice,
+                                        onclick: move |_| {
+                                            view.set(choice);
+                                            CardsViewStore::browser().save(choice);
+                                            selected.set(None);
+                                        },
+                                        "{choice.label()}"
+                                    }
+                                }
+                            }
                         },
                     }
                 }
@@ -453,13 +484,17 @@ pub fn DeckWidePage(
                 if !loaded() {
                     DeckBandsGhost {}
                 }
-                for (section, rows) in sections {
-                    DeckBand {
-                        key: "{section.key}",
-                        section,
-                        folded: collapsed,
-                        for row in rows {
-                            {row_view(&ed, cur, &row_meta, row)}
+                if view() == CardsView::Stacks {
+                    {stacks_view(&sections, cur, collapsed, reveal, details_open)}
+                } else {
+                    for (section, rows) in sections {
+                        DeckBand {
+                            key: "{section.key}",
+                            section,
+                            folded: collapsed,
+                            for row in rows {
+                                {row_view(&ed, cur, &row_meta, row)}
+                            }
                         }
                     }
                 }
@@ -596,6 +631,9 @@ pub fn DeckWidePage(
             },
         }
         HoverStackHost { stack: hover_stack }
+        if view() == CardsView::Stacks {
+            {stack_details(&ed, &all_rows, &row_meta, reveal, details_open)}
+        }
         CardOverlaysHost { overlays, on_printing_save: move |_| {} }
         OtagExamplesHost { examples }
         OneTimeHintDialog { hint: OneTimeHint::DeckCards, open: hint_open }

@@ -263,7 +263,7 @@ pub fn DeckList() -> Element {
                                 group_key: group.key(),
                                 header: group.header.clone(),
                                 pips: group.pips.clone(),
-                                count: group.decks.len(),
+                                count: Some(group.decks.len()),
                                 collapsed,
                                 for profile in group.decks {
                                     DeckRow { key: "{profile.id}", profile }
@@ -287,15 +287,19 @@ pub fn DeckList() -> Element {
     }
 }
 
-/// One group of the list: a header that folds it, then its rows, which stay
-/// mounted while folded.
+/// One group of the list: a header chip that folds it, then its rows, which
+/// stay mounted while folded. The chip reads `header (count)`, or the pips
+/// and `(count)` for a color group; with no `count` it reads `header` as
+/// given. `trailing` sits at the chip's end (the deck page's stacks put the
+/// group's price there).
 #[component]
-fn DeckGroupSection(
+pub(crate) fn DeckGroupSection(
     group_key: String,
     header: String,
     pips: Option<Vec<Color>>,
-    count: usize,
+    count: Option<usize>,
     mut collapsed: Signal<HashSet<String>>,
+    #[props(default)] trailing: Option<Element>,
     children: Element,
 ) -> Element {
     let expanded = !collapsed().contains(&group_key);
@@ -314,10 +318,17 @@ fn DeckGroupSection(
                 span { class: "card-row-arrow", "\u{25b8}" }
                 if let Some(pips) = pips.as_ref().filter(|p| !p.is_empty()) {
                     IdentityPips { colors: pips.clone() }
-                    "({count})"
-                } else {
+                    if let Some(count) = count {
+                        "({count})"
+                    } else {
+                        "{header}"
+                    }
+                } else if let Some(count) = count {
                     "{header} ({count})"
+                } else {
+                    "{header}"
                 }
+                {trailing}
             }
             div {
                 class: if expanded { "collapsible open" } else { "collapsible" },

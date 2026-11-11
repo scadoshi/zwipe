@@ -153,6 +153,7 @@ fn use_session_and_client() -> (Signal<Option<Session>>, Signal<ZwipeClient>) {
     let client =
         use_hook(|| Signal::new_in_scope(ZwipeClient::new(config.backend_url), ScopeId::ROOT));
     use_context_provider(|| client);
+    crate::inbound::components::meld_source::use_meld_source(client);
 
     (session, client)
 }

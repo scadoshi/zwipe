@@ -42,11 +42,13 @@
 
 mod architecture;
 mod back_online;
+mod card_actions;
 mod card_details;
 mod card_filter;
 mod card_list_fold;
 mod card_role_chips;
 mod card_row;
+mod card_stack;
 mod changelog;
 mod charts;
 mod color_bars;
@@ -63,6 +65,7 @@ mod hover_stack;
 mod identity_pips;
 mod keyword_chips;
 mod load_failed;
+mod meld;
 mod menu_section;
 mod oracle_text;
 mod picker_search;
@@ -74,6 +77,7 @@ mod theme;
 
 pub use architecture::ZwipeArchitecture;
 pub use back_online::use_back_online;
+pub use card_actions::{CardBoardMoves, CardEditButtons};
 pub use card_details::{
     CardDetails, CardDetailsCost, CardDetailsPanel, CardDetailsPanelSkeleton, card_face_count,
 };
@@ -81,6 +85,7 @@ pub use card_filter::{CardFilterPanel, DictionarySlot};
 pub use card_list_fold::CardListFold;
 pub use card_role_chips::CardRoleChips;
 pub use card_row::CardRow;
+pub use card_stack::{CardStack, StackCard};
 pub use changelog::{
     ChangelogCollapseAll, ChangelogFilters, ChangelogLook, ChangelogReleases,
     Filter as ChangelogFilter,
@@ -105,6 +110,7 @@ pub use hover_stack::{HoverStack, HoverStackHost, use_hover_stack};
 pub use identity_pips::IdentityPips;
 pub use keyword_chips::{KeywordChips, KeywordReminders};
 pub use load_failed::LoadFailed;
+pub use meld::{MeldFetch, MeldSource, MeldToggle, use_meld};
 pub use menu_section::MenuSection;
 pub use oracle_text::OracleText;
 pub use orangui::{

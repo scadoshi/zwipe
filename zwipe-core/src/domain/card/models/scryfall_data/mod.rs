@@ -9,7 +9,7 @@ pub mod prices;
 pub mod rarity;
 pub mod universe;
 
-use all_parts::AllParts;
+use all_parts::{AllParts, Meld};
 use card_faces::CardFaces;
 use colors::Colors;
 pub use image_uris::ImageSize;
@@ -322,6 +322,31 @@ pub fn is_basic_land_type_line(type_line: &str) -> bool {
 }
 
 impl ScryfallData {
+    /// What this card melds into, when it is one half of a meld pair: the
+    /// melded card and the other half. `None` for the melded card itself,
+    /// for any other layout, and when `all_parts` is missing or names no
+    /// result.
+    #[must_use]
+    pub fn meld(&self) -> Option<Meld> {
+        if self.layout != "meld" {
+            return None;
+        }
+        let parts = self.all_parts.as_deref()?;
+        let result = parts.iter().find(|p| p.component == "meld_result")?;
+        if result.id == self.id {
+            return None;
+        }
+        let partner_name = parts
+            .iter()
+            .find(|p| p.component == "meld_part" && p.id != self.id)
+            .map(|p| p.name.clone());
+        Some(Meld {
+            result_id: result.id,
+            result_name: result.name.clone(),
+            partner_name,
+        })
+    }
+
     /// Fills a missing top-level `oracle_id` from the card's faces.
     ///
     /// Scryfall omits `oracle_id` at the top level on `reversible_card`
@@ -446,6 +471,54 @@ where
 #[cfg(test)]
 mod tests {
     use crate::test_utils::make_card;
+
+    /// Gisela as Scryfall sends her: a checklist card, Brisela as the result,
+    /// and both halves as meld parts, herself among them.
+    fn gisela() -> super::ScryfallData {
+        let mut card = make_card("Gisela, the Broken Blade").scryfall_data;
+        card.id = uuid::Uuid::from_u128(1);
+        card.layout = "meld".to_string();
+        card.all_parts = Some(
+            serde_json::from_value(serde_json::json!([
+                { "id": uuid::Uuid::from_u128(9), "object": "related_card", "component": "combo_piece",
+                  "name": "Eldritch Moon Checklist", "type_line": "Card", "uri": "u" },
+                { "id": uuid::Uuid::from_u128(3), "object": "related_card", "component": "meld_result",
+                  "name": "Brisela, Voice of Nightmares", "type_line": "Legendary Creature", "uri": "u" },
+                { "id": uuid::Uuid::from_u128(2), "object": "related_card", "component": "meld_part",
+                  "name": "Bruna, the Fading Light", "type_line": "Legendary Creature", "uri": "u" },
+                { "id": uuid::Uuid::from_u128(1), "object": "related_card", "component": "meld_part",
+                  "name": "Gisela, the Broken Blade", "type_line": "Legendary Creature", "uri": "u" },
+            ]))
+            .expect("parts parse"),
+        );
+        card
+    }
+
+    #[test]
+    fn a_meld_half_names_its_result_and_its_other_half() {
+        let meld = gisela().meld().expect("a meld half");
+        assert_eq!(meld.result_id, uuid::Uuid::from_u128(3));
+        assert_eq!(meld.result_name, "Brisela, Voice of Nightmares");
+        assert_eq!(
+            meld.partner_name.as_deref(),
+            Some("Bruna, the Fading Light")
+        );
+    }
+
+    #[test]
+    fn the_meld_result_and_other_cards_have_no_meld_toggle() {
+        let mut result = gisela();
+        result.id = uuid::Uuid::from_u128(3);
+        assert_eq!(result.meld(), None, "the result itself does not toggle");
+
+        let mut plain = gisela();
+        plain.layout = "normal".to_string();
+        assert_eq!(plain.meld(), None, "not a meld layout");
+
+        let mut bare = gisela();
+        bare.all_parts = None;
+        assert_eq!(bare.meld(), None, "no parts to read");
+    }
 
     /// Reversible cards (Secret Lair double-sided printings) arrive from
     /// Scryfall with no top-level `oracle_id` and one on each face. A card

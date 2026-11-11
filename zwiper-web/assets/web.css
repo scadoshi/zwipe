@@ -867,6 +867,45 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
     }
 }
 
+/* ---- The deck page's Stacks view ----
+   The stacks flow into as many columns as the page fits, each at least a
+   card's readable width. A stack's header is the decks list's own group
+   chip (DeckGroupSection), so nothing sits bare on the page's grid: the
+   group's pips, name and count, its total price in the money chip nested
+   at the chip's end, the tag as it is everywhere else. The chip's lighter
+   letter-spacing and tighter gap fit name, count and price on one line in
+   a column; a long name still wraps the tag under it. The cards float on
+   the grid under it. */
+.deck-stacks {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr));
+    gap: 1.25rem;
+    align-items: start;
+}
+
+.deck-stack > .deck-group > .card-group-header.group-collapsible {
+    max-width: 100%;
+    margin-top: 0;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    padding: 0.3rem 0.4rem;
+    letter-spacing: 0.02em;
+}
+
+/* A stack is one column of cards, under the decks list's rule that pairs a
+   group's rows from 1400px. */
+.deck-stack > .deck-group > .collapsible > .collapsible-inner {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+/* A card's details drawer opened from the stacks leaves the stacks live:
+   its backdrop neither dims nor catches a click, so a click on another card
+   swaps that card in. Escape and the drawer's × close it. */
+body:has(.deck-stacks) .sheet-form-drawer:has(> .card-details-drawer) > .sheet-backdrop {
+    background: transparent;
+    pointer-events: none;
+}
+
 /* ---- Settings lists (Account, Config) ---- */
 
 /* Two lists side by side on a wide window, at the page's width under its
@@ -2123,6 +2162,22 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
     }
 }
 
+/* From the wide layout's 900px up to the fold (media.rs's
+   NAV_FOLD_MAX_PX), the folded nav lies over the window's top and names the
+   screen, so on Add and Remove the last swipe's chip sits under it, at the
+   nav's height, and the title tag stays hidden as it does on a phone. Swipe
+   select already starts under the nav. */
+@media (min-width: 900px) and (max-width: 1109px) {
+    .web-cards-swipe > .web-screen-chips {
+        top: calc(var(--web-nav-h, 2.75rem) + 0.5rem);
+        left: 1rem;
+    }
+
+    .web-cards-swipe > .web-screen-chips > .stat-chip.web-screen-chip {
+        display: none;
+    }
+}
+
 @media (min-width: 900px) and (prefers-reduced-motion: reduce) {
     .web-swipe-details,
     .web-examples-details,
@@ -2900,7 +2955,9 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 }
 
 /* The keyboard shortcuts sheet: one row per key, its keys in the hint's key
-   style at the left, what it does after them. */
+   style at the left, what it does after them. The keys sit inline in text,
+   spaced as words, as they do in a page hint, so they draw the hint's own
+   squircle. */
 .web-shortcuts {
     list-style: none;
     margin: 0;
@@ -2917,23 +2974,19 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
     gap: 0.75rem;
 }
 
-.web-shortcut-keys {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.35rem;
-}
 
 .web-shortcut-does {
     color: var(--text-primary);
 }
 
-/* The swipe screens' keyboard button shows only on a computer: a pointer
-   that hovers and is precise, which a phone's touch is not. */
+/* The swipe screens' keyboard button shows only on a computer's wide
+   layout: a pointer that hovers and is precise, which a phone's touch is
+   not, and the window at least WIDE_PX (900px) across. */
 .action-dock-btn.web-dock-shortcuts {
     display: none;
 }
 
-@media (hover: hover) and (pointer: fine) {
+@media (hover: hover) and (pointer: fine) and (min-width: 900px) {
     .action-dock-btn.web-dock-shortcuts {
         display: flex;
     }

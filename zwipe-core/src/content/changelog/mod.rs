@@ -46,7 +46,13 @@ pub const MOBILE_STORE_VERSION: Version = Version::new(1, 18, 15);
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[];
+pub const UPCOMING: &[Release] = &[Release {
+    version: Version::new(1, 19, 0),
+    date: None,
+    entries: &[
+        "The deck page on the web can show its cards as stacks, one per group, beside the list",
+    ],
+}];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
@@ -60,7 +66,9 @@ pub const RELEASES: &[Release] = &[
             "A failure that repeats shows one error toast instead of a stack, and on the web Printings keeps Couldn't load printings and Retry clear of the toast",
             "Tapping a link or button on zwipe.net no longer flashes a blue highlight",
             "Links on zwipe.net and app.zwipe.net are the accent color with no underline, brightening slightly under a mouse",
+            "Meld, a button on a meld card and in its details that shows the card it melds into",
             "Keyboard shortcuts on the web, with the arrows or hjkl to swipe and Shift+H to list them",
+            "On a narrower web window, Add and Remove show the last swipe's chip at the top left under the nav",
             "A shared deck's link names its owner and the deck",
             "A shared deck shows who shared it under its name",
             "The deck page on the web deals its featured cards in, as a shared deck does",
