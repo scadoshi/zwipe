@@ -51,6 +51,18 @@ pub const UPCOMING: &[Release] = &[];
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
     Release {
+        version: Version::new(1, 18, 17),
+        date: NaiveDate::from_ymd_opt(2026, 11, 11),
+        entries: &[
+            "Add says it couldn't load cards and offers Retry when a search never answers",
+            "Format, Deck tags and Oracle tags show more chips, with a hint box that hugs its text until you pick and, on the web, chips that scroll under the checkmark",
+            "Printings tries a failed card image again once the connection is back",
+            "A failure that repeats shows one error toast instead of a stack, and on the web Printings keeps Couldn't load printings and Retry clear of the toast",
+            "Tapping a link or button on zwipe.net no longer flashes a blue highlight",
+            "Links on zwipe.net and app.zwipe.net are the accent color with no underline, brightening slightly under a mouse",
+        ],
+    },
+    Release {
         version: Version::new(1, 18, 16),
         date: NaiveDate::from_ymd_opt(2026, 11, 9),
         entries: &[
@@ -71,12 +83,6 @@ pub const RELEASES: &[Release] = &[
             "The deck page on the web shows the deck's name over its chips",
             "Changelog releases look the same on the site and in the app, with the tag at the right end and no fill on hover",
             "Links inside text on the web answer the mouse too",
-            "Add says it couldn't load cards and offers Retry when a search never answers",
-            "Format, Deck tags and Oracle tags show more chips, with a hint box that hugs its text until you pick and, on the web, chips that scroll under the checkmark",
-            "Printings tries a failed card image again once the connection is back",
-            "A failure that repeats shows one error toast instead of a stack, and on the web Printings keeps Couldn't load printings and Retry clear of the toast",
-            "Tapping a link or button on zwipe.net no longer flashes a blue highlight",
-            "Links on zwipe.net and app.zwipe.net are the accent color with no underline, brightening slightly under a mouse",
         ],
     },
     Release {
