@@ -1510,7 +1510,7 @@ body .toast-container [role="alertdialog"] {
     pointer-events: none;
 }
 
-.swipe-reveal.revealing > .swipe-stack > .swipe-stack-card {
+.swipe-reveal.revealing > .swipe-stack > .swipe-stack-card:not(.swipe-stack-ghost-card) {
     visibility: hidden;
 }
 
@@ -1520,6 +1520,19 @@ body .toast-container [role="alertdialog"] {
    painted it, an empty frame over the ghost. */
 .swipe-reveal > .swipe-stack .flippable-card-wrapper img {
     transition: none;
+}
+
+/* The app's ghost card: a stack card under the others, its blank image
+   in the card's own wrapper, so it takes the top card's box by the card's
+   own rules. */
+.swipe-stack-card.swipe-stack-ghost-card {
+    z-index: 0;
+    pointer-events: none;
+}
+
+.swipe-stack-ghost-card img.card-ghost {
+    background-color: var(--border-muted);
+    box-shadow: none;
 }
 
 /* The ghost under a held swipe stack, and the ghost while a pile is on its
@@ -1554,7 +1567,7 @@ body .toast-container [role="alertdialog"] {
     animation: none;
 }
 
-.swipe-stack.ghost-held > .swipe-stack-card:not(.top, .swipe-stack-exiting) {
+.swipe-stack.ghost-held > .swipe-stack-card:not(.top, .swipe-stack-exiting, .swipe-stack-ghost-card) {
     visibility: hidden;
 }
 

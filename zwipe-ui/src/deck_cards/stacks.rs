@@ -57,6 +57,17 @@ pub fn tucked(count: usize) -> Vec<bool> {
     (0..count).map(|i| i > 0).collect()
 }
 
+/// For each of a stack's `count` cards, whether it shows in full: the
+/// `revealed` one and the last, which nothing covers. Only a card shown in
+/// full wears the open card's outline.
+#[must_use]
+pub fn exposed(count: usize, revealed: Option<usize>) -> Vec<bool> {
+    let last = count.checked_sub(1);
+    (0..count)
+        .map(|i| Some(i) == revealed || Some(i) == last)
+        .collect()
+}
+
 /// For each of a stack's `count` cards, whether it moves down to make room
 /// for `revealed`: every card after the revealed one does, by the height its
 /// tuck hid, so the revealed card shows whole. The move is a transform, which
@@ -103,6 +114,15 @@ pub struct Reveal {
 }
 
 impl Reveal {
+    /// The card shown in full in the stack of `cards`: the one under the
+    /// pointer when it is in this stack, else the open one when it is, so a
+    /// hover in another stack leaves this one's open card revealed.
+    #[must_use]
+    pub fn revealed_in(&self, cards: &[Uuid]) -> Option<Uuid> {
+        let here = |card: Option<Uuid>| card.filter(|c| cards.contains(c));
+        here(self.hovered).or_else(|| here(self.open))
+    }
+
     /// The card shown in full in its stack: the one under the pointer, else
     /// the open one.
     #[must_use]
@@ -161,6 +181,36 @@ impl Reveal {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn only_the_revealed_card_and_the_last_show_in_full() {
+        assert_eq!(exposed(4, None), [false, false, false, true]);
+        assert_eq!(exposed(4, Some(1)), [false, true, false, true]);
+        assert_eq!(exposed(4, Some(3)), [false, false, false, true]);
+        assert_eq!(exposed(0, None), [false; 0]);
+    }
+
+    #[test]
+    fn a_hover_in_another_stack_leaves_the_pinned_card_revealed() {
+        let mut reveal = Reveal::default();
+        let left = [id(1), id(2), id(3)];
+        let right = [id(7), id(8)];
+        reveal.apply(Gesture::Click(id(1)));
+        reveal.apply(Gesture::Hover(id(7)));
+        assert_eq!(
+            reveal.revealed_in(&left),
+            Some(id(1)),
+            "the pinned stack holds its card"
+        );
+        assert_eq!(reveal.revealed_in(&right), Some(id(7)));
+        reveal.apply(Gesture::Hover(id(3)));
+        assert_eq!(
+            reveal.revealed_in(&left),
+            Some(id(3)),
+            "a hover in its own stack still wins"
+        );
+        assert_eq!(reveal.revealed_in(&right), None);
+    }
 
     #[test]
     fn the_cards_after_the_revealed_one_move_down() {

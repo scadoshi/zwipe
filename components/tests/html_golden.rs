@@ -481,8 +481,8 @@ fn flippable_card_image_controlled_face() {
 }
 
 /// A stack of three: the first on top, the second revealed so the third
-/// drops below it, the third open with a copies badge, and a card without
-/// art showing its name.
+/// drops below it, the third open with a copies badge but unmarked while a
+/// card covers it, and a card without art showing its name.
 #[test]
 fn card_stack_revealed() {
     golden(

@@ -5,6 +5,7 @@ use zwipe_core::domain::card::Card;
 use zwipe_ui::card::info;
 
 use crate::inbound::components::catalog_cache::CatalogCache;
+use crate::inbound::components::interactions::swipe::stack::CARD_GHOST_SRC;
 
 /// A card's prices as money chips on one line: USD, EUR then TIX, whichever
 /// it has, under a printing in the printing sheet. A swipe card's prices are
@@ -125,6 +126,11 @@ pub(crate) fn CardSkeleton(
     #[props(default)] note: Option<&'static str>,
     #[props(default)] detail: Option<&'static str>,
 ) -> Element {
+    // With nothing to say, the ghost is the stack's own, in the top card's
+    // box; a note needs the text card.
+    if note.is_none() {
+        return rsx! { StackGhost {} };
+    }
     rsx! {
         div { class: "skeleton-card",
             // The stack's slot, the card's ghost centered in it as the real
@@ -139,6 +145,27 @@ pub(crate) fn CardSkeleton(
                     }
                 } else {
                     div { class: "skeleton-image" }
+                }
+            }
+        }
+    }
+}
+
+/// The ghost of a swipe stack's top card, while a pile is on its way: the
+/// stack's ghost card in a stack of its own, so it takes the top card's
+/// box exactly, as [`SwipeStack`](crate::inbound::components::interactions::swipe::stack::SwipeStack)'s
+/// does while it holds its ghost.
+#[component]
+pub(crate) fn StackGhost() -> Element {
+    rsx! {
+        div { class: "skeleton-card",
+            div { class: "swipe-stack",
+                div { class: "swipe-stack-card swipe-stack-ghost-card", "aria-hidden": "true",
+                    div { class: "flippable-card-wrapper card-image",
+                        div { class: "flip-face",
+                            img { class: "img-loaded card-ghost", src: CARD_GHOST_SRC, alt: "", draggable: false }
+                        }
+                    }
                 }
             }
         }
