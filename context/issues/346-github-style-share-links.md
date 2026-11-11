@@ -1,6 +1,6 @@
 # 346. GitHub-style shared deck links, "by <username>", and the deal on the web deck page
 
-State: fixing | Owner: thinker | PR: - | Build seen: release 1.18.17
+State: fixing | Owner: thinker | PR: - | Build seen: release 1.18.17 (ships in 1.19.0)
 
 ## Report
 Scotty, 2026-11-11 (feature, approved), via the composer:
