@@ -872,7 +872,10 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
    card's readable width. A stack's header is the decks list's own group
    chip (DeckGroupSection), so nothing sits bare on the page's grid: the
    group's pips, name and count, its total price in the money chip nested
-   at the chip's end. The cards float on the grid under it. */
+   at the chip's end, the tag as it is everywhere else. The chip's lighter
+   letter-spacing and tighter gap fit name, count and price on one line in
+   a column; a long name still wraps the tag under it. The cards float on
+   the grid under it. */
 .deck-stacks {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr));
@@ -884,16 +887,9 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
     max-width: 100%;
     margin-top: 0;
     flex-wrap: wrap;
-    gap: 0.25rem 0.3rem;
-    padding: 0.3rem 0.45rem;
-    letter-spacing: 0.04em;
-}
-
-/* The price rides inside the chip, a size down so a group's name, count
-   and price fit one line in a column; a long name still wraps it under. */
-.deck-stack > .deck-group > .card-group-header .stat-chip-money {
-    padding: 0 0.3rem;
-    font-size: 0.7rem;
+    gap: 0.25rem;
+    padding: 0.3rem 0.4rem;
+    letter-spacing: 0.02em;
 }
 
 /* A stack is one column of cards, under the decks list's rule that pairs a
