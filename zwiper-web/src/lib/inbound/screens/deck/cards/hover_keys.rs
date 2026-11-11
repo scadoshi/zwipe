@@ -1,7 +1,7 @@
 //! The deck cards screen's keys for one card (`context/plans/keyboard_shortcuts.md`, "Deck cards
-//! screen"): `p` opens its Printings, `i` its image, `v` flips it, `m` and `s` move it to the
-//! maybeboard and the sideboard, Shift+S stars or unstars it, and `-` and `+` (or `=`) step its
-//! quantity. Each does exactly what that card's own button does, and nothing where it has no such
+//! screen"): `p` opens its Printings, `i` its image, `v` flips it, `d` opens or closes its
+//! details, `m` and `s` move it to the maybeboard and the sideboard, Shift+S stars or unstars it,
+//! and `-` and `+` (or `=`) step its quantity. Each does exactly what that card's own button does, and nothing where it has no such
 //! button. The card is the one under the cursor, else the one whose details are open.
 
 use uuid::Uuid;
@@ -13,8 +13,8 @@ use super::editor::{RowInfo, RowKind};
 
 /// Every key [`hover_key`] answers, as `KeyboardEvent.key`: the keys that still reach the screen
 /// while the Stacks view's card details drawer is open.
-pub(crate) const HOVER_KEYS: [&str; 13] = [
-    "p", "P", "i", "I", "v", "V", "m", "M", "s", "S", "-", "+", "=",
+pub(crate) const HOVER_KEYS: [&str; 15] = [
+    "p", "P", "i", "I", "v", "V", "d", "D", "m", "M", "s", "S", "-", "+", "=",
 ];
 
 /// A key the deck cards screen answers for the hovered card.
@@ -26,6 +26,8 @@ pub(crate) enum HoverKey {
     Image,
     /// `v`: the card's other face, as its Flip button turns it.
     Flip,
+    /// `d`: open or close its details, as a click on it does.
+    Details,
     /// `m`: to the maybeboard.
     ToMaybeboard,
     /// `s`: to the sideboard.
@@ -45,6 +47,7 @@ pub(crate) fn hover_key(key: &str) -> Option<HoverKey> {
         "p" | "P" => Some(HoverKey::Printings),
         "i" | "I" => Some(HoverKey::Image),
         "v" | "V" => Some(HoverKey::Flip),
+        "d" | "D" => Some(HoverKey::Details),
         "m" | "M" => Some(HoverKey::ToMaybeboard),
         "s" => Some(HoverKey::ToSideboard),
         "S" => Some(HoverKey::Star),
@@ -65,16 +68,26 @@ pub(crate) enum HoverAction {
     Star(Uuid, bool),
     /// Change the card's quantity by the step, as the stepper's `-` or `+` does.
     Quantity(Uuid, i32),
+    /// Show the card on this face, everywhere it shows: its row or stack image and its details.
+    Flip(Uuid, usize),
+    /// Open the card's details, or close them where they are open, as a click on it does.
+    Details(Uuid),
     /// Press the card's own details button with this label, which does nothing where the card
     /// shows none (a single-faced card has no Flip).
     Press(Uuid, &'static str),
 }
 
-/// What `key` does to `row`, a card on `board`: the action of the row's matching button, or
-/// `None` where the row has no such button (a token's Printings, a move to the board the card is
-/// already on, a star off the main board, a quantity in the command zone or of a token).
+/// What `key` does to `row`, a card on `board` showing face `shown_face`: the action of the row's
+/// matching button, or `None` where the row has no such button (a token's Printings, a move to
+/// the board the card is already on, a star off the main board, a quantity in the command zone or
+/// of a token, a flip of a single-faced card).
 #[must_use]
-pub(crate) fn hover_action(key: HoverKey, row: &RowInfo, board: Board) -> Option<HoverAction> {
+pub(crate) fn hover_action(
+    key: HoverKey,
+    row: &RowInfo,
+    board: Board,
+    shown_face: usize,
+) -> Option<HoverAction> {
     let card_id = row.card.scryfall_data.id;
     // Only a main board or other board card has the stepper and the board buttons.
     let movable = matches!(row.kind, RowKind::Main { .. } | RowKind::Board(_));
@@ -99,7 +112,15 @@ pub(crate) fn hover_action(key: HoverKey, row: &RowInfo, board: Board) -> Option
             RowKind::Board(_) | RowKind::Zone(_) | RowKind::Token => None,
         },
         HoverKey::Image => Some(HoverAction::Press(card_id, "Image")),
-        HoverKey::Flip => Some(HoverAction::Press(card_id, "Flip")),
+        HoverKey::Flip => {
+            // The faces Flip turns through, as the details count them.
+            let faces = components::card_face_count(&row.card);
+            (faces > 1).then(|| {
+                let next = shown_face.saturating_add(1).checked_rem(faces).unwrap_or(0);
+                HoverAction::Flip(card_id, next)
+            })
+        }
+        HoverKey::Details => Some(HoverAction::Details(card_id)),
         HoverKey::Fewer => movable.then_some(HoverAction::Quantity(card_id, -1)),
         HoverKey::More => movable.then_some(HoverAction::Quantity(card_id, 1)),
     }
@@ -148,7 +169,7 @@ mod tests {
         assert_eq!(hover_key("m"), Some(HoverKey::ToMaybeboard));
         assert_eq!(hover_key("s"), Some(HoverKey::ToSideboard));
         assert_eq!(hover_key("S"), Some(HoverKey::Star));
-        for key in ["d", "f", "/", "Enter", " ", "_", "r"] {
+        for key in ["f", "/", "Enter", " ", "_", "r", "u"] {
             assert_eq!(hover_key(key), None, "{key}");
         }
     }
@@ -157,12 +178,12 @@ mod tests {
     fn p_opens_the_hovered_card_s_printings_as_its_button_does() {
         let main = row(RowKind::Main { mvp: false });
         assert_eq!(
-            hover_action(HoverKey::Printings, &main, Board::Deck),
+            hover_action(HoverKey::Printings, &main, Board::Deck, 0),
             Some(HoverAction::Printings(Box::new(main.card.clone()), None))
         );
         let zone = row(RowKind::Zone(Slot::Commander));
         assert_eq!(
-            hover_action(HoverKey::Printings, &zone, Board::Deck),
+            hover_action(HoverKey::Printings, &zone, Board::Deck, 0),
             Some(HoverAction::Printings(
                 Box::new(zone.card.clone()),
                 Some(Slot::Commander)
@@ -170,7 +191,10 @@ mod tests {
             "a command zone card keeps its slot"
         );
         let token = row(RowKind::Token);
-        assert_eq!(hover_action(HoverKey::Printings, &token, Board::Deck), None);
+        assert_eq!(
+            hover_action(HoverKey::Printings, &token, Board::Deck, 0),
+            None
+        );
     }
 
     #[test]
@@ -178,38 +202,38 @@ mod tests {
         let main = row(RowKind::Main { mvp: false });
         let id = main.card.scryfall_data.id;
         assert_eq!(
-            hover_action(HoverKey::ToMaybeboard, &main, Board::Deck),
+            hover_action(HoverKey::ToMaybeboard, &main, Board::Deck, 0),
             Some(HoverAction::Move(id, Board::Maybeboard))
         );
         assert_eq!(
-            hover_action(HoverKey::ToSideboard, &main, Board::Deck),
+            hover_action(HoverKey::ToSideboard, &main, Board::Deck, 0),
             Some(HoverAction::Move(id, Board::Sideboard))
         );
         let maybe = row(RowKind::Board(Board::Maybeboard));
         let maybe_id = maybe.card.scryfall_data.id;
         assert_eq!(
-            hover_action(HoverKey::ToMaybeboard, &maybe, Board::Maybeboard),
+            hover_action(HoverKey::ToMaybeboard, &maybe, Board::Maybeboard, 0),
             None,
             "a maybeboard card has no To maybeboard button"
         );
         assert_eq!(
-            hover_action(HoverKey::ToSideboard, &maybe, Board::Maybeboard),
+            hover_action(HoverKey::ToSideboard, &maybe, Board::Maybeboard, 0),
             Some(HoverAction::Move(maybe_id, Board::Sideboard))
         );
         let side = row(RowKind::Board(Board::Sideboard));
         assert_eq!(
-            hover_action(HoverKey::ToSideboard, &side, Board::Sideboard),
+            hover_action(HoverKey::ToSideboard, &side, Board::Sideboard, 0),
             None,
             "a sideboard card has no To sideboard button"
         );
         for kind in [RowKind::Zone(Slot::Commander), RowKind::Token] {
             let other = row(kind);
             assert_eq!(
-                hover_action(HoverKey::ToMaybeboard, &other, Board::Deck),
+                hover_action(HoverKey::ToMaybeboard, &other, Board::Deck, 0),
                 None
             );
             assert_eq!(
-                hover_action(HoverKey::ToSideboard, &other, Board::Deck),
+                hover_action(HoverKey::ToSideboard, &other, Board::Deck, 0),
                 None
             );
         }
@@ -227,25 +251,26 @@ mod tests {
             let stepped = row(kind);
             let id = stepped.card.scryfall_data.id;
             assert_eq!(
-                hover_action(HoverKey::Fewer, &stepped, Board::Sideboard),
+                hover_action(HoverKey::Fewer, &stepped, Board::Sideboard, 0),
                 Some(HoverAction::Quantity(id, -1))
             );
             assert_eq!(
-                hover_action(HoverKey::More, &stepped, Board::Sideboard),
+                hover_action(HoverKey::More, &stepped, Board::Sideboard, 0),
                 Some(HoverAction::Quantity(id, 1))
             );
         }
         for kind in [RowKind::Zone(Slot::Commander), RowKind::Token] {
             let other = row(kind);
-            assert_eq!(hover_action(HoverKey::Fewer, &other, Board::Deck), None);
-            assert_eq!(hover_action(HoverKey::More, &other, Board::Deck), None);
+            assert_eq!(hover_action(HoverKey::Fewer, &other, Board::Deck, 0), None);
+            assert_eq!(hover_action(HoverKey::More, &other, Board::Deck, 0), None);
         }
     }
 
     #[test]
-    fn i_and_v_press_the_card_s_own_image_and_flip_buttons() {
+    fn i_presses_the_image_button_and_d_toggles_the_details() {
         assert_eq!(hover_key("i"), Some(HoverKey::Image));
-        assert_eq!(hover_key("v"), Some(HoverKey::Flip));
+        assert_eq!(hover_key("d"), Some(HoverKey::Details));
+        assert_eq!(hover_key("D"), Some(HoverKey::Details));
         for kind in [
             RowKind::Main { mvp: false },
             RowKind::Board(Board::Maybeboard),
@@ -255,26 +280,57 @@ mod tests {
             let any = row(kind);
             let id = any.card.scryfall_data.id;
             assert_eq!(
-                hover_action(HoverKey::Image, &any, Board::Deck),
+                hover_action(HoverKey::Image, &any, Board::Deck, 0),
                 Some(HoverAction::Press(id, "Image"))
             );
             assert_eq!(
-                hover_action(HoverKey::Flip, &any, Board::Deck),
-                Some(HoverAction::Press(id, "Flip"))
+                hover_action(HoverKey::Details, &any, Board::Deck, 0),
+                Some(HoverAction::Details(id)),
+                "every row opens and closes its details"
             );
         }
+    }
+
+    #[test]
+    fn v_turns_to_the_next_face_and_back_to_the_front() {
+        assert_eq!(hover_key("v"), Some(HoverKey::Flip));
+        let mut dfc = row(RowKind::Main { mvp: false });
+        dfc.card.scryfall_data.card_faces = Some(
+            serde_json::from_value(serde_json::json!([
+                { "name": "Front", "object": "card_face", "mana_cost": "", "oracle_text": "a" },
+                { "name": "Back", "object": "card_face", "mana_cost": "", "oracle_text": "b" },
+            ]))
+            .unwrap(),
+        );
+        dfc.card.scryfall_data.oracle_text = None;
+        let id = dfc.card.scryfall_data.id;
+        assert_eq!(
+            hover_action(HoverKey::Flip, &dfc, Board::Deck, 0),
+            Some(HoverAction::Flip(id, 1))
+        );
+        assert_eq!(
+            hover_action(HoverKey::Flip, &dfc, Board::Deck, 1),
+            Some(HoverAction::Flip(id, 0)),
+            "the back turns to the front"
+        );
+        let single = row(RowKind::Main { mvp: false });
+        assert_eq!(
+            hover_action(HoverKey::Flip, &single, Board::Deck, 0),
+            None,
+            "a single-faced card has no Flip"
+        );
     }
 
     #[test]
     fn shift_s_toggles_the_star_of_a_main_board_card_only() {
         let starred = row(RowKind::Main { mvp: true });
         assert_eq!(
-            hover_action(HoverKey::Star, &starred, Board::Deck),
+            hover_action(HoverKey::Star, &starred, Board::Deck, 0),
             Some(HoverAction::Star(starred.card.scryfall_data.id, true))
         );
         let plain = row(RowKind::Main { mvp: false });
         assert_eq!(
-            hover_action(HoverKey::Star, &plain, Board::Deck),
+            hover_action(HoverKey::Star, &plain, Board::Deck, 0),
             Some(HoverAction::Star(plain.card.scryfall_data.id, false))
         );
         for kind in [
@@ -282,7 +338,10 @@ mod tests {
             RowKind::Zone(Slot::Commander),
             RowKind::Token,
         ] {
-            assert_eq!(hover_action(HoverKey::Star, &row(kind), Board::Deck), None);
+            assert_eq!(
+                hover_action(HoverKey::Star, &row(kind), Board::Deck, 0),
+                None
+            );
         }
     }
 }

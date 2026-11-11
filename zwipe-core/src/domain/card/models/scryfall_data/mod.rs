@@ -419,6 +419,19 @@ impl ScryfallData {
             .and_then(|iu| iu.art_crop.as_deref())
     }
 
+    /// Returns the art-crop URL of face `face_index` (`0` is the front), falling back to the
+    /// front's [`Self::art_crop_url`] where that face has no art of its own: a single-faced
+    /// card, or a split card whose halves share one image.
+    pub fn face_art_crop_url(&self, face_index: usize) -> Option<&str> {
+        self.card_faces
+            .as_ref()
+            .filter(|_| face_index > 0)
+            .and_then(|faces| faces.get(face_index))
+            .and_then(|face| face.image_uris.as_ref())
+            .and_then(|iu| iu.art_crop.as_deref())
+            .or_else(|| self.art_crop_url())
+    }
+
     /// Returns the URL for a specific face at the given size.
     ///
     /// `face_index == 0` returns the front face, falling back from top-level `image_uris`
@@ -435,6 +448,13 @@ impl ScryfallData {
             .and_then(|faces| faces.get(face_index))
             .and_then(|face| face.image_uris.as_ref())
             .and_then(|iu| iu.at_size(size))
+    }
+
+    /// Returns the image of face `face_index` at `size`, or the front's where that face has no
+    /// image of its own (a split card's halves share one): the image of the face a host shows.
+    pub fn shown_face_image_url(&self, face_index: usize, size: ImageSize) -> Option<&str> {
+        self.face_image_url(face_index, size)
+            .or_else(|| self.primary_image_url(size))
     }
 
     /// Returns the number of distinct faces this card has for flippable display.
@@ -492,6 +512,61 @@ mod tests {
             .expect("parts parse"),
         );
         card
+    }
+
+    /// A transform card as Scryfall sends it: no top-level images, each face with its own.
+    fn delver() -> super::ScryfallData {
+        let mut card = make_card("Delver of Secrets").scryfall_data;
+        card.layout = "transform".to_string();
+        card.image_uris = None;
+        let face = |name: &str, art: &str| {
+            serde_json::json!({
+                "name": name, "object": "card_face", "mana_cost": "",
+                "image_uris": { "art_crop": art, "normal": format!("{art}-normal") },
+            })
+        };
+        card.card_faces = Some(
+            serde_json::from_value(serde_json::json!([
+                face("Delver of Secrets", "front-art"),
+                face("Insectile Aberration", "back-art"),
+            ]))
+            .expect("faces parse"),
+        );
+        card
+    }
+
+    #[test]
+    fn each_face_has_its_own_art_crop() {
+        let card = delver();
+        assert_eq!(card.face_art_crop_url(0), Some("front-art"));
+        assert_eq!(card.face_art_crop_url(1), Some("back-art"));
+        assert_eq!(
+            card.face_art_crop_url(2),
+            Some("front-art"),
+            "a face with no art of its own shows the front's"
+        );
+        let single = make_card("Sol Ring").scryfall_data;
+        assert_eq!(single.face_art_crop_url(1), single.art_crop_url());
+    }
+
+    #[test]
+    fn a_shown_face_s_image_falls_back_to_the_front() {
+        use super::ImageSize;
+        let card = delver();
+        assert_eq!(
+            card.shown_face_image_url(1, ImageSize::Normal),
+            Some("back-art-normal")
+        );
+        assert_eq!(
+            card.shown_face_image_url(0, ImageSize::Normal),
+            Some("front-art-normal")
+        );
+        let single = make_card("Sol Ring").scryfall_data;
+        assert_eq!(
+            single.shown_face_image_url(1, ImageSize::Normal),
+            single.primary_image_url(ImageSize::Normal),
+            "a face with no image of its own shows the front"
+        );
     }
 
     #[test]

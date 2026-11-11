@@ -81,6 +81,10 @@ pub fn CardOverlaysHost(
 /// `expanded_card`. Under a screen's hover stack, hovering the compact
 /// line shows the card's image there.
 ///
+/// A host that keeps the shown face passes it as `face` and takes each
+/// flip from `on_face_change`; the row's art, hover preview, detail and
+/// Image then follow it.
+///
 /// The deck cards view adds the editing actions: the quantity stepper
 /// (`on_qty_change`), the board moves (`on_move_to` from `current_board`)
 /// and the MVP star (`mvp`, `on_toggle_mvp`), with prices in
@@ -100,15 +104,22 @@ pub fn CardRow(
     #[props(default)] on_toggle_mvp: Option<EventHandler<()>>,
     #[props(default)] price_currency: PriceCurrency,
     #[props(default)] on_printing: Option<EventHandler<Card>>,
+    #[props(default)] face: Option<usize>,
+    #[props(default)] on_face_change: Option<EventHandler<usize>>,
 ) -> Element {
     let overlays = try_use_context::<CardOverlays>();
-    let mut face = use_signal(|| 0usize);
+    let mut own_face = use_signal(|| 0usize);
     let describe_tag = try_use_context::<OtagDescribe>().map(|d| d.0);
     let on_examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
     let show_art = try_use_context::<ShowRowArt>().map(|s| (s.0)());
     let sd_for_image = card.scryfall_data.clone();
     let on_image = overlays.map(|CardOverlays { mut preview, .. }| {
-        EventHandler::new(move |()| preview.set(Some((sd_for_image.clone(), face()))))
+        EventHandler::new(move |()| {
+            preview.set(Some((
+                sd_for_image.clone(),
+                face.unwrap_or_else(|| *own_face.read()),
+            )));
+        })
     });
     let on_printing = on_printing.or_else(|| {
         overlays.map(|CardOverlays { mut printing, .. }| {
@@ -124,7 +135,13 @@ pub fn CardRow(
                 expanded_card,
                 show_art,
                 on_image,
-                on_face_change: move |f: usize| face.set(f),
+                on_face_change: move |f: usize| {
+                    own_face.set(f);
+                    if let Some(handler) = on_face_change {
+                        handler.call(f);
+                    }
+                },
+                face,
                 on_qty_change,
                 on_move_to,
                 current_board,

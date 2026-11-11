@@ -34,7 +34,7 @@ pub fn swipe_screen_shortcut(key: &str) -> Option<Shortcut> {
         "ArrowRight" | "l" | "L" => Shortcut::Swipe(Swipe::Right),
         "ArrowLeft" | "h" => Shortcut::Swipe(Swipe::Left),
         "ArrowUp" | "k" | "K" => Shortcut::Swipe(Swipe::Up),
-        "ArrowDown" | "j" | "J" => Shortcut::Swipe(Swipe::Down),
+        "ArrowDown" | "j" | "J" | "u" | "U" => Shortcut::Swipe(Swipe::Down),
         "p" | "P" => Shortcut::Printings,
         "d" | "D" => Shortcut::Details,
         "v" | "V" => Shortcut::Flip,
@@ -44,6 +44,16 @@ pub fn swipe_screen_shortcut(key: &str) -> Option<Shortcut> {
         _ => return None,
     };
     Some(shortcut)
+}
+
+/// How the sheets write Ctrl+Z (Cmd+Z on a Mac), which undoes wherever `u` does except while
+/// typing in a field, where the field keeps its own undo ([`super::page_keys::use_undo_key`]).
+pub const UNDO_COMBO: &str = "Ctrl+Z";
+
+/// Whether `key` is `u`, the deck cards screen's Undo, the same as its dock's Undo button.
+#[must_use]
+pub fn undo_letter(key: &str) -> bool {
+    matches!(key, "u" | "U")
 }
 
 /// What a key does in Printings' cover flow.
@@ -176,7 +186,7 @@ pub fn sheet_rows(screen: &ShortcutsScreen) -> Vec<(&'static [&'static str], &'s
                 Some((&["→", "l"][..], labels.right)),
                 Some((&["←", "h"][..], labels.left)),
                 labels.up.map(|up| (&["↑", "k"][..], up)),
-                Some((&["↓", "j"][..], labels.down)),
+                Some((&["↓", "j", "u", UNDO_COMBO][..], labels.down)),
             ];
             let rest: [(&'static [&'static str], &'static str); 5] = [
                 (&["p"], "Printings"),
@@ -197,11 +207,13 @@ pub fn sheet_rows(screen: &ShortcutsScreen) -> Vec<(&'static [&'static str], &'s
             (&["p"], "Printings"),
             (&["i"], "Image"),
             (&["v"], "Flip card"),
+            (&["d"], "Card details"),
             (&["m"], "Maybeboard"),
             (&["s"], "Sideboard"),
             (&["Shift+S"], "Star"),
             (&["-"], "One fewer"),
             (&["+"], "One more"),
+            (&["u", UNDO_COMBO], "Undo"),
         ],
     };
     own.into_iter().chain(everywhere).collect()
@@ -406,7 +418,7 @@ mod tests {
         let names = |labels: &SwipeLabels| -> Vec<&'static str> {
             sheet_rows(&ShortcutsScreen::Swipe(*labels))
                 .iter()
-                .take_while(|(keys, _)| keys.len() == 2)
+                .take_while(|(keys, _)| keys.first().is_some_and(|k| "→←↑↓".contains(k)))
                 .map(|(_, does)| *does)
                 .collect()
         };
@@ -458,6 +470,21 @@ mod tests {
     }
 
     #[test]
+    fn u_undoes_on_every_screen_that_has_undo() {
+        for key in ["u", "U"] {
+            assert_eq!(
+                swipe_screen_shortcut(key),
+                Some(Shortcut::Swipe(Swipe::Down)),
+                "{key} on a swipe screen is the down swipe, Undo"
+            );
+            assert!(undo_letter(key), "{key} on the deck cards screen");
+        }
+        for key in ["j", "z", "Z", "y"] {
+            assert!(!undo_letter(key), "{key}");
+        }
+    }
+
+    #[test]
     fn the_deck_cards_sheet_lists_only_that_screen_s_keys() {
         let rows = sheet_rows(&ShortcutsScreen::DeckCards);
         let listed: Vec<(&[&str], &str)> = rows.clone();
@@ -467,11 +494,13 @@ mod tests {
                 (&["p"][..], "Printings"),
                 (&["i"][..], "Image"),
                 (&["v"][..], "Flip card"),
+                (&["d"][..], "Card details"),
                 (&["m"][..], "Maybeboard"),
                 (&["s"][..], "Sideboard"),
                 (&["Shift+S"][..], "Star"),
                 (&["-"][..], "One fewer"),
                 (&["+"][..], "One more"),
+                (&["u", "Ctrl+Z"][..], "Undo"),
                 (&["Esc"][..], "Close the open sheet"),
                 (&["?"][..], "This page's hint"),
                 (&["Shift+H"][..], "These shortcuts"),
@@ -493,8 +522,10 @@ mod tests {
                     label
                 };
                 let known = hover_keys::hover_key(key).is_some()
+                    || undo_letter(key)
                     || global_key(key).is_some()
-                    || key == "Esc";
+                    || key == "Esc"
+                    || key == UNDO_COMBO;
                 assert!(known, "{label} for {does}");
             }
         }
@@ -523,6 +554,13 @@ mod tests {
             ]
         );
         assert_eq!(rows.first().map(|(keys, _)| *keys), Some(&["→", "l"][..]));
+        assert_eq!(
+            rows.iter()
+                .find(|(_, does)| *does == "Undo")
+                .map(|(keys, _)| *keys),
+            Some(&["↓", "j", "u", UNDO_COMBO][..]),
+            "u and Ctrl+Z undo beside the down swipe"
+        );
         // Every listed key really does what its row says.
         let typed = |label: &str| match label {
             "→" => "ArrowRight".to_owned(),
@@ -537,7 +575,8 @@ mod tests {
                 let key = typed(label);
                 let known = swipe_screen_shortcut(&key).is_some()
                     || global_key(&key).is_some()
-                    || key == "Esc";
+                    || key == "Esc"
+                    || key == UNDO_COMBO;
                 assert!(known, "{label} for {does}");
             }
         }

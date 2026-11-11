@@ -72,7 +72,7 @@ use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::back_arrow::BackArrow;
 use crate::inbound::chrome::details_eye::{DockEye, Surface, use_details_eye};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, SwipeSelectHint, open_and_record_hint};
-use crate::inbound::chrome::page_keys::use_page_keys;
+use crate::inbound::chrome::page_keys::{use_page_keys, use_undo_key};
 use crate::inbound::chrome::shortcuts::{self, SELECT_LABELS, Shortcut, ShortcutsScreen};
 use crate::inbound::chrome::shortcuts_sheet::{
     DockShortcuts, use_global_keys, use_offer_shortcuts,
@@ -623,6 +623,7 @@ fn SwipeSelectBody(
         Callback::new(move |()| stack.peek().current().is_some()),
         undo,
     );
+    use_undo_key(Callback::new(move |()| undo.call(())));
 
     // Refresh, from its dock button or `r`.
     let refresh = use_callback(move |()| {
