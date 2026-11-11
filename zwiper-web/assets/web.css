@@ -2816,6 +2816,34 @@ body:has(.deck-stacks) .sheet-form-drawer:has(> .card-details-drawer) > .sheet-b
         padding-bottom: 5rem;
     }
 
+    /* The deck page runs the window's width inside the page gutter, so the
+       stacks fit as many columns as the window holds. */
+    .web-page.web-deck-page {
+        max-width: none;
+    }
+}
+
+/* From 1400px the list's groups flow down two columns, each group whole in
+   one of them. */
+@media (min-width: 1400px) {
+    .web-deck-page .deck-bands:not(:has(> .deck-stacks)) {
+        display: block;
+        column-count: 2;
+        column-gap: var(--panel-gap);
+    }
+
+    .web-deck-page .deck-bands:not(:has(> .deck-stacks)) > * {
+        break-inside: avoid;
+    }
+
+    /* The gap falls away at the top of the second column. */
+    .web-deck-page .deck-bands:not(:has(> .deck-stacks)) > * + * {
+        margin-top: var(--panel-gap);
+    }
+}
+
+@media (min-width: 900px) {
+
     /* Warnings at the foot, open, in the section's own warning dress. */
     .web-deck-warnings {
         margin: 0;

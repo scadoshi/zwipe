@@ -101,6 +101,32 @@ mod tests {
         assert!(chips.contains("var(--web-nav-h"), "{chips}");
     }
 
+    /// The body of `selector`'s rule inside the block that opens with `query`.
+    fn rule_in(query: &str, selector: &str) -> &'static str {
+        let at = WEB_CSS.find(query).unwrap_or_else(|| panic!("no {query}"));
+        let block = WEB_CSS.get(at..).unwrap();
+        let block = block.get(..block.find("\n}\n").unwrap()).unwrap();
+        let rule = block
+            .find(&format!("    {selector} {{"))
+            .and_then(|i| block.get(i..))
+            .unwrap_or_else(|| panic!("no {selector} in {query}"));
+        rule.get(..rule.find('}').unwrap()).unwrap()
+    }
+
+    #[test]
+    fn the_deck_page_runs_the_window_s_width_and_pairs_its_groups_from_1400() {
+        let page = rule_in(
+            "@media (min-width: 900px) {\n    .web-deck-page {",
+            ".web-page.web-deck-page",
+        );
+        assert!(page.contains("max-width: none"), "{page}");
+        let bands = rule_in(
+            "@media (min-width: 1400px) {\n    .web-deck-page .deck-bands",
+            ".web-deck-page .deck-bands:not(:has(> .deck-stacks))",
+        );
+        assert!(bands.contains("column-count: 2"), "{bands}");
+    }
+
     #[test]
     fn the_header_folds_below_1110_and_never_wraps() {
         assert_eq!(NAV_FOLD_MAX_PX, 1109);
