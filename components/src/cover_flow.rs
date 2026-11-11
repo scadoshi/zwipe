@@ -18,9 +18,16 @@ use crate::flippable_card_image::{decoded, mark_image_seen};
 use crate::icons::{ARROW_LEFT, ARROW_RIGHT, DockIcon};
 
 /// Answers once the browser has drawn three frames, by then the flow's
-/// card layers are painted.
+/// layers are painted.
 const PRIME_JS: &str = r"
 await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(done))));
+dioxus.send(true);
+";
+
+/// Answers after three seconds: the longest the flow waits on its middle
+/// image before it shows.
+const PRIME_LIMIT_JS: &str = r"
+await new Promise((done) => setTimeout(done, 3000));
 dioxus.send(true);
 ";
 
@@ -150,15 +157,31 @@ pub fn CoverFlow(
     let mut arrived: Signal<HashMap<String, Arrival>> = use_signal(HashMap::new);
     let count = printings.len();
     let at = index().min(count.saturating_sub(1));
-    // For its first frames the flow draws its cards all but invisible, so a
-    // phone's browser paints their layers before they show, with a flat
-    // ghost under the middle card meanwhile; a card's layer the browser has
-    // not painted yet draws as the page's background.
+    // Until the middle printing's image is in and has had a few frames to
+    // paint, the flow's stage is all but invisible over a flat ghost in the
+    // middle card's place: the stage and its cards are layers of their own,
+    // which a phone's browser draws as the page's background until it has
+    // painted them. A middle image that never settles shows the flow anyway
+    // after `PRIME_LIMIT_JS`.
     let mut primed = use_signal(|| false);
+    let centre_settled = printings.get(at).is_none_or(|card| {
+        card.scryfall_data
+            .primary_image_url(ImageSize::Large)
+            .is_none_or(|u| arrived.read().contains_key(u))
+    });
+    use_effect(use_reactive!(|centre_settled| {
+        if centre_settled && !*primed.peek() {
+            spawn(async move {
+                let mut frames = document::eval(PRIME_JS);
+                let _drawn: Result<bool, _> = frames.recv().await;
+                primed.set(true);
+            });
+        }
+    }));
     use_hook(move || {
         spawn(async move {
-            let mut frames = document::eval(PRIME_JS);
-            let _drawn: Result<bool, _> = frames.recv().await;
+            let mut limit = document::eval(PRIME_LIMIT_JS);
+            let _waited: Result<bool, _> = limit.recv().await;
             primed.set(true);
         });
     });
@@ -197,6 +220,10 @@ pub fn CoverFlow(
                     DockIcon { path: ARROW_LEFT }
                 }
             }
+            div { class: "cover-flow-frame",
+            if !primed() {
+                div { class: "cover-flow-primer" }
+            }
             div {
                 class: if primed() { "cover-flow-stage" } else { "cover-flow-stage priming" },
                 onwheel: move |e: Event<WheelData>| {
@@ -228,9 +255,6 @@ pub fn CoverFlow(
                 onpointerup: move |_| drag_from.set(None),
                 onpointercancel: move |_| drag_from.set(None),
                 onpointerleave: move |_| drag_from.set(None),
-                if !primed() {
-                    div { class: "cover-flow-primer" }
-                }
                 for (i, offset, card) in cards {
                     div {
                         key: "{card.scryfall_data.id}",
@@ -268,7 +292,10 @@ pub fn CoverFlow(
                                             class: if shown.image_shown() { "shown" } else { "" },
                                             src: "{url}",
                                             alt: "{card.scryfall_data.name}, {card.scryfall_data.set_name}",
-                                            loading: "lazy",
+                                            // The middle loads at once, the sheet
+                                            // sliding in from off screen; the rest
+                                            // as they come near.
+                                            loading: if offset == 0 { "eager" } else { "lazy" },
                                             draggable: false,
                                             onload: move |_| {
                                                 let loaded = loaded.clone();
@@ -288,6 +315,7 @@ pub fn CoverFlow(
                         }
                     }
                 }
+            }
             }
             if count > 1 {
                 button {

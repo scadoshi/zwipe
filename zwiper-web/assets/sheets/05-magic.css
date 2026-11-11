@@ -1765,8 +1765,16 @@ html.keyboard-up .web-dock-pair {
     animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-/* While the flow primes, its cards are all but invisible and a flat ghost
-   (no 3D, so no layer of its own) holds the middle card's place under them. */
+/* The stage's frame, which holds the primer under the stage. */
+.cover-flow-frame {
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+/* While the flow primes, the stage is all but invisible and a flat ghost
+   (no 3D or mask, so no layer of its own) holds the middle card's place
+   under it, outside the stage. */
 .cover-flow-primer {
     position: absolute;
     top: 4%;
@@ -1778,7 +1786,7 @@ html.keyboard-up .web-dock-pair {
     background-color: var(--border-muted);
 }
 
-.cover-flow-stage.priming > .cover-flow-card {
+.cover-flow-stage.priming {
     opacity: 0.01;
 }
 
