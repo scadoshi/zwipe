@@ -1753,8 +1753,9 @@ html.keyboard-up .web-dock-pair {
     opacity: 1;
 }
 
-/* A printing's own ghost in the card's shape, under its image until the
-   image has decoded and faded in, so the card is never empty. */
+/* A printing's own ghost in the card's shape, under its image from the
+   start and for good, so the card is never empty, even while a phone has
+   yet to paint an image it has decoded. */
 .cover-flow-ghost {
     position: absolute;
     inset: 0;
@@ -1763,8 +1764,7 @@ html.keyboard-up .web-dock-pair {
     animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-/* Under a shown image the ghost holds still: it is covered, and stays only
-   until the image's fade ends (or for good if that end is never reported). */
+/* Under a shown image the ghost holds still: it is covered. */
 .cover-flow-ghost:has(+ img.shown) {
     animation: none;
 }

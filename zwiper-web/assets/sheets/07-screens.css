@@ -1519,21 +1519,23 @@ body .toast-container [role="alertdialog"] {
     animation: swipe-reveal-in 250ms ease;
 }
 
-/* Once the pile shows, the ghost stays under the stack (it comes first)
-   until the top card's image has decoded, and the cards under the top stay
-   hidden meanwhile: a pile shown by the fallback, before its top image is
-   in, never shows an empty slot or another card. */
-.swipe-reveal:not(.revealing) > .skeleton-card {
+/* While the stack holds its ghost (`ghost-held`: the top card's image is
+   not in, or has not had time to paint), the ghost sits under the cards and
+   the cards under the top do not paint, so a pile never shows an empty slot
+   or another card through the top. The stack decides when, from each
+   image's load. */
+.swipe-stack-ghost {
     position: absolute;
     inset: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.swipe-stack-ghost > .skeleton-card {
     animation: none;
 }
 
-.swipe-reveal:not(.revealing):has(> .swipe-stack > .swipe-stack-card.top :is(img.img-loaded, .no-image-card)) > .skeleton-card {
-    display: none;
-}
-
-.swipe-reveal > .swipe-stack:has(> .swipe-stack-card.top img:not(.img-loaded)) > .swipe-stack-card:not(.top) {
+.swipe-stack.ghost-held > .swipe-stack-card:not(.top) {
     visibility: hidden;
 }
 

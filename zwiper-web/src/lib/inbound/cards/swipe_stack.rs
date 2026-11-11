@@ -9,14 +9,19 @@
 //! animate the same way a drag does, and a press before the last card is half way out is dropped, so
 //! two exits overlap at most by half.
 
+use std::collections::HashSet;
+
 use chrono::{DateTime, Utc};
 use components::icons::{ARROW_DOWN, ARROW_LEFT, ARROW_RIGHT, ARROW_UP, DockIcon};
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ImageSize;
-use zwipe_ui::stack::{Direction, STACK_DEPTH};
+use zwipe_ui::stack::{Direction, STACK_DEPTH, ghost_held};
 use zwipe_ui::telemetry::SwipeDirection;
+use zwipe_ui::timing::TOP_PAINT_GRACE;
+
+use crate::outbound::timer;
 
 /// A drag this far along its axis, in pixels, commits; the app's distance.
 pub const COMMIT_PX: f64 = 90.0;
@@ -184,7 +189,10 @@ impl Drag {
 /// in `allowed` calls `on_swipe` with the top card; any other springs back.
 /// `entering` names the side the top card comes back from after an undo,
 /// and `on_entered` clears it once that keyframe ends. `on_top_shown` fires
-/// once the top card's image has its bytes, failed, or has no art.
+/// once the top card's image has its bytes, failed, or has no art. Until
+/// then, and for [`TOP_PAINT_GRACE`] after, the stack draws `ghost` under
+/// its cards and hides the cards under the top, so neither an empty slot
+/// nor another card shows while the top's image arrives.
 #[component]
 pub fn SwipeStack(
     cards: Vec<Card>,
@@ -194,8 +202,13 @@ pub fn SwipeStack(
     #[props(default)] entering: Option<Direction>,
     #[props(default)] on_entered: Option<EventHandler<()>>,
     #[props(default)] on_top_shown: Option<EventHandler<()>>,
+    #[props(default)] ghost: Option<Element>,
 ) -> Element {
     let mut drag: Signal<Option<Drag>> = use_signal(|| None);
+    // The cards whose image has loaded and decoded, failed, or has no art,
+    // and the top that has been shown long enough to have painted.
+    let mut shown_cards: Signal<HashSet<Uuid>> = use_signal(HashSet::new);
+    let mut painted: Signal<Option<Uuid>> = use_signal(|| None);
     let mut exiting: Signal<Vec<Exiting>> = use_signal(Vec::new);
     // When the last card started flying off, on the browser's clock.
     let mut last_exit_at: Signal<Option<DateTime<Utc>>> = use_signal(|| None);
@@ -238,9 +251,27 @@ pub fn SwipeStack(
     let shown: Vec<Card> = cards.into_iter().take(STACK_DEPTH).collect();
     let count = shown.len();
     let allowed_up = allowed.contains(&Swipe::Up);
+    let top_id = shown.first().map(|c| c.scryfall_data.id);
+    let top_in = top_id.is_some_and(|id| shown_cards.read().contains(&id));
+    let held = ghost_held(top_id, &shown_cards.read(), painted());
+    // Once the top's image is in, it has the grace to paint before the
+    // ghost goes and the cards under it may show.
+    use_effect(use_reactive!(|top_id, top_in| {
+        if let Some(id) = top_id.filter(|_| top_in)
+            && *painted.peek() != Some(id)
+        {
+            spawn(async move {
+                timer::sleep(TOP_PAINT_GRACE).await;
+                painted.set(Some(id));
+            });
+        }
+    }));
 
     rsx! {
-        div { class: "swipe-stack web-swipe-stack",
+        div { class: if held { "swipe-stack web-swipe-stack ghost-held" } else { "swipe-stack web-swipe-stack" },
+            if held && let Some(ghost) = ghost {
+                div { class: "swipe-stack-ghost", {ghost} }
+            }
             for (i, card) in shown.into_iter().enumerate().rev() {
                 {
                     let is_top = i == 0;
@@ -315,9 +346,14 @@ pub fn SwipeStack(
                                 class: "card-image".to_string(),
                                 draggable: false,
                                 flippable: is_top,
-                                on_load: move |()| {
-                                    if is_top && let Some(handler) = on_top_shown {
-                                        handler.call(());
+                                trust_seen: false,
+                                on_load: {
+                                    let id = card.scryfall_data.id;
+                                    move |()| {
+                                        shown_cards.write().insert(id);
+                                        if is_top && let Some(handler) = on_top_shown {
+                                            handler.call(());
+                                        }
                                     }
                                 },
                             }
