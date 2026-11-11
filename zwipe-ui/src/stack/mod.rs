@@ -34,16 +34,17 @@ pub const STACK_DEPTH: usize = 10;
 /// Whether a swipe stack whose top card is `top` still draws its ghost
 /// under that card and keeps the cards under it hidden: until the top's id
 /// is in `shown` (cards whose image has loaded and decoded, failed, or that
-/// have no art) and then until it is `painted` (the top that has been shown
-/// for [`crate::timing::TOP_PAINT_GRACE`]). Neither an empty slot nor
-/// another card then shows while the top's image arrives.
+/// have no art), and while it is `painting` (its image came in while it was
+/// the top, and has yet to have [`crate::timing::TOP_PAINT_GRACE`] to
+/// paint). A card that loaded under the top shows at once when it comes up,
+/// so a swipe never holds the ghost.
 #[must_use]
 pub fn ghost_held<S: BuildHasher>(
     top: Option<Uuid>,
     shown: &HashSet<Uuid, S>,
-    painted: Option<Uuid>,
+    painting: Option<Uuid>,
 ) -> bool {
-    top.is_some_and(|id| !shown.contains(&id) || painted != Some(id))
+    top.is_some_and(|id| !shown.contains(&id) || painting == Some(id))
 }
 
 /// A swipe direction.
@@ -423,18 +424,28 @@ mod tests {
         );
         shown.insert(top);
         assert!(
-            ghost_held(Some(top), &shown, None),
-            "shown, but not yet given time to paint"
+            ghost_held(Some(top), &shown, Some(top)),
+            "came in while on top: held while it paints"
         );
-        assert!(
-            !ghost_held(Some(top), &shown, Some(top)),
-            "shown and painted"
-        );
-        assert!(
-            ghost_held(Some(under), &shown, Some(top)),
-            "a new top waits again"
-        );
+        assert!(!ghost_held(Some(top), &shown, None), "shown and painted");
         assert!(!ghost_held(None, &shown, None), "no top, no ghost");
+    }
+
+    #[test]
+    fn a_card_that_loaded_under_the_top_shows_at_once_when_it_comes_up() {
+        // Every swipe makes the card under the top the new top. It loaded
+        // there, so the stack must not hold its ghost (and hide the card
+        // flying off) while it waits again.
+        let (gone, next) = (Uuid::from_u128(1), Uuid::from_u128(2));
+        let shown: HashSet<Uuid> = [gone, next].into_iter().collect();
+        assert!(
+            !ghost_held(Some(next), &shown, None),
+            "the new top shows at once"
+        );
+        assert!(
+            !ghost_held(Some(next), &shown, Some(gone)),
+            "the old top still painting does not hold the new one"
+        );
     }
 
     fn stack(names: &[&str]) -> CardStack<AddAction> {

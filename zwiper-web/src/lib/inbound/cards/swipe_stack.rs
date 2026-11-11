@@ -16,7 +16,7 @@ use components::icons::{ARROW_DOWN, ARROW_LEFT, ARROW_RIGHT, ARROW_UP, DockIcon}
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::scryfall_data::ImageSize;
+use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
 use zwipe_ui::stack::{Direction, STACK_DEPTH, ghost_held};
 use zwipe_ui::telemetry::SwipeDirection;
 use zwipe_ui::timing::TOP_PAINT_GRACE;
@@ -191,9 +191,11 @@ impl Drag {
 /// `entering` names the side the top card comes back from after an undo,
 /// and `on_entered` clears it once that keyframe ends. `on_top_shown` fires
 /// once the top card's image has its bytes, failed, or has no art. Until
-/// then, and for [`TOP_PAINT_GRACE`] after, the stack draws `ghost` under
-/// its cards and hides the cards under the top, so neither an empty slot
-/// nor another card shows while the top's image arrives.
+/// then, and for [`TOP_PAINT_GRACE`] after when it came in on top, the
+/// stack draws `ghost` under its cards and hides the cards under the top,
+/// so neither an empty slot nor another card shows while the top's image
+/// arrives. `hold` keeps the ghost up regardless, for a pile the host has
+/// yet to show.
 #[component]
 pub fn SwipeStack(
     cards: Vec<Card>,
@@ -204,12 +206,13 @@ pub fn SwipeStack(
     #[props(default)] on_entered: Option<EventHandler<()>>,
     #[props(default)] on_top_shown: Option<EventHandler<()>>,
     #[props(default)] ghost: Option<Element>,
+    #[props(default)] hold: bool,
 ) -> Element {
     let mut drag: Signal<Option<Drag>> = use_signal(|| None);
     // The cards whose image has loaded and decoded, failed, or has no art,
-    // and the top that has been shown long enough to have painted.
+    // and the top whose image came in while it was the top, while it paints.
     let mut shown_cards: Signal<HashSet<Uuid>> = use_signal(HashSet::new);
-    let mut painted: Signal<Option<Uuid>> = use_signal(|| None);
+    let mut painting: Signal<Option<Uuid>> = use_signal(|| None);
     let mut exiting: Signal<Vec<Exiting>> = use_signal(Vec::new);
     // When the last card started flying off, on the browser's clock.
     let mut last_exit_at: Signal<Option<DateTime<Utc>>> = use_signal(|| None);
@@ -253,112 +256,133 @@ pub fn SwipeStack(
     let count = shown.len();
     let allowed_up = allowed.contains(&Swipe::Up);
     let top_id = shown.first().map(|c| c.scryfall_data.id);
-    let top_in = top_id.is_some_and(|id| shown_cards.read().contains(&id));
-    let held = ghost_held(top_id, &shown_cards.read(), painted());
-    // Once the top's image is in, it has the grace to paint before the
-    // ghost goes and the cards under it may show.
-    use_effect(use_reactive!(|top_id, top_in| {
-        if let Some(id) = top_id.filter(|_| top_in)
-            && *painted.peek() != Some(id)
-        {
+    let held = hold || ghost_held(top_id, &shown_cards.read(), painting());
+    // A top whose image came in while it was the top has the grace to paint
+    // before the ghost goes and the cards under it may show.
+    let painting_now = painting();
+    use_effect(use_reactive!(|painting_now| {
+        if let Some(id) = painting_now {
             spawn(async move {
                 timer::sleep(TOP_PAINT_GRACE).await;
-                painted.set(Some(id));
+                if *painting.peek() == Some(id) {
+                    painting.set(None);
+                }
             });
         }
     }));
+
+    let layers = shown.into_iter().enumerate().rev().map(|(i, card)| {
+        let is_top = i == 0;
+        let z = count.saturating_sub(i);
+        let style = if is_top {
+            let (dx, dy) = drag().map(Drag::delta).unwrap_or_default();
+            let horizontal = dx.abs() >= dy.abs();
+            let tx = if horizontal { dx } else { 0.0 };
+            let ty = if !horizontal && allowed_up {
+                dy.min(0.0)
+            } else {
+                0.0
+            };
+            let rot = tx * TILT_PER_PX;
+            let transition = if drag().is_some() {
+                "transition: transform 0s;"
+            } else {
+                "transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);"
+            };
+            format!(
+                "transform: translate({tx}px, {ty}px) rotate({rot}deg); {transition} z-index: {z};"
+            )
+        } else {
+            format!("z-index: {z};")
+        };
+        let entering_class = match (is_top, entering) {
+            (true, Some(Direction::Left)) => " card-stack-enter-left",
+            (true, Some(Direction::Right)) => " card-stack-enter-right",
+            (true, Some(Direction::Up)) => " card-stack-enter-up",
+            _ => "",
+        };
+        let id = card.scryfall_data.id;
+        Layer {
+            id,
+            name: card.scryfall_data.name.clone(),
+            is_top,
+            class: format!(
+                "swipe-stack-card{}{entering_class}",
+                if is_top { " top" } else { "" }
+            ),
+            style,
+            loaded: shown_cards.read().contains(&id),
+            sd: card.scryfall_data.clone(),
+            card,
+            allowed: allowed.clone(),
+        }
+    });
 
     rsx! {
         div { class: if held { "swipe-stack web-swipe-stack ghost-held" } else { "swipe-stack web-swipe-stack" },
             if held && let Some(ghost) = ghost {
                 div { class: "swipe-stack-ghost", {ghost} }
             }
-            for (i, card) in shown.into_iter().enumerate().rev() {
-                {
-                    let is_top = i == 0;
-                    let z = count.saturating_sub(i);
-                    let style = if is_top {
-                        let (dx, dy) = drag().map(Drag::delta).unwrap_or_default();
-                        let horizontal = dx.abs() >= dy.abs();
-                        let tx = if horizontal { dx } else { 0.0 };
-                        let ty = if !horizontal && allowed_up { dy.min(0.0) } else { 0.0 };
-                        let rot = tx * TILT_PER_PX;
-                        let transition = if drag().is_some() {
-                            "transition: transform 0s;"
-                        } else {
-                            "transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);"
-                        };
-                        format!("transform: translate({tx}px, {ty}px) rotate({rot}deg); {transition} z-index: {z};")
-                    } else {
-                        format!("z-index: {z};")
-                    };
-                    let entering_class = match (is_top, entering) {
-                        (true, Some(Direction::Left)) => " card-stack-enter-left",
-                        (true, Some(Direction::Right)) => " card-stack-enter-right",
-                        (true, Some(Direction::Up)) => " card-stack-enter-up",
-                        _ => "",
-                    };
-                    let class = format!("swipe-stack-card{}{entering_class}", if is_top { " top" } else { "" });
-                    let card_for_up = card.clone();
-                    let allowed = allowed.clone();
-                    rsx! {
-                        div {
-                            key: "{card.scryfall_data.id}",
-                            class: "{class}",
-                            style: "{style}",
-                            "aria-label": "{card.scryfall_data.name}",
-                            onpointerdown: move |e: Event<PointerData>| {
-                                if !is_top || entering.is_some() {
-                                    return;
-                                }
-                                let p = e.client_coordinates();
-                                drag.set(Some(Drag { start: (p.x, p.y), now: (p.x, p.y) }));
-                            },
-                            onpointermove: move |e: Event<PointerData>| {
-                                let current = *drag.peek();
-                                if let Some(mut d) = current {
-                                    let p = e.client_coordinates();
-                                    d.now = (p.x, p.y);
-                                    drag.set(Some(d));
-                                }
-                            },
-                            onpointerup: move |_| {
-                                let Some(d) = drag.take() else {
-                                    return;
-                                };
-                                let (dx, dy) = d.delta();
-                                if let Some(swipe) = Swipe::of_drag(dx, dy).filter(|s| allowed.contains(s)) {
-                                    let from = if swipe == Swipe::Up { (0.0, dy.min(0.0)) } else { (dx, 0.0) };
-                                    commit.call((swipe, card_for_up.clone(), from));
-                                }
-                            },
-                            onpointerleave: move |_| drag.set(None),
-                            onpointercancel: move |_| drag.set(None),
-                            onanimationend: move |_| {
-                                if is_top && entering.is_some()
-                                    && let Some(handler) = on_entered
-                                {
-                                    handler.call(());
-                                }
-                            },
-                            components::FlippableCardImage {
-                                sd: card.scryfall_data.clone(),
-                                size: ImageSize::Large,
-                                class: "card-image".to_string(),
-                                draggable: false,
-                                flippable: is_top,
-                                trust_seen: false,
-                                on_load: {
-                                    let id = card.scryfall_data.id;
-                                    move |()| {
-                                        shown_cards.write().insert(id);
-                                        if is_top && let Some(handler) = on_top_shown {
-                                            handler.call(());
-                                        }
-                                    }
-                                },
-                            }
+            // Keyed by card, the loop's own node, so a swipe drops the top
+            // and keeps every other card mounted.
+            for layer in layers {
+                div {
+                    key: "{layer.id}",
+                    class: "{layer.class}",
+                    style: "{layer.style}",
+                    "aria-label": "{layer.name}",
+                    onpointerdown: move |e: Event<PointerData>| {
+                        if !layer.is_top || entering.is_some() {
+                            return;
                         }
+                        let p = e.client_coordinates();
+                        drag.set(Some(Drag { start: (p.x, p.y), now: (p.x, p.y) }));
+                    },
+                    onpointermove: move |e: Event<PointerData>| {
+                        let current = *drag.peek();
+                        if let Some(mut d) = current {
+                            let p = e.client_coordinates();
+                            d.now = (p.x, p.y);
+                            drag.set(Some(d));
+                        }
+                    },
+                    onpointerup: move |_| {
+                        let Some(d) = drag.take() else {
+                            return;
+                        };
+                        let (dx, dy) = d.delta();
+                        if let Some(swipe) = Swipe::of_drag(dx, dy).filter(|s| layer.allowed.contains(s)) {
+                            let from = if swipe == Swipe::Up { (0.0, dy.min(0.0)) } else { (dx, 0.0) };
+                            commit.call((swipe, layer.card.clone(), from));
+                        }
+                    },
+                    onpointerleave: move |_| drag.set(None),
+                    onpointercancel: move |_| drag.set(None),
+                    onanimationend: move |_| {
+                        if layer.is_top && entering.is_some()
+                            && let Some(handler) = on_entered
+                        {
+                            handler.call(());
+                        }
+                    },
+                    components::FlippableCardImage {
+                        sd: layer.sd,
+                        size: ImageSize::Large,
+                        class: "card-image".to_string(),
+                        draggable: false,
+                        flippable: layer.is_top,
+                        // Shows at once if this stack already had it in, else
+                        // only from its own load.
+                        trust_seen: layer.loaded,
+                        on_load: move |()| {
+                            if layer.is_top && !shown_cards.peek().contains(&layer.id) {
+                                painting.set(Some(layer.id));
+                            }
+                            shown_cards.write().insert(layer.id);
+                            if layer.is_top && let Some(handler) = on_top_shown {
+                                handler.call(());
+                            }
+                        },
                     }
                 }
             }
@@ -371,6 +395,21 @@ pub fn SwipeStack(
             }
         }
     }
+}
+
+/// One card of the stack as it draws, worked out before the markup so the
+/// markup's loop can key each card by its id.
+struct Layer {
+    id: Uuid,
+    name: String,
+    is_top: bool,
+    class: String,
+    style: String,
+    /// Whether this stack already had the card's image in.
+    loaded: bool,
+    sd: ScryfallData,
+    card: Card,
+    allowed: Vec<Swipe>,
 }
 
 /// One card flying off on its exit keyframe, keyed by its own id so the
@@ -568,6 +607,21 @@ window.__zwipeSwipe = (window.__zwipeSwipe || []).filter((id) => id !== '__ID__'
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The swipe screens' shared sheet, as the web links it.
+    const SCREENS_CSS: &str = include_str!("../../../../assets/sheets/07-screens.css");
+
+    #[test]
+    fn a_card_flying_off_shows_while_the_stack_holds_its_ghost() {
+        let rule = SCREENS_CSS
+            .lines()
+            .find(|line| line.starts_with(".swipe-stack.ghost-held > .swipe-stack-card"))
+            .expect("the rule hiding the cards under a held top");
+        assert!(
+            rule.contains(".swipe-stack-exiting"),
+            "the exiting card is exempt, or every fly-off is invisible: {rule}"
+        );
+    }
 
     #[test]
     fn a_short_drag_springs_back() {
