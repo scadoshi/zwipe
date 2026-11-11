@@ -313,7 +313,13 @@ fn create_sends_the_form_and_opens_the_new_deck() {
         ticket: *ticket,
         deck_id,
     });
-    assert_eq!(navigation(&effects), [Destination::Deck(deck_id)]);
+    assert!(
+        matches!(
+            effects.as_slice(),
+            [Effect::Replace(Destination::Deck(id))] if *id == deck_id
+        ),
+        "the new deck takes the spent form's place, so Back skips it: {effects:?}"
+    );
     assert!(toasts(&effects).is_empty(), "no success toast");
 }
 

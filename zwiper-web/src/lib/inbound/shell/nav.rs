@@ -2,6 +2,7 @@
 //! back arrow goes.
 
 use dioxus::prelude::*;
+use dioxus::router::Navigator;
 use uuid::Uuid;
 
 use crate::inbound::router::Route;
@@ -15,12 +16,14 @@ pub struct MenuOpen(pub Signal<bool>);
 /// Where the header's back arrow goes from a screen.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Back {
-    /// The screen before this one, or Home when the tab has no history.
+    /// The screen before this one, or Home when the app has none in this tab.
     Previous,
-    /// The screen's fixed parent.
+    /// The screen before this one, or this fixed parent when the app has
+    /// none in this tab.
     To(Route),
-    /// The screen that opened this deck, or Decks when none is on record
-    /// (see [`DeckOpener`](super::DeckOpener)).
+    /// The screen before this one, or the screen that opened this deck
+    /// (Decks when none is on record, see [`DeckOpener`](super::DeckOpener))
+    /// when the app has none in this tab.
     Opener(Uuid),
 }
 
@@ -54,6 +57,17 @@ impl Back {
             Route::CommanderMaybeboard {} => Some(Back::To(Route::Playstyle {})),
             Route::PrivacyPolicy {} => Some(Back::To(Route::About {})),
         }
+    }
+}
+
+/// Goes back to the screen before this one when the app has one in this
+/// tab, and otherwise shows `parent` in this screen's place, so a back move
+/// never adds an entry that Back would return through.
+pub fn back_or(navigator: Navigator, parent: Route) {
+    if navigator.can_go_back() {
+        navigator.go_back();
+    } else {
+        navigator.replace(parent);
     }
 }
 

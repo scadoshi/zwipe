@@ -196,7 +196,8 @@ pub enum Results {
 pub enum Destination {
     /// Wherever the user came from, Create's Back.
     Previous,
-    /// The deck view for the deck with this id: Edit's Back, and after either save.
+    /// The deck view for the deck with this id: Edit's Back and save, and
+    /// the new deck in place of Create.
     Deck(Uuid),
     /// The deck list, in place of a screen whose deck is gone.
     DeckList,
@@ -665,7 +666,7 @@ impl State {
                     return Vec::new();
                 }
                 self.saved = self.values.clone();
-                vec![Effect::Navigate(Destination::Deck(deck_id))]
+                vec![Effect::Replace(Destination::Deck(deck_id))]
             }
             Action::Updated { ticket } => {
                 if self.take(ticket) != Some(Request::Save) {

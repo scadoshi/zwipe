@@ -15,6 +15,7 @@ use zwipe_ui::screens::deck_export::{self, Action, Board, Destination, Effect, S
 
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::hint_dialog::OneTimeHintDialog;
+use crate::inbound::components::navigation::back_handler;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen};
 use crate::inbound::components::{hint_dialog, ui_toast};
@@ -87,8 +88,9 @@ impl Driver {
                 document::eval(&js);
                 ui_toast::raise(toast, done);
             }
+            // The screen navigates only from Back, to its deck.
             Effect::Navigate(destination) => {
-                navigator.push(route(destination));
+                back_handler::back_or(navigator, route(destination));
             }
             Effect::Replace(destination) => {
                 navigator.replace(route(destination));

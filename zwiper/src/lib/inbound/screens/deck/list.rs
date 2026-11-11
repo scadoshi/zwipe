@@ -31,6 +31,7 @@ use zwipe_ui::screens::deck_list::{self, Action, Destination, Effect, State, Sta
 
 use crate::inbound::components::auth::authed::{Authed, use_authed};
 use crate::inbound::components::hint_dialog::OneTimeHintDialog;
+use crate::inbound::components::navigation::back_handler;
 use crate::inbound::components::navigation::deck_opener::DeckOpener;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen};
@@ -120,6 +121,9 @@ impl Driver {
             }
             Effect::OfferHint(hint) => {
                 hint_dialog::open_and_record_hint(hint.key(), session, client, hint_open);
+            }
+            Effect::Navigate(Destination::Home) => {
+                back_handler::back_or(navigator, Router::Home {});
             }
             Effect::Navigate(destination) => {
                 if let Destination::Deck(deck_id) = destination {
