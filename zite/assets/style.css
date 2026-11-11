@@ -52,6 +52,14 @@
         U+A720-A7FF;
 }
 
+/* A tap on a phone flashes no browser highlight (blue in Chrome on
+   Android), as on app.zwipe.net; links and buttons answer with their own
+   hover and active states. The property inherits, so the root sets it for
+   the whole page. */
+:root {
+    -webkit-tap-highlight-color: transparent;
+}
+
 /* ==================
         base
  ==================== */
