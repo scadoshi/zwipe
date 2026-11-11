@@ -39,11 +39,20 @@ pub fn CardDetailsSheet(
     #[props(default)] footer: Option<Element>,
     #[props(default)] body_end: Option<Element>,
     #[props(default = "card-details-drawer")] class: &'static str,
+    #[props(default)] face: Option<usize>,
+    #[props(default)] on_face_change: Option<EventHandler<usize>>,
 ) -> Element {
     let describe_tag = use_describe_tag();
     use_overlay_back(open);
-    // The shown face, shared by the title bar's cost and the panel's Flip.
-    let face = use_signal(|| 0_usize);
+    // The shown face, shared by the title bar's cost and the panel's Flip,
+    // and kept on the host's `face` when it passes one.
+    let mut shown_face = use_signal(|| face.unwrap_or(0));
+    use_effect(use_reactive!(|face| {
+        if let Some(face) = face {
+            shown_face.set(face);
+        }
+    }));
+    let face = shown_face;
     // The meld toggle, shared by the title bar and the panel, so the title
     // shows the melded card's name and cost (none) while it is on.
     let meld = use_meld(&card.scryfall_data);
@@ -66,6 +75,7 @@ pub fn CardDetailsSheet(
                 face,
                 meld: Some(meld),
                 describe_tag: Some(describe_tag),
+                on_face_change,
                 on_printings,
                 footer,
                 body_end,

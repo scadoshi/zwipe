@@ -53,6 +53,12 @@ pub fn CardRow(
     /// Fires with the new face index when the expanded detail is flipped, so a
     /// host can mirror the shown side (e.g. zite's image overlay).
     on_face_change: Option<EventHandler<usize>>,
+    /// The face the row shows, when the host keeps it: its art, its hover
+    /// preview (swapped in place while the cursor is on the row) and its
+    /// detail follow it, and Flip hands the next face to `on_face_change`.
+    /// Left out, the row starts on the front and its detail keeps its own.
+    #[props(default)]
+    face: Option<usize>,
     on_qty_change: Option<EventHandler<i32>>,
     on_move_to: Option<EventHandler<Board>>,
     current_board: Option<Board>,
@@ -122,6 +128,18 @@ pub fn CardRow(
     let held_on_enter = Rc::clone(&held);
     let held_on_click = Rc::clone(&held);
     let held_on_key = Rc::clone(&held);
+    // The held preview follows a face the host turns while the cursor is on the row.
+    let held_on_face = Rc::clone(&held);
+    let sd_on_face = card.scryfall_data.clone();
+    use_effect(use_reactive!(|face| {
+        if let (Some(stack), Some(face)) = (hover_stack, face)
+            && let Some(url) = sd_on_face.shown_face_image_url(face, ImageSize::Normal)
+            && let Some(stale) = held_on_face.take()
+        {
+            held_on_face.set(Some(stack.enter(url.to_string(), sd_on_face.name.clone())));
+            stack.leave(stale);
+        }
+    }));
     let held_on_leave = held;
     let face_on_enter = Rc::clone(&shown_face);
     let face_on_flip = shown_face;
@@ -137,7 +155,7 @@ pub fn CardRow(
     let name = sd.name.clone();
     let art_url = show_art
         .is_some()
-        .then(|| sd.art_crop_url().map(str::to_string))
+        .then(|| sd.face_art_crop_url(face.unwrap_or(0)).map(str::to_string))
         .flatten();
     let art_class = if show_art == Some(true) {
         "card-row-art"
@@ -201,7 +219,7 @@ pub fn CardRow(
                 onmouseenter: move |_| {
                     if let Some(stack) = hover_stack
                         && expanded_card() != Some(card_id)
-                        && let Some(url) = sd_on_enter.face_image_url(face_on_enter.get(), ImageSize::Normal)
+                        && let Some(url) = sd_on_enter.shown_face_image_url(face.unwrap_or_else(|| face_on_enter.get()), ImageSize::Normal)
                         && let Some(stale) = held_on_enter.replace(Some(stack.enter(url.to_string(), sd_on_enter.name.clone())))
                     {
                         stack.leave(stale);
@@ -291,6 +309,7 @@ pub fn CardRow(
                     on_examples,
                     on_image,
                     on_face_change: Some(face_change),
+                    face,
                     footer,
                     has_actions: has_slot_actions,
                     actions: rsx! {

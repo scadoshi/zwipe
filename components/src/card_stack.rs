@@ -17,6 +17,8 @@ pub struct StackCard {
     pub card: Card,
     /// Its copies; more than one shows a badge.
     pub qty: i32,
+    /// The face it shows, `0` the front: a two-faced card shows its back after a flip.
+    pub face: usize,
 }
 
 /// The stack of `cards`, top to bottom. `revealed` shows in full, the cards
@@ -39,11 +41,11 @@ pub fn CardStack(
     let full = stacks::exposed(cards.len(), at);
     rsx! {
         div { class: "card-stack", role: "list",
-            for (((StackCard { card, qty }, tucked), shifted), exposed) in cards.into_iter().zip(tucks).zip(shifts).zip(full) {
+            for (((StackCard { card, qty, face }, tucked), shifted), exposed) in cards.into_iter().zip(tucks).zip(shifts).zip(full) {
                 {
                     let id = card.scryfall_data.id;
                     let name = card.scryfall_data.name.clone();
-                    let image = card.scryfall_data.primary_image_url(ImageSize::Normal).map(str::to_owned);
+                    let image = card.scryfall_data.shown_face_image_url(face, ImageSize::Normal).map(str::to_owned);
                     let mut class = String::from("card-stack-slot");
                     if tucked {
                         class.push_str(" tucked");

@@ -502,18 +502,22 @@ fn card_stack_revealed() {
                 StackCard {
                     card: named(1, "Top"),
                     qty: 1,
+                    face: 0,
                 },
                 StackCard {
                     card: named(2, "Middle"),
                     qty: 1,
+                    face: 0,
                 },
                 StackCard {
                     card: named(3, "Bottom"),
                     qty: 4,
+                    face: 0,
                 },
                 StackCard {
                     card: artless,
                     qty: 1,
+                    face: 0,
                 },
             ];
             rsx! {
