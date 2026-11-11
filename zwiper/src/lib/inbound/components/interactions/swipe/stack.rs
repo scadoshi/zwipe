@@ -25,7 +25,7 @@ use dioxus::html::geometry::euclid::{Point2D, UnknownUnit};
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::scryfall_data::ImageSize;
+use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
 use zwipe_ui::stack::ghost_held;
 use zwipe_ui::timing::TOP_PAINT_GRACE;
 
@@ -66,6 +66,76 @@ struct ExitingCard {
     from_rot: f64,
 }
 
+/// The stack's swipe callbacks, one per direction.
+#[derive(Clone, Copy)]
+struct SwipeHandlers {
+    left: EventHandler<Card>,
+    right: EventHandler<Card>,
+    up: EventHandler<Card>,
+    down: EventHandler<Card>,
+}
+
+/// One card of the stack as it draws, worked out before the markup so the
+/// markup's loop can key each card by its id.
+struct Layer {
+    id: Uuid,
+    name: String,
+    is_top: bool,
+    class: String,
+    style: String,
+    /// Whether this stack already had the card's image in.
+    loaded: bool,
+    card_touch: Card,
+    card_mouse: Card,
+    sd: ScryfallData,
+    config_touch: SwipeConfig,
+    config_mouse: SwipeConfig,
+}
+
+/// Dispatches the committed latest swipe from `state` for `card`. For an
+/// exit direction, pushes the card onto the overlay and fires its callback
+/// at once, so the stack advances on the next render; a down swipe fires
+/// undo.
+fn dispatch_latest(
+    mut state: Signal<SwipeState>,
+    mut exiting_overlay: Signal<Vec<ExitingCard>>,
+    handlers: SwipeHandlers,
+    card: &Card,
+) {
+    let Some(dir) = state.peek().latest_swipe else {
+        return;
+    };
+    state.write().latest_swipe = None;
+    let on_exit = match dir {
+        Direction::Down => {
+            handlers.down.call(card.clone());
+            return;
+        }
+        Direction::Left => handlers.left,
+        Direction::Right => handlers.right,
+        Direction::Up => handlers.up,
+    };
+    // Seed the exit from the release position, mirroring the drag
+    // transform's axis clamping.
+    let delta = state
+        .peek()
+        .release_delta
+        .unwrap_or(DeltaPoint::new(0.0, 0.0));
+    let (from_x, from_y) = match dir {
+        Direction::Up => (0.0, delta.y.min(0.0)),
+        _ => (delta.x, 0.0),
+    };
+    exiting_overlay.write().push(ExitingCard {
+        id: card.scryfall_data.id,
+        direction: dir,
+        card: card.clone(),
+        from_x,
+        from_y,
+        from_rot: from_x * TILT_PER_PX,
+    });
+    on_exit.call(card.clone());
+}
+
 /// A peeking card stack with gesture-driven commit-or-return behavior.
 #[component]
 pub fn SwipeStack(
@@ -93,11 +163,14 @@ pub fn SwipeStack(
     /// hidden, so neither an empty slot nor another card shows.
     #[props(default)]
     ghost: Option<Element>,
+    /// Keeps the ghost up regardless, for a pile the host has yet to show.
+    #[props(default)]
+    hold: bool,
 ) -> Element {
     // The cards whose image has loaded and decoded, failed, or has no art,
-    // and the top that has been shown long enough to have painted.
+    // and the top whose image came in while it was the top, while it paints.
     let mut shown_cards: Signal<HashSet<Uuid>> = use_signal(HashSet::new);
-    let mut painted: Signal<Option<Uuid>> = use_signal(|| None);
+    let mut painting: Signal<Option<Uuid>> = use_signal(|| None);
     let mut state = use_signal(SwipeState::new);
     // In-flight exiting cards. Each entry is rendered as an overlay layer
     // playing a one-shot CSS keyframe and removes itself on animationend.
@@ -107,20 +180,125 @@ pub fn SwipeStack(
     let visible = cards.into_iter().take(STACK_DEPTH).collect::<Vec<_>>();
     let n = visible.len();
     let top_id = visible.first().map(|c| c.scryfall_data.id);
-    let top_in = top_id.is_some_and(|id| shown_cards.read().contains(&id));
-    let held = ghost_held(top_id, &shown_cards.read(), painted());
-    // Once the top's image is in, it has the grace to paint before the
-    // ghost goes and the cards under it may show.
-    use_effect(use_reactive!(|top_id, top_in| {
-        if let Some(id) = top_id.filter(|_| top_in)
-            && *painted.peek() != Some(id)
-        {
+    let held = hold || ghost_held(top_id, &shown_cards.read(), painting());
+    // A top whose image came in while it was the top has the grace to paint
+    // before the ghost goes and the cards under it may show.
+    let painting_now = painting();
+    use_effect(use_reactive!(|painting_now| {
+        if let Some(id) = painting_now {
             spawn(async move {
                 tokio::time::sleep(TOP_PAINT_GRACE).await;
-                painted.set(Some(id));
+                if *painting.peek() == Some(id) {
+                    painting.set(None);
+                }
             });
         }
     }));
+
+    let handlers = SwipeHandlers {
+        left: on_swipe_left,
+        right: on_swipe_right,
+        up: on_swipe_up,
+        down: on_swipe_down,
+    };
+    let layers = visible.into_iter().enumerate().rev().map(|(i, card)| {
+        let is_top = i == 0;
+        let peek_i = gesture_math::layout_index(i);
+        // i < n, so this never floors.
+        let z = n.saturating_sub(i);
+
+        // Build the inline transform for this card. We let the
+        // `.swipe-stack-card` CSS class own the default transform
+        // transition (0.12s ease-out) so peek→top promotion and
+        // sub-threshold return-to-origin both interpolate without
+        // per-card bookkeeping. The ONLY case we override with
+        // `transition: transform 0s` is during an active drag,
+        // where the card must follow the finger 1:1.
+        let style = if is_top {
+            // Top card, following the gesture (or sitting at rest).
+            let s = state();
+            let delta = s
+                .delta_from_start_point()
+                .unwrap_or(DeltaPoint::new(0.0, 0.0));
+            let tx = if s.traversing_axis == Some(Axis::X) {
+                delta.x
+            } else {
+                0.0
+            };
+            // Suppress visual movement on downward drags. The
+            // gesture is still tracked (so set_latest_swipe will
+            // fire `Direction::Down` on threshold); only the
+            // rendered transform is clamped. Undo then triggers
+            // and the previous card slides in via the existing
+            // entering keyframe. Upward movement is likewise only
+            // shown when `Up` is an exit direction; screens where up
+            // does nothing (e.g. commander swipe) keep the card put.
+            let ty = if s.traversing_axis == Some(Axis::Y) {
+                if config.allowed_directions.contains(&Direction::Up) {
+                    delta.y.min(0.0)
+                } else {
+                    0.0
+                }
+            } else {
+                0.0
+            };
+            let rot = tx * TILT_PER_PX;
+            // Dragging: no transition, follow the finger 1:1.
+            // Released below threshold: return to center with an
+            // overshoot curve (easeOutBack) so the card bobbles
+            // just past rest and settles, instead of a flat glide.
+            let transition_override = if s.is_swiping {
+                "transition: transform 0s;"
+            } else {
+                "transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);"
+            };
+            format!(
+                "transform: translate({tx}px, {ty}px) rotate({rot}deg); \
+                     {transition_override} \
+                     z-index: {z};"
+            )
+        } else {
+            // Peeking layer behind the top card.
+            let ty = peek_i * PEEK_OFFSET_PX;
+            let scale = 1.0 - peek_i * PEEK_SCALE_STEP;
+            format!("transform: translateY({ty}px) scale({scale}); z-index: {z};")
+        };
+
+        // Apply an enter-keyframe class only on the top card, and
+        // only when the parent requested one (after undo).
+        let entering_class = if is_top {
+            match entering() {
+                Some(Direction::Left) => " card-stack-enter-left",
+                Some(Direction::Right) => " card-stack-enter-right",
+                Some(Direction::Up) => " card-stack-enter-up",
+                Some(Direction::Down) => " card-stack-enter-down",
+                None => "",
+            }
+        } else {
+            ""
+        };
+
+        let class = format!(
+            "swipe-stack-card{}{}",
+            if is_top { " top" } else { "" },
+            entering_class
+        );
+
+        let card_id = card.scryfall_data.id;
+        Layer {
+            id: card_id,
+            name: card.scryfall_data.name.clone(),
+            is_top,
+            class,
+            style,
+            loaded: shown_cards.read().contains(&card_id),
+            card_touch: card.clone(),
+            card_mouse: card.clone(),
+            sd: card.scryfall_data,
+            config_touch: config.clone(),
+            config_mouse: config.clone(),
+        }
+    });
 
     rsx! {
         div { class: if held { "swipe-stack ghost-held" } else { "swipe-stack" },
@@ -128,213 +306,71 @@ pub fn SwipeStack(
                 div { class: "swipe-stack-ghost", {ghost} }
             }
             // Render back-to-front so the DOM order matches z-index painting.
-            for (i, card) in visible.into_iter().enumerate().rev() {
-                {
-                    let is_top = i == 0;
-                    let card_id = card.scryfall_data.id;
-                    let card_name = card.scryfall_data.name.clone();
-                    let peek_i = gesture_math::layout_index(i);
-                    // i < n, so this never floors.
-                    let z = n.saturating_sub(i);
+            // Keyed by card, the loop's own node, so a swipe drops the top and
+            // keeps every other card mounted.
+            for layer in layers {
+                div {
+                    key: "{layer.id}",
+                    class: "{layer.class}",
+                    style: "{layer.style}",
+                    "aria-label": "{layer.name}",
 
-                    // Build the inline transform for this card. We let the
-                    // `.swipe-stack-card` CSS class own the default transform
-                    // transition (0.12s ease-out) so peek→top promotion and
-                    // sub-threshold return-to-origin both interpolate without
-                    // per-card bookkeeping. The ONLY case we override with
-                    // `transition: transform 0s` is during an active drag,
-                    // where the card must follow the finger 1:1.
-                    let style = if is_top {
-                        // Top card, following the gesture (or sitting at rest).
-                        let s = state();
-                        let delta = s
-                            .delta_from_start_point()
-                            .unwrap_or(DeltaPoint::new(0.0, 0.0));
-                        let tx = if s.traversing_axis == Some(Axis::X) {
-                            delta.x
-                        } else {
-                            0.0
-                        };
-                        // Suppress visual movement on downward drags. The
-                        // gesture is still tracked (so set_latest_swipe will
-                        // fire `Direction::Down` on threshold); only the
-                        // rendered transform is clamped. Undo then triggers
-                        // and the previous card slides in via the existing
-                        // entering keyframe. Upward movement is likewise only
-                        // shown when `Up` is an exit direction; screens where up
-                        // does nothing (e.g. commander swipe) keep the card put.
-                        let ty = if s.traversing_axis == Some(Axis::Y) {
-                            if config.allowed_directions.contains(&Direction::Up) {
-                                delta.y.min(0.0)
-                            } else {
-                                0.0
-                            }
-                        } else {
-                            0.0
-                        };
-                        let rot = tx * TILT_PER_PX;
-                        // Dragging: no transition, follow the finger 1:1.
-                        // Released below threshold: return to center with an
-                        // overshoot curve (easeOutBack) so the card bobbles
-                        // just past rest and settles, instead of a flat glide.
-                        let transition_override = if s.is_swiping {
-                            "transition: transform 0s;"
-                        } else {
-                            "transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);"
-                        };
-                        format!(
-                            "transform: translate({tx}px, {ty}px) rotate({rot}deg); \
-                             {transition_override} \
-                             z-index: {z};"
-                        )
-                    } else {
-                        // Peeking layer behind the top card.
-                        let ty = peek_i * PEEK_OFFSET_PX;
-                        let scale = 1.0 - peek_i * PEEK_SCALE_STEP;
-                        format!(
-                            "transform: translateY({ty}px) scale({scale}); z-index: {z};"
-                        )
-                    };
+                    // Guards: only the top card receives gestures, and
+                    // never during an enter (undo) keyframe so the
+                    // animation isn't fought by inline transform.
+                    ontouchstart: move |e: Event<TouchData>| {
+                        if !layer.is_top || entering.peek().is_some() { return; }
+                        state.ontouchstart(e);
+                    },
+                    ontouchmove: move |e: Event<TouchData>| {
+                        if !layer.is_top || entering.peek().is_some() { return; }
+                        state.ontouchmove(e);
+                    },
+                    ontouchend: move |e: Event<TouchData>| {
+                        if !layer.is_top || entering.peek().is_some() { return; }
+                        state.ontouchend(e, &layer.config_touch);
+                        dispatch_latest(state, exiting_overlay, handlers, &layer.card_touch);
+                    },
 
-                    // Apply an enter-keyframe class only on the top card, and
-                    // only when the parent requested one (after undo).
-                    let entering_class = if is_top {
-                        match entering() {
-                            Some(Direction::Left) => " card-stack-enter-left",
-                            Some(Direction::Right) => " card-stack-enter-right",
-                            Some(Direction::Up) => " card-stack-enter-up",
-                            Some(Direction::Down) => " card-stack-enter-down",
-                            None => "",
+                    onmousedown: move |e: Event<MouseData>| {
+                        if !layer.is_top || entering.peek().is_some() { return; }
+                        state.onmousedown(e);
+                    },
+                    onmousemove: move |e: Event<MouseData>| {
+                        if !layer.is_top || entering.peek().is_some() { return; }
+                        state.onmousemove(e);
+                    },
+                    onmouseup: move |e: Event<MouseData>| {
+                        if !layer.is_top || entering.peek().is_some() { return; }
+                        state.onmouseup(e, &layer.config_mouse);
+                        dispatch_latest(state, exiting_overlay, handlers, &layer.card_mouse);
+                    },
+
+                    onanimationend: move |_| {
+                        // Enter keyframe finished: clear the request.
+                        if layer.is_top && entering.peek().is_some() {
+                            entering.set(None);
                         }
-                    } else {
-                        ""
-                    };
+                    },
 
-                    let class = format!(
-                        "swipe-stack-card{}{}",
-                        if is_top { " top" } else { "" },
-                        entering_class
-                    );
-
-                    // Gesture handlers: only bound on the top card.
-                    let config_touch_end = config.clone();
-                    let config_mouse_end = config.clone();
-                    let card_for_handlers = card.clone();
-
-                    // Dispatches the committed latest_swipe from SwipeState.
-                    // For exit directions, push the card onto the overlay AND
-                    // fire the parent callback immediately so current_index
-                    // advances synchronously; the new top is interactive on
-                    // the next render with no gesture-block guard.
-                    let dispatch_latest = {
-                        let card = card_for_handlers;
-                        let mut state = state;
-                        let on_swipe_down = on_swipe_down;
-                        move || {
-                            let latest = state.peek().latest_swipe;
-                            if let Some(dir) = latest {
-                                state.write().latest_swipe = None;
-                                let on_exit = match dir {
-                                    Direction::Down => {
-                                        on_swipe_down.call(card.clone());
-                                        return;
-                                    }
-                                    Direction::Left => on_swipe_left,
-                                    Direction::Right => on_swipe_right,
-                                    Direction::Up => on_swipe_up,
-                                };
-                                // Seed the exit from the release position,
-                                // mirroring the drag transform's axis
-                                // clamping above.
-                                let delta = state
-                                    .peek()
-                                    .release_delta
-                                    .unwrap_or(DeltaPoint::new(0.0, 0.0));
-                                let (from_x, from_y) = match dir {
-                                    Direction::Up => (0.0, delta.y.min(0.0)),
-                                    _ => (delta.x, 0.0),
-                                };
-                                exiting_overlay.write().push(ExitingCard {
-                                    id: card.scryfall_data.id,
-                                    direction: dir,
-                                    card: card.clone(),
-                                    from_x,
-                                    from_y,
-                                    from_rot: from_x * TILT_PER_PX,
-                                });
-                                on_exit.call(card.clone());
+                    FlippableCardImage {
+                        sd: layer.sd,
+                        size: ImageSize::Large,
+                        class: "card-image".to_string(),
+                        draggable: false,
+                        flippable: layer.is_top,
+                        // Shows at once if this stack already had it in, else
+                        // only from its own load.
+                        trust_seen: layer.loaded,
+                        on_load: move |()| {
+                            if layer.is_top && !shown_cards.peek().contains(&layer.id) {
+                                painting.set(Some(layer.id));
                             }
-                        }
-                    };
-
-                    rsx! {
-                        div {
-                            key: "{card_id}",
-                            class: "{class}",
-                            style: "{style}",
-                            "aria-label": "{card_name}",
-
-                            // Guards: only the top card receives gestures, and
-                            // never during an enter (undo) keyframe so the
-                            // animation isn't fought by inline transform.
-                            ontouchstart: move |e: Event<TouchData>| {
-                                if !is_top || entering.peek().is_some() { return; }
-                                state.ontouchstart(e);
-                            },
-                            ontouchmove: move |e: Event<TouchData>| {
-                                if !is_top || entering.peek().is_some() { return; }
-                                state.ontouchmove(e);
-                            },
-                            ontouchend: {
-                                let config = config_touch_end;
-                                let mut dispatch = dispatch_latest.clone();
-                                move |e: Event<TouchData>| {
-                                    if !is_top || entering.peek().is_some() { return; }
-                                    state.ontouchend(e, &config);
-                                    dispatch();
-                                }
-                            },
-
-                            onmousedown: move |e: Event<MouseData>| {
-                                if !is_top || entering.peek().is_some() { return; }
-                                state.onmousedown(e);
-                            },
-                            onmousemove: move |e: Event<MouseData>| {
-                                if !is_top || entering.peek().is_some() { return; }
-                                state.onmousemove(e);
-                            },
-                            onmouseup: {
-                                let config = config_mouse_end;
-                                let mut dispatch = dispatch_latest;
-                                move |e: Event<MouseData>| {
-                                    if !is_top || entering.peek().is_some() { return; }
-                                    state.onmouseup(e, &config);
-                                    dispatch();
-                                }
-                            },
-
-                            onanimationend: move |_| {
-                                // Enter keyframe finished: clear the request.
-                                if is_top && entering.peek().is_some() {
-                                    entering.set(None);
-                                }
-                            },
-
-                            FlippableCardImage {
-                                sd: card.scryfall_data,
-                                size: ImageSize::Large,
-                                class: "card-image".to_string(),
-                                draggable: false,
-                                flippable: is_top,
-                                trust_seen: false,
-                                on_load: move |()| {
-                                    shown_cards.write().insert(card_id);
-                                    if is_top && let Some(handler) = on_top_shown {
-                                        handler.call(());
-                                    }
-                                },
+                            shown_cards.write().insert(layer.id);
+                            if layer.is_top && let Some(handler) = on_top_shown {
+                                handler.call(());
                             }
-                        }
+                        },
                     }
                 }
             }
