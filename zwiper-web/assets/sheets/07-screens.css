@@ -69,7 +69,9 @@ button {
    reads up from the bottom: the newest at the bottom, the older ones
    tucked above it, each rising in from below. A screen with a dock or a
    bottom row keeps it above them. The kit's toast sheet loads after this
-   one, so each rule names the body to win. */
+   one, so each rule names the body to win. The stack's height off the
+   window's foot, --toast-bottom, is set on the body, so a sheet reads the
+   same value to keep its content clear of the stack. */
 body .toast-container {
     top: auto;
     right: auto;
@@ -77,7 +79,7 @@ body .toast-container {
     left: 1rem;
 }
 
-body:has(.action-dock, .swipe-bottom-row) .toast-container {
+body:has(.action-dock, .swipe-bottom-row) {
     --toast-bottom: 4.5rem;
 }
 
@@ -86,12 +88,17 @@ body .toast-container ol {
 }
 
 /* While a toast is up over an open sheet with a dock, the sheet's content
-   ends above the toast band as well as the dock: the toast stands 4.5rem up
-   and a three-line one (a connection error) is about 6.75rem tall, so a
-   sheet sized to its content grows upward and a scrolling one scrolls its
-   last row clear. */
+   ends above the toast band as well as the dock. The band's top is wherever
+   the stack stands (--toast-bottom, which a screen raises over its dock or
+   bottom row) plus a three-line toast (a connection error, about 6.75rem)
+   and a gap, so a sheet sized to its content grows upward and a scrolling
+   one scrolls its last row clear, on any screen. */
+body {
+    --toast-band-top: calc(var(--toast-bottom, 1rem) + 8rem + env(safe-area-inset-bottom, 0px));
+}
+
 body:has(.toast-container li) .bottom-sheet.show:has(.sheet-dock) > .sheet-content {
-    padding-bottom: calc(12.5rem + env(safe-area-inset-bottom, 0px));
+    padding-bottom: var(--toast-band-top);
 }
 
 body .toast-container li {
