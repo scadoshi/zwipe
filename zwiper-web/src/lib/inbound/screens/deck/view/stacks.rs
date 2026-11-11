@@ -1,6 +1,7 @@
 //! The deck page's Stacks view: each section as a [`CardStack`] under a
-//! [`DeckFold`] header (its name and count, its total price at the right
-//! end), the stacks flowing into as many columns as the page fits. Hover
+//! [`DeckFold`] header (its name and count, its total price in a money chip
+//! at the right end), floating on the page's grid with no panel around it,
+//! the stacks flowing into as many columns as the page fits. Hover
 //! reveals a card in place; a click opens its details in the card details
 //! drawer with the actions its row has, and a click on another card swaps
 //! it in. The reveal and open state is zwipe-ui's [`Reveal`].
@@ -56,7 +57,7 @@ pub(crate) fn stacks_view(
                                 title: section.title,
                                 pips: section.pips,
                                 folded: collapsed,
-                                accessory: price.map(|p| rsx! { span { class: "deck-stack-price", "{p}" } }),
+                                accessory: price.map(|p| rsx! { span { class: "stat-chip stat-chip-money", "{p}" } }),
                                 CardStack {
                                     cards,
                                     revealed: shown.revealed(),

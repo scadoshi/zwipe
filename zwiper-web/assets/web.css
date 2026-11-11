@@ -869,30 +869,40 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 
 /* ---- The deck page's Stacks view ----
    The stacks flow into as many columns as the page fits, each at least a
-   card's readable width, their headers the bands' fold headers with the
-   group's total price at the right end. */
+   card's readable width. A stack floats on the page's grid: its header (the
+   bands' fold header, the group's total price in a money chip at its right
+   end) sits over its cards with no panel, border or shadow around them. */
 .deck-stacks {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr));
-    gap: 1rem 1.25rem;
+    gap: 1.25rem;
     align-items: start;
 }
 
-.deck-stack .deck-fold-inner {
-    padding: 0.5rem 0.25rem 0.75rem;
+.deck-stack .deck-fold {
+    overflow: visible;
+    background: none;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
 }
 
-/* A stack's header keeps its name and count whole on one line; in a narrow
-   column the price wraps under them, at the right end. */
+/* The header keeps the name and count whole on one line; in a narrow column
+   the price chip wraps under them, at the right end. */
 .deck-stack .deck-fold-head {
     flex-wrap: wrap;
-    row-gap: 0.15rem;
-    padding: 0.6rem 0.75rem;
+    row-gap: 0.25rem;
+    padding: 0 0.25rem 0.6rem;
+    border-bottom: none;
     letter-spacing: 0.05em;
 }
 
 .deck-stack .deck-fold-toggle {
     white-space: nowrap;
+}
+
+.deck-stack .deck-fold-inner {
+    padding: 0 0 0.25rem;
 }
 
 /* A card's details drawer opened from the stacks leaves the stacks live:
@@ -901,11 +911,6 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 body:has(.deck-stacks) .sheet-form-drawer:has(> .card-details-drawer) > .sheet-backdrop {
     background: transparent;
     pointer-events: none;
-}
-
-.deck-stack-price {
-    font-size: 0.85rem;
-    color: var(--ink-text-muted, var(--text-muted));
 }
 
 /* ---- Settings lists (Account, Config) ---- */
