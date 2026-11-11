@@ -27,14 +27,16 @@ pub fn CardInfoDisplay(card: Card) -> Element {
 /// with the host's `footer` in its foot and `body_end` scrolling at its
 /// body's end, under the title bar. It closes from its title bar's ×, a backdrop tap,
 /// Escape or the back gesture. The panel's foot has `Flip` for a
-/// multi-faced card and a `Printings` pill when the host passes
-/// `on_printings`, as the wide pane does. `class` names the drawer, and a
+/// multi-faced card, `Image` when the host passes `on_image` (called with
+/// the shown face) and the card has art, and a `Printings` pill when the
+/// host passes `on_printings`, as the wide pane does. `class` names the drawer, and a
 /// host that adds its own class keeps `card-details-drawer` in it. Mount it
 /// at the screen root beside the printing sheet.
 #[component]
 pub fn CardDetailsSheet(
     open: Signal<bool>,
     card: Card,
+    #[props(default)] on_image: Option<EventHandler<usize>>,
     #[props(default)] on_printings: Option<EventHandler<()>>,
     #[props(default)] footer: Option<Element>,
     #[props(default)] body_end: Option<Element>,
@@ -49,6 +51,7 @@ pub fn CardDetailsSheet(
     let meld = use_meld(&card.scryfall_data);
     let title_card = meld.apply(&card);
     let name = title_card.scryfall_data.name.clone();
+    let on_image = on_image.map(|handler| EventHandler::new(move |()| handler.call(face())));
     rsx! {
         DrawerSheet {
             open,
@@ -66,6 +69,7 @@ pub fn CardDetailsSheet(
                 face,
                 meld: Some(meld),
                 describe_tag: Some(describe_tag),
+                on_image,
                 on_printings,
                 footer,
                 body_end,

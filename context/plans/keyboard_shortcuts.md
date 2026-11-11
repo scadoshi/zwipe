@@ -26,7 +26,7 @@ Each key acts on one card: the card under the cursor (a list row or a stack card
 | Key | Does |
 |---|---|
 | `p` | Open Printings for the card (a command zone card keeps its slot; a token has none, so nothing) |
-| `i` | Open its image, as its Image button does |
+| `i` | Open its image, as its Image button does (the List row's, or the Stacks details drawer's) |
 | `v` | Flip it to its other face, as its Flip button does; nothing for a single-faced card |
 | `m` | Move it to the maybeboard, as the details' To maybeboard button does |
 | `s` | Move it to the sideboard, as the details' To sideboard button does |
@@ -34,7 +34,7 @@ Each key acts on one card: the card under the cursor (a list row or a stack card
 | `-` | One copy fewer, as the stepper's `-` does: at one copy it removes the card, with Undo |
 | `+` (or `=` without Shift) | One copy more, as the stepper's `+` does, with no cap |
 
-A key whose button the card doesn't have does nothing: `m` on a maybeboard card, `s` on a sideboard card, Shift+S off the main board, `m`, `s`, `-` and `+` on a command zone card or a token, `v` on a single-faced card or a stack card whose details aren't open (a stack card shows no buttons of its own), and `i` anywhere in the Stacks view, whose cards and details drawer show no Image button. `s` here is Sideboard; Synergy's `s` belongs to Add.
+A key whose button the card doesn't have does nothing: `m` on a maybeboard card, `s` on a sideboard card, Shift+S off the main board, `m`, `s`, `-` and `+` on a command zone card or a token, and `v` on a single-faced card or a stack card whose details aren't open (a stack card shows no buttons of its own). `i` on a stack card whose details aren't open opens the same image view on the face the stack shows, the front; with its details open it presses the drawer's Image. `s` here is Sideboard; Synergy's `s` belongs to Add.
 
 These keys also work while the Stacks view's card details drawer is open, the one sheet they pass through. Every other key waits for it to close, and every other sheet (Filter, Printings, the shortcuts sheet) and every dialog keeps all keys from the screen as usual.
 

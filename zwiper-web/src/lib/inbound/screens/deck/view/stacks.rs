@@ -17,6 +17,7 @@ use zwipe_core::domain::deck::{Board, deck_metrics};
 use zwipe_ui::deck_cards::stacks::{Gesture, Reveal};
 
 use crate::inbound::cards::card_info::CardDetailsSheet;
+use crate::inbound::cards::card_row::CardOverlays;
 use crate::inbound::screens::deck::cards::editor::{Editor, Meta, RowInfo, RowKind};
 use crate::inbound::screens::deck::list::DeckGroupSection;
 
@@ -83,7 +84,9 @@ pub(crate) fn stacks_view(
 }
 
 /// The open card's details drawer, from `rows` (every listed row), with
-/// the actions its kind allows: Printings in the panel's foot, then the
+/// the actions its kind allows: Image (the screen's image preview in
+/// `overlays`, as a list row's Image opens it) and Printings in the panel's
+/// foot, then the
 /// quantity stepper and the star, then the board moves. It shows the
 /// [`Reveal::drawn`] card and is mounted, closed, on the first row before
 /// any click; nothing when the list is empty.
@@ -93,6 +96,7 @@ pub(crate) fn stack_details(
     row_meta: &HashMap<Uuid, Meta>,
     reveal: Signal<Reveal>,
     details_open: Signal<bool>,
+    overlays: CardOverlays,
 ) -> Element {
     // The sheet stays mounted on a card so it slides in and out on its
     // `show` class: the drawn card, else the first row before any click.
@@ -116,6 +120,10 @@ pub(crate) fn stack_details(
     let RowInfo { card, qty, kind } = row;
     let card_id = card.scryfall_data.id;
     let print_card = card.clone();
+    let image_of = card.scryfall_data.clone();
+    let CardOverlays { mut preview, .. } = overlays;
+    let on_image =
+        EventHandler::new(move |face: usize| preview.set(Some((image_of.clone(), face))));
     let slot = match kind {
         RowKind::Zone(slot) => Some(slot),
         _ => None,
@@ -162,6 +170,7 @@ pub(crate) fn stack_details(
         CardDetailsSheet {
             open: details_open,
             card,
+            on_image,
             on_printings,
             footer,
             class: DRAWER_CLASSES,
