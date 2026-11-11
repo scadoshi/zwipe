@@ -59,7 +59,7 @@ Who checked, on which live build, what they saw.
 | [333](333-printings-stuck-on-slow-network.md) | Printings sits empty after a slow fetch, with no error or retry | fixing | halo | #515 |
 | [334](334-deck-page-missing-name.md) | The web deck page shows no deck name | fixing | thinker | - |
 | [335](335-selector-drawer-space.md) | Selector drawers waste space above the chips | fixing | laptop | #520 |
-| [340](340-toasts-over-load-error.md) | Stacked error toasts cover the "Couldn't load" box | fixing | laptop | - |
+| [340](340-toasts-over-load-error.md) | Stacked error toasts cover the "Couldn't load" box | fixing | laptop | #522 |
 
 ## Waiting for live verification
 
