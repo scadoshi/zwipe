@@ -51,7 +51,7 @@ use crate::inbound::chrome::details_eye::{DockEye, Surface, use_details_eye};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::chrome::page_keys::{use_page_keys, use_undo_key};
 use crate::inbound::chrome::shortcuts::{self, Shortcut};
-use crate::inbound::chrome::shortcuts_sheet::DockShortcuts;
+use crate::inbound::chrome::shortcuts_sheet::{DockShortcuts, use_offer_shortcuts};
 use crate::inbound::session::ensure_fresh::ensure_fresh;
 use crate::inbound::shell::ScreenFrame;
 use crate::inbound::telemetry;
@@ -127,6 +127,8 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
     let mut filter_open = use_signal(|| false);
     let mut hint_open = use_one_time_hint(OneTimeHint::RemoveDeckCards);
     let control = use_swipe_control();
+    // A swipe screen: Shift+H opens the shortcuts sheet here.
+    use_offer_shortcuts();
 
     let mut bump = move || {
         let next = counter.peek().wrapping_add(1);
