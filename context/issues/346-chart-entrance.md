@@ -1,6 +1,6 @@
 # 346. Charts animate in when they open
 
-State: fixing | Owner: laptop | PR: - | Build seen: 918a1d477
+State: fixing | Owner: laptop | PR: #539 | Build seen: 918a1d477
 
 ## Report
 Scotty, 2026-11-11, approved: every chart in Zwipe should animate in, both when its page opens (Playstyle) and when a folded section holding it expands (deck stats: Distributions, Mana, Draw odds; Activity's heatmap and charts). It should reuse orangui's chart entrances as the portfolio and Cairn use them, with no new animation style. It should respect reduced motion and play once per open or expand, not on every data refresh, in the app and on the web.
