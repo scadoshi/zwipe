@@ -44,13 +44,17 @@ use crate::inbound::chrome::page_keys::{focus_by_id, use_page_keys_through, use_
 use crate::inbound::chrome::shortcuts::{self, CardKey, ShortcutsScreen};
 use crate::inbound::chrome::shortcuts_sheet::use_offer_shortcuts;
 use crate::inbound::screens::deck::view::cards::zone as zone_of;
+use crate::inbound::screens::deck::view::stacks::StackDetails;
 use crate::inbound::telemetry;
 use crate::outbound::timer;
 
-/// Sends the id of the card the deck cards screen's keys act on: the deepest card row or stack
-/// card under the cursor, else the card open in the Stacks view's details drawer, else the list
-/// row whose details are open, else an empty string.
-const KEY_CARD_JS: &str = "const under = document.querySelectorAll('[data-row]:hover'); const drawer = document.querySelector('.bottom-sheet.show.__DRAWER__') && document.querySelector('.card-stack-slot.open[data-row]'); const row = document.querySelector('.web-deck-row.selected[data-row]'); const card = under.length ? under[under.length - 1] : drawer || row; dioxus.send(card ? card.getAttribute('data-row') : '');";
+/// Sends the card the deck cards screen's keys act on, as `stack:<id>` for a stack card or
+/// `row:<id>` for a list row: the deepest one under the cursor, else the card open in the Stacks
+/// view's details drawer, else the list row whose details are open, else an empty string.
+const KEY_CARD_JS: &str = "const under = document.querySelectorAll('[data-row]:hover'); const drawer = document.querySelector('.bottom-sheet.show.__DRAWER__') && document.querySelector('.card-stack-slot.open[data-row]'); const row = document.querySelector('.web-deck-row.selected[data-row]'); const card = under.length ? under[under.length - 1] : drawer || row; dioxus.send(card ? (card.classList.contains('card-stack-slot') ? 'stack:' : 'row:') + card.getAttribute('data-row') : '');";
+
+/// Clicks list row `__ID__`'s line, which opens or closes its details as a click on it does.
+const ROW_TOGGLE_JS: &str = "const line = document.querySelector('.web-deck-row[data-row=\"__ID__\"] .card-row-compact'); if (line) line.click();";
 
 /// Clicks the first details button marked with one of `__ACTIONS__` ([`components::data_action`])
 /// of card `__ID__`: in the Stacks view's drawer
@@ -262,6 +266,9 @@ pub(crate) struct Editor {
     pub collapsed: Signal<HashSet<String>>,
     pub selected: Signal<Option<Uuid>>,
     pub face: Signal<usize>,
+    /// The face each card shows, the front where it has none: its row's art and preview, its
+    /// stack image and its details follow it, and Flip and `v` turn it.
+    pub faces: Signal<HashMap<Uuid, usize>>,
     pub printing: Signal<Option<(Card, Option<Slot>)>>,
     pub printing_open: Signal<bool>,
     pub filter_open: Signal<bool>,
@@ -335,6 +342,10 @@ pub(crate) fn use_deck_editor(deck_id: Uuid, on_failure: LoadFailure) -> Editor 
     let collapsed: Signal<HashSet<String>> = use_signal(HashSet::new);
     let mut selected: Signal<Option<Uuid>> = use_signal(|| None);
     let mut face = use_signal(|| 0usize);
+    let mut faces: Signal<HashMap<Uuid, usize>> = use_signal(HashMap::new);
+    // The Stacks view's reveal, which `d` moves as a click does; absent where the screen has no
+    // stacks.
+    let stack_details = try_use_context::<StackDetails>();
     let mut bursts = use_signal(Bursts::default);
     let mut removed_rows: Signal<HashMap<Uuid, DeckEntry>> = use_signal(HashMap::new);
     let mut printing: Signal<Option<(Card, Option<Slot>)>> = use_signal(|| None);
@@ -906,9 +917,10 @@ pub(crate) fn use_deck_editor(deck_id: Uuid, on_failure: LoadFailure) -> Editor 
         shortcuts::STACK_DETAILS_CLASS,
         &hover_keys::HOVER_KEYS,
         Callback::new(move |key: String| {
-            // `p`, `i`, `v`, `m`, `s`, Shift+S, `-` and `+` act on the card
-            // under the cursor, else the open one, as its own buttons do; with
-            // neither they do nothing.
+            // `p`, `i`, `v`, `d`, `m`, `s`, Shift+S, `-` and `+` act on the
+            // card under the cursor, else the open one, as its own buttons and
+            // a click on it do; with neither they do nothing. `u` undoes, as
+            // the dock's Undo does.
             if let Some(hover) = hover_keys::hover_key(&key) {
                 spawn(async move {
                     let mut found = document::eval(
@@ -917,7 +929,11 @@ pub(crate) fn use_deck_editor(deck_id: Uuid, on_failure: LoadFailure) -> Editor 
                     let Ok(found) = found.recv::<String>().await else {
                         return;
                     };
-                    let Ok(id) = Uuid::try_parse(&found) else {
+                    let Some((kind, id)) = found.split_once(':') else {
+                        return;
+                    };
+                    let on_stack = kind == "stack";
+                    let Ok(id) = Uuid::try_parse(id) else {
                         return;
                     };
                     let row = listing
@@ -935,7 +951,8 @@ pub(crate) fn use_deck_editor(deck_id: Uuid, on_failure: LoadFailure) -> Editor 
                             board_of(&meta.peek(), id)
                         }
                     };
-                    match hover_keys::hover_action(hover, &row, board) {
+                    let shown_face = faces.peek().get(&id).copied().unwrap_or(0);
+                    match hover_keys::hover_action(hover, &row, board, shown_face) {
                         Some(HoverAction::Printings(card, slot)) => {
                             printing.set(Some((*card, slot)));
                             printing_open.set(true);
@@ -949,6 +966,17 @@ pub(crate) fn use_deck_editor(deck_id: Uuid, on_failure: LoadFailure) -> Editor 
                         Some(HoverAction::Quantity(card_id, step)) => {
                             change_quantity.call((card_id, step, /* record */ true));
                         }
+                        Some(HoverAction::Flip(card_id, next)) => {
+                            faces.write().insert(card_id, next);
+                        }
+                        Some(HoverAction::Details(card_id)) => match stack_details {
+                            Some(details) if on_stack => details.click(card_id),
+                            _ => {
+                                document::eval(
+                                    &ROW_TOGGLE_JS.replace("__ID__", &card_id.to_string()),
+                                );
+                            }
+                        },
                         Some(HoverAction::Press(card_id, actions)) => {
                             document::eval(
                                 &PRESS_JS
@@ -960,6 +988,10 @@ pub(crate) fn use_deck_editor(deck_id: Uuid, on_failure: LoadFailure) -> Editor 
                         None => {}
                     }
                 });
+                return;
+            }
+            if shortcuts::undo_letter(&key) {
+                apply_undo.call(());
                 return;
             }
             match screen_key(&key) {
@@ -990,6 +1022,7 @@ pub(crate) fn use_deck_editor(deck_id: Uuid, on_failure: LoadFailure) -> Editor 
         collapsed,
         selected,
         face,
+        faces,
         printing,
         printing_open,
         filter_open,
@@ -1017,6 +1050,7 @@ pub(crate) fn row_view(
     let Editor {
         selected,
         mut face,
+        mut faces,
         mut printing,
         mut printing_open,
         change_quantity,
@@ -1027,6 +1061,7 @@ pub(crate) fn row_view(
     let meta_for_rows = row_meta.clone();
     {
         let card_id = row.card.scryfall_data.id;
+        let shown_face = faces.read().get(&card_id).copied().unwrap_or(0);
         let RowInfo { card, qty, kind } = row;
         let is_selected = selected() == Some(card_id);
         let RowActions {
@@ -1092,6 +1127,10 @@ pub(crate) fn row_view(
                     on_toggle_mvp: on_star,
                     price_currency: cur,
                     on_printing: on_print,
+                    face: Some(shown_face),
+                    on_face_change: move |next: usize| {
+                        faces.write().insert(card_id, next);
+                    },
                 }
             }
         }

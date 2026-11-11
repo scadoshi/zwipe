@@ -36,7 +36,7 @@ use super::sections::{
     BudgetBody, CurrencyChips, DistributionsBody, DrawOddsStepper, ManaBody, TagsBody,
     WarningFixes, WarningsBody, charted,
 };
-use super::stacks::{stack_details, stacks_view, use_stack_details_sync};
+use super::stacks::{StackDetails, stack_details, stacks_view, use_stack_details_sync};
 use crate::domain::deck::{has_budget, tag_count};
 use crate::inbound::card_filter::CardFilterPanel;
 use crate::inbound::card_stores::CardStores;
@@ -72,6 +72,13 @@ pub fn DeckWidePage(
         ..
     } = dialogs;
     // Quiet: the deck view's own profile fetch raises the one toast.
+    // The stacks' reveal and the open card, before the editor, whose `d` moves them as a click.
+    let reveal = use_signal(Reveal::default);
+    let details_open = use_signal(|| false);
+    let stack_details_state = use_context_provider(|| StackDetails {
+        reveal,
+        details_open,
+    });
     let ed = use_deck_editor(deck_id, LoadFailure::Quiet);
     let Editor {
         deck,
@@ -108,10 +115,8 @@ pub fn DeckWidePage(
     let hover_stack = use_hover_stack();
     let folded: Signal<HashSet<String>> =
         use_signal(|| FOLDED_STATS.into_iter().map(String::from).collect());
-    // List or Stacks, as last left; the stacks' reveal and the open card.
+    // List or Stacks, as last left.
     let mut view = use_signal(|| CardsViewStore::browser().load());
-    let reveal = use_signal(Reveal::default);
-    let details_open = use_signal(|| false);
     let listed_ids = use_memo(move || {
         listing()
             .rows
@@ -458,7 +463,7 @@ pub fn DeckWidePage(
                     DeckBandsGhost {}
                 }
                 if view() == CardsView::Stacks {
-                    {stacks_view(sections, cur, collapsed, reveal, details_open)}
+                    {stacks_view(sections, cur, collapsed, stack_details_state, ed.faces)}
                 } else {
                     for (section, rows) in sections {
                         DeckBand {
@@ -606,7 +611,7 @@ pub fn DeckWidePage(
         }
         HoverStackHost { stack: hover_stack }
         if view() == CardsView::Stacks {
-            {stack_details(&ed, &all_rows, &row_meta, reveal, details_open)}
+            {stack_details(&ed, &all_rows, &row_meta, stack_details_state)}
         }
         CardOverlaysHost { overlays, on_printing_save: move |_| {} }
         OtagExamplesHost { examples }

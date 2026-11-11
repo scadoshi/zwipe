@@ -196,6 +196,11 @@ pub fn CardDetails(
     /// Fires with the new face index whenever Flip turns the card, so a host
     /// can mirror the shown side elsewhere (zite's image overlay).
     on_face_change: Option<EventHandler<usize>>,
+    /// The face shown, when the host keeps it: Flip then hands the next face
+    /// to `on_face_change` for the host to show. Left out, the details keep
+    /// their own.
+    #[props(default)]
+    face: Option<usize>,
     /// Whether `actions` or `action_rows` carry any buttons, so the bar
     /// renders to hold them. (A slot can't be introspected.)
     #[props(default)]
@@ -231,7 +236,9 @@ pub fn CardDetails(
     // two-face card can't overflow a non-scrolling host.
     let face_count = faces.as_ref().map_or(0, Vec::len);
     let face_idx = use_signal(|| 0usize);
-    let cur = face_idx().min(face_count.saturating_sub(1));
+    let cur = face
+        .unwrap_or_else(|| *face_idx.read())
+        .min(face_count.saturating_sub(1));
     let current_face = faces.as_ref().and_then(|f| f.get(cur)).cloned();
     let stats = current_face.as_ref().and_then(|f| f.stats.clone());
 
