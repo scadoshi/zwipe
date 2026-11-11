@@ -87,10 +87,11 @@ body .toast-container ol {
 
 /* While a toast is up over an open sheet with a dock, the sheet's content
    ends above the toast band as well as the dock: the toast stands 4.5rem up
-   and a two-line one is about 5rem tall, so a sheet sized to its content
-   grows upward and a scrolling one scrolls its last row clear. */
+   and a three-line one (a connection error) is about 6.75rem tall, so a
+   sheet sized to its content grows upward and a scrolling one scrolls its
+   last row clear. */
 body:has(.toast-container li) .bottom-sheet.show:has(.sheet-dock) > .sheet-content {
-    padding-bottom: calc(10.5rem + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(12.5rem + env(safe-area-inset-bottom, 0px));
 }
 
 body .toast-container li {

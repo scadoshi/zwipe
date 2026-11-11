@@ -60,6 +60,7 @@ Who checked, on which live build, what they saw.
 | [334](334-deck-page-missing-name.md) | The web deck page shows no deck name | fixing | thinker | - |
 | [336](336-search-no-timeout.md) | A deck card search that never answers leaves Add on the skeleton | fixing | thinker | - |
 | [335](335-selector-drawer-space.md) | Selector drawers waste space above the chips | fixing | laptop | #520 |
+| [340](340-toasts-over-load-error.md) | Stacked error toasts cover the "Couldn't load" box | fixing | laptop | #522 |
 | [337](337-zite-tap-highlight.md) | Taps on zwipe.net flash Chrome's blue highlight | fixing | thinker | - |
 
 ## Waiting for live verification

@@ -6,7 +6,9 @@
 //! same way.
 
 use std::fmt;
+use std::sync::Mutex;
 
+use chrono::Utc;
 use components::TOAST_NORMAL;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, Toasts, use_toast};
@@ -14,6 +16,7 @@ use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_ui::telemetry::SharedUsageBuffer;
 use zwipe_ui::telemetry::vocabulary::component;
+use zwipe_ui::toast::RepeatGate;
 
 use crate::inbound::session::ensure_fresh::ensure_fresh;
 use crate::inbound::telemetry;
@@ -163,10 +166,22 @@ impl Authed {
             .peek()
             .report_error(self.screen, self.component, op, &telemetry::failure(e));
         if report == Report::Toast {
-            self.toast.error(
-                e.to_user_message(),
-                ToastOptions::default().duration(TOAST_NORMAL),
-            );
+            let message = e.to_user_message();
+            if admit_error_toast(&message) {
+                self.toast
+                    .error(message, ToastOptions::default().duration(TOAST_NORMAL));
+            }
         }
     }
+}
+
+/// The error toasts up across every screen, so a failure retried shows once.
+static ERROR_TOASTS: Mutex<RepeatGate> = Mutex::new(RepeatGate::new());
+
+/// Whether an error toast saying `message` shows: not while one with the same
+/// words is still up. A poisoned gate lets the toast through.
+fn admit_error_toast(message: &str) -> bool {
+    ERROR_TOASTS.lock().map_or(true, |mut gate| {
+        gate.admit(message, Utc::now(), TOAST_NORMAL)
+    })
 }
