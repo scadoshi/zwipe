@@ -10,6 +10,10 @@
         <meta charset="UTF-8">
         <!-- Tells the Dark Reader extension the page themes itself, as zwipe.net does. -->
         <meta name="darkreader-lock">
+        <!-- Gives a Response built by script (an extension wrapping fetch) a
+             URL, which the app's HTTP client needs on every reply. It runs
+             before the app's first request. -->
+        <script src="/response-url.js"></script>
         <!-- The link card a shared app.zwipe.net link unfurls into. Its
              source is zwipe-context marketing/og_app.html. -->
         <meta property="og:type" content="website">

@@ -59,6 +59,7 @@ Who checked, on which live build, what they saw.
 | [333](333-printings-stuck-on-slow-network.md) | Printings sits empty after a slow fetch, with no error or retry | fixing | halo | #515 |
 | [334](334-deck-page-missing-name.md) | The web deck page shows no deck name | fixing | thinker | - |
 | [335](335-selector-drawer-space.md) | Selector drawers waste space above the chips | reported | - | - |
+| [339](339-web-url-parse-panic.md) | A reply with an empty URL crashes web Add | fixing | thinker | - |
 
 ## Waiting for live verification
 
