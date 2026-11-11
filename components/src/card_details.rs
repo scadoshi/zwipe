@@ -18,7 +18,7 @@ use dioxus::prelude::*;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ImageSize;
 
-use crate::meld::use_meld;
+use crate::meld::{MeldToggle, use_meld};
 use crate::{CardRoleChips, KeywordChips, OracleText, Panel};
 
 /// One card face's rules text, extracted for display. Single-faced cards yield
@@ -331,14 +331,17 @@ pub fn CardDetailsPanel(
     /// drawer: the body then runs from the panel's top.
     #[props(default)]
     headless: bool,
+    /// The meld toggle, when the host owns it, so its own title bar can show
+    /// the melded card too (a drawer). Left out, the panel keeps its own.
+    #[props(default)]
+    meld: Option<MeldToggle>,
 ) -> Element {
     let sd = &card.scryfall_data;
     // A meld half can show its melded card's name, type, rules and stats in
     // its place; the set, prices and tags stay the half's own.
-    let meld = use_meld(sd);
-    let melded = meld
-        .shown()
-        .map(|result| Card::new(card.card_profile.clone(), result.clone()));
+    let own_meld = use_meld(sd);
+    let meld = meld.unwrap_or(own_meld);
+    let melded = meld.shown().is_some().then(|| meld.apply(&card));
     let shown_card = melded.as_ref().unwrap_or(&card);
     let name = shown_card.scryfall_data.name.clone();
     let rarity = sd.rarity.to_long_name();
@@ -351,10 +354,10 @@ pub fn CardDetailsPanel(
     let has_image = sd.primary_image_url(ImageSize::Large).is_some();
 
     let faces = build_rules(shown_card);
-    let meld_line = melded.as_ref().map(|result| {
-        let partner = meld.partner().map(|p| format!("Melds with {p}"));
-        (result.scryfall_data.name.clone(), partner)
-    });
+    let meld_line = melded
+        .as_ref()
+        .and_then(|_| meld.partner())
+        .map(|p| format!("Melds with {p}"));
     let face_count = faces.as_ref().map_or(0, Vec::len);
     let internal_face = use_signal(|| 0usize);
     let face_idx = face.unwrap_or(internal_face);
@@ -418,15 +421,8 @@ pub fn CardDetailsPanel(
                 type_line: current_face.as_ref().map(|f| f.type_line.clone()).unwrap_or_default(),
                 rarity,
             }
-            if let Some((result_name, partner)) = meld_line {
-                p { class: "card-details-meld",
-                    if headless {
-                        span { class: "card-details-meld-name", "{result_name}" }
-                    }
-                    if let Some(partner) = partner {
-                        span { "{partner}" }
-                    }
-                }
+            if let Some(line) = meld_line {
+                p { class: "card-details-meld", "{line}" }
             }
             if let Some(face) = current_face.filter(|f| !f.oracle.is_empty()) {
                 OracleText { text: face.oracle, class: "card-detail-oracle card-details-oracle".to_string() }

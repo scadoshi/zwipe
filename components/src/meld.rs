@@ -10,6 +10,7 @@ use std::collections::HashMap;
 
 use dioxus::prelude::*;
 use uuid::Uuid;
+use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::card::scryfall_data::all_parts::Meld;
 
@@ -26,7 +27,7 @@ pub enum MeldFetch {
 
 /// The host's melded cards: the session's fetches by Scryfall id, and the
 /// callback that starts one, which writes its outcome into `results`.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct MeldSource {
     /// Each melded card asked for this session, by its Scryfall id.
     pub results: Signal<HashMap<Uuid, MeldFetch>>,
@@ -41,7 +42,7 @@ fn shows_result(wanted: bool, fetch: Option<&MeldFetch>) -> bool {
 }
 
 /// One meld half's toggle, from [`use_meld`].
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct MeldToggle {
     meld: Option<Meld>,
     result: Option<ScryfallData>,
@@ -63,6 +64,16 @@ impl MeldToggle {
     #[must_use]
     pub fn shown(&self) -> Option<&ScryfallData> {
         self.result.as_ref()
+    }
+
+    /// `card` as it shows: the melded card, with `card`'s own profile, while
+    /// the toggle is on and the melded card is in; otherwise `card` itself.
+    #[must_use]
+    pub fn apply(&self, card: &Card) -> Card {
+        match self.result.as_ref() {
+            Some(result) => Card::new(card.card_profile.clone(), result.clone()),
+            None => card.clone(),
+        }
     }
 
     /// Whether the toggle is on: the melded card is wanted and its fetch

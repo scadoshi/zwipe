@@ -1409,19 +1409,11 @@ i.ms.ms-cost.ms-gp {
     color: var(--ink-accent-primary, var(--accent-primary));
 }
 
-/* Card details showing a melded card: its name, when the host titles the
-   half in its own bar, then which card it melds with. */
+/* Card details showing a melded card: which card it melds with. */
 .card-details-meld {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
     margin: 0 0 0.75rem;
     font-size: 0.85rem;
     color: var(--ink-text-muted, var(--text-muted));
-}
-
-.card-details-meld-name {
-    color: var(--text-primary);
 }
 
 .card-flip-button:active {

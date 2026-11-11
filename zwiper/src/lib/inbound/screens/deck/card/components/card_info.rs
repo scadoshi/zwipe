@@ -1,4 +1,4 @@
-use components::{CardDetailsCost, CardDetailsPanel, DrawerSheet, use_overlay_back};
+use components::{CardDetailsCost, CardDetailsPanel, DrawerSheet, use_meld, use_overlay_back};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::Card;
@@ -67,8 +67,11 @@ pub(crate) fn CardDetailsSheet(
     use_overlay_back(open);
     // The shown face, shared by the title bar's cost and the panel's Flip.
     let face = use_signal(|| 0_usize);
-    let name = card.scryfall_data.name.clone();
-    let title_card = card.clone();
+    // The meld toggle, shared by the title bar and the panel, so the title
+    // shows the melded card's name and cost (none) while it is on.
+    let meld = use_meld(&card.scryfall_data);
+    let title_card = meld.apply(&card);
+    let name = title_card.scryfall_data.name.clone();
     rsx! {
         DrawerSheet {
             open,
@@ -84,6 +87,7 @@ pub(crate) fn CardDetailsSheet(
                 card,
                 headless: true,
                 face,
+                meld: Some(meld),
                 describe_tag: Some(describe_tag),
                 on_printings,
                 footer,
