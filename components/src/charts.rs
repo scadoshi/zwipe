@@ -250,21 +250,21 @@ pub fn BarChart(
     };
     // Rows space by their own padding, not the column's gap, so a shut fold
     // adds no height.
-    let plain_row = |bar: &Bar| {
+    let plain_row = |index: usize, bar: &Bar| {
         rsx! {
             div { style: "display:flex;align-items:center;gap:0.5rem;padding:0.175rem 0;",
                 span { style: label_style(bar), onclick: tap(bar.key.clone()),
                     "{bar.label}"
                 }
                 div { class: "chart-track",
-                    div { class: "chart-fill", style: "width:{bar.pct}%;" }
+                    div { class: "chart-fill chart-bar", style: "width:{bar.pct}%;{bar_delay(index)}" }
                 }
                 span { style: count_style, "{bar.count}{count_suffix}" }
             }
         }
     };
     // Three grid cells and the row's reveal, spanning the grid.
-    let chip_row = |bar: &Bar| {
+    let chip_row = |index: usize, bar: &Bar| {
         rsx! {
             div { style: "padding:0.175rem 0;text-align:right;",
                 if bar.revealable {
@@ -276,7 +276,7 @@ pub fn BarChart(
                 }
             }
             div { class: "chart-track",
-                div { class: "chart-fill", style: "width:{bar.pct}%;" }
+                div { class: "chart-fill chart-bar", style: "width:{bar.pct}%;{bar_delay(index)}" }
             }
             span { style: count_style, "{bar.count}{count_suffix}" }
             // Mounted shut under every row so opening one is a class
@@ -298,12 +298,15 @@ pub fn BarChart(
             match layout {
                 Layout::Vertical => rsx! {
                     div { style: "display:flex;justify-content:center;align-items:flex-end;gap:0.25rem;height:6rem;",
-                        for bar in bars.iter() {
+                        for (index, bar) in bars.iter().enumerate() {
                             div { style: "{column}display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:0.15rem;",
                                 if bar.count > 0 {
                                     span { style: "font-size:0.6rem;color:var(--text-primary);opacity:0.85;line-height:1;", "{bar.count}{count_suffix}" }
                                 }
-                                div { style: format!("width:100%;height:{}%;background:var(--text-primary);opacity:0.65;border-radius:0.15rem 0.15rem 0 0;", bar.pct) }
+                                div {
+                                    class: "chart-bar chart-bar-up",
+                                    style: format!("width:100%;height:{}%;background:var(--text-primary);opacity:0.65;border-radius:0.15rem 0.15rem 0 0;{}", bar.pct, bar_delay(index)),
+                                }
                             }
                         }
                     }
@@ -314,13 +317,13 @@ pub fn BarChart(
                     }
                 },
                 Layout::Rows => rsx! {
-                    for bar in shown_bars.iter() {
-                        {plain_row(bar)}
+                    for (index, bar) in shown_bars.iter().enumerate() {
+                        {plain_row(index, bar)}
                     }
                     if let Some(rest) = folded_bars {
                         Fold { open: fold_open(),
-                            for bar in rest.iter() {
-                                {plain_row(bar)}
+                            for (index, bar) in rest.iter().enumerate() {
+                                {plain_row(index, bar)}
                             }
                         }
                         SeeMore { open: fold_open(), on_toggle: toggle_fold }
@@ -332,13 +335,13 @@ pub fn BarChart(
                 // add no height.
                 Layout::ChipRows => rsx! {
                     div { style: format!("display:grid;grid-template-columns:fit-content({CHIP_LABEL_MAX_WIDTH}) minmax(0,1fr) auto;column-gap:0.5rem;align-items:center;"),
-                        for bar in shown_bars.iter() {
-                            {chip_row(bar)}
+                        for (index, bar) in shown_bars.iter().enumerate() {
+                            {chip_row(index, bar)}
                         }
                         if let Some(rest) = folded_bars {
                             Fold { open: fold_open(), subgrid: true,
-                                for bar in rest.iter() {
-                                    {chip_row(bar)}
+                                for (index, bar) in rest.iter().enumerate() {
+                                    {chip_row(index, bar)}
                                 }
                             }
                         }
@@ -523,6 +526,23 @@ pub fn ColorChart(bars: Vec<ColorBar>, hint: Option<Element>) -> Element {
     }
 }
 
+/// How far each bar's entrance trails the one before it, in milliseconds:
+/// the portfolio's fleet chart's row stagger, so the charts arrive alike.
+const BAR_STAGGER_MS: usize = 45;
+
+/// The last bar that trails the one before it; every bar after it starts
+/// with it, so a long chart is in within about half a second.
+const STAGGERED_BARS: usize = 8;
+
+/// The inline `animation-delay` for the bar at `index`, which orangui's
+/// `.chart-bar` entrance reads.
+pub(crate) fn bar_delay(index: usize) -> String {
+    format!(
+        "animation-delay:{}ms;",
+        index.min(STAGGERED_BARS).saturating_mul(BAR_STAGGER_MS)
+    )
+}
+
 /// Mana curve (nonland CMC histogram), rendered flat.
 #[component]
 pub fn ManaCurve(mana_curve_bars: [(usize, u32); 7], hint: Option<Element>) -> Element {
@@ -530,12 +550,15 @@ pub fn ManaCurve(mana_curve_bars: [(usize, u32); 7], hint: Option<Element>) -> E
         div { style: "display:flex;flex-direction:column;gap:0.35rem;padding:0 0.75rem;",
             ChartLabel { text: "Mana curve", hint }
             div { style: "display:flex;align-items:flex-end;gap:0.25rem;height:6rem;",
-                for (count, pct) in mana_curve_bars.iter() {
+                for (index, (count, pct)) in mana_curve_bars.iter().enumerate() {
                     div { style: "flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:0.15rem;",
                         if *count > 0 {
                             span { style: "font-size:0.6rem;color:var(--text-primary);opacity:0.85;line-height:1;", "{count}" }
                         }
-                        div { style: format!("width:100%;height:{pct}%;background:var(--text-primary);opacity:0.65;border-radius:0.15rem 0.15rem 0 0;") }
+                        div {
+                            class: "chart-bar chart-bar-up",
+                            style: format!("width:100%;height:{pct}%;background:var(--text-primary);opacity:0.65;border-radius:0.15rem 0.15rem 0 0;{}", bar_delay(index)),
+                        }
                     }
                 }
             }
@@ -562,6 +585,9 @@ pub fn DrawOdds(
 ) -> Element {
     const MAX_TURN: u32 = 20;
     let mut turn = use_signal(|| 0u32);
+    // A step remounts the rows (see OddsRow); after the first, they show their
+    // new odds without growing in again.
+    let mut stepped = use_signal(|| false);
     let mut fold_open = use_signal(|| false);
     let toggle_fold = use_callback(move |()| fold_open.toggle());
     // The stepper holds `turn` at MAX_TURN or below, so this never saturates.
@@ -592,7 +618,7 @@ pub fn DrawOdds(
                 button {
                     class: "stepper-btn",
                     disabled: turn() == 0,
-                    onclick: move |_| { let t = turn(); if t > 0 { turn.set(t - 1); } },
+                    onclick: move |_| { let t = turn(); if t > 0 { turn.set(t - 1); stepped.set(true); } },
                     "-"
                 }
                 span { class: "chart-label",
@@ -602,17 +628,17 @@ pub fn DrawOdds(
                 button {
                     class: "stepper-btn",
                     disabled: turn() >= MAX_TURN,
-                    onclick: move |_| { let t = turn(); if t < MAX_TURN { turn.set(t + 1); } },
+                    onclick: move |_| { let t = turn(); if t < MAX_TURN { turn.set(t + 1); stepped.set(true); } },
                     "+"
                 }
             }
-            for (label, pct) in shown_rows.iter().copied() {
-                OddsRow { label, pct }
+            for (index, (label, pct)) in shown_rows.iter().copied().enumerate() {
+                OddsRow { label, pct, entrance: (!stepped()).then_some(index) }
             }
             if let Some(rest) = folded_rows {
                 Fold { open: fold_open(),
-                    for (label, pct) in rest.iter().copied() {
-                        OddsRow { label, pct }
+                    for (index, (label, pct)) in rest.iter().copied().enumerate() {
+                        OddsRow { label, pct, entrance: (!stepped()).then_some(index) }
                     }
                 }
                 SeeMore { open: fold_open(), on_toggle: toggle_fold }
@@ -625,7 +651,17 @@ pub fn DrawOdds(
 /// (fresh DOM) instead of an in-place style update; the web view drops the
 /// latter and leaves the bar unfilled on alternating turns otherwise.
 #[component]
-fn OddsRow(label: &'static str, pct: u32) -> Element {
+fn OddsRow(
+    label: &'static str,
+    pct: u32,
+    /// The row's place in the entrance's stagger; `None` shows the bar at
+    /// rest, for rows remounted by a step.
+    entrance: Option<usize>,
+) -> Element {
+    let (class, delay) = match entrance {
+        Some(index) => ("chart-fill chart-bar", bar_delay(index)),
+        None => ("chart-fill", String::new()),
+    };
     rsx! {
         div {
             key: "{label}-{pct}",
@@ -634,7 +670,7 @@ fn OddsRow(label: &'static str, pct: u32) -> Element {
                 "{label}"
             }
             div { class: "chart-track",
-                div { class: "chart-fill", style: "width:{pct}%;" }
+                div { class: "{class}", style: "width:{pct}%;{delay}" }
             }
             span { style: "font-size:0.7rem;color:var(--text-primary);opacity:0.85;width:4ch;text-align:right;flex-shrink:0;",
                 "{pct}%"
@@ -674,13 +710,13 @@ pub fn ManaFulfillment(rows: Vec<ManaBalanceRow>, hint: Option<Element>) -> Elem
     rsx! {
         div { class: "color-chart",
             ChartLabel { text: "Mana cost fulfillment", hint }
-            for ManaBalanceRow { label: color_label, consumed, produced, fill_pct, is_surplus } in rows.iter() {
+            for (index, ManaBalanceRow { label: color_label, consumed, produced, fill_pct, is_surplus }) in rows.iter().enumerate() {
                 div { class: "color-bar-row",
                     i { class: "ms ms-{color_label.to_lowercase()} ms-cost" }
                     div { class: "color-bar-track",
                         div {
-                            class: "color-bar-fill",
-                            style: "width: {fill_pct}%; background-color: {balance_fill(color_label)};",
+                            class: "color-bar-fill chart-bar",
+                            style: "width: {fill_pct}%; background-color: {balance_fill(color_label)}; {bar_delay(index)}",
                         }
                     }
                     span { style: "font-size:0.75rem;color:var(--text-primary);opacity:0.85;width:1.25rem;text-align:center;flex-shrink:0;",

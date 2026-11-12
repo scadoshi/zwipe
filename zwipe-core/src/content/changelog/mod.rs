@@ -48,6 +48,14 @@ pub const MOBILE_STORE_VERSION: Version = Version::new(1, 18, 15);
 /// changelog with an "Upcoming" badge instead of "Latest".
 pub const UPCOMING: &[Release] = &[
     Release {
+        version: Version::new(1, 19, 3),
+        date: None,
+        entries: &[
+            "The Share dialog's link is a colored chip that wraps only when the screen is too narrow for it",
+            "Charts grow in when their page opens or their section expands",
+        ],
+    },
+    Release {
         version: Version::new(1, 19, 2),
         date: None,
         entries: &[
@@ -56,6 +64,7 @@ pub const UPCOMING: &[Release] = &[
             "Back returns to the screen you came from instead of looping between Create deck and Decks",
             "On the web, a cloned deck shows its own name as soon as it opens, and back and forward between two decks show the right one",
             "The Share dialog on the web shows the deck's own name in its link",
+            "A melded card's list row shows the melded card in its thumbnail and hover preview",
             "Hovering a stack on the web's deck page no longer shifts its cards by a pixel",
         ],
     },
@@ -77,7 +86,7 @@ pub const UPCOMING: &[Release] = &[
         entries: &[
             "The deck page on the web can show its cards as stacks, one per group, beside the list",
             "The web's deck page runs the window's width, its list in two columns on a wide screen",
-            "A cart on each stack of the web's deck page buys that stack's cards",
+            "A cart on each card group of the web's deck page, in the list and in the stacks, buys that group's cards",
             "Keyboard shortcuts on the web's deck page for the hovered or open card, with Shift+H to list them",
             "A shared deck's link names its owner and the deck",
             "A shared deck shows who shared it under its name",

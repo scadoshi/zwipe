@@ -67,19 +67,24 @@ Who checked, on which live build, what they saw.
 | [342](342-no-link-underlines.md) | No underlines on links | fixing | thinker | - |
 | [344](344-meld-support.md) | Meld cards show their melded card | fixing | scotland | #534 |
 | [343](343-web-keyboard-shortcuts.md) | Keyboard shortcuts on the web | fixing | thinker | - |
+| [346](346-chart-entrance.md) | Charts animate in when they open | fixing | laptop | #539 |
 | [345](345-narrow-swipe-chip.md) | Add's last-action chip is missing below the full nav | fixing | scotland | #537 |
 | [347](347-swipe-fly-off-hidden.md) | Add's left, right and up swipes play no fly-off | fixing | scotland | #542, #545 |
 | [352](352-back-loop.md) | Back loops between Create deck and Decks | fixing | laptop | #553 |
 | [348](348-github-style-share-links.md) | GitHub-style shared deck links, "by <username>", the deal on the web deck page | fixing | thinker | - |
 | [351](351-flyoff-clipped.md) | The commander swipe's fly-off is cut off before the window's edge | fixing | scotland | #550 |
+| [355](355-full-width-sites.md) | The sites leave a wide window's sides empty | fixing | scotland | zite #557 |
 | [350](350-deck-page-wide.md) | The web deck page leaves a wide window's sides empty | fixing | scotland | #547 |
 | [353](353-stack-cart.md) | A stack has no way to buy its cards | fixing | thinker | - |
 | [354](354-one-buy-dialog.md) | Buying is a different control in every spot, and the wide deck page hides it | fixing | thinker | - |
 | [358](358-share-link-deck-name.md) | The Share dialog's link names every deck "deck" | fixing | thinker | - |
+| [361](361-list-group-cart.md) | The List's card groups have no cart | fixing | thinker | - |
 | [362](362-store-links-printing.md) | Store links send names only, not the printing picked | research | thinker | - |
 | [357](357-stack-hover-shift.md) | Hovering a stack shifts its cards a pixel | fixing | thinker | - |
 | [356](356-list-row-meld.md) | A meld card's list row has no Meld toggle | fixing | scotland | #555 |
 | [359](359-key-map-gaps.md) | f and v gaps on Commander maybeboard and meld cards | fixing | scotland | #559 |
+| [369](369-share-link-chip.md) | The Share dialog's link sits in an odd dark box | fixing | laptop | #564 |
+| [364](364-list-row-art-meld.md) | A melded card's list row thumbnail and hover preview show the half | fixing | scotland | #563 |
 
 ## Waiting for live verification
 

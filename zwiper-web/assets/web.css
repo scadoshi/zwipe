@@ -7,6 +7,8 @@
     --web-content-max: 72rem;
     /* zite's page on a wide window (the page grammar below). */
     --web-page-max: 74rem;
+    /* A wide page's width: seven 26rem card columns, as zwipe.net's. */
+    --web-wide-max: calc(7 * 26rem + 6 * var(--panel-gap));
     /* Where a sticky column stops: the page's 1rem gap under the nav. */
     --web-sticky-top: 1rem;
     /* How tall a sticky column may be: the window less the nav, the gap
@@ -1750,6 +1752,41 @@ body:has(.deck-stacks) .sheet-form-drawer:has(> .card-details-drawer) > .sheet-b
         margin: 0;
         box-sizing: border-box;
         min-height: 0;
+    }
+
+    /* Home runs the window's width as zwipe.net does: the hero across the
+       page, its tagline at a readable measure, and the recent decks' tiles
+       at their own size, centered in the panel. */
+    .web-page.web-home-page {
+        max-width: var(--web-wide-max);
+    }
+
+    .web-home-page .web-hero-tagline {
+        max-width: 70ch;
+        margin: 0 auto;
+    }
+
+    .web-home-page .home-deck-tiles {
+        grid-template-columns: repeat(3, minmax(0, 12rem));
+        justify-content: center;
+    }
+}
+
+/* From 1920px Decks, Colors and the flavor card share one row under the
+   hero. */
+@media (min-width: 120rem) {
+    .web-home .web-home-page {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        align-items: start;
+    }
+
+    .web-home-page > .web-hero {
+        grid-column: 1 / -1;
+    }
+
+    .web-home-page > .web-columns {
+        display: contents;
     }
 }
 

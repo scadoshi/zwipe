@@ -26,8 +26,8 @@ pub const DECK_TITLE: &str = "Buy deck";
 /// The store dialog's body for the whole deck.
 pub const DECK_BODY: &str = "Buy this deck's cards from a retailer.";
 
-/// The store dialog's body for a stack's cards.
-pub const STACK_BODY: &str = "Buy this stack's cards from a retailer.";
+/// The store dialog's body for a card group's cards, a List band's or a stack's.
+pub const GROUP_BODY: &str = "Buy this group's cards from a retailer.";
 
 /// A retailer link in the store dialog.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -84,10 +84,10 @@ pub fn card_links(name: &str, tcgplayer_id: Option<i32>) -> Vec<BuyLink> {
     )
 }
 
-/// The store dialog's title for the stack whose header reads `header`: its name without the
+/// The store dialog's title for the card group whose header reads `header`: its name without the
 /// count, or "these cards" for a color group, whose header is the count alone.
 #[must_use]
-pub fn stack_title(header: &str) -> String {
+pub fn group_title(header: &str) -> String {
     let name = header
         .rsplit_once('(')
         .filter(|(_, count)| count.ends_with(')'))
@@ -227,11 +227,11 @@ mod tests {
     }
 
     #[test]
-    fn a_stack_s_dialog_names_its_group_without_the_count() {
-        assert_eq!(stack_title("Creatures (12)"), "Buy Creatures");
-        assert_eq!(stack_title("Commander"), "Buy Commander");
+    fn a_group_s_dialog_names_it_without_the_count() {
+        assert_eq!(group_title("Creatures (12)"), "Buy Creatures");
+        assert_eq!(group_title("Commander"), "Buy Commander");
         assert_eq!(
-            stack_title("(3)"),
+            group_title("(3)"),
             "Buy these cards",
             "a color group shows pips, not a name"
         );

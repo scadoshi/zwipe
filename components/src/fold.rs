@@ -27,6 +27,7 @@ pub fn fold_split<T>(items: &[T], fold_at: usize) -> (&[T], Option<&[T]>) {
 /// The folding wrapper: `.chart-fold`, eased between shut and open with the
 /// grid-rows 0fr to 1fr transition in `magic.css`. Mount it shut with its
 /// content inside so opening is a class change the transition can ease.
+/// Shut, it is inert.
 ///
 /// Inside a grid of chart rows, `subgrid` makes the fold and its inner span
 /// and share the grid's columns, so the rows behind it line up with the rows
@@ -39,8 +40,10 @@ pub fn Fold(open: bool, #[props(default)] subgrid: bool, children: Element) -> E
         (false, true) => "chart-fold subgrid",
         (false, false) => "chart-fold",
     };
+    // A shut fold is inert, as every fold is: Tab and screen readers pass
+    // over its rows, and its charts' entrance waits for it to open.
     rsx! {
-        div { class,
+        div { class, inert: (!open).then_some(true),
             div { class: "chart-fold-inner", {children} }
         }
     }

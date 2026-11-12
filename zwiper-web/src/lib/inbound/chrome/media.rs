@@ -128,6 +128,17 @@ mod tests {
     }
 
     #[test]
+    fn home_runs_the_wide_page_and_takes_one_row_from_1920() {
+        let page = rule_in(
+            "@media (min-width: 900px) {\n    /* zite's page from the top",
+            ".web-page.web-home-page",
+        );
+        assert!(page.contains("max-width: var(--web-wide-max)"), "{page}");
+        let row = rule_in("@media (min-width: 120rem) {", ".web-home .web-home-page");
+        assert!(row.contains("repeat(3, minmax(0, 1fr))"), "{row}");
+    }
+
+    #[test]
     fn the_header_folds_below_1110_and_never_wraps() {
         assert_eq!(NAV_FOLD_MAX_PX, 1109);
         assert!(nav_fold_css().starts_with("@media (max-width: 1109px) {"));
