@@ -5,6 +5,7 @@
 pub mod card_info;
 pub mod card_row;
 pub mod charts;
+pub mod drawer_swap;
 pub mod image_preview;
 pub mod meld;
 pub mod otag;
