@@ -24,6 +24,7 @@ use crate::inbound::cards::otag::{OtagDescribe, OtagExamplesOpen};
 use crate::inbound::cards::stack_view::{CardsStack, CardsViewSwitch, StackDrawer};
 use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
 use crate::inbound::chrome::section::CollapsibleSection;
+use crate::outbound::cards_view_store::CardsViewPlace;
 
 /// The accordion title of the heatmap section, open on entry.
 pub const ACTIVITY_TITLE: &str = "Activity";
@@ -400,6 +401,33 @@ pub fn HardPassesPanel(
                 .unwrap_or_default(),
         )
     });
+    let switch = rsx! {
+        div { class: "web-card-group-filters",
+            CardsViewSwitch {
+                view,
+                place: CardsViewPlace::MostSkipped,
+                on_change: move |()| {
+                    let mut expanded = expanded_card;
+                    expanded.set(None);
+                },
+            }
+        }
+    };
+    // In Stacks the cards float on the page under the group's own header, as
+    // the deck page's stacks do; in the List they sit in the fold.
+    if view() == CardsView::Stacks && !cards.is_empty() {
+        return rsx! {
+            {switch}
+            CardsStack {
+                cards: cards.clone(),
+                title: PASSES_TITLE.to_owned(),
+                trailing: rsx! {
+                    InfoButton { topic: HintTopic::HardPasses }
+                },
+            }
+            StackDrawer { cards, extras }
+        };
+    }
     rsx! {
         CardListFold {
             title: PASSES_TITLE,
@@ -411,25 +439,11 @@ pub fn HardPassesPanel(
                     span { class: "chip-note", "{PASSES_EMPTY}" }
                 }
             } else {
-                div { class: "web-card-group-filters",
-                    CardsViewSwitch { view, on_change: move |()| {
-                        let mut expanded = expanded_card;
-                        expanded.set(None);
-                    } }
-                }
+                {switch}
             }
-            if view() == CardsView::Stacks {
-                if !cards.is_empty() {
-                    CardsStack { cards: cards.clone() }
-                }
-            } else {
-                for pass in passes {
-                    HardPassRow { key: "{pass.card.scryfall_data.id}", pass, expanded_card }
-                }
+            for pass in passes {
+                HardPassRow { key: "{pass.card.scryfall_data.id}", pass, expanded_card }
             }
-        }
-        if view() == CardsView::Stacks {
-            StackDrawer { cards, extras }
         }
     }
 }

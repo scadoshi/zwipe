@@ -1,5 +1,5 @@
 //! The card keys of a screen of card rows with no editing (Playstyle's
-//! lists, Activity's Most skipped): `p` opens the card's Printings, `i` its
+//! lists, Activity's Most skipped, the Commander maybeboard): `p` opens the card's Printings, `i` its
 //! image, `v` flips it (or toggles a meld half's Meld) and `d` opens or
 //! closes its details, each as its own button or a click on it does. The
 //! card is the one under the cursor, else the one whose details are open.
@@ -9,7 +9,6 @@ use components::{MeldSource, MeldToggle};
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
-use zwipe_ui::deck_cards::stacks::CardsView;
 
 use crate::inbound::cards::card_row::CardOverlays;
 use crate::inbound::cards::stack_view::{RowFaces, StackDetails};
@@ -50,18 +49,26 @@ pub(crate) fn row_key(key: &str) -> Option<RowKey> {
     }
 }
 
-/// Sends the id of the card under the cursor (a row or a stack card), else of the stack card
-/// whose drawer is open, else an empty string.
-const KEY_CARD_JS: &str = "const under = document.querySelectorAll('[data-row]:hover'); const open = document.querySelector('.bottom-sheet.show.__DRAWER__') && document.querySelector('.card-stack-slot.open[data-row]'); const card = under.length ? under[under.length - 1] : open; dioxus.send(card ? card.getAttribute('data-row') : '');";
+/// Sends the card under the cursor, else the stack card whose drawer is open, as `stack:<id>`
+/// or `row:<id>`, else an empty string.
+const KEY_CARD_JS: &str = "const under = document.querySelectorAll('[data-row]:hover'); const open = document.querySelector('.bottom-sheet.show.__DRAWER__') && document.querySelector('.card-stack-slot.open[data-row]'); const card = under.length ? under[under.length - 1] : open; dioxus.send(card ? (card.classList.contains('card-stack-slot') ? 'stack:' : 'row:') + card.getAttribute('data-row') : '');";
 
-/// Answers [`ROW_KEYS`] on a screen listing `cards` as rows (expanding `expanded_card`) or, in
-/// `view`'s Stacks, as stacks, and offers the screen's shortcuts on Shift+H. The image and
+/// Answers [`ROW_KEYS`] on a screen listing `cards` as rows (expanding `expanded_card`), as
+/// stacks, or both in different sections, and offers the screen's shortcuts on Shift+H. A key
+/// acts on the card under the cursor, a stack card or a row, else on the open stack card, else
+/// on the expanded row. The image and
 /// Printings open in the screen's [`CardOverlays`], faces turn in its [`RowFaces`] and the
 /// stacks' details move in its [`StackDetails`], each where the screen provides it.
-pub(crate) fn use_card_row_keys(
+pub(crate) fn use_card_row_keys(cards: Memo<Vec<Card>>, expanded_card: Signal<Option<Uuid>>) {
+    use_card_row_keys_and(cards, expanded_card, None);
+}
+
+/// [`use_card_row_keys`] on a screen with keys of its own: a key that is not a card key goes
+/// to `screen_keys`, since only the newest page key listener hears the keys.
+pub(crate) fn use_card_row_keys_and(
     cards: Memo<Vec<Card>>,
     expanded_card: Signal<Option<Uuid>>,
-    view: Signal<CardsView>,
+    screen_keys: Option<Callback<String>>,
 ) {
     let overlays = try_use_context::<CardOverlays>();
     let details = try_use_context::<StackDetails>();
@@ -73,23 +80,23 @@ pub(crate) fn use_card_row_keys(
         &ROW_KEYS,
         Callback::new(move |key: String| {
             let Some(pressed) = row_key(&key) else {
+                if let Some(screen_keys) = screen_keys {
+                    screen_keys.call(key);
+                }
                 return;
             };
             spawn(async move {
                 let mut found =
                     document::eval(&KEY_CARD_JS.replace("__DRAWER__", STACK_DETAILS_CLASS));
-                let hovered = found
-                    .recv::<String>()
-                    .await
-                    .ok()
-                    .and_then(|id| Uuid::try_parse(&id).ok());
-                let stacks = *view.peek() == CardsView::Stacks;
-                let open = if stacks {
-                    details.and_then(|d| d.reveal.peek().open())
-                } else {
-                    *expanded_card.peek()
-                };
-                let Some(id) = hovered.or(open) else {
+                let hovered = found.recv::<String>().await.ok().and_then(|found| {
+                    let (kind, id) = found.split_once(':')?;
+                    Some((kind == "stack", Uuid::try_parse(id).ok()?))
+                });
+                let open_stack = details
+                    .and_then(|d| d.reveal.peek().open())
+                    .map(|id| (true, id));
+                let open_row = (*expanded_card.peek()).map(|id| (false, id));
+                let Some((stacks, id)) = hovered.or(open_stack).or(open_row) else {
                     return;
                 };
                 let Some(card) = cards

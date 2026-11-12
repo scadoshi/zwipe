@@ -1,5 +1,5 @@
 //! zwipe.net's pages share one column, 1400px at most (Scotty's pick between the old 74rem column
-//! and the window's width), with running text at a readable 70ch inside it.
+//! and the window's width), with running text filling its panel across it.
 
 /// zwipe.net's stylesheet.
 const CSS: &str = include_str!("../assets/style.css");
@@ -25,16 +25,11 @@ fn every_page_shares_one_1400px_column() {
 }
 
 #[test]
-fn running_text_keeps_a_readable_measure() {
-    let at = CSS.find("max-width: 70ch").expect("a 70ch rule");
-    let selectors = CSS.get(..at).unwrap();
-    let selectors = selectors.get(selectors.rfind('}').unwrap()..).unwrap();
-    for text in [
-        ".guide-content .guide-p",
-        ".privacy-section > p",
-        ".hero .tagline",
-        ".panel-card p",
-    ] {
-        assert!(selectors.contains(text), "{text} in {selectors}");
-    }
+fn running_text_fills_its_panel() {
+    assert!(
+        !CSS.contains("70ch"),
+        "no text is capped to a reading measure"
+    );
+    let coming = rule(".coming-soon p").expect("the coming soon text rule");
+    assert!(!coming.contains("max-width"), "{coming}");
 }

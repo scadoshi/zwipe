@@ -9,14 +9,16 @@
 
 use std::collections::{HashMap, HashSet};
 
-use components::{CardBoardMoves, CardEditButtons, CardStack, CartButton, DeckSection, StackCard};
+use components::{
+    CardBoardMoves, CardEditButtons, CardStack, CartButton, DeckSection, GroupBuy, StackCard,
+};
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::{Board, deck_metrics};
+use zwipe_ui::buy::group_cards;
 use zwipe_ui::deck_cards::stacks::Gesture;
 
-use super::group_buy::{GroupBuy, group_cards};
 use crate::inbound::cards::card_info::CardDetailsSheet;
 use crate::inbound::cards::card_row::CardOverlays;
 use crate::inbound::cards::stack_view::{DRAWER_CLASSES, StackDetails};

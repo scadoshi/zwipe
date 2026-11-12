@@ -4,6 +4,8 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::deck::deck_profile::DeckProfile;
 use zwipe_core::domain::deck::{Deck, DeckEntry};
 
+use crate::deck_cards::keys::{RowInfo, RowKind};
+
 /// The store dialog's link to `TCGplayer`.
 pub const TCGPLAYER: &str = "TCGplayer \u{2197}";
 
@@ -232,6 +234,19 @@ pub fn links(deck: &Deck) -> (String, String) {
     )
 }
 
+/// The cards a deck page's group sends to a store, each with its copies and its printing's
+/// `TCGplayer` id: every card but a token.
+#[must_use]
+pub fn group_cards(rows: &[RowInfo]) -> Vec<StoreCard<'_>> {
+    rows.iter()
+        .filter(|row| row.kind != RowKind::Token)
+        .map(|row| {
+            let data = &row.card.scryfall_data;
+            (row.qty, data.name.as_str(), data.tcgplayer_id)
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use zwipe_core::domain::deck::{Board, Quantity};
@@ -347,6 +362,40 @@ mod tests {
         assert_eq!(
             cardkingdom_card_url("Urza's Saga, Again"),
             "https://www.cardkingdom.com/builder?c=1+Urza%27s+Saga%2C+Again"
+        );
+    }
+
+    #[test]
+    fn a_group_sends_its_cards_with_their_copies_and_leaves_tokens_out() {
+        use zwipe_core::domain::deck::Board;
+
+        use crate::deck::form::Slot;
+
+        fn row(name: &str, qty: i32, kind: RowKind) -> RowInfo {
+            RowInfo {
+                card: crate::test_support::card(name),
+                qty,
+                kind,
+            }
+        }
+        let rows = [
+            row("Sol Ring", 1, RowKind::Main { mvp: false }),
+            row("Forest", 12, RowKind::Board(Board::Deck)),
+            row("Krenko, Mob Boss", 1, RowKind::Zone(Slot::Commander)),
+            row("Goblin", 1, RowKind::Token),
+        ];
+        assert_eq!(
+            group_cards(&rows),
+            [
+                (1, "Sol Ring", Some(91237)),
+                (12, "Forest", Some(91237)),
+                (1, "Krenko, Mob Boss", Some(91237))
+            ],
+            "each with its printing's TCGplayer product"
+        );
+        assert!(
+            group_cards(&[row("Goblin", 1, RowKind::Token)]).is_empty(),
+            "a group of tokens has nothing to buy"
         );
     }
 }

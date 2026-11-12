@@ -79,6 +79,11 @@ Who checked, on which live build, what they saw.
 | [354](354-one-buy-dialog.md) | Buying is a different control in every spot, and the wide deck page hides it | fixing | thinker | - |
 | [358](358-share-link-deck-name.md) | The Share dialog's link names every deck "deck" | fixing | thinker | - |
 | [372](372-stacks-deal-in.md) | Stacks appear all at once | fixing | thinker | - |
+| [393](393-proxy-strips.md) | No-image stack strips wrap and peek, and Home's deck tiles show a broken image | fixing | laptop | #596 |
+| [391](391-proxy-fit.md) | The no-image card clips its facts row in the app's Featured card, and thumbnails break names mid-word | fixing | laptop | #594 |
+| [388](388-section-stacks.md) | Playstyle and Activity stacks sit in panels, and share one View setting | fixing | laptop | #591 |
+| [386](386-card-proxy.md) | One no-image card for every image spot | fixing | laptop | #589 |
+| [385](385-settle-first-frame.md) | The settle paints the final layout for one frame first | fixing | laptop | #586 |
 | [376](376-nav-logo-size.md) | The nav logo is a different size on each site | fixing | thinker | - |
 | [366](366-swipe-select-footer.md) | Suggested commanders has no footer | fixing | thinker | - |
 | [361](361-list-group-cart.md) | The List's card groups have no cart | fixing | thinker | - |
@@ -99,6 +104,8 @@ Who checked, on which live build, what they saw.
 | [379](379-quick-add-width.md) | Quick add runs wider than the chip rows under it | fixing | laptop | #581 |
 | [375](375-home-activity-button.md) | Home's counters have no way into Activity on the web | fixing | laptop | #580 |
 | [378](378-swipe-image-fallback.md) | A failed swipe card image shows the card underneath | fixing | laptop | #583 |
+| [394](394-no-prose-caps.md) | Running text stops at 70ch inside the wide panels | fixing | thinker | #598, portfolio#49 |
+| [387](387-home-column.md) | app.zwipe.net Home runs the window's width | fixing | thinker | #590 |
 
 ## Waiting for live verification
 

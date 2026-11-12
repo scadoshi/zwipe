@@ -367,6 +367,7 @@ pub fn SwipeStack(
                     },
                     components::FlippableCardImage {
                         sd: layer.sd,
+                        profile: Some(layer.card.card_profile.clone()),
                         size: ImageSize::Large,
                         class: "card-image".to_string(),
                         draggable: false,
@@ -431,6 +432,7 @@ fn ExitingCard(gone: Exiting, on_end: EventHandler<Uuid>) -> Element {
             onanimationend: move |_| on_end.call(key),
             components::FlippableCardImage {
                 sd: gone.card.scryfall_data.clone(),
+                profile: Some(gone.card.card_profile.clone()),
                 size: ImageSize::Large,
                 class: "card-image".to_string(),
                 draggable: false,

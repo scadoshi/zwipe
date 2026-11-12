@@ -97,6 +97,9 @@ pub enum Gesture {
     Tap(Uuid),
     /// The details closed (their ×, Escape, the backdrop, the back gesture).
     Close,
+    /// A tap off every card (phones): the reveal goes back to the open card,
+    /// or to none.
+    Dismiss,
 }
 
 /// The pause between one card's deal and the next in a stack, top to bottom.
@@ -222,6 +225,7 @@ impl Reveal {
                 }
             }
             Gesture::Close => self.open = None,
+            Gesture::Dismiss => self.hovered = None,
         }
     }
 }
@@ -517,6 +521,33 @@ mod tests {
             (reveal.revealed(), reveal.open()),
             (Some(id(2)), None),
             "closing keeps the card revealed"
+        );
+    }
+
+    #[test]
+    fn a_tap_off_every_card_closes_the_reveal() {
+        let mut reveal = Reveal::default();
+        reveal.apply(Gesture::Tap(id(1)));
+        reveal.apply(Gesture::Dismiss);
+        assert_eq!((reveal.revealed(), reveal.open()), (None, None));
+        reveal.apply(Gesture::Tap(id(1)));
+        assert_eq!(
+            (reveal.revealed(), reveal.open()),
+            (Some(id(1)), None),
+            "the next tap reveals again, not opens"
+        );
+    }
+
+    #[test]
+    fn a_tap_off_every_card_leaves_the_open_card() {
+        let mut reveal = Reveal::default();
+        reveal.apply(Gesture::Tap(id(1)));
+        reveal.apply(Gesture::Tap(id(1)));
+        reveal.apply(Gesture::Dismiss);
+        assert_eq!(
+            (reveal.revealed(), reveal.open()),
+            (Some(id(1)), Some(id(1))),
+            "the open card stays pinned and revealed"
         );
     }
 }

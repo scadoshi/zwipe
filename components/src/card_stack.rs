@@ -4,13 +4,19 @@
 //! come from zwipe-ui's [`stacks::tucked`], [`stacks::shifted`] and
 //! [`stacks::exposed`], so the phones' stacks do the same.
 
+use std::collections::HashSet;
+
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ImageSize;
 use zwipe_ui::deck_cards::stacks;
 
+use crate::CardProxy;
 use crate::meld::{MeldSource, MeldToggle};
+
+/// The class that draws a covered card's [`CardProxy`] as its top strip only.
+const STRIP_CLASS: &str = "card-proxy-strip";
 
 /// One card in a [`CardStack`], with its copies in the deck.
 #[derive(Debug, Clone, PartialEq)]
@@ -27,7 +33,13 @@ pub struct StackCard {
 /// after it moving down to make room; `open` outlines the card whose details
 /// are up while it shows in full.
 /// A pointer over a card or focus on it calls `on_hover` and leaving calls
-/// `on_leave`; a click or Enter calls `on_select`. While `dealing` the cards
+/// `on_leave`; a click or Enter calls `on_select`.
+///
+/// With no `on_hover` the stack is in tap mode, for phones, and carries the
+/// `tap` class: a card's mouseenter, mouseleave, focus and blur call
+/// nothing, since a webview fires them before a tap's click, and the click
+/// stops at the card, so a host's tap-off handler above the stack never
+/// sees it. While `dealing` the cards
 /// rise into their slots one after another, the top card first, each slot
 /// carrying its place in the stack for the stagger.
 #[component]
@@ -36,8 +48,8 @@ pub fn CardStack(
     #[props(default)] revealed: Option<Uuid>,
     #[props(default)] open: Option<Uuid>,
     #[props(default)] dealing: bool,
-    on_hover: EventHandler<Uuid>,
-    on_leave: EventHandler<Uuid>,
+    #[props(default)] on_hover: Option<EventHandler<Uuid>>,
+    #[props(default)] on_leave: Option<EventHandler<Uuid>>,
     on_select: EventHandler<Uuid>,
 ) -> Element {
     let at = revealed.and_then(|r| cards.iter().position(|c| c.card.scryfall_data.id == r));
@@ -46,13 +58,35 @@ pub fn CardStack(
     let full = stacks::exposed(cards.len(), at);
     // A meld half with its Meld on shows its melded card.
     let melds = try_use_context::<MeldSource>();
+    // The cards whose image failed to load, which draw their text instead.
+    let mut failed: Signal<HashSet<Uuid>> = use_signal(HashSet::new);
+    let tap = on_hover.is_none();
+    let hover = move |id: Uuid| {
+        if let Some(handler) = on_hover {
+            handler.call(id);
+        }
+    };
+    let leave = move |id: Uuid| {
+        if let Some(handler) = on_leave {
+            handler.call(id);
+        }
+    };
+    let mut stack_class = String::from("card-stack");
+    if tap {
+        stack_class.push_str(" tap");
+    }
+    if dealing {
+        stack_class.push_str(" dealing");
+    }
     rsx! {
-        div { class: if dealing { "card-stack dealing" } else { "card-stack" }, role: "list",
+        div { class: "{stack_class}", role: "list",
             for (index, (((StackCard { card, qty, face }, tucked), shifted), exposed)) in cards.into_iter().zip(tucks).zip(shifts).zip(full).enumerate() {
                 {
                     let id = card.scryfall_data.id;
                     let name = card.scryfall_data.name.clone();
                     let meld = MeldToggle::of(&card.scryfall_data, melds);
+                    // The card a proxy draws: the melded card while Meld is on.
+                    let proxy_card = meld.shown().map_or_else(|| card.clone(), |melded| Card { scryfall_data: melded.clone(), ..card.clone() });
                     let image = match meld.shown() {
                         Some(melded) => melded.shown_face_image_url(0, ImageSize::Normal),
                         None => card.scryfall_data.shown_face_image_url(face, ImageSize::Normal),
@@ -68,7 +102,7 @@ pub fn CardStack(
                     if exposed && open == Some(id) {
                         class.push_str(" open");
                     }
-                    let label = if qty > 1 { format!("{name}, {qty} copies") } else { name.clone() };
+                    let label = if qty > 1 { format!("{name}, {qty} copies") } else { name };
                     rsx! {
                         // `data-row` names the card, as a list row does, so a
                         // host can find the card under the cursor.
@@ -82,15 +116,37 @@ pub fn CardStack(
                                 r#type: "button",
                                 class: "card-stack-card",
                                 "aria-label": "{label}",
-                                onmouseenter: move |_| on_hover.call(id),
-                                onmouseleave: move |_| on_leave.call(id),
-                                onfocus: move |_| on_hover.call(id),
-                                onblur: move |_| on_leave.call(id),
-                                onclick: move |_| on_select.call(id),
-                                if let Some(src) = image {
-                                    img { src: "{src}", alt: "", loading: "lazy", draggable: "false" }
+                                onmouseenter: move |_| hover(id),
+                                onmouseleave: move |_| leave(id),
+                                onfocus: move |_| hover(id),
+                                onblur: move |_| leave(id),
+                                onclick: move |event: MouseEvent| {
+                                    if tap {
+                                        event.stop_propagation();
+                                    }
+                                    on_select.call(id);
+                                },
+                                // An image that is missing or failed leaves the
+                                // card's text in the card's box.
+                                if let Some(src) = image.filter(|_| !failed.read().contains(&id)) {
+                                    img {
+                                        src: "{src}",
+                                        alt: "",
+                                        loading: "lazy",
+                                        draggable: "false",
+                                        onerror: move |_| {
+                                            failed.write().insert(id);
+                                        },
+                                    }
                                 } else {
-                                    span { class: "card-stack-name", "{name}" }
+                                    // A covered card shows only its strip: the
+                                    // name and cost on one line.
+                                    CardProxy {
+                                        sd: proxy_card.scryfall_data,
+                                        face,
+                                        profile: Some(proxy_card.card_profile),
+                                        class: if exposed { String::new() } else { STRIP_CLASS.to_owned() },
+                                    }
                                 }
                                 if qty > 1 {
                                     span { class: "card-stack-qty", "\u{d7}{qty}" }
