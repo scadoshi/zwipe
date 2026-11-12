@@ -92,6 +92,7 @@ Who checked, on which live build, what they saw.
 | [364](364-list-row-art-meld.md) | A melded card's list row thumbnail and hover preview show the half | fixing | scotland | #563 |
 | [363](363-row-keys-and-stacks.md) | Playstyle and Activity have no card keys and no Stacks view | fixing | laptop | #574 |
 | [371](371-art-chip-stacks.md) | Art stays live while Stacks is on | fixing | laptop | #577 |
+| [378](378-swipe-image-fallback.md) | A failed swipe card image shows the card underneath | fixing | laptop | - |
 
 ## Waiting for live verification
 
