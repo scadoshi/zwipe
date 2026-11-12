@@ -59,6 +59,7 @@ pub const UPCOMING: &[Release] = &[
             "On the web, Home's Colors panel runs as tall as Decks beside it",
             "zwipe.net draws its logos in the same font as the app, so they look the same",
             "In the app, each card group in a deck's List has its price and a cart that buys its cards, as its stack does",
+            "On the web's deck page, each column of Stacks runs on its own, every stack right under the one above it",
         ],
     },
     Release {

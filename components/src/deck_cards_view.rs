@@ -16,7 +16,7 @@ use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCur
 use zwipe_core::domain::deck::Board;
 use zwipe_ui::buy::{group_cards, group_price};
 use zwipe_ui::deck::form::Slot;
-use zwipe_ui::deck_cards::columns::{self, Side};
+use zwipe_ui::deck_cards::columns;
 use zwipe_ui::deck_cards::keys::{RowInfo, RowKind};
 use zwipe_ui::deck_cards::stacks::{CardsView, Gesture, Reveal};
 
@@ -390,6 +390,21 @@ pub fn DeckStacks(
         details.dismiss();
     });
     use_overlay_back_action(revealing.into(), dismiss);
+    let width = use_stacks_width(touch);
+    // A fold reweighs the stacks and can move some to another column, so it starts the settle,
+    // which slides them there.
+    let mut folds = collapsed;
+    let on_fold = Some(EventHandler::new(move |key: String| {
+        crate::settle::watch();
+        if let Some(on_fold) = on_fold {
+            on_fold.call(key);
+            return;
+        }
+        let mut set = folds.write();
+        if !set.remove(&key) {
+            set.insert(key);
+        }
+    }));
     let on_hover =
         (!touch).then(|| EventHandler::new(move |id| reveal.write().apply(Gesture::Hover(id))));
     let on_leave =
@@ -448,7 +463,13 @@ pub fn DeckStacks(
             (height, stack)
         })
         .collect();
-    if !touch {
+    // Two columns on a phone; on a wide page as many as its width fits, once it is measured.
+    let column_total = if touch {
+        Some(2)
+    } else {
+        width().map(columns::column_count)
+    };
+    let Some(column_total) = column_total else {
         return rsx! {
             div { class: "deck-stacks",
                 for (_, stack) in stacks {
@@ -456,32 +477,82 @@ pub fn DeckStacks(
                 }
             }
         };
-    }
-    // Phones: two columns of their own heights, each stack under the one above it in its column.
+    };
+    // Columns of their own heights, each stack under the one above it in its column.
     let heights: Vec<u32> = stacks.iter().map(|(height, _)| *height).collect();
-    let mut left = Vec::new();
-    let mut right = Vec::new();
-    for (side, (_, stack)) in columns::masonry(&heights).into_iter().zip(stacks) {
-        match side {
-            Side::Left => left.push(stack),
-            Side::Right => right.push(stack),
+    let mut laid: Vec<Vec<Element>> = vec![Vec::new(); column_total.max(1)];
+    for (column, (_, stack)) in columns::place(&heights, column_total)
+        .into_iter()
+        .zip(stacks)
+    {
+        if let Some(held) = laid.get_mut(column) {
+            held.push(stack);
         }
     }
     rsx! {
         div { class: "deck-stacks deck-stacks-columns",
-            div { class: "deck-stacks-column",
-                for stack in left {
-                    {stack}
-                }
-            }
-            div { class: "deck-stacks-column",
-                for stack in right {
-                    {stack}
+            for (at , held) in laid.into_iter().enumerate() {
+                div { key: "{at}", class: "deck-stacks-column",
+                    for stack in held {
+                        {stack}
+                    }
                 }
             }
         }
     }
 }
+
+/// The width the stacks last measured, in hundredths of a rem, so stacks mounted again lay out
+/// their columns from the first render.
+static LAST_WIDTH: GlobalSignal<Option<u32>> = Signal::global(|| None);
+
+/// The width the stacks have on the page, in hundredths of a rem, kept current as it changes:
+/// the content box of the element the stacks sit in, which stays put while the stacks swap
+/// their grid for columns. `None` until it is first measured, and off the browser.
+fn use_stacks_width(touch: bool) -> Signal<Option<u32>> {
+    let mut width = use_signal(|| *LAST_WIDTH.peek());
+    use_effect(move || {
+        if touch {
+            return;
+        }
+        spawn(async move {
+            let mut sizes = document::eval(STACKS_WIDTH_JS);
+            while let Ok(now) = sizes.recv::<u32>().await {
+                if *width.peek() != Some(now) {
+                    width.set(Some(now));
+                    *LAST_WIDTH.write() = Some(now);
+                }
+            }
+        });
+    });
+    use_drop(move || {
+        if !touch {
+            document::eval(STACKS_WIDTH_DROP_JS);
+        }
+    });
+    width
+}
+
+/// Sends the width of the element the stacks sit in, in hundredths of a rem, then again on each
+/// change.
+const STACKS_WIDTH_JS: &str = r"
+const stacks = document.querySelector('.deck-stacks');
+const frame = stacks && stacks.parentElement;
+if (frame) {
+  const send = (px) => {
+    const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    dioxus.send(Math.floor(px / rem * 100));
+  };
+  const sizes = new ResizeObserver((entries) => { for (const e of entries) send(e.contentRect.width); });
+  sizes.observe(frame);
+  window.__zwStacksWidth = sizes;
+}
+";
+
+/// Stops measuring the stacks' width.
+const STACKS_WIDTH_DROP_JS: &str = r"
+if (window.__zwStacksWidth) { window.__zwStacksWidth.disconnect(); delete window.__zwStacksWidth; }
+";
 
 /// The open stack card's details drawer, from `rows` (every listed row): Image and Printings
 /// (`host`'s, the saving printings not on a token, else the viewing ones) in the panel's foot,
@@ -571,5 +642,110 @@ pub fn DeckStackDrawer(
             },
             describe_tag,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use dioxus::dioxus_core::NoOpMutations;
+
+    use super::*;
+    use crate::{DeckSection, use_group_buy};
+
+    /// A real card, as the API serves it.
+    const CARD_JSON: &str = include_str!("../../zwipe-ui/src/test_support/card.json");
+
+    /// A group under `key` of `n` main board copies of the card, each its own card.
+    fn group(key: &str, n: u128, base: u128) -> (DeckSection, Vec<RowInfo>) {
+        let rows: Vec<RowInfo> = (0..n)
+            .map(|i| {
+                let mut card: Card = serde_json::from_str(CARD_JSON).unwrap();
+                card.scryfall_data.id = Uuid::from_u128(base.saturating_add(i));
+                RowInfo {
+                    card,
+                    qty: 1,
+                    kind: RowKind::Main { mvp: false },
+                }
+            })
+            .collect();
+        let section = DeckSection {
+            key: key.to_owned(),
+            title: key.to_owned(),
+            pips: None,
+            cards: rows.iter().map(|r| r.card.clone()).collect(),
+        };
+        (section, rows)
+    }
+
+    /// Pointer stacks on a page 40rem across, a width measured before they mount.
+    fn app() -> Element {
+        use_hook(|| *LAST_WIDTH.write() = Some(4000));
+        let details = StackDetails {
+            reveal: use_signal(Reveal::default),
+            details_open: use_signal(|| false),
+        };
+        rsx! {
+            DeckStacks {
+                sections: vec![group("Creatures", 30, 100), group("Lands", 1, 200), group("Artifacts", 1, 300), group("Enchantments", 1, 400), group("Instants", 1, 500)],
+                currency: PriceCurrency::default(),
+                collapsed: use_signal(HashSet::new),
+                details,
+                faces: use_signal(HashMap::new),
+                group_buy: use_group_buy(),
+            }
+        }
+    }
+
+    #[test]
+    fn pointer_stacks_fill_as_many_columns_as_the_width_holds_each_under_the_shortest() {
+        let mut dom = VirtualDom::new(app);
+        dom.rebuild_in_place();
+        for _ in 0..4 {
+            dom.process_events();
+            dom.render_immediate(&mut NoOpMutations);
+        }
+        let html = dioxus_ssr::render(&dom);
+        let laid: Vec<Vec<&str>> = html
+            .split(r#"class="deck-stacks-column""#)
+            .skip(1)
+            .map(|column| {
+                column
+                    .split(r#"data-fold=""#)
+                    .skip(1)
+                    .filter_map(|rest| rest.split_once('"').map(|(key, _)| key))
+                    .collect()
+            })
+            .collect();
+        assert_eq!(
+            columns::column_count(4000),
+            3,
+            "40rem holds three 12.5rem columns"
+        );
+        assert_eq!(
+            laid,
+            [
+                vec!["Creatures"],
+                vec!["Lands", "Enchantments"],
+                vec!["Artifacts", "Instants"]
+            ],
+            "{html}"
+        );
+    }
+
+    #[test]
+    fn the_stacks_measure_the_content_box_they_sit_in_in_hundredths_of_a_rem() {
+        for part in [
+            "querySelector('.deck-stacks')",
+            "parentElement",
+            "new ResizeObserver",
+            "contentRect.width",
+            "/ rem * 100",
+        ] {
+            assert!(
+                STACKS_WIDTH_JS.contains(part),
+                "{part} in {STACKS_WIDTH_JS}"
+            );
+        }
+        assert!(STACKS_WIDTH_DROP_JS.contains("disconnect()"));
     }
 }

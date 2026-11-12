@@ -3,8 +3,9 @@
 //! share of rows. Two plain columns keep a change inside one group (a row opening, Art, a fold)
 //! from laying out the whole list again, as a balanced CSS multi-column does.
 //!
-//! The phones' Stacks view lays its stacks in two columns of their own heights ([`masonry`]),
-//! each stack under the one above it in its column.
+//! The Stacks view lays its stacks in columns of their own heights, each stack under the one
+//! above it in its column: two on a phone ([`masonry`]), as many as the page's width fits
+//! ([`column_count`]) on a wide page ([`place`]).
 
 /// The height a group's header counts for, in rows.
 const HEADER_ROWS: usize = 1;
@@ -66,23 +67,53 @@ pub fn stack_height(cards: usize, folded: bool) -> u32 {
 
 /// The column each of a list of stacks, `heights` tall, goes in, in order: under the shorter
 /// column so far, the left on a tie, so the groups read left to right and down as a page does
-/// and each column holds its stacks in their order.
+/// and each column holds its stacks in their order. The phones' two columns of [`place`].
 #[must_use]
 pub fn masonry(heights: &[u32]) -> Vec<Side> {
-    let mut left = 0_u32;
-    let mut right = 0_u32;
+    place(heights, 2)
+        .into_iter()
+        .map(|column| if column == 0 { Side::Left } else { Side::Right })
+        .collect()
+}
+
+/// The column, `0` the leftmost, each of a list of stacks, `heights` tall, goes in among
+/// `columns` columns, in order: under the shortest column so far, the leftmost on a tie, so the
+/// groups read left to right and down as a page does and each column holds its stacks in their
+/// order. No room for a column still lays them in one.
+#[must_use]
+pub fn place(heights: &[u32], columns: usize) -> Vec<usize> {
+    let mut totals = vec![0_u32; columns.max(1)];
     heights
         .iter()
         .map(|height| {
-            if left <= right {
-                left = left.saturating_add(*height);
-                Side::Left
-            } else {
-                right = right.saturating_add(*height);
-                Side::Right
+            let shortest = totals
+                .iter()
+                .enumerate()
+                .min_by_key(|(at, total)| (**total, *at))
+                .map_or(0, |(at, _)| at);
+            if let Some(total) = totals.get_mut(shortest) {
+                *total = total.saturating_add(*height);
             }
+            shortest
         })
         .collect()
+}
+
+/// A stack column's narrowest width on a wide page, in hundredths of a rem: the 12.5rem the
+/// stacks' grid fit as many of as it could.
+pub const STACK_MIN_CENTIREM: u32 = 1250;
+
+/// The room between two stack columns, in hundredths of a rem.
+pub const STACK_GAP_CENTIREM: u32 = 125;
+
+/// How many stack columns a page `width` hundredths of a rem across holds: as many
+/// [`STACK_MIN_CENTIREM`]-wide columns as fit with [`STACK_GAP_CENTIREM`] between them, as the
+/// grid's `auto-fill` placed them, and never fewer than one.
+#[must_use]
+pub fn column_count(width: u32) -> usize {
+    let per = STACK_MIN_CENTIREM.saturating_add(STACK_GAP_CENTIREM);
+    let fit = width.saturating_add(STACK_GAP_CENTIREM).checked_div(per).unwrap_or(1);
+    usize::try_from(fit).unwrap_or(1).max(1)
 }
 
 #[cfg(test)]
@@ -161,5 +192,57 @@ mod tests {
             [Left, Right, Left],
             "the folded header leaves its column the shorter"
         );
+    }
+
+    #[test]
+    fn stacks_go_under_the_shortest_of_any_number_of_columns() {
+        let tall = stack_height(50, false);
+        let short = stack_height(1, false);
+        assert_eq!(
+            place(&[tall, short, short, short, short], 3),
+            [0, 1, 2, 1, 2],
+            "the short stacks fill the two columns beside the long one"
+        );
+        assert_eq!(
+            place(&[short, short, short, short], 4),
+            [0, 1, 2, 3],
+            "one row reads left to right"
+        );
+        assert_eq!(
+            place(&[short, short], 1),
+            [0, 0],
+            "one column holds every stack"
+        );
+        assert_eq!(
+            place(&[short, short], 0),
+            [0, 0],
+            "no room still lays one column"
+        );
+        assert_eq!(place(&[], 3), Vec::<usize>::new());
+    }
+
+    #[test]
+    fn two_columns_place_as_the_phone_does() {
+        let heights = [
+            stack_height(30, false),
+            stack_height(1, false),
+            stack_height(2, true),
+            stack_height(4, false),
+        ];
+        let sides: Vec<usize> = masonry(&heights)
+            .into_iter()
+            .map(|side| usize::from(side == Side::Right))
+            .collect();
+        assert_eq!(place(&heights, 2), sides);
+    }
+
+    #[test]
+    fn the_column_count_follows_the_grid_it_replaces() {
+        // 12.5rem columns with 1.25rem between them, in hundredths of a rem.
+        assert_eq!(column_count(1250), 1, "one column's width");
+        assert_eq!(column_count(1250 + 125 + 1249), 1, "a hair short of two");
+        assert_eq!(column_count(1250 + 125 + 1250), 2, "exactly two");
+        assert_eq!(column_count(8000), 5, "80rem: (80 + 1.25) / 13.75");
+        assert_eq!(column_count(0), 1, "never fewer than one");
     }
 }
