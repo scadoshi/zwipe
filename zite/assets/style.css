@@ -96,10 +96,6 @@ body {
     margin-top: 0;
 }
 
-.accent-tertiary {
-    color: var(--ink-accent-tertiary, var(--accent-tertiary));
-}
-
 a {
     color: var(--ink-palette-1, var(--palette-1));
     text-decoration: none;
@@ -255,51 +251,11 @@ html:has(> body[class*="theme-"][class*="-light"]) {
 }
 
 /* ==================
-        nav
- ==================== */
-
-/* The nav shell (wrapper, hamburger toggle, collapsing panel, link pills, the
-   persistent slot and its .nav-cta pills) and the ASCII logo (.nav-logo) live
-   in orangui (components.css). */
-
-.nav-brand img {
-    width: 1.75rem;
-    height: 1.75rem;
-    border-radius: 0.375rem;
-}
-
-/* ==================
         sections / cards
  ==================== */
 
 .section {
     margin-bottom: var(--panel-gap);
-}
-
-.card {
-    background-color: var(--bg-primary);
-    border: 1px solid var(--border-secondary);
-    border-radius: 1rem;
-    padding: 1.5rem;
-    box-shadow: var(--shadow-sm);
-    transition: border-color 0.2s;
-}
-
-.card:hover {
-    border-color: var(--accent-primary);
-}
-
-.card h3,
-.card .card-title {
-    font-size: 1.1rem;
-    color: var(--ink-accent-primary, var(--accent-primary));
-    margin-bottom: 0.75rem;
-    font-weight: 700;
-}
-
-.card p {
-    color: var(--text-subtle);
-    line-height: 1.55;
 }
 
 .panel-body .card-summary {
@@ -568,55 +524,16 @@ code {
     border-color: var(--accent-primary);
 }
 
-/* Numbered tester-onboarding steps on /download/android. */
-.beta-steps {
-    padding-left: 2.5rem;
-    margin: 2rem 0;
-}
-
-.beta-steps > li {
-    margin-bottom: 2.25rem;
-}
-
-.beta-steps > li:last-child {
-    margin-bottom: 0;
-}
-
-.beta-steps > li::marker {
-    color: var(--ink-accent-tertiary, var(--accent-tertiary));
-    font-weight: 700;
-}
-
-.beta-steps > li > p {
-    margin: 0 0 0.85rem;
-}
-
-.beta-steps .store-btn {
-    margin-top: 0.25rem;
-}
-
-.card-grid,
-.features-grid {
+.card-grid {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
     gap: var(--panel-gap);
     margin-top: var(--panel-gap);
 }
 
-.features-grid {
-    grid-template-columns: repeat(3, 1fr);
-    margin-top: 2.5rem;
-}
-
 /* A grid of two cards fills its row in two columns. */
 .card-grid.card-grid-2 {
     grid-template-columns: 1fr 1fr;
-}
-
-@media (max-width: 75rem) {
-    .features-grid {
-        grid-template-columns: 1fr 1fr;
-    }
 }
 
 @media (max-width: 60rem) {
@@ -635,9 +552,6 @@ code {
 }
 
 @media (max-width: 30rem) {
-    .features-grid {
-        grid-template-columns: 1fr;
-    }
     .form-group {
         margin-bottom: 0.75rem;
     }
@@ -669,28 +583,6 @@ code {
     content: "\203A";
     position: absolute;
     left: 0;
-    color: var(--ink-accent-primary, var(--accent-primary));
-}
-
-.card-category {
-    display: block;
-    font-size: 0.7rem;
-    color: var(--ink-accent-tertiary, var(--accent-tertiary));
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    margin-bottom: 0.5rem;
-}
-
-.card-action {
-    display: inline-block;
-    color: var(--ink-accent-primary, var(--accent-primary));
-    text-decoration: none;
-    font-size: 0.9rem;
-    margin-top: 0.5rem;
-    transition: color 0.15s;
-}
-
-.card-action:hover {
     color: var(--ink-accent-primary, var(--accent-primary));
 }
 
@@ -962,25 +854,6 @@ h2.panel-title {
 }
 
 /* ==================
-        contribute
- ==================== */
-
-.coming-soon {
-    text-align: center;
-    padding: 3.75rem 1.5rem;
-}
-
-.coming-soon h2 {
-    font-size: 1rem;
-    color: var(--ink-text-muted, var(--text-muted));
-    margin-bottom: 0.75rem;
-}
-
-.coming-soon p {
-    margin: 0 auto;
-}
-
-/* ==================
         forms (verify / reset)
  ==================== */
 
@@ -1079,35 +952,6 @@ h2.panel-title {
 
 .form-group input:focus {
     border-color: var(--accent-primary);
-}
-
-.btn-primary {
-    width: 100%;
-    background-color: var(--bg-primary);
-    color: var(--ink-accent-primary, var(--accent-primary));
-    border: 1px solid var(--accent-primary);
-    font-family: "JetBrains Mono", monospace;
-    font-weight: 400;
-    font-size: 0.9rem;
-    letter-spacing: 0.05em;
-    padding: 0.6875rem;
-    border-radius: 0.4rem;
-    box-shadow: var(--shadow-sm);
-    cursor: pointer;
-    margin-top: 0.5rem;
-    transition:
-        color 0.15s,
-        border-color 0.15s;
-}
-
-.btn-primary:hover {
-    color: var(--ink-accent-primary, var(--accent-primary));
-    border-color: var(--accent-primary);
-}
-
-.btn-primary:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
 }
 
 .status-message {
@@ -1292,26 +1136,6 @@ h2.panel-title {
     color: var(--text-subtle);
     font-size: 0.85rem;
     line-height: 1.55;
-}
-
-.guide-breadcrumb {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.78rem;
-    color: var(--ink-text-muted, var(--text-muted));
-    margin-bottom: 0.85rem;
-}
-
-.crumb-sep {
-    opacity: 0.5;
-}
-
-.crumb-cat {
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--ink-accent-tertiary, var(--accent-tertiary));
 }
 
 /* "Related guides" block at the foot of a guide: pill links to sibling guides. */
@@ -1567,28 +1391,6 @@ body[class$="-dark"] .chip-value {
     transform: scale(0.97);
 }
 
-.testimonials-header {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 1.75rem;
-}
-
-.testimonials-title {
-    margin: 0;
-    font-size: 1.4rem;
-    color: var(--text-primary);
-}
-
-.testimonials-rating {
-    display: inline-flex;
-    align-items: baseline;
-    gap: 0.5rem;
-    text-decoration: none;
-    font-family: "JetBrains Mono", monospace;
-}
-
 .rating-stars {
     color: var(--ink-palette-5, var(--palette-5));
     letter-spacing: 0.1em;
@@ -1597,13 +1399,6 @@ body[class$="-dark"] .chip-value {
 .rating-score {
     font-weight: 600;
     color: var(--text-primary);
-}
-
-.rating-count {
-    font-size: 0.75rem;
-    letter-spacing: 0.06em;
-    color: var(--text-primary);
-    opacity: 0.7;
 }
 
 /* Slow marquee: the viewport clips, the track slides. The review set renders
