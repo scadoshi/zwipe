@@ -52,6 +52,7 @@ mod card_row;
 mod card_stack;
 mod changelog;
 mod charts;
+mod close_hold;
 mod color_bars;
 mod cover_flow;
 mod danger_zone;
@@ -98,6 +99,7 @@ pub use charts::{
     Bar, BarChart, BarOrientation, ChartLabel, ColorChart, DeckCharts, DrawOdds, LabelCase,
     ManaCurve, ManaFulfillment,
 };
+pub use close_hold::{CLOSE_MS, CloseHold, settle_after_close, use_close_hold};
 pub use color_bars::{ColorBars, ColorBarsGhost};
 pub use cover_flow::CoverFlow;
 pub use danger_zone::DangerZoneAction;

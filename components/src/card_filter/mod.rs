@@ -38,6 +38,7 @@ use zwipe_ui::stores::catalog::{Catalog, Kind};
 use zwipe_ui::toast::{Toast, ToastKind};
 
 use self::rows::{SectionRows, bump};
+use crate::close_hold::{CloseHold, settle_after_close};
 use crate::icons::{CHECK, ERASER};
 use crate::{DockAction, DrawerSheet, use_overlay_back};
 
@@ -88,6 +89,24 @@ pub fn CardFilterPanel(
     let mut armed = use_signal(|| false);
     let epoch = use_signal(|| 0u32);
     let mut open_section: Signal<Option<Section>> = use_signal(|| None);
+    // The section folding shut keeps its rows through the fold, so it eases
+    // closed as it eased open instead of dropping its height in a frame.
+    let mut folding: Signal<Option<Section>> = use_signal(|| None);
+    let mut fold = use_signal(CloseHold::default);
+    let mut last_open: Signal<Option<Section>> = use_signal(|| None);
+    use_effect(move || {
+        let now = open_section();
+        let before = *last_open.peek();
+        last_open.set(now);
+        if let Some(shut) = before.filter(|was| Some(*was) != now) {
+            folding.set(Some(shut));
+            fold.write().open();
+            let close = fold.write().close();
+            settle_after_close(fold, close);
+        }
+    });
+    let folding_now =
+        move |section: Section| *folding.read() == Some(section) && fold.read().kept();
     let mut first_fired = use_signal(|| false);
     let mut dict_open = use_signal(|| false);
     let mut dict_field: Signal<Option<PickerField>> = use_signal(|| None);
@@ -263,7 +282,7 @@ pub fn CardFilterPanel(
                             }
                             div { class: "accordion-content", "data-open": "{is_open}",
                                 div {
-                                    if is_open {
+                                    if is_open || folding_now(section) {
                                         SectionRows {
                                             section,
                                             draft,

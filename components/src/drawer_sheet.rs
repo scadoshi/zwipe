@@ -6,6 +6,7 @@
 
 use dioxus::prelude::*;
 
+use crate::close_hold::use_close_hold;
 use crate::{ActionDock, Button, ButtonVariant, DockPlace, SheetFrame, SheetWide};
 
 /// The sheet, shown while `open`. Its title bar holds the ×, then `title`
@@ -13,8 +14,9 @@ use crate::{ActionDock, Button, ButtonVariant, DockPlace, SheetFrame, SheetWide}
 /// `title_trailing` when given, such as a card's mana cost. The × and a
 /// backdrop tap call
 /// `on_close`; `on_hint`, when given, puts a `?` in the title bar's right
-/// corner. `class` joins the sheet's own classes. `children` mount only
-/// while open; `dock`, when given, holds the dock's actions. With
+/// corner. `class` joins the sheet's own classes. `children` mount while
+/// open and stay through the slide away, so the sheet closes full; `dock`,
+/// when given, holds the dock's actions. With
 /// `every_width` it is a drawer at every width: below the kit's breakpoint
 /// it floats in from the right, inset under the header, above the docks and
 /// from the right edge, over most of the window's width.
@@ -31,6 +33,7 @@ pub fn DrawerSheet(
     children: Element,
 ) -> Element {
     let shown = open();
+    let kept = use_close_hold(open);
     let reach = if every_width {
         "drawer-every-width"
     } else {
@@ -63,7 +66,7 @@ pub fn DrawerSheet(
                     }
                 }
                 div { class: "sheet-content",
-                    if shown {
+                    if kept() {
                         {children}
                     }
                 }
