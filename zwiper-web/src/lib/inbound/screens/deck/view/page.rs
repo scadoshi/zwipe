@@ -13,7 +13,8 @@ use std::time::Duration;
 use components::icons::{CloneIcon, DockIcon, EditIcon, MINUS, PLUS, ShareIcon, UNDO};
 use components::{
     CART, CartButton, Chip, DeckBand, DeckControls, DeckFacts, DeckFold, DeckHead, DeckPage,
-    DeckSection, DockFilter, FeaturedCard, HoverStackHost, StoreDialog, use_hover_stack,
+    DeckSection, DockFilter, FeaturedCard, GroupBuyDialog, HoverStackHost, StoreDialog,
+    use_group_buy, use_hover_stack,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -21,6 +22,7 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::{Board, deck_tag_label};
+use zwipe_ui::buy::group_cards;
 use zwipe_ui::deck::form::Slot;
 use zwipe_ui::deck_cards::stacks::{CardsView, Reveal, VIEW_LABEL};
 use zwipe_ui::filter::draft::SheetConfig;
@@ -32,7 +34,6 @@ use super::dialogs::DeckDialogs;
 use super::ghost::{
     DeckBandsGhost, DeckControlsGhost, DeckFootGhost, DeckHeadGhost, DeckStatsGhost,
 };
-use super::group_buy::{group_buy_dialog, group_cards, use_group_buy};
 use super::panels::{DangerZonePanel, DataPanel};
 use super::sections::{
     BudgetBody, CurrencyChips, DistributionsBody, DrawOddsStepper, ManaBody, TagsBody,
@@ -666,7 +667,7 @@ pub fn DeckWidePage(
                 links,
             }
         }
-        {group_buy_dialog(group_buy)}
+        GroupBuyDialog { group_buy }
         if view() == CardsView::Stacks {
             {stack_details(&ed, &all_rows, &row_meta, stack_details_state, overlays)}
         }
