@@ -270,9 +270,9 @@ fn NavMark(open: Signal<bool>) -> Element {
 }
 
 /// The back arrow in the left corner below the breakpoint, boxed like the
-/// hamburger, on every screen but Home and the auth screens. It goes to
-/// the screen's fixed parent, or the screen before this one, or Home when
-/// the tab has no history.
+/// hamburger, on every screen but Home and the auth screens, which hold its
+/// slot empty. It goes to the screen's fixed parent, or the screen before
+/// this one, or Home when the tab has no history.
 ///
 /// While an overlay screen sits under the nav (see [`use_overlay_nav`]),
 /// the arrow closes it instead.
@@ -294,8 +294,12 @@ fn BackButton(
             }
         };
     }
+    // A screen with no back keeps the box's slot, so the bar holds still
+    // between Home and the screens below it.
     let Some(back) = back else {
-        return rsx! {};
+        return rsx! {
+            span { class: "nav-brand app-nav-back nav-back-held", "aria-hidden": "true" }
+        };
     };
     rsx! {
         BackArrow {

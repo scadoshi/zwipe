@@ -694,6 +694,12 @@ body {
     background-color: color-mix(in srgb, var(--color-warning) 12%, transparent);
 }
 
+/* Home and the auth screens hold the back box's slot empty, so the bar
+   keeps its place from screen to screen. */
+.app-nav-back.nav-back-held {
+    visibility: hidden;
+}
+
 /* ---- Header while folded (below 1110px, media.rs's NAV_FOLD_MAX_PX) ----
 
    The app's header from the kit's NavBar: the back arrow or an empty left

@@ -1583,6 +1583,18 @@ i.ms.ms-cost.ms-gp {
     border-radius: 0.15rem;
 }
 
+/* A bar that changes in place, as the Draw odds bars do on a turn step,
+   eases to its new width. */
+.chart-fill-step {
+    transition: width var(--enter-duration) var(--ease-enter);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .chart-fill-step {
+        transition: none;
+    }
+}
+
 /* A chart's title: a chip in the theme's heading accent, centered over its
    chart with its "?" beside it at the button's own margin. */
 .chart-label {

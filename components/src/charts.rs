@@ -585,8 +585,8 @@ pub fn DrawOdds(
 ) -> Element {
     const MAX_TURN: u32 = 20;
     let mut turn = use_signal(|| 0u32);
-    // A step remounts the rows (see OddsRow); after the first, they show their
-    // new odds without growing in again.
+    // After the first step the rows ease to their new odds instead of growing
+    // in again.
     let mut stepped = use_signal(|| false);
     let mut fold_open = use_signal(|| false);
     let toggle_fold = use_callback(move |()| fold_open.toggle());
@@ -597,8 +597,7 @@ pub fn DrawOdds(
     let heading = format!("Odds of \u{2265}1 by turn {:\u{2007}>2}", turn());
     // Map each bucket to its odds in the loop header rather than a
     // `{ let …; rsx! }` block inside the `for` (which confuses Dioxus node
-    // diffing and drops the bar-width style on alternating turns); the keyed
-    // loop below remounts changed rows.
+    // diffing and drops the bar-width style on alternating turns).
     let rows: Vec<(&'static str, u32)> = buckets
         .iter()
         .map(|(label, k)| {
@@ -647,24 +646,19 @@ pub fn DrawOdds(
     }
 }
 
-/// One draw odds bar. Its key includes `pct` so a changed row remounts
-/// (fresh DOM) instead of an in-place style update; the web view drops the
-/// latter and leaves the bar unfilled on alternating turns otherwise.
+/// One draw odds bar. A step restyles the bar in place, and its width eases
+/// to the new odds.
 #[component]
 fn OddsRow(
     label: &'static str,
     pct: u32,
-    /// The row's place in the entrance's stagger; `None` shows the bar at
-    /// rest, for rows remounted by a step.
+    /// The row's place in the entrance's stagger; `None` for a row after a
+    /// step, whose bar eases from its last width.
     entrance: Option<usize>,
 ) -> Element {
-    let (class, delay) = match entrance {
-        Some(index) => ("chart-fill chart-bar", bar_delay(index)),
-        None => ("chart-fill", String::new()),
-    };
+    let (class, delay) = odds_fill(entrance);
     rsx! {
         div {
-            key: "{label}-{pct}",
             style: "display:flex;align-items:center;gap:0.5rem;padding:0.175rem 0;",
             span { style: "width:{DRAW_ODDS_LABEL_WIDTH};font-size:0.7rem;color:var(--text-primary);opacity:0.85;text-align:right;flex-shrink:0;text-transform:uppercase;",
                 "{label}"
@@ -676,6 +670,15 @@ fn OddsRow(
                 "{pct}%"
             }
         }
+    }
+}
+
+/// A draw odds bar's class and inline delay: it grows in at its place in the
+/// stagger, and after a step it eases from its last width instead.
+fn odds_fill(entrance: Option<usize>) -> (&'static str, String) {
+    match entrance {
+        Some(index) => ("chart-fill chart-bar", bar_delay(index)),
+        None => ("chart-fill chart-fill-step", String::new()),
     }
 }
 
@@ -734,6 +737,17 @@ pub fn ManaFulfillment(rows: Vec<ManaBalanceRow>, hint: Option<Element>) -> Elem
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_stepped_odds_bar_eases_instead_of_growing_in() {
+        let (class, delay) = odds_fill(Some(2));
+        assert!(class.contains("chart-bar"), "the first render grows in: {class}");
+        assert_eq!(delay, bar_delay(2));
+        let (class, delay) = odds_fill(None);
+        assert!(class.contains("chart-fill-step"), "a step eases: {class}");
+        assert!(!class.contains("chart-bar"), "a step never grows in again: {class}");
+        assert!(delay.is_empty());
+    }
 
     #[test]
     fn whole_percent_rounds_probabilities() {
