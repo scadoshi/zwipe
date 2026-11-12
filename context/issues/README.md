@@ -122,6 +122,7 @@ Who checked, on which live build, what they saw.
 | [377](377-keyboard-in-hint.md) | The keyboard shortcuts button sits on the action docks instead of in the hint | fixing | halo | orangui#38, orangui#39, #618 |
 | [404](404-list-group-cart.md) | The app's List groups have no cart | fixing | halo | #620 |
 | [405](405-web-stacks-masonry.md) | The web deck page's Stacks hold each row to its tallest stack | fixing | halo | #623 |
+| [406](406-og-underline.md) | The link cards underline Magic: The Gathering | fixing | thinker | - |
 
 ## Waiting for live verification
 

@@ -61,6 +61,7 @@ pub const UPCOMING: &[Release] = &[
             "In the app, each card group in a deck's List has its price and a cart that buys its cards, as its stack does",
             "On the web's deck page, each column of Stacks runs on its own, every stack right under the one above it",
             "zwipe.net's shared deck is the web app's deck page, read only",
+            "The preview cards for zwipe.net and app.zwipe.net links no longer underline Magic: The Gathering",
         ],
     },
     Release {
