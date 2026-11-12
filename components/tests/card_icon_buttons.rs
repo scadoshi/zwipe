@@ -25,7 +25,7 @@ fn the_image_button_is_the_card_art_icon_named_image() {
         r#"aria-label="Image""#,
         r#"title="Image""#,
         r#"class="action-dock-icon""#,
-        components::CARD_ART,
+        components::IMAGE_ICON,
     ] {
         assert!(html.contains(part), "{part} in {html}");
     }
@@ -164,5 +164,27 @@ fn every_star_wears_the_star_color() {
             "{rule}"
         );
         assert!(!rule.contains("palette-6"), "{rule}");
+    }
+}
+
+#[test]
+fn the_image_icon_is_lucide_s_image_with_its_license_beside_it() {
+    assert_eq!(
+        components::IMAGE_ICON,
+        "M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM9 7a2 2 0 1 0 0 4 2 2 0 1 0 0-4zM21 15l-3.086-3.086a2 2 0 0 0-2.828 0L6 21",
+        "Lucide's image: a square frame, a sun and a hill"
+    );
+    let notice = include_str!("../LICENSE-LUCIDE");
+    for part in [
+        "ISC License",
+        "Lucide Contributors",
+        "Cole Bemis",
+        "Permission to use, copy, modify",
+    ] {
+        assert!(notice.contains(part), "{part} in the notice");
+    }
+    let source = include_str!("../src/card_icon_button.rs");
+    for part in ["LICENSE-LUCIDE", "Lucide's `image`", "Lucide's `merge`"] {
+        assert!(source.contains(part), "{part} named in card_icon_button.rs");
     }
 }

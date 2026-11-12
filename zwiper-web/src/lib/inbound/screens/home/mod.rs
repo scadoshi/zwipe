@@ -15,7 +15,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use chrono::{DateTime, Utc};
 use components::icons::DockIcon;
 use components::{
-    CARD_ART, CartButton, HomeColors, HomeDecks, ImageButton, LoadFailed, StoreDialog, ThemeConfig,
+    CartButton, HomeColors, HomeDecks, IMAGE_ICON, ImageButton, LoadFailed, StoreDialog,
+    ThemeConfig,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -548,7 +549,7 @@ pub(crate) fn FlavorPanel(
                     span { "$0.00" }
                 }
                 span { class: "card-action-btn card-action-icon web-ghost-chip",
-                    DockIcon { path: CARD_ART }
+                    DockIcon { path: IMAGE_ICON }
                 }
                 span { class: "btn-action btn-icon cart-button web-ghost-chip" }
             }

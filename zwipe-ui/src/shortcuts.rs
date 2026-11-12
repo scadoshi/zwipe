@@ -145,7 +145,7 @@ pub fn card_read_rows() -> [SheetRow; 4] {
 }
 
 /// What the `i` row does: the Image button's icon with its name, so the sheet teaches the icon.
-const IMAGE_ROW: &str = "[[card-art]] Image";
+const IMAGE_ROW: &str = "[[image]] Image";
 
 /// What the `v` row does: the Flip button's icon and name, and Meld's, since `v` toggles a meld
 /// half's Meld where a card has one face.
@@ -239,7 +239,7 @@ mod tests {
                 .find(|(keys, _)| keys == &[key])
                 .map(|(_, does)| *does)
         };
-        assert_eq!(does("i"), Some("[[card-art]] Image"));
+        assert_eq!(does("i"), Some("[[image]] Image"));
         assert_eq!(does("v"), Some("[[flip]] Flip or [[meld]] meld"));
         let star = deck_cards_rows(Editable::Yes)
             .into_iter()

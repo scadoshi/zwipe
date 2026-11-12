@@ -15,8 +15,8 @@ pub use zwipe_ui::shortcuts::{
     undo_letter,
 };
 use zwipe_ui::shortcuts::{
-    DECK_CARDS_NOTE, EVERYWHERE_ROWS, Editable, FLIP_ROW, SheetRow, card_read_rows, deck_cards_rows,
-    examples_rows,
+    DECK_CARDS_NOTE, EVERYWHERE_ROWS, Editable, FLIP_ROW, SheetRow, card_read_rows,
+    deck_cards_rows, examples_rows,
 };
 
 /// What a key does on a swipe screen (Add, Remove, Commander swipe): the same action as its

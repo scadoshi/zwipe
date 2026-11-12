@@ -621,7 +621,7 @@ pub(crate) static GUIDES: &[Guide] = &[
                 caption: None,
             },
             Block::Bullets(&[
-                "[[card-art]] shows the card full size.",
+                "[[image]] shows the card full size.",
                 "`Printings` swaps the printing, and your pick carries into Create deck.",
                 "`Create deck` starts a new deck with that commander already in the command zone and the format set to Commander.",
                 "`Remove` takes it off the list.",

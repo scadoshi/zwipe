@@ -108,7 +108,7 @@ pub use card_details::{
 pub use card_details_sheet::CardDetailsSheet;
 pub use card_filter::{CardFilterPanel, DictionarySlot};
 pub use card_icon_button::{
-    CARD_ART, CardIconButton, IMAGE_LABEL, ImageButton, MELD, STAR, StarButton,
+    CardIconButton, IMAGE_ICON, IMAGE_LABEL, ImageButton, MELD, STAR, StarButton,
 };
 pub use card_list_fold::CardListFold;
 pub use card_proxy::{CardProxy, FIT_JS as CARD_PROXY_FIT_JS, ProxyFace, use_card_proxy_fit};
