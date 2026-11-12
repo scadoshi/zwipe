@@ -1233,3 +1233,153 @@ fn remove_then_undo_keeps_the_star_quantity_board_and_printing() {
     });
     assert_eq!(state.row(ring), Some(before), "the row is back as it was");
 }
+
+/// A stack row as the tests compare it: the card's name, its copies and its kind.
+type StackRow = (String, i32, RowKind);
+
+/// Each stack's key, title and rows, for comparing against the List.
+fn stacks_of(state: &State) -> Vec<(String, String, Vec<StackRow>)> {
+    let live = blank();
+    let display = state.display(&live);
+    state
+        .stack_groups(&display, &live)
+        .into_iter()
+        .map(|group| {
+            let rows = group
+                .rows
+                .into_iter()
+                .map(|row| (row.card.scryfall_data.name, row.qty, row.kind))
+                .collect();
+            (group.key, group.title, rows)
+        })
+        .collect()
+}
+
+#[test]
+fn the_stacks_follow_the_lists_sections_with_their_fold_keys() {
+    let (mut state, _) = loaded();
+    let _ = state.update(Action::ToggleBoard(Board::Maybeboard));
+    let _ = state.update(Action::ToggleBoard(Board::Sideboard));
+    let stacks = stacks_of(&state);
+    let main = RowKind::Main { mvp: false };
+    assert_eq!(
+        stacks,
+        [
+            (
+                MAYBEBOARD_KEY.to_owned(),
+                maybeboard_title(1),
+                vec![("Maybe".to_owned(), 1, RowKind::Board(Board::Maybeboard))]
+            ),
+            (
+                SIDEBOARD_KEY.to_owned(),
+                sideboard_title(1),
+                vec![("Side".to_owned(), 1, RowKind::Board(Board::Sideboard))]
+            ),
+            (
+                "Artifacts".to_owned(),
+                group_title("Artifacts", 1),
+                vec![("Sol Ring".to_owned(), 1, main)]
+            ),
+            (
+                LANDS_KEY.to_owned(),
+                lands_title(1),
+                vec![("Forest".to_owned(), 1, main)]
+            ),
+        ]
+    );
+}
+
+#[test]
+fn a_board_shown_off_leaves_its_stacks_out() {
+    let (mut state, _) = loaded();
+    let _ = state.update(Action::ToggleBoard(Board::Maybeboard));
+    let _ = state.update(Action::ToggleBoard(Board::Deck));
+    let keys: Vec<String> = stacks_of(&state).into_iter().map(|(key, ..)| key).collect();
+    assert_eq!(
+        keys,
+        [MAYBEBOARD_KEY],
+        "Main off drops its groups and lands"
+    );
+}
+
+#[test]
+fn the_command_zone_stacks_after_the_boards_with_its_slots() {
+    let cards = library();
+    let mut profile = deck_profile("D");
+    profile.format = Some(Format::Oathbreaker);
+    let (mut state, _, ticket, _) = loading(blank());
+    let _ = state.update(Action::ProfileLoaded {
+        ticket,
+        profile: Box::new(profile.clone()),
+    });
+    let mut d = deck(profile, cards.clone());
+    d.entries[0].deck_card.mvp_at = Some(Utc::now());
+    let zone = Zone {
+        commander: Some(cards[1].clone()),
+        ..Zone::default()
+    };
+    let _ = state.update(Action::Loaded {
+        ticket,
+        deck: Box::new(d),
+        zone: Box::new(zone),
+    });
+    let stacks = stacks_of(&state);
+    let (key, title, rows) = stacks.first().cloned().unwrap();
+    assert_eq!(key, Slot::Commander.group_key());
+    assert_eq!(
+        title,
+        Slot::Commander.group_header(Some(Format::Oathbreaker), false)
+    );
+    assert_eq!(
+        rows,
+        [("Forest".to_owned(), 1, RowKind::Zone(Slot::Commander))]
+    );
+    let starred = stacks
+        .iter()
+        .flat_map(|(_, _, rows)| rows)
+        .find(|(name, ..)| name == "Sol Ring")
+        .map(|(_, _, kind)| *kind);
+    assert_eq!(
+        starred,
+        Some(RowKind::Main { mvp: true }),
+        "a main row carries its star"
+    );
+
+    let _ = state.update(Action::ToggleCommandZone);
+    assert!(
+        stacks_of(&state)
+            .iter()
+            .all(|(key, ..)| key != Slot::Commander.group_key()),
+        "the zone hides with its chip"
+    );
+}
+
+#[test]
+fn tokens_stack_first_while_shown() {
+    let (mut state, _, _, tokens_ticket) = loading(blank());
+    let _ = state.update(Action::TokensLoaded {
+        ticket: tokens_ticket,
+        tokens: vec![card("Treasure")],
+    });
+    let _ = state.update(Action::ToggleTokens);
+    let stacks = stacks_of(&state);
+    assert_eq!(
+        stacks.first().cloned(),
+        Some((
+            TOKENS_KEY.to_owned(),
+            tokens_title(1),
+            vec![("Treasure".to_owned(), 1, RowKind::Token)]
+        ))
+    );
+}
+
+#[test]
+fn the_folds_read_as_one_set() {
+    let (mut state, _) = loaded();
+    let _ = state.update(Action::ToggleSection(LANDS_KEY.to_owned()));
+    assert_eq!(
+        state.collapsed(),
+        &HashSet::from([LANDS_KEY.to_owned()]),
+        "the Stacks view's headers fold from the same set as the List"
+    );
+}

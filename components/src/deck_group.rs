@@ -13,6 +13,9 @@ use crate::{IdentityPips, Pressable};
 /// and `(count)` for a color group; with no `count` it reads `header` as
 /// given. The words sit in a `.card-group-label` span. `trailing` sits at
 /// the chip's end (the deck page's stacks put the group's price there).
+/// A press folds the group in `collapsed`, or with `on_fold` calls it with
+/// the group's key instead, for a host whose folds live elsewhere and come
+/// back through `collapsed`.
 #[component]
 pub fn DeckGroupSection(
     group_key: String,
@@ -21,6 +24,7 @@ pub fn DeckGroupSection(
     count: Option<usize>,
     mut collapsed: Signal<HashSet<String>>,
     #[props(default)] trailing: Option<Element>,
+    #[props(default)] on_fold: Option<EventHandler<String>>,
     children: Element,
 ) -> Element {
     let expanded = !collapsed().contains(&group_key);
@@ -31,6 +35,10 @@ pub fn DeckGroupSection(
                 class: if expanded { "card-group-header group-collapsible expanded" } else { "card-group-header group-collapsible" },
                 expanded,
                 onpress: move |()| {
+                    if let Some(on_fold) = on_fold {
+                        on_fold.call(group_key.clone());
+                        return;
+                    }
                     let mut set = collapsed.write();
                     if !set.remove(&group_key) {
                         set.insert(group_key.clone());

@@ -81,6 +81,7 @@ pub const UPCOMING: &[Release] = &[
             "On the web's deck page, cards ease in, out and into new groups when a board is shown or hidden or the grouping changes",
             "On the web's deck page, switching to Stacks deals the cards in",
             "A card whose image is missing or fails to load shows its name, text and chips in the card's own shape, everywhere a card image shows",
+            "The app's deck cards screen has a List and Stacks switch, Stacks showing two stacks side by side, a first tap revealing a card and a second opening its details",
         ],
     },
     Release {

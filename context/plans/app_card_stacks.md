@@ -1,6 +1,6 @@
 # App card stacks
 
-Issue 390. Status: draft for the composer, 2026-11-11. Follows `card_stacks.md` (Phones) and sits beside `shared_deck_page.md` (370).
+Issue 390. Status: approved 2026-11-11; phase 1 shipped (#595); phase 2, with the group carts folded in, built on 370 phase 2b's `DeckStacks` and `DeckStackDrawer`. Follows `card_stacks.md` (Phones) and sits beside `shared_deck_page.md` (370).
 
 ## Goal
 

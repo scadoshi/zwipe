@@ -338,3 +338,104 @@ body {
 .quick-add-results {
     margin-bottom: 0.5rem;
 }
+
+/* ---- Deck cards: Stacks ---- */
+
+/* Two stacks side by side at every phone width, each about half the screen,
+   in components' DeckStacks. A stack takes two of the grid's rows, its
+   header and its cards, through a subgrid, so the two cards in a row start
+   level whether or not a price wrapped. */
+.app-deck-stacks .deck-stacks {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6rem;
+    align-items: start;
+}
+
+.app-deck-stacks .deck-stack {
+    display: grid;
+    grid-row: span 2;
+    grid-template-rows: subgrid;
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 0;
+    min-width: 0;
+    margin-bottom: 0.65rem;
+}
+
+.app-deck-stacks .deck-stack > .card-group.deck-group {
+    display: contents;
+}
+
+/* The header is the stack's width: the arrow in the left inset, the name
+   and count on one line cut short past the column, then the price tag and
+   the cart on the line under them. */
+.app-deck-stacks .deck-stack > .deck-group > .card-group-header.group-collapsible {
+    --stack-head-inset: 0.5rem;
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    align-content: flex-start;
+    align-self: stretch;
+    gap: 0.3rem 0.4rem;
+    box-sizing: border-box;
+    width: 100%;
+    margin: 0 0 0.5rem;
+    padding: var(--stack-head-inset) var(--stack-head-inset) var(--stack-head-inset) calc(var(--stack-head-inset) + 1.2rem);
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    background-color: var(--bg-primary);
+    box-shadow: var(--shadow-sm);
+    color: var(--ink-accent-tertiary, var(--accent-tertiary));
+    font-size: 0.8125rem;
+    letter-spacing: 0.04em;
+    line-height: 1.5;
+    text-align: left;
+}
+
+.app-deck-stacks .deck-stack > .deck-group > .card-group-header .card-row-arrow {
+    position: absolute;
+    left: var(--stack-head-inset);
+    top: calc(var(--stack-head-inset) + 0.65em - 0.5rem);
+    color: inherit;
+}
+
+.app-deck-stacks .deck-stack > .deck-group > .card-group-header > .card-group-label {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.app-deck-stacks .deck-stack > .deck-group > .card-group-header > .deck-stack-tail {
+    display: flex;
+    flex: 1 0 100%;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.app-deck-stacks .deck-stack > .deck-group > .card-group-header > .deck-stack-tail > .stat-chip {
+    flex: none;
+    font-size: 0.75rem;
+    letter-spacing: 0.02em;
+    line-height: normal;
+}
+
+.app-deck-stacks .deck-stack > .deck-group > .card-group-header > .deck-stack-tail > .cart-button {
+    flex: none;
+    margin-left: auto;
+}
+
+/* The stack revealing a card sits over its neighbors, so the cards moved
+   down to make room pass over the header below instead of under it, and
+   stays over them until they settle back. A phone has no hover to lift it. */
+.app-deck-stacks .card-stack.tap:has(.card-stack-slot.shifted) {
+    z-index: 2;
+    transition-delay: 0s;
+}
+
+/* A tap shows no flash over the card it reveals. */
+.app-deck-stacks .card-stack-card {
+    -webkit-tap-highlight-color: transparent;
+}
