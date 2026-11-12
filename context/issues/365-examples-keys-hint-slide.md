@@ -42,7 +42,7 @@ surfer on live #567, via composer, 2026-11-12: on the deck page, Filter, then Or
 - Cause, dock: `magic.css` hides every action dock while a form drawer (the filter) is open, the Examples' own dock included.
 - The details' first state is the one remembered from the last toggle (`DetailsStore`), the same on both paths, so that part is not a path difference.
 
-Fix, scotland, #PR:
+Fix, scotland, #576:
 - The key guards pass while no overlay is open, or while the topmost open modal is the Examples modal (`shortcuts::KEYED_MODAL`, `.web-examples`). Its listeners register last, so they answer, even over a sheet.
 - The drawer's rule spares a dock inside a nested screen (`.screen .screen *`), so the Examples' dock stays over the filter.
 
