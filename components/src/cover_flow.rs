@@ -6,6 +6,11 @@
 //! so do a sideways wheel or trackpad scroll and a drag or swipe across the
 //! stage; a tap on a side card brings it to the middle. The host keeps the
 //! selection in `index`, so its own keys and Save read the same one.
+//!
+//! While the host fetches the printings, the flow is their ghost: card-shaped
+//! ghosts fanned in the flow's places and ghosts of the step buttons. The
+//! same flow then takes the printings, so the fan stays in place as they
+//! arrive.
 
 use std::collections::HashMap;
 
@@ -198,12 +203,14 @@ fn tile(has_art: bool, arrival: Option<Arrival>) -> Tile {
 
 /// The printings in a cover flow, the one at `index` in the middle. A tap
 /// on the middle card calls `on_pick`, when given (a host that only shows
-/// printings leaves it out).
+/// printings leaves it out). While `loading`, the flow is the printings'
+/// ghost and `printings` is not read.
 #[component]
 pub fn CoverFlow(
     printings: Vec<Card>,
     mut index: Signal<usize>,
     #[props(default)] on_pick: Option<EventHandler<()>>,
+    #[props(default)] loading: bool,
 ) -> Element {
     let mut wheel = use_signal(|| 0.0_f64);
     let mut drag_from: Signal<Option<f64>> = use_signal(|| None);
@@ -211,20 +218,21 @@ pub fn CoverFlow(
     // How far each image URL has come; every card ghosts on its own until
     // its own image has loaded and decoded, then keeps the ghost under it.
     let mut arrived: Signal<Arrivals> = use_signal(Arrivals::default);
-    let count = printings.len();
+    let count = if loading { 0 } else { printings.len() };
     let at = index().min(count.saturating_sub(1));
-    // Until the middle printing's image is in and has had a few frames to
-    // paint, the flow's stage is all but invisible over a flat ghost in the
-    // middle card's place: the stage and its cards are layers of their own,
-    // which a phone's browser draws as the page's background until it has
-    // painted them. A middle image that never settles shows the flow anyway
-    // after `PRIME_LIMIT_JS`.
+    // While loading, and then until the middle printing's image is in and
+    // has had a few frames to paint, the flow's stage is all but invisible
+    // over the primer, the fan of ghosts: the stage and its cards are layers
+    // of their own, which a phone's browser draws as the page's background
+    // until it has painted them. A middle image that never settles shows the
+    // flow anyway `PRIME_LIMIT_JS` after the printings arrive.
     let mut primed = use_signal(|| false);
-    let center_settled = printings.get(at).is_none_or(|card| {
-        card.scryfall_data
-            .primary_image_url(ImageSize::Large)
-            .is_none_or(|u| arrived.read().get(u).is_some())
-    });
+    let center_settled = !loading
+        && printings.get(at).is_none_or(|card| {
+            card.scryfall_data
+                .primary_image_url(ImageSize::Large)
+                .is_none_or(|u| arrived.read().get(u).is_some())
+        });
     use_effect(use_reactive!(|center_settled| {
         if center_settled && !*primed.peek() {
             spawn(async move {
@@ -234,13 +242,16 @@ pub fn CoverFlow(
             });
         }
     }));
-    use_hook(move || {
-        spawn(async move {
-            let mut limit = document::eval(PRIME_LIMIT_JS);
-            let _waited: Result<bool, _> = limit.recv().await;
-            primed.set(true);
-        });
-    });
+    use_effect(use_reactive!(|loading| {
+        if !loading && !*primed.peek() {
+            spawn(async move {
+                let mut limit = document::eval(PRIME_LIMIT_JS);
+                let _waited: Result<bool, _> = limit.recv().await;
+                primed.set(true);
+            });
+        }
+    }));
+    let shown = primed() && !loading;
 
     // An image that failed tries again once the connection is back, and
     // when its printing comes to the middle.
@@ -281,10 +292,13 @@ pub fn CoverFlow(
     let cards = flow_window(at, count)
         .into_iter()
         .filter_map(|(i, offset)| printings.get(i).map(|card| (i, offset, card.clone())));
+    let ghosts = ghost_offsets(loading, at, count);
 
     rsx! {
         div { class: "cover-flow",
-            if count > 1 {
+            if loading {
+                span { class: "skeleton-bar skeleton-chip cover-flow-step" }
+            } else if count > 1 {
                 button {
                     r#type: "button",
                     class: "btn-action btn-icon cover-flow-step",
@@ -301,11 +315,20 @@ pub fn CoverFlow(
                 }
             }
             div { class: "cover-flow-frame",
-            if !primed() {
-                div { class: "cover-flow-primer" }
+            if !shown {
+                div { class: "cover-flow-primer",
+                    for offset in ghosts {
+                        div {
+                            key: "{offset}",
+                            class: "cover-flow-card",
+                            style: flow_slot(offset).style(),
+                            div { class: "cover-flow-ghost" }
+                        }
+                    }
+                }
             }
             div {
-                class: if primed() { "cover-flow-stage" } else { "cover-flow-stage priming" },
+                class: if shown { "cover-flow-stage" } else { "cover-flow-stage priming" },
                 onwheel: move |e: Event<WheelData>| {
                     let (way, steps, rest) = wheel_steps(*wheel.peek(), wheel_px(&e.delta()), count);
                     if let Some(way) = way {
@@ -404,7 +427,9 @@ pub fn CoverFlow(
                 }
             }
             }
-            if count > 1 {
+            if loading {
+                span { class: "skeleton-bar skeleton-chip cover-flow-step" }
+            } else if count > 1 {
                 button {
                     r#type: "button",
                     class: "btn-action btn-icon cover-flow-step",
@@ -505,6 +530,21 @@ fn flow_slot(offset: i32) -> FlowSlot {
         layer,
         shade: (FIRST_SHADE - STEP_SHADE * further).max(MIN_SHADE),
     }
+}
+
+/// The offsets of the primer's ghosts: while `loading`, [`FLOW_REACH`] on
+/// each side of the middle; then the places the printings take around
+/// `selected` in a list of `count`.
+#[must_use]
+fn ghost_offsets(loading: bool, selected: usize, count: usize) -> Vec<i32> {
+    if loading {
+        let reach = i32::try_from(FLOW_REACH).unwrap_or(i32::MAX);
+        return (reach.saturating_neg()..=reach).collect();
+    }
+    flow_window(selected, count)
+        .into_iter()
+        .map(|(_, offset)| offset)
+        .collect()
 }
 
 /// The indexes the flow draws around `selected` in a list of `count`: the
@@ -687,6 +727,20 @@ mod tests {
                 "{arrival:?} shows the image with nothing under it"
             );
         }
+    }
+
+    #[test]
+    fn the_loading_fan_is_the_middle_and_the_full_reach_each_side() {
+        let fan = ghost_offsets(true, 0, 0);
+        assert_eq!(fan.len(), 21);
+        assert_eq!(fan.first(), Some(&-10));
+        assert_eq!(fan.last(), Some(&10));
+    }
+
+    #[test]
+    fn the_primer_ghosts_where_the_printings_go() {
+        assert_eq!(ghost_offsets(false, 1, 3), vec![-1, 0, 1]);
+        assert_eq!(ghost_offsets(false, 0, 0), Vec::<i32>::new());
     }
 
     #[test]

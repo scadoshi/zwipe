@@ -115,7 +115,10 @@ pub fn PrintingSheet(
     let fetch = source
         .zip(oracle_id)
         .and_then(|(source, oracle_id)| source.results.read().get(&oracle_id).cloned());
-    let loading = matches!(fetch, Some(PrintingsFetch::Loading));
+    // Until the first fetch starts, the sheet ghosts as it does while one runs.
+    let loading = source.is_some()
+        && oracle_id.is_some()
+        && matches!(fetch, None | Some(PrintingsFetch::Loading));
     let failed = matches!(fetch, Some(PrintingsFetch::Failed));
     let all = match fetch {
         Some(PrintingsFetch::Ready(cards)) => cards,
@@ -201,19 +204,25 @@ pub fn PrintingSheet(
                         Some(FlowKey::Select) => save.call(()),
                         None => {}
                     },
-                    if loading {
-                        PrintingSheetSkeleton {}
-                    } else if failed {
+                    if failed {
                         LoadFailed { message: model::LOAD_FAILED, on_retry: retry }
-                    } else if let Some(card) = visible {
-                        CoverFlow { printings: all, index }
+                    } else if loading || visible.is_some() {
+                        CoverFlow { printings: all, index, loading }
                         // The prices with Save at their right, at the
                         // sheet's bottom. Save is grayed until a different
                         // printing shows.
                         div { class: "web-printing-foot",
                             div { class: "web-printing-foot-row",
-                                CardPrices { card }
-                                if !read_only {
+                                if let Some(card) = visible.filter(|_| !loading) {
+                                    CardPrices { card }
+                                } else {
+                                    CardPricesGhost {}
+                                }
+                                if loading && !read_only {
+                                    div { class: "action-dock web-printing-save",
+                                        span { class: "skeleton-bar skeleton-chip web-printing-save-ghost" }
+                                    }
+                                } else if !read_only {
                                     div { class: "action-dock web-printing-save",
                                         button {
                                             class: "action-dock-btn",
@@ -312,17 +321,28 @@ fn CoverFlowSheet(
                             Some(FlowKey::Select) if !read_only => on_select.call(()),
                             _ => {}
                         },
-                        if loading {
-                            PrintingSheetSkeleton {}
-                        } else if failed {
+                        if failed {
                             LoadFailed { message: model::LOAD_FAILED, on_retry: move |()| on_retry.call(()) }
                         } else {
                             CoverFlow {
                                 printings,
                                 index,
+                                loading,
                                 on_pick: (!read_only).then(|| EventHandler::new(move |()| on_select.call(()))),
                             }
-                            if let Some(card) = selected {
+                            if loading {
+                                div { class: "web-flow-info",
+                                    span { class: "skeleton-bar skeleton-chip skeleton-tinted stat-chip-p3 web-flow-ghost-set" }
+                                    span { class: "skeleton-bar skeleton-chip skeleton-tinted stat-chip-muted web-flow-ghost-number" }
+                                    for i in 0..GHOST_PRICES {
+                                        span { key: "{i}", class: "skeleton-bar skeleton-chip skeleton-tinted stat-chip-money web-flow-ghost-price" }
+                                    }
+                                    span { class: "skeleton-bar web-flow-ghost-count" }
+                                    if !read_only {
+                                        span { class: "skeleton-bar skeleton-chip web-flow-ghost-select" }
+                                    }
+                                }
+                            } else if let Some(card) = selected {
                                 div { class: "web-flow-info",
                                     span { class: "stat-chip stat-chip-p3", "{card.scryfall_data.set_name}" }
                                     span { class: "stat-chip stat-chip-muted", "#{card.scryfall_data.collector_number}" }
@@ -364,22 +384,17 @@ fn CardPrices(card: Card) -> Element {
     }
 }
 
-/// The printing sheet's ghost: the image, the dots and the info lines.
+/// How many price chips a printing's ghost shows: dollars, euros and tix.
+const GHOST_PRICES: usize = 3;
+
+/// The ghost of a printing's prices, under the cover flow while the
+/// printings load: a price chip's ghost in the money tone for each price.
 #[component]
-fn PrintingSheetSkeleton() -> Element {
+pub fn CardPricesGhost() -> Element {
     rsx! {
-        div { class: "skeleton-printing",
-            div { class: "skeleton-printing-image" }
-            div { class: "skeleton-printing-dots",
-                for i in 0..5 {
-                    div { key: "{i}", class: "skeleton-printing-dot" }
-                }
-            }
-            div { class: "skeleton-printing-info",
-                div { class: "skeleton-bar skeleton-printing-info-price" }
-                div { class: "skeleton-bar skeleton-printing-info-set" }
-                div { class: "skeleton-bar skeleton-printing-info-released" }
-                div { class: "skeleton-bar skeleton-printing-info-artist" }
+        div { class: "card-prices",
+            for i in 0..GHOST_PRICES {
+                span { key: "{i}", class: "skeleton-bar skeleton-chip skeleton-tinted stat-chip-money card-price-ghost" }
             }
         }
     }

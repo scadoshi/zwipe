@@ -97,27 +97,6 @@ pub(crate) fn CardDetailsSheet(
     }
 }
 
-/// Skeleton placeholder for the printing sheet (carousel + info rows).
-#[component]
-pub(crate) fn PrintingSheetSkeleton() -> Element {
-    rsx! {
-        div { class: "skeleton-printing",
-            div { class: "skeleton-printing-image" }
-            div { class: "skeleton-printing-dots",
-                for i in 0..5 {
-                    div { key: "{i}", class: "skeleton-printing-dot" }
-                }
-            }
-            div { class: "skeleton-printing-info",
-                div { class: "skeleton-bar skeleton-printing-info-price" }
-                div { class: "skeleton-bar skeleton-printing-info-set" }
-                div { class: "skeleton-bar skeleton-printing-info-released" }
-                div { class: "skeleton-bar skeleton-printing-info-artist" }
-            }
-        }
-    }
-}
-
 /// Skeleton placeholder for when no card is loaded. A pile that ran out is said with a toast, so
 /// the ghost carries text only as `note`, why a filter left nothing to deal, and `detail` under
 /// it, whether Synergy may be the reason.

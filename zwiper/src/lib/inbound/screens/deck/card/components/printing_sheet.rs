@@ -5,8 +5,8 @@
 //! index, and performs its effects.
 
 use components::{
-    BottomSheet, CoverFlow, DockAction, LoadFailed, TOAST_NORMAL, ToastOptions, Toasts, icons,
-    use_toast,
+    BottomSheet, CardPricesGhost, CoverFlow, DockAction, LoadFailed, TOAST_NORMAL, ToastOptions,
+    Toasts, icons, use_toast,
 };
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
@@ -14,7 +14,7 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ImageSize;
 use zwipe_ui::screens::printing_sheet::{self as model, Action, Effect, Mode, State, Status};
 
-use super::card_info::{CardInfoDisplay, PrintingSheetSkeleton};
+use super::card_info::CardInfoDisplay;
 use super::flippable_card_image::FlippableCardImage;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::component;
@@ -168,15 +168,17 @@ pub(crate) fn PrintingSheet(
                 on_dismiss: move |()| driver.dispatch(Action::Dismiss { at: current_idx }),
 
                 div { class: "printing-sheet-body",
-                    if status == Status::Loading {
-                        PrintingSheetSkeleton {}
-                    } else if status == Status::Failed {
+                    if status == Status::Failed {
                         LoadFailed { message: model::LOAD_FAILED, on_retry: move |()| driver.dispatch(Action::Retry) }
-                    } else if status == Status::Several {
-                        CoverFlow { printings, index }
+                    } else if matches!(status, Status::Loading | Status::Several) {
+                        // The same flow is the ghost while the printings load
+                        // and then takes them, so the fan stays in place.
+                        CoverFlow { printings, index, loading: status == Status::Loading }
 
                         // Info row for the printing in the middle
-                        if let Some(card) = visible_card {
+                        if status == Status::Loading {
+                            CardPricesGhost {}
+                        } else if let Some(card) = visible_card {
                             CardInfoDisplay { card }
                         }
                     } else if let Some(card) = visible_card {

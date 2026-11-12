@@ -130,6 +130,7 @@ Who checked, on which live build, what they saw.
 | [407](407-byline-chip.md) | The shared deck's owner sits on its own line, not as a chip | fixing | laptop | - |
 | [414](414-sheet-icons-named.md) | The shortcuts sheet's icon rows show no names | fixing | halo | nits/halo-414 |
 | [419](419-shared-guides.md) | Guides live only on zwipe.net | fixing | halo | release, in phases |
+| [409](409-printings-skeleton.md) | Printings shows two different skeletons while it loads | fixing | laptop | issue/409-printings-skeleton |
 
 ## Waiting for live verification
 

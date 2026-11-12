@@ -183,7 +183,7 @@ pub use orangui::{OpenUrlError, open_url, use_in_app_links};
 pub use orangui::{TOAST_CSS, ToastOptions, ToastStack, Toasts, use_toast};
 pub use picker_search::use_picker_search;
 pub use pressable::{Pressable, is_press};
-pub use printing_sheet::{PrintingSheet, PrintingsFetch, PrintingsSource};
+pub use printing_sheet::{CardPricesGhost, PrintingSheet, PrintingsFetch, PrintingsSource};
 pub use role_tags::{OtagDef, RoleTags};
 pub use settle::use_settle;
 pub use share_url::ShareUrl;

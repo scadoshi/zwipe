@@ -1809,6 +1809,7 @@ html.keyboard-up .web-dock-pair {
    shrinks the cards and the whole sheet still fits. A sideways swipe is
    the flow's; an up or down one still scrolls the page. */
 .cover-flow {
+    --flow-fade: linear-gradient(to right, transparent, #000 11%, #000 89%, transparent);
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -1828,10 +1829,9 @@ html.keyboard-up .web-dock-pair {
 }
 
 /* The stack melts into its host at the sides: the outermost cards fade out
-   over the stage's outer ninth on each side, short of the selected card's
-   neighbors. */
+   over the stage's outer ninth on each side (`--flow-fade`, on the flow),
+   short of the selected card's neighbors. */
 .cover-flow-stage {
-    --flow-fade: linear-gradient(to right, transparent, #000 11%, #000 89%, transparent);
     position: relative;
     flex: 1 1 auto;
     min-width: 0;
@@ -1921,18 +1921,36 @@ html.keyboard-up .web-dock-pair {
     min-width: 0;
 }
 
-/* While the flow primes, the stage is all but invisible and a flat ghost
-   (no 3D or mask, so no layer of its own) holds the middle card's place
-   under it, outside the stage. */
+/* While the printings load and the flow primes, the stage is all but
+   invisible and the primer, the stage's fan of ghosts, sits under it,
+   outside the stage. */
 .cover-flow-primer {
     position: absolute;
-    top: 4%;
-    left: 50%;
-    height: 92%;
-    aspect-ratio: 488 / 680;
-    transform: translateX(-50%);
-    border-radius: 4.75% / 3.5%;
-    background-color: var(--border-muted);
+    inset: 0;
+    overflow: clip;
+    perspective: 1600px;
+    pointer-events: none;
+    -webkit-mask-image: var(--flow-fade);
+    mask-image: var(--flow-fade);
+}
+
+.cover-flow-primer > .cover-flow-card {
+    will-change: auto;
+    transition: none;
+}
+
+/* A price chip's ghost under the printings, a price chip's size. */
+.card-prices > .card-price-ghost {
+    width: 3.6rem;
+    height: 1.8rem;
+    border-radius: 0.4rem;
+}
+
+/* A step button's ghost, the button's size. */
+.cover-flow-step.skeleton-chip {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.7rem;
 }
 
 .cover-flow-stage.priming {
@@ -1967,6 +1985,12 @@ html.keyboard-up .web-dock-pair {
     .cover-flow-step > .action-dock-icon {
         width: 1.35rem;
         height: 1.35rem;
+    }
+
+    .cover-flow-step.skeleton-chip {
+        width: 2.75rem;
+        height: 2.75rem;
+        border-radius: 0.8rem;
     }
 }
 
