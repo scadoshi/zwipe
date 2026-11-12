@@ -9,11 +9,10 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use components::{InfoButton, NavBar, use_overlay_back};
+use components::{BackArrow, InfoButton, NavBar, use_overlay_back};
 use dioxus::prelude::*;
 use zwipe_core::domain::logo;
 
-use crate::inbound::chrome::back_arrow::BackArrow;
 use crate::inbound::chrome::leave_guard::LeaveDialog;
 use crate::inbound::router::Route;
 use crate::inbound::shell::deck_opener::DeckOpener;

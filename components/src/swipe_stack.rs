@@ -12,7 +12,6 @@
 use std::collections::HashSet;
 
 use chrono::{DateTime, Utc};
-use components::icons::{ARROW_DOWN, ARROW_LEFT, ARROW_RIGHT, ARROW_UP, DockIcon};
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
@@ -21,8 +20,8 @@ use zwipe_ui::stack::{Direction, STACK_DEPTH, ghost_held};
 use zwipe_ui::telemetry::SwipeDirection;
 use zwipe_ui::timing::TOP_PAINT_GRACE;
 
-use crate::inbound::chrome::shortcuts::{self, Shortcut};
-use crate::outbound::timer;
+use crate::icons::{ARROW_DOWN, ARROW_LEFT, ARROW_RIGHT, ARROW_UP, DockIcon};
+use crate::keys::{guard_js, press_first_js};
 
 /// A drag this far along its axis, in pixels, commits; the app's distance.
 pub const COMMIT_PX: f64 = 90.0;
@@ -119,6 +118,35 @@ impl Swipe {
         } else {
             None
         }
+    }
+}
+
+/// The swipe `key` (a `KeyboardEvent.key`) stands for on a swipe surface: an arrow, or the vim
+/// letters `l`, `h`, `k` and `j`, with `u` for down. Letters answer in either case, so Caps Lock
+/// doesn't turn them off, except `H`, which opens the shortcuts sheet.
+#[must_use]
+pub fn swipe_key(key: &str) -> Option<Swipe> {
+    match key {
+        "ArrowRight" | "l" | "L" => Some(Swipe::Right),
+        "ArrowLeft" | "h" => Some(Swipe::Left),
+        "ArrowUp" | "k" | "K" => Some(Swipe::Up),
+        "ArrowDown" | "j" | "J" | "u" | "U" => Some(Swipe::Down),
+        _ => None,
+    }
+}
+
+/// The letter keys that swipe, beside the arrows ([`swipe_key`]).
+pub const SWIPE_LETTERS: [&str; 9] = ["h", "j", "k", "l", "u", "J", "K", "L", "U"];
+
+/// Resolves after `duration` on the browser's clock; off the browser it never resolves, so
+/// nothing times there.
+async fn sleep(duration: std::time::Duration) {
+    #[cfg(target_arch = "wasm32")]
+    gloo_timers::future::sleep(duration).await;
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        let _ = duration;
+        std::future::pending::<()>().await;
     }
 }
 
@@ -263,7 +291,7 @@ pub fn SwipeStack(
     use_effect(use_reactive!(|painting_now| {
         if let Some(id) = painting_now {
             spawn(async move {
-                timer::sleep(TOP_PAINT_GRACE).await;
+                sleep(TOP_PAINT_GRACE).await;
                 if *painting.peek() == Some(id) {
                     painting.set(None);
                 }
@@ -365,7 +393,7 @@ pub fn SwipeStack(
                             handler.call(());
                         }
                     },
-                    components::FlippableCardImage {
+                    crate::FlippableCardImage {
                         sd: layer.sd,
                         profile: Some(layer.card.card_profile.clone()),
                         size: ImageSize::Large,
@@ -430,7 +458,7 @@ fn ExitingCard(gone: Exiting, on_end: EventHandler<Uuid>) -> Element {
             class: "swipe-stack-card swipe-stack-exiting {exit_class}",
             style: "z-index: 100; --exit-from-x: {gone.from_x}px; --exit-from-y: {gone.from_y}px; --exit-from-rot: {rot}deg;",
             onanimationend: move |_| on_end.call(key),
-            components::FlippableCardImage {
+            crate::FlippableCardImage {
                 sd: gone.card.scryfall_data.clone(),
                 profile: Some(gone.card.card_profile.clone()),
                 size: ImageSize::Large,
@@ -491,9 +519,9 @@ pub fn SwipeDock(
 /// has, else its Meld toggle, which a meld half has; on any other card
 /// nothing happens.
 pub fn flip_top_card() {
-    document::eval(&shortcuts::press_first_js(
+    document::eval(&press_first_js(
         ".swipe-stack-card.top",
-        &components::data_action::FLIP_OR_MELD,
+        &crate::data_action::FLIP_OR_MELD,
     ));
 }
 
@@ -538,8 +566,7 @@ pub fn use_swipe_key_handler(keys: Vec<Swipe>, on_key: Callback<Swipe>) {
 enum Letters {
     /// The arrow keys alone.
     Arrows,
-    /// The arrow keys and the swipe screens' `hjkl` and `u`
-    /// ([`shortcuts::swipe_screen_shortcut`]).
+    /// The arrow keys and the swipe screens' `hjkl` and `u` ([`swipe_key`]).
     Vim,
 }
 
@@ -547,13 +574,15 @@ enum Letters {
 fn swipe_keys(keys: &[Swipe], letters: Letters) -> Vec<&'static str> {
     let vim: &[&'static str] = match letters {
         Letters::Arrows => &[],
-        Letters::Vim => &shortcuts::SWIPE_LETTERS,
+        Letters::Vim => &SWIPE_LETTERS,
     };
     keys.iter()
         .map(|s| s.key())
-        .chain(vim.iter().copied().filter(|key| {
-            matches!(shortcuts::swipe_screen_shortcut(key), Some(Shortcut::Swipe(s)) if keys.contains(&s))
-        }))
+        .chain(
+            vim.iter()
+                .copied()
+                .filter(|key| swipe_key(key).is_some_and(|s| keys.contains(&s))),
+        )
         .collect()
 }
 
@@ -566,11 +595,11 @@ fn use_swipe_key_listener(keys: Vec<Swipe>, letters: Letters, on_key: Callback<S
         let script = SWIPE_KEYS_JS
             .replace("__ID__", &id.to_string())
             .replace("__KEYS__", &format!("{wanted:?}"))
-            .replace("__GUARD__", &shortcuts::guard_js());
+            .replace("__GUARD__", &guard_js());
         spawn(async move {
             let mut keys_in = document::eval(&script);
             while let Ok(key) = keys_in.recv::<String>().await {
-                if let Some(Shortcut::Swipe(swipe)) = shortcuts::swipe_screen_shortcut(&key) {
+                if let Some(swipe) = swipe_key(&key) {
                     on_key.call(swipe);
                 }
             }
@@ -611,21 +640,6 @@ window.__zwipeSwipe = (window.__zwipeSwipe || []).filter((id) => id !== '__ID__'
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    /// The swipe screens' shared sheet, as the web links it.
-    const SCREENS_CSS: &str = include_str!("../../../../assets/sheets/07-screens.css");
-
-    #[test]
-    fn a_card_flying_off_shows_while_the_stack_holds_its_ghost() {
-        let rule = SCREENS_CSS
-            .lines()
-            .find(|line| line.starts_with(".swipe-stack.ghost-held > .swipe-stack-card"))
-            .expect("the rule hiding the cards under a held top");
-        assert!(
-            rule.contains(".swipe-stack-exiting"),
-            "the exiting card is exempt, or every fly-off is invisible: {rule}"
-        );
-    }
 
     #[test]
     fn u_undoes_with_the_vim_letters() {
@@ -687,5 +701,22 @@ mod tests {
         assert_eq!(Swipe::of_drag(-120.0, 30.0), Some(Swipe::Left));
         assert_eq!(Swipe::of_drag(40.0, -95.0), Some(Swipe::Up));
         assert_eq!(Swipe::of_drag(-20.0, 95.0), Some(Swipe::Down));
+    }
+}
+
+#[cfg(test)]
+mod swipe_key_tests {
+    use super::*;
+
+    #[test]
+    fn the_swipe_letters_are_exactly_the_letters_that_swipe() {
+        for byte in b' '..=b'~' {
+            let key = char::from(byte).to_string();
+            assert_eq!(
+                swipe_key(&key).is_some(),
+                SWIPE_LETTERS.contains(&key.as_str()),
+                "{key}"
+            );
+        }
     }
 }

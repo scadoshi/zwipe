@@ -4,6 +4,9 @@
 use dioxus::prelude::*;
 use uuid::Uuid;
 
+/// The width at which the layout leaves the phone's: the stylesheet's wide breakpoint.
+pub const WIDE_PX: u32 = 900;
+
 /// The width, 60rem, from which the kit draws a sheet form as a modal.
 pub const KIT_MODAL_PX: u32 = 960;
 
@@ -16,6 +19,12 @@ pub const COMPUTER_QUERY: &str = "(hover: hover) and (pointer: fine) and (min-wi
 #[must_use]
 pub fn use_computer() -> Signal<bool> {
     use_media(COMPUTER_QUERY.to_owned())
+}
+
+/// True while the window is wide, as [`use_min_width`] with [`WIDE_PX`].
+#[must_use]
+pub fn use_wide() -> Signal<bool> {
+    use_min_width(WIDE_PX)
 }
 
 /// True while the window is at least `px` wide, kept current as it resizes.

@@ -48,7 +48,7 @@ pub fn PrintingSheet(
 
 /// Provides the sheet's [`PrintingsSource`] under it: each fetch runs for the session, its
 /// failure toasted and reported under the printing sheet.
-fn use_printings_source() {
+pub(crate) fn use_printings_source() {
     let authed = use_authed().in_component(component::PRINTING_SHEET);
     let mut results: Signal<HashMap<Uuid, PrintingsFetch>> = use_signal(HashMap::new);
     let request = use_callback(move |oracle_id: Uuid| {

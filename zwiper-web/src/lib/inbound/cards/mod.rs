@@ -13,4 +13,3 @@ pub mod row_keys;
 pub mod stack_view;
 pub mod swipe_confirm;
 pub mod swipe_select;
-pub mod swipe_stack;

@@ -15,6 +15,8 @@ path = "src/lib.rs"
 # fullstack, and cargo unifies; sharing components must not force a platform.
 dioxus = { version = "0.7.9" }
 uuid.workspace = true
+# The swipe stack times a key press against the last card's exit on the browser's clock.
+chrono.workspace = true
 zwipe-core = { path = "../zwipe-core" }
 # The screen logic the clients share: the color map's model, the chart bars
 # and the changelog's filing, which this crate draws.

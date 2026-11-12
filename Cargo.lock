@@ -992,6 +992,7 @@ dependencies = [
 name = "components"
 version = "1.18.17"
 dependencies = [
+ "chrono",
  "dioxus",
  "dioxus-ssr",
  "gloo-timers 0.4.0",

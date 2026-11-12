@@ -11,7 +11,13 @@ use std::collections::{HashMap, HashSet};
 use chrono::{DateTime, Utc};
 use components::icons::{DockIcon, REFRESH};
 use components::keys::{use_page_keys, use_undo_key};
-use components::{Chip, DockFilter, SheetFrame, SheetWide, TOAST_QUICK};
+use components::swipe_stack::{
+    self, Swipe, SwipeDock, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
+};
+use components::{
+    CardSkeleton, Chip, DockEye, DockFilter, SheetFrame, SheetWide, Surface, TOAST_QUICK,
+    use_details_eye,
+};
 use dioxus::core::spawn_forever;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -41,14 +47,10 @@ use zwipe_ui::telemetry::vocabulary::{DeckScreen, Screen};
 use super::{OneLine, SwipeDetails};
 use crate::inbound::card_filter::CardFilterPanel;
 use crate::inbound::card_stores::CardStores;
-use crate::inbound::cards::card_info::{CardDetailsSheet, CardSkeleton};
+use crate::inbound::cards::card_info::CardDetailsSheet;
 use crate::inbound::cards::printing_sheet::PrintingSheet;
 use crate::inbound::cards::swipe_confirm::{SwipeScreenChips, Tone, use_swipe_confirm};
-use crate::inbound::cards::swipe_stack::{
-    self, Swipe, SwipeDock, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
-};
 use crate::inbound::chrome::authed::use_authed;
-use crate::inbound::chrome::details_eye::{DockEye, Surface, use_details_eye};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::chrome::shortcuts::{self, REMOVE_LABELS, Shortcut, ShortcutsScreen};
 use crate::inbound::chrome::shortcuts_sheet::use_offer_shortcuts;

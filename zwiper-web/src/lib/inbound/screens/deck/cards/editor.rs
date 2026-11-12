@@ -9,6 +9,7 @@ use std::collections::{HashMap, HashSet};
 
 use chrono::Utc;
 use components::keys::{focus_by_id, use_undo_key};
+use components::swipe_stack::{Swipe, use_swipe_key_handler};
 use components::{
     DeckEditActions, DeckHoverKeys, DeckRow, DeckRowHost, TOAST_QUICK, use_deck_hover_keys,
 };
@@ -40,7 +41,6 @@ use crate::inbound::card_stores::CardStores;
 use crate::inbound::cards::card_row::{CardOverlays, ShowRowArt};
 use crate::inbound::cards::otag::{OtagDescribe, OtagExamplesOpen};
 use crate::inbound::cards::stack_view::StackDetails;
-use crate::inbound::cards::swipe_stack::{Swipe, use_swipe_key_handler};
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, open_and_record_hint};
 use crate::inbound::chrome::shortcuts::{self, CardKey, ShortcutsScreen};

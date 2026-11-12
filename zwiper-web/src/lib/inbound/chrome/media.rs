@@ -1,12 +1,9 @@
 //! Whether the window is at least a width, for the few places where a wide
 //! window changes what a screen does and not only how it looks.
 
-pub use components::{COMPUTER_QUERY, KIT_MODAL_PX, use_computer, use_min_width};
-use dioxus::prelude::*;
-
-/// The width at which the layout leaves the phone's: the stylesheet's wide
-/// breakpoint.
-pub const WIDE_PX: u32 = 900;
+pub use components::{
+    COMPUTER_QUERY, KIT_MODAL_PX, WIDE_PX, use_computer, use_min_width, use_wide,
+};
 
 /// The widest window whose header folds behind the hamburger. The full bar
 /// needs about 1110px on one row, so below that it folds rather than wrap.
@@ -19,11 +16,6 @@ pub fn nav_fold_css() -> String {
         "@media (max-width: {NAV_FOLD_MAX_PX}px) {{\n{}}}",
         components::NAV_FOLD_CSS
     )
-}
-
-/// True while the window is wide, as [`use_min_width`] with [`WIDE_PX`].
-pub fn use_wide() -> Signal<bool> {
-    use_min_width(WIDE_PX)
 }
 
 #[cfg(test)]
@@ -49,6 +41,21 @@ mod tests {
         assert_eq!(
             COMPUTER_QUERY,
             format!("(hover: hover) and (pointer: fine) and (min-width: {WIDE_PX}px)")
+        );
+    }
+
+    /// The swipe screens' shared sheet, as the web links it.
+    const SCREENS_CSS: &str = include_str!("../../../../assets/sheets/07-screens.css");
+
+    #[test]
+    fn a_card_flying_off_shows_while_the_stack_holds_its_ghost() {
+        let rule = SCREENS_CSS
+            .lines()
+            .find(|line| line.starts_with(".swipe-stack.ghost-held > .swipe-stack-card"))
+            .expect("the rule hiding the cards under a held top");
+        assert!(
+            rule.contains(".swipe-stack-exiting"),
+            "the exiting card is exempt, or every fly-off is invisible: {rule}"
         );
     }
 

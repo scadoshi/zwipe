@@ -19,6 +19,8 @@ use crate::inbound::screens::update_required::UpdateRequired;
 use crate::inbound::session::upkeep;
 use crate::inbound::shell::{DeckOpener, MenuOpen, use_footer_lift};
 use crate::inbound::{caches, card_stores, catalog, telemetry};
+use crate::outbound::browser;
+use crate::outbound::details_store::DetailsStore;
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 const FAVICON_16: Asset = asset!("/assets/favicon-16x16.png");
@@ -54,6 +56,12 @@ pub fn App() -> Element {
     });
     // A swipe screen's card slides clear of its docked details panel.
     components::use_details_clear();
+    // The swipe surfaces' eye keeps its last choice in this browser's storage.
+    use_context_provider(|| components::DetailsEyeHost {
+        window_size: Callback::new(|()| browser::window_size()),
+        load: Callback::new(|()| DetailsStore::browser().load()),
+        save: Callback::new(|shown: bool| DetailsStore::browser().save(shown)),
+    });
     // The deck page's stat panels open the web's hints from their `?`.
     use_context_provider(|| {
         components::StatHints(Callback::new(|topic: components::StatTopic| {

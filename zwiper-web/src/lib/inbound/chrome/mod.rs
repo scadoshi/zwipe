@@ -3,8 +3,6 @@
 //! zwipe-ui toast bridge.
 
 pub mod authed;
-pub mod back_arrow;
-pub mod details_eye;
 pub mod fresh_build;
 pub mod ghost;
 pub mod hint_topic;

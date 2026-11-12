@@ -19,7 +19,7 @@
 
 use components::keys::{focus_by_id, use_page_keys};
 use components::{
-    Button, ButtonVariant, ClearWrap, PageHeader, SheetFrame, SheetWide, TOAST_NORMAL,
+    BackArrow, Button, ButtonVariant, ClearWrap, PageHeader, SheetFrame, SheetWide, TOAST_NORMAL,
     use_overlay_back,
 };
 use dioxus::prelude::*;
@@ -30,7 +30,6 @@ use zwipe_ui::dictionary;
 use zwipe_ui::telemetry::vocabulary::{OracleTagScreen, Screen};
 
 use crate::inbound::catalog::CatalogCache;
-use crate::inbound::chrome::back_arrow::BackArrow;
 use crate::inbound::chrome::ghost::{GhostChip, GhostText, GhostWords};
 use crate::inbound::chrome::media::{KIT_MODAL_PX, use_min_width};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};

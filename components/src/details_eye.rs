@@ -2,15 +2,13 @@
 //! opens the details sheet, as in the app. On a wide window the details sit
 //! beside the card, and the eye hides and shows that panel instead, lit
 //! while the panel shows. The panel starts hidden where it would touch the
-//! card, and elsewhere as the eye last left it (kept in browser storage),
-//! shown by default, decided once as the screen opens.
+//! card, and elsewhere as the eye last left it (kept by the host's
+//! [`DetailsEyeHost`]), shown by default, decided once as the screen opens.
 
-use components::icons::EyeIcon;
 use dioxus::prelude::*;
 
-use crate::inbound::chrome::media::use_wide;
-use crate::outbound::browser;
-use crate::outbound::details_store::DetailsStore;
+use crate::icons::EyeIcon;
+use crate::media::use_wide;
 
 /// The class a swipe surface's body takes while its beside-the-card
 /// details are hidden.
@@ -118,11 +116,24 @@ pub fn starts_hidden(fits: bool, stored: Option<bool>) -> bool {
     !fits || stored.is_some_and(|shown| !shown)
 }
 
+/// What the host keeps for the eye: the window's size and the eye's last choice, in the host's
+/// storage. Without one the panel fits and starts shown, and a press is not kept.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct DetailsEyeHost {
+    /// The window's inner width and height in CSS pixels, where the host can read them.
+    pub window_size: Callback<(), Option<(f64, f64)>>,
+    /// Whether the panel was last left shown, or `None` when the eye was never pressed.
+    pub load: Callback<(), Option<bool>>,
+    /// Keeps whether the panel is shown.
+    pub save: Callback<bool>,
+}
+
 /// Whether the panel starts hidden on `surface` in the current window, with
-/// the eye's stored choice; off the browser it fits and starts shown.
-fn starts_hidden_here(surface: Surface) -> bool {
-    let fits = browser::window_size().is_none_or(|(w, h)| beside_fits(surface, w, h));
-    starts_hidden(fits, DetailsStore::browser().load())
+/// the eye's stored choice; without a host it fits and starts shown.
+fn starts_hidden_here(surface: Surface, host: Option<DetailsEyeHost>) -> bool {
+    let window = host.and_then(|h| h.window_size.call(()));
+    let fits = window.is_none_or(|(w, h)| beside_fits(surface, w, h));
+    starts_hidden(fits, host.and_then(|h| h.load.call(())))
 }
 
 /// One surface's eye: the window's width, the surface's details sheet and
@@ -132,6 +143,7 @@ pub struct DetailsEye {
     wide: Signal<bool>,
     sheet: Signal<bool>,
     beside_hidden: Signal<bool>,
+    host: Option<DetailsEyeHost>,
 }
 
 impl DetailsEye {
@@ -142,12 +154,15 @@ impl DetailsEye {
             wide,
             mut sheet,
             mut beside_hidden,
+            host,
         } = self;
         match EyePress::at(*wide.peek()) {
             EyePress::Sheet => sheet.toggle(),
             EyePress::Beside => {
                 beside_hidden.toggle();
-                DetailsStore::browser().save(!*beside_hidden.peek());
+                if let Some(host) = host {
+                    host.save.call(!*beside_hidden.peek());
+                }
             }
         }
     }
@@ -178,14 +193,17 @@ impl DetailsEye {
 
 /// The eye for `surface`, whose details sheet opens on `sheet`. The beside
 /// panel starts as [`starts_hidden`] says, from [`beside_fits`] and the
-/// eye's stored choice; later resizes leave the eye as it is.
+/// eye's stored choice in the [`DetailsEyeHost`] in context; later resizes leave the eye as it
+/// is.
 pub fn use_details_eye(sheet: Signal<bool>, surface: Surface) -> DetailsEye {
     let wide = use_wide();
-    let beside_hidden = use_signal(|| starts_hidden_here(surface));
+    let host = try_use_context::<DetailsEyeHost>();
+    let beside_hidden = use_signal(|| starts_hidden_here(surface, host));
     DetailsEye {
         wide,
         sheet,
         beside_hidden,
+        host,
     }
 }
 

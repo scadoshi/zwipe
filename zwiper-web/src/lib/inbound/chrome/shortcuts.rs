@@ -8,15 +8,16 @@ pub use components::keys::{
     TYPING_TAGS, guard_js, guard_js_through, guard_js_with_modifiers, hint_guard_js, modal_hint_js,
     press_first_js,
 };
+pub use components::swipe_stack::SWIPE_LETTERS;
+use components::swipe_stack::{Swipe, swipe_key};
 pub use zwipe_ui::shortcuts::{
     CardKey, FlowKey, GLOBAL_KEYS, GlobalKey, HINT_KEY, UNDO_COMBO, card_key, flow_key, global_key,
     undo_letter,
 };
 use zwipe_ui::shortcuts::{
     DECK_CARDS_NOTE, EVERYWHERE_ROWS, Editable, SheetRow, card_read_rows, deck_cards_rows,
+    examples_rows,
 };
-
-use crate::inbound::cards::swipe_stack::Swipe;
 
 /// What a key does on a swipe screen (Add, Remove, Commander swipe): the same action as its
 /// swipe or dock button.
@@ -48,11 +49,10 @@ pub fn swipe_screen_shortcut(key: &str) -> Option<Shortcut> {
         Some(CardKey::Details) => return Some(Shortcut::Details),
         None => {}
     }
+    if let Some(swipe) = swipe_key(key) {
+        return Some(Shortcut::Swipe(swipe));
+    }
     let shortcut = match key {
-        "ArrowRight" | "l" | "L" => Shortcut::Swipe(Swipe::Right),
-        "ArrowLeft" | "h" => Shortcut::Swipe(Swipe::Left),
-        "ArrowUp" | "k" | "K" => Shortcut::Swipe(Swipe::Up),
-        "ArrowDown" | "j" | "J" | "u" | "U" => Shortcut::Swipe(Swipe::Down),
         "p" | "P" => Shortcut::Printings,
         "r" | "R" => Shortcut::Refresh,
         "s" | "S" => Shortcut::Synergy,
@@ -60,9 +60,6 @@ pub fn swipe_screen_shortcut(key: &str) -> Option<Shortcut> {
     };
     Some(shortcut)
 }
-
-/// The letter keys that swipe on a swipe screen, beside the arrows ([`swipe_screen_shortcut`]).
-pub const SWIPE_LETTERS: [&str; 9] = ["h", "j", "k", "l", "u", "J", "K", "L", "U"];
 
 /// What one swipe screen calls its four swipes, as its dock buttons say them, and whether it has
 /// Synergy. `up` is `None` on a screen with no up swipe.
@@ -171,12 +168,7 @@ pub fn sheet_rows(screen: &ShortcutsScreen) -> Vec<SheetRow> {
                 .collect()
         }
         ShortcutsScreen::DeckCards => deck_cards_rows(Editable::Yes),
-        ShortcutsScreen::Examples => vec![
-            (&["←", "h"], "Next"),
-            (&["↓", "j"], "Back one"),
-            (&["d"], "Card details"),
-            (&["v"], "[[flip]]"),
-        ],
+        ShortcutsScreen::Examples => examples_rows().to_vec(),
         ShortcutsScreen::CardRows => card_read_rows().to_vec(),
     };
     own.into_iter().chain(EVERYWHERE_ROWS).collect()

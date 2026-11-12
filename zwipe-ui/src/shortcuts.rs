@@ -175,6 +175,18 @@ pub fn row_label(does: &str) -> &str {
     }
 }
 
+/// The Oracle tag examples' own rows: `←` steps to the next card, `↓` back one, and the card keys
+/// that read.
+#[must_use]
+pub fn examples_rows() -> [SheetRow; 4] {
+    [
+        (&["←", "h"], "Next"),
+        (&["↓", "j"], "Back one"),
+        (&["d"], "Card details"),
+        (&["v"], FLIP_ROW),
+    ]
+}
+
 /// The line the deck cards page's sheet shows above its keys.
 pub const DECK_CARDS_NOTE: &str = "Hover or open a card, then press its key";
 

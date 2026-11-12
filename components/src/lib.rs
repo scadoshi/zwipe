@@ -41,6 +41,7 @@
 //! (`open_url`, `use_in_app_links`).
 
 mod architecture;
+mod back_arrow;
 mod back_online;
 mod buy;
 mod card_actions;
@@ -52,6 +53,7 @@ mod card_list_fold;
 mod card_proxy;
 mod card_role_chips;
 mod card_row;
+mod card_skeleton;
 mod card_stack;
 mod changelog;
 mod charts;
@@ -65,6 +67,7 @@ mod deck_hover_keys;
 mod deck_page;
 mod deck_stats;
 mod details_clear;
+mod details_eye;
 mod drawer_sheet;
 mod drawer_swap;
 mod flippable_card_image;
@@ -81,6 +84,7 @@ mod load_failed;
 mod media;
 mod meld;
 mod menu_section;
+mod oracle_tag_examples;
 mod oracle_text;
 mod picker_search;
 mod pressable;
@@ -90,9 +94,11 @@ pub mod settle;
 mod share_url;
 mod site_footer;
 mod staple_decks_chip;
+pub mod swipe_stack;
 mod theme;
 
 pub use architecture::ZwipeArchitecture;
+pub use back_arrow::BackArrow;
 pub use back_online::use_back_online;
 pub use buy::{CART, CartButton, StoreDialog, store_actions};
 pub use card_actions::{CardBoardMoves, CardEditButtons};
@@ -108,6 +114,7 @@ pub use card_list_fold::CardListFold;
 pub use card_proxy::{CardProxy, FIT_JS as CARD_PROXY_FIT_JS, ProxyFace, use_card_proxy_fit};
 pub use card_role_chips::CardRoleChips;
 pub use card_row::CardRow;
+pub use card_skeleton::CardSkeleton;
 pub use card_stack::{CardStack, StackCard};
 pub use changelog::{
     ChangelogCollapseAll, ChangelogFilters, ChangelogLook, ChangelogReleases,
@@ -135,6 +142,10 @@ pub use deck_stats::{
     StatTopic, TagsBody, charted, draw_odds_hint,
 };
 pub use details_clear::use_details_clear;
+pub use details_eye::{
+    DETAILS_HIDDEN_CLASS, DetailsEye, DetailsEyeHost, DockEye, EyePress, Surface, beside_fits,
+    eye_lit, starts_hidden, use_details_eye,
+};
 pub use drawer_sheet::DrawerSheet;
 pub use flippable_card_image::{FlippableCardImage, reset_image_ease};
 pub use fold::{FOLD_AT, Fold, SEE_LESS, SEE_MORE, SeeMore, fold_split};
@@ -145,9 +156,10 @@ pub use hover_stack::{HoverStack, HoverStackHost, use_hover_stack};
 pub use identity_pips::IdentityPips;
 pub use keyword_chips::{KeywordChips, KeywordReminders};
 pub use load_failed::LoadFailed;
-pub use media::{COMPUTER_QUERY, KIT_MODAL_PX, use_computer, use_min_width};
+pub use media::{COMPUTER_QUERY, KIT_MODAL_PX, WIDE_PX, use_computer, use_min_width, use_wide};
 pub use meld::{MeldFetch, MeldSource, MeldToggle, use_meld};
 pub use menu_section::MenuSection;
+pub use oracle_tag_examples::{ExamplesPage, ExamplesSource, OracleTagExamples};
 pub use oracle_text::OracleText;
 pub use orangui::{
     ALLOWED_THEMES, APP_CSS, ActionBar, ActionButton, ActionDock, AlertDialog, AppLifecycle,

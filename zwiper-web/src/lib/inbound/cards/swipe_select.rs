@@ -34,9 +34,13 @@ use std::collections::HashSet;
 
 use components::icons::{DockIcon, REFRESH};
 use components::keys::{use_page_keys, use_undo_key};
+use components::swipe_stack::{
+    self, Swipe, SwipeControl, SwipeDock, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
+};
 use components::{
-    BottomSheet, CardDetailsPanel, CardDetailsPanelSkeleton, DockFilter, PageHeader, SheetFrame,
-    SheetWide, TOAST_QUICK, use_overlay_back,
+    BackArrow, BottomSheet, CardDetailsPanel, CardDetailsPanelSkeleton, CardSkeleton, DockEye,
+    DockFilter, PageHeader, SheetFrame, SheetWide, Surface, TOAST_QUICK, use_details_eye,
+    use_overlay_back,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -62,16 +66,11 @@ use zwipe_ui::timing::{LOAD_MORE_AT, MAYBEBOARD_TOAST, PAGE_SIZE};
 
 use crate::domain::swipe_select::{card_key, redeal};
 use crate::inbound::card_filter::CardFilterPanel;
-use crate::inbound::cards::card_info::{CardDetailsSheet, CardSkeleton};
+use crate::inbound::cards::card_info::CardDetailsSheet;
 use crate::inbound::cards::otag::{OtagExamplesOpen, use_describe_tag};
 use crate::inbound::cards::printing_sheet::PrintingSheet;
 use crate::inbound::cards::swipe_confirm::{SwipeScreenChips, use_swipe_confirm};
-use crate::inbound::cards::swipe_stack::{
-    self, Swipe, SwipeControl, SwipeDock, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
-};
 use crate::inbound::chrome::authed::use_authed;
-use crate::inbound::chrome::back_arrow::BackArrow;
-use crate::inbound::chrome::details_eye::{DockEye, Surface, use_details_eye};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, SwipeSelectHint, open_and_record_hint};
 use crate::inbound::chrome::shortcuts::{self, SELECT_LABELS, Shortcut, ShortcutsScreen};
 use crate::inbound::chrome::shortcuts_sheet::{use_global_keys, use_offer_shortcuts};
