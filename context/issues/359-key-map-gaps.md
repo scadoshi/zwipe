@@ -1,6 +1,6 @@
 # 359. f and v gaps on Commander maybeboard and meld cards
 
-State: fixing | Owner: scotland | PR: #PR | Build seen: live, web, after #554
+State: fixing | Owner: scotland | PR: #559 | Build seen: live, web, after #554
 
 ## Report
 surfer via composer, 2026-11-12, web:
@@ -15,7 +15,7 @@ Skipped on composer's word: the key swallowed right after Escape closes the filt
 - (b) and (c): each image, details panel and row kept its own Meld state (`use_meld`'s local signal), so turning Meld on in one left the others off. `v` on a hovered card could only press a Meld button that was drawn, and a collapsed row or a stack card has none. The stack card draws its own `img` from the card and never asked about meld.
 
 ## Fix
-scotland, #PR:
+scotland, #559:
 - `MeldSource` holds the halves whose Meld is on (`on`, by Scryfall id), so a half's Meld is one switch wherever it shows: the card image, the details (panel, drawer, open row) and the stack card.
 - `MeldToggle::of` builds a half's toggle outside a component, and `use_meld` is that over the context. The app and the web provide `on`.
 - The stack card shows the melded image while Meld is on.
