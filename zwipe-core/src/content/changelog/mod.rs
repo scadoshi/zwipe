@@ -55,6 +55,7 @@ pub const UPCOMING: &[Release] = &[
             "Printings runs its cards out to the sheet's edges with no fade, its arrows over the cards, on the web and in the app",
             "On the web's deck page, a featured card lifts and sways gently under the mouse",
             "zwipe.net's changelog moves to About, linked beside Privacy policy and in the footer instead of the top nav",
+            "A shared deck's link opens on app.zwipe.net, signed in or not, with its preview in chats as before",
         ],
     },
     Release {
@@ -71,7 +72,6 @@ pub const UPCOMING: &[Release] = &[
             "On zwipe.net's shared deck, the owner's name is a chip beside the deck's name",
             "A starred card's mark and its MVP chips share the star's gold",
             "In light themes, a chip that can't be used right now fades as it does in dark themes",
-            "A shared deck's link opens on app.zwipe.net, signed in or not, with its preview in chats as before",
         ],
     },
     Release {
