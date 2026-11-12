@@ -776,16 +776,50 @@ code {
     margin: 0.75rem -1.5rem;
 }
 
-.gallery-video {
-    display: block;
-    /* Replaced elements in a flex row floor at intrinsic size otherwise. */
-    min-width: 0;
-    max-width: 100%;
-    max-height: 70vh;
-    height: auto;
-    object-fit: contain;
+/* A media's box at its own shape (--media-w / --media-h, set by MediaFrame),
+   as tall as --media-max-h allows and no wider than its column, so nothing
+   moves when the media arrives. Until index.html's script marks the media
+   data-ready (it can paint its first frame), the box is the app's skeleton
+   (.skeleton-bar: the ghost fill and its pulse) and the media, controls and
+   all, stays hidden; then the pulse stops and the media fades in over it.
+   The hold applies before any script has run, as the page streams in;
+   index.html's noscript style lifts it when script is off. */
+.media-frame {
+    --media-max-h: 70vh;
+    position: relative;
+    flex: none;
+    width: min(100%, calc(var(--media-max-h) * var(--media-w) / var(--media-h)));
+    aspect-ratio: var(--media-w) / var(--media-h);
     border-radius: 0.5rem;
-    animation: gallery-fade-in 0.45s cubic-bezier(0.4, 0, 0.2, 1) both;
+    overflow: hidden;
+}
+
+.media-frame > img,
+.media-frame > video {
+    position: relative;
+    z-index: 1;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: inherit;
+    animation: gallery-fade-in 0.25s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.media-frame > .media-frame-sk {
+    position: absolute;
+    inset: 0;
+    height: auto;
+    border-radius: inherit;
+}
+
+.media-frame > :is(img, video):not([data-ready]) {
+    opacity: 0;
+    animation: none;
+}
+
+.media-frame > [data-ready] ~ .media-frame-sk {
+    animation: none;
 }
 
 @keyframes gallery-fade-in {
@@ -850,8 +884,9 @@ code {
     flex: 0 0 auto;
 }
 
-/* The demo clips all share one shape (540x1110), so the video reserves exactly
-   that box before it loads: as tall as 70vh allows, no wider than its column.
+/* The demo clips all share one shape (540x1110), so their frame reserves
+   exactly that box before one loads: as tall as 70vh allows, no wider than its
+   column.
    The panel ends at the video instead of at a 70vh floor, which left empty
    space around it when zoomed out. The panel-body prefix outranks site.css's
    floor, which is inlined after this sheet. */
@@ -859,10 +894,8 @@ code {
     min-height: 0;
 }
 
-.demo-col .gallery-video {
-    aspect-ratio: 540 / 1110;
-    width: min(100%, calc(70vh * 540 / 1110));
-    max-height: none;
+.demo-col .media-frame {
+    --media-max-h: 70vh;
 }
 
 /* Full width under the demo band, one panel gap above Reviews. */
@@ -880,8 +913,8 @@ code {
 
     /* Phone-scale demo: capped at 55vh so the autoplaying block doesn't
        swallow the screen. */
-    .demo-col .gallery-video {
-        width: min(100%, calc(55vh * 540 / 1110));
+    .demo-col .media-frame {
+        --media-max-h: 55vh;
     }
 }
 
@@ -2101,8 +2134,8 @@ body[class$="-dark"] .chip-value {
     min-height: 24rem;
 }
 
-.guide-gallery-col .gallery-video {
-    max-height: 60vh;
+.guide-gallery-col .media-frame {
+    --media-max-h: 60vh;
     border: 1px solid var(--border-secondary);
     border-radius: 1rem;
     box-shadow: var(--shadow-sm);
@@ -2123,10 +2156,8 @@ body[class$="-dark"] .chip-value {
 
 /* Framed like the site's cards; phone captures are tall, so cap the height
    and let width follow rather than flooding the column. */
-.guide-img {
-    display: block;
-    max-width: 100%;
-    max-height: 34rem;
+.guide-img-frame {
+    --media-max-h: 34rem;
     margin: 0 auto;
     border: 1px solid var(--border-secondary);
     border-radius: 1rem;

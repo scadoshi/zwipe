@@ -1,8 +1,10 @@
 mod featured_flavor;
+mod media_frame;
 mod page_meta;
 mod pip_toggle;
 mod stats_strip;
 pub(crate) use featured_flavor::{FeaturedFlavor, dismiss_flavor_overlay};
+pub(crate) use media_frame::{MediaFrame, MediaSize};
 pub(crate) use page_meta::PageMeta;
 pub(crate) use pip_toggle::PipToggle;
 pub(crate) use stats_strip::StatsStrip;

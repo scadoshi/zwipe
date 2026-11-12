@@ -15,7 +15,7 @@ use content::{Block, GUIDES, Guide};
 use dioxus::prelude::*;
 use zwipe_ui::hint::KeyIcon;
 
-use crate::components::PageMeta;
+use crate::components::{MediaFrame, PageMeta};
 use crate::{Footer, Nav, Route, WEB_BASE};
 
 /// Every guide slug, for the SSG prerender list in `main.rs`. Reads `GUIDES`
@@ -151,13 +151,13 @@ fn GuideGallery(shots: Vec<(&'static str, &'static str, Option<&'static str>)>) 
     rsx! {
         GalleryFrame { index, total, noun: "screenshot", class: "guide-gallery-body",
             if let Some(src) = src {
-                img {
-                    key: "{i}",
-                    class: "gallery-video",
-                    src: "{src}",
-                    alt: "{alt}",
-                    loading: "lazy",
-                    draggable: false,
+                MediaFrame { key: "{i}", size: content::guide_image_size(file),
+                    img {
+                        src: "{src}",
+                        alt: "{alt}",
+                        loading: "lazy",
+                        draggable: false,
+                    }
                 }
             }
         }
@@ -225,12 +225,14 @@ fn render_block(b: &'static Block) -> Element {
         Block::Image { file, alt, caption } => rsx! {
             if let Some(src) = content::guide_image(file) {
                 figure { class: "guide-figure",
-                    img {
-                        class: "guide-img",
-                        src: "{src}",
-                        alt: "{alt}",
-                        loading: "lazy",
-                        draggable: false,
+                    MediaFrame { size: content::guide_image_size(file), class: "guide-img-frame",
+                        img {
+                            class: "guide-img",
+                            src: "{src}",
+                            alt: "{alt}",
+                            loading: "lazy",
+                            draggable: false,
+                        }
                     }
                     if let Some(c) = caption {
                         figcaption { class: "guide-figcaption", "{c}" }

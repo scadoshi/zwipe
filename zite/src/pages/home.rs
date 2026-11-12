@@ -5,7 +5,9 @@ use components::{
 use dioxus::prelude::*;
 use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
 
-use crate::components::{FeaturedFlavor, PageMeta, StatsStrip, dismiss_flavor_overlay, sleep_ms};
+use crate::components::{
+    FeaturedFlavor, MediaFrame, MediaSize, PageMeta, StatsStrip, dismiss_flavor_overlay, sleep_ms,
+};
 use crate::{Footer, Nav, Route, SiteSplash};
 
 const LOGO_ASCII: &str = zwipe_core::domain::logo::ZWIPE;
@@ -142,6 +144,12 @@ const DEMO_ACTIVITY: Asset = asset!("/assets/demo/4_activity.mp4");
 const DEMO_ACTIVITY_POSTER: Asset = asset!("/assets/demo/4_activity.jpg");
 const DEMO_DECK: Asset = asset!("/assets/demo/5_deck.mp4");
 const DEMO_DECK_POSTER: Asset = asset!("/assets/demo/5_deck.jpg");
+
+/// Every demo clip's size: 540x1110, a phone screen.
+const DEMO_SIZE: MediaSize = MediaSize {
+    width: 540,
+    height: 1110,
+};
 
 /// One demo clip: the video, its first frame as the poster, the caption
 /// under it and its label for screen readers.
@@ -313,20 +321,21 @@ pub fn Home() -> Element {
                         // caption under the video does the describing.
                         Panel { title: "Watch it work",
                             GalleryFrame { index, total, noun: "demo",
-                                video {
-                                    // key forces a remount when index changes so autoplay re-fires
-                                    // for the new src instead of the browser keeping the old video.
-                                    key: "{index()}",
-                                    class: "gallery-video",
-                                    src: current.video,
-                                    poster: current.poster,
-                                    "aria-label": "{current.label}",
-                                    autoplay: true,
-                                    muted: true,
-                                    "loop": true,
-                                    playsinline: true,
-                                    controls: true,
-                                    preload: "metadata",
+                                // key remounts the frame when index changes, so autoplay
+                                // re-fires for the new src and the skeleton shows again
+                                // until it can paint.
+                                MediaFrame { key: "{index()}", size: DEMO_SIZE,
+                                    video {
+                                        src: current.video,
+                                        poster: current.poster,
+                                        "aria-label": "{current.label}",
+                                        autoplay: true,
+                                        muted: true,
+                                        "loop": true,
+                                        playsinline: true,
+                                        controls: true,
+                                        preload: "metadata",
+                                    }
                                 }
                             }
                             hr { class: "gallery-rule" }
@@ -383,6 +392,37 @@ mod tests {
 
     fn source(asset: Asset) -> PathBuf {
         PathBuf::from(asset.bundled().absolute_source_path())
+    }
+
+    /// The video track's width and height from an MP4's track headers
+    /// (`tkhd`), whose size is 16.16 fixed point; an audio track's is zero.
+    fn mp4_size(bytes: &[u8]) -> (u32, u32) {
+        let after = |at: usize, n: usize| at.checked_add(n).unwrap();
+        let word = |at: usize| u32::from_be_bytes(bytes[at..after(at, 4)].try_into().unwrap());
+        bytes
+            .windows(4)
+            .enumerate()
+            .filter(|(_, tag)| *tag == b"tkhd")
+            .map(|(at, _)| {
+                let body = after(at, 4);
+                let size_at = after(body, if bytes[body] == 1 { 88 } else { 76 });
+                (word(size_at) >> 16, word(after(size_at, 4)) >> 16)
+            })
+            .find(|&(width, _)| width > 0)
+            .unwrap()
+    }
+
+    #[test]
+    fn every_clip_is_the_size_its_frame_holds() {
+        for demo in DEMOS {
+            let bytes = std::fs::read(source(demo.video)).unwrap();
+            assert_eq!(
+                mp4_size(&bytes),
+                (DEMO_SIZE.width, DEMO_SIZE.height),
+                "{}",
+                demo.label
+            );
+        }
     }
 
     #[test]
