@@ -17,6 +17,7 @@ use zwipe_core::domain::card::search_card::group_cards::GroupByOption;
 use zwipe_core::domain::deck::{Format, PowerLevel};
 use zwipe_ui::deck::cards_label;
 use zwipe_ui::deck::command_zone::Slot;
+use zwipe_ui::deck::view::DeckArea;
 use zwipe_ui::deck_cards::Display;
 
 use crate::icons::{DockIcon, FOLD, UNFOLD};
@@ -139,6 +140,12 @@ pub fn sections(
 
 /// The page: the head, the controls, the bands, then the stats and the
 /// host's foot, one panel gap apart.
+///
+/// With `areas`, a phone splits the page under its head into the deck's
+/// profile (the stats and the foot) and its cards (the controls and the
+/// bands), with a Profile | Cards switch under the head that sets `areas`.
+/// Every part stays mounted: the stylesheet hides the area not picked below
+/// the wide layout, and a wide window shows both and no switch.
 #[component]
 pub fn DeckPage(
     head: Element,
@@ -149,12 +156,29 @@ pub fn DeckPage(
     bands: Element,
     #[props(default)] stats: Option<Element>,
     #[props(default)] foot: Option<Element>,
+    #[props(default)] areas: Option<Signal<DeckArea>>,
 ) -> Element {
+    let class = areas.map_or_else(
+        || "deck-page".to_owned(),
+        |area| format!("deck-page deck-page-areas {}", area().class()),
+    );
     rsx! {
         // The whole page settles (`settle`): its groups, rows, head cards and
         // foot panels ease into place when a control moves them.
-        div { class: "deck-page", "data-settle-scope": "",
+        div { class: "{class}", "data-settle-scope": "",
             {head}
+            if let Some(mut area) = areas {
+                div { class: "chip-row deck-area-switch",
+                    for choice in DeckArea::ALL {
+                        Chip {
+                            key: "{choice.class()}",
+                            selected: area() == choice,
+                            onclick: move |_| area.set(choice),
+                            {choice.label()}
+                        }
+                    }
+                }
+            }
             if let Some(controls) = controls {
                 div { class: "deck-controls", "data-settle-key": "controls", {controls} }
             }

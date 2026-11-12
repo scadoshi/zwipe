@@ -2350,6 +2350,28 @@ html.keyboard-up .web-dock-pair {
     min-width: 0;
 }
 
+/* A page with areas (DeckPage's `areas`): a phone shows the deck's profile
+   (the stats and the foot) or its cards (the controls and the bands), as the
+   switch under the head picks. Everything stays mounted; the area not picked
+   only hides. The wide layout, from 900px, shows both and no switch. */
+.deck-area-switch {
+    display: none;
+}
+
+@media (max-width: 899px) {
+    .deck-page-areas > .deck-area-switch {
+        display: flex;
+    }
+
+    .deck-page-areas.area-profile > .deck-controls,
+    .deck-page-areas.area-profile > .deck-bands,
+    .deck-page-areas.area-profile > .deck-empty,
+    .deck-page-areas.area-cards > .deck-stats,
+    .deck-page-areas.area-cards > .deck-foot {
+        display: none;
+    }
+}
+
 /* The head: the name and its chips, then the featured cards in a centered
    row under them. */
 .deck-head {

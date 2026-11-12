@@ -1,4 +1,4 @@
-//! The deck view's rules: which sections show, the Tags badge, the Budget section's total, the share link, the clone dialog's prefill, and the toasts its actions raise.
+//! The deck view's rules: a phone's two areas ([`DeckArea`]), which sections show, the Tags badge, the Budget section's total, the share link, the clone dialog's prefill, and the toasts its actions raise.
 
 use uuid::Uuid;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
@@ -8,6 +8,41 @@ use zwipe_core::http::contracts::deck::HttpSharedDeck;
 
 use crate::deck::command_zone::Slot;
 use crate::toast::{Toast, ToastKind};
+
+/// The two areas a deck's page splits into on a phone, under its head: its profile (the stat
+/// panels and the page's foot) or its cards (the controls and the groups). A wide window shows
+/// both.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+pub enum DeckArea {
+    /// The stat panels and the foot, which a deck opens on, as the app does.
+    #[default]
+    Profile,
+    /// The controls and the card groups.
+    Cards,
+}
+
+impl DeckArea {
+    /// Both areas, in the switch's order.
+    pub const ALL: [Self; 2] = [Self::Profile, Self::Cards];
+
+    /// The switch's label.
+    #[must_use]
+    pub const fn label(self) -> &'static str {
+        match self {
+            Self::Profile => "Profile",
+            Self::Cards => "Cards",
+        }
+    }
+
+    /// The page's class while this area shows, which the stylesheet reads on a phone.
+    #[must_use]
+    pub const fn class(self) -> &'static str {
+        match self {
+            Self::Profile => "area-profile",
+            Self::Cards => "area-cards",
+        }
+    }
+}
 
 /// What the deck's stat panels read from its profile: its tags and its targets. An owner's deck
 /// and a shared deck both give one, so the panels draw the same for either.
@@ -303,5 +338,15 @@ mod tests {
                 "{done:?}"
             );
         }
+    }
+
+    #[test]
+    fn a_phone_opens_a_deck_on_its_profile_then_offers_its_cards() {
+        assert_eq!(DeckArea::default(), DeckArea::Profile, "as the app opens a deck");
+        assert_eq!(DeckArea::ALL, [DeckArea::Profile, DeckArea::Cards]);
+        let labels: Vec<&str> = DeckArea::ALL.iter().map(|a| a.label()).collect();
+        assert_eq!(labels, ["Profile", "Cards"]);
+        let classes: Vec<&str> = DeckArea::ALL.iter().map(|a| a.class()).collect();
+        assert_eq!(classes, ["area-profile", "area-cards"]);
     }
 }
