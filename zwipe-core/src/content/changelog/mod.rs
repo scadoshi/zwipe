@@ -55,6 +55,7 @@ pub const UPCOMING: &[Release] = &[
             "The nav bar, a field's label and the Draw odds bars no longer jump when they change",
             "On the web, Home pairs Decks and Colors under the hero, with Featured flavor on its own row",
             "On a phone, a deck's Edit, Clone and Share sit in the dock beside Cards",
+            "zwipe.net's videos and guide screenshots hold their place as a pulsing placeholder while they load, then fade in",
         ],
     },
     Release {

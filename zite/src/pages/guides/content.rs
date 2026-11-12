@@ -7,6 +7,8 @@
 
 use dioxus::prelude::*;
 
+use crate::components::MediaSize;
+
 /// A block of article content. Rendered in order by `super::render_block`.
 pub(crate) enum Block {
     /// Emphasized intro paragraph.
@@ -33,6 +35,24 @@ pub(crate) enum Block {
         alt: &'static str,
         caption: Option<&'static str>,
     },
+}
+
+/// The size of a phone capture, which nearly every guide screenshot is.
+const PHONE_CAPTURE: MediaSize = MediaSize {
+    width: 860,
+    height: 1862,
+};
+
+/// A guide screenshot's size in pixels, for its frame to hold while it
+/// loads. A test checks every file under `assets/guides/` against it.
+pub(crate) fn guide_image_size(file: &str) -> MediaSize {
+    match file {
+        "share-your-deck/02-shared-page.webp" => MediaSize {
+            width: 1236,
+            height: 1213,
+        },
+        _ => PHONE_CAPTURE,
+    }
 }
 
 /// Compile-time asset registry for guide screenshots. `asset!()` needs a
@@ -1189,6 +1209,39 @@ mod tests {
                     "{}: {file} has no guide_image arm",
                     guide.slug
                 );
+            }
+        }
+    }
+
+    /// A WebP's width and height from its header, for the three encodings
+    /// (lossy `VP8 `, lossless `VP8L`, extended `VP8X`).
+    fn webp_size(bytes: &[u8]) -> (u32, u32) {
+        let le = |range: std::ops::Range<usize>| {
+            bytes[range]
+                .iter()
+                .rev()
+                .fold(0u32, |n, b| (n << 8) | u32::from(*b))
+        };
+        let plus_one = |n: u32| n.checked_add(1).unwrap();
+        match &bytes[12..16] {
+            b"VP8 " => (le(26..28) & 0x3fff, le(28..30) & 0x3fff),
+            b"VP8L" => {
+                let bits = le(21..25);
+                (plus_one(bits & 0x3fff), plus_one((bits >> 14) & 0x3fff))
+            }
+            b"VP8X" => (plus_one(le(24..27)), plus_one(le(27..30))),
+            other => panic!("not a WebP chunk: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn every_screenshot_frame_has_the_file_s_size() {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("assets/guides");
+        for guide in GUIDES {
+            for file in shots(guide) {
+                let bytes = std::fs::read(root.join(file)).unwrap();
+                let MediaSize { width, height } = guide_image_size(file);
+                assert_eq!(webp_size(&bytes), (width, height), "{file}");
             }
         }
     }
