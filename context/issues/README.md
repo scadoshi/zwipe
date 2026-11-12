@@ -79,7 +79,7 @@ Who checked, on which live build, what they saw.
 | [357](357-stack-hover-shift.md) | Hovering a stack shifts its cards a pixel | fixing | thinker | - |
 | [356](356-list-row-meld.md) | A meld card's list row has no Meld toggle | fixing | scotland | #555 |
 | [359](359-key-map-gaps.md) | f and v gaps on Commander maybeboard and meld cards | fixing | scotland | #559 |
-| [360](360-modal-entrance.md) | The wide modals pop in with no motion | fixing | laptop | orangui#35 |
+| [360](360-modal-entrance.md) | The wide modals pop in with no motion | fixing | laptop | #565, orangui#35 |
 
 ## Waiting for live verification
 

@@ -1,6 +1,6 @@
 # 360. The wide modals pop in with no motion
 
-State: fixing | Owner: laptop | PR: - (orangui#35) | Build seen: production, web
+State: fixing | Owner: laptop | PR: #565 (orangui#35) | Build seen: production, web
 
 ## Report
 Composer for Scotty, 2026-11-11, web: the full-screen and wide modals (the Printings picker, the Oracle tags dictionary, the Oracle tag Examples modal and any other large sheet) just pop in. They should get a softer entrance: a fade with a small rise or grow (from 0.98 and 8px down) over about 250 to 300ms on cubic-bezier(0.22, 1, 0.36, 1), the curve the stacks use. It should be one shared curve and duration from orangui tokens, set on the shared modal rather than per screen. The exit can stay quicker, and prefers-reduced-motion must be respected.
@@ -10,7 +10,7 @@ Composer for Scotty, 2026-11-11, web: the full-screen and wide modals (the Print
 - The Examples modal and the narrower dictionary (`.screen.web-large-modal`, from 900px) are fixed screens with no entrance at all.
 
 ## Fix
-laptop:
+laptop, #565:
 - orangui#35:
   - `--ease-enter` (cubic-bezier(0.22, 1, 0.36, 1)) and `--enter-duration` (280ms) on `:root`;
   - `@keyframes modal-enter`, from opacity 0, `translate: 0 0.5rem` and `scale: 0.98`, so it composes with the modal's centering transform;
