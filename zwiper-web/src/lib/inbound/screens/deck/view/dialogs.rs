@@ -66,20 +66,22 @@ pub fn DeckDialogsHost(
         delete: delete_open,
     } = dialogs;
 
-    // The link's owner and deck name, read when a link is shown or copied.
+    // The link's owner, read when a link is shown or copied, and the deck's
+    // name for a copy made from a handler, which runs after the effect has
+    // caught the name up. The dialog itself names the link from `deck_name`.
     let session: Signal<Option<Session>> = use_context();
     let mut name = use_signal(|| deck_name.clone());
     use_effect(use_reactive!(|deck_name| name.set(deck_name)));
-    let link = move |token: Uuid| {
+    let link = move |deck: &str, token: Uuid| {
         let owner = session
             .peek()
             .as_ref()
             .map(|s| s.user.username.to_string())
             .unwrap_or_default();
-        share_link(&owner, &name.peek(), token)
+        share_link(&owner, deck, token)
     };
     let copy_link = move |token: Uuid| {
-        browser::copy_to_clipboard(&link(token));
+        browser::copy_to_clipboard(&link(&name.peek(), token));
         toast.info(
             "Share link copied".to_string(),
             ToastOptions::default().duration(TOAST_QUICK),
@@ -194,7 +196,7 @@ pub fn DeckDialogsHost(
             actions: share_actions,
             div { "{share_body}" }
             if let Some(token) = share_token() {
-                ShareUrl { url: link(token) }
+                ShareUrl { url: link(&deck_name, token) }
             }
         }
         AlertDialog {
