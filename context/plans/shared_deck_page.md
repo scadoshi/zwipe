@@ -1,6 +1,6 @@
 # Shared deck page: one deck page component for zite and zwiper-web
 
-Issue 370. Status: approved 2026-11-12; phase 1 shipped (#572); phase 2 in two PRs, the carts and stat panels (#592) then the cards view; phase 3 in #619 and #621, 4b-1 in #622; phase 4 (zite on the shared page, read only) in #624.
+Issue 370. Status: approved 2026-11-12; phase 1 shipped (#572); phase 2 in two PRs, the carts and stat panels (#592) then the cards view; phase 3 in #619 and #621, 4b-1 in #622; phase 4 (zite on the shared page, read only) in #624; phase 5 (the phone's Profile | Cards switch, `DeckPage`'s `areas`) pushed to release by halo.
 
 ## Goal
 

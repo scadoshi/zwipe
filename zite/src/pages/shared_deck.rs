@@ -26,7 +26,7 @@ use zwipe_core::domain::deck::{Board, DeckEntry, Format, deck_tag_label};
 use zwipe_core::domain::share_link;
 use zwipe_core::http::contracts::deck::HttpSharedDeck;
 use zwipe_ui::deck::form::Slot;
-use zwipe_ui::deck::view::StatsProfile;
+use zwipe_ui::deck::view::{DeckArea, StatsProfile};
 use zwipe_ui::deck_cards::keys::RowKind;
 use zwipe_ui::deck_cards::stacks::{
     CardsView, DEAL_DURATION, DEAL_STAGGER_CAP, DealCue, Reveal, deal_delay,
@@ -284,6 +284,8 @@ const FOLDED_STATS: [&str; 5] = ["Budget", "Tags", "Distributions", "Mana", "Dra
 /// carts, a card's image, printings (to look), details, flip and Meld, then the stat panels.
 #[component]
 fn SharedDeckView(deck: HttpSharedDeck) -> Element {
+    // On a phone the page shows the deck's profile or its cards, under a switch below the head.
+    let area = use_signal(DeckArea::default);
     // The meld halves and the printing sheet read their cards through these.
     use_meld_source();
     use_printings_source();
@@ -677,6 +679,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                         host,
                     }
                 },
+                areas: Some(area),
                 stats: rsx! {
                     if has_budget {
                         DeckFold {

@@ -2353,8 +2353,10 @@ html.keyboard-up .web-dock-pair {
 /* A page with areas (DeckPage's `areas`): a phone shows the deck's profile
    (the stats and the foot) or its cards (the controls and the bands), as the
    switch under the head picks. Everything stays mounted; the area not picked
-   only hides. The wide layout, from 900px, shows both and no switch. */
-.deck-area-switch {
+   only hides. The wide layout, from 900px, shows both and no switch; the
+   switch's rule names the page too, so a host's later .chip-row rule can't
+   show it there. */
+.deck-page-areas > .deck-area-switch {
     display: none;
 }
 

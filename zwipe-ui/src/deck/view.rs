@@ -342,7 +342,11 @@ mod tests {
 
     #[test]
     fn a_phone_opens_a_deck_on_its_profile_then_offers_its_cards() {
-        assert_eq!(DeckArea::default(), DeckArea::Profile, "as the app opens a deck");
+        assert_eq!(
+            DeckArea::default(),
+            DeckArea::Profile,
+            "as the app opens a deck"
+        );
         assert_eq!(DeckArea::ALL, [DeckArea::Profile, DeckArea::Cards]);
         let labels: Vec<&str> = DeckArea::ALL.iter().map(|a| a.label()).collect();
         assert_eq!(labels, ["Profile", "Cards"]);

@@ -92,6 +92,11 @@ fn a_page_without_areas_draws_as_it_always_has() {
 
 #[test]
 fn a_phone_hides_the_area_not_picked_and_a_wide_window_shows_both() {
+    assert!(
+        components::MAGIC_CSS
+            .contains(".deck-page-areas > .deck-area-switch {\n    display: none;"),
+        "the wide layout hides the switch at a .chip-row's strength and more"
+    );
     let block = components::MAGIC_CSS
         .split("@media (max-width: 899px)")
         .skip(1)
