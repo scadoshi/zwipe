@@ -48,6 +48,16 @@ pub const MOBILE_STORE_VERSION: Version = Version::new(1, 18, 15);
 /// changelog with an "Upcoming" badge instead of "Latest".
 pub const UPCOMING: &[Release] = &[
     Release {
+        version: Version::new(1, 19, 5),
+        date: None,
+        entries: &[
+            "On the web's deck page, Quick add ends where the widest chip row under it does",
+            "Home's counters on the web have an Activity button, as in the app",
+            "A card image that fails to load shows the card's name and text instead of the card under it",
+            "The Z in the web's nav is the same size as on zwipe.net",
+        ],
+    },
+    Release {
         version: Version::new(1, 19, 4),
         date: None,
         entries: &[
@@ -57,9 +67,6 @@ pub const UPCOMING: &[Release] = &[
             "On the web, an Oracle tag's examples take h, j, d and v, ? opens the hint of the open modal, and a card slides clear of its details where it fits",
             "On the web's deck page, Art grays out while Stacks is on, since stacks always show art",
             "Buying from TCGplayer adds each card in the printing you picked",
-            "On the web's deck page, Quick add ends where the widest chip row under it does",
-            "Home's counters on the web have an Activity button, as in the app",
-            "A card image that fails to load shows the card's name and text instead of the card under it",
         ],
     },
     Release {
@@ -77,7 +84,6 @@ pub const UPCOMING: &[Release] = &[
         version: Version::new(1, 19, 2),
         date: None,
         entries: &[
-            "The Z in the web's nav is the same size as on zwipe.net",
             "The deck page on the web deals its featured cards in, as a shared deck does",
             "Back returns to the screen you came from instead of looping between Create deck and Decks",
             "On the web, a cloned deck shows its own name as soon as it opens, and back and forward between two decks show the right one",
