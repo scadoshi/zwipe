@@ -10,6 +10,8 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ImageSize;
 use zwipe_ui::deck_cards::stacks;
 
+use crate::meld::{MeldSource, MeldToggle};
+
 /// One card in a [`CardStack`], with its copies in the deck.
 #[derive(Debug, Clone, PartialEq)]
 pub struct StackCard {
@@ -39,13 +41,20 @@ pub fn CardStack(
     let tucks = stacks::tucked(cards.len());
     let shifts = stacks::shifted(cards.len(), at);
     let full = stacks::exposed(cards.len(), at);
+    // A meld half with its Meld on shows its melded card.
+    let melds = try_use_context::<MeldSource>();
     rsx! {
         div { class: "card-stack", role: "list",
             for (((StackCard { card, qty, face }, tucked), shifted), exposed) in cards.into_iter().zip(tucks).zip(shifts).zip(full) {
                 {
                     let id = card.scryfall_data.id;
                     let name = card.scryfall_data.name.clone();
-                    let image = card.scryfall_data.shown_face_image_url(face, ImageSize::Normal).map(str::to_owned);
+                    let meld = MeldToggle::of(&card.scryfall_data, melds);
+                    let image = match meld.shown() {
+                        Some(melded) => melded.shown_face_image_url(0, ImageSize::Normal),
+                        None => card.scryfall_data.shown_face_image_url(face, ImageSize::Normal),
+                    }
+                    .map(str::to_owned);
                     let mut class = String::from("card-stack-slot");
                     if tucked {
                         class.push_str(" tucked");

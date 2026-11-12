@@ -6,7 +6,7 @@
 //! keyed by Scryfall id, and a callback that fetches one. Without a source
 //! no meld toggle shows.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -25,12 +25,16 @@ pub enum MeldFetch {
     Failed,
 }
 
-/// The host's melded cards: the session's fetches by Scryfall id, and the
-/// callback that starts one, which writes its outcome into `results`.
+/// The host's melded cards: the session's fetches by Scryfall id, the
+/// halves whose Meld is on, and the callback that starts a fetch, which
+/// writes its outcome into `results`. A half's Meld is one state wherever the
+/// half shows (its image, its details, its row, its stack card).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct MeldSource {
     /// Each melded card asked for this session, by its Scryfall id.
     pub results: Signal<HashMap<Uuid, MeldFetch>>,
+    /// The halves showing their melded card, by the half's Scryfall id.
+    pub on: Signal<HashSet<Uuid>>,
     /// Fetches the melded card with this Scryfall id.
     pub request: Callback<Uuid>,
 }
@@ -49,7 +53,10 @@ fn shown_result(wanted: bool, fetch: Option<&MeldFetch>) -> Option<&ScryfallData
 pub struct MeldToggle {
     meld: Option<Meld>,
     result: Option<ScryfallData>,
-    wanted: Signal<bool>,
+    /// The half's Scryfall id, its key in [`MeldSource::on`].
+    id: Uuid,
+    /// Whether the half's Meld is on.
+    wanted: bool,
     /// The melded card's fetch failed; the toggle reads as off.
     failed: bool,
     source: Option<MeldSource>,
@@ -83,7 +90,7 @@ impl MeldToggle {
     /// has not failed.
     #[must_use]
     pub fn on(&self) -> bool {
-        *self.wanted.read() && !self.failed
+        self.wanted && !self.failed
     }
 
     /// The other half's name, when known.
@@ -96,13 +103,17 @@ impl MeldToggle {
     /// unless it is fetched or on its way, so after a failed fetch one tap
     /// tries again.
     pub fn toggle(&self) {
-        let mut wanted = self.wanted;
-        let next = !*wanted.peek() || self.failed;
-        wanted.set(next);
-        if !next {
+        let Some(mut source) = self.source else {
+            return;
+        };
+        let next = !source.on.peek().contains(&self.id) || self.failed;
+        if next {
+            source.on.write().insert(self.id);
+        } else {
+            source.on.write().remove(&self.id);
             return;
         }
-        if let (Some(meld), Some(source)) = (self.meld.as_ref(), self.source) {
+        if let Some(meld) = self.meld.as_ref() {
             let known = matches!(
                 source.results.peek().get(&meld.result_id),
                 Some(MeldFetch::Ready(_) | MeldFetch::Loading)
@@ -114,25 +125,36 @@ impl MeldToggle {
     }
 }
 
-/// The meld toggle for the card `sd`: off at first, each card its own.
+/// The meld toggle for the card `sd`, from the [`MeldSource`] in context:
+/// off at first, and one state wherever the card shows.
 #[must_use]
 pub fn use_meld(sd: &ScryfallData) -> MeldToggle {
-    let source = try_use_context::<MeldSource>();
-    let wanted = use_signal(|| false);
-    let meld = source.and_then(|_| sd.meld());
-    let failed = meld.as_ref().zip(source).is_some_and(|(m, s)| {
-        matches!(s.results.read().get(&m.result_id), Some(MeldFetch::Failed))
-    });
-    let result = meld.as_ref().zip(source).and_then(|(m, s)| {
-        let results = s.results.read();
-        shown_result(*wanted.read(), results.get(&m.result_id)).cloned()
-    });
-    MeldToggle {
-        meld,
-        result,
-        wanted,
-        failed,
-        source,
+    MeldToggle::of(sd, try_use_context::<MeldSource>())
+}
+
+impl MeldToggle {
+    /// The meld toggle for the card `sd` under `source`, for a caller outside
+    /// a component's body (a key handler); [`use_meld`] in one. Without a
+    /// source the card has no toggle.
+    #[must_use]
+    pub fn of(sd: &ScryfallData, source: Option<MeldSource>) -> Self {
+        let meld = source.and_then(|_| sd.meld());
+        let wanted = source.is_some_and(|s| s.on.read().contains(&sd.id));
+        let failed = meld.as_ref().zip(source).is_some_and(|(m, s)| {
+            matches!(s.results.read().get(&m.result_id), Some(MeldFetch::Failed))
+        });
+        let result = meld.as_ref().zip(source).and_then(|(m, s)| {
+            let results = s.results.read();
+            shown_result(wanted, results.get(&m.result_id)).cloned()
+        });
+        Self {
+            meld,
+            result,
+            id: sd.id,
+            wanted,
+            failed,
+            source,
+        }
     }
 }
 

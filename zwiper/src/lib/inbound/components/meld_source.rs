@@ -1,7 +1,7 @@
 //! The melded cards behind meld halves, fetched at most once a session for
 //! the shared meld toggle on card images and card details.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use components::{MeldFetch, MeldSource};
 use dioxus::prelude::*;
@@ -30,5 +30,11 @@ pub fn use_meld_source(client: Signal<ZwipeClient>) {
             results.write().insert(id, fetched);
         });
     });
-    use_context_provider(|| MeldSource { results, request });
+    let on: Signal<HashSet<Uuid>> =
+        use_hook(|| Signal::new_in_scope(HashSet::new(), ScopeId::ROOT));
+    use_context_provider(|| MeldSource {
+        results,
+        on,
+        request,
+    });
 }

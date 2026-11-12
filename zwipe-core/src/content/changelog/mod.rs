@@ -60,6 +60,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "On the web, u and Ctrl+Z undo on the deck page and the swipe screens",
         "On the web's deck page, d opens or closes a card's details",
         "A meld card's open row in a deck's list has the Meld toggle its details drawer has",
+        "On the web, f opens the filter on Commander maybeboard, and a meld card's Meld is one switch for its image, details, row and stack card",
         "Flipping a card on the web's deck page turns its stack image and row preview too",
         "The web's deck page runs the window's width, its list in two columns on a wide screen",
         "Image in a stack card's details on the web's deck page",
