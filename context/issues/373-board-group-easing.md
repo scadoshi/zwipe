@@ -1,6 +1,6 @@
 # 373. Board and Group by changes snap the deck page's cards
 
-State: fixing | Owner: laptop | PR: - | Build seen: production, web
+State: fixing | Owner: laptop | PR: #578 | Build seen: production, web
 
 ## Report
 Composer for Scotty, 2026-11-12: on the deck page, toggling the Boards chips (Main, Maybe, Side) makes cards vanish or appear instantly, and changing Group by snaps to the new grouping. Both should ease:
@@ -14,7 +14,7 @@ Composer for Scotty, 2026-11-12: on the deck page, toggling the Boards chips (Ma
 The bands re-render from the new listing in one step, with no record of where anything was.
 
 ## Fix
-laptop, one code path for both, `deck/view/settle.rs`: a script installed once on the deck page.
+laptop, #578, one code path for both, `deck/view/settle.rs`: a script installed once on the deck page.
 - **Before the change:** a capture-phase click on a chip row marked `data-settle` (Boards and Group by) records where every card sits (list rows and stack cards by `data-row`) and every group (by a new `data-fold` on `DeckFold` and on each stack).
 - **After the bands re-render** (a `MutationObserver` on `.deck-bands`, then a frame):
   - a card or group still shown slides from its old place to its new one, on `translate`, so it composes with the stacks' own transforms; a card's slide is relative to its group's, so the two don't add up;
