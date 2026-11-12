@@ -19,5 +19,8 @@ halo:
 - `zite/src/pages/guides/content.rs`, the commander maybeboard guide's screenshot alt text: it describes the old screenshot, which still shows the words, so it waits for a new screenshot.
 - A starred row's ★ marker draws in `--palette-6` (a coral red in rustbox), while the star toggle and the Star hint use `--color-warning` (gold).
 
+## Later
+- 414 switched Image from the card art to Lucide's square `image`, with Lucide's ISC notice in `components/LICENSE-LUCIDE`.
+
 ## Verification
 -

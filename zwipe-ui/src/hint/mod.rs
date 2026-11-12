@@ -109,8 +109,8 @@ pub enum KeyIcon {
     Share,
     /// The buy button's cart.
     Cart,
-    /// The Image button's card art: a card's frame with a sun over a hill.
-    CardArt,
+    /// The Image button's picture: a square frame with a sun over a hill.
+    Image,
     /// The Flip button's two arrows turning over each other.
     Flip,
     /// The Meld button's two lines merging into one.
@@ -150,7 +150,7 @@ impl KeyIcon {
         Self::Clone,
         Self::Share,
         Self::Cart,
-        Self::CardArt,
+        Self::Image,
         Self::Flip,
         Self::Meld,
         Self::Star,
@@ -189,7 +189,7 @@ impl KeyIcon {
             Self::Clone => "clone",
             Self::Share => "share",
             Self::Cart => "cart",
-            Self::CardArt => "card-art",
+            Self::Image => "image",
             Self::Flip => "flip",
             Self::Meld => "meld",
             Self::Star => "star",
@@ -414,8 +414,8 @@ mod tests {
         assert_eq!(KeyIcon::from_name("pencil"), Some(KeyIcon::Edit));
         assert_eq!(KeyIcon::from_name("funel"), None);
         assert_eq!(
-            KeyIcon::from_name("card-art"),
-            Some(KeyIcon::CardArt),
+            KeyIcon::from_name("image"),
+            Some(KeyIcon::Image),
             "the Image button's icon"
         );
         assert_eq!(KeyIcon::from_name("flip"), Some(KeyIcon::Flip));

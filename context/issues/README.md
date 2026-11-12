@@ -128,6 +128,7 @@ Who checked, on which live build, what they saw.
 | [413](413-disabled-chip-light.md) | A disabled chip looks enabled in light themes | fixing | thinker | orangui 00a8954 |
 | [408](408-stack-header-wrap.md) | Stack headers cut long names short, and the cart sits far from the price | fixing | halo | nits/halo-408 |
 | [407](407-byline-chip.md) | The shared deck's owner sits on its own line, not as a chip | fixing | laptop | - |
+| [414](414-sheet-icons-named.md) | The shortcuts sheet's icon rows show no names | fixing | halo | nits/halo-414 |
 
 ## Waiting for live verification
 

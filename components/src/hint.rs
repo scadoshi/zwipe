@@ -108,7 +108,7 @@ pub fn KeyGlyph(icon: KeyIcon) -> Element {
         KeyIcon::Minus => MINUS,
         KeyIcon::Funnel => FUNNEL,
         KeyIcon::Cart => crate::CART,
-        KeyIcon::CardArt => crate::CARD_ART,
+        KeyIcon::Image => crate::IMAGE_ICON,
         KeyIcon::Flip => orangui::icons::FLIP,
         KeyIcon::Meld => crate::MELD,
         KeyIcon::Star => crate::STAR,

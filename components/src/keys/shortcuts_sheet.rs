@@ -7,7 +7,7 @@
 
 use dioxus::prelude::*;
 use uuid::Uuid;
-use zwipe_ui::shortcuts::{self, GlobalKey, SheetRow};
+use zwipe_ui::shortcuts::{self, GlobalKey, RowPart, SheetRow};
 
 use crate::hint::KeyGlyph;
 use crate::keys::guard;
@@ -146,14 +146,14 @@ pub fn ShortcutsSheet(open: Signal<bool>) -> Element {
                                     }
                                 }
                             }
-                            // A row that names an icon button shows its icon, never words.
-                            if let Some(icon) = shortcuts::row_icon(does) {
-                                span { class: "web-shortcut-does",
-                                    HintKey { KeyGlyph { icon } }
-                                    span { class: "sr-only", {shortcuts::row_label(does)} }
+                            // An icon button shows its icon beside its name, so the sheet teaches it.
+                            span { class: "web-shortcut-does",
+                                for part in shortcuts::row_parts(does) {
+                                    match part {
+                                        RowPart::Icon(icon) => rsx! { HintKey { KeyGlyph { icon } } },
+                                        RowPart::Text(words) => rsx! { "{words}" },
+                                    }
                                 }
-                            } else {
-                                span { class: "web-shortcut-does", "{does}" }
                             }
                         }
                     }

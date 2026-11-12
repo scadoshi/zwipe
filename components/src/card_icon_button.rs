@@ -7,13 +7,16 @@ use dioxus::prelude::*;
 use crate::data_action;
 use crate::icons::DockIcon;
 
-/// The card art icon: a card's frame with a sun over a hill, drawn in the kit's 24-unit stroke.
-pub const CARD_ART: &str = "M7 2h10a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zM10 6.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 1 0 0-3zM19 15l-3-3-8 8";
+/// The image icon: a square frame with a sun over a hill, Lucide's `image` drawn as one path
+/// (ISC, `components/LICENSE-LUCIDE`).
+pub const IMAGE_ICON: &str = "M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM9 7a2 2 0 1 0 0 4 2 2 0 1 0 0-4zM21 15l-3.086-3.086a2 2 0 0 0-2.828 0L6 21";
 
-/// The meld icon: two lines merging into one that points on, drawn in the kit's 24-unit stroke.
+/// The meld icon: two lines merging into one that points on, Lucide's `merge` drawn as one path
+/// (ISC, `components/LICENSE-LUCIDE`).
 pub const MELD: &str = "M8 6l4-4 4 4M12 2v10.3a4 4 0 0 1-1.17 2.83L4 22M20 22l-5-5";
 
-/// The star icon: an outline, which [`StarButton`] fills while the card is starred.
+/// The star icon: an outline, which [`StarButton`] fills while the card is starred. Our own
+/// drawing, as is Flip's, which is the kit's (orangui `icons::FLIP`).
 pub const STAR: &str =
     "M12 2.5l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5-5.8-3.1-5.8 3.1 1.1-6.5-4.7-4.6 6.5-.9z";
 
@@ -54,11 +57,11 @@ pub fn CardIconButton(
     }
 }
 
-/// The button that opens a card's image, the card art icon named [`IMAGE_LABEL`].
+/// The button that opens a card's image, the image icon named [`IMAGE_LABEL`].
 #[component]
 pub fn ImageButton(on_click: EventHandler<()>) -> Element {
     rsx! {
-        CardIconButton { label: IMAGE_LABEL, path: CARD_ART, action: data_action::IMAGE, on_click }
+        CardIconButton { label: IMAGE_LABEL, path: IMAGE_ICON, action: data_action::IMAGE, on_click }
     }
 }
 
