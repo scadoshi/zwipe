@@ -128,7 +128,7 @@ mod tests {
     }
 
     #[test]
-    fn the_few_panel_pages_share_zwipe_net_s_1400px_column() {
+    fn the_few_panel_pages_share_zwipe_net_s_1400px_column_and_text_fills_it() {
         const ZITE_CSS: &str = include_str!("../../../../../zite/assets/style.css");
         let root = WEB_CSS.get(..WEB_CSS.find("\n}\n").unwrap()).unwrap();
         assert!(root.contains("--web-page-max: 87.5rem;"), "{root}");
@@ -141,23 +141,15 @@ mod tests {
             ".web-page",
         );
         assert!(page.contains("max-width: var(--web-page-max)"), "{page}");
-        // Home takes the shared column rather than a width of its own.
-        let home = rule_in(
-            "@media (min-width: 900px) {\n    /* zite's page from the top",
-            ".web-home-page .web-hero-tagline",
-        );
-        assert!(home.contains("max-width: 70ch"), "{home}");
+        // Home takes the shared column rather than a width of its own, and
+        // no text in it or elsewhere stops at a character measure.
+        assert!(!WEB_CSS.contains("70ch"), "text fills its panel");
         assert!(
             !WEB_CSS.contains(".web-page.web-home-page {"),
             "Home has no width of its own"
         );
         let row = rule_in("@media (min-width: 120rem) {", ".web-home .web-home-page");
         assert!(row.contains("repeat(3, minmax(0, 1fr))"), "{row}");
-        let text = rule_in(
-            "@media (min-width: 900px) {\n    .web-privacy .privacy-content {",
-            ".web-privacy .privacy-section :is(p, ul)",
-        );
-        assert!(text.contains("max-width: 70ch"), "{text}");
     }
 
     #[test]

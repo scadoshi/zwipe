@@ -52,6 +52,7 @@ pub const UPCOMING: &[Release] = &[
         date: None,
         entries: &[
             "The web's Home and its other few-panel pages sit in the same 1400px column as zwipe.net",
+            "On the web, Home's tagline and the Privacy policy's text run the full width of their panels",
         ],
     },
     Release {
