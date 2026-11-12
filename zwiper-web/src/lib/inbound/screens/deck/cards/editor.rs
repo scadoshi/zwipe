@@ -223,8 +223,8 @@ pub(crate) fn list_rows(
 }
 
 /// The engine's state and actions. `Copy`: every field is a signal, a memo
-/// or a callback.
-#[derive(Clone, Copy)]
+/// or a callback, which compare by identity.
+#[derive(Clone, Copy, PartialEq)]
 pub(crate) struct Editor {
     /// The deck as fetched, with its warnings and command zone cards.
     pub deck: Signal<Option<Deck>>,
@@ -1038,13 +1038,26 @@ pub(crate) fn use_deck_editor(deck_id: Uuid, on_failure: LoadFailure) -> Editor 
 }
 
 /// One listed row as a selectable [`CardRow`] with the editing actions its
-/// kind allows.
+/// kind allows, as its own component keyed by the card, so a change to one
+/// row (its details opening, its face turning) renders that row alone.
 pub(crate) fn row_view(
     ed: &Editor,
     cur: PriceCurrency,
     row_meta: &HashMap<Uuid, Meta>,
     row: RowInfo,
 ) -> Element {
+    let card_id = row.card.scryfall_data.id;
+    let board = board_of(row_meta, card_id);
+    rsx! {
+        DeckRowItem { key: "{card_id}", ed: *ed, cur, board, row }
+    }
+}
+
+/// [`row_view`]'s row. It reads whether it is the open row and the face it
+/// shows through memos of its own, so the page and the other rows stay put
+/// when they change.
+#[component]
+fn DeckRowItem(ed: Editor, cur: PriceCurrency, board: Board, row: RowInfo) -> Element {
     let Editor {
         selected,
         mut face,
@@ -1055,13 +1068,16 @@ pub(crate) fn row_view(
         move_to_board,
         toggle_mvp,
         ..
-    } = *ed;
-    let meta_for_rows = row_meta.clone();
+    } = ed;
     {
         let card_id = row.card.scryfall_data.id;
-        let shown_face = faces.read().get(&card_id).copied().unwrap_or(0);
+        let shown_face = use_memo(use_reactive!(|card_id| faces
+            .read()
+            .get(&card_id)
+            .copied()
+            .unwrap_or(0)))();
+        let is_selected = use_memo(use_reactive!(|card_id| selected() == Some(card_id)))();
         let RowInfo { card, qty, kind } = row;
-        let is_selected = selected() == Some(card_id);
         let RowActions {
             on_qty,
             on_move,
@@ -1077,7 +1093,7 @@ pub(crate) fn row_view(
                 on_move: Some(EventHandler::new(move |b| {
                     move_to_board.call((card_id, b, /* record */ true));
                 })),
-                board: Some(board_of(&meta_for_rows, card_id)),
+                board: Some(board),
                 mvp: Some(mvp),
                 on_star: Some(EventHandler::new(move |()| toggle_mvp.call((card_id, mvp)))),
                 on_print: Some(EventHandler::new(move |c: Card| {
@@ -1110,7 +1126,6 @@ pub(crate) fn row_view(
         };
         rsx! {
             div {
-                key: "{card_id}",
                 class: if is_selected { "web-deck-row selected" } else { "web-deck-row" },
                 "data-row": "{card_id}",
                 onclick: move |_| face.set(0),
