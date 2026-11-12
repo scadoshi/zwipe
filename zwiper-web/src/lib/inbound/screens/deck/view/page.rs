@@ -12,9 +12,10 @@ use std::time::Duration;
 
 use components::icons::{CloneIcon, DockIcon, EditIcon, MINUS, PLUS, ShareIcon, UNDO};
 use components::{
-    CART, CartButton, Chip, DeckBand, DeckControls, DeckFacts, DeckFold, DeckHead, DeckPage,
-    DeckSection, DockFilter, FeaturedCard, GroupBuyDialog, HoverStackHost, StoreDialog,
-    use_group_buy, use_hover_stack,
+    BudgetBody, CART, CartButton, Chip, CurrencyChips, DeckBand, DeckControls, DeckFacts, DeckFold,
+    DeckHead, DeckPage, DeckSection, DistributionsBody, DockFilter, DrawOddsStepper, FeaturedCard,
+    GroupBuyDialog, HoverStackHost, ManaBody, StoreDialog, TagsBody, charted, use_group_buy,
+    use_hover_stack,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -35,16 +36,15 @@ use super::ghost::{
     DeckBandsGhost, DeckControlsGhost, DeckFootGhost, DeckHeadGhost, DeckStatsGhost,
 };
 use super::panels::{DangerZonePanel, DataPanel};
-use super::sections::{
-    BudgetBody, CurrencyChips, DistributionsBody, DrawOddsStepper, ManaBody, TagsBody,
-    WarningFixes, WarningsBody, charted,
-};
+use super::sections::{WarningFixes, WarningsBody};
 use super::stacks::{StackDetails, stack_details, stacks_view, use_stack_details_sync};
 use crate::domain::deck::{has_budget, tag_count};
 use crate::inbound::card_filter::CardFilterPanel;
 use crate::inbound::card_stores::CardStores;
 use crate::inbound::cards::card_row::{CardOverlays, CardOverlaysHost, use_card_overlays};
-use crate::inbound::cards::otag::{OtagExamplesHost, use_otag_reveals};
+use crate::inbound::cards::otag::{
+    OtagDescribe, OtagExamplesHost, OtagExamplesOpen, use_otag_reveals,
+};
 use crate::inbound::cards::printing_sheet::PrintingSheet;
 use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog};
@@ -406,6 +406,9 @@ pub fn DeckWidePage(
         price: price.filter(|v| *v > 0.0).map(|v| shown.format_amount(v)),
     });
     let charts = charted(metrics.as_ref());
+    // The Oracle tag lookups the Distributions charts hand to their tags.
+    let describe_tag = try_use_context::<OtagDescribe>().map(|d| d.0);
+    let on_examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
     let land_count = metrics.as_ref().map_or(0, |m| m.land_count);
     let land_target = held_profile.as_ref().and_then(|p| p.land_target);
 
@@ -540,7 +543,11 @@ pub fn DeckWidePage(
                 }
                 if let Some(m) = charts.clone() {
                     DeckFold { fold_key: "Distributions", title: "Distributions", folded,
-                        DistributionsBody { metrics: m }
+                        DistributionsBody {
+                            metrics: m,
+                            describe_tag,
+                            on_examples,
+                        }
                     }
                 }
                 if charts.is_some() || land_target.is_some() {

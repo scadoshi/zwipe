@@ -57,6 +57,7 @@ mod cover_flow;
 mod danger_zone;
 pub mod data_action;
 mod deck_page;
+mod deck_stats;
 mod drawer_sheet;
 mod flippable_card_image;
 mod fold;
@@ -104,6 +105,10 @@ pub use danger_zone::DangerZoneAction;
 pub use deck_page::{
     DeckBand, DeckControls, DeckFacts, DeckFold, DeckHead, DeckPage, DeckSection, FeaturedCard,
     NO_CARDS, sections,
+};
+pub use deck_stats::{
+    BudgetBody, CurrencyChips, DistributionsBody, DrawOddsStepper, InfoRow, ManaBody, StatHints,
+    StatTopic, TagsBody, charted, draw_odds_hint,
 };
 pub use drawer_sheet::DrawerSheet;
 pub use flippable_card_image::{FlippableCardImage, reset_image_ease};
