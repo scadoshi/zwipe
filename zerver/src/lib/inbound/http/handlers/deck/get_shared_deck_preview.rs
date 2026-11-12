@@ -49,7 +49,7 @@ pub async fn get_shared_deck_preview(
     Query(query): Query<PreviewQuery>,
 ) -> Result<Response, ApiError> {
     let token = share_token(&token)?;
-    let deck = shared_body(&state, token).await?;
+    let deck = Box::pin(shared_body(&state, token)).await?;
     let current = deck
         .updated_at
         .map(|t| shared_deck_preview_version(t.timestamp()));

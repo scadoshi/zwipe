@@ -21,6 +21,7 @@ use zwipe_core::domain::card::search_card::cards::Cards;
 use zwipe_core::domain::card::search_card::group_cards::GroupByOption;
 use zwipe_core::domain::deck::deck_metrics::{self, DeckMetrics};
 use zwipe_core::domain::deck::{Board, DeckEntry, Format, deck_tag_label};
+use zwipe_core::domain::share_link;
 use zwipe_core::http::contracts::deck::HttpSharedDeck;
 use zwipe_ui::colors::ColorCounts;
 use zwipe_ui::deck_cards::{self, Zone};
@@ -30,7 +31,7 @@ use zwipe_ui::filter::picker::Sources;
 use zwipe_ui::stores::catalog::{Catalog, Kind};
 
 use crate::components::{OVERLAY_EXIT_MS, PageMeta, sleep_ms};
-use crate::{Footer, Nav, ShowsPips, api};
+use crate::{Footer, Nav, Route, ShowsPips, api};
 
 /// Shortest the retry spinner shows, so an instant failure still reads as a click.
 const RETRY_SPINNER_MIN_MS: u32 = 500;
@@ -180,8 +181,20 @@ fn has_cards(deck: &HttpSharedDeck) -> bool {
         || deck.signature_spell.is_some()
 }
 
+/// A shared deck at its own link, `/<owner>/deck/<slug>/<token>`.
 #[component]
-pub fn SharedDeck(token: String) -> Element {
+pub fn SharedDeckPage(owner: String, slug: String, token: String) -> Element {
+    rsx! { SharedDeck { token, at: Some((owner, slug)) } }
+}
+
+/// The shared deck `token` names. `at` is the owner and slug the link
+/// carried (none for a `/deck/<token>` link); once the deck loads, the page
+/// moves to its canonical link when they differ from its current owner and
+/// slug. A server that sends no owner leaves the link as it is.
+#[component]
+pub fn SharedDeck(token: String, #[props(default)] at: Option<(String, String)>) -> Element {
+    let navigator = use_navigator();
+    let link_token = token.clone();
     let mut result: Resource<Result<HttpSharedDeck, FetchError>> = use_resource(move || {
         let token = token.clone();
         async move {
@@ -198,6 +211,26 @@ pub fn SharedDeck(token: String) -> Element {
                     ClientError::NotFound(_) => FetchError::NotShared,
                     other => FetchError::Network(other.to_string()),
                 })
+        }
+    });
+
+    // A stale or old-style link moves to the canonical one, in place.
+    use_effect(move || {
+        let canonical = match &*result.read() {
+            Some(Ok(deck)) => deck
+                .owner
+                .clone()
+                .map(|owner| (owner, share_link::deck_slug(&deck.name))),
+            _ => None,
+        };
+        if let Some((owner, slug)) = canonical
+            && at.as_ref() != Some(&(owner.clone(), slug.clone()))
+        {
+            navigator.replace(Route::SharedDeckPage {
+                owner,
+                slug,
+                token: link_token.clone(),
+            });
         }
     });
 
@@ -379,9 +412,9 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
     let featured = deck_cards::featured(&zone, &mainboard, is_oathbreaker);
     let featured_ready = featured_timed_out() || featured_loaded() >= featured.len();
     let featured_class = if featured_ready {
-        "sd-featured ready"
+        "deck-head-deal ready"
     } else {
-        "sd-featured"
+        "deck-head-deal"
     };
     // A count of image loads, compared against a handful of featured cards.
     let on_featured_load = move |()| {
@@ -608,6 +641,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                 head: rsx! {
                     DeckHead {
                         name: deck.name.clone(),
+                        byline: deck.owner.clone(),
                         facts,
                         has_featured: !featured.is_empty(),
                         featured_class: featured_class.to_string(),

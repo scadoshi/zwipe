@@ -485,12 +485,14 @@ pub fn SwipeDock(
     }
 }
 
-/// Presses the flip control of the top swipe card, which a card with two
-/// faces has; a single-faced card has none, and nothing happens.
+/// Presses the top swipe card's flip control, which a card with two faces
+/// has, else its Meld toggle, which a meld half has; on any other card
+/// nothing happens.
 pub fn flip_top_card() {
-    document::eval(
-        r#"const flip = document.querySelector('.swipe-stack-card.top [aria-label="Flip card"]'); if (flip) flip.click();"#,
-    );
+    document::eval(&shortcuts::press_first_js(
+        ".swipe-stack-card.top",
+        &components::data_action::FLIP_OR_MELD,
+    ));
 }
 
 /// Listens for arrow keys like [`use_swipe_keys`], routed by
@@ -543,7 +545,7 @@ enum Letters {
 fn swipe_keys(keys: &[Swipe], letters: Letters) -> Vec<&'static str> {
     let vim: &[&'static str] = match letters {
         Letters::Arrows => &[],
-        Letters::Vim => &["h", "j", "k", "l", "u", "J", "K", "L", "U"],
+        Letters::Vim => &shortcuts::SWIPE_LETTERS,
     };
     keys.iter()
         .map(|s| s.key())

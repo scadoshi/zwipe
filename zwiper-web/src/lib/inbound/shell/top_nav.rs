@@ -18,7 +18,7 @@ use crate::inbound::chrome::leave_guard::LeaveDialog;
 use crate::inbound::router::Route;
 use crate::inbound::shell::deck_opener::DeckOpener;
 use crate::inbound::shell::menu_footer::MenuFooter;
-use crate::inbound::shell::nav::{Back, MenuOpen, Section, route_of, section_of};
+use crate::inbound::shell::nav::{self, Back, MenuOpen, Section, route_of, section_of};
 
 /// The screen on view's title and its `?`, which the folded nav shows
 /// between the corners and a wide window's nav shows in its icon row. The
@@ -301,18 +301,12 @@ fn BackButton(
         BackArrow {
             onclick: move |()| {
                 open.set(false);
-                match &back {
-                    Back::To(route) => {
-                        navigator.push(route.clone());
-                    }
-                    Back::Opener(deck_id) => {
-                        navigator.push(opener.back_from(*deck_id));
-                    }
-                    Back::Previous if navigator.can_go_back() => navigator.go_back(),
-                    Back::Previous => {
-                        navigator.push(Route::Home {});
-                    }
-                }
+                let parent = match &back {
+                    Back::To(route) => route.clone(),
+                    Back::Opener(deck_id) => opener.back_from(*deck_id),
+                    Back::Previous => Route::Home {},
+                };
+                nav::back_or(navigator, parent);
             },
         }
     }

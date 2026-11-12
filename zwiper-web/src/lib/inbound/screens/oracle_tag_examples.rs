@@ -22,12 +22,14 @@ use crate::inbound::cards::card_info::{CardDetailsSheet, CardSkeleton};
 use crate::inbound::cards::otag::use_describe_tag;
 use crate::inbound::cards::printing_sheet::PrintingSheet;
 use crate::inbound::cards::swipe_stack::{
-    Swipe, SwipeDock, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
+    self, Swipe, SwipeDock, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
 };
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::back_arrow::BackArrow;
 use crate::inbound::chrome::details_eye::{DockEye, Surface, use_details_eye};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
+use crate::inbound::chrome::page_keys::use_page_keys;
+use crate::inbound::chrome::shortcuts::{self, CardKey};
 use crate::inbound::telemetry;
 
 /// A step forward through the examples. It leaves to the left, so a step
@@ -125,6 +127,12 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
             s.record(action);
         }
     });
+    // `v` flips the top card or shows its meld, as on every screen.
+    use_page_keys(Callback::new(move |key: String| {
+        if shortcuts::card_key(&key) == Some(CardKey::Flip) {
+            swipe_stack::flip_top_card();
+        }
+    }));
     use_swipe_keys_or_undo(
         control,
         vec![Swipe::Left, Swipe::Down],

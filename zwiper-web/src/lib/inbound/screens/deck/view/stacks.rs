@@ -20,7 +20,8 @@ use zwipe_ui::buy::{self, BuyLink};
 use zwipe_ui::deck_cards::stacks::{Gesture, Reveal};
 
 use crate::inbound::cards::card_info::CardDetailsSheet;
-use crate::inbound::screens::deck::cards::editor::{Editor, Meta, RowInfo, RowKind};
+use crate::inbound::cards::card_row::CardOverlays;
+use crate::inbound::screens::deck::cards::editor::{Editor, Meta, RowInfo, RowKind, board_of};
 use crate::inbound::screens::deck::list::DeckGroupSection;
 
 /// The total of `rows` in `currency`, each card's price times its copies;
@@ -31,6 +32,7 @@ fn total_price(rows: &[RowInfo], currency: PriceCurrency) -> Option<String> {
     for row in rows {
         if let Some(each) = deck_metrics::card_price(&row.card.scryfall_data, currency) {
             priced = true;
+            // A row holds at least one copy (`Quantity` is positive; a zone or token row is 1).
             sum += each * f64::from(row.qty.max(1));
         }
     }
@@ -119,7 +121,7 @@ pub(crate) fn stack_buy_dialog(stack_buy: StackBuy) -> Element {
 /// The stacks for `sections`, folding by `collapsed` as the bands do, each card on its face in
 /// `faces` (the front where it has none), its header's cart opening `stack_buy` on its cards.
 pub(crate) fn stacks_view(
-    sections: &[(DeckSection, Vec<RowInfo>)],
+    sections: Vec<(DeckSection, Vec<RowInfo>)>,
     currency: PriceCurrency,
     collapsed: Signal<HashSet<String>>,
     details: StackDetails,
@@ -131,7 +133,7 @@ pub(crate) fn stacks_view(
     let shown_faces = faces();
     rsx! {
         div { class: "deck-stacks",
-            for (section, rows) in sections.iter().cloned() {
+            for (section, rows) in sections {
                 {
                     let price = total_price(&rows, currency);
                     let buyable = !stack_cards(&rows).is_empty();
@@ -181,7 +183,9 @@ pub(crate) fn stacks_view(
 }
 
 /// The open card's details drawer, from `rows` (every listed row), with
-/// the actions its kind allows: Printings in the panel's foot, then the
+/// the actions its kind allows: Image (the screen's image preview in
+/// `overlays`, as a list row's Image opens it) and Printings in the panel's
+/// foot, then the
 /// quantity stepper and the star, then the board moves. It shows the
 /// [`Reveal::drawn`] card and is mounted, closed, on the first row before
 /// any click; nothing when the list is empty.
@@ -190,6 +194,7 @@ pub(crate) fn stack_details(
     rows: &[RowInfo],
     row_meta: &HashMap<Uuid, Meta>,
     details: StackDetails,
+    overlays: CardOverlays,
 ) -> Element {
     let StackDetails {
         reveal,
@@ -219,6 +224,10 @@ pub(crate) fn stack_details(
     let card_id = card.scryfall_data.id;
     let shown_face = faces.read().get(&card_id).copied().unwrap_or(0);
     let print_card = card.clone();
+    let image_of = card.scryfall_data.clone();
+    let CardOverlays { mut preview, .. } = overlays;
+    let on_image =
+        EventHandler::new(move |face: usize| preview.set(Some((image_of.clone(), face))));
     let slot = match kind {
         RowKind::Zone(slot) => Some(slot),
         _ => None,
@@ -231,7 +240,7 @@ pub(crate) fn stack_details(
     });
     let board = match kind {
         RowKind::Board(b) => Some(b),
-        RowKind::Main { .. } => Some(row_meta.get(&card_id).map_or(Board::Deck, |m| m.board)),
+        RowKind::Main { .. } => Some(board_of(row_meta, card_id)),
         RowKind::Zone(_) | RowKind::Token => None,
     };
     let mvp = match kind {
@@ -246,7 +255,7 @@ pub(crate) fn stack_details(
             div { class: "card-action-row",
                 CardEditButtons {
                     qty,
-                    on_qty_change: move |d| change_quantity.call((card_id, d, true)),
+                    on_qty_change: move |d| change_quantity.call((card_id, d, /* record */ true)),
                     mvp,
                     on_toggle_mvp: move |()| {
                         if let Some(is_mvp) = mvp {
@@ -257,7 +266,7 @@ pub(crate) fn stack_details(
             }
             CardBoardMoves {
                 current_board: board,
-                on_move_to: move |to: Board| move_to_board.call((card_id, to, true)),
+                on_move_to: move |to: Board| move_to_board.call((card_id, to, /* record */ true)),
             }
         }
     });
@@ -265,6 +274,7 @@ pub(crate) fn stack_details(
         CardDetailsSheet {
             open: details_open,
             card,
+            on_image,
             on_printings,
             footer,
             class: DRAWER_CLASSES,

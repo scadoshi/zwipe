@@ -42,6 +42,7 @@ use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::hint_dialog::OneTimeHintDialog;
 use crate::inbound::components::hint_host::HintTopic;
 use crate::inbound::components::info_button::InfoButton;
+use crate::inbound::components::navigation::back_handler;
 use crate::inbound::components::navigation::deck_opener::DeckOpener;
 use crate::inbound::components::screen_header::ScreenHeader;
 use crate::inbound::components::telemetry::flush_loop;
@@ -182,7 +183,7 @@ impl Driver {
                     .peek()
                     .deck_id()
                     .map_or(Router::DeckList {}, |id| self.opener.back_from(id));
-                self.navigator.push(back);
+                back_handler::back_or(self.navigator, back);
             }
             Effect::Navigate(destination) => {
                 self.navigator.push(route(destination));
@@ -425,13 +426,20 @@ fn route(destination: Destination) -> Router {
 #[component]
 pub fn ViewDeck(deck_id: Uuid) -> Element {
     let client: Signal<ZwipeClient> = use_context();
+    let session: Signal<Option<Session>> = use_context();
+    // The share link starts with the signed-in user's username.
+    let owner = session
+        .peek()
+        .as_ref()
+        .map(|s| s.user.username.to_string())
+        .unwrap_or_default();
     let driver = Driver {
-        model: use_signal(State::new),
+        model: use_signal(|| State::for_owner(owner)),
         navigator: use_navigator(),
         toast: use_toast(),
         authed: use_authed(Screen::Deck(DeckScreen::View)),
         usage_buffer: use_context(),
-        session: use_context(),
+        session,
         client,
         hint_open: use_signal(|| false),
         dialogs: use_deck_dialogs(),

@@ -509,7 +509,7 @@ async fn shared_deck(app: &TestApp, username: &str) -> String {
 }
 
 #[sqlx::test]
-async fn the_share_payload_carries_its_version_and_the_owners_theme(pool: sqlx::PgPool) {
+async fn the_share_payload_carries_its_version_the_owners_theme_and_username(pool: sqlx::PgPool) {
     let app = TestApp::new(pool);
     let share = shared_deck(&app, "sharer").await;
     let (status, body) = app
@@ -522,9 +522,12 @@ async fn the_share_payload_carries_its_version_and_the_owners_theme(pool: sqlx::
         json!({ "name": "gruvbox", "is_dark": true }),
         "the default theme"
     );
+    // The owner's username is public on a shared deck (Scotty, 2026-11-11):
+    // in its link and as "by <username>". Nothing else about the account is.
+    assert_eq!(body["owner"], json!("sharer"), "{body}");
     assert!(
-        body.get("user_id").is_none() && body.get("username").is_none(),
-        "no identity: {body}"
+        body.get("user_id").is_none() && body.get("email").is_none(),
+        "no other identity: {body}"
     );
 }
 

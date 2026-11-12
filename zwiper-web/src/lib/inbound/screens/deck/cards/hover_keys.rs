@@ -4,12 +4,14 @@
 //! and `-` and `+` (or `=`) step its quantity. Each does exactly what that card's own button does, and nothing where it has no such
 //! button. The card is the one under the cursor, else the one whose details are open.
 
+use components::data_action;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::deck::Board;
 use zwipe_ui::deck::form::Slot;
 
 use super::editor::{RowInfo, RowKind};
+use crate::inbound::chrome::shortcuts::{self, CardKey};
 
 /// Every key [`hover_key`] answers, as `KeyboardEvent.key`: the keys that still reach the screen
 /// while the Stacks view's card details drawer is open.
@@ -43,10 +45,12 @@ pub(crate) enum HoverKey {
 /// The hover key `key` (a `KeyboardEvent.key`) stands for. `s` and `S` differ: Shift+S stars.
 #[must_use]
 pub(crate) fn hover_key(key: &str) -> Option<HoverKey> {
+    if shortcuts::card_key(key) == Some(CardKey::Flip) {
+        return Some(HoverKey::Flip);
+    }
     match key {
         "p" | "P" => Some(HoverKey::Printings),
         "i" | "I" => Some(HoverKey::Image),
-        "v" | "V" => Some(HoverKey::Flip),
         "d" | "D" => Some(HoverKey::Details),
         "m" | "M" => Some(HoverKey::ToMaybeboard),
         "s" => Some(HoverKey::ToSideboard),
@@ -72,9 +76,9 @@ pub(crate) enum HoverAction {
     Flip(Uuid, usize),
     /// Open the card's details, or close them where they are open, as a click on it does.
     Details(Uuid),
-    /// Press the card's own details button with this label, which does nothing where the card
-    /// shows none (a single-faced card has no Flip).
-    Press(Uuid, &'static str),
+    /// Press the first of the card's own details buttons marked with these [`data_action`]s,
+    /// which does nothing where the card shows none.
+    Press(Uuid, &'static [&'static str]),
 }
 
 /// What `key` does to `row`, a card on `board` showing face `shown_face`: the action of the row's
@@ -111,14 +115,17 @@ pub(crate) fn hover_action(
             RowKind::Main { mvp } => Some(HoverAction::Star(card_id, mvp)),
             RowKind::Board(_) | RowKind::Zone(_) | RowKind::Token => None,
         },
-        HoverKey::Image => Some(HoverAction::Press(card_id, "Image")),
+        HoverKey::Image => Some(HoverAction::Press(card_id, &[data_action::IMAGE])),
         HoverKey::Flip => {
             // The faces Flip turns through, as the details count them.
             let faces = components::card_face_count(&row.card);
-            (faces > 1).then(|| {
+            // A card with one face shows its meld instead, where it melds.
+            if faces > 1 {
                 let next = shown_face.saturating_add(1).checked_rem(faces).unwrap_or(0);
-                HoverAction::Flip(card_id, next)
-            })
+                Some(HoverAction::Flip(card_id, next))
+            } else {
+                Some(HoverAction::Press(card_id, &[data_action::MELD]))
+            }
         }
         HoverKey::Details => Some(HoverAction::Details(card_id)),
         HoverKey::Fewer => movable.then_some(HoverAction::Quantity(card_id, -1)),
@@ -157,6 +164,18 @@ mod tests {
             assert_eq!(
                 hover_key(&key).is_some(),
                 HOVER_KEYS.contains(&key.as_str()),
+                "{key}"
+            );
+        }
+    }
+
+    #[test]
+    fn v_flips_here_as_on_every_screen() {
+        for byte in b' '..=b'~' {
+            let key = char::from(byte).to_string();
+            assert_eq!(
+                hover_key(&key) == Some(HoverKey::Flip),
+                shortcuts::card_key(&key) == Some(CardKey::Flip),
                 "{key}"
             );
         }
@@ -281,7 +300,7 @@ mod tests {
             let id = any.card.scryfall_data.id;
             assert_eq!(
                 hover_action(HoverKey::Image, &any, Board::Deck, 0),
-                Some(HoverAction::Press(id, "Image"))
+                Some(HoverAction::Press(id, &[data_action::IMAGE]))
             );
             assert_eq!(
                 hover_action(HoverKey::Details, &any, Board::Deck, 0),
@@ -316,8 +335,11 @@ mod tests {
         let single = row(RowKind::Main { mvp: false });
         assert_eq!(
             hover_action(HoverKey::Flip, &single, Board::Deck, 0),
-            None,
-            "a single-faced card has no Flip"
+            Some(HoverAction::Press(
+                single.card.scryfall_data.id,
+                &[data_action::MELD]
+            )),
+            "a single-faced card presses its Meld, which does nothing where it has none"
         );
     }
 

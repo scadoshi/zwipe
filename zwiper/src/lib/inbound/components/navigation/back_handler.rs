@@ -18,6 +18,7 @@ use std::ffi::c_void;
 use std::ptr::NonNull;
 
 use dioxus::prelude::*;
+use dioxus::router::Navigator;
 
 use crate::inbound::components::navigation::leave_guard::LeaveDialog;
 use crate::inbound::router::Router;
@@ -41,6 +42,17 @@ pub fn BackHandlerLayout() -> Element {
     rsx! {
         Outlet::<Router> {}
         LeaveDialog {}
+    }
+}
+
+/// A screen's Back to `parent`: the screen before this one when there is
+/// one, else `parent` in this screen's place. Back never pushes, so the OS
+/// back after it cannot return through the screen it left.
+pub fn back_or(navigator: Navigator, parent: Router) {
+    if navigator.can_go_back() {
+        navigator.go_back();
+    } else {
+        navigator.replace(parent);
     }
 }
 

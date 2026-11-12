@@ -107,6 +107,8 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
         };
     }
     let navigator = use_navigator();
+    // Before the editor, whose `i` opens the image preview.
+    let overlays = use_card_overlays();
     let ed = use_deck_editor(deck_id, LoadFailure::Toast);
     let Editor {
         entries,
@@ -134,7 +136,6 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
     } = ed;
     let CardStores { undo, .. } = use_context();
     let examples = use_otag_reveals();
-    let overlays = use_card_overlays();
     let CardOverlays { mut preview, .. } = overlays;
 
     let Listed {
@@ -396,6 +397,7 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
                 button {
                     class: "action-dock-btn",
                     "aria-label": "Undo",
+                    "data-action": components::data_action::UNDO,
                     disabled: !undo_ready,
                     onclick: move |_| apply_undo.call(()),
                     DockIcon { path: UNDO }

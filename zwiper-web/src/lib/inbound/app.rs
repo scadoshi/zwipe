@@ -12,6 +12,7 @@ use zwipe_core::domain::user::models::settings::PipStyle;
 use crate::inbound::chrome::hint_topic::{HintHost, HintTopic};
 use crate::inbound::chrome::leave_guard::{self, GuardedHistory};
 use crate::inbound::chrome::splash;
+use crate::inbound::chrome::trail::TrailHistory;
 use crate::inbound::router::Route;
 use crate::inbound::screens::auth::login::LoginPrefill;
 use crate::inbound::screens::update_required::UpdateRequired;
@@ -67,8 +68,10 @@ pub fn App() -> Element {
     // Which screen opened the deck on screen, for the deck's back arrow.
     DeckOpener::use_provider();
     use_footer_lift();
-    // The router's history, with the leave guard in front of it.
+    // The router's history, with the leave guard in front of it and the
+    // app's trail over both.
     use_hook(GuardedHistory::provide);
+    use_hook(TrailHistory::provide);
 
     rsx! {
         document::Link { rel: "icon", href: FAVICON }

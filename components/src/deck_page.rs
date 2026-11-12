@@ -172,8 +172,9 @@ pub fn DeckPage(
     }
 }
 
-/// The head: the `name` over the facts as chips, with the host's `actions`
-/// at the name's right end, then the featured cards (`children`,
+/// The head: the `name`, then `byline` as `by <byline>` when given, over the
+/// facts as chips, with the host's `actions` at the name's right end, then
+/// the featured cards (`children`,
 /// [`FeaturedCard`]s) in a centered row under them. Without a name or
 /// actions the head opens on the chips, for a host that names the deck and
 /// holds its actions elsewhere. `featured_class` joins the featured row's
@@ -181,6 +182,7 @@ pub fn DeckPage(
 #[component]
 pub fn DeckHead(
     #[props(default)] name: Option<String>,
+    #[props(default)] byline: Option<String>,
     facts: DeckFacts,
     #[props(default)] actions: Option<Element>,
     #[props(default)] featured_class: Option<String>,
@@ -203,6 +205,9 @@ pub fn DeckHead(
                             div { class: "deck-head-actions", {actions} }
                         }
                     }
+                }
+                if let Some(owner) = byline {
+                    div { class: "deck-head-byline text-muted", "by {owner}" }
                 }
                 div { class: "deck-head-meta",
                     span { class: "stat-chip stat-chip-p5", {cards_label(facts.cards)} }

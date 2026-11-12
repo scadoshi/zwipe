@@ -225,9 +225,10 @@ pub fn metrics_possible(profile: &DeckProfile) -> bool {
 }
 
 // Belongs in zwipe-ui
-/// The shared deck's public link for `token`.
-pub fn share_link(token: Uuid) -> String {
-    format!("{}/deck/{token}", zwipe_core::domain::site::WEB_BASE)
+/// The public link to the deck `owner` shares as `deck_name` under `token`:
+/// `zwipe.net/<owner>/deck/<slug>/<token>`.
+pub fn share_link(owner: &str, deck_name: &str, token: Uuid) -> String {
+    zwipe_core::domain::share_link::shared_deck_url(owner, deck_name, token)
 }
 
 // Belongs in zwipe-ui
@@ -283,7 +284,10 @@ mod tests {
     #[test]
     fn the_share_link_ends_in_the_token() {
         let token = Uuid::nil();
-        assert!(share_link(token).ends_with("/deck/00000000-0000-0000-0000-000000000000"));
+        assert!(
+            share_link("scotty", "Elves", token)
+                .ends_with("/scotty/deck/elves/00000000-0000-0000-0000-000000000000")
+        );
     }
 
     #[test]

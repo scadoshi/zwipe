@@ -4,6 +4,7 @@ use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use uuid::Uuid;
+use zwipe_core::domain::user::requests::get_user::GetUser;
 use zwipe_core::domain::user::theme::ThemeConfig;
 use zwipe_core::http::contracts::deck::HttpSharedDeck;
 
@@ -29,8 +30,9 @@ impl From<GetSharedDeckError> for ApiError {
 /// briefly (~5 min): a shared deck updating a few minutes late is fine, and a
 /// revoked token dying a few minutes late is acceptable.
 ///
-/// The response strips owner identity: a malformed token is answered exactly
-/// like a revoked one, so the endpoint never confirms what exists.
+/// Of the owner, the response carries only the username. A malformed token
+/// is answered exactly like a revoked one, so the endpoint never confirms
+/// what exists.
 ///
 /// # Errors
 ///
@@ -41,7 +43,10 @@ pub async fn get_shared_deck(
     Path(token): Path<String>,
 ) -> Result<(StatusCode, Json<HttpSharedDeck>), ApiError> {
     let token = share_token(&token)?;
-    Ok((StatusCode::OK, Json(shared_body(&state, token).await?)))
+    Ok((
+        StatusCode::OK,
+        Json(Box::pin(shared_body(&state, token)).await?),
+    ))
 }
 
 /// `token` as a share token, or the same 404 a revoked token gets.
@@ -53,10 +58,10 @@ pub(crate) fn share_token(token: &str) -> Result<Uuid, ApiError> {
     Uuid::try_parse(token).map_err(|_| ApiError::NotFound(GetSharedDeckError::NotFound.to_string()))
 }
 
-/// The shared deck `token` names, as the public share routes send it: no
-/// owner identity, but the owner's theme, which only styles the preview
-/// image. A settings lookup that fails leaves the theme out rather than
-/// failing the page.
+/// The shared deck `token` names, as the public share routes send it: of the
+/// owner, only the username, public on a shared deck, and the theme, which
+/// only styles the preview image. A settings or user lookup that fails
+/// leaves that field out rather than failing the page.
 ///
 /// # Errors
 ///
@@ -75,6 +80,17 @@ pub(crate) async fn shared_body(state: &AppState, token: Uuid) -> Result<HttpSha
         Ok(settings) => Some(ThemeConfig::from(&settings)),
         Err(e) => {
             tracing::warn!(error = %e, "shared deck: owner settings did not load");
+            None
+        }
+    };
+    let owner = match state
+        .user_service
+        .fetch_user(&GetUser::from(shared.deck.deck_profile.user_id))
+        .await
+    {
+        Ok(user) => Some(user.username.to_string()),
+        Err(e) => {
+            tracing::warn!(error = %e, "shared deck: owner did not load");
             None
         }
     };
@@ -97,5 +113,6 @@ pub(crate) async fn shared_body(state: &AppState, token: Uuid) -> Result<HttpSha
         price_target_currency: profile.price_target_currency,
         updated_at: profile.updated_at,
         theme,
+        owner,
     })
 }

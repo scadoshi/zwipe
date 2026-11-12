@@ -2102,6 +2102,16 @@ body:has(.deck-stacks) .sheet-form-drawer:has(> .card-details-drawer) > .sheet-b
     .web-swipe-select-details {
         display: block;
     }
+
+    /* A skipped or picked card flies past the body's capped width to the
+       window's edge, where the screen clips it. */
+    .screen-content.card-swipe.web-swipe-select-body {
+        overflow: visible;
+    }
+
+    .swipe-select-screen.web-swipe-select {
+        overflow: hidden;
+    }
 }
 
 /* ---- The card's details on a wide window ----
