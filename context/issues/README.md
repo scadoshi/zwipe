@@ -72,7 +72,7 @@ Who checked, on which live build, what they saw.
 | [352](352-back-loop.md) | Back loops between Create deck and Decks | fixing | laptop | #553 |
 | [348](348-github-style-share-links.md) | GitHub-style shared deck links, "by <username>", the deal on the web deck page | fixing | thinker | - |
 | [351](351-flyoff-clipped.md) | The commander swipe's fly-off is cut off before the window's edge | fixing | scotland | #550 |
-| [355](355-full-width-sites.md) | The sites leave a wide window's sides empty | fixing | scotland | zite #PR |
+| [355](355-full-width-sites.md) | The sites leave a wide window's sides empty | fixing | scotland | zite #557 |
 | [350](350-deck-page-wide.md) | The web deck page leaves a wide window's sides empty | fixing | scotland | #547 |
 
 ## Waiting for live verification
