@@ -68,6 +68,9 @@ const SETTLE_JS: &str = r"
     const [x, y] = t.split(' ').map(parseFloat);
     return [x || 0, y || 0];
   };
+  // A keyed wrapper drawn as `display: contents` has no box of its own, so
+  // its first child is measured and moved in its place.
+  const boxOf = (el) => (getComputedStyle(el).display === 'contents' && el.firstElementChild) || el;
   const snapshot = () => {
     const found = new Map();
     document.querySelectorAll('[data-settle-scope]').forEach((scope, s) => {
@@ -75,21 +78,22 @@ const SETTLE_JS: &str = r"
         if (el.closest('[data-settle-ghost]')) continue;
         const key = s + '|' + keyOf(el);
         if (found.has(key)) continue;
-        const r = el.getBoundingClientRect();
+        const box = boxOf(el);
+        const r = box.getBoundingClientRect();
         if (r.width === 0 && r.height === 0) continue;
         const up = parentItem(el, scope);
-        const [tx, ty] = own(el);
+        const [tx, ty] = own(box);
         const ax = r.left - tx, ay = r.top - ty;
         let x = ax, y = ay;
         let parent = null;
         if (up) {
           // Against the group's box as it shows, its own moves included, so
           // a thing rides along with its group's move.
-          const pr = up.getBoundingClientRect();
+          const pr = boxOf(up).getBoundingClientRect();
           x -= pr.left; y -= pr.top;
           parent = s + '|' + keyOf(up);
         }
-        found.set(key, { el, x, y, ax, ay, tx, ty, rect: r, parent });
+        found.set(key, { el: box, x, y, ax, ay, tx, ty, rect: r, parent });
       }
     });
     return found;
