@@ -1679,6 +1679,7 @@ body:has(.deck-stacks) .sheet-form-drawer:has(> .card-details-drawer) > .sheet-b
         border-radius: 1rem;
         overflow: hidden;
         box-shadow: 0 0 0 100vmax var(--bg-overlay), var(--shadow-sm);
+        animation: modal-enter var(--enter-duration) var(--ease-enter) backwards;
     }
 
     /* The backdrop keeps its fill and drops the tiles: the grid lives only
@@ -1699,6 +1700,12 @@ body:has(.deck-stacks) .sheet-form-drawer:has(> .card-details-drawer) > .sheet-b
     .web-examples-details {
         display: block;
         align-self: stretch;
+    }
+}
+
+@media (min-width: 900px) and (prefers-reduced-motion: reduce) {
+    .screen.web-large-modal {
+        animation: none;
     }
 }
 

@@ -2802,7 +2802,7 @@ footer.site-footer .site-footer-note {
    alone, so the stack slides rather than reflowing. */
 .card-stack {
     --card-stack-move: 500ms;
-    --card-stack-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --card-stack-ease: var(--ease-enter);
     position: relative;
     display: flex;
     flex-direction: column;
