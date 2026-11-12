@@ -49,14 +49,14 @@ pub fn ColorBars(bars: Vec<Bar>) -> Element {
     });
     rsx! {
         div { class: "color-bars",
-            for (pip, fill, count, pct) in rows {
+            for (index, (pip, fill, count, pct)) in rows.enumerate() {
                 div { key: "{pip}", class: "color-bar-row",
                     i { class: "ms ms-{pip} ms-cost" }
                     div { class: "color-bar-track",
                         if count > 0 {
                             div {
-                                class: "color-bar-fill",
-                                style: "width: {pct}%; background-color: {fill};",
+                                class: "color-bar-fill chart-bar",
+                                style: "width: {pct}%; background-color: {fill}; {crate::charts::bar_delay(index)}",
                             }
                         }
                     }

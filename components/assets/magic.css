@@ -2890,3 +2890,20 @@ footer.site-footer .site-footer-note {
         transition: none;
     }
 }
+
+/* ==================
+  chart entrances
+ ==================== */
+
+/* Every chart arrives with orangui's entrances: bars grow in (.chart-bar),
+   the heatmap's cells sweep in (.heat-cell). A shut fold's body is inert, and
+   under it the entrance is off, so opening the fold starts it fresh. It plays
+   once per open and once on a page's mount, never on a data refresh, which
+   only restyles bars that are already there. */
+[inert] .chart-bar,
+[inert] .chart-value,
+[inert] .chart-line,
+[inert] .heat-cell,
+[inert] .heat-halo {
+    animation: none;
+}

@@ -2437,13 +2437,78 @@ a.nav-dropdown-item.active:visited {
     }
 }
 
+/* A bar that grows from its base on mount: sideways from the left
+   (.chart-bar), or up from the bottom for a column (.chart-bar.chart-bar-up).
+   A bar's value fades in after it (.chart-value). `backwards` holds the start
+   through a delay and hands back to the resting style after, so a host's
+   width or height transition still applies. The timing is a soft default a
+   host rule of any specificity overrides, as for .chart-line. The motion is
+   the one the portfolio's fleet chart has always used. */
+:where(.chart-bar) {
+    animation-duration: 0.6s;
+    animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
+    animation-delay: 0s;
+}
+
+.chart-bar {
+    transform-box: fill-box;
+    transform-origin: left center;
+    animation-name: chart-grow;
+    animation-fill-mode: backwards;
+}
+
+.chart-bar.chart-bar-up {
+    transform-origin: center bottom;
+    animation-name: chart-rise;
+}
+
+:where(.chart-value) {
+    animation-duration: 0.3s;
+    animation-timing-function: ease-out;
+    animation-delay: 0s;
+}
+
+.chart-value {
+    animation-name: chart-fade;
+    animation-fill-mode: backwards;
+}
+
+@keyframes chart-grow {
+    from {
+        transform: scaleX(0);
+    }
+    to {
+        transform: none;
+    }
+}
+
+@keyframes chart-rise {
+    from {
+        transform: scaleY(0);
+    }
+    to {
+        transform: none;
+    }
+}
+
+@keyframes chart-fade {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     .chart-tip {
         animation: none;
         transition: none;
     }
 
-    .chart-line {
+    .chart-line,
+    .chart-bar,
+    .chart-value {
         animation: none;
     }
 }

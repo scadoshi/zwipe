@@ -99,6 +99,7 @@ pub const RELEASES: &[Release] = &[
             "Links on zwipe.net and app.zwipe.net are the accent color with no underline, brightening slightly under a mouse",
             "Meld, a button on a meld card and in its details that shows the card it melds into",
             "Keyboard shortcuts on the web, with the arrows or hjkl to swipe and Shift+H to list them",
+            "Charts grow in when their page opens or their section expands",
             "On a narrower web window, Add and Remove show the last swipe's chip at the top left under the nav",
             "A swiped card flies off again on Add, and the card's ghost sits exactly under it",
         ],
