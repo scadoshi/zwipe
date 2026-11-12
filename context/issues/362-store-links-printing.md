@@ -1,6 +1,6 @@
 # 362. Store links send names only, not the printing picked
 
-State: research | Owner: thinker | PR: - | Build seen: -
+State: fixing | Owner: thinker | PR: - | Build seen: -
 
 ## Report
 Composer for Scotty, 2026-11-11: should the store links carry each card's chosen printing, so people buy the version they picked? Research only: what TCGplayer's mass entry and Card Kingdom's builder accept, with a real test link each, and whether deck cards keep the chosen printing. No code until confirmed.
@@ -23,3 +23,9 @@ Card Kingdom builder (`/builder?c=`): name only. Its help lists `4 Ancient Den`,
 - Card Kingdom: unchanged, name only; a set marker would break the line.
 - Foil: nothing to send until a deck card records a finish, and neither store's list link takes one.
 - Check the TCGplayer cart once by hand before shipping, since the honoring was not observed.
+
+## Fix
+Approved by Scotty on 2026-11-11 as proposed. thinker: zwipe-ui's `buy` builds TCGplayer lines as `{qty}-{tcgplayer_id}` for every card whose printing has an id (the deck's entries, its command zone through `Deck.command_zone_cards`, a group's cards) and `{qty}+{name}` otherwise, on `massentry?productline=Magic`. Card Kingdom keeps name lines. The web's deck dock and group carts and the app's deck cart all use it.
+
+Checked in TCGplayer's real cart (a guest cart in a throwaway browser): `massentry?productline=Magic&c=1-1263||1-609611||1+Counterspell` read as those three lines. After Add to Cart, the cart held Sol Ring from Alpha Edition and Delver of Secrets from Innistrad Remastered, the chosen printings. Counterspell, by name only, landed as whichever printing TCGplayer picked (Dominaria Remastered).
+

@@ -80,7 +80,7 @@ Who checked, on which live build, what they saw.
 | [358](358-share-link-deck-name.md) | The Share dialog's link names every deck "deck" | fixing | thinker | - |
 | [366](366-swipe-select-footer.md) | Suggested commanders has no footer | fixing | thinker | - |
 | [361](361-list-group-cart.md) | The List's card groups have no cart | fixing | thinker | - |
-| [362](362-store-links-printing.md) | Store links send names only, not the printing picked | research | thinker | - |
+| [362](362-store-links-printing.md) | Store links send names only, not the printing picked | fixing | thinker | - |
 | [357](357-stack-hover-shift.md) | Hovering a stack shifts its cards a pixel | fixing | thinker | - |
 | [356](356-list-row-meld.md) | A meld card's list row has no Meld toggle | fixing | scotland | #555 |
 | [359](359-key-map-gaps.md) | f and v gaps on Commander maybeboard and meld cards | fixing | scotland | #559 |
