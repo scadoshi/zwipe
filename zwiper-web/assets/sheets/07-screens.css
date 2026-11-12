@@ -3223,9 +3223,9 @@ body .toast-container [role="alertdialog"] {
 }
 
 .stat-chip.deck-featured-role-mvp {
-    color: var(--ink-palette-6, var(--palette-6));
-    background-color: color-mix(in srgb, var(--palette-6) 12%, var(--bg-primary));
-    border-color: color-mix(in srgb, var(--palette-6) 35%, var(--bg-primary));
+    color: var(--ink-color-star, var(--color-star));
+    background-color: color-mix(in srgb, var(--color-star) 12%, var(--bg-primary));
+    border-color: color-mix(in srgb, var(--color-star) 35%, var(--bg-primary));
 }
 
 /* ── Commander maybeboard ─────────────────────────────────────────────── */

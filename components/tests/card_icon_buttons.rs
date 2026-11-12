@@ -148,7 +148,21 @@ fn the_star_is_one_toggle_outline_off_and_filled_on() {
         "the starred star is filled"
     );
     assert!(
-        components::MAGIC_CSS.contains(".card-action-btn.card-action-icon[data-action=\"star\"][aria-pressed=\"true\"] {\n    border-color: var(--color-warning);\n    color: var(--ink-color-warning, var(--color-warning));"),
-        "in the warning gold"
+        components::MAGIC_CSS.contains(".card-action-btn.card-action-icon[data-action=\"star\"][aria-pressed=\"true\"] {\n    border-color: var(--color-star);\n    color: var(--ink-color-star, var(--color-star));"),
+        "in the star color"
     );
+}
+
+#[test]
+fn every_star_wears_the_star_color() {
+    for selector in [".card-row-mvp {", ".stat-chip.deck-head-card-role-mvp {"] {
+        let at = components::MAGIC_CSS.find(selector).unwrap();
+        let rule = components::MAGIC_CSS.get(at..).unwrap();
+        let rule = rule.get(..rule.find('}').unwrap()).unwrap();
+        assert!(
+            rule.contains("var(--ink-color-star, var(--color-star))"),
+            "{rule}"
+        );
+        assert!(!rule.contains("palette-6"), "{rule}");
+    }
 }

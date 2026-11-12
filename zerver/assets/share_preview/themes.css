@@ -6439,3 +6439,16 @@
     --bg-sink: color-mix(in srgb, var(--bg-primary), #fff 35%);
     --bg-raised: color-mix(in srgb, var(--bg-primary), #000 5%);
 }
+
+/* ==================
+   derived: the star
+ ==================== */
+
+/* The color of a starred thing, its star and its marker: the theme's own
+   warning gold. The default sits at no specificity, so a theme block that
+   names --color-star keeps its own. Declared on the element that carries
+   the theme class, so it follows that theme's warning. */
+:where(:root, [class*="theme-"][class*="-dark"], [class*="theme-"][class*="-light"]) {
+    --color-star: var(--color-warning);
+    --ink-color-star: var(--ink-color-warning, var(--color-warning));
+}

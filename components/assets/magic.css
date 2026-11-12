@@ -273,7 +273,7 @@
 
 .card-row-mvp {
     display: inline-block;
-    color: var(--ink-palette-6, var(--palette-6));
+    color: var(--ink-color-star, var(--color-star));
     font-size: 1.1rem;
     margin-right: 0.3rem;
     line-height: 1;
@@ -856,14 +856,14 @@ i.ms.ms-cost.ms-gp {
 }
 
 /* The Star toggle: an outline star in the text's color, filled in the
-   warning gold the Star hint draws in while the card is starred. */
+   theme's star color while the card is starred. */
 .card-action-icon[data-action="star"] > .action-dock-icon {
     stroke-linejoin: round;
 }
 
 .card-action-btn.card-action-icon[data-action="star"][aria-pressed="true"] {
-    border-color: var(--color-warning);
-    color: var(--ink-color-warning, var(--color-warning));
+    border-color: var(--color-star);
+    color: var(--ink-color-star, var(--color-star));
 }
 
 .card-action-icon[data-action="star"][aria-pressed="true"] > .action-dock-icon {
@@ -2531,9 +2531,9 @@ html.keyboard-up .web-dock-pair {
 }
 
 .stat-chip.deck-head-card-role-mvp {
-    color: var(--ink-palette-6, var(--palette-6));
-    background-color: color-mix(in srgb, var(--palette-6) 12%, var(--bg-primary));
-    border-color: color-mix(in srgb, var(--palette-6) 35%, var(--bg-primary));
+    color: var(--ink-color-star, var(--color-star));
+    background-color: color-mix(in srgb, var(--color-star) 12%, var(--bg-primary));
+    border-color: color-mix(in srgb, var(--color-star) 35%, var(--bg-primary));
 }
 
 .deck-head-text {
