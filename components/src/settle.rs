@@ -10,8 +10,9 @@
 //!   button inside a scope or a toast, a click on a fold's header, or one of
 //!   [`KEYS`] outside a text field starts a watch.
 //!
-//! For [`WATCH_MS`] after that, every frame compares each thing's place with
-//! the frame before:
+//! For [`WATCH_MS`] after that, each change to the page, in the task that
+//! made it and so before the browser paints it, and every frame compare each
+//! thing's place with where it last was:
 //! - one that jumped more than [`JUMP_PX`] in that frame slides from where it
 //!   was to where it is;
 //! - a new one fades in;
@@ -91,7 +92,7 @@ const SETTLE_JS: &str = r"
     });
     return found;
   };
-  let prev = null, until = 0, watching = false;
+  let prev = null, until = 0, watching = false, observer = null;
   const ghost = (old) => {
     const copy = old.el.cloneNode(true);
     copy.setAttribute('data-settle-ghost', '');
@@ -107,7 +108,10 @@ const SETTLE_JS: &str = r"
     copy.animate([{ opacity: 1 }, { opacity: 0 }], { duration: MS, easing: ease() })
       .finished.then(() => copy.remove(), () => copy.remove());
   };
-  const frame = () => {
+  // Compares every keyed thing with where it last was and moves the ones that
+  // jumped. Runs on each frame and, through the observer, in the task that
+  // changed the page, before the browser paints the change.
+  const check = () => {
     const now = snapshot();
     const timing = { duration: MS, easing: ease() };
     if (prev) {
@@ -138,15 +142,27 @@ const SETTLE_JS: &str = r"
       }
     }
     prev = now;
-    if (performance.now() < until) requestAnimationFrame(frame);
-    else { watching = false; prev = null; }
   };
+  const frame = () => {
+    check();
+    if (performance.now() < until) requestAnimationFrame(frame);
+    else {
+      watching = false;
+      prev = null;
+      if (observer) observer.disconnect();
+      observer = null;
+    }
+  };
+  const changed = (records) => records.some((r) => !(r.target instanceof Element && r.target.closest('[data-settle-ghost]'))
+    && !(r.type === 'childList' && [...r.addedNodes, ...r.removedNodes].every((n) => n instanceof Element && n.hasAttribute('data-settle-ghost'))));
   const watch = () => {
     if (reduce()) return;
     until = performance.now() + WATCH;
     if (watching) return;
     watching = true;
     prev = snapshot();
+    observer = new MutationObserver((records) => { if (prev && changed(records)) check(); });
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'hidden', 'open'] });
     requestAnimationFrame(frame);
   };
   const TRIGGERS = '[data-settle], [data-settle-scope] button, .toast-container button, .deck-fold-head';
