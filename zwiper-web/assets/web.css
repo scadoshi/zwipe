@@ -1168,15 +1168,16 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 
 /* ---- Printing sheet ---- */
 
-/* The cover flow, then the foot under it. The reserve is the sheet's
-   title bar, its padding, this margin and the foot, so the flow leaves the
-   foot on screen. */
+/* The cover flow, out through the sheet's side padding to its edges, then
+   the foot under it. The reserve is the sheet's title bar, its padding,
+   this margin and the foot, so the flow leaves the foot on screen. */
 .web-printing-body {
     --flow-reserve: 12.5rem;
 }
 
 .web-printing-body > .cover-flow {
-    margin-bottom: 0.75rem;
+    --flow-step-inset: 1rem;
+    margin: 0 -1.5rem 0.75rem;
 }
 
 /* The flow's frame is filled with the sheet body's own color, so nothing
@@ -1259,14 +1260,17 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
         outline: none;
     }
 
-    /* The cover flow takes the modal's height, its stage stretching
-       between the step buttons rather than keeping the phone's shape. */
+    /* The cover flow takes the modal's height and runs out through the
+       body's side padding to the modal's edges, its stage stretching rather
+       than keeping the phone's shape. */
     .web-flow-body > .cover-flow {
+        --flow-step-inset: 1.5rem;
         flex: 1 1 auto;
         min-height: 0;
+        margin-inline: -1.5rem;
     }
 
-    /* The frame between the step buttons stretches to the flow's height and
+    /* The frame under the step buttons stretches to the flow's height and
        lays its stage out, so the stage stretches with it. */
     .web-flow-body .cover-flow-frame {
         align-self: stretch;

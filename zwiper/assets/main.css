@@ -327,7 +327,7 @@ body {
 /* The cover flow's step buttons keep the screen's gutter inside that full
    width. */
 .printing-sheet-body > .cover-flow {
-    padding-inline: 1rem;
+    --flow-step-inset: 1rem;
 }
 
 /* =========================

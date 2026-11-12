@@ -131,6 +131,7 @@ Who checked, on which live build, what they saw.
 | [414](414-sheet-icons-named.md) | The shortcuts sheet's icon rows show no names | fixing | halo | nits/halo-414 |
 | [419](419-shared-guides.md) | Guides live only on zwipe.net | fixing | halo | release, in phases |
 | [409](409-printings-skeleton.md) | Printings shows two different skeletons while it loads | fixing | laptop | issue/409-printings-skeleton |
+| [410](410-printings-edges.md) | Printings fades its cards out short of the sheet's edges | fixing | laptop | issue/410-printings-edges |
 
 ## Waiting for live verification
 

@@ -62,6 +62,7 @@ pub const UPCOMING: &[Release] = &[
             "A starred card's mark and its MVP chips share the star's gold",
             "In light themes, a chip that can't be used right now fades as it does in dark themes",
             "Printings loads as one fan of card ghosts, with ghosts of its chips, on the web and in the app",
+            "Printings runs its cards out to the sheet's edges with no fade, its arrows over the cards, on the web and in the app",
         ],
     },
     Release {
