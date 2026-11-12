@@ -773,7 +773,7 @@ pub fn DeckStackDrawer(
         on_printing,
         on_view_printing,
         describe_tag,
-        ..
+        on_examples,
     } = host;
     let StackDetails {
         reveal,
@@ -840,6 +840,7 @@ pub fn DeckStackDrawer(
                 faces.write().insert(card_id, face);
             },
             describe_tag,
+            on_examples,
         }
     }
 }

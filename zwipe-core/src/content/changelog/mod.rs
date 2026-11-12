@@ -57,6 +57,7 @@ pub const UPCOMING: &[Release] = &[
             "zwipe.net's changelog moves to About, linked beside Privacy policy and in the footer instead of the top nav",
             "A shared deck's link opens on app.zwipe.net, signed in or not, with its preview in chats as before",
             "In Stacks, the card you reveal lifts and sways gently instead of taking an outline, on the web and in the app",
+            "In a deck's Stacks, an Oracle tag in the open card's drawer offers its Examples, as in the List",
         ],
     },
     Release {

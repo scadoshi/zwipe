@@ -15,6 +15,7 @@ use components::{
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_client::{ClientError, ZwipeClient};
+use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
@@ -39,6 +40,7 @@ use crate::inbound::cards::card_row::{CardOverlays, use_card_overlays};
 use crate::inbound::cards::otag::{OtagDescribe, OtagExamplesOpen, use_otag_reveals};
 use crate::inbound::router::Route;
 use crate::inbound::screens::deck::view::body::DeckPageBody;
+use crate::inbound::session::return_to;
 use crate::inbound::shell::ScreenFrame;
 
 /// The tab's title while the deck loads or when it can't be shown.
@@ -79,6 +81,15 @@ fn has_cards(deck: &HttpSharedDeck) -> bool {
 pub fn SharedDeck(owner: String, slug: String, token: String) -> Element {
     let navigator = use_navigator();
     let client: Signal<ZwipeClient> = use_context();
+    // A signed-out reader who signs in from here comes back to this deck.
+    let session: Signal<Option<Session>> = use_context();
+    let route = use_route::<Route>();
+    use_hook(move || {
+        let signed_in = session.peek().as_ref().is_some_and(|s| !s.is_expired());
+        if !signed_in {
+            return_to::remember(&route);
+        }
+    });
     let link_token = token.clone();
     let mut result: Resource<Result<HttpSharedDeck, FetchError>> =
         use_resource(use_reactive!(|token| async move {
@@ -133,7 +144,7 @@ pub fn SharedDeck(owner: String, slug: String, token: String) -> Element {
             match &*result.read() {
                 None => rsx! { SharedDeckView { deck: None } },
                 Some(Err(FetchError::NotShared)) => rsx! {
-                    div { class: "content-enter web-page web-column",
+                    div { class: "content-enter web-page shared-deck-note",
                         Panel { title: "Deck not shared",
                             p { class: "subtitle",
                                 "This deck is no longer shared. The owner may have stopped sharing it, or the link may be incomplete."
@@ -142,7 +153,7 @@ pub fn SharedDeck(owner: String, slug: String, token: String) -> Element {
                     }
                 },
                 Some(Err(FetchError::Network)) => rsx! {
-                    div { class: "content-enter web-page web-column",
+                    div { class: "content-enter web-page shared-deck-note",
                         LoadFailed {
                             message: "Couldn't load this deck",
                             on_retry: move |()| result.restart(),

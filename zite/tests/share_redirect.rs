@@ -12,7 +12,11 @@ fn every_shared_deck_link_moves_to_the_web_app_for_good() {
     );
     assert!(FUNCTION.contains("Response.redirect(`${APP}${path}${url.search}`, 301)"));
     assert!(
-        OWNER_FORM.contains(r#"export { onRequestGet } from "../../../deck/[token].js";"#),
+        FUNCTION.contains("export async function onRequest("),
+        "every method redirects, HEAD included"
+    );
+    assert!(
+        OWNER_FORM.contains(r#"export { onRequest } from "../../../deck/[token].js";"#),
         "{OWNER_FORM}"
     );
 }

@@ -2744,6 +2744,16 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
     }
 }
 
+/* On a phone a shared deck's page, and its not-shared and failed notes, keep
+   the 1rem side gutter the phone's other screens keep. */
+@media (max-width: 899px) {
+    .web-page.deck-page-wide,
+    .web-page.shared-deck-note {
+        padding: 0 1rem 1rem;
+        box-sizing: border-box;
+    }
+}
+
 @media (min-width: 900px) {
 
     /* Warnings at the foot, open, in the section's own warning dress. */

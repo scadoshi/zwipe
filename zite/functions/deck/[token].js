@@ -1,6 +1,6 @@
-// Cloudflare Pages Function for GET /deck/:token on zwipe.net, an older shared
-// deck link, and for the owner and slug form /:owner/deck/:slug/:token, whose
-// file re-exports this one.
+// Cloudflare Pages Function for /deck/:token on zwipe.net, an older shared deck
+// link, and for the owner and slug form /:owner/deck/:slug/:token, whose file
+// re-exports this one. It answers every method, so a HEAD redirects too.
 //
 // A shared deck lives on the web app, so every shared deck link here moves
 // there for good: the owner and slug form to the same path on app.zwipe.net,
@@ -17,7 +17,7 @@ const APP = "https://app.zwipe.net";
 /// deck's own by the web app.
 const PLACEHOLDER = "/_/deck/deck";
 
-export async function onRequestGet({ params, request }) {
+export async function onRequest({ params, request }) {
   const url = new URL(request.url);
   const path = params.owner === undefined
     ? `${PLACEHOLDER}/${encodeURIComponent(String(params.token))}`

@@ -1,8 +1,8 @@
 //! Where a signed-out visit was headed, kept for the sign-in that follows.
 //!
 //! [`AuthGate`](super::auth_gate::AuthGate) saves the route it turned away in
-//! the tab's `sessionStorage`; Login's sign-in takes it back and goes there
-//! instead of Home. What comes back out is parsed into a [`Route`] again, so
+//! the tab's `sessionStorage`, and a shared deck saves its own for a signed-out
+//! reader; Login's sign-in takes it back and goes there instead of Home. What comes back out is parsed into a [`Route`] again, so
 //! only a path on this origin that needs a session is ever followed.
 
 use std::str::FromStr;
@@ -91,6 +91,19 @@ mod tests {
             Some(Route::AddDeckCard { deck_id })
         );
         assert_eq!(return_route("/account"), Some(Route::Account {}));
+    }
+
+    #[test]
+    fn a_shared_deck_comes_back_after_sign_in() {
+        let path = "/scotty/deck/elves/01234567-89ab-cdef-0123-456789abcdef";
+        assert_eq!(
+            return_route(path),
+            Some(Route::SharedDeck {
+                owner: "scotty".to_owned(),
+                slug: "elves".to_owned(),
+                token: "01234567-89ab-cdef-0123-456789abcdef".to_owned(),
+            })
+        );
     }
 
     #[test]

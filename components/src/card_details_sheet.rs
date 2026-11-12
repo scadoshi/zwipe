@@ -10,7 +10,8 @@ use crate::{CardDetailsCost, CardDetailsPanel, DrawerSheet, use_meld, use_overla
 /// `card`'s details as a drawer, while `open`. Its foot carries `Flip` for a multi-faced card,
 /// `Image` when the host passes `on_image` (called with the shown face) and the card has art, and
 /// a `Printings` pill when the host passes `on_printings`. `describe_tag` gives an Oracle tag's
-/// description, where the host has a catalog. `class` names the drawer, and a host that adds its
+/// description, where the host has a catalog, and `on_examples` opens a tag's example cards,
+/// where the host shows them. `class` names the drawer, and a host that adds its
 /// own class keeps `card-details-drawer` in it. The shown face follows `face` when the host
 /// passes one. Swapping to another card while it is open crossfades (`use_drawer_swap`).
 #[component]
@@ -25,6 +26,7 @@ pub fn CardDetailsSheet(
     #[props(default)] face: Option<usize>,
     #[props(default)] on_face_change: Option<EventHandler<usize>>,
     #[props(default)] describe_tag: Option<Callback<String, Option<String>>>,
+    #[props(default)] on_examples: Option<Callback<String>>,
 ) -> Element {
     use_overlay_back(open);
     use_drawer_swap();
@@ -60,6 +62,7 @@ pub fn CardDetailsSheet(
                 face,
                 meld: Some(meld),
                 describe_tag,
+                on_examples,
                 on_image,
                 on_face_change,
                 on_printings,
