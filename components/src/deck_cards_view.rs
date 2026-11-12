@@ -16,7 +16,7 @@ use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCur
 use zwipe_core::domain::deck::Board;
 use zwipe_ui::buy::{group_cards, group_price};
 use zwipe_ui::deck::form::Slot;
-use zwipe_ui::deck_cards::columns;
+use zwipe_ui::deck_cards::columns::{self, Side};
 use zwipe_ui::deck_cards::keys::{RowInfo, RowKind};
 use zwipe_ui::deck_cards::stacks::{CardsView, Gesture, Reveal};
 
@@ -361,8 +361,10 @@ pub fn DeckRow(
 ///
 /// With `touch`, for phones, the stacks are in [`CardStack`]'s tap mode: a first tap reveals a
 /// card, a second opens it in the drawer, and the OS back clears a revealed card before it leaves
-/// the screen. A header press calls `on_fold` with the group's key where the host passes it, else
-/// folds it in `collapsed`.
+/// the screen. The stacks lie in two columns of their own heights ([`columns::masonry`]), each
+/// under the one above it in its column, so a fold or a reveal moves only its own column. A
+/// header press calls `on_fold` with the group's key where the host passes it, else folds it in
+/// `collapsed`.
 #[component]
 pub fn DeckStacks(
     sections: Vec<(DeckSection, Vec<RowInfo>)>,
@@ -394,53 +396,87 @@ pub fn DeckStacks(
         (!touch).then(|| EventHandler::new(move |id| reveal.write().apply(Gesture::Leave(id))));
     let shown = reveal();
     let shown_faces = faces();
-    rsx! {
-        div { class: "deck-stacks",
-            for (section, rows) in sections {
-                {
-                    let price = group_price(&rows, currency);
-                    let buyable = !group_cards(&rows).is_empty();
-                    let group = section.title.clone();
-                    let for_buy = rows.clone();
-                    let ids: Vec<Uuid> = rows.iter().map(|r| r.card.scryfall_data.id).collect();
-                    let cards: Vec<StackCard> = rows
-                        .into_iter()
-                        .map(|row| {
-                            let face = shown_faces.get(&row.card.scryfall_data.id).copied().unwrap_or(0);
-                            StackCard { card: row.card, qty: row.qty, face }
-                        })
-                        .collect();
-                    rsx! {
-                        div { key: "{section.key}", class: "deck-stack", "data-fold": "{section.key}",
-                            DeckGroupSection {
-                                group_key: section.key.clone(),
-                                header: section.title,
-                                pips: section.pips,
-                                count: None,
-                                collapsed,
-                                on_fold,
-                                trailing: (price.is_some() || buyable).then(|| rsx! {
-                                    span { class: "deck-stack-tail",
-                                        if let Some(p) = price {
-                                            span { class: "stat-chip stat-chip-money", "{p}" }
-                                        }
-                                        if buyable {
-                                            CartButton { onclick: move |_| group_buy.offer(&group, &for_buy) }
-                                        }
-                                    }
-                                }),
-                                CardStack {
-                                    cards,
-                                    dealing,
-                                    revealed: shown.revealed_in(&ids),
-                                    open: shown.open(),
-                                    on_hover,
-                                    on_leave,
-                                    on_select: move |id| if touch { details.tap(id) } else { details.click(id) },
+    let folded = collapsed();
+    // Each stack with its height as the columns weigh it.
+    let stacks: Vec<(u32, Element)> = sections
+        .into_iter()
+        .map(|(section, rows)| {
+            let height = columns::stack_height(rows.len(), folded.contains(&section.key));
+            let price = group_price(&rows, currency);
+            let buyable = !group_cards(&rows).is_empty();
+            let group = section.title.clone();
+            let for_buy = rows.clone();
+            let ids: Vec<Uuid> = rows.iter().map(|r| r.card.scryfall_data.id).collect();
+            let cards: Vec<StackCard> = rows
+                .into_iter()
+                .map(|row| {
+                    let face = shown_faces.get(&row.card.scryfall_data.id).copied().unwrap_or(0);
+                    StackCard { card: row.card, qty: row.qty, face }
+                })
+                .collect();
+            let stack = rsx! {
+                div { key: "{section.key}", class: "deck-stack", "data-fold": "{section.key}",
+                    DeckGroupSection {
+                        group_key: section.key.clone(),
+                        header: section.title,
+                        pips: section.pips,
+                        count: None,
+                        collapsed,
+                        on_fold,
+                        trailing: (price.is_some() || buyable).then(|| rsx! {
+                            span { class: "deck-stack-tail",
+                                if let Some(p) = price {
+                                    span { class: "stat-chip stat-chip-money", "{p}" }
+                                }
+                                if buyable {
+                                    CartButton { onclick: move |_| group_buy.offer(&group, &for_buy) }
                                 }
                             }
+                        }),
+                        CardStack {
+                            cards,
+                            dealing,
+                            revealed: shown.revealed_in(&ids),
+                            open: shown.open(),
+                            on_hover,
+                            on_leave,
+                            on_select: move |id| if touch { details.tap(id) } else { details.click(id) },
                         }
                     }
+                }
+            };
+            (height, stack)
+        })
+        .collect();
+    if !touch {
+        return rsx! {
+            div { class: "deck-stacks",
+                for (_, stack) in stacks {
+                    {stack}
+                }
+            }
+        };
+    }
+    // Phones: two columns of their own heights, each stack under the one above it in its column.
+    let heights: Vec<u32> = stacks.iter().map(|(height, _)| *height).collect();
+    let mut left = Vec::new();
+    let mut right = Vec::new();
+    for (side, (_, stack)) in columns::masonry(&heights).into_iter().zip(stacks) {
+        match side {
+            Side::Left => left.push(stack),
+            Side::Right => right.push(stack),
+        }
+    }
+    rsx! {
+        div { class: "deck-stacks deck-stacks-columns",
+            div { class: "deck-stacks-column",
+                for stack in left {
+                    {stack}
+                }
+            }
+            div { class: "deck-stacks-column",
+                for stack in right {
+                    {stack}
                 }
             }
         }

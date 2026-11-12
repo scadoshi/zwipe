@@ -1043,6 +1043,11 @@ pub fn View(deck_id: Uuid) -> Element {
                                 variant: ButtonVariant::Action,
                                 class: "btn-icon deck-fold-all",
                                 onclick: move |_| {
+                                    // Folding every stack can move stacks between the columns,
+                                    // and the settle skips this button, so it starts the watch.
+                                    if stacks_on {
+                                        components::settle::watch();
+                                    }
                                     driver.dispatch(Action::SetSections {
                                         keys: section_keys.clone(),
                                         collapsed: !all_collapsed,
