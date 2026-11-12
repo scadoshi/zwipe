@@ -43,6 +43,7 @@ use crate::inbound::chrome::ghost::{
 };
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::chrome::page_keys::{focus_by_id, use_page_keys};
+use crate::inbound::chrome::shortcuts::{self, CardKey};
 use crate::inbound::router::Route;
 use crate::inbound::shell::ScreenFrame;
 use crate::inbound::telemetry;
@@ -118,6 +119,23 @@ impl SavedList {
         self.entries.set(Vec::new());
         self.restart_stale_load();
     }
+}
+
+/// What a key does on the commander maybeboard.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ScreenKey {
+    /// Focuses Quick add's search.
+    QuickAdd,
+    /// Opens the filter.
+    Filter,
+}
+
+/// The screen action `key` stands for: `/` Quick add, `f` the filter ([`shortcuts::card_key`]).
+fn screen_key(key: &str) -> Option<ScreenKey> {
+    if shortcuts::card_key(key) == Some(CardKey::Filter) {
+        return Some(ScreenKey::Filter);
+    }
+    (key == "/").then_some(ScreenKey::QuickAdd)
 }
 
 /// The commander maybeboard screen.
@@ -338,10 +356,10 @@ pub fn CommanderMaybeboard() -> Element {
         });
     });
 
-    use_page_keys(Callback::new(move |key: String| {
-        if key == "/" {
-            focus_by_id(QUICK_ADD_ID);
-        }
+    use_page_keys(Callback::new(move |key: String| match screen_key(&key) {
+        Some(ScreenKey::QuickAdd) => focus_by_id(QUICK_ADD_ID),
+        Some(ScreenKey::Filter) => filter_open.set(true),
+        None => {}
     }));
 
     // A printing swap is display only: the maybeboard is keyed by oracle, and
@@ -645,6 +663,24 @@ fn MaybeboardRow(
                     }
                 }
             },
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn slash_focuses_quick_add_and_f_opens_the_filter_as_everywhere() {
+        assert_eq!(screen_key("/"), Some(ScreenKey::QuickAdd));
+        for byte in b' '..=b'~' {
+            let key = char::from(byte).to_string();
+            assert_eq!(
+                screen_key(&key) == Some(ScreenKey::Filter),
+                shortcuts::card_key(&key) == Some(CardKey::Filter),
+                "{key}"
+            );
         }
     }
 }

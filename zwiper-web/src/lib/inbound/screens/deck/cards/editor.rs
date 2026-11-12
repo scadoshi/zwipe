@@ -344,6 +344,8 @@ pub(crate) fn use_deck_editor(deck_id: Uuid, on_failure: LoadFailure) -> Editor 
     let mut selected: Signal<Option<Uuid>> = use_signal(|| None);
     let mut face = use_signal(|| 0usize);
     let mut faces: Signal<HashMap<Uuid, usize>> = use_signal(HashMap::new);
+    // The session's melded cards, so `v` toggles a hovered half's Meld.
+    let meld_source = try_use_context::<components::MeldSource>();
     // The Stacks view's reveal, which `d` moves as a click does; absent where the screen has no
     // stacks.
     let stack_details = try_use_context::<StackDetails>();
@@ -969,6 +971,10 @@ pub(crate) fn use_deck_editor(deck_id: Uuid, on_failure: LoadFailure) -> Editor 
                         }
                         Some(HoverAction::Flip(card_id, next)) => {
                             faces.write().insert(card_id, next);
+                        }
+                        Some(HoverAction::Meld(_)) => {
+                            components::MeldToggle::of(&row.card.scryfall_data, meld_source)
+                                .toggle();
                         }
                         Some(HoverAction::Details(card_id)) => match stack_details {
                             Some(details) if on_stack => details.click(card_id),

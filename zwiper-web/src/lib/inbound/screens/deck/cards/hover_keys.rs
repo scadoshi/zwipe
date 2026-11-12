@@ -74,6 +74,8 @@ pub(crate) enum HoverAction {
     Quantity(Uuid, i32),
     /// Show the card on this face, everywhere it shows: its row or stack image and its details.
     Flip(Uuid, usize),
+    /// Toggle the meld half's Meld, everywhere it shows: its row, its stack card and its details.
+    Meld(Uuid),
     /// Open the card's details, or close them where they are open, as a click on it does.
     Details(Uuid),
     /// Press the first of the card's own details buttons marked with these [`data_action`]s,
@@ -119,12 +121,15 @@ pub(crate) fn hover_action(
         HoverKey::Flip => {
             // The faces Flip turns through, as the details count them.
             let faces = components::card_face_count(&row.card);
-            // A card with one face shows its meld instead, where it melds.
+            // A meld half with one face toggles its Meld instead.
             if faces > 1 {
                 let next = shown_face.saturating_add(1).checked_rem(faces).unwrap_or(0);
                 Some(HoverAction::Flip(card_id, next))
             } else {
-                Some(HoverAction::Press(card_id, &[data_action::MELD]))
+                row.card
+                    .scryfall_data
+                    .meld()
+                    .map(|_| HoverAction::Meld(card_id))
             }
         }
         HoverKey::Details => Some(HoverAction::Details(card_id)),
@@ -335,11 +340,26 @@ mod tests {
         let single = row(RowKind::Main { mvp: false });
         assert_eq!(
             hover_action(HoverKey::Flip, &single, Board::Deck, 0),
-            Some(HoverAction::Press(
-                single.card.scryfall_data.id,
-                &[data_action::MELD]
-            )),
-            "a single-faced card presses its Meld, which does nothing where it has none"
+            None,
+            "a single-faced card that does not meld has nothing to turn"
+        );
+        let mut half = row(RowKind::Main { mvp: false });
+        let own = half.card.scryfall_data.id;
+        half.card.scryfall_data.layout = "meld".to_owned();
+        half.card.scryfall_data.all_parts = Some(
+            serde_json::from_value(serde_json::json!([
+                { "object": "related_card", "id": own, "component": "meld_part",
+                  "name": "Half", "type_line": "Creature", "uri": "https://api.scryfall.com/cards/a" },
+                { "object": "related_card", "id": "00000000-0000-0000-0000-00000000beef",
+                  "component": "meld_result", "name": "Melded", "type_line": "Creature",
+                  "uri": "https://api.scryfall.com/cards/b" },
+            ]))
+            .unwrap(),
+        );
+        assert_eq!(
+            hover_action(HoverKey::Flip, &half, Board::Deck, 0),
+            Some(HoverAction::Meld(own)),
+            "a hovered meld half toggles its Meld, open or not"
         );
     }
 
