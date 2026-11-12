@@ -4,8 +4,8 @@
 //! (a name zwipe-ui's hint `KeyIcon` knows), so no line describes an icon in words. Never
 //! describe where synergy data comes from, only what it does for the user.
 //!
-//! The screenshots are files served once, by zwipe.net; [`image_size`] gives each one's size so a
-//! page holds its place while it loads.
+//! The screenshots are files served once, by zwipe.net ([`image_url`]); [`image_size`] gives each
+//! one's size so a page holds its place while it loads.
 
 /// A width and a height in pixels.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -33,6 +33,14 @@ pub fn image_size(file: &str) -> Pixels {
         },
         _ => PHONE_CAPTURE,
     }
+}
+
+/// Where a guide screenshot is served: once, by zwipe.net, under `/guide-images/`, so zwipe.net
+/// and the web app load the same file. A changed screenshot takes a new file name, since the
+/// address carries no hash.
+#[must_use]
+pub fn image_url(file: &str) -> String {
+    format!("{}/guide-images/{file}", crate::domain::site::WEB_BASE)
 }
 
 /// The files `guide`'s screenshots name, in order.
@@ -1075,6 +1083,15 @@ pub static GUIDES: &[Guide] = &[
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::site::WEB_BASE;
+
+    #[test]
+    fn a_screenshot_is_served_once_by_zwipe_net() {
+        assert_eq!(
+            image_url("getting-started/01-create-deck.webp"),
+            format!("{WEB_BASE}/guide-images/getting-started/01-create-deck.webp")
+        );
+    }
 
     #[test]
     fn every_guide_has_a_screenshot() {

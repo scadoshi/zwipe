@@ -12,7 +12,7 @@ mod content;
 use components::hint::KeyGlyph;
 use components::{ClearWrap, GalleryFooter, GalleryFrame, HintKey, Panel};
 use dioxus::prelude::*;
-use zwipe_core::content::guides::{Block, GUIDES, Guide};
+use zwipe_core::content::guides::{Block, GUIDES, Guide, image_url};
 use zwipe_ui::hint::KeyIcon;
 
 use crate::components::{MediaFrame, PageMeta};
@@ -146,18 +146,16 @@ fn GuideGallery(shots: Vec<(&'static str, &'static str, Option<&'static str>)>) 
         return rsx! {};
     };
     let caption_text = caption.unwrap_or(alt);
-    let src = content::guide_image(file);
+    let src = image_url(file);
 
     rsx! {
         GalleryFrame { index, total, noun: "screenshot", class: "guide-gallery-body",
-            if let Some(src) = src {
-                MediaFrame { key: "{i}", size: content::guide_image_size(file),
-                    img {
-                        src: "{src}",
-                        alt: "{alt}",
-                        loading: "lazy",
-                        draggable: false,
-                    }
+            MediaFrame { key: "{i}", size: content::guide_image_size(file),
+                img {
+                    src: "{src}",
+                    alt: "{alt}",
+                    loading: "lazy",
+                    draggable: false,
                 }
             }
         }
@@ -222,8 +220,9 @@ fn render_block(b: &'static Block) -> Element {
                 pre { class: "scroll-fade-x", "{t}" }
             }
         },
-        Block::Image { file, alt, caption } => rsx! {
-            if let Some(src) = content::guide_image(file) {
+        Block::Image { file, alt, caption } => {
+            let src = image_url(file);
+            rsx! {
                 figure { class: "guide-figure",
                     MediaFrame { size: content::guide_image_size(file), class: "guide-img-frame",
                         img {
@@ -239,7 +238,7 @@ fn render_block(b: &'static Block) -> Element {
                     }
                 }
             }
-        },
+        }
     }
 }
 
