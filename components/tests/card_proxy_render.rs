@@ -1,6 +1,7 @@
 //! Renders [`CardProxy`] at the sizes it fills, for a look in a browser: a
-//! creature and a long-text card at swipe, Featured, stack and thumbnail
-//! width, each in Gruvbox dark and light. Ignored in the suite; run with
+//! creature, a long-text card and a long-named card at swipe, Featured,
+//! stack, phone Featured and thumbnail width, each in Gruvbox dark and
+//! light. Ignored in the suite; run with
 //! `cargo test -p components --test card_proxy_render -- --ignored`, which
 //! writes `target/card-proxy-renders/<theme>.html` over the web app's sheets.
 
@@ -67,13 +68,29 @@ fn long_text() -> Card {
     urza
 }
 
-/// The widths a proxy fills: a swipe card, Featured's preview, a stack card
-/// and a list row's thumbnail.
-const SIZES: [(&str, u32); 4] = [
+/// A card whose name holds one long word.
+fn long_name() -> Card {
+    let mut card = card(
+        "Thembercha Overwatcher",
+        "{3}{W}",
+        "Creature \u{2014} Bird Soldier",
+        "Flying",
+        ("2", "3"),
+    );
+    "Commander Masters".clone_into(&mut card.scryfall_data.set_name);
+    card
+}
+
+/// The widths a proxy fills: a swipe card, Featured's preview, a stack card,
+/// the app deck page's Featured card on a phone, and a list row's thumbnail
+/// on the web and in the app.
+const SIZES: [(&str, u32); 6] = [
     ("Swipe", 320),
     ("Featured", 300),
     ("Stack", 210),
+    ("Phone featured", 150),
     ("Thumbnail", 44),
+    ("App thumbnail", 64),
 ];
 
 #[test]
@@ -96,7 +113,11 @@ fn render_the_proxy_at_every_size() {
         .unwrap();
     }
     let mut cells = String::new();
-    for (label, card) in [("Creature", creature()), ("Long text", long_text())] {
+    for (label, card) in [
+        ("Creature", creature()),
+        ("Long text", long_text()),
+        ("Long name", long_name()),
+    ] {
         write!(
             cells,
             r#"<h2 class="r-label">{label}</h2><div class="r-row">"#

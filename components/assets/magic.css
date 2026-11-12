@@ -1248,7 +1248,7 @@ i.ms.ms-cost.ms-gp {
     font-weight: 700;
     font-size: 1.15em;
     line-height: 1.2;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
     color: var(--ink-palette-3, var(--palette-3));
 }
 
@@ -1349,11 +1349,22 @@ i.ms.ms-cost.ms-gp {
     box-shadow: var(--shadow-md);
 }
 
-/* A thumbnail: just the name, as many lines of it as read at that size. */
+/* Rows the fitting script drops, in order, from a card the type can't
+   shrink into: the rules text, the Keywords and Card roles rows, the kind
+   chips. The name and the facts row stay. */
+.card-proxy[data-proxy-drop] .card-proxy-text,
+.card-proxy[data-proxy-drop="2"] .card-proxy-row,
+.card-proxy[data-proxy-drop="3"] .card-proxy-row,
+.card-proxy[data-proxy-drop="3"] .card-details-keys {
+    display: none;
+}
+
+/* A thumbnail: just the name, wrapped between words, as many lines of it as
+   fit; the fitting script shrinks it until each word fits its width. */
 @container (max-width: 110px) {
     .card-proxy-fit {
         padding: 8cqw;
-        font-size: max(7px, 13cqw);
+        font-size: max(5px, calc(13cqw * var(--proxy-scale, 1)));
         line-height: 1.15;
     }
 
@@ -1364,7 +1375,8 @@ i.ms.ms-cost.ms-gp {
         overflow: hidden;
         font-size: 1em;
         overflow-wrap: normal;
-        word-break: break-word;
+        word-break: normal;
+        hyphens: none;
     }
 
     .card-proxy-head-end,
