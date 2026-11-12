@@ -1,6 +1,6 @@
 # 395. app.zwipe.net Import squeezes into the left of its page
 
-State: fixing | Owner: thinker | PR: - | Build seen: production, web
+State: fixing | Owner: thinker | PR: #604 | Build seen: production, web
 
 ## Report
 Composer for Scotty, 2026-11-12, from surfer's text-width sweep: a deck's Import screen sits in a block about 530px wide at the left of its 1152px column (the chips, the hint and the Paste decklist panel), leaving the right side empty, while Export fills the same column. Import should fill it as Export does.
