@@ -1875,7 +1875,9 @@ html.keyboard-up .web-dock-pair {
             visibility 0s linear 0s;
     }
 
-    body:has(.sheet-form-drawer > .bottom-sheet.show) .action-dock:not(.sheet-dock) {
+    /* A modal's own dock, above the drawer (an Oracle tag's examples opened
+       from the filter's dictionary), stays. */
+    body:has(.sheet-form-drawer > .bottom-sheet.show) .action-dock:not(.sheet-dock, .screen .screen *) {
         transform: translateY(calc(100% + 2rem));
         opacity: 0;
         visibility: hidden;
@@ -1889,7 +1891,7 @@ html.keyboard-up .web-dock-pair {
 }
 
 @media (min-width: 60rem) and (prefers-reduced-motion: reduce) {
-    body:has(.sheet-form-drawer > .bottom-sheet.show) .action-dock:not(.sheet-dock) {
+    body:has(.sheet-form-drawer > .bottom-sheet.show) .action-dock:not(.sheet-dock, .screen .screen *) {
         transform: none;
     }
 }

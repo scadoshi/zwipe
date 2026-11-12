@@ -34,3 +34,16 @@ Headless on scotland, Examples opened from Playstyle:
 - Add at 1100 moves 43px; at 1600 it stays.
 
 Shots `target/shots-365/365-{1600,1300,1100,950}.png`.
+
+## Follow-up: Examples opened from the filter's dictionary
+surfer on live #567, via composer, 2026-11-12: on the deck page, Filter, then Oracle tags, then Dictionary, then a tag's Examples. There `h`, `j`, `d`, `v` and Shift+H did nothing (`?` worked), the Next, Back one and eye dock was missing, and the details were open from the start.
+
+- Cause, keys: the Examples mount inside the filter's open sheet, so every key guard saw an open overlay and dropped the key. `?` already routed to the topmost modal.
+- Cause, dock: `magic.css` hides every action dock while a form drawer (the filter) is open, the Examples' own dock included.
+- The details' first state is the one remembered from the last toggle (`DetailsStore`), the same on both paths, so that part is not a path difference.
+
+Fix, scotland, #PR:
+- The key guards pass while no overlay is open, or while the topmost open modal is the Examples modal (`shortcuts::KEYED_MODAL`, `.web-examples`). Its listeners register last, so they answer, even over a sheet.
+- The drawer's rule spares a dock inside a nested screen (`.screen .screen *`), so the Examples' dock stays over the filter.
+
+Tests: `the_examples_take_their_keys_when_they_are_the_topmost_modal_even_over_a_sheet` (`chrome/shortcuts.rs`) and `components/tests/modal_dock.rs`. Headless on scotland, the dictionary path at 1600: `d` toggles the details, `h` and `j` step, and Shift+H lists the Examples' keys. The dock shows (`target/shots-365/365-dict-after.png`). The Playstyle path is unchanged.
