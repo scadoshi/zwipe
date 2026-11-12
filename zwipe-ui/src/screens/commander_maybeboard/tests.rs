@@ -660,3 +660,41 @@ fn the_copy_matches_the_app() {
     assert_eq!(NO_MATCH, "No commanders match");
     assert_eq!(LOAD_FAILED, "Couldn't load your commander maybeboard");
 }
+
+#[test]
+fn the_sort_row_orders_the_list_and_is_remembered() {
+    let mut state = loaded(vec![
+        commander("Krenko", &[Color::Red]),
+        commander(
+            "Atraxa",
+            &[Color::White, Color::Blue, Color::Black, Color::Green],
+        ),
+        commander("Brago", &[Color::White, Color::Blue]),
+    ]);
+    assert_eq!(
+        state.sort().by,
+        SortBy::Newest,
+        "the newest save first by default"
+    );
+    assert_eq!(shown(&state), ["Krenko", "Atraxa", "Brago"]);
+    let by_name = Sort {
+        by: SortBy::Name,
+        direction: SortDirection::Ascending,
+    };
+    assert_eq!(
+        state.update(Action::Sort(by_name)),
+        [Effect::RememberSort(by_name)]
+    );
+    assert_eq!(shown(&state), ["Atraxa", "Brago", "Krenko"]);
+    let by_color = Sort {
+        by: SortBy::Color,
+        direction: SortDirection::Ascending,
+    };
+    let _ = state.update(Action::Sort(by_color));
+    assert_eq!(shown(&state), ["Krenko", "Brago", "Atraxa"]);
+    assert_eq!(
+        State::with_sort(by_name).sort(),
+        by_name,
+        "a remembered sort opens the screen"
+    );
+}

@@ -18,8 +18,8 @@ use zwipe_core::domain::card::search_card::cards::Cards;
 use zwipe_core::domain::deck::Format;
 use zwipe_core::domain::user::hints::OneTimeHint;
 
-use crate::commander::maybeboard::{self, Step};
-pub use crate::commander::maybeboard::{LIST_TITLE, LOAD_FAILED, NO_COMMANDERS, NO_MATCH};
+use crate::commander::maybeboard::{self, Sort, Step};
+pub use crate::commander::maybeboard::{LIST_TITLE, LOAD_FAILED, NO_COMMANDERS, NO_MATCH, SortBy};
 use crate::generation::{Generation, Ticket};
 use crate::toast::{Toast, ToastKind};
 use crate::{deck, timing};
@@ -181,6 +181,8 @@ pub enum Action {
     ShowAll,
     /// Picks or unpicks a Show color.
     ToggleColor(Color),
+    /// Orders the list by this sort, from the Sort row.
+    Sort(Sort),
     /// Starts a deck with this commander, through the create gate: a row's Create deck or a right swipe.
     Create {
         /// The commander, in the printing on screen.
@@ -255,6 +257,8 @@ pub enum Effect {
     Navigate(Destination),
     /// Raises this toast.
     Toast(Toast),
+    /// Stores this sort, so the screen opens in it next time.
+    RememberSort(Sort),
 }
 
 /// A request that changes the list, waiting for its reply.
@@ -313,6 +317,7 @@ pub struct State {
     load_waiting: Option<Ticket>,
     deck_count: Option<usize>,
     picked: HashSet<Color>,
+    sort: Sort,
     quick: QuickAdd,
     edits: Vec<(Ticket, Edit)>,
     hint: HintOffer,
@@ -328,6 +333,7 @@ impl Default for State {
             load_waiting: None,
             deck_count: None,
             picked: HashSet::new(),
+            sort: Sort::default(),
             quick: QuickAdd::default(),
             edits: Vec::new(),
             hint: HintOffer::Waiting,
@@ -341,6 +347,21 @@ impl State {
     #[must_use]
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// [`Self::new`] in `sort`, the one the client remembers.
+    #[must_use]
+    pub fn with_sort(sort: Sort) -> Self {
+        Self {
+            sort,
+            ..Self::default()
+        }
+    }
+
+    /// The Sort row's order.
+    #[must_use]
+    pub fn sort(&self) -> Sort {
+        self.sort
     }
 
     /// Applies `action` and returns what the client must do, in order.
@@ -399,6 +420,10 @@ impl State {
                     self.picked.insert(color);
                 }
                 Vec::new()
+            }
+            Action::Sort(sort) => {
+                self.sort = sort;
+                vec![Effect::RememberSort(sort)]
             }
             Action::Create { card, verified } => {
                 match deck::create_gate(verified, self.deck_count.unwrap_or(0)) {
@@ -627,7 +652,7 @@ impl State {
             .collect()
     }
 
-    /// The saved commanders the Show pips and `filter` let through. Saved order stands unless `filter` picks a sort.
+    /// The saved commanders the Show pips and `filter` let through, in the Sort row's order, unless `filter` picks a sort of its own.
     ///
     /// `filter` is the card filter sheet's builder, which the client keeps; a builder that fails to build narrows nothing.
     #[must_use]
@@ -643,6 +668,7 @@ impl State {
         {
             shown = Cards::from(shown).matching(&criteria).into();
         }
+        shown = self.sort.sorted(shown);
         if let Some(sort) = filter.sort() {
             shown = Cards::from(shown).sorted(sort, filter.direction()).into();
         }

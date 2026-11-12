@@ -23,6 +23,8 @@ pub mod crash_store;
 /// store on iOS), shared by `session` + `theme_store`.
 #[cfg(not(target_os = "android"))]
 pub mod keyring_entry;
+/// The commander maybeboard's sort, kept across launches.
+pub mod maybeboard_sort_store;
 /// Open a URL with the OS default handler (browser, mail app, etc.).
 pub mod open_url;
 /// Settings changes sent with no reply yet, resent on the next launch.

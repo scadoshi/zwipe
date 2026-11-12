@@ -37,10 +37,12 @@ use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::deck::format::Format;
 use zwipe_core::domain::user::hints::OneTimeHint;
+use zwipe_ui::commander::maybeboard::{Sort, SortBy};
 use zwipe_ui::generation::Ticket;
 use zwipe_ui::screens::commander_maybeboard::{
     self as model, Action, Destination, Effect, QuickAddResults, State, Status,
 };
+use zwipe_ui::screens::deck_list;
 
 use super::components::danger_zone::DangerZoneAction;
 use super::components::skeletons::{ChipGhost, ChipRowGhost, QuickAddSkeleton};
@@ -62,6 +64,7 @@ use crate::inbound::screens::deck::card::components::printing_sheet::PrintingShe
 use crate::inbound::screens::deck::card::filter::card_filter_sheet::CardFilterSheet;
 use crate::inbound::screens::deck::create::CreateDeckCommanderSeed;
 use crate::inbound::screens::oracle_tag_examples::OracleTagExamples;
+use crate::outbound::maybeboard_sort_store;
 
 /// One maybeboard entry: the shared expandable card row, with this screen's
 /// Create deck / Remove pair riding the row's own action bar (`extra_actions`)
@@ -230,6 +233,7 @@ impl Driver {
                 self.navigator.push(Router::CreateDeck);
             }
             Effect::Toast(toast) => ui_toast::raise(self.toast, toast),
+            Effect::RememberSort(sort) => maybeboard_sort_store::infallible_save(sort),
         }
     }
 
@@ -274,7 +278,7 @@ impl Driver {
 #[component]
 pub fn CommanderMaybeboard() -> Element {
     let driver = Driver {
-        model: use_signal(State::new),
+        model: use_signal(|| State::with_sort(maybeboard_sort_store::restored())),
         navigator: use_navigator(),
         toast: use_toast(),
         authed: use_authed(Screen::CommanderMaybeboard),
@@ -373,6 +377,7 @@ pub fn CommanderMaybeboard() -> Element {
     let builder = filter_builder.peek().clone();
     let view = driver.model.read();
     let is_loading = view.status() == Status::Loading;
+    let sort = view.sort();
     let nothing_saved = view.status() == Status::Empty;
     let query = view.query().to_owned();
     let quick_add = view.quick_add();
@@ -404,6 +409,14 @@ pub fn CommanderMaybeboard() -> Element {
                             chips: iter::once(ChipGhost::Text(model::SHOW_ALL.to_string()))
                                 .chain(Color::all().into_iter().map(ChipGhost::Pip))
                                 .chain(iter::once(ChipGhost::Text(model::ART.to_string())))
+                                .collect::<Vec<_>>(),
+                        }
+                        ChipRowGhost {
+                            label: deck_list::SORT,
+                            chips: SortBy::ALL
+                                .into_iter()
+                                .map(|by| ChipGhost::Text(by.label().to_string()))
+                                .chain(iter::once(ChipGhost::Text(sort.direction.to_string())))
                                 .collect::<Vec<_>>(),
                         }
                         div { class: "maybeboard-list card-group row-enter",
@@ -501,6 +514,24 @@ pub fn CommanderMaybeboard() -> Element {
                                 selected: show_row_art(),
                                 onclick: move |_| show_row_art.set(!show_row_art()),
                                 {model::ART}
+                            }
+                        }
+                        // The key chips pick, the last chip turns the order
+                        // around, as on Decks.
+                        div { class: "chip-row",
+                            span { class: "stat-chip stat-chip-p1 chip-row-label", {deck_list::SORT} }
+                            for by in SortBy::ALL {
+                                Chip {
+                                    key: "{by.label()}",
+                                    selected: sort.by == by,
+                                    onclick: move |_| driver.dispatch(Action::Sort(Sort { by, ..sort })),
+                                    "{by.label()}"
+                                }
+                            }
+                            Chip {
+                                selected: false,
+                                onclick: move |_| driver.dispatch(Action::Sort(Sort { direction: sort.direction.flipped(), ..sort })),
+                                "{sort.direction}"
                             }
                         }
 
