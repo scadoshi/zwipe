@@ -243,6 +243,8 @@ fn App() -> Element {
     use_context_provider(|| pip_style);
     use_context_provider(|| ShowsPips(Signal::new(false)));
     use_context_provider(|| Replay(Signal::new(0u32)));
+    // The keyboard shortcuts sheet, which Shift+H opens on a page that offers it.
+    let shortcuts_open = ::components::keys::use_shortcuts_root();
     // A card drawn without its image shrinks its text to fit its box.
     ::components::use_card_proxy_fit();
     // Lists marked to settle, as Guides' cards under a filter, ease into place.
@@ -375,6 +377,7 @@ fn App() -> Element {
         // fades the backdrop is already there and nothing rains twice.
         ::components::GridCells { still: true }
         Router::<Route> {}
+        ::components::keys::ShortcutsSheet { open: shortcuts_open }
         ::components::DialogHostView {}
     }
 }

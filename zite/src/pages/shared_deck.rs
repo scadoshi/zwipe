@@ -2,6 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 use chrono::Utc;
 use components::icons::DockIcon;
+use components::keys::{ShortcutsList, use_offer_shortcuts, use_page_keys};
 use components::{
     BudgetBody, CART, CardFilterPanel, CardsViewSwitch, Chip, CurrencyChips, DeckCardsView,
     DeckControls, DeckFacts, DeckFold, DeckHead, DeckPage, DeckRowHost, DeckStackDrawer,
@@ -29,6 +30,7 @@ use zwipe_ui::deck_cards::stacks::{
 use zwipe_ui::deck_cards::{self, Boards, Zone, listing};
 use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::filter::picker::Sources;
+use zwipe_ui::shortcuts::{self, CardKey, Editable};
 use zwipe_ui::stores::catalog::{Catalog, Kind};
 use zwipe_ui::{buy, filter};
 
@@ -287,6 +289,19 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
     let group_by = use_signal(|| GroupByOption::CardType);
     let mut card_filter: Signal<CardQueryBuilder> = use_signal(CardQueryBuilder::default);
     let mut filter_open = use_signal(|| false);
+    // The read-only deck page's keys on the shortcuts sheet, and `f` for the filter.
+    use_offer_shortcuts(ShortcutsList {
+        rows: shortcuts::deck_cards_rows(Editable::No)
+            .into_iter()
+            .chain(shortcuts::EVERYWHERE_ROWS)
+            .collect(),
+        note: Some(shortcuts::DECK_CARDS_NOTE),
+    });
+    use_page_keys(use_callback(move |key: String| {
+        if shortcuts::card_key(&key) == Some(CardKey::Filter) {
+            filter_open.set(true);
+        }
+    }));
     let catalog: Signal<Catalog> = use_signal(Catalog::default);
     let mut boards = use_signal(Boards::default);
     let show_zone = use_signal(|| true);
