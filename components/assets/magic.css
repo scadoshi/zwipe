@@ -2525,6 +2525,65 @@ html.keyboard-up .web-dock-pair {
     cursor: pointer;
 }
 
+/* With a mouse, a featured card lifts, grows a little and sways slowly
+   while the pointer is on it, then eases back when it leaves. The card's
+   turn is its sway's phase (`--deck-head-sway-phase`, -1 to 1, which runs
+   only while hovered and holds where it is on leave) times its reach
+   (`--deck-head-sway-reach`, 0 to 1, eased in and out), so on leave the
+   card rights itself from wherever it was. */
+@property --deck-head-sway-phase {
+    syntax: "<number>";
+    inherits: false;
+    initial-value: 0;
+}
+
+@property --deck-head-sway-reach {
+    syntax: "<number>";
+    inherits: false;
+    initial-value: 0;
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    .deck-head-card-image {
+        rotate: calc(var(--deck-head-sway-phase) * var(--deck-head-sway-reach) * 1.25deg);
+        transition:
+            translate 0.3s cubic-bezier(0.33, 1, 0.68, 1),
+            scale 0.3s cubic-bezier(0.33, 1, 0.68, 1),
+            --deck-head-sway-reach 0.45s cubic-bezier(0.33, 1, 0.68, 1);
+        animation: deck-head-sway 4.5s linear infinite paused;
+    }
+
+    .deck-head-card-image:hover {
+        --deck-head-sway-reach: 1;
+        translate: 0 -0.3rem;
+        scale: 1.035;
+        animation-play-state: running;
+    }
+}
+
+/* A pendulum: each swing slows at its ends and keeps its speed through the
+   middle. */
+@keyframes deck-head-sway {
+    0% {
+        --deck-head-sway-phase: 0;
+        animation-timing-function: cubic-bezier(0.61, 1, 0.88, 1);
+    }
+
+    25% {
+        --deck-head-sway-phase: 1;
+        animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
+    }
+
+    75% {
+        --deck-head-sway-phase: -1;
+        animation-timing-function: cubic-bezier(0.12, 0, 0.39, 0);
+    }
+
+    100% {
+        --deck-head-sway-phase: 0;
+    }
+}
+
 .deck-head-card .deck-head-card-image img {
     width: 100%;
     height: auto;
