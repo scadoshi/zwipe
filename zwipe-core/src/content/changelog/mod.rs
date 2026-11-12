@@ -62,6 +62,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "A meld card's open row in a deck's list has the Meld toggle its details drawer has",
         "On the web, f opens the filter on Commander maybeboard, and a meld card's Meld is one switch for its image, details, row and stack card",
         "Flipping a card on the web's deck page turns its stack image and row preview too",
+        "The Share dialog on the web shows the deck's own name in its link",
         "Hovering a stack on the web's deck page no longer shifts its cards by a pixel",
         "The web's deck page runs the window's width, its list in two columns on a wide screen",
         "Image in a stack card's details on the web's deck page",
