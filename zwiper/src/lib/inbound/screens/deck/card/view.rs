@@ -2,9 +2,9 @@ use std::collections::{HashMap, HashSet};
 
 use components::icons::{self};
 use components::{
-    Button, ButtonVariant, Chip, DeckEditActions, DeckRowHost, DeckSection, DeckStackDrawer,
-    DeckStacks, DockAction, DockFilter, GroupBuyDialog, IdentityPips, Pressable, StackDetails,
-    Toasts, use_group_buy, use_settle, use_stack_details_sync, use_toast,
+    Button, ButtonVariant, CartButton, Chip, DeckEditActions, DeckRowHost, DeckSection,
+    DeckStackDrawer, DeckStacks, DockAction, DockFilter, GroupBuyDialog, IdentityPips, Pressable,
+    StackDetails, Toasts, use_group_buy, use_settle, use_stack_details_sync, use_toast,
 };
 use dioxus::core::spawn_forever;
 use dioxus::prelude::*;
@@ -22,6 +22,7 @@ use zwipe_core::domain::card::search_card::group_cards::GroupByOption;
 use zwipe_core::domain::deck::{self, Board};
 use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_core::http::contracts::deck_card::HttpPatchDeckCard;
+use zwipe_ui::buy::{group_cards, group_price};
 use zwipe_ui::deck::command_zone::Slot;
 use zwipe_ui::deck_cards::keys::RowInfo;
 use zwipe_ui::deck_cards::stacks::{
@@ -477,6 +478,10 @@ fn flush(authed: Authed, deck_id: Uuid, card_id: Uuid, write: Write) {
 /// eased rotation) over a body that opens and closes with the `.collapsible`
 /// grid-rows ease the deck view's sections use. Rows stay mounted through a
 /// collapse, so expanded-card state survives the round trip.
+///
+/// `trailing` (the group's price and cart) sits on the line under the title.
+/// With it, only the arrow and the title fold the group, in a
+/// `.card-group-toggle`, so a tap on the cart never folds it.
 #[component]
 fn CollapsibleGroup(
     title: String,
@@ -486,20 +491,31 @@ fn CollapsibleGroup(
     pips: Option<Vec<Color>>,
     expanded: bool,
     ontoggle: EventHandler,
+    #[props(default)] trailing: Option<Element>,
     children: Element,
 ) -> Element {
+    let header_class = if expanded {
+        "card-group-header group-collapsible expanded"
+    } else {
+        "card-group-header group-collapsible"
+    };
+    let heading = rsx! {
+        span { class: "card-row-arrow", "▸" }
+        if let Some(pips) = pips.as_ref().filter(|p| !p.is_empty()) {
+            IdentityPips { colors: pips.clone() }
+        }
+        "{title}"
+    };
     rsx! {
         div {
             class: if expanded { "card-group row-enter" } else { "card-group row-enter collapsed" },
-            Pressable {
-                class: if expanded { "card-group-header group-collapsible expanded" } else { "card-group-header group-collapsible" },
-                expanded,
-                onpress: move |()| ontoggle(()),
-                span { class: "card-row-arrow", "▸" }
-                if let Some(pips) = pips.as_ref().filter(|p| !p.is_empty()) {
-                    IdentityPips { colors: pips.clone() }
+            if let Some(trailing) = trailing {
+                div { class: "{header_class} card-group-header-tailed",
+                    Pressable { class: "card-group-toggle", expanded, onpress: move |()| ontoggle(()), {heading} }
+                    {trailing}
                 }
-                "{title}"
+            } else {
+                Pressable { class: header_class, expanded, onpress: move |()| ontoggle(()), {heading} }
             }
             div {
                 class: if expanded { "collapsible open" } else { "collapsible" },
@@ -813,11 +829,8 @@ pub fn View(deck_id: Uuid) -> Element {
     let quick_query = model.quick_query().to_owned();
     let quick_results = model.quick_add();
     let stacks_on = view() == CardsView::Stacks;
-    let stack_groups = if stacks_on {
-        model.stack_groups(&display, &filter)
-    } else {
-        Vec::new()
-    };
+    // The groups as stacks, which the List's group carts read too.
+    let stack_groups = model.stack_groups(&display, &filter);
     let stack_boards: HashMap<Uuid, Board> = stack_groups
         .iter()
         .flat_map(|group| &group.rows)
@@ -831,6 +844,31 @@ pub fn View(deck_id: Uuid) -> Element {
         .iter()
         .flat_map(|group| group.rows.iter().cloned())
         .collect();
+    // Each List group's header and rows, by its fold key, for its cart.
+    let group_rows: HashMap<String, (String, Vec<RowInfo>)> = stack_groups
+        .iter()
+        .map(|group| (group.key.clone(), (group.title.clone(), group.rows.clone())))
+        .collect();
+    let currency = price_budget_currency();
+    // A List group's price and cart on the line under its title, as a stack's header shows
+    // them: nothing for a group with neither, such as the tokens.
+    let tail = |key: &str| -> Option<Element> {
+        let (title, rows) = group_rows.get(key)?.clone();
+        let price = group_price(&rows, currency);
+        let buyable = !group_cards(&rows).is_empty();
+        (price.is_some() || buyable).then(|| {
+            rsx! {
+                span { class: "card-group-tail",
+                    if let Some(p) = price {
+                        span { class: "stat-chip stat-chip-money", "{p}" }
+                    }
+                    if buyable {
+                        CartButton { onclick: move |_| group_buy.offer(&title, &rows) }
+                    }
+                }
+            }
+        })
+    };
     let stack_sections: Vec<(DeckSection, Vec<RowInfo>)> = stack_groups
         .into_iter()
         .map(
@@ -1102,6 +1140,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                     title: deck_cards::tokens_title(tokens.len()),
                                     expanded: tokens_expanded,
                                     ontoggle: toggle_section(deck_cards::TOKENS_KEY),
+                                    trailing: tail(deck_cards::TOKENS_KEY),
                                     for token in tokens.iter() {
                                         CardRow {
                                             card: token.clone(),
@@ -1122,6 +1161,7 @@ pub fn View(deck_id: Uuid) -> Element {
                             title: deck_cards::maybeboard_title(display.maybe.len()),
                             expanded: maybe_expanded,
                             ontoggle: toggle_section(deck_cards::MAYBEBOARD_KEY),
+                            trailing: tail(deck_cards::MAYBEBOARD_KEY),
                             for entry in display.maybe.iter() {
                                 {
                                     let card_id = entry.card.scryfall_data.id;
@@ -1150,6 +1190,7 @@ pub fn View(deck_id: Uuid) -> Element {
                             title: deck_cards::sideboard_title(display.side.len()),
                             expanded: side_expanded,
                             ontoggle: toggle_section(deck_cards::SIDEBOARD_KEY),
+                            trailing: tail(deck_cards::SIDEBOARD_KEY),
                             for entry in display.side.iter() {
                                 {
                                     let card_id = entry.card.scryfall_data.id;
@@ -1179,6 +1220,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                 title: Slot::Commander.group_header(deck_format, has_partner),
                                 expanded: commander_expanded,
                                 ontoggle: toggle_section(Slot::Commander.group_key()),
+                                trailing: tail(Slot::Commander.group_key()),
                                 if let Some(cmd) = displayed_commander {
                                     CardRow {
                                         card: cmd,
@@ -1208,6 +1250,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                 title: Slot::Background.group_header(deck_format, has_partner),
                                 expanded: background_expanded,
                                 ontoggle: toggle_section(Slot::Background.group_key()),
+                                trailing: tail(Slot::Background.group_key()),
                                 CardRow {
                                     card: bg,
                                     qty: 1,
@@ -1225,6 +1268,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                 title: Slot::SignatureSpell.group_header(deck_format, has_partner),
                                 expanded: spell_expanded,
                                 ontoggle: toggle_section(Slot::SignatureSpell.group_key()),
+                                trailing: tail(Slot::SignatureSpell.group_key()),
                                 CardRow {
                                     card: spell,
                                     qty: 1,
@@ -1247,6 +1291,7 @@ pub fn View(deck_id: Uuid) -> Element {
                                 pips,
                                 expanded: group_expanded,
                                 ontoggle: toggle_section(&key),
+                                trailing: tail(&key),
                                 for (card, row) in rows {
                                     {
                                         let card_id = card.scryfall_data.id;
@@ -1281,6 +1326,7 @@ pub fn View(deck_id: Uuid) -> Element {
                             title: lands_title,
                             expanded: lands_expanded,
                             ontoggle: toggle_section(deck_cards::LANDS_KEY),
+                            trailing: tail(deck_cards::LANDS_KEY),
                             for (card, row) in lands {
                                 {
                                     let card_id = card.scryfall_data.id;
@@ -1398,6 +1444,67 @@ pub fn View(deck_id: Uuid) -> Element {
 mod tests {
     use super::*;
     use crate::test_fixtures;
+
+    /// A group header rendered once, with a cart in its tail or none.
+    fn group_html(with_tail: bool) -> String {
+        fn tailed() -> Element {
+            rsx! {
+                CollapsibleGroup {
+                    title: "Creatures (2)".to_owned(),
+                    expanded: true,
+                    ontoggle: move |()| {},
+                    trailing: rsx! {
+                        span { class: "card-group-tail",
+                            components::CartButton { onclick: move |_| {} }
+                        }
+                    },
+                    "rows"
+                }
+            }
+        }
+        fn plain() -> Element {
+            rsx! {
+                CollapsibleGroup { title: "Creatures (2)".to_owned(), expanded: true, ontoggle: move |()| {}, "rows" }
+            }
+        }
+        let mut dom = VirtualDom::new(if with_tail { tailed } else { plain });
+        dom.rebuild_in_place();
+        dioxus_ssr::render(&dom)
+    }
+
+    #[test]
+    fn a_group_with_a_cart_folds_only_from_its_title() {
+        let html = group_html(true);
+        let (header, _) = html.split_once("collapsible open").unwrap();
+        let (_, toggle) = header.split_once(r#"class="card-group-toggle""#).unwrap();
+        let (toggle, rest) = toggle.split_once("</div>").unwrap();
+        assert!(
+            toggle.contains("Creatures (2)"),
+            "the title folds: {toggle}"
+        );
+        assert!(
+            !toggle.contains("cart-button"),
+            "the cart never folds: {toggle}"
+        );
+        assert!(
+            rest.contains("cart-button"),
+            "the cart follows the title: {rest}"
+        );
+        assert!(
+            header.matches(r#"role="button""#).count() == 1,
+            "only the title is the fold's button: {header}"
+        );
+    }
+
+    #[test]
+    fn a_group_without_a_cart_folds_from_its_whole_header() {
+        let html = group_html(false);
+        assert!(!html.contains("card-group-toggle"), "{html}");
+        assert!(
+            html.contains(r#"class="card-group-header group-collapsible expanded" role="button""#),
+            "{html}"
+        );
+    }
 
     #[test]
     fn undo_entries_survive_the_round_trip_to_the_model() {

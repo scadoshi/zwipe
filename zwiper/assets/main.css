@@ -449,3 +449,44 @@ body {
 .app-deck-stacks .card-stack-card {
     -webkit-tap-highlight-color: transparent;
 }
+
+/* ---- Deck cards: a List group's price and cart ---- */
+
+/* A List group header with its price and cart, as a stack's header has
+   them: the arrow and the title fold the group on the first line, and the
+   price and the cart sit on the line under the title, the cart at the end,
+   where a tap on it never folds the group. */
+.card-group-header.card-group-header-tailed {
+    flex-wrap: wrap;
+    row-gap: 0.35rem;
+    cursor: default;
+}
+
+.card-group-header-tailed > .card-group-toggle {
+    display: flex;
+    flex: 1 0 100%;
+    align-items: center;
+    gap: 0.4rem;
+    min-width: 0;
+    cursor: pointer;
+}
+
+/* The line starts under the title: past the arrow's 1.2rem and the gap. */
+.card-group-header-tailed > .card-group-tail {
+    display: flex;
+    flex: 1 0 100%;
+    align-items: center;
+    gap: 0.5rem;
+    padding-left: 1.6rem;
+}
+
+.card-group-tail > .stat-chip {
+    flex: none;
+    font-size: 0.75rem;
+    letter-spacing: 0.02em;
+}
+
+.card-group-tail > .cart-button {
+    flex: none;
+    margin-left: auto;
+}
