@@ -15,6 +15,7 @@ use zwipe_core::domain::deck::{Board, DeckEntry, DeckProfile, DeckWarning, Forma
 use crate::deck::form::Slot;
 use crate::stores::undo::UndoAction;
 
+pub mod columns;
 pub mod keys;
 pub mod stacks;
 
