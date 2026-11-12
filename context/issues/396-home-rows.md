@@ -1,6 +1,6 @@
 # 396. app.zwipe.net Home puts its three panels in one row from 1920
 
-State: fixing | Owner: thinker | PR: - | Build seen: production, web
+State: fixing | Owner: thinker | PR: #602 | Build seen: production, web
 
 ## Report
 Composer for Scotty, 2026-11-12, with a screenshot of Home at 1400: the row under the hero is two columns, Decks and Colors side by side sharing its width, and Featured flavor always takes its own full-width row below them, at every desktop width. The phone stays one column.
