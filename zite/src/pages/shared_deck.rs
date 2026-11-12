@@ -3,15 +3,14 @@ use std::collections::{HashMap, HashSet};
 use chrono::Utc;
 use components::hint::ContentHintDialog;
 use components::icons::DockIcon;
-use components::keys::{
-    ShortcutsList, use_global_keys, use_offer_shortcuts, use_page_keys, use_shortcuts_action,
-};
+use components::keys::{ShortcutsList, use_global_keys, use_offer_shortcuts, use_shortcuts_action};
 use components::{
     BudgetBody, CART, CardFilterPanel, CardsViewSwitch, Chip, CurrencyChips, DeckCardsView,
-    DeckControls, DeckFacts, DeckFold, DeckHead, DeckPage, DeckRowHost, DeckStackDrawer,
-    DistributionsBody, DockFilter, DrawOddsStepper, FeaturedCard, FlippableCardImage,
-    GroupBuyDialog, HoverStackHost, ManaBody, Panel, PrintingSheet, StackDetails, StoreDialog,
-    TagsBody, charted, deck_sections, use_group_buy, use_hover_stack, use_stack_details_sync,
+    DeckControls, DeckFacts, DeckFold, DeckHead, DeckHoverKeys, DeckPage, DeckRowHost,
+    DeckStackDrawer, DistributionsBody, DockFilter, DrawOddsStepper, FeaturedCard,
+    FlippableCardImage, GroupBuyDialog, HoverStackHost, ManaBody, Panel, PrintingSheet,
+    StackDetails, StoreDialog, TagsBody, charted, deck_sections, use_deck_hover_keys,
+    use_group_buy, use_hover_stack, use_stack_details_sync,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -26,7 +25,9 @@ use zwipe_core::domain::deck::deck_metrics::{self, DeckMetrics};
 use zwipe_core::domain::deck::{Board, DeckEntry, Format, deck_tag_label};
 use zwipe_core::domain::share_link;
 use zwipe_core::http::contracts::deck::HttpSharedDeck;
+use zwipe_ui::deck::form::Slot;
 use zwipe_ui::deck::view::StatsProfile;
+use zwipe_ui::deck_cards::keys::RowKind;
 use zwipe_ui::deck_cards::stacks::{
     CardsView, DEAL_DURATION, DEAL_STAGGER_CAP, DealCue, Reveal, deal_delay,
 };
@@ -115,6 +116,16 @@ fn SharedDeckSkeleton() -> Element {
                 }
             }
         }
+    }
+}
+
+/// The shared deck's command zone in its slots.
+fn zone_of(deck: &HttpSharedDeck) -> Zone {
+    Zone {
+        commander: deck.commander.clone(),
+        partner: deck.partner_commander.clone(),
+        background: deck.background.clone(),
+        signature: deck.signature_spell.clone(),
     }
 }
 
@@ -305,11 +316,6 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
     let mut hint_open = use_signal(|| false);
     use_global_keys(Some(use_callback(move |()| hint_open.set(true))));
     let shortcuts_action = use_shortcuts_action();
-    use_page_keys(use_callback(move |key: String| {
-        if shortcuts::card_key(&key) == Some(CardKey::Filter) {
-            filter_open.set(true);
-        }
-    }));
     let catalog: Signal<Catalog> = use_signal(Catalog::default);
     let mut boards = use_signal(Boards::default);
     let show_zone = use_signal(|| true);
@@ -362,13 +368,59 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
     let mut overlay_card: Signal<Option<(ScryfallData, usize)>> = use_signal(|| None);
     let mut overlay_dismissing = use_signal(|| false);
 
+    // The rows as the owner's deck page lists them, from the same pass, with each card's
+    // quantity, board and star.
+    let listing_memo = use_memo(use_reactive!(|deck| {
+        let zone = zone_of(&deck);
+        let mut entries: Vec<DeckEntry> = deck.entries.clone();
+        zone.strip(&mut entries);
+        let applied = card_filter();
+        let meta = listing::meta_of(&entries);
+        let display = deck_cards::pass(&entries, &zone, &applied, group_by());
+        let tokens = if show_tokens() {
+            deck.tokens
+        } else {
+            Vec::new()
+        };
+        let listed = listing::list_rows(&display, &meta, tokens, &applied, boards(), show_zone());
+        (listed, meta)
+    }));
+    // `p`, `i`, `v` and `d` read the card under the cursor, else the open one; `f` opens the
+    // filter.
+    use_deck_hover_keys(DeckHoverKeys {
+        row_of: Callback::new(move |id: Uuid| {
+            let held = listing_memo.peek();
+            let (listed, meta) = &*held;
+            let row = listed
+                .rows
+                .iter()
+                .find(|r| r.card.scryfall_data.id == id)
+                .cloned()?;
+            let board = match row.kind {
+                RowKind::Board(board) => board,
+                RowKind::Main { .. } | RowKind::Zone(_) | RowKind::Token => {
+                    listing::board_of(meta, id)
+                }
+            };
+            Some((row, board))
+        }),
+        faces,
+        details: Some(details),
+        actions: None,
+        on_printing: Callback::new(move |(card, _): (Card, Option<Slot>)| {
+            printing.set(Some(card));
+            printing_open.set(true);
+        }),
+        on_image: Callback::new(move |shown: (ScryfallData, usize)| overlay_card.set(Some(shown))),
+        other_keys: Some(Callback::new(move |key: String| {
+            if shortcuts::card_key(&key) == Some(CardKey::Filter) {
+                filter_open.set(true);
+            }
+        })),
+    });
+
     // The command zone in its slots, and every board's entries without it.
-    let zone = Zone {
-        commander: deck.commander.clone(),
-        partner: deck.partner_commander.clone(),
-        background: deck.background.clone(),
-        signature: deck.signature_spell.clone(),
-    };
+    let zone = zone_of(&deck);
     let mut entries: Vec<DeckEntry> = deck.entries.clone();
     zone.strip(&mut entries);
     let mainboard: Vec<DeckEntry> = entries
@@ -396,21 +448,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
 
     // The rows as the owner's deck page lists them, from the same pass.
     let applied = card_filter();
-    let meta = listing::meta_of(&entries);
-    let display = deck_cards::pass(&entries, &zone, &applied, group_by());
-    let token_cards = if show_tokens() {
-        deck.tokens.clone()
-    } else {
-        Vec::new()
-    };
-    let listed = listing::list_rows(
-        &display,
-        &meta,
-        token_cards,
-        &applied,
-        boards(),
-        show_zone(),
-    );
+    let (listed, meta) = listing_memo();
     let all_rows = listed.rows.clone();
     let listed_ids = use_memo(use_reactive!(|all_rows| all_rows
         .iter()
