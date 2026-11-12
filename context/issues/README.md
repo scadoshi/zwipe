@@ -79,6 +79,7 @@ Who checked, on which live build, what they saw.
 | [354](354-one-buy-dialog.md) | Buying is a different control in every spot, and the wide deck page hides it | fixing | thinker | - |
 | [358](358-share-link-deck-name.md) | The Share dialog's link names every deck "deck" | fixing | thinker | - |
 | [372](372-stacks-deal-in.md) | Stacks appear all at once | fixing | thinker | - |
+| [385](385-settle-first-frame.md) | The settle paints the final layout for one frame first | fixing | laptop | - |
 | [376](376-nav-logo-size.md) | The nav logo is a different size on each site | fixing | thinker | - |
 | [366](366-swipe-select-footer.md) | Suggested commanders has no footer | fixing | thinker | - |
 | [361](361-list-group-cart.md) | The List's card groups have no cart | fixing | thinker | - |

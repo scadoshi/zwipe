@@ -3,7 +3,9 @@
 //!
 //! A click on an element marked [`TRIGGER`] notes where every card (a list
 //! row or a stack card, by its `data-row`) and every group (by its
-//! `data-fold`) sits in the bands. Once the bands have re-rendered:
+//! `data-fold`) sits in the bands. As soon as the bands have re-rendered, in
+//! the same task and before the browser paints, so the first painted frame
+//! already shows the old layout:
 //! - a card or group still shown slides from where it was to where it is;
 //! - a new one fades in;
 //! - one that left fades out where it was, as a copy laid over the page, and
@@ -57,11 +59,13 @@ const SETTLE_JS: &str = r"
     }
     if (observer) observer.disconnect();
     clearTimeout(expire);
+    // The observer's callback runs in the task that changed the bands, before
+    // the browser paints them, so the moves start on the first painted frame.
     observer = new MutationObserver(() => {
       observer.disconnect();
       observer = null;
       clearTimeout(expire);
-      requestAnimationFrame(play);
+      play();
     });
     observer.observe(root, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
     expire = setTimeout(() => { if (observer) observer.disconnect(); observer = null; before = null; }, 600);
