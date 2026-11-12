@@ -5,10 +5,11 @@
 
 :root {
     --web-content-max: 72rem;
-    /* zite's page on a wide window (the page grammar below). */
-    --web-page-max: 74rem;
-    /* A wide page's width: seven 26rem card columns, as zwipe.net's. */
-    --web-wide-max: calc(7 * 26rem + 6 * var(--panel-gap));
+    /* The page column on a wide window, zwipe.net's 1400px (the page
+       grammar below). The deck page and the card screens run wider. */
+    --web-page-max: 87.5rem;
+    /* A dialog's widest. */
+    --web-dialog-max: 74rem;
     /* Where a sticky column stops: the page's 1rem gap under the nav. */
     --web-sticky-top: 1rem;
     /* How tall a sticky column may be: the window less the nav, the gap
@@ -1004,6 +1005,12 @@ body:has(.deck-stacks) .sheet-form-drawer:has(> .card-details-drawer) > .sheet-b
         padding: 0 1.5rem 1rem;
         box-sizing: border-box;
     }
+
+    /* The policy's running text keeps a readable measure in the wide
+       column, as zwipe.net's does. */
+    .web-privacy .privacy-section :is(p, ul) {
+        max-width: 70ch;
+    }
 }
 
 /* ---- About ---- */
@@ -1743,13 +1750,9 @@ body:has(.deck-stacks) .sheet-form-drawer:has(> .card-details-drawer) > .sheet-b
         min-height: 0;
     }
 
-    /* Home runs the window's width as zwipe.net does: the hero across the
-       page, its tagline at a readable measure, and the recent decks' tiles
-       at their own size, centered in the panel. */
-    .web-page.web-home-page {
-        max-width: var(--web-wide-max);
-    }
-
+    /* The hero runs across the column with its tagline at a readable
+       measure, and the recent decks' tiles keep their own size, centered
+       in the panel. */
     .web-home-page .web-hero-tagline {
         max-width: 70ch;
         margin: 0 auto;
@@ -2996,7 +2999,7 @@ body:has(.deck-stacks) .sheet-form-drawer:has(> .card-details-drawer) > .sheet-b
     .alert-dialog {
         width: max-content;
         min-width: 20rem;
-        max-width: min(var(--web-page-max), calc(100% - 3rem));
+        max-width: min(var(--web-dialog-max), calc(100% - 3rem));
         max-height: calc(100dvh - 8rem);
         padding-top: 1.25rem;
         padding-bottom: 1.25rem;

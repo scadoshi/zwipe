@@ -50,7 +50,10 @@ pub const UPCOMING: &[Release] = &[
     Release {
         version: Version::new(1, 19, 6),
         date: None,
-        entries: &["On a phone, a deck's Edit, Clone and Share sit in the dock beside Cards"],
+        entries: &[
+            "The web's Home and its other few-panel pages sit in the same 1400px column as zwipe.net",
+            "On a phone, a deck's Edit, Clone and Share sit in the dock beside Cards",
+        ],
     },
     Release {
         version: Version::new(1, 19, 5),
