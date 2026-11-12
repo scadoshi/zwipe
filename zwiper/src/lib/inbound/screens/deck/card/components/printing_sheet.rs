@@ -28,7 +28,7 @@ struct Driver {
     /// The printing the cover flow shows in its middle.
     index: Signal<usize>,
     open: Signal<bool>,
-    on_save: EventHandler<Card>,
+    on_save: Option<EventHandler<Card>>,
     host_screen: &'static str,
     client: Signal<ZwipeClient>,
     toast: Toasts,
@@ -75,7 +75,11 @@ impl Driver {
                 let mut index = self.index;
                 index.set(at);
             }
-            Effect::Pick(card) => self.on_save.call(*card),
+            Effect::Pick(card) => {
+                if let Some(on_save) = self.on_save {
+                    on_save.call(*card);
+                }
+            }
             Effect::Toast(toast) => ui_toast::raise(self.toast, toast),
             Effect::Close => {
                 let mut open = self.open;
@@ -90,16 +94,16 @@ impl Driver {
 pub(crate) fn PrintingSheet(
     card: Card,
     open: Signal<bool>,
-    on_save: EventHandler<Card>,
+    /// Takes the picked printing. Without one the sheet only browses: no
+    /// Save and no toast, as where nothing would keep the pick (Remove cards,
+    /// whose delete is keyed on the printing already on the deck, a staple,
+    /// Activity, Examples).
+    #[props(default)]
+    on_save: Option<EventHandler<Card>>,
     /// Host screen const (`vocabulary::screen`) for error-report breadcrumbs,
     /// this sheet serves several screens, and the report's aggregation axis is
     /// always the host, never the component.
     host_screen: &'static str,
-    /// Browse-only: hide Save and never fire `on_save`. Used on the remove
-    /// screen, where changing a card's printing would break the delete (which is
-    /// keyed on the exact `scryfall_data_id` already on the deck).
-    #[props(default)]
-    read_only: bool,
     /// Confirmation shown after Save. Host-specific because only some hosts
     /// persist: the deck view sends a `PATCH` for the deck card, while the add screen just
     /// re-skins the card still sitting in the swipe stack, where "saved" would
@@ -107,10 +111,10 @@ pub(crate) fn PrintingSheet(
     #[props(default = model::SAVED)]
     saved_message: &'static str,
 ) -> Element {
-    let mode = if read_only {
-        Mode::ReadOnly
-    } else {
+    let mode = if on_save.is_some() {
         Mode::Pick
+    } else {
+        Mode::ReadOnly
     };
     let driver = Driver {
         model: use_signal(|| State::new(mode, saved_message)),

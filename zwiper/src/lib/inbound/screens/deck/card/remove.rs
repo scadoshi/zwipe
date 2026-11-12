@@ -644,8 +644,6 @@ pub fn Remove(deck_id: Uuid) -> Element {
                     host_screen: screen::DECK_CARD_REMOVE,
                     card,
                     open: printing_open,
-                    on_save: move |_: Card| {},
-                    read_only: true,
                 }
             }
 

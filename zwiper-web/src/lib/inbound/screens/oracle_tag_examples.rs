@@ -246,8 +246,6 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
                 PrintingSheet {
                     card,
                     open: printing_open,
-                    on_save: move |_: Card| {},
-                    read_only: true,
                 }
             }
         }

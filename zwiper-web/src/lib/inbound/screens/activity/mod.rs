@@ -13,7 +13,6 @@ pub mod sections;
 use components::{HoverStackHost, use_hover_stack};
 use dioxus::prelude::*;
 use uuid::Uuid;
-use zwipe_core::domain::card::Card;
 use zwipe_core::http::contracts::suggestions::HttpActivity;
 use zwipe_ui::activity::has_anything;
 use zwipe_ui::telemetry::vocabulary::Screen;
@@ -182,24 +181,6 @@ pub fn Activity() -> Element {
         OneTimeHintDialog { hint: OneTimeHint::Activity, open: hint_open }
         OtagExamplesHost { examples }
         HoverStackHost { stack: hover_stack }
-        CardOverlaysHost {
-            overlays,
-            on_printing_save: move |picked: Card| {
-                let target = picked.scryfall_data.oracle_id;
-                if target.is_none() {
-                    return;
-                }
-                let mut expanded = expanded_card;
-                expanded.set(Some(picked.scryfall_data.id));
-                if let Some(found) = activity.write().as_mut()
-                    && let Some(slot) = found
-                        .passes
-                        .iter_mut()
-                        .find(|p| p.card.scryfall_data.oracle_id == target)
-                {
-                    slot.card = picked;
-                }
-            },
-        }
+        CardOverlaysHost { overlays }
     }
 }

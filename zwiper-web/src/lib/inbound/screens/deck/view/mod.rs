@@ -358,7 +358,7 @@ fn DeckViewScreen(deck_id: Uuid) -> Element {
         }
         DeckDialogsHost { deck_id, dialogs, share_token, deck_name, clone_name, delete_body }
         FirstDeckHintDialog { open: hint_open, wide: wide() }
-        CardOverlaysHost { overlays, on_printing_save: move |_: Card| {}, read_only: true }
+        CardOverlaysHost { overlays }
         OtagExamplesHost { examples }
     }
 }

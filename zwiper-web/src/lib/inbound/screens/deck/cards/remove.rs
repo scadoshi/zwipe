@@ -653,8 +653,6 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
             PrintingSheet {
                 card,
                 open: printing_open,
-                read_only: true,
-                on_save: move |_: Card| {},
             }
         }
         CardFilterPanel {

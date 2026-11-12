@@ -53,6 +53,7 @@ pub const UPCOMING: &[Release] = &[
         entries: &[
             "The Share dialog's link is a colored chip that wraps only when the screen is too narrow for it",
             "Charts grow in when their page opens or their section expands",
+            "Printings has no Select where there is nothing to save the pick to",
         ],
     },
     Release {

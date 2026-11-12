@@ -550,6 +550,28 @@ fn pick_printing_swaps_the_suggestion_sharing_its_oracle() {
 }
 
 #[test]
+fn only_a_suggested_commander_picks_a_printing() {
+    let state = loaded(ranking(), full_profile());
+    let krenko = state.entries()[0].card.clone();
+    let mut printing = card("Krenko, Mob Boss");
+    printing.scryfall_data.oracle_id = krenko.scryfall_data.oracle_id;
+    assert!(
+        state.picks_printing(&printing),
+        "a suggestion's printing carries into Create deck"
+    );
+
+    let staple = staple("Sol Ring", "Artifact", &[], 3).card;
+    assert!(
+        !state.picks_printing(&staple),
+        "a staple only browses its printings"
+    );
+
+    let mut stray = printing;
+    stray.scryfall_data.oracle_id = None;
+    assert!(!state.picks_printing(&stray), "no oracle id, no pick");
+}
+
+#[test]
 fn back_goes_to_the_screen_before() {
     let mut state = State::new();
     assert_eq!(

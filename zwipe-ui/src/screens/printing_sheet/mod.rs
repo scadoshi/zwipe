@@ -35,7 +35,7 @@ pub enum Mode {
     /// Save picks the showing printing for the host.
     #[default]
     Pick,
-    /// Browse only: no Save, and leaving never toasts. Remove cards opens it this way, since its delete is keyed on the printing already on the deck.
+    /// Browse only: no Save, and leaving never toasts. Every host with nothing to keep a pick opens it this way: Remove cards, whose delete is keyed on the printing already on the deck, a staple, Activity and Examples.
     ReadOnly,
 }
 
