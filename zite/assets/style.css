@@ -306,38 +306,13 @@ html:has(> body[class*="theme-"][class*="-light"]) {
     outline-offset: 2px;
 }
 
-/* The page runs the window's width inside its 1.5rem gutter, as the web
-   app's deck page does, up to the width of seven card columns. Every section
-   takes that one width, so headers, filters, panels and the card grids under
-   them share their edges; running text keeps a readable measure inside. */
-:root {
-    --zite-page-max: calc(7 * 26rem + 6 * var(--panel-gap));
-}
-
 .page {
     flex: 1 0 auto;
     width: 100%;
+    max-width: 74rem;
     margin: 0 auto;
     /* The same 1rem off the footer as the nav's margin leaves at the top. */
     padding: 0 1.5rem 1rem;
-}
-
-/* Outranks a section's own margin shorthand, so every section centers. */
-body .page > * {
-    width: 100%;
-    max-width: var(--zite-page-max);
-    margin-left: auto;
-    margin-right: auto;
-}
-
-/* Running text keeps a readable measure. */
-:is(.guide-content .guide-p, .guide-content .guide-lead, .guide-content .guide-steps,
-    .guide-content .guide-bullets, .guide-content .guide-note, .privacy-section > p,
-    .privacy-section > ul, .release-card .collapse-body, .hero .tagline,
-    body .page > :is(.section, .page-header) > .panel-card p,
-    body .page > .section > .section-head > .panel-card p,
-    .card-grid-2 .panel-card p) {
-    max-width: 70ch;
 }
 
 /* ==================
@@ -426,7 +401,6 @@ body .page > * {
 
 body .arch-figure .diagram {
     width: 80%;
-    max-width: 57rem;
     margin-inline: auto;
 }
 
@@ -570,8 +544,9 @@ code {
 .hero-card {
     display: flex;
     flex-direction: column;
-    /* The page's width, so the hero's edges align with the band below. */
-    max-width: var(--zite-page-max);
+    /* Match the .page content width (74rem minus its 1.5rem side padding)
+       so the hero's edges align with the demo/features band below. */
+    max-width: 71rem;
     margin: 0 auto;
     padding: 1rem 1.5rem;
     background-color: var(--bg-primary);
@@ -615,7 +590,7 @@ code {
 .hero .tagline {
     font-size: 0.95rem;
     color: var(--text-primary);
-    margin: 0 auto;
+    margin: 0;
 }
 
 /* The rule + stats are inserted together once metrics resolve; ease them in
@@ -714,17 +689,6 @@ code {
 /* A grid of two cards fills its row in two columns. */
 .card-grid.card-grid-2 {
     grid-template-columns: 1fr 1fr;
-}
-
-/* From 1280px the card grids add columns as the window grows, each card at
-   least 22rem, filling the page's width edge to edge so the grid lines up
-   with the sections above it; the page's width stops it at seven. A pair
-   stays a pair across the page. */
-@media (min-width: 80rem) {
-    .card-grid:not(.card-grid-2),
-    .features-grid {
-        grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr));
-    }
 }
 
 @media (max-width: 75rem) {
@@ -913,20 +877,6 @@ code {
     aspect-ratio: 540 / 1110;
     width: min(100%, calc(70vh * 540 / 1110));
     max-height: none;
-}
-
-/* From 1920px the demo and the three feature panels share one row, the
-   panels side by side beside the demo. */
-@media (min-width: 120rem) {
-    .demo-features {
-        grid-template-columns: minmax(0, 1fr) minmax(0, 3fr);
-    }
-
-    .features-stack {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        align-items: start;
-    }
 }
 
 /* Full width under the demo band, one panel gap above Reviews. */
@@ -1811,9 +1761,10 @@ body[class$="-dark"] .chip-value {
  ==================== */
 
 .shared-deck {
+    max-width: 74rem;
     width: 100%;
     margin: 0 auto;
-    padding: 0 1.5rem 3rem;
+    padding: 0 1.25rem 3rem;
     /* Grow to fill between nav and footer so the footer stays pinned to the
        bottom regardless of deck length (matches the loading/error state). */
     flex: 1 0 auto;
@@ -2119,25 +2070,6 @@ body[class$="-dark"] .chip-value {
 .sd-retry:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-}
-
-/* From 1400px the groups flow down two columns, each group whole in one of
-   them, as on the web app's deck page. */
-@media (min-width: 1400px) {
-    .shared-deck .deck-bands {
-        display: block;
-        column-count: 2;
-        column-gap: var(--panel-gap);
-    }
-
-    .shared-deck .deck-bands > * {
-        break-inside: avoid;
-    }
-
-    /* The gap falls away at the top of the second column. */
-    .shared-deck .deck-bands > * + * {
-        margin-top: var(--panel-gap);
-    }
 }
 
 @media (max-width: 640px) {
