@@ -1,6 +1,6 @@
 # 365. Examples keys, d on every swipe screen, ? to the open modal, the card clear of its details
 
-State: fixing | Owner: scotland | PR: #PR | Build seen: live, web
+State: fixing | Owner: scotland | PR: #567 | Build seen: live, web
 
 ## Report
 Scotty via composer, 2026-11-12, web:
@@ -15,7 +15,7 @@ Scotty via composer, 2026-11-12, web:
 - (d): the global key listener sent `?` to the newest page registration. A modal that did not register (Examples, the filter sheet) never got it, and the overlay guard dropped `?` outright while a sheet was open.
 
 ## Fix
-scotland, #PR (zwiper-web):
+scotland, #567 (zwiper-web):
 - `shortcuts::CardKey` gains `Details` (`d`). The swipe screens' map and the deck page's hover keys take `d` from it. The Examples modal answers `d` with its eye.
 - `ShortcutsScreen::Examples` lists ← h Next, ↓ j Back one, d Card details and v Flip card. The modal offers the sheet while open.
 - `chrome/details_clear.rs` replaces the CSS estimate with a shared script installed once at the app root. It runs on resize and on class changes, for Add, Remove, Commander swipe and the Examples:
