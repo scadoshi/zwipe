@@ -2182,26 +2182,10 @@ body:has(.deck-stacks) .sheet-form-drawer:has(> .card-details-drawer) > .sheet-b
         transition: transform 0.3s ease, visibility 0s linear 0.3s;
     }
 
-    /* Where the window is too narrow for the card centered beside the shown
-       panel (details_eye.rs's beside_fits), the card moves left just far
-       enough to clear it, 1rem short of the panel; where both fit it stays
-       centered. The card's width is card_width's: the stack's
-       min(68vh, 42rem) less its 3.25rem, at a card's 63:88, at most 26rem. */
-    :is(.web-cards-swipe, .web-swipe-select-body) {
-        --web-card-w: min(calc((min(68vh, 42rem) - 3.25rem) * 63 / 88), 26rem);
-        --web-card-shift: min(
-            0px,
-            calc(100vw - 2rem - var(--web-dock-panel-width) - 50vw - var(--web-card-w) / 2)
-        );
-    }
-
-    :is(.web-cards-swipe, .web-swipe-select-body) .web-swipe-stack {
-        translate: var(--web-card-shift) 0;
+    /* The card slides clear of the shown panel where the room on its left
+       fits it (details_clear.rs sets its translate), on the panel's easing. */
+    :is(.web-cards-swipe, .web-swipe-select-body, .web-examples-body) .web-swipe-stack {
         transition: translate 0.3s ease;
-    }
-
-    :is(.web-cards-swipe, .web-swipe-select-body).web-details-hidden .web-swipe-stack {
-        translate: none;
     }
 
     /* A transform on the panel's block, even one mid-entrance, makes the
