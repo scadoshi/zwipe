@@ -48,6 +48,16 @@ pub const MOBILE_STORE_VERSION: Version = Version::new(1, 18, 15);
 /// changelog with an "Upcoming" badge instead of "Latest".
 pub const UPCOMING: &[Release] = &[
     Release {
+        version: Version::new(1, 19, 7),
+        date: None,
+        entries: &[
+            "On the web, cards, decks and guides ease into place when a fold, a Show or Sort chip, a filter, a row's action or Undo moves them, instead of jumping",
+            "The nav bar, a field's label and the Draw odds bars no longer jump when they change",
+            "On the web, Home pairs Decks and Colors under the hero, with Featured flavor on its own row",
+            "On a phone, a deck's Edit, Clone and Share sit in the dock beside Cards",
+        ],
+    },
+    Release {
         version: Version::new(1, 19, 6),
         date: None,
         entries: &[
@@ -57,10 +67,6 @@ pub const UPCOMING: &[Release] = &[
             "On the web, Import runs the full width of its page, as Export does",
             "On the web, Home's tagline and the Privacy policy's text run the full width of their panels",
             "Back closes an open card image before leaving the screen",
-            "On the web, cards, decks and guides ease into place when a fold, a Show or Sort chip, a filter, a row's action or Undo moves them, instead of jumping",
-            "The nav bar, a field's label and the Draw odds bars no longer jump when they change",
-            "On the web, Home pairs Decks and Colors under the hero, with Featured flavor on its own row",
-            "On a phone, a deck's Edit, Clone and Share sit in the dock beside Cards",
         ],
     },
     Release {
