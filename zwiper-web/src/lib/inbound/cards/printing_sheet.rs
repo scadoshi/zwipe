@@ -8,6 +8,8 @@ use components::{
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
+use zwipe_client::ZwipeClient;
+use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
 use zwipe_ui::telemetry::vocabulary::component;
 
@@ -47,18 +49,27 @@ pub fn PrintingSheet(
 }
 
 /// Provides the sheet's [`PrintingsSource`] under it: each fetch runs for the session, its
-/// failure toasted and reported under the printing sheet.
+/// failure toasted and reported under the printing sheet. Signed out (a shared deck's reader) it
+/// runs on the public route with no session, and a failure offers Retry.
 pub(crate) fn use_printings_source() {
     let authed = use_authed().in_component(component::PRINTING_SHEET);
+    let session: Signal<Option<Session>> = use_context();
+    let client: Signal<ZwipeClient> = use_context();
     let mut results: Signal<HashMap<Uuid, PrintingsFetch>> = use_signal(HashMap::new);
     let request = use_callback(move |oracle_id: Uuid| {
         results.write().insert(oracle_id, PrintingsFetch::Loading);
+        let signed_in = session.peek().is_some();
         spawn(async move {
-            let fetched = authed
-                .run("load_printings", |c, _| async move {
-                    c.fetch_printings(oracle_id).await
-                })
-                .await;
+            let fetched = if signed_in {
+                authed
+                    .run("load_printings", |c, _| async move {
+                        c.fetch_printings(oracle_id).await
+                    })
+                    .await
+            } else {
+                let http = client.peek().clone();
+                http.fetch_printings(oracle_id).await.ok()
+            };
             let fetch = fetched.map_or(PrintingsFetch::Failed, PrintingsFetch::Ready);
             results.write().insert(oracle_id, fetch);
         });

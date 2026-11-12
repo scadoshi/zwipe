@@ -32,9 +32,9 @@ GitHub → Actions tab → **Deploy zite** → Run workflow → Run workflow
 
 ---
 
-## Cloudflare Pages and the share page's preview tags
+## Cloudflare Pages and shared deck links
 
-`zite/functions/deck/[token].js` is a Pages Function for `/deck/:token`. It reads the deck from the public `GET /api/share/deck/:token` and serves the site shell with the deck's own title, description, image and canonical link, so link previews show the deck. An unknown, revoked or malformed token gets the generic tags with a 404, and a failing API gets the generic page with a 200. Every other path is a static file, with `index.html` and a 200 for an app route, since there is no `404.html`. `zite/tests/og_function.rs` keeps the Function's format names and commander formats matched to zwipe-core.
+A shared deck lives on the web app (see app.zwipe.net below). `zite/functions/deck/[token].js`, which `/:owner/deck/:slug/:token` re-exports, answers both shared deck links on zwipe.net with a 301 to the same path on app.zwipe.net (the bare token form to `/_/deck/deck/:token`, which the web app corrects to the deck's owner and slug). Phones built before the move mint zwipe.net links, so the redirect stays. `zite/tests/share_redirect.rs` pins it. Every other path is a static file, with `index.html` and a 200 for an app route, since there is no `404.html`.
 
 zwipe.net moved to the `zwipe-site` Pages project on 2026-11-07; GitHub Pages is unpublished and its deploy job is gone. Secrets: `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, the same as `deploy-web.yml`.
 
@@ -61,5 +61,6 @@ The web app is hosted on Cloudflare Pages, project `zwipe-app`, at `app.zwipe.ne
 - `test` (`cargo test -p zwiper-web`) and `build` (`dx build --release --platform web` with `BACKEND_URL=https://api.zwipe.net`) run side by side; `deploy` waits on both and uploads the build with `wrangler pages deploy --branch main`.
 - `zwiper-web/deploy/_headers` is copied into the build: the security headers, with the Content-Security-Policy in report-only until a click-through shows no violations.
 - No `404.html`, so Pages answers app routes with `index.html` and a 200.
+- `zwiper-web/functions/[owner]/deck/[slug]/[token].js` is a Pages Function for a shared deck's link. It reads the deck from the public `GET /api/share/deck/:token` and serves the app's shell with the deck's own title, description, preview image and canonical link, so link previews (Teams, WhatsApp, X, iMessage, Discord, Slack) show the deck. An unknown, revoked or malformed token gets the app-wide tags with a 404, and a failing API the app-wide tags with a 200. `deploy` runs `wrangler pages deploy` from `zwiper-web/` so the function uploads with the build. `zwiper-web/tests/og_function.rs` keeps its format names, commander formats, slug cap and preview URL matched to zwipe-core. Check a deploy with `curl -sA "Twitterbot/1.0" https://app.zwipe.net/<owner>/deck/<slug>/<token> | grep og:`: the deck's own `og:title`, `og:description` and `og:image`.
 - Secrets: `CLOUDFLARE_API_TOKEN` (an account token, Pages Edit only, expires 2027-11-06) and `CLOUDFLARE_ACCOUNT_ID`.
 - The API must list `https://app.zwipe.net` in `ALLOWED_ORIGINS` (`/etc/zwipe/zerver.env`): CORS and the cookie session routes both check it.

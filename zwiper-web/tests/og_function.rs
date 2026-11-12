@@ -1,11 +1,11 @@
-//! The share page's Pages Function (`functions/deck/[token].js`) names formats,
+//! The shared deck link's Pages Function (`functions/[owner]/deck/[slug]/[token].js`) names formats,
 //! picks which ones lead with a commander and versions the preview image from
 //! its own copies of zwipe-core's lists and constants. These keep the copies
 //! matched.
 
 use zwipe_core::domain::deck::Format;
 
-const FUNCTION: &str = include_str!("../functions/deck/[token].js");
+const FUNCTION: &str = include_str!("../functions/[owner]/deck/[slug]/[token].js");
 
 /// The text between `start` and the next `end` after it.
 fn block(start: &str, end: &str) -> Option<&'static str> {
@@ -70,14 +70,16 @@ fn the_preview_version_carries_the_layout() {
     );
 }
 
-const OWNER_FORM: &str = include_str!("../functions/[owner]/deck/[slug]/[token].js");
-
 #[test]
-fn the_owner_and_slug_link_shares_the_handler() {
+fn the_canonical_link_is_the_app_s_owner_form() {
+    assert!(FUNCTION.contains("const SITE = \"https://app.zwipe.net\";"));
     assert!(
-        OWNER_FORM.contains(r#"export { onRequestGet } from "../../../deck/[token].js";"#),
-        "{OWNER_FORM}"
+        FUNCTION.contains(
+            "`${SITE}/${encodeURIComponent(owner)}/deck/${deckSlug(deck.name)}/${lower}`"
+        ),
+        "the canonical link is the one shared deck shape"
     );
+    assert!(!FUNCTION.contains("${SITE}/deck/"), "no bare token link");
 }
 
 #[test]

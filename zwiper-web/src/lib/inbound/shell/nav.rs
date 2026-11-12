@@ -34,9 +34,11 @@ impl Back {
     /// and a section goes to the screen before it.
     pub fn of(route: &Route) -> Option<Back> {
         match route {
-            Route::Home {} | Route::Login {} | Route::Register {} | Route::ForgotPassword {} => {
-                None
-            }
+            Route::Home {}
+            | Route::Login {}
+            | Route::Register {}
+            | Route::ForgotPassword {}
+            | Route::SharedDeck { .. } => None,
             Route::DeckList {}
             | Route::Activity {}
             | Route::Playstyle {}
@@ -114,6 +116,7 @@ pub const fn section_of(route: &Route) -> Option<Section> {
         Route::Login {}
         | Route::Register {}
         | Route::ForgotPassword {}
+        | Route::SharedDeck { .. }
         | Route::NotFound { .. } => None,
     }
 }

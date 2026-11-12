@@ -144,7 +144,7 @@ pub fn metrics_possible(profile: &DeckProfile) -> bool {
         || profile.signature_spell_id.is_some()
 }
 
-/// The public link to the deck `owner` shares as `deck_name` under `token`: `{WEB_BASE}/<owner>/deck/<slug>/<token>`, from [`share_link::shared_deck_url`]. Debug builds point at the local site, release builds at zwipe.net.
+/// The public link to the deck `owner` shares as `deck_name` under `token`: `{APP_BASE}/<owner>/deck/<slug>/<token>`, from [`share_link::shared_deck_url`]. Debug builds point at the local web app, release builds at app.zwipe.net.
 #[must_use]
 pub fn share_link(owner: &str, deck_name: &str, token: Uuid) -> String {
     share_link::shared_deck_url(owner, deck_name, token)
@@ -219,7 +219,7 @@ impl Done {
 #[cfg(test)]
 mod tests {
     use zwipe_core::domain::deck::DeckOtherTag;
-    use zwipe_core::domain::site::WEB_BASE;
+    use zwipe_core::domain::site::APP_BASE;
 
     use super::*;
     use crate::test_support::deck_profile;
@@ -300,7 +300,7 @@ mod tests {
         let token = Uuid::nil();
         assert_eq!(
             share_link("scotty", "Elves Go Wide", token),
-            format!("{WEB_BASE}/scotty/deck/elves-go-wide/00000000-0000-0000-0000-000000000000")
+            format!("{APP_BASE}/scotty/deck/elves-go-wide/00000000-0000-0000-0000-000000000000")
         );
     }
 

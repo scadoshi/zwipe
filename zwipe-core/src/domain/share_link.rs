@@ -1,13 +1,14 @@
-//! A shared deck's public link: `zwipe.net/<owner>/deck/<slug>/<token>`, GitHub style.
+//! A shared deck's public link: `app.zwipe.net/<owner>/deck/<slug>/<token>`, GitHub style.
 //!
 //! Only the share token identifies the deck. The owner's username and the slug of the deck's
-//! name are cosmetic: zite loads the deck by its token and swaps a stale owner or slug for the
-//! current ones. The four-segment `/<owner>/deck/<slug>/<token>` shape is the only shared-deck
+//! name are cosmetic: the web app loads the deck by its token and swaps a stale owner or slug for
+//! the current ones. zwipe.net answers the same path with a redirect here, for links a phone
+//! built before the move still makes. The four-segment `/<owner>/deck/<slug>/<token>` shape is the only shared-deck
 //! form, so it never collides with the site's own one- and two-segment pages.
 
 use uuid::Uuid;
 
-use crate::domain::site::WEB_BASE;
+use crate::domain::site::APP_BASE;
 
 /// The longest a slug runs, in characters, before it is cut at a dash where it can be.
 pub const SLUG_MAX: usize = 60;
@@ -119,10 +120,10 @@ pub fn shared_deck_path(owner: &str, deck_name: &str, token: Uuid) -> String {
     )
 }
 
-/// The full public link: [`WEB_BASE`] then [`shared_deck_path`].
+/// The full public link: [`APP_BASE`], the web app, then [`shared_deck_path`].
 #[must_use]
 pub fn shared_deck_url(owner: &str, deck_name: &str, token: Uuid) -> String {
-    format!("{WEB_BASE}{}", shared_deck_path(owner, deck_name, token))
+    format!("{APP_BASE}{}", shared_deck_path(owner, deck_name, token))
 }
 
 #[cfg(test)]
@@ -188,6 +189,6 @@ mod tests {
             shared_deck_path("a/b", "", token),
             "/a%2Fb/deck/deck/00000000-0000-0000-0000-000000000000"
         );
-        assert!(shared_deck_url("scotty", "Test", token).starts_with(WEB_BASE));
+        assert!(shared_deck_url("scotty", "Test", token).starts_with(APP_BASE));
     }
 }

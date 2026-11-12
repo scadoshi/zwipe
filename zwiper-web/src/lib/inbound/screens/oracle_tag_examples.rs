@@ -1,9 +1,13 @@
-//! Oracle tag examples: components' screen over the session's card search, with the web's
-//! telemetry, one-time hint and toast.
+//! Oracle tag examples: components' screen over the session's card search (the public examples
+//! route for a signed-out reader of a shared deck), with the web's telemetry, one-time hint and
+//! toast.
 
 use components::{ExamplesPage, ExamplesSource, OracleTagExamples as SharedExamples, TOAST_QUICK};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
+use zwipe_client::ZwipeClient;
+use zwipe_core::domain::auth::models::session::Session;
+use zwipe_core::domain::card::oracle_tag_examples::OracleTagSlug;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
 use zwipe_ui::telemetry::vocabulary::{OracleTagScreen, Screen};
@@ -21,6 +25,8 @@ pub fn OracleTagExamples(open: Signal<bool>, slug: String) -> Element {
     telemetry::use_telemetry_screen(Screen::OracleTag(OracleTagScreen::Examples));
     let toast = use_toast();
     let authed = use_authed();
+    let session: Signal<Option<Session>> = use_context();
+    let client: Signal<ZwipeClient> = use_context();
     let describe_tag = use_describe_tag();
     let hint_open = use_one_time_hint(OneTimeHint::OtagExamples);
     use_printings_source();
@@ -31,6 +37,18 @@ pub fn OracleTagExamples(open: Signal<bool>, slug: String) -> Element {
                 offset,
                 reply,
             } = page;
+            // Signed out (a shared deck's reader), the public examples route.
+            if session.peek().is_none() {
+                let Ok(slug) = slug.parse::<OracleTagSlug>() else {
+                    reply.call(None);
+                    return;
+                };
+                spawn(async move {
+                    let http = client.peek().clone();
+                    reply.call(http.fetch_oracle_tag_examples(&slug, offset).await.ok());
+                });
+                return;
+            }
             let mut builder = CardQueryBuilder::new();
             builder
                 .set_oracle_tags_contains_any(vec![slug])

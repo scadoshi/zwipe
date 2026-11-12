@@ -71,6 +71,7 @@ pub const UPCOMING: &[Release] = &[
             "On zwipe.net's shared deck, the owner's name is a chip beside the deck's name",
             "A starred card's mark and its MVP chips share the star's gold",
             "In light themes, a chip that can't be used right now fades as it does in dark themes",
+            "A shared deck's link opens on app.zwipe.net, signed in or not, with its preview in chats as before",
         ],
     },
     Release {

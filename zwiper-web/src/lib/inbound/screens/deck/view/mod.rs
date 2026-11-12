@@ -6,9 +6,10 @@
 //! floating in the dock. A deck the server no longer has leaves for Decks,
 //! as the app's model does with `Action::Gone`.
 
+pub mod body;
 pub mod cards;
 pub mod dialogs;
-mod ghost;
+pub(crate) mod ghost;
 pub mod page;
 pub mod panels;
 pub mod sections;

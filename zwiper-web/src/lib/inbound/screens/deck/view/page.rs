@@ -7,63 +7,35 @@
 //! and the foot holds Warnings, Data and Danger zone. The dock floats add,
 //! remove, the filter and undo, then Edit, Clone and Share.
 
-use std::collections::{HashMap, HashSet};
-use std::time::Duration;
-
 use components::icons::{CloneIcon, DockIcon, EditIcon, MINUS, PLUS, ShareIcon, UNDO};
-use components::{
-    BudgetBody, CART, Chip, CurrencyChips, DeckCardsView, DeckControls, DeckFacts, DeckFold,
-    DeckHead, DeckPage, DeckRowHost, DeckStackDrawer, DistributionsBody, DockFilter,
-    DrawOddsStepper, FeaturedCard, GroupBuyDialog, HoverStackHost, ManaBody, StoreDialog, TagsBody,
-    charted, deck_sections, use_group_buy, use_hover_stack,
-};
+use components::{DeckFacts, DeckRowHost, StackDetails};
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use zwipe_core::domain::deck::{Board, deck_tag_label};
+use zwipe_core::domain::deck::deck_tag_label;
 use zwipe_ui::deck::view::StatsProfile;
-use zwipe_ui::deck_cards::stacks::{
-    CardsView, DEAL_DURATION, DEAL_STAGGER_CAP, DealCue, Reveal, deal_delay,
-};
-use zwipe_ui::filter::draft::SheetConfig;
+use zwipe_ui::deck_cards::stacks::Reveal;
 use zwipe_ui::filter::picker::Sources;
 use zwipe_ui::screens::deck_view::{EDIT, MoreItem};
-use zwipe_ui::{buy, deck_cards, filter};
+use zwipe_ui::{buy, deck_cards};
 
+use super::body::DeckPageBody;
 use super::dialogs::DeckDialogs;
-use super::ghost::{
-    DeckBandsGhost, DeckControlsGhost, DeckFootGhost, DeckHeadGhost, DeckStatsGhost,
-};
+use super::ghost::DeckFootGhost;
 use super::panels::{DangerZonePanel, DataPanel};
 use super::sections::{WarningFixes, WarningsBody};
-use crate::domain::deck::{has_budget, tag_count};
-use crate::inbound::card_filter::CardFilterPanel;
 use crate::inbound::card_stores::CardStores;
-use crate::inbound::cards::card_row::{CardOverlays, CardOverlaysHost, use_card_overlays};
-use crate::inbound::cards::otag::{
-    OtagDescribe, OtagExamplesHost, OtagExamplesOpen, use_otag_reveals,
-};
+use crate::inbound::cards::card_row::use_card_overlays;
+use crate::inbound::cards::otag::use_otag_reveals;
 use crate::inbound::cards::printing_sheet::PrintingSheet;
-use crate::inbound::cards::stack_view::{
-    CardsViewSwitch, StackDetails, use_cards_view, use_stack_details_sync,
-};
-use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
+use crate::inbound::cards::stack_view::{use_cards_view, use_stack_details_sync};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog};
 use crate::inbound::router::Route;
 use crate::inbound::screens::deck::cards::editor::{
     Editor, LoadFailure, use_deck_editor, use_deck_row_host,
 };
 use crate::inbound::screens::deck::cards::quick_add::QuickAdd;
-use crate::outbound::timer;
-
-/// The stat panels' fold keys, shut when the page opens.
-const FOLDED_STATS: [&str; 5] = ["Budget", "Tags", "Distributions", "Mana", "Draw odds"];
-
-/// How long the featured cards wait for their images before they deal anyway, as on
-/// zwipe.net's shared deck.
-const FEATURED_WAIT: Duration = Duration::from_secs(4);
 
 /// The page for `deck_id`. `fixes` are the warnings' fixes, and `fixed`
 /// counts the ones that have landed: each reloads the deck.
@@ -99,17 +71,17 @@ pub fn DeckWidePage(
         profile,
         loaded,
         tokens,
-        mut filter,
+        filter,
         group_by,
-        mut boards,
+        boards,
         show_tokens,
         show_zone,
         show_art,
         collapsed,
-        mut selected,
+        selected,
         printing,
         printing_open,
-        mut filter_open,
+        filter_open,
         hint_open,
         listing,
         meta,
@@ -121,33 +93,8 @@ pub fn DeckWidePage(
     let CardStores { undo, .. } = use_context();
     let examples = use_otag_reveals();
     let row_host = use_deck_row_host(&ed);
-    let CardOverlays { mut preview, .. } = overlays;
-    // The rows' hover stack, drawn outside the rows and the page's entrance,
-    // whose transforms would pin it to them instead of the window.
-    let hover_stack = use_hover_stack();
-    let folded: Signal<HashSet<String>> =
-        use_signal(|| FOLDED_STATS.into_iter().map(String::from).collect());
     // List or Stacks, as last left.
     let view = use_cards_view();
-    // The stacks deal in on entering Stacks, once the cards are in, for as
-    // long as the longest stack takes.
-    let mut deal_cue = use_signal(DealCue::default);
-    let mut dealing = use_signal(|| false);
-    use_effect(move || {
-        let shown = view();
-        let ready = loaded();
-        if deal_cue.write().on(shown, ready) {
-            dealing.set(true);
-            spawn(async move {
-                timer::sleep(deal_delay(DEAL_STAGGER_CAP).saturating_add(DEAL_DURATION)).await;
-                dealing.set(false);
-            });
-        }
-    });
-    // The store dialog a group's cart opens, in the List or the stacks.
-    let group_buy = use_group_buy();
-    // The deck's store dialog, from the dock's cart.
-    let mut deck_buy_open = use_signal(|| false);
     let listed_ids = use_memo(move || {
         listing()
             .rows
@@ -164,11 +111,6 @@ pub fn DeckWidePage(
         }
     });
 
-    let all_rows = listing().rows;
-    let row_meta = meta();
-    let row_boards: HashMap<Uuid, Board> = row_meta.iter().map(|(id, m)| (*id, m.board)).collect();
-    let applied = filter.read().clone();
-    let shown_boards = boards();
     let held_profile = profile();
     let format = held_profile.as_ref().and_then(|p| p.format);
     let oathbreaker = format.is_some_and(|f| f.has_signature_spell());
@@ -181,25 +123,6 @@ pub fn DeckWidePage(
         .iter()
         .any(|e| e.deck_card.board.is_sideboard());
     let featured = deck_cards::featured(&zone.read(), &entries.read(), oathbreaker);
-    // The featured cards with their image bytes in hand. The row stays unseen
-    // until every card reports in, or the wait runs out, then deals, as on
-    // zwipe.net's shared deck.
-    let mut featured_loaded = use_signal(|| 0usize);
-    let mut featured_timed_out = use_signal(|| false);
-    use_future(move || async move {
-        timer::sleep(FEATURED_WAIT).await;
-        featured_timed_out.set(true);
-    });
-    let featured_ready = featured_timed_out() || featured_loaded() >= featured.len();
-    let featured_class = if featured_ready {
-        "deck-head-deal ready"
-    } else {
-        "deck-head-deal"
-    };
-    let on_featured_load = move |()| {
-        let loaded = *featured_loaded.peek();
-        featured_loaded.set(loaded.saturating_add(1));
-    };
     let sources = Sources::deck(
         &entries
             .read()
@@ -209,30 +132,6 @@ pub fn DeckWidePage(
     );
     let cur = ed.currency();
     let undo_ready = !undo.read().is_empty(deck_id);
-    let filter_on = !applied.is_empty();
-    let dot = filter::shows_dot(&applied);
-
-    // The sections, in the editor's order.
-    let sections = deck_sections(listing(), &row_meta, format);
-    let empty = loaded() && shown_boards.main && sections.is_empty();
-
-    // The fold-all button: every band shut, or every one open again.
-    let section_keys: Vec<String> = sections.iter().map(|(s, _)| s.key.clone()).collect();
-    let all_folded = {
-        let shut = collapsed.read();
-        !section_keys.is_empty() && section_keys.iter().all(|k| shut.contains(k))
-    };
-    let fold_all = move |()| {
-        let mut collapsed = collapsed;
-        let mut shut = collapsed.write();
-        if all_folded {
-            for key in &section_keys {
-                shut.remove(key);
-            }
-        } else {
-            shut.extend(section_keys.iter().cloned());
-        }
-    };
 
     // The owner's facts, stats and warnings follow the cards as edited here;
     // the store links stay the deck's as fetched.
@@ -278,281 +177,136 @@ pub fn DeckWidePage(
             .collect(),
         price: price.filter(|v| *v > 0.0).map(|v| shown.format_amount(v)),
     });
-    let charts = charted(metrics.as_ref());
-    // The Oracle tag lookups the Distributions charts hand to their tags.
-    let describe_tag = try_use_context::<OtagDescribe>().map(|d| d.0);
-    let on_examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
-    let land_count = metrics.as_ref().map_or(0, |m| m.land_count);
     let land_target = held_profile.as_ref().and_then(|p| p.land_target);
+    let stats = held_profile.as_ref().map(StatsProfile::from);
 
     rsx! {
-        // The dock floats outside the page's entrance, whose transform would
-        // otherwise pin it to the page instead of the window.
-        div {
-            class: "content-enter web-page deck-page-wide",
-            onmousemove: move |e| hover_stack.track(e.client_coordinates().x),
-            DeckPage {
-                head: rsx! {
-                if let Some(facts) = facts {
-                    DeckHead {
-                        name,
-                        facts,
-                        has_featured: !featured.is_empty(),
-                        featured_class: featured_class.to_string(),
-                        for (card, role) in featured.iter().cloned() {
-                            FeaturedCard {
-                                key: "{card.scryfall_data.id}-{role}",
-                                card,
-                                role: role.to_string(),
-                                on_open: move |(sd, shown_face)| preview.set(Some((sd, shown_face))),
-                                on_load: on_featured_load,
-                            }
-                        }
-                    }
-                } else {
-                    DeckHeadGhost {}
-                }
-            },
-            controls: rsx! {
-                if !loaded() {
-                    DeckControlsGhost {}
-                } else {
-                    DeckControls {
-                        group_by,
-                        show_tokens: tokens().is_some_and(|t| !t.is_empty()).then_some(show_tokens),
-                        show_zone: zone.read().offers_chip(format).then_some(show_zone),
-                        show_art,
-                        art_disabled: view() == CardsView::Stacks,
-                        all_folded,
-                        on_fold_all: fold_all,
-                        on_change: move |()| selected.set(None),
-                        leading: rsx! {
-                            QuickAdd { deck_id, entries, on_added: move |()| {} }
-                        },
-                        boards: rsx! {
-                            // Board chips ease the cards in and out (`settle`).
-                            div { class: "chip-row", "data-settle": "",
-                                span { class: "stat-chip stat-chip-p1 chip-row-label", "Boards" }
-                                for (label, board, on, enabled) in [
-                                    ("Main", Board::Deck, shown_boards.main, true),
-                                    ("Maybe", Board::Maybeboard, shown_boards.maybe, has_maybe || shown_boards.maybe),
-                                    ("Side", Board::Sideboard, shown_boards.side, has_side || shown_boards.side),
-                                ] {
-                                    Chip {
-                                        key: "{label}",
-                                        selected: on,
-                                        disabled: !enabled,
-                                        onclick: move |_| {
-                                            boards.write().toggle(board);
-                                            selected.set(None);
-                                        },
-                                        "{label}"
-                                    }
-                                }
-                            }
-                            CardsViewSwitch { view, on_change: move |()| selected.set(None) }
-                        },
-                    }
-                }
-            },
-            empty,
-            bands: rsx! {
-                if !loaded() {
-                    DeckBandsGhost {}
-                }
-                DeckCardsView {
-                    sections,
-                    view: view(),
-                    currency: cur,
-                    collapsed,
-                    details: stack_details_state,
-                    selected,
-                    face: ed.face,
-                    faces: ed.faces,
-                    boards: row_boards.clone(),
-                    group_buy,
-                    dealing: dealing(),
-                    show_art: Some(show_art),
-                    actions: Some(ed.edit_actions()),
-                    host: row_host,
-                }
-            },
-            stats: rsx! {
-                if !loaded() {
-                    DeckStatsGhost {}
-                }
-                if let Some(p) = held_profile {
-                    if has_budget(&p, has_cards) {
-                        DeckFold {
-                            fold_key: "Budget",
-                            title: "Budget",
-                            folded,
-                            accessory: has_cards.then(|| rsx! { CurrencyChips { currency } }),
-                            BudgetBody { profile: StatsProfile::from(&p), metrics, currency }
-                        }
-                    }
-                    if tag_count(&p) > 0 {
-                        DeckFold { fold_key: "Tags", title: "Tags", folded,
-                            TagsBody { profile: StatsProfile::from(&p) }
-                        }
-                    }
-                }
-                if let Some(m) = charts.clone() {
-                    DeckFold { fold_key: "Distributions", title: "Distributions", folded,
-                        DistributionsBody {
-                            metrics: m,
-                            describe_tag,
-                            on_examples,
-                        }
-                    }
-                }
-                if charts.is_some() || land_target.is_some() {
-                    DeckFold { fold_key: "Mana", title: "Mana", folded,
-                        ManaBody { charts: charts.clone(), land_count, land_target }
-                    }
-                }
-                if let Some(m) = charts {
-                    DeckFold {
-                        fold_key: "Draw odds",
-                        title: "Draw odds",
-                        folded,
-                        accessory: rsx! { InfoButton { topic: HintTopic::DrawOdds } },
-                        DrawOddsStepper { metrics: m }
-                    }
-                }
+        DeckPageBody {
+            loaded: loaded(),
+            name,
+            facts,
+            featured,
+            format,
+            listing: listing(),
+            meta: meta(),
+            group_by,
+            show_tokens: tokens().is_some_and(|t| !t.is_empty()).then_some(show_tokens),
+            show_zone: zone.read().offers_chip(format).then_some(show_zone),
+            show_art,
+            boards,
+            has_maybe,
+            has_side,
+            view,
+            collapsed,
+            selected,
+            face: ed.face,
+            faces: ed.faces,
+            details: stack_details_state,
+            filter,
+            filter_open,
+            on_reset_filter: reset_filter,
+            sources,
+            row_currency: cur,
+            currency,
+            stats,
+            metrics,
+            land_target,
+            deck_buy,
+            actions: Some(ed.edit_actions()),
+            host: row_host,
+            drawer_host: DeckRowHost { on_view_printing: None, ..row_host },
+            overlays,
+            examples,
+            quick_add: rsx! {
+                QuickAdd { deck_id, entries, on_added: move |()| {} }
             },
             foot: rsx! {
                 if !loaded() {
                     DeckFootGhost {}
                 } else {
-                div { class: "web-column",
-                    if !warnings.is_empty() {
-                        div { class: "web-section open warn web-deck-warnings", "data-settle-key": "warnings",
-                            div { class: "web-section-head",
-                                div { class: "web-section-title",
-                                    span { class: "settings-list-title", "Warnings" }
-                                    span { class: "web-section-badge", "{warnings.len()}" }
+                    div { class: "web-column",
+                        if !warnings.is_empty() {
+                            div { class: "web-section open warn web-deck-warnings", "data-settle-key": "warnings",
+                                div { class: "web-section-head",
+                                    div { class: "web-section-title",
+                                        span { class: "settings-list-title", "Warnings" }
+                                        span { class: "web-section-badge", "{warnings.len()}" }
+                                    }
                                 }
+                                hr { class: "web-section-rule" }
+                                WarningsBody { deck_id, warnings, fixes }
                             }
-                            hr { class: "web-section-rule" }
-                            WarningsBody { deck_id, warnings, fixes }
                         }
+                        DataPanel { deck_id, has_cards }
                     }
-                    DataPanel { deck_id, has_cards }
-                }
-                DangerZonePanel { dialogs }
+                    DangerZonePanel { dialogs }
                 }
             },
-            }
-        }
-        // The page's actions as one floating icon bar at the bottom right:
-        // add and remove, then the filter (with its reset while a filter is
-        // on) and undo, then the deck's own: edit, clone and share.
-        div { class: "action-dock action-dock-right",
-            button {
-                class: "action-dock-btn",
-                "aria-label": "Add",
-                onclick: move |_| {
-                    navigator.push(Route::AddDeckCard { deck_id });
-                },
-                DockIcon { path: PLUS }
-            }
-            button {
-                class: "action-dock-btn",
-                "aria-label": "Remove",
-                onclick: move |_| {
-                    navigator.push(Route::RemoveDeckCard { deck_id });
-                },
-                DockIcon { path: MINUS }
-            }
-            span { class: "action-dock-divider" }
-            DockFilter {
-                label: "Filter",
-                dot,
-                active: filter_on,
-                onclick: move |()| filter_open.set(true),
-                on_reset: move |()| reset_filter.call(()),
-                reset_label: "Reset filter",
-            }
-            button {
-                class: "action-dock-btn",
-                "aria-label": "Undo",
-                "data-action": components::data_action::UNDO,
-                // Undo puts a card back, so the page settles around it.
-                "data-settle": "",
-                disabled: !undo_ready,
-                onclick: move |_| apply_undo.call(()),
-                DockIcon { path: UNDO }
-            }
-            span { class: "action-dock-divider" }
-            button {
-                class: "action-dock-btn",
-                "aria-label": EDIT,
-                onclick: move |_| {
-                    navigator.push(Route::EditDeck { deck_id });
-                },
-                EditIcon {}
-            }
-            button {
-                class: "action-dock-btn",
-                "aria-label": MoreItem::CloneDeck.short_label(),
-                onclick: move |_| clone.set(true),
-                CloneIcon {}
-            }
-            button {
-                class: "action-dock-btn",
-                "aria-label": MoreItem::ShareDeck.short_label(),
-                onclick: move |_| share.set(true),
-                ShareIcon {}
-            }
-            if deck_buy.is_some() {
+            // Add and remove, before the filter.
+            dock_lead: rsx! {
                 button {
                     class: "action-dock-btn",
-                    "aria-label": buy::CART_LABEL,
-                    onclick: move |_| deck_buy_open.set(true),
-                    DockIcon { path: CART }
+                    "aria-label": "Add",
+                    onclick: move |_| {
+                        navigator.push(Route::AddDeckCard { deck_id });
+                    },
+                    DockIcon { path: PLUS }
                 }
-            }
-        }
-        CardFilterPanel {
-            open: filter_open,
-            filter,
-            config: SheetConfig { show_format: true, sources, ..SheetConfig::default() },
-            on_apply: move |next: CardQueryBuilder| {
-                filter.set(next);
-                selected.set(None);
+                button {
+                    class: "action-dock-btn",
+                    "aria-label": "Remove",
+                    onclick: move |_| {
+                        navigator.push(Route::RemoveDeckCard { deck_id });
+                    },
+                    DockIcon { path: MINUS }
+                }
+                span { class: "action-dock-divider" }
             },
-        }
-        HoverStackHost { stack: hover_stack }
-        if let Some(links) = deck_buy {
-            StoreDialog {
-                open: deck_buy_open,
-                title: buy::DECK_TITLE.to_owned(),
-                body: buy::DECK_BODY.to_owned(),
-                links,
-            }
-        }
-        GroupBuyDialog { group_buy }
-        if view() == CardsView::Stacks {
-            DeckStackDrawer {
-                rows: all_rows,
-                boards: row_boards,
-                details: stack_details_state,
-                faces: ed.faces,
-                actions: Some(ed.edit_actions()),
-                host: DeckRowHost { on_view_printing: None, ..row_host },
-            }
-        }
-        CardOverlaysHost { overlays }
-        OtagExamplesHost { examples }
-        OneTimeHintDialog { hint: OneTimeHint::DeckCards, open: hint_open }
-        if let Some((card, _)) = printing() {
-            PrintingSheet {
-                key: "{card.scryfall_data.id}",
-                card,
-                open: printing_open,
-                on_save: move |picked: Card| save_printing.call(picked),
-            }
+            // Undo after the filter, then the deck's own: edit, clone and share.
+            dock_tail: rsx! {
+                button {
+                    class: "action-dock-btn",
+                    "aria-label": "Undo",
+                    "data-action": components::data_action::UNDO,
+                    // Undo puts a card back, so the page settles around it.
+                    "data-settle": "",
+                    disabled: !undo_ready,
+                    onclick: move |_| apply_undo.call(()),
+                    DockIcon { path: UNDO }
+                }
+                span { class: "action-dock-divider" }
+                button {
+                    class: "action-dock-btn",
+                    "aria-label": EDIT,
+                    onclick: move |_| {
+                        navigator.push(Route::EditDeck { deck_id });
+                    },
+                    EditIcon {}
+                }
+                button {
+                    class: "action-dock-btn",
+                    "aria-label": MoreItem::CloneDeck.short_label(),
+                    onclick: move |_| clone.set(true),
+                    CloneIcon {}
+                }
+                button {
+                    class: "action-dock-btn",
+                    "aria-label": MoreItem::ShareDeck.short_label(),
+                    onclick: move |_| share.set(true),
+                    ShareIcon {}
+                }
+            },
+            extra: rsx! {
+                OneTimeHintDialog { hint: OneTimeHint::DeckCards, open: hint_open }
+                if let Some((card, _)) = printing() {
+                    PrintingSheet {
+                        key: "{card.scryfall_data.id}",
+                        card,
+                        open: printing_open,
+                        on_save: move |picked: Card| save_printing.call(picked),
+                    }
+                }
+            },
         }
     }
 }

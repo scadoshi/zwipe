@@ -1,5 +1,5 @@
 use zwipe_core::domain::deck::{DeckOtherTag, Format, WarningAction};
-use zwipe_core::domain::site::WEB_BASE;
+use zwipe_core::domain::site::APP_BASE;
 
 use super::*;
 use crate::test_support::{card, deck, deck_profile};
@@ -137,7 +137,7 @@ fn the_profile_lands_and_seeds_the_currency_and_share_link() {
     assert_eq!(
         state.share_url().as_deref(),
         Some(
-            format!("{WEB_BASE}/scotty/deck/budget/00000000-0000-0000-0000-000000000000").as_str()
+            format!("{APP_BASE}/scotty/deck/budget/00000000-0000-0000-0000-000000000000").as_str()
         ),
         "the dialog shows the live link, owner and deck name first"
     );
@@ -733,7 +733,7 @@ fn sharing_copies_the_new_link_and_stopping_disables_it() {
     let effects = state.update(Action::Share);
     let token = Uuid::new_v4();
     let copied = Effect::Copy {
-        text: format!("{WEB_BASE}/scotty/deck/elves/{token}"),
+        text: format!("{APP_BASE}/scotty/deck/elves/{token}"),
         done: Toast::new(ToastKind::Info, "Share link copied", QUICK),
     };
     assert_eq!(

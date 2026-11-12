@@ -60,7 +60,10 @@ pub fn OpenFrame() -> Element {
 fn is_open(route: &Route) -> bool {
     matches!(
         route,
-        Route::PrivacyPolicy {} | Route::About {} | Route::NotFound { .. }
+        Route::PrivacyPolicy {}
+            | Route::About {}
+            | Route::SharedDeck { .. }
+            | Route::NotFound { .. }
     )
 }
 

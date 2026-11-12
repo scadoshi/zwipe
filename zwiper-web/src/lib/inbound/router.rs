@@ -33,6 +33,7 @@ use crate::inbound::screens::home::Home;
 use crate::inbound::screens::not_found::NotFound;
 use crate::inbound::screens::playstyle::Playstyle;
 use crate::inbound::screens::privacy_policy::PrivacyPolicy;
+use crate::inbound::screens::shared_deck::SharedDeck;
 use crate::inbound::session::auth_gate::AuthGate;
 use crate::inbound::session::signed_out_gate::SignedOutGate;
 use crate::inbound::shell::{OpenFrame, PublicFrame};
@@ -75,6 +76,9 @@ pub enum Route {
         /// The version, the links, the credits and the release history.
         #[route("/about")]
         About {},
+        /// A shared deck at its public link, read only. Only the token names the deck.
+        #[route("/:owner/deck/:slug/:token")]
+        SharedDeck { owner: String, slug: String, token: String },
 
     // == authed ==
     #[layout(AuthGate)]
@@ -262,6 +266,14 @@ mod tests {
             ),
             (Route::ImportDeck { deck_id }, format!("/decks/{d}/import")),
             (Route::ExportDeck { deck_id }, format!("/decks/{d}/export")),
+            (
+                Route::SharedDeck {
+                    owner: "scotty".to_owned(),
+                    slug: "elves-go-wide".to_owned(),
+                    token: d.to_string(),
+                },
+                format!("/scotty/deck/elves-go-wide/{d}"),
+            ),
         ];
         for (route, path) in routes {
             assert_eq!(route.to_string(), path);

@@ -210,7 +210,7 @@ pub fn metrics_possible(profile: &DeckProfile) -> bool {
 
 // Belongs in zwipe-ui
 /// The public link to the deck `owner` shares as `deck_name` under `token`:
-/// `zwipe.net/<owner>/deck/<slug>/<token>`.
+/// `app.zwipe.net/<owner>/deck/<slug>/<token>`.
 pub fn share_link(owner: &str, deck_name: &str, token: Uuid) -> String {
     zwipe_core::domain::share_link::shared_deck_url(owner, deck_name, token)
 }

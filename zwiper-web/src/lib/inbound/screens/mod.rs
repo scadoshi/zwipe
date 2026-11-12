@@ -13,4 +13,5 @@ pub mod oracle_tag_dictionary;
 pub mod oracle_tag_examples;
 pub mod playstyle;
 pub mod privacy_policy;
+pub mod shared_deck;
 pub mod update_required;
