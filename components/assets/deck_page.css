@@ -117,8 +117,8 @@
 /* The header is exactly the stack's width, the cards' width under it. It
    wears the deck page's fold heads below it (.deck-fold's box,
    .deck-fold-head's ink and type, a step smaller to fit a column). The
-   arrow sits in the left inset and the name and count hold one line,
-   cut short only past the column's width; the price tag and the cart
+   arrow sits in the left inset beside the name and count, which wrap onto
+   more lines in a narrow column; the price tag and the cart right after it
    share the line under them. */
 .deck-stack > .deck-group > .card-group-header.group-collapsible {
     --stack-head-inset: 0.6rem;
@@ -152,12 +152,13 @@
 /* The header's first line, the arrow and the words, folds the stack; the
    price and the cart on the line under it do not. The arrow sits inline
    before the words, in the header's left inset (the toggle reaches back
-   over it), so the price line starts under the name. */
+   over it), so the price line starts under the name, and on the words'
+   first line when they wrap. */
 .deck-stack > .deck-group > .card-group-header > .card-group-toggle {
     --stack-arrow-room: 1.4rem;
     display: flex;
     flex: 1 0 100%;
-    align-items: center;
+    align-items: baseline;
     gap: calc(var(--stack-arrow-room) - 1rem);
     min-width: 0;
     margin-left: calc(-1 * var(--stack-arrow-room));
@@ -167,9 +168,7 @@
 .deck-stack > .deck-group > .card-group-header > .card-group-toggle > .card-group-label {
     flex: 0 1 auto;
     min-width: 0;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
+    overflow-wrap: break-word;
 }
 
 /* The price tag keeps the decks list chip's type. */
@@ -180,8 +179,8 @@
     line-height: normal;
 }
 
-/* The header's second line: the price tag at the left and the cart at the
-   right end, the same in every stack. */
+/* The header's second line: the price tag, then the cart right after it,
+   the same in every stack. */
 .deck-stack > .deck-group > .card-group-header > .deck-stack-tail {
     display: flex;
     flex: 1 0 100%;
@@ -191,7 +190,6 @@
 
 .deck-stack > .deck-group > .card-group-header > .deck-stack-tail > .cart-button {
     flex: none;
-    margin-left: auto;
 }
 
 /* A stack is one column of cards, under the decks list's rule that pairs a
