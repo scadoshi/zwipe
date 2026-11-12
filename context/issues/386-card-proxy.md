@@ -1,6 +1,6 @@
 # 386. One no-image card for every image spot
 
-State: fixing | Owner: laptop | PR: - | Build seen: local, web
+State: fixing | Owner: laptop | PR: #589 | Build seen: local, web
 
 ## Report
 Composer for Scotty, 2026-11-12 (grown from 384): every place a card image can be missing or fail gets the same card, replacing the swipe and Featured proxy and the stacks' and Printings' different fallbacks, with List row thumbnails getting one where they had none.
@@ -13,7 +13,7 @@ Composer for Scotty, 2026-11-12 (grown from 384): every place a card image can b
 Scotty approved the renders (`target/386-renders/`), and asked for the chip order to follow the row.
 
 ## Fix
-laptop:
+laptop, #589:
 - **The component:** `components::CardProxy`, in a 63:88 size container.
   - **Order:** the name with the mana cost, a rule, the row's own `KindChips` (type line, rarity), the rules text, the Keywords and Card roles rows (plain chips with the row's classes, since a proxy sits inside clickable cards), then the row's own `FactsChips` (set, prices, power and toughness).
   - **Sizing:** type in container units. A shared script (`use_card_proxy_fit`, installed at the web, app and zwipe.net roots) steps `--proxy-scale` down until nothing overflows.
