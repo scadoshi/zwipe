@@ -9,16 +9,14 @@
 
 use std::collections::{HashMap, HashSet};
 
-use components::{
-    CardBoardMoves, CardEditButtons, CardStack, CartButton, DeckSection, StackCard, StoreDialog,
-};
+use components::{CardBoardMoves, CardEditButtons, CardStack, CartButton, DeckSection, StackCard};
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::{Board, deck_metrics};
-use zwipe_ui::buy::{self, BuyLink};
 use zwipe_ui::deck_cards::stacks::{Gesture, Reveal};
 
+use super::group_buy::{GroupBuy, group_cards};
 use crate::inbound::cards::card_info::CardDetailsSheet;
 use crate::inbound::cards::card_row::CardOverlays;
 use crate::inbound::screens::deck::cards::editor::{Editor, Meta, RowInfo, RowKind, board_of};
@@ -62,71 +60,15 @@ impl StackDetails {
     }
 }
 
-/// The cards a stack sends to a store, each with its copies: every card but a token.
-pub(crate) fn stack_cards(rows: &[RowInfo]) -> Vec<(i32, &str)> {
-    rows.iter()
-        .filter(|row| row.kind != RowKind::Token)
-        .map(|row| (row.qty, row.card.scryfall_data.name.as_str()))
-        .collect()
-}
-
-/// The stacks' store dialog: whether it shows, and the stack it was opened for, its title and
-/// store links.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub(crate) struct StackBuy {
-    /// Whether the dialog shows.
-    pub(crate) open: Signal<bool>,
-    /// The dialog's title and links, for the stack whose cart was clicked.
-    pub(crate) stack: Signal<Option<(String, Vec<BuyLink>)>>,
-}
-
-impl StackBuy {
-    /// Opens the dialog on the stack titled `group` holding `rows`.
-    fn offer(self, group: &str, rows: &[RowInfo]) {
-        let Self {
-            mut open,
-            mut stack,
-        } = self;
-        stack.set(Some((
-            buy::stack_title(group),
-            buy::cards_links(stack_cards(rows)),
-        )));
-        open.set(true);
-    }
-}
-
-/// The stacks' store dialog, closed until a stack's cart opens it.
-pub(crate) fn use_stack_buy() -> StackBuy {
-    StackBuy {
-        open: use_signal(|| false),
-        stack: use_signal(|| None),
-    }
-}
-
-/// The store dialog for the stack whose cart was clicked; nothing before any click.
-pub(crate) fn stack_buy_dialog(stack_buy: StackBuy) -> Element {
-    let Some((title, links)) = (stack_buy.stack)() else {
-        return rsx! {};
-    };
-    rsx! {
-        StoreDialog {
-            open: stack_buy.open,
-            title,
-            body: buy::STACK_BODY.to_owned(),
-            links,
-        }
-    }
-}
-
 /// The stacks for `sections`, folding by `collapsed` as the bands do, each card on its face in
-/// `faces` (the front where it has none), its header's cart opening `stack_buy` on its cards.
+/// `faces` (the front where it has none), its header's cart opening `group_buy` on its cards.
 pub(crate) fn stacks_view(
     sections: Vec<(DeckSection, Vec<RowInfo>)>,
     currency: PriceCurrency,
     collapsed: Signal<HashSet<String>>,
     details: StackDetails,
     faces: Signal<HashMap<Uuid, usize>>,
-    stack_buy: StackBuy,
+    group_buy: GroupBuy,
 ) -> Element {
     let mut reveal = details.reveal;
     let shown = reveal();
@@ -136,7 +78,7 @@ pub(crate) fn stacks_view(
             for (section, rows) in sections {
                 {
                     let price = total_price(&rows, currency);
-                    let buyable = !stack_cards(&rows).is_empty();
+                    let buyable = !group_cards(&rows).is_empty();
                     let group = section.title.clone();
                     let for_buy = rows.clone();
                     let ids: Vec<Uuid> = rows.iter().map(|r| r.card.scryfall_data.id).collect();
@@ -161,7 +103,7 @@ pub(crate) fn stacks_view(
                                             span { class: "stat-chip stat-chip-money", "{p}" }
                                         }
                                         if buyable {
-                                            CartButton { onclick: move |_| stack_buy.offer(&group, &for_buy) }
+                                            CartButton { onclick: move |_| group_buy.offer(&group, &for_buy) }
                                         }
                                     }
                                 }),
@@ -319,37 +261,9 @@ pub(crate) fn use_stack_details_sync(
 
 #[cfg(test)]
 mod tests {
-    use zwipe_ui::deck::form::Slot;
 
     use super::*;
     use crate::inbound::chrome::shortcuts::STACK_DETAILS_CLASS;
-
-    fn row(name: &str, qty: i32, kind: RowKind) -> RowInfo {
-        let mut card: zwipe_core::domain::card::Card = serde_json::from_str(include_str!(
-            "../../../../../../../zwipe-ui/src/test_support/card.json"
-        ))
-        .unwrap();
-        card.scryfall_data.name = name.to_owned();
-        RowInfo { card, qty, kind }
-    }
-
-    #[test]
-    fn a_stack_sends_its_cards_with_their_copies_and_leaves_tokens_out() {
-        let rows = [
-            row("Sol Ring", 1, RowKind::Main { mvp: false }),
-            row("Forest", 12, RowKind::Board(Board::Deck)),
-            row("Krenko, Mob Boss", 1, RowKind::Zone(Slot::Commander)),
-            row("Goblin", 1, RowKind::Token),
-        ];
-        assert_eq!(
-            stack_cards(&rows),
-            [(1, "Sol Ring"), (12, "Forest"), (1, "Krenko, Mob Boss")]
-        );
-        assert!(
-            stack_cards(&[row("Goblin", 1, RowKind::Token)]).is_empty(),
-            "a stack of tokens has nothing to buy"
-        );
-    }
 
     #[test]
     fn the_drawer_names_the_class_the_keys_pass_through() {

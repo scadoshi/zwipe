@@ -481,6 +481,30 @@ fn flippable_card_image_controlled_face() {
 }
 
 /// A stack of three: the first on top, the second revealed so the third
+/// A card group's band with its cart at the right end of its header.
+#[test]
+fn deck_band_with_cart() {
+    golden(
+        "deck_band_with_cart",
+        &render(|| {
+            let folded = use_signal(std::collections::HashSet::new);
+            rsx! {
+                components::DeckBand {
+                    section: components::DeckSection {
+                        key: "Creatures".to_owned(),
+                        title: "Creatures (2)".to_owned(),
+                        pips: None,
+                        cards: Vec::new(),
+                    },
+                    folded,
+                    accessory: rsx! { components::CartButton { onclick: move |_| {} } },
+                    div { "rows" }
+                }
+            }
+        }),
+    );
+}
+
 /// The cart button: an icon button with its name for a screen reader.
 #[test]
 fn cart_button() {

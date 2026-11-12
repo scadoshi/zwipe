@@ -12,8 +12,8 @@ use std::time::Duration;
 
 use components::icons::{CloneIcon, DockIcon, EditIcon, MINUS, PLUS, ShareIcon, UNDO};
 use components::{
-    Chip, DeckBand, DeckControls, DeckFacts, DeckFold, DeckHead, DeckPage, DeckSection, DockFilter,
-    FeaturedCard, HoverStackHost, use_hover_stack,
+    CartButton, Chip, DeckBand, DeckControls, DeckFacts, DeckFold, DeckHead, DeckPage, DeckSection,
+    DockFilter, FeaturedCard, HoverStackHost, use_hover_stack,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -32,15 +32,13 @@ use super::dialogs::DeckDialogs;
 use super::ghost::{
     DeckBandsGhost, DeckControlsGhost, DeckFootGhost, DeckHeadGhost, DeckStatsGhost,
 };
+use super::group_buy::{group_buy_dialog, group_cards, use_group_buy};
 use super::panels::{DangerZonePanel, DataPanel};
 use super::sections::{
     BudgetBody, CurrencyChips, DistributionsBody, DrawOddsStepper, ManaBody, TagsBody,
     WarningFixes, WarningsBody, charted,
 };
-use super::stacks::{
-    StackDetails, stack_buy_dialog, stack_details, stacks_view, use_stack_buy,
-    use_stack_details_sync,
-};
+use super::stacks::{StackDetails, stack_details, stacks_view, use_stack_details_sync};
 use crate::domain::deck::{has_budget, tag_count};
 use crate::inbound::card_filter::CardFilterPanel;
 use crate::inbound::card_stores::CardStores;
@@ -127,8 +125,8 @@ pub fn DeckWidePage(
         use_signal(|| FOLDED_STATS.into_iter().map(String::from).collect());
     // List or Stacks, as last left.
     let mut view = use_signal(|| CardsViewStore::browser().load());
-    // The store dialog a stack's cart opens.
-    let stack_buy = use_stack_buy();
+    // The store dialog a group's cart opens, in the List or the stacks.
+    let group_buy = use_group_buy();
     let listed_ids = use_memo(move || {
         listing()
             .rows
@@ -496,11 +494,18 @@ pub fn DeckWidePage(
                     DeckBandsGhost {}
                 }
                 if view() == CardsView::Stacks {
-                    {stacks_view(sections, cur, collapsed, stack_details_state, ed.faces, stack_buy)}
+                    {stacks_view(sections, cur, collapsed, stack_details_state, ed.faces, group_buy)}
                 } else {
                     for (section, rows) in sections {
                         DeckBand {
                             key: "{section.key}",
+                            accessory: (!group_cards(&rows).is_empty()).then(|| {
+                                let header = section.title.clone();
+                                let for_buy = rows.clone();
+                                rsx! {
+                                    CartButton { onclick: move |_| group_buy.offer(&header, &for_buy) }
+                                }
+                            }),
                             section,
                             folded: collapsed,
                             for row in rows {
@@ -643,8 +648,8 @@ pub fn DeckWidePage(
             },
         }
         HoverStackHost { stack: hover_stack }
+        {group_buy_dialog(group_buy)}
         if view() == CardsView::Stacks {
-            {stack_buy_dialog(stack_buy)}
             {stack_details(&ed, &all_rows, &row_meta, stack_details_state, overlays)}
         }
         CardOverlaysHost { overlays, on_printing_save: move |_| {} }
