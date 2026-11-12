@@ -1,25 +1,11 @@
-//! A card's prices as chips, for the printing sheet, and a swipe card's
-//! full details in the drawer behind the dock's eye.
+//! A swipe card's full details in the drawer behind the dock's eye, and its ghost while cards
+//! load.
 
 use components::CardDetailsSheet as SharedDetailsSheet;
 use dioxus::prelude::*;
 use zwipe_core::domain::card::Card;
-use zwipe_ui::card::info;
 
 use crate::inbound::cards::otag::use_describe_tag;
-
-/// The card's prices as chips, under a printing in the printing sheet.
-#[component]
-pub fn CardInfoDisplay(card: Card) -> Element {
-    let prices = info::prices(&card.scryfall_data);
-    rsx! {
-        div { class: "card-prices",
-            for price in prices {
-                span { key: "{price}", class: "card-row-price card-price-chip", "{price}" }
-            }
-        }
-    }
-}
 
 /// The card's details as a drawer from the right edge, at every width,
 /// behind the eye button: the card's name and mana cost in the drawer's
@@ -85,27 +71,6 @@ pub fn CardSkeleton(
                 } else {
                     div { class: "skeleton-image" }
                 }
-            }
-        }
-    }
-}
-
-/// The printing sheet's ghost: the image, the dots and the info lines.
-#[component]
-pub fn PrintingSheetSkeleton() -> Element {
-    rsx! {
-        div { class: "skeleton-printing",
-            div { class: "skeleton-printing-image" }
-            div { class: "skeleton-printing-dots",
-                for i in 0..5 {
-                    div { key: "{i}", class: "skeleton-printing-dot" }
-                }
-            }
-            div { class: "skeleton-printing-info",
-                div { class: "skeleton-bar skeleton-printing-info-price" }
-                div { class: "skeleton-bar skeleton-printing-info-set" }
-                div { class: "skeleton-bar skeleton-printing-info-released" }
-                div { class: "skeleton-bar skeleton-printing-info-artist" }
             }
         }
     }

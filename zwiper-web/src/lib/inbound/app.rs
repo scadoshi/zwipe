@@ -11,8 +11,8 @@ use zwipe_core::domain::user::models::settings::PipStyle;
 
 use crate::inbound::chrome::hint_topic::{HintHost, HintTopic, InfoButton};
 use crate::inbound::chrome::leave_guard::{self, GuardedHistory};
+use crate::inbound::chrome::splash;
 use crate::inbound::chrome::trail::TrailHistory;
-use crate::inbound::chrome::{details_clear, splash};
 use crate::inbound::router::Route;
 use crate::inbound::screens::auth::login::LoginPrefill;
 use crate::inbound::screens::update_required::UpdateRequired;
@@ -53,7 +53,7 @@ pub fn App() -> Element {
         document::eval(HINT_FOCUS_JS);
     });
     // A swipe screen's card slides clear of its docked details panel.
-    details_clear::use_details_clear();
+    components::use_details_clear();
     // The deck page's stat panels open the web's hints from their `?`.
     use_context_provider(|| {
         components::StatHints(Callback::new(|topic: components::StatTopic| {

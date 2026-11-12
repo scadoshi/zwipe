@@ -1,18 +1,17 @@
 //! The card on a swipe screen slides clear of its docked details panel.
 //!
-//! On a wide window the card's details dock at the right as a panel
-//! (`details_eye`). When the shown panel would lie over the card and the room
-//! left of the card fits it clear, the card slides left just far enough to
-//! clear the panel, on the panel's own easing; with too little room it stays
-//! where it is and the panel lies over it, and a panel that misses the card
-//! moves nothing. Hidden, the card slides back. Add, Remove, Commander swipe
-//! and the Oracle tag examples share it.
+//! On a wide window the card's details dock at the right as a fixed panel. When the shown panel
+//! would lie over the card and the room left of the card fits it clear, the card slides left just
+//! far enough to clear the panel, on the panel's own easing; with too little room it stays where
+//! it is and the panel lies over it, and a panel that misses the card moves nothing. Hidden, the
+//! card slides back. The surfaces are the web's: Add, Remove, Commander swipe and the Oracle tag
+//! examples.
 
 use dioxus::prelude::*;
 
 /// Each surface: its body, its docked panel and its card stack, as selectors. The stack slides;
 /// its top card's image is what clears the panel.
-pub(crate) const SURFACES: [(&str, &str, &str); 3] = [
+const SURFACES: [(&str, &str, &str); 3] = [
     (".web-cards-swipe", ".web-swipe-details", ".web-swipe-stack"),
     (
         ".web-swipe-select-body",
@@ -102,7 +101,7 @@ fn script() -> String {
         .replace("__GAP__", &CLEAR_GAP_PX.to_string())
 }
 
-/// Installs the slide. Call once, in the app's root.
+/// Installs the slide. Call once, in the root of a host that draws the swipe surfaces.
 pub fn use_details_clear() {
     use_hook(|| {
         document::eval(&script());

@@ -41,3 +41,5 @@ links = ["orangui/links"]
 dioxus-ssr = "0.7"
 # Builds card fixtures for the golden test.
 serde_json = { workspace = true }
+# The runtime the kit's sheets time their entrance on, off the browser, in the printing sheet's test.
+tokio = { workspace = true }
