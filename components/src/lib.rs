@@ -181,6 +181,11 @@ pub use theme::{pip_style_class, theme_from_settings};
 /// Latin subset leaves them to a system font, which draws them heavier.
 pub const FONTS_CSS: &str = include_str!("../assets/fonts.css");
 
+/// The deck page's cards on the two web sites: the wide page, the list's two columns from
+/// 1400px, the rows' rules and the Stacks view. Load it after [`MAGIC_CSS`] and the screen rules.
+/// The phone apps draw their stacks with their own rules and leave it out.
+pub const DECK_PAGE_CSS: &str = include_str!("../assets/deck_page.css");
+
 /// The Magic rules: oracle text, keyword chips, card rows, the flippable card
 /// image, the changelog, the color bars and the mana glyph inside a chip. Load it after
 /// orangui's [`COMPONENTS_CSS`] and before [`APP_CSS`] or [`SITE_CSS`].

@@ -859,158 +859,6 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
     }
 }
 
-/* ---- The deck page's Stacks view ----
-   The stacks flow into as many columns as the page fits, each at least a
-   card's readable width. A stack's header is the decks list's own group
-   chip (DeckGroupSection), so nothing sits bare on the page's grid: the
-   group's pips, name and count, its total price in the money chip nested
-   at the chip's end, the tag as it is everywhere else. The chip's lighter
-   letter-spacing and tighter gap fit name, count and price on one line in
-   a column; a long name still wraps the tag under it. The cards float on
-   the grid under it. */
-.deck-stacks {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr));
-    gap: 0.6rem 1.25rem;
-    align-items: start;
-}
-
-/* Each stack takes two of the grid's rows, its header chip and its cards,
-   through a subgrid, so the headers of one row of stacks share the tallest
-   one's height and every stack's cards start level, whether or not its price
-   wrapped. The group wrapper steps aside (display: contents) so the chip and
-   the cards are the subgrid's own items. */
-.deck-stack {
-    display: grid;
-    grid-row: span 2;
-    grid-template-rows: subgrid;
-    row-gap: 0;
-    margin-bottom: 0.65rem;
-}
-
-.deck-stack > .card-group.deck-group {
-    display: contents;
-}
-
-/* Once DeckStacks has measured the page, the stacks lie in as many flex
-   columns of their own heights as the grid above fit (columns::place), each
-   stack right under the one above it in its column, so a short stack never
-   waits on a long one beside it. Not CSS multi-column, which made the List
-   slow in Firefox. The gaps are the grid's: 1.25rem across, and its row gap
-   with a stack's margin down. */
-.deck-stacks.deck-stacks-columns {
-    display: flex;
-    gap: 0 1.25rem;
-    align-items: flex-start;
-}
-
-.deck-stacks-columns > .deck-stacks-column {
-    display: flex;
-    flex: 1 1 0;
-    flex-direction: column;
-    min-width: 0;
-}
-
-.deck-stacks-columns .deck-stack {
-    display: flex;
-    flex-direction: column;
-    margin-bottom: 1.25rem;
-}
-
-/* The header is exactly the stack's width, the cards' width under it. It
-   wears the deck page's fold heads below it (.deck-fold's box,
-   .deck-fold-head's ink and type, a step smaller to fit a column). The
-   arrow sits in the left inset and the name and count hold one line,
-   cut short only past the column's width; the price tag and the cart
-   share the line under them. */
-.deck-stack > .deck-group > .card-group-header.group-collapsible {
-    --stack-head-inset: 0.6rem;
-    position: relative;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    align-content: flex-start;
-    align-self: stretch;
-    gap: 0.35rem 0.5rem;
-    box-sizing: border-box;
-    width: 100%;
-    margin: 0 0 0.6rem;
-    padding: var(--stack-head-inset) var(--stack-head-inset) var(--stack-head-inset) calc(var(--stack-head-inset) + 1.4rem);
-    border: 1px solid var(--border-secondary);
-    border-radius: 1rem;
-    background-color: var(--bg-primary);
-    box-shadow: var(--shadow-sm);
-    color: var(--ink-accent-tertiary, var(--accent-tertiary));
-    font-size: 0.875rem;
-    letter-spacing: 0.06em;
-    line-height: 1.6;
-    text-align: left;
-}
-
-.deck-stack > .deck-group > .card-group-header .card-row-arrow {
-    flex: none;
-    color: inherit;
-}
-
-/* The header's first line, the arrow and the words, folds the stack; the
-   price and the cart on the line under it do not. The arrow sits inline
-   before the words, in the header's left inset (the toggle reaches back
-   over it), so the price line starts under the name. */
-.deck-stack > .deck-group > .card-group-header > .card-group-toggle {
-    --stack-arrow-room: 1.4rem;
-    display: flex;
-    flex: 1 0 100%;
-    align-items: center;
-    gap: calc(var(--stack-arrow-room) - 1rem);
-    min-width: 0;
-    margin-left: calc(-1 * var(--stack-arrow-room));
-    cursor: pointer;
-}
-
-.deck-stack > .deck-group > .card-group-header > .card-group-toggle > .card-group-label {
-    flex: 0 1 auto;
-    min-width: 0;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-}
-
-/* The price tag keeps the decks list chip's type. */
-.deck-stack > .deck-group > .card-group-header > .deck-stack-tail > .stat-chip {
-    flex: none;
-    font-size: 0.75rem;
-    letter-spacing: 0.02em;
-    line-height: normal;
-}
-
-/* The header's second line: the price tag at the left and the cart at the
-   right end, the same in every stack. */
-.deck-stack > .deck-group > .card-group-header > .deck-stack-tail {
-    display: flex;
-    flex: 1 0 100%;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.deck-stack > .deck-group > .card-group-header > .deck-stack-tail > .cart-button {
-    flex: none;
-    margin-left: auto;
-}
-
-/* A stack is one column of cards, under the decks list's rule that pairs a
-   group's rows from 1400px. */
-.deck-stack > .deck-group > .collapsible > .collapsible-inner {
-    grid-template-columns: minmax(0, 1fr);
-}
-
-/* A card's details drawer opened from the stacks leaves the stacks live:
-   its backdrop neither dims nor catches a click, so a click on another card
-   swaps that card in. Escape and the drawer's × close it. */
-body:has(.deck-stacks) .sheet-form-drawer:has(> .card-details-drawer) > .sheet-backdrop {
-    background: transparent;
-    pointer-events: none;
-}
-
 /* ---- Settings lists (Account, Config) ---- */
 
 /* Two lists side by side on a wide window, at the page's width under its
@@ -1287,25 +1135,6 @@ body:has(.deck-stacks) .sheet-form-drawer:has(> .card-details-drawer) > .sheet-b
     .web-sections-open .web-section > .collapsible > .collapsible-inner {
         overflow: visible;
     }
-}
-
-/* ---- Card rows ---- */
-
-.web-card-row {
-    display: contents;
-}
-
-/* A row sits in its .web-card-row, and a deck's rows in a .web-deck-row
-   around that, so each is its wrapper's last child. The app's rule goes
-   under every row but its list's last and the expanded one, keyed on the
-   outer wrapper. */
-.web-card-row > .card-row:not(.expanded) {
-    border-bottom: 1px solid var(--border-secondary);
-}
-
-.web-card-row:not(.web-deck-row > *):last-child > .card-row,
-.web-deck-row:last-child > .web-card-row > .card-row {
-    border-bottom: none;
 }
 
 /* ---- Image preview ----
@@ -2870,35 +2699,11 @@ body:has(.deck-stacks) .sheet-form-drawer:has(> .card-details-drawer) > .sheet-b
     }
 }
 
-/* On a wide window it is the deck page both sites share; the page's
-   trailing room keeps the floating Cards off Delete. */
+/* The deck page runs the window's width inside the page gutter, so the
+   stacks fit as many columns as the window holds. */
 @media (min-width: 900px) {
-    .web-deck-page {
-        padding-bottom: 5rem;
-    }
-
-    /* The deck page runs the window's width inside the page gutter, so the
-       stacks fit as many columns as the window holds. */
-    .web-page.web-deck-page {
+    .web-page.deck-page-wide {
         max-width: none;
-    }
-}
-
-/* From 1400px the list's groups run down two columns side by side, the
-   first ones on the left, each group whole in one of them. */
-@media (min-width: 1400px) {
-    .web-deck-page .deck-list-columns {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: var(--panel-gap);
-        align-items: start;
-    }
-
-    .web-deck-page .deck-list-column {
-        display: flex;
-        flex-direction: column;
-        gap: var(--panel-gap);
-        min-width: 0;
     }
 }
 
@@ -2907,15 +2712,6 @@ body:has(.deck-stacks) .sheet-form-drawer:has(> .card-details-drawer) > .sheet-b
     /* Warnings at the foot, open, in the section's own warning dress. */
     .web-deck-warnings {
         margin: 0;
-    }
-
-    /* A stat panel that holds charts spaces its rows and charts as the
-       phone's open section does, so each chart's title sits clear of what
-       is above it. */
-    .web-deck-page .deck-fold-inner:has(> div > .chart-label) {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
     }
 }
 

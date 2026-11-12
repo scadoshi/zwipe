@@ -292,7 +292,7 @@ pub fn DeckWidePage(
         // The dock floats outside the page's entrance, whose transform would
         // otherwise pin it to the page instead of the window.
         div {
-            class: "content-enter web-page web-deck-page",
+            class: "content-enter web-page deck-page-wide",
             onmousemove: move |e| hover_stack.track(e.client_coordinates().x),
             DeckPage {
                 head: rsx! {

@@ -70,8 +70,13 @@ mod tests {
 
     /// The body of `selector`'s rule inside the block that opens with `query`.
     fn rule_in(query: &str, selector: &str) -> &'static str {
-        let at = WEB_CSS.find(query).unwrap_or_else(|| panic!("no {query}"));
-        let block = WEB_CSS.get(at..).unwrap();
+        rule_of(WEB_CSS, query, selector)
+    }
+
+    /// The body of `selector`'s rule inside the block of `css` that opens with `query`.
+    fn rule_of(css: &'static str, query: &str, selector: &str) -> &'static str {
+        let at = css.find(query).unwrap_or_else(|| panic!("no {query}"));
+        let block = css.get(at..).unwrap();
         let block = block.get(..block.find("\n}\n").unwrap()).unwrap();
         let rule = block
             .find(&format!("    {selector} {{"))
@@ -83,20 +88,22 @@ mod tests {
     #[test]
     fn the_deck_page_runs_the_window_s_width_and_pairs_its_groups_from_1400() {
         let page = rule_in(
-            "@media (min-width: 900px) {\n    .web-deck-page {",
-            ".web-page.web-deck-page",
+            "@media (min-width: 900px) {\n    .web-page.deck-page-wide {",
+            ".web-page.deck-page-wide",
         );
         assert!(page.contains("max-width: none"), "{page}");
-        let columns = rule_in(
-            "@media (min-width: 1400px) {\n    .web-deck-page .deck-list-columns",
-            ".web-deck-page .deck-list-columns",
+        let columns = rule_of(
+            components::DECK_PAGE_CSS,
+            "@media (min-width: 1400px) {\n    .deck-page-wide .deck-list-columns",
+            ".deck-page-wide .deck-list-columns",
         );
         assert!(
             columns.contains("grid-template-columns: repeat(2, minmax(0, 1fr))"),
             "{columns}"
         );
         assert!(
-            !WEB_CSS.contains("column-count"),
+            !WEB_CSS.contains("column-count")
+                && !components::DECK_PAGE_CSS.contains("column-count"),
             "no CSS multi-column, which Firefox lays out again on every change"
         );
     }

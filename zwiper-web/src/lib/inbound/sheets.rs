@@ -16,14 +16,14 @@
 //! dx writes the links in the order of the files' paths, so the file names
 //! carry the cascade order: the fonts, orangui's themes and components, the
 //! nav's fold under this app's width (`chrome::media::nav_fold_css`), the
-//! Magic UI, orangui's app sheet, the screens, the toasts, the filter, and
-//! last `web.css`.
+//! Magic UI, orangui's app sheet, the screens, the toasts, the filter, the
+//! deck page's cards, and last `web.css`.
 
 use dioxus::prelude::*;
 
 /// Every stylesheet the app uses, in cascade order, each linked in the head
 /// of the built `index.html`.
-pub const SHEETS: [Asset; 10] = [
+pub const SHEETS: [Asset; 11] = [
     asset!(
         "/assets/sheets/01-fonts.css",
         AssetOptions::css().with_static_head(true)
@@ -61,6 +61,10 @@ pub const SHEETS: [Asset; 10] = [
         AssetOptions::css().with_static_head(true)
     ),
     asset!(
+        "/assets/sheets/10-deck-page.css",
+        AssetOptions::css().with_static_head(true)
+    ),
+    asset!(
         "/assets/web.css",
         AssetOptions::css().with_static_head(true)
     ),
@@ -93,7 +97,7 @@ mod tests {
     use crate::inbound::chrome::media;
 
     /// Each copied sheet's file in `assets/sheets`, with the css it copies.
-    fn copies() -> [(&'static str, String); 9] {
+    fn copies() -> [(&'static str, String); 10] {
         [
             ("01-fonts.css", components::FONTS_CSS.to_owned()),
             ("02-themes.css", components::THEMES_CSS.to_owned()),
@@ -104,6 +108,7 @@ mod tests {
             ("07-screens.css", components::SCREENS_CSS.to_owned()),
             ("08-toast.css", components::TOAST_CSS.to_owned()),
             ("09-filter.css", components::FILTER_CSS.to_owned()),
+            ("10-deck-page.css", components::DECK_PAGE_CSS.to_owned()),
         ]
     }
 
