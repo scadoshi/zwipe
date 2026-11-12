@@ -16,7 +16,7 @@ mod settle;
 
 use std::iter;
 
-use components::icons::DockIcon;
+use components::icons::{CloneIcon, DockIcon, EditIcon, ShareIcon};
 use components::{
     Button, ButtonVariant, CART, LoadFailed, StoreDialog, TOAST_NORMAL, TOAST_QUICK,
     use_back_online,
@@ -33,7 +33,9 @@ use zwipe_core::domain::deck::{Deck, DeckProfile};
 use zwipe_core::http::contracts::deck_card::HttpPatchDeckCard;
 use zwipe_ui::buy;
 use zwipe_ui::deck::form::Slot;
-use zwipe_ui::screens::deck_view::{CARDS, LOAD_FAILED, delete_body};
+use zwipe_ui::screens::deck_view::{
+    CARDS, DockItem, EDIT, LOAD_FAILED, MoreItem, delete_body, dock,
+};
 use zwipe_ui::telemetry::vocabulary::{DeckScreen, Screen, component};
 
 use self::dialogs::{DeckDialogsHost, use_deck_dialogs};
@@ -87,6 +89,8 @@ fn DeckViewScreen(deck_id: Uuid) -> Element {
         hint_open.set(true);
     });
     let dialogs = use_deck_dialogs();
+    let mut clone_open = dialogs.clone;
+    let mut share_open = dialogs.share;
     let examples = use_otag_reveals();
     let overlays = use_card_overlays();
     let open_section: Signal<Option<String>> = use_signal(|| Some("Budget".to_owned()));
@@ -317,7 +321,7 @@ fn DeckViewScreen(deck_id: Uuid) -> Element {
                         rsx! {
                             // The app's stack.
                             div { class: "content-enter web-deck-view",
-                                ProfileCard { profile: p.clone(), commander: commander(), cards, dialogs }
+                                ProfileCard { profile: p.clone(), commander: commander(), cards }
                                 if has_budget(&p, metrics.is_some()) {
                                     BudgetSection {
                                         profile: p.clone(),
@@ -347,23 +351,59 @@ fn DeckViewScreen(deck_id: Uuid) -> Element {
                     },
                 }
             }
-            // Cards, the screen's main action, floats at the bottom right.
+            // The deck's own actions and Cards, the screen's main action,
+            // float at the bottom right.
             if shows_cards && !wide() {
                 div { class: "action-dock action-dock-right content-enter-delayed",
-                    if deck_buy.is_some() {
-                        button {
-                            class: "action-dock-btn",
-                            "aria-label": buy::CART_LABEL,
-                            onclick: move |_| deck_buy_open.set(true),
-                            DockIcon { path: CART }
+                    for item in dock(deck_buy.is_some()) {
+                        match item {
+                            DockItem::Edit => rsx! {
+                                button {
+                                    class: "action-dock-btn",
+                                    "aria-label": EDIT,
+                                    onclick: move |_| {
+                                        navigator.push(Route::EditDeck { deck_id });
+                                    },
+                                    EditIcon {}
+                                }
+                            },
+                            DockItem::Clone => rsx! {
+                                button {
+                                    class: "action-dock-btn",
+                                    "aria-label": MoreItem::CloneDeck.short_label(),
+                                    onclick: move |_| clone_open.set(true),
+                                    CloneIcon {}
+                                }
+                            },
+                            DockItem::Share => rsx! {
+                                button {
+                                    class: "action-dock-btn",
+                                    "aria-label": MoreItem::ShareDeck.short_label(),
+                                    onclick: move |_| share_open.set(true),
+                                    ShareIcon {}
+                                }
+                            },
+                            DockItem::Buy => rsx! {
+                                button {
+                                    class: "action-dock-btn",
+                                    "aria-label": buy::CART_LABEL,
+                                    onclick: move |_| deck_buy_open.set(true),
+                                    DockIcon { path: CART }
+                                }
+                            },
+                            DockItem::Divider => rsx! {
+                                span { class: "action-dock-divider" }
+                            },
+                            DockItem::Cards => rsx! {
+                                Button {
+                                    variant: ButtonVariant::Action,
+                                    onclick: move |_| {
+                                        navigator.push(Route::ViewDeckCard { deck_id });
+                                    },
+                                    {CARDS}
+                                }
+                            },
                         }
-                    }
-                    Button {
-                        variant: ButtonVariant::Action,
-                        onclick: move |_| {
-                            navigator.push(Route::ViewDeckCard { deck_id });
-                        },
-                        {CARDS}
                     }
                 }
             }

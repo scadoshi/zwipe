@@ -13,18 +13,6 @@ use crate::inbound::chrome::ghost::{
 /// Ghost rows in each band, the Commander band's one then a full group.
 const BAND_ROWS: [usize; 2] = [1, 5];
 
-/// The deck's icons: edit, clone, share and, on a wide window, the `?`.
-#[component]
-fn GhostActions(count: usize) -> Element {
-    rsx! {
-        div { class: "deck-profile-actions",
-            for i in 0..count {
-                GhostIconButton { key: "{i}" }
-            }
-        }
-    }
-}
-
 /// The head: the deck name's bar over the facts as tinted chips, then one
 /// featured card with its name and role chips. The icons sit in the dock.
 #[component]
@@ -171,7 +159,7 @@ pub fn StatsSectionsGhost() -> Element {
 pub fn DeckViewGhost() -> Element {
     rsx! {
         div { class: "content-enter web-deck-view",
-            GhostList { chars: 7, header: rsx! { GhostActions { count: 3 } },
+            GhostList { chars: 7,
                 GhostInfoRow { label: 4, value: 11 }
                 GhostInfoRow { label: 5, value: 2 }
                 GhostInfoRow { label: 6, value: 9 }
