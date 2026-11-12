@@ -1,6 +1,6 @@
 # 389. A deck's Edit, Clone and Share sit in the Profile header on a phone
 
-State: fixing | Owner: thinker | PR: - | Build seen: production, app and web
+State: fixing | Owner: thinker | PR: #593 | Build seen: production, app and web
 
 ## Report
 Composer for Scotty, 2026-11-12: on the deck profile screen at phone size (the app, and the web below its breakpoint, where the deck shows as Profile then Cards), move the Profile header's Edit, Clone and Share into the action dock, so it reads Edit, Clone, Share, Buy, a separator, then the Cards button: the same icons and order as the wide web dock. Remove them from the header so each exists once.
