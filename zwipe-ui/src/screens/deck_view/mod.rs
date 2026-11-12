@@ -31,6 +31,35 @@ pub const EDIT: &str = "Edit";
 /// The button that opens the deck's cards.
 pub const CARDS: &str = "Cards";
 
+/// One place in the deck profile's action dock below the breakpoint.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DockItem {
+    /// Opens Edit deck, as an icon.
+    Edit,
+    /// Opens the Clone dialog, as an icon.
+    Clone,
+    /// Opens the Share dialog, as an icon.
+    Share,
+    /// Opens the deck's store dialog, as a cart icon.
+    Buy,
+    /// The rule between the icons and the text button.
+    Divider,
+    /// Opens the deck's cards, as the [`CARDS`] text button.
+    Cards,
+}
+
+/// The deck profile's dock, left to right: the deck's own icons (the cart
+/// only with a store to buy from), then a rule and the Cards button.
+#[must_use]
+pub fn dock(buy: bool) -> Vec<DockItem> {
+    let mut items = vec![DockItem::Edit, DockItem::Clone, DockItem::Share];
+    if buy {
+        items.push(DockItem::Buy);
+    }
+    items.extend([DockItem::Divider, DockItem::Cards]);
+    items
+}
+
 /// The title of the panel near the foot of the page that holds Import and Export.
 pub const DATA: &str = "Data";
 

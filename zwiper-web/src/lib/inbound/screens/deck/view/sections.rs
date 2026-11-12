@@ -4,7 +4,6 @@
 //! window's deck page folds in its own panel, and a `*Section` wrapper
 //! that draws the body in the phone's accordion.
 
-use components::icons::{CloneIcon, EditIcon, ShareIcon};
 use components::{
     Button, ButtonVariant, Chip, ColorChart, DeckCharts, DrawOdds, ManaCurve, ManaFulfillment,
 };
@@ -18,9 +17,7 @@ use zwipe_ui::colors::ColorCounts;
 use zwipe_ui::deck::form::Slot;
 use zwipe_ui::deck::view::with_unpriced;
 use zwipe_ui::deck::warning::{self, Fix};
-use zwipe_ui::screens::deck_view::{EDIT, MoreItem};
 
-use super::dialogs::DeckDialogs;
 use crate::domain::deck::total_price_line;
 use crate::inbound::cards::otag::{OtagDescribe, OtagExamplesOpen};
 use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
@@ -38,57 +35,11 @@ fn InfoRow(label: String, value: String) -> Element {
     }
 }
 
-/// Edit, Clone and Share as icons, the actions on the deck as a whole, in
-/// the Profile card's header below the breakpoint. A wide window's deck
-/// page holds them in its action dock.
-#[component]
-pub fn ProfileActions(deck_id: Uuid, dialogs: DeckDialogs) -> Element {
-    let navigator = use_navigator();
-    let DeckDialogs {
-        mut clone,
-        mut share,
-        ..
-    } = dialogs;
-    rsx! {
-        div { class: "deck-profile-actions",
-            Button {
-                variant: ButtonVariant::Action,
-                class: "btn-icon",
-                onclick: move |_| {
-                    navigator.push(Route::EditDeck { deck_id });
-                },
-                EditIcon {}
-                span { class: "sr-only", {EDIT} }
-            }
-            Button {
-                variant: ButtonVariant::Action,
-                class: "btn-icon",
-                onclick: move |_| clone.set(true),
-                CloneIcon {}
-                span { class: "sr-only", {MoreItem::CloneDeck.short_label()} }
-            }
-            Button {
-                variant: ButtonVariant::Action,
-                class: "btn-icon",
-                onclick: move |_| share.set(true),
-                ShareIcon {}
-                span { class: "sr-only", {MoreItem::ShareDeck.short_label()} }
-            }
-        }
-    }
-}
-
 /// The Profile card: name, card count, format, the command zone and power
-/// level, with [`ProfileActions`] in its header. The commander row prefers
-/// the fetched card's name.
+/// level. The deck's own actions sit in the screen's dock. The commander
+/// row prefers the fetched card's name.
 #[component]
-pub fn ProfileCard(
-    profile: DeckProfile,
-    commander: Option<Card>,
-    cards: usize,
-    dialogs: DeckDialogs,
-) -> Element {
-    let deck_id = profile.id;
+pub fn ProfileCard(profile: DeckProfile, commander: Option<Card>, cards: usize) -> Element {
     let label = Slot::Commander.label(profile.format);
     let commander_name = commander
         .map(|c| c.scryfall_data.name)
@@ -101,7 +52,6 @@ pub fn ProfileCard(
         div { class: "settings-list",
             div { class: "settings-list-header",
                 span { class: "settings-list-title", "Profile" }
-                ProfileActions { deck_id, dialogs }
             }
             InfoRow { label: "Name", value: profile.name.to_string() }
             InfoRow { label: "Cards", value: cards.to_string() }

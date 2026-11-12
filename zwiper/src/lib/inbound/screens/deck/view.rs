@@ -23,7 +23,7 @@ use zwipe_ui::colors::ColorCounts;
 use zwipe_ui::deck::command_zone::Slot;
 use zwipe_ui::generation::Ticket;
 use zwipe_ui::screens::deck_view::{
-    self, Action, Destination, Dialog, Effect, MoreItem, Section, State,
+    self, Action, Destination, Dialog, DockItem, Effect, MoreItem, Section, State,
 };
 
 use super::components::clone_deck_dialog::CloneDeckDialog;
@@ -510,6 +510,8 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         .into_iter()
         .filter(|item| state.is_enabled(*item))
         .collect();
+    let clone_on = more_enabled.contains(&MoreItem::CloneDeck);
+    let share_on = more_enabled.contains(&MoreItem::ShareDeck);
     let store_links = state.store_links();
     let share_url = state.share_url();
     let share_body = state.share_body();
@@ -554,31 +556,6 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                     deck_profile: deck_profile.clone(),
                                     commander: commander,
                                     card_count: card_count,
-                                    actions: rsx! {
-                                        Button {
-                                            variant: ButtonVariant::Action,
-                                            class: "btn-icon",
-                                            onclick: move |_| driver.dispatch(Action::Edit),
-                                            EditIcon {}
-                                            span { class: "sr-only", {deck_view::EDIT} }
-                                        }
-                                        Button {
-                                            variant: ButtonVariant::Action,
-                                            class: "btn-icon",
-                                            disabled: !more_enabled.contains(&MoreItem::CloneDeck),
-                                            onclick: move |_| driver.dispatch(Action::More(MoreItem::CloneDeck)),
-                                            CloneIcon {}
-                                            span { class: "sr-only", {MoreItem::CloneDeck.short_label()} }
-                                        }
-                                        Button {
-                                            variant: ButtonVariant::Action,
-                                            class: "btn-icon",
-                                            disabled: !more_enabled.contains(&MoreItem::ShareDeck),
-                                            onclick: move |_| driver.dispatch(Action::More(MoreItem::ShareDeck)),
-                                            ShareIcon {}
-                                            span { class: "sr-only", {MoreItem::ShareDeck.short_label()} }
-                                        }
-                                    },
                                 }
 
                                 if sections.contains(&Section::Budget) {
@@ -761,21 +738,57 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                     }
                 }
 
-            // Cards, the screen's main action, floats at the bottom right.
+            // The deck's own actions and Cards, the screen's main action,
+            // float at the bottom right.
             if !failed {
                 div { class: "action-dock action-dock-right content-enter-delayed",
-                    if store_links.is_some() {
-                        button {
-                            class: "action-dock-btn",
-                            "aria-label": buy::CART_LABEL,
-                            onclick: move |_| deck_buy_open.set(true),
-                            DockIcon { path: CART }
+                    for item in deck_view::dock(store_links.is_some()) {
+                        match item {
+                            DockItem::Edit => rsx! {
+                                button {
+                                    class: "action-dock-btn",
+                                    "aria-label": deck_view::EDIT,
+                                    onclick: move |_| driver.dispatch(Action::Edit),
+                                    EditIcon {}
+                                }
+                            },
+                            DockItem::Clone => rsx! {
+                                button {
+                                    class: "action-dock-btn",
+                                    "aria-label": MoreItem::CloneDeck.short_label(),
+                                    disabled: !clone_on,
+                                    onclick: move |_| driver.dispatch(Action::More(MoreItem::CloneDeck)),
+                                    CloneIcon {}
+                                }
+                            },
+                            DockItem::Share => rsx! {
+                                button {
+                                    class: "action-dock-btn",
+                                    "aria-label": MoreItem::ShareDeck.short_label(),
+                                    disabled: !share_on,
+                                    onclick: move |_| driver.dispatch(Action::More(MoreItem::ShareDeck)),
+                                    ShareIcon {}
+                                }
+                            },
+                            DockItem::Buy => rsx! {
+                                button {
+                                    class: "action-dock-btn",
+                                    "aria-label": buy::CART_LABEL,
+                                    onclick: move |_| deck_buy_open.set(true),
+                                    DockIcon { path: CART }
+                                }
+                            },
+                            DockItem::Divider => rsx! {
+                                span { class: "action-dock-divider" }
+                            },
+                            DockItem::Cards => rsx! {
+                                Button {
+                                    variant: ButtonVariant::Action,
+                                    onclick: move |_| driver.dispatch(Action::Cards),
+                                    {deck_view::CARDS}
+                                }
+                            },
                         }
-                    }
-                    Button {
-                        variant: ButtonVariant::Action,
-                        onclick: move |_| driver.dispatch(Action::Cards),
-                        {deck_view::CARDS}
                     }
                 }
             }

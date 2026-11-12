@@ -977,3 +977,29 @@ fn every_short_label_drops_the_deck_or_cards_word() {
         );
     }
 }
+
+#[test]
+fn the_dock_reads_edit_clone_share_buy_then_cards() {
+    assert_eq!(
+        dock(true),
+        [
+            DockItem::Edit,
+            DockItem::Clone,
+            DockItem::Share,
+            DockItem::Buy,
+            DockItem::Divider,
+            DockItem::Cards
+        ]
+    );
+    assert_eq!(
+        dock(false),
+        [
+            DockItem::Edit,
+            DockItem::Clone,
+            DockItem::Share,
+            DockItem::Divider,
+            DockItem::Cards
+        ],
+        "no cart without a store link"
+    );
+}

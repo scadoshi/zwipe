@@ -53,8 +53,8 @@ fn building_a_deck() -> Vec<Block> {
 /// Which deck page the first-deck hint describes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum DeckLayout {
-    /// The app, and the web below its breakpoint: the Profile card carries
-    /// the pencil, clone and share, and the `Cards` pill floats in the dock.
+    /// The app, and the web below its breakpoint: the dock holds the pencil,
+    /// clone and share, then the `Cards` pill.
     Narrow,
     /// The wide web page: one dock holds add and remove, the filter and
     /// undo, then edit, clone and share.
@@ -95,10 +95,8 @@ pub fn first_deck(layout: DeckLayout) -> HintContent {
         vec![
             bullet(vec![key("Cards"), text(" browses, adds and removes cards")]),
             bullet(vec![
-                text("The "),
+                text("In the dock, "),
                 icon_key(KeyIcon::Edit),
-                text(" by "),
-                key("Profile"),
                 text(" changes the name, format, command zone, tags and targets"),
             ]),
             bullet(vec![
@@ -732,6 +730,10 @@ mod tests {
             "the add button is an icon, so its key is the icon alone"
         );
         let deck = content_for(OneTimeHint::FirstDeck).unwrap();
+        assert_eq!(
+            deck.blocks[1].plain(),
+            "In the dock, pencil changes the name, format, command zone, tags and targets"
+        );
         assert_eq!(
             deck.blocks[2].plain(),
             "Beside it, clone clones the deck and share shares a link to it"

@@ -11,9 +11,6 @@ pub(crate) fn DeckProfileSection(
     commander: Option<Card>,
     /// Total card count (command-zone variants included) for the "Cards" row.
     card_count: usize,
-    /// The buttons on the deck as a whole, at the end of the header row.
-    #[props(default)]
-    actions: Option<Element>,
 ) -> Element {
     let format = deck_profile.format;
     let commander_label = Slot::Commander.label(format);
@@ -22,9 +19,6 @@ pub(crate) fn DeckProfileSection(
         div { class: "settings-list",
             div { class: "settings-list-header",
                 span { class: "settings-list-title", "Profile" }
-                if let Some(actions) = actions {
-                    div { class: "deck-profile-actions", {actions} }
-                }
             }
             div { class: "settings-row",
                 span { class: "settings-row-label", "Name" }

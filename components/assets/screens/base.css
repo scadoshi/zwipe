@@ -298,21 +298,6 @@ body .toast-container [role="alertdialog"] {
 }
 
 /* ==================
-  deck view actions
- ==================== */
-
-/* Edit, Clone and Share at the end of the profile panel's header row. */
-.deck-profile-actions {
-    display: flex;
-    gap: 0.4rem;
-}
-
-/* The header row's icons, edit, clone and share, each in a kit .btn-icon. */
-.deck-profile-actions .action-dock-icon {
-    display: block;
-}
-
-/* ==================
   list header actions
  ==================== */
 

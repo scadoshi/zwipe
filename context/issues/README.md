@@ -99,6 +99,7 @@ Who checked, on which live build, what they saw.
 | [379](379-quick-add-width.md) | Quick add runs wider than the chip rows under it | fixing | laptop | #581 |
 | [375](375-home-activity-button.md) | Home's counters have no way into Activity on the web | fixing | laptop | #580 |
 | [378](378-swipe-image-fallback.md) | A failed swipe card image shows the card underneath | fixing | laptop | #583 |
+| [389](389-profile-dock.md) | A deck's Edit, Clone and Share sit in the Profile header on a phone | fixing | thinker | - |
 
 ## Waiting for live verification
 
