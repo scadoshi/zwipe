@@ -1,6 +1,6 @@
 # 382. The Stacks drawer snaps to another card
 
-State: fixing | Owner: laptop | PR: #606, PENDING | Build seen: audit build 9680dcacb
+State: fixing | Owner: laptop | PR: #606, #609 | Build seen: audit build 9680dcacb
 
 ## Report
 Ease audit, row 6 (`~/ease-audit/README.md`), moved from thinker via the composer: clicking another card while the Stacks drawer is open replaces its contents in one frame, with no crossfade, and the title shifts.
@@ -21,7 +21,7 @@ A per-frame probe sampled the drawer while a click swapped Beetleback Chief for 
 surfer, after #606 deployed: no crossfade on the deck page, and `window.__zwDrawerSwap` is never set. The swap ran only in zwiper-web's `CardDetailsSheet` wrapper, and the deck page's drawer is `components::CardDetailsSheet` (`deck_cards_view.rs`).
 
 ## Fix, second pass
-laptop, PENDING: `drawer_swap` moves to components and `components::CardDetailsSheet` installs it, so every card details drawer has it: the deck page, the web's card screens through the wrapper, and the app's deck screens.
+laptop, #609: `drawer_swap` moves to components and `components::CardDetailsSheet` installs it, so every card details drawer has it: the deck page, the web's card screens through the wrapper, and the app's deck screens.
 
 Checked on the deck page in Stacks (headless Chrome, 1422), swapping Skirk Prospector for Swiftfoot Boots: the swap is installed, and the first frame with the new title shows the copies at 2 / 1.00 / 0.00, then 0.93 / 0.07 … 0.00 / 1.00 at 217ms, with the copies gone by 250ms. Under reduced motion the swap is instant.
 
