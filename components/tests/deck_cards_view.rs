@@ -389,3 +389,72 @@ fn back_passes_by_stacks_with_nothing_revealed_or_an_open_card() {
         "a pointer's reveal is the hover's"
     );
 }
+
+/// The group keys in each touch column, left then right, for `sections` with `folded` folded.
+fn columns_of(html: &str) -> Vec<Vec<String>> {
+    html.split(r#"class="deck-stacks-column""#)
+        .skip(1)
+        .map(|column| {
+            column
+                .split(r#"data-fold=""#)
+                .skip(1)
+                .filter_map(|rest| rest.split_once('"').map(|(key, _)| key.to_owned()))
+                .collect()
+        })
+        .collect()
+}
+
+thread_local! {
+    static FOLDED: std::cell::RefCell<Vec<String>> = const { std::cell::RefCell::new(Vec::new()) };
+}
+
+fn masonry_app() -> Element {
+    let details = StackDetails {
+        reveal: use_signal(Reveal::default),
+        details_open: use_signal(|| false),
+    };
+    let folded: std::collections::HashSet<String> =
+        FOLDED.with(|f| f.borrow().iter().cloned().collect());
+    rsx! {
+        components::DeckStacks {
+            sections: vec![group("Creatures", 30), group("Lands", 1), group("Artifacts", 1), group("Enchantments", 1)],
+            currency: PriceCurrency::default(),
+            collapsed: use_signal(|| folded),
+            details,
+            faces: use_signal(HashMap::new),
+            group_buy: components::use_group_buy(),
+            touch: true,
+        }
+    }
+}
+
+#[test]
+fn touch_stacks_lie_in_two_columns_of_their_own_heights() {
+    FOLDED.with(|f| f.borrow_mut().clear());
+    let html = render(masonry_app);
+    assert_eq!(
+        columns_of(&html),
+        [
+            vec!["Creatures"],
+            vec!["Lands", "Artifacts", "Enchantments"]
+        ],
+        "the short stacks fill the column beside the long one: {html}"
+    );
+    FOLDED.with(|f| *f.borrow_mut() = vec!["Creatures".to_owned()]);
+    let html = render(masonry_app);
+    assert_eq!(
+        columns_of(&html),
+        [
+            vec!["Creatures", "Artifacts"],
+            vec!["Lands", "Enchantments"]
+        ],
+        "a folded stack counts as its header: {html}"
+    );
+}
+
+#[test]
+fn pointer_stacks_keep_their_one_grid() {
+    let html = render(|| stacks(false));
+    assert!(!html.contains("deck-stacks-column"), "{html}");
+    assert!(html.contains(r#"class="deck-stacks""#), "{html}");
+}

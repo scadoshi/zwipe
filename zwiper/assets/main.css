@@ -341,23 +341,28 @@ body {
 
 /* ---- Deck cards: Stacks ---- */
 
-/* Two stacks side by side at every phone width, each about half the screen,
-   in components' DeckStacks. A stack takes two of the grid's rows, its
-   header and its cards, through a subgrid, so the two cards in a row start
-   level whether or not a price wrapped. */
+/* Two columns side by side at every phone width, each about half the
+   screen, in components' DeckStacks. Each column holds its own stacks, each
+   right under the one above it, so a long stack never holds the other
+   column's next stack down, and a fold or a reveal moves only its own
+   column. Two flex columns, not CSS multi-column, so a change in one
+   stack never lays out the rest again. */
 .app-deck-stacks .deck-stacks {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: flex;
     gap: 0.6rem;
-    align-items: start;
+    align-items: flex-start;
+}
+
+.app-deck-stacks .deck-stacks-column {
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    min-width: 0;
 }
 
 .app-deck-stacks .deck-stack {
-    display: grid;
-    grid-row: span 2;
-    grid-template-rows: subgrid;
-    grid-template-columns: minmax(0, 1fr);
-    row-gap: 0;
+    display: flex;
+    flex-direction: column;
     min-width: 0;
     margin-bottom: 0.65rem;
 }
