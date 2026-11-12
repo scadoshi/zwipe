@@ -31,9 +31,10 @@ use zwipe_core::domain::deck::deck_profile::DeckProfile;
 use zwipe_core::http::contracts::suggestions::{
     HttpBuilderProfile, HttpCommanderSuggestion, HttpStaple,
 };
+use zwipe_ui::deck_cards::stacks::CardsView;
 use zwipe_ui::generation::Generation;
 use zwipe_ui::playstyle::{
-    HELD_SIZE, LIST_SIZE, StapleDeck, empty_identity_line, of_identity, shown,
+    HELD_SIZE, LIST_SIZE, StapleDeck, empty_identity_line, named_staple_decks, of_identity, shown,
 };
 use zwipe_ui::screens::playstyle as model;
 use zwipe_ui::telemetry::vocabulary::Screen;
@@ -41,11 +42,15 @@ use zwipe_ui::telemetry::vocabulary::Screen;
 pub use self::chips::{IdentityPips, ShowIdentityChips};
 use self::profile::{BuilderProfileSections, ProfileSummary};
 pub use self::rows::SuggestionReasons;
-use self::rows::{StaplesPanel, SuggestionRow};
+use self::rows::{StaplesPanel, SuggestionRow, staple_footer, suggestion_actions};
 use self::skeleton::PlaystyleSkeleton;
 use crate::inbound::caches::CreateDeckSeed;
 use crate::inbound::cards::card_row::{CardOverlaysHost, ShowRowArt, use_card_overlays};
 use crate::inbound::cards::otag::{OtagExamplesHost, use_otag_reveals};
+use crate::inbound::cards::row_keys::use_card_row_keys;
+use crate::inbound::cards::stack_view::{
+    CardsStack, CardsViewSwitch, StackDrawer, use_cards_view, use_row_faces, use_stack_details,
+};
 use crate::inbound::cards::swipe_select::{SuggestedPile, SwipeMode, SwipeSelect};
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
@@ -96,6 +101,32 @@ pub fn Playstyle() -> Element {
     // The titles of the profile folds shut on a wide window; all start open.
     let folded: Signal<HashSet<String>> = use_signal(HashSet::new);
     let wide = use_wide();
+    // List or Stacks for the suggestions and the staples, each list one stack.
+    let view = use_cards_view();
+    use_row_faces();
+    // Every card the screen lists, which the card keys and the stacks' drawer act on.
+    let listed_cards = use_memo(move || {
+        let staples = profile
+            .read()
+            .as_ref()
+            .map(|p| p.staples.iter().map(|s| s.card.clone()).collect::<Vec<_>>())
+            .unwrap_or_default();
+        entries
+            .read()
+            .iter()
+            .map(|s| s.card.clone())
+            .chain(staples)
+            .collect::<Vec<Card>>()
+    });
+    let listed_ids = use_memo(move || {
+        listed_cards
+            .read()
+            .iter()
+            .map(|c| c.scryfall_data.id)
+            .collect::<Vec<_>>()
+    });
+    use_stack_details(listed_ids);
+    use_card_row_keys(listed_cards, expanded_card, view);
     let mut is_loading = use_signal(|| true);
     let mut load_failed = use_signal(|| false);
     let mut reload = use_signal(|| 0u32);
@@ -286,11 +317,20 @@ pub fn Playstyle() -> Element {
     let folds = wide().then_some(folded);
     let show_chips = rsx! {
         ShowIdentityChips { active_identity, identities: identities(),
+            // Stacks always show art, so the chip grays out and keeps its state.
             Chip {
                 selected: show_row_art(),
+                disabled: view() == CardsView::Stacks,
                 onclick: move |_| show_row_art.toggle(),
                 "Art"
             }
+        }
+        CardsViewSwitch {
+            view,
+            on_change: move |()| {
+                let mut expanded = expanded_card;
+                expanded.set(None);
+            },
         }
     };
     let staples: Vec<HttpStaple> = profile
@@ -299,6 +339,8 @@ pub fn Playstyle() -> Element {
         .map(|p| p.staples.clone())
         .unwrap_or_default();
 
+    // The deck list again for the stacks' drawer, which names a staple's decks.
+    let drawer_decks = staple_decks.clone();
     rsx! {
         ScreenFrame {
             title: "Playstyle",
@@ -363,21 +405,27 @@ pub fn Playstyle() -> Element {
                                                 }
                                             }
                                         }
-                                        for suggestion in rows {
-                                            SuggestionRow {
-                                                key: "{suggestion.card.scryfall_data.id}",
-                                                suggestion,
-                                                deck_count: deck_count(),
-                                                expanded_card,
-                                                on_start: create_with,
-                                                on_maybe,
-                                                on_dismiss,
+                                        if view() == CardsView::Stacks {
+                                            if !rows.is_empty() {
+                                                CardsStack { cards: rows.iter().map(|s| s.card.clone()).collect::<Vec<Card>>() }
+                                            }
+                                        } else {
+                                            for suggestion in rows {
+                                                SuggestionRow {
+                                                    key: "{suggestion.card.scryfall_data.id}",
+                                                    suggestion,
+                                                    deck_count: deck_count(),
+                                                    expanded_card,
+                                                    on_start: create_with,
+                                                    on_maybe,
+                                                    on_dismiss,
+                                                }
                                             }
                                         }
                                     }
                                 }
                                 if !staples.is_empty() {
-                                    StaplesPanel { staples, deck_count: deck_count(), decks: staple_decks, expanded_card, wide: wide() }
+                                    StaplesPanel { staples, deck_count: deck_count(), decks: staple_decks, expanded_card, wide: wide(), view }
                                 }
                                 div { class: "web-playstyle-cell web-playstyle-danger",
                                     DangerZoneAction {
@@ -420,6 +468,37 @@ pub fn Playstyle() -> Element {
             on_close: move |()| swipe_open.set(false),
         }
         HoverStackHost { stack: hover_stack }
+        if view() == CardsView::Stacks {
+            StackDrawer {
+                cards: listed_cards(),
+                extras: Callback::new(move |card: Card| {
+                    let id = card.scryfall_data.id;
+                    if let Some(suggestion) = entries.read().iter().find(|s| s.card.scryfall_data.id == id).cloned() {
+                        let actions = suggestion_actions(
+                            card,
+                            EventHandler::new(create_with),
+                            EventHandler::new(on_maybe),
+                            EventHandler::new(on_dismiss),
+                        );
+                        return rsx! {
+                            SuggestionReasons { reasons: suggestion.reasons, deck_count: deck_count(), foldable: true }
+                            div { class: "card-action-row", {actions} }
+                        };
+                    }
+                    let staple = profile
+                        .read()
+                        .as_ref()
+                        .and_then(|p| p.staples.iter().find(|s| s.card.scryfall_data.id == id).cloned());
+                    staple.map_or_else(
+                        || rsx! {},
+                        |staple| {
+                            let in_decks = named_staple_decks(&staple.deck_ids, &drawer_decks);
+                            staple_footer(&staple, deck_count(), in_decks)
+                        },
+                    )
+                }),
+            }
+        }
         CardOverlaysHost {
             overlays,
             on_printing_save: picks.then_some(EventHandler::new(move |picked: Card| {

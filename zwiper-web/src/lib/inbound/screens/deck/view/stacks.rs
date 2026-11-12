@@ -5,7 +5,7 @@
 //! flowing into as many columns as the page fits. Hover
 //! reveals a card in place; a click opens its details in the card details
 //! drawer with the actions its row has, and a click on another card swaps
-//! it in. The reveal and open state is zwipe-ui's [`Reveal`].
+//! it in. The reveal and open state is zwipe-ui's [`Reveal`](zwipe_ui::deck_cards::stacks::Reveal).
 
 use std::collections::{HashMap, HashSet};
 
@@ -14,11 +14,12 @@ use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::{Board, deck_metrics};
-use zwipe_ui::deck_cards::stacks::{Gesture, Reveal};
+use zwipe_ui::deck_cards::stacks::Gesture;
 
 use super::group_buy::{GroupBuy, group_cards};
 use crate::inbound::cards::card_info::CardDetailsSheet;
 use crate::inbound::cards::card_row::CardOverlays;
+use crate::inbound::cards::stack_view::{DRAWER_CLASSES, StackDetails};
 use crate::inbound::screens::deck::cards::editor::{Editor, Meta, RowInfo, RowKind, board_of};
 use crate::inbound::screens::deck::list::DeckGroupSection;
 
@@ -35,29 +36,6 @@ fn total_price(rows: &[RowInfo], currency: PriceCurrency) -> Option<String> {
         }
     }
     priced.then(|| currency.format_amount(sum))
-}
-
-/// The stacks' reveal and whether the open card's drawer shows, which a click on a card and the
-/// deck cards screen's `d` both move. The page provides it as context, ahead of the deck editor.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub(crate) struct StackDetails {
-    /// Which card shows in full and which card's details are open.
-    pub(crate) reveal: Signal<Reveal>,
-    /// Whether the open card's details drawer shows.
-    pub(crate) details_open: Signal<bool>,
-}
-
-impl StackDetails {
-    /// A click on card `id`: its details open, in place of any open one, or close where they are
-    /// open.
-    pub(crate) fn click(self, id: Uuid) {
-        let Self {
-            mut reveal,
-            mut details_open,
-        } = self;
-        reveal.write().apply(Gesture::Click(id));
-        details_open.set(reveal.peek().open().is_some());
-    }
 }
 
 /// The stacks for `sections`, folding by `collapsed` as the bands do, each card on its face in
@@ -129,7 +107,7 @@ pub(crate) fn stacks_view(
 /// `overlays`, as a list row's Image opens it) and Printings in the panel's
 /// foot, then the
 /// quantity stepper and the star, then the board moves. It shows the
-/// [`Reveal::drawn`] card and is mounted, closed, on the first row before
+/// [`Reveal::drawn`](zwipe_ui::deck_cards::stacks::Reveal::drawn) card and is mounted, closed, on the first row before
 /// any click; nothing when the list is empty.
 pub(crate) fn stack_details(
     ed: &Editor,
@@ -225,50 +203,5 @@ pub(crate) fn stack_details(
                 faces.write().insert(card_id, face);
             },
         }
-    }
-}
-
-/// The details drawer's classes: the card details drawer's own, then
-/// [`STACK_DETAILS_CLASS`](crate::inbound::chrome::shortcuts::STACK_DETAILS_CLASS), so
-/// the deck cards screen's hover keys reach the screen through it.
-const DRAWER_CLASSES: &str = "card-details-drawer deck-stack-details";
-
-/// Drops focus from the stack card the drawer opened from, so its focus
-/// outline goes with the drawer.
-const BLUR_STACK_CARD_JS: &str = "if (document.activeElement?.classList.contains('card-stack-card')) document.activeElement.blur();";
-
-/// Keeps the drawer and the reveal state agreeing: a drawer closed by its
-/// ×, Escape, the backdrop or the back gesture closes the open card and
-/// clears its outline, and an open card that left the list (its last copy
-/// removed) closes the drawer.
-pub(crate) fn use_stack_details_sync(
-    mut reveal: Signal<Reveal>,
-    mut details_open: Signal<bool>,
-    listed: Memo<Vec<Uuid>>,
-) {
-    use_effect(move || {
-        let open = details_open();
-        let card = reveal.peek().open();
-        if !open && card.is_some() {
-            reveal.write().apply(Gesture::Close);
-            document::eval(BLUR_STACK_CARD_JS);
-        }
-        if open && card.is_some_and(|id| !listed().contains(&id)) {
-            details_open.set(false);
-        }
-    });
-}
-
-#[cfg(test)]
-mod tests {
-
-    use super::*;
-    use crate::inbound::chrome::shortcuts::STACK_DETAILS_CLASS;
-
-    #[test]
-    fn the_drawer_names_the_class_the_keys_pass_through() {
-        let classes: Vec<&str> = DRAWER_CLASSES.split_whitespace().collect();
-        assert!(classes.contains(&"card-details-drawer"));
-        assert!(classes.contains(&STACK_DETAILS_CLASS));
     }
 }

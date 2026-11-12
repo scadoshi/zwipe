@@ -13,6 +13,7 @@ use zwipe_core::domain::deck::Board;
 use crate::inbound::cards::image_preview::ImagePreview;
 use crate::inbound::cards::otag::{OtagDescribe, OtagExamplesOpen};
 use crate::inbound::cards::printing_sheet::PrintingSheet;
+use crate::inbound::cards::stack_view::RowFaces;
 
 /// Whether compact rows show their art thumbnail; a screen's `Art` chip
 /// toggles it. Rows without the context show no art.
@@ -107,6 +108,11 @@ pub fn CardRow(
 ) -> Element {
     let overlays = try_use_context::<CardOverlays>();
     let mut own_face = use_signal(|| 0usize);
+    let card_id = card.scryfall_data.id;
+    // A row with no face of its own shows the screen's, when it keeps them,
+    // so the `v` key and its stack turn the same face.
+    let row_faces = try_use_context::<RowFaces>();
+    let face = face.or_else(|| row_faces.map(|faces| faces.of(card_id)));
     let describe_tag = try_use_context::<OtagDescribe>().map(|d| d.0);
     let on_examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
     let show_art = try_use_context::<ShowRowArt>().map(|s| (s.0)());
@@ -127,6 +133,7 @@ pub fn CardRow(
     rsx! {
         div {
             class: "web-card-row",
+            "data-row": "{card_id}",
             SharedCardRow {
                 card,
                 qty,
@@ -135,6 +142,9 @@ pub fn CardRow(
                 on_image,
                 on_face_change: move |f: usize| {
                     own_face.set(f);
+                    if let Some(faces) = row_faces {
+                        faces.set(card_id, f);
+                    }
                     if let Some(handler) = on_face_change {
                         handler.call(f);
                     }
