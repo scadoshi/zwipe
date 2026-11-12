@@ -16,7 +16,11 @@ pub(crate) mod stacks;
 
 use std::iter;
 
-use components::{Button, ButtonVariant, LoadFailed, TOAST_NORMAL, TOAST_QUICK, use_back_online};
+use components::icons::DockIcon;
+use components::{
+    Button, ButtonVariant, CART, LoadFailed, StoreDialog, TOAST_NORMAL, TOAST_QUICK,
+    use_back_online,
+};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
@@ -93,6 +97,8 @@ fn DeckViewScreen(deck_id: Uuid) -> Element {
     // Counts the warning fixes that have landed, so the wide page reloads
     // its own copy of the deck after each.
     let mut fixed = use_signal(|| 0u32);
+    // The deck's store dialog, from the dock's cart.
+    let mut deck_buy_open = use_signal(|| false);
 
     let mut profile: Resource<Result<DeckProfile, ClientError>> =
         use_resource(use_reactive!(|deck_id| async move {
@@ -260,7 +266,7 @@ fn DeckViewScreen(deck_id: Uuid) -> Element {
         .as_ref()
         .map(|d| d.warnings.clone())
         .unwrap_or_default();
-    let buy_links = loaded_deck.as_ref().map(buy::links);
+    let deck_buy = loaded_deck.as_ref().map(buy::deck_links);
     let loaded_profile: Option<Result<DeckProfile, ()>> = profile
         .read()
         .as_ref()
@@ -316,7 +322,6 @@ fn DeckViewScreen(deck_id: Uuid) -> Element {
                                     BudgetSection {
                                         profile: p.clone(),
                                         metrics: metrics.clone(),
-                                        buy: buy_links,
                                         currency,
                                         open_section,
                                     }
@@ -345,6 +350,14 @@ fn DeckViewScreen(deck_id: Uuid) -> Element {
             // Cards, the screen's main action, floats at the bottom right.
             if shows_cards && !wide() {
                 div { class: "action-dock action-dock-right content-enter-delayed",
+                    if deck_buy.is_some() {
+                        button {
+                            class: "action-dock-btn",
+                            "aria-label": buy::CART_LABEL,
+                            onclick: move |_| deck_buy_open.set(true),
+                            DockIcon { path: CART }
+                        }
+                    }
                     Button {
                         variant: ButtonVariant::Action,
                         onclick: move |_| {
@@ -353,6 +366,14 @@ fn DeckViewScreen(deck_id: Uuid) -> Element {
                         {CARDS}
                     }
                 }
+            }
+        }
+        if let Some(links) = deck_buy.filter(|_| !wide()) {
+            StoreDialog {
+                open: deck_buy_open,
+                title: buy::DECK_TITLE.to_owned(),
+                body: buy::DECK_BODY.to_owned(),
+                links,
             }
         }
         DeckDialogsHost { deck_id, dialogs, share_token, deck_name, clone_name, delete_body }

@@ -11,4 +11,13 @@ Composer for Scotty, 2026-11-11: on wide web the deck page seemed to have no Buy
 Each surface grew its own buy control: the web's Budget row and featured spots show the two retailer links, the app's Budget shows two buttons and its featured flavor a Buy button with a dialog.
 
 ## Fix
-thinker, after 353: the shared `StoreDialog` and `CartButton` everywhere a card, a stack or the deck can be bought; the PR lists every spot changed.
+thinker: one cart, one store dialog (`CartButton`, `StoreDialog`, from 353), with zwipe-ui's `buy::deck_links` and `buy::card_links`:
+- Web deck page, wide: a cart in the action dock after Share, for the whole deck.
+- Web deck view, phone width: a cart in the dock beside Cards.
+- Web Budget (wide fold and phone accordion) and its loading ghost: the TCGplayer and Card Kingdom links are gone.
+- Web home featured flavor: the two retailer links become the cart (its ghost too).
+- App deck view: Budget's Buy row is gone; a cart in the dock beside Cards.
+- App home featured flavor: the Buy button becomes the cart, opening the shared dialog.
+- zwipe.net guide: the Budget paragraph names the dock cart and the stacks' carts.
+- Left: zwipe.net's featured flavor keeps its two links. The kit draws dialogs with app-only rules (`APP_CSS`), which the site does not load.
+- Removed with them: zwiper-web's `cards/buy_links.rs`, zwipe-ui's `Retailer`, `Action::Buy` and the two `BUY` labels, and the `.deck-buy-row` and `.web-buy-link` rules.

@@ -51,6 +51,7 @@ pub const UPCOMING: &[Release] = &[
         version: Version::new(1, 19, 2),
         date: None,
         entries: &[
+            "Buying is one cart on the web and in the app, on the deck's dock and the featured card, opening TCGplayer or Card Kingdom",
             "The deck page on the web deals its featured cards in, as a shared deck does",
             "Back returns to the screen you came from instead of looping between Create deck and Decks",
             "On the web, a cloned deck shows its own name as soon as it opens, and back and forward between two decks show the right one",

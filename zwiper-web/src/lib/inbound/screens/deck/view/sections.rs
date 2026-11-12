@@ -18,7 +18,7 @@ use zwipe_ui::colors::ColorCounts;
 use zwipe_ui::deck::form::Slot;
 use zwipe_ui::deck::view::with_unpriced;
 use zwipe_ui::deck::warning::{self, Fix};
-use zwipe_ui::screens::deck_view::{BUY, EDIT, MoreItem};
+use zwipe_ui::screens::deck_view::{EDIT, MoreItem};
 
 use super::dialogs::DeckDialogs;
 use crate::domain::deck::total_price_line;
@@ -143,13 +143,11 @@ pub fn CurrencyChips(mut currency: Signal<PriceCurrency>) -> Element {
     }
 }
 
-/// Budget's body: the total and average price, and the Buy row with the
-/// `TCGplayer` and `Card Kingdom` links once `buy` holds them.
+/// Budget's body: the total and average price. Buying the deck is the dock's cart.
 #[component]
 pub fn BudgetBody(
     profile: DeckProfile,
     metrics: Option<DeckMetrics>,
-    buy: Option<(String, String)>,
     currency: Signal<PriceCurrency>,
 ) -> Element {
     let shown = currency();
@@ -176,13 +174,6 @@ pub fn BudgetBody(
                         ),
                 }
             }
-            if let Some((tcgplayer, cardkingdom)) = buy {
-                div { class: "deck-buy-row",
-                    span { class: "stat-chip stat-chip-p1 chip-row-label", {BUY} }
-                    BuyLink { href: tcgplayer, label: "TCGplayer" }
-                    BuyLink { href: cardkingdom, label: "Card Kingdom" }
-                }
-            }
         }
     }
 }
@@ -193,7 +184,6 @@ pub fn BudgetBody(
 pub fn BudgetSection(
     profile: DeckProfile,
     metrics: Option<DeckMetrics>,
-    buy: Option<(String, String)>,
     currency: Signal<PriceCurrency>,
     open_section: Signal<Option<String>>,
 ) -> Element {
@@ -204,21 +194,7 @@ pub fn BudgetSection(
     });
     rsx! {
         CollapsibleSection { title: "Budget", open_section, header_accessory: accessory,
-            BudgetBody { profile, metrics, buy, currency }
-        }
-    }
-}
-
-/// One retailer link in the Buy row, drawn as the row's action buttons,
-/// with the `↗` that marks it as leaving the site.
-#[component]
-fn BuyLink(href: String, label: &'static str) -> Element {
-    rsx! {
-        a {
-            class: "btn-action web-buy-link",
-            href,
-            "{label}"
-            span { class: "web-buy-ext", "\u{2197}" }
+            BudgetBody { profile, metrics, currency }
         }
     }
 }

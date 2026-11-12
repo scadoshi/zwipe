@@ -1,8 +1,8 @@
 //! The Featured flavor panel: the hour's card's flavor text under a centered
-//! title, with its name, price, Image and Buy on the row beneath. Home draws
+//! title, with its name, price, Image and the cart on the row beneath. Home draws
 //! it from its model; the public screens draw it over the cached card.
 
-use components::{AlertDialog, DialogAction, LoadFailed};
+use components::{CartButton, LoadFailed, StoreDialog};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::Card;
@@ -15,7 +15,7 @@ use crate::inbound::screens::deck::card::components::image_preview::ImagePreview
 /// The panel for `flavor`, `card` being the one quoted: a card without
 /// flavor text leaves the panel empty, before any card it ghosts, and after a
 /// failed fetch it says so with Retry when the host passes `on_retry`. Image
-/// opens the card's preview and Buy the retailer dialog, both owned here.
+/// opens the card's preview and the cart the store dialog, both owned here.
 #[component]
 pub fn FlavorPanel(
     flavor: Flavor,
@@ -27,19 +27,7 @@ pub fn FlavorPanel(
     let mut show_buy_sheet = use_signal(|| false);
 
     let flavor_data = card.as_ref().map(|c| c.scryfall_data.clone());
-    // Close, then the retailers for the card.
-    let buy_actions: Vec<DialogAction> = std::iter::once(DialogAction::Dismiss(home::CLOSE.into()))
-        .chain(
-            card.as_ref()
-                .map(home::buy_links)
-                .unwrap_or_default()
-                .into_iter()
-                .map(|link| DialogAction::Link {
-                    label: link.label.into(),
-                    href: link.url,
-                }),
-        )
-        .collect();
+    let buy_links = card.as_ref().map(home::buy_links).unwrap_or_default();
 
     rsx! {
         div { class: "container-sm text-center flex-col home-flavor content-enter-delayed",
@@ -67,11 +55,7 @@ pub fn FlavorPanel(
                                 {home::IMAGE}
                             }
                             if quote.price.is_some() {
-                                button {
-                                    class: "card-action-btn",
-                                    onclick: move |_| show_buy_sheet.set(true),
-                                    {home::BUY}
-                                }
+                                CartButton { onclick: move |_| show_buy_sheet.set(true) }
                             }
                         }
                     }
@@ -110,11 +94,11 @@ pub fn FlavorPanel(
 
         ImagePreview { card: preview_card, dismissing: preview_dismissing }
 
-        AlertDialog {
+        StoreDialog {
             open: show_buy_sheet,
-            title: home::BUY_TITLE,
-            actions: buy_actions,
-            {home::BUY_BODY}
+            title: home::BUY_TITLE.to_owned(),
+            body: home::BUY_BODY.to_owned(),
+            links: buy_links,
         }
     }
 }

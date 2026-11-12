@@ -530,7 +530,7 @@ fn the_action_bar_and_more_items_go_where_the_app_goes() {
 }
 
 #[test]
-fn export_and_buy_wait_for_a_card() {
+fn export_and_the_cart_wait_for_a_card() {
     let profile = deck_profile("Empty");
     let mut state = loaded(&profile, deck(profile.clone(), Vec::new()));
     for item in MoreItem::ALL {
@@ -539,21 +539,23 @@ fn export_and_buy_wait_for_a_card() {
     }
     assert_eq!(state.update(Action::More(MoreItem::ExportCards)), []);
     assert_eq!(state.buy_links(), None);
-    assert_eq!(state.update(Action::Buy(Retailer::TcgPlayer)), []);
 }
 
 #[test]
-fn buy_opens_the_retailer_with_the_deck_filled_in() {
+fn the_dock_cart_offers_both_stores_with_the_deck_filled_in() {
     let (profile, built) = two_cards("Krenko");
-    let mut state = loaded(&profile, built);
+    let state = loaded(&profile, built);
     let (tcg, ck) = state.buy_links().unwrap();
     assert_eq!(
-        state.update(Action::Buy(Retailer::TcgPlayer)),
-        [Effect::OpenUrl(tcg)]
+        state.store_links(),
+        Some(crate::buy::store_links(tcg, ck)),
+        "TCGplayer then Card Kingdom, as every store dialog"
     );
+    let empty = deck_profile("Empty");
     assert_eq!(
-        state.update(Action::Buy(Retailer::CardKingdom)),
-        [Effect::OpenUrl(ck)]
+        loaded(&empty, deck(empty.clone(), Vec::new())).store_links(),
+        None,
+        "an empty deck has no cart"
     );
 }
 
@@ -927,11 +929,6 @@ fn the_copy_matches_the_app() {
         ["Average P/T", "Lands", "Average mana value"]
     );
     assert_eq!([CLOSE, CANCEL], ["Close", "Cancel"]);
-    assert_eq!(BUY, "Buy");
-    assert_eq!(
-        Retailer::ALL.map(Retailer::label),
-        ["TCGplayer \u{2197}", "Card Kingdom \u{2197}"]
-    );
     assert_eq!(
         CLONE_BODY,
         "Make an exact copy of your deck under a new name."
