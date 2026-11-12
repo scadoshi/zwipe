@@ -56,6 +56,7 @@ pub const UPCOMING: &[Release] = &[
             "On the web, an Oracle tag's examples take h, j, d and v, ? opens the hint of the open modal, and a card slides clear of its details where it fits",
             "On the web's deck page, Art grays out while Stacks is on, since stacks always show art",
             "Buying from TCGplayer adds each card in the printing you picked",
+            "On the web's deck page, cards ease in, out and into new groups when a board is shown or hidden or the grouping changes",
         ],
     },
     Release {
