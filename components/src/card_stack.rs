@@ -15,6 +15,9 @@ use zwipe_ui::deck_cards::stacks;
 use crate::CardProxy;
 use crate::meld::{MeldSource, MeldToggle};
 
+/// The class that draws a covered card's [`CardProxy`] as its top strip only.
+const STRIP_CLASS: &str = "card-proxy-strip";
+
 /// One card in a [`CardStack`], with its copies in the deck.
 #[derive(Debug, Clone, PartialEq)]
 pub struct StackCard {
@@ -107,10 +110,13 @@ pub fn CardStack(
                                         },
                                     }
                                 } else {
+                                    // A covered card shows only its strip: the
+                                    // name and cost on one line.
                                     CardProxy {
                                         sd: proxy_card.scryfall_data,
                                         face,
                                         profile: Some(proxy_card.card_profile),
+                                        class: if exposed { String::new() } else { STRIP_CLASS.to_owned() },
                                     }
                                 }
                                 if qty > 1 {
