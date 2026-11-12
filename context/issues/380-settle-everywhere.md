@@ -1,6 +1,6 @@
 # 380. Lists and groups snap when a control reorders, adds or removes them
 
-State: fixing | Owner: laptop | PR: - | Build seen: audit builds 9680dcacb (app) and bab3fbcd9 (zwipe.net)
+State: fixing | Owner: laptop | PR: #603 | Build seen: audit builds 9680dcacb (app) and bab3fbcd9 (zwipe.net)
 
 ## Report
 The ease audit (`~/ease-audit/README.md`, 2026-11-12) found moves that happen in one frame. Part A, via the composer: one shared settle, from #578's script, for every reorder, insert and remove that snaps:
@@ -12,7 +12,7 @@ The ease audit (`~/ease-audit/README.md`, 2026-11-12) found moves that happen in
 The settle uses the same tokens (`--ease-enter`, 250ms), does nothing under reduced motion, and leaves nothing jumping after it settles.
 
 ## Fix
-laptop, web and zwipe.net: `components::settle` replaces the deck page's own settle script, installed once at the web and zwipe.net roots.
+laptop, #603, web and zwipe.net: `components::settle` replaces the deck page's own settle script, installed once at the web and zwipe.net roots.
 - **What it moves.** A container marked `data-settle-scope` holds things named by `data-row`, `data-fold` or `data-settle-key`. A click inside `data-settle`, on a button in a scope or a toast, or on a fold's header starts a 900ms watch, as do typing in a `data-settle` box and the deck page's keys.
 - **When it measures.** During the watch, every frame and every DOM change compare each thing's layout with where it last was. A DOM change is caught by a mutation observer, which runs in the task that made the change, so moves start before the browser paints it (as in #586).
 - **How it moves.** A jump over 40px slides from where the thing showed. Each jump adds its own move (`composite: 'add'`), so a group that jumps columns while a fold eases carries on smoothly instead of restarting. New things fade in, and things that left fade out as a copy.
