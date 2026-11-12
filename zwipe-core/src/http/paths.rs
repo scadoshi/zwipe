@@ -11,6 +11,7 @@
 
 use uuid::Uuid;
 
+use crate::domain::card::oracle_tag_examples::OracleTagSlug;
 use crate::http::endpoint::Method;
 
 // == health ==
@@ -120,6 +121,10 @@ pub fn card_route(scryfall_data_id: Uuid) -> String {
 
 pub fn printings_route(oracle_id: Uuid) -> String {
     format!("{CARD_ROUTE}/{oracle_id}/printings")
+}
+
+pub fn oracle_tag_examples_route(slug: &OracleTagSlug, offset: u32) -> String {
+    format!("{CARD_ROUTE}/oracle-tag/{slug}/examples?offset={offset}")
 }
 
 pub fn deck_route(deck_id: Uuid) -> String {
@@ -304,6 +309,11 @@ mod tests {
 
         assert_eq!(card_route(a), format!("/api/card/{sa}"));
         assert_eq!(printings_route(a), format!("/api/card/{sa}/printings"));
+        let slug: OracleTagSlug = "spot-removal".parse().unwrap();
+        assert_eq!(
+            oracle_tag_examples_route(&slug, 25),
+            "/api/card/oracle-tag/spot-removal/examples?offset=25"
+        );
         assert_eq!(deck_route(a), format!("/api/deck/{sa}"));
         assert_eq!(deck_tokens_route(a), format!("/api/deck/{sa}/tokens"));
         assert_eq!(deck_profile_route(a), format!("/api/deck/profile/{sa}"));

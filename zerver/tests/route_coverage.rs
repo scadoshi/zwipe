@@ -17,10 +17,10 @@ use zwipe_core::http::paths::{
     FEATURED_FLAVOR_ROUTE, FIXED_ROUTES, add_commander_maybeboard_card_route, card_route,
     clear_deck_suppressions_route, clone_deck_route, create_deck_card_route, deck_profile_route,
     deck_route, deck_tokens_route, delete_deck_card_route, delete_deck_route,
-    import_archidekt_deck_route, import_deck_cards_route, printings_route,
-    remove_commander_maybeboard_card_route, search_deck_cards_route, share_deck_route,
-    shared_deck_route, skip_deck_card_route, undismiss_commander_route, unskip_deck_card_route,
-    update_deck_card_route, update_deck_route,
+    import_archidekt_deck_route, import_deck_cards_route, oracle_tag_examples_route,
+    printings_route, remove_commander_maybeboard_card_route, search_deck_cards_route,
+    share_deck_route, shared_deck_route, skip_deck_card_route, undismiss_commander_route,
+    unskip_deck_card_route, update_deck_card_route, update_deck_route,
 };
 
 fn http_method(method: Method) -> HttpMethod {
@@ -128,6 +128,10 @@ async fn every_id_carrying_route_matches_the_contract(pool: sqlx::PgPool) {
         (Method::Get, card_route(id)),
         (Method::Get, printings_route(id)),
         (Method::Get, shared_deck_route(id)),
+        (
+            Method::Get,
+            oracle_tag_examples_route(&"burn".parse().unwrap(), 0),
+        ),
     ] {
         let (status, _) = app.send(http_method(method), &path, None, None).await;
         assert_ne!(

@@ -210,6 +210,16 @@ pub fn public_routes() -> Router<AppState> {
             .finish()
             .expect("rate limit config: burst_size and period must be non-zero"),
     );
+    // A burst of 10, then one every 3s per IP: each example page is a real card search, heavier
+    // than the catalog reads, and Cloudflare caches repeat pages for an hour.
+    let public_examples_config = Arc::new(
+        GovernorConfigBuilder::default()
+            .period(Duration::from_secs(3))
+            .burst_size(10)
+            .key_extractor(CfConnectingIpKeyExtractor)
+            .finish()
+            .expect("rate limit config: burst_size and period must be non-zero"),
+    );
     // 30 req / 2s per IP: public marketing aggregates. CF cache absorbs most
     // traffic; this guards origin if someone bypasses CF or warms many POPs.
     let public_marketing_config = Arc::new(
@@ -403,6 +413,16 @@ pub fn public_routes() -> Router<AppState> {
                         .route("/sets", get(card::get_sets))
                         .layer(
                             GovernorLayer::new(public_card_config).error_handler(stable_rate_limit),
+                        )
+                        .layer(hourly_cache_layer()),
+                )
+                .nest(
+                    "/card/oracle-tag",
+                    Router::new()
+                        .route("/{slug}/examples", get(card::get_oracle_tag_examples))
+                        .layer(
+                            GovernorLayer::new(public_examples_config)
+                                .error_handler(stable_rate_limit),
                         )
                         .layer(hourly_cache_layer()),
                 )

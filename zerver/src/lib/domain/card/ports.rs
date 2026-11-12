@@ -518,6 +518,14 @@ pub trait CardService: Clone + Send + Sync + 'static {
         user_id: uuid::Uuid,
     ) -> impl Future<Output = Result<Vec<Card>, SearchCardsError>> + Send;
 
+    /// One page of an oracle tag's example cards for a reader with no account: the search
+    /// [`examples_query`](zwipe_core::domain::card::oracle_tag_examples::examples_query) builds,
+    /// with no user's settings.
+    fn search_oracle_tag_examples(
+        &self,
+        request: &CardQuery,
+    ) -> impl Future<Output = Result<Vec<Card>, SearchCardsError>> + Send;
+
     /// Searches for commanders (`context/archive/commander_select_ordering.md`):
     /// popularity-ordered, banded + wildcarded per user per day, token-free.
     fn search_commanders(

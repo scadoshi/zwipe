@@ -7,6 +7,7 @@ use uuid::Uuid;
 use crate::domain::card::Card;
 use crate::domain::card::card_role::CardRoleView;
 use crate::domain::card::oracle_tag::OracleTag;
+use crate::domain::card::oracle_tag_examples::OracleTagSlug;
 use crate::domain::card::scryfall_data::universe::UbFranchiseView;
 use crate::domain::card::search_card::card_filter::CardQuery;
 use crate::http::endpoint::{Endpoint, Method};
@@ -100,6 +101,24 @@ impl Endpoint for GetPrintings {
     type Response = Vec<Card>;
     fn path(&self) -> Cow<'static, str> {
         Cow::Owned(paths::printings_route(self.0))
+    }
+}
+
+/// One page of an oracle tag's example cards, from `offset`, for a reader with no account.
+#[derive(Debug)]
+pub struct GetOracleTagExamples {
+    /// The tag.
+    pub slug: OracleTagSlug,
+    /// How many examples come before this page.
+    pub offset: u32,
+}
+impl Endpoint for GetOracleTagExamples {
+    const METHOD: Method = Method::Get;
+    const AUTH: bool = false;
+    type Request = ();
+    type Response = Vec<Card>;
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Owned(paths::oracle_tag_examples_route(&self.slug, self.offset))
     }
 }
 

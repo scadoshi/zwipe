@@ -19,6 +19,8 @@ pub mod fetch_keyword_reminders;
 pub mod fetch_keywords;
 /// Fetch all available languages.
 pub mod fetch_languages;
+/// Fetch one page of an oracle tag's example cards, with no account.
+pub mod fetch_oracle_tag_examples;
 /// Fetch the oracle tag catalog.
 pub mod fetch_oracle_tags;
 /// Fetch all normalized oracle text words.

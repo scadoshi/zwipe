@@ -228,6 +228,13 @@ impl<R: CardRepository> CardService for Service<R> {
             .await
     }
 
+    async fn search_oracle_tag_examples(
+        &self,
+        request: &CardQuery,
+    ) -> Result<Vec<Card>, SearchCardsError> {
+        self.repo.search_cards(request).await
+    }
+
     async fn search_commanders(
         &self,
         request: &CardQuery,
