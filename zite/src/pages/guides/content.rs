@@ -621,7 +621,7 @@ pub(crate) static GUIDES: &[Guide] = &[
                 caption: None,
             },
             Block::Bullets(&[
-                "`Image` shows the card full size.",
+                "[[card-art]] shows the card full size.",
                 "`Printings` swaps the printing, and your pick carries into Create deck.",
                 "`Create deck` starts a new deck with that commander already in the command zone and the format set to Commander.",
                 "`Remove` takes it off the list.",
@@ -1027,7 +1027,7 @@ pub(crate) static GUIDES: &[Guide] = &[
             ),
             Block::H2("Star a card"),
             Block::P(
-                "In a deck's card list, expand a card's row and tap Star. A gold ★ marks the row; Unstar frees the slot.",
+                "In a deck's card list, expand a card's row and tap [[star]]. A gold ★ marks the row; tapping [[star]] again frees the slot.",
             ),
             Block::Image {
                 file: "deck-mvps/01-featured-strip.webp",

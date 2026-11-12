@@ -63,6 +63,7 @@ pub const UPCOMING: &[Release] = &[
             "zwipe.net's shared deck is the web app's deck page, read only",
             "The preview cards for zwipe.net and app.zwipe.net links no longer underline Magic: The Gathering",
             "On a phone, zwipe.net's shared deck page shows its profile or its cards, under a Profile and Cards switch",
+            "A card's Image, Flip, Meld and Star buttons and the Printings Select are icons, the star filling in gold when the card is starred",
         ],
     },
     Release {

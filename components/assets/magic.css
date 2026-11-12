@@ -839,6 +839,37 @@ i.ms.ms-cost.ms-gp {
         color 0.15s;
 }
 
+/* A card's icon buttons (CardIconButton: Image, Flip, Meld, the Star
+   toggle): a text button's box around the icon. The icon draws a fifth
+   larger than the text, and the padding gives that room back, so the button
+   stands exactly as high as Printings beside it. */
+.card-action-btn.card-action-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: calc(0.2rem - 0.1em) 0.4rem;
+}
+
+.card-action-icon > .action-dock-icon {
+    width: 1.2em;
+    height: 1.2em;
+}
+
+/* The Star toggle: an outline star in the text's color, filled in the
+   warning gold the Star hint draws in while the card is starred. */
+.card-action-icon[data-action="star"] > .action-dock-icon {
+    stroke-linejoin: round;
+}
+
+.card-action-btn.card-action-icon[data-action="star"][aria-pressed="true"] {
+    border-color: var(--color-warning);
+    color: var(--ink-color-warning, var(--color-warning));
+}
+
+.card-action-icon[data-action="star"][aria-pressed="true"] > .action-dock-icon {
+    fill: currentColor;
+}
+
 @media (hover: hover) {
     .card-action-btn:hover {
         border-color: var(--palette-2);
@@ -1491,6 +1522,19 @@ i.ms.ms-cost.ms-gp {
 
 .card-flip-button:active {
     transform: scale(0.95);
+}
+
+/* The Flip and Meld buttons over a card image draw their icon one text
+   line tall, as the details' icon buttons do. */
+.card-flip-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.card-flip-button > .action-dock-icon {
+    width: 1.2em;
+    height: 1.2em;
 }
 
 /* ---- Changelog (components::Changelog) ---- */

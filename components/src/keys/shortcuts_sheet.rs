@@ -9,6 +9,7 @@ use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_ui::shortcuts::{self, GlobalKey, SheetRow};
 
+use crate::hint::KeyGlyph;
 use crate::keys::guard;
 use crate::media::use_computer;
 use crate::{BottomSheet, DialogAction, HintKey, SheetFrame, SheetWide};
@@ -145,7 +146,15 @@ pub fn ShortcutsSheet(open: Signal<bool>) -> Element {
                                     }
                                 }
                             }
-                            span { class: "web-shortcut-does", "{does}" }
+                            // A row that names an icon button shows its icon, never words.
+                            if let Some(icon) = shortcuts::row_icon(does) {
+                                span { class: "web-shortcut-does",
+                                    HintKey { KeyGlyph { icon } }
+                                    span { class: "sr-only", {shortcuts::row_label(does)} }
+                                }
+                            } else {
+                                span { class: "web-shortcut-does", "{does}" }
+                            }
                         }
                     }
                 }

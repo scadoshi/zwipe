@@ -16,6 +16,9 @@ pub const UNDO: &str = "undo";
 /// A meld half's Meld toggle: the details' and the card image's own.
 pub const MELD: &str = "meld";
 
+/// A deck card's Star toggle.
+pub const STAR: &str = "star";
+
 /// What the flip key presses, the first the card shows: its flip control, else, a card with one
 /// face, its Meld toggle.
 pub const FLIP_OR_MELD: [&str; 2] = [FLIP, MELD];

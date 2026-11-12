@@ -106,6 +106,14 @@ pub enum KeyIcon {
     Share,
     /// The buy button's cart.
     Cart,
+    /// The Image button's card art: a card's frame with a sun over a hill.
+    CardArt,
+    /// The Flip button's two arrows turning over each other.
+    Flip,
+    /// The Meld button's two lines merging into one.
+    Meld,
+    /// The Star toggle's star: an outline, filled while the card is starred.
+    Star,
     /// The Account button's person.
     Person,
     /// The Settings button's cog.
@@ -124,7 +132,7 @@ pub enum KeyIcon {
 
 impl KeyIcon {
     /// Every icon, in [`KeyIcon::name`] order.
-    pub const ALL: [Self; 21] = [
+    pub const ALL: [Self; 25] = [
         Self::Plus,
         Self::Minus,
         Self::Funnel,
@@ -139,6 +147,10 @@ impl KeyIcon {
         Self::Clone,
         Self::Share,
         Self::Cart,
+        Self::CardArt,
+        Self::Flip,
+        Self::Meld,
+        Self::Star,
         Self::Person,
         Self::Cog,
         Self::Info,
@@ -174,6 +186,10 @@ impl KeyIcon {
             Self::Clone => "clone",
             Self::Share => "share",
             Self::Cart => "cart",
+            Self::CardArt => "card-art",
+            Self::Flip => "flip",
+            Self::Meld => "meld",
+            Self::Star => "star",
             Self::Person => "person",
             Self::Cog => "cog",
             Self::Info => "info",
@@ -394,6 +410,14 @@ mod tests {
         }
         assert_eq!(KeyIcon::from_name("pencil"), Some(KeyIcon::Edit));
         assert_eq!(KeyIcon::from_name("funel"), None);
+        assert_eq!(
+            KeyIcon::from_name("card-art"),
+            Some(KeyIcon::CardArt),
+            "the Image button's icon"
+        );
+        assert_eq!(KeyIcon::from_name("flip"), Some(KeyIcon::Flip));
+        assert_eq!(KeyIcon::from_name("meld"), Some(KeyIcon::Meld));
+        assert_eq!(KeyIcon::from_name("star"), Some(KeyIcon::Star));
         assert_eq!(KeyIcon::from_name(""), None);
     }
 

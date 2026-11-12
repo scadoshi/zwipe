@@ -261,7 +261,7 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
                     text(" undoes"),
                 ]),
                 bullet(vec![
-                    key_in("Star", Role::Warning),
+                    icon_key_in(KeyIcon::Star, Role::Warning),
                     text(
                         " marks up to three MVPs. Suggestions lean toward cards that share their roles",
                     ),

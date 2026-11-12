@@ -158,7 +158,7 @@ pub fn sheet_rows(screen: &ShortcutsScreen) -> Vec<SheetRow> {
             let rest: [(&'static [&'static str], &'static str); 5] = [
                 (&["p"], "Printings"),
                 (&["d"], "Card details"),
-                (&["v"], "Flip card"),
+                (&["v"], "[[flip]]"),
                 (&["f"], "Filter"),
                 (&["r"], "Refresh"),
             ];
@@ -175,7 +175,7 @@ pub fn sheet_rows(screen: &ShortcutsScreen) -> Vec<SheetRow> {
             (&["←", "h"], "Next"),
             (&["↓", "j"], "Back one"),
             (&["d"], "Card details"),
-            (&["v"], "Flip card"),
+            (&["v"], "[[flip]]"),
         ],
         ShortcutsScreen::CardRows => card_read_rows().to_vec(),
     };
@@ -386,7 +386,7 @@ mod tests {
                 "Undo",
                 "Printings",
                 "Card details",
-                "Flip card",
+                "[[flip]]",
                 "Filter",
                 "Refresh",
                 "Synergy on or off",
