@@ -14,6 +14,7 @@
 
 pub mod guide;
 pub mod one_time;
+pub mod shared_deck;
 pub mod topics;
 
 pub use self::one_time::SwipeSelectMode;
@@ -103,6 +104,8 @@ pub enum KeyIcon {
     Clone,
     /// The share button's box with an arrow rising out of it.
     Share,
+    /// The buy button's cart.
+    Cart,
     /// The Account button's person.
     Person,
     /// The Settings button's cog.
@@ -121,7 +124,7 @@ pub enum KeyIcon {
 
 impl KeyIcon {
     /// Every icon, in [`KeyIcon::name`] order.
-    pub const ALL: [Self; 20] = [
+    pub const ALL: [Self; 21] = [
         Self::Plus,
         Self::Minus,
         Self::Funnel,
@@ -135,6 +138,7 @@ impl KeyIcon {
         Self::Edit,
         Self::Clone,
         Self::Share,
+        Self::Cart,
         Self::Person,
         Self::Cog,
         Self::Info,
@@ -169,6 +173,7 @@ impl KeyIcon {
             Self::Edit => "pencil",
             Self::Clone => "clone",
             Self::Share => "share",
+            Self::Cart => "cart",
             Self::Person => "person",
             Self::Cog => "cog",
             Self::Info => "info",

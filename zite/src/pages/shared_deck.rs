@@ -1,8 +1,11 @@
 use std::collections::{HashMap, HashSet};
 
 use chrono::Utc;
+use components::hint::ContentHintDialog;
 use components::icons::DockIcon;
-use components::keys::{ShortcutsList, use_offer_shortcuts, use_page_keys};
+use components::keys::{
+    ShortcutsList, use_global_keys, use_offer_shortcuts, use_page_keys, use_shortcuts_action,
+};
 use components::{
     BudgetBody, CART, CardFilterPanel, CardsViewSwitch, Chip, CurrencyChips, DeckCardsView,
     DeckControls, DeckFacts, DeckFold, DeckHead, DeckPage, DeckRowHost, DeckStackDrawer,
@@ -30,6 +33,7 @@ use zwipe_ui::deck_cards::stacks::{
 use zwipe_ui::deck_cards::{self, Boards, Zone, listing};
 use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::filter::picker::Sources;
+use zwipe_ui::hint::shared_deck as hint_copy;
 use zwipe_ui::shortcuts::{self, CardKey, Editable};
 use zwipe_ui::stores::catalog::{Catalog, Kind};
 use zwipe_ui::{buy, filter};
@@ -297,6 +301,10 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
             .collect(),
         note: Some(shortcuts::DECK_CARDS_NOTE),
     });
+    // `?` opens the page's hint, whose keyboard button opens the shortcuts sheet on a computer.
+    let mut hint_open = use_signal(|| false);
+    use_global_keys(Some(use_callback(move |()| hint_open.set(true))));
+    let shortcuts_action = use_shortcuts_action();
     use_page_keys(use_callback(move |key: String| {
         if shortcuts::card_key(&key) == Some(CardKey::Filter) {
             filter_open.set(true);
@@ -685,6 +693,11 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
         }
         if let Some(card) = printing() {
             PrintingSheet { key: "{card.scryfall_data.id}", card, open: printing_open }
+        }
+        ContentHintDialog {
+            open: hint_open,
+            content: hint_copy::content(),
+            actions: shortcuts_action.into_iter().collect::<Vec<_>>(),
         }
     }
 }

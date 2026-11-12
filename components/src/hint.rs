@@ -107,6 +107,7 @@ pub fn KeyGlyph(icon: KeyIcon) -> Element {
         KeyIcon::Plus => PLUS,
         KeyIcon::Minus => MINUS,
         KeyIcon::Funnel => FUNNEL,
+        KeyIcon::Cart => crate::CART,
         KeyIcon::Undo => UNDO,
         KeyIcon::Eraser => ERASER,
         KeyIcon::Refresh => REFRESH,
