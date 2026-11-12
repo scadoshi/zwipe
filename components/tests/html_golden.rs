@@ -643,7 +643,6 @@ fn card_stack_revealed() {
                 CardStack {
                     cards,
                     revealed: Some(uuid::Uuid::from_u128(2)),
-                    open: Some(uuid::Uuid::from_u128(3)),
                     on_hover: move |_| {},
                     on_leave: move |_| {},
                     on_select: move |_| {},

@@ -31,8 +31,8 @@ pub struct StackCard {
 }
 
 /// The stack of `cards`, top to bottom. `revealed` shows in full, the cards
-/// after it moving down to make room; `open` outlines the card whose details
-/// are up while it shows in full.
+/// after it moving down to make room, and floats once it has settled: a small
+/// lift and a slow sway, which mark it in place of an outline.
 /// A pointer over a card or focus on it calls `on_hover` and leaving calls
 /// `on_leave`; a click or Enter calls `on_select`.
 ///
@@ -49,7 +49,6 @@ pub struct StackCard {
 pub fn CardStack(
     cards: Vec<StackCard>,
     #[props(default)] revealed: Option<Uuid>,
-    #[props(default)] open: Option<Uuid>,
     #[props(default)] dealing: bool,
     #[props(default)] on_hover: Option<EventHandler<Uuid>>,
     #[props(default)] on_leave: Option<EventHandler<Uuid>>,
@@ -111,8 +110,8 @@ pub fn CardStack(
                     if shifted {
                         class.push_str(" shifted");
                     }
-                    if exposed && open == Some(id) {
-                        class.push_str(" open");
+                    if revealed == Some(id) {
+                        class.push_str(" revealed");
                     }
                     let label = if qty > 1 { format!("{name}, {qty} copies") } else { name };
                     rsx! {
@@ -126,7 +125,7 @@ pub fn CardStack(
                             style: dealing.then(|| format!("--deal-i: {index}")),
                             button {
                                 r#type: "button",
-                                class: "card-stack-card",
+                                class: if revealed == Some(id) { "card-stack-card floatable floating" } else { "card-stack-card floatable" },
                                 "aria-label": "{label}",
                                 onmouseenter: move |_| hover(id),
                                 onmouseleave: move |_| leave(id),

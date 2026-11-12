@@ -134,6 +134,7 @@ Who checked, on which live build, what they saw.
 | [410](410-printings-edges.md) | Printings fades its cards out short of the sheet's edges | fixing | laptop | issue/410-printings-edges |
 | [417](417-featured-hover.md) | The deck head's featured cards don't answer the mouse | fixing | laptop | issue/417-featured-hover |
 | [420](420-changelog-under-about.md) | zwipe.net's Changelog sits in the top nav | fixing | thinker | - |
+| [421](421-stack-float.md) | The revealed card in Stacks sits still under an outline | fixing | laptop | issue/421-stack-float |
 
 ## Waiting for live verification
 

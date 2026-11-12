@@ -652,7 +652,6 @@ pub fn DeckStacks(
                             cards,
                             dealing,
                             revealed: shown.revealed_in(&ids),
-                            open: shown.open(),
                             on_hover,
                             on_leave,
                             on_select: move |id| if touch { details.tap(id) } else { details.click(id) },

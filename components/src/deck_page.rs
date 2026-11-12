@@ -298,7 +298,7 @@ pub fn FeaturedCard(
             if has_image {
                 // The flip control stops its click, so flipping never opens.
                 div {
-                    class: "deck-head-card-image",
+                    class: "deck-head-card-image floatable float-on-hover",
                     onclick: move |_| {
                         if let Some(open) = on_open {
                             open.call((sd_open.clone(), face()));
