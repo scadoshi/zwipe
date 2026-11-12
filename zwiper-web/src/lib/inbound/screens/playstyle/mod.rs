@@ -309,8 +309,10 @@ pub fn Playstyle() -> Element {
     let folds = wide().then_some(folded);
     let show_chips = rsx! {
         ShowIdentityChips { active_identity, identities: identities(),
+            // Stacks always show art, so the chip grays out and keeps its state.
             Chip {
                 selected: show_row_art(),
+                disabled: view() == CardsView::Stacks,
                 onclick: move |_| show_row_art.toggle(),
                 "Art"
             }
