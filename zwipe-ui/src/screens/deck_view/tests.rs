@@ -567,7 +567,8 @@ fn buy_links_put_the_profiles_command_zone_first() {
     let (tcg, ck) = state.buy_links().unwrap();
     assert_eq!(
         tcg,
-        "https://www.tcgplayer.com/massentry?c=1+Krenko%2C+Mob+Boss||1+Sol+Ring||1+Opt"
+        "https://www.tcgplayer.com/massentry?productline=Magic&c=1+Krenko%2C+Mob+Boss||1-91237||1-91237",
+        "each card's printing by its TCGplayer product, the commander by name with no card loaded"
     );
     assert_eq!(
         ck,
