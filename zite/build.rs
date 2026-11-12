@@ -1,4 +1,4 @@
-//! Build script: checks `GUIDE_SLUGS` against the guides in `src/pages/guides/content.rs`
+//! Build script: checks `GUIDE_SLUGS` against the guides in zwipe-core's `content::guides`
 //! and writes `public/sitemap.xml`.
 
 #![expect(
@@ -29,7 +29,7 @@ const ROUTES: &[(&str, &str, &str)] = &[
 ];
 
 /// Guide article slugs, each rendered at `/guides/<slug>/` by `GuidePage`.
-/// Checked against `GUIDES` in `src/pages/guides/content.rs` at build time by
+/// Checked against `GUIDES` in zwipe-core's `content/guides/mod.rs` at build time by
 /// [`assert_guide_slugs_match`], so a new guide can't quietly miss the sitemap.
 const GUIDE_SLUGS: &[&str] = &[
     "getting-started",
@@ -65,7 +65,7 @@ fn main() {
 /// missing here is invisible to search engines, and the omission is silent:
 /// the page still renders, so nothing else catches it.
 fn assert_guide_slugs_match() {
-    const CONTENT: &str = "src/pages/guides/content.rs";
+    const CONTENT: &str = "../zwipe-core/src/content/guides/mod.rs";
     println!("cargo:rerun-if-changed={CONTENT}");
     let src = std::fs::read_to_string(CONTENT).expect("failed to read guides content.rs");
 

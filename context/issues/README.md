@@ -129,6 +129,7 @@ Who checked, on which live build, what they saw.
 | [408](408-stack-header-wrap.md) | Stack headers cut long names short, and the cart sits far from the price | fixing | halo | nits/halo-408 |
 | [407](407-byline-chip.md) | The shared deck's owner sits on its own line, not as a chip | fixing | laptop | - |
 | [414](414-sheet-icons-named.md) | The shortcuts sheet's icon rows show no names | fixing | halo | nits/halo-414 |
+| [419](419-shared-guides.md) | Guides live only on zwipe.net | fixing | halo | release, in phases |
 
 ## Waiting for live verification
 

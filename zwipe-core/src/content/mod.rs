@@ -6,3 +6,4 @@
 //! nothing external.
 
 pub mod changelog;
+pub mod guides;

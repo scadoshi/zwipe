@@ -11,8 +11,8 @@ mod content;
 
 use components::hint::KeyGlyph;
 use components::{ClearWrap, GalleryFooter, GalleryFrame, HintKey, Panel};
-use content::{Block, GUIDES, Guide};
 use dioxus::prelude::*;
+use zwipe_core::content::guides::{Block, GUIDES, Guide};
 use zwipe_ui::hint::KeyIcon;
 
 use crate::components::{MediaFrame, PageMeta};

@@ -106,14 +106,11 @@ pub const fn swipe_select_slug(mode: SwipeSelectMode) -> &'static str {
 mod tests {
     use super::*;
 
-    /// zite's guide pages, read from its source so a renamed or dropped guide fails here.
-    const ZITE_GUIDES: &str = include_str!("../../../zite/src/pages/guides/content.rs");
-
+    /// Every guide's slug, from the guides both sites draw.
     fn zite_slugs() -> Vec<&'static str> {
-        ZITE_GUIDES
-            .split("slug: \"")
-            .skip(1)
-            .filter_map(|rest| rest.split('"').next())
+        zwipe_core::content::guides::GUIDES
+            .iter()
+            .map(|guide| guide.slug)
             .collect()
     }
 
