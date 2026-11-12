@@ -781,7 +781,7 @@ pub(crate) static GUIDES: &[Guide] = &[
             ),
             Block::H2("Prices and buying"),
             Block::P(
-                "The Budget section shows Total price and Average card price; the currency chip in its header switches USD, EUR, and TIX. Each card lists its prices while you swipe. The Buy row links to TCGplayer and Card Kingdom with the deck filled in.",
+                "The Budget section shows Total price and Average card price; the currency chip in its header switches USD, EUR, and TIX. Each card lists its prices while you swipe. The cart in the deck's action dock sends the whole deck to TCGplayer or Card Kingdom, and each stack's cart sends that stack's cards.",
             ),
         ],
     },

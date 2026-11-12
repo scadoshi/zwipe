@@ -12,8 +12,8 @@ use std::time::Duration;
 
 use components::icons::{CloneIcon, DockIcon, EditIcon, MINUS, PLUS, ShareIcon, UNDO};
 use components::{
-    CartButton, Chip, DeckBand, DeckControls, DeckFacts, DeckFold, DeckHead, DeckPage, DeckSection,
-    DockFilter, FeaturedCard, HoverStackHost, use_hover_stack,
+    CART, CartButton, Chip, DeckBand, DeckControls, DeckFacts, DeckFold, DeckHead, DeckPage,
+    DeckSection, DockFilter, FeaturedCard, HoverStackHost, StoreDialog, use_hover_stack,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -127,6 +127,8 @@ pub fn DeckWidePage(
     let mut view = use_signal(|| CardsViewStore::browser().load());
     // The store dialog a group's cart opens, in the List or the stacks.
     let group_buy = use_group_buy();
+    // The deck's store dialog, from the dock's cart.
+    let mut deck_buy_open = use_signal(|| false);
     let listed_ids = use_memo(move || {
         listing()
             .rows
@@ -369,7 +371,7 @@ pub fn DeckWidePage(
                 .live_warnings(&d.deck_profile, &d.entries, &entries.read())
         })
         .unwrap_or_default();
-    let buy_links = held_deck.as_ref().map(buy::links);
+    let deck_buy = held_deck.as_ref().map(buy::deck_links);
     let has_cards = metrics.is_some();
     let shown = currency();
     let price = metrics.as_ref().and_then(|m| match shown {
@@ -526,7 +528,7 @@ pub fn DeckWidePage(
                             title: "Budget",
                             folded,
                             accessory: has_cards.then(|| rsx! { CurrencyChips { currency } }),
-                            BudgetBody { profile: p.clone(), metrics, buy: buy_links, currency }
+                            BudgetBody { profile: p.clone(), metrics, currency }
                         }
                     }
                     if tag_count(&p) > 0 {
@@ -637,6 +639,14 @@ pub fn DeckWidePage(
                 onclick: move |_| share.set(true),
                 ShareIcon {}
             }
+            if deck_buy.is_some() {
+                button {
+                    class: "action-dock-btn",
+                    "aria-label": buy::CART_LABEL,
+                    onclick: move |_| deck_buy_open.set(true),
+                    DockIcon { path: CART }
+                }
+            }
         }
         CardFilterPanel {
             open: filter_open,
@@ -648,6 +658,14 @@ pub fn DeckWidePage(
             },
         }
         HoverStackHost { stack: hover_stack }
+        if let Some(links) = deck_buy {
+            StoreDialog {
+                open: deck_buy_open,
+                title: buy::DECK_TITLE.to_owned(),
+                body: buy::DECK_BODY.to_owned(),
+                links,
+            }
+        }
         {group_buy_dialog(group_buy)}
         if view() == CardsView::Stacks {
             {stack_details(&ed, &all_rows, &row_meta, stack_details_state, overlays)}

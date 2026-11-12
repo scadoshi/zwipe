@@ -14,6 +14,18 @@ pub const CLOSE: &str = "Close";
 /// The cart button's name for a screen reader and its tooltip.
 pub const CART_LABEL: &str = "Buy";
 
+/// The store dialog's title for one card.
+pub const CARD_TITLE: &str = "Buy card";
+
+/// The store dialog's body for one card.
+pub const CARD_BODY: &str = "Buy this card from a retailer.";
+
+/// The store dialog's title for the whole deck.
+pub const DECK_TITLE: &str = "Buy deck";
+
+/// The store dialog's body for the whole deck.
+pub const DECK_BODY: &str = "Buy this deck's cards from a retailer.";
+
 /// The store dialog's body for a card group's cards, a List band's or a stack's.
 pub const GROUP_BODY: &str = "Buy this group's cards from a retailer.";
 
@@ -51,6 +63,24 @@ pub fn cards_links<'a>(cards: impl IntoIterator<Item = (i32, &'a str)>) -> Vec<B
             "https://www.cardkingdom.com/builder?c={}",
             items.join("%0A")
         ),
+    )
+}
+
+/// The store dialog's links for the deck: the command zone, then the main and side boards, as
+/// [`links`] builds them.
+#[must_use]
+pub fn deck_links(deck: &Deck) -> Vec<BuyLink> {
+    let (tcgplayer, cardkingdom) = links(deck);
+    store_links(tcgplayer, cardkingdom)
+}
+
+/// The store dialog's links for one card named `name`: its `TCGplayer` product page when
+/// `tcgplayer_id` is known, else a one-copy entry, and a one-copy `Card Kingdom` entry.
+#[must_use]
+pub fn card_links(name: &str, tcgplayer_id: Option<i32>) -> Vec<BuyLink> {
+    store_links(
+        tcgplayer_card_url(name, tcgplayer_id),
+        cardkingdom_card_url(name),
     )
 }
 
@@ -240,6 +270,25 @@ mod tests {
         assert_eq!(
             ck,
             "https://www.cardkingdom.com/builder?c=1+Krenko%2C+Mob+Boss%0A1+Sol+Ring%0A4+Lightning+Bolt"
+        );
+    }
+
+    #[test]
+    fn the_deck_and_a_card_offer_both_stores_in_one_order() {
+        let built = deck(deck_profile("Krenko"), vec![card("Sol Ring")]);
+        let (tcg, ck) = links(&built);
+        assert_eq!(deck_links(&built), store_links(tcg, ck));
+        assert_eq!(
+            card_links("Sol Ring", Some(42)),
+            store_links(
+                tcgplayer_card_url("Sol Ring", Some(42)),
+                cardkingdom_card_url("Sol Ring")
+            )
+        );
+        assert_eq!(
+            [CARD_TITLE, DECK_TITLE],
+            ["Buy card", "Buy deck"],
+            "each dialog names what it buys"
         );
     }
 
