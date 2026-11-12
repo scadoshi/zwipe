@@ -7,7 +7,7 @@
 //! the markup has painted, and the page flashes unstyled.
 //!
 //! dx bundles only files inside this crate, so the shared sheets (orangui's
-//! and components') are copied into `assets/sheets`, and a test keeps each
+//! and components', the fonts' among them) are copied into `assets/sheets`, and a test keeps each
 //! copy equal to the string it copies. `tools/gate.sh` rewrites the copies
 //! and stops until they are committed; by hand, after a change to one of them
 //! or a `cargo update -p orangui`, run
@@ -66,8 +66,9 @@ pub const SHEETS: [Asset; 10] = [
     ),
 ];
 
-/// The fonts `01-fonts.css` names, bundled without a hash suffix so its
-/// relative urls and `index.html`'s preloads can name them. Their contents
+/// The fonts `01-fonts.css` (components' `FONTS_CSS`) names, bundled without
+/// a hash suffix so its `/assets/` urls and `index.html`'s preloads can name
+/// them. Their contents
 /// never change, so they need no cache-busting name.
 pub const FONTS: [Asset; 3] = [
     asset!(
@@ -92,8 +93,9 @@ mod tests {
     use crate::inbound::chrome::media;
 
     /// Each copied sheet's file in `assets/sheets`, with the css it copies.
-    fn copies() -> [(&'static str, String); 8] {
+    fn copies() -> [(&'static str, String); 9] {
         [
+            ("01-fonts.css", components::FONTS_CSS.to_owned()),
             ("02-themes.css", components::THEMES_CSS.to_owned()),
             ("03-components.css", components::COMPONENTS_CSS.to_owned()),
             ("04-nav-fold.css", media::nav_fold_css()),
@@ -148,9 +150,7 @@ mod tests {
                 sheet.bundled().absolute_source_path()
             );
         }
-        let linked: Vec<&str> = std::iter::once("01-fonts.css")
-            .chain(copies().into_iter().map(|(file, _)| file))
-            .collect();
+        let linked: Vec<&str> = copies().into_iter().map(|(file, _)| file).collect();
         let mut on_disk: Vec<String> = std::fs::read_dir(crate_dir().join("assets/sheets"))
             .unwrap()
             .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())

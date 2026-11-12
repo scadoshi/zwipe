@@ -2,8 +2,9 @@
 //! pages. The per-token pages (shared deck, verify, confirm email, reset) render in the browser.
 
 use ::components::{
-    BRAND_RESET_JS, COMPONENTS_CSS, Decode, MAGIC_CSS, NAV_GLIDE_JS, NavBar, NavCtaIcon, REVEAL_JS,
-    Replay, SCROLL_FADE_JS, SITE_CSS, THEMES_CSS, ThemeConfig, ThemePicker, use_theme_wipe,
+    BRAND_RESET_JS, COMPONENTS_CSS, Decode, FONTS_CSS, MAGIC_CSS, NAV_GLIDE_JS, NavBar, NavCtaIcon,
+    REVEAL_JS, Replay, SCROLL_FADE_JS, SITE_CSS, THEMES_CSS, ThemeConfig, ThemePicker,
+    use_theme_wipe,
 };
 use dioxus::prelude::*;
 use zwipe_core::domain::user::settings::PipStyle;
@@ -31,6 +32,24 @@ const FAVICON_32: Asset = asset!("/assets/favicon-32x32.png");
 const APPLE_TOUCH_ICON: Asset = asset!("/assets/icon-180.png");
 const MANIFEST: Asset = asset!("/assets/site.webmanifest");
 const Z_LOGO: &str = zwipe_core::domain::logo::Z;
+
+/// The complete `JetBrains Mono` faces components' `FONTS_CSS` names, bundled
+/// without a hash suffix so its `/assets/` urls find them. They are the
+/// app's files, byte for byte, so both sites draw every glyph the same.
+const FONTS: [Asset; 3] = [
+    asset!(
+        "/assets/fonts/jetbrains-mono-400.woff2",
+        AssetOptions::builder().with_hash_suffix(false)
+    ),
+    asset!(
+        "/assets/fonts/jetbrains-mono-500.woff2",
+        AssetOptions::builder().with_hash_suffix(false)
+    ),
+    asset!(
+        "/assets/fonts/jetbrains-mono-700.woff2",
+        AssetOptions::builder().with_hash_suffix(false)
+    ),
+];
 
 /// A store the nav links as an icon pill.
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -325,11 +344,12 @@ fn App() -> Element {
         document::Link { rel: "icon", r#type: "image/png", sizes: "32x32", href: FAVICON_32 }
         document::Link { rel: "apple-touch-icon", href: APPLE_TOUCH_ICON }
         document::Link { rel: "manifest", href: MANIFEST }
-        // Fonts are self-hosted in public/fonts (see the @font-face block in
-        // style.css); preloading the two latin weights starts those fetches
-        // before CSS parsing discovers them, closing the fallback-font flash.
-        document::Link { rel: "preload", href: "/fonts/jetbrains-mono-latin-400-normal.woff2", r#as: "font", r#type: "font/woff2", crossorigin: "anonymous" }
-        document::Link { rel: "preload", href: "/fonts/jetbrains-mono-latin-700-normal.woff2", r#as: "font", r#type: "font/woff2", crossorigin: "anonymous" }
+        // Preloading the two weights the site draws in starts those fetches
+        // before the font rule is parsed, so text rarely shows in a fallback.
+        // The 500 face is bundled for the shared rule and fetched only if used.
+        document::Link { rel: "preload", href: FONTS[0], r#as: "font", r#type: "font/woff2", crossorigin: "anonymous" }
+        document::Link { rel: "preload", href: FONTS[2], r#as: "font", r#type: "font/woff2", crossorigin: "anonymous" }
+        document::Style { {FONTS_CSS} }
         document::Style { {THEMES_CSS} }
         document::Style { {COMPONENTS_CSS} }
         // The kit's dialogs, without the app shell.
@@ -477,6 +497,23 @@ pub fn Footer() -> Element {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_fonts_are_the_app_s_files_and_the_shared_rule_names_them() {
+        let app =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../zwiper-web/assets/fonts");
+        for font in FONTS {
+            let ours = std::path::PathBuf::from(font.bundled().absolute_source_path());
+            let name = ours.file_name().unwrap();
+            assert_eq!(
+                std::fs::read(&ours).unwrap(),
+                std::fs::read(app.join(name)).unwrap(),
+                "{name:?} differs from the app's"
+            );
+            let url = format!("url(/assets/{})", name.to_string_lossy());
+            assert!(FONTS_CSS.contains(&url), "FONTS_CSS does not name {url}");
+        }
+    }
 
     #[test]
     fn the_old_suggested_commanders_slug_redirects_to_playstyle() {
