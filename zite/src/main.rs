@@ -13,10 +13,8 @@ mod api;
 mod components;
 mod pages;
 mod pip_store;
-use pages::{
-    About, Android, Changelog, Community, ConfirmEmail, Contribute, GuidePage, Guides, Home, Ios,
-    NotFound, Privacy, Reset, SharedDeck, SharedDeckPage, Verify,
-};
+mod route;
+use route::Route;
 // Base URLs + contact points live in zwipe-core's `site` module (shared with
 // zwiper and zerver so they can't drift); re-exported so pages keep importing
 // them from crate root. Debug builds resolve the URLs to the local dev servers.
@@ -81,55 +79,6 @@ const APPLE: &str = "M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1
 
 /// The Google Play mark (Simple Icons).
 const GOOGLE_PLAY: &str = "M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 0 1-.61-.92V2.734a1 1 0 0 1 .609-.92zm10.89 10.893l2.302 2.302-10.937 6.333 8.635-8.635zm3.199-3.198l2.807 1.626a1 1 0 0 1 0 1.73l-2.808 1.626L15.206 12l2.492-2.491zM5.864 2.658L16.8 8.99l-2.302 2.302-8.634-8.634z";
-
-#[derive(Routable, Clone, PartialEq)]
-#[rustfmt::skip]
-enum Route {
-    #[route("/")]
-    Home {},
-    #[route("/guides/")]
-    Guides {},
-    #[route("/guides/:slug/")]
-    GuidePage { slug: String },
-    // The Playstyle guide's first slug, linked before the rename.
-    #[redirect("/guides/suggested-commanders", || Route::GuidePage { slug: "playstyle".to_string() })]
-    #[route("/about/")]
-    About {},
-    #[route("/changelog/")]
-    Changelog {},
-    #[route("/contribute/")]
-    Contribute {},
-    #[route("/community/")]
-    Community {},
-    #[redirect("/discord", || Route::Community {})]
-    #[route("/download/android/")]
-    Android {},
-    #[route("/download/ios/")]
-    Ios {},
-    #[route("/privacy/")]
-    Privacy {},
-    // A shared deck, GitHub style. Only the token identifies it; the page
-    // swaps a stale owner or slug for the current ones. The four-segment
-    // shape is the only shared-deck form, clear of the one- and two-segment
-    // pages above.
-    #[route("/:owner/deck/:slug/:token")]
-    SharedDeckPage { owner: String, slug: String, token: String },
-    // The links shipped apps share: the same page, which then moves to the
-    // owner, slug and token form.
-    #[route("/deck/:token")]
-    SharedDeck { token: String },
-    #[route("/verify/:token")]
-    Verify { token: String },
-    #[route("/confirm-email/:token")]
-    ConfirmEmail { token: String },
-    #[route("/reset/:token")]
-    Reset { token: String },
-    // Catch-all LAST so it only matches when nothing above does. The deploy
-    // copies index.html to 404.html, so unknown paths boot the shell and land
-    // here instead of the router's raw match-log dump.
-    #[route("/:..segments")]
-    NotFound { segments: Vec<String> },
-}
 
 #[cfg_attr(
     not(all(feature = "server", not(debug_assertions))),

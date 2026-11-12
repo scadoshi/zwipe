@@ -45,8 +45,7 @@ impl From<&Release> for HttpRelease {
             version: release.version.to_string(),
             date: release
                 .date
-                .map(|date| date.format(DISPLAY_DATE_FORMAT).to_string())
-                .unwrap_or_default(),
+                .map_or_default(|date| date.format(DISPLAY_DATE_FORMAT).to_string()),
             released_on: release.date,
             entries: release.entries.iter().map(ToString::to_string).collect(),
         }

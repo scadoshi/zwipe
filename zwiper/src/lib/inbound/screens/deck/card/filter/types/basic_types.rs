@@ -8,14 +8,8 @@ use super::super::match_mode::MatchMode;
 
 fn read_card_types(fb: &CardQueryBuilder, mode: MatchMode) -> Vec<CardType> {
     match mode {
-        MatchMode::Any => fb
-            .card_type_contains_any()
-            .map(<[_]>::to_vec)
-            .unwrap_or_default(),
-        MatchMode::All => fb
-            .card_type_contains_all()
-            .map(<[_]>::to_vec)
-            .unwrap_or_default(),
+        MatchMode::Any => fb.card_type_contains_any().map_or_default(<[_]>::to_vec),
+        MatchMode::All => fb.card_type_contains_all().map_or_default(<[_]>::to_vec),
     }
 }
 
@@ -35,9 +29,7 @@ fn write_card_types(fb: &mut CardQueryBuilder, mode: MatchMode, values: Vec<Card
 }
 
 fn read_excluded(fb: &CardQueryBuilder) -> Vec<CardType> {
-    fb.card_type_excludes_any()
-        .map(<[_]>::to_vec)
-        .unwrap_or_default()
+    fb.card_type_excludes_any().map_or_default(<[_]>::to_vec)
 }
 
 fn write_excluded(fb: &mut CardQueryBuilder, values: Vec<CardType>) {

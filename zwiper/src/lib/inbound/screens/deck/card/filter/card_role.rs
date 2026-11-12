@@ -38,22 +38,15 @@ pub fn CardRole() -> Element {
     let read_selected = move || -> Vec<String> {
         let fb = filter_builder();
         match mode() {
-            MatchMode::Any => fb
-                .card_roles_contains_any()
-                .map(<[_]>::to_vec)
-                .unwrap_or_default(),
-            MatchMode::All => fb
-                .card_roles_contains_all()
-                .map(<[_]>::to_vec)
-                .unwrap_or_default(),
+            MatchMode::Any => fb.card_roles_contains_any().map_or_default(<[_]>::to_vec),
+            MatchMode::All => fb.card_roles_contains_all().map_or_default(<[_]>::to_vec),
         }
     };
 
     let read_excluded = move || -> Vec<String> {
         filter_builder()
             .card_roles_excludes()
-            .map(<[_]>::to_vec)
-            .unwrap_or_default()
+            .map_or_default(<[_]>::to_vec)
     };
 
     let mut write_card_roles = move |cats: Vec<String>, m: MatchMode| {

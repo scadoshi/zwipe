@@ -27,13 +27,12 @@ impl From<DatabaseCardProfile> for CardProfile {
         let card_roles: Vec<CardRole> = value
             .card_roles
             .and_then(|v| serde_json::from_value::<Vec<String>>(v).ok())
-            .map(|strings| {
+            .map_or_default(|strings| {
                 strings
                     .iter()
                     .filter_map(|s| CardRole::try_from(s.as_str()).ok())
                     .collect()
-            })
-            .unwrap_or_default();
+            });
 
         let oracle_tags = value
             .oracle_tags

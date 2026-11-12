@@ -302,8 +302,7 @@ impl State {
     pub fn totals(&self) -> Vec<Bar> {
         self.activity()
             .filter(|a| activity::has_outcomes(&a.outcomes))
-            .map(|a| activity::outcome_bars(&a.outcomes))
-            .unwrap_or_default()
+            .map_or_default(|a| activity::outcome_bars(&a.outcomes))
     }
 
     /// The share both rate charts show.
@@ -356,8 +355,7 @@ impl State {
     #[must_use]
     pub fn tags_under(&self, role: &str) -> Vec<String> {
         self.activity()
-            .map(|a| activity::tags_under(role, &a.tags))
-            .unwrap_or_default()
+            .map_or_default(|a| activity::tags_under(role, &a.tags))
     }
 
     /// The cards the user keeps passing on, most skipped against other players first. Empty until the activity loads.

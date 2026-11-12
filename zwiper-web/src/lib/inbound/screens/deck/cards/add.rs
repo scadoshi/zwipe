@@ -163,12 +163,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
     // A swipe screen: Shift+H opens the shortcuts sheet here.
     use_offer_shortcuts(ShortcutsScreen::Swipe(ADD_LABELS));
 
-    let context = move || -> AddContext {
-        deck.peek()
-            .as_ref()
-            .map(AddDeck::context)
-            .unwrap_or_default()
-    };
+    let context = move || -> AddContext { deck.peek().as_ref().map_or_default(AddDeck::context) };
     let holds = move |card: &Card| deck.peek().as_ref().is_some_and(|d| d.holds(card));
     let mut bump = move || {
         let next = counter.peek().wrapping_add(1);
@@ -345,8 +340,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         let cards: Vec<Card> = deck
             .peek()
             .as_ref()
-            .map(|d| d.maybeboard.iter().map(|e| e.card.clone()).collect())
-            .unwrap_or_default();
+            .map_or_default(|d| d.maybeboard.iter().map(|e| e.card.clone()).collect());
         let applied = filter.peek().clone();
         let mut shown = Cards::from(cards);
         if !applied.is_empty()
@@ -1001,11 +995,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
         }
     }));
 
-    let ctx = deck
-        .read()
-        .as_ref()
-        .map(AddDeck::context)
-        .unwrap_or_default();
+    let ctx = deck.read().as_ref().map_or_default(AddDeck::context);
     let has_commander = ctx.has_commander;
     let dot = ctx.shows_dot(&filter.read());
     let synergy_on = filter.read().synergy();

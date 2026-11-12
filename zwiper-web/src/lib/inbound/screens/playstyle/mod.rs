@@ -104,8 +104,7 @@ pub fn Playstyle() -> Element {
         let staples = profile
             .read()
             .as_ref()
-            .map(|p| p.staples.iter().map(|s| s.card.clone()).collect::<Vec<_>>())
-            .unwrap_or_default();
+            .map_or_default(|p| p.staples.iter().map(|s| s.card.clone()).collect::<Vec<_>>());
         entries
             .read()
             .iter()
@@ -291,8 +290,7 @@ pub fn Playstyle() -> Element {
     let staple_decks: Vec<StapleDeck> = deck_profiles
         .read()
         .as_ref()
-        .map(|decks| decks.iter().map(StapleDeck::from).collect())
-        .unwrap_or_default();
+        .map_or_default(|decks| decks.iter().map(StapleDeck::from).collect());
     // A suggested commander's printing carries into Create deck; a staple only
     // browses its printings.
     let picks = overlays
@@ -314,8 +312,7 @@ pub fn Playstyle() -> Element {
     let staples: Vec<HttpStaple> = profile
         .read()
         .as_ref()
-        .map(|p| p.staples.clone())
-        .unwrap_or_default();
+        .map_or_default(|p| p.staples.clone());
 
     rsx! {
         ScreenFrame {

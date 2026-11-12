@@ -314,12 +314,8 @@ pub(crate) fn SwipeSelect(
         }
         let mode = mode.peek().clone();
         let filter = filter_builder.peek().clone();
-        let pile = suggested_pile
-            .map(|pile| pile.peek().clone())
-            .unwrap_or_default();
-        let excluded = exclude_oracle_ids
-            .map(|ids| ids.peek().clone())
-            .unwrap_or_default();
+        let pile = suggested_pile.map_or_default(|pile| pile.peek().clone());
+        let excluded = exclude_oracle_ids.map_or_default(|ids| ids.peek().clone());
         driver.dispatch(Action::Open {
             mode,
             filter,

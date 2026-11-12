@@ -1175,8 +1175,7 @@ impl State {
         let deck = self.deck().filter(|_| self.has_cards())?;
         let zone = self
             .profile()
-            .map(|p| buy::command_zone(p, &deck.command_zone_cards))
-            .unwrap_or_default();
+            .map_or_default(|p| buy::command_zone(p, &deck.command_zone_cards));
         let entries: Vec<&DeckEntry> = deck
             .entries
             .iter()
@@ -1207,10 +1206,7 @@ impl State {
     /// a public link.
     #[must_use]
     pub fn share_url(&self) -> Option<String> {
-        let name = self
-            .profile()
-            .map(|p| p.name.to_string())
-            .unwrap_or_default();
+        let name = self.profile().map_or_default(|p| p.name.to_string());
         self.share_token
             .map(|token| view::share_link(&self.owner, &name, token))
     }
@@ -1234,9 +1230,7 @@ impl State {
     /// The Clone dialog's prefill, `{name} (clone)`, empty until the profile loads.
     #[must_use]
     pub fn clone_name(&self) -> String {
-        self.profile()
-            .map(|p| view::clone_name(&p.name))
-            .unwrap_or_default()
+        self.profile().map_or_default(|p| view::clone_name(&p.name))
     }
 }
 

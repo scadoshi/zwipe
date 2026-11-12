@@ -117,8 +117,7 @@ async fn sql_and_core_role_membership_match(pool: sqlx::PgPool) {
     // Pin the cases the seed is built around, so a shared mistake fails too.
     let roles = |slug: &str| -> Vec<&str> {
         core.roles_of(slug)
-            .map(|r| r.iter().map(String::as_str).collect())
-            .unwrap_or_default()
+            .map_or_default(|r| r.iter().map(String::as_str).collect())
     };
     assert_eq!(roles("burn-creature"), ["removal"]);
     assert!(roles("burn-self").is_empty(), "excluded from removal");

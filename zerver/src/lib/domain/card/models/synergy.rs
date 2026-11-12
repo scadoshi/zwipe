@@ -21,8 +21,7 @@ mod tests {
     // A parse failure yields an empty map, which fails the score assertions.
     fn scores_from(payload: serde_json::Value) -> HashMap<String, f64> {
         serde_json::from_value::<SynergyPayload>(payload)
-            .map(SynergyPayload::into_scores)
-            .unwrap_or_default()
+            .map_or_default(SynergyPayload::into_scores)
     }
 
     #[test]

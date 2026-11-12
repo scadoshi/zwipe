@@ -99,22 +99,19 @@ pub fn CardProxy(
     } = ProxyFace::of(&sd, face);
     let keywords = sd.keywords.clone().unwrap_or_default();
     let prices = zwipe_ui::card::info::prices(&sd);
-    let roles: Vec<(String, bool)> = profile
-        .as_ref()
-        .map(|p| {
-            p.card_roles
-                .iter()
-                .map(|slug| {
-                    let tagged = p
-                        .oracle_tags_by_role
-                        .get(slug)
-                        .is_some_and(|t| !t.is_empty());
-                    (card_role::role_label(slug), tagged)
-                })
-                .chain((!p.other_oracle_tags.is_empty()).then(|| ("Other tags".to_owned(), true)))
-                .collect()
-        })
-        .unwrap_or_default();
+    let roles: Vec<(String, bool)> = profile.as_ref().map_or_default(|p| {
+        p.card_roles
+            .iter()
+            .map(|slug| {
+                let tagged = p
+                    .oracle_tags_by_role
+                    .get(slug)
+                    .is_some_and(|t| !t.is_empty());
+                (card_role::role_label(slug), tagged)
+            })
+            .chain((!p.other_oracle_tags.is_empty()).then(|| ("Other tags".to_owned(), true)))
+            .collect()
+    });
     rsx! {
         div { class: "card-proxy {class}", role: "img", "aria-label": "{name}",
             div { class: "card-proxy-fit",

@@ -1442,8 +1442,7 @@ impl State {
             UndoAction::QuantityChanged { card_id, net, .. } => {
                 let mut effects = net
                     .checked_neg()
-                    .map(|inverse| self.tap(card_id, inverse, false))
-                    .unwrap_or_default();
+                    .map_or_default(|inverse| self.tap(card_id, inverse, false));
                 effects.push(toast);
                 effects
             }

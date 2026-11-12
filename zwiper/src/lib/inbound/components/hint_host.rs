@@ -41,7 +41,7 @@ pub fn HintHost() -> Element {
     rsx! {
         AlertDialog {
             open,
-            title: topic.map(HintTopic::title).unwrap_or_default().to_string(),
+            title: topic.map_or_default(HintTopic::title).to_string(),
             actions: vec![DialogAction::Dismiss("Got it".into())],
             if let Some(topic) = topic {
                 {body(topic)}

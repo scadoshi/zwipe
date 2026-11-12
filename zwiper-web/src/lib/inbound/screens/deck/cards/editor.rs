@@ -397,8 +397,7 @@ pub(crate) fn use_deck_editor(deck_id: Uuid, on_failure: LoadFailure) -> Editor 
                         .peek()
                         .iter()
                         .find(|e| e.deck_card.scryfall_data_id == card_id)
-                        .map(|e| e.card.scryfall_data.name.clone())
-                        .unwrap_or_default();
+                        .map_or_default(|e| e.card.scryfall_data.name.clone());
                     match reply {
                         Ok(_) if burst.record => undo.write().push(
                             deck_id,

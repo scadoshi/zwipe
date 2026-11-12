@@ -76,8 +76,7 @@ pub fn DeckDialogsHost(
         let owner = session
             .peek()
             .as_ref()
-            .map(|s| s.user.username.to_string())
-            .unwrap_or_default();
+            .map_or_default(|s| s.user.username.to_string());
         share_link(&owner, deck, token)
     };
     let copy_link = move |token: Uuid| {

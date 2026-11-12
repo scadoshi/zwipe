@@ -281,8 +281,7 @@ fn CoverFlowSheet(
     };
     let prices = selected
         .as_ref()
-        .map(|c| info::prices(&c.scryfall_data))
-        .unwrap_or_default();
+        .map_or_default(|c| info::prices(&c.scryfall_data));
 
     rsx! {
         div { class: "web-flow",

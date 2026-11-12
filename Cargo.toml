@@ -77,9 +77,6 @@ pedantic = { level = "warn", priority = -1 }
 module_name_repetitions = "allow"
 # Library crates flip this to "warn": builders and pure functions get #[must_use].
 must_use_candidate = "allow"
-# Clippy 1.100 widened this to map(..).unwrap_or_default(), whose fix (map_or_default)
-# needs 1.100; allowed until every machine is on it.
-map_unwrap_or = "allow"
 
 # Docs: # Errors and # Panics sections everywhere.
 missing_errors_doc = "warn"

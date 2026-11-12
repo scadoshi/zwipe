@@ -663,8 +663,7 @@ impl State {
     pub fn role_bars(&self) -> Vec<Bar> {
         self.profile
             .as_ref()
-            .map(|p| playstyle::role_bars(&p.roles, &p.tags))
-            .unwrap_or_default()
+            .map_or_default(|p| playstyle::role_bars(&p.roles, &p.tags))
     }
 
     /// The oracle tags under `role` that its bar reveals, highest score first.
@@ -672,8 +671,7 @@ impl State {
     pub fn role_tags(&self, role: &str) -> Vec<String> {
         self.profile
             .as_ref()
-            .map(|p| playstyle::role_tags(&p.tags, role))
-            .unwrap_or_default()
+            .map_or_default(|p| playstyle::role_tags(&p.tags, role))
     }
 
     /// The Oracle tags table's rows, from [`playstyle::tag_rows`].
@@ -681,8 +679,7 @@ impl State {
     pub fn tag_rows(&self) -> Vec<TagRow> {
         self.profile
             .as_ref()
-            .map(|p| playstyle::tag_rows(&p.tags, p.deck_count))
-            .unwrap_or_default()
+            .map_or_default(|p| playstyle::tag_rows(&p.tags, p.deck_count))
     }
 
     /// Whether the printing sheet over `card` picks a printing; see [`picks_printing`].

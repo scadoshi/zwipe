@@ -241,13 +241,10 @@ pub fn DeckWidePage(
         zone.read()
             .live_metrics(&d.entries, &entries.read(), &d.command_zone_cards)
     });
-    let warnings = held_deck
-        .as_ref()
-        .map(|d| {
-            zone.read()
-                .live_warnings(&d.deck_profile, &d.entries, &entries.read())
-        })
-        .unwrap_or_default();
+    let warnings = held_deck.as_ref().map_or_default(|d| {
+        zone.read()
+            .live_warnings(&d.deck_profile, &d.entries, &entries.read())
+    });
     let deck_buy = held_deck.as_ref().map(buy::deck_links);
     let has_cards = metrics.is_some();
     let shown = currency();

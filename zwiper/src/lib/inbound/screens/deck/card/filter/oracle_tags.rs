@@ -20,14 +20,8 @@ use crate::inbound::components::catalog_cache::CatalogCache;
 
 fn read_selected(fb: &CardQueryBuilder, mode: MatchMode) -> Vec<String> {
     match mode {
-        MatchMode::Any => fb
-            .oracle_tags_contains_any()
-            .map(<[_]>::to_vec)
-            .unwrap_or_default(),
-        MatchMode::All => fb
-            .oracle_tags_contains_all()
-            .map(<[_]>::to_vec)
-            .unwrap_or_default(),
+        MatchMode::Any => fb.oracle_tags_contains_any().map_or_default(<[_]>::to_vec),
+        MatchMode::All => fb.oracle_tags_contains_all().map_or_default(<[_]>::to_vec),
     }
 }
 
@@ -47,9 +41,7 @@ fn write_selected(fb: &mut CardQueryBuilder, mode: MatchMode, values: Vec<String
 }
 
 fn read_excluded(fb: &CardQueryBuilder) -> Vec<String> {
-    fb.oracle_tags_excludes()
-        .map(<[_]>::to_vec)
-        .unwrap_or_default()
+    fb.oracle_tags_excludes().map_or_default(<[_]>::to_vec)
 }
 
 fn write_excluded(fb: &mut CardQueryBuilder, values: Vec<String>) {

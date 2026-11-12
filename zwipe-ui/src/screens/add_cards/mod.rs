@@ -1142,8 +1142,7 @@ impl State {
         let cards: Vec<Card> = self
             .deck
             .as_ref()
-            .map(|d| d.maybeboard.iter().map(|e| e.card.clone()).collect())
-            .unwrap_or_default();
+            .map_or_default(|d| d.maybeboard.iter().map(|e| e.card.clone()).collect());
         let matching: Vec<Card> = if self.filter.is_empty() {
             cards
         } else {
@@ -1584,7 +1583,7 @@ impl State {
     /// The deck facts the Search filter is built from; empty before the deck is in.
     #[must_use]
     pub fn context(&self) -> AddContext {
-        self.deck.as_ref().map(AddDeck::context).unwrap_or_default()
+        self.deck.as_ref().map_or_default(AddDeck::context)
     }
 
     /// Whether the Synergy chip shows: on Search, for a deck with a commander.

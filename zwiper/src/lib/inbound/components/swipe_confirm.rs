@@ -25,8 +25,7 @@ pub(crate) fn confirm(
     let setting = session
         .peek()
         .as_ref()
-        .map(|s| s.settings.swipe_confirmations)
-        .unwrap_or_default();
+        .map_or_default(|s| s.settings.swipe_confirmations);
     match setting {
         SwipeConfirmations::Chip => {
             let count = said.peek().as_ref().map_or(0, |(n, _)| n.wrapping_add(1));

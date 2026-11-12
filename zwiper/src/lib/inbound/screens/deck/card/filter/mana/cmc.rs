@@ -27,20 +27,17 @@ pub(crate) fn CmcFilter() -> Element {
     let mut cmc_equals_string = use_signal(|| {
         filter_builder()
             .cmc_equals()
-            .map(|v| v.to_string())
-            .unwrap_or_default()
+            .map_or_default(|v| v.to_string())
     });
     let mut cmc_range_min_string = use_signal(|| {
         filter_builder()
             .cmc_range()
-            .map(|(min, _)| min.to_string())
-            .unwrap_or_default()
+            .map_or_default(|(min, _)| min.to_string())
     });
     let mut cmc_range_max_string = use_signal(|| {
         filter_builder()
             .cmc_range()
-            .map(|(_, max)| max.to_string())
-            .unwrap_or_default()
+            .map_or_default(|(_, max)| max.to_string())
     });
 
     // Parse and write CMC equals on blur, tidying the text or saying it is invalid

@@ -275,7 +275,7 @@ pub fn SwipeStack(
         let is_top = i == 0;
         let z = count.saturating_sub(i);
         let style = if is_top {
-            let (dx, dy) = drag().map(Drag::delta).unwrap_or_default();
+            let (dx, dy) = drag().map_or_default(Drag::delta);
             let horizontal = dx.abs() >= dy.abs();
             let tx = if horizontal { dx } else { 0.0 };
             let ty = if !horizontal && allowed_up {

@@ -43,12 +43,10 @@ pub fn Rarity() -> Element {
     let selected = match mode() {
         IncludeExclude::Include => filter_builder()
             .rarity_equals_any()
-            .map(|r| r.to_vec())
-            .unwrap_or_default(),
+            .map_or_default(|r| r.to_vec()),
         IncludeExclude::Exclude => filter_builder()
             .rarity_excludes_any()
-            .map(|r| r.to_vec())
-            .unwrap_or_default(),
+            .map_or_default(|r| r.to_vec()),
     };
 
     let has_selection = !selected.is_empty();
@@ -66,12 +64,10 @@ pub fn Rarity() -> Element {
                             let current = match mode() {
                                 IncludeExclude::Include => filter_builder()
                                     .rarity_equals_any()
-                                    .map(|r| r.to_vec())
-                                    .unwrap_or_default(),
+                                    .map_or_default(|r| r.to_vec()),
                                 IncludeExclude::Exclude => filter_builder()
                                     .rarity_excludes_any()
-                                    .map(|r| r.to_vec())
-                                    .unwrap_or_default(),
+                                    .map_or_default(|r| r.to_vec()),
                             };
                             let fb = &mut *filter_builder.write();
                             fb.unset_rarity_equals_any();
@@ -118,12 +114,10 @@ pub fn Rarity() -> Element {
                             let current = match mode() {
                                 IncludeExclude::Include => filter_builder()
                                     .rarity_equals_any()
-                                    .map(|r| r.to_vec())
-                                    .unwrap_or_default(),
+                                    .map_or_default(|r| r.to_vec()),
                                 IncludeExclude::Exclude => filter_builder()
                                     .rarity_excludes_any()
-                                    .map(|r| r.to_vec())
-                                    .unwrap_or_default(),
+                                    .map_or_default(|r| r.to_vec()),
                             };
 
                             let mut new = current;

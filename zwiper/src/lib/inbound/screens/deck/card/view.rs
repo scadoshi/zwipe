@@ -728,17 +728,11 @@ pub fn View(deck_id: Uuid) -> Element {
     let filter = filter_builder.read().clone();
     let model = driver.model.read();
     let loaded = model.is_loaded();
-    let deck_name = model
-        .profile()
-        .map(|p| p.name.to_string())
-        .unwrap_or_default();
+    let deck_name = model.profile().map_or_default(|p| p.name.to_string());
     let deck_format = model.profile().and_then(|p| p.format);
     let deck_power = model.profile().and_then(|p| p.power_level);
-    let deck_tags = model.profile().map(|p| p.tags.clone()).unwrap_or_default();
-    let deck_other_tags = model
-        .profile()
-        .map(|p| p.other_tags.clone())
-        .unwrap_or_default();
+    let deck_tags = model.profile().map_or_default(|p| p.tags.clone());
+    let deck_other_tags = model.profile().map_or_default(|p| p.other_tags.clone());
     let featured_cards: Vec<(Card, String)> = model
         .featured()
         .into_iter()

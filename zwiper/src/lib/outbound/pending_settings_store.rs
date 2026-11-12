@@ -22,7 +22,7 @@ fn to_stored(pending: &PendingSettings) -> anyhow::Result<Vec<u8>> {
 /// Reads the stored form; `None` when it holds nothing to send.
 fn from_stored(bytes: &[u8]) -> anyhow::Result<Option<PendingSettings>> {
     let mut stored: Value = serde_json::from_slice(bytes)?;
-    let mut field = |name: &str| stored.get_mut(name).map(Value::take).unwrap_or_default();
+    let mut field = |name: &str| stored.get_mut(name).map_or_default(Value::take);
     let user_id: Uuid = serde_json::from_value(field("user_id"))?;
     let update: HttpUpdateSettings = serde_json::from_value(field("update"))?;
     Ok(PendingSettings::from_update(user_id, update))

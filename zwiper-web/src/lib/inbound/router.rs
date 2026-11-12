@@ -1,6 +1,14 @@
 //! Every route, at resource paths: a deck lives under `/decks/:deck_id`,
 //! and its screens under it.
 
+// Routable's derive builds each `String` field's parse error variant from an
+// `Infallible`, and rustc reads that constructor as an unreachable call. The
+// derive's items sit beside the enum, so only a module-level expect reaches them.
+#![expect(
+    unreachable_code,
+    reason = "Routable's derive wraps String fields' Infallible parse errors"
+)]
+
 use dioxus::prelude::*;
 use uuid::Uuid;
 
@@ -39,6 +47,7 @@ use crate::inbound::shell::{OpenFrame, PublicFrame};
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
 #[expect(missing_docs, reason = "each route field is the URL parameter its path names")]
+#[expect(clippy::duplicated_attributes, reason = "each nested layout closes with its own #[end_layout]")]
 pub enum Route {
     #[redirect("/changelog", || Route::About {})]
     #[redirect("/config", || Route::Config {})]

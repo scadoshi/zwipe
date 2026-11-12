@@ -33,7 +33,7 @@ pub fn HintHost() -> Element {
     rsx! {
         AlertDialog {
             open,
-            title: topic.map(HintTopic::title).unwrap_or_default().to_string(),
+            title: topic.map_or_default(HintTopic::title).to_string(),
             actions: vec![DialogAction::Dismiss(GOT_IT.into())],
             if let Some(topic) = topic {
                 HintBody { blocks: topic.blocks() }

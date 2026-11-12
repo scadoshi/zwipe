@@ -61,9 +61,7 @@ pub(crate) fn CardRow(
     // Deck's price-target currency, shared by the parent view via context so
     // every row prices in the same currency without threading a prop through
     // each call site. Falls back to USD outside that provider.
-    let price_currency = try_use_context::<Signal<PriceCurrency>>()
-        .map(|c| c())
-        .unwrap_or_default();
+    let price_currency = try_use_context::<Signal<PriceCurrency>>().map_or_default(|c| c());
     // Otag reveal plumbing (deck-cards view provides it): a description lookup and
     // an examples opener. Absent elsewhere, so those rows keep plain otag chips.
     let describe_tag = try_use_context::<OtagDescribe>().map(|d| d.0);

@@ -20,14 +20,12 @@ pub(crate) fn PriceFilter() -> Element {
     let mut price_min_string = use_signal(|| {
         filter_builder()
             .price_min()
-            .map(|v| v.to_string())
-            .unwrap_or_default()
+            .map_or_default(|v| v.to_string())
     });
     let mut price_max_string = use_signal(|| {
         filter_builder()
             .price_max()
-            .map(|v| v.to_string())
-            .unwrap_or_default()
+            .map_or_default(|v| v.to_string())
     });
 
     // Parse and write the min bound on blur (empty clears it), tidying the text or saying it is invalid.

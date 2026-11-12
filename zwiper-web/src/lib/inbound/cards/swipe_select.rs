@@ -264,11 +264,8 @@ pub fn SwipeSelect(
         }
     });
 
-    let excluded_now = move || -> HashSet<Uuid> {
-        exclude_oracle_ids
-            .map(|ids| ids.peek().clone())
-            .unwrap_or_default()
-    };
+    let excluded_now =
+        move || -> HashSet<Uuid> { exclude_oracle_ids.map_or_default(|ids| ids.peek().clone()) };
 
     // The next page of commanders. The host's exclusions can empty a page
     // while more remain, so it keeps pulling a few pages until cards land.
@@ -364,9 +361,7 @@ pub fn SwipeSelect(
         exhausted.set(false);
         searched.set(false);
         if suggested {
-            let held = suggested_pile
-                .map(|pile| pile.peek().clone())
-                .unwrap_or_default();
+            let held = suggested_pile.map_or_default(|pile| pile.peek().clone());
             exhausted.set(true);
             deck_count.set(held.deck_count);
             stack

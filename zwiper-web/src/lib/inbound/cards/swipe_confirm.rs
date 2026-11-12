@@ -101,8 +101,7 @@ impl SwipeConfirm {
             .session
             .peek()
             .as_ref()
-            .map(|s| s.settings.swipe_confirmations)
-            .unwrap_or_default();
+            .map_or_default(|s| s.settings.swipe_confirmations);
         match setting {
             SwipeConfirmations::Chip => self.set_chip(&text, chip),
             SwipeConfirmations::Toasts => {

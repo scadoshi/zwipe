@@ -380,15 +380,11 @@ impl MetricsRepository for Postgres {
                 let Some(oracle_id) = row.oracle_id else {
                     continue;
                 };
-                let tags: Vec<String> = row
-                    .oracle_tags
-                    .as_array()
-                    .map(|a| {
-                        a.iter()
-                            .filter_map(|t| t.as_str().map(str::to_string))
-                            .collect()
-                    })
-                    .unwrap_or_default();
+                let tags: Vec<String> = row.oracle_tags.as_array().map_or_default(|a| {
+                    a.iter()
+                        .filter_map(|t| t.as_str().map(str::to_string))
+                        .collect()
+                });
                 if !tags.is_empty() {
                     card_otags.insert(oracle_id, tags);
                 }
@@ -537,12 +533,11 @@ impl MetricsRepository for Postgres {
                     .card_roles
                     .as_ref()
                     .and_then(|v| v.as_array())
-                    .map(|a| {
+                    .map_or_default(|a| {
                         a.iter()
                             .filter_map(|c| c.as_str().map(str::to_string))
                             .collect()
-                    })
-                    .unwrap_or_default();
+                    });
                 card_facets.insert(oracle_id, (colors, categories));
             }
 

@@ -147,17 +147,13 @@ pub fn Activity() -> Element {
     let open_section: Signal<Option<String>> = use_signal(|| Some(ACTIVITY_TITLE.to_string()));
     // Most skipped's cards, which the card keys act on.
     let pass_cards = use_memo(move || {
-        activity
-            .read()
-            .as_ref()
-            .map(|found| {
-                found
-                    .passes
-                    .iter()
-                    .map(|p| p.card.clone())
-                    .collect::<Vec<_>>()
-            })
-            .unwrap_or_default()
+        activity.read().as_ref().map_or_default(|found| {
+            found
+                .passes
+                .iter()
+                .map(|p| p.card.clone())
+                .collect::<Vec<_>>()
+        })
     });
     use_card_row_keys(pass_cards, expanded_card);
 

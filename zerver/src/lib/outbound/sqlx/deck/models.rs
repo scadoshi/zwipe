@@ -70,13 +70,12 @@ impl TryFrom<DatabaseDeckProfile> for DeckProfile {
         let other_tags = value
             .other_tags
             .and_then(|v| serde_json::from_value::<Vec<String>>(v).ok())
-            .map(|strings| {
+            .map_or_default(|strings| {
                 strings
                     .iter()
                     .filter_map(|s| DeckOtherTag::try_from(s.as_str()).ok())
                     .collect()
-            })
-            .unwrap_or_default();
+            });
         // Free slugs from the oracle_tags catalog, no enum filter.
         let oracle_tags = value
             .oracle_tags

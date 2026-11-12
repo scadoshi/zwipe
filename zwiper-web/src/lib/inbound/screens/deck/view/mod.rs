@@ -265,10 +265,7 @@ fn DeckViewScreen(deck_id: Uuid) -> Element {
         .as_ref()
         .filter(|d| !d.entries.is_empty() || !d.command_zone_cards.is_empty())
         .map(|d| DeckMetrics::from_entries_and_command_zone(&d.entries, &d.command_zone_cards));
-    let warnings = loaded_deck
-        .as_ref()
-        .map(|d| d.warnings.clone())
-        .unwrap_or_default();
+    let warnings = loaded_deck.as_ref().map_or_default(|d| d.warnings.clone());
     let deck_buy = loaded_deck.as_ref().map(buy::deck_links);
     let loaded_profile: Option<Result<DeckProfile, ()>> = profile
         .read()
@@ -278,13 +275,11 @@ fn DeckViewScreen(deck_id: Uuid) -> Element {
     let clone_name = loaded_profile
         .as_ref()
         .and_then(|r| r.as_ref().ok())
-        .map(|p| format!("{} (clone)", p.name))
-        .unwrap_or_default();
+        .map_or_default(|p| format!("{} (clone)", p.name));
     let deck_name = loaded_profile
         .as_ref()
         .and_then(|r| r.as_ref().ok())
-        .map(|p| p.name.to_string())
-        .unwrap_or_default();
+        .map_or_default(|p| p.name.to_string());
     let delete_body = delete_body(
         loaded_profile
             .as_ref()

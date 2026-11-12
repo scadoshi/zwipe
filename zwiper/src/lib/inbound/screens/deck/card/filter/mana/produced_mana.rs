@@ -11,12 +11,10 @@ fn read_produced_mana(fb: &CardQueryBuilder, mode: MatchMode) -> Vec<String> {
     match mode {
         MatchMode::Any => fb
             .produced_mana_contains_any()
-            .map(<[_]>::to_vec)
-            .unwrap_or_default(),
+            .map_or_default(<[_]>::to_vec),
         MatchMode::All => fb
             .produced_mana_contains_all()
-            .map(<[_]>::to_vec)
-            .unwrap_or_default(),
+            .map_or_default(<[_]>::to_vec),
     }
 }
 
@@ -36,9 +34,7 @@ fn write_produced_mana(fb: &mut CardQueryBuilder, mode: MatchMode, values: Vec<S
 }
 
 fn read_excluded(fb: &CardQueryBuilder) -> Vec<String> {
-    fb.produced_mana_excludes()
-        .map(<[_]>::to_vec)
-        .unwrap_or_default()
+    fb.produced_mana_excludes().map_or_default(<[_]>::to_vec)
 }
 
 fn write_excluded(fb: &mut CardQueryBuilder, values: Vec<String>) {

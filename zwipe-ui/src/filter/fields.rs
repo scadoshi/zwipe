@@ -89,7 +89,7 @@ impl StrList {
             Self::LegalAny => b.legalities_contains_any(),
             Self::LegalAll => b.legalities_contains_all(),
         };
-        values.map(<[String]>::to_vec).unwrap_or_default()
+        values.map_or_default(<[String]>::to_vec)
     }
 
     /// Writes `values`, or unsets the field when they are empty.
@@ -433,9 +433,7 @@ impl MatchGroup {
     /// The excluded values, empty for a group with no exclude list.
     #[must_use]
     pub fn excluded(self, b: &CardQueryBuilder) -> Vec<String> {
-        self.exclude()
-            .map(|exclude| exclude.values(b))
-            .unwrap_or_default()
+        self.exclude().map_or_default(|exclude| exclude.values(b))
     }
 
     /// Writes the excludes; a group with no exclude list keeps nothing.
@@ -586,9 +584,7 @@ impl SideGroup {
 }
 
 fn rarity_names(rarities: Option<&Rarities>) -> Vec<String> {
-    rarities
-        .map(|r| r.iter().map(Rarity::to_long_name).collect())
-        .unwrap_or_default()
+    rarities.map_or_default(|r| r.iter().map(Rarity::to_long_name).collect())
 }
 
 /// A field that can be one value or a range, with an Exact or Range chip.
@@ -671,8 +667,7 @@ impl RangeGroup {
 pub fn identity_colors(b: &CardQueryBuilder) -> Vec<Color> {
     b.color_identity_equals()
         .or_else(|| b.color_identity_within())
-        .map(|c| c.to_vec())
-        .unwrap_or_default()
+        .map_or_default(|c| c.to_vec())
 }
 
 fn write_identity(

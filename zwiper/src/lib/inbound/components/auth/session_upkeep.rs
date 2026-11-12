@@ -315,8 +315,7 @@ fn use_theme_and_pips(session: Signal<Option<Session>>) {
         session
             .peek()
             .as_ref()
-            .map(|s| s.settings.pip_style)
-            .unwrap_or_default()
+            .map_or_default(|s| s.settings.pip_style)
     });
     use_context_provider(|| pip_style);
 

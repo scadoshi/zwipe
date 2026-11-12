@@ -11,14 +11,8 @@ use crate::inbound::components::catalog_cache::CatalogCache;
 
 fn read_other_types(fb: &CardQueryBuilder, mode: MatchMode) -> Vec<String> {
     match mode {
-        MatchMode::Any => fb
-            .type_line_contains_any()
-            .map(<[_]>::to_vec)
-            .unwrap_or_default(),
-        MatchMode::All => fb
-            .type_line_contains_all()
-            .map(<[_]>::to_vec)
-            .unwrap_or_default(),
+        MatchMode::Any => fb.type_line_contains_any().map_or_default(<[_]>::to_vec),
+        MatchMode::All => fb.type_line_contains_all().map_or_default(<[_]>::to_vec),
     }
 }
 
@@ -38,9 +32,7 @@ fn write_other_types(fb: &mut CardQueryBuilder, mode: MatchMode, values: Vec<Str
 }
 
 fn read_excluded(fb: &CardQueryBuilder) -> Vec<String> {
-    fb.type_line_excludes_any()
-        .map(<[_]>::to_vec)
-        .unwrap_or_default()
+    fb.type_line_excludes_any().map_or_default(<[_]>::to_vec)
 }
 
 fn write_excluded(fb: &mut CardQueryBuilder, values: Vec<String>) {

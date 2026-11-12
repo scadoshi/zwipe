@@ -432,8 +432,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
     let owner = session
         .peek()
         .as_ref()
-        .map(|s| s.user.username.to_string())
-        .unwrap_or_default();
+        .map_or_default(|s| s.user.username.to_string());
     let driver = Driver {
         model: use_signal(|| State::for_owner(owner)),
         navigator: use_navigator(),

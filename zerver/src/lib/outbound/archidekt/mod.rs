@@ -248,15 +248,13 @@ impl RawDeck {
                     .find(|c| c.name.eq_ignore_ascii_case(COMMANDER_CATEGORY))
             })
             .map(|c| c.name.clone());
-        let commanders = premier
-            .map(|name| {
-                self.cards
-                    .iter()
-                    .filter(|c| c.quantity > 0 && c.categories.contains(&name))
-                    .map(RawCard::to_card)
-                    .collect()
-            })
-            .unwrap_or_default();
+        let commanders = premier.map_or_default(|name| {
+            self.cards
+                .iter()
+                .filter(|c| c.quantity > 0 && c.categories.contains(&name))
+                .map(RawCard::to_card)
+                .collect()
+        });
         ArchidektDeck {
             format: self.deck_format.and_then(format_from_archidekt),
             commanders,
@@ -299,8 +297,7 @@ impl RawCard {
                 .card
                 .oracle_card
                 .as_ref()
-                .map(|o| o.name.clone())
-                .unwrap_or_default(),
+                .map_or_default(|o| o.name.clone()),
             quantity: self.quantity,
         }
     }

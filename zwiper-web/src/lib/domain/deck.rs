@@ -54,7 +54,7 @@ impl FormValues {
             signature_spell: None,
             tags: profile.tags.clone(),
             land_target: profile.land_target,
-            price_text: profile.price_target.map(price_text).unwrap_or_default(),
+            price_text: profile.price_target.map_or_default(price_text),
             currency: profile.price_target_currency.unwrap_or(PriceCurrency::Usd),
             power_level: profile.power_level,
             other_tags: profile.other_tags.clone(),

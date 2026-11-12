@@ -58,8 +58,7 @@ impl PendingSettings {
     pub fn record(previous: Option<Self>, user_id: Uuid, change: SettingChange) -> Self {
         let mut changes = previous
             .filter(|p| p.user_id == user_id)
-            .map(|p| p.changes)
-            .unwrap_or_default();
+            .map_or_default(|p| p.changes);
         let change = normalized(change);
         changes.retain(|c| setting(c) != setting(&change));
         changes.push(change);

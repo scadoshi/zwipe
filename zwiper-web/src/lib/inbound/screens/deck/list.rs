@@ -122,12 +122,11 @@ pub fn DeckList() -> Element {
     let errored = matches!(&*decks.read(), Some(Err(_)));
     let loading = !errored && profiles.is_none();
     let show_rows = profiles.as_ref().is_some_and(|p| !p.is_empty());
-    let tags_present: Vec<(String, String)> =
-        profiles.as_deref().map(list::all_tags).unwrap_or_default();
+    let tags_present: Vec<(String, String)> = profiles.as_deref().map_or_default(list::all_tags);
     let filter = show();
     // Last changed and Price only when the server sends them; a remembered
     // key it doesn't send sorts by name until it does.
-    let sort_keys = profiles.as_deref().map(SortBy::offered).unwrap_or_default();
+    let sort_keys = profiles.as_deref().map_or_default(SortBy::offered);
     let shown_sort = sort().within(&sort_keys);
     let shown: Option<Vec<DeckProfile>> = profiles
         .as_deref()

@@ -296,8 +296,7 @@ impl DeckGroup {
         }
         self.pips
             .as_ref()
-            .map(|pips| pips.iter().map(Color::to_short_name).collect::<String>())
-            .unwrap_or_default()
+            .map_or_default(|pips| pips.iter().map(Color::to_short_name).collect::<String>())
     }
 }
 

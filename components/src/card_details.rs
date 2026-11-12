@@ -385,8 +385,7 @@ pub fn CardDetailsPanel(
     let current_face = faces.as_ref().and_then(|f| f.get(cur)).cloned();
     let cost = current_face
         .as_ref()
-        .map(|f| f.mana_cost.clone())
-        .unwrap_or_default();
+        .map_or_default(|f| f.mana_cost.clone());
     let stats = current_face.as_ref().and_then(|f| f.stats.clone());
     let show_flip_btn = face_count > 1 && show_flip;
     let show_image = has_image && on_image.is_some();
@@ -427,7 +426,7 @@ pub fn CardDetailsPanel(
                 }
             }),
             KindChips {
-                type_line: current_face.as_ref().map(|f| f.type_line.clone()).unwrap_or_default(),
+                type_line: current_face.as_ref().map_or_default(|f| f.type_line.clone()),
                 rarity,
             }
             if let Some(line) = meld_line {
@@ -456,8 +455,7 @@ pub fn CardDetailsCost(card: Card, face: Signal<usize>) -> Element {
     let cost = faces
         .as_ref()
         .and_then(|f| f.get(cur))
-        .map(|f| f.mana_cost.clone())
-        .unwrap_or_default();
+        .map_or_default(|f| f.mana_cost.clone());
     rsx! {
         if !cost.is_empty() {
             OracleText { text: cost, class: "card-details-cost".to_string() }

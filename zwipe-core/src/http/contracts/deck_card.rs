@@ -34,10 +34,7 @@ impl HttpCreateDeckCard {
     pub fn new(scryfall_data: &ScryfallData, quantity: i32, board: Option<String>) -> Self {
         Self {
             scryfall_data_id: scryfall_data.id.to_string(),
-            oracle_id: scryfall_data
-                .oracle_id
-                .map(|id| id.to_string())
-                .unwrap_or_default(),
+            oracle_id: scryfall_data.oracle_id.map_or_default(|id| id.to_string()),
             quantity,
             board,
             mvp_at: None,

@@ -183,10 +183,7 @@ pub fn ensure_lands_excluded(b: &mut CardQueryBuilder) {
     if let Some(types) = without_land(b.card_type_contains_all()) {
         b.set_card_type_contains_all(types);
     }
-    let mut excludes = b
-        .card_type_excludes_any()
-        .map(<[_]>::to_vec)
-        .unwrap_or_default();
+    let mut excludes = b.card_type_excludes_any().map_or_default(<[_]>::to_vec);
     if !excludes.contains(&CardType::Land) {
         excludes.push(CardType::Land);
     }

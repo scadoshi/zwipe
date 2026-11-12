@@ -966,8 +966,7 @@ mod tests {
     fn weights_only(weights: serde_json::Value) -> DeckTagProfile {
         let cards = weights
             .as_object()
-            .map(|w| w.keys().map(|slug| (slug.clone(), 1)).collect())
-            .unwrap_or_default();
+            .map_or_default(|w| w.keys().map(|slug| (slug.clone(), 1)).collect());
         DeckTagProfile { weights, cards }
     }
 

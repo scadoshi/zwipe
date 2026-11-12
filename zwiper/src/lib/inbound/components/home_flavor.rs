@@ -27,7 +27,7 @@ pub fn FlavorPanel(
     let mut show_buy_sheet = use_signal(|| false);
 
     let flavor_data = card.as_ref().map(|c| c.scryfall_data.clone());
-    let buy_links = card.as_ref().map(home::buy_links).unwrap_or_default();
+    let buy_links = card.as_ref().map_or_default(home::buy_links);
 
     rsx! {
         div { class: "container-sm text-center flex-col home-flavor content-enter-delayed",

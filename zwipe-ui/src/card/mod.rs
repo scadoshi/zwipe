@@ -105,8 +105,7 @@ fn color_index(c: char) -> Option<usize> {
 }
 
 fn paragraphs(text: Option<&str>) -> Vec<String> {
-    text.map(|t| t.lines().map(str::to_owned).collect())
-        .unwrap_or_default()
+    text.map_or_default(|t| t.lines().map(str::to_owned).collect())
 }
 
 fn stats(

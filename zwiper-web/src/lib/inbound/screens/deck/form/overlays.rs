@@ -26,8 +26,7 @@ pub fn DeckFormOverlays(form: DeckForm) -> Element {
     let commander = form.commander.card.read().clone();
     let commander_key = commander
         .as_ref()
-        .map(|c| c.scryfall_data.id.to_string())
-        .unwrap_or_default();
+        .map_or_default(|c| c.scryfall_data.id.to_string());
     let pick = move |slot: Slot, card: Card| {
         let state = form.slot(slot);
         if slot == Slot::Commander {
