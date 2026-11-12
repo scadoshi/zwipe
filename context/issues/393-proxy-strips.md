@@ -1,6 +1,6 @@
 # 393. No-image stack strips wrap and peek, and Home's deck tiles show a broken image
 
-State: fixing | Owner: laptop | PR: - | Build seen: live #589, web, images blocked
+State: fixing | Owner: laptop | PR: #596 | Build seen: live #589, web, images blocked
 
 ## Report
 Surfer, via the composer, 2026-11-11, on live #589 with images blocked:
@@ -9,7 +9,7 @@ Surfer, via the composer, 2026-11-11, on live #589 with images blocked:
 - app.zwipe.net Home's Decks tiles show the browser's broken-image icon.
 
 ## Fix
-laptop, web (components, so the app's stacks too):
+laptop, #596, web (components, so the app's stacks too):
 - **Stacks.** A covered stack card's proxy carries `card-proxy-strip`. It shows only the name and cost on one line, at one size for every card in the stack (the card's width sets it, and the fit script leaves strips alone), cut with an ellipsis. Nothing under the head shows. The full proxy, fitted, shows once the card is revealed or is the last; the fit script refits when the class changes.
 - **Home tiles.** A deck tile's art that fails to load shows the deck's name in the no-image card's dress, in the tile's square, wrapped between words and fitted like a thumbnail's.
 
