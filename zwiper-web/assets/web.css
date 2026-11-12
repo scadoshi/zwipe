@@ -695,9 +695,10 @@ body {
     background-color: color-mix(in srgb, var(--color-warning) 12%, transparent);
 }
 
-/* Home and the auth screens hold the back box's slot empty, so the bar
-   keeps its place from screen to screen. */
-.app-nav-back.nav-back-held {
+/* A screen with no back or no hint holds that button's slot empty, so the
+   bar keeps its place from screen to screen. */
+.app-nav-back.nav-back-held,
+.web-nav-hint.nav-hint-held {
     visibility: hidden;
 }
 

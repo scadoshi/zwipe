@@ -741,12 +741,18 @@ mod tests {
     #[test]
     fn a_stepped_odds_bar_eases_instead_of_growing_in() {
         let (class, delay) = odds_fill(Some(2));
-        assert!(class.contains("chart-bar"), "the first render grows in: {class}");
+        assert!(
+            class.contains("chart-bar"),
+            "the first render grows in: {class}"
+        );
         assert_eq!(delay, bar_delay(2));
         let (class, delay) = odds_fill(None);
         assert!(class.contains("chart-fill-step"), "a step eases: {class}");
-        assert!(!class.contains("chart-bar"), "a step never grows in again: {class}");
-        assert!(delay.is_empty());
+        assert!(
+            !class.contains("chart-bar"),
+            "a step never grows in again: {class}"
+        );
+        assert_eq!(delay, "");
     }
 
     #[test]
