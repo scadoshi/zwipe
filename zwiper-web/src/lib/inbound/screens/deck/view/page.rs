@@ -7,15 +7,15 @@
 //! and the foot holds Warnings, Data and Danger zone. The dock floats add,
 //! remove, the filter and undo, then Edit, Clone and Share.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::time::Duration;
 
 use components::icons::{CloneIcon, DockIcon, EditIcon, MINUS, PLUS, ShareIcon, UNDO};
 use components::{
-    BudgetBody, CART, CartButton, Chip, CurrencyChips, DeckBand, DeckControls, DeckFacts, DeckFold,
-    DeckHead, DeckPage, DeckSection, DistributionsBody, DockFilter, DrawOddsStepper, FeaturedCard,
-    GroupBuyDialog, HoverStackHost, ManaBody, StoreDialog, TagsBody, charted, use_group_buy,
-    use_hover_stack,
+    BudgetBody, CART, Chip, CurrencyChips, DeckCardsView, DeckControls, DeckFacts, DeckFold,
+    DeckHead, DeckPage, DeckRowHost, DeckSection, DeckStackDrawer, DistributionsBody, DockFilter,
+    DrawOddsStepper, FeaturedCard, GroupBuyDialog, HoverStackHost, ManaBody, StoreDialog, TagsBody,
+    charted, use_group_buy, use_hover_stack,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -23,7 +23,6 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::{Board, deck_tag_label};
-use zwipe_ui::buy::group_cards;
 use zwipe_ui::deck::form::Slot;
 use zwipe_ui::deck_cards::stacks::{
     CardsView, DEAL_DURATION, DEAL_STAGGER_CAP, DealCue, Reveal, deal_delay,
@@ -40,7 +39,6 @@ use super::ghost::{
 use super::panels::{DangerZonePanel, DataPanel};
 use super::sections::{WarningFixes, WarningsBody};
 use super::settle::use_settle;
-use super::stacks::{stack_details, stacks_view};
 use crate::domain::deck::{has_budget, tag_count};
 use crate::inbound::card_filter::CardFilterPanel;
 use crate::inbound::card_stores::CardStores;
@@ -56,7 +54,7 @@ use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog};
 use crate::inbound::router::Route;
 use crate::inbound::screens::deck::cards::editor::{
-    Editor, Listed, LoadFailure, RowInfo, RowKind, main_row_of, row_view, use_deck_editor,
+    Editor, Listed, LoadFailure, RowInfo, RowKind, main_row_of, use_deck_editor, use_deck_row_host,
 };
 use crate::inbound::screens::deck::cards::quick_add::QuickAdd;
 use crate::outbound::timer;
@@ -124,6 +122,7 @@ pub fn DeckWidePage(
     } = ed;
     let CardStores { undo, .. } = use_context();
     let examples = use_otag_reveals();
+    let row_host = use_deck_row_host(&ed);
     let CardOverlays { mut preview, .. } = overlays;
     // The rows' hover stack, drawn outside the rows and the page's entrance,
     // whose transforms would pin it to them instead of the window.
@@ -178,6 +177,7 @@ pub fn DeckWidePage(
         ..
     } = listing();
     let row_meta = meta();
+    let row_boards: HashMap<Uuid, Board> = row_meta.iter().map(|(id, m)| (*id, m.board)).collect();
     let applied = filter.read().clone();
     let shown_boards = boards();
     let held_profile = profile();
@@ -508,26 +508,21 @@ pub fn DeckWidePage(
                 if !loaded() {
                     DeckBandsGhost {}
                 }
-                if view() == CardsView::Stacks {
-                    {stacks_view(sections, cur, collapsed, stack_details_state, ed.faces, group_buy, dealing())}
-                } else {
-                    for (section, rows) in sections {
-                        DeckBand {
-                            key: "{section.key}",
-                            accessory: (!group_cards(&rows).is_empty()).then(|| {
-                                let header = section.title.clone();
-                                let for_buy = rows.clone();
-                                rsx! {
-                                    CartButton { onclick: move |_| group_buy.offer(&header, &for_buy) }
-                                }
-                            }),
-                            section,
-                            folded: collapsed,
-                            for row in rows {
-                                {row_view(&ed, cur, &row_meta, row)}
-                            }
-                        }
-                    }
+                DeckCardsView {
+                    sections,
+                    view: view(),
+                    currency: cur,
+                    collapsed,
+                    details: stack_details_state,
+                    selected,
+                    face: ed.face,
+                    faces: ed.faces,
+                    boards: row_boards.clone(),
+                    group_buy,
+                    dealing: dealing(),
+                    show_art: Some(show_art),
+                    actions: Some(ed.edit_actions()),
+                    host: row_host,
                 }
             },
             stats: rsx! {
@@ -685,7 +680,14 @@ pub fn DeckWidePage(
         }
         GroupBuyDialog { group_buy }
         if view() == CardsView::Stacks {
-            {stack_details(&ed, &all_rows, &row_meta, stack_details_state, overlays)}
+            DeckStackDrawer {
+                rows: all_rows,
+                boards: row_boards,
+                details: stack_details_state,
+                faces: ed.faces,
+                actions: Some(ed.edit_actions()),
+                host: DeckRowHost { on_view_printing: None, ..row_host },
+            }
         }
         CardOverlaysHost { overlays }
         OtagExamplesHost { examples }

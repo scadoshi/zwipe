@@ -53,6 +53,9 @@ pub const UPCOMING: &[Release] = &[
         entries: &[
             "On the web, the Commander maybeboard takes p, i, v and d on a card, as Playstyle and Activity do",
             "The web's Home and its other few-panel pages sit in the same 1400px column as zwipe.net",
+            "On the web, Import runs the full width of its page, as Export does",
+            "On the web, Home's tagline and the Privacy policy's text run the full width of their panels",
+            "Back closes an open card image before leaving the screen",
         ],
     },
     Release {
