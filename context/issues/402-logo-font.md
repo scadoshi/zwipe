@@ -1,6 +1,6 @@
 # 402. zwipe.net's logos look heavier than the app's
 
-State: fixing | Owner: laptop | PR: PENDING | Build seen: zwipe.net and app.zwipe.net live, 2026-11-12
+State: fixing | Owner: laptop | PR: #616 | Build seen: zwipe.net and app.zwipe.net live, 2026-11-12
 
 ## Report
 Scotty, a screen recording flipping between zwipe.net and app.zwipe.net home at the same window size: the ASCII logos are the same size, but on zwipe.net the hero ZWIPE and the nav Z look heavier and chunkier, with solid blocks, while the app's show thinner vertical stripes.
@@ -13,7 +13,7 @@ Headless Chrome at 1634 wide. Every computed style of the nav Z (`.nav-logo`) an
 zite served @fontsource's Latin and Latin-ext subsets of JetBrains Mono. The block characters the logos are drawn in (U+2580-259F, ▎ and ▉) are in neither, so they fell back to the system's monospace font, which draws them heavier. The app serves the complete font files.
 
 ## Fix
-laptop, PENDING: one font rule for both sites, in components.
+laptop, #616: one font rule for both sites, in components.
 - `components::FONTS_CSS` (`components/assets/fonts.css`): JetBrains Mono at 400, 500 and 700 from the complete files at `/assets/`.
 - zwiper-web's `01-fonts.css` is its copy, kept equal by the sheets test like the other shared sheets.
 - zite inlines `FONTS_CSS` first and bundles the app's complete font files unhashed at `/assets/`. Its subset faces in `style.css` and `public/fonts` are gone. A test checks that zite's files are the app's byte for byte and that the shared rule names each one.
