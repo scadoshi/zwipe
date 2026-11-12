@@ -1,6 +1,6 @@
 # 383. Three small snaps: the nav, a label's clear and the Draw odds bars
 
-State: fixing | Owner: thinker | PR: - | Build seen: production, web and app
+State: fixing | Owner: thinker | PR: #607 | Build seen: production, web and app
 
 ## Report
 Composer for Scotty, 2026-11-12, from surfer's ease audit (`~/ease-audit/README.md`, rows 8 to 10):
