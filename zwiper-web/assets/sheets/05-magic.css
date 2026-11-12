@@ -2506,6 +2506,16 @@ html.keyboard-up .web-dock-pair {
     gap: 1rem;
 }
 
+/* The deck's name, then its owner's chip on the same line, wrapping under
+   the name only when the line runs out. */
+.deck-head-name {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+    min-width: 0;
+}
+
 .deck-head-title {
     margin: 0;
     font-size: 1.6rem;
