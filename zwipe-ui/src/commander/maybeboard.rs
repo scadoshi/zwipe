@@ -1,10 +1,14 @@
-//! The commander maybeboard: the Show row's color pips, which Quick add results can still be added, the highlighted result's step, and the screen's fixed copy.
+//! The commander maybeboard: the Show row's color pips, the Sort row's orders, which Quick add results can still be added, the highlighted result's step, and the screen's fixed copy.
 
+use std::cmp::Ordering;
 use std::collections::HashSet;
 use std::hash::BuildHasher;
 
 use uuid::Uuid;
+use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
+use zwipe_core::domain::card::search_card::card_filter::CardSortKey;
+use zwipe_core::domain::card::search_card::card_filter::sort_direction::SortDirection;
 
 /// The saved list's group header.
 pub const LIST_TITLE: &str = "Commanders";
@@ -17,6 +21,121 @@ pub const NO_MATCH: &str = "No commanders match";
 
 /// The empty line when the maybeboard failed to load.
 pub const LOAD_FAILED: &str = "Couldn't load your commander maybeboard";
+
+/// What the saved commanders sort on.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum SortBy {
+    /// The order they were saved in, the newest first ascending.
+    #[default]
+    Newest,
+    /// The card's name.
+    Name,
+    /// The mana value, the cheapest first ascending.
+    ManaValue,
+    /// The color identity: fewer colors first ascending, then in WUBRG order.
+    Color,
+}
+
+impl SortBy {
+    /// Every key in chip order.
+    pub const ALL: [Self; 4] = [Self::Newest, Self::Name, Self::ManaValue, Self::Color];
+
+    /// The chip's label.
+    #[must_use]
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Newest => "Newest saved",
+            Self::Name => "Name",
+            Self::ManaValue => "Mana value",
+            Self::Color => "Color",
+        }
+    }
+
+    /// The key [`Sort::key`] stores it under.
+    fn slug(self) -> &'static str {
+        match self {
+            Self::Newest => "newest",
+            Self::Name => "name",
+            Self::ManaValue => "mana",
+            Self::Color => "color",
+        }
+    }
+}
+
+/// The saved commanders' order: a key and a direction. Commanders the key ties on fall back to their names, A to Z.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub struct Sort {
+    /// What to sort on.
+    pub by: SortBy,
+    /// Which way.
+    pub direction: SortDirection,
+}
+
+impl Sort {
+    /// The sort as one string, such as `mana-descending`, for a client that stores it as text.
+    #[must_use]
+    pub fn key(self) -> String {
+        let direction = match self.direction {
+            SortDirection::Ascending => "ascending",
+            SortDirection::Descending => "descending",
+        };
+        format!("{}-{direction}", self.by.slug())
+    }
+
+    /// The sort [`Self::key`] gave `key`, or `None` for anything else.
+    #[must_use]
+    pub fn from_key(key: &str) -> Option<Self> {
+        let (by, direction) = key.split_once('-')?;
+        let by = SortBy::ALL.into_iter().find(|b| b.slug() == by)?;
+        let direction = match direction {
+            "ascending" => SortDirection::Ascending,
+            "descending" => SortDirection::Descending,
+            _ => return None,
+        };
+        Some(Self { by, direction })
+    }
+
+    /// `cards`, given in saved order with the newest first, in this order.
+    #[must_use]
+    pub fn sorted(self, mut cards: Vec<Card>) -> Vec<Card> {
+        let directed = |ordering: Ordering| match self.direction {
+            SortDirection::Ascending => ordering,
+            SortDirection::Descending => ordering.reverse(),
+        };
+        let by_name =
+            |a: &Card, b: &Card| CardSortKey::Name.compare(&a.scryfall_data, &b.scryfall_data);
+        match self.by {
+            SortBy::Newest => {
+                if self.direction == SortDirection::Descending {
+                    cards.reverse();
+                }
+            }
+            SortBy::Name => cards.sort_by(|a, b| directed(by_name(a, b))),
+            SortBy::ManaValue => cards.sort_by(|a, b| {
+                directed(CardSortKey::Cmc.compare(&a.scryfall_data, &b.scryfall_data))
+                    .then_with(|| by_name(a, b))
+            }),
+            SortBy::Color => cards.sort_by(|a, b| {
+                directed(
+                    identity_rank(&a.scryfall_data.color_identity)
+                        .cmp(&identity_rank(&b.scryfall_data.color_identity)),
+                )
+                .then_with(|| by_name(a, b))
+            }),
+        }
+        cards
+    }
+}
+
+/// Where a color identity falls in the Color order: its size, then its colors' places in WUBRG.
+fn identity_rank(identity: &[Color]) -> (usize, Vec<usize>) {
+    let mut places: Vec<usize> = identity
+        .iter()
+        .filter_map(|color| Color::all().into_iter().position(|c| c == *color))
+        .collect();
+    places.sort_unstable();
+    (places.len(), places)
+}
 
 /// Which way a highlight step moves through the Quick add results.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -56,6 +175,91 @@ mod tests {
     use Color::{Black, Blue, Green, Red, White};
 
     use super::*;
+    use crate::test_support::card;
+
+    /// A commander named `name` with mana value `cmc` and `identity`.
+    fn commander(name: &str, cmc: f64, identity: &[Color]) -> Card {
+        let mut c = card(name);
+        c.scryfall_data.cmc = Some(cmc);
+        c.scryfall_data.color_identity = identity.to_vec().into();
+        c
+    }
+
+    /// The names of `cards`, in order.
+    fn names(cards: &[Card]) -> Vec<&str> {
+        cards
+            .iter()
+            .map(|c| c.scryfall_data.name.as_str())
+            .collect()
+    }
+
+    /// Saved order, newest first.
+    fn saved() -> Vec<Card> {
+        vec![
+            commander("Krenko", 4.0, &[Red]),
+            commander("Atraxa", 4.0, &[White, Blue, Black, Green]),
+            commander("Kenrith", 5.0, &[White, Blue, Black, Red, Green]),
+            commander("Brago", 4.0, &[White, Blue]),
+            commander("Karn", 4.0, &[]),
+        ]
+    }
+
+    #[test]
+    fn the_default_is_the_saved_order() {
+        assert_eq!(Sort::default().by, SortBy::Newest);
+        assert_eq!(
+            names(&Sort::default().sorted(saved())),
+            ["Krenko", "Atraxa", "Kenrith", "Brago", "Karn"]
+        );
+        let oldest = Sort {
+            by: SortBy::Newest,
+            direction: SortDirection::Descending,
+        };
+        assert_eq!(
+            names(&oldest.sorted(saved())),
+            ["Karn", "Brago", "Kenrith", "Atraxa", "Krenko"]
+        );
+    }
+
+    #[test]
+    fn each_key_orders_and_ties_fall_back_to_the_name() {
+        let by = |by| Sort {
+            by,
+            direction: SortDirection::Ascending,
+        };
+        assert_eq!(
+            names(&by(SortBy::Name).sorted(saved())),
+            ["Atraxa", "Brago", "Karn", "Kenrith", "Krenko"]
+        );
+        assert_eq!(
+            names(&by(SortBy::ManaValue).sorted(saved())),
+            ["Atraxa", "Brago", "Karn", "Krenko", "Kenrith"]
+        );
+        assert_eq!(
+            names(&by(SortBy::Color).sorted(saved())),
+            ["Karn", "Krenko", "Brago", "Atraxa", "Kenrith"]
+        );
+        let down = Sort {
+            by: SortBy::ManaValue,
+            direction: SortDirection::Descending,
+        };
+        assert_eq!(
+            names(&down.sorted(saved())),
+            ["Kenrith", "Atraxa", "Brago", "Karn", "Krenko"]
+        );
+    }
+
+    #[test]
+    fn a_sort_round_trips_through_its_key() {
+        for by in SortBy::ALL {
+            for direction in [SortDirection::Ascending, SortDirection::Descending] {
+                let sort = Sort { by, direction };
+                assert_eq!(Sort::from_key(&sort.key()), Some(sort), "{}", sort.key());
+            }
+        }
+        assert_eq!(Sort::from_key("name"), None);
+        assert_eq!(Sort::from_key("size-ascending"), None);
+    }
 
     #[test]
     fn pips_keep_identities_holding_every_picked_color() {

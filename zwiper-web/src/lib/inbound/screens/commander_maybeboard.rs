@@ -1,5 +1,6 @@
 //! Commander maybeboard: the commanders a user saved for later, with Quick
-//! add by name, the Show row's color pips, and Create deck or Remove on each.
+//! add by name, the Show row's color pips, the Sort row, and Create deck or
+//! Remove on each.
 //!
 //! On a wide window the Quick add, Show and list column sits on the left,
 //! `/` focuses Quick add, and ↑ and ↓ move through its result chips with
@@ -24,10 +25,11 @@ use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilde
 use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
 use zwipe_core::domain::card::search_card::cards::Cards;
 use zwipe_core::domain::deck::format::Format;
-use zwipe_ui::commander::maybeboard::{self, Step};
+use zwipe_ui::commander::maybeboard::{self, Sort, SortBy, Step};
 use zwipe_ui::filter;
 use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::generation::{Generation, Ticket};
+use zwipe_ui::screens::deck_list;
 use zwipe_ui::telemetry::vocabulary::Screen;
 use zwipe_ui::timing::{MAYBEBOARD_QUICK_ADD_LIMIT, QUICK_ADD_DEBOUNCE, QUICK_ADD_MIN_CHARS};
 
@@ -41,7 +43,7 @@ use crate::inbound::cards::stack_view::use_row_faces;
 use crate::inbound::cards::swipe_select::{SwipeMode, SwipeSelect};
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::ghost::{
-    GhostActionRow, GhostButton, GhostList, GhostShowRow, GhostText,
+    GhostActionRow, GhostButton, GhostChipRow, GhostList, GhostShowRow, GhostText,
 };
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::chrome::page_keys::focus_by_id;
@@ -49,6 +51,7 @@ use crate::inbound::chrome::shortcuts::{self, CardKey};
 use crate::inbound::router::Route;
 use crate::inbound::shell::ScreenFrame;
 use crate::inbound::telemetry;
+use crate::outbound::maybeboard_sort_store::MaybeboardSortStore;
 use crate::outbound::timer;
 
 /// The saved commanders' header.
@@ -169,6 +172,7 @@ pub fn CommanderMaybeboard() -> Element {
     let mut filter = use_signal(CardQueryBuilder::new);
     let mut filter_open = use_signal(|| false);
     let mut highlight: Signal<Option<usize>> = use_signal(|| None);
+    let mut sort: Signal<Sort> = use_signal(|| MaybeboardSortStore::browser().load());
 
     let mut list = SavedList {
         entries: use_signal(Vec::new),
@@ -396,6 +400,7 @@ pub fn CommanderMaybeboard() -> Element {
         {
             shown = shown.matching(&criteria);
         }
+        let shown = Cards::from(sort().sorted(shown.into()));
         shown.sorted(applied.sort(), applied.direction()).into()
     });
     let screen_keys = Callback::new(move |key: String| match screen_key(&key) {
@@ -434,6 +439,7 @@ pub fn CommanderMaybeboard() -> Element {
                             }
                         }
                         GhostShowRow {}
+                        GhostChipRow { label: 4, chips: vec![12, 4, 10, 5, 9] }
                         div { class: "maybeboard-list card-group row-enter",
                             div { class: "card-group-header card-group-header-with-hint",
                                 GhostText { chars: 10 }
@@ -539,6 +545,33 @@ pub fn CommanderMaybeboard() -> Element {
                                 selected: show_row_art(),
                                 onclick: move |_| show_row_art.toggle(),
                                 "Art"
+                            }
+                        }
+                        // The key chips pick, the last chip turns the order
+                        // around, as on Decks.
+                        div { class: "chip-row",
+                            span { class: "stat-chip stat-chip-p1 chip-row-label", {deck_list::SORT} }
+                            for by in SortBy::ALL {
+                                Chip {
+                                    key: "{by.label()}",
+                                    selected: sort().by == by,
+                                    onclick: move |_| {
+                                        let next = Sort { by, ..sort() };
+                                        sort.set(next);
+                                        MaybeboardSortStore::browser().save(next);
+                                    },
+                                    "{by.label()}"
+                                }
+                            }
+                            Chip {
+                                selected: false,
+                                onclick: move |_| {
+                                    let mut next = sort();
+                                    next.direction = next.direction.flipped();
+                                    sort.set(next);
+                                    MaybeboardSortStore::browser().save(next);
+                                },
+                                "{sort().direction}"
                             }
                         }
                         // Swipe sits in the list's header, so it says
