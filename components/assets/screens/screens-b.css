@@ -262,24 +262,6 @@
     transform: rotate(90deg);
 }
 
-/* Collapsible group headers (deck cards screen): the card-row disclosure
-   grammar — arrow points down while expanded, eases sideways when collapsed
-   (rotation transition rides .card-row-arrow's own 0.2s ease). The body
-   opens/closes via the shared .collapsible grid-rows ease; rows stay
-   mounted, so this only styles the header. */
-.card-group-header.group-collapsible {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    cursor: pointer;
-    user-select: none;
-    transition: border-color 0.25s ease;
-}
-
-.card-group-header.group-collapsible.expanded .card-row-arrow {
-    transform: rotate(90deg);
-}
-
 /* A card list panel's arrow and title, held together at the header's
    start so its actions keep the end. */
 .card-list-fold-title {

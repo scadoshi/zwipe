@@ -798,28 +798,6 @@ body .toast-container [role="alertdialog"] {
     padding: var(--deck-list-gap) 0 0;
 }
 
-.deck-group > .card-group-header .card-row-arrow {
-    width: 1em;
-    height: 1em;
-    font-size: 1rem;
-    color: var(--text-primary);
-}
-
-/* The decks sit a panel gap under their chip and over the next one. The
-   padding opens and closes with the fold, so folded groups stack at the
-   chip row's own spacing instead of holding two gaps of empty space. */
-.deck-group > .collapsible > .collapsible-inner {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: var(--panel-gap);
-    padding: 0;
-    transition: padding 0.25s ease;
-}
-
-.deck-group > .collapsible.open > .collapsible-inner {
-    padding: var(--panel-gap) 0;
-}
-
 .deck-row {
     padding: 0.75rem 1rem;
     background-color: var(--bg-primary);
@@ -2422,24 +2400,6 @@ body .toast-container [role="alertdialog"] {
 }
 
 .chip-fold-arrow.expanded {
-    transform: rotate(90deg);
-}
-
-/* Collapsible group headers (deck cards screen): the card-row disclosure
-   grammar — arrow points down while expanded, eases sideways when collapsed
-   (rotation transition rides .card-row-arrow's own 0.2s ease). The body
-   opens/closes via the shared .collapsible grid-rows ease; rows stay
-   mounted, so this only styles the header. */
-.card-group-header.group-collapsible {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    cursor: pointer;
-    user-select: none;
-    transition: border-color 0.25s ease;
-}
-
-.card-group-header.group-collapsible.expanded .card-row-arrow {
     transform: rotate(90deg);
 }
 
