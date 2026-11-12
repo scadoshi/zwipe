@@ -1,6 +1,6 @@
 # 394. Running text stops at 70ch inside the wide panels
 
-State: fixing | Owner: thinker | PR: - | Build seen: production, web, zwipe.net, portfolio
+State: fixing | Owner: thinker | PR: #598, portfolio#49 | Build seen: production, web, zwipe.net, portfolio
 
 ## Report
 Composer for Scotty, 2026-11-12: drop the 70ch prose caps everywhere: the portfolio (every page, project pages included, such as Steller's "How it's built" bullets), zwipe.net and app.zwipe.net. Text and lists fill their panel's width; the 1400px page column stays. Surfer is sweeping for every capped spot.
