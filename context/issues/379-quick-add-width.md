@@ -16,5 +16,7 @@ laptop, #581, `web.css`, from the 900px breakpoint, scoped to `.deck-page > .dec
 
 Below 900px nothing changes, and the deck cards screen's own Quick add is untouched.
 
+The label chip also sat off its field's center: the shared `filter.css` gave a compact field in a clear wrap 0.5rem under it, which made the row taller than the field, so the row's `align-items: center` centered the label on the taller box. A compact field inside a chip row now takes no bottom margin, so label and field share a center line, and `.quick-add-results` keep the 0.5rem gap with a top margin. The sheet is components', loaded by the app too, whose deck cards Quick add (and the Commander maybeboard's) has the same chip row and compact field, so the app gets the same fix.
+
 ## Verification
 -
