@@ -2,12 +2,15 @@
 
 use dioxus::prelude::*;
 
-/// `url` on one line, cut short with an ellipsis when it runs past the
-/// dialog, the whole of it in the tooltip. A tap selects all of it, so it can
-/// be copied by hand as well as with Copy link.
+/// `url` in an accent chip centered under the dialog's text, hugging the
+/// link's width. It stays on one line while the dialog fits it and otherwise
+/// breaks at any character. A tap selects all of it, so it can be copied by
+/// hand as well as with Copy link.
 #[component]
 pub fn ShareUrl(url: String) -> Element {
     rsx! {
-        div { class: "share-url", title: "{url}", "{url}" }
+        div { class: "share-url",
+            span { class: "stat-chip share-url-chip", "{url}" }
+        }
     }
 }
