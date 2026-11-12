@@ -164,6 +164,29 @@ mod tests {
     }
 
     #[test]
+    fn home_s_colors_matches_decks_height_only_side_by_side() {
+        let home = "@media (min-width: 900px) {\n    /* zite's page from the top";
+        let row = rule_in(home, ".web-home-page > .web-columns");
+        assert!(row.contains("align-items: stretch"), "{row}");
+        let colors = rule_in(home, ".web-home-page .web-column > .home-colors");
+        assert!(colors.contains("flex: 1 1 auto"), "{colors}");
+        assert_eq!(
+            query_for(".web-columns"),
+            "@media (min-width: 900px)",
+            "the shared row is side by side only from 900px"
+        );
+        let shared = WEB_CSS
+            .find("    .web-columns {")
+            .and_then(|at| WEB_CSS.get(at..))
+            .unwrap();
+        let shared = shared.get(..shared.find('}').unwrap()).unwrap();
+        assert!(
+            shared.contains("align-items: start"),
+            "every other page's columns keep their natural heights: {shared}"
+        );
+    }
+
+    #[test]
     fn import_fills_its_column_as_export_does() {
         let import = rule_in(
             "@media (min-width: 900px) {\n    /* Import and Export",

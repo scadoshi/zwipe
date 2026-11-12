@@ -56,6 +56,7 @@ pub const UPCOMING: &[Release] = &[
             "On the web, Home pairs Decks and Colors under the hero, with Featured flavor on its own row",
             "On a phone, a deck's Edit, Clone and Share sit in the dock beside Cards",
             "zwipe.net's videos and guide screenshots hold their place as a pulsing placeholder while they load, then fade in",
+            "On the web, Home's Colors panel runs as tall as Decks beside it",
         ],
     },
     Release {
