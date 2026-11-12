@@ -355,6 +355,8 @@ fn App() -> Element {
         // The kit's dialogs, without the app shell.
         document::Style { {::components::DIALOG_CSS} }
         document::Style { {MAGIC_CSS} }
+        // The deck page's cards, as the web app draws them, for a shared deck.
+        document::Style { {::components::DECK_PAGE_CSS} }
         document::Style { {SITE_CSS} }
         // The card filter on a shared deck: the kit's input rules it needs,
         // scoped to its sheet, then its own.

@@ -1,11 +1,13 @@
 use std::collections::{HashMap, HashSet};
 
 use chrono::Utc;
+use components::icons::DockIcon;
 use components::{
-    CardFilterPanel, CardRow as SharedCardRow, Chip, ColorChart, DeckBand, DeckCharts,
-    DeckControls, DeckFacts, DeckFold, DeckHead, DeckPage, DeckSection, DockFilter, DrawOdds,
-    FeaturedCard, FlippableCardImage, HoverStackHost, ManaCurve, ManaFulfillment, Panel,
-    use_hover_stack,
+    BudgetBody, CART, CardFilterPanel, CardsViewSwitch, Chip, CurrencyChips, DeckCardsView,
+    DeckControls, DeckFacts, DeckFold, DeckHead, DeckPage, DeckRowHost, DeckStackDrawer,
+    DistributionsBody, DockFilter, DrawOddsStepper, FeaturedCard, FlippableCardImage,
+    GroupBuyDialog, HoverStackHost, ManaBody, Panel, PrintingSheet, StackDetails, StoreDialog,
+    TagsBody, charted, deck_sections, use_group_buy, use_hover_stack, use_stack_details_sync,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -14,23 +16,25 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::oracle_tag::OracleTag;
 use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
-use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use zwipe_core::domain::card::search_card::card_filter::sort_direction::SortDirection;
-use zwipe_core::domain::card::search_card::cards::Cards;
 use zwipe_core::domain::card::search_card::group_cards::GroupByOption;
 use zwipe_core::domain::deck::deck_metrics::{self, DeckMetrics};
 use zwipe_core::domain::deck::{Board, DeckEntry, Format, deck_tag_label};
 use zwipe_core::domain::share_link;
 use zwipe_core::http::contracts::deck::HttpSharedDeck;
-use zwipe_ui::colors::ColorCounts;
-use zwipe_ui::deck_cards::{self, Zone};
-use zwipe_ui::filter;
+use zwipe_ui::deck::view::StatsProfile;
+use zwipe_ui::deck_cards::stacks::{
+    CardsView, DEAL_DURATION, DEAL_STAGGER_CAP, DealCue, Reveal, deal_delay,
+};
+use zwipe_ui::deck_cards::{self, Boards, Zone, listing};
 use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::filter::picker::Sources;
 use zwipe_ui::stores::catalog::{Catalog, Kind};
+use zwipe_ui::{buy, filter};
 
-use crate::components::{OVERLAY_EXIT_MS, PageMeta, sleep_ms};
+use crate::components::{
+    OVERLAY_EXIT_MS, PageMeta, sleep_ms, use_meld_source, use_printings_source,
+};
 use crate::{Footer, Nav, Route, ShowsPips, api};
 
 /// Shortest the retry spinner shows, so an instant failure still reads as a click.
@@ -39,27 +43,6 @@ const RETRY_SPINNER_MIN_MS: u32 = 500;
 /// Longest the featured row waits for its images before it opens anyway.
 const FEATURED_WAIT_MS: u32 = 4000;
 
-/// The sideboard band's title and fold key.
-const SIDEBOARD: &str = "Sideboard";
-
-/// The sideboard as a band after the main board, titled with its card count;
-/// `None` when it is empty or the filter leaves none of it.
-fn sideboard_section(side: &[DeckEntry]) -> Option<DeckSection> {
-    if side.is_empty() {
-        return None;
-    }
-    let count = side
-        .iter()
-        .map(|e| i64::from(*e.deck_card.quantity))
-        .fold(0, i64::saturating_add);
-    Some(DeckSection {
-        key: SIDEBOARD.to_owned(),
-        title: format!("{SIDEBOARD} ({count})"),
-        pips: None,
-        cards: side.iter().map(|e| e.card.clone()).collect(),
-    })
-}
-
 /// How a shared-deck fetch can fail, from the reader's point of view.
 #[derive(Clone, PartialEq)]
 enum FetchError {
@@ -67,49 +50,6 @@ enum FetchError {
     NotShared,
     /// Anything else, worth a retry.
     Network(String),
-}
-
-/// Read-only wrapper over the shared [`SharedCardRow`]: wires the mobile
-/// tap-to-open image overlay, passing no edit callbacks (this page has none).
-/// The row feeds the page's hover stack itself.
-#[component]
-fn CardRow(
-    card: Card,
-    qty: i32,
-    mvp: bool,
-    expanded_card: Signal<Option<Uuid>>,
-    /// Tap-to-open full-art overlay target. Set to this card's data + the face
-    /// currently shown when the in-detail "Image" button is tapped.
-    mut overlay_card: Signal<Option<(ScryfallData, usize)>>,
-    /// Resolve an Oracle tag's description, so the card-role tags reveal their
-    /// definition inline. No `on_examples` on the web (no swipe browse).
-    describe_tag: Callback<String, Option<String>>,
-    /// Art-crop thumbnail visibility (the "Art" chip in Show). Always
-    /// `Some(..)` here so the toggle eases thumbs in/out instead of clipping.
-    show_art: bool,
-) -> Element {
-    // Which face the expanded detail is flipped to (0 = front), the side the
-    // overlay opens on. Kept in sync via the detail's `on_face_change`.
-    let mut current_face = use_signal(|| 0usize);
-    // Owned copies for the move closures below (each may fire many times).
-    let sd_overlay = card.scryfall_data.clone();
-
-    rsx! {
-        SharedCardRow {
-            card,
-            qty,
-            show_art: Some(show_art),
-            expanded_card,
-            show_classification: true,
-            describe_tag: Some(describe_tag),
-            // Star indicator on starred rows only; no Star button (read-only).
-            mvp: mvp.then_some(true),
-            on_image: move |()| {
-                overlay_card.set(Some((sd_overlay.clone(), current_face())));
-            },
-            on_face_change: move |face: usize| current_face.set(face),
-        }
-    }
 }
 
 /// Loading placeholder in the shape of the loaded deck: the head's title,
@@ -319,12 +259,20 @@ pub fn SharedDeck(token: String, #[props(default)] at: Option<(String, String)>)
     }
 }
 
+/// The stat panels' fold keys, shut when the page opens.
+const FOLDED_STATS: [&str; 5] = ["Budget", "Tags", "Distributions", "Mana", "Draw odds"];
+
+/// The shared deck, read only: the deck page both sites share, as the owner's deck page draws it
+/// with no edit control. List or Stacks, Group by, Show, Boards, the filter, the group and deck
+/// carts, a card's image, printings (to look), details, flip and Meld, then the stat panels.
 #[component]
 fn SharedDeckView(deck: HttpSharedDeck) -> Element {
+    // The meld halves and the printing sheet read their cards through these.
+    use_meld_source();
+    use_printings_source();
     // Oracle-tag catalog for the card-role tag definitions, fetched once and held
     // in browser memory (the endpoint is public, no auth). On failure it stays
-    // empty and exposed tags read "No description yet". No examples browse on the
-    // web, so tags reveal their definition only (no "Examples" button).
+    // empty and exposed tags read "No description yet".
     let otags: Resource<Vec<OracleTag>> =
         use_resource(|| async move { api::client().fetch_oracle_tags().await.unwrap_or_default() });
     let describe_tag = use_callback(move |slug: String| {
@@ -337,14 +285,48 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
 
     // The controls' state, ephemeral per visit.
     let group_by = use_signal(|| GroupByOption::CardType);
-    // The card filter's applied filter, and the lists its pickers search.
     let mut card_filter: Signal<CardQueryBuilder> = use_signal(CardQueryBuilder::default);
     let mut filter_open = use_signal(|| false);
     let catalog: Signal<Catalog> = use_signal(Catalog::default);
+    let mut boards = use_signal(Boards::default);
     let show_zone = use_signal(|| true);
     let show_tokens = use_signal(|| false);
-    // Art-crop thumbnails on the card rows, on by default (matches the app).
-    let show_row_art = use_signal(|| true);
+    let show_art = use_signal(|| true);
+    let view = use_signal(|| CardsView::List);
+    let collapsed: Signal<HashSet<String>> = use_signal(HashSet::new);
+    let folded: Signal<HashSet<String>> =
+        use_signal(|| FOLDED_STATS.into_iter().map(String::from).collect());
+    let mut selected: Signal<Option<Uuid>> = use_signal(|| None);
+    let face = use_signal(|| 0usize);
+    let faces: Signal<HashMap<Uuid, usize>> = use_signal(HashMap::new);
+    let currency = use_signal(PriceCurrency::default);
+    // The stacks' reveal and whether the open card's drawer shows.
+    let reveal = use_signal(Reveal::default);
+    let details_open = use_signal(|| false);
+    let details = use_context_provider(|| StackDetails {
+        reveal,
+        details_open,
+    });
+    // The stacks deal in on entering Stacks, for as long as the longest stack takes.
+    let mut deal_cue = use_signal(DealCue::default);
+    let mut dealing = use_signal(|| false);
+    use_effect(move || {
+        if deal_cue.write().on(view(), true) {
+            dealing.set(true);
+            spawn(async move {
+                let span = deal_delay(DEAL_STAGGER_CAP).saturating_add(DEAL_DURATION);
+                sleep_ms(u32::try_from(span.as_millis()).unwrap_or(u32::MAX)).await;
+                dealing.set(false);
+            });
+        }
+    });
+    let group_buy = use_group_buy();
+    let mut deck_buy_open = use_signal(|| false);
+    // The card whose printings show, to look at only.
+    let mut printing: Signal<Option<Card>> = use_signal(|| None);
+    let mut printing_open = use_signal(|| false);
+    // The rows' hover stack, pinned in the corner away from the cursor.
+    let hover_stack = use_hover_stack();
     // Featured cards with their image bytes in hand. The row stays unseen
     // until every card reports in, or 4 s pass, then deals.
     let mut featured_loaded = use_signal(|| 0usize);
@@ -353,62 +335,30 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
         sleep_ms(FEATURED_WAIT_MS).await;
         featured_timed_out.set(true);
     });
-    // Budget panel currency, mirroring the app's Budget section chips.
-    let mut selected_currency = use_signal(|| "usd");
-    // The folded panels, by key. The card groups open; the stat panels fold.
-    let mut folded: Signal<HashSet<String>> = use_signal(|| {
-        ["Budget", "Tags", "Distributions", "Mana", "Draw odds"]
-            .into_iter()
-            .map(String::from)
-            .collect()
-    });
-    // The hover stack the rows feed, pinned in the corner away from the
-    // cursor; it stays empty on touch (no mouseenter).
-    let hover_stack = use_hover_stack();
-    let expanded_card: Signal<Option<Uuid>> = use_signal(|| None);
-    // Tap-to-open full-art overlay. Holds the card's data + the face to open on
-    // (so it lands on whichever side the row was flipped to) and flips from
-    // there via the shared FlippableCardImage. A short dismiss fade mirrors the
-    // app's ImagePreview.
+    // The full-art overlay: the card's data and the face it opens on.
     let mut overlay_card: Signal<Option<(ScryfallData, usize)>> = use_signal(|| None);
     let mut overlay_dismissing = use_signal(|| false);
 
-    // The command zone in its slots, and the main board without it: the
-    // maybeboard is scratch space, not the deck statement.
+    // The command zone in its slots, and every board's entries without it.
     let zone = Zone {
         commander: deck.commander.clone(),
         partner: deck.partner_commander.clone(),
         background: deck.background.clone(),
         signature: deck.signature_spell.clone(),
     };
-    let mut mainboard: Vec<DeckEntry> = deck
-        .entries
+    let mut entries: Vec<DeckEntry> = deck.entries.clone();
+    zone.strip(&mut entries);
+    let mainboard: Vec<DeckEntry> = entries
         .iter()
         .filter(|e| e.deck_card.board == Board::Deck)
         .cloned()
         .collect();
-    zone.strip(&mut mainboard);
-    let card_count: i64 = mainboard
-        .iter()
-        .map(|e| i64::from(*e.deck_card.quantity))
-        .sum();
-    let qty_by_id: HashMap<Uuid, i32> = mainboard
-        .iter()
-        .map(|e| (e.deck_card.scryfall_data_id, *e.deck_card.quantity))
-        .collect();
-    let mvp_ids: HashSet<Uuid> = mainboard
-        .iter()
-        .filter(|e| e.deck_card.mvp_at.is_some())
-        .map(|e| e.deck_card.scryfall_data_id)
-        .collect();
-    // A format with a signature spell is Oathbreaker: the "commander" is the
-    // oathbreaker planeswalker.
+    let has_maybe = entries.iter().any(|e| e.deck_card.board.is_maybeboard());
+    let has_side = entries.iter().any(|e| e.deck_card.board.is_sideboard());
     let is_oathbreaker = deck
         .format
         .as_ref()
         .is_some_and(Format::has_signature_spell);
-    // The command zone with its roles, then the MVPs: the deck's identity at
-    // a glance, and the one strip the Command zone chip never hides.
     let featured = deck_cards::featured(&zone, &mainboard, is_oathbreaker);
     let featured_ready = featured_timed_out() || featured_loaded() >= featured.len();
     let featured_class = if featured_ready {
@@ -416,28 +366,65 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
     } else {
         "deck-head-deal"
     };
-    // A count of image loads, compared against a handful of featured cards.
     let on_featured_load = move |()| {
         let loaded = featured_loaded();
         featured_loaded.set(loaded.saturating_add(1));
     };
 
-    // The app's total: the main board plus the command zone, each card at
-    // its chosen printing's price.
-    let zone_cards: Vec<Card> = [
-        &deck.commander,
-        &deck.partner_commander,
-        &deck.background,
-        &deck.signature_spell,
-    ]
-    .into_iter()
-    .flatten()
-    .cloned()
-    .collect();
-    let price = deck_metrics::deck_price(&deck.entries, &zone_cards, PriceCurrency::Usd);
+    // The rows as the owner's deck page lists them, from the same pass.
+    let applied = card_filter();
+    let meta = listing::meta_of(&entries);
+    let display = deck_cards::pass(&entries, &zone, &applied, group_by());
+    let token_cards = if show_tokens() {
+        deck.tokens.clone()
+    } else {
+        Vec::new()
+    };
+    let listed = listing::list_rows(
+        &display,
+        &meta,
+        token_cards,
+        &applied,
+        boards(),
+        show_zone(),
+    );
+    let all_rows = listed.rows.clone();
+    let listed_ids = use_memo(use_reactive!(|all_rows| all_rows
+        .iter()
+        .map(|r| r.card.scryfall_data.id)
+        .collect::<Vec<_>>()));
+    use_stack_details_sync(reveal, details_open, listed_ids);
+    let row_boards: HashMap<Uuid, Board> = meta.iter().map(|(id, m)| (*id, m.board)).collect();
+    let sections = deck_sections(listed, &meta, deck.format);
+    let empty = boards().main && sections.is_empty();
+    let section_keys: Vec<String> = sections.iter().map(|(s, _)| s.key.clone()).collect();
+    let all_folded = {
+        let shut = collapsed.read();
+        !section_keys.is_empty() && section_keys.iter().all(|k| shut.contains(k))
+    };
+    let fold_all = move |()| {
+        let mut collapsed = collapsed;
+        let mut shut = collapsed.write();
+        if all_folded {
+            for key in &section_keys {
+                shut.remove(key);
+            }
+        } else {
+            shut.extend(section_keys.iter().cloned());
+        }
+    };
+    let filter_on = !applied.is_empty();
+    let dot = filter::shows_dot(&applied);
+    let sources = Sources::deck(&mainboard.iter().map(|e| e.card.clone()).collect::<Vec<_>>());
 
-    // Card count mirrors the app's deck-list tile: mainboard sum plus each
-    // present command-zone slot (commander only when the format uses one).
+    // The head's facts: the main board plus each present command zone slot,
+    // priced at each card's chosen printing.
+    let zone_cards: Vec<Card> = zone.cards().into_iter().map(|(_, c)| c.clone()).collect();
+    let price = deck_metrics::deck_price(&deck.entries, &zone_cards, PriceCurrency::Usd);
+    let card_count: i64 = mainboard
+        .iter()
+        .map(|e| i64::from(*e.deck_card.quantity))
+        .sum();
     let zone_slots = [
         deck.format.as_ref().is_some_and(Format::has_commander) && deck.commander.is_some(),
         deck.partner_commander.is_some(),
@@ -447,7 +434,6 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
     .into_iter()
     .filter(|present| *present)
     .count();
-    // A display count: it saturates rather than wraps on a corrupt quantity.
     let display_count =
         i64::try_from(zone_slots).map_or(card_count, |slots| card_count.saturating_add(slots));
     let facts = DeckFacts {
@@ -468,117 +454,28 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
         price: (price > 0.0).then(|| format!("${price:.2}")),
     };
 
-    // The same pass the app's deck view runs: criteria match, name sort, then
-    // group, with the lands pulled out. A filter that fails to parse lists
-    // every card.
-    let builder = card_filter();
-    let filter_on = !builder.is_empty();
-    let dot = filter::shows_dot(&builder);
-    let deck_cards: Vec<Card> = mainboard.iter().map(|e| e.card.clone()).collect();
-    let sources = Sources::deck(&deck_cards);
-    let listed_zone = if show_zone() {
-        zone.clone()
-    } else {
-        Zone::default()
-    };
-    let sideboard: Vec<DeckEntry> = deck
-        .entries
-        .iter()
-        .filter(|e| e.deck_card.board == Board::Sideboard)
-        .cloned()
-        .collect();
-    let side_qty: HashMap<Uuid, i32> = sideboard
-        .iter()
-        .map(|e| (e.deck_card.scryfall_data_id, *e.deck_card.quantity))
-        .collect();
-    let listed: Vec<DeckEntry> = mainboard.iter().chain(&sideboard).cloned().collect();
-    let display = deck_cards::pass(&listed, &listed_zone, &builder, group_by());
-    // Tokens the deck's cards produce (server-derived), shown like the app's
-    // token list. Name-sorted, not run through the card filter.
-    let tokens: Option<Vec<Card>> = show_tokens().then(|| {
-        Cards::from(deck.tokens.clone())
-            .sorted(CardSortKey::Name, SortDirection::Ascending)
-            .into()
-    });
-    let mut sections = components::sections(&display, deck.format, tokens.as_deref(), &qty_by_id);
-    if let Some(section) = sideboard_section(&display.side) {
-        sections.push(section);
-    }
-    // The fold-all button: every card group shut, or every one open again.
-    let section_keys: Vec<String> = sections.iter().map(|s| s.key.clone()).collect();
-    let all_folded = {
-        let shut = folded.read();
-        !section_keys.is_empty() && section_keys.iter().all(|k| shut.contains(k))
-    };
-    let fold_all = move |()| {
-        let mut shut = folded.write();
-        if all_folded {
-            for key in &section_keys {
-                shut.remove(key);
-            }
-        } else {
-            shut.extend(section_keys.iter().cloned());
-        }
-    };
-    let empty = sections.is_empty();
-    // Each band with its rows' quantities, the sideboard's from its own
-    // entries: a card can sit in both boards in different numbers.
-    let bands = sections.into_iter().map(|section| {
-        let qty_of = if section.key == SIDEBOARD {
-            &side_qty
-        } else {
-            &qty_by_id
-        };
-        let quantities: Vec<i32> = section
-            .cards
-            .iter()
-            .map(|c| qty_of.get(&c.scryfall_data.id).copied().unwrap_or(1))
-            .collect();
-        (section, quantities)
-    });
+    // The stat panels, as the owner's deck page draws them.
+    let stats_profile = StatsProfile::from(&deck);
+    let metrics = has_cards(&deck)
+        .then(|| DeckMetrics::from_entries_and_command_zone(&deck.entries, &zone_cards));
+    let charts = charted(metrics.as_ref());
+    let land_count = metrics.as_ref().map_or(0, |m| m.land_count);
+    let has_budget = stats_profile.has_budget(metrics.is_some());
+    let has_tags = stats_profile.tag_count() > 0;
+    let deck_buy = has_cards(&deck).then(|| buy::shared_deck_links(&deck));
 
-    // Distribution charts, mirroring the app's deck screen sections: metrics
-    // over the full entry list (mainboard-only inside, same as the app) plus
-    // the command zone; suppressed while the deck holds only its command zone.
-    let cz_cards: Vec<Card> = zone.cards().into_iter().map(|(_, c)| c.clone()).collect();
-    let metrics = DeckMetrics::from_entries_and_command_zone(&deck.entries, &cz_cards);
-    let show_charts = metrics.land_count > 0 || metrics.nonland_count > 0;
-    let has_tags =
-        !deck.tags.is_empty() || !deck.oracle_tags.is_empty() || !deck.other_tags.is_empty();
-    let currency = PriceCurrency::from_key(selected_currency()).unwrap_or_default();
-    let (total, avg) = match currency {
-        PriceCurrency::Eur => (metrics.total_price_eur, metrics.avg_price_eur),
-        PriceCurrency::Tix => (metrics.total_price_tix, metrics.avg_price_tix),
-        PriceCurrency::Usd => (metrics.total_price_usd, metrics.avg_price_usd),
+    let host = DeckRowHost {
+        on_image: Some(Callback::new(move |shown: (ScryfallData, usize)| {
+            overlay_card.set(Some(shown));
+        })),
+        on_printing: None,
+        on_view_printing: Some(Callback::new(move |card: Card| {
+            printing.set(Some(card));
+            printing_open.set(true);
+        })),
+        describe_tag: Some(describe_tag),
+        on_examples: None,
     };
-    // Total shown as `total / target` when a price target is set; the target
-    // keeps its own stored currency, never converted (same as the app's
-    // Budget section).
-    let running = currency.format_amount(total.unwrap_or(0.0));
-    let total_fmt = match deck.price_target {
-        Some(target) => {
-            let target_currency = deck.price_target_currency.unwrap_or_default();
-            format!("{running} / {}", target_currency.format_amount(target))
-        }
-        None => running,
-    };
-    let avg_fmt = avg.map_or_else(|| "N/A".to_string(), |v| currency.format_amount(v));
-    let avg_pt = if metrics.avg_power.is_some() || metrics.avg_toughness.is_some() {
-        let fmt = |v: Option<f64>| v.map_or_else(|| "-".to_string(), |v| format!("{v:.1}"));
-        Some(format!(
-            "{} / {}",
-            fmt(metrics.avg_power),
-            fmt(metrics.avg_toughness)
-        ))
-    } else {
-        None
-    };
-    // `actual / target` when a land target is set, like the app's Mana section.
-    let lands_line = match deck.land_target {
-        Some(target) => format!("{} / {target}", metrics.land_count),
-        None => metrics.land_count.to_string(),
-    };
-    let (deck_size, buckets) = metrics.draw_odds_buckets();
 
     rsx! {
         PageMeta {
@@ -587,8 +484,8 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
             path: "/deck".to_string(),
         }
         HoverStackHost { stack: hover_stack }
-        // The funnel floats at the bottom right, as on the web's deck page,
-        // with a reset on its corner while a filter is on.
+        // The page's actions float at the bottom right, as on the web's deck
+        // page: the filter, with its reset while a filter is on, then the cart.
         div { class: "action-dock action-dock-right",
             DockFilter {
                 label: "Filter",
@@ -598,19 +495,29 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                 on_reset: move |()| card_filter.set(CardQueryBuilder::default()),
                 reset_label: "Reset filter",
             }
+            if deck_buy.is_some() {
+                span { class: "action-dock-divider" }
+                button {
+                    class: "action-dock-btn",
+                    "aria-label": buy::CART_LABEL,
+                    onclick: move |_| deck_buy_open.set(true),
+                    DockIcon { path: CART }
+                }
+            }
         }
         CardFilterPanel {
             open: filter_open,
             filter: card_filter,
             config: SheetConfig { show_format: true, sources, ..SheetConfig::default() },
-            on_apply: move |next: CardQueryBuilder| card_filter.set(next),
+            on_apply: move |next: CardQueryBuilder| {
+                card_filter.set(next);
+                selected.set(None);
+            },
             catalog,
             on_need: move |kinds: &'static [Kind]| fetch_lists(catalog, kinds),
         }
-        // Tap-to-open full-art overlay. Mirrors the app's ImagePreview: a dimmed
-        // backdrop with the card art (its own flip button for DFCs), tap anywhere
-        // to dismiss. The flip button stops propagation, so flipping never
-        // dismisses.
+        // The full-art overlay: a dimmed backdrop with the card's art (its own
+        // flip button for a card with faces); a tap anywhere dismisses it.
         if overlay_card().is_some() || overlay_dismissing() {
             div { class: "sd-image-overlay-backdrop" }
             div {
@@ -635,7 +542,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
             }
         }
         div {
-            class: "shared-deck content-enter",
+            class: "shared-deck content-enter deck-page-wide",
             onmousemove: move |e| hover_stack.track(e.client_coordinates().x),
             DeckPage {
                 head: rsx! {
@@ -659,136 +566,110 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                 controls: rsx! {
                     DeckControls {
                         group_by,
-                        all_folded,
-                        on_fold_all: fold_all,
                         show_tokens: (!deck.tokens.is_empty()).then_some(show_tokens),
                         show_zone: zone.offers_chip(deck.format).then_some(show_zone),
-                        show_art: show_row_art,
-                    }
-                },
-                empty,
-                bands: rsx! {
-                    for (section, quantities) in bands {
-                        DeckBand {
-                            key: "{section.key}",
-                            section: section.clone(),
-                            folded,
-                            for (card, qty) in section.cards.into_iter().zip(quantities) {
-                                CardRow {
-                                    key: "{card.scryfall_data.id}",
-                                    qty,
-                                    mvp: mvp_ids.contains(&card.scryfall_data.id),
-                                    card,
-                                    expanded_card,
-                                    overlay_card,
-                                    describe_tag,
-                                    show_art: show_row_art(),
-                                }
-                            }
-                        }
-                    }
-                },
-                // The app's deck-view sections (Budget, Tags, Distributions,
-                // Mana, Draw odds), folded. Warnings stays app-only: a
-                // builder's tool.
-                stats: show_charts.then(|| rsx! {
-                    DeckFold { fold_key: "Budget", title: "Budget", folded,
-                        div { class: "deck-stat-body",
-                            div { class: "chip-row", style: "padding: 0 1rem;",
-                                for (label, key) in [("USD", "usd"), ("EUR", "eur"), ("TIX", "tix")] {
+                        show_art,
+                        art_disabled: view() == CardsView::Stacks,
+                        all_folded,
+                        on_fold_all: fold_all,
+                        on_change: move |()| selected.set(None),
+                        boards: rsx! {
+                            div { class: "chip-row", "data-settle": "",
+                                span { class: "stat-chip stat-chip-p1 chip-row-label", "Boards" }
+                                for (label, board, on, enabled) in [
+                                    ("Main", Board::Deck, boards().main, true),
+                                    ("Maybe", Board::Maybeboard, boards().maybe, has_maybe || boards().maybe),
+                                    ("Side", Board::Sideboard, boards().side, has_side || boards().side),
+                                ] {
                                     Chip {
-                                        key: "{key}",
-                                        selected: selected_currency() == key,
-                                        onclick: move |_| selected_currency.set(key),
+                                        key: "{label}",
+                                        selected: on,
+                                        disabled: !enabled,
+                                        onclick: move |_| {
+                                            boards.write().toggle(board);
+                                            selected.set(None);
+                                        },
                                         "{label}"
                                     }
                                 }
                             }
-                            div { class: "info-row",
-                                span { class: "info-row-label", "Total price" }
-                                span { class: "info-row-value", "{total_fmt}" }
-                            }
-                            div { class: "info-row",
-                                span { class: "info-row-label", "Average card price" }
-                                span { class: "info-row-value", "{avg_fmt}" }
-                            }
+                            CardsViewSwitch { view, on_change: move |_| selected.set(None) }
+                        },
+                    }
+                },
+                empty,
+                bands: rsx! {
+                    DeckCardsView {
+                        sections,
+                        view: view(),
+                        currency: PriceCurrency::Usd,
+                        collapsed,
+                        details,
+                        selected,
+                        face,
+                        faces,
+                        boards: row_boards.clone(),
+                        group_buy,
+                        dealing: dealing(),
+                        show_art: Some(show_art),
+                        actions: None,
+                        host,
+                    }
+                },
+                stats: rsx! {
+                    if has_budget {
+                        DeckFold {
+                            fold_key: "Budget",
+                            title: "Budget",
+                            folded,
+                            accessory: metrics.is_some().then(|| rsx! { CurrencyChips { currency } }),
+                            BudgetBody { profile: stats_profile.clone(), metrics, currency }
                         }
                     }
                     if has_tags {
                         DeckFold { fold_key: "Tags", title: "Tags", folded,
-                            div { class: "deck-stat-body",
-                                if !deck.tags.is_empty() {
-                                    div { class: "info-row info-row-stacked",
-                                        span { class: "info-row-label", "Deck tags" }
-                                        span { class: "info-row-value info-row-tags",
-                                            for tag in deck.tags.iter() {
-                                                span { key: "{tag}", class: "stat-chip stat-chip-muted", "{deck_tag_label(tag)}" }
-                                            }
-                                        }
-                                    }
-                                }
-                                if !deck.oracle_tags.is_empty() {
-                                    div { class: "info-row info-row-stacked",
-                                        span { class: "info-row-label", "Oracle tags" }
-                                        span { class: "info-row-value info-row-tags",
-                                            for slug in deck.oracle_tags.iter() {
-                                                span { key: "{slug}", class: "stat-chip stat-chip-muted", "{slug}" }
-                                            }
-                                        }
-                                    }
-                                }
-                                if !deck.other_tags.is_empty() {
-                                    div { class: "info-row info-row-stacked",
-                                        span { class: "info-row-label", "Other tags" }
-                                        span { class: "info-row-value info-row-tags",
-                                            for tag in deck.other_tags.iter() {
-                                                span { key: "{tag}", class: "stat-chip stat-chip-muted", "{tag.display_name()}" }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+                            TagsBody { profile: stats_profile }
                         }
                     }
-                    DeckFold { fold_key: "Distributions", title: "Distributions", folded,
-                        div { class: "deck-stat-body",
-                            if let Some(value) = avg_pt {
-                                div { class: "info-row",
-                                    span { class: "info-row-label", "Average P/T" }
-                                    span { class: "info-row-value", style: "white-space:nowrap;", "{value}" }
-                                }
-                            }
-                            DeckCharts {
-                                type_bars: Some(metrics.type_bars()),
-                                category_bars: metrics.card_role_bars(),
-                                oracle_tag_bars: metrics.oracle_tag_bars(),
-                                role_tags: Some(metrics.card_role_tags.clone()),
-                                describe_tag,
-                            }
+                    if let Some(m) = charts.clone() {
+                        DeckFold { fold_key: "Distributions", title: "Distributions", folded,
+                            DistributionsBody { metrics: m, describe_tag: Some(describe_tag) }
                         }
                     }
-                    DeckFold { fold_key: "Mana", title: "Mana", folded,
-                        div { class: "deck-stat-body",
-                            div { class: "info-row",
-                                span { class: "info-row-label", "Lands" }
-                                span { class: "info-row-value", "{lands_line}" }
-                            }
-                            div { class: "info-row",
-                                span { class: "info-row-label", "Average mana value" }
-                                span { class: "info-row-value", "{metrics.avg_cmc:.1}" }
-                            }
-                            ManaCurve { mana_curve_bars: metrics.mana_curve_bars() }
-                            ColorChart { bars: ColorCounts::from(&metrics).bars() }
-                            ManaFulfillment { rows: metrics.mana_balance_rows() }
+                    if charts.is_some() || deck.land_target.is_some() {
+                        DeckFold { fold_key: "Mana", title: "Mana", folded,
+                            ManaBody { charts: charts.clone(), land_count, land_target: deck.land_target }
                         }
                     }
-                    DeckFold { fold_key: "Draw odds", title: "Draw odds", folded,
-                        div { class: "deck-stat-body",
-                            DrawOdds { deck_size, buckets }
+                    if let Some(m) = charts {
+                        DeckFold { fold_key: "Draw odds", title: "Draw odds", folded,
+                            DrawOddsStepper { metrics: m }
                         }
                     }
-                }),
+                },
             }
+        }
+        if let Some(links) = deck_buy {
+            StoreDialog {
+                open: deck_buy_open,
+                title: buy::DECK_TITLE.to_owned(),
+                body: buy::DECK_BODY.to_owned(),
+                links,
+            }
+        }
+        GroupBuyDialog { group_buy }
+        if view() == CardsView::Stacks {
+            DeckStackDrawer {
+                rows: all_rows,
+                boards: row_boards,
+                details,
+                faces,
+                actions: None,
+                host,
+            }
+        }
+        if let Some(card) = printing() {
+            PrintingSheet { key: "{card.scryfall_data.id}", card, open: printing_open }
         }
     }
 }

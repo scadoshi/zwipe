@@ -4,6 +4,7 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::deck_profile::DeckProfile;
 use zwipe_core::domain::deck::{Deck, DeckEntry, deck_metrics};
+use zwipe_core::http::contracts::deck::HttpSharedDeck;
 
 use crate::deck_cards::keys::{RowInfo, RowKind};
 
@@ -72,6 +73,36 @@ pub fn cards_links<'a>(cards: impl IntoIterator<Item = StoreCard<'a>>) -> Vec<Bu
 pub fn deck_links(deck: &Deck) -> Vec<BuyLink> {
     let (tcgplayer, cardkingdom) = links(deck);
     store_links(tcgplayer, cardkingdom)
+}
+
+/// The store dialog's links for a shared deck, built as [`deck_links`] builds an owner's: the
+/// command zone in its order, then the main and side boards.
+#[must_use]
+pub fn shared_deck_links(deck: &HttpSharedDeck) -> Vec<BuyLink> {
+    let zone: Vec<(&str, Option<i32>)> = [
+        &deck.commander,
+        &deck.partner_commander,
+        &deck.background,
+        &deck.signature_spell,
+    ]
+    .into_iter()
+    .flatten()
+    .map(|card| {
+        (
+            card.scryfall_data.name.as_str(),
+            card.scryfall_data.tcgplayer_id,
+        )
+    })
+    .collect();
+    let entries: Vec<&DeckEntry> = deck
+        .entries
+        .iter()
+        .filter(|e| e.deck_card.board.is_active() || e.deck_card.board.is_sideboard())
+        .collect();
+    store_links(
+        tcgplayer_url(&entries, &zone),
+        cardkingdom_url(&entries, &zone),
+    )
 }
 
 /// The store dialog's links for one card named `name`: its `TCGplayer` product page when
