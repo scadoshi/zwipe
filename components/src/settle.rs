@@ -83,6 +83,8 @@ const SETTLE_JS: &str = r"
         let x = ax, y = ay;
         let parent = null;
         if (up) {
+          // Against the group's box as it shows, its own moves included, so
+          // a thing rides along with its group's move.
           const pr = up.getBoundingClientRect();
           x -= pr.left; y -= pr.top;
           parent = s + '|' + keyOf(up);
@@ -124,13 +126,15 @@ const SETTLE_JS: &str = r"
           cur.el.animate([{ opacity: 0 }, { opacity: 1 }], timing);
           continue;
         }
-        const moved = old.parent === cur.parent;
-        const dx = moved ? old.x - cur.x : old.ax - cur.ax;
-        const dy = moved ? old.y - cur.y : old.ay - cur.ay;
+        // Where the layout put it, against where it was: within its group
+        // when it stays in the same one, on the page otherwise.
+        const sameGroup = old.parent === cur.parent;
+        const dx = sameGroup ? old.x - cur.x : old.ax - cur.ax;
+        const dy = sameGroup ? old.y - cur.y : old.ay - cur.ay;
         if (Math.hypot(dx, dy) < JUMP) continue;
-        for (const a of cur.el.getAnimations()) if (a.id === 'settle') a.cancel();
-        const sx = dx + old.tx, sy = dy + old.ty;
-        const a = cur.el.animate([{ translate: sx + 'px ' + sy + 'px' }, { translate: '0px 0px' }], timing);
+        // Each jump adds its own move on top of any still running, so a
+        // thing that jumps again mid-move carries on from where it shows.
+        const a = cur.el.animate([{ translate: dx + 'px ' + dy + 'px' }, { translate: '0px 0px' }], { ...timing, composite: 'add' });
         a.id = 'settle';
       }
       const gone = new Set();

@@ -630,6 +630,8 @@ pub fn DeckWidePage(
                 class: "action-dock-btn",
                 "aria-label": "Undo",
                 "data-action": components::data_action::UNDO,
+                // Undo puts a card back, so the page settles around it.
+                "data-settle": "",
                 disabled: !undo_ready,
                 onclick: move |_| apply_undo.call(()),
                 DockIcon { path: UNDO }
