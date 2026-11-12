@@ -59,6 +59,16 @@ pub fn tucked(count: usize) -> Vec<bool> {
     (0..count).map(|i| i > 0).collect()
 }
 
+/// For each of a stack's `count` cards, whether it tucks under the card above it while
+/// `revealed` pushes the rest down in the layout (phones): as [`tucked`], except the card right
+/// after the revealed one, which starts under it. The stack grows by the height the tuck hid,
+/// moving what lies below it on the page, where [`shifted`] would lay the cards over it.
+#[must_use]
+pub fn tucked_pushed(count: usize, revealed: Option<usize>) -> Vec<bool> {
+    let opened = revealed.and_then(|r| r.checked_add(1));
+    (0..count).map(|i| i > 0 && Some(i) != opened).collect()
+}
+
 /// For each of a stack's `count` cards, whether it shows in full: the
 /// `revealed` one and the last, which nothing covers. Only a card shown in
 /// full wears the open card's outline.
@@ -451,6 +461,22 @@ mod tests {
             CardsView::List,
             "the list stays the default"
         );
+    }
+
+    #[test]
+    fn a_pushing_reveal_untucks_only_the_card_after_it() {
+        assert_eq!(
+            tucked_pushed(4, None),
+            tucked(4),
+            "nothing revealed, the plain stack"
+        );
+        assert_eq!(tucked_pushed(4, Some(1)), [false, true, false, true]);
+        assert_eq!(
+            tucked_pushed(4, Some(3)),
+            tucked(4),
+            "the last card shows whole already"
+        );
+        assert_eq!(tucked_pushed(4, Some(0)), [false, false, true, true]);
     }
 
     #[test]

@@ -22,7 +22,7 @@ use zwipe_ui::deck_cards::stacks::{CardsView, Gesture, Reveal};
 
 use crate::{
     CardBoardMoves, CardDetailsSheet, CardEditButtons, CardRow, CardStack, CartButton, DeckBand,
-    DeckGroupSection, DeckSection, GroupBuy, StackCard,
+    DeckGroupSection, DeckSection, GroupBuy, StackCard, use_overlay_back_action,
 };
 
 /// The deck's edits, each taking the card's id: a quantity change by a step, a move to a board,
@@ -360,8 +360,9 @@ pub fn DeckRow(
 /// bottom. Hover reveals a card in place; a click opens it in the drawer.
 ///
 /// With `touch`, for phones, the stacks are in [`CardStack`]'s tap mode: a first tap reveals a
-/// card, a second opens it in the drawer. A header press calls `on_fold` with the group's key
-/// where the host passes it, else folds it in `collapsed`.
+/// card, a second opens it in the drawer, and the OS back clears a revealed card before it leaves
+/// the screen. A header press calls `on_fold` with the group's key where the host passes it, else
+/// folds it in `collapsed`.
 #[component]
 pub fn DeckStacks(
     sections: Vec<(DeckSection, Vec<RowInfo>)>,
@@ -375,6 +376,18 @@ pub fn DeckStacks(
     #[props(default)] on_fold: Option<EventHandler<String>>,
 ) -> Element {
     let mut reveal = details.reveal;
+    // The open card's sheet takes the back itself; a card only revealed takes it here.
+    let revealing = use_memo(move || {
+        let shown = reveal();
+        touch && shown.revealed().is_some() && shown.open().is_none()
+    });
+    // Back clears the reveal with no click behind it, so it starts the settle itself and the
+    // rows the reveal pushed down slide back up.
+    let dismiss = use_callback(move |()| {
+        crate::settle::watch();
+        details.dismiss();
+    });
+    use_overlay_back_action(revealing.into(), dismiss);
     let on_hover =
         (!touch).then(|| EventHandler::new(move |id| reveal.write().apply(Gesture::Hover(id))));
     let on_leave =

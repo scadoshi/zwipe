@@ -31,6 +31,7 @@ The app's deck cards screen (`zwiper/src/lib/inbound/screens/deck/card/view.rs`)
 - A scroll that starts on a card fires no click, so scrolling never reveals anything.
 - `-webkit-tap-highlight-color: transparent` on `.card-stack-card`. `.card-stack:hover` z-index is harmless on touch: it sticks to the last tapped stack, which is the one that should sit on top.
 - A card that leaves the list (removed, moved off a shown board, filtered out) closes the sheet, as on the web.
+- A revealed card pushes the rows below it down instead of laying over them, and they slide back on tap off or Back, through the shared settle (Scotty, 2026-11-12). The web's hover keeps the overlap.
 
 ## Layout at 360 to 430px
 

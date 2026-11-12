@@ -23,6 +23,9 @@
 //! - a new one fades in;
 //! - one that left fades out where it was, as a copy laid over the page.
 //!
+//! A change with no click or key behind it, such as the OS back, starts a
+//! watch through [`watch`] before it changes anything.
+//!
 //! Every move runs on the kit's `--ease-enter` over [`SETTLE_MS`]. Under
 //! `prefers-reduced-motion` nothing is watched.
 
@@ -218,6 +221,7 @@ const SETTLE_JS: &str = r"
     observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'hidden', 'open'] });
     setTimeout(function end() { if (performance.now() < until) setTimeout(end, until - performance.now()); else stop(); }, WATCH);
   };
+  window.__zwSettleWatch = watch;
   const TRIGGERS = '[data-settle], [data-settle-scope] .card-action-btn, .toast-container button';
   // Controls in a trigger row that fold or show rather than reorder.
   const NOT_TRIGGERS = '__SKIP__';
@@ -255,6 +259,16 @@ pub fn use_settle() {
     });
 }
 
+/// The script [`watch`] runs: the installed settling's watch, when there is one.
+const WATCH_JS: &str = "window.__zwSettleWatch && window.__zwSettleWatch();";
+
+/// Starts a watch from a change no click or key made, as a trigger does: call it
+/// before the change, so the page's things are noted where they show. Without
+/// [`use_settle`] on the page it does nothing.
+pub fn watch() {
+    document::eval(WATCH_JS);
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -269,5 +283,10 @@ mod tests {
         assert!(script.contains(r#"KEYS = ["u", "U", "m", "s", "S", "-", "+"]"#));
         assert!(script.contains(&format!("[{TRIGGER}]")));
         assert!(script.contains(&format!("[{SCOPE}]")));
+        assert!(
+            script.contains("window.__zwSettleWatch = watch;"),
+            "the script hands its watch to settle::watch"
+        );
+        assert!(WATCH_JS.contains("window.__zwSettleWatch"));
     }
 }

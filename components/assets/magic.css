@@ -2845,6 +2845,7 @@ footer.site-footer .site-footer-note {
    header's padding. */
 .card-row-compact:focus-visible,
 .card-group-header:focus-visible,
+.card-group-toggle:focus-visible,
 .deck-fold-toggle:focus-visible {
     outline: 2px solid var(--accent-primary);
     outline-offset: -2px;

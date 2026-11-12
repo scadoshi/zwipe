@@ -400,7 +400,17 @@ body {
     color: inherit;
 }
 
-.app-deck-stacks .deck-stack > .deck-group > .card-group-header > .card-group-label {
+/* The header's first line, the arrow and the words, folds the stack; the
+   price and the cart on the line under it do not. */
+.app-deck-stacks .deck-stack > .deck-group > .card-group-header > .card-group-toggle {
+    display: flex;
+    flex: 1 1 0;
+    align-items: center;
+    min-width: 0;
+    cursor: pointer;
+}
+
+.app-deck-stacks .deck-stack > .deck-group > .card-group-header > .card-group-toggle > .card-group-label {
     flex: 0 1 auto;
     min-width: 0;
     overflow: hidden;
@@ -425,14 +435,6 @@ body {
 .app-deck-stacks .deck-stack > .deck-group > .card-group-header > .deck-stack-tail > .cart-button {
     flex: none;
     margin-left: auto;
-}
-
-/* The stack revealing a card sits over its neighbors, so the cards moved
-   down to make room pass over the header below instead of under it, and
-   stays over them until they settle back. A phone has no hover to lift it. */
-.app-deck-stacks .card-stack.tap:has(.card-stack-slot.shifted) {
-    z-index: 2;
-    transition-delay: 0s;
 }
 
 /* A tap shows no flash over the card it reveals. */
