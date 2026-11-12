@@ -13,9 +13,9 @@ use std::time::Duration;
 use components::icons::{CloneIcon, DockIcon, EditIcon, MINUS, PLUS, ShareIcon, UNDO};
 use components::{
     BudgetBody, CART, Chip, CurrencyChips, DeckCardsView, DeckControls, DeckFacts, DeckFold,
-    DeckHead, DeckPage, DeckRowHost, DeckSection, DeckStackDrawer, DistributionsBody, DockFilter,
+    DeckHead, DeckPage, DeckRowHost, DeckStackDrawer, DistributionsBody, DockFilter,
     DrawOddsStepper, FeaturedCard, GroupBuyDialog, HoverStackHost, ManaBody, StoreDialog, TagsBody,
-    charted, use_group_buy, use_hover_stack,
+    charted, deck_sections, use_group_buy, use_hover_stack,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -23,7 +23,7 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::{Board, deck_tag_label};
-use zwipe_ui::deck::form::Slot;
+use zwipe_ui::deck::view::StatsProfile;
 use zwipe_ui::deck_cards::stacks::{
     CardsView, DEAL_DURATION, DEAL_STAGGER_CAP, DealCue, Reveal, deal_delay,
 };
@@ -53,7 +53,7 @@ use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog};
 use crate::inbound::router::Route;
 use crate::inbound::screens::deck::cards::editor::{
-    Editor, Listed, LoadFailure, RowInfo, RowKind, main_row_of, use_deck_editor, use_deck_row_host,
+    Editor, LoadFailure, use_deck_editor, use_deck_row_host,
 };
 use crate::inbound::screens::deck::cards::quick_add::QuickAdd;
 use crate::outbound::timer;
@@ -165,15 +165,6 @@ pub fn DeckWidePage(
     });
 
     let all_rows = listing().rows;
-    let Listed {
-        tokens: token_rows,
-        maybe: maybe_rows,
-        side: side_rows,
-        zone: zone_rows,
-        groups: main_groups,
-        lands: main_lands,
-        ..
-    } = listing();
     let row_meta = meta();
     let row_boards: HashMap<Uuid, Board> = row_meta.iter().map(|(id, m)| (*id, m.board)).collect();
     let applied = filter.read().clone();
@@ -181,12 +172,6 @@ pub fn DeckWidePage(
     let held_profile = profile();
     let format = held_profile.as_ref().and_then(|p| p.format);
     let oathbreaker = format.is_some_and(|f| f.has_signature_spell());
-    let qty_count = |cards: &[Card]| -> i32 {
-        cards
-            .iter()
-            .map(|c| row_meta.get(&c.scryfall_data.id).map_or(1, |m| m.qty))
-            .fold(0, i32::saturating_add)
-    };
     let has_maybe = entries
         .read()
         .iter()
@@ -226,137 +211,9 @@ pub fn DeckWidePage(
     let undo_ready = !undo.read().is_empty(deck_id);
     let filter_on = !applied.is_empty();
     let dot = filter::shows_dot(&applied);
-    let has_partner = zone_rows.iter().any(|(slot, _)| *slot == Slot::Partner);
 
-    // The sections, in the editor's order: tokens, the maybeboard and
-    // sideboard, the command zone, the main board's groups and its lands.
-    let mut sections: Vec<(DeckSection, Vec<RowInfo>)> = Vec::new();
-    if !token_rows.is_empty() {
-        let rows = token_rows
-            .iter()
-            .map(|card| RowInfo {
-                card: card.clone(),
-                qty: 1,
-                kind: RowKind::Token,
-            })
-            .collect();
-        sections.push((
-            DeckSection {
-                key: "Tokens".to_owned(),
-                title: format!("Tokens ({})", token_rows.len()),
-                pips: None,
-                cards: token_rows,
-            },
-            rows,
-        ));
-    }
-    for (board, title, entries_on) in [
-        (Board::Maybeboard, "Maybeboard", maybe_rows),
-        (Board::Sideboard, "Sideboard", side_rows),
-    ] {
-        if entries_on.is_empty() {
-            continue;
-        }
-        let rows = entries_on
-            .iter()
-            .map(|entry| RowInfo {
-                card: entry.card.clone(),
-                qty: *entry.deck_card.quantity,
-                kind: RowKind::Board(board),
-            })
-            .collect();
-        sections.push((
-            DeckSection {
-                key: title.to_owned(),
-                title: format!("{title} ({})", entries_on.len()),
-                pips: None,
-                cards: entries_on.into_iter().map(|e| e.card).collect(),
-            },
-            rows,
-        ));
-    }
-    let commanders: Vec<(Slot, Card)> = zone_rows
-        .iter()
-        .filter(|(slot, _)| matches!(slot, Slot::Commander | Slot::Partner))
-        .cloned()
-        .collect();
-    if !commanders.is_empty() {
-        let title = Slot::Commander.group_header(format, has_partner).to_owned();
-        sections.push((
-            DeckSection {
-                key: title.clone(),
-                title,
-                pips: None,
-                cards: commanders.iter().map(|(_, c)| c.clone()).collect(),
-            },
-            commanders
-                .into_iter()
-                .map(|(slot, card)| RowInfo {
-                    card,
-                    qty: 1,
-                    kind: RowKind::Zone(slot),
-                })
-                .collect(),
-        ));
-    }
-    for (slot, card) in zone_rows
-        .iter()
-        .filter(|(slot, _)| matches!(slot, Slot::Background | Slot::SignatureSpell))
-        .cloned()
-    {
-        let title = slot.group_header(format, has_partner).to_owned();
-        sections.push((
-            DeckSection {
-                key: title.clone(),
-                title,
-                pips: None,
-                cards: vec![card.clone()],
-            },
-            vec![RowInfo {
-                card,
-                qty: 1,
-                kind: RowKind::Zone(slot),
-            }],
-        ));
-    }
-    for group in main_groups {
-        let n = qty_count(&group.cards);
-        let title = if group.label.is_empty() {
-            format!("({n})")
-        } else {
-            format!("{} ({n})", group.label)
-        };
-        let rows = group
-            .cards
-            .iter()
-            .map(|c| main_row_of(&row_meta, c))
-            .collect();
-        sections.push((
-            DeckSection {
-                key: group.key,
-                title,
-                pips: group.pips,
-                cards: group.cards,
-            },
-            rows,
-        ));
-    }
-    if !main_lands.is_empty() {
-        let n = qty_count(&main_lands);
-        let rows = main_lands
-            .iter()
-            .map(|c| main_row_of(&row_meta, c))
-            .collect();
-        sections.push((
-            DeckSection {
-                key: "Lands".to_owned(),
-                title: format!("Lands ({n})"),
-                pips: None,
-                cards: main_lands,
-            },
-            rows,
-        ));
-    }
+    // The sections, in the editor's order.
+    let sections = deck_sections(listing(), &row_meta, format);
     let empty = loaded() && shown_boards.main && sections.is_empty();
 
     // The fold-all button: every band shut, or every one open again.
@@ -534,12 +391,12 @@ pub fn DeckWidePage(
                             title: "Budget",
                             folded,
                             accessory: has_cards.then(|| rsx! { CurrencyChips { currency } }),
-                            BudgetBody { profile: p.clone(), metrics, currency }
+                            BudgetBody { profile: StatsProfile::from(&p), metrics, currency }
                         }
                     }
                     if tag_count(&p) > 0 {
                         DeckFold { fold_key: "Tags", title: "Tags", folded,
-                            TagsBody { profile: p }
+                            TagsBody { profile: StatsProfile::from(&p) }
                         }
                     }
                 }

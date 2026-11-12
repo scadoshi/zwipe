@@ -117,8 +117,8 @@ pub use color_bars::{ColorBars, ColorBarsGhost};
 pub use cover_flow::CoverFlow;
 pub use danger_zone::DangerZoneAction;
 pub use deck_cards_view::{
-    DRAWER_CLASSES, DeckCardsView, DeckEditActions, DeckRow, DeckRowHost, DeckStackDrawer,
-    DeckStacks, OnPrinting, StackDetails, use_stack_details_sync,
+    CardsViewSwitch, DRAWER_CLASSES, DeckCardsView, DeckEditActions, DeckRow, DeckRowHost,
+    DeckStackDrawer, DeckStacks, OnPrinting, StackDetails, deck_sections, use_stack_details_sync,
 };
 pub use deck_group::DeckGroupSection;
 pub use deck_hover_keys::{DeckHoverKeys, use_deck_hover_keys};

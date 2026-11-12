@@ -2,26 +2,101 @@
 
 use uuid::Uuid;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use zwipe_core::domain::deck::{DeckProfile, Format};
+use zwipe_core::domain::deck::{DeckOtherTag, DeckProfile, Format};
 use zwipe_core::domain::share_link;
+use zwipe_core::http::contracts::deck::HttpSharedDeck;
 
 use crate::deck::command_zone::Slot;
 use crate::toast::{Toast, ToastKind};
 
+/// What the deck's stat panels read from its profile: its tags and its targets. An owner's deck
+/// and a shared deck both give one, so the panels draw the same for either.
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct StatsProfile {
+    /// The deck's own tags, as stored.
+    pub tags: Vec<String>,
+    /// The deck's Oracle tag slugs.
+    pub oracle_tags: Vec<String>,
+    /// The deck's other tags.
+    pub other_tags: Vec<DeckOtherTag>,
+    /// How many lands the owner aims for.
+    pub land_target: Option<i32>,
+    /// The price the owner aims to stay under, in `price_target_currency`.
+    pub price_target: Option<f64>,
+    /// The currency `price_target` is in; dollars when none is stored.
+    pub price_target_currency: Option<PriceCurrency>,
+}
+
+impl From<&DeckProfile> for StatsProfile {
+    fn from(profile: &DeckProfile) -> Self {
+        Self {
+            tags: profile.tags.clone(),
+            oracle_tags: profile.oracle_tags.clone(),
+            other_tags: profile.other_tags.clone(),
+            land_target: profile.land_target,
+            price_target: profile.price_target,
+            price_target_currency: profile.price_target_currency,
+        }
+    }
+}
+
+impl From<&HttpSharedDeck> for StatsProfile {
+    fn from(deck: &HttpSharedDeck) -> Self {
+        Self {
+            tags: deck.tags.clone(),
+            oracle_tags: deck.oracle_tags.clone(),
+            other_tags: deck.other_tags.clone(),
+            land_target: deck.land_target,
+            price_target: deck.price_target,
+            price_target_currency: deck.price_target_currency,
+        }
+    }
+}
+
+impl StatsProfile {
+    /// Whether the `Budget` panel shows: the deck has a price target, or it has metrics, which
+    /// carry the running prices.
+    #[must_use]
+    pub fn has_budget(&self, has_metrics: bool) -> bool {
+        self.price_target.is_some() || has_metrics
+    }
+
+    /// The deck, oracle and other tags together; the `Tags` panel shows only when this is above
+    /// zero.
+    #[must_use]
+    pub fn tag_count(&self) -> usize {
+        self.tags
+            .len()
+            .saturating_add(self.oracle_tags.len())
+            .saturating_add(self.other_tags.len())
+    }
+
+    /// The `Total price` row's value: the running total in `currency`, then ` / ` and the price
+    /// target in its own stored currency when the deck has one. Nothing priced reads as the
+    /// currency's zero, and the target is never converted.
+    #[must_use]
+    pub fn total_price_line(&self, total: Option<f64>, currency: PriceCurrency) -> String {
+        let running = currency.format_amount(total.unwrap_or(0.0));
+        match self.price_target {
+            Some(target) => {
+                let stored = self.price_target_currency.unwrap_or_default();
+                format!("{running} / {}", stored.format_amount(target))
+            }
+            None => running,
+        }
+    }
+}
+
 /// Whether the deck view shows its `Budget` section: the deck has a price target, or it has metrics, which carry the running prices.
 #[must_use]
 pub fn has_budget(profile: &DeckProfile, has_metrics: bool) -> bool {
-    profile.price_target.is_some() || has_metrics
+    StatsProfile::from(profile).has_budget(has_metrics)
 }
 
 /// The number on the `Tags` section's badge: deck, oracle and other tags together. The section shows only when this is above zero.
 #[must_use]
 pub fn tag_count(profile: &DeckProfile) -> usize {
-    profile
-        .tags
-        .len()
-        .saturating_add(profile.oracle_tags.len())
-        .saturating_add(profile.other_tags.len())
+    StatsProfile::from(profile).tag_count()
 }
 
 /// Whether the deck can have stats once it loads: a card in it, or any command-zone card. While the deck loads, a skeleton stands in for the stats only when this holds.
@@ -49,14 +124,7 @@ pub fn total_price_line(
     total: Option<f64>,
     currency: PriceCurrency,
 ) -> String {
-    let running = currency.format_amount(total.unwrap_or(0.0));
-    match profile.price_target {
-        Some(target) => {
-            let stored = profile.price_target_currency.unwrap_or_default();
-            format!("{running} / {}", stored.format_amount(target))
-        }
-        None => running,
-    }
+    StatsProfile::from(profile).total_price_line(total, currency)
 }
 
 /// A price row's value with ` (N unpriced)` after it when `unpriced` copies have no price in the shown currency, which its sum and average leave out.

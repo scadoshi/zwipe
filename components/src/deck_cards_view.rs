@@ -7,22 +7,25 @@
 //! image preview are the host's, through callbacks, so this module never calls the API.
 
 use std::collections::{HashMap, HashSet};
+use std::hash::BuildHasher;
 
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use zwipe_core::domain::deck::Board;
+use zwipe_core::domain::deck::{Board, Format};
 use zwipe_ui::buy::{group_cards, group_price};
 use zwipe_ui::deck::form::Slot;
+use zwipe_ui::deck_cards::Group;
 use zwipe_ui::deck_cards::columns;
 use zwipe_ui::deck_cards::keys::{RowInfo, RowKind};
-use zwipe_ui::deck_cards::stacks::{CardsView, Gesture, Reveal};
+use zwipe_ui::deck_cards::listing::{Listed, RowMeta, main_row_of};
+use zwipe_ui::deck_cards::stacks::{CardsView, Gesture, Reveal, VIEW_LABEL};
 
 use crate::{
-    CardBoardMoves, CardDetailsSheet, CardEditButtons, CardRow, CardStack, CartButton, DeckBand,
-    DeckGroupSection, DeckSection, GroupBuy, StackCard, use_overlay_back_action,
+    CardBoardMoves, CardDetailsSheet, CardEditButtons, CardRow, CardStack, CartButton, Chip,
+    DeckBand, DeckGroupSection, DeckSection, GroupBuy, StackCard, use_overlay_back_action,
 };
 
 /// The deck's edits, each taking the card's id: a quantity change by a step, a move to a board,
@@ -105,6 +108,204 @@ impl StackDetails {
         let Self { mut reveal, .. } = self;
         if reveal.peek().revealed() != reveal.peek().open() {
             reveal.write().apply(Gesture::Dismiss);
+        }
+    }
+}
+
+/// The deck's sections from `listed`, each with its rows, in the deck page's order: tokens, the
+/// maybeboard and sideboard, the commander and partner under the format's header, the background
+/// and the signature spell each under its own, then the main board's groups and its lands. A main
+/// board header counts copies by `meta`; the others count cards.
+#[must_use]
+pub fn deck_sections<S: BuildHasher>(
+    listed: Listed,
+    meta: &HashMap<Uuid, RowMeta, S>,
+    format: Option<Format>,
+) -> Vec<(DeckSection, Vec<RowInfo>)> {
+    let Listed {
+        tokens,
+        maybe,
+        side,
+        zone,
+        groups,
+        lands,
+        ..
+    } = listed;
+    let mut sections: Vec<(DeckSection, Vec<RowInfo>)> = Vec::new();
+    if !tokens.is_empty() {
+        let rows = tokens
+            .iter()
+            .map(|card| RowInfo {
+                card: card.clone(),
+                qty: 1,
+                kind: RowKind::Token,
+            })
+            .collect();
+        sections.push((
+            DeckSection {
+                key: "Tokens".to_owned(),
+                title: format!("Tokens ({})", tokens.len()),
+                pips: None,
+                cards: tokens,
+            },
+            rows,
+        ));
+    }
+    for (board, title, on_board) in [
+        (Board::Maybeboard, "Maybeboard", maybe),
+        (Board::Sideboard, "Sideboard", side),
+    ] {
+        if on_board.is_empty() {
+            continue;
+        }
+        let rows = on_board
+            .iter()
+            .map(|entry| RowInfo {
+                card: entry.card.clone(),
+                qty: *entry.deck_card.quantity,
+                kind: RowKind::Board(board),
+            })
+            .collect();
+        sections.push((
+            DeckSection {
+                key: title.to_owned(),
+                title: format!("{title} ({})", on_board.len()),
+                pips: None,
+                cards: on_board.into_iter().map(|e| e.card).collect(),
+            },
+            rows,
+        ));
+    }
+    sections.extend(zone_sections(zone, format));
+    sections.extend(main_sections(groups, lands, meta));
+    sections
+}
+
+/// The command zone's sections: the commander and partner under the format's header, then the
+/// background and the signature spell each under its own.
+fn zone_sections(
+    zone: Vec<(Slot, Card)>,
+    format: Option<Format>,
+) -> Vec<(DeckSection, Vec<RowInfo>)> {
+    let has_partner = zone.iter().any(|(slot, _)| *slot == Slot::Partner);
+    let mut sections: Vec<(DeckSection, Vec<RowInfo>)> = Vec::new();
+    let commanders: Vec<(Slot, Card)> = zone
+        .iter()
+        .filter(|(slot, _)| matches!(slot, Slot::Commander | Slot::Partner))
+        .cloned()
+        .collect();
+    if !commanders.is_empty() {
+        let title = Slot::Commander.group_header(format, has_partner).to_owned();
+        sections.push((
+            DeckSection {
+                key: title.clone(),
+                title,
+                pips: None,
+                cards: commanders.iter().map(|(_, c)| c.clone()).collect(),
+            },
+            commanders
+                .into_iter()
+                .map(|(slot, card)| RowInfo {
+                    card,
+                    qty: 1,
+                    kind: RowKind::Zone(slot),
+                })
+                .collect(),
+        ));
+    }
+    for (slot, card) in zone
+        .into_iter()
+        .filter(|(slot, _)| matches!(slot, Slot::Background | Slot::SignatureSpell))
+    {
+        let title = slot.group_header(format, has_partner).to_owned();
+        sections.push((
+            DeckSection {
+                key: title.clone(),
+                title,
+                pips: None,
+                cards: vec![card.clone()],
+            },
+            vec![RowInfo {
+                card,
+                qty: 1,
+                kind: RowKind::Zone(slot),
+            }],
+        ));
+    }
+    sections
+}
+
+/// The main board's sections: its nonland groups, then its lands, each header counting copies by
+/// `meta`.
+fn main_sections<S: BuildHasher>(
+    groups: Vec<Group>,
+    lands: Vec<Card>,
+    meta: &HashMap<Uuid, RowMeta, S>,
+) -> Vec<(DeckSection, Vec<RowInfo>)> {
+    let qty_count = |cards: &[Card]| -> i32 {
+        cards
+            .iter()
+            .map(|c| meta.get(&c.scryfall_data.id).map_or(1, |m| m.qty))
+            .fold(0, i32::saturating_add)
+    };
+    let mut sections: Vec<(DeckSection, Vec<RowInfo>)> = Vec::new();
+    for group in groups {
+        let n = qty_count(&group.cards);
+        let title = if group.label.is_empty() {
+            format!("({n})")
+        } else {
+            format!("{} ({n})", group.label)
+        };
+        let rows = group.cards.iter().map(|c| main_row_of(meta, c)).collect();
+        sections.push((
+            DeckSection {
+                key: group.key,
+                title,
+                pips: group.pips,
+                cards: group.cards,
+            },
+            rows,
+        ));
+    }
+    if !lands.is_empty() {
+        let n = qty_count(&lands);
+        let rows = lands.iter().map(|c| main_row_of(meta, c)).collect();
+        sections.push((
+            DeckSection {
+                key: "Lands".to_owned(),
+                title: format!("Lands ({n})"),
+                pips: None,
+                cards: lands,
+            },
+            rows,
+        ));
+    }
+    sections
+}
+
+/// The View chip row: List and Stacks, the one in `view` selected. A tap sets `view` and calls
+/// `on_change` with it, where the host keeps the choice.
+#[component]
+pub fn CardsViewSwitch(
+    mut view: Signal<CardsView>,
+    #[props(default)] on_change: Option<EventHandler<CardsView>>,
+) -> Element {
+    rsx! {
+        div { class: "chip-row deck-view-switch",
+            span { class: "stat-chip stat-chip-p1 chip-row-label", "{VIEW_LABEL}" }
+            for choice in [CardsView::List, CardsView::Stacks] {
+                Chip {
+                    key: "{choice.key()}",
+                    selected: view() == choice,
+                    onclick: move |_| {
+                        view.set(choice);
+                        if let Some(handler) = on_change {
+                            handler.call(choice);
+                        }
+                    },
+                    "{choice.label()}"
+                }
+            }
         }
     }
 }

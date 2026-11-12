@@ -20,10 +20,8 @@ use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
-use zwipe_core::domain::card::search_card::card_filter::CardSortKey;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use zwipe_core::domain::card::search_card::cards::Cards;
 use zwipe_core::domain::card::search_card::group_cards::GroupByOption;
 use zwipe_core::domain::deck::deck_metrics::deck_price;
 use zwipe_core::domain::deck::{Board, Deck, DeckEntry, DeckProfile, Quantity};
@@ -72,133 +70,10 @@ fn screen_key(key: &str) -> Option<ScreenKey> {
     }
 }
 
-/// The board the card `id` is on, by `meta`; the main board for a card it does not list.
-pub(crate) fn board_of(meta: &HashMap<Uuid, Meta>, id: Uuid) -> Board {
-    meta.get(&id).map_or(Board::Deck, |m| m.board)
-}
-
 pub(crate) use zwipe_ui::deck_cards::keys::{RowInfo, RowKind};
-
-/// A row's quantity, board and star, the first entry for a printing winning.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub(crate) struct Meta {
-    pub qty: i32,
-    pub board: Board,
-    pub mvp: bool,
-}
-
-/// What the view lists, in order, after the pass and the Boards and Show
-/// rows; `rows` flattens it for the pane and the arrow keys.
-#[derive(Debug, Clone, PartialEq, Default)]
-pub(crate) struct Listed {
-    pub tokens: Vec<Card>,
-    pub maybe: Vec<DeckEntry>,
-    pub side: Vec<DeckEntry>,
-    pub zone: Vec<(Slot, Card)>,
-    pub groups: Vec<deck_cards::Group>,
-    pub lands: Vec<Card>,
-    pub rows: Vec<RowInfo>,
-}
-
-/// A main board row, its quantity and star from the deck's entries.
-pub(crate) fn main_row_of(meta: &HashMap<Uuid, Meta>, card: &Card) -> RowInfo {
-    let m = meta.get(&card.scryfall_data.id).copied();
-    RowInfo {
-        card: card.clone(),
-        qty: m.map_or(1, |m| m.qty),
-        kind: RowKind::Main {
-            mvp: m.is_some_and(|m| m.mvp),
-        },
-    }
-}
-
-/// The sections the view lists, in the app's order: tokens (sorted, never
-/// filtered), the maybeboard and sideboard, the command zone, then the main
-/// board's groups and its lands.
-pub(crate) fn list_rows(
-    shown: &deck_cards::Display,
-    meta: &HashMap<Uuid, Meta>,
-    tokens: Vec<Card>,
-    filter: &CardQueryBuilder,
-    boards: Boards,
-    show_zone: bool,
-) -> Listed {
-    let sort = filter.sort().unwrap_or(CardSortKey::Name);
-    let tokens: Vec<Card> = Cards::from(tokens).sorted(sort, filter.direction()).into();
-    let maybe = if boards.maybe {
-        shown.maybe.clone()
-    } else {
-        Vec::new()
-    };
-    let side = if boards.side {
-        shown.side.clone()
-    } else {
-        Vec::new()
-    };
-    let zone = if show_zone {
-        shown.zone.clone()
-    } else {
-        Vec::new()
-    };
-    let groups = if boards.main {
-        shown.groups.clone()
-    } else {
-        Vec::new()
-    };
-    let lands = if boards.main {
-        shown.lands.clone()
-    } else {
-        Vec::new()
-    };
-    let mut rows: Vec<RowInfo> = tokens
-        .iter()
-        .map(|card| RowInfo {
-            card: card.clone(),
-            qty: 1,
-            kind: RowKind::Token,
-        })
-        .collect();
-    for (entry, board) in maybe
-        .iter()
-        .map(|e| (e, Board::Maybeboard))
-        .chain(side.iter().map(|e| (e, Board::Sideboard)))
-    {
-        rows.push(RowInfo {
-            card: entry.card.clone(),
-            qty: *entry.deck_card.quantity,
-            kind: RowKind::Board(board),
-        });
-    }
-    let commanders = zone
-        .iter()
-        .filter(|(slot, _)| matches!(slot, Slot::Commander | Slot::Partner));
-    let others = zone
-        .iter()
-        .filter(|(slot, _)| !matches!(slot, Slot::Commander | Slot::Partner));
-    for (slot, card) in commanders.chain(others) {
-        rows.push(RowInfo {
-            card: card.clone(),
-            qty: 1,
-            kind: RowKind::Zone(*slot),
-        });
-    }
-    for card in groups
-        .iter()
-        .flat_map(|g| g.cards.iter())
-        .chain(lands.iter())
-    {
-        rows.push(main_row_of(meta, card));
-    }
-    Listed {
-        tokens,
-        maybe,
-        side,
-        zone,
-        groups,
-        lands,
-        rows,
-    }
-}
+pub(crate) use zwipe_ui::deck_cards::listing::{
+    Listed, RowMeta as Meta, board_of, list_rows, main_row_of,
+};
 
 /// The engine's state and actions. `Copy`: every field is a signal, a memo
 /// or a callback, which compare by identity.
@@ -408,18 +283,7 @@ pub(crate) fn use_deck_editor(deck_id: Uuid, on_failure: LoadFailure) -> Editor 
     let display = use_memo(move || {
         deck_cards::pass(&entries.read(), &zone.read(), &filter.read(), group_by())
     });
-    let meta = use_memo(move || {
-        let mut map: HashMap<Uuid, Meta> = HashMap::new();
-        for e in entries.read().iter() {
-            map.entry(e.deck_card.scryfall_data_id)
-                .or_insert_with(|| Meta {
-                    qty: *e.deck_card.quantity,
-                    board: e.deck_card.board,
-                    mvp: e.deck_card.mvp_at.is_some(),
-                });
-        }
-        map
-    });
+    let meta = use_memo(move || deck_cards::listing::meta_of(&entries.read()));
 
     // Raises the land and budget toasts for a change from `before`.
     let crossings = move |before: &[DeckEntry]| {

@@ -8,9 +8,9 @@
 use dioxus::prelude::*;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
-use zwipe_core::domain::deck::{DeckProfile, deck_tag_label};
+use zwipe_core::domain::deck::deck_tag_label;
 use zwipe_ui::colors::ColorCounts;
-use zwipe_ui::deck::view::{total_price_line, with_unpriced};
+use zwipe_ui::deck::view::{StatsProfile, with_unpriced};
 
 use crate::{Chip, ColorChart, DeckCharts, DrawOdds, ManaCurve, ManaFulfillment};
 
@@ -78,7 +78,7 @@ pub fn CurrencyChips(mut currency: Signal<PriceCurrency>) -> Element {
 /// Budget's body: the total and average price.
 #[component]
 pub fn BudgetBody(
-    profile: DeckProfile,
+    profile: StatsProfile,
     metrics: Option<DeckMetrics>,
     currency: Signal<PriceCurrency>,
 ) -> Element {
@@ -94,7 +94,7 @@ pub fn BudgetBody(
         div { style: "display:flex;flex-direction:column;",
             InfoRow {
                 label: "Total price",
-                value: with_unpriced(total_price_line(&profile, total, shown), unpriced),
+                value: with_unpriced(profile.total_price_line(total, shown), unpriced),
             }
             if metrics.is_some() {
                 InfoRow {
@@ -132,7 +132,7 @@ fn TagRow(label: String, topic: Option<StatTopic>, chips: Vec<String>) -> Elemen
 
 /// Tags' body: deck, oracle and other tags, each row only when it has any.
 #[component]
-pub fn TagsBody(profile: DeckProfile) -> Element {
+pub fn TagsBody(profile: StatsProfile) -> Element {
     rsx! {
         div { style: "display:flex;flex-direction:column;",
                 if !profile.tags.is_empty() {

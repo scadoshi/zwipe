@@ -17,6 +17,7 @@ use crate::stores::undo::UndoAction;
 
 pub mod columns;
 pub mod keys;
+pub mod listing;
 pub mod stacks;
 
 /// The command zone's cards by slot.

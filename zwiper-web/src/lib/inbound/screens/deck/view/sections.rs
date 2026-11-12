@@ -15,6 +15,7 @@ use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCur
 use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
 use zwipe_core::domain::deck::{DeckProfile, DeckWarning};
 use zwipe_ui::deck::form::Slot;
+use zwipe_ui::deck::view::StatsProfile;
 use zwipe_ui::deck::warning::{self, Fix};
 
 use crate::inbound::cards::otag::{OtagDescribe, OtagExamplesOpen};
@@ -78,7 +79,7 @@ pub fn BudgetSection(
     });
     rsx! {
         CollapsibleSection { title: "Budget", open_section, header_accessory: accessory,
-            BudgetBody { profile, metrics, currency }
+            BudgetBody { profile: StatsProfile::from(&profile), metrics, currency }
         }
     }
 }
@@ -89,7 +90,7 @@ pub fn TagsSection(profile: DeckProfile, open_section: Signal<Option<String>>) -
     let count = crate::domain::deck::tag_count(&profile);
     rsx! {
         CollapsibleSection { title: "Tags", badge: count.to_string(), open_section,
-            TagsBody { profile }
+            TagsBody { profile: StatsProfile::from(&profile) }
         }
     }
 }

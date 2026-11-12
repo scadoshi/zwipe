@@ -4,11 +4,11 @@
 
 use std::collections::HashMap;
 
-use components::Chip;
+use components::CardsViewSwitch as SharedCardsViewSwitch;
 pub(crate) use components::{StackDetails, use_stack_details_sync};
 use dioxus::prelude::*;
 use uuid::Uuid;
-use zwipe_ui::deck_cards::stacks::{CardsView, VIEW_LABEL};
+use zwipe_ui::deck_cards::stacks::CardsView;
 
 use crate::outbound::cards_view_store::CardsViewStore;
 
@@ -47,26 +47,18 @@ pub(crate) fn use_cards_view() -> Signal<CardsView> {
 /// stores the choice and calls `on_change`.
 #[component]
 pub(crate) fn CardsViewSwitch(
-    mut view: Signal<CardsView>,
+    view: Signal<CardsView>,
     #[props(default)] on_change: Option<EventHandler<()>>,
 ) -> Element {
     rsx! {
-        div { class: "chip-row deck-view-switch",
-            span { class: "stat-chip stat-chip-p1 chip-row-label", "{VIEW_LABEL}" }
-            for choice in [CardsView::List, CardsView::Stacks] {
-                Chip {
-                    key: "{choice.key()}",
-                    selected: view() == choice,
-                    onclick: move |_| {
-                        view.set(choice);
-                        CardsViewStore::browser().save(choice);
-                        if let Some(handler) = on_change {
-                            handler.call(());
-                        }
-                    },
-                    "{choice.label()}"
+        SharedCardsViewSwitch {
+            view,
+            on_change: move |choice: CardsView| {
+                CardsViewStore::browser().save(choice);
+                if let Some(handler) = on_change {
+                    handler.call(());
                 }
-            }
+            },
         }
     }
 }
