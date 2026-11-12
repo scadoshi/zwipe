@@ -126,7 +126,7 @@ pub(crate) fn QuickAdd(
     let lit = highlight().min(shown.len().saturating_sub(1));
     let keyed = shown.clone();
     rsx! {
-        div {
+        div { class: "quick-add",
             div { class: "chip-row",
                 label { class: "stat-chip stat-chip-p1 chip-row-label", r#for: QUICK_ADD_ID, "Quick add" }
                 ClearWrap {
