@@ -53,7 +53,6 @@ pub const UPCOMING: &[Release] = &[
         entries: &[
             "On the web's deck page, Quick add ends where the widest chip row under it does",
             "Home's counters on the web have an Activity button, as in the app",
-            "A card image that fails to load shows the card's name and text instead of the card under it",
             "The Z in the web's nav is the same size as on zwipe.net",
             "Opening a card's row, or folding all, on the web's deck page List answers about twice as fast",
             "On the web's deck page, cards ease in, out and into new groups when a board is shown or hidden or the grouping changes",
