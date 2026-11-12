@@ -1,6 +1,7 @@
-/* JetBrains Mono, the app's face. dx bundles the font files unhashed beside
-   this sheet (src/lib/inbound/sheets.rs), so these relative urls find them,
-   and index.html preloads them. */
-@font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:400;font-display:swap;src:url(jetbrains-mono-400.woff2) format('woff2');}
-@font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:500;font-display:swap;src:url(jetbrains-mono-500.woff2) format('woff2');}
-@font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:700;font-display:swap;src:url(jetbrains-mono-700.woff2) format('woff2');}
+/* JetBrains Mono, the face every Zwipe page draws in. The files are the
+   complete faces, so the logos' block characters (U+2580-259F) come from it
+   rather than a system fallback. Each client bundles the files unhashed at
+   /assets/ and links this rule before every other sheet. */
+@font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:400;font-display:swap;src:url(/assets/jetbrains-mono-400.woff2) format('woff2');}
+@font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:500;font-display:swap;src:url(/assets/jetbrains-mono-500.woff2) format('woff2');}
+@font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:700;font-display:swap;src:url(/assets/jetbrains-mono-700.woff2) format('woff2');}

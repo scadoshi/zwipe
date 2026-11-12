@@ -166,6 +166,12 @@ pub use site_footer::SiteFooter;
 pub use staple_decks_chip::StapleDecksChip;
 pub use theme::{pip_style_class, theme_from_settings};
 
+/// The `JetBrains Mono` faces at 400, 500 and 700, from the complete font files,
+/// which each client bundles unhashed at `/assets/`. Load it before every
+/// other sheet. The logos' block characters need the complete files: a
+/// Latin subset leaves them to a system font, which draws them heavier.
+pub const FONTS_CSS: &str = include_str!("../assets/fonts.css");
+
 /// The Magic rules: oracle text, keyword chips, card rows, the flippable card
 /// image, the changelog, the color bars and the mana glyph inside a chip. Load it after
 /// orangui's [`COMPONENTS_CSS`] and before [`APP_CSS`] or [`SITE_CSS`].
