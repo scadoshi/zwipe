@@ -55,6 +55,9 @@ pub const UPCOMING: &[Release] = &[
             "Home's counters on the web have an Activity button, as in the app",
             "A card image that fails to load shows the card's name and text instead of the card under it",
             "The Z in the web's nav is the same size as on zwipe.net",
+            "Opening a card's row, or folding all, on the web's deck page List answers about twice as fast",
+            "On the web's deck page, cards ease in, out and into new groups when a board is shown or hidden or the grouping changes",
+            "On the web's deck page, switching to Stacks deals the cards in",
         ],
     },
     Release {
@@ -64,11 +67,9 @@ pub const UPCOMING: &[Release] = &[
             "Suggested commanders and the commander swipe on the web end with the site's footer, as Add does",
             "On the web, Playstyle and Activity take p, i, v and d on a card and show their lists as a stack too",
             "A staple's deck count on Playstyle opens to the decks that run it, each one tap from its deck",
-            "Opening a card's row, or folding all, on the web's deck page List answers about twice as fast",
             "On the web, an Oracle tag's examples take h, j, d and v, ? opens the hint of the open modal, and a card slides clear of its details where it fits",
             "On the web's deck page, Art grays out while Stacks is on, since stacks always show art",
             "Buying from TCGplayer adds each card in the printing you picked",
-            "On the web's deck page, cards ease in, out and into new groups when a board is shown or hidden or the grouping changes",
         ],
     },
     Release {
@@ -86,7 +87,6 @@ pub const UPCOMING: &[Release] = &[
         version: Version::new(1, 19, 2),
         date: None,
         entries: &[
-            "On the web's deck page, switching to Stacks deals the cards in",
             "The deck page on the web deals its featured cards in, as a shared deck does",
             "Back returns to the screen you came from instead of looping between Create deck and Decks",
             "On the web, a cloned deck shows its own name as soon as it opens, and back and forward between two decks show the right one",
