@@ -1,27 +1,67 @@
-//! The deck cards screen's keys for one card (`context/plans/keyboard_shortcuts.md`, "Deck cards
+//! The deck cards page's keys for one card (`context/plans/keyboard_shortcuts.md`, "Deck cards
 //! screen"): `p` opens its Printings, `i` its image, `v` flips it, `d` opens or closes its
 //! details, `m` and `s` move it to the maybeboard and the sideboard, Shift+S stars or unstars it,
-//! and `-` and `+` (or `=`) step its quantity. Each does exactly what that card's own button does, and nothing where it has no such
-//! button. The card is the one under the cursor, else the one whose details are open.
+//! and `-` and `+` (or `=`) step its quantity. Each does exactly what that card's own button
+//! does, and nothing where it has no such button. The card is the one under the cursor, else the
+//! one whose details are open. A read-only deck page ([`Editable::No`]) answers only `p`, `i`,
+//! `v` and `d`.
 
-use components::data_action;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::deck::Board;
-use zwipe_ui::deck::form::Slot;
 
-use super::editor::{RowInfo, RowKind};
-use crate::inbound::chrome::shortcuts::{self, CardKey};
+use crate::card;
+use crate::deck::form::Slot;
+use crate::shortcuts::{self, CardKey, Editable};
 
-/// Every key [`hover_key`] answers, as `KeyboardEvent.key`: the keys that still reach the screen
-/// while the Stacks view's card details drawer is open.
-pub(crate) const HOVER_KEYS: [&str; 15] = [
+/// What a row is, which decides its actions.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RowKind {
+    /// A main board card: quantity, moves, printing and the MVP star.
+    Main {
+        /// Whether it is starred.
+        mvp: bool,
+    },
+    /// A maybeboard or sideboard card: quantity, moves and printing.
+    Board(Board),
+    /// A command zone card: printing only.
+    Zone(Slot),
+    /// A token: no actions.
+    Token,
+}
+
+/// One listed row of a deck's cards, for its details and the keys.
+#[derive(Debug, Clone, PartialEq)]
+pub struct RowInfo {
+    /// The card.
+    pub card: Card,
+    /// How many copies the deck holds.
+    pub qty: i32,
+    /// What the row is.
+    pub kind: RowKind,
+}
+
+/// Every key [`hover_key`] answers on an editable page, as `KeyboardEvent.key`: the keys that
+/// still reach the page while the Stacks view's card details drawer is open.
+pub const HOVER_KEYS: [&str; 15] = [
     "p", "P", "i", "I", "v", "V", "d", "D", "m", "M", "s", "S", "-", "+", "=",
 ];
 
+/// The keys [`hover_key`] answers on a read-only page: the ones that read.
+pub const READ_ONLY_HOVER_KEYS: [&str; 8] = ["p", "P", "i", "I", "v", "V", "d", "D"];
+
+/// The keys [`hover_key`] answers under `editable`.
+#[must_use]
+pub fn hover_keys(editable: Editable) -> &'static [&'static str] {
+    match editable {
+        Editable::Yes => &HOVER_KEYS,
+        Editable::No => &READ_ONLY_HOVER_KEYS,
+    }
+}
+
 /// A key the deck cards screen answers for the hovered card.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum HoverKey {
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum HoverKey {
     /// `p`: the card's Printings.
     Printings,
     /// `i`: the card's image, as its Image button opens it.
@@ -42,9 +82,23 @@ pub(crate) enum HoverKey {
     More,
 }
 
-/// The hover key `key` (a `KeyboardEvent.key`) stands for. `s` and `S` differ: Shift+S stars.
+/// The hover key `key` (a `KeyboardEvent.key`) stands for under `editable`. `s` and `S` differ:
+/// Shift+S stars. A read-only page answers only the keys that read.
 #[must_use]
-pub(crate) fn hover_key(key: &str) -> Option<HoverKey> {
+pub fn hover_key(key: &str, editable: Editable) -> Option<HoverKey> {
+    let found = any_hover_key(key)?;
+    match (editable, found) {
+        (Editable::Yes, _)
+        | (
+            Editable::No,
+            HoverKey::Printings | HoverKey::Image | HoverKey::Flip | HoverKey::Details,
+        ) => Some(found),
+        (Editable::No, _) => None,
+    }
+}
+
+/// The hover key `key` stands for on an editable page.
+fn any_hover_key(key: &str) -> Option<HoverKey> {
     match shortcuts::card_key(key) {
         Some(CardKey::Flip) => return Some(HoverKey::Flip),
         Some(CardKey::Details) => return Some(HoverKey::Details),
@@ -64,7 +118,7 @@ pub(crate) fn hover_key(key: &str) -> Option<HoverKey> {
 
 /// What a hover key does to one row, as its own button does it.
 #[derive(Debug, Clone, PartialEq)]
-pub(crate) enum HoverAction {
+pub enum HoverAction {
     /// Open Printings for the card, in the command zone `slot` when it has one.
     Printings(Box<Card>, Option<Slot>),
     /// Move the card to the board.
@@ -79,9 +133,8 @@ pub(crate) enum HoverAction {
     Meld(Uuid),
     /// Open the card's details, or close them where they are open, as a click on it does.
     Details(Uuid),
-    /// Press the first of the card's own details buttons marked with these [`data_action`]s,
-    /// which does nothing where the card shows none.
-    Press(Uuid, &'static [&'static str]),
+    /// Press the card's own Image button, which does nothing where the card shows none.
+    Image(Uuid),
 }
 
 /// What `key` does to `row`, a card on `board` showing face `shown_face`: the action of the row's
@@ -89,7 +142,7 @@ pub(crate) enum HoverAction {
 /// the board the card is already on, a star off the main board, a quantity in the command zone or
 /// of a token, a flip of a single-faced card).
 #[must_use]
-pub(crate) fn hover_action(
+pub fn hover_action(
     key: HoverKey,
     row: &RowInfo,
     board: Board,
@@ -118,10 +171,10 @@ pub(crate) fn hover_action(
             RowKind::Main { mvp } => Some(HoverAction::Star(card_id, mvp)),
             RowKind::Board(_) | RowKind::Zone(_) | RowKind::Token => None,
         },
-        HoverKey::Image => Some(HoverAction::Press(card_id, &[data_action::IMAGE])),
+        HoverKey::Image => Some(HoverAction::Image(card_id)),
         HoverKey::Flip => {
             // The faces Flip turns through, as the details count them.
-            let faces = components::card_face_count(&row.card);
+            let faces = card::face_count(&row.card.scryfall_data);
             // A meld half with one face toggles its Meld instead.
             if faces > 1 {
                 let next = shown_face.saturating_add(1).checked_rem(faces).unwrap_or(0);
@@ -144,10 +197,8 @@ mod tests {
     use super::*;
 
     fn card(name: &str) -> Card {
-        let mut card: Card = serde_json::from_str(include_str!(
-            "../../../../../../../zwipe-ui/src/test_support/card.json"
-        ))
-        .unwrap();
+        let mut card: Card =
+            serde_json::from_str(include_str!("../test_support/card.json")).unwrap();
         let id = Uuid::new_v4();
         card.card_profile.scryfall_data_id = id;
         card.scryfall_data.id = id;
@@ -168,7 +219,7 @@ mod tests {
         for byte in b' '..=b'~' {
             let key = char::from(byte).to_string();
             assert_eq!(
-                hover_key(&key).is_some(),
+                hover_key(&key, Editable::Yes).is_some(),
                 HOVER_KEYS.contains(&key.as_str()),
                 "{key}"
             );
@@ -180,7 +231,7 @@ mod tests {
         for byte in b' '..=b'~' {
             let key = char::from(byte).to_string();
             assert_eq!(
-                hover_key(&key) == Some(HoverKey::Flip),
+                hover_key(&key, Editable::Yes) == Some(HoverKey::Flip),
                 shortcuts::card_key(&key) == Some(CardKey::Flip),
                 "{key}"
             );
@@ -189,13 +240,13 @@ mod tests {
 
     #[test]
     fn the_keys_are_p_m_s_and_shift_s() {
-        assert_eq!(hover_key("p"), Some(HoverKey::Printings));
-        assert_eq!(hover_key("P"), Some(HoverKey::Printings));
-        assert_eq!(hover_key("m"), Some(HoverKey::ToMaybeboard));
-        assert_eq!(hover_key("s"), Some(HoverKey::ToSideboard));
-        assert_eq!(hover_key("S"), Some(HoverKey::Star));
+        assert_eq!(hover_key("p", Editable::Yes), Some(HoverKey::Printings));
+        assert_eq!(hover_key("P", Editable::Yes), Some(HoverKey::Printings));
+        assert_eq!(hover_key("m", Editable::Yes), Some(HoverKey::ToMaybeboard));
+        assert_eq!(hover_key("s", Editable::Yes), Some(HoverKey::ToSideboard));
+        assert_eq!(hover_key("S", Editable::Yes), Some(HoverKey::Star));
         for key in ["f", "/", "Enter", " ", "_", "r", "u"] {
-            assert_eq!(hover_key(key), None, "{key}");
+            assert_eq!(hover_key(key, Editable::Yes), None, "{key}");
         }
     }
 
@@ -266,9 +317,13 @@ mod tests {
 
     #[test]
     fn minus_and_plus_step_the_quantity_as_the_stepper_does() {
-        assert_eq!(hover_key("-"), Some(HoverKey::Fewer));
-        assert_eq!(hover_key("+"), Some(HoverKey::More));
-        assert_eq!(hover_key("="), Some(HoverKey::More), "+ without Shift");
+        assert_eq!(hover_key("-", Editable::Yes), Some(HoverKey::Fewer));
+        assert_eq!(hover_key("+", Editable::Yes), Some(HoverKey::More));
+        assert_eq!(
+            hover_key("=", Editable::Yes),
+            Some(HoverKey::More),
+            "+ without Shift"
+        );
         for kind in [
             RowKind::Main { mvp: false },
             RowKind::Board(Board::Sideboard),
@@ -293,9 +348,9 @@ mod tests {
 
     #[test]
     fn i_presses_the_image_button_and_d_toggles_the_details() {
-        assert_eq!(hover_key("i"), Some(HoverKey::Image));
-        assert_eq!(hover_key("d"), Some(HoverKey::Details));
-        assert_eq!(hover_key("D"), Some(HoverKey::Details));
+        assert_eq!(hover_key("i", Editable::Yes), Some(HoverKey::Image));
+        assert_eq!(hover_key("d", Editable::Yes), Some(HoverKey::Details));
+        assert_eq!(hover_key("D", Editable::Yes), Some(HoverKey::Details));
         for kind in [
             RowKind::Main { mvp: false },
             RowKind::Board(Board::Maybeboard),
@@ -306,7 +361,7 @@ mod tests {
             let id = any.card.scryfall_data.id;
             assert_eq!(
                 hover_action(HoverKey::Image, &any, Board::Deck, 0),
-                Some(HoverAction::Press(id, &[data_action::IMAGE]))
+                Some(HoverAction::Image(id))
             );
             assert_eq!(
                 hover_action(HoverKey::Details, &any, Board::Deck, 0),
@@ -318,7 +373,7 @@ mod tests {
 
     #[test]
     fn v_turns_to_the_next_face_and_back_to_the_front() {
-        assert_eq!(hover_key("v"), Some(HoverKey::Flip));
+        assert_eq!(hover_key("v", Editable::Yes), Some(HoverKey::Flip));
         let mut dfc = row(RowKind::Main { mvp: false });
         dfc.card.scryfall_data.card_faces = Some(
             serde_json::from_value(serde_json::json!([
@@ -385,6 +440,31 @@ mod tests {
                 hover_action(HoverKey::Star, &row(kind), Board::Deck, 0),
                 None
             );
+        }
+    }
+
+    #[test]
+    fn a_read_only_page_answers_only_the_keys_that_read() {
+        for byte in b' '..=b'~' {
+            let key = char::from(byte).to_string();
+            let read = hover_key(&key, Editable::No);
+            assert_eq!(
+                read.is_some(),
+                READ_ONLY_HOVER_KEYS.contains(&key.as_str()),
+                "{key}"
+            );
+            if let Some(found) = read {
+                assert!(
+                    matches!(
+                        found,
+                        HoverKey::Printings | HoverKey::Image | HoverKey::Flip | HoverKey::Details
+                    ),
+                    "{key} only reads"
+                );
+            }
+        }
+        for key in READ_ONLY_HOVER_KEYS {
+            assert!(HOVER_KEYS.contains(&key), "{key} also on the owner's deck");
         }
     }
 }

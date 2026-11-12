@@ -3,6 +3,12 @@
 //! screen that offers it, and when a key reaches a screen at all. The listeners in `page_keys`
 //! and `swipe_stack` run that guard as browser script built from the constants here.
 
+pub use zwipe_ui::shortcuts::{
+    CardKey, FlowKey, GLOBAL_KEYS, GlobalKey, HINT_KEY, UNDO_COMBO, card_key, flow_key, global_key,
+    undo_letter,
+};
+use zwipe_ui::shortcuts::{DECK_CARDS_NOTE, EVERYWHERE_ROWS, Editable, SheetRow, deck_cards_rows};
+
 use crate::inbound::cards::swipe_stack::Swipe;
 
 /// What a key does on a swipe screen (Add, Remove, Commander swipe): the same action as its
@@ -48,30 +54,6 @@ pub fn swipe_screen_shortcut(key: &str) -> Option<Shortcut> {
     Some(shortcut)
 }
 
-/// A key that means the same on every screen: `f` opens the screen's filter where it has one, `v`
-/// flips the card on show or, a card with one face, shows its meld, and `d` opens or closes the
-/// card's details.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum CardKey {
-    /// Opens the screen's filter.
-    Filter,
-    /// Flips the card on show, or toggles its meld.
-    Flip,
-    /// Opens or closes the card's details.
-    Details,
-}
-
-/// The [`CardKey`] `key` stands for. Every screen's own key map defers to this one for `f` and `v`.
-#[must_use]
-pub fn card_key(key: &str) -> Option<CardKey> {
-    match key {
-        "f" | "F" => Some(CardKey::Filter),
-        "v" | "V" => Some(CardKey::Flip),
-        "d" | "D" => Some(CardKey::Details),
-        _ => None,
-    }
-}
-
 /// A script that clicks the first element inside `scope` (a selector) marked with one of `actions`
 /// ([`components::data_action`]), in their order; nothing when it shows none.
 #[must_use]
@@ -83,63 +65,6 @@ pub fn press_first_js(scope: &str, actions: &[&str]) -> String {
 
 /// The letter keys that swipe on a swipe screen, beside the arrows ([`swipe_screen_shortcut`]).
 pub const SWIPE_LETTERS: [&str; 9] = ["h", "j", "k", "l", "u", "J", "K", "L", "U"];
-
-/// How the sheets write Ctrl+Z (Cmd+Z on a Mac), which undoes wherever `u` does except while
-/// typing in a field, where the field keeps its own undo ([`super::page_keys::use_undo_key`]).
-pub const UNDO_COMBO: &str = "Ctrl+Z";
-
-/// Whether `key` is `u`, the deck cards screen's Undo, the same as its dock's Undo button.
-#[must_use]
-pub fn undo_letter(key: &str) -> bool {
-    matches!(key, "u" | "U")
-}
-
-/// What a key does in Printings' cover flow.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum FlowKey {
-    /// To the printing before.
-    Back,
-    /// To the printing after.
-    Forward,
-    /// Picks the printing in the center.
-    Select,
-}
-
-/// The cover-flow action `key` stands for.
-#[must_use]
-pub fn flow_key(key: &str) -> Option<FlowKey> {
-    match key {
-        "ArrowLeft" | "h" | "H" => Some(FlowKey::Back),
-        "ArrowRight" | "l" | "L" => Some(FlowKey::Forward),
-        "Enter" => Some(FlowKey::Select),
-        _ => None,
-    }
-}
-
-/// What a key does on any screen.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum GlobalKey {
-    /// Opens the page's own hint, as its `?` button does.
-    Hint,
-    /// Opens the shortcuts sheet.
-    Shortcuts,
-}
-
-/// The key that opens a hint: the topmost open modal's, else the page's.
-pub const HINT_KEY: &str = "?";
-
-/// The keys that work everywhere ([`global_key`]).
-pub const GLOBAL_KEYS: [&str; 2] = [HINT_KEY, "H"];
-
-/// The global action `key` stands for: `?` the page's hint, Shift+H (`H`) the shortcuts sheet.
-#[must_use]
-pub fn global_key(key: &str) -> Option<GlobalKey> {
-    match key {
-        "?" => Some(GlobalKey::Hint),
-        "H" => Some(GlobalKey::Shortcuts),
-        _ => None,
-    }
-}
 
 /// What one swipe screen calls its four swipes, as its dock buttons say them, and whether it has
 /// Synergy. `up` is `None` on a screen with no up swipe.
@@ -220,13 +145,8 @@ pub enum ShortcutsScreen {
 /// The rows the shortcuts sheet lists on `screen`: each key, with its vim letter if it has one,
 /// and what it does, the screen's own keys first and then the keys every screen answers.
 #[must_use]
-pub fn sheet_rows(screen: &ShortcutsScreen) -> Vec<(&'static [&'static str], &'static str)> {
-    let everywhere: [(&'static [&'static str], &'static str); 3] = [
-        (&["Esc"], "Close the open sheet"),
-        (&["?"], "This page's hint"),
-        (&["Shift+H"], "These shortcuts"),
-    ];
-    let own: Vec<(&'static [&'static str], &'static str)> = match screen {
+pub fn sheet_rows(screen: &ShortcutsScreen) -> Vec<SheetRow> {
+    let own: Vec<SheetRow> = match screen {
         ShortcutsScreen::Swipe(labels) => {
             let swipes = [
                 Some((&["→", "l"][..], labels.right)),
@@ -249,19 +169,7 @@ pub fn sheet_rows(screen: &ShortcutsScreen) -> Vec<(&'static [&'static str], &'s
                 .chain(synergy)
                 .collect()
         }
-        ShortcutsScreen::DeckCards => vec![
-            (&["p"], "Printings"),
-            (&["i"], "Image"),
-            (&["v"], "Flip card"),
-            (&["d"], "Card details"),
-            (&["m"], "Maybeboard"),
-            (&["s"], "Sideboard"),
-            (&["Shift+S"], "Star"),
-            (&["-"], "One fewer"),
-            (&["+"], "One more"),
-            (&["u", UNDO_COMBO], "Undo"),
-            (&["f"], "Filter"),
-        ],
+        ShortcutsScreen::DeckCards => deck_cards_rows(Editable::Yes),
         ShortcutsScreen::Examples => vec![
             (&["←", "h"], "Next"),
             (&["↓", "j"], "Back one"),
@@ -269,7 +177,7 @@ pub fn sheet_rows(screen: &ShortcutsScreen) -> Vec<(&'static [&'static str], &'s
             (&["v"], "Flip card"),
         ],
     };
-    own.into_iter().chain(everywhere).collect()
+    own.into_iter().chain(EVERYWHERE_ROWS).collect()
 }
 
 /// The line the shortcuts sheet shows above the keys on `screen`, if it needs one.
@@ -277,7 +185,7 @@ pub fn sheet_rows(screen: &ShortcutsScreen) -> Vec<(&'static [&'static str], &'s
 pub fn sheet_note(screen: &ShortcutsScreen) -> Option<&'static str> {
     match screen {
         ShortcutsScreen::Swipe(_) | ShortcutsScreen::Examples => None,
-        ShortcutsScreen::DeckCards => Some("Hover or open a card, then press its key"),
+        ShortcutsScreen::DeckCards => Some(DECK_CARDS_NOTE),
     }
 }
 
@@ -401,8 +309,9 @@ fn browser_guard(modifiers: Modifiers, overlays: &str) -> String {
 
 #[cfg(test)]
 mod tests {
+    use zwipe_ui::deck_cards::keys as hover_keys;
+
     use super::*;
-    use crate::inbound::screens::deck::cards::hover_keys;
 
     #[test]
     fn arrows_and_vim_letters_swipe() {
@@ -569,7 +478,7 @@ mod tests {
                 } else {
                     label
                 };
-                let known = hover_keys::hover_key(key).is_some()
+                let known = hover_keys::hover_key(key, Editable::Yes).is_some()
                     || card_key(key).is_some()
                     || undo_letter(key)
                     || global_key(key).is_some()
