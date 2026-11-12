@@ -17,11 +17,10 @@ use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCur
 use zwipe_core::domain::deck::{Board, Format};
 use zwipe_ui::buy::{group_cards, group_price};
 use zwipe_ui::deck::form::Slot;
-use zwipe_ui::deck_cards::Group;
-use zwipe_ui::deck_cards::columns;
 use zwipe_ui::deck_cards::keys::{RowInfo, RowKind};
 use zwipe_ui::deck_cards::listing::{Listed, RowMeta, main_row_of};
 use zwipe_ui::deck_cards::stacks::{CardsView, Gesture, Reveal, VIEW_LABEL};
+use zwipe_ui::deck_cards::{Group, columns};
 
 use crate::{
     CardBoardMoves, CardDetailsSheet, CardEditButtons, CardRow, CardStack, CartButton, Chip,

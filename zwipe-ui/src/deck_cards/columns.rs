@@ -112,7 +112,10 @@ pub const STACK_GAP_CENTIREM: u32 = 125;
 #[must_use]
 pub fn column_count(width: u32) -> usize {
     let per = STACK_MIN_CENTIREM.saturating_add(STACK_GAP_CENTIREM);
-    let fit = width.saturating_add(STACK_GAP_CENTIREM).checked_div(per).unwrap_or(1);
+    let fit = width
+        .saturating_add(STACK_GAP_CENTIREM)
+        .checked_div(per)
+        .unwrap_or(1);
     usize::try_from(fit).unwrap_or(1).max(1)
 }
 
