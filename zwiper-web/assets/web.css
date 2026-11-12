@@ -892,6 +892,31 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
     display: contents;
 }
 
+/* Once DeckStacks has measured the page, the stacks lie in as many flex
+   columns of their own heights as the grid above fit (columns::place), each
+   stack right under the one above it in its column, so a short stack never
+   waits on a long one beside it. Not CSS multi-column, which made the List
+   slow in Firefox. The gaps are the grid's: 1.25rem across, and its row gap
+   with a stack's margin down. */
+.deck-stacks.deck-stacks-columns {
+    display: flex;
+    gap: 0 1.25rem;
+    align-items: flex-start;
+}
+
+.deck-stacks-columns > .deck-stacks-column {
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.deck-stacks-columns .deck-stack {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 1.25rem;
+}
+
 /* The header is exactly the stack's width, the cards' width under it. It
    wears the deck page's fold heads below it (.deck-fold's box,
    .deck-fold-head's ink and type, a step smaller to fit a column). The
