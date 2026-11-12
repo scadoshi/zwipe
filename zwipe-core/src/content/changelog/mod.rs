@@ -48,6 +48,13 @@ pub const MOBILE_STORE_VERSION: Version = Version::new(1, 18, 15);
 /// changelog with an "Upcoming" badge instead of "Latest".
 pub const UPCOMING: &[Release] = &[
     Release {
+        version: Version::new(1, 19, 4),
+        date: None,
+        entries: &[
+            "Suggested commanders and the commander swipe on the web end with the site's footer, as Add does",
+        ],
+    },
+    Release {
         version: Version::new(1, 19, 3),
         date: None,
         entries: &[
@@ -63,7 +70,6 @@ pub const UPCOMING: &[Release] = &[
         version: Version::new(1, 19, 2),
         date: None,
         entries: &[
-            "Suggested commanders and the commander swipe on the web end with the site's footer, as Add does",
             "The deck page on the web deals its featured cards in, as a shared deck does",
             "Back returns to the screen you came from instead of looping between Create deck and Decks",
             "On the web, a cloned deck shows its own name as soon as it opens, and back and forward between two decks show the right one",
