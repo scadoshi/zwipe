@@ -54,6 +54,7 @@ pub const UPCOMING: &[Release] = &[
             "The Share dialog's link is a colored chip that wraps only when the screen is too narrow for it",
             "Charts grow in when their page opens or their section expands",
             "The web's large dialogs fade and rise in when they open",
+            "A staple's deck count on Playstyle opens to the decks that run it, each one tap from its deck",
         ],
     },
     Release {

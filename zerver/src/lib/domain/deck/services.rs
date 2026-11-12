@@ -163,6 +163,7 @@ where
                 Some(Staple {
                     card,
                     decks: count.decks,
+                    deck_ids: count.deck_ids,
                 })
             })
             .collect())

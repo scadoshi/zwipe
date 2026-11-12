@@ -1,3 +1,4 @@
+use uuid::Uuid;
 use zwipe_core::domain::card::scryfall_data::colors::Color::{Blue, Green, Red, White};
 use zwipe_core::http::contracts::suggestions::{
     HttpColorAffinity, HttpColorCards, HttpColorIdentityCount, HttpColorMap, HttpProfileRole,
@@ -6,6 +7,7 @@ use zwipe_core::http::contracts::suggestions::{
 
 use super::*;
 use crate::deck::VERIFY_TO_CREATE;
+use crate::playstyle::{StapleDeck, named_staple_decks};
 use crate::test_support::card;
 use crate::toast::{LONG, QUICK};
 
@@ -27,7 +29,11 @@ fn staple(name: &str, type_line: &str, identity: &[Color], decks: u32) -> HttpSt
     let mut card = card(name);
     card.scryfall_data.type_line = Some(type_line.to_owned());
     card.scryfall_data.color_identity = identity.iter().copied().collect();
-    HttpStaple { card, decks }
+    HttpStaple {
+        card,
+        decks,
+        deck_ids: vec![],
+    }
 }
 
 fn oracle(suggestion: &HttpCommanderSuggestion) -> Uuid {
@@ -522,7 +528,12 @@ fn create_is_gated_for_an_unverified_account_with_a_deck() {
         ),
         "the deck count is still out, so the gate counts none"
     );
-    let _ = state.update(Action::DeckProfilesLoaded { count: 1 });
+    let _ = state.update(Action::DeckProfilesLoaded {
+        decks: vec![StapleDeck {
+            id: Uuid::new_v4(),
+            name: "Krenko".to_owned(),
+        }],
+    });
     assert_eq!(
         state.update(unverified(&card)),
         [Effect::Toast(Toast::new(
@@ -547,6 +558,41 @@ fn pick_printing_swaps_the_suggestion_sharing_its_oracle() {
     let before = state.clone();
     let _ = state.update(Action::PickPrinting(Box::new(stray)));
     assert_eq!(state, before, "no oracle id changes nothing");
+}
+
+#[test]
+fn a_staple_names_its_decks_from_the_deck_list() {
+    let mut state = loaded(ranking(), full_profile());
+    let krenko = Uuid::new_v4();
+    let edgar = Uuid::new_v4();
+    let mut sol_ring = staple("Sol Ring", "Artifact", &[], 3);
+    sol_ring.deck_ids = vec![edgar, Uuid::new_v4(), krenko];
+    assert!(
+        named_staple_decks(&sol_ring.deck_ids, state.decks()).is_empty(),
+        "no deck list yet, so no names"
+    );
+    let named = |id, name: &str| StapleDeck {
+        id,
+        name: name.to_owned(),
+    };
+    let _ = state.update(Action::DeckProfilesLoaded {
+        decks: vec![named(krenko, "Krenko"), named(edgar, "Edgar")],
+    });
+    assert_eq!(
+        named_staple_decks(&sol_ring.deck_ids, state.decks()),
+        vec![named(edgar, "Edgar"), named(krenko, "Krenko")],
+        "the server's order, the unknown deck left out"
+    );
+}
+
+#[test]
+fn a_staples_deck_chip_opens_that_deck() {
+    let mut state = loaded(ranking(), full_profile());
+    let deck_id = Uuid::new_v4();
+    assert_eq!(
+        state.update(Action::OpenDeck(deck_id)),
+        [Effect::Navigate(Destination::Deck(deck_id))]
+    );
 }
 
 #[test]

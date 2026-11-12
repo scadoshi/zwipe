@@ -5,11 +5,13 @@ mod tests;
 
 use std::collections::BTreeMap;
 
+use uuid::Uuid;
 use zwipe_core::domain::card::card_role;
 use zwipe_core::domain::card::scryfall_data::colors::{self, Color};
 use zwipe_core::domain::card::search_card::card_type::CardType;
 use zwipe_core::domain::card::search_card::type_line;
 use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
+use zwipe_core::domain::deck::deck_profile::DeckProfile;
 use zwipe_core::http::contracts::suggestions::{
     HttpBuilderProfile, HttpColorAffinity, HttpProfileRole, HttpProfileTag, HttpSharedTag,
     HttpStaple, MAX_SUGGESTION_LIMIT,
@@ -100,6 +102,37 @@ fn decks_noun(deck_count: u32) -> &'static str {
 pub fn staple_decks(decks: u32, deck_count: u32) -> String {
     let noun = decks_noun(deck_count);
     format!("{decks} of {deck_count} {noun}")
+}
+
+/// A deck a staple is in, named from the user's deck list.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct StapleDeck {
+    /// The deck's id, which opens it.
+    pub id: Uuid,
+    /// The deck's name.
+    pub name: String,
+}
+
+impl From<&DeckProfile> for StapleDeck {
+    fn from(deck: &DeckProfile) -> Self {
+        Self {
+            id: deck.id,
+            name: deck.name.to_string(),
+        }
+    }
+}
+
+/// The decks behind a staple's `deck_ids`, in the order the server sent
+/// them (most recently updated first), each named from `decks`, the user's
+/// deck list. An id the list doesn't hold, such as a deck deleted since the
+/// profile was built, is left out. Empty when the server sent no ids, so the
+/// staple's chip stays its plain count.
+#[must_use]
+pub fn named_staple_decks(deck_ids: &[Uuid], decks: &[StapleDeck]) -> Vec<StapleDeck> {
+    deck_ids
+        .iter()
+        .filter_map(|id| decks.iter().find(|deck| deck.id == *id).cloned())
+        .collect()
 }
 
 /// A WUBRG code's lowercase name, `None` for anything else.

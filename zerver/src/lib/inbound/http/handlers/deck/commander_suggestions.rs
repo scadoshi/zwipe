@@ -207,6 +207,7 @@ impl From<BuilderProfile> for HttpBuilderProfile {
                 .map(|staple| HttpStaple {
                     card: staple.card,
                     decks: staple.decks,
+                    deck_ids: staple.deck_ids,
                 })
                 .collect(),
             color_map: Some(HttpColorMap::from(value.color_map)),
