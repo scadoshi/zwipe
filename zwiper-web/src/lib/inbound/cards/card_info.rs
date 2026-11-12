@@ -1,12 +1,16 @@
 //! A card's prices as chips, for the printing sheet, and a swipe card's
 //! full details in the drawer behind the dock's eye.
 
+use std::time::Duration;
+
 use components::{CardDetailsCost, CardDetailsPanel, DrawerSheet, use_meld, use_overlay_back};
 use dioxus::prelude::*;
+use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_ui::card::info;
 
 use crate::inbound::cards::otag::use_describe_tag;
+use crate::outbound::timer;
 
 /// The card's prices as chips, under a printing in the printing sheet.
 #[component]
@@ -61,6 +65,38 @@ pub fn CardDetailsSheet(
     let title_card = meld.apply(&card);
     let name = title_card.scryfall_data.name.clone();
     let on_image = on_image.map(|handler| EventHandler::new(move |()| handler.call(face())));
+    // A swap to another card while open crossfades: the card drawn last
+    // stays as a layer fading out over the new one for one entrance.
+    let card_id = card.scryfall_data.id;
+    let mut drawn = use_hook(|| CopyValue::new(None::<Outgoing>));
+    let mut outgoing = use_hook(|| CopyValue::new(None::<(Outgoing, u32)>));
+    let mut swaps = use_signal(|| 0u32);
+    let swap_turn = swaps();
+    let before = drawn.take();
+    let open_now = *open.peek();
+    let was_open = before.as_ref().is_some_and(|o| o.open);
+    if crossfades(
+        before.as_ref().map(|o| o.card.scryfall_data.id),
+        card_id,
+        was_open && open_now,
+    ) {
+        let turn = swap_turn.wrapping_add(1);
+        outgoing.set(before.map(|o| (o, turn)));
+        spawn(async move {
+            timer::sleep(SWAP).await;
+            if outgoing.read().as_ref().is_some_and(|(_, t)| *t == turn) {
+                outgoing.set(None);
+                swaps.set(turn);
+            }
+        });
+    }
+    drawn.set(Some(Outgoing {
+        card: card.clone(),
+        footer: footer.clone(),
+        body_end: body_end.clone(),
+        open: open_now,
+    }));
+    let fading = outgoing.read().as_ref().map(|(o, _)| o.clone());
     rsx! {
         DrawerSheet {
             open,
@@ -72,20 +108,64 @@ pub fn CardDetailsSheet(
             },
             every_width: true,
             class,
-            CardDetailsPanel {
-                card,
-                headless: true,
-                face,
-                meld: Some(meld),
-                describe_tag: Some(describe_tag),
-                on_image,
-                on_face_change,
-                on_printings,
-                footer,
-                body_end,
+            div { class: "card-details-crossfade",
+                if let Some(old) = fading {
+                    div {
+                        class: "card-details-out",
+                        "aria-hidden": "true",
+                        inert: true,
+                        CardDetailsPanel {
+                            card: old.card,
+                            headless: true,
+                            describe_tag: Some(describe_tag),
+                            footer: old.footer,
+                            body_end: old.body_end,
+                        }
+                    }
+                }
+                // A one-card list, so its key remounts the layer, and its
+                // entrance runs, only when the card changes.
+                for shown_id in [card_id] {
+                    div { key: "{shown_id}", class: "card-details-in",
+                        CardDetailsPanel {
+                            card: card.clone(),
+                            headless: true,
+                            face,
+                            meld: Some(meld.clone()),
+                            describe_tag: Some(describe_tag),
+                            on_image,
+                            on_face_change,
+                            on_printings,
+                            footer: footer.clone(),
+                            body_end: body_end.clone(),
+                        }
+                    }
+                }
             }
         }
     }
+}
+
+/// How long a swapped-out card takes to fade under the new one: the kit's `--enter-duration`.
+const SWAP: Duration = Duration::from_millis(280);
+
+/// What the drawer drew for one card, kept to fade out when it swaps to another.
+#[derive(Clone)]
+struct Outgoing {
+    /// The card.
+    card: Card,
+    /// The host's footer for it.
+    footer: Option<Element>,
+    /// The host's body end for it.
+    body_end: Option<Element>,
+    /// Whether the drawer was open when it drew the card.
+    open: bool,
+}
+
+/// Whether the drawer crossfades on drawing card `now` after `before`: only a swap to another
+/// card while it stays `open`. A face or meld change, or a card a drawer opens on, swaps in place.
+fn crossfades(before: Option<Uuid>, now: Uuid, open: bool) -> bool {
+    open && before.is_some_and(|was| was != now)
 }
 
 /// A swipe card's ghost: the image block, while cards load and where the
@@ -134,5 +214,25 @@ pub fn PrintingSheetSkeleton() -> Element {
                 div { class: "skeleton-bar skeleton-printing-info-artist" }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn only_a_swap_in_an_open_drawer_crossfades() {
+        let (a, b) = (Uuid::from_u128(1), Uuid::from_u128(2));
+        assert!(crossfades(Some(a), b, true), "another card while open");
+        assert!(
+            !crossfades(Some(a), a, true),
+            "the same card: a face or meld change"
+        );
+        assert!(
+            !crossfades(Some(a), b, false),
+            "a closed drawer just shows the new card"
+        );
+        assert!(!crossfades(None, b, true), "nothing shown before");
     }
 }

@@ -51,7 +51,8 @@ pub fn DrawerSheet(
                         "\u{00d7}"
                     }
                     if !title.is_empty() || title_trailing.is_some() {
-                        span { class: "sheet-title", "{title}" {title_trailing} }
+                        // Keyed by the title, so a host can ease a new one in.
+                        span { key: "{title}", class: "sheet-title", "{title}" {title_trailing} }
                     }
                     if let Some(on_hint) = on_hint {
                         Button {

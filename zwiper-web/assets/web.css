@@ -2135,6 +2135,54 @@ body:has(.deck-stacks) .sheet-form-drawer:has(> .card-details-drawer) > .sheet-b
     }
 }
 
+/* ---- The details drawer's swap ----
+
+   A swap to another card while the drawer is open crossfades: the card
+   drawn before fades out over the new one, both in one grid cell, on the
+   kit's entrance timing, and the title eases in with the new card. Without
+   motion the old card goes at once. */
+.card-details-crossfade {
+    display: grid;
+}
+
+.card-details-crossfade > * {
+    grid-area: 1 / 1;
+    min-width: 0;
+}
+
+.card-details-in,
+.card-details-drawer.show .sheet-title {
+    animation: details-swap-in var(--enter-duration) var(--ease-enter) backwards;
+}
+
+.card-details-out {
+    pointer-events: none;
+    animation: details-swap-out var(--enter-duration) var(--ease-enter) forwards;
+}
+
+@keyframes details-swap-in {
+    from {
+        opacity: 0;
+    }
+}
+
+@keyframes details-swap-out {
+    to {
+        opacity: 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .card-details-in,
+    .card-details-drawer.show .sheet-title {
+        animation: none;
+    }
+
+    .card-details-out {
+        display: none;
+    }
+}
+
 /* ---- The card's details on a wide window ----
 
    On Add, Remove, swipe select and the examples the card's details are a
