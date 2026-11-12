@@ -27,12 +27,15 @@ pub struct StackCard {
 /// after it moving down to make room; `open` outlines the card whose details
 /// are up while it shows in full.
 /// A pointer over a card or focus on it calls `on_hover` and leaving calls
-/// `on_leave`; a click or Enter calls `on_select`.
+/// `on_leave`; a click or Enter calls `on_select`. While `dealing` the cards
+/// rise into their slots one after another, the top card first, each slot
+/// carrying its place in the stack for the stagger.
 #[component]
 pub fn CardStack(
     cards: Vec<StackCard>,
     #[props(default)] revealed: Option<Uuid>,
     #[props(default)] open: Option<Uuid>,
+    #[props(default)] dealing: bool,
     on_hover: EventHandler<Uuid>,
     on_leave: EventHandler<Uuid>,
     on_select: EventHandler<Uuid>,
@@ -44,8 +47,8 @@ pub fn CardStack(
     // A meld half with its Meld on shows its melded card.
     let melds = try_use_context::<MeldSource>();
     rsx! {
-        div { class: "card-stack", role: "list",
-            for (((StackCard { card, qty, face }, tucked), shifted), exposed) in cards.into_iter().zip(tucks).zip(shifts).zip(full) {
+        div { class: if dealing { "card-stack dealing" } else { "card-stack" }, role: "list",
+            for (index, (((StackCard { card, qty, face }, tucked), shifted), exposed)) in cards.into_iter().zip(tucks).zip(shifts).zip(full).enumerate() {
                 {
                     let id = card.scryfall_data.id;
                     let name = card.scryfall_data.name.clone();
@@ -69,7 +72,12 @@ pub fn CardStack(
                     rsx! {
                         // `data-row` names the card, as a list row does, so a
                         // host can find the card under the cursor.
-                        div { key: "{id}", role: "listitem", class: "{class}", "data-row": "{id}",
+                        div {
+                            key: "{id}",
+                            role: "listitem",
+                            class: "{class}",
+                            "data-row": "{id}",
+                            style: dealing.then(|| format!("--deal-i: {index}")),
                             button {
                                 r#type: "button",
                                 class: "card-stack-card",
@@ -98,8 +106,41 @@ pub fn CardStack(
 
 #[cfg(test)]
 mod tests {
+    use zwipe_ui::deck_cards::stacks::{DEAL_DURATION, DEAL_STAGGER, DEAL_STAGGER_CAP};
+
     /// The kit's Magic sheet, where the stacks' rules live.
     const MAGIC_CSS: &str = include_str!("../assets/magic.css");
+
+    /// The body of the first rule whose selector reads `selector`.
+    fn rule(selector: &str) -> &'static str {
+        let at = MAGIC_CSS.find(&format!("{selector} {{")).unwrap();
+        let body = MAGIC_CSS.get(at..).unwrap();
+        body.get(body.find('{').unwrap().saturating_add(1)..body.find('}').unwrap())
+            .unwrap()
+    }
+
+    #[test]
+    fn a_dealing_stack_rises_in_card_by_card_on_the_shared_timing() {
+        let deal = rule(".card-stack.dealing .card-stack-card");
+        for part in [
+            "card-stack-deal".to_owned(),
+            format!("{}ms", DEAL_DURATION.as_millis()),
+            "var(--ease-enter)".to_owned(),
+            format!(
+                "calc(min(var(--deal-i), {DEAL_STAGGER_CAP}) * {}ms)",
+                DEAL_STAGGER.as_millis()
+            ),
+            "backwards".to_owned(),
+        ] {
+            assert!(deal.contains(&part), "{part} in {deal}");
+        }
+        let skipped = MAGIC_CSS
+            .split("@media (prefers-reduced-motion: reduce)")
+            .skip(1)
+            .filter_map(|block| block.get(..block.find("\n}\n")?))
+            .any(|block| block.contains(".card-stack.dealing .card-stack-card"));
+        assert!(skipped, "reduced motion skips the deal");
+    }
 
     #[test]
     fn nothing_about_a_stack_promotes_its_cards_to_layers() {

@@ -8,6 +8,7 @@ use dioxus::prelude::*;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::http::contracts::metrics::HttpLifetimeCounters;
 use zwipe_ui::home::{Figures, Scope};
+use zwipe_ui::screens::home;
 
 use crate::inbound::caches::CachedMyCounts;
 use crate::inbound::chrome::authed::use_authed;
@@ -58,7 +59,8 @@ pub fn use_my_counts(scope: Signal<Scope>) -> Option<HttpLifetimeCounters> {
 /// Home's hero: the mark over everybody's or the user's own three
 /// `figures`, tagged `tag` (`Live`, or "as of" an edge-cached copy's day)
 /// once the figures on screen come from this visit, then the scope button,
-/// which calls `ontoggle`. A new scope rolls the figures to the other counts
+/// which calls `ontoggle`, and Activity, which calls `onactivity`, as the
+/// app's hero has them. A new scope rolls the figures to the other counts
 /// while its label fades in. Home's model holds the figures and the scope.
 #[component]
 pub fn HomeHeroScoped(
@@ -67,6 +69,7 @@ pub fn HomeHeroScoped(
     tag: Option<String>,
     scope: Scope,
     ontoggle: EventHandler,
+    onactivity: EventHandler,
 ) -> Element {
     let label = scope.label();
     rsx! {
@@ -84,6 +87,11 @@ pub fn HomeHeroScoped(
                     for label in [label] {
                         span { key: "{label}", class: "hero-scope-label", "{label}" }
                     }
+                }
+                button {
+                    class: "card-action-btn",
+                    onclick: move |_| onactivity.call(()),
+                    {home::ACTIVITY}
                 }
             },
         }

@@ -264,7 +264,7 @@ fn NavMark(open: Signal<bool>) -> Element {
             class: "nav-brand web-nav-mark web-nav-wide",
             "aria-label": "Home",
             onclick: move |_| open.set(false),
-            span { class: "nav-logo web-nav-logo", "{logo::Z}" }
+            span { class: "nav-logo", "{logo::Z}" }
         }
     }
 }

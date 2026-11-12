@@ -1144,19 +1144,9 @@ impl State {
     #[must_use]
     pub fn buy_links(&self) -> Option<(String, String)> {
         let deck = self.deck().filter(|_| self.has_cards())?;
-        let names: Vec<&str> = self
+        let zone = self
             .profile()
-            .map(|p| {
-                [
-                    p.commander_name.as_deref(),
-                    p.partner_commander_name.as_deref(),
-                    p.background_name.as_deref(),
-                    p.signature_spell_name.as_deref(),
-                ]
-                .into_iter()
-                .flatten()
-                .collect()
-            })
+            .map(|p| buy::command_zone(p, &deck.command_zone_cards))
             .unwrap_or_default();
         let entries: Vec<&DeckEntry> = deck
             .entries
@@ -1164,8 +1154,8 @@ impl State {
             .filter(|e| e.deck_card.board.is_active() || e.deck_card.board.is_sideboard())
             .collect();
         Some((
-            buy::tcgplayer_url(&entries, &names),
-            buy::cardkingdom_url(&entries, &names),
+            buy::tcgplayer_url(&entries, &zone),
+            buy::cardkingdom_url(&entries, &zone),
         ))
     }
 

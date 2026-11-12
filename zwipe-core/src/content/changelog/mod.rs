@@ -48,6 +48,31 @@ pub const MOBILE_STORE_VERSION: Version = Version::new(1, 18, 15);
 /// changelog with an "Upcoming" badge instead of "Latest".
 pub const UPCOMING: &[Release] = &[
     Release {
+        version: Version::new(1, 19, 5),
+        date: None,
+        entries: &[
+            "On the web's deck page, Quick add ends where the widest chip row under it does",
+            "Home's counters on the web have an Activity button, as in the app",
+            "A card image that fails to load shows the card's name and text instead of the card under it",
+            "The Z in the web's nav is the same size as on zwipe.net",
+            "Opening a card's row, or folding all, on the web's deck page List answers about twice as fast",
+            "On the web's deck page, cards ease in, out and into new groups when a board is shown or hidden or the grouping changes",
+            "On the web's deck page, switching to Stacks deals the cards in",
+        ],
+    },
+    Release {
+        version: Version::new(1, 19, 4),
+        date: None,
+        entries: &[
+            "Suggested commanders and the commander swipe on the web end with the site's footer, as Add does",
+            "On the web, Playstyle and Activity take p, i, v and d on a card and show their lists as a stack too",
+            "A staple's deck count on Playstyle opens to the decks that run it, each one tap from its deck",
+            "On the web, an Oracle tag's examples take h, j, d and v, ? opens the hint of the open modal, and a card slides clear of its details where it fits",
+            "On the web's deck page, Art grays out while Stacks is on, since stacks always show art",
+            "Buying from TCGplayer adds each card in the printing you picked",
+        ],
+    },
+    Release {
         version: Version::new(1, 19, 3),
         date: None,
         entries: &[
@@ -56,7 +81,6 @@ pub const UPCOMING: &[Release] = &[
             "Printings has no Select where there is nothing to save the pick to",
             "The web's large dialogs fade and rise in when they open",
             "Buying is one cart on the web and in the app, on the deck's dock and the featured card, opening TCGplayer or Card Kingdom",
-            "On the web, an Oracle tag's examples take h, j, d and v, ? opens the hint of the open modal, and a card slides clear of its details where it fits",
         ],
     },
     Release {

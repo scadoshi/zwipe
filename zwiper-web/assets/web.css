@@ -573,24 +573,6 @@ body {
     min-height: 0;
 }
 
-/* The Z mark as zite draws it, in the logo color: seven lines at 0.9 line
-   height, sized to stand as tall as a 1.85rem nav pill. */
-.web-nav-logo {
-    font-family: "JetBrains Mono", monospace;
-    font-size: calc(1.85rem / 6.3);
-    line-height: 0.9;
-    white-space: pre;
-    display: block;
-    letter-spacing: 0;
-    color: var(--logo);
-}
-
-@media (hover: hover) {
-    .nav-brand:hover .web-nav-logo {
-        color: var(--accent-primary);
-    }
-}
-
 /* The nav's width-only pieces keep their own boxes: a corner button, a
    list item, the footer row. */
 @media (max-width: 1109px) {
@@ -2125,9 +2107,31 @@ body:has(.deck-stacks) .sheet-form-drawer:has(> .card-details-drawer) > .sheet-b
     .screen-content.card-swipe.web-swipe-select-body {
         overflow: visible;
     }
+}
 
-    .swipe-select-screen.web-swipe-select {
-        overflow: hidden;
+/* The overlay scrolls as a screen under the nav does, down to the site's
+   footer, and clips sideways at the window's edge. */
+.swipe-select-screen.web-swipe-select {
+    overflow-x: hidden;
+    overflow-y: auto;
+    /* Its docks rise over its own footer, not the screen's under it. */
+    timeline-scope: --site-footer;
+}
+
+/* On a wide window, where the nav takes its header's place, its swipe fills
+   the window and the footer starts below the fold. */
+@media (min-width: 900px) {
+    .swipe-select-screen.web-swipe-select > .screen-content {
+        min-height: 100%;
+        box-sizing: border-box;
+    }
+}
+
+/* A phone's swipe fills the window without scrolling, as Add's does, so its
+   footer stays out. */
+@media (max-width: 899px) {
+    .swipe-select-screen.web-swipe-select > .web-site-footer {
+        display: none;
     }
 }
 
@@ -2381,6 +2385,24 @@ body:has(.deck-stacks) .sheet-form-drawer:has(> .card-details-drawer) > .sheet-b
 
     .maybeboard-list > .web-card-row:nth-child(8) > .card-row {
         animation-delay: 270ms;
+    }
+}
+
+/* On a wide window the deck page's controls are as wide as their widest
+   chip row, and Quick add's field runs to that row's right edge: its row
+   takes no part in the block's width and stretches across it. */
+@media (min-width: 900px) {
+    .deck-page > .deck-controls {
+        width: fit-content;
+        max-width: 100%;
+    }
+
+    .deck-page > .deck-controls > .quick-add {
+        contain: inline-size;
+    }
+
+    .deck-page > .deck-controls .input-clear-wrap:has(> #quick-add) {
+        max-width: none;
     }
 }
 

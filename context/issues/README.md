@@ -78,16 +78,27 @@ Who checked, on which live build, what they saw.
 | [353](353-stack-cart.md) | A stack has no way to buy its cards | fixing | thinker | - |
 | [354](354-one-buy-dialog.md) | Buying is a different control in every spot, and the wide deck page hides it | fixing | thinker | - |
 | [358](358-share-link-deck-name.md) | The Share dialog's link names every deck "deck" | fixing | thinker | - |
+| [372](372-stacks-deal-in.md) | Stacks appear all at once | fixing | thinker | - |
+| [376](376-nav-logo-size.md) | The nav logo is a different size on each site | fixing | thinker | - |
+| [366](366-swipe-select-footer.md) | Suggested commanders has no footer | fixing | thinker | - |
 | [361](361-list-group-cart.md) | The List's card groups have no cart | fixing | thinker | - |
-| [362](362-store-links-printing.md) | Store links send names only, not the printing picked | research | thinker | - |
+| [362](362-store-links-printing.md) | Store links send names only, not the printing picked | fixing | thinker | - |
 | [357](357-stack-hover-shift.md) | Hovering a stack shifts its cards a pixel | fixing | thinker | - |
 | [356](356-list-row-meld.md) | A meld card's list row has no Meld toggle | fixing | scotland | #555 |
 | [359](359-key-map-gaps.md) | f and v gaps on Commander maybeboard and meld cards | fixing | scotland | #559 |
+| [368](368-staple-decks.md) | A staple's deck count names no decks | fixing | laptop | #571 |
 | [367](367-printings-browse-only.md) | Printings offers Select where nothing would save | fixing | laptop | #568 |
-| [365](365-examples-keys-hint-slide.md) | Examples keys, d on every swipe screen, ? to the open modal, the card clear of its details | fixing | scotland | #567 |
+| [365](365-examples-keys-hint-slide.md) | Examples keys, d on every swipe screen, ? to the open modal, the card clear of its details | fixing | scotland | #567, #576 |
 | [360](360-modal-entrance.md) | The wide modals pop in with no motion | fixing | laptop | #565, orangui#35 |
 | [369](369-share-link-chip.md) | The Share dialog's link sits in an odd dark box | fixing | laptop | #564 |
 | [364](364-list-row-art-meld.md) | A melded card's list row thumbnail and hover preview show the half | fixing | scotland | #563 |
+| [363](363-row-keys-and-stacks.md) | Playstyle and Activity have no card keys and no Stacks view | fixing | laptop | #574 |
+| [371](371-art-chip-stacks.md) | Art stays live while Stacks is on | fixing | laptop | #577 |
+| [373](373-board-group-easing.md) | Board and Group by changes snap the deck page's cards | fixing | laptop | #578 |
+| [374](374-deck-list-slow.md) | The deck page's List is slow to open a row, fold or toggle Art | fixing | scotland | #585 |
+| [379](379-quick-add-width.md) | Quick add runs wider than the chip rows under it | fixing | laptop | #581 |
+| [375](375-home-activity-button.md) | Home's counters have no way into Activity on the web | fixing | laptop | #580 |
+| [378](378-swipe-image-fallback.md) | A failed swipe card image shows the card underneath | fixing | laptop | #583 |
 
 ## Waiting for live verification
 

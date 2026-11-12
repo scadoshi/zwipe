@@ -12,6 +12,7 @@ mod top_nav;
 
 pub use deck_opener::DeckOpener;
 pub use footer_lift::use_footer_lift;
+pub(crate) use frame::WebFooter;
 pub use frame::{OpenFrame, PublicFrame, ScreenFrame};
 pub use nav::MenuOpen;
 pub use top_nav::{Shell, use_overlay_nav};

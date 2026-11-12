@@ -2,6 +2,8 @@
 //! role and per oracle tag, and the cards the user keeps passing on. Every
 //! number comes from zwipe-ui's `activity`; this module draws it.
 
+use std::collections::HashMap;
+
 use chrono::NaiveDate;
 use components::{
     BarChart, BarOrientation, CardListFold, ChartTip, Chip, HEAT_CELL, HEAT_ROWS, HeatCell,
@@ -9,14 +11,17 @@ use components::{
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
+use zwipe_core::domain::card::Card;
 use zwipe_core::http::contracts::suggestions::{HttpActivity, HttpActivityDay, HttpHardPass};
 use zwipe_ui::activity::{
     self, NONE_REMOVED, PASSES_EMPTY, ROLES_EMPTY, RateKind, TAGS_EMPTY, WEEKDAY_LABELS,
 };
+use zwipe_ui::deck_cards::stacks::CardsView;
 
 use crate::inbound::cards::card_row::CardRow;
 use crate::inbound::cards::charts::chart_bars;
 use crate::inbound::cards::otag::{OtagDescribe, OtagExamplesOpen};
+use crate::inbound::cards::stack_view::{CardsStack, CardsViewSwitch, StackDrawer};
 use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
 use crate::inbound::chrome::section::CollapsibleSection;
 
@@ -346,32 +351,55 @@ fn RateChips(mut kind: Signal<RateKind>) -> Element {
 #[component]
 fn HardPassRow(pass: HttpHardPass, expanded_card: Signal<Option<Uuid>>) -> Element {
     let skips = activity::counted(pass.skipped, "skip", "skips");
-    let commanders = pass.commanders;
     rsx! {
         CardRow {
             card: pass.card,
             qty: i32::try_from(pass.skipped).unwrap_or(i32::MAX),
             qty_tags: vec![skips],
             expanded_card,
-            footer: rsx! {
-                if !commanders.is_empty() {
-                    div { class: "keyword-chips",
-                        span { class: "stat-chip stat-chip-p1 chip-row-label", "Skipped under" }
-                        for name in commanders {
-                            span { key: "{name}", class: "stat-chip", "{name}" }
-                        }
-                    }
+            footer: skipped_under(pass.commanders),
+        }
+    }
+}
+
+/// The commanders a card was skipped under, as chips after a label; nothing
+/// without any. A pass's row and its stack card's drawer both show it.
+fn skipped_under(commanders: Vec<String>) -> Element {
+    rsx! {
+        if !commanders.is_empty() {
+            div { class: "keyword-chips",
+                span { class: "stat-chip stat-chip-p1 chip-row-label", "Skipped under" }
+                for name in commanders {
+                    span { key: "{name}", class: "stat-chip", "{name}" }
                 }
-            },
+            }
         }
     }
 }
 
 /// The cards the user keeps passing on, in the server's order (most skipped
-/// against other players first), in a list that folds. Without any, the
-/// header over a line saying what fills it.
+/// against other players first), in a list that folds: rows, or one stack
+/// in `view`'s Stacks, with its card details drawer. Without any, the header
+/// over a line saying what fills it.
 #[component]
-pub fn HardPassesPanel(passes: Vec<HttpHardPass>, expanded_card: Signal<Option<Uuid>>) -> Element {
+pub fn HardPassesPanel(
+    passes: Vec<HttpHardPass>,
+    expanded_card: Signal<Option<Uuid>>,
+    view: Signal<CardsView>,
+) -> Element {
+    let cards: Vec<Card> = passes.iter().map(|p| p.card.clone()).collect();
+    let under: HashMap<Uuid, Vec<String>> = passes
+        .iter()
+        .map(|p| (p.card.scryfall_data.id, p.commanders.clone()))
+        .collect();
+    let extras = Callback::new(move |card: Card| {
+        skipped_under(
+            under
+                .get(&card.scryfall_data.id)
+                .cloned()
+                .unwrap_or_default(),
+        )
+    });
     rsx! {
         CardListFold {
             title: PASSES_TITLE,
@@ -382,10 +410,26 @@ pub fn HardPassesPanel(passes: Vec<HttpHardPass>, expanded_card: Signal<Option<U
                 div { class: "activity-total activity-total-group",
                     span { class: "chip-note", "{PASSES_EMPTY}" }
                 }
+            } else {
+                div { class: "web-card-group-filters",
+                    CardsViewSwitch { view, on_change: move |()| {
+                        let mut expanded = expanded_card;
+                        expanded.set(None);
+                    } }
+                }
             }
-            for pass in passes {
-                HardPassRow { key: "{pass.card.scryfall_data.id}", pass, expanded_card }
+            if view() == CardsView::Stacks {
+                if !cards.is_empty() {
+                    CardsStack { cards: cards.clone() }
+                }
+            } else {
+                for pass in passes {
+                    HardPassRow { key: "{pass.card.scryfall_data.id}", pass, expanded_card }
+                }
             }
+        }
+        if view() == CardsView::Stacks {
+            StackDrawer { cards, extras }
         }
     }
 }

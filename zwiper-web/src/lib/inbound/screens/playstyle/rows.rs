@@ -1,7 +1,7 @@
 //! Playstyle's card rows: a suggestion with the reasons it fits, and the
 //! Staples panel with its Type and Color filters.
 
-use components::{CardListFold, CardRoleChips, Chip};
+use components::{CardListFold, CardRoleChips, Chip, StapleDecksChip};
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
@@ -9,15 +9,19 @@ use zwipe_core::domain::card::search_card::card_type::CardType;
 use zwipe_core::http::contracts::suggestions::{
     HttpCommanderSuggestion, HttpStaple, HttpSuggestionReasons,
 };
+use zwipe_ui::deck_cards::stacks::CardsView;
 use zwipe_ui::playstyle::{
-    StapleColor, color_lines, group_shared_tags, matching_staples, staple_colors_present,
-    staple_decks, staple_identity, staple_percent, staple_type_line, staple_types_present,
+    StapleColor, StapleDeck, color_lines, group_shared_tags, matching_staples, named_staple_decks,
+    staple_colors_present, staple_decks, staple_identity, staple_percent, staple_type_line,
+    staple_types_present,
 };
 
 use super::chips::{IdentityPips, identity_key};
 use crate::inbound::cards::card_row::CardRow;
 use crate::inbound::cards::otag::{OtagDescribe, OtagExamplesOpen};
+use crate::inbound::cards::stack_view::CardsStack;
 use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
+use crate::inbound::router::Route;
 
 /// The Staples group's title.
 const STAPLES_TITLE: &str = "Staples";
@@ -105,8 +109,7 @@ pub fn SuggestionRow(
     on_dismiss: EventHandler<Uuid>,
 ) -> Element {
     let card = suggestion.card;
-    let oracle_id = card.scryfall_data.oracle_id;
-    let card_for_start = card.clone();
+    let actions = suggestion_actions(card.clone(), on_start, on_maybe, on_dismiss);
     rsx! {
         CardRow {
             card,
@@ -115,34 +118,47 @@ pub fn SuggestionRow(
             footer: rsx! {
                 SuggestionReasons { reasons: suggestion.reasons, deck_count, foldable: true }
             },
-            extra_actions: rsx! {
-                button {
-                    class: "card-action-btn",
-                    onclick: move |evt| {
-                        evt.stop_propagation();
-                        on_start.call(card_for_start.clone());
-                    },
-                    "Create deck"
-                }
-                if let Some(oid) = oracle_id {
-                    button {
-                        class: "card-action-btn",
-                        onclick: move |evt| {
-                            evt.stop_propagation();
-                            on_maybe.call(oid);
-                        },
-                        "Maybeboard"
-                    }
-                    button {
-                        class: "card-action-btn",
-                        onclick: move |evt| {
-                            evt.stop_propagation();
-                            on_dismiss.call(oid);
-                        },
-                        "Remove"
-                    }
-                }
+            extra_actions: actions,
+        }
+    }
+}
+
+/// A suggestion's actions: `Create deck`, then `Maybeboard` and `Remove`
+/// when the card has an oracle id. Its row and its stack card's drawer both
+/// show them.
+pub(super) fn suggestion_actions(
+    card: Card,
+    on_start: EventHandler<Card>,
+    on_maybe: EventHandler<Uuid>,
+    on_dismiss: EventHandler<Uuid>,
+) -> Element {
+    let oracle_id = card.scryfall_data.oracle_id;
+    rsx! {
+        button {
+            class: "card-action-btn",
+            onclick: move |evt| {
+                evt.stop_propagation();
+                on_start.call(card.clone());
             },
+            "Create deck"
+        }
+        if let Some(oid) = oracle_id {
+            button {
+                class: "card-action-btn",
+                onclick: move |evt| {
+                    evt.stop_propagation();
+                    on_maybe.call(oid);
+                },
+                "Maybeboard"
+            }
+            button {
+                class: "card-action-btn",
+                onclick: move |evt| {
+                    evt.stop_propagation();
+                    on_dismiss.call(oid);
+                },
+                "Remove"
+            }
         }
     }
 }
@@ -155,8 +171,12 @@ pub fn SuggestionRow(
 pub fn StaplesPanel(
     staples: Vec<HttpStaple>,
     deck_count: u32,
+    /// The user's decks, which name each staple's deck chips.
+    decks: Vec<StapleDeck>,
     expanded_card: Signal<Option<Uuid>>,
     wide: bool,
+    /// List rows, or one stack in Stacks.
+    view: Signal<CardsView>,
 ) -> Element {
     let active_type: Signal<Option<CardType>> = use_signal(|| None);
     let active_color: Signal<Option<StapleColor>> = use_signal(|| None);
@@ -191,12 +211,19 @@ pub fn StaplesPanel(
                         span { class: "chip-note", "No staples match" }
                     }
                 }
-                for staple in rows {
-                    StapleRow {
-                        key: "{staple.card.scryfall_data.id}",
-                        staple,
-                        deck_count,
-                        expanded_card,
+                if view() == CardsView::Stacks {
+                    if !rows.is_empty() {
+                        CardsStack { cards: rows.iter().map(|s| s.card.clone()).collect::<Vec<Card>>() }
+                    }
+                } else {
+                    for staple in rows {
+                        StapleRow {
+                            key: "{staple.card.scryfall_data.id}",
+                            in_decks: named_staple_decks(&staple.deck_ids, &decks),
+                            staple,
+                            deck_count,
+                            expanded_card,
+                        }
                     }
                 }
             }
@@ -205,20 +232,41 @@ pub fn StaplesPanel(
 }
 
 /// A staple: its share of the user's decks in place of the quantity, and
-/// how many decks run it in the footer.
+/// how many decks run it in the footer, a chip that lists `in_decks`, each
+/// opening its deck.
 #[component]
-fn StapleRow(staple: HttpStaple, deck_count: u32, expanded_card: Signal<Option<Uuid>>) -> Element {
-    let decks_label = staple_decks(staple.decks, deck_count);
+fn StapleRow(
+    staple: HttpStaple,
+    deck_count: u32,
+    in_decks: Vec<StapleDeck>,
+    expanded_card: Signal<Option<Uuid>>,
+) -> Element {
+    let footer = staple_footer(&staple, deck_count, in_decks);
     rsx! {
         CardRow {
             card: staple.card,
             qty: i32::try_from(staple.decks).unwrap_or(i32::MAX),
             qty_tags: staple_percent(staple.decks, deck_count).into_iter().collect::<Vec<String>>(),
             expanded_card,
-            footer: rsx! {
-                div { class: "keyword-chips",
-                    span { class: "detail-chip detail-chip-pt", "{decks_label}" }
-                }
+            footer,
+        }
+    }
+}
+
+/// How many of the user's decks run `staple`, as a chip that lists `in_decks`,
+/// each opening its deck. Its row and its stack card's drawer both show it.
+pub(super) fn staple_footer(
+    staple: &HttpStaple,
+    deck_count: u32,
+    in_decks: Vec<StapleDeck>,
+) -> Element {
+    let decks_label = staple_decks(staple.decks, deck_count);
+    rsx! {
+        StapleDecksChip {
+            label: decks_label,
+            decks: in_decks,
+            on_open: move |deck_id: Uuid| {
+                navigator().push(Route::ViewDeck { deck_id });
             },
         }
     }

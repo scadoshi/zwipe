@@ -137,6 +137,10 @@ pub struct HttpStaple {
     /// Profiled decks with the card on their mainboard, counted once per
     /// deck however many copies it runs, at least [`STAPLE_MIN_DECKS`].
     pub decks: u32,
+    /// The ids of those decks, the most recently updated first. Empty from a
+    /// server that predates the field, so a client shows only the count.
+    #[serde(default)]
+    pub deck_ids: Vec<Uuid>,
 }
 
 /// A card role the user's decks lean on.
@@ -240,6 +244,43 @@ pub struct HttpClearedDismissals {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_utils::make_card;
+
+    /// A staple as JSON, with or without the `deck_ids` field.
+    fn staple_json(deck_ids: Option<&[Uuid]>) -> serde_json::Value {
+        let mut json = serde_json::json!({ "card": make_card("Sol Ring"), "decks": 4 });
+        if let Some(ids) = deck_ids {
+            json["deck_ids"] = serde_json::json!(ids);
+        }
+        json
+    }
+
+    #[test]
+    fn a_staple_from_a_server_without_deck_ids_has_none() {
+        let back: HttpStaple = serde_json::from_value(staple_json(None)).unwrap();
+        assert_eq!(back.decks, 4);
+        assert!(
+            back.deck_ids.is_empty(),
+            "an old server's staple lists no decks"
+        );
+    }
+
+    #[test]
+    fn a_staple_with_deck_ids_reads_into_the_shape_before_them() {
+        /// `HttpStaple` before `deck_ids`, as an old app's core declares it.
+        #[derive(Deserialize)]
+        struct OldStaple {
+            card: Card,
+            decks: u32,
+        }
+        let ids = [Uuid::new_v4(), Uuid::new_v4()];
+        let json = staple_json(Some(&ids));
+        let old: OldStaple = serde_json::from_value(json.clone()).unwrap();
+        assert_eq!(old.decks, 4, "an old app ignores deck_ids");
+        assert_eq!(old.card.scryfall_data.name, "Sol Ring");
+        let new: HttpStaple = serde_json::from_value(json).unwrap();
+        assert_eq!(new.deck_ids, ids, "most recently updated first, as sent");
+    }
 
     #[test]
     fn reasons_round_trip() {
@@ -383,10 +424,12 @@ mod tests {
                 HttpStaple {
                     card: crate::test_utils::make_card("Sol Ring"),
                     decks: 3,
+                    deck_ids: vec![Uuid::nil()],
                 },
                 HttpStaple {
                     card: crate::test_utils::make_card("Arcane Signet"),
                     decks: 2,
+                    deck_ids: vec![],
                 },
             ],
             color_map: None,
@@ -394,7 +437,10 @@ mod tests {
         let json = serde_json::to_string(&profile).unwrap();
         let back: HttpBuilderProfile = serde_json::from_str(&json).unwrap();
         assert_eq!(back, profile);
-        assert!(json.contains(r#""decks":3}"#), "{json}");
+        assert!(
+            json.contains(r#""decks":3,"deck_ids":["00000000-0000-0000-0000-000000000000"]}"#),
+            "{json}"
+        );
     }
 
     #[test]

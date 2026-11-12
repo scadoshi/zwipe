@@ -7,7 +7,9 @@ pub use zwipe_ui::shortcuts::{
     CardKey, FlowKey, GLOBAL_KEYS, GlobalKey, HINT_KEY, UNDO_COMBO, card_key, flow_key, global_key,
     undo_letter,
 };
-use zwipe_ui::shortcuts::{DECK_CARDS_NOTE, EVERYWHERE_ROWS, Editable, SheetRow, deck_cards_rows};
+use zwipe_ui::shortcuts::{
+    DECK_CARDS_NOTE, EVERYWHERE_ROWS, Editable, SheetRow, card_read_rows, deck_cards_rows,
+};
 
 use crate::inbound::cards::swipe_stack::Swipe;
 
@@ -140,6 +142,9 @@ pub enum ShortcutsScreen {
     DeckCards,
     /// An Oracle tag's example cards, swiped through in their modal.
     Examples,
+    /// A screen of card rows with no editing (Playstyle, Activity), whose keys act on the card
+    /// under the cursor, else the open one.
+    CardRows,
 }
 
 /// The rows the shortcuts sheet lists on `screen`: each key, with its vim letter if it has one,
@@ -176,6 +181,7 @@ pub fn sheet_rows(screen: &ShortcutsScreen) -> Vec<SheetRow> {
             (&["d"], "Card details"),
             (&["v"], "Flip card"),
         ],
+        ShortcutsScreen::CardRows => card_read_rows().to_vec(),
     };
     own.into_iter().chain(EVERYWHERE_ROWS).collect()
 }
@@ -185,7 +191,7 @@ pub fn sheet_rows(screen: &ShortcutsScreen) -> Vec<SheetRow> {
 pub fn sheet_note(screen: &ShortcutsScreen) -> Option<&'static str> {
     match screen {
         ShortcutsScreen::Swipe(_) | ShortcutsScreen::Examples => None,
-        ShortcutsScreen::DeckCards => Some(DECK_CARDS_NOTE),
+        ShortcutsScreen::DeckCards | ShortcutsScreen::CardRows => Some(DECK_CARDS_NOTE),
     }
 }
 
@@ -208,14 +214,29 @@ pub const STACK_DETAILS_CLASS: &str = "deck-stack-details";
 /// [`OVERLAY_SELECTORS`] is open (it takes its own keys).
 #[must_use]
 pub fn guard_js() -> String {
-    browser_guard(Modifiers::Refused, &overlays_closed(None))
+    browser_guard(Modifiers::Refused, &overlays_closed_or_keyed_on_top())
 }
 
 /// [`guard_js`] without the modifier check, for a listener that wants a combo such as Ctrl+Z
 /// and checks the modifiers itself.
 #[must_use]
 pub fn guard_js_with_modifiers() -> String {
-    browser_guard(Modifiers::Allowed, &overlays_closed(None))
+    browser_guard(Modifiers::Allowed, &overlays_closed_or_keyed_on_top())
+}
+
+/// The modal that takes the screen's keys while it is the topmost one open, wherever it opens: the
+/// Oracle tag examples, whose listeners register last, so they are the ones that answer, even
+/// opened from a sheet (the filter's dictionary).
+pub const KEYED_MODAL: &str = ".web-examples";
+
+/// The expression that holds while no overlay is open, or while the topmost open modal
+/// ([`MODAL_SELECTORS`]) is the [`KEYED_MODAL`].
+fn overlays_closed_or_keyed_on_top() -> String {
+    let modals = MODAL_SELECTORS.join(", ");
+    format!(
+        "({} || (() => {{ const open = [...document.querySelectorAll('{modals}')]; const top = open[open.length - 1]; return !!top && top.matches('{KEYED_MODAL}'); }})())",
+        overlays_closed(None)
+    )
 }
 
 /// Whether the browser guard turns a key with Ctrl, Alt or Meta away.
@@ -616,6 +637,23 @@ mod tests {
         for key in printable_keys() {
             let swipes = matches!(swipe_screen_shortcut(&key), Some(Shortcut::Swipe(_)));
             assert_eq!(swipes, SWIPE_LETTERS.contains(&key.as_str()), "{key}");
+        }
+    }
+
+    #[test]
+    fn the_examples_take_their_keys_when_they_are_the_topmost_modal_even_over_a_sheet() {
+        for js in [guard_js(), guard_js_with_modifiers()] {
+            assert!(
+                js.contains(&overlays_closed(None)),
+                "no overlay still passes: {js}"
+            );
+            assert!(
+                js.contains(&format!("top.matches('{KEYED_MODAL}')")),
+                "the examples on top pass: {js}"
+            );
+            for modal in MODAL_SELECTORS {
+                assert!(js.contains(modal), "{modal} counts toward the top: {js}");
+            }
         }
     }
 

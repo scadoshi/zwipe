@@ -137,6 +137,17 @@
     margin-bottom: 0.5rem;
 }
 
+/* One in a chip row sits on the row's center line beside its label chip, as
+   Quick add's does: the row's own gap spaces it, and Quick add's results keep
+   that gap under it. */
+.chip-row > .input-clear-wrap:has(> .input-compact) {
+    margin-bottom: 0;
+}
+
+.quick-add-results {
+    margin-top: 0.5rem;
+}
+
 .label-xs {
     font-size: 0.875rem;
     margin-bottom: 0.25rem;

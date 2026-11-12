@@ -420,6 +420,30 @@ a.stat-chip {
     cursor: pointer;
 }
 
+/* The brand's ASCII mark: seven lines of block glyphs at a 0.9 line height,
+   small enough that the glyphs' slivers fuse into solid bars, in the logo
+   color, the primary accent under the pointer. One size for every site that
+   draws one. Soft: its size and color. */
+:where(.nav-logo) {
+    font-size: 0.4rem;
+    color: var(--logo);
+}
+
+.nav-logo {
+    font-family: "JetBrains Mono", monospace;
+    line-height: 0.9;
+    white-space: pre;
+    display: block;
+    margin: 0;
+    letter-spacing: 0;
+}
+
+@media (hover: hover) {
+    :where(.nav-brand:hover .nav-logo) {
+        color: var(--ink-accent-primary, var(--accent-primary));
+    }
+}
+
 .nav-links {
     display: flex;
     align-items: center;

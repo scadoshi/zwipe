@@ -20,6 +20,8 @@ use zwipe_ui::telemetry::vocabulary::Screen;
 use self::sections::{ACTIVITY_TITLE, ActivityRates, ActivityYear, HardPassesPanel, HeatGhost};
 use crate::inbound::cards::card_row::{CardOverlaysHost, ShowRowArt, use_card_overlays};
 use crate::inbound::cards::otag::{OtagExamplesHost, use_otag_reveals};
+use crate::inbound::cards::row_keys::use_card_row_keys;
+use crate::inbound::cards::stack_view::{use_cards_view, use_row_faces, use_stack_details};
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::ghost::{
     GhostChipBars, GhostChipRow, GhostHint, GhostSection, GhostText,
@@ -125,6 +127,8 @@ pub fn Activity() -> Element {
     let overlays = use_card_overlays();
     let hover_stack = use_hover_stack();
     let expanded_card: Signal<Option<Uuid>> = use_signal(|| None);
+    let view = use_cards_view();
+    use_row_faces();
 
     let mut activity: Signal<Option<HttpActivity>> = use_signal(|| None);
     let mut is_loading = use_signal(|| true);
@@ -142,6 +146,29 @@ pub fn Activity() -> Element {
         });
     });
     let open_section: Signal<Option<String>> = use_signal(|| Some(ACTIVITY_TITLE.to_string()));
+    // Most skipped's cards, which the card keys and the stack act on.
+    let pass_cards = use_memo(move || {
+        activity
+            .read()
+            .as_ref()
+            .map(|found| {
+                found
+                    .passes
+                    .iter()
+                    .map(|p| p.card.clone())
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default()
+    });
+    let pass_ids = use_memo(move || {
+        pass_cards
+            .read()
+            .iter()
+            .map(|c| c.scryfall_data.id)
+            .collect::<Vec<_>>()
+    });
+    use_stack_details(pass_ids);
+    use_card_row_keys(pass_cards, expanded_card, view);
 
     rsx! {
         ScreenFrame {
@@ -164,7 +191,7 @@ pub fn Activity() -> Element {
                         ActivityYear { activity: found.clone(), open_section }
                         div { class: "web-columns",
                             div { class: "web-column",
-                                HardPassesPanel { passes: found.passes.clone(), expanded_card }
+                                HardPassesPanel { passes: found.passes.clone(), expanded_card, view }
                             }
                             div { class: "web-column",
                                 ActivityRates { activity: found, open_section }

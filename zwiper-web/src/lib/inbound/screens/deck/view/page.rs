@@ -25,7 +25,9 @@ use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCur
 use zwipe_core::domain::deck::{Board, deck_tag_label};
 use zwipe_ui::buy::group_cards;
 use zwipe_ui::deck::form::Slot;
-use zwipe_ui::deck_cards::stacks::{CardsView, Reveal, VIEW_LABEL};
+use zwipe_ui::deck_cards::stacks::{
+    CardsView, DEAL_DURATION, DEAL_STAGGER_CAP, DealCue, Reveal, deal_delay,
+};
 use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::filter::picker::Sources;
 use zwipe_ui::screens::deck_view::{EDIT, MoreItem};
@@ -37,7 +39,8 @@ use super::ghost::{
 };
 use super::panels::{DangerZonePanel, DataPanel};
 use super::sections::{WarningFixes, WarningsBody};
-use super::stacks::{StackDetails, stack_details, stacks_view, use_stack_details_sync};
+use super::settle::use_settle;
+use super::stacks::{stack_details, stacks_view};
 use crate::domain::deck::{has_budget, tag_count};
 use crate::inbound::card_filter::CardFilterPanel;
 use crate::inbound::card_stores::CardStores;
@@ -46,6 +49,9 @@ use crate::inbound::cards::otag::{
     OtagDescribe, OtagExamplesHost, OtagExamplesOpen, use_otag_reveals,
 };
 use crate::inbound::cards::printing_sheet::PrintingSheet;
+use crate::inbound::cards::stack_view::{
+    CardsViewSwitch, StackDetails, use_cards_view, use_stack_details_sync,
+};
 use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog};
 use crate::inbound::router::Route;
@@ -53,7 +59,6 @@ use crate::inbound::screens::deck::cards::editor::{
     Editor, Listed, LoadFailure, RowInfo, RowKind, main_row_of, row_view, use_deck_editor,
 };
 use crate::inbound::screens::deck::cards::quick_add::QuickAdd;
-use crate::outbound::cards_view_store::CardsViewStore;
 use crate::outbound::timer;
 
 /// The stat panels' fold keys, shut when the page opens.
@@ -90,6 +95,7 @@ pub fn DeckWidePage(
         details_open,
     });
     let ed = use_deck_editor(deck_id, LoadFailure::Quiet);
+    use_settle();
     let Editor {
         deck,
         entries,
@@ -125,7 +131,22 @@ pub fn DeckWidePage(
     let folded: Signal<HashSet<String>> =
         use_signal(|| FOLDED_STATS.into_iter().map(String::from).collect());
     // List or Stacks, as last left.
-    let mut view = use_signal(|| CardsViewStore::browser().load());
+    let view = use_cards_view();
+    // The stacks deal in on entering Stacks, once the cards are in, for as
+    // long as the longest stack takes.
+    let mut deal_cue = use_signal(DealCue::default);
+    let mut dealing = use_signal(|| false);
+    use_effect(move || {
+        let shown = view();
+        let ready = loaded();
+        if deal_cue.write().on(shown, ready) {
+            dealing.set(true);
+            spawn(async move {
+                timer::sleep(deal_delay(DEAL_STAGGER_CAP).saturating_add(DEAL_DURATION)).await;
+                dealing.set(false);
+            });
+        }
+    });
     // The store dialog a group's cart opens, in the List or the stacks.
     let group_buy = use_group_buy();
     // The deck's store dialog, from the dock's cart.
@@ -449,6 +470,7 @@ pub fn DeckWidePage(
                         show_tokens: tokens().is_some_and(|t| !t.is_empty()).then_some(show_tokens),
                         show_zone: zone.read().offers_chip(format).then_some(show_zone),
                         show_art,
+                        art_disabled: view() == CardsView::Stacks,
                         all_folded,
                         on_fold_all: fold_all,
                         on_change: move |()| selected.set(None),
@@ -456,7 +478,8 @@ pub fn DeckWidePage(
                             QuickAdd { deck_id, entries, on_added: move |()| {} }
                         },
                         boards: rsx! {
-                            div { class: "chip-row",
+                            // Board chips ease the cards in and out (`settle`).
+                            div { class: "chip-row", "data-settle": "",
                                 span { class: "stat-chip stat-chip-p1 chip-row-label", "Boards" }
                                 for (label, board, on, enabled) in [
                                     ("Main", Board::Deck, shown_boards.main, true),
@@ -475,21 +498,7 @@ pub fn DeckWidePage(
                                     }
                                 }
                             }
-                            div { class: "chip-row deck-view-switch",
-                                span { class: "stat-chip stat-chip-p1 chip-row-label", "{VIEW_LABEL}" }
-                                for choice in [CardsView::List, CardsView::Stacks] {
-                                    Chip {
-                                        key: "{choice.key()}",
-                                        selected: view() == choice,
-                                        onclick: move |_| {
-                                            view.set(choice);
-                                            CardsViewStore::browser().save(choice);
-                                            selected.set(None);
-                                        },
-                                        "{choice.label()}"
-                                    }
-                                }
-                            }
+                            CardsViewSwitch { view, on_change: move |()| selected.set(None) }
                         },
                     }
                 }
@@ -500,7 +509,7 @@ pub fn DeckWidePage(
                     DeckBandsGhost {}
                 }
                 if view() == CardsView::Stacks {
-                    {stacks_view(sections, cur, collapsed, stack_details_state, ed.faces, group_buy)}
+                    {stacks_view(sections, cur, collapsed, stack_details_state, ed.faces, group_buy, dealing())}
                 } else {
                     for (section, rows) in sections {
                         DeckBand {

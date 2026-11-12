@@ -28,7 +28,7 @@
 
 use components::{
     AlertDialog, Bar, BarChart, BarOrientation, Button, ButtonVariant, CardListFold, CardRoleChips,
-    Chip, ColorBars, DialogAction, OtagDef, RoleTags, Toasts, use_toast,
+    Chip, ColorBars, DialogAction, OtagDef, RoleTags, StapleDecksChip, Toasts, use_toast,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -46,7 +46,7 @@ use zwipe_core::http::contracts::suggestions::{
 use zwipe_ui::colors::ColorCounts;
 use zwipe_ui::generation::Ticket;
 use zwipe_ui::playstyle::{
-    self, ProfileSummary, StapleColor, SummaryValue, TagRow, identity_label,
+    self, ProfileSummary, StapleColor, StapleDeck, SummaryValue, TagRow, identity_label,
 };
 use zwipe_ui::screens::playstyle::{
     self as model, Action, Destination, Effect, Section, State, Status,
@@ -306,11 +306,14 @@ fn SummaryIdentityRow(
 
 /// One staple: the shared expandable card row with its percent of the user's
 /// decks as a tag where a deck list puts copies, and the deck count under its
-/// roles when expanded. No actions beyond the row's own Printing.
+/// roles when expanded, a chip that lists `in_decks`, each opening its deck
+/// through `on_open_deck`. No other actions beyond the row's own Printing.
 #[component]
 fn StapleRow(
     staple: HttpStaple,
     deck_count: u32,
+    in_decks: Vec<StapleDeck>,
+    on_open_deck: EventHandler<Uuid>,
     expanded_card: Signal<Option<Uuid>>,
     preview_card: Signal<Option<(ScryfallData, usize)>>,
     preview_dismissing: Signal<bool>,
@@ -327,9 +330,7 @@ fn StapleRow(
             preview_dismissing,
             on_printing: move |c: Card| on_printing.call(c),
             footer: rsx! {
-                div { class: "keyword-chips",
-                    span { class: "detail-chip detail-chip-pt", "{decks_label}" }
-                }
+                StapleDecksChip { label: decks_label, decks: in_decks, on_open: on_open_deck }
             },
         }
     }
@@ -406,6 +407,8 @@ fn StaplesPanel(
     active_type: Option<CardType>,
     active_color: Option<StapleColor>,
     deck_count: u32,
+    /// The user's decks, which name each staple's deck chips.
+    decks: Vec<StapleDeck>,
     expanded_card: Signal<Option<Uuid>>,
     preview_card: Signal<Option<(ScryfallData, usize)>>,
     preview_dismissing: Signal<bool>,
@@ -444,12 +447,14 @@ fn StaplesPanel(
                 for staple in rows {
                     StapleRow {
                         key: "{staple.card.scryfall_data.id}",
+                        in_decks: playstyle::named_staple_decks(&staple.deck_ids, &decks),
                         staple,
                         deck_count,
                         expanded_card,
                         preview_card,
                         preview_dismissing,
                         on_printing,
+                        on_open_deck: move |deck_id: Uuid| on_action.call(Action::OpenDeck(deck_id)),
                     }
                 }
             }
@@ -767,7 +772,7 @@ impl Driver {
                         .await;
                     if let Some(profiles) = found {
                         self.dispatch(Action::DeckProfilesLoaded {
-                            count: profiles.len(),
+                            decks: profiles.iter().map(StapleDeck::from).collect(),
                         });
                     }
                 });
@@ -800,6 +805,9 @@ impl Driver {
                 Destination::Previous => self.navigator.go_back(),
                 Destination::CreateDeck => {
                     self.navigator.push(Router::CreateDeck);
+                }
+                Destination::Deck(deck_id) => {
+                    self.navigator.push(Router::ViewDeck { deck_id });
                 }
             },
             Effect::Toast(toast) => ui_toast::raise(self.toast, toast),
@@ -961,6 +969,7 @@ pub fn SuggestedCommanders() -> Element {
     let staple_colors = state.staple_colors();
     let staple_type = state.staple_type();
     let staple_color = state.staple_color();
+    let decks = state.decks().to_vec();
     let picks_printing = printing_card
         .read()
         .as_ref()
@@ -1079,6 +1088,7 @@ pub fn SuggestedCommanders() -> Element {
                                     active_type: staple_type,
                                     active_color: staple_color,
                                     deck_count,
+                                    decks,
                                     expanded_card,
                                     preview_card,
                                     preview_dismissing,

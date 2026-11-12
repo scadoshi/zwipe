@@ -304,7 +304,8 @@ pub fn FeaturedCard(
 /// with no command zone, and `on_change` fires when a row
 /// changes what the list shows. With `on_fold_all` the Show row ends in the
 /// fold-all button, which shuts every group, or opens every group once
-/// `all_folded`.
+/// `all_folded`. `art_disabled` grays out the Art chip and keeps its state,
+/// for a view that always shows art (the Stacks).
 #[component]
 pub fn DeckControls(
     mut group_by: Signal<GroupByOption>,
@@ -313,6 +314,7 @@ pub fn DeckControls(
     #[props(default)] show_tokens: Option<Signal<bool>>,
     #[props(default)] show_zone: Option<Signal<bool>>,
     mut show_art: Signal<bool>,
+    #[props(default)] art_disabled: bool,
     #[props(default)] on_change: Option<Callback<()>>,
     #[props(default)] leading: Option<Element>,
     #[props(default)] boards: Option<Element>,
@@ -326,7 +328,9 @@ pub fn DeckControls(
         if let Some(leading) = leading {
             {leading}
         }
-        div { class: "chip-row",
+        // `data-settle`: a regrouping eases the cards into their new groups
+        // where the host installs it.
+        div { class: "chip-row", "data-settle": "",
             span { class: "stat-chip stat-chip-p1 chip-row-label", "Group by" }
             for option in GroupByOption::all() {
                 Chip {
@@ -361,6 +365,7 @@ pub fn DeckControls(
             }
             Chip {
                 selected: show_art(),
+                disabled: art_disabled,
                 onclick: move |_| show_art.toggle(),
                 "Art"
             }
@@ -393,7 +398,9 @@ pub fn DeckFold(
     let shut = folded().contains(&fold_key);
     let key_for_keys = fold_key.clone();
     rsx! {
-        div { class: if shut { "deck-fold folded" } else { "deck-fold" },
+        div {
+            class: if shut { "deck-fold folded" } else { "deck-fold" },
+            "data-fold": "{key_for_keys}",
             div {
                 class: "deck-fold-head",
                 onclick: move |_| flip(folded, &fold_key),
