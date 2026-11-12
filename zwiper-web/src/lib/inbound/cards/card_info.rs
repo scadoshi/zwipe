@@ -1,7 +1,7 @@
 //! A card's prices as chips, for the printing sheet, and a swipe card's
 //! full details in the drawer behind the dock's eye.
 
-use components::{CardDetailsCost, CardDetailsPanel, DrawerSheet, use_meld, use_overlay_back};
+use components::CardDetailsSheet as SharedDetailsSheet;
 use dioxus::prelude::*;
 use zwipe_core::domain::card::Card;
 use zwipe_ui::card::info;
@@ -45,45 +45,18 @@ pub fn CardDetailsSheet(
     #[props(default)] on_face_change: Option<EventHandler<usize>>,
 ) -> Element {
     let describe_tag = use_describe_tag();
-    use_overlay_back(open);
-    // The shown face, shared by the title bar's cost and the panel's Flip,
-    // and kept on the host's `face` when it passes one.
-    let mut shown_face = use_signal(|| face.unwrap_or(0));
-    use_effect(use_reactive!(|face| {
-        if let Some(face) = face {
-            shown_face.set(face);
-        }
-    }));
-    let face = shown_face;
-    // The meld toggle, shared by the title bar and the panel, so the title
-    // shows the melded card's name and cost (none) while it is on.
-    let meld = use_meld(&card.scryfall_data);
-    let title_card = meld.apply(&card);
-    let name = title_card.scryfall_data.name.clone();
-    let on_image = on_image.map(|handler| EventHandler::new(move |()| handler.call(face())));
     rsx! {
-        DrawerSheet {
+        SharedDetailsSheet {
             open,
-            title: name,
-            title_trailing: rsx! { CardDetailsCost { card: title_card, face } },
-            on_close: move |()| {
-                let mut open = open;
-                open.set(false);
-            },
-            every_width: true,
+            card,
+            on_image,
+            on_printings,
+            footer,
+            body_end,
             class,
-            CardDetailsPanel {
-                card,
-                headless: true,
-                face,
-                meld: Some(meld),
-                describe_tag: Some(describe_tag),
-                on_image,
-                on_face_change,
-                on_printings,
-                footer,
-                body_end,
-            }
+            face,
+            on_face_change,
+            describe_tag: Some(describe_tag),
         }
     }
 }
