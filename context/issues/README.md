@@ -125,6 +125,7 @@ Who checked, on which live build, what they saw.
 | [406](406-og-underline.md) | The link cards underline Magic: The Gathering | fixing | thinker | 6f6314bd3 |
 | [411](411-icons-not-words.md) | Card buttons say Image, Flip, Meld, Star and Select in words | fixing | halo | nits/halo-411 |
 | [412](412-star-color.md) | Stars take three different colors | fixing | halo | orangui 8626ccf, nits/halo-412 |
+| [413](413-disabled-chip-light.md) | A disabled chip looks enabled in light themes | fixing | thinker | orangui 00a8954 |
 | [408](408-stack-header-wrap.md) | Stack headers cut long names short, and the cart sits far from the price | fixing | halo | nits/halo-408 |
 | [407](407-byline-chip.md) | The shared deck's owner sits on its own line, not as a chip | fixing | laptop | - |
 

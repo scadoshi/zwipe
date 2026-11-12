@@ -62,11 +62,12 @@
     box-shadow: none;
 }
 
-/* A disabled control on a light theme keeps its border and dims its text
+/* A disabled button on a light theme keeps its border and dims its text
    to the muted color instead of fading out: at half opacity a cream button
-   vanishes into a cream panel. Dark themes keep the fade. */
-[class*="theme-"][class*="-light"] :is(.btn, .btn-xs, .btn-action):disabled,
-[class*="theme-"][class*="-light"] .chip.disabled {
+   vanishes into a cream panel. Dark themes keep the fade, and a disabled
+   chip fades on every theme: it has the panel's fill, so muted ink alone
+   reads as an enabled chip. */
+[class*="theme-"][class*="-light"] :is(.btn, .btn-xs, .btn-action):disabled {
     opacity: 1;
     color: var(--text-muted);
     border-color: var(--border-primary);
@@ -809,7 +810,7 @@ a.nav-dropdown-item.active:visited {
 }
 
 /* A row that cannot be picked fades; on a light theme it keeps its place
-   and its muted text, as the disabled buttons and chips do. */
+   and its muted text, as the disabled buttons do. */
 .pref-row:disabled {
     opacity: 0.45;
     cursor: default;
