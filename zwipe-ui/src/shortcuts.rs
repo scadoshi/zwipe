@@ -144,35 +144,49 @@ pub fn card_read_rows() -> [SheetRow; 4] {
     ]
 }
 
-/// What the `i` row does: the Image button, drawn as its icon, never the word.
-const IMAGE_ROW: &str = "[[card-art]]";
+/// What the `i` row does: the Image button's icon with its name, so the sheet teaches the icon.
+const IMAGE_ROW: &str = "[[card-art]] Image";
 
-/// What the `v` row does: the Flip button, drawn as its icon.
-const FLIP_ROW: &str = "[[flip]]";
+/// What the `v` row does: the Flip button's icon and name, and Meld's, since `v` toggles a meld
+/// half's Meld where a card has one face.
+pub const FLIP_ROW: &str = "[[flip]] Flip or [[meld]] meld";
 
-/// What the Shift+S row does: the Star toggle, drawn as its icon.
-const STAR_ROW: &str = "[[star]]";
+/// What the Shift+S row does: the Star toggle's icon with its name.
+const STAR_ROW: &str = "[[star]] Star";
 
-/// The icon a sheet row's text names as a whole, `[[name]]`, drawn as that icon's key chip in
-/// place of words; `None` for a row of words.
-#[must_use]
-pub fn row_icon(does: &str) -> Option<KeyIcon> {
-    does.strip_prefix("[[")
-        .and_then(|rest| rest.strip_suffix("]]"))
-        .and_then(KeyIcon::from_name)
+/// One run of a sheet row's text.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum RowPart<'a> {
+    /// Words, drawn as they are.
+    Text(&'a str),
+    /// A `[[name]]` token naming an icon button, drawn as its icon in a key chip.
+    Icon(KeyIcon),
 }
 
-/// A sheet row's text as a screen reader hears it: the button's name for an icon row, the
-/// words as they are otherwise.
+/// A sheet row's text in runs: each `[[name]]` an icon button's icon, the rest words. A name no
+/// icon has, or an unclosed `[[`, stays words.
 #[must_use]
-pub fn row_label(does: &str) -> &str {
-    match row_icon(does) {
-        Some(KeyIcon::CardArt) => "Image",
-        Some(KeyIcon::Flip) => "Flip card",
-        Some(KeyIcon::Meld) => "Meld",
-        Some(KeyIcon::Star) => "Star",
-        _ => does,
+pub fn row_parts(does: &str) -> Vec<RowPart<'_>> {
+    let mut parts = Vec::new();
+    let mut rest = does;
+    while let Some((before, after)) = rest.split_once("[[") {
+        let Some((name, tail)) = after.split_once("]]") else {
+            break;
+        };
+        if !before.is_empty() {
+            parts.push(RowPart::Text(before));
+        }
+        let token_len = name.len().saturating_add(4);
+        let token = rest
+            .get(before.len()..before.len().saturating_add(token_len))
+            .unwrap_or(name);
+        parts.push(KeyIcon::from_name(name).map_or(RowPart::Text(token), RowPart::Icon));
+        rest = tail;
     }
+    if !rest.is_empty() || parts.is_empty() {
+        parts.push(RowPart::Text(rest));
+    }
+    parts
 }
 
 /// The line the deck cards page's sheet shows above its keys.
@@ -183,46 +197,43 @@ mod tests {
     use super::*;
 
     #[test]
-    fn the_image_key_shows_the_image_button_s_icon_not_the_word() {
-        let rows = card_read_rows();
-        let image = rows
-            .iter()
-            .find(|(keys, _)| keys == &["i"])
-            .map(|(_, does)| *does);
-        assert_eq!(image, Some("[[card-art]]"));
-        assert_eq!(row_icon("[[card-art]]"), Some(KeyIcon::CardArt));
-        assert_eq!(row_icon("Printings"), None, "words stay words");
-        assert_eq!(row_icon("[[no-such-icon]]"), None);
+    fn a_row_reads_its_icons_as_icons_and_its_words_as_words() {
         assert_eq!(
-            row_label("[[card-art]]"),
-            "Image",
-            "its name for a screen reader"
+            row_parts("[[flip]] Flip or [[meld]] meld"),
+            [
+                RowPart::Icon(KeyIcon::Flip),
+                RowPart::Text(" Flip or "),
+                RowPart::Icon(KeyIcon::Meld),
+                RowPart::Text(" meld"),
+            ]
         );
-        assert_eq!(row_label("Printings"), "Printings");
+        assert_eq!(row_parts("Printings"), [RowPart::Text("Printings")]);
+        assert_eq!(
+            row_parts("[[nope]] stays"),
+            [RowPart::Text("[[nope]]"), RowPart::Text(" stays")],
+            "a name no icon has stays words"
+        );
+        assert_eq!(
+            row_parts("open [[ never closes"),
+            [RowPart::Text("open [[ never closes")]
+        );
     }
 
     #[test]
-    fn the_star_key_shows_the_star_toggle_s_icon() {
+    fn an_icon_row_names_its_button_beside_the_icon() {
+        let rows = card_read_rows();
+        let does = |key: &str| {
+            rows.iter()
+                .find(|(keys, _)| keys == &[key])
+                .map(|(_, does)| *does)
+        };
+        assert_eq!(does("i"), Some("[[card-art]] Image"));
+        assert_eq!(does("v"), Some("[[flip]] Flip or [[meld]] meld"));
         let star = deck_cards_rows(Editable::Yes)
             .into_iter()
             .find(|(keys, _)| keys == &["Shift+S"])
             .map(|(_, does)| does);
-        assert_eq!(star, Some("[[star]]"));
-        assert_eq!(row_icon("[[star]]"), Some(KeyIcon::Star));
-        assert_eq!(row_label("[[star]]"), "Star");
-    }
-
-    #[test]
-    fn the_flip_key_shows_the_flip_button_s_icon() {
-        let rows = card_read_rows();
-        let flip = rows
-            .iter()
-            .find(|(keys, _)| keys == &["v"])
-            .map(|(_, does)| *does);
-        assert_eq!(flip, Some("[[flip]]"));
-        assert_eq!(row_icon("[[flip]]"), Some(KeyIcon::Flip));
-        assert_eq!(row_label("[[flip]]"), "Flip card");
-        assert_eq!(row_label("[[meld]]"), "Meld");
+        assert_eq!(star, Some("[[star]] Star"));
     }
 
     #[test]

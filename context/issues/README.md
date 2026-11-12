@@ -125,6 +125,7 @@ Who checked, on which live build, what they saw.
 | [406](406-og-underline.md) | The link cards underline Magic: The Gathering | fixing | thinker | 6f6314bd3 |
 | [411](411-icons-not-words.md) | Card buttons say Image, Flip, Meld, Star and Select in words | fixing | halo | nits/halo-411 |
 | [412](412-star-color.md) | Stars take three different colors | fixing | halo | orangui 8626ccf, nits/halo-412 |
+| [414](414-sheet-icons-named.md) | The shortcuts sheet's icon rows show no names | fixing | halo | nits/halo-414 |
 
 ## Waiting for live verification
 

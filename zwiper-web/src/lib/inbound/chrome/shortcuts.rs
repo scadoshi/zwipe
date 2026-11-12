@@ -13,7 +13,7 @@ pub use zwipe_ui::shortcuts::{
     undo_letter,
 };
 use zwipe_ui::shortcuts::{
-    DECK_CARDS_NOTE, EVERYWHERE_ROWS, Editable, SheetRow, card_read_rows, deck_cards_rows,
+    DECK_CARDS_NOTE, EVERYWHERE_ROWS, Editable, FLIP_ROW, SheetRow, card_read_rows, deck_cards_rows,
 };
 
 use crate::inbound::cards::swipe_stack::Swipe;
@@ -158,7 +158,7 @@ pub fn sheet_rows(screen: &ShortcutsScreen) -> Vec<SheetRow> {
             let rest: [(&'static [&'static str], &'static str); 5] = [
                 (&["p"], "Printings"),
                 (&["d"], "Card details"),
-                (&["v"], "[[flip]]"),
+                (&["v"], FLIP_ROW),
                 (&["f"], "Filter"),
                 (&["r"], "Refresh"),
             ];
@@ -175,7 +175,7 @@ pub fn sheet_rows(screen: &ShortcutsScreen) -> Vec<SheetRow> {
             (&["←", "h"], "Next"),
             (&["↓", "j"], "Back one"),
             (&["d"], "Card details"),
-            (&["v"], "[[flip]]"),
+            (&["v"], FLIP_ROW),
         ],
         ShortcutsScreen::CardRows => card_read_rows().to_vec(),
     };
@@ -386,7 +386,7 @@ mod tests {
                 "Undo",
                 "Printings",
                 "Card details",
-                "[[flip]]",
+                FLIP_ROW,
                 "Filter",
                 "Refresh",
                 "Synergy on or off",
