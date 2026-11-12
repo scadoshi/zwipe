@@ -2,8 +2,6 @@
 //! role and per oracle tag, and the cards the user keeps passing on. Every
 //! number comes from zwipe-ui's `activity`; this module draws it.
 
-use std::collections::HashMap;
-
 use chrono::NaiveDate;
 use components::{
     BarChart, BarOrientation, CardListFold, ChartTip, Chip, HEAT_CELL, HEAT_ROWS, HeatCell,
@@ -11,20 +9,16 @@ use components::{
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
-use zwipe_core::domain::card::Card;
 use zwipe_core::http::contracts::suggestions::{HttpActivity, HttpActivityDay, HttpHardPass};
 use zwipe_ui::activity::{
     self, NONE_REMOVED, PASSES_EMPTY, ROLES_EMPTY, RateKind, TAGS_EMPTY, WEEKDAY_LABELS,
 };
-use zwipe_ui::deck_cards::stacks::CardsView;
 
 use crate::inbound::cards::card_row::CardRow;
 use crate::inbound::cards::charts::chart_bars;
 use crate::inbound::cards::otag::{OtagDescribe, OtagExamplesOpen};
-use crate::inbound::cards::stack_view::{CardsStack, CardsViewSwitch, StackDrawer};
 use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
 use crate::inbound::chrome::section::CollapsibleSection;
-use crate::outbound::cards_view_store::CardsViewPlace;
 
 /// The accordion title of the heatmap section, open on entry.
 pub const ACTIVITY_TITLE: &str = "Activity";
@@ -364,7 +358,7 @@ fn HardPassRow(pass: HttpHardPass, expanded_card: Signal<Option<Uuid>>) -> Eleme
 }
 
 /// The commanders a card was skipped under, as chips after a label; nothing
-/// without any. A pass's row and its stack card's drawer both show it.
+/// without any.
 fn skipped_under(commanders: Vec<String>) -> Element {
     rsx! {
         if !commanders.is_empty() {
@@ -379,55 +373,10 @@ fn skipped_under(commanders: Vec<String>) -> Element {
 }
 
 /// The cards the user keeps passing on, in the server's order (most skipped
-/// against other players first), in a list that folds: rows, or one stack
-/// in `view`'s Stacks, with its card details drawer. Without any, the header
-/// over a line saying what fills it.
+/// against other players first), in a list that folds. Without any, the
+/// header over a line saying what fills it.
 #[component]
-pub fn HardPassesPanel(
-    passes: Vec<HttpHardPass>,
-    expanded_card: Signal<Option<Uuid>>,
-    view: Signal<CardsView>,
-) -> Element {
-    let cards: Vec<Card> = passes.iter().map(|p| p.card.clone()).collect();
-    let under: HashMap<Uuid, Vec<String>> = passes
-        .iter()
-        .map(|p| (p.card.scryfall_data.id, p.commanders.clone()))
-        .collect();
-    let extras = Callback::new(move |card: Card| {
-        skipped_under(
-            under
-                .get(&card.scryfall_data.id)
-                .cloned()
-                .unwrap_or_default(),
-        )
-    });
-    let switch = rsx! {
-        div { class: "web-card-group-filters",
-            CardsViewSwitch {
-                view,
-                place: CardsViewPlace::MostSkipped,
-                on_change: move |()| {
-                    let mut expanded = expanded_card;
-                    expanded.set(None);
-                },
-            }
-        }
-    };
-    // In Stacks the cards float on the page under the group's own header, as
-    // the deck page's stacks do; in the List they sit in the fold.
-    if view() == CardsView::Stacks && !cards.is_empty() {
-        return rsx! {
-            {switch}
-            CardsStack {
-                cards: cards.clone(),
-                title: PASSES_TITLE.to_owned(),
-                trailing: rsx! {
-                    InfoButton { topic: HintTopic::HardPasses }
-                },
-            }
-            StackDrawer { cards, extras }
-        };
-    }
+pub fn HardPassesPanel(passes: Vec<HttpHardPass>, expanded_card: Signal<Option<Uuid>>) -> Element {
     rsx! {
         CardListFold {
             title: PASSES_TITLE,
@@ -438,8 +387,6 @@ pub fn HardPassesPanel(
                 div { class: "activity-total activity-total-group",
                     span { class: "chip-note", "{PASSES_EMPTY}" }
                 }
-            } else {
-                {switch}
             }
             for pass in passes {
                 HardPassRow { key: "{pass.card.scryfall_data.id}", pass, expanded_card }

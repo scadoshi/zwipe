@@ -9,7 +9,6 @@ use zwipe_core::domain::card::search_card::card_type::CardType;
 use zwipe_core::http::contracts::suggestions::{
     HttpCommanderSuggestion, HttpStaple, HttpSuggestionReasons,
 };
-use zwipe_ui::deck_cards::stacks::CardsView;
 use zwipe_ui::playstyle::{
     StapleColor, StapleDeck, color_lines, group_shared_tags, matching_staples, named_staple_decks,
     staple_colors_present, staple_decks, staple_identity, staple_percent, staple_type_line,
@@ -19,10 +18,8 @@ use zwipe_ui::playstyle::{
 use super::chips::{IdentityPips, identity_key};
 use crate::inbound::cards::card_row::CardRow;
 use crate::inbound::cards::otag::{OtagDescribe, OtagExamplesOpen};
-use crate::inbound::cards::stack_view::{CardsStack, CardsViewSwitch};
 use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
 use crate::inbound::router::Route;
-use crate::outbound::cards_view_store::CardsViewPlace;
 
 /// The Staples group's title.
 const STAPLES_TITLE: &str = "Staples";
@@ -125,9 +122,8 @@ pub fn SuggestionRow(
 }
 
 /// A suggestion's actions: `Create deck`, then `Maybeboard` and `Remove`
-/// when the card has an oracle id. Its row and its stack card's drawer both
-/// show them.
-pub(super) fn suggestion_actions(
+/// when the card has an oracle id.
+fn suggestion_actions(
     card: Card,
     on_start: EventHandler<Card>,
     on_maybe: EventHandler<Uuid>,
@@ -176,8 +172,6 @@ pub fn StaplesPanel(
     decks: Vec<StapleDeck>,
     expanded_card: Signal<Option<Uuid>>,
     wide: bool,
-    /// List rows, or one stack in Stacks.
-    view: Signal<CardsView>,
 ) -> Element {
     let active_type: Signal<Option<CardType>> = use_signal(|| None);
     let active_color: Signal<Option<StapleColor>> = use_signal(|| None);
@@ -193,53 +187,32 @@ pub fn StaplesPanel(
     let filters = rsx! {
         StapleTypeChips { active_type, types }
         StapleColorChips { active_color, colors }
-        CardsViewSwitch {
-            view,
-            place: CardsViewPlace::Staples,
-            on_change: move |()| {
-                let mut expanded = expanded_card;
-                expanded.set(None);
-            },
-        }
     };
-    // In Stacks the staples float on the page under their group's header, as
-    // the deck page's stacks do, the filters above.
-    let stacked = view() == CardsView::Stacks && !rows.is_empty();
     rsx! {
         div { class: "web-playstyle-cell web-playstyle-staples",
-            if wide || stacked {
+            if wide {
                 div { class: "deck-controls", {filters.clone()} }
             }
-            if stacked {
-                CardsStack {
-                    cards: rows.iter().map(|s| s.card.clone()).collect::<Vec<Card>>(),
-                    title: STAPLES_TITLE.to_owned(),
-                    trailing: rsx! {
-                        InfoButton { topic: HintTopic::SuggestionStaples }
-                    },
+            CardListFold {
+                title: STAPLES_TITLE,
+                actions: rsx! {
+                    InfoButton { topic: HintTopic::SuggestionStaples }
+                },
+                if !wide {
+                    div { class: "web-card-group-filters", {filters} }
                 }
-            } else {
-                CardListFold {
-                    title: STAPLES_TITLE,
-                    actions: rsx! {
-                        InfoButton { topic: HintTopic::SuggestionStaples }
-                    },
-                    if !wide {
-                        div { class: "web-card-group-filters", {filters} }
+                if rows.is_empty() {
+                    div { class: "activity-total activity-total-group",
+                        span { class: "chip-note", "No staples match" }
                     }
-                    if rows.is_empty() {
-                        div { class: "activity-total activity-total-group",
-                            span { class: "chip-note", "No staples match" }
-                        }
-                    }
-                    for staple in rows {
-                        StapleRow {
-                            key: "{staple.card.scryfall_data.id}",
-                            in_decks: named_staple_decks(&staple.deck_ids, &decks),
-                            staple,
-                            deck_count,
-                            expanded_card,
-                        }
+                }
+                for staple in rows {
+                    StapleRow {
+                        key: "{staple.card.scryfall_data.id}",
+                        in_decks: named_staple_decks(&staple.deck_ids, &decks),
+                        staple,
+                        deck_count,
+                        expanded_card,
                     }
                 }
             }
@@ -270,12 +243,8 @@ fn StapleRow(
 }
 
 /// How many of the user's decks run `staple`, as a chip that lists `in_decks`,
-/// each opening its deck. Its row and its stack card's drawer both show it.
-pub(super) fn staple_footer(
-    staple: &HttpStaple,
-    deck_count: u32,
-    in_decks: Vec<StapleDeck>,
-) -> Element {
+/// each opening its deck.
+fn staple_footer(staple: &HttpStaple, deck_count: u32, in_decks: Vec<StapleDeck>) -> Element {
     let decks_label = staple_decks(staple.decks, deck_count);
     rsx! {
         StapleDecksChip {

@@ -21,7 +21,7 @@ use self::sections::{ACTIVITY_TITLE, ActivityRates, ActivityYear, HardPassesPane
 use crate::inbound::cards::card_row::{CardOverlaysHost, ShowRowArt, use_card_overlays};
 use crate::inbound::cards::otag::{OtagExamplesHost, use_otag_reveals};
 use crate::inbound::cards::row_keys::use_card_row_keys;
-use crate::inbound::cards::stack_view::{use_cards_view, use_row_faces, use_stack_details};
+use crate::inbound::cards::stack_view::use_row_faces;
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::ghost::{
     GhostChipBars, GhostChipRow, GhostHint, GhostSection, GhostText,
@@ -30,7 +30,6 @@ use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_
 use crate::inbound::screens::home::hero::MyCountsPanel;
 use crate::inbound::shell::ScreenFrame;
 use crate::inbound::telemetry;
-use crate::outbound::cards_view_store::CardsViewPlace;
 
 /// The Card roles chart's ghost chips, as wide as the roles' short labels.
 const ROLE_CHIPS: [u8; 6] = [4, 4, 5, 5, 5, 5];
@@ -128,7 +127,6 @@ pub fn Activity() -> Element {
     let overlays = use_card_overlays();
     let hover_stack = use_hover_stack();
     let expanded_card: Signal<Option<Uuid>> = use_signal(|| None);
-    let view = use_cards_view(CardsViewPlace::MostSkipped);
     use_row_faces();
 
     let mut activity: Signal<Option<HttpActivity>> = use_signal(|| None);
@@ -147,7 +145,7 @@ pub fn Activity() -> Element {
         });
     });
     let open_section: Signal<Option<String>> = use_signal(|| Some(ACTIVITY_TITLE.to_string()));
-    // Most skipped's cards, which the card keys and the stack act on.
+    // Most skipped's cards, which the card keys act on.
     let pass_cards = use_memo(move || {
         activity
             .read()
@@ -161,14 +159,6 @@ pub fn Activity() -> Element {
             })
             .unwrap_or_default()
     });
-    let pass_ids = use_memo(move || {
-        pass_cards
-            .read()
-            .iter()
-            .map(|c| c.scryfall_data.id)
-            .collect::<Vec<_>>()
-    });
-    use_stack_details(pass_ids);
     use_card_row_keys(pass_cards, expanded_card);
 
     rsx! {
@@ -192,7 +182,7 @@ pub fn Activity() -> Element {
                         ActivityYear { activity: found.clone(), open_section }
                         div { class: "web-columns",
                             div { class: "web-column",
-                                HardPassesPanel { passes: found.passes.clone(), expanded_card, view }
+                                HardPassesPanel { passes: found.passes.clone(), expanded_card }
                             }
                             div { class: "web-column",
                                 ActivityRates { activity: found, open_section }

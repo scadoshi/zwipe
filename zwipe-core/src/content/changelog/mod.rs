@@ -51,7 +51,7 @@ pub const UPCOMING: &[Release] = &[
         version: Version::new(1, 19, 6),
         date: None,
         entries: &[
-            "On the web, Suggested commanders, Staples, Most skipped and the Commander maybeboard each keep their own List or Stacks, stacked as on the deck page",
+            "On the web, the Commander maybeboard takes p, i, v and d on a card, as Playstyle and Activity do",
             "The web's Home and its other few-panel pages sit in the same 1400px column as zwipe.net",
             "On the web, Import runs the full width of its page, as Export does",
             "On the web, Home's tagline and the Privacy policy's text run the full width of their panels",
@@ -76,7 +76,7 @@ pub const UPCOMING: &[Release] = &[
         date: None,
         entries: &[
             "Suggested commanders and the commander swipe on the web end with the site's footer, as Add does",
-            "On the web, Playstyle and Activity take p, i, v and d on a card and show their lists as a stack too",
+            "On the web, Playstyle and Activity take p, i, v and d on a card",
             "A staple's deck count on Playstyle opens to the decks that run it, each one tap from its deck",
             "On the web, an Oracle tag's examples take h, j, d and v, ? opens the hint of the open modal, and a card slides clear of its details where it fits",
             "On the web's deck page, Art grays out while Stacks is on, since stacks always show art",
