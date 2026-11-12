@@ -336,25 +336,8 @@ html:has(> body[class*="theme-"][class*="-light"]) {
  ==================== */
 
 /* The nav shell (wrapper, hamburger toggle, collapsing panel, link pills, the
-   persistent slot and its .nav-cta pills) lives in orangui (components.css);
-   only the ASCII logo remains here. */
-
-.nav-logo {
-    font-family: "JetBrains Mono", monospace;
-    font-size: 0.35rem;
-    line-height: 0.9;
-    white-space: pre;
-    display: block;
-    letter-spacing: 0;
-    /* The shared token: text on dark themes, the primary accent on light. */
-    color: var(--logo);
-}
-
-@media (hover: hover) {
-    .nav-brand:hover .nav-logo {
-        color: var(--accent-primary);
-    }
-}
+   persistent slot and its .nav-cta pills) and the ASCII logo (.nav-logo) live
+   in orangui (components.css). */
 
 .nav-brand img {
     width: 1.75rem;
