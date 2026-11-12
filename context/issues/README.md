@@ -83,6 +83,7 @@ Who checked, on which live build, what they saw.
 | [391](391-proxy-fit.md) | The no-image card clips its facts row in the app's Featured card, and thumbnails break names mid-word | fixing | laptop | #594 |
 | [388](388-section-stacks.md) | Playstyle and Activity stacks sit in panels, and share one View setting | fixing | laptop | #591 |
 | [386](386-card-proxy.md) | One no-image card for every image spot | fixing | laptop | #589 |
+| [381](381-sheets-keep-content.md) | Sheets and drawers slide out empty, and the Filter accordion drops shut | fixing | laptop | #605 |
 | [385](385-settle-first-frame.md) | The settle paints the final layout for one frame first | fixing | laptop | #586 |
 | [376](376-nav-logo-size.md) | The nav logo is a different size on each site | fixing | thinker | - |
 | [366](366-swipe-select-footer.md) | Suggested commanders has no footer | fixing | thinker | - |

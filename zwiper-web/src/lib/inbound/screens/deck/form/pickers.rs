@@ -43,8 +43,9 @@ use crate::inbound::screens::oracle_tag_dictionary::OracleTagDictionary;
 /// window, the window's height along the right edge below it, and the whole
 /// window over the grid backdrop where a drawer no longer fits. The
 /// title bar's × and a backdrop tap call `on_back`; the dock's checkmark
-/// calls `on_save` and stays off while `unchanged`. The body mounts only
-/// while open, so its keys never answer under a closed picker.
+/// calls `on_save` and stays off while `unchanged`. The body mounts while
+/// open and through the slide out, so its keys stop answering once the
+/// picker is gone.
 #[component]
 fn PickerSheet(
     open: Signal<bool>,
