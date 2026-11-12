@@ -58,6 +58,7 @@ use crate::inbound::screens::deck::cards::editor::{
     Editor, Listed, LoadFailure, RowInfo, RowKind, main_row_of, row_view, use_deck_editor,
 };
 use crate::inbound::screens::deck::cards::quick_add::QuickAdd;
+use crate::outbound::cards_view_store::CardsViewPlace;
 use crate::outbound::timer;
 
 /// The stat panels' fold keys, shut when the page opens.
@@ -130,7 +131,7 @@ pub fn DeckWidePage(
     let folded: Signal<HashSet<String>> =
         use_signal(|| FOLDED_STATS.into_iter().map(String::from).collect());
     // List or Stacks, as last left.
-    let view = use_cards_view();
+    let view = use_cards_view(CardsViewPlace::DeckPage);
     // The stacks deal in on entering Stacks, once the cards are in, for as
     // long as the longest stack takes.
     let mut deal_cue = use_signal(DealCue::default);
@@ -494,7 +495,7 @@ pub fn DeckWidePage(
                                     }
                                 }
                             }
-                            CardsViewSwitch { view, on_change: move |()| selected.set(None) }
+                            CardsViewSwitch { view, place: CardsViewPlace::DeckPage, on_change: move |()| selected.set(None) }
                         },
                     }
                 }

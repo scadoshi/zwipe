@@ -30,6 +30,7 @@ use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_
 use crate::inbound::screens::home::hero::MyCountsPanel;
 use crate::inbound::shell::ScreenFrame;
 use crate::inbound::telemetry;
+use crate::outbound::cards_view_store::CardsViewPlace;
 
 /// The Card roles chart's ghost chips, as wide as the roles' short labels.
 const ROLE_CHIPS: [u8; 6] = [4, 4, 5, 5, 5, 5];
@@ -127,7 +128,7 @@ pub fn Activity() -> Element {
     let overlays = use_card_overlays();
     let hover_stack = use_hover_stack();
     let expanded_card: Signal<Option<Uuid>> = use_signal(|| None);
-    let view = use_cards_view();
+    let view = use_cards_view(CardsViewPlace::MostSkipped);
     use_row_faces();
 
     let mut activity: Signal<Option<HttpActivity>> = use_signal(|| None);
@@ -168,7 +169,7 @@ pub fn Activity() -> Element {
             .collect::<Vec<_>>()
     });
     use_stack_details(pass_ids);
-    use_card_row_keys(pass_cards, expanded_card, view);
+    use_card_row_keys(pass_cards, expanded_card);
 
     rsx! {
         ScreenFrame {
