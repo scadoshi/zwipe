@@ -1,6 +1,6 @@
 # 363. Playstyle and Activity have no card keys and no Stacks view
 
-State: fixing | Owner: laptop | PR: - | Build seen: production, web
+State: fixing | Owner: laptop | PR: #574 | Build seen: production, web
 
 ## Report
 Composer for Scotty, 2026-11-11 (moved from thinker): the card-row keyboard shortcuts should work on Playstyle's Suggested commanders and Staples and on Activity's Most skipped. That means v, d, i and p; f where there is a filter; u and Ctrl+Z where undo applies; and Shift+H, all through the shared card_key map. Those screens also get the List / Stacks view toggle, one stack each since each is a single group, reusing the deck page's stack and toggle components. Web first, then a note on what the app would need.
@@ -9,7 +9,7 @@ Composer for Scotty, 2026-11-11 (moved from thinker): the card-row keyboard shor
 The card keys, the stacks and the View switch were built inside the deck page: its editor, its `stacks.rs` and its page. No other screen could reach them.
 
 ## Fix
-laptop, web:
+laptop, #574, web:
 - **Moved, not copied,** into `inbound/cards/stack_view.rs`:
   - the deck page's `StackDetails`, `use_stack_details_sync` and drawer classes;
   - its View chip row, as `CardsViewSwitch`.
