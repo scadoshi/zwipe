@@ -16,7 +16,7 @@
 //! become the containing block for `position: fixed` and trap the overlay in
 //! the page column.
 
-use components::{CartButton, Panel, StoreDialog};
+use components::{CartButton, ImageButton, Panel, StoreDialog};
 use dioxus::prelude::*;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
@@ -90,11 +90,7 @@ pub fn FeaturedFlavor(overlay: Signal<Option<ScryfallData>>) -> Element {
                     }
                     // A card without art, or one whose art fails, opens on its
                     // name and text, as in the app.
-                    button {
-                        class: "panel-action",
-                        onclick: move |_| overlay.set(Some(sd.clone())),
-                        "Image"
-                    }
+                    ImageButton { on_click: move |()| overlay.set(Some(sd.clone())) }
                     if usd_price.is_some() {
                         CartButton { onclick: move |_| buy_open.set(true) }
                     }

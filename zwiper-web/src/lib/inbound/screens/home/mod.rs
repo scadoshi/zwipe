@@ -13,7 +13,10 @@ pub mod hero;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use chrono::{DateTime, Utc};
-use components::{CartButton, HomeColors, HomeDecks, LoadFailed, StoreDialog, ThemeConfig};
+use components::icons::DockIcon;
+use components::{
+    CARD_ART, CartButton, HomeColors, HomeDecks, ImageButton, LoadFailed, StoreDialog, ThemeConfig,
+};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use dioxus_primitives::toast::{Toasts, use_toast};
@@ -510,11 +513,7 @@ pub(crate) fn FlavorPanel(
                     if let Some(price) = quote.price.as_ref() {
                         span { class: "flavor-price", "{price}" }
                     }
-                    button {
-                        class: "card-action-btn",
-                        onclick: move |_| on_image.call(sd_for_image.clone()),
-                        {home::IMAGE}
-                    }
+                    ImageButton { on_click: move |()| on_image.call(sd_for_image.clone()) }
                     if quote.price.is_some() {
                         CartButton { onclick: move |_| buy_open.set(true) }
                     }
@@ -548,8 +547,8 @@ pub(crate) fn FlavorPanel(
                 span { class: "flavor-price web-ghost-chip",
                     span { "$0.00" }
                 }
-                span { class: "card-action-btn web-ghost-chip",
-                    span { {home::IMAGE} }
+                span { class: "card-action-btn card-action-icon web-ghost-chip",
+                    DockIcon { path: CARD_ART }
                 }
                 span { class: "btn-action btn-icon cart-button web-ghost-chip" }
             }

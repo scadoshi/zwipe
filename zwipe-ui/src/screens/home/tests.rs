@@ -859,7 +859,6 @@ fn the_copy_matches_the_app() {
     assert_eq!(
         [
             FEATURED_FLAVOR,
-            IMAGE,
             BUY_TITLE,
             BUY_BODY,
             CLOSE,
@@ -868,7 +867,6 @@ fn the_copy_matches_the_app() {
         ],
         [
             "Featured flavor",
-            "Image",
             "Buy card",
             "Buy this card from a retailer.",
             "Close",

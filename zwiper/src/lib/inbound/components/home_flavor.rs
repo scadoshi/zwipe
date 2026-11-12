@@ -2,7 +2,7 @@
 //! title, with its name, price, Image and the cart on the row beneath. Home draws
 //! it from its model; the public screens draw it over the cached card.
 
-use components::{CartButton, LoadFailed, StoreDialog};
+use components::{CartButton, ImageButton, LoadFailed, StoreDialog};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::Card;
@@ -45,14 +45,12 @@ pub fn FlavorPanel(
                             if let Some(price) = quote.price.as_ref() {
                                 span { class: "flavor-price", "{price}" }
                             }
-                            button {
-                                class: "card-action-btn",
-                                onclick: move |_| {
+                            ImageButton {
+                                on_click: move |()| {
                                     if let Some(sd) = flavor_data.clone() {
                                         preview_card.set(Some((sd, 0)));
                                     }
                                 },
-                                {home::IMAGE}
                             }
                             if quote.price.is_some() {
                                 CartButton { onclick: move |_| show_buy_sheet.set(true) }

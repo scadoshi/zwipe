@@ -3,6 +3,8 @@
 //! the rows the shortcuts sheet lists for the deck cards page. A deck page that cannot be edited
 //! (a shared deck) answers only the keys that read ([`Editable::No`]).
 
+use crate::hint::KeyIcon;
+
 /// Whether the deck page on show can be edited: the owner's own deck, or a shared deck read by
 /// anyone. A read-only page answers no key that changes the deck.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -112,7 +114,7 @@ pub fn deck_cards_rows(editable: Editable) -> Vec<SheetRow> {
     let edits: [SheetRow; 6] = [
         (&["m"], "Maybeboard"),
         (&["s"], "Sideboard"),
-        (&["Shift+S"], "Star"),
+        (&["Shift+S"], STAR_ROW),
         (&["-"], "One fewer"),
         (&["+"], "One more"),
         (&["u", UNDO_COMBO], "Undo"),
@@ -136,10 +138,41 @@ pub fn deck_cards_rows(editable: Editable) -> Vec<SheetRow> {
 pub fn card_read_rows() -> [SheetRow; 4] {
     [
         (&["p"], "Printings"),
-        (&["i"], "Image"),
-        (&["v"], "Flip card"),
+        (&["i"], IMAGE_ROW),
+        (&["v"], FLIP_ROW),
         (&["d"], "Card details"),
     ]
+}
+
+/// What the `i` row does: the Image button, drawn as its icon, never the word.
+const IMAGE_ROW: &str = "[[card-art]]";
+
+/// What the `v` row does: the Flip button, drawn as its icon.
+const FLIP_ROW: &str = "[[flip]]";
+
+/// What the Shift+S row does: the Star toggle, drawn as its icon.
+const STAR_ROW: &str = "[[star]]";
+
+/// The icon a sheet row's text names as a whole, `[[name]]`, drawn as that icon's key chip in
+/// place of words; `None` for a row of words.
+#[must_use]
+pub fn row_icon(does: &str) -> Option<KeyIcon> {
+    does.strip_prefix("[[")
+        .and_then(|rest| rest.strip_suffix("]]"))
+        .and_then(KeyIcon::from_name)
+}
+
+/// A sheet row's text as a screen reader hears it: the button's name for an icon row, the
+/// words as they are otherwise.
+#[must_use]
+pub fn row_label(does: &str) -> &str {
+    match row_icon(does) {
+        Some(KeyIcon::CardArt) => "Image",
+        Some(KeyIcon::Flip) => "Flip card",
+        Some(KeyIcon::Meld) => "Meld",
+        Some(KeyIcon::Star) => "Star",
+        _ => does,
+    }
 }
 
 /// The line the deck cards page's sheet shows above its keys.
@@ -148,6 +181,49 @@ pub const DECK_CARDS_NOTE: &str = "Hover or open a card, then press its key";
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_image_key_shows_the_image_button_s_icon_not_the_word() {
+        let rows = card_read_rows();
+        let image = rows
+            .iter()
+            .find(|(keys, _)| keys == &["i"])
+            .map(|(_, does)| *does);
+        assert_eq!(image, Some("[[card-art]]"));
+        assert_eq!(row_icon("[[card-art]]"), Some(KeyIcon::CardArt));
+        assert_eq!(row_icon("Printings"), None, "words stay words");
+        assert_eq!(row_icon("[[no-such-icon]]"), None);
+        assert_eq!(
+            row_label("[[card-art]]"),
+            "Image",
+            "its name for a screen reader"
+        );
+        assert_eq!(row_label("Printings"), "Printings");
+    }
+
+    #[test]
+    fn the_star_key_shows_the_star_toggle_s_icon() {
+        let star = deck_cards_rows(Editable::Yes)
+            .into_iter()
+            .find(|(keys, _)| keys == &["Shift+S"])
+            .map(|(_, does)| does);
+        assert_eq!(star, Some("[[star]]"));
+        assert_eq!(row_icon("[[star]]"), Some(KeyIcon::Star));
+        assert_eq!(row_label("[[star]]"), "Star");
+    }
+
+    #[test]
+    fn the_flip_key_shows_the_flip_button_s_icon() {
+        let rows = card_read_rows();
+        let flip = rows
+            .iter()
+            .find(|(keys, _)| keys == &["v"])
+            .map(|(_, does)| *does);
+        assert_eq!(flip, Some("[[flip]]"));
+        assert_eq!(row_icon("[[flip]]"), Some(KeyIcon::Flip));
+        assert_eq!(row_label("[[flip]]"), "Flip card");
+        assert_eq!(row_label("[[meld]]"), "Meld");
+    }
 
     #[test]
     fn a_read_only_deck_lists_only_the_keys_that_read() {

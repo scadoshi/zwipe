@@ -71,9 +71,6 @@ pub const FLAVOR_FAILED: &str = "Couldn't load the featured flavor";
 /// The featured flavor panel's title.
 pub const FEATURED_FLAVOR: &str = "Featured flavor";
 
-/// The flavor card's button that previews its image.
-pub const IMAGE: &str = "Image";
-
 /// The Decks panel's title.
 pub const DECKS: &str = "Decks";
 

@@ -14,8 +14,9 @@ use dioxus::prelude::*;
 use zwipe_core::domain::card::card_profile::CardProfile;
 use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
 
+use crate::icons::{DockIcon, FLIP};
 use crate::meld::use_meld;
-use crate::{CardProxy, data_action};
+use crate::{CardProxy, MELD, data_action};
 
 /// Image URLs whose bytes have already arrived once this session. These
 /// render instantly; only first-time loads play the ease-in. Keyed by URL
@@ -241,8 +242,9 @@ pub fn FlippableCardImage(
                             profile,
                             trailing: (flippable && total > 1).then(|| rsx! {
                                 button {
-                                    class: "card-action-btn",
-                                    "aria-label": "Flip card",
+                                    class: "card-action-btn card-action-icon",
+                                    "aria-label": "Flip",
+                                    title: "Flip",
                                     "data-action": data_action::FLIP,
                                     onclick: move |e| {
                                         e.stop_propagation();
@@ -255,7 +257,7 @@ pub fn FlippableCardImage(
                                     onpointerdown: move |e| { e.stop_propagation(); },
                                     onmousedown: move |e| { e.stop_propagation(); },
                                     ontouchstart: move |e| { e.stop_propagation(); },
-                                    "Flip"
+                                    DockIcon { path: FLIP }
                                 }
                             }),
                         }
@@ -266,7 +268,8 @@ pub fn FlippableCardImage(
                     button {
                         class: if meld.on() { "card-flip-button card-meld-button selected" } else { "card-flip-button card-meld-button" },
                         "data-action": data_action::MELD,
-                        "aria-label": if meld.on() { "Show this half" } else { "Show the melded card" },
+                        "aria-label": "Meld",
+                        title: "Meld",
                         "aria-pressed": "{meld.on()}",
                         onclick: move |e: MouseEvent| {
                             e.stop_propagation();
@@ -275,13 +278,14 @@ pub fn FlippableCardImage(
                         onpointerdown: move |e| { e.stop_propagation(); },
                         onmousedown: move |e| { e.stop_propagation(); },
                         ontouchstart: move |e| { e.stop_propagation(); },
-                        "Meld"
+                        DockIcon { path: MELD }
                     }
                 }
                 if flippable && total > 1 && !is_no_image {
                     button {
                         class: "card-flip-button",
-                        "aria-label": "Flip card",
+                        "aria-label": "Flip",
+                        title: "Flip",
                         "data-action": data_action::FLIP,
                         onclick: move |e| {
                             e.stop_propagation();
@@ -294,7 +298,7 @@ pub fn FlippableCardImage(
                         onpointerdown: move |e| { e.stop_propagation(); },
                         onmousedown: move |e| { e.stop_propagation(); },
                         ontouchstart: move |e| { e.stop_propagation(); },
-                        "Flip"
+                        DockIcon { path: FLIP }
                     }
                 }
             }

@@ -18,8 +18,11 @@ use dioxus::prelude::*;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ImageSize;
 
+use crate::icons::FLIP;
 use crate::meld::{MeldToggle, use_meld};
-use crate::{CardRoleChips, KeywordChips, OracleText, Panel, data_action};
+use crate::{
+    CardIconButton, CardRoleChips, ImageButton, KeywordChips, MELD, OracleText, Panel, data_action,
+};
 
 /// One card face's rules text, extracted for display. Single-faced cards yield
 /// one of these; multi-faced cards (DFCs, split, etc.) yield one per face.
@@ -281,7 +284,7 @@ pub fn CardDetails(
                         MeldButton { meld }
                     }
                     if let (true, Some(handler)) = (show_image, on_image) {
-                        FootButton { label: "Image", action: data_action::IMAGE, on_click: handler }
+                        ImageButton { on_click: handler }
                     }
                     {actions}
                 }
@@ -416,7 +419,7 @@ pub fn CardDetailsPanel(
                                 MeldButton { meld: meld.clone() }
                             }
                             if let (true, Some(handler)) = (show_image, on_image) {
-                                FootButton { label: "Image", action: data_action::IMAGE, on_click: handler }
+                                ImageButton { on_click: handler }
                             }
                             if let Some(handler) = on_printings {
                                 FootButton { label: "Printings", action: data_action::PRINTINGS, on_click: handler }
@@ -479,18 +482,17 @@ fn FlipButton(
     on_face_change: Option<EventHandler<usize>>,
 ) -> Element {
     rsx! {
-        button {
-            class: "card-action-btn",
-            "data-action": data_action::FLIP,
-            onclick: move |evt| {
-                evt.stop_propagation();
+        CardIconButton {
+            label: "Flip",
+            path: FLIP,
+            action: data_action::FLIP,
+            on_click: move |()| {
                 let next = current.saturating_add(1).checked_rem(face_count).unwrap_or(0);
                 face_idx.set(next);
                 if let Some(handler) = on_face_change {
                     handler.call(next);
                 }
             },
-            "Flip"
         }
     }
 }
@@ -498,17 +500,13 @@ fn FlipButton(
 /// A meld half's Meld toggle: on, the melded card shows in the half's place.
 #[component]
 fn MeldButton(meld: MeldToggle) -> Element {
-    let on = meld.on();
     rsx! {
-        button {
-            class: if on { "card-action-btn selected" } else { "card-action-btn" },
-            "data-action": data_action::MELD,
-            "aria-pressed": "{on}",
-            onclick: move |evt: MouseEvent| {
-                evt.stop_propagation();
-                meld.toggle();
-            },
-            "Meld"
+        CardIconButton {
+            label: "Meld",
+            path: MELD,
+            action: data_action::MELD,
+            pressed: Some(meld.on()),
+            on_click: move |()| meld.toggle(),
         }
     }
 }

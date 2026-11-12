@@ -8,8 +8,10 @@
 use dioxus::prelude::*;
 use zwipe_core::domain::deck::Board;
 
+use crate::StarButton;
+
 /// The quantity stepper (`-`, the count, `+`) when `on_qty_change` is
-/// given, then Star or Unstar when `mvp` and `on_toggle_mvp` are. Each is a
+/// given, then the [`StarButton`] when `mvp` and `on_toggle_mvp` are. Each is a
 /// `card-action-btn` that stops its click there, so a row under it stays
 /// as it is.
 #[component]
@@ -40,14 +42,7 @@ pub fn CardEditButtons(
             }
         }
         if let (Some(is_mvp), Some(handler)) = (mvp, on_toggle_mvp) {
-            button {
-                class: "card-action-btn",
-                onclick: move |evt| {
-                    evt.stop_propagation();
-                    handler.call(());
-                },
-                if is_mvp { "Unstar" } else { "Star" }
-            }
+            StarButton { starred: is_mvp, on_toggle: handler }
         }
     }
 }

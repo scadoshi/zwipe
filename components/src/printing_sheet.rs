@@ -22,10 +22,7 @@ use zwipe_ui::shortcuts::{self, FlowKey};
 
 use crate::icons::{CHECK, DockIcon};
 use crate::media::{KIT_MODAL_PX, use_min_width};
-use crate::{
-    BottomSheet, Button, ButtonVariant, CoverFlow, LoadFailed, SheetFrame, SheetWide,
-    use_overlay_back_action,
-};
+use crate::{BottomSheet, CoverFlow, LoadFailed, SheetFrame, SheetWide, use_overlay_back_action};
 
 /// How far a card's printings have come.
 #[derive(Debug, Clone, PartialEq)]
@@ -334,12 +331,14 @@ fn CoverFlowSheet(
                                     }
                                     span { class: "web-flow-count", "{at.saturating_add(1)} of {count}" }
                                     if !read_only {
-                                        Button {
-                                            variant: ButtonVariant::Action,
-                                            class: "web-flow-select",
+                                        button {
+                                            r#type: "button",
+                                            class: "btn-action btn-icon web-flow-select",
+                                            "aria-label": "Select",
+                                            title: "Select",
                                             disabled: !changed,
                                             onclick: move |_| on_select.call(()),
-                                            "Select"
+                                            DockIcon { path: CHECK }
                                         }
                                     }
                                 }
