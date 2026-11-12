@@ -79,6 +79,7 @@ Who checked, on which live build, what they saw.
 | [357](357-stack-hover-shift.md) | Hovering a stack shifts its cards a pixel | fixing | thinker | - |
 | [356](356-list-row-meld.md) | A meld card's list row has no Meld toggle | fixing | scotland | #555 |
 | [359](359-key-map-gaps.md) | f and v gaps on Commander maybeboard and meld cards | fixing | scotland | #559 |
+| [369](369-share-link-chip.md) | The Share dialog's link sits in an odd dark box | fixing | laptop | - |
 
 ## Waiting for live verification
 

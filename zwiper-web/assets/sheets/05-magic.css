@@ -2735,21 +2735,16 @@ footer.site-footer .site-footer-note {
     color: var(--text-muted);
 }
 
-/* The Share dialog's link: one selectable line, cut with an ellipsis when it
-   runs past the dialog, in a sunk field so it reads as something to copy. */
+/* The Share dialog's link: an accent chip centered under the text, on one
+   line while it fits and broken at any character once it does not. */
 .share-url {
     margin-top: 0.75rem;
-    padding: 0.5rem 0.75rem;
-    border-radius: 0.5rem;
-    background: var(--bg-sink);
-    max-width: 100%;
-    box-sizing: border-box;
-    color: var(--text-primary);
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size: 0.85rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    display: flex;
+    justify-content: center;
+}
+
+.share-url-chip {
+    word-break: break-all;
     user-select: all;
     -webkit-user-select: all;
 }
