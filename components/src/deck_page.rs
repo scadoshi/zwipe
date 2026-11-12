@@ -441,11 +441,12 @@ fn flip(mut folded: Signal<HashSet<String>>, fold_key: &str) {
 }
 
 /// One card group as a band the page's width: a [`DeckFold`] over its rows
-/// (`children`).
+/// (`children`), with `accessory` at the right end of its header when given.
 #[component]
 pub fn DeckBand(
     section: DeckSection,
     folded: Signal<HashSet<String>>,
+    #[props(default)] accessory: Option<Element>,
     children: Element,
 ) -> Element {
     rsx! {
@@ -454,6 +455,7 @@ pub fn DeckBand(
             title: section.title,
             pips: section.pips,
             folded,
+            accessory,
             div { class: "deck-band-rows", {children} }
         }
     }

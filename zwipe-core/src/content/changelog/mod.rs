@@ -76,7 +76,7 @@ pub const UPCOMING: &[Release] = &[
         entries: &[
             "The deck page on the web can show its cards as stacks, one per group, beside the list",
             "The web's deck page runs the window's width, its list in two columns on a wide screen",
-            "A cart on each stack of the web's deck page buys that stack's cards",
+            "A cart on each card group of the web's deck page, in the list and in the stacks, buys that group's cards",
             "Keyboard shortcuts on the web's deck page for the hovered or open card, with Shift+H to list them",
             "A shared deck's link names its owner and the deck",
             "A shared deck shows who shared it under its name",

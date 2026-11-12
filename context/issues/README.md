@@ -77,6 +77,7 @@ Who checked, on which live build, what they saw.
 | [353](353-stack-cart.md) | A stack has no way to buy its cards | fixing | thinker | - |
 | [354](354-one-buy-dialog.md) | Buying is a different control in every spot, and the wide deck page hides it | fixing | thinker | - |
 | [358](358-share-link-deck-name.md) | The Share dialog's link names every deck "deck" | fixing | thinker | - |
+| [361](361-list-group-cart.md) | The List's card groups have no cart | fixing | thinker | - |
 | [357](357-stack-hover-shift.md) | Hovering a stack shifts its cards a pixel | fixing | thinker | - |
 | [356](356-list-row-meld.md) | A meld card's list row has no Meld toggle | fixing | scotland | #555 |
 | [359](359-key-map-gaps.md) | f and v gaps on Commander maybeboard and meld cards | fixing | scotland | #559 |
