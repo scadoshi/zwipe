@@ -32,7 +32,9 @@ use zwipe_core::http::contracts::suggestions::{
     HttpBuilderProfile, HttpCommanderSuggestion, HttpStaple,
 };
 use zwipe_ui::generation::Generation;
-use zwipe_ui::playstyle::{HELD_SIZE, LIST_SIZE, empty_identity_line, of_identity, shown};
+use zwipe_ui::playstyle::{
+    HELD_SIZE, LIST_SIZE, StapleDeck, empty_identity_line, of_identity, shown,
+};
 use zwipe_ui::screens::playstyle as model;
 use zwipe_ui::telemetry::vocabulary::Screen;
 
@@ -267,6 +269,12 @@ pub fn Playstyle() -> Element {
 
     let cold_start = deck_count() == 0;
     let has_entries = !entries().is_empty();
+    // The user's decks, which name a staple's deck chips; none until they load.
+    let staple_decks: Vec<StapleDeck> = deck_profiles
+        .read()
+        .as_ref()
+        .map(|decks| decks.iter().map(StapleDeck::from).collect())
+        .unwrap_or_default();
     // A suggested commander's printing carries into Create deck; a staple only
     // browses its printings.
     let picks = overlays
@@ -369,7 +377,7 @@ pub fn Playstyle() -> Element {
                                     }
                                 }
                                 if !staples.is_empty() {
-                                    StaplesPanel { staples, deck_count: deck_count(), expanded_card, wide: wide() }
+                                    StaplesPanel { staples, deck_count: deck_count(), decks: staple_decks, expanded_card, wide: wide() }
                                 }
                                 div { class: "web-playstyle-cell web-playstyle-danger",
                                     DangerZoneAction {

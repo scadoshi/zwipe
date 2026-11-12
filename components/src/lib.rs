@@ -75,6 +75,7 @@ mod pressable;
 mod role_tags;
 mod share_url;
 mod site_footer;
+mod staple_decks_chip;
 mod theme;
 
 pub use architecture::ZwipeArchitecture;
@@ -141,6 +142,7 @@ pub use pressable::{Pressable, is_press};
 pub use role_tags::{OtagDef, RoleTags};
 pub use share_url::ShareUrl;
 pub use site_footer::SiteFooter;
+pub use staple_decks_chip::StapleDecksChip;
 pub use theme::{pip_style_class, theme_from_settings};
 
 /// The Magic rules: oracle text, keyword chips, card rows, the flippable card

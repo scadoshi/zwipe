@@ -1,9 +1,11 @@
 use std::collections::BTreeMap;
 
+use uuid::Uuid;
 use zwipe_core::domain::card::scryfall_data::card_faces::{CardFace, CardFaces};
 use zwipe_core::http::contracts::suggestions::HttpColorIdentityCount;
 
 use super::*;
+use crate::test_support::card;
 
 /// A commander as the helpers see it: a name and its colors.
 type Named = (&'static str, Vec<Color>);
@@ -249,7 +251,11 @@ fn a_staples_type_line_falls_back_to_its_first_face() {
     }))
     .unwrap();
     card.scryfall_data.card_faces = Some(CardFaces::from(vec![face]));
-    let staple = HttpStaple { card, decks: 2 };
+    let staple = HttpStaple {
+        card,
+        decks: 2,
+        deck_ids: vec![],
+    };
     assert_eq!(staple_type_line(&staple), Some("Enchantment — Saga"));
     assert_eq!(
         staple_identity(&staple),
@@ -668,4 +674,34 @@ fn shared_tags_group_by_role_in_first_appearance_order() {
     ]);
     assert_eq!(grouped.by_role, expected);
     assert_eq!(grouped.other, vec!["typal-goblin"]);
+}
+
+/// A deck the user owns, as the client's deck list names it.
+fn owned(id: u128, name: &str) -> StapleDeck {
+    StapleDeck {
+        id: Uuid::from_u128(id),
+        name: name.to_owned(),
+    }
+}
+
+#[test]
+fn a_staples_decks_follow_the_servers_order_and_skip_unknown_ids() {
+    let decks = [owned(1, "Krenko"), owned(2, "Edgar"), owned(3, "Atraxa")];
+    let ids = [Uuid::from_u128(3), Uuid::from_u128(9), Uuid::from_u128(1)];
+    assert_eq!(
+        named_staple_decks(&ids, &decks),
+        vec![owned(3, "Atraxa"), owned(1, "Krenko")],
+        "most recent first, as sent; a deck missing from the list is left out"
+    );
+}
+
+#[test]
+fn a_staple_from_a_server_without_deck_ids_names_no_decks() {
+    let json = serde_json::json!({ "card": card("Sol Ring"), "decks": 4 });
+    let staple: HttpStaple = serde_json::from_value(json).unwrap();
+    let decks = [owned(1, "Krenko")];
+    assert!(
+        named_staple_decks(&staple.deck_ids, &decks).is_empty(),
+        "no decks to list, so the chip stays the plain count"
+    );
 }
