@@ -48,6 +48,14 @@ pub const MOBILE_STORE_VERSION: Version = Version::new(1, 18, 15);
 /// changelog with an "Upcoming" badge instead of "Latest".
 pub const UPCOMING: &[Release] = &[
     Release {
+        version: Version::new(1, 19, 3),
+        date: None,
+        entries: &[
+            "The Share dialog's link is a colored chip that wraps only when the screen is too narrow for it",
+            "Charts grow in when their page opens or their section expands",
+        ],
+    },
+    Release {
         version: Version::new(1, 19, 2),
         date: None,
         entries: &[
@@ -57,8 +65,6 @@ pub const UPCOMING: &[Release] = &[
             "The Share dialog on the web shows the deck's own name in its link",
             "A melded card's list row shows the melded card in its thumbnail and hover preview",
             "Hovering a stack on the web's deck page no longer shifts its cards by a pixel",
-            "The Share dialog's link is a colored chip that wraps only when the screen is too narrow for it",
-            "Charts grow in when their page opens or their section expands",
         ],
     },
     Release {
