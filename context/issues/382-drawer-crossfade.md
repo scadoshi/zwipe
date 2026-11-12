@@ -1,12 +1,12 @@
 # 382. The Stacks drawer snaps to another card
 
-State: fixing | Owner: laptop | PR: - | Build seen: audit build 9680dcacb
+State: fixing | Owner: laptop | PR: #606 | Build seen: audit build 9680dcacb
 
 ## Report
 Ease audit, row 6 (`~/ease-audit/README.md`), moved from thinker via the composer: clicking another card while the Stacks drawer is open replaces its contents in one frame, with no crossfade, and the title shifts.
 
 ## Fix
-laptop, web: `cards::drawer_swap`, installed by `CardDetailsSheet`.
+laptop, #606, web: `cards::drawer_swap`, installed by `CardDetailsSheet`.
 - **Copying the old card.** A click on a stack card, or a key, while a card details drawer is open copies the drawer's title bar and content as they show.
 - **Fading.** If the drawer then shows another card, a mutation observer lays the copies over the drawer in the same task, before the browser paints the change. The copies fade out over 200ms while the new card fades in.
 - A drawer that kept its card drops the copies unseen. Nothing runs under reduced motion.
