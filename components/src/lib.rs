@@ -73,6 +73,7 @@ mod home_colors;
 mod home_decks;
 mod hover_stack;
 mod identity_pips;
+pub mod keys;
 mod keyword_chips;
 mod load_failed;
 mod media;

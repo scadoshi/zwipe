@@ -6,6 +6,7 @@
 //! a wide window it is a large modal with the card's details beside it;
 //! below the breakpoint it is the app's full-screen overlay.
 
+use components::keys::use_page_keys;
 use components::{
     CardDetailsPanel, CardDetailsPanelSkeleton, PageHeader, TOAST_QUICK, use_overlay_back,
 };
@@ -28,7 +29,6 @@ use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::back_arrow::BackArrow;
 use crate::inbound::chrome::details_eye::{DockEye, Surface, use_details_eye};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
-use crate::inbound::chrome::page_keys::use_page_keys;
 use crate::inbound::chrome::shortcuts::{self, CardKey, ShortcutsScreen};
 use crate::inbound::chrome::shortcuts_sheet::use_offer_shortcuts;
 use crate::inbound::telemetry;

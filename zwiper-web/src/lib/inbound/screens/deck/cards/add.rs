@@ -13,6 +13,7 @@
 use std::collections::HashSet;
 
 use components::icons::{BoltIcon, DockIcon, REFRESH};
+use components::keys::{use_page_keys, use_undo_key};
 use components::{
     Chip, DockFilter, LoadFailed, SheetFrame, SheetWide, TOAST_NORMAL, TOAST_QUICK,
     reset_image_ease, use_back_online,
@@ -60,7 +61,6 @@ use crate::inbound::cards::swipe_stack::{
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::details_eye::{DockEye, Surface, use_details_eye};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
-use crate::inbound::chrome::page_keys::{use_page_keys, use_undo_key};
 use crate::inbound::chrome::shortcuts::{self, ADD_LABELS, Shortcut, ShortcutsScreen};
 use crate::inbound::chrome::shortcuts_sheet::use_offer_shortcuts;
 use crate::inbound::root_signal::use_signal_for_root_tasks;

@@ -10,6 +10,7 @@ use std::collections::{HashMap, HashSet};
 
 use chrono::{DateTime, Utc};
 use components::icons::{DockIcon, REFRESH};
+use components::keys::{use_page_keys, use_undo_key};
 use components::{Chip, DockFilter, SheetFrame, SheetWide, TOAST_QUICK};
 use dioxus::core::spawn_forever;
 use dioxus::prelude::*;
@@ -49,7 +50,6 @@ use crate::inbound::cards::swipe_stack::{
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::details_eye::{DockEye, Surface, use_details_eye};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
-use crate::inbound::chrome::page_keys::{use_page_keys, use_undo_key};
 use crate::inbound::chrome::shortcuts::{self, REMOVE_LABELS, Shortcut, ShortcutsScreen};
 use crate::inbound::chrome::shortcuts_sheet::use_offer_shortcuts;
 use crate::inbound::session::ensure_fresh::ensure_fresh;

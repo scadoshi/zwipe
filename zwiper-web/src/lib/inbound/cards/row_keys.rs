@@ -5,6 +5,7 @@
 //! card is the one under the cursor, else the one whose details are open.
 //! Shift+H lists them ([`ShortcutsScreen::CardRows`]).
 
+use components::keys::use_page_keys_through;
 use components::{MeldSource, MeldToggle};
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -12,7 +13,6 @@ use zwipe_core::domain::card::Card;
 
 use crate::inbound::cards::card_row::CardOverlays;
 use crate::inbound::cards::stack_view::{RowFaces, StackDetails};
-use crate::inbound::chrome::page_keys::use_page_keys_through;
 use crate::inbound::chrome::shortcuts::{self, CardKey, STACK_DETAILS_CLASS, ShortcutsScreen};
 use crate::inbound::chrome::shortcuts_sheet::use_offer_shortcuts;
 
