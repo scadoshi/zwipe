@@ -1,6 +1,6 @@
 # 367. Printings offers Select where nothing would save
 
-State: fixing | Owner: laptop | PR: - | Build seen: production, web
+State: fixing | Owner: laptop | PR: #568 | Build seen: production, web
 
 ## Report
 Composer for Scotty, 2026-11-11 (moved from thinker): Printings opened outside a deck (Playstyle Staples, Suggested commanders, Activity, Examples, anywhere with no deck card to save to) still shows Select, and Enter toasts "Printing saved" though nothing saves. Printings should have a browse-only mode, driven by whether a save target is passed: no Select, Enter does nothing, no toast. Deck screens keep Select. Web and app.
@@ -12,7 +12,7 @@ Composer for Scotty, 2026-11-11 (moved from thinker): Printings opened outside a
   - the web deck page's row overlays passed an empty closure.
 
 ## Fix
-laptop:
+laptop, #568:
 - `on_save` is optional on both clients' `PrintingSheet` (and on the web's `CardOverlaysHost`), and the `read_only` flag is gone. Without a save the sheet only browses (the model's `Mode::ReadOnly`): no Select or Save, Enter does nothing, and leaving never toasts.
 - Browse-only:
   - Activity (web and app), with Activity's display-only `PickPrinting` removed from its model;
