@@ -41,6 +41,7 @@ use crate::domain::auth::requests::resend_email_change::ResendEmailChangeError;
 use crate::domain::auth::requests::reset_password::{ResetPassword, ResetPasswordError};
 use crate::domain::auth::requests::revoke_sessions::{RevokeSessions, RevokeSessionsError};
 use crate::domain::auth::requests::verify_email::{VerifyEmail, VerifyEmailError};
+use crate::domain::email::models::SendEmailError;
 
 /// Database port for authentication operations.
 ///
@@ -60,11 +61,17 @@ pub trait AuthRepository: Clone + Send + Sync + 'static {
         request: &RegisterUser,
     ) -> impl Future<Output = Result<User, RegisterUserError>> + Send;
 
-    /// Whether any account has this username.
-    fn username_exists(
+    /// Whether an account other than `except` holds `username`, compared without case, so a new
+    /// name can't stand beside an existing one that differs only in case.
+    ///
+    /// # Errors
+    ///
+    /// The database error when the lookup fails.
+    fn username_taken(
         &self,
         username: &Username,
-    ) -> impl Future<Output = Result<bool, RegisterUserError>> + Send;
+        except: Option<Uuid>,
+    ) -> impl Future<Output = anyhow::Result<bool>> + Send;
 
     /// Creates a new refresh token for an existing user (new session).
     ///
@@ -338,6 +345,37 @@ pub trait AuthService: Clone + Send + Sync + 'static {
         &self,
         request: &ChangeUsername,
     ) -> impl Future<Output = Result<User, ChangeUsernameError>> + Send;
+
+    /// Renames the account named or numbered `account` (its exact username, its id or its email)
+    /// to `new_username` as a user's own change does, without the password and without the
+    /// reserved-name check, for Scotty claiming a reserved name from the server. Answers the
+    /// account's old name and the account as renamed. Nothing in the app reaches it, and it sends
+    /// no email; see [`Self::send_reserved_name_notice`].
+    ///
+    /// # Errors
+    ///
+    /// [`ChangeUsernameError::AuthenticateUserError`] when no account matches `account`,
+    /// [`ChangeUsernameError::Unchanged`] when it already has that name,
+    /// [`ChangeUsernameError::Duplicate`] when another account holds it in any case, and
+    /// [`ChangeUsernameError::Database`] on a database failure.
+    fn admin_change_username(
+        &self,
+        account: &str,
+        new_username: &Username,
+    ) -> impl Future<Output = Result<(Username, User), ChangeUsernameError>> + Send;
+
+    /// Tells `user`, now renamed from `old_username`, that Zwipe reserved its old name: a plain
+    /// text and an HTML body, replies to `reply_to` when given.
+    ///
+    /// # Errors
+    ///
+    /// The [`SendEmailError`] when the email does not go out.
+    fn send_reserved_name_notice(
+        &self,
+        user: &User,
+        old_username: &Username,
+        reply_to: Option<&str>,
+    ) -> impl Future<Output = Result<(), SendEmailError>> + Send;
 
     /// Holds a new email as pending after verifying the password, and mails a
     /// confirmation link to it when no other account has it.

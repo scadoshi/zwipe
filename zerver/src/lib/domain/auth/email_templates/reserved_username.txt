@@ -1,0 +1,11 @@
+Hi,
+
+We've reserved the username "{old_username}" for Zwipe's own use, so your account's username is now {new_username}.
+
+Nothing else has changed: your decks and settings are all still there, and you can keep signing in with your email address.
+
+If you'd like a different username, you can change it any time under Account.
+
+Sorry for the trouble, and thanks for using Zwipe.
+
+Scotty

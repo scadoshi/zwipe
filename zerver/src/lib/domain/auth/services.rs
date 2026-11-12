@@ -7,8 +7,11 @@ use rand::Rng;
 use sha2::Digest;
 use uuid::Uuid;
 use zwipe_core::domain::auth::models::access_token::AccessToken;
+use zwipe_core::domain::auth::models::secret::Secret;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::user::User;
+use zwipe_core::domain::user::models::reserved_username;
+use zwipe_core::domain::user::username::Username;
 
 use crate::domain::auth::lockout::LoginLockout;
 use crate::domain::auth::models::UserWithPasswordHash;
@@ -44,7 +47,7 @@ use crate::domain::auth::requests::revoke_sessions::{
     RevokeScope, RevokeSessions, RevokeSessionsError,
 };
 use crate::domain::auth::requests::verify_email::{VerifyEmail, VerifyEmailError};
-use crate::domain::email::models::SendEmail;
+use crate::domain::email::models::{SendEmail, SendEmailError};
 use crate::domain::email::ports::EmailSender;
 use crate::domain::user::ports::UserRepository;
 
@@ -113,6 +116,19 @@ pub struct Service<AR, UR> {
     support_email: String,
 }
 
+/// The subject of the notice an account gets when Scotty claims its reserved name.
+const RESERVED_NAME_SUBJECT: &str = "Your Zwipe username has changed";
+
+/// Whether a rename checks the reserved list: a user's own change does, Scotty's admin rename
+/// doesn't.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ReservedCheck {
+    /// A reserved name answers as a taken one.
+    Apply,
+    /// Any open name goes.
+    Skip,
+}
+
 impl<AR, UR> Service<AR, UR>
 where
     AR: AuthRepository,
@@ -143,6 +159,34 @@ where
         }
     }
 
+    /// Renames the account in `request` from `old_username`, answering a taken name, or a reserved
+    /// one under [`ReservedCheck::Apply`], with [`ChangeUsernameError::Duplicate`]. A name another
+    /// account holds in any case is taken; an account may rewrite how its own reserved name is
+    /// written.
+    async fn rename(
+        &self,
+        old_username: &Username,
+        request: &ChangeUsername,
+        reserved: ReservedCheck,
+    ) -> Result<User, ChangeUsernameError> {
+        if *old_username == request.new_username {
+            return Err(ChangeUsernameError::Unchanged);
+        }
+        let reserved = reserved == ReservedCheck::Apply
+            && reserved_username::is_reserved(&request.new_username)
+            && !reserved_username::same_name(old_username, &request.new_username);
+        if reserved
+            || self
+                .auth_repo
+                .username_taken(&request.new_username, Some(request.user_id))
+                .await
+                .map_err(ChangeUsernameError::Database)?
+        {
+            return Err(ChangeUsernameError::Duplicate);
+        }
+        self.auth_repo.change_username(request).await
+    }
+
     /// Sends a security notification email after a profile change.
     ///
     /// Fire-and-forget: the change has already been committed, so a delivery
@@ -160,6 +204,8 @@ where
                 to: to_email.to_string(),
                 subject: subject.to_string(),
                 html_body,
+                text_body: None,
+                reply_to: None,
             })
             .await
         {
@@ -201,6 +247,8 @@ where
                 to: to_email.to_string(),
                 subject: "You already have a Zwipe account".to_string(),
                 html_body: html,
+                text_body: None,
+                reply_to: None,
             })
             .await
         {
@@ -285,8 +333,15 @@ where
     ) -> Result<RegisterOutcome, RegisterUserError> {
         // Checked first so a taken email can only ever be what the insert
         // trips over. Usernames are public, so answering this inline tells
-        // nobody anything new.
-        if self.auth_repo.username_exists(&request.username).await? {
+        // nobody anything new. A reserved name answers as a taken one, so the
+        // list stays unread and older apps already understand it.
+        if reserved_username::is_reserved(&request.username)
+            || self
+                .auth_repo
+                .username_taken(&request.username, None)
+                .await
+                .map_err(RegisterUserError::Database)?
+        {
             return Err(RegisterUserError::UsernameTaken);
         }
 
@@ -509,10 +564,9 @@ where
     // == update ==
     async fn change_username(&self, request: &ChangeUsername) -> Result<User, ChangeUsernameError> {
         let old_username = self.verify_password(&request.into()).await?.username;
-        if old_username == request.new_username {
-            return Err(ChangeUsernameError::Unchanged);
-        }
-        let user = self.auth_repo.change_username(request).await?;
+        let user = self
+            .rename(&old_username, request, ReservedCheck::Apply)
+            .await?;
 
         let html = include_str!("email_templates/username_changed.html")
             .replace("{old_username}", &escape_html(&old_username))
@@ -526,6 +580,65 @@ where
         .await;
 
         Ok(user)
+    }
+
+    async fn admin_change_username(
+        &self,
+        account: &str,
+        new_username: &Username,
+    ) -> Result<(Username, User), ChangeUsernameError> {
+        let lookup = AuthenticateUser {
+            identifier: account.to_owned(),
+            password: Secret::new(""),
+            platform: None,
+            client_version: None,
+            client_ip: None,
+        };
+        let held = self
+            .auth_repo
+            .fetch_user_with_password_hash(&lookup)
+            .await?;
+        let request = ChangeUsername {
+            user_id: held.id,
+            new_username: new_username.clone(),
+            password: Secret::new(""),
+        };
+        let user = self
+            .rename(&held.username, &request, ReservedCheck::Skip)
+            .await?;
+        Ok((held.username, user))
+    }
+
+    async fn send_reserved_name_notice(
+        &self,
+        user: &User,
+        old_username: &Username,
+        reply_to: Option<&str>,
+    ) -> Result<(), SendEmailError> {
+        let fill = |template: &str, old: &str, new: &str| {
+            template
+                .replace("{old_username}", old)
+                .replace("{new_username}", new)
+        };
+        let html = fill(
+            include_str!("email_templates/reserved_username.html"),
+            &escape_html(old_username),
+            &escape_html(&user.username),
+        );
+        let text = fill(
+            include_str!("email_templates/reserved_username.txt"),
+            old_username,
+            &user.username,
+        );
+        self.email_sender
+            .send_email(SendEmail {
+                to: user.email.to_string(),
+                subject: RESERVED_NAME_SUBJECT.to_owned(),
+                html_body: html,
+                text_body: Some(text),
+                reply_to: reply_to.map(str::to_owned),
+            })
+            .await
     }
 
     async fn change_password_and_revoke_sessions(
@@ -690,6 +803,8 @@ where
                 to: to_email.to_string(),
                 subject: "Verify your Zwipe email".to_string(),
                 html_body: html,
+                text_body: None,
+                reply_to: None,
             })
             .await
             .map_err(|e| anyhow!("{e}"))?;
@@ -758,6 +873,8 @@ where
                 to: request.email.clone(),
                 subject: "Reset your Zwipe password".to_string(),
                 html_body: html,
+                text_body: None,
+                reply_to: None,
             })
             .await
         {

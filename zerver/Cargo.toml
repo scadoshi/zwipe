@@ -23,6 +23,10 @@ path = "src/bin/zerver.rs"
 name = "zervice"
 path = "src/bin/zervice.rs"
 
+[[bin]]
+name = "zerver-admin"
+path = "src/bin/zerver-admin.rs"
+
 [dependencies]
 
 axum = { version = "0.8" }

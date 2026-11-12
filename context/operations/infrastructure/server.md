@@ -442,6 +442,18 @@ This first build is by hand; every later one comes from the deploy runner.
 
 ---
 
+## zerver-admin
+
+Account changes made from the server only, never from the app. It is not part of the deploy; build it from the checkout when needed and run it with zerver's environment:
+
+```bash
+cd ~/zwipe-src && git pull
+SQLX_OFFLINE=true cargo build --release --bin zerver-admin
+sudo bash -c 'set -a; . /etc/zwipe/zerver.env; set +a; /home/scadoshi/zwipe-src/target/release/zerver-admin rename <username|id|email> <new-username>'
+```
+
+`rename` renames an account the way a user's own change does (the username rules, a name no other account holds in any case, the `username_changed` audit row) without the password or the reserved-name check, and mails the account that its old name is now reserved. `--no-notice` sends nothing; `--reply-to <address>` sets where replies go.
+
 ## systemd Service
 
 systemd is Ubuntu's service manager. A unit file tells it how to run zerver, so it starts automatically on boot and restarts itself if it crashes, instead of you running `./zerver` manually in a terminal.

@@ -53,14 +53,22 @@ impl AuthRepository for Postgres {
         Ok(User::from(database_user))
     }
 
-    async fn username_exists(&self, username: &Username) -> Result<bool, RegisterUserError> {
-        let exists = query_scalar!(
-            r#"SELECT EXISTS(SELECT 1 FROM users WHERE username = $1) AS "exists!""#,
-            username.to_string()
+    async fn username_taken(
+        &self,
+        username: &Username,
+        except: Option<Uuid>,
+    ) -> anyhow::Result<bool> {
+        let taken = query_scalar!(
+            r#"SELECT EXISTS(
+                SELECT 1 FROM users
+                WHERE lower(username) = lower($1) AND ($2::uuid IS NULL OR id <> $2)
+            ) AS "taken!""#,
+            username.to_string(),
+            except
         )
         .fetch_one(&self.pool)
         .await?;
-        Ok(exists)
+        Ok(taken)
     }
 
     async fn create_refresh_token(

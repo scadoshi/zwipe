@@ -8,15 +8,21 @@ pub struct SendEmail {
     pub subject: String,
     /// HTML body of the email.
     pub html_body: String,
+    /// Plain-text body, for mail clients that show no HTML; `None` sends the HTML alone.
+    pub text_body: Option<String>,
+    /// Where a reply goes, in place of the sending address; `None` replies to the sender.
+    pub reply_to: Option<String>,
 }
 
-/// Redacted: `html_body` carries one-time verify and reset links.
+/// Redacted: the bodies carry one-time verify and reset links.
 impl std::fmt::Debug for SendEmail {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("SendEmail")
             .field("to", &self.to)
             .field("subject", &self.subject)
             .field("html_body", &"REDACTED")
+            .field("text_body", &self.text_body.as_ref().map(|_| "REDACTED"))
+            .field("reply_to", &self.reply_to)
             .finish()
     }
 }

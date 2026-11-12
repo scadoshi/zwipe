@@ -2,6 +2,7 @@
 
 pub mod email;
 pub mod hints;
+pub mod reserved_username;
 pub mod settings;
 pub mod theme;
 pub mod username;
