@@ -1,6 +1,6 @@
 # 408. Stack headers cut long names short, and the cart sits far from the price
 
-State: merged | Owner: halo | PR: pushed to release | Build seen: 6d0bdc52d
+State: fixing | Owner: halo | PR: branch nits/halo-408 | Build seen: 6d0bdc52d
 
 ## Report
 From the composer: group headers in Stacks, on the app and the web, cut long names short ("Planeswalkers (…"). Let the name and count wrap onto a second line instead. And move the cart from the bottom right to right after the price chip. The web's List keeps its far-right cart; the app's List takes the same inline cart as Stacks.
