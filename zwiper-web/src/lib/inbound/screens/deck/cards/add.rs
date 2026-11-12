@@ -62,7 +62,7 @@ use crate::inbound::chrome::details_eye::{DockEye, Surface, use_details_eye};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::chrome::page_keys::{use_page_keys, use_undo_key};
 use crate::inbound::chrome::shortcuts::{self, ADD_LABELS, Shortcut, ShortcutsScreen};
-use crate::inbound::chrome::shortcuts_sheet::{DockShortcuts, use_offer_shortcuts};
+use crate::inbound::chrome::shortcuts_sheet::use_offer_shortcuts;
 use crate::inbound::root_signal::use_signal_for_root_tasks;
 use crate::inbound::session::ensure_fresh::ensure_fresh;
 use crate::inbound::shell::ScreenFrame;
@@ -1202,7 +1202,6 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                         }
                         span { class: "action-dock-divider" }
                         DockEye { eye, disabled: !has_current }
-                        DockShortcuts {}
                     }
                 }
             }

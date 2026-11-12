@@ -7,6 +7,7 @@
 //! open once more later. A screen's header `?` reopens it on demand without
 //! recording it again. The hints are zwipe-core's and their copy zwipe-ui's.
 
+use components::DialogAction;
 use components::hint::{ContentHintDialog, guide_for_one_time, guide_for_swipe_select};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
@@ -14,6 +15,7 @@ use zwipe_core::domain::auth::models::session::Session;
 pub use zwipe_core::domain::user::models::hints::OneTimeHint;
 use zwipe_ui::hint::{SwipeSelectMode, one_time};
 
+use crate::inbound::chrome::shortcuts_sheet::use_shortcuts_action;
 use crate::inbound::session::ensure_fresh::ensure_fresh;
 use crate::outbound::session_store::SessionStore;
 
@@ -64,15 +66,26 @@ pub fn open_and_record_hint(
     });
 }
 
+/// A hint's `actions`, then the keyboard button where the screen offers it
+/// ([`use_shortcuts_action`]), so it sits beside the guide link.
+fn with_shortcuts(
+    mut actions: Vec<DialogAction>,
+    shortcuts: Option<DialogAction>,
+) -> Vec<DialogAction> {
+    actions.extend(shortcuts);
+    actions
+}
+
 /// The dialog for every one-time hint but [`OneTimeHint::SwipeSelect`],
 /// whose copy changes with its overlay: see [`SwipeSelectHint`].
 #[component]
 pub fn OneTimeHintDialog(hint: OneTimeHint, open: Signal<bool>) -> Element {
+    let shortcuts = use_shortcuts_action();
     let Some(content) = one_time::content_for(hint) else {
         return rsx! {};
     };
     rsx! {
-        ContentHintDialog { open, content, actions: guide_for_one_time(hint) }
+        ContentHintDialog { open, content, actions: with_shortcuts(guide_for_one_time(hint), shortcuts) }
     }
 }
 
@@ -80,11 +93,12 @@ pub fn OneTimeHintDialog(hint: OneTimeHint, open: Signal<bool>) -> Element {
 /// the narrow stack's Profile card and `Cards` pill.
 #[component]
 pub fn FirstDeckHintDialog(open: Signal<bool>, wide: bool) -> Element {
+    let shortcuts = use_shortcuts_action();
     rsx! {
         ContentHintDialog {
             open,
             content: one_time::first_deck(if wide { one_time::DeckLayout::Wide } else { one_time::DeckLayout::Narrow }),
-            actions: guide_for_one_time(OneTimeHint::FirstDeck),
+            actions: with_shortcuts(guide_for_one_time(OneTimeHint::FirstDeck), shortcuts),
         }
     }
 }
@@ -92,11 +106,12 @@ pub fn FirstDeckHintDialog(open: Signal<bool>, wide: bool) -> Element {
 /// The `swipe_select` hint for the overlay's `mode`.
 #[component]
 pub fn SwipeSelectHint(open: Signal<bool>, mode: SwipeSelectMode) -> Element {
+    let shortcuts = use_shortcuts_action();
     rsx! {
         ContentHintDialog {
             open,
             content: one_time::swipe_select(mode),
-            actions: guide_for_swipe_select(mode),
+            actions: with_shortcuts(guide_for_swipe_select(mode), shortcuts),
         }
     }
 }

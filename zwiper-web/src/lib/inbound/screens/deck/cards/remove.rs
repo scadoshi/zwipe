@@ -51,7 +51,7 @@ use crate::inbound::chrome::details_eye::{DockEye, Surface, use_details_eye};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::chrome::page_keys::{use_page_keys, use_undo_key};
 use crate::inbound::chrome::shortcuts::{self, REMOVE_LABELS, Shortcut, ShortcutsScreen};
-use crate::inbound::chrome::shortcuts_sheet::{DockShortcuts, use_offer_shortcuts};
+use crate::inbound::chrome::shortcuts_sheet::use_offer_shortcuts;
 use crate::inbound::session::ensure_fresh::ensure_fresh;
 use crate::inbound::shell::ScreenFrame;
 use crate::inbound::telemetry;
@@ -637,7 +637,6 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                         }
                         span { class: "action-dock-divider" }
                         DockEye { eye, disabled: current.is_none() }
-                        DockShortcuts {}
                     }
                 }
             }

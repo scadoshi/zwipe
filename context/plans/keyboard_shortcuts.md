@@ -40,7 +40,7 @@ A key whose button the card doesn't have does nothing: `m` on a maybeboard card,
 
 These keys also work while the Stacks view's card details drawer is open, the one sheet they pass through. Every other key waits for it to close, and every other sheet (Filter, Printings, the shortcuts sheet) and every dialog keeps all keys from the screen as usual.
 
-`H` (Shift+H) opens the shortcuts sheet with this screen's keys only, under the line "Hover or open a card, then press its key": `p`, `i`, `v`, `d`, `m`, `s`, Shift+S, `-`, `+`, `u` with Ctrl+Z, then Esc, `?` and `H`. The screen has no dock, so no keyboard button.
+`H` (Shift+H) opens the shortcuts sheet with this screen's keys only, under the line "Hover or open a card, then press its key": `p`, `i`, `v`, `d`, `m`, `s`, Shift+S, `-`, `+`, `u` with Ctrl+Z, then Esc, `?` and `H`. Its hint offers the keyboard button too.
 
 ## Printings
 
@@ -57,7 +57,7 @@ These keys also work while the Stacks view's card details drawer is open, the on
 
 ## Showing the shortcuts
 
-No key labels on buttons and no settings toggle: they would clutter the screens for people who never use a keyboard. Instead, the swipe screens get one keyboard icon in the dock, on a computer's wide layout only (`(hover: hover) and (pointer: fine)` and the web's 900px layout switch), which opens the same shortcuts sheet as `H`. Shift+H works at any width.
+No key labels on buttons and no settings toggle: they would clutter the screens for people who never use a keyboard. Instead, the hint of every screen with keys offers one keyboard icon in its action bar, beside See guide, on a computer's wide layout only (`(hover: hover) and (pointer: fine)` and the web's 900px layout switch), which closes the hint and opens the same shortcuts sheet as `H` (issue 377; it sat in the swipe screens' dock before). Shift+H works at any width.
 
 ## Rules
 
