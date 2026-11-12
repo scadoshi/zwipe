@@ -53,6 +53,7 @@ pub const UPCOMING: &[Release] = &[
         entries: &[
             "On the web, Suggested commanders, Staples, Most skipped and the Commander maybeboard each keep their own List or Stacks, stacked as on the deck page",
             "The web's Home and its other few-panel pages sit in the same 1400px column as zwipe.net",
+            "Back closes an open card image before leaving the screen",
         ],
     },
     Release {
@@ -66,7 +67,6 @@ pub const UPCOMING: &[Release] = &[
             "On the web's deck page, cards ease in, out and into new groups when a board is shown or hidden or the grouping changes",
             "On the web's deck page, switching to Stacks deals the cards in",
             "A card whose image is missing or fails to load shows its name, text and chips in the card's own shape, everywhere a card image shows",
-            "Back closes an open card image before leaving the screen",
         ],
     },
     Release {
