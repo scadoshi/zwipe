@@ -51,7 +51,7 @@ async fn commander_deck(
 #[sqlx::test]
 async fn usage_batch_folds_into_commander_card_signal(pool: sqlx::PgPool) {
     let app = TestApp::new(pool.clone());
-    let (token, _) = app.register("swiper").await;
+    let (token, _) = app.register("cardswiper").await;
 
     let atraxa = card("Atraxa, Praetors' Voice");
     let atraxa_id = atraxa.id();

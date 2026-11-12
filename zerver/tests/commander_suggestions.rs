@@ -821,7 +821,7 @@ async fn every_route_needs_a_token(pool: sqlx::PgPool) {
 #[sqlx::test]
 async fn play_style_summary_sends_the_color_map(pool: sqlx::PgPool) {
     let app = TestApp::new(pool.clone());
-    let (token, uid) = app.register("playstyle").await;
+    let (token, uid) = app.register("stylepicker").await;
     app.verify_email(&uid).await;
 
     let (status, body) = app.get(PLAYSTYLE_ROUTE, Some(&token)).await;
