@@ -1,8 +1,9 @@
 //! Retailer links for buying a whole deck or one card, ported from the app's `buy_links.rs`.
 
 use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::deck_profile::DeckProfile;
-use zwipe_core::domain::deck::{Deck, DeckEntry};
+use zwipe_core::domain::deck::{Deck, DeckEntry, deck_metrics};
 
 use crate::deck_cards::keys::{RowInfo, RowKind};
 
@@ -234,6 +235,22 @@ pub fn links(deck: &Deck) -> (String, String) {
     )
 }
 
+/// The total of a deck page group's `rows` in `currency`, each card's price times its copies;
+/// `None` when no card has a price in it.
+#[must_use]
+pub fn group_price(rows: &[RowInfo], currency: PriceCurrency) -> Option<String> {
+    let mut priced = false;
+    let mut sum = 0.0_f64;
+    for row in rows {
+        if let Some(each) = deck_metrics::card_price(&row.card.scryfall_data, currency) {
+            priced = true;
+            // A row holds at least one copy (`Quantity` is positive; a zone or token row is 1).
+            sum += each * f64::from(row.qty.max(1));
+        }
+    }
+    priced.then(|| currency.format_amount(sum))
+}
+
 /// The cards a deck page's group sends to a store, each with its copies and its printing's
 /// `TCGplayer` id: every card but a token.
 #[must_use]
@@ -397,5 +414,23 @@ mod tests {
             group_cards(&[row("Goblin", 1, RowKind::Token)]).is_empty(),
             "a group of tokens has nothing to buy"
         );
+    }
+
+    #[test]
+    fn a_group_s_price_counts_every_copy_and_none_without_prices() {
+        let row = |qty: i32| RowInfo {
+            card: crate::test_support::card("Forest"),
+            qty,
+            kind: RowKind::Main { mvp: false },
+        };
+        assert_eq!(
+            group_price(&[row(1), row(12)], PriceCurrency::Usd).as_deref(),
+            Some("$1.04"),
+            "13 copies at $0.08"
+        );
+        let mut unpriced = row(1);
+        unpriced.card.scryfall_data.prices.usd = None;
+        assert_eq!(group_price(&[unpriced], PriceCurrency::Usd), None);
+        assert_eq!(group_price(&[], PriceCurrency::Usd), None);
     }
 }

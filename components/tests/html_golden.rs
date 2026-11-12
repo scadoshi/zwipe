@@ -544,6 +544,49 @@ fn card_stack_dealing() {
     );
 }
 
+/// A stack in tap mode, for phones: no hover handlers, so the stack carries
+/// `tap`, the second card revealed by a first tap.
+#[test]
+fn card_stack_tap() {
+    golden(
+        "card_stack_tap",
+        &render(|| {
+            let named = |n: u128, name: &str| {
+                let mut card: Card = serde_json::from_str(CARD_JSON).unwrap();
+                card.scryfall_data.id = uuid::Uuid::from_u128(n);
+                card.scryfall_data.name = name.to_owned();
+                card.scryfall_data.image_uris = None;
+                card.scryfall_data.card_faces = None;
+                card
+            };
+            let cards = vec![
+                StackCard {
+                    card: named(1, "Top"),
+                    qty: 1,
+                    face: 0,
+                },
+                StackCard {
+                    card: named(2, "Middle"),
+                    qty: 2,
+                    face: 0,
+                },
+                StackCard {
+                    card: named(3, "Bottom"),
+                    qty: 1,
+                    face: 0,
+                },
+            ];
+            rsx! {
+                CardStack {
+                    cards,
+                    revealed: Some(uuid::Uuid::from_u128(2)),
+                    on_select: move |_| {},
+                }
+            }
+        }),
+    );
+}
+
 /// The cart button: an icon button with its name for a screen reader.
 #[test]
 fn cart_button() {

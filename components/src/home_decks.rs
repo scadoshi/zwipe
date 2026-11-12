@@ -2,6 +2,8 @@
 //! its header, the latest decks as tiles under it, each a tap into the deck.
 //! With no deck the one button is Create a deck over one muted line.
 
+use std::collections::HashSet;
+
 use dioxus::prelude::*;
 use orangui::{Button, ButtonVariant};
 use uuid::Uuid;
@@ -114,11 +116,14 @@ fn PanelHeader(
 }
 
 /// Three tiles across: the commander's art crop in a rounded square (a
-/// filled square with the deck's pips without one), then the name chip and the
+/// filled square with the deck's pips without one, the deck's name in the
+/// no-image card's dress when it fails to load), then the name chip and the
 /// format chip under it. The name keeps to one line and ellipsizes; the
 /// format sits beside it when both fit and under it otherwise.
 #[component]
 fn DeckTiles(panel: DeckPanel, ondeck: EventHandler<Uuid>) -> Element {
+    // The tiles whose art failed to load, which show the deck's name instead.
+    let mut failed: Signal<HashSet<Uuid>> = use_signal(HashSet::new);
     rsx! {
         div { class: "home-deck-tiles",
             for deck in panel.latest {
@@ -127,8 +132,26 @@ fn DeckTiles(panel: DeckPanel, ondeck: EventHandler<Uuid>) -> Element {
                     class: "home-deck-tile",
                     onclick: move |_| ondeck.call(deck.id),
                     div { class: "home-deck-tile-art",
-                        if let Some(url) = deck.art_url.as_deref() {
-                            img { src: "{url}", loading: "lazy", draggable: false, alt: "" }
+                        if failed.read().contains(&deck.id) {
+                            div {
+                                class: "card-proxy home-deck-tile-proxy",
+                                role: "img",
+                                "aria-label": "{deck.name}",
+                                "data-proxy-name": "",
+                                div { class: "card-proxy-fit",
+                                    span { class: "card-proxy-name", "{deck.name}" }
+                                }
+                            }
+                        } else if let Some(url) = deck.art_url.as_deref() {
+                            img {
+                                src: "{url}",
+                                loading: "lazy",
+                                draggable: false,
+                                alt: "",
+                                onerror: move |_| {
+                                    failed.write().insert(deck.id);
+                                },
+                            }
                         } else {
                             {pips(&deck)}
                         }

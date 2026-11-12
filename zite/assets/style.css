@@ -318,19 +318,6 @@ html:has(> body[class*="theme-"][class*="-light"]) {
     padding: 0 1.5rem 1rem;
 }
 
-/* Running text keeps a readable measure inside the wide column; the hero's
-   centered tagline stays centered. */
-:is(.guide-content .guide-p, .guide-content .guide-lead, .guide-content .guide-steps,
-    .guide-content .guide-bullets, .guide-content .guide-note, .privacy-section > p,
-    .privacy-section > ul, .release-card .collapse-body, .hero .tagline,
-    .page .panel-card p) {
-    max-width: 70ch;
-}
-
-.hero .tagline {
-    margin-inline: auto;
-}
-
 /* ==================
         nav
  ==================== */
@@ -1022,7 +1009,6 @@ h2.panel-title {
 }
 
 .coming-soon p {
-    max-width: 25rem;
     margin: 0 auto;
 }
 

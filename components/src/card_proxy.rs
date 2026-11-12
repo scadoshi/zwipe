@@ -162,7 +162,10 @@ pub fn CardProxy(
 /// kind chips, and fits again: the name and the facts row always show. A
 /// thumbnail shows only its name, which wraps between words and shrinks until
 /// every word and line fits, clipping to an ellipsis only at the smallest
-/// size.
+/// size. A proxy marked `data-proxy-name` (a deck tile's) fits its name the
+/// same way at any size. A covered stack card's strip (`card-proxy-strip`)
+/// is not fitted: it keeps the stack's one size, and fits again when it is
+/// revealed.
 pub const FIT_JS: &str = r"
 (() => {
   if (window.__zwProxyFit) return;
@@ -185,7 +188,12 @@ pub const FIT_JS: &str = r"
   const fit = (card) => {
     const inner = card.querySelector('.card-proxy-fit');
     if (!inner || card.clientWidth === 0) return;
-    const thumb = card.clientWidth <= 110;
+    if (card.classList.contains('card-proxy-strip')) {
+      card.removeAttribute('data-proxy-drop');
+      card.style.setProperty('--proxy-scale', '1');
+      return;
+    }
+    const thumb = card.clientWidth <= 110 || card.hasAttribute('data-proxy-name');
     const name = card.querySelector('.card-proxy-name');
     const text = nameText(name);
     const was = text && full.get(text);
@@ -218,8 +226,11 @@ pub const FIT_JS: &str = r"
   };
   watch(document.body);
   new MutationObserver((records) => {
-    for (const r of records) for (const n of r.addedNodes) if (n instanceof Element) watch(n);
-  }).observe(document.body, { childList: true, subtree: true });
+    for (const r of records) {
+      if (r.type === 'attributes') { if (r.target.matches('.card-proxy')) fit(r.target); continue; }
+      for (const n of r.addedNodes) if (n instanceof Element) watch(n);
+    }
+  }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
 })();
 ";
 
