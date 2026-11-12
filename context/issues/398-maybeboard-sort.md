@@ -1,12 +1,12 @@
 # 398. The Commander maybeboard has no ordering
 
-State: fixing | Owner: laptop | PR: - | Build seen: release after #599
+State: fixing | Owner: laptop | PR: #601 | Build seen: release after #599
 
 ## Report
 Scotty, via the composer, 2026-11-11: give the Commander maybeboard ordering with the Decks list's Sort chip row (same component, no new look): Newest saved (the default), Name, Mana value and Color. Remember the choice, on the web and in the app.
 
 ## Fix
-laptop, web and app:
+laptop, #601, web and app:
 - **The order.** `zwipe_ui::commander::maybeboard::{SortBy, Sort}` hold the keys and the comparison, with ties falling back to the name:
   - Newest saved is the saved order, newest first ascending;
   - Mana value orders by `cmc`;
