@@ -1,6 +1,6 @@
 # 406. The link cards underline Magic: The Gathering
 
-State: fixing | Owner: thinker | PR: - | Build seen: production
+State: fixing | Owner: thinker | PR: 6f6314bd3 | Build seen: production
 
 ## Report
 Composer, 2026-11-12: app.zwipe.net's Open Graph image (`og-app.png`) underlines "Magic: The Gathering", against the no-underlined-links rule. Redraw it without the underline, accent kept, same layout, 1200x630, and give the app's head `twitter:image` and `twitter:image:alt` as zwipe.net has. Check zwipe.net's and the share page's images too.
