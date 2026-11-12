@@ -4,6 +4,7 @@
 use dioxus::prelude::*;
 use zwipe_core::domain::card::Card;
 
+use crate::drawer_swap::use_drawer_swap;
 use crate::{CardDetailsCost, CardDetailsPanel, DrawerSheet, use_meld, use_overlay_back};
 
 /// `card`'s details as a drawer, while `open`. Its foot carries `Flip` for a multi-faced card,
@@ -11,7 +12,7 @@ use crate::{CardDetailsCost, CardDetailsPanel, DrawerSheet, use_meld, use_overla
 /// a `Printings` pill when the host passes `on_printings`. `describe_tag` gives an Oracle tag's
 /// description, where the host has a catalog. `class` names the drawer, and a host that adds its
 /// own class keeps `card-details-drawer` in it. The shown face follows `face` when the host
-/// passes one.
+/// passes one. Swapping to another card while it is open crossfades (`use_drawer_swap`).
 #[component]
 pub fn CardDetailsSheet(
     open: Signal<bool>,
@@ -26,6 +27,7 @@ pub fn CardDetailsSheet(
     #[props(default)] describe_tag: Option<Callback<String, Option<String>>>,
 ) -> Element {
     use_overlay_back(open);
+    use_drawer_swap();
     // The shown face, shared by the title bar's cost and the panel's Flip,
     // and kept on the host's `face` when it passes one.
     let mut shown_face = use_signal(|| face.unwrap_or(0));

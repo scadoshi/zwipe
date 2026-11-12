@@ -63,6 +63,7 @@ mod deck_group;
 mod deck_page;
 mod deck_stats;
 mod drawer_sheet;
+mod drawer_swap;
 mod flippable_card_image;
 mod fold;
 mod group_buy;

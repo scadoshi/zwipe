@@ -6,7 +6,6 @@ use dioxus::prelude::*;
 use zwipe_core::domain::card::Card;
 use zwipe_ui::card::info;
 
-use crate::inbound::cards::drawer_swap::use_drawer_swap;
 use crate::inbound::cards::otag::use_describe_tag;
 
 /// The card's prices as chips, under a printing in the printing sheet.
@@ -32,7 +31,7 @@ pub fn CardInfoDisplay(card: Card) -> Element {
 /// the shown face) and the card has art, and a `Printings` pill when the
 /// host passes `on_printings`, as the wide pane does. `class` names the drawer, and a
 /// host that adds its own class keeps `card-details-drawer` in it. Swapping
-/// to another card while open crossfades (`use_drawer_swap`). Mount it at
+/// to another card while open crossfades. Mount it at
 /// the screen root beside the printing sheet.
 #[component]
 pub fn CardDetailsSheet(
@@ -47,7 +46,6 @@ pub fn CardDetailsSheet(
     #[props(default)] on_face_change: Option<EventHandler<usize>>,
 ) -> Element {
     let describe_tag = use_describe_tag();
-    use_drawer_swap();
     rsx! {
         SharedDetailsSheet {
             open,
