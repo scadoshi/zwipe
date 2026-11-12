@@ -5,7 +5,9 @@
 //! `/` focuses Quick add, and ↑ and ↓ move through its result chips with
 //! Enter adding the highlighted one. Below the breakpoint it is the app's
 //! screen. Swipe sits in the list's header, Filter floats in the dock and
-//! Clear maybeboard is the Danger zone panel under the list.
+//! Clear maybeboard is the Danger zone panel under the list. The Show row's
+//! List | Stacks switch lays the commanders out as rows or as one stack,
+//! kept apart from every other list's choice.
 
 use std::collections::HashSet;
 
@@ -25,6 +27,7 @@ use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortK
 use zwipe_core::domain::card::search_card::cards::Cards;
 use zwipe_core::domain::deck::format::Format;
 use zwipe_ui::commander::maybeboard::{self, Step};
+use zwipe_ui::deck_cards::stacks::CardsView;
 use zwipe_ui::filter;
 use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::generation::{Generation, Ticket};
@@ -36,18 +39,26 @@ use crate::inbound::caches::CreateDeckSeed;
 use crate::inbound::card_filter::CardFilterPanel;
 use crate::inbound::cards::card_row::{CardOverlaysHost, CardRow, ShowRowArt, use_card_overlays};
 use crate::inbound::cards::otag::{OtagExamplesHost, use_otag_reveals};
+use crate::inbound::cards::row_keys::use_card_row_keys_and;
+use crate::inbound::cards::stack_view::{
+    CardsStack, CardsViewSwitch, StackDrawer, use_cards_view, use_row_faces, use_stack_details,
+};
 use crate::inbound::cards::swipe_select::{SwipeMode, SwipeSelect};
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::ghost::{
     GhostActionRow, GhostButton, GhostList, GhostShowRow, GhostText,
 };
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
-use crate::inbound::chrome::page_keys::{focus_by_id, use_page_keys};
+use crate::inbound::chrome::page_keys::focus_by_id;
 use crate::inbound::chrome::shortcuts::{self, CardKey};
 use crate::inbound::router::Route;
 use crate::inbound::shell::ScreenFrame;
 use crate::inbound::telemetry;
+use crate::outbound::cards_view_store::CardsViewPlace;
 use crate::outbound::timer;
+
+/// The saved commanders' header, in the List and the Stacks alike.
+const LIST_TITLE: &str = "Commanders";
 
 /// The Quick add input's id, for `/`.
 const QUICK_ADD_ID: &str = "commander-maybeboard-search";
@@ -157,6 +168,8 @@ pub fn CommanderMaybeboard() -> Element {
     let overlays = use_card_overlays();
     let hover_stack = use_hover_stack();
     let expanded_card: Signal<Option<Uuid>> = use_signal(|| None);
+    let view = use_cards_view(CardsViewPlace::CommanderMaybeboard);
+    use_row_faces();
 
     let mut query = use_signal(String::new);
     let mut selected_colors: Signal<HashSet<Color>> = use_signal(HashSet::new);
@@ -356,12 +369,6 @@ pub fn CommanderMaybeboard() -> Element {
         });
     });
 
-    use_page_keys(Callback::new(move |key: String| match screen_key(&key) {
-        Some(ScreenKey::QuickAdd) => focus_by_id(QUICK_ADD_ID),
-        Some(ScreenKey::Filter) => filter_open.set(true),
-        None => {}
-    }));
-
     // A printing swap is display only: the maybeboard is keyed by oracle, and
     // a refetch returns the preferred printing. A Create deck after the swap
     // carries the picked printing.
@@ -398,7 +405,24 @@ pub fn CommanderMaybeboard() -> Element {
         }
         shown.sorted(applied.sort(), applied.direction()).into()
     });
+    let filtered_ids = use_memo(move || -> Vec<Uuid> {
+        filtered.read().iter().map(|c| c.scryfall_data.id).collect()
+    });
+    use_stack_details(filtered_ids);
+    let screen_keys = Callback::new(move |key: String| match screen_key(&key) {
+        Some(ScreenKey::QuickAdd) => focus_by_id(QUICK_ADD_ID),
+        Some(ScreenKey::Filter) => filter_open.set(true),
+        None => {}
+    });
+    use_card_row_keys_and(filtered, expanded_card, Some(screen_keys));
+    let extras = Callback::new(move |card: Card| {
+        let actions = maybeboard_actions(card, create_with, on_remove);
+        rsx! {
+            div { class: "card-action-row", {actions} }
+        }
+    });
     let filtered = filtered();
+    let stacked = view() == CardsView::Stacks && !filtered.is_empty() && !load_failed();
     let colors = selected_colors();
     let has_entries = !entries().is_empty();
     let searching_catalog = query().trim().len() >= QUICK_ADD_MIN_CHARS;
@@ -529,18 +553,44 @@ pub fn CommanderMaybeboard() -> Element {
                                     span { class: "sr-only", "{color.to_long_name()}" }
                                 }
                             }
+                            // Stacks always show art, so the chip grays out and
+                            // keeps its state.
                             Chip {
                                 selected: show_row_art(),
+                                disabled: view() == CardsView::Stacks,
                                 onclick: move |_| show_row_art.toggle(),
                                 "Art"
+                            }
+                            CardsViewSwitch {
+                                view,
+                                place: CardsViewPlace::CommanderMaybeboard,
+                                on_change: move |()| {
+                                    let mut expanded = expanded_card;
+                                    expanded.set(None);
+                                },
                             }
                         }
                         // Swipe sits in the list's header, so it says
                         // what gets swiped. The panel is there whether or
                         // not anything is saved; with nothing to list, one
-                        // row says why.
+                        // row says why. In Stacks the commanders float on
+                        // the page under the header, as the deck page's
+                        // stacks do.
+                        if stacked {
+                            CardsStack {
+                                cards: filtered.clone(),
+                                title: LIST_TITLE.to_owned(),
+                                trailing: rsx! {
+                                    Button {
+                                        variant: ButtonVariant::Action,
+                                        onclick: move |_| swipe_open.set(true),
+                                        "Swipe"
+                                    }
+                                },
+                            }
+                        } else {
                         CardListFold {
-                            title: "Commanders",
+                            title: LIST_TITLE,
                             actions: rsx! {
                                 Button {
                                     variant: ButtonVariant::Action,
@@ -555,7 +605,7 @@ pub fn CommanderMaybeboard() -> Element {
                             } else if filtered.is_empty() {
                                 div { class: "card-row card-row-note", "No commanders match" }
                             }
-                            for card in filtered {
+                            for card in filtered.clone() {
                                 MaybeboardRow {
                                     key: "{card.scryfall_data.id}",
                                     card,
@@ -564,6 +614,7 @@ pub fn CommanderMaybeboard() -> Element {
                                     on_remove,
                                 }
                             }
+                        }
                         }
                         DangerZoneAction {
                             label: "Clear maybeboard",
@@ -597,6 +648,9 @@ pub fn CommanderMaybeboard() -> Element {
             ],
             "Every commander on your maybeboard will be removed. This can't be undone."
         }
+        if stacked {
+            StackDrawer { cards: filtered, extras }
+        }
         HoverStackHost { stack: hover_stack }
         CardOverlaysHost { overlays, on_printing_save }
         OtagExamplesHost { examples }
@@ -627,8 +681,8 @@ pub fn CommanderMaybeboard() -> Element {
     }
 }
 
-/// One saved commander: the shared row with `Create deck` and, when it has
-/// an oracle id, `Remove` after its own `Image` and `Printing`.
+/// One saved commander: the shared row with [`maybeboard_actions`] after its
+/// own `Image` and `Printing`.
 #[component]
 fn MaybeboardRow(
     card: Card,
@@ -636,33 +690,39 @@ fn MaybeboardRow(
     on_create: Callback<Card>,
     on_remove: Callback<Uuid>,
 ) -> Element {
-    let oracle_id = card.scryfall_data.oracle_id;
-    let card_for_create = card.clone();
+    let extra_actions = maybeboard_actions(card.clone(), on_create, on_remove);
     rsx! {
         CardRow {
             card,
             qty: 1,
             expanded_card,
-            extra_actions: rsx! {
-                button {
-                    class: "card-action-btn",
-                    onclick: move |evt| {
-                        evt.stop_propagation();
-                        on_create.call(card_for_create.clone());
-                    },
-                    "Create deck"
-                }
-                if let Some(oracle_id) = oracle_id {
-                    button {
-                        class: "card-action-btn",
-                        onclick: move |evt| {
-                            evt.stop_propagation();
-                            on_remove.call(oracle_id);
-                        },
-                        "Remove"
-                    }
-                }
+            extra_actions,
+        }
+    }
+}
+
+/// A saved commander's actions: `Create deck`, then `Remove` when it has an
+/// oracle id. Its row and its stack card's drawer both show them.
+fn maybeboard_actions(card: Card, on_create: Callback<Card>, on_remove: Callback<Uuid>) -> Element {
+    let oracle_id = card.scryfall_data.oracle_id;
+    rsx! {
+        button {
+            class: "card-action-btn",
+            onclick: move |evt| {
+                evt.stop_propagation();
+                on_create.call(card.clone());
             },
+            "Create deck"
+        }
+        if let Some(oracle_id) = oracle_id {
+            button {
+                class: "card-action-btn",
+                onclick: move |evt| {
+                    evt.stop_propagation();
+                    on_remove.call(oracle_id);
+                },
+                "Remove"
+            }
         }
     }
 }

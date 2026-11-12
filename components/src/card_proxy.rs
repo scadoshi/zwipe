@@ -6,8 +6,8 @@
 //! own pieces: the name and mana cost, a rule, the kind chips, the rules
 //! text, the Keywords and Card roles rows, then the facts chips. The text is
 //! sized against the box, and [`use_card_proxy_fit`] shrinks a card whose text
-//! would still overflow until it fits. At a thumbnail's size only the name
-//! shows.
+//! would still overflow until it fits, dropping rows when the type can shrink
+//! no further. At a thumbnail's size only the name shows.
 
 use dioxus::prelude::*;
 use zwipe_core::domain::card::card_profile::CardProfile;
@@ -154,21 +154,68 @@ pub fn CardProxy(
     }
 }
 
-/// Shrinks every [`CardProxy`] on the page whose text overflows its box, and
-/// again whenever one is added or resized: its text scale steps down from 1
-/// until the content fits, to no less than 0.45 of the box-sized type.
+/// Fits every [`CardProxy`] on the page into its box, and again whenever one
+/// is added or resized. Its text scale steps down from 1, to no less than
+/// 0.45 of the box-sized type. A browser with a minimum font size can stop
+/// the type shrinking, so a card that still overflows drops its rows one at a
+/// time, rules text first, then the Keywords and Card roles rows, then the
+/// kind chips, and fits again: the name and the facts row always show. A
+/// thumbnail shows only its name, which wraps between words and shrinks until
+/// every word and line fits, clipping to an ellipsis only at the smallest
+/// size. A proxy marked `data-proxy-name` (a deck tile's) fits its name the
+/// same way at any size. A covered stack card's strip (`card-proxy-strip`)
+/// is not fitted: it keeps the stack's one size, and fits again when it is
+/// revealed.
 pub const FIT_JS: &str = r"
 (() => {
   if (window.__zwProxyFit) return;
   window.__zwProxyFit = true;
+  const DROPS = 3;
+  const full = new WeakMap();
+  const nameText = (name) => (name && name.firstChild && name.firstChild.nodeType === 3 ? name.firstChild : null);
+  // The name with its widest words cut to an ellipsis until each fits its line.
+  const cut = (name, text, whole) => {
+    const words = whole.split(' ');
+    while (name.scrollWidth > name.clientWidth + 1) {
+      let at = 0;
+      words.forEach((w, i) => { if (w.length > words[at].length) at = i; });
+      const word = words[at].replace(/\u2026$/, '');
+      if (word.length <= 1) return;
+      words[at] = word.slice(0, -1) + '\u2026';
+      text.data = words.join(' ');
+    }
+  };
   const fit = (card) => {
     const inner = card.querySelector('.card-proxy-fit');
-    if (!inner || card.clientWidth <= 110) return;
-    let scale = 1;
-    card.style.setProperty('--proxy-scale', '1');
-    while (inner.scrollHeight > card.clientHeight + 1 && scale > 0.45) {
-      scale = Math.round((scale - 0.05) * 100) / 100;
-      card.style.setProperty('--proxy-scale', String(scale));
+    if (!inner || card.clientWidth === 0) return;
+    if (card.classList.contains('card-proxy-strip')) {
+      card.removeAttribute('data-proxy-drop');
+      card.style.setProperty('--proxy-scale', '1');
+      return;
+    }
+    const thumb = card.clientWidth <= 110 || card.hasAttribute('data-proxy-name');
+    const name = card.querySelector('.card-proxy-name');
+    const text = nameText(name);
+    const was = text && full.get(text);
+    if (was && text.data === was.shown) text.data = was.whole;
+    const over = () =>
+      inner.scrollHeight > card.clientHeight + 1 ||
+      (thumb && !!name && (name.scrollHeight > name.clientHeight + 1 || name.scrollWidth > name.clientWidth + 1));
+    for (let drop = 0; drop <= (thumb ? 0 : DROPS); drop++) {
+      if (drop) card.setAttribute('data-proxy-drop', String(drop));
+      else card.removeAttribute('data-proxy-drop');
+      let scale = 1;
+      card.style.setProperty('--proxy-scale', '1');
+      while (over() && scale > 0.45) {
+        scale = Math.round((scale - 0.05) * 100) / 100;
+        card.style.setProperty('--proxy-scale', String(scale));
+      }
+      if (!over()) return;
+    }
+    if (thumb && text) {
+      const whole = text.data;
+      cut(name, text, whole);
+      full.set(text, { whole, shown: text.data });
     }
   };
   const sizes = new ResizeObserver((entries) => { for (const e of entries) fit(e.target); });
@@ -179,8 +226,11 @@ pub const FIT_JS: &str = r"
   };
   watch(document.body);
   new MutationObserver((records) => {
-    for (const r of records) for (const n of r.addedNodes) if (n instanceof Element) watch(n);
-  }).observe(document.body, { childList: true, subtree: true });
+    for (const r of records) {
+      if (r.type === 'attributes') { if (r.target.matches('.card-proxy')) fit(r.target); continue; }
+      for (const n of r.addedNodes) if (n instanceof Element) watch(n);
+    }
+  }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
 })();
 ";
 

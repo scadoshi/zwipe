@@ -9,7 +9,7 @@ use dioxus::prelude::*;
 use zwipe_core::domain::logo;
 use zwipe_core::domain::user::models::settings::PipStyle;
 
-use crate::inbound::chrome::hint_topic::{HintHost, HintTopic};
+use crate::inbound::chrome::hint_topic::{HintHost, HintTopic, InfoButton};
 use crate::inbound::chrome::leave_guard::{self, GuardedHistory};
 use crate::inbound::chrome::trail::TrailHistory;
 use crate::inbound::chrome::{details_clear, splash};
@@ -54,6 +54,12 @@ pub fn App() -> Element {
     });
     // A swipe screen's card slides clear of its docked details panel.
     details_clear::use_details_clear();
+    // The deck page's stat panels open the web's hints from their `?`.
+    use_context_provider(|| {
+        components::StatHints(Callback::new(|topic: components::StatTopic| {
+            rsx! { InfoButton { topic: stat_hint_topic(topic) } }
+        }))
+    });
     let dialogs = use_dialog_host();
     use_context_provider(|| dialogs);
     use_context_provider(|| LoginPrefill(Signal::new(None)));
@@ -203,5 +209,20 @@ fn ThemeShell(splash: bool, children: Element) -> Element {
             }
             {children}
         }
+    }
+}
+
+/// The web's hint for a stat panel's `?`.
+fn stat_hint_topic(topic: components::StatTopic) -> HintTopic {
+    match topic {
+        components::StatTopic::DeckTags => HintTopic::DeckViewDeckTags,
+        components::StatTopic::OracleTags => HintTopic::DeckViewOracleTags,
+        components::StatTopic::TypeChart => HintTopic::TypeChart,
+        components::StatTopic::RoleChart => HintTopic::RoleChart,
+        components::StatTopic::OracleTagChart => HintTopic::OracleTagChart,
+        components::StatTopic::ManaCurve => HintTopic::ManaCurve,
+        components::StatTopic::ColorChart => HintTopic::ColorChart,
+        components::StatTopic::ManaFulfillment => HintTopic::ManaFulfillment,
+        components::StatTopic::DrawOdds => HintTopic::DrawOdds,
     }
 }

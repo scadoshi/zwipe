@@ -88,6 +88,17 @@ pub fn CardFilterPanel(
     let mut armed = use_signal(|| false);
     let epoch = use_signal(|| 0u32);
     let mut open_section: Signal<Option<Section>> = use_signal(|| None);
+    // The section whose rows stay mounted while it eases shut.
+    let closing: Signal<Option<Section>> = use_signal(|| None);
+    // Opens `next` (or none), keeping the section it replaces drawn while it
+    // closes, so the collapse eases its rows away instead of dropping them.
+    let mut set_open = move |next: Option<Section>| {
+        let before = *open_section.peek();
+        if let Some(prev) = before.filter(|prev| Some(*prev) != next) {
+            keep_while_closing(closing, prev);
+        }
+        open_section.set(next);
+    };
     let mut first_fired = use_signal(|| false);
     let mut dict_open = use_signal(|| false);
     let mut dict_field: Signal<Option<PickerField>> = use_signal(|| None);
@@ -119,7 +130,7 @@ pub fn CardFilterPanel(
             if let Some(t) = dropped {
                 raise(on_toast, t);
             }
-            open_section.set(None);
+            set_open(None);
         }
     });
 
@@ -159,7 +170,7 @@ pub fn CardFilterPanel(
             on_apply.call(applied);
             raise(on_toast, t);
             armed.set(false);
-            open_section.set(None);
+            set_open(None);
             open.set(false);
         }
     };
@@ -181,10 +192,10 @@ pub fn CardFilterPanel(
 
     let mut toggle_section = move |section: Section| {
         if open_section.peek().as_ref() == Some(&section) {
-            open_section.set(None);
+            set_open(None);
             return;
         }
-        open_section.set(Some(section));
+        set_open(Some(section));
         if !*first_fired.peek() {
             first_fired.set(true);
             if let Some(handler) = on_first_open {
@@ -263,7 +274,7 @@ pub fn CardFilterPanel(
                             }
                             div { class: "accordion-content", "data-open": "{is_open}",
                                 div {
-                                    if is_open {
+                                    if is_open || closing() == Some(section) {
                                         SectionRows {
                                             section,
                                             draft,
@@ -339,3 +350,28 @@ fn scroll_section_into_view(section: Section) {
         "setTimeout(() => {{ const el = document.getElementById('{id}'); if (el) el.scrollIntoView({{ behavior: 'smooth', block: 'start' }}); }}, {SECTION_SCROLL_DELAY_MS})"
     ));
 }
+
+/// How long a section takes to ease shut, in milliseconds: the accordion's
+/// 300ms collapse.
+#[cfg_attr(
+    not(target_arch = "wasm32"),
+    expect(dead_code, reason = "only the browser times the collapse")
+)]
+const SECTION_CLOSE_MS: u32 = 300;
+
+/// Keeps `section`'s rows drawn for its collapse, unless another section
+/// starts closing meanwhile.
+#[cfg(target_arch = "wasm32")]
+fn keep_while_closing(mut closing: Signal<Option<Section>>, section: Section) {
+    closing.set(Some(section));
+    spawn(async move {
+        gloo_timers::future::TimeoutFuture::new(SECTION_CLOSE_MS).await;
+        if *closing.peek() == Some(section) {
+            closing.set(None);
+        }
+    });
+}
+
+/// Off the browser nothing is timed: the rows drop at once.
+#[cfg(not(target_arch = "wasm32"))]
+fn keep_while_closing(_closing: Signal<Option<Section>>, _section: Section) {}

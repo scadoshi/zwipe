@@ -195,23 +195,7 @@ pub fn update_request(
     })
 }
 
-// Belongs in zwipe-ui
-/// Whether the deck view shows `Budget`: a price target, or any card to
-/// price.
-pub fn has_budget(profile: &DeckProfile, has_metrics: bool) -> bool {
-    profile.price_target.is_some() || has_metrics
-}
-
-// Belongs in zwipe-ui
-/// How many tags the deck view's `Tags` badge counts: deck, oracle and other
-/// tags together.
-pub fn tag_count(profile: &DeckProfile) -> usize {
-    profile
-        .tags
-        .len()
-        .saturating_add(profile.oracle_tags.len())
-        .saturating_add(profile.other_tags.len())
-}
+pub use zwipe_ui::deck::view::{has_budget, tag_count, total_price_line};
 
 // Belongs in zwipe-ui
 /// Whether the deck can have stats: a card in it or a command-zone card,
@@ -231,30 +215,9 @@ pub fn share_link(owner: &str, deck_name: &str, token: Uuid) -> String {
     zwipe_core::domain::share_link::shared_deck_url(owner, deck_name, token)
 }
 
-// Belongs in zwipe-ui
-/// The deck view's `Total price` value: the running total in `currency`
-/// (zero when nothing is priced), then the target in its own stored
-/// currency when there is one. No conversion: each currency reads its own
-/// sum.
-pub fn total_price_line(
-    profile: &DeckProfile,
-    total: Option<f64>,
-    currency: PriceCurrency,
-) -> String {
-    let running = currency.format_amount(total.unwrap_or(0.0));
-    match profile.price_target {
-        Some(target) => {
-            let stored = profile.price_target_currency.unwrap_or_default();
-            format!("{running} / {}", stored.format_amount(target))
-        }
-        None => running,
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_fixtures;
 
     fn values() -> FormValues {
         FormValues {
@@ -265,20 +228,6 @@ mod tests {
             price_text: "50".to_owned(),
             ..FormValues::default()
         }
-    }
-
-    #[test]
-    fn the_target_keeps_its_own_currency() {
-        let mut profile = test_fixtures::deck_profile("Budget");
-        assert_eq!(
-            total_price_line(&profile, None, PriceCurrency::Eur),
-            "\u{20ac}0.00"
-        );
-        profile.price_target = Some(100.0);
-        assert_eq!(
-            total_price_line(&profile, Some(12.5), PriceCurrency::Eur),
-            "\u{20ac}12.50 / $100.00"
-        );
     }
 
     #[test]

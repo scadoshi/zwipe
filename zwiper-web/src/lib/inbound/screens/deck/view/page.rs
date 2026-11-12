@@ -7,13 +7,15 @@
 //! and the foot holds Warnings, Data and Danger zone. The dock floats add,
 //! remove, the filter and undo, then Edit, Clone and Share.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::time::Duration;
 
 use components::icons::{CloneIcon, DockIcon, EditIcon, MINUS, PLUS, ShareIcon, UNDO};
 use components::{
-    CART, CartButton, Chip, DeckBand, DeckControls, DeckFacts, DeckFold, DeckHead, DeckPage,
-    DeckSection, DockFilter, FeaturedCard, HoverStackHost, StoreDialog, use_hover_stack,
+    BudgetBody, CART, Chip, CurrencyChips, DeckCardsView, DeckControls, DeckFacts, DeckFold,
+    DeckHead, DeckPage, DeckRowHost, DeckSection, DeckStackDrawer, DistributionsBody, DockFilter,
+    DrawOddsStepper, FeaturedCard, GroupBuyDialog, HoverStackHost, ManaBody, StoreDialog, TagsBody,
+    charted, use_group_buy, use_hover_stack,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -34,19 +36,16 @@ use super::dialogs::DeckDialogs;
 use super::ghost::{
     DeckBandsGhost, DeckControlsGhost, DeckFootGhost, DeckHeadGhost, DeckStatsGhost,
 };
-use super::group_buy::{group_buy_dialog, group_cards, use_group_buy};
 use super::panels::{DangerZonePanel, DataPanel};
-use super::sections::{
-    BudgetBody, CurrencyChips, DistributionsBody, DrawOddsStepper, ManaBody, TagsBody,
-    WarningFixes, WarningsBody, charted,
-};
+use super::sections::{WarningFixes, WarningsBody};
 use super::settle::use_settle;
-use super::stacks::{stack_details, stacks_view};
 use crate::domain::deck::{has_budget, tag_count};
 use crate::inbound::card_filter::CardFilterPanel;
 use crate::inbound::card_stores::CardStores;
 use crate::inbound::cards::card_row::{CardOverlays, CardOverlaysHost, use_card_overlays};
-use crate::inbound::cards::otag::{OtagExamplesHost, use_otag_reveals};
+use crate::inbound::cards::otag::{
+    OtagDescribe, OtagExamplesHost, OtagExamplesOpen, use_otag_reveals,
+};
 use crate::inbound::cards::printing_sheet::PrintingSheet;
 use crate::inbound::cards::stack_view::{
     CardsViewSwitch, StackDetails, use_cards_view, use_stack_details_sync,
@@ -55,9 +54,10 @@ use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog};
 use crate::inbound::router::Route;
 use crate::inbound::screens::deck::cards::editor::{
-    Editor, Listed, LoadFailure, RowInfo, RowKind, main_row_of, row_view, use_deck_editor,
+    Editor, Listed, LoadFailure, RowInfo, RowKind, main_row_of, use_deck_editor, use_deck_row_host,
 };
 use crate::inbound::screens::deck::cards::quick_add::QuickAdd;
+use crate::outbound::cards_view_store::CardsViewPlace;
 use crate::outbound::timer;
 
 /// The stat panels' fold keys, shut when the page opens.
@@ -123,6 +123,7 @@ pub fn DeckWidePage(
     } = ed;
     let CardStores { undo, .. } = use_context();
     let examples = use_otag_reveals();
+    let row_host = use_deck_row_host(&ed);
     let CardOverlays { mut preview, .. } = overlays;
     // The rows' hover stack, drawn outside the rows and the page's entrance,
     // whose transforms would pin it to them instead of the window.
@@ -130,7 +131,7 @@ pub fn DeckWidePage(
     let folded: Signal<HashSet<String>> =
         use_signal(|| FOLDED_STATS.into_iter().map(String::from).collect());
     // List or Stacks, as last left.
-    let view = use_cards_view();
+    let view = use_cards_view(CardsViewPlace::DeckPage);
     // The stacks deal in on entering Stacks, once the cards are in, for as
     // long as the longest stack takes.
     let mut deal_cue = use_signal(DealCue::default);
@@ -177,6 +178,7 @@ pub fn DeckWidePage(
         ..
     } = listing();
     let row_meta = meta();
+    let row_boards: HashMap<Uuid, Board> = row_meta.iter().map(|(id, m)| (*id, m.board)).collect();
     let applied = filter.read().clone();
     let shown_boards = boards();
     let held_profile = profile();
@@ -426,6 +428,9 @@ pub fn DeckWidePage(
         price: price.filter(|v| *v > 0.0).map(|v| shown.format_amount(v)),
     });
     let charts = charted(metrics.as_ref());
+    // The Oracle tag lookups the Distributions charts hand to their tags.
+    let describe_tag = try_use_context::<OtagDescribe>().map(|d| d.0);
+    let on_examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
     let land_count = metrics.as_ref().map_or(0, |m| m.land_count);
     let land_target = held_profile.as_ref().and_then(|p| p.land_target);
 
@@ -494,7 +499,7 @@ pub fn DeckWidePage(
                                     }
                                 }
                             }
-                            CardsViewSwitch { view, on_change: move |()| selected.set(None) }
+                            CardsViewSwitch { view, place: CardsViewPlace::DeckPage, on_change: move |()| selected.set(None) }
                         },
                     }
                 }
@@ -504,26 +509,21 @@ pub fn DeckWidePage(
                 if !loaded() {
                     DeckBandsGhost {}
                 }
-                if view() == CardsView::Stacks {
-                    {stacks_view(sections, cur, collapsed, stack_details_state, ed.faces, group_buy, dealing())}
-                } else {
-                    for (section, rows) in sections {
-                        DeckBand {
-                            key: "{section.key}",
-                            accessory: (!group_cards(&rows).is_empty()).then(|| {
-                                let header = section.title.clone();
-                                let for_buy = rows.clone();
-                                rsx! {
-                                    CartButton { onclick: move |_| group_buy.offer(&header, &for_buy) }
-                                }
-                            }),
-                            section,
-                            folded: collapsed,
-                            for row in rows {
-                                {row_view(&ed, cur, &row_meta, row)}
-                            }
-                        }
-                    }
+                DeckCardsView {
+                    sections,
+                    view: view(),
+                    currency: cur,
+                    collapsed,
+                    details: stack_details_state,
+                    selected,
+                    face: ed.face,
+                    faces: ed.faces,
+                    boards: row_boards.clone(),
+                    group_buy,
+                    dealing: dealing(),
+                    show_art: Some(show_art),
+                    actions: Some(ed.edit_actions()),
+                    host: row_host,
                 }
             },
             stats: rsx! {
@@ -548,7 +548,11 @@ pub fn DeckWidePage(
                 }
                 if let Some(m) = charts.clone() {
                     DeckFold { fold_key: "Distributions", title: "Distributions", folded,
-                        DistributionsBody { metrics: m }
+                        DistributionsBody {
+                            metrics: m,
+                            describe_tag,
+                            on_examples,
+                        }
                     }
                 }
                 if charts.is_some() || land_target.is_some() {
@@ -675,9 +679,16 @@ pub fn DeckWidePage(
                 links,
             }
         }
-        {group_buy_dialog(group_buy)}
+        GroupBuyDialog { group_buy }
         if view() == CardsView::Stacks {
-            {stack_details(&ed, &all_rows, &row_meta, stack_details_state, overlays)}
+            DeckStackDrawer {
+                rows: all_rows,
+                boards: row_boards,
+                details: stack_details_state,
+                faces: ed.faces,
+                actions: Some(ed.edit_actions()),
+                host: DeckRowHost { on_view_printing: None, ..row_host },
+            }
         }
         CardOverlaysHost { overlays }
         OtagExamplesHost { examples }
