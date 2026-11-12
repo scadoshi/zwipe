@@ -226,6 +226,8 @@ fn App() -> Element {
     use_context_provider(|| Replay(Signal::new(0u32)));
     // A card drawn without its image shrinks its text to fit its box.
     ::components::use_card_proxy_fit();
+    // Lists marked to settle, as Guides' cards under a filter, ease into place.
+    ::components::use_settle();
     // Sheets register here, so Escape closes the top one.
     let mut overlay_back_stack = ::components::use_overlay_back_stack();
     use_context_provider(|| overlay_back_stack);

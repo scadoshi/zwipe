@@ -82,6 +82,8 @@ pub fn App() -> Element {
     use_hook(TrailHistory::provide);
     // A card drawn without its image shrinks its text to fit its box.
     components::use_card_proxy_fit();
+    // Lists and groups marked to settle ease into place instead of snapping.
+    components::use_settle();
 
     rsx! {
         document::Link { rel: "icon", href: FAVICON }

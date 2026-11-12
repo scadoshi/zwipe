@@ -319,7 +319,8 @@ fn tag_color_class(tag: &str) -> &'static str {
 #[component]
 fn GuideFilter(query: Signal<String>, selected: Signal<Option<&'static str>>) -> Element {
     rsx! {
-        div { class: "guide-filter",
+        // A tag or a search settles the guides into place (`components::settle`).
+        div { class: "guide-filter", "data-settle": "",
             span { class: "stat-chip stat-chip-p1 chip-row-label", "Filter" }
             ClearWrap {
                 filled: !query().is_empty(),
@@ -371,10 +372,6 @@ pub fn Guides() -> Element {
         .filter(|g| selected().is_none_or(|t| g.tags.contains(&t)))
         .filter(|g| q.is_empty() || matches_query(g, &q))
         .collect();
-    // Signature of the visible set, prefixed onto each card's key so the cards
-    // remount (and replay their entrance) only when the results actually
-    // change, not on every keystroke that leaves the same list standing.
-    let sig = hits.iter().map(|g| g.slug).collect::<Vec<_>>().join(",");
     rsx! {
         PageMeta {
             title: "Guides",
@@ -408,10 +405,11 @@ pub fn Guides() -> Element {
                     }
                 }
             }
-            div { class: "card-grid",
+            div { class: "card-grid", "data-settle-scope": "",
                 for (i , g) in hits.iter().enumerate() {
                     Link {
-                        key: "{sig}|{g.slug}",
+                        key: "{g.slug}",
+                        "data-settle-key": "{g.slug}",
                         to: Route::GuidePage { slug: g.slug.to_string() },
                         class: "guide-card guide-card-in",
                         // Stagger the deal-in, capped so a wide result set

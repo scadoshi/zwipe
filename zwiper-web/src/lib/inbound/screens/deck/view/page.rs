@@ -38,7 +38,6 @@ use super::ghost::{
 };
 use super::panels::{DangerZonePanel, DataPanel};
 use super::sections::{WarningFixes, WarningsBody};
-use super::settle::use_settle;
 use crate::domain::deck::{has_budget, tag_count};
 use crate::inbound::card_filter::CardFilterPanel;
 use crate::inbound::card_stores::CardStores;
@@ -93,7 +92,6 @@ pub fn DeckWidePage(
         details_open,
     });
     let ed = use_deck_editor(deck_id, LoadFailure::Quiet);
-    use_settle();
     let Editor {
         deck,
         entries,
@@ -575,7 +573,7 @@ pub fn DeckWidePage(
                 } else {
                 div { class: "web-column",
                     if !warnings.is_empty() {
-                        div { class: "web-section open warn web-deck-warnings",
+                        div { class: "web-section open warn web-deck-warnings", "data-settle-key": "warnings",
                             div { class: "web-section-head",
                                 div { class: "web-section-title",
                                     span { class: "settings-list-title", "Warnings" }
@@ -626,6 +624,8 @@ pub fn DeckWidePage(
                 class: "action-dock-btn",
                 "aria-label": "Undo",
                 "data-action": components::data_action::UNDO,
+                // Undo puts a card back, so the page settles around it.
+                "data-settle": "",
                 disabled: !undo_ready,
                 onclick: move |_| apply_undo.call(()),
                 DockIcon { path: UNDO }

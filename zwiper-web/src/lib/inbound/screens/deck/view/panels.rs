@@ -16,7 +16,7 @@ use crate::inbound::router::Route;
 pub fn DataPanel(deck_id: Uuid, has_cards: bool) -> Element {
     let navigator = use_navigator();
     rsx! {
-        div { class: "settings-list",
+        div { class: "settings-list", "data-settle-key": "data",
             div { class: "settings-list-header",
                 span { class: "settings-list-title", {DATA} }
             }
@@ -46,7 +46,7 @@ pub fn DangerZonePanel(dialogs: DeckDialogs) -> Element {
         ..
     } = dialogs;
     rsx! {
-        div { class: "settings-list danger-zone",
+        div { class: "settings-list danger-zone", "data-settle-key": "danger",
             div { class: "settings-list-header",
                 span { class: "settings-list-title danger-zone-title", {DANGER_ZONE} }
             }

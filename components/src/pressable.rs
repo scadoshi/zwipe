@@ -24,6 +24,9 @@ pub fn Pressable(
     #[props(into)] class: String,
     #[props(default)] style: Option<String>,
     #[props(default, into)] expanded: Option<bool>,
+    /// Names it for the page's settling ([`crate::settle`]), as `data-settle-key`.
+    #[props(default, into)]
+    settle_key: Option<String>,
     onpress: EventHandler<()>,
     children: Element,
 ) -> Element {
@@ -31,6 +34,7 @@ pub fn Pressable(
         div {
             class,
             style,
+            "data-settle-key": settle_key,
             role: "button",
             tabindex: "0",
             "aria-expanded": expanded.map(|open| open.to_string()),

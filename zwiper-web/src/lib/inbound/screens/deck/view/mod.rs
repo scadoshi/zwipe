@@ -12,7 +12,6 @@ mod ghost;
 pub mod page;
 pub mod panels;
 pub mod sections;
-mod settle;
 
 use std::iter;
 

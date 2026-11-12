@@ -64,7 +64,7 @@ pub fn ShowIdentityChips(
     children: Element,
 ) -> Element {
     rsx! {
-        div { class: "chip-row",
+        div { class: "chip-row", "data-settle": "",
             span { class: "stat-chip stat-chip-p1 chip-row-label", "Show" }
             Chip {
                 selected: active_identity().is_none(),

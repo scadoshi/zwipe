@@ -141,13 +141,14 @@ pub fn DeckList() -> Element {
                 hint_open.set(true);
             },
             div { class: "screen-content",
-                div { class: "flex-col web-deck-list deck-list-stack",
+                // The decks settle into place on a sort, a regroup or a filter.
+                div { class: "flex-col web-deck-list deck-list-stack", "data-settle-scope": "",
                     if loading {
                         GhostChipRow { label: 8, chips: vec![4, 6, 5, 3] }
                         GhostChipRow { label: 4, chips: vec![4, 4, 6, 9] }
                         GhostShowRow { art: false }
                     } else if show_rows {
-                        div { class: "chip-row",
+                        div { class: "chip-row", "data-settle": "",
                             span { class: "stat-chip stat-chip-p1 chip-row-label", "Group by" }
                             for option in GroupBy::ALL {
                                 Chip {
@@ -159,7 +160,7 @@ pub fn DeckList() -> Element {
                             }
                         }
                         // The key chips pick, the last chip turns the order around.
-                        div { class: "chip-row",
+                        div { class: "chip-row", "data-settle": "",
                             span { class: "stat-chip stat-chip-p1 chip-row-label", {deck_list::SORT} }
                             for by in sort_keys {
                                 Chip {
@@ -183,7 +184,7 @@ pub fn DeckList() -> Element {
                                 "{sort().direction}"
                             }
                         }
-                        div { class: "chip-row",
+                        div { class: "chip-row", "data-settle": "",
                             span { class: "stat-chip stat-chip-p1 chip-row-label", "Show" }
                             Chip {
                                 selected: filter.is_all(),
@@ -229,7 +230,7 @@ pub fn DeckList() -> Element {
                         if !tags_present.is_empty() {
                             div { class: if tags_open() { "collapsible open" } else { "collapsible" },
                                 div { class: "collapsible-inner",
-                                    div { class: "chip-row",
+                                    div { class: "chip-row", "data-settle": "",
                                         for (key, label) in tags_present {
                                             Chip {
                                                 key: "{key}",
@@ -300,6 +301,7 @@ fn DeckRow(profile: DeckProfile) -> Element {
     rsx! {
         Pressable {
             class: "card-row deck-row row-enter",
+            settle_key: deck_id.to_string(),
             onpress: move |()| {
                 opener.record(deck_id, Route::DeckList {});
                 navigator.push(Route::ViewDeck { deck_id });
