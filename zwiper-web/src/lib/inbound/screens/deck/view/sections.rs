@@ -26,11 +26,7 @@ use crate::inbound::router::Route;
 /// level. The deck's own actions sit in the screen's dock. The commander
 /// row prefers the fetched card's name.
 #[component]
-pub fn ProfileCard(
-    profile: DeckProfile,
-    commander: Option<Card>,
-    cards: usize,
-) -> Element {
+pub fn ProfileCard(profile: DeckProfile, commander: Option<Card>, cards: usize) -> Element {
     let label = Slot::Commander.label(profile.format);
     let commander_name = commander
         .map(|c| c.scryfall_data.name)
