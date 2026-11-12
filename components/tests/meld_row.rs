@@ -8,7 +8,9 @@
 
 use std::collections::{HashMap, HashSet};
 
-use components::{CardDetails, CardStack, FlippableCardImage, MeldFetch, MeldSource, StackCard};
+use components::{
+    CardDetails, CardRow, CardStack, FlippableCardImage, MeldFetch, MeldSource, StackCard,
+};
 use dioxus::dioxus_core::NoOpMutations;
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -133,5 +135,45 @@ fn a_half_s_meld_is_one_state_for_its_details_image_and_stack_card() {
     assert!(
         stack.contains("melded-"),
         "the stack card shows the melded card: {stack}"
+    );
+}
+
+#[test]
+fn a_melded_half_s_list_row_shows_the_melded_card_s_art() {
+    fn app() -> Element {
+        let half = meld_half();
+        let result = Uuid::parse_str(RESULT_ID).unwrap();
+        let results: Signal<HashMap<Uuid, MeldFetch>> =
+            use_signal(|| HashMap::from([(result, MeldFetch::Ready(Box::new(melded())))]));
+        let on: Signal<HashSet<Uuid>> = use_signal(|| HashSet::from([half.scryfall_data.id]));
+        use_context_provider(|| MeldSource {
+            results,
+            on,
+            request: Callback::new(|_: Uuid| {}),
+        });
+        let expanded: Signal<Option<Uuid>> = use_signal(|| None);
+        rsx! {
+            CardRow {
+                card: half,
+                qty: 1,
+                expanded_card: expanded,
+                on_image: None,
+                on_face_change: None,
+                on_qty_change: None,
+                on_move_to: None,
+                current_board: None,
+                on_printing: None,
+                mvp: None,
+                on_toggle_mvp: None,
+                on_hover_enter: None,
+                on_hover_leave: None,
+                show_art: Some(true),
+            }
+        }
+    }
+    let html = render(app);
+    assert!(
+        html.contains("melded-art_crop"),
+        "the row's thumbnail shows the melded card: {html}"
     );
 }

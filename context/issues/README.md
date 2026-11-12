@@ -81,6 +81,7 @@ Who checked, on which live build, what they saw.
 | [357](357-stack-hover-shift.md) | Hovering a stack shifts its cards a pixel | fixing | thinker | - |
 | [356](356-list-row-meld.md) | A meld card's list row has no Meld toggle | fixing | scotland | #555 |
 | [359](359-key-map-gaps.md) | f and v gaps on Commander maybeboard and meld cards | fixing | scotland | #559 |
+| [364](364-list-row-art-meld.md) | A melded card's list row thumbnail and hover preview show the half | fixing | scotland | #563 |
 
 ## Waiting for live verification
 
