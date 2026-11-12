@@ -2406,6 +2406,24 @@ body:has(.deck-stacks) .sheet-form-drawer:has(> .card-details-drawer) > .sheet-b
     }
 }
 
+/* On a wide window the deck page's controls are as wide as their widest
+   chip row, and Quick add's field runs to that row's right edge: its row
+   takes no part in the block's width and stretches across it. */
+@media (min-width: 900px) {
+    .deck-page > .deck-controls {
+        width: fit-content;
+        max-width: 100%;
+    }
+
+    .deck-page > .deck-controls > .quick-add {
+        contain: inline-size;
+    }
+
+    .deck-page > .deck-controls .input-clear-wrap:has(> #quick-add) {
+        max-width: none;
+    }
+}
+
 /* Quick add's results under its bar keep a row's gap from the row below. */
 .quick-add-results {
     margin-bottom: 0.5rem;
