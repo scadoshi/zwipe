@@ -83,6 +83,7 @@ Who checked, on which live build, what they saw.
 | [357](357-stack-hover-shift.md) | Hovering a stack shifts its cards a pixel | fixing | thinker | - |
 | [356](356-list-row-meld.md) | A meld card's list row has no Meld toggle | fixing | scotland | #555 |
 | [359](359-key-map-gaps.md) | f and v gaps on Commander maybeboard and meld cards | fixing | scotland | #559 |
+| [367](367-printings-browse-only.md) | Printings offers Select where nothing would save | fixing | laptop | #568 |
 | [365](365-examples-keys-hint-slide.md) | Examples keys, d on every swipe screen, ? to the open modal, the card clear of its details | fixing | scotland | #567 |
 | [360](360-modal-entrance.md) | The wide modals pop in with no motion | fixing | laptop | #565, orangui#35 |
 | [369](369-share-link-chip.md) | The Share dialog's link sits in an odd dark box | fixing | laptop | #564 |

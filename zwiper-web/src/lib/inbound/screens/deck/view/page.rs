@@ -670,7 +670,7 @@ pub fn DeckWidePage(
         if view() == CardsView::Stacks {
             {stack_details(&ed, &all_rows, &row_meta, stack_details_state, overlays)}
         }
-        CardOverlaysHost { overlays, on_printing_save: move |_| {} }
+        CardOverlaysHost { overlays }
         OtagExamplesHost { examples }
         OneTimeHintDialog { hint: OneTimeHint::DeckCards, open: hint_open }
         if let Some((card, _)) = printing() {

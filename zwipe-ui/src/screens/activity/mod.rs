@@ -5,7 +5,6 @@
 #[cfg(test)]
 mod tests;
 
-use zwipe_core::domain::card::Card;
 use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_core::http::contracts::suggestions::{HttpActivity, HttpHardPass};
 
@@ -122,8 +121,6 @@ pub enum Action {
     ToggleRole(String),
     /// Reveals the definition of the tag with this slug, or hides it when it shows.
     ToggleTag(String),
-    /// Swaps in a printing picked from a Most skipped row, on the pass whose card shares its oracle id. A card with no oracle id changes nothing.
-    PickPrinting(Box<Card>),
     /// Goes back to the screen before.
     Back,
 }
@@ -209,28 +206,9 @@ impl State {
             Action::PickRate(rate) => self.rate = rate,
             Action::ToggleRole(key) => toggle(&mut self.revealed_role, key),
             Action::ToggleTag(slug) => toggle(&mut self.revealed_tag, slug),
-            Action::PickPrinting(card) => self.swap_printing(*card),
             Action::Back => return vec![Effect::Navigate(Destination::Previous)],
         }
         Vec::new()
-    }
-
-    /// Puts `card` on the pass whose card shares its oracle id.
-    fn swap_printing(&mut self, card: Card) {
-        let Load::Loaded(found) = &mut self.load else {
-            return;
-        };
-        let target = card.scryfall_data.oracle_id;
-        if target.is_none() {
-            return;
-        }
-        if let Some(pass) = found
-            .passes
-            .iter_mut()
-            .find(|p| p.card.scryfall_data.oracle_id == target)
-        {
-            pass.card = card;
-        }
     }
 
     /// Where the fetch stands.

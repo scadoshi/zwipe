@@ -200,6 +200,17 @@ pub struct Reasons {
     pub colors: Vec<String>,
 }
 
+/// Whether the printing sheet over `card` picks a printing: only for one of `suggestions`, whose picked printing carries into Create deck ([`Action::PickPrinting`]). A staple or a card with no oracle id only browses its printings.
+#[must_use]
+pub fn picks_printing(suggestions: &[HttpCommanderSuggestion], card: &Card) -> bool {
+    let Some(oracle_id) = card.scryfall_data.oracle_id else {
+        return false;
+    };
+    suggestions
+        .iter()
+        .any(|s| s.card.scryfall_data.oracle_id == Some(oracle_id))
+}
+
 /// A suggestion's reasons against `deck_count` decks, or `None` when it has neither a shared tag nor a color line, so the block draws nothing at all.
 #[must_use]
 pub fn reasons(reasons: &HttpSuggestionReasons, deck_count: u32) -> Option<Reasons> {
@@ -667,6 +678,12 @@ impl State {
             .as_ref()
             .map(|p| playstyle::tag_rows(&p.tags, p.deck_count))
             .unwrap_or_default()
+    }
+
+    /// Whether the printing sheet over `card` picks a printing; see [`picks_printing`].
+    #[must_use]
+    pub fn picks_printing(&self, card: &Card) -> bool {
+        picks_printing(&self.entries, card)
     }
 
     /// The held ranking, best fit first, unnarrowed.

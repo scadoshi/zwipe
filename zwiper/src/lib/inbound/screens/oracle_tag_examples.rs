@@ -276,8 +276,6 @@ pub fn OracleTagExamples(open: Signal<bool>, slug: String) -> Element {
                     host_screen: screen::ORACLE_TAG_EXAMPLES,
                     card,
                     open: printing_open,
-                    on_save: move |_: Card| {},
-                    read_only: true,
                 }
             }
         }

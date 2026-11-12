@@ -1,5 +1,4 @@
 use chrono::NaiveDate;
-use uuid::Uuid;
 use zwipe_core::http::contracts::suggestions::{
     HttpActivityDay, HttpRoleRates, HttpSwipeOutcomes, HttpTagRates,
 };
@@ -365,31 +364,6 @@ fn a_tag_reveal_is_independent_of_the_role_reveal() {
     let _ = state.update(Action::ToggleTag("mana-rock".to_owned()));
     assert_eq!(state.revealed_tag(), None);
     assert_eq!(state.revealed_role(), Some("ramp"));
-}
-
-#[test]
-fn a_picked_printing_replaces_its_pass() {
-    let found = busy();
-    let mut state = landed(found.clone());
-    let mut printing = card("Sol Ring");
-    printing.scryfall_data.id = Uuid::new_v4();
-    printing.scryfall_data.oracle_id = state.passes()[0].card.scryfall_data.oracle_id;
-    let effects = state.update(Action::PickPrinting(Box::new(printing.clone())));
-    assert_eq!(effects, []);
-    assert_eq!(state.passes()[0].card, printing);
-    assert_eq!(state.passes()[0].skipped, 12, "the counts stay");
-    assert_eq!(state.passes()[1], found.passes[1]);
-}
-
-#[test]
-fn a_printing_with_no_match_changes_nothing() {
-    let found = busy();
-    let mut state = landed(found.clone());
-    let _ = state.update(Action::PickPrinting(Box::new(card("Stranger"))));
-    let mut no_oracle = card("Sol Ring");
-    no_oracle.scryfall_data.oracle_id = None;
-    let _ = state.update(Action::PickPrinting(Box::new(no_oracle)));
-    assert_eq!(state.activity(), Some(&found));
 }
 
 #[test]

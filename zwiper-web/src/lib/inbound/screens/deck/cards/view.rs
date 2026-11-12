@@ -413,7 +413,7 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
                 selected.set(None);
             },
         }
-        CardOverlaysHost { overlays, on_printing_save: move |_| {} }
+        CardOverlaysHost { overlays }
         OtagExamplesHost { examples }
         OneTimeHintDialog { hint: OneTimeHint::DeckCards, open: hint_open }
         if let Some((card, _)) = printing() {

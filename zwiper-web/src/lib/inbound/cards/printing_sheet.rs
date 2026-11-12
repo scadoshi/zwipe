@@ -36,17 +36,19 @@ enum Step {
     Forward,
 }
 
-/// The printings of `card`, opening on the one shown. `on_save` takes the
-/// picked printing and toasts `saved_message`; `read_only` hides the dock.
-/// Leaving with a different printing showing toasts `Printing unchanged`.
+/// The printings of `card`, opening on the one shown. With an `on_save`, the
+/// sheet picks: Select or Enter hands it the showing printing and toasts
+/// `saved_message`, and leaving with a different printing showing toasts
+/// `Printing unchanged`. Without one it only browses: no Select, Enter does
+/// nothing, and nothing toasts.
 #[component]
 pub fn PrintingSheet(
     card: Card,
     mut open: Signal<bool>,
-    on_save: EventHandler<Card>,
-    #[props(default)] read_only: bool,
+    #[props(default)] on_save: Option<EventHandler<Card>>,
     #[props(default = "Printing saved")] saved_message: &'static str,
 ) -> Element {
+    let read_only = on_save.is_none();
     let authed = use_authed().in_component(component::PRINTING_SHEET);
     let toast = use_toast();
     // From the kit's modal width on, the picker is the cover flow.
@@ -122,7 +124,10 @@ pub fn PrintingSheet(
     };
     let visible_for_save = visible.clone();
     let save = use_callback(move |(): ()| {
-        if read_only || !changed {
+        let Some(on_save) = on_save else {
+            return;
+        };
+        if !changed {
             return;
         }
         if let Some(picked) = visible_for_save.clone() {
