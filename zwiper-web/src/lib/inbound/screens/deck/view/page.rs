@@ -38,6 +38,7 @@ use super::sections::{
     BudgetBody, CurrencyChips, DistributionsBody, DrawOddsStepper, ManaBody, TagsBody,
     WarningFixes, WarningsBody, charted,
 };
+use super::settle::use_settle;
 use super::stacks::{stack_details, stacks_view};
 use crate::domain::deck::{has_budget, tag_count};
 use crate::inbound::card_filter::CardFilterPanel;
@@ -91,6 +92,7 @@ pub fn DeckWidePage(
         details_open,
     });
     let ed = use_deck_editor(deck_id, LoadFailure::Quiet);
+    use_settle();
     let Editor {
         deck,
         entries,
@@ -455,7 +457,8 @@ pub fn DeckWidePage(
                             QuickAdd { deck_id, entries, on_added: move |()| {} }
                         },
                         boards: rsx! {
-                            div { class: "chip-row",
+                            // Board chips ease the cards in and out (`settle`).
+                            div { class: "chip-row", "data-settle": "",
                                 span { class: "stat-chip stat-chip-p1 chip-row-label", "Boards" }
                                 for (label, board, on, enabled) in [
                                     ("Main", Board::Deck, shown_boards.main, true),

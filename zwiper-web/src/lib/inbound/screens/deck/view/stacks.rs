@@ -68,7 +68,7 @@ pub(crate) fn stacks_view(
                         })
                         .collect();
                     rsx! {
-                        div { key: "{section.key}", class: "deck-stack",
+                        div { key: "{section.key}", class: "deck-stack", "data-fold": "{section.key}",
                             DeckGroupSection {
                                 group_key: section.key.clone(),
                                 header: section.title,

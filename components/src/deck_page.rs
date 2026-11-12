@@ -328,7 +328,9 @@ pub fn DeckControls(
         if let Some(leading) = leading {
             {leading}
         }
-        div { class: "chip-row",
+        // `data-settle`: a regrouping eases the cards into their new groups
+        // where the host installs it.
+        div { class: "chip-row", "data-settle": "",
             span { class: "stat-chip stat-chip-p1 chip-row-label", "Group by" }
             for option in GroupByOption::all() {
                 Chip {
@@ -396,7 +398,9 @@ pub fn DeckFold(
     let shut = folded().contains(&fold_key);
     let key_for_keys = fold_key.clone();
     rsx! {
-        div { class: if shut { "deck-fold folded" } else { "deck-fold" },
+        div {
+            class: if shut { "deck-fold folded" } else { "deck-fold" },
+            "data-fold": "{key_for_keys}",
             div {
                 class: "deck-fold-head",
                 onclick: move |_| flip(folded, &fold_key),
