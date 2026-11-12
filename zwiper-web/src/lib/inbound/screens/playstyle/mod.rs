@@ -367,7 +367,8 @@ pub fn Playstyle() -> Element {
                         span { class: "chip-note", "Build a deck to see your playstyle" }
                     }
                 } else {
-                    div { class: "web-playstyle web-playstyle-grid web-page content-enter",
+                    // The lists settle into place when a Show, Type or Color chip filters them.
+                    div { class: "web-playstyle web-playstyle-grid web-page content-enter", "data-settle-scope": "",
                         if let Some(profile) = profile() {
                             div { class: "web-hero web-playstyle-summary-hero web-playstyle-cell",
                                 ProfileSummary { profile, open_section: summary_section, folds }

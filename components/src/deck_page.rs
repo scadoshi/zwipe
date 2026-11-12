@@ -151,10 +151,12 @@ pub fn DeckPage(
     #[props(default)] foot: Option<Element>,
 ) -> Element {
     rsx! {
-        div { class: "deck-page",
+        // The whole page settles (`settle`): its groups, rows, head cards and
+        // foot panels ease into place when a control moves them.
+        div { class: "deck-page", "data-settle-scope": "",
             {head}
             if let Some(controls) = controls {
-                div { class: "deck-controls", {controls} }
+                div { class: "deck-controls", "data-settle-key": "controls", {controls} }
             }
             if empty {
                 p { class: "deck-empty",
@@ -265,7 +267,7 @@ pub fn FeaturedCard(
         "stat-chip deck-head-card-role-zone"
     };
     rsx! {
-        div { class: "deck-head-card",
+        div { class: "deck-head-card", "data-settle-key": "head:{name}",
             if has_image {
                 // The flip control stops its click, so flipping never opens.
                 div {
@@ -347,7 +349,7 @@ pub fn DeckControls(
         if let Some(boards) = boards {
             {boards}
         }
-        div { class: "chip-row",
+        div { class: "chip-row", "data-settle": "",
             span { class: "stat-chip stat-chip-p1 chip-row-label", "Show" }
             if let Some(mut tokens) = show_tokens {
                 Chip {

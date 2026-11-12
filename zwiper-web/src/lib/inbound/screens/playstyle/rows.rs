@@ -292,7 +292,7 @@ pub(super) fn staple_footer(
 #[component]
 fn StapleTypeChips(mut active_type: Signal<Option<CardType>>, types: Vec<CardType>) -> Element {
     rsx! {
-        div { class: "chip-row",
+        div { class: "chip-row", "data-settle": "",
             span { class: "stat-chip stat-chip-p1 chip-row-label", "Type" }
             Chip {
                 selected: active_type().is_none(),
@@ -325,7 +325,7 @@ fn StapleColorChips(
     colors: Vec<StapleColor>,
 ) -> Element {
     rsx! {
-        div { class: "chip-row",
+        div { class: "chip-row", "data-settle": "",
             span { class: "stat-chip stat-chip-p1 chip-row-label", "Color" }
             Chip {
                 selected: active_color().is_none(),
