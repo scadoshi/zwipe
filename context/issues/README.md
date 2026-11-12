@@ -93,6 +93,7 @@ Who checked, on which live build, what they saw.
 | [364](364-list-row-art-meld.md) | A melded card's list row thumbnail and hover preview show the half | fixing | scotland | #563 |
 | [363](363-row-keys-and-stacks.md) | Playstyle and Activity have no card keys and no Stacks view | fixing | laptop | #574 |
 | [371](371-art-chip-stacks.md) | Art stays live while Stacks is on | fixing | laptop | #577 |
+| [374](374-deck-list-slow.md) | The deck page's List is slow to open a row, fold or toggle Art | fixing | scotland | #585 |
 | [379](379-quick-add-width.md) | Quick add runs wider than the chip rows under it | fixing | laptop | #581 |
 | [375](375-home-activity-button.md) | Home's counters have no way into Activity on the web | fixing | laptop | #580 |
 | [378](378-swipe-image-fallback.md) | A failed swipe card image shows the card underneath | fixing | laptop | #583 |

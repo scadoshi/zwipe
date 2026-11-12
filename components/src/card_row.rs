@@ -114,7 +114,9 @@ pub fn CardRow(
     qty_tags: Vec<String>,
 ) -> Element {
     let card_id = card.scryfall_data.id;
-    let is_expanded = expanded_card() == Some(card_id);
+    // A memo, so the other rows sharing `expanded_card` render again only
+    // when their own open state flips.
+    let is_expanded = use_memo(use_reactive!(|card_id| expanded_card() == Some(card_id)))();
     // The screen's hover preview: a collapsed row shows the face it shows
     // while the cursor is on it, and lets go on leave, expand or unmount.
     let hover_stack = try_use_context::<HoverStack>();
