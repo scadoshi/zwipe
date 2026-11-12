@@ -14,6 +14,7 @@ use dioxus::prelude::*;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ImageSize;
 
+use crate::CardProxy;
 use crate::back_online::use_back_online;
 use crate::flippable_card_image::{decoded, mark_image_seen};
 use crate::icons::{ARROW_LEFT, ARROW_RIGHT, DockIcon};
@@ -358,7 +359,11 @@ pub fn CoverFlow(
                             });
                             match (tile(url.is_some(), arrival), url) {
                                 (Tile::Missing, _) | (_, None) => rsx! {
-                                    div { class: "cover-flow-missing", "{card.scryfall_data.set_name}" }
+                                    CardProxy {
+                                        sd: card.scryfall_data.clone(),
+                                        profile: Some(card.card_profile),
+                                        class: "cover-flow-proxy",
+                                    }
                                 },
                                 (shown, Some(url)) => {
                                     let src = arrived.read().src(&url);

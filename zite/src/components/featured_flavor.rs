@@ -19,7 +19,7 @@
 use components::{CartButton, Panel, StoreDialog};
 use dioxus::prelude::*;
 use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
+use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::deck_metrics;
 use zwipe_ui::buy;
@@ -75,7 +75,6 @@ pub fn FeaturedFlavor(overlay: Signal<Option<ScryfallData>>) -> Element {
     };
     let sd = card.scryfall_data;
     let name = sd.name.clone();
-    let has_image = sd.primary_image_url(ImageSize::Normal).is_some();
     let usd_price = deck_metrics::card_price(&sd, PriceCurrency::Usd)
         .map(|p| PriceCurrency::Usd.format_amount(p));
     let links = buy::card_links(&name, sd.tcgplayer_id);
@@ -89,12 +88,12 @@ pub fn FeaturedFlavor(overlay: Signal<Option<ScryfallData>>) -> Element {
                     if let Some(price) = usd_price.as_ref() {
                         span { class: "ff-price", "{price}" }
                     }
-                    if has_image {
-                        button {
-                            class: "panel-action",
-                            onclick: move |_| overlay.set(Some(sd.clone())),
-                            "Image"
-                        }
+                    // A card without art, or one whose art fails, opens on its
+                    // name and text, as in the app.
+                    button {
+                        class: "panel-action",
+                        onclick: move |_| overlay.set(Some(sd.clone())),
+                        "Image"
                     }
                     if usd_price.is_some() {
                         CartButton { onclick: move |_| buy_open.set(true) }

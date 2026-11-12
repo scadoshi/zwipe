@@ -2,16 +2,19 @@
 //! like its expanded row, in the exact box the image would fill.
 //!
 //! [`CardProxy`] is always the card's 63:88 shape, so nothing around it moves
-//! when an image is missing. Top to bottom: the name and mana cost, a rule,
-//! the row's chips (type line, rarity, set, then any roles), the rules text,
-//! and power and toughness (or loyalty) as a chip after the text. The text is
+//! when an image is missing. It follows an expanded card row from the row's
+//! own pieces: the name and mana cost, a rule, the kind chips, the rules
+//! text, the Keywords and Card roles rows, then the facts chips. The text is
 //! sized against the box, and [`use_card_proxy_fit`] shrinks a card whose text
 //! would still overflow until it fits. At a thumbnail's size only the name
 //! shows.
 
 use dioxus::prelude::*;
+use zwipe_core::domain::card::card_profile::CardProfile;
+use zwipe_core::domain::card::card_role;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 
+use crate::card_details::{FactsChips, KindChips};
 use crate::oracle_text::OracleText;
 
 /// What a [`CardProxy`] shows for one face of a card.
@@ -70,14 +73,18 @@ impl ProxyFace {
     }
 }
 
-/// The no-image card for `face`: its name and cost, a rule, its chips (with
-/// `roles` after the set, as the expanded row shows them), its rules text and
-/// its stats chip, in the card's 63:88 box. `trailing` sits at the head's
-/// right end, before the cost, for a host's control such as Flip.
+/// The no-image card for face `face` of `sd`, laid out as an expanded card
+/// row lays the card out, from the row's own pieces: the name with the mana
+/// cost, a rule, the kind chips (type line, rarity), the rules text, the
+/// Keywords row, the Card roles row when `profile` gives roles, then the facts
+/// chips (set, prices, stats). The rows' chips are plain here, since the
+/// proxy sits inside cards a click already acts on. `trailing` sits at the
+/// head's right end, before the cost, for a host's control such as Flip.
 #[component]
 pub fn CardProxy(
-    face: ProxyFace,
-    #[props(default)] roles: Vec<String>,
+    sd: ScryfallData,
+    #[props(default)] face: usize,
+    #[props(default)] profile: Option<CardProfile>,
     #[props(default)] trailing: Option<Element>,
     #[props(default = String::new())] class: String,
 ) -> Element {
@@ -89,7 +96,25 @@ pub fn CardProxy(
         set_name,
         oracle_text,
         stats,
-    } = face;
+    } = ProxyFace::of(&sd, face);
+    let keywords = sd.keywords.clone().unwrap_or_default();
+    let prices = zwipe_ui::card::info::prices(&sd);
+    let roles: Vec<(String, bool)> = profile
+        .as_ref()
+        .map(|p| {
+            p.card_roles
+                .iter()
+                .map(|slug| {
+                    let tagged = p
+                        .oracle_tags_by_role
+                        .get(slug)
+                        .is_some_and(|t| !t.is_empty());
+                    (card_role::role_label(slug), tagged)
+                })
+                .chain((!p.other_oracle_tags.is_empty()).then(|| ("Other tags".to_owned(), true)))
+                .collect()
+        })
+        .unwrap_or_default();
     rsx! {
         div { class: "card-proxy {class}", role: "img", "aria-label": "{name}",
             div { class: "card-proxy-fit",
@@ -103,26 +128,27 @@ pub fn CardProxy(
                     }
                 }
                 hr { class: "card-proxy-rule" }
-                div { class: "card-proxy-chips",
-                    if let Some(line) = type_line {
-                        span { class: "detail-chip detail-chip-type", "{line}" }
-                    }
-                    if let Some(rarity) = rarity {
-                        span { class: "detail-chip detail-chip-rarity", "{rarity}" }
-                    }
-                    if let Some(set) = set_name {
-                        span { class: "detail-chip detail-chip-set", "{set}" }
-                    }
-                    for role in roles {
-                        span { key: "{role}", class: "stat-chip", "{role}" }
-                    }
-                }
+                KindChips { type_line: type_line.unwrap_or_default(), rarity: rarity.unwrap_or_default() }
                 if let Some(text) = oracle_text {
                     OracleText { text, class: "card-proxy-text".to_string() }
                 }
-                if let Some(stats) = stats {
-                    span { class: "detail-chip detail-chip-pt card-proxy-stats", "{stats}" }
+                if !keywords.is_empty() {
+                    div { class: "keyword-chips card-proxy-row",
+                        span { class: "stat-chip stat-chip-p1 chip-row-label", "Keywords" }
+                        for keyword in keywords {
+                            span { key: "{keyword}", class: "chip", "{keyword}" }
+                        }
+                    }
                 }
+                if !roles.is_empty() {
+                    div { class: "keyword-chips card-proxy-row",
+                        span { class: "stat-chip stat-chip-p1 chip-row-label", "Card roles" }
+                        for (label, tagged) in roles {
+                            span { key: "{label}", class: if tagged { "chip" } else { "stat-chip" }, "{label}" }
+                        }
+                    }
+                }
+                FactsChips { set_name: set_name.unwrap_or_default(), prices, stats }
             }
         }
     }

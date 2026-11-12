@@ -9,42 +9,62 @@
     reason = "a test helper: a failed write fails the test"
 )]
 
+use std::collections::BTreeMap;
+use std::fmt::Write as _;
 use std::fs;
 use std::path::PathBuf;
 
-use components::{CARD_PROXY_FIT_JS, CardProxy, ProxyFace};
+use components::{CARD_PROXY_FIT_JS, CardProxy};
 use dioxus::prelude::*;
+use zwipe_core::domain::card::Card;
+
+/// A real card as the API serves it, shared with zwipe-ui's tests.
+const CARD_JSON: &str = include_str!("../../zwipe-ui/src/test_support/card.json");
+
+/// The fixture card renamed and retexted.
+fn card(name: &str, cost: &str, type_line: &str, text: &str, stats: (&str, &str)) -> Card {
+    let mut card: Card = serde_json::from_str(CARD_JSON).unwrap();
+    let sd = &mut card.scryfall_data;
+    name.clone_into(&mut sd.name);
+    sd.mana_cost = Some(cost.to_owned());
+    sd.type_line = Some(type_line.to_owned());
+    sd.oracle_text = Some(text.to_owned());
+    sd.power = Some(stats.0.to_owned());
+    sd.toughness = Some(stats.1.to_owned());
+    sd.card_faces = None;
+    card.card_profile.card_roles = vec!["token_maker".to_owned(), "aggression".to_owned()];
+    card.card_profile.oracle_tags_by_role = BTreeMap::from([(
+        "token_maker".to_owned(),
+        vec!["repeatable-token-maker".to_owned()],
+    )]);
+    card
+}
 
 /// A creature with a short text and stats.
-fn creature() -> ProxyFace {
-    ProxyFace {
-        name: "Krenko, Mob Boss".to_owned(),
-        mana_cost: Some("{2}{R}{R}".to_owned()),
-        type_line: Some("Legendary Creature \u{2014} Goblin Warrior".to_owned()),
-        rarity: Some("Rare".to_owned()),
-        set_name: Some("Commander Masters".to_owned()),
-        oracle_text: Some(
-            "{T}: Create X 1/1 red Goblin creature tokens, where X is the number of Goblins you control."
-                .to_owned(),
-        ),
-        stats: Some("3/3".to_owned()),
-    }
+fn creature() -> Card {
+    let mut krenko = card(
+        "Krenko, Mob Boss",
+        "{2}{R}{R}",
+        "Legendary Creature \u{2014} Goblin Warrior",
+        "{T}: Create X 1/1 red Goblin creature tokens, where X is the number of Goblins you control.",
+        ("3", "3"),
+    );
+    "Commander Masters".clone_into(&mut krenko.scryfall_data.set_name);
+    krenko
 }
 
 /// A card with a long rules text.
-fn long_text() -> ProxyFace {
-    ProxyFace {
-        name: "Urza, Lord High Artificer".to_owned(),
-        mana_cost: Some("{2}{U}{U}".to_owned()),
-        type_line: Some("Legendary Creature \u{2014} Human Artificer".to_owned()),
-        rarity: Some("Mythic".to_owned()),
-        set_name: Some("Modern Horizons".to_owned()),
-        oracle_text: Some(
-            "When Urza, Lord High Artificer enters, create a 0/0 colorless Construct artifact creature token with \"This creature gets +1/+1 for each artifact you control.\"\nTap an untapped artifact you control: Add {U}.\n{5}: Shuffle your library, then exile the top card. Until end of turn, you may play that card without paying its mana cost."
-                .to_owned(),
-        ),
-        stats: Some("1/4".to_owned()),
-    }
+fn long_text() -> Card {
+    let mut urza = card(
+        "Urza, Lord High Artificer",
+        "{2}{U}{U}",
+        "Legendary Creature \u{2014} Human Artificer",
+        "When Urza, Lord High Artificer enters, create a 0/0 colorless Construct artifact creature token with \"This creature gets +1/+1 for each artifact you control.\"\nTap an untapped artifact you control: Add {U}.\n{5}: Shuffle your library, then exile the top card. Until end of turn, you may play that card without paying its mana cost.",
+        ("1", "4"),
+    );
+    "Modern Horizons".clone_into(&mut urza.scryfall_data.set_name);
+    urza.scryfall_data.keywords = Some(vec![]);
+    urza
 }
 
 /// The widths a proxy fills: a swipe card, Featured's preview, a stack card
@@ -60,33 +80,37 @@ const SIZES: [(&str, u32); 4] = [
 #[ignore = "writes renders for a look in a browser"]
 fn render_the_proxy_at_every_size() {
     let sheets = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../zwiper-web/assets/sheets");
-    let links: String = [
+    let mut links = String::new();
+    for name in [
         "01-fonts.css",
         "02-themes.css",
         "03-components.css",
         "05-magic.css",
         "07-screens.css",
-    ]
-    .iter()
-    .map(|name| {
-        format!(
+    ] {
+        write!(
+            links,
             r#"<link rel="stylesheet" href="file://{}">"#,
             sheets.join(name).display()
         )
-    })
-    .collect();
+        .unwrap();
+    }
     let mut cells = String::new();
-    for (label, face) in [("Creature", creature()), ("Long text", long_text())] {
-        cells.push_str(&format!(
+    for (label, card) in [("Creature", creature()), ("Long text", long_text())] {
+        write!(
+            cells,
             r#"<h2 class="r-label">{label}</h2><div class="r-row">"#
-        ));
+        )
+        .unwrap();
         for (size, width) in SIZES {
-            let card = dioxus_ssr::render_element(rsx! {
-                CardProxy { face: face.clone(), roles: vec!["Tokens".to_owned(), "Aggression".to_owned()] }
+            let html = dioxus_ssr::render_element(rsx! {
+                CardProxy { sd: card.scryfall_data.clone(), profile: Some(card.card_profile.clone()) }
             });
-            cells.push_str(&format!(
-                r#"<figure class="r-cell"><div style="width:{width}px">{card}</div><figcaption>{size} {width}px</figcaption></figure>"#
-            ));
+            write!(
+                cells,
+                r#"<figure class="r-cell"><div style="width:{width}px">{html}</div><figcaption>{size} {width}px</figcaption></figure>"#
+            )
+            .unwrap();
         }
         cells.push_str("</div>");
     }
