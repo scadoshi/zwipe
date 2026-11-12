@@ -227,6 +227,9 @@ fn App() -> Element {
     // Sheets register here, so Escape closes the top one.
     let mut overlay_back_stack = ::components::use_overlay_back_stack();
     use_context_provider(|| overlay_back_stack);
+    // Dialogs, such as the featured card's store dialog, draw at the root.
+    let dialogs = ::components::use_dialog_host();
+    use_context_provider(|| dialogs);
     use_effect(move || {
         spawn(async move {
             let mut escapes = document::eval(ESCAPE_JS);
@@ -325,6 +328,8 @@ fn App() -> Element {
         document::Link { rel: "preload", href: "/fonts/jetbrains-mono-latin-700-normal.woff2", r#as: "font", r#type: "font/woff2", crossorigin: "anonymous" }
         document::Style { {THEMES_CSS} }
         document::Style { {COMPONENTS_CSS} }
+        // The kit's dialogs, without the app shell.
+        document::Style { {::components::DIALOG_CSS} }
         document::Style { {MAGIC_CSS} }
         document::Style { {SITE_CSS} }
         // The card filter on a shared deck: the kit's input rules it needs,
@@ -344,6 +349,7 @@ fn App() -> Element {
         // fades the backdrop is already there and nothing rains twice.
         ::components::GridCells { still: true }
         Router::<Route> {}
+        ::components::DialogHostView {}
     }
 }
 
