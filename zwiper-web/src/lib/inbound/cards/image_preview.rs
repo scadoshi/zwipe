@@ -20,7 +20,7 @@ const DISMISS: Duration = Duration::from_millis(200);
 pub fn ImagePreview(mut card: Signal<Option<(ScryfallData, usize)>>) -> Element {
     let mut dismissing = use_signal(|| false);
     let mut open = use_signal(|| false);
-    use_overlay_back(open);
+    let layer = use_overlay_back(open);
     // The back stack closes `open`; the card follows it.
     use_effect(move || {
         let shown = card().is_some();
@@ -43,9 +43,10 @@ pub fn ImagePreview(mut card: Signal<Option<(ScryfallData, usize)>>) -> Element 
     };
     rsx! {
         if card().is_some() || dismissing() {
-            div { class: "sheet-backdrop show web-image-preview-backdrop" }
+            div { class: "sheet-backdrop show web-image-preview-backdrop", style: layer().map(|z| format!("--overlay-z: {z};")), }
             div {
                 class: if dismissing() { "image-preview-container show dismissing" } else { "image-preview-container show" },
+                style: layer().map(|z| format!("--overlay-z: {z};")),
                 tabindex: "-1",
                 onmounted: move |e| async move {
                     let _ = e.set_focus(true).await;

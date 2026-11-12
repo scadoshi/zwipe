@@ -137,6 +137,7 @@ Who checked, on which live build, what they saw.
 | [421](421-stack-float.md) | The revealed card in Stacks sits still under an outline | fixing | laptop | issue/421-stack-float |
 | [422](422-featured-acts-like-cards.md) | The deck head's featured cards only open their image | fixing | thinker | - |
 | [423](423-reserved-usernames.md) | Anyone can register Zwipe's own names, and names that differ only in case | fixing | thinker | - |
+| [424](424-overlay-layers.md) | Themes opens under the card details drawer | fixing | laptop | issue/424-overlay-layers, orangui 73ee2f6 |
 
 ## Waiting for live verification
 

@@ -1147,7 +1147,9 @@ a.nav-dropdown-item.active:visited {
 
 /* ---- Bottom sheet (orangui::BottomSheet) ----
    Shared by the apps and the sites: the sites' ThemePicker opens one at
-   hamburger widths. */
+   hamburger widths. A sheet on an overlay stack draws at its place there
+   (`--overlay-z`, the backdrop's; the sheet one above), so the one opened
+   last is on top; with no stack, as on a site, every sheet is 200/201. */
 
 .sheet-backdrop {
     position: fixed;
@@ -1155,12 +1157,21 @@ a.nav-dropdown-item.active:visited {
     background: transparent;
     pointer-events: none;
     transition: background 0.3s ease;
-    z-index: 200;
+    z-index: var(--overlay-z, 200);
 }
 
 .sheet-backdrop.show {
     background: var(--bg-overlay);
     pointer-events: auto;
+}
+
+/* A sheet that previews its change live (SheetDim::Phone) leaves the page
+   undimmed from the kit's modal width; its backdrop still takes the click
+   outside that closes it. */
+@media (min-width: 60rem) {
+    .sheet-backdrop.sheet-dim-phone.show {
+        background: transparent;
+    }
 }
 
 .bottom-sheet {
@@ -1177,7 +1188,7 @@ a.nav-dropdown-item.active:visited {
     transition: transform 0.3s ease, visibility 0s linear 0.3s;
     display: flex;
     flex-direction: column;
-    z-index: 201;
+    z-index: calc(var(--overlay-z, 200) + 1);
     /* Clips the fill to the rounded corners. */
     overflow: hidden;
 }

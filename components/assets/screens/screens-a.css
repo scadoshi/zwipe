@@ -598,7 +598,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 202; /* above sheet-backdrop (200) and bottom-sheet (201) */
+    z-index: calc(var(--overlay-z, 201) + 1);
     pointer-events: none;
 }
 

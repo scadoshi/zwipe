@@ -437,11 +437,11 @@
   Zwipe select
 ================================== */
 
-/* ── Overlay z-index registry ──────────────────────────────────────────────
-   Back-aware overlays stack in a documented band so depths never collide. Leave
-   gaps (10s) for future insertion. Each is a full-screen fixed layer that
-   `use_overlay_back(open)` wires into the OS back gesture (see
-   navigation::overlay_stack).
+/* ── Overlay layers ─────────────────────────────────────────────────────────
+   Every overlay on orangui's overlay stack draws at its place there:
+   `--overlay-z`, set on it while it is open, puts the one opened last on top
+   (context/plans/overlay_layers.md). The numbers below are only for a host
+   with no stack, as on zwipe.net.
      base screen                              (default)
      modal backdrop / bottom sheet / filter   200–202
      a sheet over a sheet (printings)         204–205
@@ -451,26 +451,23 @@
      toasts                                   (top, unchanged)
    ─────────────────────────────────────────────────────────────────────────── */
 
-/* The printing sheet opens over the card details sheet, so its backdrop and
-   sheet sit above both of the shared sheet layers; the backdrop dims the sheet
-   under it and a tap outside the printings lands on that backdrop. */
+/* With no stack, the printing sheet sits over the card details sheet. */
 .sheet-over > .sheet-backdrop {
-    z-index: 204;
+    z-index: var(--overlay-z, 204);
 }
 
 .sheet-over > .bottom-sheet {
-    z-index: 205;
+    z-index: calc(var(--overlay-z, 204) + 1);
 }
 
-/* Dictionary + examples are opaque `.screen` overlays stacked above the picker
-   (220) and above the dictionary (230). Fixed layers, no cross-fade — they mount
-   on open and unmount on close, so a static stacking order is enough. */
+/* Dictionary + examples are opaque `.screen` overlays. Fixed layers, no
+   cross-fade: they mount on open and unmount on close. */
 .dict-overlay {
-    z-index: 220;
+    z-index: var(--overlay-z, 220);
 }
 
 .examples-overlay {
-    z-index: 230;
+    z-index: var(--overlay-z, 230);
 }
 
 /* Full-screen swipe-select picker rendered as a sibling overlay above the form
@@ -478,7 +475,7 @@
    stays mounted and cross-fades on `.show` so the form eases back into view
    rather than the overlay popping away; it's click-through while hidden. */
 .swipe-select-screen {
-    z-index: 210;
+    z-index: var(--overlay-z, 210);
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.2s ease;

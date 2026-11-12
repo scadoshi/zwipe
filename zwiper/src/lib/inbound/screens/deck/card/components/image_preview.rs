@@ -28,16 +28,17 @@ pub(crate) fn ImagePreview(
         });
     });
     let open = use_memo(move || card.read().is_some() && !dismissing());
-    use_overlay_back_action(open.into(), dismiss);
+    let layer = use_overlay_back_action(open.into(), dismiss);
     rsx! {
         if card().is_some() || dismissing() {
-            div { class: "sheet-backdrop show" }
+            div { class: "sheet-backdrop show", style: layer().map(|z| format!("--overlay-z: {z};")), }
             div {
                 class: if dismissing() {
                     "image-preview-container show dismissing"
                 } else {
                     "image-preview-container show"
                 },
+                style: layer().map(|z| format!("--overlay-z: {z};")),
                 onclick: move |_| dismiss.call(()),
                 if let Some((sd, face)) = card() {
                     FlippableCardImage {

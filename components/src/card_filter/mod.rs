@@ -39,7 +39,7 @@ use zwipe_ui::toast::{Toast, ToastKind};
 
 use self::rows::{SectionRows, bump};
 use crate::icons::{CHECK, ERASER};
-use crate::{DockAction, DrawerSheet, use_overlay_back};
+use crate::{DockAction, DrawerSheet, SheetDim, use_overlay_back};
 
 /// What the panel hands the host's dictionary: whether it is open, and
 /// where a tag the user picks in it goes.
@@ -80,7 +80,7 @@ pub fn CardFilterPanel(
     #[props(default)] hint: Option<Element>,
     #[props(default)] dictionary: Option<Callback<DictionarySlot, Element>>,
 ) -> Element {
-    use_overlay_back(open);
+    let layer = use_overlay_back(open);
 
     let config_for_draft = config.clone();
     let mut draft = use_signal(|| FilterDraft::new(&filter.peek(), config_for_draft));
@@ -306,6 +306,8 @@ pub fn CardFilterPanel(
 
     rsx! {
         DrawerSheet {
+            layer: layer(),
+            dim: SheetDim::Phone,
             open,
             title: card_filter::TITLE,
             on_close: move |()| open.set(false),

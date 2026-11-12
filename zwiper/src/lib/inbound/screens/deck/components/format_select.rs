@@ -33,7 +33,7 @@ pub(crate) fn FormatSelect(
     let back = use_callback(move |(): ()| on_back.call(()));
     // Off the stack while the form asks about discarding, so Keep puts it back on top.
     let listening = use_memo(move || open() && !asking());
-    use_overlay_back_action(listening.into(), back);
+    let layer = use_overlay_back_action(listening.into(), back);
 
     let mut query = use_picker_search(open);
     let mut focused = use_signal(|| Option::<Format>::None);
@@ -59,7 +59,7 @@ pub(crate) fn FormatSelect(
     };
 
     rsx! {
-        div { class: "{screen_class}",
+        div { class: "{screen_class}", style: layer().map(|z| format!("--overlay-z: {z};")),
             // A screen over another paints its own backdrop, since .screen is
             // clear and the one beneath would show through.
             if backdrop {

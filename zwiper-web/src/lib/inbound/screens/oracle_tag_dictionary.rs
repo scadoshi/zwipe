@@ -44,7 +44,7 @@ const SEARCH_ID: &str = "oracle-tag-dictionary-search";
 #[component]
 pub fn OracleTagDictionary(mut open: Signal<bool>, on_use: EventHandler<String>) -> Element {
     telemetry::use_telemetry_screen(Screen::OracleTag(OracleTagScreen::Dictionary));
-    use_overlay_back(open);
+    let layer = use_overlay_back(open);
     let client: Signal<ZwipeClient> = use_context();
     let cache: CatalogCache = use_context();
     let toast = use_toast();
@@ -215,7 +215,9 @@ pub fn OracleTagDictionary(mut open: Signal<bool>, on_use: EventHandler<String>)
     }
 
     rsx! {
-        div { class: "screen dict-overlay web-large-modal web-dictionary",
+        div {
+            class: "screen dict-overlay web-large-modal web-dictionary",
+            style: layer().map(|z| format!("--overlay-z: {z};")),
             components::GridCells { still: true }
             PageHeader {
                 title: "Oracle tags",

@@ -220,7 +220,7 @@ pub fn SwipeSelect(
     #[props(default)] commander: Option<Card>,
     #[props(default)] starts_deck: bool,
 ) -> Element {
-    use_overlay_back(open);
+    let layer = use_overlay_back(open);
     let session: Signal<Option<Session>> = use_context();
     let client: Signal<ZwipeClient> = use_context();
     let authed = use_authed().in_component(component::SWIPE_SELECT);
@@ -463,6 +463,7 @@ pub fn SwipeSelect(
     rsx! {
         div {
             class: if open() { "screen swipe-select-screen web-swipe-select web-scroll-screen show" } else { "screen swipe-select-screen web-swipe-select web-scroll-screen" },
+            style: layer().map(|z| format!("--overlay-z: {z};")),
             components::GridCells { still: true }
             if open() {
                 SwipeSelectBody {

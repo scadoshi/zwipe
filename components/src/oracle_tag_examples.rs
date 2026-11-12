@@ -82,7 +82,7 @@ pub fn OracleTagExamples(
     #[props(default)] describe_tag: Option<Callback<String, Option<String>>>,
     #[props(default)] on_first: Option<Callback<()>>,
 ) -> Element {
-    use_overlay_back(open);
+    let layer = use_overlay_back(open);
     let source = try_use_context::<ExamplesSource>();
     let mut hint_again = hint_open;
     let tag = use_signal(|| slug.clone());
@@ -204,7 +204,9 @@ pub fn OracleTagExamples(
     let has_card = current.is_some();
 
     rsx! {
-        div { class: "screen examples-overlay web-examples web-large-modal",
+        div {
+            class: "screen examples-overlay web-examples web-large-modal",
+            style: layer().map(|z| format!("--overlay-z: {z};")),
             crate::GridCells { still: true }
             PageHeader {
                 title: "Examples",

@@ -6,7 +6,7 @@
 
 use dioxus::prelude::*;
 
-use crate::{ActionDock, Button, ButtonVariant, DockPlace, SheetFrame, SheetWide};
+use crate::{ActionDock, Button, ButtonVariant, DockPlace, SheetDim, SheetFrame, SheetWide};
 
 /// How long the sheet takes to slide out, in milliseconds: the kit's 0.3s
 /// sheet transform.
@@ -27,6 +27,11 @@ const CLOSE_MS: u32 = 300;
 /// `every_width` it is a drawer at every width: below the kit's breakpoint
 /// it floats in from the right, inset under the header, above the docks and
 /// from the right edge, over most of the window's width.
+///
+/// `layer` is the z-index its host's overlay registration hands back
+/// (`use_overlay_back`), which the sheet draws at, holding it through the
+/// slide out, so the sheet opened last is on top. `dim` says whether its
+/// backdrop dims the page ([`SheetDim`]).
 #[component]
 pub fn DrawerSheet(
     open: ReadSignal<bool>,
@@ -37,6 +42,8 @@ pub fn DrawerSheet(
     #[props(default)] class: &'static str,
     #[props(default)] every_width: bool,
     #[props(default)] dock: Option<Element>,
+    #[props(default)] layer: Option<u32>,
+    #[props(default)] dim: SheetDim,
     children: Element,
 ) -> Element {
     let shown = open();
@@ -54,13 +61,29 @@ pub fn DrawerSheet(
     } else {
         ""
     };
+    let mut held = use_signal(|| None::<u32>);
+    use_effect(use_reactive!(|layer| {
+        if layer.is_some() {
+            held.set(layer);
+        }
+    }));
+    let layer_style = held()
+        .filter(|_| shown || content_up())
+        .map(|z| format!("--overlay-z: {z};"));
+    let dim_class = match dim {
+        SheetDim::Always => "",
+        SheetDim::Phone => " sheet-dim-phone",
+    };
     rsx! {
         SheetFrame { wide: SheetWide::Drawer,
             div {
-                class: if shown { "sheet-backdrop show {reach}" } else { "sheet-backdrop {reach}" },
+                class: if shown { "sheet-backdrop show {reach}{dim_class}" } else { "sheet-backdrop {reach}{dim_class}" },
+                style: layer_style.clone(),
                 onclick: move |_| on_close.call(()),
             }
-            div { class: if shown { "bottom-sheet show {reach} {class}" } else { "bottom-sheet {reach} {class}" },
+            div {
+                class: if shown { "bottom-sheet show {reach} {class}" } else { "bottom-sheet {reach} {class}" },
+                style: layer_style,
                 div { class: "sheet-header", style: "position: relative;",
                     button {
                         class: "sheet-close",

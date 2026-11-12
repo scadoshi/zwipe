@@ -3232,14 +3232,15 @@ footer.site-footer .site-footer-note {
     color: var(--ink-text-muted, var(--text-muted));
 }
 
-/* The shortcuts sheet opens over any screen: the full-window Commander
-   swipe (210) and the dictionary and examples overlays (220, 230) too. */
+/* With no overlay stack, the shortcuts sheet opens over any screen: the
+   full-window Commander swipe (210) and the dictionary and examples
+   overlays (220, 230) too. */
 .web-shortcuts-layer .sheet-backdrop {
-    z-index: 240;
+    z-index: var(--overlay-z, 240);
 }
 
 .web-shortcuts-layer .bottom-sheet {
-    z-index: 241;
+    z-index: calc(var(--overlay-z, 240) + 1);
 }
 
 /* A card group that folds (DeckGroupSection, a deck page band or stack, a

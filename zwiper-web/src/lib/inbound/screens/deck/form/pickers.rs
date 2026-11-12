@@ -55,11 +55,13 @@ fn PickerSheet(
     unchanged: bool,
     on_back: EventHandler<()>,
     on_save: EventHandler<()>,
+    layer: Option<u32>,
     children: Element,
 ) -> Element {
     rsx! {
         DrawerSheet {
             open,
+            layer,
             title,
             on_close: move |()| on_back.call(()),
             on_hint: move |()| hint_open.set(true),
@@ -258,7 +260,7 @@ pub fn FormatPicker(form: DeckForm) -> Element {
     });
     // Off the stack while it asks, so Keep puts it back on top.
     let listening = use_memo(move || open() && !discard_open());
-    use_overlay_back_action(listening.into(), back);
+    let layer = use_overlay_back_action(listening.into(), back);
     let unchanged = (form.format)() == snapshot.read().format;
     let typed = query().to_lowercase();
     let results: Vec<Format> = Format::all()
@@ -269,6 +271,7 @@ pub fn FormatPicker(form: DeckForm) -> Element {
     rsx! {
         PickerSheet {
             open,
+            layer: layer(),
             title: "Format",
             search_id: "format-search",
             hint_open,
@@ -389,7 +392,7 @@ pub fn DeckTagPicker(form: DeckForm) -> Element {
     });
     // Off the stack while it asks, so Keep puts it back on top.
     let listening = use_memo(move || open() && !discard_open());
-    use_overlay_back_action(listening.into(), back);
+    let layer = use_overlay_back_action(listening.into(), back);
     let unchanged = same_set(&tags(), &snapshot.read().tags);
     let typed = query().to_lowercase();
     let results: Vec<DeckTagView> = catalog()
@@ -400,6 +403,7 @@ pub fn DeckTagPicker(form: DeckForm) -> Element {
     rsx! {
         PickerSheet {
             open,
+            layer: layer(),
             title: "Deck tags",
             search_id: "tag-search",
             hint_open,
@@ -526,7 +530,7 @@ pub fn OracleTagPicker(form: DeckForm) -> Element {
     });
     // Off the stack while it asks, so Keep puts it back on top.
     let listening = use_memo(move || open() && !discard_open());
-    use_overlay_back_action(listening.into(), back);
+    let layer = use_overlay_back_action(listening.into(), back);
     let adopt = move |slug: String| {
         let mut current = selected.write();
         if current.contains(&slug) {
@@ -574,6 +578,7 @@ pub fn OracleTagPicker(form: DeckForm) -> Element {
     rsx! {
         PickerSheet {
             open,
+            layer: layer(),
             title: "Oracle tags",
             search_id: "oracle-tag-search",
             hint_open,

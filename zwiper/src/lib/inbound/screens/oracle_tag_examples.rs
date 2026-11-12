@@ -119,7 +119,7 @@ impl Driver {
 /// Back button closes it.
 #[component]
 pub fn OracleTagExamples(open: Signal<bool>, slug: String) -> Element {
-    use_overlay_back(open);
+    let layer = use_overlay_back(open);
     let driver = Driver {
         model: use_signal(State::new),
         open,
@@ -167,7 +167,9 @@ pub fn OracleTagExamples(open: Signal<bool>, slug: String) -> Element {
 
     let no_card = current.is_none();
     rsx! {
-        div { class: "screen examples-overlay",
+        div {
+            class: "screen examples-overlay",
+            style: layer().map(|z| format!("--overlay-z: {z};")),
             // An overlay screen paints its own backdrop, since .screen is clear
             // and the screen beneath would show through.
             ::components::GridCells { still: true }

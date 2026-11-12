@@ -65,7 +65,7 @@ pub(crate) fn CardDetailsSheet(
     footer: Option<Element>,
 ) -> Element {
     let describe_tag = use_describe_tag();
-    use_overlay_back(open);
+    let layer = use_overlay_back(open);
     // The shown face, shared by the title bar's cost and the panel's Flip.
     let face = use_signal(|| 0_usize);
     // The meld toggle, shared by the title bar and the panel, so the title
@@ -75,6 +75,7 @@ pub(crate) fn CardDetailsSheet(
     let name = title_card.scryfall_data.name.clone();
     rsx! {
         DrawerSheet {
+            layer: layer(),
             open,
             title: name,
             title_trailing: rsx! { CardDetailsCost { card: title_card, face } },

@@ -1239,11 +1239,11 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 
 @media (min-width: 60rem) {
     .web-flow .sheet-backdrop {
-        z-index: 204;
+        z-index: var(--overlay-z, 204);
     }
 
     .web-flow .bottom-sheet.web-flow-sheet {
-        z-index: 205;
+        z-index: calc(var(--overlay-z, 204) + 1);
         width: min(76rem, calc(100vw - 4rem));
         height: 92vh;
         max-height: 92vh;
@@ -2563,11 +2563,11 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 
 @media (min-width: 60rem) {
     .web-dict-sheet > .sheet-form-modal > .sheet-backdrop {
-        z-index: 220;
+        z-index: var(--overlay-z, 220);
     }
 
     .web-dict-sheet > .sheet-form-modal > .bottom-sheet {
-        z-index: 221;
+        z-index: calc(var(--overlay-z, 220) + 1);
         width: min(76rem, calc(100vw - 4rem));
         height: 92vh;
         max-height: 92vh;

@@ -28,7 +28,7 @@ pub fn CardDetailsSheet(
     #[props(default)] describe_tag: Option<Callback<String, Option<String>>>,
     #[props(default)] on_examples: Option<Callback<String>>,
 ) -> Element {
-    use_overlay_back(open);
+    let layer = use_overlay_back(open);
     use_drawer_swap();
     // The shown face, shared by the title bar's cost and the panel's Flip,
     // and kept on the host's `face` when it passes one.
@@ -47,6 +47,7 @@ pub fn CardDetailsSheet(
     let on_image = on_image.map(|handler| EventHandler::new(move |()| handler.call(face())));
     rsx! {
         DrawerSheet {
+            layer: layer(),
             open,
             title: name,
             title_trailing: rsx! { CardDetailsCost { card: title_card, face } },

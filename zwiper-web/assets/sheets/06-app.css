@@ -1,18 +1,3 @@
-/* App shell styles, for the apps only (zwiper and cairn).
- *
- * Opt-in through the crate's APP_CSS constant, after COMPONENTS_CSS. The
- * website and the portfolio never load it; zite defines .page-header itself,
- * differently.
- *
- * Holds the rules both apps had word for word, plus the base the shared app
- * components need (PageHeader, ThemeSheet, the hint pieces).
- * Where the apps differ, the base here is what they share and each app keeps
- * its own difference in its own stylesheet. The values an app tunes sit in
- * :where() rules, so an app rule of class specificity or higher wins over
- * them whether the app's sheet loads before or after this one. An app's
- * universal or element reset goes in @layer reset { ... } so it stays under
- * them. */
-
 /* ---- Screen ---- */
 
 .screen-content {
@@ -161,6 +146,22 @@
 .page-header-corner:active {
     opacity: 1;
 }
+
+/* App shell styles, for the apps only (zwiper and cairn).
+ *
+ * Opt-in through the crate's APP_CSS constant, after COMPONENTS_CSS. The
+ * website and the portfolio never load it; zite defines .page-header itself,
+ * differently. APP_CSS opens with screen.css, the screen and page header,
+ * which a site that opens an app screen over its page loads on its own.
+ *
+ * Holds the rules both apps had word for word, plus the base the shared app
+ * components need (PageHeader, ThemeSheet, the hint pieces).
+ * Where the apps differ, the base here is what they share and each app keeps
+ * its own difference in its own stylesheet. The values an app tunes sit in
+ * :where() rules, so an app rule of class specificity or higher wins over
+ * them whether the app's sheet loads before or after this one. An app's
+ * universal or element reset goes in @layer reset { ... } so it stays under
+ * them. */
 
 /* ---- Hints (orangui::HintDialog, HintLine, HintBullets, HintChip) ---- */
 

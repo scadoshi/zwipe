@@ -45,7 +45,7 @@ pub(crate) fn TagSelect(
     let back = use_callback(move |(): ()| on_back.call(()));
     // Off the stack while the form asks about discarding, so Keep puts it back on top.
     let listening = use_memo(move || open() && !asking());
-    use_overlay_back_action(listening.into(), back);
+    let layer = use_overlay_back_action(listening.into(), back);
 
     let backdrop = held_open::use_held_open(open);
     let screen_class = if open() {
@@ -64,7 +64,7 @@ pub(crate) fn TagSelect(
     };
 
     rsx! {
-        div { class: "{screen_class}",
+        div { class: "{screen_class}", style: layer().map(|z| format!("--overlay-z: {z};")),
             // A screen over another paints its own backdrop, since .screen is
             // clear and the one beneath would show through.
             if backdrop {

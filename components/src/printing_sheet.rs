@@ -261,7 +261,7 @@ fn CoverFlowSheet(
     on_leave: Callback<()>,
     on_select: Callback<()>,
 ) -> Element {
-    use_overlay_back_action(open.into(), on_leave);
+    let layer = use_overlay_back_action(open.into(), on_leave);
     let count = printings.len();
     let at = index().min(count.saturating_sub(1));
     let selected = printings.get(at).cloned();
@@ -294,9 +294,12 @@ fn CoverFlowSheet(
             SheetFrame { wide: SheetWide::Modal,
                 div {
                     class: if open() { "sheet-backdrop show" } else { "sheet-backdrop" },
+                    style: layer().map(|z| format!("--overlay-z: {z};")),
                     onclick: move |_| on_leave.call(()),
                 }
-                div { class: if open() { "bottom-sheet show web-flow-sheet" } else { "bottom-sheet web-flow-sheet" },
+                div {
+                    class: if open() { "bottom-sheet show web-flow-sheet" } else { "bottom-sheet web-flow-sheet" },
+                    style: layer().map(|z| format!("--overlay-z: {z};")),
                     div { class: "sheet-header", style: "position: relative;",
                         button {
                             class: "sheet-close",

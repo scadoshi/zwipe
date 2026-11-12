@@ -268,7 +268,7 @@ pub(crate) fn SwipeSelect(
     starts_deck: bool,
 ) -> Element {
     // OS back gesture closes this overlay before touching the router.
-    use_overlay_back(open);
+    let layer = use_overlay_back(open);
     let usage_buffer: Signal<UsageBuffer> = use_context();
     let driver = Driver {
         model: use_signal(State::new),
@@ -420,7 +420,7 @@ pub(crate) fn SwipeSelect(
     let swipe_config = SwipeConfig::new(directions, SWIPE_DISTANCE_PX, SWIPE_SPEED_PX_PER_MS);
 
     rsx! {
-        div { class: "{screen_class}",
+        div { class: "{screen_class}", style: layer().map(|z| format!("--overlay-z: {z};")),
             // A screen over another paints its own backdrop, since .screen is
             // clear and the one beneath would show through.
             if backdrop {
