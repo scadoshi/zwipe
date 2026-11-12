@@ -2,7 +2,8 @@
 //! under the one above it so only its title strip shows, the last in full.
 //! Which card tucks, which move down to reveal one, and which show in full
 //! come from zwipe-ui's [`stacks::tucked`], [`stacks::shifted`] and
-//! [`stacks::exposed`], so the phones' stacks do the same.
+//! [`stacks::exposed`], with [`stacks::tucked_pushed`] in place of the first
+//! two on phones.
 
 use std::collections::HashSet;
 
@@ -39,7 +40,9 @@ pub struct StackCard {
 /// `tap` class: a card's mouseenter, mouseleave, focus and blur call
 /// nothing, since a webview fires them before a tap's click, and the click
 /// stops at the card, so a host's tap-off handler above the stack never
-/// sees it. While `dealing` the cards
+/// sees it. A revealed card pushes the cards after it down in the layout
+/// ([`stacks::tucked_pushed`]), so the stack grows over the page below it
+/// instead of laying its cards over it. While `dealing` the cards
 /// rise into their slots one after another, the top card first, each slot
 /// carrying its place in the stack for the stagger.
 #[component]
@@ -52,15 +55,24 @@ pub fn CardStack(
     #[props(default)] on_leave: Option<EventHandler<Uuid>>,
     on_select: EventHandler<Uuid>,
 ) -> Element {
+    let tap = on_hover.is_none();
     let at = revealed.and_then(|r| cards.iter().position(|c| c.card.scryfall_data.id == r));
-    let tucks = stacks::tucked(cards.len());
-    let shifts = stacks::shifted(cards.len(), at);
+    let (tucks, shifts) = if tap {
+        (
+            stacks::tucked_pushed(cards.len(), at),
+            vec![false; cards.len()],
+        )
+    } else {
+        (
+            stacks::tucked(cards.len()),
+            stacks::shifted(cards.len(), at),
+        )
+    };
     let full = stacks::exposed(cards.len(), at);
     // A meld half with its Meld on shows its melded card.
     let melds = try_use_context::<MeldSource>();
     // The cards whose image failed to load, which draw their text instead.
     let mut failed: Signal<HashSet<Uuid>> = use_signal(HashSet::new);
-    let tap = on_hover.is_none();
     let hover = move |id: Uuid| {
         if let Some(handler) = on_hover {
             handler.call(id);

@@ -4,7 +4,7 @@ use components::icons::{self};
 use components::{
     Button, ButtonVariant, Chip, DeckEditActions, DeckRowHost, DeckSection, DeckStackDrawer,
     DeckStacks, DockAction, DockFilter, GroupBuyDialog, IdentityPips, Pressable, StackDetails,
-    Toasts, use_group_buy, use_stack_details_sync, use_toast,
+    Toasts, use_group_buy, use_settle, use_stack_details_sync, use_toast,
 };
 use dioxus::core::spawn_forever;
 use dioxus::prelude::*;
@@ -705,6 +705,9 @@ pub fn View(deck_id: Uuid) -> Element {
         }
     });
     let group_buy = use_group_buy();
+    // A reveal in the stacks pushes the stacks below it down, and they slide
+    // there and back instead of snapping.
+    use_settle();
 
     let filter = filter_builder.read().clone();
     let model = driver.model.read();
@@ -894,6 +897,8 @@ pub fn View(deck_id: Uuid) -> Element {
     rsx! {
             div {
                 class: "screen",
+                // Any tap while the stacks show can reveal a card or close one.
+                "data-settle": stacks_on.then_some(""),
                 // A tap off every card closes the stacks' reveal; a card's own tap stops at the card.
                 onclick: move |_| {
                     if stacks_on {
@@ -1070,7 +1075,7 @@ pub fn View(deck_id: Uuid) -> Element {
                     }
 
                     if stacks_on {
-                        div { class: "app-deck-stacks",
+                        div { class: "app-deck-stacks", "data-settle-scope": "",
                             DeckStacks {
                                 sections: stack_sections,
                                 currency: price_budget_currency(),

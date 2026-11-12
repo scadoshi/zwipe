@@ -381,7 +381,12 @@ pub fn DeckStacks(
         let shown = reveal();
         touch && shown.revealed().is_some() && shown.open().is_none()
     });
-    let dismiss = use_callback(move |()| details.dismiss());
+    // Back clears the reveal with no click behind it, so it starts the settle itself and the
+    // rows the reveal pushed down slide back up.
+    let dismiss = use_callback(move |()| {
+        crate::settle::watch();
+        details.dismiss();
+    });
     use_overlay_back_action(revealing.into(), dismiss);
     let on_hover =
         (!touch).then(|| EventHandler::new(move |id| reveal.write().apply(Gesture::Hover(id))));
