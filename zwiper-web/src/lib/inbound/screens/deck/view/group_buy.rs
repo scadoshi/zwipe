@@ -3,15 +3,19 @@
 
 use components::StoreDialog;
 use dioxus::prelude::*;
-use zwipe_ui::buy::{self, BuyLink};
+use zwipe_ui::buy::{self, BuyLink, StoreCard};
 
 use crate::inbound::screens::deck::cards::editor::{RowInfo, RowKind};
 
-/// The cards a group sends to a store, each with its copies: every card but a token.
-pub(crate) fn group_cards(rows: &[RowInfo]) -> Vec<(i32, &str)> {
+/// The cards a group sends to a store, each with its copies and its printing's `TCGplayer` id:
+/// every card but a token.
+pub(crate) fn group_cards(rows: &[RowInfo]) -> Vec<StoreCard<'_>> {
     rows.iter()
         .filter(|row| row.kind != RowKind::Token)
-        .map(|row| (row.qty, row.card.scryfall_data.name.as_str()))
+        .map(|row| {
+            let data = &row.card.scryfall_data;
+            (row.qty, data.name.as_str(), data.tcgplayer_id)
+        })
         .collect()
 }
 
@@ -89,7 +93,12 @@ mod tests {
         ];
         assert_eq!(
             group_cards(&rows),
-            [(1, "Sol Ring"), (12, "Forest"), (1, "Krenko, Mob Boss")]
+            [
+                (1, "Sol Ring", Some(91237)),
+                (12, "Forest", Some(91237)),
+                (1, "Krenko, Mob Boss", Some(91237))
+            ],
+            "each with its printing's TCGplayer product"
         );
         assert!(
             group_cards(&[row("Goblin", 1, RowKind::Token)]).is_empty(),

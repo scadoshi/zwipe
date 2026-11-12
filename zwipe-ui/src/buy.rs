@@ -1,5 +1,7 @@
 //! Retailer links for buying a whole deck or one card, ported from the app's `buy_links.rs`.
 
+use zwipe_core::domain::card::Card;
+use zwipe_core::domain::deck::deck_profile::DeckProfile;
 use zwipe_core::domain::deck::{Deck, DeckEntry};
 
 /// The store dialog's link to `TCGplayer`.
@@ -53,17 +55,12 @@ pub fn store_links(tcgplayer: String, cardkingdom: String) -> Vec<BuyLink> {
     ]
 }
 
-/// The store dialog's links for `cards`, each with its copies, in order.
+/// The store dialog's links for `cards`, each with its copies, in order: `TCGplayer` gets each
+/// card's printing where it has one.
 #[must_use]
-pub fn cards_links<'a>(cards: impl IntoIterator<Item = (i32, &'a str)>) -> Vec<BuyLink> {
-    let items = line(cards);
-    store_links(
-        format!("https://www.tcgplayer.com/massentry?c={}", items.join("||")),
-        format!(
-            "https://www.cardkingdom.com/builder?c={}",
-            items.join("%0A")
-        ),
-    )
+pub fn cards_links<'a>(cards: impl IntoIterator<Item = StoreCard<'a>>) -> Vec<BuyLink> {
+    let cards: Vec<StoreCard<'a>> = cards.into_iter().collect();
+    store_links(tcgplayer_mass(&cards), cardkingdom_builder(&cards))
 }
 
 /// The store dialog's links for the deck: the command zone, then the main and side boards, as
@@ -114,69 +111,68 @@ pub fn encode_name(name: &str) -> String {
         .replace('\'', "%27")
 }
 
-/// Each card as `{qty}+{name}`.
-fn line<'a>(cards: impl IntoIterator<Item = (i32, &'a str)>) -> Vec<String> {
-    cards
-        .into_iter()
-        .map(|(qty, name)| format!("{qty}+{}", encode_name(name)))
-        .collect()
-}
+/// A card sent to a store: its copies, its name and its `TCGplayer` product id, which names the
+/// exact printing, when known.
+pub type StoreCard<'a> = (i32, &'a str, Option<i32>);
 
-/// Each command-zone card as `1+{name}`, then each entry as `{qty}+{name}`.
-fn items(entries: &[&DeckEntry], command_zone_names: &[&str]) -> Vec<String> {
-    line(
-        command_zone_names.iter().map(|name| (1, *name)).chain(
-            entries
-                .iter()
-                .map(|e| (*e.deck_card.quantity, e.card.scryfall_data.name.as_str())),
-        ),
-    )
-}
+/// `TCGplayer`'s mass entry, for Magic, before its `||`-joined lines.
+const TCGPLAYER_MASS: &str = "https://www.tcgplayer.com/massentry?productline=Magic&c=";
 
-/// The `TCGplayer` mass-entry link.
-#[must_use]
-pub fn tcgplayer_url(entries: &[&DeckEntry], command_zone_names: &[&str]) -> String {
-    format!(
-        "https://www.tcgplayer.com/massentry?c={}",
-        items(entries, command_zone_names).join("||")
-    )
-}
+/// `Card Kingdom`'s builder, before its newline-joined lines.
+const CARD_KINGDOM_BUILDER: &str = "https://www.cardkingdom.com/builder?c=";
 
-/// The `CardKingdom` builder link.
-#[must_use]
-pub fn cardkingdom_url(entries: &[&DeckEntry], command_zone_names: &[&str]) -> String {
-    format!(
-        "https://www.cardkingdom.com/builder?c={}",
-        items(entries, command_zone_names).join("%0A")
-    )
-}
-
-/// One card's `TCGplayer` link: its product page when the card's `TCGplayer` id is known, else a mass entry of one copy by name.
-#[must_use]
-pub fn tcgplayer_card_url(name: &str, tcgplayer_id: Option<i32>) -> String {
+/// A card's mass-entry line: `{qty}-{product id}` for its exact printing, else `{qty}+{name}`.
+fn tcgplayer_line((qty, name, tcgplayer_id): StoreCard<'_>) -> String {
     match tcgplayer_id {
-        Some(id) => format!("https://www.tcgplayer.com/product/{id}"),
-        None => format!(
-            "https://www.tcgplayer.com/massentry?c=1+{}",
-            encode_name(name)
-        ),
+        Some(id) => format!("{qty}-{id}"),
+        None => format!("{qty}+{}", encode_name(name)),
     }
 }
 
-/// One card's `CardKingdom` builder link, one copy.
-#[must_use]
-pub fn cardkingdom_card_url(name: &str) -> String {
-    format!(
-        "https://www.cardkingdom.com/builder?c=1+{}",
-        encode_name(name)
-    )
+/// A card's builder line, `{qty}+{name}`: the builder matches by name only, and any set or finish
+/// marker leaves the card unrecognized.
+fn cardkingdom_line((qty, name, _): StoreCard<'_>) -> String {
+    format!("{qty}+{}", encode_name(name))
 }
 
-/// The deck's `TCGplayer` and `CardKingdom` links: the command zone, then the main and side boards in served order. The maybeboard stays out.
+/// The `TCGplayer` mass entry for `cards`.
+fn tcgplayer_mass(cards: &[StoreCard<'_>]) -> String {
+    let lines: Vec<String> = cards.iter().copied().map(tcgplayer_line).collect();
+    format!("{TCGPLAYER_MASS}{}", lines.join("||"))
+}
+
+/// The `Card Kingdom` builder for `cards`.
+fn cardkingdom_builder(cards: &[StoreCard<'_>]) -> String {
+    let lines: Vec<String> = cards.iter().copied().map(cardkingdom_line).collect();
+    format!("{CARD_KINGDOM_BUILDER}{}", lines.join("%0A"))
+}
+
+/// The deck's cards for a store: each command-zone card once, then each entry with its copies.
+fn deck_cards<'a>(
+    entries: &[&'a DeckEntry],
+    command_zone: &[(&'a str, Option<i32>)],
+) -> Vec<StoreCard<'a>> {
+    command_zone
+        .iter()
+        .map(|(name, id)| (1, *name, *id))
+        .chain(entries.iter().map(|e| {
+            (
+                *e.deck_card.quantity,
+                e.card.scryfall_data.name.as_str(),
+                e.card.scryfall_data.tcgplayer_id,
+            )
+        }))
+        .collect()
+}
+
+/// The command zone named on `profile`, in its order (commander, partner, background, signature
+/// spell), each with the `TCGplayer` id of its card in `cards` when one of them carries that name.
 #[must_use]
-pub fn links(deck: &Deck) -> (String, String) {
-    let profile = &deck.deck_profile;
-    let names: Vec<&str> = [
+pub fn command_zone<'a>(
+    profile: &'a DeckProfile,
+    cards: &'a [Card],
+) -> Vec<(&'a str, Option<i32>)> {
+    [
         profile.commander_name.as_deref(),
         profile.partner_commander_name.as_deref(),
         profile.background_name.as_deref(),
@@ -184,15 +180,55 @@ pub fn links(deck: &Deck) -> (String, String) {
     ]
     .into_iter()
     .flatten()
-    .collect();
+    .map(|name| {
+        let id = cards
+            .iter()
+            .find(|card| card.scryfall_data.name == name)
+            .and_then(|card| card.scryfall_data.tcgplayer_id);
+        (name, id)
+    })
+    .collect()
+}
+
+/// The `TCGplayer` mass-entry link: `command_zone` (as [`command_zone`] gives it), then `entries`.
+#[must_use]
+pub fn tcgplayer_url(entries: &[&DeckEntry], command_zone: &[(&str, Option<i32>)]) -> String {
+    tcgplayer_mass(&deck_cards(entries, command_zone))
+}
+
+/// The `CardKingdom` builder link: `command_zone`, then `entries`.
+#[must_use]
+pub fn cardkingdom_url(entries: &[&DeckEntry], command_zone: &[(&str, Option<i32>)]) -> String {
+    cardkingdom_builder(&deck_cards(entries, command_zone))
+}
+
+/// One card's `TCGplayer` link: its product page when the card's `TCGplayer` id is known, else a mass entry of one copy by name.
+#[must_use]
+pub fn tcgplayer_card_url(name: &str, tcgplayer_id: Option<i32>) -> String {
+    match tcgplayer_id {
+        Some(id) => format!("https://www.tcgplayer.com/product/{id}"),
+        None => tcgplayer_mass(&[(1, name, None)]),
+    }
+}
+
+/// One card's `CardKingdom` builder link, one copy.
+#[must_use]
+pub fn cardkingdom_card_url(name: &str) -> String {
+    cardkingdom_builder(&[(1, name, None)])
+}
+
+/// The deck's `TCGplayer` and `CardKingdom` links: the command zone, then the main and side boards in served order. The maybeboard stays out.
+#[must_use]
+pub fn links(deck: &Deck) -> (String, String) {
+    let zone = command_zone(&deck.deck_profile, &deck.command_zone_cards);
     let entries: Vec<&DeckEntry> = deck
         .entries
         .iter()
         .filter(|e| e.deck_card.board.is_active() || e.deck_card.board.is_sideboard())
         .collect();
     (
-        tcgplayer_url(&entries, &names),
-        cardkingdom_url(&entries, &names),
+        tcgplayer_url(&entries, &zone),
+        cardkingdom_url(&entries, &zone),
     )
 }
 
@@ -204,17 +240,17 @@ mod tests {
     use crate::test_support::{card, deck, deck_profile};
 
     #[test]
-    fn a_set_of_cards_links_to_both_stores_with_its_copies() {
+    fn tcgplayer_gets_each_printing_and_card_kingdom_each_name() {
         let links = cards_links([
-            (2, "Sol Ring"),
-            (1, "Delver of Secrets // Insectile Aberration"),
+            (2, "Sol Ring", Some(1263)),
+            (1, "Delver of Secrets // Insectile Aberration", None),
         ]);
         assert_eq!(
             links,
             [
                 BuyLink {
                     label: TCGPLAYER,
-                    url: "https://www.tcgplayer.com/massentry?c=2+Sol+Ring||1+Delver+of+Secrets"
+                    url: "https://www.tcgplayer.com/massentry?productline=Magic&c=2-1263||1+Delver+of+Secrets"
                         .to_owned(),
                 },
                 BuyLink {
@@ -259,13 +295,19 @@ mod tests {
             profile,
             vec![card("Sol Ring"), card("Lightning Bolt"), card("Opt")],
         );
+        built.entries[0].card.scryfall_data.tcgplayer_id = Some(1263);
+        built.entries[1].card.scryfall_data.tcgplayer_id = None;
         built.entries[1].deck_card.quantity = Quantity::new(4).unwrap();
         built.entries[1].deck_card.board = Board::Sideboard;
         built.entries[2].deck_card.board = Board::Maybeboard;
+        let mut krenko = card("Krenko, Mob Boss");
+        krenko.scryfall_data.tcgplayer_id = Some(9999);
+        built.command_zone_cards = vec![krenko];
         let (tcg, ck) = links(&built);
         assert_eq!(
             tcg,
-            "https://www.tcgplayer.com/massentry?c=1+Krenko%2C+Mob+Boss||1+Sol+Ring||4+Lightning+Bolt"
+            "https://www.tcgplayer.com/massentry?productline=Magic&c=1-9999||1-1263||4+Lightning+Bolt",
+            "each printing by its TCGplayer product, by name where it has none"
         );
         assert_eq!(
             ck,
@@ -296,7 +338,7 @@ mod tests {
     fn single_card_links_encode_the_front_face_only() {
         assert_eq!(
             tcgplayer_card_url("Fire // Ice", None),
-            "https://www.tcgplayer.com/massentry?c=1+Fire"
+            "https://www.tcgplayer.com/massentry?productline=Magic&c=1+Fire"
         );
         assert_eq!(
             tcgplayer_card_url("Sol Ring", Some(42)),

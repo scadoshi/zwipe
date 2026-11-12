@@ -60,7 +60,7 @@ mod tests {
 
     #[test]
     fn the_dialog_closes_first_then_offers_each_store() {
-        let links = buy::cards_links([(1, "Sol Ring")]);
+        let links = buy::cards_links([(1, "Sol Ring", None)]);
         let actions = store_actions(links.clone());
         let mut expected = vec![DialogAction::Dismiss(buy::CLOSE.to_owned())];
         expected.extend(links.into_iter().map(|link| DialogAction::Link {

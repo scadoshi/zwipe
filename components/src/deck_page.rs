@@ -304,7 +304,8 @@ pub fn FeaturedCard(
 /// with no command zone, and `on_change` fires when a row
 /// changes what the list shows. With `on_fold_all` the Show row ends in the
 /// fold-all button, which shuts every group, or opens every group once
-/// `all_folded`.
+/// `all_folded`. `art_disabled` grays out the Art chip and keeps its state,
+/// for a view that always shows art (the Stacks).
 #[component]
 pub fn DeckControls(
     mut group_by: Signal<GroupByOption>,
@@ -313,6 +314,7 @@ pub fn DeckControls(
     #[props(default)] show_tokens: Option<Signal<bool>>,
     #[props(default)] show_zone: Option<Signal<bool>>,
     mut show_art: Signal<bool>,
+    #[props(default)] art_disabled: bool,
     #[props(default)] on_change: Option<Callback<()>>,
     #[props(default)] leading: Option<Element>,
     #[props(default)] boards: Option<Element>,
@@ -361,6 +363,7 @@ pub fn DeckControls(
             }
             Chip {
                 selected: show_art(),
+                disabled: art_disabled,
                 onclick: move |_| show_art.toggle(),
                 "Art"
             }
