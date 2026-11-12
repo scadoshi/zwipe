@@ -1212,6 +1212,127 @@ i.ms.ms-cost.ms-gp {
    picture, laid out like a real card - title + mana pips, rule, boxed "No image"
    marker, type/rarity/set line, rule, then oracle + flavor text. Continuous: only
    the art marker is boxed; dividers are hairline rules, not filled panels. */
+/* ---- The no-image card (components::CardProxy) ----
+   The card's text in the exact 63:88 box its image would fill, laid out like
+   its expanded row. The box is a size container, so the type scales with the
+   card; the fitting script steps --proxy-scale down until nothing overflows.
+   At a thumbnail's width only the name and cost show. */
+.card-proxy {
+    container-type: size;
+    position: relative;
+    box-sizing: border-box;
+    width: 100%;
+    aspect-ratio: 63 / 88;
+    border: 1px solid var(--border-secondary);
+    border-radius: 4.75% / 3.4%;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    text-align: left;
+    overflow: hidden;
+}
+
+.card-proxy-fit {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55em;
+    box-sizing: border-box;
+    padding: 6cqw 6cqw 5cqw;
+    font-size: calc(5cqw * var(--proxy-scale, 1));
+    line-height: 1.3;
+}
+
+.card-proxy-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.5em;
+}
+
+.card-proxy-name {
+    font-weight: 700;
+    font-size: 1.15em;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+    color: var(--ink-palette-3, var(--palette-3));
+}
+
+.card-proxy-head-end {
+    display: flex;
+    align-items: center;
+    gap: 0.4em;
+    flex-shrink: 0;
+}
+
+.card-proxy-cost {
+    margin: 0;
+    white-space: nowrap;
+}
+
+.card-proxy-cost .ms,
+.card-proxy-text .ms {
+    font-size: 0.95em;
+    vertical-align: middle;
+}
+
+.card-proxy-rule {
+    align-self: stretch;
+    height: 0;
+    margin: 0 -6cqw;
+    border: none;
+    border-top: 1px solid var(--border-secondary);
+}
+
+.card-proxy-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35em;
+}
+
+.card-proxy .detail-chip,
+.card-proxy .stat-chip {
+    padding: 0.15em 0.5em;
+    border-radius: 0.4em;
+    font-size: 0.8em;
+    line-height: 1.3;
+}
+
+.card-proxy-text {
+    margin: 0;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}
+
+.card-proxy-stats {
+    align-self: flex-end;
+}
+
+/* A thumbnail: just the name, as many lines of it as read at that size. */
+@container (max-width: 110px) {
+    .card-proxy-fit {
+        padding: 8cqw;
+        font-size: max(8px, 15cqw);
+        line-height: 1.15;
+    }
+
+    .card-proxy-name {
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 4;
+        overflow: hidden;
+        font-size: 1em;
+        overflow-wrap: normal;
+        word-break: break-word;
+    }
+
+    .card-proxy-head-end,
+    .card-proxy-rule,
+    .card-proxy-chips,
+    .card-proxy-text,
+    .card-proxy-stats {
+        display: none;
+    }
+}
+
 .no-image-card {
     position: relative;
     display: flex;
