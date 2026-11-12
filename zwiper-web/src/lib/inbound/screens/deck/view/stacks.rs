@@ -40,6 +40,7 @@ fn total_price(rows: &[RowInfo], currency: PriceCurrency) -> Option<String> {
 
 /// The stacks for `sections`, folding by `collapsed` as the bands do, each card on its face in
 /// `faces` (the front where it has none), its header's cart opening `group_buy` on its cards.
+/// While `dealing` every stack deals its cards in, top to bottom.
 pub(crate) fn stacks_view(
     sections: Vec<(DeckSection, Vec<RowInfo>)>,
     currency: PriceCurrency,
@@ -47,6 +48,7 @@ pub(crate) fn stacks_view(
     details: StackDetails,
     faces: Signal<HashMap<Uuid, usize>>,
     group_buy: GroupBuy,
+    dealing: bool,
 ) -> Element {
     let mut reveal = details.reveal;
     let shown = reveal();
@@ -87,6 +89,7 @@ pub(crate) fn stacks_view(
                                 }),
                                 CardStack {
                                     cards,
+                                    dealing,
                                     revealed: shown.revealed_in(&ids),
                                     open: shown.open(),
                                     on_hover: move |id| reveal.write().apply(Gesture::Hover(id)),

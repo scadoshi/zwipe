@@ -22,7 +22,9 @@ use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilde
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::{Board, deck_tag_label};
 use zwipe_ui::deck::form::Slot;
-use zwipe_ui::deck_cards::stacks::{CardsView, Reveal};
+use zwipe_ui::deck_cards::stacks::{
+    CardsView, DEAL_DURATION, DEAL_STAGGER_CAP, DealCue, Reveal, deal_delay,
+};
 use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::filter::picker::Sources;
 use zwipe_ui::screens::deck_view::{EDIT, MoreItem};
@@ -129,6 +131,21 @@ pub fn DeckWidePage(
         use_signal(|| FOLDED_STATS.into_iter().map(String::from).collect());
     // List or Stacks, as last left.
     let view = use_cards_view();
+    // The stacks deal in on entering Stacks, once the cards are in, for as
+    // long as the longest stack takes.
+    let mut deal_cue = use_signal(DealCue::default);
+    let mut dealing = use_signal(|| false);
+    use_effect(move || {
+        let shown = view();
+        let ready = loaded();
+        if deal_cue.write().on(shown, ready) {
+            dealing.set(true);
+            spawn(async move {
+                timer::sleep(deal_delay(DEAL_STAGGER_CAP).saturating_add(DEAL_DURATION)).await;
+                dealing.set(false);
+            });
+        }
+    });
     // The store dialog a group's cart opens, in the List or the stacks.
     let group_buy = use_group_buy();
     // The deck's store dialog, from the dock's cart.
@@ -488,7 +505,7 @@ pub fn DeckWidePage(
                     DeckBandsGhost {}
                 }
                 if view() == CardsView::Stacks {
-                    {stacks_view(sections, cur, collapsed, stack_details_state, ed.faces, group_buy)}
+                    {stacks_view(sections, cur, collapsed, stack_details_state, ed.faces, group_buy, dealing())}
                 } else {
                     for (section, rows) in sections {
                         DeckBand {
