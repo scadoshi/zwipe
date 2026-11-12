@@ -91,7 +91,7 @@ Who checked, on which live build, what they saw.
 | [369](369-share-link-chip.md) | The Share dialog's link sits in an odd dark box | fixing | laptop | #564 |
 | [364](364-list-row-art-meld.md) | A melded card's list row thumbnail and hover preview show the half | fixing | scotland | #563 |
 | [371](371-art-chip-stacks.md) | Art stays live while Stacks is on | fixing | laptop | #577 |
-| [379](379-quick-add-width.md) | Quick add runs wider than the chip rows under it | fixing | laptop | - |
+| [379](379-quick-add-width.md) | Quick add runs wider than the chip rows under it | fixing | laptop | #581 |
 
 ## Waiting for live verification
 
