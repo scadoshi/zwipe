@@ -4,7 +4,7 @@
 //! copies the drawer's title bar and content as they show. If the drawer
 //! then changes to another card, the copies are laid over the drawer in the
 //! same task, before the browser paints the change, and fade out over
-//! [`SWAP_MS`] while the new card's title bar and content fade in. Nothing
+//! `SWAP_MS` while the new card's title bar and content fade in. Nothing
 //! runs under `prefers-reduced-motion`, and a drawer that kept its card
 //! drops the copies unseen.
 
