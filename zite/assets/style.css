@@ -58,6 +58,9 @@
    the whole page. */
 :root {
     -webkit-tap-highlight-color: transparent;
+    /* The page column every page shares: 1400px at most, wider than a
+       reading column for a page of a few panels, narrower than the window. */
+    --zite-page-max: 87.5rem;
 }
 
 /* ==================
@@ -309,10 +312,23 @@ html:has(> body[class*="theme-"][class*="-light"]) {
 .page {
     flex: 1 0 auto;
     width: 100%;
-    max-width: 74rem;
+    max-width: var(--zite-page-max);
     margin: 0 auto;
     /* The same 1rem off the footer as the nav's margin leaves at the top. */
     padding: 0 1.5rem 1rem;
+}
+
+/* Running text keeps a readable measure inside the wide column; the hero's
+   centered tagline stays centered. */
+:is(.guide-content .guide-p, .guide-content .guide-lead, .guide-content .guide-steps,
+    .guide-content .guide-bullets, .guide-content .guide-note, .privacy-section > p,
+    .privacy-section > ul, .release-card .collapse-body, .hero .tagline,
+    .page .panel-card p) {
+    max-width: 70ch;
+}
+
+.hero .tagline {
+    margin-inline: auto;
 }
 
 /* ==================
@@ -544,9 +560,9 @@ code {
 .hero-card {
     display: flex;
     flex-direction: column;
-    /* Match the .page content width (74rem minus its 1.5rem side padding)
-       so the hero's edges align with the demo/features band below. */
-    max-width: 71rem;
+    /* Match the .page content width (the column less its 1.5rem side
+       padding) so the hero's edges align with the demo/features band below. */
+    max-width: calc(var(--zite-page-max) - 3rem);
     margin: 0 auto;
     padding: 1rem 1.5rem;
     background-color: var(--bg-primary);
