@@ -161,6 +161,26 @@ mod tests {
     }
 
     #[test]
+    fn import_fills_its_column_as_export_does() {
+        let import = rule_in(
+            "@media (min-width: 900px) {\n    /* Import and Export",
+            ".web-import.screen-content",
+        );
+        assert!(
+            import.contains("grid-template-columns: minmax(0, 1fr)"),
+            "{import}"
+        );
+        let results = rule_in(
+            "@media (min-width: 900px) {\n    /* Import and Export",
+            ".web-import-results",
+        );
+        assert!(
+            !results.contains("grid-column: 2"),
+            "results sit under the input: {results}"
+        );
+    }
+
+    #[test]
     fn the_header_folds_below_1110_and_never_wraps() {
         assert_eq!(NAV_FOLD_MAX_PX, 1109);
         assert!(nav_fold_css().starts_with("@media (max-width: 1109px) {"));
