@@ -28,7 +28,7 @@ Tests: `card_key` pins `d` on the swipe screens; every key the Examples sheet li
 
 Headless on scotland, Examples opened from Playstyle:
 - `d` toggles the details; `h` and `j` step forward and back.
-- `?` opens "Example cards" (the modal's hint), not Playstyle's.
+- `?` opens "Example cards" (the modal's hint), not Playstyle's. On Add, `?` opens Add's hint, and with the filter sheet open (`f`) it opens "Filters", the sheet's own hint; sheets' header hints are covered by `MODAL_HINT_BUTTON`.
 - Shift+H lists the modal's keys.
 - The slide: at 1600 the card moves 10px (it overlapped by that much); at 1300 it stays (the panel misses it); at 1100 and 950 it moves 76px and 151px and clears; on close it returns.
 - Add at 1100 moves 43px; at 1600 it stays.

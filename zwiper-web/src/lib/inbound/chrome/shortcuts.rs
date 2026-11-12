@@ -359,8 +359,10 @@ pub const MODAL_SELECTORS: [&str; 4] = [
     ".swipe-select-screen.show",
 ];
 
-/// A modal's or sheet's own `?`: the corner button of its header.
-pub const MODAL_HINT_BUTTON: &str = ".page-header > .page-header-corner";
+/// A modal's or sheet's own `?`: the corner button of a modal's page header, or a sheet's
+/// header hint.
+pub const MODAL_HINT_BUTTON: &str =
+    ".page-header > .page-header-corner, .sheet-header > .drawer-sheet-hint";
 
 /// The guard for `?` while a modal may be open: not while typing in a field and not with Ctrl,
 /// Alt or Meta held; an open modal answers it instead of keeping it.
