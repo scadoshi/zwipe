@@ -1,6 +1,6 @@
 # 391. The no-image card clips its facts row in the app's Featured card, and thumbnails break names mid-word
 
-State: fixing | Owner: laptop | PR: - | Build seen: #589, app (Android), images blocked
+State: fixing | Owner: laptop | PR: #594 | Build seen: #589, app (Android), images blocked
 
 ## Report
 Droider, via the composer, 2026-11-11, on #589 with images blocked:
@@ -17,7 +17,7 @@ Render `cargo test -p components --test card_proxy_render -- --ignored` in Chrom
 - the long-named card's thumbnails read "Thember/cha" and "Overwatche/r".
 
 ## Fix
-laptop, web and app (one component):
+laptop, #594, web and app (one component):
 - When the type can't shrink the card into its box, `FIT_JS` drops rows one at a time and fits again: first the rules text, then the Keywords and Card roles rows, then the kind chips. The name and the facts row always show.
 - A thumbnail's name wraps only between words, and the fit shrinks it until each word and line fits. As a last resort, the widest words are cut to an ellipsis.
 - The full card's name breaks a word only when the word alone is wider than the line.

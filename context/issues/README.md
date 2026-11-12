@@ -79,7 +79,7 @@ Who checked, on which live build, what they saw.
 | [354](354-one-buy-dialog.md) | Buying is a different control in every spot, and the wide deck page hides it | fixing | thinker | - |
 | [358](358-share-link-deck-name.md) | The Share dialog's link names every deck "deck" | fixing | thinker | - |
 | [372](372-stacks-deal-in.md) | Stacks appear all at once | fixing | thinker | - |
-| [391](391-proxy-fit.md) | The no-image card clips its facts row in the app's Featured card, and thumbnails break names mid-word | fixing | laptop | - |
+| [391](391-proxy-fit.md) | The no-image card clips its facts row in the app's Featured card, and thumbnails break names mid-word | fixing | laptop | #594 |
 | [386](386-card-proxy.md) | One no-image card for every image spot | fixing | laptop | #589 |
 | [385](385-settle-first-frame.md) | The settle paints the final layout for one frame first | fixing | laptop | #586 |
 | [376](376-nav-logo-size.md) | The nav logo is a different size on each site | fixing | thinker | - |
