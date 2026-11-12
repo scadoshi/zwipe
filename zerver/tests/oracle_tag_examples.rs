@@ -22,7 +22,7 @@ use zwipe_core::http::paths::{CARD_ROUTE, oracle_tag_examples_route};
 /// The route for `slug` from `offset`, for a slug the test knows is valid.
 fn route(slug: &str, offset: u32) -> String {
     let slug: OracleTagSlug = slug.parse().unwrap();
-    oracle_tag_examples_route(&slug, offset)
+    format!("{}?offset={offset}", oracle_tag_examples_route(&slug))
 }
 
 /// The names in a page, in order.

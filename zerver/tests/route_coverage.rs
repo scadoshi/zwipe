@@ -130,7 +130,7 @@ async fn every_id_carrying_route_matches_the_contract(pool: sqlx::PgPool) {
         (Method::Get, shared_deck_route(id)),
         (
             Method::Get,
-            oracle_tag_examples_route(&"burn".parse().unwrap(), 0),
+            oracle_tag_examples_route(&"burn".parse().unwrap()),
         ),
     ] {
         let (status, _) = app.send(http_method(method), &path, None, None).await;

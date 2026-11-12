@@ -118,7 +118,10 @@ impl Endpoint for GetOracleTagExamples {
     type Request = ();
     type Response = Vec<Card>;
     fn path(&self) -> Cow<'static, str> {
-        Cow::Owned(paths::oracle_tag_examples_route(&self.slug, self.offset))
+        Cow::Owned(paths::oracle_tag_examples_route(&self.slug))
+    }
+    fn query(&self) -> Option<String> {
+        Some(format!("offset={}", self.offset))
     }
 }
 
@@ -157,3 +160,21 @@ public_get!(
     /// Franchises the Universes Beyond exceptions picker offers.
     GetUbFranchises => GET_UB_FRANCHISES_ROUTE, Vec<UbFranchiseView>
 );
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_examples_offset_rides_the_query_not_the_path() {
+        let endpoint = GetOracleTagExamples {
+            slug: "spot-removal".parse().unwrap(),
+            offset: 25,
+        };
+        assert_eq!(
+            endpoint.path(),
+            "/api/card/oracle-tag/spot-removal/examples"
+        );
+        assert_eq!(endpoint.query().as_deref(), Some("offset=25"));
+    }
+}

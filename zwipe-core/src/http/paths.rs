@@ -123,8 +123,8 @@ pub fn printings_route(oracle_id: Uuid) -> String {
     format!("{CARD_ROUTE}/{oracle_id}/printings")
 }
 
-pub fn oracle_tag_examples_route(slug: &OracleTagSlug, offset: u32) -> String {
-    format!("{CARD_ROUTE}/oracle-tag/{slug}/examples?offset={offset}")
+pub fn oracle_tag_examples_route(slug: &OracleTagSlug) -> String {
+    format!("{CARD_ROUTE}/oracle-tag/{slug}/examples")
 }
 
 pub fn deck_route(deck_id: Uuid) -> String {
@@ -311,8 +311,8 @@ mod tests {
         assert_eq!(printings_route(a), format!("/api/card/{sa}/printings"));
         let slug: OracleTagSlug = "spot-removal".parse().unwrap();
         assert_eq!(
-            oracle_tag_examples_route(&slug, 25),
-            "/api/card/oracle-tag/spot-removal/examples?offset=25"
+            oracle_tag_examples_route(&slug),
+            "/api/card/oracle-tag/spot-removal/examples"
         );
         assert_eq!(deck_route(a), format!("/api/deck/{sa}"));
         assert_eq!(deck_tokens_route(a), format!("/api/deck/{sa}/tokens"));
