@@ -24,7 +24,6 @@ A per-frame probe recorded each keyed thing's on-screen box (transforms included
 
 | Audit row | Snaps with settle | Without | Frames in motion |
 |---|---|---|---|
-| Two-column fold, Creatures shut and open | 0 | 10 | 15 to 16 |
 | Show Tokens on and off | 0 | 34 | 12 |
 | Show Command zone off and on | 0 | 32 | 11 |
 | Star and Unstar (head card) | 0 | 1 | 9 to 11 |

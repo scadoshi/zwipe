@@ -1,27 +1,30 @@
 //! Cards, rows and groups settling into place instead of snapping when a
-//! control reorders, adds or removes them: a board or Group by chip, a fold,
-//! a Show chip, a row's action, an undo, a sort or a filter.
+//! control reorders, adds or removes them: a board, Group by, Show, Sort or
+//! filter chip, a row's action, an undo.
 //!
 //! The page marks what moves and what moves it:
-//! - a container marked `data-settle-scope` holds the things that settle,
-//!   each named by `data-row`, `data-fold` or `data-settle-key`. A keyed thing
-//!   inside another (a row in its group) settles relative to it;
+//! - a container marked [`SCOPE`] holds the things that settle, each named by
+//!   `data-row`, `data-fold` (a group) or `data-settle-key`. A keyed thing
+//!   inside a group settles relative to it, so it rides along with its
+//!   group's move;
 //! - a click or typing inside an element marked [`TRIGGER`], a click on a
-//!   button inside a scope or a toast, a click on a fold's header, or one of
-//!   [`KEYS`] outside a text field starts a watch.
+//!   row's action button inside a scope or on a toast's button, or one of
+//!   [`KEYS`] outside a text field starts a watch. Opening a row or folding
+//!   a group never does.
 //!
-//! For [`WATCH_MS`] after that, each change to the page, in the task that
-//! made it and so before the browser paints it, and every frame compare each
-//! thing's place with where it last was:
-//! - one that jumped more than [`JUMP_PX`] in that frame slides from where it
-//!   was to where it is;
+//! A trigger notes where every keyed thing sits, once, before the page's own
+//! handler changes anything. For [`WATCH_MS`] after it, each change to a
+//! scope is caught by a mutation observer, in the task that made it and so
+//! before the browser paints it, and measured at most once a frame. Only
+//! what can have moved is measured again: the groups, the things outside
+//! any group, and the things inside the groups the change touched. Then:
+//! - one that moved more than [`JUMP_PX`] slides from where it showed to
+//!   where it is, each move added on top of any still running;
 //! - a new one fades in;
 //! - one that left fades out where it was, as a copy laid over the page.
 //!
-//! Gradual movement, as a fold's body easing shut, is left alone, while a
-//! group that jumps to the other column partway through is caught on the
-//! frame it jumps. Every move runs on the kit's `--ease-enter` over
-//! [`SETTLE_MS`]. Under `prefers-reduced-motion` nothing is watched.
+//! Every move runs on the kit's `--ease-enter` over [`SETTLE_MS`]. Under
+//! `prefers-reduced-motion` nothing is watched.
 
 use dioxus::prelude::*;
 
@@ -35,12 +38,10 @@ pub const SCOPE: &str = "data-settle-scope";
 pub const SETTLE_MS: u32 = 250;
 
 /// How long a trigger keeps the page watched, in milliseconds: long enough to
-/// cover a fold's own ease and the render after a server answer.
+/// cover the render after a server answer.
 pub const WATCH_MS: u32 = 900;
 
-/// The smallest move in one frame that counts as a jump, in pixels. A fold's
-/// gradual slide stays under it; a re-render's jump or a column change does
-/// not.
+/// The smallest move that counts as a jump, in pixels.
 pub const JUMP_PX: u32 = 40;
 
 /// The keys that start a watch outside a text field, as `KeyboardEvent.key`:
@@ -58,6 +59,12 @@ const SETTLE_JS: &str = r"
   const KEYED = '[data-row], [data-fold], [data-settle-key]';
   const keyOf = (el) => el.hasAttribute('data-settle-key') ? 'k:' + el.getAttribute('data-settle-key')
     : el.hasAttribute('data-fold') ? 'f:' + el.getAttribute('data-fold') : 'r:' + el.getAttribute('data-row');
+  const scopes = () => [...document.querySelectorAll('[data-settle-scope]')];
+  // The group a thing sits in, or null outside any group.
+  const groupOf = (el, scope) => {
+    const up = el.parentElement && el.parentElement.closest('[data-fold]');
+    return up && scope.contains(up) ? up : null;
+  };
   const parentItem = (el, scope) => {
     const up = el.parentElement && el.parentElement.closest(KEYED);
     return up && scope.contains(up) ? up : null;
@@ -71,11 +78,16 @@ const SETTLE_JS: &str = r"
   // A keyed wrapper drawn as `display: contents` has no box of its own, so
   // its first child is measured and moved in its place.
   const boxOf = (el) => (getComputedStyle(el).display === 'contents' && el.firstElementChild) || el;
-  const snapshot = () => {
+  // Where each keyed thing sits. `touched` names the groups whose insides to
+  // measure (scope index and group key); null measures everything.
+  const snapshot = (touched) => {
     const found = new Map();
-    document.querySelectorAll('[data-settle-scope]').forEach((scope, s) => {
+    scopes().forEach((scope, s) => {
       for (const el of scope.querySelectorAll(KEYED)) {
         if (el.closest('[data-settle-ghost]')) continue;
+        const group = groupOf(el, scope);
+        const groupKey = group ? s + '|' + keyOf(group) : null;
+        if (touched && groupKey && !el.hasAttribute('data-fold') && !touched.has(groupKey)) continue;
         const key = s + '|' + keyOf(el);
         if (found.has(key)) continue;
         const box = boxOf(el);
@@ -93,12 +105,32 @@ const SETTLE_JS: &str = r"
           x -= pr.left; y -= pr.top;
           parent = s + '|' + keyOf(up);
         }
-        found.set(key, { el: box, x, y, ax, ay, tx, ty, rect: r, parent });
+        found.set(key, { el: box, x, y, ax, ay, rect: r, parent, group: groupKey });
       }
     });
     return found;
   };
-  let prev = null, until = 0, watching = false, observer = null;
+  // The groups a batch of changes touched; undefined when none reached a
+  // scope. Groups and things outside any group are measured either way.
+  const touchedBy = (records) => {
+    const all = scopes();
+    const touched = new Set();
+    let inScope = false;
+    for (const r of records) {
+      const target = r.target instanceof Element ? r.target : r.target.parentElement;
+      if (!target || target.closest('[data-settle-ghost]')) continue;
+      const s = all.findIndex((scope) => scope.contains(target));
+      if (s < 0) continue;
+      inScope = true;
+      const group = target.closest('[data-fold]');
+      if (group && all[s].contains(group)) touched.add(s + '|' + keyOf(group));
+      for (const n of [...r.addedNodes, ...r.removedNodes]) {
+        if (n instanceof Element && n.hasAttribute('data-fold')) touched.add(s + '|' + keyOf(n));
+      }
+    }
+    return inScope ? touched : undefined;
+  };
+  let prev = null, until = 0, observer = null, measured = false, queued = null;
   const ghost = (old) => {
     const copy = old.el.cloneNode(true);
     copy.setAttribute('data-settle-ghost', '');
@@ -114,66 +146,75 @@ const SETTLE_JS: &str = r"
     copy.animate([{ opacity: 1 }, { opacity: 0 }], { duration: MS, easing: ease() })
       .finished.then(() => copy.remove(), () => copy.remove());
   };
-  // Compares every keyed thing with where it last was and moves the ones that
-  // jumped. Runs on each frame and, through the observer, in the task that
-  // changed the page, before the browser paints the change.
-  const check = () => {
-    const now = snapshot();
+  // Measures what the change can have moved and moves what jumped.
+  const check = (touched) => {
+    if (!prev) return;
+    const now = snapshot(touched);
     const timing = { duration: MS, easing: ease() };
-    if (prev) {
-      const fresh = new Set();
-      for (const [key, cur] of now) {
-        const old = prev.get(key);
-        if (!old) {
-          fresh.add(key);
-          if (cur.parent && fresh.has(cur.parent)) continue;
-          cur.el.animate([{ opacity: 0 }, { opacity: 1 }], timing);
-          continue;
-        }
-        // Where the layout put it, against where it was: within its group
-        // when it stays in the same one, on the page otherwise.
-        const sameGroup = old.parent === cur.parent;
-        const dx = sameGroup ? old.x - cur.x : old.ax - cur.ax;
-        const dy = sameGroup ? old.y - cur.y : old.ay - cur.ay;
-        if (Math.hypot(dx, dy) < JUMP) continue;
-        // Each jump adds its own move on top of any still running, so a
-        // thing that jumps again mid-move carries on from where it shows.
-        const a = cur.el.animate([{ translate: dx + 'px ' + dy + 'px' }, { translate: '0px 0px' }], { ...timing, composite: 'add' });
-        a.id = 'settle';
+    const fresh = new Set();
+    for (const [key, cur] of now) {
+      const old = prev.get(key);
+      if (!old) {
+        fresh.add(key);
+        if (cur.parent && fresh.has(cur.parent)) continue;
+        cur.el.animate([{ opacity: 0 }, { opacity: 1 }], timing);
+        continue;
       }
-      const gone = new Set();
-      for (const [key, old] of prev) if (!now.has(key)) gone.add(key);
-      for (const key of gone) {
-        const old = prev.get(key);
-        if (old.parent && gone.has(old.parent)) continue;
-        ghost(old);
-      }
+      const sameGroup = old.parent === cur.parent;
+      const dx = sameGroup ? old.x - cur.x : old.ax - cur.ax;
+      const dy = sameGroup ? old.y - cur.y : old.ay - cur.ay;
+      if (Math.hypot(dx, dy) < JUMP) continue;
+      cur.el.animate([{ translate: dx + 'px ' + dy + 'px' }, { translate: '0px 0px' }], { ...timing, composite: 'add' });
     }
-    prev = now;
-  };
-  const frame = () => {
-    check();
-    if (performance.now() < until) requestAnimationFrame(frame);
-    else {
-      watching = false;
-      prev = null;
-      if (observer) observer.disconnect();
-      observer = null;
+    // Only what was measured can have left: a thing in an untouched group
+    // is still where it was.
+    const gone = [];
+    for (const [key, old] of prev) {
+      if (now.has(key)) continue;
+      if (touched && old.group && !touched.has(old.group) && !key.includes('|f:')) continue;
+      gone.push(key);
     }
+    const goneSet = new Set(gone);
+    for (const key of gone) {
+      const old = prev.get(key);
+      if (!(old.parent && goneSet.has(old.parent))) ghost(old);
+      prev.delete(key);
+    }
+    for (const [key, cur] of now) prev.set(key, cur);
   };
-  const changed = (records) => records.some((r) => !(r.target instanceof Element && r.target.closest('[data-settle-ghost]'))
-    && !(r.type === 'childList' && [...r.addedNodes, ...r.removedNodes].every((n) => n instanceof Element && n.hasAttribute('data-settle-ghost'))));
+  const stop = () => {
+    if (observer) observer.disconnect();
+    observer = null;
+    prev = null;
+    queued = null;
+  };
+  const changed = (records) => {
+    if (performance.now() > until) { stop(); return; }
+    const touched = touchedBy(records);
+    if (touched === undefined) return;
+    if (!measured) {
+      measured = true;
+      requestAnimationFrame(() => {
+        measured = false;
+        if (queued) { const t = queued; queued = null; check(t); }
+      });
+      check(touched);
+      return;
+    }
+    // A second batch in the same frame waits for the next one.
+    if (!queued) queued = new Set();
+    for (const g of touched) queued.add(g);
+  };
   const watch = () => {
     if (reduce()) return;
     until = performance.now() + WATCH;
-    if (watching) return;
-    watching = true;
-    prev = snapshot();
-    observer = new MutationObserver((records) => { if (prev && changed(records)) check(); });
+    if (observer) return;
+    prev = snapshot(null);
+    observer = new MutationObserver(changed);
     observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'hidden', 'open'] });
-    requestAnimationFrame(frame);
+    setTimeout(function end() { if (performance.now() < until) setTimeout(end, until - performance.now()); else stop(); }, WATCH);
   };
-  const TRIGGERS = '[data-settle], [data-settle-scope] button, .toast-container button, .deck-fold-head';
+  const TRIGGERS = '[data-settle], [data-settle-scope] .card-action-btn, .toast-container button';
   document.addEventListener('click', (e) => {
     if (e.target instanceof Element && e.target.closest(TRIGGERS)) watch();
   }, true);
