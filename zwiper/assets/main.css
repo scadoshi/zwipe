@@ -400,7 +400,17 @@ body {
     color: inherit;
 }
 
-.app-deck-stacks .deck-stack > .deck-group > .card-group-header > .card-group-label {
+/* The header's first line, the arrow and the words, folds the stack; the
+   price and the cart on the line under it do not. */
+.app-deck-stacks .deck-stack > .deck-group > .card-group-header > .card-group-toggle {
+    display: flex;
+    flex: 1 1 0;
+    align-items: center;
+    min-width: 0;
+    cursor: pointer;
+}
+
+.app-deck-stacks .deck-stack > .deck-group > .card-group-header > .card-group-toggle > .card-group-label {
     flex: 0 1 auto;
     min-width: 0;
     overflow: hidden;

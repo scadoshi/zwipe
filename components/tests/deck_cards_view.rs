@@ -277,3 +277,115 @@ fn a_second_tap_opens_the_drawer_and_a_tap_off_keeps_it() {
         "a tap off leaves the open card"
     );
 }
+
+#[test]
+fn a_stack_header_s_cart_sits_outside_its_fold_toggle() {
+    let html = render(|| stacks(true));
+    let headers: Vec<&str> = html.split(r#"class="card-group-toggle""#).skip(1).collect();
+    assert_eq!(headers.len(), 2, "each stack header has a toggle: {html}");
+    for header in headers {
+        let (toggle, rest) = header.split_once("</div>").unwrap();
+        assert!(
+            toggle.contains("card-group-label"),
+            "the title folds: {toggle}"
+        );
+        assert!(
+            !toggle.contains("cart-button"),
+            "the cart never folds: {toggle}"
+        );
+        assert!(
+            rest.contains("cart-button"),
+            "the cart follows the toggle: {rest}"
+        );
+    }
+}
+
+/// The stacks' reveal, from the test, between renders.
+#[derive(Clone, Copy)]
+struct BackProbe {
+    stack: components::OverlayBackStack,
+    details: StackDetails,
+}
+
+thread_local! {
+    static BACK: std::cell::Cell<Option<BackProbe>> = const { std::cell::Cell::new(None) };
+    static TOUCH: std::cell::Cell<bool> = const { std::cell::Cell::new(true) };
+}
+
+fn back_app() -> Element {
+    let stack = components::use_overlay_back_stack();
+    use_context_provider(|| stack);
+    let details = StackDetails {
+        reveal: use_signal(Reveal::default),
+        details_open: use_signal(|| false),
+    };
+    BACK.with(|b| b.set(Some(BackProbe { stack, details })));
+    rsx! {
+        components::DeckStacks {
+            sections: vec![group("Creatures", 3)],
+            currency: PriceCurrency::default(),
+            collapsed: use_signal(Default::default),
+            details,
+            faces: use_signal(HashMap::new),
+            group_buy: components::use_group_buy(),
+            touch: TOUCH.with(std::cell::Cell::get),
+        }
+    }
+}
+
+fn settle(dom: &mut VirtualDom) {
+    for _ in 0..8 {
+        dom.process_events();
+        dom.render_immediate(&mut NoOpMutations);
+    }
+}
+
+/// The back stack after `taps` on one card, in touch mode or not.
+fn back_after(touch: bool, taps: usize) -> (VirtualDom, BackProbe) {
+    TOUCH.with(|t| t.set(touch));
+    let mut dom = VirtualDom::new(back_app);
+    dom.rebuild_in_place();
+    settle(&mut dom);
+    let probe = BACK.with(std::cell::Cell::get).unwrap();
+    let id = Uuid::new_v4();
+    for _ in 0..taps {
+        dom.in_runtime(|| probe.details.tap(id));
+    }
+    settle(&mut dom);
+    (dom, probe)
+}
+
+#[test]
+fn back_clears_a_revealed_card_before_leaving() {
+    let (mut dom, probe) = back_after(true, 1);
+    let BackProbe { mut stack, details } = probe;
+    assert!(
+        dom.in_runtime(|| stack.close_top()),
+        "back takes the reveal"
+    );
+    settle(&mut dom);
+    assert_eq!(dom.in_runtime(|| details.reveal.peek().revealed()), None);
+    assert!(
+        !dom.in_runtime(|| stack.close_top()),
+        "the next back leaves"
+    );
+}
+
+#[test]
+fn back_passes_by_stacks_with_nothing_revealed_or_an_open_card() {
+    let (dom, probe) = back_after(true, 0);
+    let BackProbe { mut stack, .. } = probe;
+    assert!(!dom.in_runtime(|| stack.close_top()), "nothing revealed");
+    let (dom, probe) = back_after(true, 2);
+    let BackProbe { mut stack, .. } = probe;
+    assert!(
+        !dom.in_runtime(|| stack.close_top()),
+        "the open card's sheet takes back, not the stacks"
+    );
+    let (dom, probe) = back_after(false, 1);
+    let BackProbe { mut stack, .. } = probe;
+    assert!(
+        !dom.in_runtime(|| stack.close_top()),
+        "a pointer's reveal is the hover's"
+    );
+}
