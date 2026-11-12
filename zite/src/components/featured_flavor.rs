@@ -8,19 +8,21 @@
 //! element always renders under `dx serve` with no backend.
 //!
 //! The card's name and price sit as tags in the panel's action row, beside
-//! Image, `TCGplayer` and Card Kingdom buttons. Image requests the full-art
+//! Image and the cart, which opens the store dialog for `TCGplayer` and Card
+//! Kingdom. Image requests the full-art
 //! overlay via the `overlay` signal; the HOME PAGE renders the overlay itself
 //! at its top level, outside the `content-enter` content tree, mirroring the
 //! shared-deck page: nested here, an animated ancestor's transform would
 //! become the containing block for `position: fixed` and trap the overlay in
 //! the page column.
 
-use components::Panel;
+use components::{CartButton, Panel, StoreDialog};
 use dioxus::prelude::*;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::deck_metrics;
+use zwipe_ui::buy;
 
 use crate::components::{OVERLAY_EXIT_MS, sleep_ms};
 
@@ -54,41 +56,11 @@ pub(crate) fn dismiss_flavor_overlay(
     });
 }
 
-/// URL-encodes a card's front face name for a retailer link, as zwiper's
-/// `buy_links` does.
-fn encode_name(name: &str) -> String {
-    name.split(" // ")
-        .next()
-        .unwrap_or(name)
-        .replace(' ', "+")
-        .replace(',', "%2C")
-        .replace('\'', "%27")
-}
-
-/// The card's `TCGplayer` product page when its id is known, else a one-copy
-/// mass entry by name.
-fn tcgplayer_url(name: &str, tcgplayer_id: Option<i32>) -> String {
-    match tcgplayer_id {
-        Some(id) => format!("https://www.tcgplayer.com/product/{id}"),
-        None => format!(
-            "https://www.tcgplayer.com/massentry?c=1+{}",
-            encode_name(name)
-        ),
-    }
-}
-
-/// A one-copy Card Kingdom builder link.
-fn cardkingdom_url(name: &str) -> String {
-    format!(
-        "https://www.cardkingdom.com/builder?c=1+{}",
-        encode_name(name)
-    )
-}
-
 #[component]
 pub fn FeaturedFlavor(overlay: Signal<Option<ScryfallData>>) -> Element {
     let fetched: Resource<Option<Card>> =
         use_resource(|| async { crate::api::client().featured_flavor().await.ok() });
+    let mut buy_open = use_signal(|| false);
 
     let value = fetched.read();
     let live = match &*value {
@@ -106,8 +78,7 @@ pub fn FeaturedFlavor(overlay: Signal<Option<ScryfallData>>) -> Element {
     let has_image = sd.primary_image_url(ImageSize::Normal).is_some();
     let usd_price = deck_metrics::card_price(&sd, PriceCurrency::Usd)
         .map(|p| PriceCurrency::Usd.format_amount(p));
-    let tcgplayer = tcgplayer_url(&name, sd.tcgplayer_id);
-    let cardkingdom = cardkingdom_url(&name);
+    let links = buy::card_links(&name, sd.tcgplayer_id);
 
     rsx! {
         section { class: "featured-flavor",
@@ -126,22 +97,17 @@ pub fn FeaturedFlavor(overlay: Signal<Option<ScryfallData>>) -> Element {
                         }
                     }
                     if usd_price.is_some() {
-                        a {
-                            class: "panel-action",
-                            href: "{tcgplayer}",
-                            "TCGplayer"
-                            span { class: "ext", "\u{2197}" }
-                        }
-                        a {
-                            class: "panel-action",
-                            href: "{cardkingdom}",
-                            "Card Kingdom"
-                            span { class: "ext", "\u{2197}" }
-                        }
+                        CartButton { onclick: move |_| buy_open.set(true) }
                     }
                 },
                 div { class: "ff-quote", "{flavor_text}" }
             }
+        }
+        StoreDialog {
+            open: buy_open,
+            title: buy::CARD_TITLE.to_owned(),
+            body: buy::CARD_BODY.to_owned(),
+            links,
         }
     }
 }
