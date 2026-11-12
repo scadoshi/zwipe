@@ -125,6 +125,9 @@ pub fn FlippableCardImage(
     };
     // The image URL this element has loaded and decoded itself.
     let loaded_here: Signal<Option<String>> = use_signal(|| None);
+    // The image URL that failed to load here, which then draws the text proxy:
+    // a failed image would otherwise leave the card see-through.
+    let failed_here: Signal<Option<String>> = use_signal(|| None);
     // A meld half can show its melded card in its place.
     let meld = use_meld(&sd.read());
     let sd_now = sd.read();
@@ -137,7 +140,10 @@ pub fn FlippableCardImage(
         .as_ref()
         .and_then(|f| f.get(cur))
         .map_or_else(|| view.name.clone(), |f| f.name.clone());
-    let image_url: Option<String> = view.face_image_url(cur, size).map(str::to_owned);
+    let image_url: Option<String> = view
+        .face_image_url(cur, size)
+        .map(str::to_owned)
+        .filter(|url| failed_here.read().as_deref() != Some(url.as_str()));
     let is_no_image = image_url.is_none();
 
     // Identity fields for the no-image placeholder, resolved for the shown face
@@ -212,6 +218,7 @@ pub fn FlippableCardImage(
                         // Shown only once decoded, so it never paints half
                         // drawn or a frame late.
                         onload: {
+                            let url = url.clone();
                             move |_| {
                                 let url = url.clone();
                                 let mut loaded_here = loaded_here;
@@ -224,7 +231,13 @@ pub fn FlippableCardImage(
                                 });
                             }
                         },
-                        onerror: move |_| announce(),
+                        onerror: {
+                            move |_| {
+                                let mut failed_here = failed_here;
+                                failed_here.set(Some(url.clone()));
+                                announce();
+                            }
+                        },
                     }
                 } else {
                     // No art: draw a card-shaped text proxy (name, mana, type,
