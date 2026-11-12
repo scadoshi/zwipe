@@ -433,6 +433,8 @@ pub enum Row {
         text: &'static str,
         /// Its mode chip, if any.
         mode: Option<ModeChip>,
+        /// A mode chip that comes with a pick, set whether or not anything is picked. A client keeps it in the row, folded while `mode` is `None`, so the label eases as it comes and goes.
+        pick_chip: Option<ModeChip>,
         /// Its clear button, if any.
         clear: Option<Clear>,
         /// Whether it can show a chip or a clear button.
@@ -466,6 +468,7 @@ fn label(b: &CardQueryBuilder, text: &'static str, mode: Option<ModeChip>, clear
     Row::Label {
         text,
         mode,
+        pick_chip: None,
         clear: clear.applies(b).then_some(clear),
         controls: true,
     }
@@ -477,6 +480,7 @@ fn label_when_set(b: &CardQueryBuilder, text: &'static str, mode: ModeChip, clea
     Row::Label {
         text,
         mode: set.then_some(mode),
+        pick_chip: Some(mode),
         clear: set.then_some(clear),
         controls: true,
     }
@@ -679,6 +683,7 @@ fn config_rows() -> Vec<Row> {
                 Row::Label {
                     text: toggle.label(),
                     mode: None,
+                    pick_chip: None,
                     clear: None,
                     controls: false,
                 },
@@ -754,6 +759,7 @@ pub fn rows(section: Section, b: &CardQueryBuilder, modes: &Modes) -> Vec<Row> {
             Row::Label {
                 text: "Sort order",
                 mode: None,
+                pick_chip: None,
                 clear: None,
                 controls: false,
             },
@@ -837,6 +843,7 @@ mod tests {
             Row::Label {
                 text: "Basic types include",
                 mode: None,
+                pick_chip: Some(ModeChip::Match(MatchGroup::BasicTypes)),
                 clear: None,
                 controls: true,
             },
@@ -848,6 +855,7 @@ mod tests {
             Row::Label {
                 text: "Type line include",
                 mode: Some(ModeChip::Match(MatchGroup::TypeLine)),
+                pick_chip: None,
                 clear: None,
                 controls: true,
             },
@@ -860,7 +868,8 @@ mod tests {
         assert!(matches!(
             rows[0],
             Row::Label {
-                mode: Some(_),
+                mode: Some(ModeChip::Match(MatchGroup::BasicTypes)),
+                pick_chip: Some(ModeChip::Match(MatchGroup::BasicTypes)),
                 clear: Some(_),
                 ..
             }

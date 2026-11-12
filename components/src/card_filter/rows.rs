@@ -65,9 +65,16 @@ pub(super) fn SectionRows(
             i = i.saturating_add(2);
             continue;
         }
+        // A label keeps its key through a clear, so a folding mode chip eases
+        // shut instead of remounting already gone.
+        let key = if matches!(row, Row::Label { .. }) {
+            format!("label-{section:?}-{i}")
+        } else {
+            format!("{generation}-{i}")
+        };
         out.push(rsx! {
             RowView {
-                key: "{generation}-{i}",
+                key: "{key}",
                 row,
                 draft,
                 epoch,
@@ -101,9 +108,22 @@ fn RowView(
 ) -> Element {
     match row {
         Row::Label {
-            text, mode, clear, ..
+            text,
+            mode,
+            pick_chip,
+            clear,
+            ..
         } => rsx! {
-            LabelRow { text, mode, clear, row, draft, epoch, on_dictionary }
+            LabelRow {
+                text,
+                mode,
+                pick_chip,
+                clear,
+                row,
+                draft,
+                epoch,
+                on_dictionary,
+            }
         },
         Row::Text(field) => {
             let value = field.get(&draft.read().draft).to_owned();
@@ -142,12 +162,26 @@ fn RowView(
     }
 }
 
+/// The class of a label's mode chip, `mode` being the chip it shows and
+/// `pick_chip` the one that comes with a pick: that one carries `label-chip`,
+/// and folds while nothing is picked.
+fn mode_chip_class(mode: Option<ModeChip>, pick_chip: Option<ModeChip>) -> &'static str {
+    match (pick_chip, mode) {
+        (None, _) => "chip-xs",
+        (Some(_), Some(_)) => "chip-xs label-chip",
+        (Some(_), None) => "chip-xs label-chip label-chip-folded",
+    }
+}
+
 /// A label with its mode chip, the Oracle tags `Dictionary` chip (when the
-/// host has a dictionary) and its `×`.
+/// host has a dictionary) and its `×`. A chip that comes with a pick stays in
+/// the row folded while nothing is picked, so the centered label eases over
+/// as it opens and folds.
 #[component]
 fn LabelRow(
     text: &'static str,
     mode: Option<ModeChip>,
+    pick_chip: Option<ModeChip>,
     clear: Option<Clear>,
     row: Row,
     mut draft: Signal<FilterDraft>,
@@ -155,7 +189,9 @@ fn LabelRow(
     on_dictionary: Option<EventHandler<PickerField>>,
 ) -> Element {
     let dictionary = on_dictionary.and_then(|_| sections::dictionary_for(row));
-    let mode_label = mode.map(|chip| {
+    let chip = mode.or(pick_chip);
+    let folded = mode.is_none();
+    let mode_label = chip.map(|chip| {
         let d = draft.read();
         d.modes.label(&d.draft, chip)
     });
@@ -173,9 +209,12 @@ fn LabelRow(
                     "Dictionary"
                 }
             }
-            if let (Some(chip), Some(label)) = (mode, mode_label) {
+            if let (Some(chip), Some(label)) = (chip, mode_label) {
                 button {
-                    class: "chip-xs",
+                    class: mode_chip_class(mode, pick_chip),
+                    disabled: folded,
+                    tabindex: if folded { "-1" },
+                    "aria-hidden": if folded { "true" },
                     onclick: move |_| {
                         let d = &mut *draft.write();
                         d.modes.flip(&mut d.draft, chip);
@@ -545,4 +584,26 @@ const RESULT_STAGGER_MS: usize = 40;
 fn result_delay(i: usize) -> String {
     let enter = i.saturating_mul(RESULT_STAGGER_MS);
     format!("animation-delay: {enter}ms;")
+}
+
+#[cfg(test)]
+mod tests {
+    use zwipe_ui::filter::fields::MatchGroup;
+
+    use super::*;
+
+    const ANY_ALL: ModeChip = ModeChip::Match(MatchGroup::BasicTypes);
+
+    #[test]
+    fn a_chip_that_comes_with_a_pick_folds_until_then() {
+        assert_eq!(mode_chip_class(Some(ANY_ALL), None), "chip-xs");
+        assert_eq!(
+            mode_chip_class(Some(ANY_ALL), Some(ANY_ALL)),
+            "chip-xs label-chip"
+        );
+        assert_eq!(
+            mode_chip_class(None, Some(ANY_ALL)),
+            "chip-xs label-chip label-chip-folded"
+        );
+    }
 }

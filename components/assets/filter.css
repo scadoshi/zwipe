@@ -220,6 +220,33 @@
     margin-right: calc(-1 * (var(--label-clear-w) + 0.5rem));
 }
 
+/* A mode chip that comes with a pick, as Basic types include's Any, stays in
+   its row: folded to nothing while nothing is picked, its left margin giving
+   back the row's gap. It opens and folds on the enter settle, so the centered
+   label eases over instead of jumping. */
+.label-row > .label-chip {
+    box-sizing: border-box;
+    max-width: 4rem;
+    overflow: hidden;
+    white-space: nowrap;
+    transition: all var(--enter-duration) var(--ease-enter);
+}
+
+.label-row > .label-chip-folded {
+    max-width: 0;
+    padding-inline: 0;
+    border-inline-width: 0;
+    margin-left: -0.25rem;
+    opacity: 0;
+    pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .label-row > .label-chip {
+        transition: none;
+    }
+}
+
 /* ── Floating type-to-search results ─────────────────────────────────────
    Shared by every type-to-search picker (deck-cards quick add, the filter
    sheet's artist/set/type/keyword/oracle-word/otag fields, the deck form's
