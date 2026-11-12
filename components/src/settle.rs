@@ -9,8 +9,8 @@
 //!   group's move;
 //! - a click or typing inside an element marked [`TRIGGER`], a click on a
 //!   row's action button inside a scope or on a toast's button, or one of
-//!   [`KEYS`] outside a text field starts a watch. Opening a row or folding
-//!   a group never does.
+//!   [`KEYS`] outside a text field starts a watch. Opening a row, folding a
+//!   group or folding them all ([`NOT_TRIGGERS`]) never does.
 //!
 //! A trigger notes where every keyed thing sits, once, before the page's own
 //! handler changes anything. For [`WATCH_MS`] after it, each change to a
@@ -43,6 +43,10 @@ pub const WATCH_MS: u32 = 900;
 
 /// The smallest move that counts as a jump, in pixels.
 pub const JUMP_PX: u32 = 40;
+
+/// Controls inside a [`TRIGGER`] row that never start a watch, since they
+/// fold groups rather than reorder them: the deck page's fold-all button.
+pub const NOT_TRIGGERS: &str = ".deck-fold-all";
 
 /// The keys that start a watch outside a text field, as `KeyboardEvent.key`:
 /// the deck page's undo, board moves, star and quantity steps.
@@ -215,8 +219,11 @@ const SETTLE_JS: &str = r"
     setTimeout(function end() { if (performance.now() < until) setTimeout(end, until - performance.now()); else stop(); }, WATCH);
   };
   const TRIGGERS = '[data-settle], [data-settle-scope] .card-action-btn, .toast-container button';
+  // Controls in a trigger row that fold or show rather than reorder.
+  const NOT_TRIGGERS = '__SKIP__';
   document.addEventListener('click', (e) => {
-    if (e.target instanceof Element && e.target.closest(TRIGGERS)) watch();
+    const t = e.target;
+    if (t instanceof Element && t.closest(TRIGGERS) && !t.closest(NOT_TRIGGERS)) watch();
   }, true);
   document.addEventListener('input', (e) => {
     if (e.target instanceof Element && e.target.closest('[data-settle]')) watch();
@@ -237,6 +244,7 @@ fn script() -> String {
         .replace("__WATCH__", &WATCH_MS.to_string())
         .replace("__JUMP__", &JUMP_PX.to_string())
         .replace("__KEYS__", &format!("{KEYS:?}"))
+        .replace("__SKIP__", NOT_TRIGGERS)
 }
 
 /// Installs the settling on the page, once per document: every scope on the
@@ -254,7 +262,7 @@ mod tests {
     #[test]
     fn the_script_carries_its_numbers_and_the_marks() {
         let script = script();
-        for placeholder in ["__MS__", "__WATCH__", "__JUMP__", "__KEYS__"] {
+        for placeholder in ["__MS__", "__WATCH__", "__JUMP__", "__KEYS__", "__SKIP__"] {
             assert!(!script.contains(placeholder), "{placeholder} is filled");
         }
         assert!(script.contains("const MS = 250, WATCH = 900, JUMP = 40"));
