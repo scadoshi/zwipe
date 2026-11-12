@@ -2546,6 +2546,13 @@ html.keyboard-up .web-dock-pair {
     gap: var(--panel-gap);
 }
 
+/* The List's two columns lay out as the one flow above until a host pairs
+   them side by side. */
+.deck-list-columns,
+.deck-list-column {
+    display: contents;
+}
+
 .deck-empty {
     margin: 0;
     padding: 1rem;

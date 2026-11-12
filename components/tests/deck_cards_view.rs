@@ -141,3 +141,64 @@ fn the_stack_drawer_without_actions_offers_no_edit() {
         "the drawer still shows its card: {html}"
     );
 }
+
+/// A group of `n` copies of the shared card under `key`, each row its own card id.
+fn group(key: &str, n: usize) -> (components::DeckSection, Vec<RowInfo>) {
+    let rows: Vec<RowInfo> = (0..n)
+        .map(|_| {
+            let mut row = row();
+            row.card.scryfall_data.id = Uuid::new_v4();
+            row
+        })
+        .collect();
+    let section = components::DeckSection {
+        key: key.to_owned(),
+        title: key.to_owned(),
+        pips: None,
+        cards: rows.iter().map(|r| r.card.clone()).collect(),
+    };
+    (section, rows)
+}
+
+#[test]
+fn the_list_lays_its_groups_down_two_plain_columns_in_order() {
+    fn app() -> Element {
+        let details = StackDetails {
+            reveal: use_signal(Reveal::default),
+            details_open: use_signal(|| false),
+        };
+        rsx! {
+            components::DeckCardsView {
+                sections: vec![group("Creatures", 6), group("Lands", 2), group("Artifacts", 2)],
+                view: zwipe_ui::deck_cards::stacks::CardsView::List,
+                currency: PriceCurrency::default(),
+                collapsed: use_signal(Default::default),
+                details,
+                selected: use_signal(|| None),
+                face: use_signal(|| 0),
+                faces: use_signal(HashMap::new),
+                boards: HashMap::new(),
+                group_buy: components::use_group_buy(),
+                actions: None,
+                host: components::DeckRowHost::default(),
+            }
+        }
+    }
+    let html = render(app);
+    assert!(
+        !html.contains("column-count"),
+        "no CSS multi-column: {html}"
+    );
+    let columns: Vec<&str> = html.split(r#"class="deck-list-column""#).skip(1).collect();
+    assert_eq!(columns.len(), 2, "two columns: {html}");
+    let left = columns.first().unwrap();
+    let right = columns.get(1).unwrap();
+    assert!(
+        left.contains("Creatures") && !left.contains("Lands"),
+        "{left}"
+    );
+    assert!(
+        right.contains("Lands") && right.contains("Artifacts"),
+        "{right}"
+    );
+}

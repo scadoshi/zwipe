@@ -2836,22 +2836,21 @@ body:has(.deck-stacks) .sheet-form-drawer:has(> .card-details-drawer) > .sheet-b
     }
 }
 
-/* From 1400px the list's groups flow down two columns, each group whole in
-   one of them. */
+/* From 1400px the list's groups run down two columns side by side, the
+   first ones on the left, each group whole in one of them. */
 @media (min-width: 1400px) {
-    .web-deck-page .deck-bands:not(:has(> .deck-stacks)) {
-        display: block;
-        column-count: 2;
-        column-gap: var(--panel-gap);
+    .web-deck-page .deck-list-columns {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--panel-gap);
+        align-items: start;
     }
 
-    .web-deck-page .deck-bands:not(:has(> .deck-stacks)) > * {
-        break-inside: avoid;
-    }
-
-    /* The gap falls away at the top of the second column. */
-    .web-deck-page .deck-bands:not(:has(> .deck-stacks)) > * + * {
-        margin-top: var(--panel-gap);
+    .web-deck-page .deck-list-column {
+        display: flex;
+        flex-direction: column;
+        gap: var(--panel-gap);
+        min-width: 0;
     }
 }
 

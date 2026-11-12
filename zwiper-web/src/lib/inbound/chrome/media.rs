@@ -120,11 +120,18 @@ mod tests {
             ".web-page.web-deck-page",
         );
         assert!(page.contains("max-width: none"), "{page}");
-        let bands = rule_in(
-            "@media (min-width: 1400px) {\n    .web-deck-page .deck-bands",
-            ".web-deck-page .deck-bands:not(:has(> .deck-stacks))",
+        let columns = rule_in(
+            "@media (min-width: 1400px) {\n    .web-deck-page .deck-list-columns",
+            ".web-deck-page .deck-list-columns",
         );
-        assert!(bands.contains("column-count: 2"), "{bands}");
+        assert!(
+            columns.contains("grid-template-columns: repeat(2, minmax(0, 1fr))"),
+            "{columns}"
+        );
+        assert!(
+            !WEB_CSS.contains("column-count"),
+            "no CSS multi-column, which Firefox lays out again on every change"
+        );
     }
 
     #[test]

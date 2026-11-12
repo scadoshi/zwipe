@@ -16,6 +16,7 @@ use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCur
 use zwipe_core::domain::deck::Board;
 use zwipe_ui::buy::{group_cards, group_price};
 use zwipe_ui::deck::form::Slot;
+use zwipe_ui::deck_cards::columns;
 use zwipe_ui::deck_cards::keys::{RowInfo, RowKind};
 use zwipe_ui::deck_cards::stacks::{CardsView, Gesture, Reveal};
 
@@ -119,8 +120,8 @@ pub fn use_stack_details_sync(
     });
 }
 
-/// The deck's cards in `view`: List bands of rows or Stacks, each group folding by `collapsed`
-/// and its cart opening `group_buy` on its cards. `boards` holds each listed card's board (the
+/// The deck's cards in `view`: List bands of rows, in two columns ([`columns::split_at`]), or
+/// Stacks, each group folding by `collapsed` and its cart opening `group_buy` on its cards. `boards` holds each listed card's board (the
 /// main board for one it lacks), `selected` the open row, `face` the open row's face and `faces`
 /// the face each card shows, and `show_art` whether rows show their art, read by each row so a
 /// toggle renders the rows alone. While `dealing` every stack deals its cards in.
@@ -146,8 +147,11 @@ pub fn DeckCardsView(
             DeckStacks { sections, currency, collapsed, details, faces, group_buy, dealing }
         };
     }
-    rsx! {
-        for (section, rows) in sections {
+    let row_counts: Vec<usize> = sections.iter().map(|(_, rows)| rows.len()).collect();
+    let mut left = sections;
+    let right = left.split_off(columns::split_at(&row_counts));
+    let band = |(section, rows): (DeckSection, Vec<RowInfo>)| {
+        rsx! {
             DeckBand {
                 key: "{section.key}",
                 accessory: (!group_cards(&rows).is_empty()).then(|| {
@@ -178,6 +182,21 @@ pub fn DeckCardsView(
                             }
                         }
                     }
+                }
+            }
+        }
+    };
+    // Two plain columns, laid out as one flow until the page is wide enough to pair them.
+    rsx! {
+        div { class: "deck-list-columns",
+            div { class: "deck-list-column",
+                for group in left {
+                    {band(group)}
+                }
+            }
+            div { class: "deck-list-column",
+                for group in right {
+                    {band(group)}
                 }
             }
         }
