@@ -75,6 +75,7 @@ mod pressable;
 mod role_tags;
 mod share_url;
 mod site_footer;
+mod staple_decks_chip;
 mod theme;
 
 pub use architecture::ZwipeArchitecture;
@@ -119,18 +120,18 @@ pub use oracle_text::OracleText;
 pub use orangui::{
     ALLOWED_THEMES, APP_CSS, ActionBar, ActionButton, ActionDock, AlertDialog, AppLifecycle,
     AppPhase, BOOT_BG, BOOT_HEAD, BRAND_RESET_JS, Banner, BootReveal, BottomSheet, Button,
-    ButtonVariant, COMPONENTS_CSS, ChartTip, Chip, ClearWrap, CollapseSet, DarkModeButton, Decode,
-    DialogAction, DialogHostView, DockAction, DockFilter, DockPlace, GalleryFooter, GalleryFrame,
-    GridCells, HEAT_CELL, HEAT_ROWS, HeatCell, HeatGrid, HeatHit, HeatReadout, HintBullet,
-    HintBullets, HintDialog, HintKey, HintLine, InfoButton, KEYBOARD_INSET_JS, ModeIcon,
-    NAV_FOLD_CSS, NAV_GLIDE_JS, NavBar, NavCtaIcon, OverlayBackStack, PageHeader, PageMeta,
-    PaletteIcon, Panel, PasswordInput, RETIRED_THEMES, REVEAL_JS, Replay, SCROLL_FADE_JS, SITE_CSS,
-    SheetFrame, SheetWide, SiteMeta, Splash, SplashGate, StatsStrip, THEME_GROUPS, THEMES_CSS,
-    TOAST_LONG, TOAST_NORMAL, TOAST_QUICK, TextInput, ThemeConfig, ThemePicker, ThemeSheet,
-    heat_span, icons, peak_indices, status_uses, use_app_lifecycle, use_app_lifecycle_root,
-    use_collapse_set, use_dialog_host, use_heat_pick, use_on_resume, use_os_back, use_overlay_back,
-    use_overlay_back_action, use_overlay_back_stack, use_page_kill_recovery, use_persisted_theme,
-    use_theme_follow, use_theme_wipe, with_separators,
+    ButtonVariant, COMPONENTS_CSS, ChartTip, Chip, ClearWrap, CollapseSet, DIALOG_CSS,
+    DarkModeButton, Decode, DialogAction, DialogHostView, DockAction, DockFilter, DockPlace,
+    GalleryFooter, GalleryFrame, GridCells, HEAT_CELL, HEAT_ROWS, HeatCell, HeatGrid, HeatHit,
+    HeatReadout, HintBullet, HintBullets, HintDialog, HintKey, HintLine, InfoButton,
+    KEYBOARD_INSET_JS, ModeIcon, NAV_FOLD_CSS, NAV_GLIDE_JS, NavBar, NavCtaIcon, OverlayBackStack,
+    PageHeader, PageMeta, PaletteIcon, Panel, PasswordInput, RETIRED_THEMES, REVEAL_JS, Replay,
+    SCROLL_FADE_JS, SITE_CSS, SheetFrame, SheetWide, SiteMeta, Splash, SplashGate, StatsStrip,
+    THEME_GROUPS, THEMES_CSS, TOAST_LONG, TOAST_NORMAL, TOAST_QUICK, TextInput, ThemeConfig,
+    ThemePicker, ThemeSheet, heat_span, icons, peak_indices, status_uses, use_app_lifecycle,
+    use_app_lifecycle_root, use_collapse_set, use_dialog_host, use_heat_pick, use_on_resume,
+    use_os_back, use_overlay_back, use_overlay_back_action, use_overlay_back_stack,
+    use_page_kill_recovery, use_persisted_theme, use_theme_follow, use_theme_wipe, with_separators,
 };
 #[cfg(feature = "links")]
 pub use orangui::{OpenUrlError, open_url, use_in_app_links};
@@ -141,6 +142,7 @@ pub use pressable::{Pressable, is_press};
 pub use role_tags::{OtagDef, RoleTags};
 pub use share_url::ShareUrl;
 pub use site_footer::SiteFooter;
+pub use staple_decks_chip::StapleDecksChip;
 pub use theme::{pip_style_class, theme_from_settings};
 
 /// The Magic rules: oracle text, keyword chips, card rows, the flippable card

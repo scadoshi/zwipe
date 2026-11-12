@@ -33,7 +33,9 @@ use zwipe_core::http::contracts::suggestions::{
 };
 use zwipe_ui::deck_cards::stacks::CardsView;
 use zwipe_ui::generation::Generation;
-use zwipe_ui::playstyle::{HELD_SIZE, LIST_SIZE, empty_identity_line, of_identity, shown};
+use zwipe_ui::playstyle::{
+    HELD_SIZE, LIST_SIZE, StapleDeck, empty_identity_line, named_staple_decks, of_identity, shown,
+};
 use zwipe_ui::screens::playstyle as model;
 use zwipe_ui::telemetry::vocabulary::Screen;
 
@@ -298,6 +300,12 @@ pub fn Playstyle() -> Element {
 
     let cold_start = deck_count() == 0;
     let has_entries = !entries().is_empty();
+    // The user's decks, which name a staple's deck chips; none until they load.
+    let staple_decks: Vec<StapleDeck> = deck_profiles
+        .read()
+        .as_ref()
+        .map(|decks| decks.iter().map(StapleDeck::from).collect())
+        .unwrap_or_default();
     // A suggested commander's printing carries into Create deck; a staple only
     // browses its printings.
     let picks = overlays
@@ -331,6 +339,8 @@ pub fn Playstyle() -> Element {
         .map(|p| p.staples.clone())
         .unwrap_or_default();
 
+    // The deck list again for the stacks' drawer, which names a staple's decks.
+    let drawer_decks = staple_decks.clone();
     rsx! {
         ScreenFrame {
             title: "Playstyle",
@@ -415,7 +425,7 @@ pub fn Playstyle() -> Element {
                                     }
                                 }
                                 if !staples.is_empty() {
-                                    StaplesPanel { staples, deck_count: deck_count(), expanded_card, wide: wide(), view }
+                                    StaplesPanel { staples, deck_count: deck_count(), decks: staple_decks, expanded_card, wide: wide(), view }
                                 }
                                 div { class: "web-playstyle-cell web-playstyle-danger",
                                     DangerZoneAction {
@@ -479,7 +489,13 @@ pub fn Playstyle() -> Element {
                         .read()
                         .as_ref()
                         .and_then(|p| p.staples.iter().find(|s| s.card.scryfall_data.id == id).cloned());
-                    staple.map_or_else(|| rsx! {}, |staple| staple_footer(&staple, deck_count()))
+                    staple.map_or_else(
+                        || rsx! {},
+                        |staple| {
+                            let in_decks = named_staple_decks(&staple.deck_ids, &drawer_decks);
+                            staple_footer(&staple, deck_count(), in_decks)
+                        },
+                    )
                 }),
             }
         }

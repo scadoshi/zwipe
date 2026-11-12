@@ -21,7 +21,7 @@ use crate::activity::Bar;
 use crate::colors::ColorCounts;
 use crate::deck;
 use crate::generation::{Generation, Ticket};
-use crate::playstyle::{self, ProfileSummary, SharedTags, StapleColor, TagRow};
+use crate::playstyle::{self, ProfileSummary, SharedTags, StapleColor, StapleDeck, TagRow};
 pub use crate::playstyle::{HELD_SIZE, LIST_SIZE};
 use crate::toast::{Toast, ToastKind};
 
@@ -141,6 +141,8 @@ pub enum Destination {
     Previous,
     /// The Create deck form, after [`Effect::SeedCommander`].
     CreateDeck,
+    /// A deck's page, from a staple's deck chip.
+    Deck(Uuid),
 }
 
 /// One of the profile's sections, in the order they draw.
@@ -231,10 +233,10 @@ pub enum Action {
         /// The ranking, the deck count and the profile.
         found: Box<HttpCommanderSuggestions>,
     },
-    /// The user's decks arrived, for the create gate. A failure sends nothing, and the gate counts no deck.
+    /// The user's decks arrived, for the create gate and to name a staple's decks. A failure sends nothing: the gate counts no deck, and a staple's chip stays its count.
     DeckProfilesLoaded {
-        /// How many decks the user owns.
-        count: usize,
+        /// Every deck the user owns.
+        decks: Vec<StapleDeck>,
     },
     /// The request holding `ticket` failed. The client has already reported it and raised its error toast.
     Failed {
@@ -285,6 +287,8 @@ pub enum Action {
     PickPrinting(Box<Card>),
     /// The Swipe overlay closed. Its swipes may have saved or skipped commanders, so the ranking fetches again.
     SwipeClosed,
+    /// A staple's deck chip: opens that deck.
+    OpenDeck(Uuid),
     /// Goes back to the screen before.
     Back,
 }
@@ -362,8 +366,8 @@ pub struct State {
     profile: Option<HttpBuilderProfile>,
     /// The newest load, while it is out.
     load_waiting: Option<Ticket>,
-    /// The user's decks, for the create gate, once fetched.
-    deck_profiles: Option<usize>,
+    /// The user's decks, for the create gate and a staple's deck chips, once fetched.
+    deck_profiles: Option<Vec<StapleDeck>>,
     /// The Show chip in effect; `None` is All.
     identity: Option<Vec<Color>>,
     /// The Staples Type chip in effect; `None` is All.
@@ -432,8 +436,8 @@ impl State {
                 }
                 Vec::new()
             }
-            Action::DeckProfilesLoaded { count } => {
-                self.deck_profiles = Some(count);
+            Action::DeckProfilesLoaded { decks } => {
+                self.deck_profiles = Some(decks);
                 Vec::new()
             }
             Action::Failed { ticket } => {
@@ -469,7 +473,7 @@ impl State {
                 Vec::new()
             }
             Action::Create { card, verified } => {
-                match deck::create_gate(verified, self.deck_profiles.unwrap_or(0)) {
+                match deck::create_gate(verified, self.deck_profiles.as_ref().map_or(0, Vec::len)) {
                     Ok(()) => vec![
                         Effect::SeedCommander(card),
                         Effect::Navigate(Destination::CreateDeck),
@@ -496,6 +500,7 @@ impl State {
                 Vec::new()
             }
             Action::SwipeClosed => vec![self.fetch()],
+            Action::OpenDeck(deck_id) => vec![Effect::Navigate(Destination::Deck(deck_id))],
             Action::Back => vec![Effect::Navigate(Destination::Previous)],
         }
     }
@@ -739,6 +744,12 @@ impl State {
     #[must_use]
     pub fn staples(&self) -> &[HttpStaple] {
         self.profile.as_ref().map_or(&[], |p| p.staples.as_slice())
+    }
+
+    /// The user's decks, which name a staple's deck chips through [`playstyle::named_staple_decks`]; empty until they arrive.
+    #[must_use]
+    pub fn decks(&self) -> &[StapleDeck] {
+        self.deck_profiles.as_deref().unwrap_or_default()
     }
 
     /// Whether the Staples panel draws: the screen is loaded and there is a staple.

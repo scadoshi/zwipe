@@ -19,5 +19,5 @@ thinker: one cart, one store dialog (`CartButton`, `StoreDialog`, from 353), wit
 - App deck view: Budget's Buy row is gone; a cart in the dock beside Cards.
 - App home featured flavor: the Buy button becomes the cart, opening the shared dialog.
 - zwipe.net guide: the Budget paragraph names the dock cart and the stacks' carts.
-- Left: zwipe.net's featured flavor keeps its two links. The kit draws dialogs with app-only rules (`APP_CSS`), which the site does not load.
+- zwipe.net featured flavor: the two retailer links become the cart (follow-up PR). orangui#36 moved the dialog's rules into their own `DIALOG_CSS`, which zwipe.net now loads, mounting the dialog host at its root.
 - Removed with them: zwiper-web's `cards/buy_links.rs`, zwipe-ui's `Retailer`, `Action::Buy` and the two `BUY` labels, and the `.deck-buy-row` and `.web-buy-link` rules.

@@ -1,7 +1,7 @@
 //! Playstyle's card rows: a suggestion with the reasons it fits, and the
 //! Staples panel with its Type and Color filters.
 
-use components::{CardListFold, CardRoleChips, Chip};
+use components::{CardListFold, CardRoleChips, Chip, StapleDecksChip};
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
@@ -11,8 +11,9 @@ use zwipe_core::http::contracts::suggestions::{
 };
 use zwipe_ui::deck_cards::stacks::CardsView;
 use zwipe_ui::playstyle::{
-    StapleColor, color_lines, group_shared_tags, matching_staples, staple_colors_present,
-    staple_decks, staple_identity, staple_percent, staple_type_line, staple_types_present,
+    StapleColor, StapleDeck, color_lines, group_shared_tags, matching_staples, named_staple_decks,
+    staple_colors_present, staple_decks, staple_identity, staple_percent, staple_type_line,
+    staple_types_present,
 };
 
 use super::chips::{IdentityPips, identity_key};
@@ -20,6 +21,7 @@ use crate::inbound::cards::card_row::CardRow;
 use crate::inbound::cards::otag::{OtagDescribe, OtagExamplesOpen};
 use crate::inbound::cards::stack_view::CardsStack;
 use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
+use crate::inbound::router::Route;
 
 /// The Staples group's title.
 const STAPLES_TITLE: &str = "Staples";
@@ -169,6 +171,8 @@ pub(super) fn suggestion_actions(
 pub fn StaplesPanel(
     staples: Vec<HttpStaple>,
     deck_count: u32,
+    /// The user's decks, which name each staple's deck chips.
+    decks: Vec<StapleDeck>,
     expanded_card: Signal<Option<Uuid>>,
     wide: bool,
     /// List rows, or one stack in Stacks.
@@ -215,6 +219,7 @@ pub fn StaplesPanel(
                     for staple in rows {
                         StapleRow {
                             key: "{staple.card.scryfall_data.id}",
+                            in_decks: named_staple_decks(&staple.deck_ids, &decks),
                             staple,
                             deck_count,
                             expanded_card,
@@ -227,10 +232,16 @@ pub fn StaplesPanel(
 }
 
 /// A staple: its share of the user's decks in place of the quantity, and
-/// how many decks run it in the footer.
+/// how many decks run it in the footer, a chip that lists `in_decks`, each
+/// opening its deck.
 #[component]
-fn StapleRow(staple: HttpStaple, deck_count: u32, expanded_card: Signal<Option<Uuid>>) -> Element {
-    let footer = staple_footer(&staple, deck_count);
+fn StapleRow(
+    staple: HttpStaple,
+    deck_count: u32,
+    in_decks: Vec<StapleDeck>,
+    expanded_card: Signal<Option<Uuid>>,
+) -> Element {
+    let footer = staple_footer(&staple, deck_count, in_decks);
     rsx! {
         CardRow {
             card: staple.card,
@@ -242,13 +253,21 @@ fn StapleRow(staple: HttpStaple, deck_count: u32, expanded_card: Signal<Option<U
     }
 }
 
-/// How many of the user's decks run `staple`, as a chip. Its row and its
-/// stack card's drawer both show it.
-pub(super) fn staple_footer(staple: &HttpStaple, deck_count: u32) -> Element {
+/// How many of the user's decks run `staple`, as a chip that lists `in_decks`,
+/// each opening its deck. Its row and its stack card's drawer both show it.
+pub(super) fn staple_footer(
+    staple: &HttpStaple,
+    deck_count: u32,
+    in_decks: Vec<StapleDeck>,
+) -> Element {
     let decks_label = staple_decks(staple.decks, deck_count);
     rsx! {
-        div { class: "keyword-chips",
-            span { class: "detail-chip detail-chip-pt", "{decks_label}" }
+        StapleDecksChip {
+            label: decks_label,
+            decks: in_decks,
+            on_open: move |deck_id: Uuid| {
+                navigator().push(Route::ViewDeck { deck_id });
+            },
         }
     }
 }

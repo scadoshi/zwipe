@@ -53,6 +53,8 @@ pub const UPCOMING: &[Release] = &[
         entries: &[
             "Suggested commanders and the commander swipe on the web end with the site's footer, as Add does",
             "On the web, Playstyle and Activity take p, i, v and d on a card and show their lists as a stack too",
+            "A staple's deck count on Playstyle opens to the decks that run it, each one tap from its deck",
+            "On the web, an Oracle tag's examples take h, j, d and v, ? opens the hint of the open modal, and a card slides clear of its details where it fits",
         ],
     },
     Release {
@@ -64,7 +66,6 @@ pub const UPCOMING: &[Release] = &[
             "Printings has no Select where there is nothing to save the pick to",
             "The web's large dialogs fade and rise in when they open",
             "Buying is one cart on the web and in the app, on the deck's dock and the featured card, opening TCGplayer or Card Kingdom",
-            "On the web, an Oracle tag's examples take h, j, d and v, ? opens the hint of the open modal, and a card slides clear of its details where it fits",
         ],
     },
     Release {

@@ -294,6 +294,8 @@ pub struct Staple {
     pub card: Card,
     /// Decks with the card on their mainboard.
     pub decks: u32,
+    /// Those decks' ids, as [`StapleCount::deck_ids`] orders them.
+    pub deck_ids: Vec<Uuid>,
 }
 
 /// One mainboard card of one of the user's decks, as [`rank_staples`] reads
@@ -322,6 +324,9 @@ pub struct StapleCount {
     pub scryfall_data_id: Uuid,
     /// Distinct decks with the card on their mainboard.
     pub decks: u32,
+    /// Those decks' ids, once each, in input order: the most recently
+    /// updated deck first.
+    pub deck_ids: Vec<Uuid>,
 }
 
 /// The user's staples from every mainboard card of every deck, the input in
@@ -334,7 +339,7 @@ pub struct StapleCount {
 /// the most recently updated deck.
 #[must_use]
 pub fn rank_staples(cards: &[MainboardCard]) -> Vec<StapleCount> {
-    let mut by_oracle: HashMap<Uuid, (&MainboardCard, HashSet<Uuid>)> = HashMap::new();
+    let mut by_oracle: HashMap<Uuid, (&MainboardCard, Vec<Uuid>)> = HashMap::new();
     for card in cards {
         if card
             .type_line
@@ -343,18 +348,20 @@ pub fn rank_staples(cards: &[MainboardCard]) -> Vec<StapleCount> {
         {
             continue;
         }
-        by_oracle
+        let decks = &mut by_oracle
             .entry(card.oracle_id)
-            .or_insert_with(|| (card, HashSet::new()))
-            .1
-            .insert(card.deck_id);
+            .or_insert_with(|| (card, Vec::new()))
+            .1;
+        if !decks.contains(&card.deck_id) {
+            decks.push(card.deck_id);
+        }
     }
-    let mut ranked: Vec<(&MainboardCard, u32)> = by_oracle
+    let mut ranked: Vec<(&MainboardCard, u32, Vec<Uuid>)> = by_oracle
         .into_values()
-        .map(|(first, decks)| (first, u32::try_from(decks.len()).unwrap_or(u32::MAX)))
-        .filter(|(_, decks)| *decks >= STAPLE_MIN_DECKS)
+        .map(|(first, ids)| (first, u32::try_from(ids.len()).unwrap_or(u32::MAX), ids))
+        .filter(|(_, decks, _)| *decks >= STAPLE_MIN_DECKS)
         .collect();
-    ranked.sort_by(|(a, a_decks), (b, b_decks)| {
+    ranked.sort_by(|(a, a_decks, _), (b, b_decks, _)| {
         b_decks
             .cmp(a_decks)
             .then_with(|| a.name.cmp(&b.name))
@@ -363,10 +370,11 @@ pub fn rank_staples(cards: &[MainboardCard]) -> Vec<StapleCount> {
     ranked
         .into_iter()
         .take(PROFILE_STAPLES_SENT)
-        .map(|(first, decks)| StapleCount {
+        .map(|(first, decks, deck_ids)| StapleCount {
             oracle_id: first.oracle_id,
             scryfall_data_id: first.scryfall_data_id,
             decks,
+            deck_ids,
         })
         .collect()
 }
@@ -1247,6 +1255,32 @@ mod tests {
             staple_ids(&staples),
             (0..100u128).map(|n| (n, 2)).collect::<Vec<_>>(),
             "the first hundred by name"
+        );
+    }
+
+    #[test]
+    fn a_staple_lists_its_decks_most_recent_first_once_each() {
+        let rows = vec![
+            row(3, 10, 103, "Sol Ring"),
+            row(1, 11, 110, "Arcane Signet"),
+            row(3, 10, 104, "Sol Ring"),
+            row(1, 10, 101, "Sol Ring"),
+            row(2, 10, 102, "Sol Ring"),
+            row(2, 11, 110, "Arcane Signet"),
+        ];
+        let decks: Vec<(u128, Vec<u128>)> = rank_staples(&rows)
+            .iter()
+            .map(|s| {
+                (
+                    s.oracle_id.as_u128(),
+                    s.deck_ids.iter().map(Uuid::as_u128).collect(),
+                )
+            })
+            .collect();
+        assert_eq!(
+            decks,
+            vec![(10, vec![3, 1, 2]), (11, vec![1, 2])],
+            "in row order, which is most recently updated deck first"
         );
     }
 

@@ -299,6 +299,160 @@
     color: var(--ink-color-error, var(--color-error));
 }
 
+/* ---- Settings lists and the theme sheet (orangui::ThemeSheet) ---- */
+
+/* The column of boxed lists on a settings or detail screen. The width is a
+   soft default. */
+:where(.settings-sections) {
+    width: calc(100% - 2rem);
+}
+
+.settings-sections {
+    display: flex;
+    flex-direction: column;
+    gap: var(--panel-gap);
+    max-width: 40rem;
+    padding-bottom: 1rem;
+}
+
+/* One boxed list: an optional header, then settings rows. */
+.settings-list {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    overflow: hidden;
+    width: 100%;
+    max-width: 40rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.settings-list-header {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-secondary);
+}
+
+/* A long unbroken name wraps instead of pushing the header wide. */
+.settings-list-title {
+    font-size: 1rem;
+    letter-spacing: 0.1em;
+    color: var(--ink-accent-primary, var(--accent-primary));
+    overflow-wrap: break-word;
+    min-width: 0;
+}
+
+.settings-list > .action-bar {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+}
+
+.settings-row {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-secondary);
+    gap: 0.75rem;
+}
+
+.settings-row:last-child {
+    border-bottom: none;
+}
+
+.settings-row-label {
+    font-size: 1rem;
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    opacity: 0.5;
+    flex-shrink: 0;
+}
+
+/* The row's value, on the right: text, chips or a control, wrapping onto
+   more lines rather than pushing the label out. */
+.settings-row-value {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    font-size: 1rem;
+    font-weight: 400;
+    flex-shrink: 1;
+    min-width: 0;
+    text-align: right;
+    overflow-wrap: anywhere;
+}
+
+/* A miniature of the theme: its background as the chip, its muted text as the
+   border, and the six palette slots inside. */
+.theme-swatches {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+    flex-shrink: 0;
+    padding: 0.2rem 0.25rem;
+    border-radius: 0.35rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--text-muted);
+}
+
+.theme-dot {
+    width: 0.7rem;
+    height: 0.7rem;
+    border-radius: 0.22rem;
+    flex-shrink: 0;
+}
+
+/* A quiet line under a group of preference rows. A path or an error has no
+   spaces to wrap at, so it breaks anywhere. The size and margin are soft
+   defaults. */
+:where(.pref-note) {
+    font-size: 0.75rem;
+    margin: 0 0 0.6rem;
+}
+
+.pref-note {
+    color: var(--ink-text-muted, var(--text-muted));
+    text-align: center;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+}
+
+/* ---- Splash (orangui::Splash) ----
+   The opening overlay: over everything while the first screen mounts under
+   it. Its GridCells rains in, the host's mark resolves in the middle, then
+   the whole overlay fades and unmounts. The fade length matches FADE_MS. */
+.splash {
+    position: fixed;
+    inset: 0;
+    z-index: 400;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.splash-out {
+    opacity: 0;
+}
+
+.splash-mark {
+    display: flex;
+    justify-content: center;
+}
+
+/* The alert dialog (AlertDialog, drawn by DialogHostView): its dim, its box,
+   its title and body, and the action row. Its own sheet, so a site can draw
+   the kit's dialogs without the app shell; APP_CSS includes it. */
+
 /* ---- Alert dialog (orangui::AlertDialog, DialogHostView) ---- */
 
 .alert-dialog-overlay {
@@ -492,154 +646,4 @@
 .alert-dialog-action-danger[aria-busy="true"] {
     opacity: 1;
     cursor: progress;
-}
-
-/* ---- Settings lists and the theme sheet (orangui::ThemeSheet) ---- */
-
-/* The column of boxed lists on a settings or detail screen. The width is a
-   soft default. */
-:where(.settings-sections) {
-    width: calc(100% - 2rem);
-}
-
-.settings-sections {
-    display: flex;
-    flex-direction: column;
-    gap: var(--panel-gap);
-    max-width: 40rem;
-    padding-bottom: 1rem;
-}
-
-/* One boxed list: an optional header, then settings rows. */
-.settings-list {
-    background-color: var(--bg-primary);
-    border: 1px solid var(--border-secondary);
-    border-radius: 1rem;
-    overflow: hidden;
-    width: 100%;
-    max-width: 40rem;
-    box-shadow: var(--shadow-sm);
-}
-
-.settings-list-header {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid var(--border-secondary);
-}
-
-/* A long unbroken name wraps instead of pushing the header wide. */
-.settings-list-title {
-    font-size: 1rem;
-    letter-spacing: 0.1em;
-    color: var(--ink-accent-primary, var(--accent-primary));
-    overflow-wrap: break-word;
-    min-width: 0;
-}
-
-.settings-list > .action-bar {
-    padding-top: 0.75rem;
-    padding-bottom: 0.75rem;
-}
-
-.settings-row {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem;
-    border-bottom: 1px solid var(--border-secondary);
-    gap: 0.75rem;
-}
-
-.settings-row:last-child {
-    border-bottom: none;
-}
-
-.settings-row-label {
-    font-size: 1rem;
-    font-weight: 400;
-    letter-spacing: 0.1em;
-    opacity: 0.5;
-    flex-shrink: 0;
-}
-
-/* The row's value, on the right: text, chips or a control, wrapping onto
-   more lines rather than pushing the label out. */
-.settings-row-value {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: flex-end;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    font-size: 1rem;
-    font-weight: 400;
-    flex-shrink: 1;
-    min-width: 0;
-    text-align: right;
-    overflow-wrap: anywhere;
-}
-
-/* A miniature of the theme: its background as the chip, its muted text as the
-   border, and the six palette slots inside. */
-.theme-swatches {
-    display: flex;
-    align-items: center;
-    gap: 0.2rem;
-    flex-shrink: 0;
-    padding: 0.2rem 0.25rem;
-    border-radius: 0.35rem;
-    background: var(--bg-primary);
-    border: 1px solid var(--text-muted);
-}
-
-.theme-dot {
-    width: 0.7rem;
-    height: 0.7rem;
-    border-radius: 0.22rem;
-    flex-shrink: 0;
-}
-
-/* A quiet line under a group of preference rows. A path or an error has no
-   spaces to wrap at, so it breaks anywhere. The size and margin are soft
-   defaults. */
-:where(.pref-note) {
-    font-size: 0.75rem;
-    margin: 0 0 0.6rem;
-}
-
-.pref-note {
-    color: var(--ink-text-muted, var(--text-muted));
-    text-align: center;
-    line-height: 1.4;
-    overflow-wrap: anywhere;
-}
-
-/* ---- Splash (orangui::Splash) ----
-   The opening overlay: over everything while the first screen mounts under
-   it. Its GridCells rains in, the host's mark resolves in the middle, then
-   the whole overlay fades and unmounts. The fade length matches FADE_MS. */
-.splash {
-    position: fixed;
-    inset: 0;
-    z-index: 400;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 1;
-    transition: opacity 0.3s ease;
-}
-
-.splash-out {
-    opacity: 0;
-}
-
-.splash-mark {
-    display: flex;
-    justify-content: center;
 }
