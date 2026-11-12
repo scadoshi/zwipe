@@ -149,6 +149,8 @@ fn App() -> Element {
     use_hook(zwiper::outbound::shake_to_edit::disable);
     // Unclaimed link clicks open in the in-app browser, not Safari.
     components::use_in_app_links();
+    // A card drawn without its image shrinks its text to fit its box.
+    components::use_card_proxy_fit();
 
     // The router's history, with the guard that asks before a screen with
     // unsaved changes is left.

@@ -25,6 +25,7 @@ use dioxus::html::geometry::euclid::{Point2D, UnknownUnit};
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::card_profile::CardProfile;
 use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
 use zwipe_ui::stack::ghost_held;
 use zwipe_ui::timing::TOP_PAINT_GRACE;
@@ -107,6 +108,8 @@ struct Layer {
     /// Whether this stack already had the card's image in.
     loaded: bool,
     sd: ScryfallData,
+    /// The card's roles and tags, which a no-art proxy lists.
+    profile: CardProfile,
     /// The card and config a touch release dispatches, on the top card only.
     touch: Option<(Card, SwipeConfig)>,
     /// The card and config a mouse release dispatches, on the top card only.
@@ -313,6 +316,7 @@ pub fn SwipeStack(
             loaded: shown_cards.read().contains(&card_id),
             touch: is_top.then(|| (card.clone(), config.clone())),
             mouse: is_top.then(|| (card.clone(), config.clone())),
+            profile: card.card_profile,
             sd: card.scryfall_data,
         }
     });
@@ -374,6 +378,7 @@ pub fn SwipeStack(
 
                     FlippableCardImage {
                         sd: layer.sd,
+                        profile: Some(layer.profile),
                         size: ImageSize::Large,
                         class: "card-image".to_string(),
                         draggable: false,
@@ -427,6 +432,7 @@ pub fn SwipeStack(
                             // here) so the fly-off matches, and image-less cards
                             // show their text frame instead of going blank.
                             FlippableCardImage {
+                                profile: Some(exiting.card.card_profile),
                                 sd: exiting.card.scryfall_data,
                                 size: ImageSize::Large,
                                 class: "card-image".to_string(),
