@@ -8,7 +8,7 @@
 use std::collections::{HashMap, HashSet};
 
 use chrono::Utc;
-use components::TOAST_QUICK;
+use components::{DeckEditActions, DeckRow, DeckRowHost, TOAST_QUICK};
 use dioxus::core::spawn_forever;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -16,6 +16,7 @@ use uuid::Uuid;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::card::search_card::card_filter::CardSortKey;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
@@ -37,7 +38,8 @@ use zwipe_ui::timing::QUANTITY_FLUSH;
 use super::quick_add::QUICK_ADD_ID;
 use super::signal_toast;
 use crate::inbound::card_stores::CardStores;
-use crate::inbound::cards::card_row::{CardOverlays, CardRow, ShowRowArt};
+use crate::inbound::cards::card_row::{CardOverlays, ShowRowArt};
+use crate::inbound::cards::otag::{OtagDescribe, OtagExamplesOpen};
 use crate::inbound::cards::stack_view::StackDetails;
 use crate::inbound::cards::swipe_stack::{Swipe, use_swipe_key_handler};
 use crate::inbound::chrome::authed::use_authed;
@@ -96,17 +98,6 @@ pub(crate) struct Meta {
     pub qty: i32,
     pub board: Board,
     pub mvp: bool,
-}
-
-/// The editing actions a row passes to its [`CardRow`], by its kind.
-#[derive(Default)]
-struct RowActions {
-    on_qty: Option<EventHandler<i32>>,
-    on_move: Option<EventHandler<Board>>,
-    board: Option<Board>,
-    mvp: Option<bool>,
-    on_star: Option<EventHandler<()>>,
-    on_print: Option<EventHandler<Card>>,
 }
 
 /// What the view lists, in order, after the pass and the Boards and Show
@@ -1037,11 +1028,60 @@ pub(crate) fn use_deck_editor(deck_id: Uuid, on_failure: LoadFailure) -> Editor 
     }
 }
 
-/// One listed row as a selectable [`CardRow`] with the editing actions its
-/// kind allows, as its own component keyed by the card, so a change to one
-/// row (its details opening, its face turning) renders that row alone.
+/// The deck's edits as the shared deck cards view takes them.
+impl Editor {
+    /// The quantity, board and star edits.
+    pub(crate) fn edit_actions(&self) -> DeckEditActions {
+        DeckEditActions {
+            change_quantity: self.change_quantity,
+            move_to_board: self.move_to_board,
+            toggle_mvp: self.toggle_mvp,
+        }
+    }
+}
+
+/// The deck cards' host buttons: the screen's image preview and view-only printings
+/// ([`CardOverlays`]), `ed`'s own printings sheet, and the Oracle tags' descriptions and examples
+/// where the screen provides them. Call after the screen provides those contexts.
+pub(crate) fn use_deck_row_host(ed: &Editor) -> DeckRowHost {
+    let overlays = try_use_context::<CardOverlays>();
+    let describe_tag = try_use_context::<OtagDescribe>().map(|d| d.0);
+    let on_examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
+    let Editor {
+        mut printing,
+        mut printing_open,
+        ..
+    } = *ed;
+    let on_printing = use_callback(move |(card, slot): (Card, Option<Slot>)| {
+        printing.set(Some((card, slot)));
+        printing_open.set(true);
+    });
+    let on_image = use_callback(move |(sd, face): (ScryfallData, usize)| {
+        if let Some(CardOverlays { mut preview, .. }) = overlays {
+            preview.set(Some((sd, face)));
+        }
+    });
+    let on_view_printing = use_callback(move |card: Card| {
+        if let Some(CardOverlays { printing, .. }) = overlays {
+            let mut printing = printing;
+            printing.set(Some(card));
+        }
+    });
+    DeckRowHost {
+        on_image: overlays.is_some().then_some(on_image),
+        on_printing: Some(on_printing),
+        on_view_printing: overlays.is_some().then_some(on_view_printing),
+        describe_tag,
+        on_examples,
+    }
+}
+
+/// One listed row as a selectable [`DeckRow`] with the editing actions its kind allows, keyed by
+/// the card, so a change to one row (its details opening, its face turning) renders that row
+/// alone.
 pub(crate) fn row_view(
     ed: &Editor,
+    host: DeckRowHost,
     cur: PriceCurrency,
     row_meta: &HashMap<Uuid, Meta>,
     row: RowInfo,
@@ -1049,103 +1089,17 @@ pub(crate) fn row_view(
     let card_id = row.card.scryfall_data.id;
     let board = board_of(row_meta, card_id);
     rsx! {
-        DeckRowItem { key: "{card_id}", ed: *ed, cur, board, row }
-    }
-}
-
-/// [`row_view`]'s row. It reads whether it is the open row and the face it
-/// shows through memos of its own, so the page and the other rows stay put
-/// when they change.
-#[component]
-fn DeckRowItem(ed: Editor, cur: PriceCurrency, board: Board, row: RowInfo) -> Element {
-    let Editor {
-        selected,
-        mut face,
-        mut faces,
-        mut printing,
-        mut printing_open,
-        change_quantity,
-        move_to_board,
-        toggle_mvp,
-        ..
-    } = ed;
-    {
-        let card_id = row.card.scryfall_data.id;
-        let shown_face = use_memo(use_reactive!(|card_id| faces
-            .read()
-            .get(&card_id)
-            .copied()
-            .unwrap_or(0)))();
-        let is_selected = use_memo(use_reactive!(|card_id| selected() == Some(card_id)))();
-        let RowInfo { card, qty, kind } = row;
-        let RowActions {
-            on_qty,
-            on_move,
+        DeckRow {
+            key: "{card_id}",
+            row,
             board,
-            mvp,
-            on_star,
-            on_print,
-        } = match kind {
-            RowKind::Main { mvp } => RowActions {
-                on_qty: Some(EventHandler::new(move |d| {
-                    change_quantity.call((card_id, d, /* record */ true));
-                })),
-                on_move: Some(EventHandler::new(move |b| {
-                    move_to_board.call((card_id, b, /* record */ true));
-                })),
-                board: Some(board),
-                mvp: Some(mvp),
-                on_star: Some(EventHandler::new(move |()| toggle_mvp.call((card_id, mvp)))),
-                on_print: Some(EventHandler::new(move |c: Card| {
-                    printing.set(Some((c, None)));
-                    printing_open.set(true);
-                })),
-            },
-            RowKind::Board(b) => RowActions {
-                on_qty: Some(EventHandler::new(move |d| {
-                    change_quantity.call((card_id, d, /* record */ true));
-                })),
-                on_move: Some(EventHandler::new(move |t| {
-                    move_to_board.call((card_id, t, /* record */ true));
-                })),
-                board: Some(b),
-                on_print: Some(EventHandler::new(move |c: Card| {
-                    printing.set(Some((c, None)));
-                    printing_open.set(true);
-                })),
-                ..RowActions::default()
-            },
-            RowKind::Zone(slot) => RowActions {
-                on_print: Some(EventHandler::new(move |c: Card| {
-                    printing.set(Some((c, Some(slot))));
-                    printing_open.set(true);
-                })),
-                ..RowActions::default()
-            },
-            RowKind::Token => RowActions::default(),
-        };
-        rsx! {
-            div {
-                class: if is_selected { "web-deck-row selected" } else { "web-deck-row" },
-                "data-row": "{card_id}",
-                onclick: move |_| face.set(0),
-                CardRow {
-                    card,
-                    qty,
-                    expanded_card: selected,
-                    on_qty_change: on_qty,
-                    on_move_to: on_move,
-                    current_board: board,
-                    mvp,
-                    on_toggle_mvp: on_star,
-                    price_currency: cur,
-                    on_printing: on_print,
-                    face: Some(shown_face),
-                    on_face_change: move |next: usize| {
-                        faces.write().insert(card_id, next);
-                    },
-                }
-            }
+            currency: cur,
+            selected: ed.selected,
+            face: ed.face,
+            faces: ed.faces,
+            show_art: Some(ed.show_art),
+            actions: Some(ed.edit_actions()),
+            host,
         }
     }
 }

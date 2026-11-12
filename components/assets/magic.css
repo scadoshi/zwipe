@@ -1248,7 +1248,7 @@ i.ms.ms-cost.ms-gp {
     font-weight: 700;
     font-size: 1.15em;
     line-height: 1.2;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
     color: var(--ink-palette-3, var(--palette-3));
 }
 
@@ -1349,11 +1349,78 @@ i.ms.ms-cost.ms-gp {
     box-shadow: var(--shadow-md);
 }
 
-/* A thumbnail: just the name, as many lines of it as read at that size. */
+/* Rows the fitting script drops, in order, from a card the type can't
+   shrink into: the rules text, the Keywords and Card roles rows, the kind
+   chips. The name and the facts row stay. */
+.card-proxy[data-proxy-drop] .card-proxy-text,
+.card-proxy[data-proxy-drop="2"] .card-proxy-row,
+.card-proxy[data-proxy-drop="3"] .card-proxy-row,
+.card-proxy[data-proxy-drop="3"] .card-details-keys {
+    display: none;
+}
+
+/* A covered stack card shows only its top strip: the name and cost on one
+   line, at one size for the whole stack and cut with an ellipsis. The rest
+   shows once the card is revealed. */
+.card-proxy.card-proxy-strip .card-proxy-fit {
+    font-size: 5cqw;
+}
+
+.card-proxy-strip .card-proxy-head {
+    align-items: center;
+}
+
+.card-proxy-strip .card-proxy-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.card-proxy-strip .card-proxy-rule,
+.card-proxy-strip .card-details-keys,
+.card-proxy-strip .card-proxy-text,
+.card-proxy-strip .card-proxy-row,
+.card-proxy-strip .card-details-facts {
+    display: none;
+}
+
+/* A deck tile whose art failed: the deck's name, centered in the tile's
+   square, wrapped between words and fitted like a thumbnail's. */
+.card-proxy.home-deck-tile-proxy {
+    width: 100%;
+    height: 100%;
+    aspect-ratio: auto;
+    border: none;
+    border-radius: inherit;
+}
+
+.home-deck-tile-proxy .card-proxy-fit {
+    height: 100%;
+    justify-content: center;
+    padding: 10cqw;
+    font-size: max(5px, calc(12cqw * var(--proxy-scale, 1)));
+    line-height: 1.15;
+    text-align: center;
+}
+
+.home-deck-tile-proxy .card-proxy-name {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4;
+    overflow: hidden;
+    font-size: 1em;
+    overflow-wrap: normal;
+    word-break: normal;
+}
+
+/* A thumbnail: just the name, wrapped between words, as many lines of it as
+   fit; the fitting script shrinks it until each word fits its width. */
 @container (max-width: 110px) {
     .card-proxy-fit {
         padding: 8cqw;
-        font-size: max(7px, 13cqw);
+        font-size: max(5px, calc(13cqw * var(--proxy-scale, 1)));
         line-height: 1.15;
     }
 
@@ -1364,7 +1431,8 @@ i.ms.ms-cost.ms-gp {
         overflow: hidden;
         font-size: 1em;
         overflow-wrap: normal;
-        word-break: break-word;
+        word-break: normal;
+        hyphens: none;
     }
 
     .card-proxy-head-end,

@@ -19,9 +19,10 @@ use zwipe_ui::playstyle::{
 use super::chips::{IdentityPips, identity_key};
 use crate::inbound::cards::card_row::CardRow;
 use crate::inbound::cards::otag::{OtagDescribe, OtagExamplesOpen};
-use crate::inbound::cards::stack_view::CardsStack;
+use crate::inbound::cards::stack_view::{CardsStack, CardsViewSwitch};
 use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
 use crate::inbound::router::Route;
+use crate::outbound::cards_view_store::CardsViewPlace;
 
 /// The Staples group's title.
 const STAPLES_TITLE: &str = "Staples";
@@ -192,30 +193,45 @@ pub fn StaplesPanel(
     let filters = rsx! {
         StapleTypeChips { active_type, types }
         StapleColorChips { active_color, colors }
+        CardsViewSwitch {
+            view,
+            place: CardsViewPlace::Staples,
+            on_change: move |()| {
+                let mut expanded = expanded_card;
+                expanded.set(None);
+            },
+        }
     };
+    // In Stacks the staples float on the page under their group's header, as
+    // the deck page's stacks do, the filters above.
+    let stacked = view() == CardsView::Stacks && !rows.is_empty();
     rsx! {
         div { class: "web-playstyle-cell web-playstyle-staples",
-            if wide {
+            if wide || stacked {
                 div { class: "deck-controls", {filters.clone()} }
             }
-            CardListFold {
-                title: STAPLES_TITLE,
-                actions: rsx! {
-                    InfoButton { topic: HintTopic::SuggestionStaples }
-                },
-                if !wide {
-                    div { class: "web-card-group-filters", {filters} }
+            if stacked {
+                CardsStack {
+                    cards: rows.iter().map(|s| s.card.clone()).collect::<Vec<Card>>(),
+                    title: STAPLES_TITLE.to_owned(),
+                    trailing: rsx! {
+                        InfoButton { topic: HintTopic::SuggestionStaples }
+                    },
                 }
-                if rows.is_empty() {
-                    div { class: "activity-total activity-total-group",
-                        span { class: "chip-note", "No staples match" }
+            } else {
+                CardListFold {
+                    title: STAPLES_TITLE,
+                    actions: rsx! {
+                        InfoButton { topic: HintTopic::SuggestionStaples }
+                    },
+                    if !wide {
+                        div { class: "web-card-group-filters", {filters} }
                     }
-                }
-                if view() == CardsView::Stacks {
-                    if !rows.is_empty() {
-                        CardsStack { cards: rows.iter().map(|s| s.card.clone()).collect::<Vec<Card>>() }
+                    if rows.is_empty() {
+                        div { class: "activity-total activity-total-group",
+                            span { class: "chip-note", "No staples match" }
+                        }
                     }
-                } else {
                     for staple in rows {
                         StapleRow {
                             key: "{staple.card.scryfall_data.id}",

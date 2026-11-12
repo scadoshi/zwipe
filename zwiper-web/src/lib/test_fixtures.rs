@@ -38,26 +38,3 @@ pub(crate) fn session() -> Session {
         settings: UserSettings::default(),
     }
 }
-
-/// An empty deck named `name` with no commander and no format.
-pub(crate) fn deck_profile(name: &str) -> zwipe_core::domain::deck::DeckProfile {
-    serde_json::from_value(serde_json::json!({
-        "id": Uuid::new_v4(),
-        "name": name,
-        "commander_id": null,
-        "partner_commander_id": null,
-        "background_id": null,
-        "signature_spell_id": null,
-        "format": null,
-        "land_target": null,
-        "price_target": null,
-        "price_target_currency": null,
-        "user_id": Uuid::new_v4(),
-        "card_count": 0,
-        "commander_name": null,
-        "partner_commander_name": null,
-        "background_name": null,
-        "signature_spell_name": null,
-    }))
-    .expect("a valid deck profile")
-}

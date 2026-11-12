@@ -8,13 +8,22 @@ use dioxus::prelude::*;
 
 use crate::{ActionDock, Button, ButtonVariant, DockPlace, SheetFrame, SheetWide};
 
+/// How long the sheet takes to slide out, in milliseconds: the kit's 0.3s
+/// sheet transform.
+#[cfg_attr(
+    not(target_arch = "wasm32"),
+    expect(dead_code, reason = "only the browser times the slide out")
+)]
+const CLOSE_MS: u32 = 300;
+
 /// The sheet, shown while `open`. Its title bar holds the ×, then `title`
 /// unless it is empty (a sheet whose content titles itself), followed by
 /// `title_trailing` when given, such as a card's mana cost. The × and a
 /// backdrop tap call
 /// `on_close`; `on_hint`, when given, puts a `?` in the title bar's right
-/// corner. `class` joins the sheet's own classes. `children` mount only
-/// while open; `dock`, when given, holds the dock's actions. With
+/// corner. `class` joins the sheet's own classes. `children` mount while
+/// open and stay through the slide out after it closes, as the theme sheet
+/// keeps its rows, so the sheet never slides away empty; `dock`, when given, holds the dock's actions. With
 /// `every_width` it is a drawer at every width: below the kit's breakpoint
 /// it floats in from the right, inset under the header, above the docks and
 /// from the right edge, over most of the window's width.
@@ -31,6 +40,15 @@ pub fn DrawerSheet(
     children: Element,
 ) -> Element {
     let shown = open();
+    // Whether the content is mounted: from opening until the slide out ends.
+    let mut content_up = use_signal(move || *open.peek());
+    use_effect(move || {
+        if open() {
+            content_up.set(true);
+        } else if *content_up.peek() {
+            close_after_slide(open, content_up);
+        }
+    });
     let reach = if every_width {
         "drawer-every-width"
     } else {
@@ -63,7 +81,7 @@ pub fn DrawerSheet(
                     }
                 }
                 div { class: "sheet-content",
-                    if shown {
+                    if shown || content_up() {
                         {children}
                     }
                 }
@@ -73,4 +91,22 @@ pub fn DrawerSheet(
             }
         }
     }
+}
+
+/// Unmounts the content once the slide out has run, unless the sheet opened
+/// again meanwhile.
+#[cfg(target_arch = "wasm32")]
+fn close_after_slide(open: ReadSignal<bool>, mut content_up: Signal<bool>) {
+    spawn(async move {
+        gloo_timers::future::TimeoutFuture::new(CLOSE_MS).await;
+        if !*open.peek() {
+            content_up.set(false);
+        }
+    });
+}
+
+/// Off the browser nothing is timed: the content drops at once.
+#[cfg(not(target_arch = "wasm32"))]
+fn close_after_slide(_open: ReadSignal<bool>, mut content_up: Signal<bool>) {
+    content_up.set(false);
 }

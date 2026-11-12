@@ -4,9 +4,10 @@
 //! single-list card screens (Playstyle's lists, Activity's Most skipped)
 //! draw one `CardsStack` per list with a `StackDrawer`.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
-use components::{CardStack, Chip, StackCard};
+use components::{CardStack, Chip, DeckGroupSection, StackCard};
+pub(crate) use components::{DRAWER_CLASSES, StackDetails, use_stack_details_sync};
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
@@ -14,61 +15,7 @@ use zwipe_ui::deck_cards::stacks::{CardsView, Gesture, Reveal, VIEW_LABEL};
 
 use crate::inbound::cards::card_info::CardDetailsSheet;
 use crate::inbound::cards::card_row::CardOverlays;
-use crate::outbound::cards_view_store::CardsViewStore;
-
-/// The stacks' reveal and whether the open card's drawer shows, which a click on a card and the
-/// `d` key both move. A screen with stacks provides it as context.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub(crate) struct StackDetails {
-    /// Which card shows in full and which card's details are open.
-    pub(crate) reveal: Signal<Reveal>,
-    /// Whether the open card's details drawer shows.
-    pub(crate) details_open: Signal<bool>,
-}
-
-impl StackDetails {
-    /// A click on card `id`: its details open, in place of any open one, or close where they are
-    /// open.
-    pub(crate) fn click(self, id: Uuid) {
-        let Self {
-            mut reveal,
-            mut details_open,
-        } = self;
-        reveal.write().apply(Gesture::Click(id));
-        details_open.set(reveal.peek().open().is_some());
-    }
-}
-
-/// The details drawer's classes: the card details drawer's own, then
-/// [`STACK_DETAILS_CLASS`](crate::inbound::chrome::shortcuts::STACK_DETAILS_CLASS), so a card
-/// screen's keys reach the screen through it.
-pub(crate) const DRAWER_CLASSES: &str = "card-details-drawer deck-stack-details";
-
-/// Drops focus from the stack card the drawer opened from, so its focus
-/// outline goes with the drawer.
-const BLUR_STACK_CARD_JS: &str = "if (document.activeElement?.classList.contains('card-stack-card')) document.activeElement.blur();";
-
-/// Keeps the drawer and the reveal state agreeing: a drawer closed by its
-/// ×, Escape, the backdrop or the back gesture closes the open card and
-/// clears its outline, and an open card that left the list closes the
-/// drawer.
-pub(crate) fn use_stack_details_sync(
-    mut reveal: Signal<Reveal>,
-    mut details_open: Signal<bool>,
-    listed: Memo<Vec<Uuid>>,
-) {
-    use_effect(move || {
-        let open = details_open();
-        let card = reveal.peek().open();
-        if !open && card.is_some() {
-            reveal.write().apply(Gesture::Close);
-            document::eval(BLUR_STACK_CARD_JS);
-        }
-        if open && card.is_some_and(|id| !listed().contains(&id)) {
-            details_open.set(false);
-        }
-    });
-}
+use crate::outbound::cards_view_store::{CardsViewPlace, CardsViewStore};
 
 /// A screen's [`StackDetails`], provided as context and kept in step with
 /// `listed`, the ids of every card the screen lists.
@@ -108,16 +55,18 @@ pub(crate) fn use_row_faces() -> RowFaces {
     use_context_provider(|| RowFaces(faces))
 }
 
-/// The List | Stacks choice, as last left on any card screen.
-pub(crate) fn use_cards_view() -> Signal<CardsView> {
-    use_signal(|| CardsViewStore::browser().load())
+/// The List | Stacks choice at `place`, as last left there; the list when it
+/// never was.
+pub(crate) fn use_cards_view(place: CardsViewPlace) -> Signal<CardsView> {
+    use_signal(|| CardsViewStore::browser(place).load())
 }
 
 /// The View chip row: List and Stacks, the one in `view` selected. A tap
-/// stores the choice and calls `on_change`.
+/// stores the choice for `place` and calls `on_change`.
 #[component]
 pub(crate) fn CardsViewSwitch(
     mut view: Signal<CardsView>,
+    place: CardsViewPlace,
     #[props(default)] on_change: Option<EventHandler<()>>,
 ) -> Element {
     rsx! {
@@ -129,7 +78,7 @@ pub(crate) fn CardsViewSwitch(
                     selected: view() == choice,
                     onclick: move |_| {
                         view.set(choice);
-                        CardsViewStore::browser().save(choice);
+                        CardsViewStore::browser(place).save(choice);
                         if let Some(handler) = on_change {
                             handler.call(());
                         }
@@ -141,10 +90,18 @@ pub(crate) fn CardsViewSwitch(
     }
 }
 
-/// `cards` as one stack, each on its face in the screen's [`RowFaces`]: hover reveals a card in
-/// place, and a click opens its details in the screen's [`StackDrawer`].
+/// `cards` as one stack on the page, as the deck page draws a group: the
+/// group's header, `title` and its count with `trailing` at its end, as the
+/// card-width chip over the cards, and the cards floating under it, each on
+/// its face in the screen's [`RowFaces`]. Hover reveals a card in place, and a
+/// click opens its details in the screen's [`StackDrawer`].
 #[component]
-pub(crate) fn CardsStack(cards: Vec<Card>) -> Element {
+pub(crate) fn CardsStack(
+    cards: Vec<Card>,
+    title: String,
+    #[props(default)] trailing: Option<Element>,
+) -> Element {
+    let collapsed: Signal<HashSet<String>> = use_signal(HashSet::new);
     let details = use_context::<StackDetails>();
     let faces = try_use_context::<RowFaces>();
     let mut reveal = details.reveal;
@@ -157,15 +114,27 @@ pub(crate) fn CardsStack(cards: Vec<Card>) -> Element {
             StackCard { card, qty: 1, face }
         })
         .collect();
+    let count = cards.len();
+    let fold_key = title.clone();
     rsx! {
         div { class: "deck-stacks cards-stack",
-            CardStack {
-                cards,
-                revealed: shown.revealed_in(&ids),
-                open: shown.open(),
-                on_hover: move |id| reveal.write().apply(Gesture::Hover(id)),
-                on_leave: move |id| reveal.write().apply(Gesture::Leave(id)),
-                on_select: move |id| details.click(id),
+            div { class: "deck-stack", "data-fold": "{fold_key}",
+                DeckGroupSection {
+                    group_key: title.clone(),
+                    header: title,
+                    pips: None,
+                    count: Some(count),
+                    collapsed,
+                    trailing: trailing.map(|t| rsx! { span { class: "deck-stack-tail", {t} } }),
+                    CardStack {
+                        cards,
+                        revealed: shown.revealed_in(&ids),
+                        open: shown.open(),
+                        on_hover: move |id| reveal.write().apply(Gesture::Hover(id)),
+                        on_leave: move |id| reveal.write().apply(Gesture::Leave(id)),
+                        on_select: move |id| details.click(id),
+                    }
+                }
             }
         }
     }
