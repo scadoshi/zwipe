@@ -4,9 +4,13 @@
  * THEMES_CSS. Rules reference theme CSS variables only, never color literals,
  * so a component resolves to whichever theme the host has active. */
 
-/* The space between stacked panels on every screen of every app and site. */
+/* The space between stacked panels on every screen of every app and site.
+   The entrance curve and length an opening surface shares: a soft ease-out
+   that starts quick and settles. */
 :root {
     --panel-gap: 1rem;
+    --ease-enter: cubic-bezier(0.22, 1, 0.36, 1);
+    --enter-duration: 280ms;
 }
 
 /* ---- Chip (orangui::Chip) ---- */
@@ -1293,14 +1297,21 @@ a.nav-dropdown-item.active:visited {
         border-radius: 1rem;
         border: 1px solid var(--border-secondary);
         opacity: 0;
-        transform: translate(-50%, calc(-50% + 0.75rem)) scale(0.98);
+        transform: translate(-50%, calc(-50% + 0.5rem)) scale(0.98);
         transition: opacity 0.2s ease, transform 0.2s ease, visibility 0s linear 0.2s;
     }
 
+    /* An animation rather than a transition, so a modal mounted already
+       open rises in too. */
     .sheet-form-modal > .bottom-sheet.show {
         opacity: 1;
         transform: translate(-50%, -50%);
-        transition: opacity 0.2s ease, transform 0.2s ease;
+        transition: none;
+        animation: modal-enter var(--enter-duration) var(--ease-enter) backwards;
+    }
+
+    .sheet-form-modal > .sheet-backdrop.show {
+        animation: backdrop-enter var(--enter-duration) var(--ease-enter) backwards;
     }
 
     .sheet-form-drawer > .bottom-sheet {
@@ -1333,12 +1344,31 @@ a.nav-dropdown-item.active:visited {
     }
 }
 
+/* A modal's entrance, for any host's own modal too: a fade with a small
+   rise and grow. It moves translate and scale, so it composes with
+   whatever transform places the modal. */
+@keyframes modal-enter {
+    from {
+        opacity: 0;
+        translate: 0 0.5rem;
+        scale: 0.98;
+    }
+}
+
+@keyframes backdrop-enter {
+    from {
+        background: transparent;
+    }
+}
+
 @media (min-width: 60rem) and (prefers-reduced-motion: reduce) {
     .sheet-form-modal > .bottom-sheet,
     .sheet-form-modal > .bottom-sheet.show,
+    .sheet-form-modal > .sheet-backdrop.show,
     .sheet-form-drawer > .bottom-sheet,
     .sheet-form-drawer > .bottom-sheet.show {
         transition: none;
+        animation: none;
     }
 }
 

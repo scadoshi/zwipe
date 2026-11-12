@@ -65,6 +65,7 @@ pub const UPCOMING: &[Release] = &[
             "The Share dialog on the web shows the deck's own name in its link",
             "A melded card's list row shows the melded card in its thumbnail and hover preview",
             "Hovering a stack on the web's deck page no longer shifts its cards by a pixel",
+            "The web's large dialogs fade and rise in when they open",
         ],
     },
     Release {
