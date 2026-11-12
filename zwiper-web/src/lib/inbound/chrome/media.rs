@@ -148,8 +148,12 @@ mod tests {
             !WEB_CSS.contains(".web-page.web-home-page {"),
             "Home has no width of its own"
         );
-        let row = rule_in("@media (min-width: 120rem) {", ".web-home .web-home-page");
-        assert!(row.contains("repeat(3, minmax(0, 1fr))"), "{row}");
+        // Decks and Colors share a row at every wide width, with Featured
+        // flavor on its own row under them.
+        assert!(
+            !WEB_CSS.contains(".web-home .web-home-page {\n        display: grid;"),
+            "Home never puts its three panels in one row"
+        );
     }
 
     #[test]

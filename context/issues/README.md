@@ -109,6 +109,7 @@ Who checked, on which live build, what they saw.
 | [378](378-swipe-image-fallback.md) | A failed swipe card image shows the card underneath | fixing | laptop | #583 |
 | [395](395-import-width.md) | app.zwipe.net Import squeezes into the left of its page | fixing | thinker | #604 |
 | [394](394-no-prose-caps.md) | Running text stops at 70ch inside the wide panels | fixing | thinker | #598, portfolio#49 |
+| [396](396-home-rows.md) | app.zwipe.net Home puts its three panels in one row from 1920 | fixing | thinker | #602 |
 | [387](387-home-column.md) | app.zwipe.net Home runs the window's width | fixing | thinker | #590 |
 | [389](389-profile-dock.md) | A deck's Edit, Clone and Share sit in the Profile header on a phone | fixing | thinker | #593 |
 

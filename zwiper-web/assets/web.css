@@ -1751,24 +1751,6 @@ body:has(.deck-stacks) .sheet-form-drawer:has(> .card-details-drawer) > .sheet-b
     }
 }
 
-/* From 1920px Decks, Colors and the flavor card share one row under the
-   hero. */
-@media (min-width: 120rem) {
-    .web-home .web-home-page {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        align-items: start;
-    }
-
-    .web-home-page > .web-hero {
-        grid-column: 1 / -1;
-    }
-
-    .web-home-page > .web-columns {
-        display: contents;
-    }
-}
-
 /* A recent deck's art grows a little under a mouse, inside its square. */
 @media (hover: hover) {
     .home-deck-tile-art > img {

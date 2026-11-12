@@ -57,6 +57,7 @@ pub const UPCOMING: &[Release] = &[
             "On the web, Import runs the full width of its page, as Export does",
             "On the web, Home's tagline and the Privacy policy's text run the full width of their panels",
             "Back closes an open card image before leaving the screen",
+            "On the web, Home pairs Decks and Colors under the hero, with Featured flavor on its own row",
             "On a phone, a deck's Edit, Clone and Share sit in the dock beside Cards",
         ],
     },
