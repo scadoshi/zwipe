@@ -1764,6 +1764,16 @@ body:has(.deck-stacks) .sheet-form-drawer:has(> .card-details-drawer) > .sheet-b
         min-height: 0;
     }
 
+    /* Side by side, Colors runs as tall as Decks, its bars at the top and
+       the rest empty panel. Stacked on a phone, each keeps its own height. */
+    .web-home-page > .web-columns {
+        align-items: stretch;
+    }
+
+    .web-home-page .web-column > .home-colors {
+        flex: 1 1 auto;
+    }
+
     /* The recent decks' tiles keep their own size, centered in the panel. */
     .web-home-page .home-deck-tiles {
         grid-template-columns: repeat(3, minmax(0, 12rem));
