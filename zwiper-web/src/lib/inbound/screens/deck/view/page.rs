@@ -37,7 +37,10 @@ use super::sections::{
     BudgetBody, CurrencyChips, DistributionsBody, DrawOddsStepper, ManaBody, TagsBody,
     WarningFixes, WarningsBody, charted,
 };
-use super::stacks::{StackDetails, stack_details, stacks_view, use_stack_details_sync};
+use super::stacks::{
+    StackDetails, stack_buy_dialog, stack_details, stacks_view, use_stack_buy,
+    use_stack_details_sync,
+};
 use crate::domain::deck::{has_budget, tag_count};
 use crate::inbound::card_filter::CardFilterPanel;
 use crate::inbound::card_stores::CardStores;
@@ -124,6 +127,8 @@ pub fn DeckWidePage(
         use_signal(|| FOLDED_STATS.into_iter().map(String::from).collect());
     // List or Stacks, as last left.
     let mut view = use_signal(|| CardsViewStore::browser().load());
+    // The store dialog a stack's cart opens.
+    let stack_buy = use_stack_buy();
     let listed_ids = use_memo(move || {
         listing()
             .rows
@@ -491,7 +496,7 @@ pub fn DeckWidePage(
                     DeckBandsGhost {}
                 }
                 if view() == CardsView::Stacks {
-                    {stacks_view(sections, cur, collapsed, stack_details_state, ed.faces)}
+                    {stacks_view(sections, cur, collapsed, stack_details_state, ed.faces, stack_buy)}
                 } else {
                     for (section, rows) in sections {
                         DeckBand {
@@ -639,6 +644,7 @@ pub fn DeckWidePage(
         }
         HoverStackHost { stack: hover_stack }
         if view() == CardsView::Stacks {
+            {stack_buy_dialog(stack_buy)}
             {stack_details(&ed, &all_rows, &row_meta, stack_details_state, overlays)}
         }
         CardOverlaysHost { overlays, on_printing_save: move |_| {} }

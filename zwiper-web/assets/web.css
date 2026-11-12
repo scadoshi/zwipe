@@ -904,8 +904,8 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
    wears the deck page's fold heads below it (.deck-fold's box,
    .deck-fold-head's ink and type, a step smaller to fit a column). The
    arrow sits in the left inset and the name and count hold one line,
-   cut short only past the column's width; the price tag drops to the
-   next line when it does not fit beside them. */
+   cut short only past the column's width; the price tag and the cart
+   share the line under them. */
 .deck-stack > .deck-group > .card-group-header.group-collapsible {
     --stack-head-inset: 0.6rem;
     position: relative;
@@ -946,11 +946,25 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 }
 
 /* The price tag keeps the decks list chip's type. */
-.deck-stack > .deck-group > .card-group-header > .stat-chip {
+.deck-stack > .deck-group > .card-group-header > .deck-stack-tail > .stat-chip {
     flex: none;
     font-size: 0.75rem;
     letter-spacing: 0.02em;
     line-height: normal;
+}
+
+/* The header's second line: the price tag at the left and the cart at the
+   right end, the same in every stack. */
+.deck-stack > .deck-group > .card-group-header > .deck-stack-tail {
+    display: flex;
+    flex: 1 0 100%;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.deck-stack > .deck-group > .card-group-header > .deck-stack-tail > .cart-button {
+    flex: none;
+    margin-left: auto;
 }
 
 /* A stack is one column of cards, under the decks list's rule that pairs a

@@ -18,6 +18,7 @@ use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_core::http::contracts::suggestions::HttpPlayStyleSummary;
 
 use crate::buy;
+pub use crate::buy::{BuyLink, CARD_KINGDOM, CLOSE, TCGPLAYER};
 use crate::colors::{Bar, ColorCounts};
 use crate::generation::{Generation, Ticket};
 use crate::home::{self, CountsTag, Figures, Scope, UserSource};
@@ -79,15 +80,6 @@ pub const BUY_TITLE: &str = "Buy card";
 
 /// The Buy dialog's body.
 pub const BUY_BODY: &str = "Buy this card from a retailer.";
-
-/// The Buy dialog's button that closes it, before the retailer links.
-pub const CLOSE: &str = "Close";
-
-/// The Buy dialog's link to `TCGplayer`.
-pub const TCGPLAYER: &str = "TCGplayer \u{2197}";
-
-/// The Buy dialog's link to `Card Kingdom`.
-pub const CARD_KINGDOM: &str = "Card Kingdom \u{2197}";
 
 /// The Decks panel's title.
 pub const DECKS: &str = "Decks";
@@ -422,15 +414,6 @@ pub enum Flavor {
     Quote(Quote),
     /// No card is held and the fetch failed: the panel says so and offers Retry.
     Failed,
-}
-
-/// A retailer link in the Buy dialog.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct BuyLink {
-    /// The link's text.
-    pub label: &'static str,
-    /// Where it opens.
-    pub url: String,
 }
 
 /// One generation per fetch, so a reply only competes with its own kind.

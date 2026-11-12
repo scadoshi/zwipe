@@ -64,6 +64,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Flipping a card on the web's deck page turns its stack image and row preview too",
         "The Share dialog on the web shows the deck's own name in its link",
         "Hovering a stack on the web's deck page no longer shifts its cards by a pixel",
+        "A cart on each stack of the web's deck page buys that stack's cards",
         "The web's deck page runs the window's width, its list in two columns on a wide screen",
         "Image in a stack card's details on the web's deck page",
     ],

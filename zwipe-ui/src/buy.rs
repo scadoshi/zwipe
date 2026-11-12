@@ -2,6 +2,74 @@
 
 use zwipe_core::domain::deck::{Deck, DeckEntry};
 
+/// The store dialog's link to `TCGplayer`.
+pub const TCGPLAYER: &str = "TCGplayer \u{2197}";
+
+/// The store dialog's link to `Card Kingdom`.
+pub const CARD_KINGDOM: &str = "Card Kingdom \u{2197}";
+
+/// The store dialog's button that closes it, before the retailer links.
+pub const CLOSE: &str = "Close";
+
+/// The cart button's name for a screen reader and its tooltip.
+pub const CART_LABEL: &str = "Buy";
+
+/// The store dialog's body for a stack's cards.
+pub const STACK_BODY: &str = "Buy this stack's cards from a retailer.";
+
+/// A retailer link in the store dialog.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct BuyLink {
+    /// The link's text.
+    pub label: &'static str,
+    /// Where it opens.
+    pub url: String,
+}
+
+/// The store dialog's links, `TCGplayer` then `Card Kingdom`, to `tcgplayer` and `cardkingdom`.
+#[must_use]
+pub fn store_links(tcgplayer: String, cardkingdom: String) -> Vec<BuyLink> {
+    vec![
+        BuyLink {
+            label: TCGPLAYER,
+            url: tcgplayer,
+        },
+        BuyLink {
+            label: CARD_KINGDOM,
+            url: cardkingdom,
+        },
+    ]
+}
+
+/// The store dialog's links for `cards`, each with its copies, in order.
+#[must_use]
+pub fn cards_links<'a>(cards: impl IntoIterator<Item = (i32, &'a str)>) -> Vec<BuyLink> {
+    let items = line(cards);
+    store_links(
+        format!("https://www.tcgplayer.com/massentry?c={}", items.join("||")),
+        format!(
+            "https://www.cardkingdom.com/builder?c={}",
+            items.join("%0A")
+        ),
+    )
+}
+
+/// The store dialog's title for the stack whose header reads `header`: its name without the
+/// count, or "these cards" for a color group, whose header is the count alone.
+#[must_use]
+pub fn stack_title(header: &str) -> String {
+    let name = header
+        .rsplit_once('(')
+        .filter(|(_, count)| count.ends_with(')'))
+        .map_or(header, |(name, _)| name)
+        .trim();
+    if name.is_empty() {
+        "Buy these cards".to_owned()
+    } else {
+        format!("Buy {name}")
+    }
+}
+
 /// A double-faced card's front face, or the whole name.
 fn front_face(name: &str) -> &str {
     name.split(" // ").next().unwrap_or(name)
@@ -16,20 +84,23 @@ pub fn encode_name(name: &str) -> String {
         .replace('\'', "%27")
 }
 
+/// Each card as `{qty}+{name}`.
+fn line<'a>(cards: impl IntoIterator<Item = (i32, &'a str)>) -> Vec<String> {
+    cards
+        .into_iter()
+        .map(|(qty, name)| format!("{qty}+{}", encode_name(name)))
+        .collect()
+}
+
 /// Each command-zone card as `1+{name}`, then each entry as `{qty}+{name}`.
 fn items(entries: &[&DeckEntry], command_zone_names: &[&str]) -> Vec<String> {
-    let mut cards: Vec<String> = command_zone_names
-        .iter()
-        .map(|name| format!("1+{}", encode_name(name)))
-        .collect();
-    cards.extend(entries.iter().map(|e| {
-        format!(
-            "{}+{}",
-            *e.deck_card.quantity,
-            encode_name(&e.card.scryfall_data.name)
-        )
-    }));
-    cards
+    line(
+        command_zone_names.iter().map(|name| (1, *name)).chain(
+            entries
+                .iter()
+                .map(|e| (*e.deck_card.quantity, e.card.scryfall_data.name.as_str())),
+        ),
+    )
 }
 
 /// The `TCGplayer` mass-entry link.
@@ -101,6 +172,41 @@ mod tests {
 
     use super::*;
     use crate::test_support::{card, deck, deck_profile};
+
+    #[test]
+    fn a_set_of_cards_links_to_both_stores_with_its_copies() {
+        let links = cards_links([
+            (2, "Sol Ring"),
+            (1, "Delver of Secrets // Insectile Aberration"),
+        ]);
+        assert_eq!(
+            links,
+            [
+                BuyLink {
+                    label: TCGPLAYER,
+                    url: "https://www.tcgplayer.com/massentry?c=2+Sol+Ring||1+Delver+of+Secrets"
+                        .to_owned(),
+                },
+                BuyLink {
+                    label: CARD_KINGDOM,
+                    url: "https://www.cardkingdom.com/builder?c=2+Sol+Ring%0A1+Delver+of+Secrets"
+                        .to_owned(),
+                },
+            ]
+        );
+    }
+
+    #[test]
+    fn a_stack_s_dialog_names_its_group_without_the_count() {
+        assert_eq!(stack_title("Creatures (12)"), "Buy Creatures");
+        assert_eq!(stack_title("Commander"), "Buy Commander");
+        assert_eq!(
+            stack_title("(3)"),
+            "Buy these cards",
+            "a color group shows pips, not a name"
+        );
+        assert_eq!(store_links("t".to_owned(), "c".to_owned()).len(), 2);
+    }
 
     #[test]
     fn names_keep_the_front_face_and_escape_three_characters() {
