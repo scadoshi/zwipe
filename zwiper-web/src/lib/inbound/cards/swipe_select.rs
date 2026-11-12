@@ -78,7 +78,7 @@ use crate::inbound::chrome::shortcuts_sheet::{
     DockShortcuts, use_global_keys, use_offer_shortcuts,
 };
 use crate::inbound::screens::playstyle::SuggestionReasons;
-use crate::inbound::shell::use_overlay_nav;
+use crate::inbound::shell::{WebFooter, use_overlay_nav};
 use crate::inbound::telemetry;
 
 /// Pages of commanders the search keeps pulling when the host's exclusions
@@ -470,7 +470,7 @@ pub fn SwipeSelect(
 
     rsx! {
         div {
-            class: if open() { "screen swipe-select-screen web-swipe-select show" } else { "screen swipe-select-screen web-swipe-select" },
+            class: if open() { "screen swipe-select-screen web-swipe-select web-scroll-screen show" } else { "screen swipe-select-screen web-swipe-select web-scroll-screen" },
             components::GridCells { still: true }
             if open() {
                 SwipeSelectBody {
@@ -490,6 +490,9 @@ pub fn SwipeSelect(
                     pile_empty,
                     suggested_filter,
                 }
+                // It scrolls as a screen does and ends as one, with the
+                // site's footer below the fold.
+                WebFooter {}
             }
             SwipeSelectHint { open: hint_open, mode: hint_mode }
         }
@@ -916,9 +919,11 @@ mod tests {
             .and_then(|i| WEB_CSS.get(i..))
             .expect("a rule for the screen around it");
         let screen = screen.get(..screen.find('}').unwrap()).unwrap();
+        // A scroll container clips on both axes, so the window still cuts a
+        // card flying off sideways or up.
         assert!(
-            screen.contains("overflow: hidden"),
-            "the screen clips at the window: {screen}"
+            screen.contains("overflow-x: hidden") && screen.contains("overflow-y: auto"),
+            "the screen clips at the window and scrolls down to its footer: {screen}"
         );
     }
 }

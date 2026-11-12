@@ -2145,9 +2145,31 @@ body:has(.deck-stacks) .sheet-form-drawer:has(> .card-details-drawer) > .sheet-b
     .screen-content.card-swipe.web-swipe-select-body {
         overflow: visible;
     }
+}
 
-    .swipe-select-screen.web-swipe-select {
-        overflow: hidden;
+/* The overlay scrolls as a screen under the nav does, down to the site's
+   footer, and clips sideways at the window's edge. */
+.swipe-select-screen.web-swipe-select {
+    overflow-x: hidden;
+    overflow-y: auto;
+    /* Its docks rise over its own footer, not the screen's under it. */
+    timeline-scope: --site-footer;
+}
+
+/* On a wide window, where the nav takes its header's place, its swipe fills
+   the window and the footer starts below the fold. */
+@media (min-width: 900px) {
+    .swipe-select-screen.web-swipe-select > .screen-content {
+        min-height: 100%;
+        box-sizing: border-box;
+    }
+}
+
+/* A phone's swipe fills the window without scrolling, as Add's does, so its
+   footer stays out. */
+@media (max-width: 899px) {
+    .swipe-select-screen.web-swipe-select > .web-site-footer {
+        display: none;
     }
 }
 

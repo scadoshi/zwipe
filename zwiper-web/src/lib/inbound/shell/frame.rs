@@ -111,10 +111,12 @@ pub fn ScreenFrame(
     }
 }
 
-/// zwipe.net's footer at a page's end on a wide window: Privacy policy on
-/// the app's own route, Community and Contribute out to zwipe.net.
+/// zwipe.net's footer at a page's end: Privacy policy on the app's own
+/// route, Community and Contribute out to zwipe.net. [`ScreenFrame`] ends
+/// every screen with it, and a full-window overlay that scrolls as a screen
+/// does (swipe select) ends with it too.
 #[component]
-fn WebFooter() -> Element {
+pub(crate) fn WebFooter() -> Element {
     rsx! {
         SiteFooter { class: "web-site-footer".to_owned(),
             Link { to: Route::PrivacyPolicy {}, class: "nav-cta", "Privacy policy" }
