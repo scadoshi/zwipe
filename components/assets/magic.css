@@ -3160,7 +3160,8 @@ footer.site-footer .site-footer-note {
 /* The revealed card floats (`floating`, set by CardStack), toned down from
    the featured cards: a lift of 0.15rem, 1.5% larger and a swing of 0.6
    degrees, starting once the cards below it have moved aside. Its slot sits
-   over the next one while it floats and while it settles back. */
+   over the next one only while it is revealed: once it is not, the cards
+   below slide back over it in their own order as it settles. */
 .card-stack-card {
     --float-lift: 0.15rem;
     --float-grow: 1.015;
@@ -3168,20 +3169,8 @@ footer.site-footer .site-footer-note {
     --float-delay: var(--card-stack-move);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-    .card-stack-slot {
-        z-index: 0;
-        transition:
-            transform var(--card-stack-move) var(--card-stack-ease),
-            z-index 0s linear 0.45s;
-    }
-
-    .card-stack-slot.revealed {
-        z-index: 1;
-        transition:
-            transform var(--card-stack-move) var(--card-stack-ease),
-            z-index 0s;
-    }
+.card-stack-slot.revealed {
+    z-index: 1;
 }
 
 @media (prefers-reduced-motion: reduce) {
