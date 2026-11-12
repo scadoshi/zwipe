@@ -26,8 +26,9 @@ const PLATFORM: &str = "Web";
 /// The footer, for the nav's `trailing` slot, at every width: in the bar on
 /// a wide window, under the folded list below the breakpoint. Signed out it
 /// holds the `!`, About and the theme pair. `hint` opens the screen's hint
-/// from a `?` after the icons on a wide window; below the breakpoint the
-/// folded nav's title carries it instead.
+/// from a `?` after the icons on a wide window, and a screen without one
+/// keeps the `?`'s slot empty; below the breakpoint the folded nav's title
+/// carries it instead.
 #[component]
 pub fn MenuFooter(
     open: Signal<bool>,
@@ -59,6 +60,14 @@ pub fn MenuFooter(
                         class: "btn-action app-nav-support web-nav-hint",
                         "aria-label": "About this screen",
                         onclick: move |_| hint.call(()),
+                        "?"
+                    }
+                } else {
+                    // A screen with no hint keeps the `?`'s slot, so the
+                    // bar holds still from screen to screen.
+                    span {
+                        class: "btn-action app-nav-support web-nav-hint nav-hint-held",
+                        "aria-hidden": "true",
                         "?"
                     }
                 }

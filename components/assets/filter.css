@@ -155,9 +155,9 @@
     font-weight: 400;
     letter-spacing: 0.1em;
     text-align: center;
-    /* No width:100% — the label shrinks to its text so any toggle/clear controls
-       sit inline beside it, and the centered .label-row keeps the group centered
-       (label just shifts left a touch). Label-only rows still center fine. */
+    /* No width:100%: the label shrinks to its text so any toggle controls
+       sit inline beside it, and the centered .label-row keeps the group
+       centered. Its × takes no room (see `.label-row > .clear-btn`). */
 }
 
 .gap-half {
@@ -205,6 +205,19 @@
     /* Opaque fill so the page grid doesn't show through the button. */
     background-color: var(--bg-primary);
     transition: all 0.2s ease;
+}
+
+/* In a label row the × takes no room: a fixed width, and a right margin
+   that gives back that width, its left margin and the row's gap. The
+   centered label holds still as a pick brings the × in or a clear takes it
+   away; the × hangs past the group's right end. */
+.label-row > .clear-btn {
+    --label-clear-w: 1.75rem;
+    box-sizing: border-box;
+    width: var(--label-clear-w);
+    padding-inline: 0;
+    text-align: center;
+    margin-right: calc(-1 * (var(--label-clear-w) + 0.5rem));
 }
 
 /* ── Floating type-to-search results ─────────────────────────────────────
