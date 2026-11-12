@@ -1,6 +1,6 @@
 # Shared deck page: one deck page component for zite and zwiper-web
 
-Issue 370. Status: approved 2026-11-12; phase 1 shipped (#572); phase 2 in two PRs, the carts and stat panels first, then the cards view.
+Issue 370. Status: approved 2026-11-12; phase 1 shipped (#572); phase 2 in two PRs, the carts and stat panels (#592) then the cards view.
 
 ## Goal
 

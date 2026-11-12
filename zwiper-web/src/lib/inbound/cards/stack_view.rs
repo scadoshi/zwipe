@@ -6,7 +6,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use components::{CardStack, Chip, StackCard};
+use components::{CardStack, Chip, DeckGroupSection, StackCard};
 pub(crate) use components::{DRAWER_CLASSES, StackDetails, use_stack_details_sync};
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -15,7 +15,6 @@ use zwipe_ui::deck_cards::stacks::{CardsView, Gesture, Reveal, VIEW_LABEL};
 
 use crate::inbound::cards::card_info::CardDetailsSheet;
 use crate::inbound::cards::card_row::CardOverlays;
-use crate::inbound::screens::deck::list::DeckGroupSection;
 use crate::outbound::cards_view_store::{CardsViewPlace, CardsViewStore};
 
 /// A screen's [`StackDetails`], provided as context and kept in step with
