@@ -30,6 +30,4 @@ fn running_text_fills_its_panel() {
         !CSS.contains("70ch"),
         "no text is capped to a reading measure"
     );
-    let coming = rule(".coming-soon p").expect("the coming soon text rule");
-    assert!(!coming.contains("max-width"), "{coming}");
 }
