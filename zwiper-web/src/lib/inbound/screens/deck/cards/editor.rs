@@ -25,14 +25,15 @@ use zwipe_core::domain::deck::deck_metrics::deck_price;
 use zwipe_core::domain::deck::{Board, Deck, DeckEntry, DeckProfile, Quantity};
 use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard};
 use zwipe_ui::deck::form::Slot;
+use zwipe_ui::deck_cards::keys::{self as hover_keys, HoverAction};
 use zwipe_ui::deck_cards::{self, Boards, Bursts, Write, Zone};
 use zwipe_ui::deck_signals::{Crossing, budget_crossing, land_count, land_crossing};
 use zwipe_ui::screens;
+use zwipe_ui::shortcuts::Editable;
 use zwipe_ui::stores::filters::FilterScope;
 use zwipe_ui::stores::undo::{UndoAction, create_board_field};
 use zwipe_ui::timing::QUANTITY_FLUSH;
 
-use super::hover_keys::{self, HoverAction};
 use super::quick_add::QUICK_ADD_ID;
 use super::signal_toast;
 use crate::inbound::card_stores::CardStores;
@@ -87,29 +88,7 @@ pub(crate) fn board_of(meta: &HashMap<Uuid, Meta>, id: Uuid) -> Board {
     meta.get(&id).map_or(Board::Deck, |m| m.board)
 }
 
-/// What a row is, which decides its actions.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub(crate) enum RowKind {
-    /// A main board card: quantity, moves, printing and the MVP star.
-    Main {
-        /// Whether it is starred.
-        mvp: bool,
-    },
-    /// A maybeboard or sideboard card: quantity, moves and printing.
-    Board(Board),
-    /// A command zone card: printing only.
-    Zone(Slot),
-    /// A token: no actions.
-    Token,
-}
-
-/// One listed row, for the detail pane and the keys.
-#[derive(Debug, Clone, PartialEq)]
-pub(crate) struct RowInfo {
-    pub card: Card,
-    pub qty: i32,
-    pub kind: RowKind,
-}
+pub(crate) use zwipe_ui::deck_cards::keys::{RowInfo, RowKind};
 
 /// A row's quantity, board and star, the first entry for a printing winning.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -918,13 +897,13 @@ pub(crate) fn use_deck_editor(deck_id: Uuid, on_failure: LoadFailure) -> Editor 
     // drawer; every other key waits for it to close.
     use_page_keys_through(
         shortcuts::STACK_DETAILS_CLASS,
-        &hover_keys::HOVER_KEYS,
+        hover_keys::hover_keys(Editable::Yes),
         Callback::new(move |key: String| {
             // `p`, `i`, `v`, `d`, `m`, `s`, Shift+S, `-` and `+` act on the
             // card under the cursor, else the open one, as its own buttons and
             // a click on it do; with neither they do nothing. `u` undoes, as
             // the dock's Undo does.
-            if let Some(hover) = hover_keys::hover_key(&key) {
+            if let Some(hover) = hover_keys::hover_key(&key, Editable::Yes) {
                 spawn(async move {
                     let mut found = document::eval(
                         &KEY_CARD_JS.replace("__DRAWER__", shortcuts::STACK_DETAILS_CLASS),
@@ -984,12 +963,15 @@ pub(crate) fn use_deck_editor(deck_id: Uuid, on_failure: LoadFailure) -> Editor 
                                 );
                             }
                         },
-                        Some(HoverAction::Press(card_id, actions)) => {
+                        Some(HoverAction::Image(card_id)) => {
                             let mut pressed = document::eval(
                                 &PRESS_JS
                                     .replace("__DRAWER__", shortcuts::STACK_DETAILS_CLASS)
                                     .replace("__ID__", &card_id.to_string())
-                                    .replace("__ACTIONS__", &format!("{actions:?}")),
+                                    .replace(
+                                        "__ACTIONS__",
+                                        &format!("{:?}", [components::data_action::IMAGE]),
+                                    ),
                             );
                             let found = pressed.recv::<bool>().await.unwrap_or(true);
                             // A stack card with its drawer shut shows no Image

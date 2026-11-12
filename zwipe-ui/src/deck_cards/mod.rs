@@ -15,6 +15,7 @@ use zwipe_core::domain::deck::{Board, DeckEntry, DeckProfile, DeckWarning, Forma
 use crate::deck::form::Slot;
 use crate::stores::undo::UndoAction;
 
+pub mod keys;
 pub mod stacks;
 
 /// The command zone's cards by slot.

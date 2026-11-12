@@ -30,6 +30,7 @@ pub mod playstyle;
 pub mod screens;
 pub mod session;
 pub mod settings;
+pub mod shortcuts;
 pub mod stack;
 pub mod stores;
 pub mod support;
