@@ -4,12 +4,15 @@
 //! come from zwipe-ui's [`stacks::tucked`], [`stacks::shifted`] and
 //! [`stacks::exposed`], so the phones' stacks do the same.
 
+use std::collections::HashSet;
+
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ImageSize;
 use zwipe_ui::deck_cards::stacks;
 
+use crate::CardProxy;
 use crate::meld::{MeldSource, MeldToggle};
 
 /// One card in a [`CardStack`], with its copies in the deck.
@@ -46,6 +49,8 @@ pub fn CardStack(
     let full = stacks::exposed(cards.len(), at);
     // A meld half with its Meld on shows its melded card.
     let melds = try_use_context::<MeldSource>();
+    // The cards whose image failed to load, which draw their text instead.
+    let mut failed: Signal<HashSet<Uuid>> = use_signal(HashSet::new);
     rsx! {
         div { class: if dealing { "card-stack dealing" } else { "card-stack" }, role: "list",
             for (index, (((StackCard { card, qty, face }, tucked), shifted), exposed)) in cards.into_iter().zip(tucks).zip(shifts).zip(full).enumerate() {
@@ -53,6 +58,8 @@ pub fn CardStack(
                     let id = card.scryfall_data.id;
                     let name = card.scryfall_data.name.clone();
                     let meld = MeldToggle::of(&card.scryfall_data, melds);
+                    // The card a proxy draws: the melded card while Meld is on.
+                    let proxy_card = meld.shown().map_or_else(|| card.clone(), |melded| Card { scryfall_data: melded.clone(), ..card.clone() });
                     let image = match meld.shown() {
                         Some(melded) => melded.shown_face_image_url(0, ImageSize::Normal),
                         None => card.scryfall_data.shown_face_image_url(face, ImageSize::Normal),
@@ -68,7 +75,7 @@ pub fn CardStack(
                     if exposed && open == Some(id) {
                         class.push_str(" open");
                     }
-                    let label = if qty > 1 { format!("{name}, {qty} copies") } else { name.clone() };
+                    let label = if qty > 1 { format!("{name}, {qty} copies") } else { name };
                     rsx! {
                         // `data-row` names the card, as a list row does, so a
                         // host can find the card under the cursor.
@@ -87,10 +94,24 @@ pub fn CardStack(
                                 onfocus: move |_| on_hover.call(id),
                                 onblur: move |_| on_leave.call(id),
                                 onclick: move |_| on_select.call(id),
-                                if let Some(src) = image {
-                                    img { src: "{src}", alt: "", loading: "lazy", draggable: "false" }
+                                // An image that is missing or failed leaves the
+                                // card's text in the card's box.
+                                if let Some(src) = image.filter(|_| !failed.read().contains(&id)) {
+                                    img {
+                                        src: "{src}",
+                                        alt: "",
+                                        loading: "lazy",
+                                        draggable: "false",
+                                        onerror: move |_| {
+                                            failed.write().insert(id);
+                                        },
+                                    }
                                 } else {
-                                    span { class: "card-stack-name", "{name}" }
+                                    CardProxy {
+                                        sd: proxy_card.scryfall_data,
+                                        face,
+                                        profile: Some(proxy_card.card_profile),
+                                    }
                                 }
                                 if qty > 1 {
                                     span { class: "card-stack-qty", "\u{d7}{qty}" }

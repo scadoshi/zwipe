@@ -11,10 +11,11 @@ use std::collections::HashSet;
 use std::sync::{Mutex, OnceLock};
 
 use dioxus::prelude::*;
+use zwipe_core::domain::card::card_profile::CardProfile;
 use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
 
 use crate::meld::use_meld;
-use crate::{OracleText, data_action};
+use crate::{CardProxy, data_action};
 
 /// Image URLs whose bytes have already arrived once this session. These
 /// render instantly; only first-time loads play the ease-in. Keyed by URL
@@ -65,6 +66,22 @@ pub fn reset_image_ease() {
     }
 }
 
+/// A transparent image the size Scryfall serves a card at `size`, which a
+/// no-art proxy sits over so the host's image rules give it the image's box.
+fn sizer(size: ImageSize) -> &'static str {
+    match size {
+        ImageSize::Small => {
+            "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='146' height='204'/%3E"
+        }
+        ImageSize::Normal => {
+            "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='488' height='680'/%3E"
+        }
+        ImageSize::Large => {
+            "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='672' height='936'/%3E"
+        }
+    }
+}
+
 /// Renders a card image with a flip-icon overlay for cards that have multiple faces.
 ///
 /// Owns the `face_idx` state internally (seeded from `initial_face`), unless
@@ -111,6 +128,10 @@ pub fn FlippableCardImage(
     /// load.
     #[props(default = true)]
     trust_seen: bool,
+    /// The card's roles and tags, which a no-art proxy lists as an expanded
+    /// row does. Left out, the proxy shows no roles.
+    #[props(default)]
+    profile: Option<CardProfile>,
 ) -> Element {
     let own_face: Signal<usize> = use_signal(move || initial_face);
     let mut face_idx = face.unwrap_or(own_face);
@@ -146,43 +167,9 @@ pub fn FlippableCardImage(
         .filter(|url| failed_here.read().as_deref() != Some(url.as_str()));
     let is_no_image = image_url.is_none();
 
-    // Identity fields for the no-image placeholder, resolved for the shown face
-    // (so a flipped DFC shows the back's text, not the front's). Rarity/set are
-    // card-level. Read only when there's no image, so an art card pays nothing.
-    let (mana_cost, type_line, rarity, set_name, oracle_text, flavor_text, pt) = if is_no_image {
-        let sd_read = view;
-        let face = sd_read.card_faces.as_ref().and_then(|f| f.get(cur));
-        let mana = face.map_or_else(
-            || sd_read.mana_cost.clone().unwrap_or_default(),
-            |f| f.mana_cost.clone(),
-        );
-        let (power, toughness, loyalty) = match face {
-            Some(f) => (f.power.clone(), f.toughness.clone(), f.loyalty.clone()),
-            None => (
-                sd_read.power.clone(),
-                sd_read.toughness.clone(),
-                sd_read.loyalty.clone(),
-            ),
-        };
-        let pt = match (power, toughness) {
-            (Some(p), Some(t)) => Some(format!("{p}/{t}")),
-            _ => loyalty,
-        };
-        (
-            Some(mana).filter(|m| !m.is_empty()),
-            face.and_then(|f| f.type_line.clone())
-                .or_else(|| sd_read.type_line.clone()),
-            Some(sd_read.rarity.to_long_name()),
-            Some(sd_read.set_name.clone()),
-            face.and_then(|f| f.oracle_text.clone())
-                .or_else(|| sd_read.oracle_text.clone()),
-            face.and_then(|f| f.flavor_text.clone())
-                .or_else(|| sd_read.flavor_text.clone()),
-            pt,
-        )
-    } else {
-        (None, None, None, None, None, None, None)
-    };
+    // The no-art proxy's card, the shown face of what shows (a melded card
+    // while Meld is on).
+    let proxy_sd = is_no_image.then(|| view.clone());
     drop(sd_now);
 
     let already_loaded = image_url
@@ -240,64 +227,38 @@ pub fn FlippableCardImage(
                         },
                     }
                 } else {
-                    // No art: draw a card-shaped text proxy (name, mana, type,
-                    // rules) in the image's footprint instead of an empty box.
-                    div { class: "no-image-card",
-                        div { class: "nic-head",
-                            span { class: "nic-name", "{alt}" }
-                            div { class: "nic-head-right",
-                                if flippable && total > 1 {
-                                    button {
-                                        class: "card-action-btn",
-                                        "aria-label": "Flip card",
-                                        "data-action": data_action::FLIP,
-                                        onclick: move |e| {
-                                            e.stop_propagation();
-                                            let next = (cur + 1) % total;
-                                            face_idx.set(next);
-                                            if let Some(handler) = on_face_change {
-                                                handler.call(next);
-                                            }
-                                        },
-                                        onpointerdown: move |e| { e.stop_propagation(); },
-                                        onmousedown: move |e| { e.stop_propagation(); },
-                                        ontouchstart: move |e| { e.stop_propagation(); },
-                                        "Flip"
-                                    }
+                    // No art, or art that failed: the card's text in the box the
+                    // image would fill, Flip in its head for a multi-faced card.
+                    // A transparent stand-in with the image's own shape and size,
+                    // so every host's image rules size the proxy's box exactly as
+                    // they would size the image.
+                    if let Some(sd) = proxy_sd {
+                        div { class: "card-proxy-slot",
+                        img { class: "card-proxy-sizer", src: "{sizer(size)}", alt: "", draggable: false }
+                        CardProxy {
+                            sd,
+                            face: cur,
+                            profile,
+                            trailing: (flippable && total > 1).then(|| rsx! {
+                                button {
+                                    class: "card-action-btn",
+                                    "aria-label": "Flip card",
+                                    "data-action": data_action::FLIP,
+                                    onclick: move |e| {
+                                        e.stop_propagation();
+                                        let next = (cur + 1) % total;
+                                        face_idx.set(next);
+                                        if let Some(handler) = on_face_change {
+                                            handler.call(next);
+                                        }
+                                    },
+                                    onpointerdown: move |e| { e.stop_propagation(); },
+                                    onmousedown: move |e| { e.stop_propagation(); },
+                                    ontouchstart: move |e| { e.stop_propagation(); },
+                                    "Flip"
                                 }
-                                if let Some(mc) = mana_cost {
-                                    OracleText { text: mc, class: "card-detail-cost".to_string() }
-                                }
-                            }
+                            }),
                         }
-                        hr { class: "nic-rule" }
-                        // Boxed marker where the art would be, so it's clear why
-                        // this card is text-only.
-                        div { class: "nic-art",
-                            span { class: "nic-noart", "No image" }
-                        }
-                        div { class: "nic-meta",
-                            if let Some(tl) = type_line {
-                                span { class: "nic-chip nic-chip-type", "{tl}" }
-                            }
-                            if let Some(r) = rarity {
-                                span { class: "nic-chip nic-chip-rarity", "{r}" }
-                            }
-                            if let Some(s) = set_name {
-                                span { class: "nic-chip nic-chip-set", "{s}" }
-                            }
-                        }
-                        hr { class: "nic-rule" }
-                        div { class: "nic-textbox",
-                            if let Some(ot) = oracle_text {
-                                OracleText { text: ot, class: "nic-oracle".to_string() }
-                            }
-                            if let Some(fl) = flavor_text {
-                                div { class: "nic-flavor", "{fl}" }
-                            }
-                        }
-                        if let Some(p) = pt {
-                            span { class: "nic-chip nic-pt", "{p}" }
                         }
                     }
                 }
