@@ -55,20 +55,20 @@ pub const UPCOMING: &[Release] = &[
             "Charts grow in when their page opens or their section expands",
             "Printings has no Select where there is nothing to save the pick to",
             "The web's large dialogs fade and rise in when they open",
+            "Buying is one cart on the web and in the app, on the deck's dock and the featured card, opening TCGplayer or Card Kingdom",
+            "On the web, an Oracle tag's examples take h, j, d and v, ? opens the hint of the open modal, and a card slides clear of its details where it fits",
         ],
     },
     Release {
         version: Version::new(1, 19, 2),
         date: None,
         entries: &[
-            "Buying is one cart on the web and in the app, on the deck's dock and the featured card, opening TCGplayer or Card Kingdom",
             "The deck page on the web deals its featured cards in, as a shared deck does",
             "Back returns to the screen you came from instead of looping between Create deck and Decks",
             "On the web, a cloned deck shows its own name as soon as it opens, and back and forward between two decks show the right one",
             "The Share dialog on the web shows the deck's own name in its link",
             "A melded card's list row shows the melded card in its thumbnail and hover preview",
             "Hovering a stack on the web's deck page no longer shifts its cards by a pixel",
-            "On the web, an Oracle tag's examples take h, j, d and v, ? opens the hint of the open modal, and a card slides clear of its details where it fits",
         ],
     },
     Release {
