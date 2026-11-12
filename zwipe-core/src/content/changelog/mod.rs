@@ -46,29 +46,43 @@ pub const MOBILE_STORE_VERSION: Version = Version::new(1, 18, 15);
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[Release {
-    version: Version::new(1, 19, 0),
-    date: None,
-    entries: &[
-        "The deck page on the web can show its cards as stacks, one per group, beside the list",
-        "Keyboard shortcuts on the web's deck page for the hovered or open card, with Shift+H to list them",
-        "Back returns to the screen you came from instead of looping between Create deck and Decks",
-        "On the web, a cloned deck shows its own name as soon as it opens, and back and forward between two decks show the right one",
-        "A shared deck's link names its owner and the deck",
-        "A shared deck shows who shared it under its name",
-        "The deck page on the web deals its featured cards in, as a shared deck does",
-        "On the web, u and Ctrl+Z undo on the deck page and the swipe screens",
-        "On the web's deck page, d opens or closes a card's details",
-        "A meld card's open row in a deck's list has the Meld toggle its details drawer has",
-        "On the web, f opens the filter on Commander maybeboard, and a meld card's Meld is one switch for its image, details, row and stack card",
-        "Flipping a card on the web's deck page turns its stack image and row preview too",
-        "The Share dialog on the web shows the deck's own name in its link",
-        "Hovering a stack on the web's deck page no longer shifts its cards by a pixel",
-        "A cart on each stack of the web's deck page buys that stack's cards",
-        "The web's deck page runs the window's width, its list in two columns on a wide screen",
-        "Image in a stack card's details on the web's deck page",
-    ],
-}];
+pub const UPCOMING: &[Release] = &[
+    Release {
+        version: Version::new(1, 19, 2),
+        date: None,
+        entries: &[
+            "The deck page on the web deals its featured cards in, as a shared deck does",
+            "Back returns to the screen you came from instead of looping between Create deck and Decks",
+            "On the web, a cloned deck shows its own name as soon as it opens, and back and forward between two decks show the right one",
+            "The Share dialog on the web shows the deck's own name in its link",
+            "Hovering a stack on the web's deck page no longer shifts its cards by a pixel",
+        ],
+    },
+    Release {
+        version: Version::new(1, 19, 1),
+        date: None,
+        entries: &[
+            "On the web, u and Ctrl+Z undo on the deck page and the swipe screens",
+            "On the web's deck page, d opens or closes a card's details",
+            "Flipping a card on the web's deck page turns its stack image and row preview too",
+            "A meld card's open row in a deck's list has the Meld toggle its details drawer has",
+            "On the web, f opens the filter on Commander maybeboard, and a meld card's Meld is one switch for its image, details, row and stack card",
+            "Image in a stack card's details on the web's deck page",
+        ],
+    },
+    Release {
+        version: Version::new(1, 19, 0),
+        date: None,
+        entries: &[
+            "The deck page on the web can show its cards as stacks, one per group, beside the list",
+            "The web's deck page runs the window's width, its list in two columns on a wide screen",
+            "A cart on each stack of the web's deck page buys that stack's cards",
+            "Keyboard shortcuts on the web's deck page for the hovered or open card, with Shift+H to list them",
+            "A shared deck's link names its owner and the deck",
+            "A shared deck shows who shared it under its name",
+        ],
+    },
+];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
