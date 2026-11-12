@@ -1,6 +1,6 @@
 # 374. The deck page's List is slow to open a row, fold or toggle Art
 
-State: fixing | Owner: scotland | PR: #PR | Build seen: live, web, a full deck
+State: fixing | Owner: scotland | PR: #585 | Build seen: live, web, a full deck
 
 ## Report
 Scotty via composer, 2026-11-12, screen recording: on the web deck page in List view, toggling Art, opening a row and collapse or expand all are visibly slow on a full deck.
@@ -31,7 +31,7 @@ Opening a row changes 5 DOM nodes, yet costs as much script as folding every gro
 - **Paint:** mostly the expand and fade transitions painting each frame, inflated here by software raster. CSS containment (`contain` on rows, `content-visibility: auto` on the bands) changed nothing measurable, so it is not part of the fix.
 
 ## Fix
-scotland, #PR:
+scotland, #585:
 - `row_view` draws each row as its own keyed component, `DeckRowItem`, with plain props. It reads whether it is the open row and the face it shows through memos of its own, so the page and the other rows stay put when one row changes. Folding leaves unchanged rows alone. `Editor` derives `PartialEq` (its fields compare by identity) so it can be a prop.
 - `CardRow`'s open state is a memo of `expanded_card`, so the rows sharing it render again only when their own open state flips.
 
