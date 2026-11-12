@@ -21,6 +21,7 @@ use zwipe_core::domain::deck::{Board, deck_metrics};
 use crate::CardDetails;
 use crate::card_actions::{CardBoardMoves, CardEditButtons};
 use crate::hover_stack::{HeldEntry, HoverStack};
+use crate::meld::use_meld;
 
 /// Opens the row's detail, letting go of its hover preview, or shuts it
 /// when it is open.
@@ -128,22 +129,36 @@ pub fn CardRow(
     let held_on_enter = Rc::clone(&held);
     let held_on_click = Rc::clone(&held);
     let held_on_key = Rc::clone(&held);
-    // The held preview follows a face the host turns while the cursor is on the row.
+    // A meld half with its Meld on shows its melded card in the thumbnail
+    // and the hover preview, as everywhere else it shows.
+    let meld = use_meld(&card.scryfall_data);
+    let melded = meld.shown().is_some();
+    let shown = meld
+        .shown()
+        .cloned()
+        .unwrap_or_else(|| card.scryfall_data.clone());
+    // The held preview follows a face the host turns, or the half's Meld,
+    // while the cursor is on the row.
     let held_on_face = Rc::clone(&held);
-    let sd_on_face = card.scryfall_data.clone();
-    use_effect(use_reactive!(|face| {
-        if let (Some(stack), Some(face)) = (hover_stack, face)
-            && let Some(url) = sd_on_face.shown_face_image_url(face, ImageSize::Normal)
+    let face_on_change = Rc::clone(&shown_face);
+    use_effect(use_reactive!(|face, shown, melded| {
+        let face = if melded {
+            0
+        } else {
+            face.unwrap_or_else(|| face_on_change.get())
+        };
+        if let Some(stack) = hover_stack
+            && let Some(url) = shown.shown_face_image_url(face, ImageSize::Normal)
             && let Some(stale) = held_on_face.take()
         {
-            held_on_face.set(Some(stack.enter(url.to_string(), sd_on_face.name.clone())));
+            held_on_face.set(Some(stack.enter(url.to_string(), shown.name.clone())));
             stack.leave(stale);
         }
     }));
     let held_on_leave = held;
     let face_on_enter = Rc::clone(&shown_face);
     let face_on_flip = shown_face;
-    let sd_on_enter = card.scryfall_data.clone();
+    let sd_on_enter = shown.clone();
     let face_change = EventHandler::new(move |face: usize| {
         face_on_flip.set(face);
         if let Some(handler) = on_face_change {
@@ -155,7 +170,11 @@ pub fn CardRow(
     let name = sd.name.clone();
     let art_url = show_art
         .is_some()
-        .then(|| sd.face_art_crop_url(face.unwrap_or(0)).map(str::to_string))
+        .then(|| {
+            shown
+                .face_art_crop_url(if melded { 0 } else { face.unwrap_or(0) })
+                .map(str::to_string)
+        })
         .flatten();
     let art_class = if show_art == Some(true) {
         "card-row-art"
@@ -219,7 +238,7 @@ pub fn CardRow(
                 onmouseenter: move |_| {
                     if let Some(stack) = hover_stack
                         && expanded_card() != Some(card_id)
-                        && let Some(url) = sd_on_enter.shown_face_image_url(face.unwrap_or_else(|| face_on_enter.get()), ImageSize::Normal)
+                        && let Some(url) = sd_on_enter.shown_face_image_url(if melded { 0 } else { face.unwrap_or_else(|| face_on_enter.get()) }, ImageSize::Normal)
                         && let Some(stale) = held_on_enter.replace(Some(stack.enter(url.to_string(), sd_on_enter.name.clone())))
                     {
                         stack.leave(stale);
