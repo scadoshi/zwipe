@@ -58,6 +58,7 @@ pub const UPCOMING: &[Release] = &[
             "zwipe.net's videos and guide screenshots hold their place as a pulsing placeholder while they load, then fade in",
             "On the web, Home's Colors panel runs as tall as Decks beside it",
             "zwipe.net draws its logos in the same font as the app, so they look the same",
+            "In the app, each card group in a deck's List has its price and a cart that buys its cards, as its stack does",
         ],
     },
     Release {

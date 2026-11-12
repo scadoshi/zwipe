@@ -51,6 +51,9 @@ objc2-foundation = { version = "0.3", default-features = false, features = ["std
 keyring-core = "1.0"
 apple-native-keyring-store = { version = "1.0", features = ["protected"] }
 
+[dev-dependencies]
+dioxus-ssr = "0.7"
+
 [build-dependencies]
 dotenvy = { workspace = true }
 

@@ -120,6 +120,7 @@ Who checked, on which live build, what they saw.
 | [387](387-home-column.md) | app.zwipe.net Home runs the window's width | fixing | thinker | #590 |
 | [389](389-profile-dock.md) | A deck's Edit, Clone and Share sit in the Profile header on a phone | fixing | thinker | #593 |
 | [377](377-keyboard-in-hint.md) | The keyboard shortcuts button sits on the action docks instead of in the hint | fixing | halo | orangui#38, orangui#39, #618 |
+| [404](404-list-group-cart.md) | The app's List groups have no cart | fixing | halo | - |
 
 ## Waiting for live verification
 
