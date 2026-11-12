@@ -208,14 +208,29 @@ pub const STACK_DETAILS_CLASS: &str = "deck-stack-details";
 /// [`OVERLAY_SELECTORS`] is open (it takes its own keys).
 #[must_use]
 pub fn guard_js() -> String {
-    browser_guard(Modifiers::Refused, &overlays_closed(None))
+    browser_guard(Modifiers::Refused, &overlays_closed_or_keyed_on_top())
 }
 
 /// [`guard_js`] without the modifier check, for a listener that wants a combo such as Ctrl+Z
 /// and checks the modifiers itself.
 #[must_use]
 pub fn guard_js_with_modifiers() -> String {
-    browser_guard(Modifiers::Allowed, &overlays_closed(None))
+    browser_guard(Modifiers::Allowed, &overlays_closed_or_keyed_on_top())
+}
+
+/// The modal that takes the screen's keys while it is the topmost one open, wherever it opens: the
+/// Oracle tag examples, whose listeners register last, so they are the ones that answer, even
+/// opened from a sheet (the filter's dictionary).
+pub const KEYED_MODAL: &str = ".web-examples";
+
+/// The expression that holds while no overlay is open, or while the topmost open modal
+/// ([`MODAL_SELECTORS`]) is the [`KEYED_MODAL`].
+fn overlays_closed_or_keyed_on_top() -> String {
+    let modals = MODAL_SELECTORS.join(", ");
+    format!(
+        "({} || (() => {{ const open = [...document.querySelectorAll('{modals}')]; const top = open[open.length - 1]; return !!top && top.matches('{KEYED_MODAL}'); }})())",
+        overlays_closed(None)
+    )
 }
 
 /// Whether the browser guard turns a key with Ctrl, Alt or Meta away.
@@ -616,6 +631,23 @@ mod tests {
         for key in printable_keys() {
             let swipes = matches!(swipe_screen_shortcut(&key), Some(Shortcut::Swipe(_)));
             assert_eq!(swipes, SWIPE_LETTERS.contains(&key.as_str()), "{key}");
+        }
+    }
+
+    #[test]
+    fn the_examples_take_their_keys_when_they_are_the_topmost_modal_even_over_a_sheet() {
+        for js in [guard_js(), guard_js_with_modifiers()] {
+            assert!(
+                js.contains(&overlays_closed(None)),
+                "no overlay still passes: {js}"
+            );
+            assert!(
+                js.contains(&format!("top.matches('{KEYED_MODAL}')")),
+                "the examples on top pass: {js}"
+            );
+            for modal in MODAL_SELECTORS {
+                assert!(js.contains(modal), "{modal} counts toward the top: {js}");
+            }
         }
     }
 
