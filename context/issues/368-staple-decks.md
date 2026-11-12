@@ -1,6 +1,6 @@
 # 368. A staple's deck count names no decks
 
-State: fixing | Owner: laptop | PR: - | Build seen: production, web
+State: fixing | Owner: laptop | PR: #571 | Build seen: production, web
 
 ## Report
 Composer for Scotty, 2026-11-11: on Playstyle's Staples, the expanded row's "4 of 11 decks" chip should be a toggle chip (the Other tags pattern) revealing one chip per deck the card is in, each opening that deck.
@@ -9,7 +9,7 @@ Composer for Scotty, 2026-11-11: on Playstyle's Staples, the expanded row's "4 o
 `HttpStaple` carried only the count. The server's `rank_staples` built each staple's set of deck ids and dropped it.
 
 ## Fix
-laptop, a wire change, additive (see `development/api_evolution.md`):
+laptop, #571, a wire change, additive (see `development/api_evolution.md`):
 - **zwipe-core:** `HttpStaple.deck_ids: Vec<Uuid>`, most recently updated deck first, `#[serde(default)]`. Compat tests:
   - a payload without the field reads with no deck ids;
   - a payload with it reads into the shape before it.
