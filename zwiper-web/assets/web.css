@@ -1005,12 +1005,6 @@ body:has(.deck-stacks) .sheet-form-drawer:has(> .card-details-drawer) > .sheet-b
         padding: 0 1.5rem 1rem;
         box-sizing: border-box;
     }
-
-    /* The policy's running text keeps a readable measure in the wide
-       column, as zwipe.net's does. */
-    .web-privacy .privacy-section :is(p, ul) {
-        max-width: 70ch;
-    }
 }
 
 /* ---- About ---- */
@@ -1750,14 +1744,7 @@ body:has(.deck-stacks) .sheet-form-drawer:has(> .card-details-drawer) > .sheet-b
         min-height: 0;
     }
 
-    /* The hero runs across the column with its tagline at a readable
-       measure, and the recent decks' tiles keep their own size, centered
-       in the panel. */
-    .web-home-page .web-hero-tagline {
-        max-width: 70ch;
-        margin: 0 auto;
-    }
-
+    /* The recent decks' tiles keep their own size, centered in the panel. */
     .web-home-page .home-deck-tiles {
         grid-template-columns: repeat(3, minmax(0, 12rem));
         justify-content: center;
