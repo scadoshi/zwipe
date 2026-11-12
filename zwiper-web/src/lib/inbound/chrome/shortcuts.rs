@@ -7,7 +7,9 @@ pub use zwipe_ui::shortcuts::{
     CardKey, FlowKey, GLOBAL_KEYS, GlobalKey, HINT_KEY, UNDO_COMBO, card_key, flow_key, global_key,
     undo_letter,
 };
-use zwipe_ui::shortcuts::{DECK_CARDS_NOTE, EVERYWHERE_ROWS, Editable, SheetRow, deck_cards_rows};
+use zwipe_ui::shortcuts::{
+    DECK_CARDS_NOTE, EVERYWHERE_ROWS, Editable, SheetRow, card_read_rows, deck_cards_rows,
+};
 
 use crate::inbound::cards::swipe_stack::Swipe;
 
@@ -140,6 +142,9 @@ pub enum ShortcutsScreen {
     DeckCards,
     /// An Oracle tag's example cards, swiped through in their modal.
     Examples,
+    /// A screen of card rows with no editing (Playstyle, Activity), whose keys act on the card
+    /// under the cursor, else the open one.
+    CardRows,
 }
 
 /// The rows the shortcuts sheet lists on `screen`: each key, with its vim letter if it has one,
@@ -176,6 +181,7 @@ pub fn sheet_rows(screen: &ShortcutsScreen) -> Vec<SheetRow> {
             (&["d"], "Card details"),
             (&["v"], "Flip card"),
         ],
+        ShortcutsScreen::CardRows => card_read_rows().to_vec(),
     };
     own.into_iter().chain(EVERYWHERE_ROWS).collect()
 }
@@ -185,7 +191,7 @@ pub fn sheet_rows(screen: &ShortcutsScreen) -> Vec<SheetRow> {
 pub fn sheet_note(screen: &ShortcutsScreen) -> Option<&'static str> {
     match screen {
         ShortcutsScreen::Swipe(_) | ShortcutsScreen::Examples => None,
-        ShortcutsScreen::DeckCards => Some(DECK_CARDS_NOTE),
+        ShortcutsScreen::DeckCards | ShortcutsScreen::CardRows => Some(DECK_CARDS_NOTE),
     }
 }
 
