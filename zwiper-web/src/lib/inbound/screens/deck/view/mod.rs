@@ -12,7 +12,6 @@ mod ghost;
 pub mod page;
 pub mod panels;
 pub mod sections;
-pub(crate) mod stacks;
 
 use std::iter;
 

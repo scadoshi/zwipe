@@ -45,6 +45,7 @@ mod back_online;
 mod buy;
 mod card_actions;
 mod card_details;
+mod card_details_sheet;
 mod card_filter;
 mod card_list_fold;
 mod card_proxy;
@@ -57,6 +58,8 @@ mod color_bars;
 mod cover_flow;
 mod danger_zone;
 pub mod data_action;
+mod deck_cards_view;
+mod deck_group;
 mod deck_page;
 mod deck_stats;
 mod drawer_sheet;
@@ -89,6 +92,7 @@ pub use card_actions::{CardBoardMoves, CardEditButtons};
 pub use card_details::{
     CardDetails, CardDetailsCost, CardDetailsPanel, CardDetailsPanelSkeleton, card_face_count,
 };
+pub use card_details_sheet::CardDetailsSheet;
 pub use card_filter::{CardFilterPanel, DictionarySlot};
 pub use card_list_fold::CardListFold;
 pub use card_proxy::{CardProxy, FIT_JS as CARD_PROXY_FIT_JS, ProxyFace, use_card_proxy_fit};
@@ -106,6 +110,11 @@ pub use charts::{
 pub use color_bars::{ColorBars, ColorBarsGhost};
 pub use cover_flow::CoverFlow;
 pub use danger_zone::DangerZoneAction;
+pub use deck_cards_view::{
+    DRAWER_CLASSES, DeckCardsView, DeckEditActions, DeckRow, DeckRowHost, DeckStackDrawer,
+    DeckStacks, OnPrinting, StackDetails, use_stack_details_sync,
+};
+pub use deck_group::DeckGroupSection;
 pub use deck_page::{
     DeckBand, DeckControls, DeckFacts, DeckFold, DeckHead, DeckPage, DeckSection, FeaturedCard,
     NO_CARDS, sections,
