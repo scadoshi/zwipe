@@ -923,19 +923,22 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 }
 
 .deck-stack > .deck-group > .card-group-header .card-row-arrow {
-    position: absolute;
-    left: var(--stack-head-inset);
-    top: calc(var(--stack-head-inset) + 0.7em - 0.5rem);
+    flex: none;
     color: inherit;
 }
 
 /* The header's first line, the arrow and the words, folds the stack; the
-   price and the cart on the line under it do not. */
+   price and the cart on the line under it do not. The arrow sits inline
+   before the words, in the header's left inset (the toggle reaches back
+   over it), so the price line starts under the name. */
 .deck-stack > .deck-group > .card-group-header > .card-group-toggle {
+    --stack-arrow-room: 1.4rem;
     display: flex;
-    flex: 1 1 0;
+    flex: 1 0 100%;
     align-items: center;
+    gap: calc(var(--stack-arrow-room) - 1rem);
     min-width: 0;
+    margin-left: calc(-1 * var(--stack-arrow-room));
     cursor: pointer;
 }
 
