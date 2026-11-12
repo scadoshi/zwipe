@@ -12,8 +12,10 @@ use std::time::Duration;
 
 use components::icons::{CloneIcon, DockIcon, EditIcon, MINUS, PLUS, ShareIcon, UNDO};
 use components::{
-    CART, CartButton, Chip, DeckBand, DeckControls, DeckFacts, DeckFold, DeckHead, DeckPage,
-    DeckSection, DockFilter, FeaturedCard, HoverStackHost, StoreDialog, use_hover_stack,
+    BudgetBody, CART, CartButton, Chip, CurrencyChips, DeckBand, DeckControls, DeckFacts, DeckFold,
+    DeckHead, DeckPage, DeckSection, DistributionsBody, DockFilter, DrawOddsStepper, FeaturedCard,
+    GroupBuyDialog, HoverStackHost, ManaBody, StoreDialog, TagsBody, charted, use_group_buy,
+    use_hover_stack,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -21,6 +23,7 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::{Board, deck_tag_label};
+use zwipe_ui::buy::group_cards;
 use zwipe_ui::deck::form::Slot;
 use zwipe_ui::deck_cards::stacks::{
     CardsView, DEAL_DURATION, DEAL_STAGGER_CAP, DealCue, Reveal, deal_delay,
@@ -34,19 +37,17 @@ use super::dialogs::DeckDialogs;
 use super::ghost::{
     DeckBandsGhost, DeckControlsGhost, DeckFootGhost, DeckHeadGhost, DeckStatsGhost,
 };
-use super::group_buy::{group_buy_dialog, group_cards, use_group_buy};
 use super::panels::{DangerZonePanel, DataPanel};
-use super::sections::{
-    BudgetBody, CurrencyChips, DistributionsBody, DrawOddsStepper, ManaBody, TagsBody,
-    WarningFixes, WarningsBody, charted,
-};
+use super::sections::{WarningFixes, WarningsBody};
 use super::settle::use_settle;
 use super::stacks::{stack_details, stacks_view};
 use crate::domain::deck::{has_budget, tag_count};
 use crate::inbound::card_filter::CardFilterPanel;
 use crate::inbound::card_stores::CardStores;
 use crate::inbound::cards::card_row::{CardOverlays, CardOverlaysHost, use_card_overlays};
-use crate::inbound::cards::otag::{OtagExamplesHost, use_otag_reveals};
+use crate::inbound::cards::otag::{
+    OtagDescribe, OtagExamplesHost, OtagExamplesOpen, use_otag_reveals,
+};
 use crate::inbound::cards::printing_sheet::PrintingSheet;
 use crate::inbound::cards::stack_view::{
     CardsViewSwitch, StackDetails, use_cards_view, use_stack_details_sync,
@@ -426,6 +427,9 @@ pub fn DeckWidePage(
         price: price.filter(|v| *v > 0.0).map(|v| shown.format_amount(v)),
     });
     let charts = charted(metrics.as_ref());
+    // The Oracle tag lookups the Distributions charts hand to their tags.
+    let describe_tag = try_use_context::<OtagDescribe>().map(|d| d.0);
+    let on_examples = try_use_context::<OtagExamplesOpen>().map(|e| e.0);
     let land_count = metrics.as_ref().map_or(0, |m| m.land_count);
     let land_target = held_profile.as_ref().and_then(|p| p.land_target);
 
@@ -548,7 +552,11 @@ pub fn DeckWidePage(
                 }
                 if let Some(m) = charts.clone() {
                     DeckFold { fold_key: "Distributions", title: "Distributions", folded,
-                        DistributionsBody { metrics: m }
+                        DistributionsBody {
+                            metrics: m,
+                            describe_tag,
+                            on_examples,
+                        }
                     }
                 }
                 if charts.is_some() || land_target.is_some() {
@@ -675,7 +683,7 @@ pub fn DeckWidePage(
                 links,
             }
         }
-        {group_buy_dialog(group_buy)}
+        GroupBuyDialog { group_buy }
         if view() == CardsView::Stacks {
             {stack_details(&ed, &all_rows, &row_meta, stack_details_state, overlays)}
         }

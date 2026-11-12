@@ -58,9 +58,11 @@ mod cover_flow;
 mod danger_zone;
 pub mod data_action;
 mod deck_page;
+mod deck_stats;
 mod drawer_sheet;
 mod flippable_card_image;
 mod fold;
+mod group_buy;
 pub mod hint;
 mod home_colors;
 mod home_decks;
@@ -107,9 +109,14 @@ pub use deck_page::{
     DeckBand, DeckControls, DeckFacts, DeckFold, DeckHead, DeckPage, DeckSection, FeaturedCard,
     NO_CARDS, sections,
 };
+pub use deck_stats::{
+    BudgetBody, CurrencyChips, DistributionsBody, DrawOddsStepper, InfoRow, ManaBody, StatHints,
+    StatTopic, TagsBody, charted, draw_odds_hint,
+};
 pub use drawer_sheet::DrawerSheet;
 pub use flippable_card_image::{FlippableCardImage, reset_image_ease};
 pub use fold::{FOLD_AT, Fold, SEE_LESS, SEE_MORE, SeeMore, fold_split};
+pub use group_buy::{GroupBuy, GroupBuyDialog, use_group_buy};
 pub use home_colors::{ColorsEmpty, HomeColors};
 pub use home_decks::HomeDecks;
 pub use hover_stack::{HoverStack, HoverStackHost, use_hover_stack};
