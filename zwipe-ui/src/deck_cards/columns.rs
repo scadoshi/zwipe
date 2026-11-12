@@ -7,7 +7,7 @@
 const HEADER_ROWS: usize = 1;
 
 /// Where the right column starts among groups holding `rows` rows each, in order: the split
-/// whose taller column is shortest, a header counting as [`HEADER_ROWS`] rows, the later split
+/// whose taller column is shortest, a header counting as `HEADER_ROWS` rows, the later split
 /// on a tie, so the left column runs the longer as a page reads. A single group stays in the
 /// left column; no groups split at 0.
 #[must_use]
