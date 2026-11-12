@@ -53,6 +53,7 @@ pub const UPCOMING: &[Release] = &[
         entries: &[
             "The Share dialog's link is a colored chip that wraps only when the screen is too narrow for it",
             "Charts grow in when their page opens or their section expands",
+            "The web's large dialogs fade and rise in when they open",
         ],
     },
     Release {
@@ -65,7 +66,6 @@ pub const UPCOMING: &[Release] = &[
             "The Share dialog on the web shows the deck's own name in its link",
             "A melded card's list row shows the melded card in its thumbnail and hover preview",
             "Hovering a stack on the web's deck page no longer shifts its cards by a pixel",
-            "The web's large dialogs fade and rise in when they open",
         ],
     },
     Release {
