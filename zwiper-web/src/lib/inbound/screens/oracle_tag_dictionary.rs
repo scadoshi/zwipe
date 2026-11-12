@@ -17,6 +17,7 @@
 //! the search is empty and unfocused, and Esc closes it, as the × or the
 //! header's back arrow do.
 
+use components::keys::{focus_by_id, use_page_keys};
 use components::{
     Button, ButtonVariant, ClearWrap, PageHeader, SheetFrame, SheetWide, TOAST_NORMAL,
     use_overlay_back,
@@ -33,7 +34,6 @@ use crate::inbound::chrome::back_arrow::BackArrow;
 use crate::inbound::chrome::ghost::{GhostChip, GhostText, GhostWords};
 use crate::inbound::chrome::media::{KIT_MODAL_PX, use_min_width};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
-use crate::inbound::chrome::page_keys::{focus_by_id, use_page_keys};
 use crate::inbound::screens::oracle_tag_examples::OracleTagExamples;
 use crate::inbound::telemetry;
 

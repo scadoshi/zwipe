@@ -10,6 +10,7 @@
 
 use std::collections::HashSet;
 
+use components::keys::focus_by_id;
 use components::{
     ActionDock, AlertDialog, Button, ButtonVariant, CardListFold, Chip, ClearWrap,
     DangerZoneAction, DialogAction, DockFilter, HoverStackHost, TOAST_LONG, TOAST_QUICK,
@@ -46,7 +47,6 @@ use crate::inbound::chrome::ghost::{
     GhostActionRow, GhostButton, GhostChipRow, GhostList, GhostShowRow, GhostText,
 };
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
-use crate::inbound::chrome::page_keys::focus_by_id;
 use crate::inbound::chrome::shortcuts::{self, CardKey};
 use crate::inbound::router::Route;
 use crate::inbound::shell::ScreenFrame;

@@ -8,6 +8,7 @@
 use std::collections::{HashMap, HashSet};
 
 use chrono::Utc;
+use components::keys::{focus_by_id, use_page_keys_through, use_undo_key};
 use components::{DeckEditActions, DeckRow, DeckRowHost, TOAST_QUICK};
 use dioxus::core::spawn_forever;
 use dioxus::prelude::*;
@@ -44,7 +45,6 @@ use crate::inbound::cards::stack_view::StackDetails;
 use crate::inbound::cards::swipe_stack::{Swipe, use_swipe_key_handler};
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, open_and_record_hint};
-use crate::inbound::chrome::page_keys::{focus_by_id, use_page_keys_through, use_undo_key};
 use crate::inbound::chrome::shortcuts::{self, CardKey, ShortcutsScreen};
 use crate::inbound::chrome::shortcuts_sheet::use_offer_shortcuts;
 use crate::inbound::screens::deck::view::cards::zone as zone_of;

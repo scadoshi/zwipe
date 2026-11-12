@@ -11,6 +11,7 @@
 
 use components::hint::{ContentHintDialog, HintBody, guide_for_screen};
 use components::icons::CHECK;
+use components::keys::{focus_by_id, use_page_keys};
 use components::{
     AlertDialog, Button, ButtonVariant, Chip, ClearWrap, DialogAction, DockAction, DrawerSheet,
     HintDialog, TOAST_NORMAL, TOAST_QUICK, use_overlay_back_action, use_picker_search,
@@ -35,7 +36,6 @@ use zwipe_ui::timing::ORACLE_TAG_PICKER_LIMIT;
 use super::{DeckForm, SlotState};
 use crate::inbound::catalog::CatalogCache;
 use crate::inbound::chrome::authed::use_authed;
-use crate::inbound::chrome::page_keys::{focus_by_id, use_page_keys};
 use crate::inbound::screens::oracle_tag_dictionary::OracleTagDictionary;
 
 /// The picker's sheet, components' [`DrawerSheet`] as a drawer at every
