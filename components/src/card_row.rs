@@ -18,10 +18,10 @@ use zwipe_core::domain::card::scryfall_data::ImageSize;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::{Board, deck_metrics};
 
-use crate::CardDetails;
 use crate::card_actions::{CardBoardMoves, CardEditButtons};
 use crate::hover_stack::{HeldEntry, HoverStack};
 use crate::meld::use_meld;
+use crate::{CardDetails, CardProxy};
 
 /// Opens the row's detail, letting go of its hover preview, or shuts it
 /// when it is open.
@@ -178,6 +178,11 @@ pub fn CardRow(
                 .map(str::to_string)
         })
         .flatten();
+    // The art crop that failed to load, which then leaves the card's name in
+    // the thumbnail's box.
+    let mut art_failed: Signal<Option<String>> = use_signal(|| None);
+    let art_url = art_url.filter(|url| art_failed.read().as_deref() != Some(url.as_str()));
+    let proxy_sd = (show_art.is_some() && art_url.is_none()).then(|| shown.clone());
     let art_class = if show_art == Some(true) {
         "card-row-art"
     } else {
@@ -275,7 +280,10 @@ pub fn CardRow(
                         loading: "lazy",
                         draggable: false,
                         alt: "",
+                        onerror: move |_| art_failed.set(Some(url.clone())),
                     }
+                } else if let Some(sd) = proxy_sd {
+                    CardProxy { sd, face: face.unwrap_or(0), class: "{art_class}" }
                 }
                 // The name's head and its tags flow beside the art; the tags
                 // wrap under the head when the line is short (see the CSS).

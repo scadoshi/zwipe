@@ -80,6 +80,8 @@ pub fn App() -> Element {
     // app's trail over both.
     use_hook(GuardedHistory::provide);
     use_hook(TrailHistory::provide);
+    // A card drawn without its image shrinks its text to fit its box.
+    components::use_card_proxy_fit();
 
     rsx! {
         document::Link { rel: "icon", href: FAVICON }

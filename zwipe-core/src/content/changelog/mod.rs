@@ -48,16 +48,24 @@ pub const MOBILE_STORE_VERSION: Version = Version::new(1, 18, 15);
 /// changelog with an "Upcoming" badge instead of "Latest".
 pub const UPCOMING: &[Release] = &[
     Release {
+        version: Version::new(1, 19, 6),
+        date: None,
+        entries: &[
+            "On the web, Suggested commanders, Staples, Most skipped and the Commander maybeboard each keep their own List or Stacks, stacked as on the deck page",
+            "The web's Home and its other few-panel pages sit in the same 1400px column as zwipe.net",
+        ],
+    },
+    Release {
         version: Version::new(1, 19, 5),
         date: None,
         entries: &[
             "On the web's deck page, Quick add ends where the widest chip row under it does",
             "Home's counters on the web have an Activity button, as in the app",
-            "A card image that fails to load shows the card's name and text instead of the card under it",
             "The Z in the web's nav is the same size as on zwipe.net",
             "Opening a card's row, or folding all, on the web's deck page List answers about twice as fast",
             "On the web's deck page, cards ease in, out and into new groups when a board is shown or hidden or the grouping changes",
             "On the web's deck page, switching to Stacks deals the cards in",
+            "A card whose image is missing or fails to load shows its name, text and chips in the card's own shape, everywhere a card image shows",
         ],
     },
     Release {

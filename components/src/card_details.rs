@@ -108,7 +108,11 @@ pub fn card_face_count(card: &Card) -> usize {
 /// A face's kind as a chip row: its mana cost's pips when `cost` is given,
 /// then its type line and the card's rarity.
 #[component]
-fn KindChips(type_line: String, rarity: String, #[props(default)] cost: Option<String>) -> Element {
+pub(crate) fn KindChips(
+    type_line: String,
+    rarity: String,
+    #[props(default)] cost: Option<String>,
+) -> Element {
     rsx! {
         div { class: "card-details-keys",
             if let Some(cost) = cost.filter(|c| !c.is_empty()) {
@@ -125,7 +129,7 @@ fn KindChips(type_line: String, rarity: String, #[props(default)] cost: Option<S
 /// The card's facts as a chip row: its set, its prices, then the face's
 /// power and toughness, loyalty or defense.
 #[component]
-fn FactsChips(set_name: String, prices: Vec<String>, stats: Option<String>) -> Element {
+pub(crate) fn FactsChips(set_name: String, prices: Vec<String>, stats: Option<String>) -> Element {
     rsx! {
         div { class: "card-details-facts",
             span { class: "detail-chip detail-chip-set", "{set_name}" }

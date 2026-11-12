@@ -1208,168 +1208,185 @@ i.ms.ms-cost.ms-gp {
     opacity: 1;
 }
 
-/* No-art fallback: a flat card shown in place of the image when a card has no
-   picture, laid out like a real card - title + mana pips, rule, boxed "No image"
-   marker, type/rarity/set line, rule, then oracle + flavor text. Continuous: only
-   the art marker is boxed; dividers are hairline rules, not filled panels. */
-.no-image-card {
+/* ---- The no-image card (components::CardProxy) ----
+   The card's text in the exact 63:88 box its image would fill, laid out like
+   its expanded row. The box is a size container, so the type scales with the
+   card; the fitting script steps --proxy-scale down until nothing overflows.
+   At a thumbnail's width only the name and cost show. */
+.card-proxy {
+    container-type: size;
     position: relative;
-    display: flex;
-    flex-direction: column;
     box-sizing: border-box;
-    width: min(calc(100vw - 2rem), 20rem);
-    aspect-ratio: 5 / 7;
-    padding: 0.8rem;
-    gap: 0.45rem;
+    width: 100%;
+    aspect-ratio: 63 / 88;
     border: 1px solid var(--border-secondary);
-    border-radius: 1rem;
+    border-radius: 4.75% / 3.4%;
     background-color: var(--bg-primary);
     color: var(--text-primary);
     text-align: left;
     overflow: hidden;
 }
 
-/* Title row: name (left) + mana pips (right, via card-detail-cost). */
-.nic-head {
+.card-proxy-fit {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55em;
+    box-sizing: border-box;
+    padding: 6cqw 6cqw 5cqw;
+    font-size: calc(5cqw * var(--proxy-scale, 1));
+    line-height: 1.3;
+}
+
+.card-proxy-head {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 0.5rem;
+    gap: 0.5em;
 }
 
-/* Right side of the title row: inline flip button (multi-faced) + mana pips. */
-.nic-head-right {
+.card-proxy-name {
+    font-weight: 700;
+    font-size: 1.15em;
+    line-height: 1.2;
+    overflow-wrap: break-word;
+    color: var(--ink-palette-3, var(--palette-3));
+}
+
+.card-proxy-head-end {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.4em;
     flex-shrink: 0;
 }
 
-.nic-name {
-    font-weight: 700;
-    font-size: 1.05rem;
-    line-height: 1.25;
-    letter-spacing: 0.3px;
-    word-break: break-word;
-    color: var(--ink-palette-3, var(--palette-3));
+.card-proxy-cost {
+    margin: 0;
+    white-space: nowrap;
 }
 
-/* Hairline divider between card sections, full-bleed to the card edges (negative
-   margins cancel the card's padding). */
-.nic-rule {
+.card-proxy .card-proxy-cost .ms,
+.card-proxy .card-proxy-text .ms {
+    font-size: 0.95em;
+    vertical-align: middle;
+}
+
+.card-proxy-rule {
+    align-self: stretch;
+    height: 0;
+    margin: 0 -6cqw;
     border: none;
     border-top: 1px solid var(--border-secondary);
-    height: 0;
-    align-self: stretch;
-    margin: 0 -0.8rem;
 }
 
-/* Boxed marker where the art window would be. */
-.nic-art {
-    flex: 0 0 34%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid var(--border-primary);
-    border-radius: 0.4rem;
-}
-
-.nic-noart {
-    color: var(--ink-text-muted, var(--text-muted));
-    font-size: 0.8rem;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-}
-
-/* Type / rarity / set as chips. */
-.nic-meta {
+/* The row's chip rows, scaled to the card: every chip and gap in em. */
+.card-proxy .card-details-keys,
+.card-proxy .card-details-facts,
+.card-proxy .card-proxy-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.35rem;
+    align-items: center;
+    gap: 0.35em;
+    margin: 0;
 }
 
-.nic-chip {
-    display: inline-block;
-    padding: 0.2rem 0.5rem;
-    border: 1px solid var(--border-primary);
-    border-radius: 0.35rem;
-    background-color: var(--bg-primary);
-    font-size: 0.7rem;
-    line-height: 1.25;
-    color: var(--ink-text-muted, var(--text-muted));
+.card-proxy .detail-chip,
+.card-proxy .stat-chip,
+.card-proxy .chip,
+.card-proxy .card-row-price {
+    padding: 0.15em 0.5em;
+    border-radius: 0.4em;
+    font-size: 0.8em;
+    line-height: 1.3;
+    box-shadow: none;
+    cursor: inherit;
 }
 
-/* Type / rarity / set chips, each tinted with its own accent. */
-.nic-chip-type {
-    color: var(--ink-palette-1, var(--palette-1));
-    background-color: color-mix(in srgb, var(--palette-1) 12%, transparent);
-    border-color: color-mix(in srgb, var(--palette-1) 35%, transparent);
+.card-proxy .card-proxy-text {
+    font-size: 1em;
 }
 
-.nic-chip-rarity {
-    color: var(--ink-palette-4, var(--palette-4));
-    background-color: color-mix(in srgb, var(--palette-4) 12%, transparent);
-    border-color: color-mix(in srgb, var(--palette-4) 35%, transparent);
+.card-proxy-text {
+    margin: 0;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
 }
 
-.nic-chip-set {
-    color: var(--ink-palette-3, var(--palette-3));
-    background-color: color-mix(in srgb, var(--palette-3) 12%, transparent);
-    border-color: color-mix(in srgb, var(--palette-3) 35%, transparent);
-}
-
-/* Power/toughness (or loyalty) tab pinned to the card's bottom-right corner. Warm
-   warning-yellow, and opaque (mixed into the card bg, not transparent) so the
-   oracle text behind it is cleanly covered instead of showing through. */
-.nic-pt {
-    position: absolute;
-    right: 0.6rem;
-    bottom: 0.6rem;
-    font-weight: 700;
-    color: var(--ink-palette-5, var(--palette-5));
-    background-color: color-mix(in srgb, var(--palette-5) 18%, var(--bg-primary));
-    border-color: color-mix(in srgb, var(--palette-5) 40%, var(--border-primary));
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
-}
-
-/* Oracle + flavor fill the remaining space and scroll if long, fading out at the
-   top and bottom edges instead of hard-cutting (matches the app's masked scrolls). */
-.nic-textbox {
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow-y: auto;
+/* In an image's place (FlippableCardImage) the proxy lies over a transparent
+   stand-in the image's own size, which the host's image rules size. */
+.card-proxy-slot {
+    position: relative;
     display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
-    -webkit-mask-image: linear-gradient(
-        to bottom,
-        transparent 0,
-        black 0.8rem,
-        black calc(100% - 0.9rem),
-        transparent 100%
-    );
-    mask-image: linear-gradient(
-        to bottom,
-        transparent 0,
-        black 0.8rem,
-        black calc(100% - 0.9rem),
-        transparent 100%
-    );
+    min-height: 0;
+    max-width: 100%;
+    max-height: 100%;
 }
 
-.nic-oracle {
-    font-size: 0.82rem;
-    line-height: 1.4;
-    white-space: pre-wrap;
-    color: var(--text-primary);
+.card-proxy-slot > .card-proxy {
+    position: absolute;
+    inset: 0;
+    height: 100%;
+    aspect-ratio: auto;
+    line-height: 1.3;
+    box-shadow: var(--shadow-md);
 }
 
-.nic-flavor {
-    font-size: 0.8rem;
-    line-height: 1.35;
-    font-style: italic;
-    color: var(--ink-text-muted, var(--text-muted));
-    white-space: pre-wrap;
+/* A list row's thumbnail without its art keeps the thumbnail's own box. */
+.card-proxy.card-row-art {
+    width: 4rem;
+    height: 2.9rem;
+    aspect-ratio: auto;
+    border-radius: 0.5rem;
+}
+
+.card-proxy.card-row-art.art-hidden {
+    width: 0;
+    height: 0;
+}
+
+/* A printing in the cover flow fills its card's slot. */
+.card-proxy.cover-flow-proxy {
+    height: 100%;
+    box-shadow: var(--shadow-md);
+}
+
+/* Rows the fitting script drops, in order, from a card the type can't
+   shrink into: the rules text, the Keywords and Card roles rows, the kind
+   chips. The name and the facts row stay. */
+.card-proxy[data-proxy-drop] .card-proxy-text,
+.card-proxy[data-proxy-drop="2"] .card-proxy-row,
+.card-proxy[data-proxy-drop="3"] .card-proxy-row,
+.card-proxy[data-proxy-drop="3"] .card-details-keys {
+    display: none;
+}
+
+/* A thumbnail: just the name, wrapped between words, as many lines of it as
+   fit; the fitting script shrinks it until each word fits its width. */
+@container (max-width: 110px) {
+    .card-proxy-fit {
+        padding: 8cqw;
+        font-size: max(5px, calc(13cqw * var(--proxy-scale, 1)));
+        line-height: 1.15;
+    }
+
+    .card-proxy-name {
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 4;
+        overflow: hidden;
+        font-size: 1em;
+        overflow-wrap: normal;
+        word-break: normal;
+        hyphens: none;
+    }
+
+    .card-proxy-head-end,
+    .card-proxy-rule,
+    .card-proxy .card-details-keys,
+    .card-proxy .card-details-facts,
+    .card-proxy .card-proxy-row,
+    .card-proxy-text {
+        display: none;
+    }
 }
 
 .card-flip-button {
@@ -1752,8 +1769,7 @@ html.keyboard-up .web-dock-pair {
     z-index: 1;
 }
 
-.cover-flow-card img,
-.cover-flow-missing {
+.cover-flow-card img {
     display: block;
     width: 100%;
     height: 100%;
@@ -1824,17 +1840,6 @@ html.keyboard-up .web-dock-pair {
     animation: none;
 }
 
-.cover-flow-missing {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1rem;
-    box-sizing: border-box;
-    text-align: center;
-    background: var(--bg-primary);
-    border: 1px solid var(--border-secondary);
-    color: var(--ink-text-muted, var(--text-muted));
-}
 
 @media (min-width: 60rem) {
     .cover-flow {
@@ -2854,13 +2859,6 @@ footer.site-footer .site-footer-note {
     object-fit: cover;
 }
 
-.card-stack-name {
-    display: block;
-    padding: 0.5rem 0.6rem;
-    text-align: left;
-    font-size: 0.85rem;
-    color: var(--text-primary);
-}
 
 .card-stack-qty {
     position: absolute;
