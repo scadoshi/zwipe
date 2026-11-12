@@ -5,6 +5,8 @@
 //! hover, taps and the details drawer or sheet. Clients draw the piles and
 //! wire their own gestures to [`Reveal::apply`].
 
+use std::time::Duration;
+
 use uuid::Uuid;
 
 /// How the deck page lists its cards.
@@ -97,6 +99,52 @@ pub enum Gesture {
     Close,
 }
 
+/// The pause between one card's deal and the next in a stack, top to bottom.
+pub const DEAL_STAGGER: Duration = Duration::from_millis(18);
+
+/// The card after which the stagger stops growing, so a long stack still deals at once.
+pub const DEAL_STAGGER_CAP: u32 = 16;
+
+/// How long one card takes to rise into its slot.
+pub const DEAL_DURATION: Duration = Duration::from_millis(380);
+
+/// How long after the deal starts the card at `index` in its stack (`0` the top) starts rising:
+/// the stagger per card above it, up to the cap.
+#[must_use]
+pub fn deal_delay(index: u32) -> Duration {
+    DEAL_STAGGER.saturating_mul(index.min(DEAL_STAGGER_CAP))
+}
+
+/// When the deck page deals its stacks in: once on entering the Stacks view, as soon as the cards
+/// are there, and never again until the page leaves Stacks and comes back. A rerender, a filter or
+/// a regrouping deals nothing.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct DealCue {
+    /// The view at the last call; `None` before the first.
+    last: Option<CardsView>,
+    /// Whether a deal waits for the cards.
+    armed: bool,
+}
+
+impl DealCue {
+    /// The page shows `view`, with its cards in when `loaded`: whether the stacks deal now.
+    pub fn on(&mut self, view: CardsView, loaded: bool) -> bool {
+        let stacks = view == CardsView::Stacks;
+        if stacks && self.last != Some(CardsView::Stacks) {
+            self.armed = true;
+        }
+        if !stacks {
+            self.armed = false;
+        }
+        self.last = Some(view);
+        let deal = self.armed && loaded;
+        if deal {
+            self.armed = false;
+        }
+        deal
+    }
+}
+
 /// Which card shows in full and which card's details are open. The open
 /// card is pinned: it stays revealed when the pointer leaves it, a card under
 /// the pointer is revealed in its place (one at a time), and leaving every
@@ -180,6 +228,52 @@ impl Reveal {
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn entering_stacks_deals_once_the_cards_are_in() {
+        let mut cue = DealCue::default();
+        assert!(
+            !cue.on(CardsView::Stacks, false),
+            "the first load waits for its cards"
+        );
+        assert!(cue.on(CardsView::Stacks, true), "and deals when they land");
+        assert!(
+            !cue.on(CardsView::Stacks, true),
+            "a rerender or a filter change deals nothing"
+        );
+        assert!(!cue.on(CardsView::List, true));
+        assert!(
+            cue.on(CardsView::Stacks, true),
+            "switching back into Stacks deals again"
+        );
+        let mut list_first = DealCue::default();
+        assert!(
+            !list_first.on(CardsView::List, true),
+            "the List never deals"
+        );
+        assert!(list_first.on(CardsView::Stacks, true));
+    }
+
+    #[test]
+    fn a_whole_deal_is_brisk_even_for_a_long_stack() {
+        let longest = DEAL_STAGGER
+            .saturating_mul(DEAL_STAGGER_CAP)
+            .saturating_add(DEAL_DURATION);
+        assert!(
+            longest < std::time::Duration::from_millis(1000),
+            "a 30-card stack deals in {longest:?}"
+        );
+        assert_eq!(
+            deal_delay(0),
+            std::time::Duration::ZERO,
+            "the top card enters first"
+        );
+        assert_eq!(
+            deal_delay(30),
+            deal_delay(DEAL_STAGGER_CAP),
+            "the stagger stops at its cap"
+        );
+    }
     use super::*;
 
     #[test]

@@ -74,6 +74,7 @@ pub const UPCOMING: &[Release] = &[
         version: Version::new(1, 19, 2),
         date: None,
         entries: &[
+            "On the web's deck page, switching to Stacks deals the cards in",
             "The deck page on the web deals its featured cards in, as a shared deck does",
             "Back returns to the screen you came from instead of looping between Create deck and Decks",
             "On the web, a cloned deck shows its own name as soon as it opens, and back and forward between two decks show the right one",

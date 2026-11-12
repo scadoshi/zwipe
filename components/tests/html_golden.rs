@@ -505,6 +505,45 @@ fn deck_band_with_cart() {
     );
 }
 
+/// A stack dealing in: its class, and each slot's place in it for the stagger.
+#[test]
+fn card_stack_dealing() {
+    golden(
+        "card_stack_dealing",
+        &render(|| {
+            let named = |n: u128, name: &str| {
+                let mut card: Card = serde_json::from_str(CARD_JSON).unwrap();
+                card.scryfall_data.id = uuid::Uuid::from_u128(n);
+                card.scryfall_data.name = name.to_owned();
+                card.scryfall_data.image_uris = None;
+                card.scryfall_data.card_faces = None;
+                card
+            };
+            let cards = vec![
+                StackCard {
+                    card: named(1, "Top"),
+                    qty: 1,
+                    face: 0,
+                },
+                StackCard {
+                    card: named(2, "Bottom"),
+                    qty: 1,
+                    face: 0,
+                },
+            ];
+            rsx! {
+                CardStack {
+                    cards,
+                    dealing: true,
+                    on_hover: move |_| {},
+                    on_leave: move |_| {},
+                    on_select: move |_| {},
+                }
+            }
+        }),
+    );
+}
+
 /// The cart button: an icon button with its name for a screen reader.
 #[test]
 fn cart_button() {

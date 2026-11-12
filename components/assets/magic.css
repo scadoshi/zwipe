@@ -2875,6 +2875,23 @@ footer.site-footer .site-footer-note {
     background-color: color-mix(in srgb, var(--bg-primary) 85%, transparent);
 }
 
+/* Dealing in, on entering the Stacks view: each card rises from below into
+   its slot, the top card first and each one under it a beat later, every
+   stack at once. The stagger stops growing at the 16th card, so a long stack
+   still deals in well under a second (zwipe-ui's DEAL_* timing). Only the
+   card moves, never the slot, whose transform reveals; nothing stays on it
+   after the deal. */
+.card-stack.dealing .card-stack-card {
+    animation: card-stack-deal 380ms var(--ease-enter) calc(min(var(--deal-i), 16) * 18ms) backwards;
+}
+
+@keyframes card-stack-deal {
+    from {
+        opacity: 0;
+        transform: translateY(35%);
+    }
+}
+
 .card-stack-card:focus-visible,
 .card-stack-slot.open > .card-stack-card {
     outline: 2px solid var(--accent-primary);
@@ -2885,6 +2902,10 @@ footer.site-footer .site-footer-note {
     .card-stack,
     .card-stack-slot {
         transition: none;
+    }
+
+    .card-stack.dealing .card-stack-card {
+        animation: none;
     }
 }
 
