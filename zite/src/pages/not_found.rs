@@ -5,9 +5,8 @@
 //! dumping its raw match log. Not prerendered: catch-all segments are
 //! dynamic, so `static_routes()` excludes it automatically.
 //!
-//! Formatted like the shared-deck page's dead-link state (inform-and-stop
-//! alert): deliberately a dead end, the nav is right there for anyone who
-//! wants to explore.
+//! An inform-and-stop alert: deliberately a dead end, the nav is right there
+//! for anyone who wants to explore.
 
 use components::Panel;
 use dioxus::prelude::*;

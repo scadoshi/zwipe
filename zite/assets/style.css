@@ -160,17 +160,6 @@ a:not([class]) {
         transform: translateY(-2px);
     }
 
-    /* The shared deck's color buttons are plain buttons, not Chips, so they
-       take the same lift and accent here. */
-    .sd-chip:not(.active):hover {
-        border-color: var(--accent-primary);
-        color: var(--ink-accent-primary, var(--accent-primary));
-    }
-
-    .sd-chip:hover {
-        transform: translateY(-2px);
-    }
-
     body .panel-card {
         transition:
             border-color 0.4s ease,
@@ -202,7 +191,6 @@ a:not([class]) {
     body .panel-card:hover,
     .hero-card:hover,
     .chip:hover,
-    .sd-chip:hover,
     a:hover .ext {
         transform: none;
     }
@@ -973,7 +961,6 @@ h2.panel-title {
     margin-bottom: 1.25rem;
 }
 
-
 /* ==================
         contribute
  ==================== */
@@ -1445,11 +1432,6 @@ h2.panel-title {
     gap: 0.75rem;
 }
 
-/* The pip stands in for the mode icon, sized to the label text. */
-.pip-toggle i.ms.ms-cost {
-    font-size: 0.85em;
-}
-
 /* In the hamburger panel the kit's trailing band already draws the rule
    and the padding, so the pair only centers and wraps inside it. */
 @media (max-width: 60rem) {
@@ -1722,112 +1704,6 @@ body[class$="-dark"] .chip-value {
     white-space: nowrap;
 }
 
-/* ==================
-    shared deck page
- ==================== */
-
-.shared-deck {
-    max-width: 74rem;
-    width: 100%;
-    margin: 0 auto;
-    padding: 0 1.25rem 3rem;
-    /* Grow to fill between nav and footer so the footer stays pinned to the
-       bottom regardless of deck length (matches the loading/error state). */
-    flex: 1 0 auto;
-}
-
-/* On a wide window the deck runs the window's width inside the page gutter,
-   as app.zwipe.net's deck page does, so the stacks fit as many columns as
-   the window holds. */
-@media (min-width: 900px) {
-    .shared-deck.deck-page-wide {
-        max-width: none;
-        padding: 0 1.5rem 5rem;
-    }
-}
-
-/* ---- loading skeleton (deck-shaped placeholders) ---- */
-@keyframes sk-pulse {
-    0%,
-    100% {
-        opacity: 0.5;
-    }
-    50% {
-        opacity: 1;
-    }
-}
-
-.sk {
-    background: color-mix(in srgb, var(--text-primary) 9%, transparent);
-    border-radius: 0.4rem;
-    animation: sk-pulse 1.4s ease-in-out infinite;
-}
-
-/* The deck name's ghost, on the title's own line. */
-.sk-title {
-    display: inline-block;
-    width: 12rem;
-    height: 1.7rem;
-    border-radius: 0.5rem;
-    vertical-align: middle;
-}
-
-/* A chip's ghost at the kit chip's height. */
-.sk-chip {
-    width: 5rem;
-    height: 1.725rem;
-    border-radius: 0.4rem;
-}
-
-/* Vary the widths so the skeleton reads like real deck tags, not uniform pills. */
-.deck-head-meta .sk-chip:nth-child(1) {
-    width: 5.5rem;
-}
-.deck-head-meta .sk-chip:nth-child(2) {
-    width: 7rem;
-}
-.deck-head-meta .sk-chip:nth-child(3) {
-    width: 4rem;
-}
-.deck-head-meta .sk-chip:nth-child(4) {
-    width: 6rem;
-}
-
-/* A control row's label chip, as the live rows lead with one: Group by,
-   then the shorter Show. */
-.sk-chip-label {
-    width: 4.75rem;
-}
-
-.sk-chip-label-short {
-    width: 3rem;
-}
-
-/* The fold-all button's ghost, an icon button's square. */
-.sk-chip-icon {
-    width: 2.2rem;
-}
-
-/* The featured card's footprint, at the card's own corner radius. */
-.sk-card {
-    width: 100%;
-    aspect-ratio: 5 / 7;
-    border-radius: 4.75% / 3.5%;
-}
-
-/* Ghost card band: one plain box, same language as the card shapes. */
-.sk-group {
-    height: 15rem;
-    border-radius: 1rem;
-}
-
-/* The expanded row's actions (Image + Flip for DFCs) and muted separator come
-   from the components crate. Shown at every width: the Flip control has to be
-   reachable on desktop too, and Image opens the full overlay. */
-.card-row-rule-muted {
-    margin-top: 0;
-}
-
 .sd-image-overlay-backdrop {
     display: block;
     position: fixed;
@@ -1872,109 +1748,7 @@ body[class$="-dark"] .chip-value {
     }
 }
 
-/* The shared deck's funnel stops above the footer as it scrolls in, by
-   magic.css's footer rise. A dock inside a sheet stays where the sheet puts
-   it. */
-@supports (animation-timeline: view()) {
-    .action-dock:not(.bottom-sheet *) {
-        animation: footer-rise linear both;
-        animation-timeline: --site-footer;
-        animation-range: entry 0px entry 100vh;
-    }
-}
-
-/* The deck page's chips and the stat panels' tag rows tint over the page
-   background, so the page grid never shows through them. */
-.info-row-tags {
-    --tone-base: var(--bg-primary);
-}
-
-/* The app's chip-row: chips in a wrapping row with breathing room. */
-.chip-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.4rem;
-}
-
-/* Info rows inside the section panels; matches the app's main.css rules. */
-.info-row {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.5rem 1rem;
-    border-bottom: 1px solid var(--border-secondary);
-    gap: 0.75rem;
-}
-
-.info-row:last-child {
-    border-bottom: none;
-}
-
-.info-row-label {
-    font-size: 0.9rem;
-    font-weight: 400;
-    letter-spacing: 0.1em;
-    opacity: 0.5;
-    flex-shrink: 0;
-}
-
-.info-row-value {
-    font-size: 0.9rem;
-    font-weight: 400;
-    text-align: right;
-    flex-shrink: 1;
-    min-width: 0;
-    overflow-wrap: anywhere;
-    word-break: break-word;
-}
-
-.info-row-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.3rem;
-    justify-content: flex-end;
-}
-
-.info-row.info-row-stacked {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.5rem;
-}
-
-.info-row.info-row-stacked .info-row-tags {
-    justify-content: flex-start;
-}
-
-/* Card rows come from the components crate (magic.css); zite's addition:
-   slightly smaller detail text than the app. */
-.card-detail-oracle {
-    font-size: 0.72rem;
-}
-
-/* Scoped so it outranks components.css's .detail-chip (equal specificity,
-   loads later), as the tag chips' rule below does. */
-.shared-deck .detail-chip {
-    font-size: 0.7rem;
-}
-
-.shared-deck :is(.keyword-chips, .card-detail-otags) :is(.chip, .stat-chip) {
-    font-size: 0.7rem;
-}
-
-.shared-deck .keyword-reveal-text {
-    font-size: 0.7rem;
-}
-
-.sd-cta {
-    display: flex;
-    justify-content: center;
-    margin-top: 2.25rem;
-}
-
-/* Dead-end alert title on the not-shared screen: red, centered, pulsing. */
-/* Dead-end pages (404, unshared deck) are the shared Panel: the card, its
+/* The dead-end page (404) is the shared Panel: the card, its
    rule, and the body come from the component, so only the narrow width and
    the alert voice live here — title red, uppercase, centered and pulsing
    rather than the usual left-aligned accent heading. */
@@ -2022,39 +1796,6 @@ body[class$="-dark"] .chip-value {
         opacity: 0.45;
     }
 }
-
-.sd-retry {
-    border: 1px solid var(--border-primary);
-    border-radius: 0.4rem;
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
-    font-family: "JetBrains Mono", monospace;
-    font-size: 0.85rem;
-    padding: 0.45rem 1.3rem;
-    box-shadow: var(--shadow-sm);
-    cursor: pointer;
-    transition:
-        color 0.15s,
-        border-color 0.15s;
-}
-
-.sd-retry:hover {
-    border-color: var(--accent-primary);
-    color: var(--ink-accent-primary, var(--accent-primary));
-}
-
-.sd-retry:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-@media (max-width: 640px) {
-    .shared-deck {
-        padding: 1rem 0.85rem 2.5rem;
-    }
-
-}
-
 
 /* ── Guide screenshots ────────────────────────────────────────────────── */
 
@@ -2199,11 +1940,11 @@ html.js:not(.splash-skip).splash-over .splash {
    control that sets its own position where it is. The expanded row's -
    and + stand apart, so a tap meant for one never lands on the other. */
 @media (pointer: coarse) {
-    :where(button, [role="button"], .chip, .chip-xs, .sd-chip, a.nav-cta, a.panel-action, a.nav-brand) {
+    :where(button, [role="button"], .chip, .chip-xs, a.nav-cta, a.panel-action, a.nav-brand) {
         position: relative;
     }
 
-    :is(button, [role="button"], .chip, .chip-xs, .sd-chip, a.nav-cta, a.panel-action, a.nav-brand)::after {
+    :is(button, [role="button"], .chip, .chip-xs, a.nav-cta, a.panel-action, a.nav-brand)::after {
         content: "";
         position: absolute;
         top: 50%;
@@ -2211,10 +1952,6 @@ html.js:not(.splash-skip).splash-over .splash {
         width: max(100%, 44px);
         height: max(100%, 44px);
         transform: translate(-50%, -50%);
-    }
-
-    .card-action-count {
-        margin-inline: 0.75rem;
     }
 
     /* The toast clips what leaves it, so its close takes the 44px corner

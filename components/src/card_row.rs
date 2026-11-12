@@ -3,7 +3,7 @@
 //! oracle text, stats) plus an optional action row.
 //!
 //! One component for every surface: the app passes edit callbacks (quantity,
-//! printing, star, move-to-board); a read-only page like zite's shared deck
+//! printing, star, move-to-board); a read-only page like a shared deck
 //! passes only what it supports (e.g. `on_image`). Every action is an
 //! `Option`; `None` simply omits the control. Under a screen's
 //! [`HoverStack`] a collapsed row shows a mouse its card's image there.

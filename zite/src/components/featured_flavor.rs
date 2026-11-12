@@ -11,8 +11,8 @@
 //! Image and the cart, which opens the store dialog for `TCGplayer` and Card
 //! Kingdom. Image requests the full-art
 //! overlay via the `overlay` signal; the HOME PAGE renders the overlay itself
-//! at its top level, outside the `content-enter` content tree, mirroring the
-//! shared-deck page: nested here, an animated ancestor's transform would
+//! at its top level, outside the `content-enter` content tree: nested here, an
+//! animated ancestor's transform would
 //! become the containing block for `position: fixed` and trap the overlay in
 //! the page column.
 

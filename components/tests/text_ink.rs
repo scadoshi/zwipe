@@ -143,10 +143,6 @@ fn tone_text_reads_its_ink() {
             "zite style.css",
             include_str!("../../zite/assets/style.css"),
         ),
-        (
-            "zite filter-inputs.css",
-            include_str!("../../zite/assets/filter-inputs.css"),
-        ),
     ];
     let mut offenders = Vec::new();
     for (name, css) in sheets {

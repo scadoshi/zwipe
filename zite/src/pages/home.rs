@@ -208,10 +208,10 @@ pub fn Home() -> Element {
     let current = DEMOS[index()];
 
     // Featured flavor's full-art overlay state. The overlay is rendered HERE,
-    // at the page's top level outside the `content-enter` tree, mirroring
-    // the shared-deck page, whose overlay works. Nested inside the content
-    // tree, an animated ancestor's transform becomes the containing block for
-    // `position: fixed` and traps the overlay in the page column.
+    // at the page's top level outside the `content-enter` tree. Nested inside
+    // the content tree, an animated ancestor's transform becomes the
+    // containing block for `position: fixed` and traps the overlay in the
+    // page column.
     let flavor_overlay: Signal<Option<ScryfallData>> = use_signal(|| None);
     let flavor_overlay_dismissing = use_signal(|| false);
 
@@ -290,8 +290,8 @@ pub fn Home() -> Element {
                     }
                 }
             }
-            // Tap-to-open full-art overlay for the featured flavor card, copied
-            // from the shared-deck page: a dimmed backdrop with the card art, tap
+            // Tap-to-open full-art overlay for the featured flavor card: a
+            // dimmed backdrop with the card art, tap
             // anywhere to dismiss (the flip button stops propagation, so flipping
             // never dismisses). Lives at the top level, outside `content-enter`.
             if flavor_overlay().is_some() || flavor_overlay_dismissing() {

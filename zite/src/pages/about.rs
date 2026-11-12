@@ -107,7 +107,7 @@ pub fn About() -> Element {
                             li {
                                 "The app on the web, at "
                                 a { href: "https://app.zwipe.net", "app.zwipe.net" }
-                                ": the same decks and swipes in a browser"
+                                ": the same decks and swipes in a browser, and every shared deck's page"
                             }
                             li {
                                 "Talks to "
@@ -138,7 +138,7 @@ pub fn About() -> Element {
                             a { class: "tag tag-p3", href: URL_WASM, "WASM" }
                         }
                         ul { class: "card-bullets",
-                            li { "Landing and guides, the changelog, shared deck pages, password reset, email verification and email change confirmation" }
+                            li { "Landing and guides, the changelog, password reset, email verification and email change confirmation" }
                             li {
                                 "Talks to "
                                 a { href: URL_ZERVER, "zerver" }

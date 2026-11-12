@@ -12,7 +12,7 @@ use dioxus::prelude::*;
 
 use crate::pages::{
     About, Android, Changelog, Community, ConfirmEmail, Contribute, GuidePage, Guides, Home, Ios,
-    NotFound, Privacy, Reset, SharedDeck, SharedDeckPage, Verify,
+    NotFound, Privacy, Reset, Verify,
 };
 
 /// The site's pages by path, with redirects for retired paths.
@@ -45,16 +45,6 @@ pub(crate) enum Route {
     Ios {},
     #[route("/privacy/")]
     Privacy {},
-    // A shared deck, GitHub style. Only the token identifies it; the page
-    // swaps a stale owner or slug for the current ones. The four-segment
-    // shape is the only shared-deck form, clear of the one- and two-segment
-    // pages above.
-    #[route("/:owner/deck/:slug/:token")]
-    SharedDeckPage { owner: String, slug: String, token: String },
-    // The links shipped apps share: the same page, which then moves to the
-    // owner, slug and token form.
-    #[route("/deck/:token")]
-    SharedDeck { token: String },
     #[route("/verify/:token")]
     Verify { token: String },
     #[route("/confirm-email/:token")]

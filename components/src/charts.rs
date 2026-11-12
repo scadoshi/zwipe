@@ -1,5 +1,5 @@
 //! Deck distribution charts, shared by the app's Distributions section and
-//! the zwipe.net shared-deck page.
+//! the web's deck page, the owner's and a shared deck's.
 //!
 //! Pure div-bar charts (no canvas, no JS) styled against the theme variables,
 //! fed the chart-ready tuples `DeckMetrics` produces (`mana_curve_bars`,

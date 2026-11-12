@@ -2464,7 +2464,7 @@ html.keyboard-up .web-dock-pair {
 /* The deck page's featured cards deal in from above once every image has
    loaded (the page adds `.ready` to the row DeckHead gives the
    `deck-head-deal` class), each a beat after the one before, at the size
-   they keep: zwipe.net's shared deck and app.zwipe.net's deck page alike.
+   they keep: the owner's deck page and a shared deck's alike.
    Same motion as the app's .deck-featured-card. */
 .deck-head-deal .deck-head-card {
     opacity: 0;

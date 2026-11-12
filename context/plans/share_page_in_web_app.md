@@ -1,6 +1,6 @@
 # Shared deck page in the web app (418)
 
-Status: approved 2026-11-12 (Scotty, via composer: plan it and start it). Owner: scotland.
+Status: shipped 2026-11-13: steps 1 to 5 in 3873515b5 and 48c3dccd6, step 6 (zite's page removed) after surfer and droider passed. Owner: scotland.
 
 A shared deck's link opens on app.zwipe.net instead of zwipe.net. The web app already draws the deck page, its Stacks, keys, printings and Oracle tag examples, so a reader gets all of it, signed in or not. zwipe.net's own copy of the page goes once the web's is live.
 

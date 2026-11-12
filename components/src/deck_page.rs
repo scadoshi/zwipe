@@ -1,5 +1,5 @@
-//! The deck page zite's shared deck and the web's deck view both draw, so
-//! the two cannot drift: [`DeckHead`] with the featured cards beside the
+//! The deck page the web's deck view draws, for the owner's deck and a
+//! shared deck alike: [`DeckHead`] with the featured cards beside the
 //! name and its facts, [`DeckControls`] over the cards, each group as a
 //! [`DeckBand`] the page's width with its rows in columns, and the stat
 //! panels as [`DeckFold`]s in a grid, all inside [`DeckPage`]. The hosts

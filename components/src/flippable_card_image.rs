@@ -1,8 +1,8 @@
 //! Card image with a built-in flip control for double-faced cards.
 //!
 //! Shared by zwiper (swipe stack, printing sheet, fullscreen preview) and zite
-//! (shared-deck image overlay) so the flip affordance behaves identically
-//! everywhere. Owns its `face_idx` internally; a host can seed the first face
+//! (the featured flavor card's image overlay) so the flip affordance behaves
+//! identically everywhere. Owns its `face_idx` internally; a host can seed the first face
 //! shown via `initial_face` (e.g. to open an overlay already on the back side),
 //! or hold the face itself through `face` to flip the card from outside, such
 //! as from a key.

@@ -7,12 +7,10 @@ use ::components::{
     use_theme_wipe,
 };
 use dioxus::prelude::*;
-use zwipe_core::domain::user::settings::PipStyle;
 
 mod api;
 mod components;
 mod pages;
-mod pip_store;
 mod route;
 use route::Route;
 // Base URLs + contact points live in zwipe-core's `site` module (shared with
@@ -23,7 +21,6 @@ pub use zwipe_core::domain::site::{API_BASE, APP_BASE, DISCORD_URL, SUPPORT_EMAI
 const STYLE: Asset = asset!("/assets/style.css");
 /// The kit's input rules the card filter's sheet draws with, which zite
 /// otherwise does not load.
-const FILTER_INPUTS_CSS: &str = include_str!("../assets/filter-inputs.css");
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 const FAVICON_16: Asset = asset!("/assets/favicon-16x16.png");
 const FAVICON_32: Asset = asset!("/assets/favicon-32x32.png");
@@ -162,11 +159,6 @@ async fn static_routes() -> ServerFnResult<Vec<String>> {
 #[derive(Debug, Clone, Copy)]
 pub struct SiteSplash(pub Signal<bool>);
 
-/// Whether the page shows cards, and so pips: true while a shared deck
-/// with any card is on screen. The nav's pip toggle shows only then.
-#[derive(Debug, Clone, Copy)]
-pub struct ShowsPips(pub Signal<bool>);
-
 /// Sends `true` on every Escape, for the root to close the top sheet. While
 /// a kit dialog is open its own listener takes Escape, so this one steps
 /// aside.
@@ -187,10 +179,6 @@ fn App() -> Element {
     // on it, so nothing visible changes.
     let theme = ::components::use_persisted_theme("zwipe.theme");
     use_context_provider(|| theme);
-    // The pip style, kept the same way under its own key.
-    let pip_style = pip_store::use_persisted_pip_style();
-    use_context_provider(|| pip_style);
-    use_context_provider(|| ShowsPips(Signal::new(false)));
     use_context_provider(|| Replay(Signal::new(0u32)));
     // The keyboard shortcuts sheet, which Shift+H opens on a page that offers it.
     let shortcuts_open = ::components::keys::use_shortcuts_root();
@@ -271,19 +259,6 @@ fn App() -> Element {
         });
     });
 
-    // The pip style's class sits on <body> beside the theme's, where magic.css
-    // looks for it.
-    use_effect(move || {
-        let classic = pip_style() == PipStyle::Classic;
-        let class = ::components::pip_style_class(PipStyle::Classic);
-        spawn(async move {
-            let _ = document::eval(&format!(
-                "document.body.classList.toggle('{class}', {classic});"
-            ))
-            .await;
-        });
-    });
-
     rsx! {
         document::Meta { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" }
         // Tells Dark Reader to leave the site alone: theming is first-class
@@ -306,13 +281,7 @@ fn App() -> Element {
         // The kit's dialogs, without the app shell.
         document::Style { {::components::DIALOG_CSS} }
         document::Style { {MAGIC_CSS} }
-        // The deck page's cards, as the web app draws them, for a shared deck.
-        document::Style { {::components::DECK_PAGE_CSS} }
         document::Style { {SITE_CSS} }
-        // The card filter on a shared deck: the kit's input rules it needs,
-        // scoped to its sheet, then its own.
-        document::Style { {FILTER_INPUTS_CSS} }
-        document::Style { {::components::FILTER_CSS} }
         document::Stylesheet { href: STYLE }
         // Scroll reveal for panels below the fold; everything it does is
         // progressive.
@@ -335,14 +304,6 @@ fn App() -> Element {
 #[component]
 pub fn Nav() -> Element {
     let (theme, shown) = use_theme_wipe(use_context::<Signal<ThemeConfig>>(), "body");
-    let pip_style = use_context::<Signal<PipStyle>>();
-    // The pip style only shows on a shared deck with cards, the one page
-    // that draws pips.
-    let on_shared_deck = matches!(
-        use_route::<Route>(),
-        Route::SharedDeck { .. } | Route::SharedDeckPage { .. }
-    );
-    let shows_pips = use_context::<ShowsPips>().0;
     let mut open = use_signal(|| false);
     // Escape closes the phone menu and gives focus back to its toggle.
     use_future(move || async move {
@@ -423,9 +384,6 @@ pub fn Nav() -> Element {
             trailing: rsx! {
                 div { class: "theme-controls",
                     ThemePicker { theme, shown }
-                    if on_shared_deck && shows_pips() {
-                        components::PipToggle { style: pip_style }
-                    }
                 }
             },
         }
