@@ -52,12 +52,6 @@ pub const UPCOMING: &[Release] = &[
         date: None,
         entries: &[
             "On the web, Suggested commanders, Staples, Most skipped and the Commander maybeboard each keep their own List or Stacks, stacked as on the deck page",
-        ],
-    },
-    Release {
-        version: Version::new(1, 19, 6),
-        date: None,
-        entries: &[
             "The web's Home and its other few-panel pages sit in the same 1400px column as zwipe.net",
         ],
     },
