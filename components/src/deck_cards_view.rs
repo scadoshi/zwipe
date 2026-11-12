@@ -88,6 +88,25 @@ impl StackDetails {
         reveal.write().apply(Gesture::Click(id));
         details_open.set(reveal.peek().open().is_some());
     }
+
+    /// A tap on card `id` (phones): the first reveals it, a second on the revealed card opens its
+    /// details, and one on the open card closes them.
+    pub fn tap(self, id: Uuid) {
+        let Self {
+            mut reveal,
+            mut details_open,
+        } = self;
+        reveal.write().apply(Gesture::Tap(id));
+        details_open.set(reveal.peek().open().is_some());
+    }
+
+    /// A tap off every card (phones): the reveal goes back to the open card, or to none.
+    pub fn dismiss(self) {
+        let Self { mut reveal, .. } = self;
+        if reveal.peek().revealed() != reveal.peek().open() {
+            reveal.write().apply(Gesture::Dismiss);
+        }
+    }
 }
 
 /// The details drawer's classes: the card details drawer's own, then `deck-stack-details`, the
@@ -339,6 +358,10 @@ pub fn DeckRow(
 /// `faces` (the front where it has none), its header showing the group's total price and its cart
 /// opening `group_buy` on its cards. While `dealing` every stack deals its cards in, top to
 /// bottom. Hover reveals a card in place; a click opens it in the drawer.
+///
+/// With `touch`, for phones, the stacks are in [`CardStack`]'s tap mode: a first tap reveals a
+/// card, a second opens it in the drawer. A header press calls `on_fold` with the group's key
+/// where the host passes it, else folds it in `collapsed`.
 #[component]
 pub fn DeckStacks(
     sections: Vec<(DeckSection, Vec<RowInfo>)>,
@@ -348,8 +371,14 @@ pub fn DeckStacks(
     faces: Signal<HashMap<Uuid, usize>>,
     group_buy: GroupBuy,
     #[props(default)] dealing: bool,
+    #[props(default)] touch: bool,
+    #[props(default)] on_fold: Option<EventHandler<String>>,
 ) -> Element {
     let mut reveal = details.reveal;
+    let on_hover =
+        (!touch).then(|| EventHandler::new(move |id| reveal.write().apply(Gesture::Hover(id))));
+    let on_leave =
+        (!touch).then(|| EventHandler::new(move |id| reveal.write().apply(Gesture::Leave(id))));
     let shown = reveal();
     let shown_faces = faces();
     rsx! {
@@ -376,6 +405,7 @@ pub fn DeckStacks(
                                 pips: section.pips,
                                 count: None,
                                 collapsed,
+                                on_fold,
                                 trailing: (price.is_some() || buyable).then(|| rsx! {
                                     span { class: "deck-stack-tail",
                                         if let Some(p) = price {
@@ -391,9 +421,9 @@ pub fn DeckStacks(
                                     dealing,
                                     revealed: shown.revealed_in(&ids),
                                     open: shown.open(),
-                                    on_hover: move |id| reveal.write().apply(Gesture::Hover(id)),
-                                    on_leave: move |id| reveal.write().apply(Gesture::Leave(id)),
-                                    on_select: move |id| details.click(id),
+                                    on_hover,
+                                    on_leave,
+                                    on_select: move |id| if touch { details.tap(id) } else { details.click(id) },
                                 }
                             }
                         }

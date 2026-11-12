@@ -13,6 +13,8 @@ pub mod android_keystore;
 pub mod app_icon;
 /// URL construction for external card retailer bulk-buy tools.
 pub mod buy_links;
+/// The deck cards screen's List | Stacks choice, kept across launches.
+pub mod cards_view_store;
 /// Whether the home hero shows everyone's counts or the user's own.
 pub mod count_scope_store;
 /// Local cache of the public counters so a launch without signal still shows them.

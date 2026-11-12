@@ -202,3 +202,78 @@ fn the_list_lays_its_groups_down_two_plain_columns_in_order() {
         "{right}"
     );
 }
+
+/// Two stacks, in tap mode with `touch`.
+fn stacks(touch: bool) -> Element {
+    let details = StackDetails {
+        reveal: use_signal(Reveal::default),
+        details_open: use_signal(|| false),
+    };
+    rsx! {
+        components::DeckStacks {
+            sections: vec![group("Creatures", 3), group("Lands", 2)],
+            currency: PriceCurrency::default(),
+            collapsed: use_signal(Default::default),
+            details,
+            faces: use_signal(HashMap::new),
+            group_buy: components::use_group_buy(),
+            touch,
+        }
+    }
+}
+
+#[test]
+fn touch_stacks_are_in_tap_mode_and_pointer_stacks_are_not() {
+    let touch = render(|| stacks(true));
+    assert_eq!(
+        touch.matches(r#"class="card-stack tap""#).count(),
+        2,
+        "{touch}"
+    );
+    let pointer = render(|| stacks(false));
+    assert!(!pointer.contains("card-stack tap"), "{pointer}");
+}
+
+#[test]
+fn a_second_tap_opens_the_drawer_and_a_tap_off_keeps_it() {
+    thread_local! {
+        static DETAILS: std::cell::Cell<Option<StackDetails>> = const { std::cell::Cell::new(None) };
+    }
+    fn app() -> Element {
+        let details = StackDetails {
+            reveal: use_signal(Reveal::default),
+            details_open: use_signal(|| false),
+        };
+        DETAILS.with(|d| d.set(Some(details)));
+        rsx! {}
+    }
+    let mut dom = VirtualDom::new(app);
+    dom.rebuild_in_place();
+    let details = DETAILS.with(std::cell::Cell::get).unwrap();
+    let id = Uuid::new_v4();
+    let state = |dom: &VirtualDom| {
+        dom.in_runtime(|| {
+            let reveal = *details.reveal.peek();
+            (reveal.revealed(), *details.details_open.peek())
+        })
+    };
+    dom.in_runtime(|| details.tap(id));
+    assert_eq!(state(&dom), (Some(id), false), "the first tap reveals");
+    dom.in_runtime(|| details.dismiss());
+    assert_eq!(state(&dom), (None, false), "a tap off closes the reveal");
+    dom.in_runtime(|| {
+        details.tap(id);
+        details.tap(id);
+    });
+    assert_eq!(
+        state(&dom),
+        (Some(id), true),
+        "the second tap opens the drawer"
+    );
+    dom.in_runtime(|| details.dismiss());
+    assert_eq!(
+        state(&dom),
+        (Some(id), true),
+        "a tap off leaves the open card"
+    );
+}

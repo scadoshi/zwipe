@@ -1,6 +1,10 @@
+use std::collections::{HashMap, HashSet};
+
 use components::icons::{self};
 use components::{
-    Button, ButtonVariant, Chip, DockAction, DockFilter, IdentityPips, Pressable, Toasts, use_toast,
+    Button, ButtonVariant, Chip, DeckEditActions, DeckRowHost, DeckSection, DeckStackDrawer,
+    DeckStacks, DockAction, DockFilter, GroupBuyDialog, IdentityPips, Pressable, StackDetails,
+    Toasts, use_group_buy, use_stack_details_sync, use_toast,
 };
 use dioxus::core::spawn_forever;
 use dioxus::prelude::*;
@@ -19,10 +23,14 @@ use zwipe_core::domain::deck::{self, Board};
 use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_core::http::contracts::deck_card::HttpPatchDeckCard;
 use zwipe_ui::deck::command_zone::Slot;
+use zwipe_ui::deck_cards::keys::RowInfo;
+use zwipe_ui::deck_cards::stacks::{
+    CardsView, DEAL_DURATION, DEAL_STAGGER_CAP, DealCue, Reveal, VIEW_LABEL, deal_delay,
+};
 use zwipe_ui::deck_cards::{Write, Zone};
 use zwipe_ui::filter;
 use zwipe_ui::generation::Ticket;
-use zwipe_ui::screens::deck_cards::{self, Action, Destination, Effect, Op, State};
+use zwipe_ui::screens::deck_cards::{self, Action, Destination, Effect, Op, StackGroup, State};
 use zwipe_ui::stores::undo::UndoAction as SharedUndo;
 
 use super::components::card_row::{CardRow, OtagDescribe, OtagExamplesOpen, ShowRowArt};
@@ -49,6 +57,7 @@ use crate::inbound::screens::deck::components::skeletons::{
 };
 use crate::inbound::screens::deck::missing_deck;
 use crate::inbound::screens::oracle_tag_examples::OracleTagExamples;
+use crate::outbound::cards_view_store;
 
 /// The app's copy of a shared undo entry, for the screen's live log.
 fn to_app_undo(action: SharedUndo) -> UndoAction {
@@ -650,6 +659,53 @@ pub fn View(deck_id: Uuid) -> Element {
         }
     });
 
+    // List or Stacks, as last left on this device.
+    let mut view = use_signal(cards_view_store::restored);
+    // The stacks' reveal and open card, the face each card shows, and the
+    // folds as the model holds them, which the stack headers read.
+    let reveal = use_signal(Reveal::default);
+    let details_open = use_signal(|| false);
+    let stack_details = StackDetails {
+        reveal,
+        details_open,
+    };
+    let stack_faces: Signal<HashMap<Uuid, usize>> = use_signal(HashMap::new);
+    let mut folds: Signal<HashSet<String>> = use_signal(HashSet::new);
+    use_effect(move || {
+        let model = driver.model.read();
+        if *folds.peek() != *model.collapsed() {
+            folds.set(model.collapsed().clone());
+        }
+    });
+    let listed_ids = use_memo(move || {
+        let model = driver.model.read();
+        let live = filter_builder.read();
+        let display = model.display(&live);
+        model
+            .stack_groups(&display, &live)
+            .into_iter()
+            .flat_map(|group| group.rows)
+            .map(|row| row.card.scryfall_data.id)
+            .collect::<Vec<_>>()
+    });
+    use_stack_details_sync(reveal, details_open, listed_ids);
+    // The stacks deal in on entering Stacks, once the deck is in, for as
+    // long as the longest stack takes.
+    let mut deal_cue = use_signal(DealCue::default);
+    let mut dealing = use_signal(|| false);
+    use_effect(move || {
+        let shown = view();
+        let ready = driver.model.read().is_loaded();
+        if deal_cue.write().on(shown, ready) {
+            dealing.set(true);
+            spawn(async move {
+                time::sleep(deal_delay(DEAL_STAGGER_CAP).saturating_add(DEAL_DURATION)).await;
+                dealing.set(false);
+            });
+        }
+    });
+    let group_buy = use_group_buy();
+
     let filter = filter_builder.read().clone();
     let model = driver.model.read();
     let loaded = model.is_loaded();
@@ -753,7 +809,76 @@ pub fn View(deck_id: Uuid) -> Element {
     let printing_card = model.printing().cloned();
     let quick_query = model.quick_query().to_owned();
     let quick_results = model.quick_add();
+    let stacks_on = view() == CardsView::Stacks;
+    let stack_groups = if stacks_on {
+        model.stack_groups(&display, &filter)
+    } else {
+        Vec::new()
+    };
+    let stack_boards: HashMap<Uuid, Board> = stack_groups
+        .iter()
+        .flat_map(|group| &group.rows)
+        .filter_map(|row| {
+            let id = row.card.scryfall_data.id;
+            model.row(id).map(|r| (id, r.board))
+        })
+        .collect();
     drop(model);
+    let stack_rows: Vec<RowInfo> = stack_groups
+        .iter()
+        .flat_map(|group| group.rows.iter().cloned())
+        .collect();
+    let stack_sections: Vec<(DeckSection, Vec<RowInfo>)> = stack_groups
+        .into_iter()
+        .map(
+            |StackGroup {
+                 key,
+                 title,
+                 pips,
+                 rows,
+             }| {
+                let cards = rows.iter().map(|row| row.card.clone()).collect();
+                (
+                    DeckSection {
+                        key,
+                        title,
+                        pips,
+                        cards,
+                    },
+                    rows,
+                )
+            },
+        )
+        .collect();
+    let edit_actions = DeckEditActions {
+        change_quantity: Callback::new(move |(card_id, delta, _record): (Uuid, i32, bool)| {
+            driver.dispatch(Action::ChangeQuantity { card_id, delta });
+        }),
+        move_to_board: Callback::new(move |(card_id, board, _record): (Uuid, Board, bool)| {
+            driver.dispatch(Action::MoveTo { card_id, board });
+        }),
+        toggle_mvp: Callback::new(move |(card_id, _starred): (Uuid, bool)| {
+            driver.dispatch(Action::ToggleMvp {
+                card_id,
+                now: chrono::Utc::now(),
+            });
+        }),
+    };
+    let stack_host = DeckRowHost {
+        on_image: Some(Callback::new(move |shown: (ScryfallData, usize)| {
+            let mut preview_card = preview_card;
+            preview_card.set(Some(shown));
+        })),
+        on_printing: Some(Callback::new(move |(card, slot): (Card, Option<Slot>)| {
+            driver.dispatch(Action::OpenPrintings {
+                card: Box::new(card),
+                slot,
+            });
+        })),
+        on_view_printing: None,
+        describe_tag: Some(describe_tag),
+        on_examples: Some(open_examples),
+    };
 
     let open_printings = move |card: Card, slot: Option<Slot>| {
         driver.dispatch(Action::OpenPrintings {
@@ -767,7 +892,14 @@ pub fn View(deck_id: Uuid) -> Element {
     };
 
     rsx! {
-            div { class: "screen",
+            div {
+                class: "screen",
+                // A tap off every card closes the stacks' reveal; a card's own tap stops at the card.
+                onclick: move |_| {
+                    if stacks_on {
+                        stack_details.dismiss();
+                    }
+                },
                 ScreenHeader { title: deck_cards::TITLE, hint: deck_cards_hint_open, back: move |()| driver.dispatch(Action::Back) }
 
                 div { class: "screen-content",
@@ -830,6 +962,22 @@ pub fn View(deck_id: Uuid) -> Element {
                             onadd: move |card: Card| driver.dispatch(Action::AddCard(Box::new(card))),
                         }
 
+                        // List or Stacks
+                        div { class: "chip-row",
+                            span { class: "stat-chip stat-chip-p1 chip-row-label", "{VIEW_LABEL}" }
+                            for choice in [CardsView::List, CardsView::Stacks] {
+                                Chip {
+                                    key: "{choice.key()}",
+                                    selected: view() == choice,
+                                    onclick: move |_| {
+                                        view.set(choice);
+                                        cards_view_store::infallible_save(choice);
+                                    },
+                                    "{choice.label()}"
+                                }
+                            }
+                        }
+
                         // Group-by row
                         div { class: "chip-row",
                             span { class: "stat-chip stat-chip-p1 chip-row-label", "{deck_cards::GROUP_BY}" }
@@ -882,6 +1030,7 @@ pub fn View(deck_id: Uuid) -> Element {
                             }
                             Chip {
                                 selected: show_row_art(),
+                                disabled: stacks_on,
                                 onclick: move |_| show_row_art.set(!show_row_art()),
                                 "{deck_cards::ART}"
                             }
@@ -920,6 +1069,21 @@ pub fn View(deck_id: Uuid) -> Element {
                         DeckCardListSkeleton {}
                     }
 
+                    if stacks_on {
+                        div { class: "app-deck-stacks",
+                            DeckStacks {
+                                sections: stack_sections,
+                                currency: price_budget_currency(),
+                                collapsed: folds,
+                                details: stack_details,
+                                faces: stack_faces,
+                                group_buy,
+                                dealing: dealing(),
+                                touch: true,
+                                on_fold: move |key: String| driver.dispatch(Action::ToggleSection(key)),
+                            }
+                        }
+                    } else {
                     // Token list
                     if show_tokens {
                         if let Some(tokens) = tokens {
@@ -1132,6 +1296,8 @@ pub fn View(deck_id: Uuid) -> Element {
                         }
                     }
 
+                    }
+
                     if no_cards {
                         p { class: "deck-empty",
                             span { class: "chip-note", "{deck_cards::NO_CARDS}" }
@@ -1184,6 +1350,18 @@ pub fn View(deck_id: Uuid) -> Element {
                 open: filters_overlay_open,
                 show_format_filter: true,
                 show_active_indicators: true,
+            }
+
+            GroupBuyDialog { group_buy }
+            if stacks_on {
+                DeckStackDrawer {
+                    rows: stack_rows,
+                    boards: stack_boards,
+                    details: stack_details,
+                    faces: stack_faces,
+                    actions: Some(edit_actions),
+                    host: stack_host,
+                }
             }
 
             ImagePreview { card: preview_card, dismissing: preview_dismissing }

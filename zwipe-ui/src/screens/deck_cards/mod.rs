@@ -25,6 +25,7 @@ use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
 use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard};
 
 use crate::deck::command_zone::Slot;
+use crate::deck_cards::keys::{RowInfo, RowKind};
 use crate::deck_cards::{self, Boards, Display, Write, Zone};
 use crate::deck_signals::{self, Crossing, Level};
 use crate::generation::{Generation, Ticket};
@@ -181,6 +182,19 @@ pub fn maybeboard_title(count: usize) -> String {
 #[must_use]
 pub fn sideboard_title(count: usize) -> String {
     format!("Sideboard ({count})")
+}
+
+/// One stack of the Stacks view: a section of the List with its rows as the stack's cards.
+#[derive(Debug, Clone, PartialEq)]
+pub struct StackGroup {
+    /// The fold key the List's section uses, so a fold carries between the views.
+    pub key: String,
+    /// The header, as the List's section reads it.
+    pub title: String,
+    /// Pips in place of the header, for a color group.
+    pub pips: Option<Vec<zwipe_core::domain::card::scryfall_data::colors::Color>>,
+    /// The cards, top to bottom, each with its copies and what its details offer.
+    pub rows: Vec<RowInfo>,
 }
 
 /// The Quick add search for `query`: cards whose name holds the trimmed query, synergy off, skipped cards included, sorted by name, [`timing::QUICK_ADD_LIMIT`] at most. The server leaves out cards already in the deck.
@@ -1638,6 +1652,141 @@ impl State {
     #[must_use]
     pub fn is_collapsed(&self, key: &str) -> bool {
         self.collapsed.contains(key)
+    }
+
+    /// The keys of the collapsed sections.
+    #[must_use]
+    pub fn collapsed(&self) -> &HashSet<String> {
+        &self.collapsed
+    }
+
+    /// The Stacks view's stacks for `display`, the List's sections in its order and under its fold
+    /// keys: the tokens, the maybeboard and sideboard, the command zone, then the main board's
+    /// groups and lands, each left out where the List leaves it out. `live` sorts the tokens as
+    /// [`State::tokens`] does.
+    #[must_use]
+    pub fn stack_groups(&self, display: &Display, live: &CardQueryBuilder) -> Vec<StackGroup> {
+        let mut out: Vec<StackGroup> = self.token_stack(live).into_iter().collect();
+        out.extend(self.board_stacks(display));
+        if self.show_command_zone {
+            out.extend(self.zone_stacks(display));
+        }
+        if self.board_on(Board::Deck) {
+            out.extend(self.main_stacks(display));
+        }
+        out
+    }
+
+    /// The tokens' stack, while they show and there are any.
+    fn token_stack(&self, live: &CardQueryBuilder) -> Option<StackGroup> {
+        let tokens = self
+            .tokens(live)
+            .filter(|t| self.show_tokens && !t.is_empty())?;
+        Some(StackGroup {
+            key: TOKENS_KEY.to_owned(),
+            title: tokens_title(tokens.len()),
+            pips: None,
+            rows: tokens
+                .into_iter()
+                .map(|card| RowInfo {
+                    card,
+                    qty: 1,
+                    kind: RowKind::Token,
+                })
+                .collect(),
+        })
+    }
+
+    /// The maybeboard's and sideboard's stacks, each while its board shows and holds a card.
+    fn board_stacks(&self, display: &Display) -> Vec<StackGroup> {
+        [
+            (Board::Maybeboard, MAYBEBOARD_KEY, &display.maybe),
+            (Board::Sideboard, SIDEBOARD_KEY, &display.side),
+        ]
+        .into_iter()
+        .filter(|(board, _, entries)| self.board_on(*board) && !entries.is_empty())
+        .map(|(board, key, entries)| StackGroup {
+            key: key.to_owned(),
+            title: match board {
+                Board::Sideboard => sideboard_title(entries.len()),
+                _ => maybeboard_title(entries.len()),
+            },
+            pips: None,
+            rows: entries
+                .iter()
+                .map(|entry| RowInfo {
+                    card: entry.card.clone(),
+                    qty: *entry.deck_card.quantity,
+                    kind: RowKind::Board(board),
+                })
+                .collect(),
+        })
+        .collect()
+    }
+
+    /// The command zone's stacks: the commander with its partner, the background and the
+    /// signature spell, each with a card in it.
+    fn zone_stacks(&self, display: &Display) -> Vec<StackGroup> {
+        let format = self.profile().and_then(|p| p.format);
+        let has_partner = display.zone.iter().any(|(slot, _)| *slot == Slot::Partner);
+        [
+            (Slot::Commander, &[Slot::Commander, Slot::Partner][..]),
+            (Slot::Background, &[Slot::Background][..]),
+            (Slot::SignatureSpell, &[Slot::SignatureSpell][..]),
+        ]
+        .into_iter()
+        .filter_map(|(slot, slots)| {
+            let rows: Vec<RowInfo> = display
+                .zone
+                .iter()
+                .filter(|(held, _)| slots.contains(held))
+                .map(|(held, card)| RowInfo {
+                    card: card.clone(),
+                    qty: 1,
+                    kind: RowKind::Zone(*held),
+                })
+                .collect();
+            (!rows.is_empty()).then(|| StackGroup {
+                key: slot.group_key().to_owned(),
+                title: slot.group_header(format, has_partner).to_owned(),
+                pips: None,
+                rows,
+            })
+        })
+        .collect()
+    }
+
+    /// The main board's stacks: its groups, then its lands when it has any.
+    fn main_stacks(&self, display: &Display) -> Vec<StackGroup> {
+        let main_row = |card: &Card| {
+            let row = self.row(card.scryfall_data.id);
+            RowInfo {
+                card: card.clone(),
+                qty: row.map_or(1, |r| r.quantity),
+                kind: RowKind::Main {
+                    mvp: row.is_some_and(|r| r.mvp),
+                },
+            }
+        };
+        let mut out: Vec<StackGroup> = display
+            .groups
+            .iter()
+            .map(|group| StackGroup {
+                key: group.key.clone(),
+                title: group_title(&group.label, self.copies(&group.cards)),
+                pips: group.pips.clone(),
+                rows: group.cards.iter().map(main_row).collect(),
+            })
+            .collect();
+        if !display.lands.is_empty() {
+            out.push(StackGroup {
+                key: LANDS_KEY.to_owned(),
+                title: lands_title(self.copies(&display.lands)),
+                pips: None,
+                rows: display.lands.iter().map(main_row).collect(),
+            });
+        }
+        out
     }
 
     /// Whether every section under `keys` is collapsed, for the fold-all button's state. False with no keys.
