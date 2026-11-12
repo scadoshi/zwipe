@@ -445,6 +445,7 @@ pub fn Home() -> Element {
                                 let mine_fresh = caches.mine_fresh(session.peek().as_ref(), Utc::now());
                                 driver.dispatch(Action::ToggleScope { mine_fresh });
                             },
+                            onactivity: move |()| driver.dispatch(Action::Activity),
                         }
                     }
                     // Decks beside Colors on a wide window, the flavor card
