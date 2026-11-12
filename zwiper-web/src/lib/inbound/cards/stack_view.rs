@@ -2,7 +2,7 @@
 //! reveal and details drawer state, and the faces the rows and stacks show.
 //! The deck page draws one stack per group with its own drawer; the
 //! single-list card screens (Playstyle's lists, Activity's Most skipped)
-//! draw one [`CardsStack`] per list with a [`StackDrawer`].
+//! draw one `CardsStack` per list with a `StackDrawer`.
 
 use std::collections::HashMap;
 
