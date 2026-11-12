@@ -64,7 +64,7 @@ pub fn splash_plays_this_load() -> bool {
         {
             tracing::debug!("could not mark the splash as seen");
         }
-        let referrer = window.document().map(|d| d.referrer()).unwrap_or_default();
+        let referrer = window.document().map_or_default(|d| d.referrer());
         let reduced_motion = window
             .match_media("(prefers-reduced-motion: reduce)")
             .ok()
