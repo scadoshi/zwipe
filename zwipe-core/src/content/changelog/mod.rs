@@ -54,6 +54,7 @@ pub const UPCOMING: &[Release] = &[
             "Printings loads as one fan of card ghosts, with ghosts of its chips, on the web and in the app",
             "Printings runs its cards out to the sheet's edges with no fade, its arrows over the cards, on the web and in the app",
             "On the web's deck page, a featured card lifts and sways gently under the mouse",
+            "zwipe.net's changelog moves to About, linked beside Privacy policy and in the footer instead of the top nav",
         ],
     },
     Release {

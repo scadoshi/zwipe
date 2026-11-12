@@ -29,8 +29,11 @@ pub(crate) enum Route {
     #[redirect("/guides/suggested-commanders", || Route::GuidePage { slug: "playstyle".to_string() })]
     #[route("/about/")]
     About {},
-    #[route("/changelog/")]
+    #[route("/about/changelog/")]
     Changelog {},
+    // The changelog's first address. The host answers it with a 301 (`public/_redirects`); this
+    // covers a link followed inside the site.
+    #[redirect("/changelog", || Route::Changelog {})]
     #[route("/contribute/")]
     Contribute {},
     #[route("/community/")]

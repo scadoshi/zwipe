@@ -43,6 +43,7 @@ pub fn About() -> Element {
                         a { class: "panel-action", href: "https://github.com/scadoshi/zwipe", "Source" span { class: "ext", "\u{2197}" } }
                         a { class: "panel-action", href: "https://scottyfermo.com", "Built by Scotty" span { class: "ext", "\u{2197}" } }
                         Link { class: "panel-action", to: Route::Privacy {}, "Privacy policy" }
+                        Link { class: "panel-action", to: Route::Changelog {}, "Changelog" }
                     },
                     p {
                         "Zwipe is built and maintained by Scotty Fermo, a Commander player who

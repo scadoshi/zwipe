@@ -21,8 +21,8 @@ const WEB_BASE: &str = "https://zwipe.net";
 const ROUTES: &[(&str, &str, &str)] = &[
     ("/", "weekly", "1.0"),
     ("/guides/", "weekly", "0.8"),
-    ("/changelog/", "weekly", "0.6"),
     ("/about/", "monthly", "0.7"),
+    ("/about/changelog/", "weekly", "0.6"),
     ("/contribute/", "monthly", "0.6"),
     ("/community/", "monthly", "0.5"),
     ("/privacy/", "yearly", "0.3"),

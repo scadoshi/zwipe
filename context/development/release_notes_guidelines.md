@@ -1,6 +1,6 @@
 # Release Notes Guidelines
 
-A release has one piece of outward text, the store notes, written from the version's block in `zwipe-core/src/content/changelog/mod.rs` after it moves to `RELEASES`. It says nothing the changelog does not. There is no Discord post: since 2026-10-23 new versions are tracked on the changelog at zwipe.net/changelog and in the app, and that is where people look.
+A release has one piece of outward text, the store notes, written from the version's block in `zwipe-core/src/content/changelog/mod.rs` after it moves to `RELEASES`. It says nothing the changelog does not. There is no Discord post: since 2026-10-23 new versions are tracked on the changelog at zwipe.net/about/changelog and in the app, and that is where people look.
 
 ## The store text
 

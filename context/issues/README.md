@@ -133,6 +133,7 @@ Who checked, on which live build, what they saw.
 | [409](409-printings-skeleton.md) | Printings shows two different skeletons while it loads | fixing | laptop | issue/409-printings-skeleton |
 | [410](410-printings-edges.md) | Printings fades its cards out short of the sheet's edges | fixing | laptop | issue/410-printings-edges |
 | [417](417-featured-hover.md) | The deck head's featured cards don't answer the mouse | fixing | laptop | issue/417-featured-hover |
+| [420](420-changelog-under-about.md) | zwipe.net's Changelog sits in the top nav | fixing | thinker | - |
 
 ## Waiting for live verification
 

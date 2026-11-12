@@ -19,7 +19,7 @@ const READ_HASH_JS: &str = "dioxus.send(decodeURIComponent(window.location.hash.
 
 #[component]
 pub fn Changelog() -> Element {
-    // The release the URL fragment names (`/changelog#v1-12-1`). Read after
+    // The release the URL fragment names (`/about/changelog#v1-12-1`). Read after
     // hydration, since the prerendered page cannot know it; the changelog then
     // selects that release's chips and the card is scrolled into view.
     let mut anchor = use_signal(|| None::<String>);
@@ -49,7 +49,7 @@ pub fn Changelog() -> Element {
         PageMeta {
             title: "Changelog",
             description: "Every Zwipe release, newest first: what changed in each version of the app.",
-            path: "/changelog/",
+            path: "/about/changelog/",
         }
         Nav {}
         main { id: "content", class: "page content-enter",

@@ -11,14 +11,14 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://zwipe.net/changelog/</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://zwipe.net/about/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://zwipe.net/about/changelog/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
   </url>
   <url>
     <loc>https://zwipe.net/contribute/</loc>

@@ -402,9 +402,6 @@ pub fn Nav() -> Element {
                     Link { to: Route::About {}, onclick: move |_| open.set(false), "About" }
                 }
                 li {
-                    Link { to: Route::Changelog {}, onclick: move |_| open.set(false), "Changelog" }
-                }
-                li {
                     Link { to: Route::Community {}, onclick: move |_| open.set(false), "Community" }
                 }
                 // The store pills hide in the collapsed panel on mobile,
@@ -435,13 +432,14 @@ pub fn Nav() -> Element {
     }
 }
 
-/// The site footer: the shared [`SiteFooter`](fn@::components::SiteFooter) with Privacy policy, Community and
-/// Contribute as its pills.
+/// The site footer: the shared [`SiteFooter`](fn@::components::SiteFooter) with Privacy policy, Changelog,
+/// Community and Contribute as its pills.
 #[component]
 pub fn Footer() -> Element {
     rsx! {
         ::components::SiteFooter {
             Link { to: Route::Privacy {}, class: "nav-cta", "Privacy policy" }
+            Link { to: Route::Changelog {}, class: "nav-cta", "Changelog" }
             Link { to: Route::Community {}, class: "nav-cta", "Community" }
             Link { to: Route::Contribute {}, class: "nav-cta", "Contribute" }
         }
