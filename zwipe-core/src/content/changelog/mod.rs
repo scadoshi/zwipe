@@ -65,6 +65,7 @@ pub const UPCOMING: &[Release] = &[
             "On the web's deck page, cards ease in, out and into new groups when a board is shown or hidden or the grouping changes",
             "On the web's deck page, switching to Stacks deals the cards in",
             "A card whose image is missing or fails to load shows its name, text and chips in the card's own shape, everywhere a card image shows",
+            "On the web, Suggested commanders, Staples, Most skipped and the Commander maybeboard each keep their own List or Stacks, stacked as on the deck page",
         ],
     },
     Release {
