@@ -135,6 +135,7 @@ Who checked, on which live build, what they saw.
 | [417](417-featured-hover.md) | The deck head's featured cards don't answer the mouse | fixing | laptop | issue/417-featured-hover |
 | [420](420-changelog-under-about.md) | zwipe.net's Changelog sits in the top nav | fixing | thinker | - |
 | [421](421-stack-float.md) | The revealed card in Stacks sits still under an outline | fixing | laptop | issue/421-stack-float |
+| [422](422-featured-acts-like-cards.md) | The deck head's featured cards only open their image | fixing | thinker | - |
 
 ## Waiting for live verification
 

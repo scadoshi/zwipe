@@ -31,7 +31,7 @@ use zwipe_ui::deck_cards::keys::RowKind;
 use zwipe_ui::deck_cards::stacks::{
     CardsView, DEAL_DURATION, DEAL_STAGGER_CAP, DealCue, Reveal, deal_delay,
 };
-use zwipe_ui::deck_cards::{self, Boards, Zone, listing};
+use zwipe_ui::deck_cards::{self, Boards, FeaturedOpen, Zone, listing};
 use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::filter::picker::Sources;
 use zwipe_ui::hint::shared_deck as hint_copy;
@@ -457,6 +457,20 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
         .map(|r| r.card.scryfall_data.id)
         .collect::<Vec<_>>()));
     use_stack_details_sync(reveal, details_open, listed_ids);
+    // A featured card opens its details in the drawer, as the same card in the List or Stacks
+    // does, or its image when no listed card has details to show.
+    let featured_cards: Vec<Card> = featured.iter().map(|(card, _)| card.clone()).collect();
+    let open_featured =
+        use_callback(
+            move |id: Uuid| match deck_cards::featured_open(id, &listed_ids.peek()) {
+                FeaturedOpen::Details => details.click(id),
+                FeaturedOpen::Image => {
+                    if let Some(card) = featured_cards.iter().find(|c| c.scryfall_data.id == id) {
+                        overlay_card.set(Some((card.scryfall_data.clone(), 0)));
+                    }
+                }
+            },
+        );
     let row_boards: HashMap<Uuid, Board> = meta.iter().map(|(id, m)| (*id, m.board)).collect();
     let sections = deck_sections(listed, &meta, deck.format);
     let empty = boards().main && sections.is_empty();
@@ -620,7 +634,7 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
                                 key: "{card.scryfall_data.id}-{role}",
                                 card,
                                 role: role.to_string(),
-                                on_open: move |(sd, face): (ScryfallData, usize)| overlay_card.set(Some((sd, face))),
+                                on_select: open_featured,
                                 on_load: on_featured_load,
                             }
                         }
@@ -722,15 +736,14 @@ fn SharedDeckView(deck: HttpSharedDeck) -> Element {
             }
         }
         GroupBuyDialog { group_buy }
-        if view() == CardsView::Stacks {
-            DeckStackDrawer {
-                rows: all_rows,
-                boards: row_boards,
-                details,
-                faces,
-                actions: None,
-                host,
-            }
+        // The drawer a stack card opens, and in either view a featured card.
+        DeckStackDrawer {
+            rows: all_rows,
+            boards: row_boards,
+            details,
+            faces,
+            actions: None,
+            host,
         }
         if let Some(card) = printing() {
             PrintingSheet { key: "{card.scryfall_data.id}", card, open: printing_open }

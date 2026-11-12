@@ -26,11 +26,11 @@ use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
 use zwipe_core::domain::deck::{Board, Format};
 use zwipe_ui::buy::{self, BuyLink};
 use zwipe_ui::deck::view::{DeckArea, StatsProfile};
-use zwipe_ui::deck_cards::Boards;
 use zwipe_ui::deck_cards::listing::{Listed, RowMeta};
 use zwipe_ui::deck_cards::stacks::{
     CardsView, DEAL_DURATION, DEAL_STAGGER_CAP, DealCue, deal_delay,
 };
+use zwipe_ui::deck_cards::{self, Boards, FeaturedOpen};
 use zwipe_ui::filter;
 use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::filter::picker::Sources;
@@ -166,6 +166,20 @@ pub(crate) fn DeckPageBody(
     } else {
         "deck-head-deal"
     };
+    // A featured card opens its details in the drawer, as the same card in the List or Stacks
+    // does, or its image when no listed card has details to show.
+    let featured_cards: Vec<Card> = featured.iter().map(|(card, _)| card.clone()).collect();
+    let open_featured =
+        use_callback(
+            move |id: Uuid| match deck_cards::featured_open(id, &listed_ids.peek()) {
+                FeaturedOpen::Details => details.click(id),
+                FeaturedOpen::Image => {
+                    if let Some(card) = featured_cards.iter().find(|c| c.scryfall_data.id == id) {
+                        preview.set(Some((card.scryfall_data.clone(), 0)));
+                    }
+                }
+            },
+        );
     let on_featured_load = move |()| {
         let loaded = *featured_loaded.peek();
         featured_loaded.set(loaded.saturating_add(1));
@@ -223,7 +237,7 @@ pub(crate) fn DeckPageBody(
                                     key: "{card.scryfall_data.id}-{role}",
                                     card,
                                     role: role.to_string(),
-                                    on_open: move |(sd, shown_face)| preview.set(Some((sd, shown_face))),
+                                    on_select: open_featured,
                                     on_load: on_featured_load,
                                 }
                             }
@@ -386,15 +400,14 @@ pub(crate) fn DeckPageBody(
             }
         }
         GroupBuyDialog { group_buy }
-        if view() == CardsView::Stacks {
-            DeckStackDrawer {
-                rows: all_rows,
-                boards: row_boards,
-                details,
-                faces,
-                actions,
-                host: drawer_host,
-            }
+        // The drawer a stack card opens, and in either view a featured card.
+        DeckStackDrawer {
+            rows: all_rows,
+            boards: row_boards,
+            details,
+            faces,
+            actions,
+            host: drawer_host,
         }
         CardOverlaysHost { overlays }
         OtagExamplesHost { examples }

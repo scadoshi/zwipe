@@ -314,6 +314,26 @@ pub fn featured(
     featured
 }
 
+/// What a click or a second tap on a featured card opens.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FeaturedOpen {
+    /// Its details, in the drawer or sheet the same card opens from the list.
+    Details,
+    /// Its image: the card is filtered out or its group hidden, so no listed card has details to
+    /// show.
+    Image,
+}
+
+/// What featured card `id` opens, with `listed` the cards the page lists now.
+#[must_use]
+pub fn featured_open(id: Uuid, listed: &[Uuid]) -> FeaturedOpen {
+    if listed.contains(&id) {
+        FeaturedOpen::Details
+    } else {
+        FeaturedOpen::Image
+    }
+}
+
 /// A burst of quantity taps on one card, waiting to be written.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Burst {
@@ -693,6 +713,13 @@ mod tests {
             shown,
             [("Boss", "Oathbreaker"), ("Ant", "MVP"), ("Zebra", "MVP")]
         );
+    }
+
+    #[test]
+    fn a_featured_card_opens_its_details_while_it_is_listed_else_its_image() {
+        let (listed, hidden) = (Uuid::new_v4(), Uuid::new_v4());
+        assert_eq!(featured_open(listed, &[listed]), FeaturedOpen::Details);
+        assert_eq!(featured_open(hidden, &[listed]), FeaturedOpen::Image);
     }
 
     #[test]

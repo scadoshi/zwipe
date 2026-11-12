@@ -17,10 +17,10 @@ use crate::deck_cards_view::{DeckEditActions, OnPrinting, StackDetails};
 use crate::keys::{STACK_DETAILS_CLASS, use_page_keys_through};
 use crate::meld::{MeldSource, MeldToggle};
 
-/// Sends the card the deck cards screen's keys act on, as `stack:<id>` for a stack card or
-/// `row:<id>` for a list row: the deepest one under the cursor, else the card open in the Stacks
+/// Sends the card the deck cards screen's keys act on, as `stack:<id>` for a stack card or a
+/// featured card in the deck head, or `row:<id>` for a list row: the deepest one under the cursor, else the card open in the Stacks
 /// view's details drawer, else the list row whose details are open, else an empty string.
-const KEY_CARD_JS: &str = "const under = document.querySelectorAll('[data-row]:hover'); const drawer = document.querySelector('.bottom-sheet.show.__DRAWER__') && document.querySelector('.card-stack-slot.open[data-row]'); const row = document.querySelector('.web-deck-row.selected[data-row]'); const card = under.length ? under[under.length - 1] : drawer || row; dioxus.send(card ? (card.classList.contains('card-stack-slot') ? 'stack:' : 'row:') + card.getAttribute('data-row') : '');";
+const KEY_CARD_JS: &str = "const under = document.querySelectorAll('[data-row]:hover'); const drawer = document.querySelector('.bottom-sheet.show.__DRAWER__') && document.querySelector('.card-stack-slot.open[data-row]'); const row = document.querySelector('.web-deck-row.selected[data-row]'); const card = under.length ? under[under.length - 1] : drawer || row; dioxus.send(card ? (card.matches('.card-stack-slot, .deck-head-card-image') ? 'stack:' : 'row:') + card.getAttribute('data-row') : '');";
 
 /// Clicks list row `__ID__`'s line, which opens or closes its details as a click on it does.
 const ROW_TOGGLE_JS: &str = "const line = document.querySelector('.web-deck-row[data-row=\"__ID__\"] .card-row-compact'); if (line) line.click();";
@@ -166,6 +166,15 @@ pub fn use_deck_hover_keys(keys: DeckHoverKeys) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_hovered_featured_card_takes_the_keys_as_a_stack_card() {
+        assert!(
+            KEY_CARD_JS
+                .contains("card.matches('.card-stack-slot, .deck-head-card-image') ? 'stack:'"),
+            "{KEY_CARD_JS}"
+        );
+    }
 
     #[test]
     fn a_key_presses_its_button_by_data_action_not_its_words() {

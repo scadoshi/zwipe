@@ -9,6 +9,7 @@ use std::time::Duration;
 
 use dioxus::prelude::*;
 use tokio::time;
+use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ImageSize;
 
@@ -18,19 +19,26 @@ use super::super::card::components::flippable_card_image::FlippableCardImage;
 const REVEAL_TIMEOUT_SECS: u64 = 4;
 
 /// One labeled featured card: image (when available) above name + role chip.
-/// Tapping it fires `on_tap` with the card so the host can open its image
-/// overlay. `on_load` fires once the image has its bytes, or at once when the
-/// card has none.
+/// Tapping it fires `on_tap` with the card, and the tap stops at the card so
+/// the screen's tap-off doesn't see it. While `floating` (revealed by a first
+/// tap) the image floats as a revealed stack card does. `on_load` fires once
+/// the image has its bytes, or at once when the card has none.
 #[component]
 fn FeaturedCard(
     card: Card,
     role: String,
+    floating: bool,
     on_tap: EventHandler<Card>,
     on_load: EventHandler<()>,
 ) -> Element {
     let name = card.scryfall_data.name.clone();
     let sd = card.scryfall_data.clone();
     let has_image = sd.primary_image_url(ImageSize::Normal).is_some();
+    let image_class = if floating {
+        "deck-featured-image floatable floating"
+    } else {
+        "deck-featured-image floatable"
+    };
     use_effect(use_reactive!(|has_image| {
         if !has_image {
             on_load.call(());
@@ -39,12 +47,15 @@ fn FeaturedCard(
     rsx! {
         div {
             class: "deck-featured-card",
-            onclick: move |_| on_tap.call(card.clone()),
+            onclick: move |event: MouseEvent| {
+                event.stop_propagation();
+                on_tap.call(card.clone());
+            },
             if has_image {
                 FlippableCardImage {
                     sd,
                     size: ImageSize::Normal,
-                    class: "deck-featured-image".to_string(),
+                    class: image_class.to_string(),
                     draggable: false,
                     on_load: move |()| on_load.call(()),
                 }
@@ -72,8 +83,12 @@ pub fn FeaturedCards(
     cards: Vec<(Card, String)>,
     /// Whether the deck's cards and command zone have all arrived.
     loaded: bool,
-    /// Fired with the tapped card: the host opens its image overlay.
+    /// Fired with the tapped card: the host reveals it, opens its details or
+    /// opens its image.
     on_tap: EventHandler<Card>,
+    /// The card a first tap revealed, which floats until a tap elsewhere.
+    #[props(default)]
+    revealed: Option<Uuid>,
 ) -> Element {
     let mut images_loaded: Signal<usize> = use_signal(|| 0);
     let mut timed_out: Signal<bool> = use_signal(|| false);
@@ -102,6 +117,7 @@ pub fn FeaturedCards(
                 for (card, role) in cards {
                     FeaturedCard {
                         key: "{card.scryfall_data.id}",
+                        floating: revealed == Some(card.scryfall_data.id),
                         card,
                         role,
                         on_tap,

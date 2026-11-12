@@ -316,6 +316,24 @@ mod tests {
     }
 
     #[test]
+    fn the_commander_takes_no_star_or_quantity_keys() {
+        let commander = row(RowKind::Zone(Slot::Commander));
+        for key in [HoverKey::Star, HoverKey::Fewer, HoverKey::More] {
+            assert_eq!(
+                hover_action(key, &commander, Board::Deck, 0),
+                None,
+                "{key:?} changes the commander only through Edit"
+            );
+        }
+        for key in [HoverKey::Image, HoverKey::Details, HoverKey::Printings] {
+            assert!(
+                hover_action(key, &commander, Board::Deck, 0).is_some(),
+                "{key:?} still works on the commander"
+            );
+        }
+    }
+
+    #[test]
     fn minus_and_plus_step_the_quantity_as_the_stepper_does() {
         assert_eq!(hover_key("-", Editable::Yes), Some(HoverKey::Fewer));
         assert_eq!(hover_key("+", Editable::Yes), Some(HoverKey::More));

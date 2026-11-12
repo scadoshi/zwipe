@@ -28,7 +28,7 @@ use zwipe_ui::deck_cards::keys::RowInfo;
 use zwipe_ui::deck_cards::stacks::{
     CardsView, DEAL_DURATION, DEAL_STAGGER_CAP, DealCue, Reveal, VIEW_LABEL, deal_delay,
 };
-use zwipe_ui::deck_cards::{Write, Zone};
+use zwipe_ui::deck_cards::{FeaturedOpen, Write, Zone, featured_open};
 use zwipe_ui::filter;
 use zwipe_ui::generation::Ticket;
 use zwipe_ui::screens::deck_cards::{self, Action, Destination, Effect, Op, StackGroup, State};
@@ -931,12 +931,9 @@ pub fn View(deck_id: Uuid) -> Element {
                 class: "screen",
                 // Any tap while the stacks show can reveal a card or close one.
                 "data-settle": stacks_on.then_some(""),
-                // A tap off every card closes the stacks' reveal; a card's own tap stops at the card.
-                onclick: move |_| {
-                    if stacks_on {
-                        stack_details.dismiss();
-                    }
-                },
+                // A tap off every card closes the reveal, of a stack card or a featured card; a
+                // card's own tap stops at the card.
+                onclick: move |_| stack_details.dismiss(),
                 ScreenHeader { title: deck_cards::TITLE, hint: deck_cards_hint_open, back: move |()| driver.dispatch(Action::Back) }
 
                 div { class: "screen-content",
@@ -981,9 +978,19 @@ pub fn View(deck_id: Uuid) -> Element {
                     FeaturedCards {
                         cards: featured_cards,
                         loaded,
+                        // A first tap floats the card, a second opens its details as the same
+                        // card in the List or Stacks does; a card no listed row has opens its
+                        // image.
+                        revealed: reveal().revealed(),
                         on_tap: move |card: Card| {
-                            let mut preview = preview_card;
-                            preview.set(Some((card.scryfall_data, 0)));
+                            let id = card.scryfall_data.id;
+                            match featured_open(id, &listed_ids.peek()) {
+                                FeaturedOpen::Details => stack_details.tap(id),
+                                FeaturedOpen::Image => {
+                                    let mut preview = preview_card;
+                                    preview.set(Some((card.scryfall_data, 0)));
+                                }
+                            }
                         },
                     }
 
@@ -1403,15 +1410,14 @@ pub fn View(deck_id: Uuid) -> Element {
             }
 
             GroupBuyDialog { group_buy }
-            if stacks_on {
-                DeckStackDrawer {
-                    rows: stack_rows,
-                    boards: stack_boards,
-                    details: stack_details,
-                    faces: stack_faces,
-                    actions: Some(edit_actions),
-                    host: stack_host,
-                }
+            // The sheet a stack card opens, and in either view a featured card.
+            DeckStackDrawer {
+                rows: stack_rows,
+                boards: stack_boards,
+                details: stack_details,
+                faces: stack_faces,
+                actions: Some(edit_actions),
+                host: stack_host,
             }
 
             ImagePreview { card: preview_card, dismissing: preview_dismissing }

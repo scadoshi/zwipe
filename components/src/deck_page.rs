@@ -267,18 +267,22 @@ pub fn DeckHead(
     }
 }
 
-/// One featured card: its image over its name chip and role chip. `on_open` fires
-/// with the card and the face shown when the image is clicked; `on_load`
-/// once the image has its bytes, or at once when the card has no image.
+/// One featured card: its image over its name chip and role chip. A click on the image fires
+/// `on_select` with the card's id, for the host to open its details as the same card in the list
+/// does, else `on_open` with the card and the face shown; `on_load` fires once the image has its
+/// bytes, or at once when the card has no image. The image carries the card's `data-row`, so the
+/// deck page's hover keys act on it as on a stack card.
 #[component]
 pub fn FeaturedCard(
     card: Card,
     role: String,
     #[props(default)] on_open: Option<Callback<(ScryfallData, usize)>>,
+    #[props(default)] on_select: Option<Callback<Uuid>>,
     #[props(default)] on_load: Option<Callback<()>>,
 ) -> Element {
     let name = card.scryfall_data.name.clone();
     let sd = card.scryfall_data;
+    let id = sd.id;
     let has_image = sd.primary_image_url(ImageSize::Normal).is_some();
     use_effect(use_reactive!(|has_image| {
         if let Some(on_load) = on_load.filter(|_| !has_image) {
@@ -299,8 +303,11 @@ pub fn FeaturedCard(
                 // The flip control stops its click, so flipping never opens.
                 div {
                     class: "deck-head-card-image floatable float-on-hover",
+                    "data-row": "{id}",
                     onclick: move |_| {
-                        if let Some(open) = on_open {
+                        if let Some(select) = on_select {
+                            select.call(id);
+                        } else if let Some(open) = on_open {
                             open.call((sd_open.clone(), face()));
                         }
                     },
@@ -510,6 +517,33 @@ mod tests {
         card.scryfall_data.id = Uuid::new_v4();
         card.scryfall_data.name = name.to_owned();
         card
+    }
+
+    #[test]
+    fn a_featured_card_names_its_card_for_the_hover_keys() {
+        thread_local! {
+            static SHOWN: std::cell::RefCell<Option<Card>> = const { std::cell::RefCell::new(None) };
+        }
+        fn app() -> Element {
+            let card = SHOWN
+                .with(|shown| shown.borrow().clone())
+                .expect("a card to show");
+            rsx! {
+                FeaturedCard { card, role: "Commander".to_owned() }
+            }
+        }
+        let shown = card("Atraxa");
+        let id = shown.scryfall_data.id;
+        SHOWN.with(|slot| *slot.borrow_mut() = Some(shown));
+        let mut dom = VirtualDom::new(app);
+        dom.rebuild_in_place();
+        let html = dioxus_ssr::render(&dom);
+        assert!(
+            html.contains(&format!(
+                r#"class="deck-head-card-image floatable float-on-hover" data-row="{id}""#
+            )),
+            "{html}"
+        );
     }
 
     #[test]
