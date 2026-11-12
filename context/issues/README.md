@@ -104,6 +104,7 @@ Who checked, on which live build, what they saw.
 | [379](379-quick-add-width.md) | Quick add runs wider than the chip rows under it | fixing | laptop | #581 |
 | [375](375-home-activity-button.md) | Home's counters have no way into Activity on the web | fixing | laptop | #580 |
 | [378](378-swipe-image-fallback.md) | A failed swipe card image shows the card underneath | fixing | laptop | #583 |
+| [395](395-import-width.md) | app.zwipe.net Import squeezes into the left of its page | fixing | thinker | #604 |
 | [394](394-no-prose-caps.md) | Running text stops at 70ch inside the wide panels | fixing | thinker | #598, portfolio#49 |
 | [387](387-home-column.md) | app.zwipe.net Home runs the window's width | fixing | thinker | #590 |
 
