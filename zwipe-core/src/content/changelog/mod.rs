@@ -52,6 +52,7 @@ pub const UPCOMING: &[Release] = &[
         date: None,
         entries: &[
             "The web's Home and its other few-panel pages sit in the same 1400px column as zwipe.net",
+            "On the web, Home pairs Decks and Colors under the hero, with Featured flavor on its own row",
         ],
     },
     Release {
