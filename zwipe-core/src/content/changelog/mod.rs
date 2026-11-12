@@ -56,6 +56,7 @@ pub const UPCOMING: &[Release] = &[
             "On the web, a cloned deck shows its own name as soon as it opens, and back and forward between two decks show the right one",
             "The Share dialog on the web shows the deck's own name in its link",
             "Hovering a stack on the web's deck page no longer shifts its cards by a pixel",
+            "On the web, an Oracle tag's examples take h, j, d and v, ? opens the hint of the open modal, and a card slides clear of its details where it fits",
         ],
     },
     Release {

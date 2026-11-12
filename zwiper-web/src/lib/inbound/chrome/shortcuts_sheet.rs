@@ -66,6 +66,9 @@ pub fn use_global_keys(on_hint: Option<Callback<()>>) {
         let script = GLOBAL_KEYS_JS
             .replace("__ID__", &id.to_string())
             .replace("__KEYS__", &format!("{:?}", shortcuts::GLOBAL_KEYS))
+            .replace("__HINT_KEY__", &format!("'{}'", shortcuts::HINT_KEY))
+            .replace("__HINT_GUARD__", &shortcuts::hint_guard_js())
+            .replace("__MODAL_HINT__", &shortcuts::modal_hint_js())
             .replace("__GUARD__", &shortcuts::guard_js());
         spawn(async move {
             let mut keys = document::eval(&script);
@@ -164,7 +167,16 @@ window.__zwipeGlobalKeys.push('__ID__');
 const onKey = (e) => {
     const stack = window.__zwipeGlobalKeys;
     if (!stack.length || stack[stack.length - 1] !== '__ID__') return;
-    if (!__KEYS__.includes(e.key) || !__GUARD__) return;
+    if (!__KEYS__.includes(e.key)) return;
+    // `?` opens the topmost open modal's hint; the page's only with no modal open.
+    if (e.key === __HINT_KEY__) {
+        if (!__HINT_GUARD__) return;
+        e.preventDefault();
+        if (__MODAL_HINT__) return;
+        dioxus.send(e.key);
+        return;
+    }
+    if (!__GUARD__) return;
     e.preventDefault();
     dioxus.send(e.key);
 };
@@ -183,6 +195,23 @@ window.__zwipeGlobalKeys = (window.__zwipeGlobalKeys || []).filter((id) => id !=
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn question_mark_goes_to_the_topmost_open_modal_before_the_page() {
+        let at = GLOBAL_KEYS_JS
+            .find("e.key === __HINT_KEY__")
+            .expect("the hint key's branch");
+        let branch = GLOBAL_KEYS_JS.get(at..).unwrap();
+        let modal = branch.find("__MODAL_HINT__").unwrap();
+        let page = branch.find("dioxus.send(e.key)").unwrap();
+        assert!(modal < page, "a modal answers before the page: {branch}");
+        let js = shortcuts::modal_hint_js();
+        for modal in shortcuts::MODAL_SELECTORS {
+            assert!(js.contains(modal), "{modal} in {js}");
+        }
+        assert!(js.contains("open[open.length - 1]"), "the topmost: {js}");
+        assert!(js.contains(shortcuts::MODAL_HINT_BUTTON), "{js}");
+    }
 
     #[test]
     fn the_global_listener_takes_its_keys_from_global_keys() {

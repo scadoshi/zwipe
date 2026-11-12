@@ -79,6 +79,7 @@ Who checked, on which live build, what they saw.
 | [357](357-stack-hover-shift.md) | Hovering a stack shifts its cards a pixel | fixing | thinker | - |
 | [356](356-list-row-meld.md) | A meld card's list row has no Meld toggle | fixing | scotland | #555 |
 | [359](359-key-map-gaps.md) | f and v gaps on Commander maybeboard and meld cards | fixing | scotland | #559 |
+| [365](365-examples-keys-hint-slide.md) | Examples keys, d on every swipe screen, ? to the open modal, the card clear of its details | fixing | scotland | #PR |
 
 ## Waiting for live verification
 
