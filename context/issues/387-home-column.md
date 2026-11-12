@@ -1,6 +1,6 @@
 # 387. app.zwipe.net Home runs the window's width
 
-State: fixing | Owner: thinker | PR: - | Build seen: production, web
+State: fixing | Owner: thinker | PR: #590 | Build seen: production, web
 
 ## Report
 Composer for Scotty, 2026-11-12: app.zwipe.net Home is still full width (from #561). It should sit on the same 1400px column as zwipe.net and the portfolio: the hero across that column, the tagline at 70ch, and Decks, Colors and Featured flavor inside it. Only Home and the other few-element pages; the deck page and the card grid screens stay full width.
