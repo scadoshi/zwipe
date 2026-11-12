@@ -38,6 +38,7 @@ use super::quick_add::QUICK_ADD_ID;
 use super::signal_toast;
 use crate::inbound::card_stores::CardStores;
 use crate::inbound::cards::card_row::{CardOverlays, CardRow, ShowRowArt};
+use crate::inbound::cards::stack_view::StackDetails;
 use crate::inbound::cards::swipe_stack::{Swipe, use_swipe_key_handler};
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, open_and_record_hint};
@@ -45,7 +46,6 @@ use crate::inbound::chrome::page_keys::{focus_by_id, use_page_keys_through, use_
 use crate::inbound::chrome::shortcuts::{self, CardKey, ShortcutsScreen};
 use crate::inbound::chrome::shortcuts_sheet::use_offer_shortcuts;
 use crate::inbound::screens::deck::view::cards::zone as zone_of;
-use crate::inbound::screens::deck::view::stacks::StackDetails;
 use crate::inbound::telemetry;
 use crate::outbound::timer;
 

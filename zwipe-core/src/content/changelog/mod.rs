@@ -52,6 +52,7 @@ pub const UPCOMING: &[Release] = &[
         date: None,
         entries: &[
             "Suggested commanders and the commander swipe on the web end with the site's footer, as Add does",
+            "On the web, Playstyle and Activity take p, i, v and d on a card and show their lists as a stack too",
         ],
     },
     Release {

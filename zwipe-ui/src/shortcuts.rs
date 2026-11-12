@@ -108,12 +108,7 @@ pub const EVERYWHERE_ROWS: [SheetRow; 3] = [
 /// The deck cards page's own rows, the read-only page's being only the keys that read.
 #[must_use]
 pub fn deck_cards_rows(editable: Editable) -> Vec<SheetRow> {
-    let reads: [SheetRow; 4] = [
-        (&["p"], "Printings"),
-        (&["i"], "Image"),
-        (&["v"], "Flip card"),
-        (&["d"], "Card details"),
-    ];
+    let reads = card_read_rows();
     let edits: [SheetRow; 6] = [
         (&["m"], "Maybeboard"),
         (&["s"], "Sideboard"),
@@ -132,6 +127,19 @@ pub fn deck_cards_rows(editable: Editable) -> Vec<SheetRow> {
         .chain(edits.iter().copied())
         .chain([filter])
         .collect()
+}
+
+/// The keys that read a card under the cursor or open: Printings, Image, Flip and details. A deck
+/// page lists them first; a screen of card rows with no editing (Playstyle, Activity) lists only
+/// them.
+#[must_use]
+pub fn card_read_rows() -> [SheetRow; 4] {
+    [
+        (&["p"], "Printings"),
+        (&["i"], "Image"),
+        (&["v"], "Flip card"),
+        (&["d"], "Card details"),
+    ]
 }
 
 /// The line the deck cards page's sheet shows above its keys.
