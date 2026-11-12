@@ -18,8 +18,8 @@ pub(crate) use changelog::Changelog;
 pub(crate) use community::Community;
 pub(crate) use confirm_email::ConfirmEmail;
 pub(crate) use contribute::Contribute;
-// SSG prerender list only, which `#[server]` compiles under this feature.
-#[cfg(feature = "server")]
+// SSG prerender list only, which `#[server]` compiles under this feature, and its test.
+#[cfg(any(feature = "server", test))]
 pub(crate) use guides::slugs as guide_slugs;
 pub(crate) use guides::{GuidePage, Guides};
 pub(crate) use home::Home;

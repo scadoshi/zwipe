@@ -21,7 +21,7 @@ use crate::{Footer, Nav, Route, WEB_BASE};
 /// Every guide slug, for the SSG prerender list in `main.rs`. Reads `GUIDES`
 /// so the prerendered set, the rendered articles and `build.rs`'s sitemap all
 /// resolve to one source; `build.rs` asserts its own copy against it.
-#[cfg(feature = "server")]
+#[cfg(any(feature = "server", test))]
 pub(crate) fn slugs() -> impl Iterator<Item = &'static str> {
     GUIDES.iter().map(|g| g.slug)
 }

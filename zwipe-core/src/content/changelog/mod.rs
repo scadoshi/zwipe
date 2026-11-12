@@ -61,6 +61,8 @@ pub const UPCOMING: &[Release] = &[
             "A deck's featured cards open their details and take the card keys as the same cards in the list do, on the web and in the app",
             "A new username can't be one of Zwipe's own names or one that differs from another account's only in case",
             "The sheet you opened last sits on top of the others, and on a wide window Themes and the filter leave the page undimmed",
+            "zwipe.net answers a page that isn't there with Page not found and a not-found status, so search engines leave it out",
+            "On zwipe.net, Esc closes the featured card's art as a click does",
         ],
     },
     Release {

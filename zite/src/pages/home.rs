@@ -1,6 +1,6 @@
 use components::{
     Banner, Decode, FlippableCardImage, GalleryFooter, GalleryFrame, Panel, Replay, Splash,
-    SplashGate,
+    SplashGate, use_overlay_back_action,
 };
 use dioxus::prelude::*;
 use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
@@ -214,6 +214,14 @@ pub fn Home() -> Element {
     // page column.
     let flavor_overlay: Signal<Option<ScryfallData>> = use_signal(|| None);
     let flavor_overlay_dismissing = use_signal(|| false);
+    // Esc closes the overlay as a click on it does: it sits on the root's
+    // overlay stack while it shows and isn't already leaving.
+    let flavor_overlay_shown =
+        use_memo(move || flavor_overlay().is_some() && !flavor_overlay_dismissing());
+    use_overlay_back_action(
+        flavor_overlay_shown.into(),
+        use_callback(move |()| dismiss_flavor_overlay(flavor_overlay, flavor_overlay_dismissing)),
+    );
 
     // The opening. Once it has faded (the gate opens as the fade starts) it is
     // done for this load.

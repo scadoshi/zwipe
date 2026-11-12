@@ -129,10 +129,29 @@ fn prerender_dir() -> std::io::Result<std::path::PathBuf> {
     Ok(dir.join("public"))
 }
 
-/// Endpoint hit by `dx build --ssg` to enumerate routes to prerender.
+/// The path the not-found page is prerendered at; the build moves its page to the top-level
+/// `404.html`, which Cloudflare Pages serves with a 404 for a path it has no file for.
+#[cfg(any(feature = "server", test))]
+const NOT_FOUND_PATH: &str = "/404/";
+
+/// Every path the SSG prerenders: each route with no dynamic segments, each guide, and the
+/// not-found page at [`NOT_FOUND_PATH`].
+#[cfg(any(feature = "server", test))]
+fn prerendered_paths() -> Vec<String> {
+    let mut paths: Vec<String> = Route::static_routes()
+        .iter()
+        .map(ToString::to_string)
+        .collect();
+    paths.extend(pages::guide_slugs().map(|slug| format!("/guides/{slug}/")));
+    paths.push(NOT_FOUND_PATH.to_owned());
+    paths
+}
+
+/// Endpoint hit by `dx build --ssg` to enumerate routes to prerender ([`prerendered_paths`]).
 /// `Route::static_routes()` returns every route with no dynamic segments,
-/// so `/verify/:token`, `/confirm-email/:token`, `/reset/:token` and `/deck/:token` are excluded
-/// automatically, which is right: their content is per-token.
+/// so `/verify/:token`, `/confirm-email/:token` and `/reset/:token` are excluded
+/// automatically, which is right: their content is per-token, and Pages Functions serve them the
+/// shell.
 ///
 /// The guides are the exception. `/guides/:slug` is one dynamic route over a
 /// fixed set of articles, so `static_routes()` drops all of them, and an
@@ -145,12 +164,7 @@ fn prerender_dir() -> std::io::Result<std::path::PathBuf> {
 )]
 #[server(endpoint = "static_routes")]
 async fn static_routes() -> ServerFnResult<Vec<String>> {
-    let mut routes: Vec<String> = Route::static_routes()
-        .iter()
-        .map(ToString::to_string)
-        .collect();
-    routes.extend(pages::guide_slugs().map(|slug| format!("/guides/{slug}/")));
-    Ok(routes)
+    Ok(prerendered_paths())
 }
 
 /// Whether this load's splash is still to come or playing. The home page
@@ -407,6 +421,20 @@ pub fn Footer() -> Element {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_not_found_page_is_prerendered_for_404_html() {
+        let paths = prerendered_paths();
+        assert!(paths.iter().any(|p| p == NOT_FOUND_PATH), "{paths:?}");
+        assert!(
+            matches!(NOT_FOUND_PATH.parse::<Route>(), Ok(Route::NotFound { .. })),
+            "the path draws the not-found page"
+        );
+        assert!(
+            paths.iter().any(|p| p == "/"),
+            "the home page still prerenders"
+        );
+    }
 
     #[test]
     fn the_fonts_are_the_app_s_files_and_the_shared_rule_names_them() {

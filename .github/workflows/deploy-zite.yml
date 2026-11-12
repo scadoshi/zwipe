@@ -229,6 +229,16 @@ jobs:
         # last and overwrites the SSG'd public/index.html with the bare shell.
         run: dx build --release --platform web --ssg --force-sequential
 
+      - name: Make the not-found page the site's 404.html
+        # The SSG prerenders the not-found page at /404/. As the top-level
+        # 404.html, Cloudflare serves it with a 404 for any path the site has
+        # no file for; zite/functions answers the per-token pages and the
+        # shared deck links before that.
+        run: |
+          public=target/dx/zite/release/web/public
+          mv "$public/404/index.html" "$public/404.html"
+          rmdir "$public/404"
+
       - name: Upload the site
         # upload-pages-artifact packs the build as one tarball artifact named
         # github-pages; the Cloudflare job below unpacks it. Nothing deploys to
@@ -257,8 +267,8 @@ jobs:
           path: pages-artifact
 
       - name: Unpack the site
-        # The artifact is one tarball. Cloudflare serves index.html with a 200
-        # for a path it has no file for only while there is no 404.html.
+        # The artifact is one tarball. Its 404.html is the not-found page,
+        # which Cloudflare serves with a 404 for a path it has no file for.
         run: |
           mkdir site
           tar -xf pages-artifact/artifact.tar -C site

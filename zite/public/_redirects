@@ -2,3 +2,7 @@
 # #fragment across the redirect, so old release anchors still land.
 /changelog /about/changelog/ 301
 /changelog/ /about/changelog/ 301
+/discord /community/ 301
+/discord/ /community/ 301
+/guides/suggested-commanders /guides/playstyle/ 301
+/guides/suggested-commanders/ /guides/playstyle/ 301
