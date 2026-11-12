@@ -3159,15 +3159,3 @@ body:has(.deck-stacks) .sheet-form-drawer:has(> .card-details-drawer) > .sheet-b
     z-index: 241;
 }
 
-/* The swipe screens' keyboard button shows only on a computer's wide
-   layout: a pointer that hovers and is precise, which a phone's touch is
-   not, and the window at least WIDE_PX (900px) across. */
-.action-dock-btn.web-dock-shortcuts {
-    display: none;
-}
-
-@media (hover: hover) and (pointer: fine) and (min-width: 900px) {
-    .action-dock-btn.web-dock-shortcuts {
-        display: flex;
-    }
-}

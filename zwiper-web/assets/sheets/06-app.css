@@ -616,9 +616,17 @@
     transition: all 0.2s ease;
 }
 
+/* An icon action stands as tall as the text actions beside it, its icon
+   centered. */
+.alert-dialog-actions > .alert-dialog-icon {
+    align-self: stretch;
+    height: auto;
+}
+
 .alert-dialog-cancel:focus-visible,
 .alert-dialog-action:focus-visible,
-.alert-dialog-action-danger:focus-visible {
+.alert-dialog-action-danger:focus-visible,
+.alert-dialog-icon:focus-visible {
     outline: 1px solid var(--accent-secondary);
     outline-offset: 2px;
 }

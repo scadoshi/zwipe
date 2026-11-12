@@ -1,16 +1,19 @@
 //! The keyboard shortcuts on screen: the sheet that lists them, the keys that open things (`?`
 //! the page's hint everywhere, Shift+H the sheet on the swipe screens and the deck cards screen),
-//! and the swipe screens' dock button that opens the sheet on a computer.
+//! and the keyboard button in the hint of a screen with keys that opens the sheet on a computer.
 
-use components::icons::DockIcon;
-use components::{BottomSheet, HintKey, SheetFrame, SheetWide};
+use components::{BottomSheet, DialogAction, HintKey, SheetFrame, SheetWide};
 use dioxus::prelude::*;
 use uuid::Uuid;
 
+use crate::inbound::chrome::media::use_computer;
 use crate::inbound::chrome::shortcuts::{self, GlobalKey, ShortcutsScreen};
 
-/// The dock button's icon: a keyboard, its keys and space bar.
+/// The hint's keyboard button's icon: a keyboard, its keys and space bar.
 const KEYBOARD: &str = "M3 7h18v10H3zM7 10.5h.01M10.5 10.5h.01M14 10.5h.01M17.5 10.5h.01M8 14h8";
+
+/// The keyboard button's name for a screen reader and its tooltip.
+pub const SHORTCUTS_LABEL: &str = "Keyboard shortcuts";
 
 /// Whether the shortcuts sheet is open, shared by the frame that draws it and everything that
 /// opens it.
@@ -139,24 +142,34 @@ pub fn ShortcutsSheet(open: Signal<bool>) -> Element {
     }
 }
 
-/// The swipe screens' dock button that opens the shortcuts sheet, shown only on a computer
-/// (a mouse or trackpad that hovers).
-#[component]
-pub fn DockShortcuts() -> Element {
+/// The keyboard button a screen's hint offers beside its guide link, which closes the hint and
+/// runs `on_click`: only while a screen with keys is `offered` and on a `computer`'s wide layout.
+#[must_use]
+pub fn shortcuts_action(
+    offered: bool,
+    computer: bool,
+    on_click: Callback<()>,
+) -> Option<DialogAction> {
+    (offered && computer).then(|| DialogAction::Icon {
+        label: SHORTCUTS_LABEL.to_owned(),
+        path: KEYBOARD,
+        on_click,
+    })
+}
+
+/// The keyboard button for the hint of the screen on top ([`shortcuts_action`]), opening the
+/// shortcuts sheet, kept current as screens mount and the window changes.
+pub fn use_shortcuts_action() -> Option<DialogAction> {
     let open = try_use_context::<ShortcutsOpen>().map(|ShortcutsOpen(open)| open);
-    rsx! {
-        button {
-            class: "action-dock-btn web-dock-shortcuts",
-            "aria-label": "Keyboard shortcuts",
-            title: "Keyboard shortcuts",
-            onclick: move |_| {
-                if let Some(mut open) = open {
-                    open.set(true);
-                }
-            },
-            DockIcon { path: KEYBOARD }
+    let offered = try_use_context::<ShortcutsOffered>().map(|ShortcutsOffered(stack)| stack);
+    let computer = use_computer();
+    let on_click = use_callback(move |()| {
+        if let Some(mut open) = open {
+            open.set(true);
         }
-    }
+    });
+    let offered_here = offered.is_some_and(|stack| !stack.read().is_empty());
+    shortcuts_action(offered_here, computer(), on_click)
 }
 
 /// Registers one page's listener for the keys that work everywhere. Only the newest
@@ -195,6 +208,26 @@ window.__zwipeGlobalKeys = (window.__zwipeGlobalKeys || []).filter((id) => id !=
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The action for `offered` and `computer`, built inside a runtime as a callback needs.
+    fn action(offered: bool, computer: bool) -> Option<DialogAction> {
+        let dom = VirtualDom::new(|| rsx! {});
+        dom.in_runtime(|| {
+            dom.in_scope(ScopeId::ROOT, || {
+                shortcuts_action(offered, computer, Callback::new(|()| {}))
+            })
+        })
+    }
+
+    #[test]
+    fn the_hint_offers_the_keyboard_button_on_a_computer_where_a_screen_has_keys() {
+        let Some(DialogAction::Icon { label, path, .. }) = action(true, true) else {
+            panic!("the keyboard button");
+        };
+        assert_eq!((label.as_str(), path), (SHORTCUTS_LABEL, KEYBOARD));
+        assert!(action(false, true).is_none(), "a screen with no keys");
+        assert!(action(true, false).is_none(), "a phone or a narrow window");
+    }
 
     #[test]
     fn question_mark_goes_to_the_topmost_open_modal_before_the_page() {
