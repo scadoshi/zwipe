@@ -60,7 +60,7 @@ pub const UPCOMING: &[Release] = &[
             "zwipe.net draws its logos in the same font as the app, so they look the same",
             "In the app, each card group in a deck's List has its price and a cart that buys its cards, as its stack does",
             "On the web's deck page, each column of Stacks runs on its own, every stack right under the one above it",
-            "zwipe.net's shared deck looks and works like the web app's deck page, read only",
+            "zwipe.net's shared deck is the web app's deck page, read only",
         ],
     },
     Release {
