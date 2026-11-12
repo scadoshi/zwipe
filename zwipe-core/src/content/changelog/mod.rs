@@ -48,6 +48,20 @@ pub const MOBILE_STORE_VERSION: Version = Version::new(1, 18, 15);
 /// changelog with an "Upcoming" badge instead of "Latest".
 pub const UPCOMING: &[Release] = &[
     Release {
+        version: Version::new(1, 19, 8),
+        date: None,
+        entries: &[
+            "In the app, each card group in a deck's List has its price and a cart that buys its cards, as its stack does",
+            "On the web's deck page, each column of Stacks runs on its own, every stack right under the one above it",
+            "zwipe.net's shared deck is the web app's deck page, read only",
+            "The preview cards for zwipe.net and app.zwipe.net links no longer underline Magic: The Gathering",
+            "On a phone, zwipe.net's shared deck page shows its profile or its cards, under a Profile and Cards switch",
+            "A card's Image, Flip, Meld and Star buttons and the Printings Select are icons, the star filling in gold when the card is starred",
+            "A Stacks group header wraps a long name instead of cutting it short, with the cart right after the price, on the web and in the app",
+            "On zwipe.net's shared deck, the owner's name is a chip beside the deck's name",
+        ],
+    },
+    Release {
         version: Version::new(1, 19, 7),
         date: None,
         entries: &[
@@ -58,14 +72,6 @@ pub const UPCOMING: &[Release] = &[
             "zwipe.net's videos and guide screenshots hold their place as a pulsing placeholder while they load, then fade in",
             "On the web, Home's Colors panel runs as tall as Decks beside it",
             "zwipe.net draws its logos in the same font as the app, so they look the same",
-            "In the app, each card group in a deck's List has its price and a cart that buys its cards, as its stack does",
-            "On the web's deck page, each column of Stacks runs on its own, every stack right under the one above it",
-            "zwipe.net's shared deck is the web app's deck page, read only",
-            "The preview cards for zwipe.net and app.zwipe.net links no longer underline Magic: The Gathering",
-            "On a phone, zwipe.net's shared deck page shows its profile or its cards, under a Profile and Cards switch",
-            "A card's Image, Flip, Meld and Star buttons and the Printings Select are icons, the star filling in gold when the card is starred",
-            "A Stacks group header wraps a long name instead of cutting it short, with the cart right after the price, on the web and in the app",
-            "On zwipe.net's shared deck, the owner's name is a chip beside the deck's name",
         ],
     },
     Release {
