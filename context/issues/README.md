@@ -79,7 +79,7 @@ Who checked, on which live build, what they saw.
 | [354](354-one-buy-dialog.md) | Buying is a different control in every spot, and the wide deck page hides it | fixing | thinker | - |
 | [358](358-share-link-deck-name.md) | The Share dialog's link names every deck "deck" | fixing | thinker | - |
 | [372](372-stacks-deal-in.md) | Stacks appear all at once | fixing | thinker | - |
-| [399](399-deck-list-slow-firefox.md) | The deck page's List is slow in Firefox: opening a row, folding, Art | fixing | scotland | - |
+| [399](399-deck-list-slow-firefox.md) | The deck page's List is slow in Firefox: opening a row, folding, Art | fixing | scotland | #608 |
 | [393](393-proxy-strips.md) | No-image stack strips wrap and peek, and Home's deck tiles show a broken image | fixing | laptop | #596 |
 | [391](391-proxy-fit.md) | The no-image card clips its facts row in the app's Featured card, and thumbnails break names mid-word | fixing | laptop | #594 |
 | [388](388-section-stacks.md) | Playstyle and Activity stacks sit in panels, and share one View setting | fixing | laptop | #591 |

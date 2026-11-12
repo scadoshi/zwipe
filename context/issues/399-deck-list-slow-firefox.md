@@ -1,6 +1,6 @@
 # 399. The deck page's List is slow in Firefox: opening a row, folding, Art
 
-State: fixing | Owner: scotland | PR: - | Build seen: live, web, Firefox, a 103-card deck
+State: fixing | Owner: scotland | PR: #608 | Build seen: live, web, Firefox, a 103-card deck
 
 ## Report
 Scotty via composer, 2026-11-12: on app.zwipe.net's deck page in List view, toggling Art, opening a row and fold or unfold all are "super slow", worst on opening a row and on fold all, even after 374 (#585). The same actions on the deck's zwipe.net share page are instant. His browser is Firefox.
