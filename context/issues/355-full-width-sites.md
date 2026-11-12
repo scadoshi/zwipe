@@ -9,12 +9,11 @@ Scotty via composer, 2026-11-11: use the full screen width on every site, the wa
 Each site caps its own page container at 74rem (zite `.page` and `.shared-deck`, the web's `--web-page-max`, the portfolio's own), so a wide window gets one 71rem column with empty grid on both sides. orangui has no shared container, so there is nothing to repin.
 
 ## Fix
-zite, scotland, #557 (style.css):
-- `.page` has no cap and keeps its 1.5rem gutter.
-- Each section stays at `--zite-text-max` (71rem, the hero's width), centered. A section that holds a card grid runs wider, with its head still at the text width.
-- From 1280px the card grids add columns: each card 22 to 26rem wide, centered, up to seven across (four at 1920, five at 2560).
-- Running text (guide paragraphs and lists, privacy sections, release notes) keeps a 70ch measure.
+zite, scotland, #557 (style.css), reworked after composer's review:
+- `.page` has no fixed cap and keeps its 1.5rem gutter. Every section, and the hero card, takes one width, `--zite-page-max` (seven 26rem columns, so the full window up to 2560). Headers, filters, panels and the card grids under them share their edges.
+- From 1280px the card grids fill that width edge to edge, each card at least 22rem: five across at 1920 and six at 2560. Below 1280 they keep their 3/2/1 columns. A pair stays a pair across the page.
+- Home: from 1920 the demo and the three feature panels share one row (the demo, then the panels side by side). Featured flavor and the reviews span the width.
+- Running text keeps a 70ch measure: the hero's tagline (centered), guide paragraphs and lists, privacy sections and release notes. The About diagram stays at 57rem inside its panel.
 - The shared deck page drops its 74rem cap and pairs its groups in two columns from 1400px, as the web deck page does.
-- At 1280 and below the pages look as they did.
 
-Test `zite/tests/full_width.rs` failed on the old stylesheet and passes now. Shots in `target/shots-355/` (before at 1920; after at 1280, 1920, 2560 and 390).
+Test `zite/tests/full_width.rs` failed on the old stylesheet and passes now. Shots in `target/shots-355/`: `before-*-1920.png`, and `r4-{home,guides,about,changelog,community,contribute,privacy}-{1280,1920,2560,390}.png` after.

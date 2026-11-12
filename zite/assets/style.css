@@ -307,10 +307,14 @@ html:has(> body[class*="theme-"][class*="-light"]) {
 }
 
 /* The page runs the window's width inside its 1.5rem gutter, as the web
-   app's deck page does. Its text sections keep to the hero's width, centered;
-   the card grids take more columns as the window grows (see the card grids). */
+   app's deck page does, up to the width of seven card columns. Every section
+   takes that one width, so headers, filters, panels and the card grids under
+   them share their edges; running text keeps a readable measure inside. */
+:root {
+    --zite-page-max: calc(7 * 26rem + 6 * var(--panel-gap));
+}
+
 .page {
-    --zite-text-max: 71rem;
     flex: 1 0 auto;
     width: 100%;
     margin: 0 auto;
@@ -321,19 +325,7 @@ html:has(> body[class*="theme-"][class*="-light"]) {
 /* Outranks a section's own margin shorthand, so every section centers. */
 body .page > * {
     width: 100%;
-    max-width: var(--zite-text-max);
-    margin-left: auto;
-    margin-right: auto;
-}
-
-/* A section that holds a card grid runs the page's width, its head and
-   figure still at the text width. */
-body .page > :has(> .card-grid:not(.card-grid-2)) {
-    max-width: none;
-}
-
-body .page > :has(> .card-grid:not(.card-grid-2)) > :not(.card-grid) {
-    max-width: var(--zite-text-max);
+    max-width: var(--zite-page-max);
     margin-left: auto;
     margin-right: auto;
 }
@@ -341,7 +333,7 @@ body .page > :has(> .card-grid:not(.card-grid-2)) > :not(.card-grid) {
 /* Running text keeps a readable measure. */
 :is(.guide-content .guide-p, .guide-content .guide-lead, .guide-content .guide-steps,
     .guide-content .guide-bullets, .guide-content .guide-note, .privacy-section > p,
-    .privacy-section > ul, .release-card .collapse-body) {
+    .privacy-section > ul, .release-card .collapse-body, .hero .tagline) {
     max-width: 70ch;
 }
 
@@ -431,6 +423,7 @@ body .page > :has(> .card-grid:not(.card-grid-2)) > :not(.card-grid) {
 
 body .arch-figure .diagram {
     width: 80%;
+    max-width: 57rem;
     margin-inline: auto;
 }
 
@@ -574,9 +567,8 @@ code {
 .hero-card {
     display: flex;
     flex-direction: column;
-    /* Match the .page content width (74rem minus its 1.5rem side padding)
-       so the hero's edges align with the demo/features band below. */
-    max-width: 71rem;
+    /* The page's width, so the hero's edges align with the band below. */
+    max-width: var(--zite-page-max);
     margin: 0 auto;
     padding: 1rem 1.5rem;
     background-color: var(--bg-primary);
@@ -620,7 +612,7 @@ code {
 .hero .tagline {
     font-size: 0.95rem;
     color: var(--text-primary);
-    margin: 0;
+    margin: 0 auto;
 }
 
 /* The rule + stats are inserted together once metrics resolve; ease them in
@@ -721,17 +713,14 @@ code {
     grid-template-columns: 1fr 1fr;
 }
 
-/* From 1280px the card grids add columns as the window grows: each card
-   between 22rem and 26rem, up to seven across, centered, the rest margin. A
-   pair stays a pair across the page. */
+/* From 1280px the card grids add columns as the window grows, each card at
+   least 22rem, filling the page's width edge to edge so the grid lines up
+   with the sections above it; the page's width stops it at seven. A pair
+   stays a pair across the page. */
 @media (min-width: 80rem) {
     .card-grid:not(.card-grid-2),
     .features-grid {
-        grid-template-columns: repeat(auto-fit, minmax(22rem, 26rem));
-        justify-content: center;
-        max-width: calc(7 * 26rem + 6 * var(--panel-gap));
-        margin-left: auto;
-        margin-right: auto;
+        grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr));
     }
 }
 
@@ -921,6 +910,20 @@ code {
     aspect-ratio: 540 / 1110;
     width: min(100%, calc(70vh * 540 / 1110));
     max-height: none;
+}
+
+/* From 1920px the demo and the three feature panels share one row, the
+   panels side by side beside the demo. */
+@media (min-width: 120rem) {
+    .demo-features {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 3fr);
+    }
+
+    .features-stack {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        align-items: start;
+    }
 }
 
 /* Full width under the demo band, one panel gap above Reviews. */
