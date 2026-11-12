@@ -86,3 +86,26 @@ pub fn CardStack(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    /// The kit's Magic sheet, where the stacks' rules live.
+    const MAGIC_CSS: &str = include_str!("../assets/magic.css");
+
+    #[test]
+    fn nothing_about_a_stack_promotes_its_cards_to_layers() {
+        // A rule's selector and its body, split at each `}`.
+        for rule in MAGIC_CSS.split('}') {
+            let Some((selector, body)) = rule.split_once('{') else {
+                continue;
+            };
+            if selector.contains(".card-stack") {
+                assert!(
+                    !body.contains("will-change"),
+                    "a stack at a fractional x is drawn a pixel off while promoted: {}",
+                    selector.trim()
+                );
+            }
+        }
+    }
+}

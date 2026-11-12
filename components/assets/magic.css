@@ -2813,15 +2813,13 @@ footer.site-footer .site-footer-note {
 
 /* The stack under the pointer sits over its neighbors, so its moved cards
    pass over whatever is below the stack, and stays over them until the cards
-   have settled back after the pointer leaves. Its slots are promoted for the
-   move only while the pointer is on it. */
+   have settled back after the pointer leaves. Nothing about the hover itself
+   promotes the slots to layers: a stack at a fractional x would be drawn a
+   pixel narrower and shifted while the pointer is on it. The browser
+   promotes a slot on its own while its transform runs. */
 .card-stack:hover {
     z-index: 2;
     transition-delay: 0s;
-}
-
-.card-stack:hover > .card-stack-slot {
-    will-change: transform;
 }
 
 /* Every moving card shares one duration and curve. */
