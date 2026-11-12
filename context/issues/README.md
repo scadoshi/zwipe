@@ -124,6 +124,7 @@ Who checked, on which live build, what they saw.
 | [405](405-web-stacks-masonry.md) | The web deck page's Stacks hold each row to its tallest stack | fixing | halo | #623 |
 | [406](406-og-underline.md) | The link cards underline Magic: The Gathering | fixing | thinker | 6f6314bd3 |
 | [411](411-icons-not-words.md) | Card buttons say Image, Flip, Meld, Star and Select in words | fixing | halo | nits/halo-411 |
+| [412](412-star-color.md) | Stars take three different colors | fixing | halo | orangui 8626ccf, nits/halo-412 |
 
 ## Waiting for live verification
 

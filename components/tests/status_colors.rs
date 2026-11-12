@@ -1,15 +1,10 @@
 //! Status colors mean an outcome. Decoration draws from the palette slots. The
-//! rules in the Magic sheet that may name one: the Danger zone title, over a
-//! panel of destructive actions, and the starred Star toggle, which wears the
-//! warning gold the Star hint draws in (Scotty's pick), a gold no palette
-//! slot holds in every theme.
+//! one rule in the Magic sheet that marks an outcome is the Danger zone title,
+//! over a panel of destructive actions; no other may name a status color.
 
 use components::status_uses;
 
-const ALLOWED: [&str; 2] = [
-    ".settings-list-title.danger-zone-title",
-    ".card-action-btn.card-action-icon[data-action=\"star\"][aria-pressed=\"true\"]",
-];
+const ALLOWED: [&str; 1] = [".settings-list-title.danger-zone-title"];
 
 #[test]
 fn status_colors_only_where_they_mean_something() {

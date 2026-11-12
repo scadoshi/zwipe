@@ -49,6 +49,8 @@ pub enum Role {
     Error,
     /// The warning color: the maybeboard, resets and up swipes.
     Warning,
+    /// The star color: a starred card's star.
+    Star,
 }
 
 impl Role {
@@ -69,6 +71,7 @@ impl Role {
             Self::Success => "--color-success",
             Self::Error => "--color-error",
             Self::Warning => "--color-warning",
+            Self::Star => "--color-star",
         }
     }
 }
@@ -418,6 +421,11 @@ mod tests {
         assert_eq!(KeyIcon::from_name("flip"), Some(KeyIcon::Flip));
         assert_eq!(KeyIcon::from_name("meld"), Some(KeyIcon::Meld));
         assert_eq!(KeyIcon::from_name("star"), Some(KeyIcon::Star));
+        assert_eq!(
+            Role::Star.css_var(),
+            "--color-star",
+            "a starred thing's own color"
+        );
         assert_eq!(KeyIcon::from_name(""), None);
     }
 

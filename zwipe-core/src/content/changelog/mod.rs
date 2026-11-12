@@ -64,6 +64,7 @@ pub const UPCOMING: &[Release] = &[
             "The preview cards for zwipe.net and app.zwipe.net links no longer underline Magic: The Gathering",
             "On a phone, zwipe.net's shared deck page shows its profile or its cards, under a Profile and Cards switch",
             "A card's Image, Flip, Meld and Star buttons and the Printings Select are icons, the star filling in gold when the card is starred",
+            "A starred card's mark and its MVP chips share the star's gold",
         ],
     },
     Release {
