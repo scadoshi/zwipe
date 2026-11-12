@@ -1,6 +1,6 @@
 # 403. Home's Colors panel stops short of Decks beside it
 
-State: fixing | Owner: thinker | PR: #TBD | Build seen: release e556ab671, local
+State: fixing | Owner: thinker | PR: #617 | Build seen: release e556ab671, local
 
 ## Report
 Scotty, through the composer, 2026-11-12, after renders at 1634 and 1400: on app.zwipe.net's Home, Colors (227px) sits beside Decks (328px) and ends well above it. He picked the stretched render. Colors should run to Decks' height, with its bars at the top and the rest empty panel, only where the two sit side by side. Stacked, each keeps its natural height.

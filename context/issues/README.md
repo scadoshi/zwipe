@@ -80,7 +80,7 @@ Who checked, on which live build, what they saw.
 | [358](358-share-link-deck-name.md) | The Share dialog's link names every deck "deck" | fixing | thinker | - |
 | [372](372-stacks-deal-in.md) | Stacks appear all at once | fixing | thinker | - |
 | [400](400-video-skeleton.md) | zwipe.net's videos paint half-drawn, with a white block, while they load | fixing | laptop | #612 |
-| [403](403-home-colors-height.md) | Home's Colors panel stops short of Decks beside it | fixing | thinker | #TBD |
+| [403](403-home-colors-height.md) | Home's Colors panel stops short of Decks beside it | fixing | thinker | #617 |
 | [399](399-deck-list-slow-firefox.md) | The deck page's List is slow in Firefox: opening a row, folding, Art | fixing | scotland | #608 |
 | [398](398-maybeboard-sort.md) | The Commander maybeboard has no ordering | fixing | laptop | #601 |
 | [397](397-list-only.md) | Playstyle, Activity and the Commander maybeboard lists are List only | fixing | laptop | #599 |
