@@ -59,6 +59,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "The deck page on the web deals its featured cards in, as a shared deck does",
         "On the web, u and Ctrl+Z undo on the deck page and the swipe screens",
         "On the web's deck page, d opens or closes a card's details",
+        "A meld card's open row in a deck's list has the Meld toggle its details drawer has",
         "Flipping a card on the web's deck page turns its stack image and row preview too",
         "The web's deck page runs the window's width, its list in two columns on a wide screen",
         "Image in a stack card's details on the web's deck page",
