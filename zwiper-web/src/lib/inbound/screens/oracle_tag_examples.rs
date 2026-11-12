@@ -29,7 +29,8 @@ use crate::inbound::chrome::back_arrow::BackArrow;
 use crate::inbound::chrome::details_eye::{DockEye, Surface, use_details_eye};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
 use crate::inbound::chrome::page_keys::use_page_keys;
-use crate::inbound::chrome::shortcuts::{self, CardKey};
+use crate::inbound::chrome::shortcuts::{self, CardKey, ShortcutsScreen};
+use crate::inbound::chrome::shortcuts_sheet::use_offer_shortcuts;
 use crate::inbound::telemetry;
 
 /// A step forward through the examples. It leaves to the left, so a step
@@ -127,12 +128,17 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
             s.record(action);
         }
     });
-    // `v` flips the top card or shows its meld, as on every screen.
-    use_page_keys(Callback::new(move |key: String| {
-        if shortcuts::card_key(&key) == Some(CardKey::Flip) {
-            swipe_stack::flip_top_card();
-        }
-    }));
+    // Shift+H lists the modal's keys while it is open.
+    use_offer_shortcuts(ShortcutsScreen::Examples);
+    // `v` flips the top card or shows its meld and `d` opens or closes its
+    // details, as on every swipe screen.
+    use_page_keys(Callback::new(
+        move |key: String| match shortcuts::card_key(&key) {
+            Some(CardKey::Flip) => swipe_stack::flip_top_card(),
+            Some(CardKey::Details) if stack.peek().current().is_some() => eye.press(),
+            _ => {}
+        },
+    ));
     use_swipe_keys_or_undo(
         control,
         vec![Swipe::Left, Swipe::Down],
@@ -246,8 +252,6 @@ pub fn OracleTagExamples(mut open: Signal<bool>, slug: String) -> Element {
                 PrintingSheet {
                     card,
                     open: printing_open,
-                    on_save: move |_: Card| {},
-                    read_only: true,
                 }
             }
         }

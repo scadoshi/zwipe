@@ -13,7 +13,7 @@ pub mod hero;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use chrono::{DateTime, Utc};
-use components::{HomeColors, HomeDecks, LoadFailed, ThemeConfig};
+use components::{CartButton, HomeColors, HomeDecks, LoadFailed, StoreDialog, ThemeConfig};
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use dioxus_primitives::toast::{Toasts, use_toast};
@@ -22,6 +22,7 @@ use zwipe_client::call::Dated;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::user::models::settings::PipStyle;
+use zwipe_ui::buy;
 use zwipe_ui::generation::Ticket;
 use zwipe_ui::home::{CountsTag, Figures};
 use zwipe_ui::screens::home::{
@@ -33,7 +34,6 @@ use zwipe_ui::telemetry::vocabulary::Screen;
 use self::hero::HomeHeroScoped;
 use crate::domain::counts::CachedCounts;
 use crate::inbound::caches::{CachedDecks, CachedMyCounts, CachedPlayStyle};
-use crate::inbound::cards::buy_links::{CardBuyLinks, GhostBuyLink};
 use crate::inbound::cards::image_preview::ImagePreview;
 use crate::inbound::chrome::authed::{Authed, use_authed};
 use crate::inbound::chrome::ghost::{GhostText, GhostWords};
@@ -483,9 +483,9 @@ pub fn Home() -> Element {
 }
 
 /// The featured flavor card as the model quotes it: its text, then its
-/// name, its USD price when it has one, `Image`, and when priced the
-/// `TCGplayer` and `Card Kingdom` links. `card` is the card behind the quote,
-/// for the image preview and the links. A card without flavor text leaves
+/// name, its USD price when it has one, `Image`, and when priced the cart,
+/// which opens the store dialog. `card` is the card behind the quote, for the
+/// image preview and the store links. A card without flavor text leaves
 /// the panel empty; before any card it ghosts.
 #[component]
 pub(crate) fn FlavorPanel(
@@ -494,9 +494,11 @@ pub(crate) fn FlavorPanel(
     on_image: EventHandler<ScryfallData>,
     #[props(default)] on_retry: Option<EventHandler>,
 ) -> Element {
+    let mut buy_open = use_signal(|| false);
     let body = match (flavor, card) {
         (Flavor::Quote(quote), Some(sd)) => {
             let sd_for_image = sd.clone();
+            let links = buy::card_links(&sd.name, sd.tcgplayer_id);
             rsx! {
                 div { class: "settings-list-header", style: "justify-content: center;",
                     span { class: "settings-list-title", {home::FEATURED_FLAVOR} }
@@ -513,8 +515,14 @@ pub(crate) fn FlavorPanel(
                         {home::IMAGE}
                     }
                     if quote.price.is_some() {
-                        CardBuyLinks { name: sd.name.clone(), tcgplayer_id: sd.tcgplayer_id }
+                        CartButton { onclick: move |_| buy_open.set(true) }
                     }
+                }
+                StoreDialog {
+                    open: buy_open,
+                    title: buy::CARD_TITLE.to_owned(),
+                    body: buy::CARD_BODY.to_owned(),
+                    links,
                 }
             }
         }
@@ -542,8 +550,7 @@ pub(crate) fn FlavorPanel(
                 span { class: "card-action-btn web-ghost-chip",
                     span { {home::IMAGE} }
                 }
-                GhostBuyLink { label: "TCGplayer" }
-                GhostBuyLink { label: "Card Kingdom" }
+                span { class: "btn-action btn-icon cart-button web-ghost-chip" }
             }
         },
     };

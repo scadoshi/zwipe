@@ -5,7 +5,6 @@
 
 use dioxus::prelude::*;
 
-use crate::inbound::cards::buy_links::GhostBuyLink;
 use crate::inbound::chrome::ghost::{
     GhostActionRow, GhostChip, GhostChipRow, GhostFold, GhostIconButton, GhostInfoRow, GhostList,
     GhostSection, GhostText,
@@ -186,11 +185,6 @@ pub fn DeckViewGhost() -> Element {
                 div { style: "display:flex;flex-direction:column;",
                     GhostInfoRow { label: 11, value: 7 }
                     GhostInfoRow { label: 18, value: 6 }
-                    div { class: "deck-buy-row",
-                        span { class: "stat-chip stat-chip-p1 chip-row-label web-ghost-chip", GhostText { chars: 3 } }
-                        GhostBuyLink { label: "TCGplayer", button: "btn-action" }
-                        GhostBuyLink { label: "Card Kingdom", button: "btn-action" }
-                    }
                 }
             }
             StatsSectionsGhost {}

@@ -11,8 +11,8 @@ use zwipe_core::domain::user::models::settings::PipStyle;
 
 use crate::inbound::chrome::hint_topic::{HintHost, HintTopic};
 use crate::inbound::chrome::leave_guard::{self, GuardedHistory};
-use crate::inbound::chrome::splash;
 use crate::inbound::chrome::trail::TrailHistory;
+use crate::inbound::chrome::{details_clear, splash};
 use crate::inbound::router::Route;
 use crate::inbound::screens::auth::login::LoginPrefill;
 use crate::inbound::screens::update_required::UpdateRequired;
@@ -52,6 +52,8 @@ pub fn App() -> Element {
     use_hook(|| {
         document::eval(HINT_FOCUS_JS);
     });
+    // A swipe screen's card slides clear of its docked details panel.
+    details_clear::use_details_clear();
     let dialogs = use_dialog_host();
     use_context_provider(|| dialogs);
     use_context_provider(|| LoginPrefill(Signal::new(None)));

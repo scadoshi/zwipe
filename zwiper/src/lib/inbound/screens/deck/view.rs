@@ -3,10 +3,10 @@
 //! What the screen knows and does is `zwipe_ui::screens::deck_view`; this
 //! file draws its state and performs its effects.
 
-use components::icons::{CloneIcon, EditIcon, ShareIcon};
+use components::icons::{CloneIcon, DockIcon, EditIcon, ShareIcon};
 use components::{
-    AlertDialog, Button, ButtonVariant, Chip, DialogAction, LoadFailed, TOAST_NORMAL, ToastOptions,
-    Toasts, use_back_online, use_toast,
+    AlertDialog, Button, ButtonVariant, CART, Chip, DialogAction, LoadFailed, StoreDialog,
+    TOAST_NORMAL, ToastOptions, Toasts, use_back_online, use_toast,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -18,11 +18,12 @@ use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
 use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_core::http::contracts::deck::HttpCloneDeck;
 use zwipe_core::http::contracts::deck_card::HttpPatchDeckCard;
+use zwipe_ui::buy;
 use zwipe_ui::colors::ColorCounts;
 use zwipe_ui::deck::command_zone::Slot;
 use zwipe_ui::generation::Ticket;
 use zwipe_ui::screens::deck_view::{
-    self, Action, Destination, Dialog, Effect, MoreItem, Retailer, Section, State,
+    self, Action, Destination, Dialog, Effect, MoreItem, Section, State,
 };
 
 use super::components::clone_deck_dialog::CloneDeckDialog;
@@ -472,6 +473,8 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         })
     });
     let mut otag_examples_open = use_signal(|| false);
+    // The deck's store dialog, from the dock's cart.
+    let mut deck_buy_open = use_signal(|| false);
     let mut otag_examples_slug = use_signal(String::new);
     let open_examples = use_callback(move |slug: String| {
         otag_examples_slug.set(slug);
@@ -507,7 +510,7 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
         .into_iter()
         .filter(|item| state.is_enabled(*item))
         .collect();
-    let buy_row = state.buy_links().is_some();
+    let store_links = state.store_links();
     let share_url = state.share_url();
     let share_body = state.share_body();
     let clone_name = state.clone_name();
@@ -602,19 +605,6 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
                                         DeckBudgetSection {
                                             total: total_line,
                                             average: average_line,
-                                        }
-                                        if buy_row {
-                                            div { class: "deck-buy-row",
-                                                span { class: "stat-chip stat-chip-p1 chip-row-label", {deck_view::BUY} }
-                                                for retailer in Retailer::ALL {
-                                                    Button {
-                                                        key: "{retailer:?}",
-                                                        variant: ButtonVariant::Action,
-                                                        onclick: move |_| driver.dispatch(Action::Buy(retailer)),
-                                                        {retailer.label()}
-                                                    }
-                                                }
-                                            }
                                         }
                                     }
                                 }
@@ -774,11 +764,28 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
             // Cards, the screen's main action, floats at the bottom right.
             if !failed {
                 div { class: "action-dock action-dock-right content-enter-delayed",
+                    if store_links.is_some() {
+                        button {
+                            class: "action-dock-btn",
+                            "aria-label": buy::CART_LABEL,
+                            onclick: move |_| deck_buy_open.set(true),
+                            DockIcon { path: CART }
+                        }
+                    }
                     Button {
                         variant: ButtonVariant::Action,
                         onclick: move |_| driver.dispatch(Action::Cards),
                         {deck_view::CARDS}
                     }
+                }
+            }
+
+            if let Some(links) = store_links {
+                StoreDialog {
+                    open: deck_buy_open,
+                    title: buy::DECK_TITLE.to_owned(),
+                    body: buy::DECK_BODY.to_owned(),
+                    links,
                 }
             }
 

@@ -333,7 +333,10 @@ body .page > * {
 /* Running text keeps a readable measure. */
 :is(.guide-content .guide-p, .guide-content .guide-lead, .guide-content .guide-steps,
     .guide-content .guide-bullets, .guide-content .guide-note, .privacy-section > p,
-    .privacy-section > ul, .release-card .collapse-body, .hero .tagline) {
+    .privacy-section > ul, .release-card .collapse-body, .hero .tagline,
+    body .page > :is(.section, .page-header) > .panel-card p,
+    body .page > .section > .section-head > .panel-card p,
+    .card-grid-2 .panel-card p) {
     max-width: 70ch;
 }
 

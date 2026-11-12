@@ -18,7 +18,9 @@ use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_core::http::contracts::suggestions::HttpPlayStyleSummary;
 
 use crate::buy;
-pub use crate::buy::{BuyLink, CARD_KINGDOM, CLOSE, TCGPLAYER};
+pub use crate::buy::{
+    BuyLink, CARD_BODY as BUY_BODY, CARD_KINGDOM, CARD_TITLE as BUY_TITLE, CLOSE, TCGPLAYER,
+};
 use crate::colors::{Bar, ColorCounts};
 use crate::generation::{Generation, Ticket};
 use crate::home::{self, CountsTag, Figures, Scope, UserSource};
@@ -71,15 +73,6 @@ pub const FEATURED_FLAVOR: &str = "Featured flavor";
 
 /// The flavor card's button that previews its image.
 pub const IMAGE: &str = "Image";
-
-/// The flavor card's button that opens the Buy dialog, shown only for a priced card.
-pub const BUY: &str = "Buy";
-
-/// The Buy dialog's title.
-pub const BUY_TITLE: &str = "Buy card";
-
-/// The Buy dialog's body.
-pub const BUY_BODY: &str = "Buy this card from a retailer.";
 
 /// The Decks panel's title.
 pub const DECKS: &str = "Decks";
@@ -485,16 +478,7 @@ pub fn quote(card: &Card) -> Flavor {
 #[must_use]
 pub fn buy_links(card: &Card) -> Vec<BuyLink> {
     let data = &card.scryfall_data;
-    vec![
-        BuyLink {
-            label: TCGPLAYER,
-            url: buy::tcgplayer_card_url(&data.name, data.tcgplayer_id),
-        },
-        BuyLink {
-            label: CARD_KINGDOM,
-            url: buy::cardkingdom_card_url(&data.name),
-        },
-    ]
+    buy::card_links(&data.name, data.tcgplayer_id)
 }
 
 impl State {

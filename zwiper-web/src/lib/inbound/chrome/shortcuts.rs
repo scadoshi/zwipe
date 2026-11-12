@@ -32,6 +32,7 @@ pub fn swipe_screen_shortcut(key: &str) -> Option<Shortcut> {
     match card_key(key) {
         Some(CardKey::Filter) => return Some(Shortcut::Filter),
         Some(CardKey::Flip) => return Some(Shortcut::Flip),
+        Some(CardKey::Details) => return Some(Shortcut::Details),
         None => {}
     }
     let shortcut = match key {
@@ -40,7 +41,6 @@ pub fn swipe_screen_shortcut(key: &str) -> Option<Shortcut> {
         "ArrowUp" | "k" | "K" => Shortcut::Swipe(Swipe::Up),
         "ArrowDown" | "j" | "J" | "u" | "U" => Shortcut::Swipe(Swipe::Down),
         "p" | "P" => Shortcut::Printings,
-        "d" | "D" => Shortcut::Details,
         "r" | "R" => Shortcut::Refresh,
         "s" | "S" => Shortcut::Synergy,
         _ => return None,
@@ -49,13 +49,16 @@ pub fn swipe_screen_shortcut(key: &str) -> Option<Shortcut> {
 }
 
 /// A key that means the same on every screen: `f` opens the screen's filter where it has one, `v`
-/// flips the card on show or, a card with one face, shows its meld.
+/// flips the card on show or, a card with one face, shows its meld, and `d` opens or closes the
+/// card's details.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CardKey {
     /// Opens the screen's filter.
     Filter,
     /// Flips the card on show, or toggles its meld.
     Flip,
+    /// Opens or closes the card's details.
+    Details,
 }
 
 /// The [`CardKey`] `key` stands for. Every screen's own key map defers to this one for `f` and `v`.
@@ -64,6 +67,7 @@ pub fn card_key(key: &str) -> Option<CardKey> {
     match key {
         "f" | "F" => Some(CardKey::Filter),
         "v" | "V" => Some(CardKey::Flip),
+        "d" | "D" => Some(CardKey::Details),
         _ => None,
     }
 }
@@ -121,8 +125,11 @@ pub enum GlobalKey {
     Shortcuts,
 }
 
+/// The key that opens a hint: the topmost open modal's, else the page's.
+pub const HINT_KEY: &str = "?";
+
 /// The keys that work everywhere ([`global_key`]).
-pub const GLOBAL_KEYS: [&str; 2] = ["?", "H"];
+pub const GLOBAL_KEYS: [&str; 2] = [HINT_KEY, "H"];
 
 /// The global action `key` stands for: `?` the page's hint, Shift+H (`H`) the shortcuts sheet.
 #[must_use]
@@ -206,6 +213,8 @@ pub enum ShortcutsScreen {
     Swipe(SwipeLabels),
     /// The deck cards screen, whose keys act on the card under the cursor, else the open one.
     DeckCards,
+    /// An Oracle tag's example cards, swiped through in their modal.
+    Examples,
 }
 
 /// The rows the shortcuts sheet lists on `screen`: each key, with its vim letter if it has one,
@@ -253,6 +262,12 @@ pub fn sheet_rows(screen: &ShortcutsScreen) -> Vec<(&'static [&'static str], &'s
             (&["u", UNDO_COMBO], "Undo"),
             (&["f"], "Filter"),
         ],
+        ShortcutsScreen::Examples => vec![
+            (&["←", "h"], "Next"),
+            (&["↓", "j"], "Back one"),
+            (&["d"], "Card details"),
+            (&["v"], "Flip card"),
+        ],
     };
     own.into_iter().chain(everywhere).collect()
 }
@@ -261,7 +276,7 @@ pub fn sheet_rows(screen: &ShortcutsScreen) -> Vec<(&'static [&'static str], &'s
 #[must_use]
 pub fn sheet_note(screen: &ShortcutsScreen) -> Option<&'static str> {
     match screen {
-        ShortcutsScreen::Swipe(_) => None,
+        ShortcutsScreen::Swipe(_) | ShortcutsScreen::Examples => None,
         ShortcutsScreen::DeckCards => Some("Hover or open a card, then press its key"),
     }
 }
@@ -333,6 +348,38 @@ fn overlays_closed(except_class: Option<&str>) -> String {
         })
         .collect::<Vec<_>>()
         .join(" && ")
+}
+
+/// The open modals and sheets, outermost first: a dialog, a sheet or drawer, a large modal
+/// (the Oracle tag dictionary and its examples) and Commander swipe.
+pub const MODAL_SELECTORS: [&str; 4] = [
+    ".alert-dialog[data-state=\"open\"]",
+    OPEN_SHEET,
+    ".screen.web-large-modal",
+    ".swipe-select-screen.show",
+];
+
+/// A modal's or sheet's own `?`: the corner button of a modal's page header, or a sheet's
+/// header hint.
+pub const MODAL_HINT_BUTTON: &str =
+    ".page-header > .page-header-corner, .sheet-header > .drawer-sheet-hint";
+
+/// The guard for `?` while a modal may be open: not while typing in a field and not with Ctrl,
+/// Alt or Meta held; an open modal answers it instead of keeping it.
+#[must_use]
+pub fn hint_guard_js() -> String {
+    browser_guard(Modifiers::Refused, "true")
+}
+
+/// A script that presses the `?` of the topmost open modal or sheet ([`MODAL_SELECTORS`], the
+/// last open one in the page) and sends whether one was open: `true` when a modal took the key,
+/// even one with no hint, so the screen's hint opens only with no modal open.
+#[must_use]
+pub fn modal_hint_js() -> String {
+    let modals = MODAL_SELECTORS.join(", ");
+    format!(
+        "(() => {{ const open = [...document.querySelectorAll('{modals}')]; const top = open[open.length - 1]; if (!top) return false; const hint = top.querySelector('{MODAL_HINT_BUTTON}'); if (hint) hint.click(); return true; }})()"
+    )
 }
 
 /// The browser guard's expression under `modifiers`, with `overlays` the check that no overlay
@@ -601,7 +648,7 @@ mod tests {
     }
 
     #[test]
-    fn f_filters_and_v_flips_on_every_swipe_screen() {
+    fn f_filters_v_flips_and_d_shows_details_on_every_swipe_screen() {
         for key in printable_keys() {
             let shortcut = swipe_screen_shortcut(&key);
             assert_eq!(
@@ -614,9 +661,35 @@ mod tests {
                 card_key(&key) == Some(CardKey::Flip),
                 "{key}"
             );
+            assert_eq!(
+                shortcut == Some(Shortcut::Details),
+                card_key(&key) == Some(CardKey::Details),
+                "{key}"
+            );
         }
         assert_eq!(card_key("f"), Some(CardKey::Filter));
         assert_eq!(card_key("v"), Some(CardKey::Flip));
+        assert_eq!(card_key("d"), Some(CardKey::Details));
+    }
+
+    #[test]
+    fn every_key_the_examples_sheet_lists_works_there() {
+        for (keys, does) in sheet_rows(&ShortcutsScreen::Examples) {
+            for label in keys {
+                let key = match *label {
+                    "←" => "ArrowLeft",
+                    "↓" => "ArrowDown",
+                    "Shift+H" => "H",
+                    other => other,
+                };
+                let works = match swipe_screen_shortcut(key) {
+                    Some(Shortcut::Swipe(swipe)) => [Swipe::Left, Swipe::Down].contains(&swipe),
+                    _ => card_key(key).is_some_and(|k| k != CardKey::Filter),
+                } || global_key(key).is_some()
+                    || key == "Esc";
+                assert!(works, "{label} for {does}");
+            }
+        }
     }
 
     #[test]

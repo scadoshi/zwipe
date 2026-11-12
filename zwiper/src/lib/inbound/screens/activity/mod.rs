@@ -268,20 +268,12 @@ pub fn Activity() -> Element {
             }
 
 
-            // Pick a printing: swap that pass's card in place and keep the
-            // row expanded under its new scryfall id.
+            // A row's printings, only to look: nothing on Activity keeps a pick.
             if let Some(card) = printing_card() {
                 PrintingSheet {
                     card,
                     open: printing_open,
                     host_screen: screen::ACTIVITY,
-                    on_save: move |new_card: Card| {
-                        if new_card.scryfall_data.oracle_id.is_some() {
-                            let mut expanded = expanded_card;
-                            expanded.set(Some(new_card.scryfall_data.id));
-                        }
-                        driver.dispatch(Action::PickPrinting(Box::new(new_card)));
-                    },
                 }
             }
 

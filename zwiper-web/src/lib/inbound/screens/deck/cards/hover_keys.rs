@@ -45,13 +45,14 @@ pub(crate) enum HoverKey {
 /// The hover key `key` (a `KeyboardEvent.key`) stands for. `s` and `S` differ: Shift+S stars.
 #[must_use]
 pub(crate) fn hover_key(key: &str) -> Option<HoverKey> {
-    if shortcuts::card_key(key) == Some(CardKey::Flip) {
-        return Some(HoverKey::Flip);
+    match shortcuts::card_key(key) {
+        Some(CardKey::Flip) => return Some(HoverKey::Flip),
+        Some(CardKey::Details) => return Some(HoverKey::Details),
+        Some(CardKey::Filter) | None => {}
     }
     match key {
         "p" | "P" => Some(HoverKey::Printings),
         "i" | "I" => Some(HoverKey::Image),
-        "d" | "D" => Some(HoverKey::Details),
         "m" | "M" => Some(HoverKey::ToMaybeboard),
         "s" => Some(HoverKey::ToSideboard),
         "S" => Some(HoverKey::Star),

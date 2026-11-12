@@ -35,6 +35,7 @@ use zwipe_ui::generation::Generation;
 use zwipe_ui::playstyle::{
     HELD_SIZE, LIST_SIZE, StapleDeck, empty_identity_line, of_identity, shown,
 };
+use zwipe_ui::screens::playstyle as model;
 use zwipe_ui::telemetry::vocabulary::Screen;
 
 pub use self::chips::{IdentityPips, ShowIdentityChips};
@@ -274,6 +275,13 @@ pub fn Playstyle() -> Element {
         .as_ref()
         .map(|decks| decks.iter().map(StapleDeck::from).collect())
         .unwrap_or_default();
+    // A suggested commander's printing carries into Create deck; a staple only
+    // browses its printings.
+    let picks = overlays
+        .printing
+        .read()
+        .as_ref()
+        .is_some_and(|card| model::picks_printing(&entries.read(), card));
     let rows = shown(&filtered());
     let folds = wide().then_some(folded);
     let show_chips = rsx! {
@@ -414,7 +422,7 @@ pub fn Playstyle() -> Element {
         HoverStackHost { stack: hover_stack }
         CardOverlaysHost {
             overlays,
-            on_printing_save: move |picked: Card| {
+            on_printing_save: picks.then_some(EventHandler::new(move |picked: Card| {
                 let target = picked.scryfall_data.oracle_id;
                 if target.is_some() {
                     let mut expanded = expanded_card;
@@ -427,7 +435,7 @@ pub fn Playstyle() -> Element {
                         slot.card = picked;
                     }
                 }
-            },
+            })),
         }
         OtagExamplesHost { examples }
     }

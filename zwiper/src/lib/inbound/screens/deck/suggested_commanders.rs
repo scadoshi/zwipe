@@ -970,6 +970,10 @@ pub fn SuggestedCommanders() -> Element {
     let staple_type = state.staple_type();
     let staple_color = state.staple_color();
     let decks = state.decks().to_vec();
+    let picks_printing = printing_card
+        .read()
+        .as_ref()
+        .is_some_and(|card| state.picks_printing(card));
     drop(state);
 
     rsx! {
@@ -1142,20 +1146,21 @@ pub fn SuggestedCommanders() -> Element {
                 on_close: move |()| swipe_open.set(false),
             }
 
-            // Pick a printing: swap that row's card in place and keep the row
-            // expanded under its new scryfall id.
+            // A suggestion's printing swaps into its row, so Create deck carries
+            // it, and the row stays expanded under the new scryfall id. A
+            // staple's printings are only to look.
             if let Some(card) = printing_card() {
                 PrintingSheet {
-                    card,
-                    open: printing_open,
-                    host_screen: screen::SUGGESTED_COMMANDERS,
-                    on_save: move |new_card: Card| {
+                    on_save: picks_printing.then_some(EventHandler::new(move |new_card: Card| {
                         if new_card.scryfall_data.oracle_id.is_some() {
                             let mut expanded = expanded_card;
                             expanded.set(Some(new_card.scryfall_data.id));
                         }
                         driver.dispatch(Action::PickPrinting(Box::new(new_card)));
-                    },
+                    })),
+                    card,
+                    open: printing_open,
+                    host_screen: screen::SUGGESTED_COMMANDERS,
                 }
             }
 
