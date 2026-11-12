@@ -50,9 +50,7 @@ pub const UPCOMING: &[Release] = &[
     Release {
         version: Version::new(1, 19, 6),
         date: None,
-        entries: &[
-            "On a phone, a deck's Edit, Clone and Share sit in the dock beside Cards",
-        ],
+        entries: &["On a phone, a deck's Edit, Clone and Share sit in the dock beside Cards"],
     },
     Release {
         version: Version::new(1, 19, 5),
