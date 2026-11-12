@@ -8,8 +8,10 @@
 use std::collections::{HashMap, HashSet};
 
 use chrono::Utc;
-use components::keys::{focus_by_id, use_page_keys_through, use_undo_key};
-use components::{DeckEditActions, DeckRow, DeckRowHost, TOAST_QUICK};
+use components::keys::{focus_by_id, use_undo_key};
+use components::{
+    DeckEditActions, DeckHoverKeys, DeckRow, DeckRowHost, TOAST_QUICK, use_deck_hover_keys,
+};
 use dioxus::core::spawn_forever;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -27,11 +29,9 @@ use zwipe_core::domain::deck::deck_metrics::deck_price;
 use zwipe_core::domain::deck::{Board, Deck, DeckEntry, DeckProfile, Quantity};
 use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard};
 use zwipe_ui::deck::form::Slot;
-use zwipe_ui::deck_cards::keys::{self as hover_keys, HoverAction};
 use zwipe_ui::deck_cards::{self, Boards, Bursts, Write, Zone};
 use zwipe_ui::deck_signals::{Crossing, budget_crossing, land_count, land_crossing};
 use zwipe_ui::screens;
-use zwipe_ui::shortcuts::Editable;
 use zwipe_ui::stores::filters::FilterScope;
 use zwipe_ui::stores::undo::{UndoAction, create_board_field};
 use zwipe_ui::timing::QUANTITY_FLUSH;
@@ -50,19 +50,6 @@ use crate::inbound::chrome::shortcuts_sheet::use_offer_shortcuts;
 use crate::inbound::screens::deck::view::cards::zone as zone_of;
 use crate::inbound::telemetry;
 use crate::outbound::timer;
-
-/// Sends the card the deck cards screen's keys act on, as `stack:<id>` for a stack card or
-/// `row:<id>` for a list row: the deepest one under the cursor, else the card open in the Stacks
-/// view's details drawer, else the list row whose details are open, else an empty string.
-const KEY_CARD_JS: &str = "const under = document.querySelectorAll('[data-row]:hover'); const drawer = document.querySelector('.bottom-sheet.show.__DRAWER__') && document.querySelector('.card-stack-slot.open[data-row]'); const row = document.querySelector('.web-deck-row.selected[data-row]'); const card = under.length ? under[under.length - 1] : drawer || row; dioxus.send(card ? (card.classList.contains('card-stack-slot') ? 'stack:' : 'row:') + card.getAttribute('data-row') : '');";
-
-/// Clicks list row `__ID__`'s line, which opens or closes its details as a click on it does.
-const ROW_TOGGLE_JS: &str = "const line = document.querySelector('.web-deck-row[data-row=\"__ID__\"] .card-row-compact'); if (line) line.click();";
-
-/// Clicks the first details button marked with one of `__ACTIONS__` ([`components::data_action`])
-/// of card `__ID__`: in the Stacks view's drawer
-/// while that card is open there, else in its list row. Sends whether it found the button.
-const PRESS_JS: &str = "const open = document.querySelector('.bottom-sheet.show.__DRAWER__') && document.querySelector('.card-stack-slot.open[data-row=\"__ID__\"]'); const host = open ? document.querySelector('.bottom-sheet.show.__DRAWER__') : document.querySelector('.web-deck-row[data-row=\"__ID__\"]'); const button = host && __ACTIONS__.map((a) => host.querySelector('button.card-action-btn[data-action=\"' + a + '\"]')).find(Boolean); if (button) button.click(); dioxus.send(!!button);";
 
 /// What a key does on the deck cards screen besides the hover keys.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -313,9 +300,7 @@ pub(crate) fn use_deck_editor(deck_id: Uuid, on_failure: LoadFailure) -> Editor 
     let collapsed: Signal<HashSet<String>> = use_signal(HashSet::new);
     let mut selected: Signal<Option<Uuid>> = use_signal(|| None);
     let mut face = use_signal(|| 0usize);
-    let mut faces: Signal<HashMap<Uuid, usize>> = use_signal(HashMap::new);
-    // The session's melded cards, so `v` toggles a hovered half's Meld.
-    let meld_source = try_use_context::<components::MeldSource>();
+    let faces: Signal<HashMap<Uuid, usize>> = use_signal(HashMap::new);
     // The Stacks view's reveal, which `d` moves as a click does; absent where the screen has no
     // stacks.
     let stack_details = try_use_context::<StackDetails>();
@@ -884,101 +869,41 @@ pub(crate) fn use_deck_editor(deck_id: Uuid, on_failure: LoadFailure) -> Editor 
     );
     // Shift+H opens the shortcuts sheet with this screen's keys.
     use_offer_shortcuts(ShortcutsScreen::DeckCards);
-    // The hover keys also reach the screen through the Stacks view's details
-    // drawer; every other key waits for it to close.
-    use_page_keys_through(
-        shortcuts::STACK_DETAILS_CLASS,
-        hover_keys::hover_keys(Editable::Yes),
-        Callback::new(move |key: String| {
-            // `p`, `i`, `v`, `d`, `m`, `s`, Shift+S, `-` and `+` act on the
-            // card under the cursor, else the open one, as its own buttons and
-            // a click on it do; with neither they do nothing. `u` undoes, as
-            // the dock's Undo does.
-            if let Some(hover) = hover_keys::hover_key(&key, Editable::Yes) {
-                spawn(async move {
-                    let mut found = document::eval(
-                        &KEY_CARD_JS.replace("__DRAWER__", shortcuts::STACK_DETAILS_CLASS),
-                    );
-                    let Ok(found) = found.recv::<String>().await else {
-                        return;
-                    };
-                    let Some((kind, id)) = found.split_once(':') else {
-                        return;
-                    };
-                    let on_stack = kind == "stack";
-                    let Ok(id) = Uuid::try_parse(id) else {
-                        return;
-                    };
-                    let row = listing
-                        .peek()
-                        .rows
-                        .iter()
-                        .find(|r| r.card.scryfall_data.id == id)
-                        .cloned();
-                    let Some(row) = row else {
-                        return;
-                    };
-                    let board = match row.kind {
-                        RowKind::Board(board) => board,
-                        RowKind::Main { .. } | RowKind::Zone(_) | RowKind::Token => {
-                            board_of(&meta.peek(), id)
-                        }
-                    };
-                    let shown_face = faces.peek().get(&id).copied().unwrap_or(0);
-                    match hover_keys::hover_action(hover, &row, board, shown_face) {
-                        Some(HoverAction::Printings(card, slot)) => {
-                            printing.set(Some((*card, slot)));
-                            printing_open.set(true);
-                        }
-                        Some(HoverAction::Move(card_id, target)) => {
-                            move_to_board.call((card_id, target, /* record */ true));
-                        }
-                        Some(HoverAction::Star(card_id, starred)) => {
-                            toggle_mvp.call((card_id, starred));
-                        }
-                        Some(HoverAction::Quantity(card_id, step)) => {
-                            change_quantity.call((card_id, step, /* record */ true));
-                        }
-                        Some(HoverAction::Flip(card_id, next)) => {
-                            faces.write().insert(card_id, next);
-                        }
-                        Some(HoverAction::Meld(_)) => {
-                            components::MeldToggle::of(&row.card.scryfall_data, meld_source)
-                                .toggle();
-                        }
-                        Some(HoverAction::Details(card_id)) => match stack_details {
-                            Some(details) if on_stack => details.click(card_id),
-                            _ => {
-                                document::eval(
-                                    &ROW_TOGGLE_JS.replace("__ID__", &card_id.to_string()),
-                                );
-                            }
-                        },
-                        Some(HoverAction::Image(card_id)) => {
-                            let mut pressed = document::eval(
-                                &PRESS_JS
-                                    .replace("__DRAWER__", shortcuts::STACK_DETAILS_CLASS)
-                                    .replace("__ID__", &card_id.to_string())
-                                    .replace(
-                                        "__ACTIONS__",
-                                        &format!("{:?}", [components::data_action::IMAGE]),
-                                    ),
-                            );
-                            let found = pressed.recv::<bool>().await.unwrap_or(true);
-                            // A stack card with its drawer shut shows no Image
-                            // button: its image opens on the face it shows.
-                            if !found
-                                && hover == hover_keys::HoverKey::Image
-                                && let Some(CardOverlays { mut preview, .. }) = overlays
-                            {
-                                preview.set(Some((row.card.scryfall_data.clone(), shown_face)));
-                            }
-                        }
-                        None => {}
-                    }
-                });
-                return;
+    // `p`, `i`, `v`, `d`, `m`, `s`, Shift+S, `-` and `+` act on the card under the cursor, else
+    // the open one, as its own buttons and a click on it do; `u` undoes, as the dock's Undo does.
+    use_deck_hover_keys(DeckHoverKeys {
+        row_of: Callback::new(move |id: Uuid| {
+            let row = listing
+                .peek()
+                .rows
+                .iter()
+                .find(|r| r.card.scryfall_data.id == id)
+                .cloned()?;
+            let board = match row.kind {
+                RowKind::Board(board) => board,
+                RowKind::Main { .. } | RowKind::Zone(_) | RowKind::Token => {
+                    board_of(&meta.peek(), id)
+                }
+            };
+            Some((row, board))
+        }),
+        faces,
+        details: stack_details,
+        actions: Some(DeckEditActions {
+            change_quantity,
+            move_to_board,
+            toggle_mvp,
+        }),
+        on_printing: Callback::new(move |picked: (Card, Option<Slot>)| {
+            printing.set(Some(picked));
+            printing_open.set(true);
+        }),
+        on_image: Callback::new(move |shown: (ScryfallData, usize)| {
+            if let Some(CardOverlays { mut preview, .. }) = overlays {
+                preview.set(Some(shown));
             }
+        }),
+        other_keys: Some(Callback::new(move |key: String| {
             if shortcuts::undo_letter(&key) {
                 apply_undo.call(());
                 return;
@@ -991,8 +916,8 @@ pub(crate) fn use_deck_editor(deck_id: Uuid, on_failure: LoadFailure) -> Editor 
                 }
                 None => {}
             }
-        }),
-    );
+        })),
+    });
     use_undo_key(Callback::new(move |()| apply_undo.call(())));
 
     Editor {
@@ -1119,12 +1044,5 @@ mod tests {
                 "{key}"
             );
         }
-    }
-
-    #[test]
-    fn a_key_presses_its_button_by_data_action_not_its_words() {
-        assert!(PRESS_JS.contains("__ACTIONS__.map("), "{PRESS_JS}");
-        assert!(PRESS_JS.contains("[data-action="), "{PRESS_JS}");
-        assert!(!PRESS_JS.contains("textContent"), "{PRESS_JS}");
     }
 }

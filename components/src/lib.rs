@@ -60,6 +60,7 @@ mod danger_zone;
 pub mod data_action;
 mod deck_cards_view;
 mod deck_group;
+mod deck_hover_keys;
 mod deck_page;
 mod deck_stats;
 mod details_clear;
@@ -120,6 +121,7 @@ pub use deck_cards_view::{
     DeckStacks, OnPrinting, StackDetails, use_stack_details_sync,
 };
 pub use deck_group::DeckGroupSection;
+pub use deck_hover_keys::{DeckHoverKeys, use_deck_hover_keys};
 pub use deck_page::{
     DeckBand, DeckControls, DeckFacts, DeckFold, DeckHead, DeckPage, DeckSection, FeaturedCard,
     NO_CARDS, sections,
