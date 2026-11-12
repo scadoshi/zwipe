@@ -6,7 +6,8 @@
 
 use std::collections::{HashMap, HashSet};
 
-use components::{CardStack, Chip, StackCard};
+use components::{CardStack, Chip, DeckGroupSection, StackCard};
+pub(crate) use components::{DRAWER_CLASSES, StackDetails, use_stack_details_sync};
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
@@ -14,62 +15,7 @@ use zwipe_ui::deck_cards::stacks::{CardsView, Gesture, Reveal, VIEW_LABEL};
 
 use crate::inbound::cards::card_info::CardDetailsSheet;
 use crate::inbound::cards::card_row::CardOverlays;
-use crate::inbound::screens::deck::list::DeckGroupSection;
 use crate::outbound::cards_view_store::{CardsViewPlace, CardsViewStore};
-
-/// The stacks' reveal and whether the open card's drawer shows, which a click on a card and the
-/// `d` key both move. A screen with stacks provides it as context.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub(crate) struct StackDetails {
-    /// Which card shows in full and which card's details are open.
-    pub(crate) reveal: Signal<Reveal>,
-    /// Whether the open card's details drawer shows.
-    pub(crate) details_open: Signal<bool>,
-}
-
-impl StackDetails {
-    /// A click on card `id`: its details open, in place of any open one, or close where they are
-    /// open.
-    pub(crate) fn click(self, id: Uuid) {
-        let Self {
-            mut reveal,
-            mut details_open,
-        } = self;
-        reveal.write().apply(Gesture::Click(id));
-        details_open.set(reveal.peek().open().is_some());
-    }
-}
-
-/// The details drawer's classes: the card details drawer's own, then
-/// [`STACK_DETAILS_CLASS`](crate::inbound::chrome::shortcuts::STACK_DETAILS_CLASS), so a card
-/// screen's keys reach the screen through it.
-pub(crate) const DRAWER_CLASSES: &str = "card-details-drawer deck-stack-details";
-
-/// Drops focus from the stack card the drawer opened from, so its focus
-/// outline goes with the drawer.
-const BLUR_STACK_CARD_JS: &str = "if (document.activeElement?.classList.contains('card-stack-card')) document.activeElement.blur();";
-
-/// Keeps the drawer and the reveal state agreeing: a drawer closed by its
-/// ×, Escape, the backdrop or the back gesture closes the open card and
-/// clears its outline, and an open card that left the list closes the
-/// drawer.
-pub(crate) fn use_stack_details_sync(
-    mut reveal: Signal<Reveal>,
-    mut details_open: Signal<bool>,
-    listed: Memo<Vec<Uuid>>,
-) {
-    use_effect(move || {
-        let open = details_open();
-        let card = reveal.peek().open();
-        if !open && card.is_some() {
-            reveal.write().apply(Gesture::Close);
-            document::eval(BLUR_STACK_CARD_JS);
-        }
-        if open && card.is_some_and(|id| !listed().contains(&id)) {
-            details_open.set(false);
-        }
-    });
-}
 
 /// A screen's [`StackDetails`], provided as context and kept in step with
 /// `listed`, the ids of every card the screen lists.

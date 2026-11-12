@@ -24,6 +24,7 @@ use zwipe_ui::{deck_cards, filter};
 
 use super::editor::{
     Editor, Listed, LoadFailure, RowInfo, RowKind, main_row_of, row_view, use_deck_editor,
+    use_deck_row_host,
 };
 use super::featured::FeaturedCards;
 use super::quick_add::QuickAdd;
@@ -136,6 +137,7 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
     } = ed;
     let CardStores { undo, .. } = use_context();
     let examples = use_otag_reveals();
+    let row_host = use_deck_row_host(&ed);
     let CardOverlays { mut preview, .. } = overlays;
 
     let Listed {
@@ -292,7 +294,7 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
                             section_key: "Tokens",
                             collapsed,
                             for card in token_rows {
-                                {row_view(&ed, cur, &row_meta, RowInfo { card, qty: 1, kind: RowKind::Token })}
+                                {row_view(&ed, row_host, cur, &row_meta, RowInfo { card, qty: 1, kind: RowKind::Token })}
                             }
                         }
                     }
@@ -302,7 +304,7 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
                             section_key: "Maybeboard",
                             collapsed,
                             for entry in maybe_rows {
-                                {row_view(&ed, cur, &row_meta, RowInfo { qty: *entry.deck_card.quantity, card: entry.card, kind: RowKind::Board(Board::Maybeboard) })}
+                                {row_view(&ed, row_host, cur, &row_meta, RowInfo { qty: *entry.deck_card.quantity, card: entry.card, kind: RowKind::Board(Board::Maybeboard) })}
                             }
                         }
                     }
@@ -312,7 +314,7 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
                             section_key: "Sideboard",
                             collapsed,
                             for entry in side_rows {
-                                {row_view(&ed, cur, &row_meta, RowInfo { qty: *entry.deck_card.quantity, card: entry.card, kind: RowKind::Board(Board::Sideboard) })}
+                                {row_view(&ed, row_host, cur, &row_meta, RowInfo { qty: *entry.deck_card.quantity, card: entry.card, kind: RowKind::Board(Board::Sideboard) })}
                             }
                         }
                     }
@@ -324,10 +326,10 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
                                     title: slot.group_header(format, has_partner).to_string(),
                                     section_key: slot.group_key().to_owned(),
                                     collapsed,
-                                    {row_view(&ed, cur, &row_meta, RowInfo { card, qty: 1, kind: RowKind::Zone(slot) })}
+                                    {row_view(&ed, row_host, cur, &row_meta, RowInfo { card, qty: 1, kind: RowKind::Zone(slot) })}
                                     if slot == Slot::Commander {
                                         for (partner_slot, partner) in zone_rows.iter().filter(|(s, _)| *s == Slot::Partner).cloned() {
-                                            {row_view(&ed, cur, &row_meta, RowInfo { card: partner, qty: 1, kind: RowKind::Zone(partner_slot) })}
+                                            {row_view(&ed, row_host, cur, &row_meta, RowInfo { card: partner, qty: 1, kind: RowKind::Zone(partner_slot) })}
                                         }
                                     }
                                 }
@@ -342,7 +344,7 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
                             pips: group.pips.clone(),
                             collapsed,
                             for card in group.cards.iter() {
-                                {row_view(&ed, cur, &row_meta, main_row(card))}
+                                {row_view(&ed, row_host, cur, &row_meta, main_row(card))}
                             }
                         }
                     }
@@ -352,7 +354,7 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
                             section_key: "Lands",
                             collapsed,
                             for card in main_lands.iter() {
-                                {row_view(&ed, cur, &row_meta, main_row(card))}
+                                {row_view(&ed, row_host, cur, &row_meta, main_row(card))}
                             }
                         }
                     }
