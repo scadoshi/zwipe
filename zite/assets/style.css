@@ -1736,6 +1736,16 @@ body[class$="-dark"] .chip-value {
     flex: 1 0 auto;
 }
 
+/* On a wide window the deck runs the window's width inside the page gutter,
+   as app.zwipe.net's deck page does, so the stacks fit as many columns as
+   the window holds. */
+@media (min-width: 900px) {
+    .shared-deck.deck-page-wide {
+        max-width: none;
+        padding: 0 1.5rem 5rem;
+    }
+}
+
 /* ---- loading skeleton (deck-shaped placeholders) ---- */
 @keyframes sk-pulse {
     0%,
