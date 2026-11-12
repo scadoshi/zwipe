@@ -59,3 +59,21 @@ fn the_home_band_takes_one_row_from_1920() {
     assert!(block.contains(".features-stack"), "{block}");
     assert!(block.contains("repeat(3, minmax(0, 1fr))"), "{block}");
 }
+
+#[test]
+fn intro_panels_keep_their_prose_to_a_readable_measure() {
+    let at = STYLE
+        .find("/* Running text keeps a readable measure. */")
+        .unwrap();
+    let rule = STYLE.get(at..).unwrap();
+    let rule = rule.get(..rule.find('}').unwrap()).unwrap();
+    assert!(
+        rule.contains("body .page > :is(.section, .page-header) > .panel-card p"),
+        "About's and Contribute's intro panels: {rule}"
+    );
+    assert!(
+        rule.contains("body .page > .section > .section-head > .panel-card p"),
+        "About's System architecture summary: {rule}"
+    );
+    assert!(rule.contains("max-width: 70ch"), "{rule}");
+}
