@@ -406,12 +406,13 @@ body {
 /* The header's first line, the arrow and the words, folds the stack; the
    price and the cart on the line under it do not. The arrow sits inline
    before the words, in the header's left inset (the toggle reaches back
-   over it), so the price line starts under the name. */
+   over it), so the price line starts under the name, and on the words'
+   first line when they wrap. */
 .app-deck-stacks .deck-stack > .deck-group > .card-group-header > .card-group-toggle {
     --stack-arrow-room: 1.2rem;
     display: flex;
     flex: 1 0 100%;
-    align-items: center;
+    align-items: baseline;
     gap: calc(var(--stack-arrow-room) - 1rem);
     min-width: 0;
     margin-left: calc(-1 * var(--stack-arrow-room));
@@ -421,9 +422,7 @@ body {
 .app-deck-stacks .deck-stack > .deck-group > .card-group-header > .card-group-toggle > .card-group-label {
     flex: 0 1 auto;
     min-width: 0;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
+    overflow-wrap: break-word;
 }
 
 .app-deck-stacks .deck-stack > .deck-group > .card-group-header > .deck-stack-tail {
@@ -442,7 +441,6 @@ body {
 
 .app-deck-stacks .deck-stack > .deck-group > .card-group-header > .deck-stack-tail > .cart-button {
     flex: none;
-    margin-left: auto;
 }
 
 /* A tap shows no flash over the card it reveals. */
@@ -454,8 +452,8 @@ body {
 
 /* A List group header with its price and cart, as a stack's header has
    them: the arrow and the title fold the group on the first line, and the
-   price and the cart sit on the line under the title, the cart at the end,
-   where a tap on it never folds the group. */
+   price and the cart right after it sit on the line under the title, where
+   a tap on the cart never folds the group. */
 .card-group-header.card-group-header-tailed {
     flex-wrap: wrap;
     row-gap: 0.35rem;
@@ -465,7 +463,7 @@ body {
 .card-group-header-tailed > .card-group-toggle {
     display: flex;
     flex: 1 0 100%;
-    align-items: center;
+    align-items: baseline;
     gap: 0.4rem;
     min-width: 0;
     cursor: pointer;
@@ -488,5 +486,4 @@ body {
 
 .card-group-tail > .cart-button {
     flex: none;
-    margin-left: auto;
 }
