@@ -30,3 +30,9 @@ surfer, breaking 461 (two tabs): tab 1 moves Adriana to the maybeboard, tab 2 st
 - Fix: the move back goes alone; once the server takes it, the undo's toast shows and the star follows in a write of its own (shared model `AfterMove`, web `move_card` with `StarBy::Quiet`). A refused star leaves her back on the main board, unstarred, with the server's refusal toasted. A refused move raises no success toast and puts her back where she was. With three MVPs counted locally, the star isn't sent and the cap toast shows.
 - Tests: `a_starred_card_moved_off_the_main_board_loses_its_star_and_undo_puts_it_back` (now: move alone, toast on landing, then the star, then a refused star leaves her moved and unstarred), `a_refused_move_back_raises_no_success_toast`, `undo_moves_back_without_its_own_move_toast`.
 
+## Follow-up: a failed Undo spent its entry
+surfer, after 8096283c4: offline, Undo of a move fails (no false toast), but the entry is gone, so back online Undo stays disabled and the move can't be undone.
+- Cause: the client pops the entry before the write (app: `view.rs` Undo, web: `apply_undo`), and nothing put it back when the write failed; the model only reverted the instant change.
+- Fix: the shared model keeps each undo by the ticket of the write it waits on (`undoing`; a quantity undo moves from its debounce to its write) and records it again on that write's failure, so the app's Undo comes back; the web editor's Undo puts the entry back from every branch's failure (delete, create, quantity through `undo_retry`, move, star, printing, command zone). The web's failed undo of an add also puts the row back, and a failed printing or command zone undo shows the printing the server still holds. A star refused after a successful move back stays spent (the move landed).
+- Tests: `an_undo_whose_write_fails_goes_back_on_the_log` (red without the re-record), `an_undo_that_lands_stays_spent`.
+

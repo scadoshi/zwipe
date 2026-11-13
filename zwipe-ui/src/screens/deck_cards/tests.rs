@@ -1948,3 +1948,81 @@ fn undoing_the_move_of_a_starred_card_with_three_mvps_moves_it_back_unstarred() 
         "a fourth star would be refused with the move, so the move goes alone"
     );
 }
+
+/// The first write in `effects`, as its ticket.
+fn write_ticket(effects: &[Effect]) -> Ticket {
+    effects
+        .iter()
+        .find_map(|e| match e {
+            Effect::PatchCard { ticket, .. }
+            | Effect::DeleteCard { ticket, .. }
+            | Effect::CreateCard { ticket, .. }
+            | Effect::PatchProfile { ticket, .. } => Some(*ticket),
+            _ => None,
+        })
+        .unwrap_or_else(|| panic!("no write in {effects:?}"))
+}
+
+#[test]
+fn an_undo_whose_write_fails_goes_back_on_the_log() {
+    for added in [true, false] {
+        let (mut state, cards) = loaded();
+        let ring = id(&cards[0]);
+        let action = if added {
+            UndoAction::Added {
+                card_id: ring,
+                card_name: "Sol Ring".to_owned(),
+            }
+        } else {
+            UndoAction::MovedBoard {
+                card_id: ring,
+                card_name: "Sol Ring".to_owned(),
+                from: Board::Maybeboard,
+                starred: None,
+            }
+        };
+        let effects = state.update(Action::Undo(Box::new(action.clone())));
+        let failed = state.update(Action::Failed {
+            ticket: write_ticket(&effects),
+        });
+        assert_eq!(
+            undo_records(&failed),
+            [action],
+            "offline, the undo stays to try again: {failed:?}"
+        );
+    }
+
+    // A quantity undo writes after its debounce; a failure there puts the entry back too.
+    let (mut state, cards) = loaded();
+    let ring = id(&cards[0]);
+    let entry = UndoAction::QuantityChanged {
+        card_id: ring,
+        card_name: "Sol Ring".to_owned(),
+        net: -2,
+        baseline: 3,
+    };
+    let effects = state.update(Action::Undo(Box::new(entry.clone())));
+    let written = state.update(Action::Debounced {
+        ticket: debounce(&effects),
+    });
+    let failed = state.update(Action::Failed {
+        ticket: write_ticket(&written),
+    });
+    assert_eq!(undo_records(&failed), [entry]);
+}
+
+#[test]
+fn an_undo_that_lands_stays_spent() {
+    let (mut state, cards) = loaded();
+    let effects = state.update(Action::Undo(Box::new(UndoAction::Added {
+        card_id: id(&cards[0]),
+        card_name: "Sol Ring".to_owned(),
+    })));
+    let ticket = write_ticket(&effects);
+    let _ = state.update(Action::Deleted { ticket });
+    let late = state.update(Action::Failed { ticket });
+    assert!(
+        undo_records(&late).is_empty(),
+        "a landed undo never comes back"
+    );
+}

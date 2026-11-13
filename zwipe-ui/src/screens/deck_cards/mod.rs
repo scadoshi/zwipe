@@ -723,6 +723,17 @@ struct QuickAdd {
     results: Vec<Card>,
 }
 
+/// The ticket of the first write among `effects`.
+fn first_write(effects: &[Effect]) -> Option<Ticket> {
+    effects.iter().find_map(|e| match e {
+        Effect::PatchCard { ticket, .. }
+        | Effect::DeleteCard { ticket, .. }
+        | Effect::CreateCard { ticket, .. }
+        | Effect::PatchProfile { ticket, .. } => Some(*ticket),
+        _ => None,
+    })
+}
+
 /// What an undo's move back does once the server has taken it.
 #[derive(Debug, Clone, Default, PartialEq)]
 struct AfterMove {
@@ -757,6 +768,8 @@ pub struct State {
     collapsed: HashSet<String>,
     quick: QuickAdd,
     bursts: Vec<Burst>,
+    /// Each undo still on its way, by the ticket of the write it waits on: a failed write puts the entry back on the log, so an undo that never reached the server can be tried again.
+    undoing: Vec<(Ticket, UndoAction)>,
     /// Rows a burst deleted at once, until the burst writes.
     removed_rows: Vec<DeckEntry>,
     printing: Option<(Card, Option<Slot>)>,
@@ -825,6 +838,7 @@ impl Default for State {
             collapsed: HashSet::new(),
             quick: QuickAdd::default(),
             bursts: Vec::new(),
+            undoing: Vec::new(),
             removed_rows: Vec::new(),
             printing: None,
             waiting: Vec::new(),
@@ -846,6 +860,14 @@ impl State {
     /// The hint is offered once per visit, the first time the deck holds a card. A reply whose request is no longer waiting changes nothing.
     #[must_use = "the client performs the effects"]
     pub fn update(&mut self, action: Action) -> Vec<Effect> {
+        // A write that went through settles the undo it was for.
+        if let Action::Created { ticket, .. }
+        | Action::Patched { ticket, .. }
+        | Action::Deleted { ticket }
+        | Action::ProfilePatched { ticket } = &action
+        {
+            self.undo_landed(*ticket);
+        }
         let mut effects = self.apply(action);
         if self.hint == HintOffer::Waiting && !self.entries.is_empty() {
             self.hint = HintOffer::Offered;
@@ -1030,6 +1052,24 @@ impl State {
     }
 
     fn failed(&mut self, ticket: Ticket) -> Vec<Effect> {
+        // An undo whose write failed goes back on the log, to try again.
+        let retry = self
+            .undoing
+            .iter()
+            .position(|(t, _)| *t == ticket)
+            .map(|at| Effect::RecordUndo(Box::new(self.undoing.remove(at).1)));
+        let mut effects = self.failed_write(ticket);
+        effects.extend(retry);
+        effects
+    }
+
+    /// The undo the write holding `ticket` was for is done with.
+    fn undo_landed(&mut self, ticket: Ticket) {
+        self.undoing.retain(|(t, _)| *t != ticket);
+    }
+
+    /// Reverts what the write holding `ticket` changed at once, now the server has refused it.
+    fn failed_write(&mut self, ticket: Ticket) -> Vec<Effect> {
         let Some(pending) = self.settle(ticket) else {
             return Vec::new();
         };
@@ -1128,7 +1168,15 @@ impl State {
     fn debounced(&mut self, ticket: Ticket) -> Vec<Effect> {
         if let Some(at) = self.bursts.iter().position(|b| b.ticket == ticket) {
             let burst = self.bursts.remove(at);
-            return self.write_burst(burst);
+            let effects = self.write_burst(burst);
+            // An undo waiting on this debounce now waits on its write.
+            if let (Some(entry), Some(write)) = (
+                self.undoing.iter_mut().find(|(t, _)| *t == ticket),
+                first_write(&effects),
+            ) {
+                entry.0 = write;
+            }
+            return effects;
         }
         if self.quick.waiting != Some(ticket) {
             return Vec::new();
@@ -1666,6 +1714,21 @@ impl State {
 
     /// Reverses a popped undo entry. A stale entry is consumed with [`ALREADY_CHANGED`] instead of a doomed request.
     fn undo(&mut self, action: UndoAction) -> Vec<Effect> {
+        let effects = self.undo_writes(action.clone());
+        // The write (or the debounce before it) the undo waits on; an entry refused before any write is spent.
+        if let Some(ticket) = first_write(&effects).or_else(|| {
+            effects.iter().find_map(|e| match e {
+                Effect::Debounce { ticket, .. } => Some(*ticket),
+                _ => None,
+            })
+        }) {
+            self.undoing.push((ticket, action));
+        }
+        effects
+    }
+
+    /// The writes and the instant changes that reverse `action`.
+    fn undo_writes(&mut self, action: UndoAction) -> Vec<Effect> {
         let Some(deck_id) = self.deck_id else {
             return Vec::new();
         };

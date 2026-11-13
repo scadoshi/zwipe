@@ -121,14 +121,24 @@ impl Editor {
     }
 }
 
+/// What a move takes: the card, its target board, whether it records undo, the star to put
+/// back once it lands, and an undo's toast and entry (raised on landing, put back on failure).
+type MoveCard = (
+    Uuid,
+    Board,
+    bool,
+    Option<DateTime<Utc>>,
+    Option<(String, UndoAction)>,
+);
+
 /// Who sets a star: a toggle, which records undo, or an undo, which toasts `message` once the
 /// server takes it.
 #[derive(Debug, Clone, PartialEq)]
 enum StarBy {
     /// The Star button or Shift+S.
     Toggle,
-    /// Undo, with its toast.
-    Undo(String),
+    /// Undo, with its toast and its entry, which goes back on the log if the write fails.
+    Undo(String, Box<UndoAction>),
     /// Undo's move back putting the star back once the move has landed: no record and no toast
     /// of its own; a refusal toasts the server's word and leaves the card unstarred.
     Quiet,
@@ -303,6 +313,9 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
         signal_toast(toast, price);
     };
 
+    // A quantity undo's entry, by card, until its debounced write lands: a failed write puts it
+    // back on the log so the undo can be tried again.
+    let mut undo_retry: Signal<HashMap<Uuid, UndoAction>> = use_signal(HashMap::new);
     let change_quantity = use_callback(move |(card_id, delta, record): (Uuid, i32, bool)| {
         let current = meta.peek().get(&card_id).map_or(1, |m| m.qty);
         let Some(target) = current.checked_add(delta) else {
@@ -359,6 +372,12 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
                 return;
             };
             let removed = removed_rows.write().remove(&card_id);
+            let retry = undo_retry.write().remove(&card_id);
+            let mut put_back = move || {
+                if let Some(entry) = retry.clone() {
+                    undo.write().push(deck_id, entry);
+                }
+            };
             match burst.write() {
                 Write::Nothing => {}
                 Write::Delete => {
@@ -368,6 +387,7 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
                         })
                         .await;
                     if reply.is_err() {
+                        put_back();
                         undo.write().take_newest(deck_id, |a| {
                             matches!(a, UndoAction::Removed { entry, .. } if entry.deck_card.scryfall_data_id == card_id)
                         });
@@ -407,6 +427,7 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
                         ),
                         Ok(_) => {}
                         Err(_) => {
+                            put_back();
                             if let Ok(quantity) = Quantity::new(burst.baseline)
                                 && let Some(entry) = entries
                                     .write()
@@ -450,32 +471,35 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
                 let request = HttpPatchDeckCard::with_mvp(at.is_some());
                 let name = match by {
                     StarBy::Toggle => "toggle_mvp",
-                    StarBy::Undo(_) | StarBy::Quiet => "undo",
+                    StarBy::Undo(..) | StarBy::Quiet => "undo",
                 };
-                match authed
+                let reply = authed
                     .try_run(name, |c, s| async move {
                         c.update_deck_card(deck_id, card_id, &request, &s).await
                     })
-                    .await
-                {
-                    Ok(saved) => {
-                        set_mvp(saved.mvp_at);
-                        match by {
-                            StarBy::Toggle => undo.write().push(
-                                deck_id,
-                                UndoAction::MvpToggled {
-                                    card_id,
-                                    card_name,
-                                    before: old,
-                                },
-                            ),
-                            StarBy::Undo(message) => {
-                                toast.info(message, ToastOptions::default().duration(TOAST_QUICK));
-                            }
-                            StarBy::Quiet => {}
+                    .await;
+                if let Ok(saved) = reply {
+                    set_mvp(saved.mvp_at);
+                    match by {
+                        StarBy::Toggle => undo.write().push(
+                            deck_id,
+                            UndoAction::MvpToggled {
+                                card_id,
+                                card_name,
+                                before: old,
+                            },
+                        ),
+                        StarBy::Undo(message, _) => {
+                            toast.info(message, ToastOptions::default().duration(TOAST_QUICK));
                         }
+                        StarBy::Quiet => {}
                     }
-                    Err(_) => set_mvp(old),
+                } else {
+                    set_mvp(old);
+                    // A failed undo goes back on the log, to try again.
+                    if let StarBy::Undo(_, entry) = by {
+                        undo.write().push(deck_id, *entry);
+                    }
                 }
             });
         },
@@ -485,81 +509,76 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
     // the undo entry keeps the star time; `restar` stars it again in the same write, for undo's
     // move back, in a write of its own once the move lands, so a refused star can't take the move
     // with it; `landed` is undo's toast, raised only then.
-    let move_card = use_callback(
-        move |(card_id, target, record, restar, landed): (
-            Uuid,
-            Board,
-            bool,
-            Option<DateTime<Utc>>,
-            Option<String>,
-        )| {
-            let Some(entry) = entries
-                .peek()
-                .iter()
-                .find(|e| e.deck_card.scryfall_data_id == card_id)
-                .cloned()
-            else {
-                return;
-            };
-            let from = entry.deck_card.board;
-            if from == target {
-                return;
-            }
-            let moved = screens::deck_cards::moved_to(
-                *entry.deck_card.quantity,
-                &entry.card.scryfall_data.name,
-                target,
+    let move_card = use_callback(move |(card_id, target, record, restar, landed): MoveCard| {
+        let Some(entry) = entries
+            .peek()
+            .iter()
+            .find(|e| e.deck_card.scryfall_data_id == card_id)
+            .cloned()
+        else {
+            return;
+        };
+        let from = entry.deck_card.board;
+        if from == target {
+            return;
+        }
+        let moved = screens::deck_cards::moved_to(
+            *entry.deck_card.quantity,
+            &entry.card.scryfall_data.name,
+            target,
+        );
+        let was_starred = entry.deck_card.mvp_at;
+        let unstars = target != Board::Deck;
+        if record {
+            undo.write().push(
+                deck_id,
+                UndoAction::MovedBoard {
+                    card_id,
+                    card_name: entry.card.scryfall_data.name,
+                    from,
+                    starred: was_starred.filter(|_| unstars),
+                },
             );
-            let was_starred = entry.deck_card.mvp_at;
-            let unstars = target != Board::Deck;
-            if record {
-                undo.write().push(
-                    deck_id,
-                    UndoAction::MovedBoard {
-                        card_id,
-                        card_name: entry.card.scryfall_data.name,
-                        from,
-                        starred: was_starred.filter(|_| unstars),
-                    },
-                );
+        }
+        let mut set_board = move |board: Board, mvp_at: Option<DateTime<Utc>>| {
+            if let Some(e) = entries
+                .write()
+                .iter_mut()
+                .find(|e| e.deck_card.scryfall_data_id == card_id)
+            {
+                e.deck_card.board = board;
+                e.deck_card.mvp_at = mvp_at;
             }
-            let mut set_board = move |board: Board, mvp_at: Option<DateTime<Utc>>| {
-                if let Some(e) = entries
-                    .write()
-                    .iter_mut()
-                    .find(|e| e.deck_card.scryfall_data_id == card_id)
-                {
-                    e.deck_card.board = board;
-                    e.deck_card.mvp_at = mvp_at;
+        };
+        set_board(target, if unstars { None } else { was_starred });
+        spawn(async move {
+            let request = HttpPatchDeckCard::new(None, Some(target.display_name().to_owned()));
+            let reply = authed
+                .try_run("move_board", |c, s| async move {
+                    c.update_deck_card(deck_id, card_id, &request, &s).await
+                })
+                .await;
+            // The reply carries the star as the server left it.
+            if let Ok(saved) = reply {
+                set_board(target, saved.mvp_at);
+                if let Some((message, _)) = landed {
+                    toast.info(message, ToastOptions::default().duration(TOAST_QUICK));
                 }
-            };
-            set_board(target, if unstars { None } else { was_starred });
-            spawn(async move {
-                let request = HttpPatchDeckCard::new(None, Some(target.display_name().to_owned()));
-                match authed
-                    .try_run("move_board", |c, s| async move {
-                        c.update_deck_card(deck_id, card_id, &request, &s).await
-                    })
-                    .await
-                {
-                    // The reply carries the star as the server left it.
-                    Ok(saved) => {
-                        set_board(target, saved.mvp_at);
-                        if let Some(message) = landed {
-                            toast.info(message, ToastOptions::default().duration(TOAST_QUICK));
-                        }
-                        if restar.is_some() {
-                            set_star.call((card_id, restar, StarBy::Quiet));
-                        }
-                    }
-                    Err(_) => set_board(from, was_starred),
+                if restar.is_some() {
+                    set_star.call((card_id, restar, StarBy::Quiet));
                 }
-            });
-            if record {
-                toast.info(moved, ToastOptions::default().duration(TOAST_QUICK));
+            } else {
+                set_board(from, was_starred);
+                // A failed undo goes back on the log, to try again.
+                if let Some((_, entry)) = landed {
+                    undo.write().push(deck_id, entry);
+                }
             }
-        },
-    );
+        });
+        if record {
+            toast.info(moved, ToastOptions::default().duration(TOAST_QUICK));
+        }
+    });
     let move_to_board = use_callback(move |(card_id, target, record): (Uuid, Board, bool)| {
         move_card.call((card_id, target, record, None, None));
     });
@@ -663,17 +682,34 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
             return;
         }
         let message = deck_cards::undo_message(&action);
+        // The entry, to put back on the log if its write fails, so the undo can be tried again.
+        let retry = action.clone();
+        let mut put_back = {
+            let retry = retry.clone();
+            move || undo.write().push(deck_id, retry.clone())
+        };
         match action {
             UndoAction::Added { card_id, .. } => {
+                let row = entries
+                    .peek()
+                    .iter()
+                    .find(|e| e.deck_card.scryfall_data_id == card_id)
+                    .cloned();
                 entries
                     .write()
                     .retain(|e| e.deck_card.scryfall_data_id != card_id);
                 spawn(async move {
-                    authed
+                    let deleted = authed
                         .run("undo", |c, s| async move {
                             c.delete_undone_deck_card(deck_id, card_id, &s).await
                         })
                         .await;
+                    if deleted.is_none() {
+                        if let Some(row) = row {
+                            entries.write().push(row);
+                        }
+                        put_back();
+                    }
                 });
             }
             UndoAction::Removed { entry, baseline } => {
@@ -695,21 +731,24 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
                             c.create_deck_card(deck_id, &request, &s).await
                         })
                         .await;
-                    let mut list = entries.write();
-                    match reply {
-                        Ok(saved) => {
-                            if let Some(e) = list
-                                .iter_mut()
-                                .find(|e| e.deck_card.scryfall_data_id == card_id)
-                            {
-                                e.deck_card = saved;
-                            }
+                    if let Ok(saved) = reply {
+                        if let Some(e) = entries
+                            .write()
+                            .iter_mut()
+                            .find(|e| e.deck_card.scryfall_data_id == card_id)
+                        {
+                            e.deck_card = saved;
                         }
-                        Err(_) => list.retain(|e| e.deck_card.scryfall_data_id != card_id),
+                    } else {
+                        entries
+                            .write()
+                            .retain(|e| e.deck_card.scryfall_data_id != card_id);
+                        put_back();
                     }
                 });
             }
             UndoAction::QuantityChanged { card_id, net, .. } => {
+                undo_retry.write().insert(card_id, retry);
                 change_quantity.call((card_id, net.saturating_neg(), /* record */ false));
             }
             UndoAction::MovedBoard {
@@ -734,14 +773,14 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
                     from,
                     /* record */ false,
                     wants_star.filter(|_| !capped),
-                    Some(message),
+                    Some((message, retry)),
                 ));
                 return;
             }
             UndoAction::MvpToggled {
                 card_id, before, ..
             } => {
-                set_star.call((card_id, before, StarBy::Undo(message)));
+                set_star.call((card_id, before, StarBy::Undo(message, Box::new(retry))));
                 return;
             }
             UndoAction::PrintingChanged { old_card, new_id } => {
@@ -751,12 +790,13 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
                 if let Some(details) = stack_details {
                     details.rekey(new_id, old_id);
                 }
+                let mut shown = None;
                 if let Some(e) = entries
                     .write()
                     .iter_mut()
                     .find(|e| e.deck_card.scryfall_data_id == new_id)
                 {
-                    e.card = old_card;
+                    shown = Some(std::mem::replace(&mut e.card, old_card));
                     e.deck_card.scryfall_data_id = old_id;
                 }
                 if *selected.peek() == Some(new_id) {
@@ -764,11 +804,24 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
                 }
                 let request = HttpPatchDeckCard::with_printing(&old_id.to_string());
                 spawn(async move {
-                    authed
+                    let saved = authed
                         .run("undo", |c, s| async move {
                             c.update_deck_card(deck_id, new_id, &request, &s).await
                         })
                         .await;
+                    if saved.is_none() {
+                        // The printing the server still holds comes back on the row.
+                        if let Some(card) = shown
+                            && let Some(e) = entries
+                                .write()
+                                .iter_mut()
+                                .find(|e| e.deck_card.scryfall_data_id == old_id)
+                        {
+                            e.card = card;
+                            e.deck_card.scryfall_data_id = new_id;
+                        }
+                        put_back();
+                    }
                 });
             }
             UndoAction::CommandZonePrintingChanged {
@@ -778,14 +831,18 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
             } => {
                 let old_id = old_card.scryfall_data.id;
                 components::deck_cursor::follow_card(new_id, old_id);
-                *zone.write().slot_mut(slot) = Some(*old_card);
+                let shown = zone.write().slot_mut(slot).replace(*old_card);
                 let request = slot.update_request(Some(old_id));
                 spawn(async move {
-                    authed
+                    let saved = authed
                         .run("undo", |c, s| async move {
                             c.update_deck_profile(deck_id, &request, &s).await
                         })
                         .await;
+                    if saved.is_none() {
+                        *zone.write().slot_mut(slot) = shown;
+                        put_back();
+                    }
                 });
             }
         }
