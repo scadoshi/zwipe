@@ -15,7 +15,7 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::{Board, Format};
-use zwipe_ui::buy::{group_cards, group_price};
+use zwipe_ui::buy::group_cards;
 use zwipe_ui::deck::form::Slot;
 use zwipe_ui::deck_cards::keys::{RowInfo, RowKind};
 use zwipe_ui::deck_cards::listing::{Listed, RowMeta, main_row_of};
@@ -24,7 +24,8 @@ use zwipe_ui::deck_cards::{Group, columns};
 
 use crate::{
     CardBoardMoves, CardDetailsSheet, CardEditButtons, CardRow, CardStack, CartButton, Chip,
-    DeckBand, DeckGroupSection, DeckSection, GroupBuy, StackCard, use_overlay_back_action,
+    DeckBand, DeckGroupSection, DeckSection, GroupBuy, StackCard, TailPlace, group_tail,
+    use_overlay_back_action,
 };
 
 /// The deck's edits, each taking the card's id: a quantity change by a step, a move to a board,
@@ -559,10 +560,11 @@ pub fn DeckRow(
 /// opening `group_buy` on its cards. While `dealing` every stack deals its cards in, top to
 /// bottom. Hover reveals a card in place; a click opens it in the drawer.
 ///
-/// With `touch`, for phones, the stacks are in [`CardStack`]'s tap mode: a first tap reveals a
+/// With `touch`, for a touch screen, the stacks are in [`CardStack`]'s tap mode: a first tap reveals a
 /// card, a second opens it in the drawer, and the OS back clears a revealed card before it leaves
 /// the screen. The stacks lie in two columns of their own heights ([`columns::masonry`]), each
-/// under the one above it in its column, so a fold or a reveal moves only its own column. A
+/// under the one above it in its column (`.deck-stacks-touch`), so a fold or a reveal moves only
+/// its own column. A
 /// header press calls `on_fold` with the group's key where the host passes it, else folds it in
 /// `collapsed`.
 #[component]
@@ -617,10 +619,8 @@ pub fn DeckStacks(
         .into_iter()
         .map(|(section, rows)| {
             let height = columns::stack_height(rows.len(), folded.contains(&section.key));
-            let price = group_price(&rows, currency);
-            let buyable = !group_cards(&rows).is_empty();
-            let group = section.title.clone();
-            let for_buy = rows.clone();
+            let trailing =
+                group_tail(TailPlace::Stack, section.title.clone(), rows.clone(), currency, group_buy);
             let ids: Vec<Uuid> = rows.iter().map(|r| r.card.scryfall_data.id).collect();
             let cards: Vec<StackCard> = rows
                 .into_iter()
@@ -638,16 +638,7 @@ pub fn DeckStacks(
                         count: None,
                         collapsed,
                         on_fold,
-                        trailing: (price.is_some() || buyable).then(|| rsx! {
-                            span { class: "deck-stack-tail",
-                                if let Some(p) = price {
-                                    span { class: "stat-chip stat-chip-money", "{p}" }
-                                }
-                                if buyable {
-                                    CartButton { onclick: move |_| group_buy.offer(&group, &for_buy) }
-                                }
-                            }
-                        }),
+                        trailing,
                         CardStack {
                             cards,
                             dealing,
@@ -688,8 +679,13 @@ pub fn DeckStacks(
             held.push(stack);
         }
     }
+    let class = if touch {
+        "deck-stacks deck-stacks-columns deck-stacks-touch"
+    } else {
+        "deck-stacks deck-stacks-columns"
+    };
     rsx! {
-        div { class: "deck-stacks deck-stacks-columns",
+        div { class,
             for (at , held) in laid.into_iter().enumerate() {
                 div { key: "{at}", class: "deck-stacks-column",
                     for stack in held {

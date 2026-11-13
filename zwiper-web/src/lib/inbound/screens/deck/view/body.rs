@@ -27,9 +27,7 @@ use zwipe_core::domain::deck::{Board, Format};
 use zwipe_ui::buy::{self, BuyLink};
 use zwipe_ui::deck::view::{DeckArea, StatsProfile};
 use zwipe_ui::deck_cards::listing::{Listed, RowMeta};
-use zwipe_ui::deck_cards::stacks::{
-    CardsView, DEAL_DURATION, DEAL_STAGGER_CAP, DealCue, deal_delay,
-};
+use zwipe_ui::deck_cards::stacks::CardsView;
 use zwipe_ui::deck_cards::{self, Boards, FeaturedOpen};
 use zwipe_ui::filter;
 use zwipe_ui::filter::draft::SheetConfig;
@@ -39,7 +37,7 @@ use super::ghost::{DeckBandsGhost, DeckControlsGhost, DeckHeadGhost, DeckStatsGh
 use crate::inbound::card_filter::CardFilterPanel;
 use crate::inbound::cards::card_row::{CardOverlays, CardOverlaysHost};
 use crate::inbound::cards::otag::{OtagDescribe, OtagExamples, OtagExamplesHost, OtagExamplesOpen};
-use crate::inbound::cards::stack_view::CardsViewSwitch;
+use crate::inbound::cards::stack_view::{CardsViewSwitch, use_stacks_dealing};
 use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
 use crate::outbound::timer;
 
@@ -129,19 +127,7 @@ pub(crate) fn DeckPageBody(
     let hover_stack = use_hover_stack();
     let folded: Signal<HashSet<String>> =
         use_signal(|| FOLDED_STATS.into_iter().map(String::from).collect());
-    // The stacks deal in on entering Stacks, once the cards are in, for as long as the longest
-    // stack takes.
-    let mut deal_cue = use_signal(DealCue::default);
-    let mut dealing = use_signal(|| false);
-    use_effect(use_reactive!(|loaded| {
-        if deal_cue.write().on(view(), loaded) {
-            dealing.set(true);
-            spawn(async move {
-                timer::sleep(deal_delay(DEAL_STAGGER_CAP).saturating_add(DEAL_DURATION)).await;
-                dealing.set(false);
-            });
-        }
-    }));
+    let dealing = use_stacks_dealing(view, loaded);
     // The store dialog a group's cart opens, in the List or the stacks.
     let group_buy = use_group_buy();
     // The deck's store dialog, from the dock's cart.

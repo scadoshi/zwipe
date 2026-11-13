@@ -14,11 +14,22 @@ pub const KIT_MODAL_PX: u32 = 960;
 /// not, with the window on the wide layout, from 900px.
 pub const COMPUTER_QUERY: &str = "(hover: hover) and (pointer: fine) and (min-width: 900px)";
 
+/// The query for a pointer that hovers and is precise (a mouse or a trackpad), at any width.
+/// Without it the input is touch.
+pub const POINTER_QUERY: &str = "(hover: hover) and (pointer: fine)";
+
 /// True on a computer's wide layout ([`COMPUTER_QUERY`]), kept current as the window resizes.
 /// Off the browser it stays false.
 #[must_use]
 pub fn use_computer() -> Signal<bool> {
     use_media(COMPUTER_QUERY.to_owned())
+}
+
+/// True while the main input is a pointer ([`POINTER_QUERY`]), kept current as it changes. Off
+/// the browser, and until the browser answers, it stays false.
+#[must_use]
+pub fn use_pointer() -> Signal<bool> {
+    use_media(POINTER_QUERY.to_owned())
 }
 
 /// True while the window is wide, as [`use_min_width`] with [`WIDE_PX`].
@@ -82,6 +93,6 @@ mod tests {
             MEDIA_JS.contains("window.matchMedia('__QUERY__')"),
             "{MEDIA_JS}"
         );
-        assert!(COMPUTER_QUERY.starts_with("(hover: hover) and (pointer: fine)"));
+        assert!(COMPUTER_QUERY.starts_with(POINTER_QUERY));
     }
 }

@@ -63,6 +63,7 @@ pub const UPCOMING: &[Release] = &[
             "The sheet you opened last sits on top of the others, and on a wide window Themes and the filter leave the page undimmed",
             "zwipe.net answers a page that isn't there with Page not found and a not-found status, so search engines leave it out",
             "On zwipe.net, Esc closes the featured card's art as a click does",
+            "On a phone or a narrow window, the web's deck cards get the View chip and Stacks as the app has them, and each List group shows its price and cart",
         ],
     },
     Release {

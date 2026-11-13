@@ -8,9 +8,12 @@ use components::CardsViewSwitch as SharedCardsViewSwitch;
 pub(crate) use components::{StackDetails, use_stack_details_sync};
 use dioxus::prelude::*;
 use uuid::Uuid;
-use zwipe_ui::deck_cards::stacks::CardsView;
+use zwipe_ui::deck_cards::stacks::{
+    CardsView, DEAL_DURATION, DEAL_STAGGER_CAP, DealCue, deal_delay,
+};
 
 use crate::outbound::cards_view_store::CardsViewStore;
+use crate::outbound::timer;
 
 /// The face each card shows, by card id, the front where it has none: a
 /// card screen provides it so its rows, its stack and the `v` key turn the
@@ -41,6 +44,23 @@ pub(crate) fn use_row_faces() -> RowFaces {
 /// was.
 pub(crate) fn use_cards_view() -> Signal<CardsView> {
     use_signal(|| CardsViewStore::browser().load())
+}
+
+/// Whether the stacks deal their cards in: from entering Stacks in `view` once the cards are
+/// `loaded`, for as long as the longest stack takes.
+pub(crate) fn use_stacks_dealing(view: Signal<CardsView>, loaded: bool) -> Signal<bool> {
+    let mut deal_cue = use_signal(DealCue::default);
+    let mut dealing = use_signal(|| false);
+    use_effect(use_reactive!(|loaded| {
+        if deal_cue.write().on(view(), loaded) {
+            dealing.set(true);
+            spawn(async move {
+                timer::sleep(deal_delay(DEAL_STAGGER_CAP).saturating_add(DEAL_DURATION)).await;
+                dealing.set(false);
+            });
+        }
+    }));
+    dealing
 }
 
 /// The View chip row: List and Stacks, the one in `view` selected. A tap

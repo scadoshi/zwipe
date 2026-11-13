@@ -48,6 +48,7 @@ mod card_actions;
 mod card_details;
 mod card_details_sheet;
 mod card_filter;
+mod card_group;
 mod card_icon_button;
 mod card_list_fold;
 mod card_proxy;
@@ -107,6 +108,7 @@ pub use card_details::{
 };
 pub use card_details_sheet::CardDetailsSheet;
 pub use card_filter::{CardFilterPanel, DictionarySlot};
+pub use card_group::{CardGroup, TailPlace, group_tail};
 pub use card_icon_button::{
     CardIconButton, IMAGE_ICON, IMAGE_LABEL, ImageButton, MELD, STAR, StarButton,
 };
@@ -156,7 +158,10 @@ pub use hover_stack::{HoverStack, HoverStackHost, use_hover_stack};
 pub use identity_pips::IdentityPips;
 pub use keyword_chips::{KeywordChips, KeywordReminders};
 pub use load_failed::LoadFailed;
-pub use media::{COMPUTER_QUERY, KIT_MODAL_PX, WIDE_PX, use_computer, use_min_width, use_wide};
+pub use media::{
+    COMPUTER_QUERY, KIT_MODAL_PX, POINTER_QUERY, WIDE_PX, use_computer, use_min_width, use_pointer,
+    use_wide,
+};
 pub use meld::{MeldFetch, MeldSource, MeldToggle, use_meld};
 pub use menu_section::MenuSection;
 pub use oracle_tag_examples::{ExamplesPage, ExamplesSource, OracleTagExamples};

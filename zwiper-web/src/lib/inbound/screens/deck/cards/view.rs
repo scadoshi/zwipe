@@ -1,31 +1,31 @@
-//! The deck cards view: every card in the deck, to edit, as the app's list
-//! below the breakpoint, rows opening inline, with Quick add, Group by,
-//! Boards and Show over the groups and add, remove, the filter and undo as
-//! the dock's icons. On a wide window the route is the deck page, which
+//! The deck cards view: every card in the deck, to edit, as the app's List
+//! or Stacks below the breakpoint, with Quick add, Group by, Boards, Show and
+//! View over the groups and add, remove, the filter and undo as the dock's
+//! icons. List rows open inline under group headers with the group's price
+//! and cart; the stacks take taps on a touch screen and hover under a mouse. On a wide window the route is the deck page, which
 //! edits too. The engine behind both is `editor`.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use components::icons::{DockIcon, MINUS, PLUS, UNDO};
-use components::{Chip, DockFilter, IdentityPips};
+use components::{
+    CardGroup, Chip, DeckRowHost, DeckStackDrawer, DeckStacks, DockFilter, GroupBuyDialog,
+    StackDetails, TailPlace, deck_sections, group_tail, use_group_buy, use_pointer,
+};
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::group_cards::GroupByOption;
 use zwipe_core::domain::deck::{Board, deck_tag_label};
-use zwipe_ui::deck::form::Slot;
+use zwipe_ui::deck_cards::stacks::{CardsView, Reveal};
 use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::filter::picker::Sources;
 use zwipe_ui::screens::deck_cards::TITLE;
 use zwipe_ui::telemetry::vocabulary::{DeckScreen, Screen};
 use zwipe_ui::{deck_cards, filter};
 
-use super::editor::{
-    Editor, Listed, LoadFailure, RowInfo, RowKind, main_row_of, row_view, use_deck_editor,
-    use_deck_row_host,
-};
+use super::editor::{Editor, LoadFailure, row_view, use_deck_editor, use_deck_row_host};
 use super::featured::FeaturedCards;
 use super::quick_add::QuickAdd;
 use crate::inbound::card_filter::CardFilterPanel;
@@ -33,6 +33,9 @@ use crate::inbound::card_stores::CardStores;
 use crate::inbound::cards::card_row::{CardOverlays, CardOverlaysHost, use_card_overlays};
 use crate::inbound::cards::otag::{OtagExamplesHost, use_otag_reveals};
 use crate::inbound::cards::printing_sheet::PrintingSheet;
+use crate::inbound::cards::stack_view::{
+    CardsViewSwitch, use_cards_view, use_stack_details_sync, use_stacks_dealing,
+};
 use crate::inbound::chrome::ghost::GhostText;
 use crate::inbound::chrome::media::use_wide;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog};
@@ -41,53 +44,6 @@ use crate::inbound::screens::deck::skeletons::ChipRowSkeleton;
 use crate::inbound::screens::deck::view::ViewDeck;
 use crate::inbound::shell::ScreenFrame;
 use crate::inbound::telemetry;
-
-/// A collapsible card group. Its header toggles it from a click, Enter or
-/// Space, and a shut group's rows are inert.
-#[component]
-fn CardGroup(
-    title: String,
-    section_key: String,
-    #[props(default)] pips: Option<Vec<Color>>,
-    collapsed: Signal<HashSet<String>>,
-    children: Element,
-) -> Element {
-    telemetry::use_telemetry_screen(Screen::Deck(DeckScreen::CardView));
-    let open = !collapsed().contains(&section_key);
-    let header_class = if open {
-        "card-group-header group-collapsible expanded"
-    } else {
-        "card-group-header group-collapsible"
-    };
-    let key_for_keys = section_key.clone();
-    rsx! {
-        div { class: if open { "card-group row-enter" } else { "card-group row-enter collapsed" },
-            div {
-                class: header_class,
-                role: "button",
-                tabindex: "0",
-                "aria-expanded": "{open}",
-                onclick: move |_| flip(collapsed, &section_key),
-                onkeydown: move |evt: KeyboardEvent| {
-                    if evt.key() == Key::Enter || evt.key() == Key::Character(" ".into()) {
-                        evt.prevent_default();
-                        flip(collapsed, &key_for_keys);
-                    }
-                },
-                span { class: "card-row-arrow", "\u{25b8}" }
-                if let Some(pips) = pips.as_ref().filter(|p| !p.is_empty()) {
-                    IdentityPips { colors: pips.clone() }
-                }
-                "{title}"
-            }
-            div {
-                class: if open { "collapsible open" } else { "collapsible" },
-                inert: (!open).then_some(true),
-                div { class: "collapsible-inner", {children} }
-            }
-        }
-    }
-}
 
 /// Shuts the group under `section_key` when it is open, or opens it.
 fn flip(mut collapsed: Signal<HashSet<String>>, section_key: &str) {
@@ -107,9 +63,17 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
             ViewDeck { deck_id }
         };
     }
+    telemetry::use_telemetry_screen(Screen::Deck(DeckScreen::CardView));
     let navigator = use_navigator();
     // Before the editor, whose `i` opens the image preview.
     let overlays = use_card_overlays();
+    // The stacks' reveal and the open card, before the editor, whose `d` moves them as a tap.
+    let reveal = use_signal(Reveal::default);
+    let details_open = use_signal(|| false);
+    let details = use_context_provider(|| StackDetails {
+        reveal,
+        details_open,
+    });
     let ed = use_deck_editor(deck_id, LoadFailure::Toast);
     let Editor {
         entries,
@@ -140,27 +104,33 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
     let row_host = use_deck_row_host(&ed);
     let CardOverlays { mut preview, .. } = overlays;
 
-    let Listed {
-        tokens: token_rows,
-        maybe: maybe_rows,
-        side: side_rows,
-        zone: zone_rows,
-        groups: main_groups,
-        lands: main_lands,
-        ..
-    } = listing();
+    // List or Stacks, as last left, and the stacks in tap mode on a touch screen.
+    let view = use_cards_view();
+    let stacks_on = view() == CardsView::Stacks;
+    let pointer = use_pointer();
+    let touch = !pointer();
+    let dealing = use_stacks_dealing(view, loaded());
+    // The store dialog a group's cart opens, in the List or the stacks.
+    let group_buy = use_group_buy();
+    let listed_ids = use_memo(move || {
+        listing()
+            .rows
+            .iter()
+            .map(|r| r.card.scryfall_data.id)
+            .collect::<Vec<_>>()
+    });
+    use_stack_details_sync(reveal, details_open, listed_ids);
+
+    let listed = listing();
+    let all_rows = listed.rows.clone();
     let row_meta = meta();
+    let row_boards: HashMap<Uuid, Board> = row_meta.iter().map(|(id, m)| (*id, m.board)).collect();
     let applied = filter.read().clone();
     let shown_boards = boards();
     let format = profile.read().as_ref().and_then(|p| p.format);
     let oathbreaker = format.is_some_and(|f| f.has_signature_spell());
-    let main_row = |card: &Card| -> RowInfo { main_row_of(&row_meta, card) };
-    let qty_count = |cards: &[Card]| -> i32 {
-        cards
-            .iter()
-            .map(|c| row_meta.get(&c.scryfall_data.id).map_or(1, |m| m.qty))
-            .fold(0, i32::saturating_add)
-    };
+    let no_main = listed.groups.is_empty() && listed.lands.is_empty();
+    let sections = deck_sections(listed, &row_meta, format);
     let has_maybe = entries
         .read()
         .iter()
@@ -183,9 +153,7 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
     let undo_ready = !undo.read().is_empty(deck_id);
     let filter_on = !applied.is_empty();
     let dot = filter::shows_dot(&applied);
-    let has_zone = !zone_rows.is_empty();
     let offers_zone = zone.read().offers_chip(format);
-    let has_partner = zone_rows.iter().any(|(slot, _)| *slot == Slot::Partner);
 
     rsx! {
         ScreenFrame {
@@ -194,7 +162,16 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
                 let mut hint_open = hint_open;
                 hint_open.set(true);
             },
-            div { class: "screen-content web-deck-cards-view",
+            div {
+                class: "screen-content web-deck-cards-view",
+                // Any tap while touch stacks show can reveal a card or close one.
+                "data-settle": (stacks_on && touch).then_some(""),
+                // A tap off every card closes the reveal; a card's own tap stops at the card.
+                onclick: move |_| {
+                    if touch {
+                        details.dismiss();
+                    }
+                },
                 div { class: "web-deck-cards-controls",
                     if let Some(p) = profile() {
                         div { class: "deck-cards-header row-enter",
@@ -266,8 +243,9 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
                             if offers_zone {
                                 Chip { selected: show_zone(), onclick: move |_| show_zone.toggle(), "Command zone" }
                             }
-                            Chip { selected: show_art(), onclick: move |_| show_art.toggle(), "Art" }
+                            Chip { selected: show_art(), disabled: stacks_on, onclick: move |_| show_art.toggle(), "Art" }
                         }
+                        CardsViewSwitch { view, on_change: move |()| selected.set(None) }
                     } else {
                         div { class: "chip-row",
                             span { class: "stat-chip stat-chip-p1 chip-row-label web-ghost-chip", GhostText { chars: 9 } }
@@ -282,83 +260,45 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
                         ChipRowSkeleton { label: "md", chips: vec!["sm", "lg", "md", "lg"] }
                         ChipRowSkeleton { label: "md", chips: vec!["sm", "md", "sm"] }
                         ChipRowSkeleton { label: "sm", chips: vec!["md", "lg", "sm"] }
+                        ChipRowSkeleton { label: "sm", chips: vec!["sm", "md"] }
                     }
                 }
-                div { class: "web-deck-cards-list",
+                div { class: "web-deck-cards-list", "data-settle-scope": "",
                     if !loaded() {
                         DeckCardListGhost {}
                     }
-                    if !token_rows.is_empty() {
-                        CardGroup {
-                            title: format!("Tokens ({})", token_rows.len()),
-                            section_key: "Tokens",
+                    if stacks_on {
+                        DeckStacks {
+                            // A change of input lays the stacks out again for it.
+                            key: "{touch}",
+                            sections,
+                            currency: cur,
                             collapsed,
-                            for card in token_rows {
-                                {row_view(&ed, row_host, cur, &row_meta, RowInfo { card, qty: 1, kind: RowKind::Token })}
-                            }
+                            details,
+                            faces: ed.faces,
+                            group_buy,
+                            dealing: dealing(),
+                            touch,
                         }
-                    }
-                    if !maybe_rows.is_empty() {
-                        CardGroup {
-                            title: format!("Maybeboard ({})", maybe_rows.len()),
-                            section_key: "Maybeboard",
-                            collapsed,
-                            for entry in maybe_rows {
-                                {row_view(&ed, row_host, cur, &row_meta, RowInfo { qty: *entry.deck_card.quantity, card: entry.card, kind: RowKind::Board(Board::Maybeboard) })}
-                            }
-                        }
-                    }
-                    if !side_rows.is_empty() {
-                        CardGroup {
-                            title: format!("Sideboard ({})", side_rows.len()),
-                            section_key: "Sideboard",
-                            collapsed,
-                            for entry in side_rows {
-                                {row_view(&ed, row_host, cur, &row_meta, RowInfo { qty: *entry.deck_card.quantity, card: entry.card, kind: RowKind::Board(Board::Sideboard) })}
-                            }
-                        }
-                    }
-                    if has_zone {
-                        for (slot, card) in zone_rows.clone() {
-                            if slot != Slot::Partner || !zone_rows.iter().any(|(s, _)| *s == Slot::Commander) {
-                                CardGroup {
-                                    key: "{slot:?}",
-                                    title: slot.group_header(format, has_partner).to_string(),
-                                    section_key: slot.group_key().to_owned(),
-                                    collapsed,
-                                    {row_view(&ed, row_host, cur, &row_meta, RowInfo { card, qty: 1, kind: RowKind::Zone(slot) })}
-                                    if slot == Slot::Commander {
-                                        for (partner_slot, partner) in zone_rows.iter().filter(|(s, _)| *s == Slot::Partner).cloned() {
-                                            {row_view(&ed, row_host, cur, &row_meta, RowInfo { card: partner, qty: 1, kind: RowKind::Zone(partner_slot) })}
-                                        }
-                                    }
+                    } else {
+                        for (section, rows) in sections {
+                            CardGroup {
+                                key: "{section.key}",
+                                title: section.title.clone(),
+                                pips: section.pips.clone(),
+                                expanded: !collapsed.read().contains(&section.key),
+                                ontoggle: {
+                                    let key = section.key.clone();
+                                    move |()| flip(collapsed, &key)
+                                },
+                                trailing: group_tail(TailPlace::List, section.title, rows.clone(), cur, group_buy),
+                                for row in rows {
+                                    {row_view(&ed, row_host, cur, &row_meta, row)}
                                 }
                             }
                         }
                     }
-                    for group in main_groups.clone() {
-                        CardGroup {
-                            key: "{group.key}",
-                            title: if group.label.is_empty() { format!("({})", qty_count(&group.cards)) } else { format!("{} ({})", group.label, qty_count(&group.cards)) },
-                            section_key: group.key.clone(),
-                            pips: group.pips.clone(),
-                            collapsed,
-                            for card in group.cards.iter() {
-                                {row_view(&ed, row_host, cur, &row_meta, main_row(card))}
-                            }
-                        }
-                    }
-                    if !main_lands.is_empty() {
-                        CardGroup {
-                            title: format!("Lands ({})", qty_count(&main_lands)),
-                            section_key: "Lands",
-                            collapsed,
-                            for card in main_lands.iter() {
-                                {row_view(&ed, row_host, cur, &row_meta, main_row(card))}
-                            }
-                        }
-                    }
-                    if shown_boards.main && main_groups.is_empty() && main_lands.is_empty() && loaded() {
+                    if shown_boards.main && no_main && loaded() {
                         p { class: "deck-empty",
                             span { class: "chip-note", "No cards" }
                         }
@@ -414,6 +354,16 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
                 filter.set(next);
                 selected.set(None);
             },
+        }
+        GroupBuyDialog { group_buy }
+        // The drawer a stack card opens with its second tap.
+        DeckStackDrawer {
+            rows: all_rows,
+            boards: row_boards,
+            details,
+            faces: ed.faces,
+            actions: Some(ed.edit_actions()),
+            host: DeckRowHost { on_view_printing: None, ..row_host },
         }
         CardOverlaysHost { overlays }
         OtagExamplesHost { examples }

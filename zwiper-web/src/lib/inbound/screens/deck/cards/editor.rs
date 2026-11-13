@@ -71,9 +71,7 @@ fn screen_key(key: &str) -> Option<ScreenKey> {
 }
 
 pub(crate) use zwipe_ui::deck_cards::keys::{RowInfo, RowKind};
-pub(crate) use zwipe_ui::deck_cards::listing::{
-    Listed, RowMeta as Meta, board_of, list_rows, main_row_of,
-};
+pub(crate) use zwipe_ui::deck_cards::listing::{Listed, RowMeta as Meta, board_of, list_rows};
 
 /// The engine's state and actions. `Copy`: every field is a signal, a memo
 /// or a callback, which compare by identity.
