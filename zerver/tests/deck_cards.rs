@@ -920,3 +920,65 @@ async fn a_quantity_patch_keeps_the_star(pool: sqlx::PgPool) {
         "the reloaded deck still has the star"
     );
 }
+
+/// A move off the main board drops the star, and the move back that stars it again in the same
+/// write, as Undo sends it, lands the card back on the main board starred.
+#[sqlx::test]
+async fn a_move_back_with_its_star_restores_a_star_the_move_dropped(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, did) = deck_for(&app, "mover").await;
+    let deck_id = did.parse().unwrap();
+    let guard = card("Adriana, Captain of the Guard").type_line("Creature");
+    let (sid, oid) = (guard.id(), guard.oracle_id().unwrap());
+    seed_cards(&pool, &[guard]).await;
+    let (status, body) = app
+        .post(
+            &create_deck_card_route(deck_id),
+            json!({ "scryfall_data_id": sid.to_string(), "oracle_id": oid.to_string(), "quantity": 4 }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED, "add: {body}");
+    let route = update_deck_card_route(deck_id, sid);
+    let (status, starred) = app
+        .patch(&route, json!({ "mvp": true }), Some(&token))
+        .await;
+    assert_eq!(status, StatusCode::OK, "star: {starred}");
+
+    let (status, moved) = app
+        .patch(&route, json!({ "board": "maybeboard" }), Some(&token))
+        .await;
+    assert_eq!(status, StatusCode::OK, "move: {moved}");
+    assert!(
+        moved["mvp_at"].is_null(),
+        "off the main board the star goes: {moved}"
+    );
+
+    let (status, back) = app
+        .patch(&route, json!({ "board": "deck" }), Some(&token))
+        .await;
+    assert_eq!(status, StatusCode::OK, "{back}");
+    assert!(
+        back["mvp_at"].is_null(),
+        "a move back alone leaves it unstarred, which is what Undo sent: {back}"
+    );
+    let _ = app
+        .patch(&route, json!({ "board": "maybeboard" }), Some(&token))
+        .await;
+
+    let (status, restored) = app
+        .patch(
+            &route,
+            json!({ "board": "deck", "mvp": true }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::OK,
+        "move back with the star: {restored}"
+    );
+    assert_eq!(restored["board"], "deck");
+    assert_eq!(restored["quantity"], 4);
+    assert!(restored["mvp_at"].is_string(), "starred again: {restored}");
+}

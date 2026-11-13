@@ -936,6 +936,7 @@ impl State {
                     card_id,
                     card_name,
                     from: Board::Maybeboard,
+                    starred: None,
                 },
             }],
             Some(Pending::UndoAdd { card, board, .. }) => {

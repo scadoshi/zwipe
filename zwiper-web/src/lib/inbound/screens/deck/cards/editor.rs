@@ -25,6 +25,7 @@ use zwipe_core::domain::card::search_card::group_cards::GroupByOption;
 use zwipe_core::domain::deck::deck_metrics::deck_price;
 use zwipe_core::domain::deck::{Board, Deck, DeckEntry, DeckProfile, Quantity};
 use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard};
+use zwipe_core::http::helpers::Patch;
 use zwipe_ui::deck::form::Slot;
 use zwipe_ui::deck_cards::{self, Boards, Bursts, Write, Zone};
 use zwipe_ui::deck_signals::{Crossing, budget_crossing, land_count, land_crossing};
@@ -419,59 +420,81 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
         });
     });
 
-    let move_to_board = use_callback(move |(card_id, target, record): (Uuid, Board, bool)| {
-        let Some(entry) = entries
-            .peek()
-            .iter()
-            .find(|e| e.deck_card.scryfall_data_id == card_id)
-            .cloned()
-        else {
-            return;
-        };
-        let from = entry.deck_card.board;
-        if from == target {
-            return;
-        }
-        let moved = screens::deck_cards::moved_to(
-            *entry.deck_card.quantity,
-            &entry.card.scryfall_data.name,
-            target,
-        );
-        if record {
-            undo.write().push(
-                deck_id,
-                UndoAction::MovedBoard {
-                    card_id,
-                    card_name: entry.card.scryfall_data.name,
-                    from,
-                },
-            );
-        }
-        let mut set_board = move |board: Board| {
-            if let Some(e) = entries
-                .write()
-                .iter_mut()
+    // A move to `target`. Off the main board a card loses its star, as the server drops it, and
+    // the undo entry keeps the star time; `restar` stars it again in the same write, for undo's
+    // move back.
+    let move_card = use_callback(
+        move |(card_id, target, record, restar): (Uuid, Board, bool, Option<DateTime<Utc>>)| {
+            let Some(entry) = entries
+                .peek()
+                .iter()
                 .find(|e| e.deck_card.scryfall_data_id == card_id)
-            {
-                e.deck_card.board = board;
+                .cloned()
+            else {
+                return;
+            };
+            let from = entry.deck_card.board;
+            if from == target {
+                return;
             }
-        };
-        set_board(target);
-        spawn(async move {
-            let request = HttpPatchDeckCard::new(None, Some(target.display_name().to_owned()));
-            if authed
-                .try_run("move_board", |c, s| async move {
-                    c.update_deck_card(deck_id, card_id, &request, &s).await
-                })
-                .await
-                .is_err()
-            {
-                set_board(from);
+            let moved = screens::deck_cards::moved_to(
+                *entry.deck_card.quantity,
+                &entry.card.scryfall_data.name,
+                target,
+            );
+            let was_starred = entry.deck_card.mvp_at;
+            let unstars = target != Board::Deck;
+            if record {
+                undo.write().push(
+                    deck_id,
+                    UndoAction::MovedBoard {
+                        card_id,
+                        card_name: entry.card.scryfall_data.name,
+                        from,
+                        starred: was_starred.filter(|_| unstars),
+                    },
+                );
             }
-        });
-        if record {
-            toast.info(moved, ToastOptions::default().duration(TOAST_QUICK));
-        }
+            let mut set_board = move |board: Board, mvp_at: Option<DateTime<Utc>>| {
+                if let Some(e) = entries
+                    .write()
+                    .iter_mut()
+                    .find(|e| e.deck_card.scryfall_data_id == card_id)
+                {
+                    e.deck_card.board = board;
+                    e.deck_card.mvp_at = mvp_at;
+                }
+            };
+            let shown_star = if unstars {
+                None
+            } else {
+                restar.or(was_starred)
+            };
+            set_board(target, shown_star);
+            spawn(async move {
+                let mut request =
+                    HttpPatchDeckCard::new(None, Some(target.display_name().to_owned()));
+                if restar.is_some() {
+                    request.mvp = Patch::Set(Some(true));
+                }
+                match authed
+                    .try_run("move_board", |c, s| async move {
+                        c.update_deck_card(deck_id, card_id, &request, &s).await
+                    })
+                    .await
+                {
+                    // The reply carries the star as the server left it.
+                    Ok(saved) => set_board(target, saved.mvp_at),
+                    Err(_) => set_board(from, was_starred),
+                }
+            });
+            if record {
+                toast.info(moved, ToastOptions::default().duration(TOAST_QUICK));
+            }
+        },
+    );
+    let move_to_board = use_callback(move |(card_id, target, record): (Uuid, Board, bool)| {
+        move_card.call((card_id, target, record, None));
     });
 
     // Sets a row's star time at once and patches the star to match. A toggle records undo once
@@ -680,8 +703,19 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
             UndoAction::QuantityChanged { card_id, net, .. } => {
                 change_quantity.call((card_id, net.saturating_neg(), /* record */ false));
             }
-            UndoAction::MovedBoard { card_id, from, .. } => {
-                move_to_board.call((card_id, from, /* record */ false));
+            UndoAction::MovedBoard {
+                card_id,
+                from,
+                starred,
+                ..
+            } => {
+                // The move back stars it again in the same write, unless a fourth star would be
+                // refused and take the move with it.
+                let restar = starred.filter(|_| {
+                    from == Board::Deck
+                        && deck_cards::mvp_count(&entries.peek()) < deck_cards::MAX_MVPS
+                });
+                move_card.call((card_id, from, /* record */ false, restar));
             }
             UndoAction::MvpToggled {
                 card_id, before, ..

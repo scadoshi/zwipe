@@ -798,6 +798,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
                             card_id,
                             card_name,
                             from: Board::Maybeboard,
+                            starred: None,
                         },
                     );
                 }

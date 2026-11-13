@@ -833,7 +833,8 @@ mod tests {
             undo_message(&UndoAction::MovedBoard {
                 card_id: present,
                 card_name: "Zebra".to_owned(),
-                from: Board::Maybeboard
+                from: Board::Maybeboard,
+                starred: None,
             }),
             "Zebra back to maybeboard"
         );

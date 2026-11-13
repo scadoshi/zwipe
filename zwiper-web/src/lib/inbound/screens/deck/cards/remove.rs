@@ -475,6 +475,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                                 card_id,
                                 card_name,
                                 from,
+                                starred: None,
                             },
                         );
                     }

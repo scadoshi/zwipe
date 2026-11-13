@@ -159,6 +159,7 @@ Who checked, on which live build, what they saw.
 | [454](454-strip-quick-add-gap.md) | On phone web, the featured chips touch Quick add | fixing | thinker | - |
 | [451](451-group-tail-inline.md) | A List group's price and cart sit on a line of their own under its title | fixing | laptop | issue/451-inline-group-tail |
 | [457](457-route-feel.md) | On a phone, the deck's Profile, Cards and card details don't behave like route changes | fixing | scotland | - |
+| [461](461-move-undo-star.md) | A starred card moved to the maybeboard and undone comes back unstarred | fixing | thinker | - |
 
 ## Waiting for live verification
 

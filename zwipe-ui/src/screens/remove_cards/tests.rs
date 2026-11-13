@@ -923,6 +923,7 @@ fn a_claim_matches_only_its_own_entry() {
         card_id: id,
         card_name: "Opt".to_owned(),
         from: Board::Deck,
+        starred: None,
     };
     assert!(UndoClaim::Removed { card_id: id }.matches(&removed));
     assert!(!UndoClaim::Removed { card_id: id }.matches(&moved));

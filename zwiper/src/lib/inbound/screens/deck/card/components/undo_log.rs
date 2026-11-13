@@ -45,6 +45,7 @@ pub(crate) enum UndoAction {
         card_id: Uuid,
         card_name: String,
         from: Board,
+        starred: Option<DateTime<Utc>>,
     },
     /// A card was starred or unstarred; undo puts its star back as `before` had it.
     MvpToggled {
@@ -87,10 +88,12 @@ impl From<UndoAction> for zwipe_ui::stores::undo::UndoAction {
                 card_id,
                 card_name,
                 from,
+                starred,
             } => Self::MovedBoard {
                 card_id,
                 card_name,
                 from,
+                starred,
             },
             UndoAction::MvpToggled {
                 card_id,
@@ -142,10 +145,12 @@ impl From<zwipe_ui::stores::undo::UndoAction> for UndoAction {
                 card_id,
                 card_name,
                 from,
+                starred,
             } => Self::MovedBoard {
                 card_id,
                 card_name,
                 from,
+                starred,
             },
             Shared::MvpToggled {
                 card_id,

@@ -356,10 +356,12 @@ fn into_shared(action: UndoAction) -> shared_undo::UndoAction {
             card_id,
             card_name,
             from,
+            starred,
         } => shared_undo::UndoAction::MovedBoard {
             card_id,
             card_name,
             from,
+            starred,
         },
         UndoAction::MvpToggled {
             card_id,
@@ -413,10 +415,12 @@ fn from_shared(action: shared_undo::UndoAction) -> UndoAction {
             card_id,
             card_name,
             from,
+            starred,
         } => UndoAction::MovedBoard {
             card_id,
             card_name,
             from,
+            starred,
         },
         shared_undo::UndoAction::MvpToggled {
             card_id,

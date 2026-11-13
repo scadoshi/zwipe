@@ -85,10 +85,12 @@ fn to_app_undo(action: SharedUndo) -> UndoAction {
             card_id,
             card_name,
             from,
+            starred,
         } => UndoAction::MovedBoard {
             card_id,
             card_name,
             from,
+            starred,
         },
         SharedUndo::MvpToggled {
             card_id,
@@ -138,10 +140,12 @@ fn to_shared_undo(action: UndoAction) -> SharedUndo {
             card_id,
             card_name,
             from,
+            starred,
         } => SharedUndo::MovedBoard {
             card_id,
             card_name,
             from,
+            starred,
         },
         UndoAction::MvpToggled {
             card_id,
@@ -1547,6 +1551,7 @@ mod tests {
             card_id,
             card_name: "Sol Ring".to_owned(),
             from: Board::Sideboard,
+            starred: None,
         }));
         assert!(matches!(
             moved,

@@ -53,6 +53,8 @@ pub enum UndoAction {
         card_name: String,
         /// The board it left.
         from: Board,
+        /// Its star time when the move took it off the main board, which drops the star; undo stars it again. `None` when it had none or stayed on the main board.
+        starred: Option<DateTime<Utc>>,
     },
     /// A card was starred or unstarred; undo puts its star back as `before` had it.
     MvpToggled {

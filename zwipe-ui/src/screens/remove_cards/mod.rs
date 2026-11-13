@@ -917,6 +917,7 @@ impl State {
                     card_id,
                     card_name,
                     from,
+                    starred: None,
                 },
             }],
             Some(Pending::UndoMove { card_id, from, .. }) => {

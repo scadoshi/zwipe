@@ -819,7 +819,8 @@ fn a_move_records_toasts_and_rolls_back_on_failure() {
         [UndoAction::MovedBoard {
             card_id: ring,
             card_name: "Sol Ring".to_owned(),
-            from: Board::Deck
+            from: Board::Deck,
+            starred: None,
         }]
     );
     assert_eq!(
@@ -1059,6 +1060,7 @@ fn undo_moves_back_without_its_own_move_toast() {
         card_id: ring,
         card_name: "Sol Ring".to_owned(),
         from: Board::Maybeboard,
+        starred: None,
     })));
     assert_eq!(
         toasts(&effects),
@@ -1793,5 +1795,75 @@ fn quick_add_lists_the_closest_names_first() {
             "Absolute Grace",
             "Consolidate"
         ]
+    );
+}
+
+#[test]
+fn a_starred_card_moved_off_the_main_board_loses_its_star_and_undo_puts_it_back() {
+    let (mut state, cards) = loaded();
+    let ring = id(&cards[0]);
+    let starred_at: DateTime<Utc> = "2026-01-02T03:04:05Z".parse().unwrap();
+    state.entries[0].deck_card.mvp_at = Some(starred_at);
+
+    let effects = state.update(Action::MoveTo {
+        card_id: ring,
+        board: Board::Maybeboard,
+    });
+    let [recorded] = undo_records(&effects).try_into().unwrap();
+    assert_eq!(
+        recorded,
+        UndoAction::MovedBoard {
+            card_id: ring,
+            card_name: "Sol Ring".to_owned(),
+            from: Board::Deck,
+            starred: Some(starred_at),
+        },
+        "the entry keeps the star the move takes"
+    );
+    assert_eq!(
+        state.entries[0].deck_card.mvp_at, None,
+        "off the main board the card is unstarred, as the server has it"
+    );
+
+    let effects = state.update(Action::Undo(Box::new(recorded)));
+    let Some(Effect::PatchCard { request, .. }) = effects
+        .iter()
+        .find(|e| matches!(e, Effect::PatchCard { .. }))
+    else {
+        panic!("undo moves it back: {effects:?}");
+    };
+    assert!(matches!(&request.board, Patch::Set(Some(b)) if b == "deck"));
+    assert!(
+        matches!(request.mvp, Patch::Set(Some(true))),
+        "the move back stars it again in the same write"
+    );
+    assert_eq!(state.row(ring).map(|r| r.board), Some(Board::Deck));
+    assert_eq!(state.entries[0].deck_card.mvp_at, Some(starred_at));
+}
+
+#[test]
+fn undoing_the_move_of_a_starred_card_with_three_mvps_moves_it_back_unstarred() {
+    let mut cards = library();
+    cards.extend(["Alpha", "Beta", "Gamma"].map(|name| typed(name, "Instant")));
+    let (mut state, _) = loaded_with(cards.clone(), deck_profile("Deck"));
+    let now = Utc::now();
+    for entry in state.entries.iter_mut().skip(4) {
+        entry.deck_card.mvp_at = Some(now);
+    }
+    let effects = state.update(Action::Undo(Box::new(UndoAction::MovedBoard {
+        card_id: id(&cards[0]),
+        card_name: "Sol Ring".to_owned(),
+        from: Board::Deck,
+        starred: Some(now),
+    })));
+    let Some(Effect::PatchCard { request, .. }) = effects
+        .iter()
+        .find(|e| matches!(e, Effect::PatchCard { .. }))
+    else {
+        panic!("undo moves it back: {effects:?}");
+    };
+    assert!(
+        matches!(request.mvp, Patch::Unchanged),
+        "a fourth star would be refused with the move, so the move goes alone"
     );
 }

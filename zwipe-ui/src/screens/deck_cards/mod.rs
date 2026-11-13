@@ -24,6 +24,7 @@ use zwipe_core::domain::deck::{
 use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
 use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard};
+use zwipe_core::http::helpers::Patch;
 
 use crate::card::default_printing;
 use crate::deck::command_zone::Slot;
@@ -683,6 +684,8 @@ enum Pending {
     Move {
         card_id: Uuid,
         from: Board,
+        /// Its star time before the move, put back if the server refuses it.
+        mvp_at: Option<DateTime<Utc>>,
     },
     Mvp {
         card_id: Uuid,
@@ -907,7 +910,7 @@ impl State {
             }
             Action::ProfilePatched { ticket } => self.profile_patched(ticket),
             Action::ChangeQuantity { card_id, delta } => self.tap(card_id, delta, true),
-            Action::MoveTo { card_id, board } => self.move_to(card_id, board, true),
+            Action::MoveTo { card_id, board } => self.move_to(card_id, board, true, None),
             Action::ToggleMvp { card_id, now } => self.toggle_mvp(card_id, now),
             Action::OpenPrintings { card, slot } => {
                 self.printing = Some((*card, slot));
@@ -1057,9 +1060,14 @@ impl State {
                 }
                 vec![Effect::Refilter]
             }
-            Pending::Move { card_id, from } => {
+            Pending::Move {
+                card_id,
+                from,
+                mvp_at,
+            } => {
                 if let Some(entry) = self.entry_mut(card_id) {
                     entry.deck_card.board = from;
+                    entry.deck_card.mvp_at = mvp_at;
                 }
                 vec![Effect::Refilter]
             }
@@ -1248,6 +1256,13 @@ impl State {
                 });
                 let toast = toast.map(|text| Effect::Toast(Toast::quick(ToastKind::Info, text)));
                 undo.into_iter().chain(toast).collect()
+            }
+            // The move's reply carries the star as the server left it.
+            Some(Pending::Move { card_id, .. }) => {
+                if let Some(entry) = self.entry_mut(card_id) {
+                    entry.deck_card.mvp_at = deck_card.mvp_at;
+                }
+                Vec::new()
             }
             Some(Pending::Printing { old, new }) => {
                 let old_id = old.scryfall_data.id;
@@ -1466,19 +1481,28 @@ impl State {
     }
 
     /// A move to `board`. `record` is false for undo's move back, which records no entry and raises no toast of its own.
-    fn move_to(&mut self, card_id: Uuid, board: Board, record: bool) -> Vec<Effect> {
+    /// A move to `board`. Off the main board a card loses its star, as the server drops it, and the undo entry keeps the star time. `restar` stars it again with the move, in one write, for undo's move back. `record` is false for undo's move back, which records no entry and raises no toast of its own.
+    fn move_to(
+        &mut self,
+        card_id: Uuid,
+        board: Board,
+        record: bool,
+        restar: Option<DateTime<Utc>>,
+    ) -> Vec<Effect> {
         let Some(deck_id) = self.deck_id else {
             return Vec::new();
         };
-        let (from, card_name, copies) =
+        let (from, card_name, copies, mvp_at) =
             self.entry(card_id)
-                .map_or((Board::Deck, String::new(), 0), |e| {
+                .map_or((Board::Deck, String::new(), 0, None), |e| {
                     (
                         e.deck_card.board,
                         e.card.scryfall_data.name.clone(),
                         *e.deck_card.quantity,
+                        e.deck_card.mvp_at,
                     )
                 });
+        let unstars = board != Board::Deck;
         let toast = moved_to(copies, &card_name, board);
         let mut effects = Vec::new();
         if record {
@@ -1486,21 +1510,32 @@ impl State {
                 card_id,
                 card_name,
                 from,
+                starred: mvp_at.filter(|_| unstars),
             })));
         }
         if let Some(entry) = self.entry_mut(card_id) {
             entry.deck_card.board = board;
+            if unstars {
+                entry.deck_card.mvp_at = None;
+            } else if restar.is_some() {
+                entry.deck_card.mvp_at = restar;
+            }
         }
         effects.push(Effect::Refilter);
-        let ticket = self.request(Pending::Move { card_id, from });
+        let ticket = self.request(Pending::Move {
+            card_id,
+            from,
+            mvp_at,
+        });
+        let mut request = HttpPatchDeckCard::new(None, Some(board.display_name().to_owned()));
+        if restar.is_some() {
+            request.mvp = Patch::Set(Some(true));
+        }
         effects.push(Effect::PatchCard {
             ticket,
             deck_id,
             card_id,
-            request: Box::new(HttpPatchDeckCard::new(
-                None,
-                Some(board.display_name().to_owned()),
-            )),
+            request: Box::new(request),
             op: Op::MoveBoard,
         });
         if record {
@@ -1637,8 +1672,18 @@ impl State {
                 effects.push(toast);
                 effects
             }
-            UndoAction::MovedBoard { card_id, from, .. } => {
-                let mut effects = self.move_to(card_id, from, false);
+            UndoAction::MovedBoard {
+                card_id,
+                from,
+                starred,
+                ..
+            } => {
+                // The move back stars it again with the same write, unless a fourth star would be refused, which would take the move with it.
+                let restar = starred.filter(|_| {
+                    from == Board::Deck
+                        && deck_cards::mvp_count(&self.entries) < deck_cards::MAX_MVPS
+                });
+                let mut effects = self.move_to(card_id, from, false, restar);
                 effects.push(toast);
                 effects
             }
