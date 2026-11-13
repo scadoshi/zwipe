@@ -94,6 +94,7 @@ pub const UPCOMING: &[Release] = &[
             "On a phone, the featured cards deal in each time you open a deck's Cards, without moving anything under them",
             "On a phone's web app, the menu opens over a deck's Cards",
             "On a phone's web app, the featured cards keep a gap above Quick add",
+            "A List group's price and cart sit at the end of its title's line on a phone, on the web and in the app",
         ],
     },
     Release {
