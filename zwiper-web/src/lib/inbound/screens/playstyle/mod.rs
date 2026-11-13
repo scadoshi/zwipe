@@ -17,6 +17,7 @@ mod skeleton;
 
 use std::collections::HashSet;
 
+use components::deck_cursor::use_card_list_cursor;
 use components::{
     AlertDialog, Button, ButtonVariant, CardListFold, Chip, DangerZoneAction, DialogAction,
     HoverStackHost, TOAST_LONG, TOAST_QUICK, use_hover_stack,
@@ -113,6 +114,8 @@ pub fn Playstyle() -> Element {
             .collect::<Vec<Card>>()
     });
     use_card_row_keys(listed_cards, expanded_card);
+    // The arrow keys and h, j, k and l move a cursor through the rows.
+    use_card_list_cursor();
     let mut is_loading = use_signal(|| true);
     let mut load_failed = use_signal(|| false);
     let mut reload = use_signal(|| 0u32);
