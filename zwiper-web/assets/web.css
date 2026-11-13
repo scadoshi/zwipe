@@ -2036,6 +2036,12 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
     }
 }
 
+/* In the Cards layer the featured cards end the head; the same breathing
+   room as the app's strip keeps their chips off Quick add below. */
+.web-cards-layer .deck-head {
+    margin-bottom: 1rem;
+}
+
 /* The overlay scrolls as a screen under the nav does, down to the site's
    footer, and clips sideways at the window's edge. */
 .swipe-select-screen.web-swipe-select {

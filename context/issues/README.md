@@ -152,8 +152,11 @@ Who checked, on which live build, what they saw.
 | [437](437-examples-one-dock.md) | At phone width the Examples controls wrap, the eye on a row of its own | fixing | scotland | - |
 | [442](442-held-deck.md) | Profile and Cards share one up-to-date deck so a star or a Warnings fix never reads a stale copy | fixing | laptop | issue/held-deck |
 | [440](440-deck-keyboard-nav.md) | The deck page's cards can't be reached from the keyboard | fixing | scotland | - |
+| [448](448-featured-deal-on-entry.md) | The featured strip no longer deals in when the Cards open | fixing | thinker | - |
 | [449](449-details-as-screen.md) | On a phone, a card's details from Cards slide in as a sheet instead of opening as a screen | fixing | scotland | - |
+| [452](452-menu-under-cards.md) | On phone web, the menu opens under the Cards layer | fixing | thinker | - |
 | [453](453-cards-under-header.md) | On phone web, scrolling Cards leaves a header-height strip above the first row | fixing | scotland | - |
+| [454](454-strip-quick-add-gap.md) | On phone web, the featured chips touch Quick add | fixing | thinker | - |
 
 ## Waiting for live verification
 

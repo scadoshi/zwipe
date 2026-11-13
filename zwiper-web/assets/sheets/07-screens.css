@@ -3035,6 +3035,46 @@ body .toast-container [role="alertdialog"] {
     transition: flex-grow 0.3s ease;
 }
 
+/* Each time the strip mounts with its cards (the Cards layer opening) they
+   deal into the space the row already holds: a short drop with a slight
+   tilt, a beat apart, opacity and transform only, so nothing under the row
+   moves. `both` holds a card unseen through its delay. Once dealt, the class
+   goes and a card starred later just joins. */
+.deck-featured.dealing .deck-featured-card {
+    animation: deck-featured-deal 0.6s cubic-bezier(0.33, 1, 0.68, 1) 0.12s both;
+}
+
+.deck-featured.dealing .deck-featured-card:nth-child(2) {
+    animation-delay: 0.24s;
+}
+
+.deck-featured.dealing .deck-featured-card:nth-child(3) {
+    animation-delay: 0.36s;
+}
+
+.deck-featured.dealing .deck-featured-card:nth-child(4) {
+    animation-delay: 0.48s;
+}
+
+.deck-featured.dealing .deck-featured-card:nth-child(5) {
+    animation-delay: 0.6s;
+}
+
+.deck-featured.dealing .deck-featured-card:nth-child(6) {
+    animation-delay: 0.72s;
+}
+
+@keyframes deck-featured-deal {
+    from {
+        opacity: 0;
+        transform: translateY(-0.5rem) rotate(-3deg);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
 /* Reserve the card's footprint before the image loads. The img inside starts
    transparent with height:auto, so without a ratio here the strip collapses to
    nothing and pops back when the bytes land. */

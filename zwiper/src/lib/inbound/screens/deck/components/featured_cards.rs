@@ -5,11 +5,18 @@
 //! [`FlippableCardImage`] so DFC commanders can show both faces. Cards share
 //! the row's width and shrink together instead of wrapping.
 
+use std::time::Duration;
+
 use dioxus::prelude::*;
+use tokio::time;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ImageSize;
 
 use super::super::card::components::flippable_card_image::FlippableCardImage;
+
+/// How long a deal takes, in milliseconds: the sixth card's start (0.12s plus five 0.12s steps)
+/// and its 0.6s drop (`screens-b.css`, `.deck-featured.dealing`).
+const DEAL_MS: u64 = 1_400;
 
 /// One labeled featured card: image (when available) above name + role chip.
 /// Tapping it fires `on_tap` with the card, and the tap stops at the card so
@@ -54,7 +61,9 @@ fn FeaturedCard(card: Card, role: String, on_tap: EventHandler<Card>) -> Element
 /// when `ghost` says the deck likely features a card, else nothing; once
 /// loaded, nothing when there is nothing to feature. The row holds its
 /// height from its first frame, each card's image box ghosted until its art
-/// fades in, so nothing under it moves.
+/// fades in, so nothing under it moves. Each time it mounts with its cards (the
+/// Cards layer opening) they deal into that held space, opacity and transform
+/// only; a card starred after the deal just joins.
 #[component]
 pub fn FeaturedCards(
     /// `(card, role label)` pairs, command zone first then MVPs.
@@ -67,6 +76,16 @@ pub fn FeaturedCards(
     /// Fired with the tapped card: the host opens its details or its image.
     on_tap: EventHandler<Card>,
 ) -> Element {
+    let mut dealt = use_signal(|| false);
+    let dealing = loaded && !cards.is_empty();
+    use_effect(use_reactive!(|dealing| {
+        if dealing && !*dealt.peek() {
+            spawn(async move {
+                time::sleep(Duration::from_millis(DEAL_MS)).await;
+                dealt.set(true);
+            });
+        }
+    }));
     if !loaded {
         return if ghost {
             rsx! { FeaturedGhost {} }
@@ -78,7 +97,7 @@ pub fn FeaturedCards(
         return rsx! {};
     }
     rsx! {
-        section { class: "deck-featured",
+        section { class: if dealt() { "deck-featured" } else { "deck-featured dealing" },
             div { class: "deck-featured-row scroll-fade-x", "data-settle-scope": "",
                 for (card, role) in cards {
                     FeaturedCard { key: "{card.scryfall_data.id}", card, role, on_tap }

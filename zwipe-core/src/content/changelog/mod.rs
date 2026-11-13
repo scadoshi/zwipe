@@ -91,6 +91,9 @@ pub const UPCOMING: &[Release] = &[
             "On the web's deck page, the arrow keys or h, j, k and l move between cards and Enter opens one, in List and Stacks",
             "On a phone, a card's details open from a deck's Cards as a screen of their own, and Cards open and close at once, both over the grid tiles, on the web and in the app",
             "On phone web, scrolling a deck's Cards lets them fill the space the header leaves",
+            "On a phone, the featured cards deal in each time you open a deck's Cards, without moving anything under them",
+            "On a phone's web app, the menu opens over a deck's Cards",
+            "On a phone's web app, the featured cards keep a gap above Quick add",
         ],
     },
     Release {

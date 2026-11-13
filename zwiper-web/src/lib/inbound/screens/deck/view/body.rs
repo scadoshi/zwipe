@@ -193,14 +193,31 @@ pub(crate) fn DeckPageBody(
         featured_timed_out.set(true);
     });
     let featured_ready = featured_timed_out() || featured_loaded() >= featured.len();
-    // Once the first deal is done, a card starred later joins without one.
+    // The cards deal once they're ready, and again each time the phone's Cards layer opens over
+    // them, into the space the row holds; once a deal is done, a card starred later joins
+    // without one. Each deal outdates the one before it.
     let mut featured_dealt = use_signal(|| false);
-    use_effect(use_reactive!(|featured_ready| {
-        if featured_ready && !*featured_dealt.peek() {
-            spawn(async move {
-                timer::sleep(FEATURED_DEAL).await;
+    let mut deal_round = use_signal(|| 0u32);
+    let mut deal = move || {
+        let round = deal_round.peek().wrapping_add(1);
+        deal_round.set(round);
+        featured_dealt.set(false);
+        spawn(async move {
+            timer::sleep(FEATURED_DEAL).await;
+            if *deal_round.peek() == round {
                 featured_dealt.set(true);
-            });
+            }
+        });
+    };
+    use_effect(use_reactive!(|featured_ready| {
+        if featured_ready && *deal_round.peek() == 0 {
+            deal();
+        }
+    }));
+    let layer_open = phone && cards_open;
+    use_effect(use_reactive!(|layer_open| {
+        if layer_open && *deal_round.peek() > 0 {
+            deal();
         }
     }));
     let featured_class = match (featured_ready, featured_dealt()) {
