@@ -357,3 +357,8 @@ fn save_does_nothing_on_the_opening_printing_or_past_the_list() {
     assert!(!state.can_save(9));
     assert_eq!(state.update(Action::Save { at: 9 }), NONE);
 }
+
+#[test]
+fn a_screen_reader_hears_whose_printings_these_are() {
+    assert_eq!(label("Sol Ring"), "Printings of Sol Ring");
+}

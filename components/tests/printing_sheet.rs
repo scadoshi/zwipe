@@ -102,3 +102,48 @@ fn a_failed_fetch_offers_retry() {
     let html = render(app);
     assert!(html.contains("Retry"), "{html}");
 }
+
+#[test]
+fn the_header_names_the_card() {
+    let html = render(|| open_sheet(true));
+    assert!(
+        html.contains(r#"<span class="sheet-title">Research Assistant</span>"#),
+        "the card's name in the title bar: {html}"
+    );
+    assert!(
+        !html.contains(r#"<span class="sheet-title">Printings</span>"#),
+        "{html}"
+    );
+}
+
+#[test]
+fn the_foot_credits_the_printing_s_artist_beside_the_image_icon() {
+    let html = render(|| open_sheet(true));
+    let (_, chip) = html
+        .split_once(r#"class="detail-chip detail-chip-artist printing-artist""#)
+        .unwrap();
+    let (chip, _) = chip.split_once("</span>").unwrap();
+    assert!(
+        chip.contains(components::IMAGE_ICON),
+        "the Image icon: {chip}"
+    );
+    assert!(chip.contains("Svetlin Velinov"), "the artist: {chip}");
+}
+
+#[test]
+fn a_printing_with_no_artist_has_no_artist_chip() {
+    fn app() -> Element {
+        let mut nameless = card();
+        nameless.scryfall_data.artist = None;
+        let asked = use_signal(Vec::new);
+        let fetched = nameless.clone();
+        use_context_provider(move || source(PrintingsFetch::Ready(vec![fetched.clone()]), asked));
+        let open = use_signal(|| true);
+        rsx! {
+            PrintingSheet { card: nameless, open }
+        }
+    }
+    let html = render(app);
+    assert!(html.contains("card-prices"), "{html}");
+    assert!(!html.contains("detail-chip-artist"), "{html}");
+}

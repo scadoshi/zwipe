@@ -5,8 +5,8 @@
 //! index, and performs its effects.
 
 use components::{
-    BottomSheet, CardPricesGhost, CoverFlow, DockAction, LoadFailed, TOAST_NORMAL, ToastOptions,
-    Toasts, icons, use_toast,
+    ArtistChip, BottomSheet, CardPricesGhost, CoverFlow, DockAction, LoadFailed, TOAST_NORMAL,
+    ToastOptions, Toasts, icons, use_toast,
 };
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
@@ -160,10 +160,10 @@ pub(crate) fn PrintingSheet(
         // already open under them. A backdrop tap, the ×, a drag down or the
         // OS back gesture leave the same way, warning when an unsaved printing
         // is about to be lost.
-        div { class: "sheet-over",
+        div { class: "sheet-over app-printing-sheet",
             BottomSheet {
                 open,
-                title: model::TITLE.to_string(),
+                title: card.scryfall_data.name,
                 closable: true,
                 on_dismiss: move |()| driver.dispatch(Action::Dismiss { at: current_idx }),
 
@@ -179,6 +179,7 @@ pub(crate) fn PrintingSheet(
                         if status == Status::Loading {
                             CardPricesGhost {}
                         } else if let Some(card) = visible_card {
+                            ArtistChip { card: card.clone() }
                             CardInfoDisplay { card }
                         }
                     } else if let Some(card) = visible_card {
@@ -193,6 +194,7 @@ pub(crate) fn PrintingSheet(
                             }
                         }
 
+                        ArtistChip { card: card.clone() }
                         CardInfoDisplay { card }
                     }
                 }

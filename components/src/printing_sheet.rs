@@ -24,7 +24,9 @@ use zwipe_ui::shortcuts::{self, FlowKey};
 use crate::icons::{CHECK, DockIcon};
 use crate::keys::use_sheet_focus_handing_back;
 use crate::media::{KIT_MODAL_PX, use_min_width};
-use crate::{BottomSheet, CoverFlow, LoadFailed, SheetFrame, SheetWide, use_overlay_back_action};
+use crate::{
+    BottomSheet, CoverFlow, IMAGE_ICON, LoadFailed, SheetFrame, SheetWide, use_overlay_back_action,
+};
 
 /// How far a card's printings have come.
 #[derive(Debug, Clone, PartialEq)]
@@ -202,9 +204,11 @@ pub fn PrintingSheet(
         attempt.set(next);
     });
 
+    let name = card.scryfall_data.name;
     if flow() {
         return rsx! {
             CoverFlowSheet {
+                name,
                 open,
                 printings: all,
                 index,
@@ -225,7 +229,7 @@ pub fn PrintingSheet(
         div { class: "web-sheet web-sheet-modal web-printing-sheet sheet-over",
             BottomSheet {
                 open,
-                title: "Printings".to_string(),
+                title: name,
                 closable: true,
                 on_dismiss: move |()| leave.call(()),
                 div {
@@ -256,6 +260,9 @@ pub fn PrintingSheet(
                         // sheet's bottom. Save is grayed until a different
                         // printing shows.
                         div { class: "web-printing-foot",
+                            if let Some(card) = visible.clone().filter(|_| !loading) {
+                                ArtistChip { card }
+                            }
                             div { class: "web-printing-foot-row",
                                 if let Some(card) = visible.filter(|_| !loading) {
                                     CardPrices { card }
@@ -300,6 +307,8 @@ pub fn PrintingSheet(
 /// the `Select` button shows. `read_only` leaves out `Select`.
 #[component]
 fn CoverFlowSheet(
+    // The card's name, the sheet's title.
+    name: String,
     open: Signal<bool>,
     printings: Vec<Card>,
     mut index: Signal<usize>,
@@ -342,7 +351,7 @@ fn CoverFlowSheet(
                     class: if open() { "bottom-sheet show web-flow-sheet" } else { "bottom-sheet web-flow-sheet" },
                     style: layer().map(|z| format!("--overlay-z: {z};")),
                     role: "dialog",
-                    "aria-label": "Printings",
+                    "aria-label": model::label(&name),
                     "aria-modal": "true",
                     div { class: "sheet-header", style: "position: relative;",
                         button {
@@ -351,7 +360,7 @@ fn CoverFlowSheet(
                             onclick: move |_| on_leave.call(()),
                             "\u{00d7}"
                         }
-                        span { class: "sheet-title", "Printings" }
+                        span { class: "sheet-title", "{name}" }
                     }
                     div {
                         class: "sheet-content web-flow-body",
@@ -398,6 +407,7 @@ fn CoverFlowSheet(
                                 div { class: "web-flow-info",
                                     span { class: "stat-chip stat-chip-p3", "{card.scryfall_data.set_name}" }
                                     span { class: "stat-chip stat-chip-muted", "#{card.scryfall_data.collector_number}" }
+                                    ArtistChip { card }
                                     for price in prices {
                                         span { key: "{price}", class: "stat-chip stat-chip-money", "{price}" }
                                     }
@@ -419,6 +429,21 @@ fn CoverFlowSheet(
                     }
                 }
             }
+        }
+    }
+}
+
+/// The artist of `card`, a printing, as a chip: the Image icon, then the name. Nothing for a
+/// printing with no artist.
+#[component]
+pub fn ArtistChip(card: Card) -> Element {
+    let Some(artist) = info::artist(&card.scryfall_data) else {
+        return rsx! {};
+    };
+    rsx! {
+        span { class: "detail-chip detail-chip-artist printing-artist",
+            DockIcon { path: IMAGE_ICON }
+            "{artist}"
         }
     }
 }

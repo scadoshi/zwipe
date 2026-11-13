@@ -11,8 +11,14 @@ use zwipe_core::domain::card::Card;
 use crate::generation::{Generation, Ticket};
 use crate::toast::{Toast, ToastKind};
 
-/// The sheet's header.
+/// The sheet's name. Its title bar shows the card's name; a screen reader hears [`label`].
 pub const TITLE: &str = "Printings";
+
+/// What a screen reader calls the sheet open on the card named `card_name`.
+#[must_use]
+pub fn label(card_name: &str) -> String {
+    format!("{TITLE} of {card_name}")
+}
 
 /// The toast after Save when the host names none of its own.
 pub const SAVED: &str = "Printing saved";

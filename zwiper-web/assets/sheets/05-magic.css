@@ -809,6 +809,32 @@ i.ms.ms-cost.ms-gp {
     border-color: color-mix(in srgb, var(--palette-6) 35%, var(--tone-base, transparent));
 }
 
+/* A printing's artist under Printings: the Image icon at the chip's text size, then the name. */
+.printing-artist {
+    display: inline-flex;
+    align-self: center;
+    align-items: center;
+    gap: 0.3em;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.printing-artist > .action-dock-icon {
+    flex: none;
+    width: 1.1em;
+    height: 1.1em;
+}
+
+/* Printings is titled with the card's name, cut short where the bar can't hold it. */
+:is(.web-printing-sheet, .web-flow-sheet, .app-printing-sheet) .sheet-title {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .detail-chip-pt {
     color: var(--ink-palette-5, var(--color-stat, var(--palette-5)));
     background-color: color-mix(in srgb, var(--palette-5) 12%, var(--tone-base, transparent));
