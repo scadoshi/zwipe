@@ -145,7 +145,6 @@ Who checked, on which live build, what they saw.
 | [431](431-drawer-card-keys.md) | With a card's details drawer open on the web deck page, the card keys do nothing | fixing | scotland | orangui 3bd2f9b |
 | [432](432-star-undo.md) | Undo on the deck page skips starring and unstarring a card | fixing | thinker | - |
 | [434](434-featured-first-tap.md) | On a phone, a featured card floats on the first tap instead of opening, and the strip clips it | fixing | thinker | - |
-| [439](439-web-first-paint-lock.md) | A fresh web app tab can sit on the List skeleton for about ten seconds | fixing | halo | release |
 | [435](435-softer-float.md) | The Stacks float pops up and sways like a metronome, and a tap reveal snaps open | fixing | laptop | issue/435-softer-float |
 | [430](430-one-deck-route.md) | A deck's Profile and Cards are separate screens on narrow web and in the app, and the shared deck splits them with a chip row | fixing | laptop | issue/430-one-deck-route |
 | [436](436-deck-page-fixes.md) | Deck page rough edges: Fix to isn't undoable, Select closes the drawer, the move toast hides the count, Quick add lands the newest printing | fixing | thinker | - |
