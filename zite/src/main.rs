@@ -295,6 +295,8 @@ fn App() -> Element {
         // The kit's dialogs, without the app shell.
         document::Style { {::components::DIALOG_CSS} }
         document::Style { {MAGIC_CSS} }
+        // After style.css and before SITE_CSS, where the guide rules sit.
+        document::Style { {::components::GUIDES_CSS} }
         document::Style { {SITE_CSS} }
         document::Stylesheet { href: STYLE }
         // Scroll reveal for panels below the fold; everything it does is
@@ -304,6 +306,8 @@ fn App() -> Element {
         document::Script { {NAV_GLIDE_JS} }
         // Edge fades on sideways scrollers where CSS can't drive them.
         document::Script { {SCROLL_FADE_JS} }
+        // A framed screenshot or video fades in once it can paint.
+        document::Script { {::components::MEDIA_FRAME_JS} }
         // The backdrop, still: drawn in place on first paint. The splash's own
         // field rains in over it, the same seeded cells, so when the overlay
         // fades the backdrop is already there and nothing rains twice.

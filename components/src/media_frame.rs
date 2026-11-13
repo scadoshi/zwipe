@@ -3,7 +3,7 @@
 //! The frame takes the media's shape from its known width and height, so the
 //! page never moves when the media arrives, and shows the site's loading
 //! skeleton (components' `.skeleton-bar`, the app's ghost fill and pulse)
-//! inside it. The host page's script (zwipe.net's `index.html`) marks the media
+//! inside it. [`MEDIA_FRAME_JS`](crate::MEDIA_FRAME_JS) marks the media
 //! `data-ready` once it can paint its first frame (an image's `load`, a
 //! video's `loadeddata`, or an `error` so a broken file never pulses
 //! forever); until then the stylesheet keeps the media invisible, then fades

@@ -1,0 +1,439 @@
+/* The guide pages zwipe.net and the web app share (components' GuideIndex,
+   GuideArticle and MediaFrame), with the card grid, media frame and gallery
+   chrome zwipe.net's other pages use too. Loaded as GUIDES_CSS after the
+   host's own sheet and before the kit's SITE_CSS. */
+
+/* ==================
+        card grid
+ ==================== */
+
+.card-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: var(--panel-gap);
+    margin-top: var(--panel-gap);
+}
+
+/* A grid of two cards fills its row in two columns. */
+.card-grid.card-grid-2 {
+    grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 60rem) {
+    .card-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+/* Under about 560px two cards side by side wrap every few words, so a
+   card grid takes one column. */
+@media (max-width: 35rem) {
+    .card-grid,
+    .card-grid.card-grid-2 {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ==================
+        gallery
+ ==================== */
+
+/* A gallery's body is the kit's GalleryFrame and GalleryFooter. Their base is
+   site.css (SITE_CSS, loaded after this sheet, so an override of one of its
+   properties needs a more specific selector); these add the media window,
+   the prev/next colors and hover, the caption's ease and the full-width rule
+   between them. */
+
+/* Breaks out of the panel-card's 1.5rem padding. */
+.gallery-rule {
+    border: none;
+    border-top: 1px solid var(--border-secondary);
+    align-self: stretch;
+    margin: 0.75rem -1.5rem;
+}
+
+/* A media's box at its own shape (--media-w / --media-h, set by MediaFrame),
+   as tall as --media-max-h allows and no wider than its column, so nothing
+   moves when the media arrives. Until MEDIA_FRAME_JS marks the media
+   data-ready (it can paint its first frame), the box is the app's skeleton
+   (.skeleton-bar: the ghost fill and its pulse) and the media, controls and
+   all, stays hidden; then the pulse stops and the media fades in over it.
+   The hold applies before any script has run, as the page streams in;
+   a host's noscript style lifts it when script is off. */
+.media-frame {
+    --media-max-h: 70vh;
+    position: relative;
+    flex: none;
+    width: min(100%, calc(var(--media-max-h) * var(--media-w) / var(--media-h)));
+    aspect-ratio: var(--media-w) / var(--media-h);
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.media-frame > img,
+.media-frame > video {
+    position: relative;
+    z-index: 1;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: inherit;
+    animation: gallery-fade-in 0.25s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.media-frame > .media-frame-sk {
+    position: absolute;
+    inset: 0;
+    height: auto;
+    border-radius: inherit;
+}
+
+.media-frame > :is(img, video):not([data-ready]) {
+    opacity: 0;
+    animation: none;
+}
+
+.media-frame > [data-ready] ~ .media-frame-sk {
+    animation: none;
+}
+
+@keyframes gallery-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(0.25rem);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.gallery-nav {
+    transition:
+        opacity 0.15s,
+        border-color 0.15s,
+        color 0.15s;
+    z-index: 10;
+}
+
+.gallery-nav:hover {
+    opacity: 1;
+    border-color: var(--accent-primary);
+    color: var(--ink-accent-primary, var(--accent-primary));
+}
+
+.gallery-caption {
+    animation: gallery-fade-in 0.45s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.gallery-counter {
+    color: var(--text-subtle);
+}
+
+/* ==================
+        guides
+ ==================== */
+
+/* The search box fills the row's middle inside the kit's clear wrap, whose
+   × slides in beside it while there is text. */
+.guide-filter > .input-clear-wrap {
+    flex: 1 1 12rem;
+    width: auto;
+    max-width: 21rem;
+    margin-bottom: 0;
+}
+
+.guide-search-input {
+    border: 1px solid var(--border-primary);
+    border-radius: 0.4rem;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.8rem;
+    padding: 0.35rem 0.7rem;
+    box-shadow: var(--shadow-sm);
+    transition: border-color 0.15s;
+}
+
+.guide-search-input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
+
+/* The label chip, as the app's chip rows draw it, with the weight restated
+   for a page without the app's screen sheet. */
+.guide-filter > .chip-row-label {
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* Nothing matched: the reason line plus a reset that clears search and tag. */
+.guide-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    color: var(--ink-text-muted, var(--text-muted));
+    font-size: 0.9rem;
+    margin-bottom: var(--panel-gap);
+}
+
+.guide-empty .chip {
+    font-family: inherit;
+}
+
+/* The tag filter row above the guide grid, in the app's .chip and
+   .chip.selected look (a button needs the font restated). */
+.guide-filter {
+    display: flex;
+    flex-wrap: wrap;
+    /* Without this the label stretches to the line box and its text rides high
+       against the input and chips beside it. */
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: var(--panel-gap);
+}
+
+.guide-filter .chip {
+    font-family: inherit;
+}
+
+/* Tag labels shown on each guide card, under the summary. Each tag takes a
+   tag-pN class keyed by its place in zwipe_ui::guides::TAGS, so the same tag reads the
+   same color on every card. */
+.guide-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.75rem;
+}
+
+/* The Link is the click target; the Panel inside is the visual card. Flex so the
+   panel-card fills the grid-stretched wrapper and cards stay equal height. */
+.guide-card {
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+}
+
+/* Filter/search results fade up instead of popping in, staggered per card
+   (delay set inline). `backwards` holds the start frame through the delay so a
+   late card doesn't flash at full opacity first. */
+@keyframes guide-card-in {
+    from {
+        opacity: 0;
+        transform: translateY(0.5rem);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+.guide-card-in {
+    animation: guide-card-in 0.28s ease-out backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .guide-card-in {
+        animation: none;
+    }
+}
+
+.guide-card > .panel-card {
+    flex: 1;
+}
+
+.guide-card .card-summary {
+    color: var(--text-subtle);
+    font-size: 0.85rem;
+    line-height: 1.55;
+}
+
+/* "Related guides" block at the foot of a guide: pill links to sibling guides. */
+.guide-related-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+}
+
+.guide-related-link {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.4rem 0.9rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.4rem;
+    background-color: var(--bg-primary);
+    box-shadow: var(--shadow-sm);
+    color: var(--ink-palette-1, var(--palette-1));
+    text-decoration: none;
+    font-size: 0.85rem;
+    transition:
+        border-color 0.15s,
+        color 0.15s;
+}
+
+.guide-related-link:hover {
+    border-color: var(--accent-primary);
+}
+
+.guide-title {
+    margin-top: 0.35rem;
+}
+
+.guide-content .guide-h2 {
+    font-size: 1rem;
+    color: var(--ink-accent-primary, var(--accent-primary));
+    margin-top: 1.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.guide-content .guide-lead {
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    line-height: 1.6;
+    margin-bottom: 0.5rem;
+}
+
+.guide-content .guide-p,
+.guide-content .guide-steps,
+.guide-content .guide-bullets,
+.guide-content .guide-swipe {
+    font-size: 0.85rem;
+    line-height: 1.8;
+}
+
+.guide-content .guide-steps,
+.guide-content .guide-bullets,
+.guide-content .guide-swipe {
+    margin: 0.5rem 0 0.5rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.guide-content .guide-swipe {
+    list-style: none;
+    margin-left: 0;
+}
+
+.guide-kw {
+    padding: 0.03rem 0.32rem;
+    border-radius: 0.6rem;
+    background-color: color-mix(in srgb, var(--text-primary) 9%, transparent);
+    border: 1px solid color-mix(in srgb, var(--text-primary) 16%, transparent);
+    color: var(--text-primary);
+    font-size: 0.9em;
+    white-space: nowrap;
+}
+
+.guide-note {
+    font-size: 0.82rem;
+    line-height: 1.55;
+    color: var(--text-subtle);
+    border-left: 2px solid var(--accent-tertiary);
+    padding: 0.15rem 0 0.15rem 0.85rem;
+    margin: 1rem 0;
+}
+
+/* The border sits on the wrapper so the scroller's edge fade leaves it whole. */
+.guide-diagram {
+    border: 1px solid var(--accent-tertiary);
+    border-radius: 0.5rem;
+    margin: 1.25rem 0;
+}
+
+.guide-diagram pre {
+    font-size: 0.78rem;
+    line-height: 1.5;
+    color: var(--text-subtle);
+    padding: 1rem;
+    margin: 0;
+    overflow-x: auto;
+    white-space: pre;
+}
+
+/* ==================
+        guide screenshots
+ ==================== */
+
+/* The article panel and the sidecar gallery Panel sit as grid siblings:
+   prose in the wide track, one phone-shaped viewer (home gallery chrome,
+   prev/next) in the narrow one, sticky so it rides along as the text
+   scrolls. Stacks on phones with the gallery first. */
+.guide-with-gallery {
+    display: grid;
+    /* Gallery left, prose right. */
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    gap: var(--panel-gap);
+    align-items: start;
+    margin-bottom: var(--panel-gap);
+}
+
+/* The grid gap owns the spacing; the article panel's .section margin would
+   double it below the row. */
+.guide-with-gallery > .section {
+    margin-bottom: 0;
+}
+
+.guide-gallery-col {
+    position: sticky;
+    /* Clears the sticky nav plus a breathing gap, so the panel docks below
+       the header instead of sliding under it. --nav-height is measured live
+       by the host, so a wrapped, taller nav still clears. */
+    top: calc(var(--nav-height, 5rem) + 1rem);
+}
+
+/* Guide captures are shorter than the home demo reel; size the body to the
+   image instead of reserving the home gallery's 70vh. The panel-body prefix
+   outranks site.css's 70vh, which loads after this sheet. */
+.panel-body .guide-gallery-body {
+    min-height: 24rem;
+}
+
+.guide-gallery-col .media-frame {
+    --media-max-h: 60vh;
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-sm);
+}
+
+@media (max-width: 800px) {
+    .guide-with-gallery {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .guide-gallery-col {
+        position: static;
+    }
+}
+
+.guide-figure {
+    margin: 1rem 0;
+}
+
+/* Framed like the site's cards; phone captures are tall, so cap the height
+   and let width follow rather than flooding the column. */
+.guide-img-frame {
+    --media-max-h: 34rem;
+    margin: 0 auto;
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.guide-figcaption {
+    margin-top: 0.4rem;
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--text-subtle);
+}
+
+/* Tag chips under the article title (same chips as the index cards). */
+.guide-title-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    /* The panel-rule below owns the bottom spacing. */
+    margin: 0.5rem 0 0;
+}

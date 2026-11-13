@@ -206,6 +206,16 @@ pub use theme::{pip_style_class, theme_from_settings};
 /// Latin subset leaves them to a system font, which draws them heavier.
 pub const FONTS_CSS: &str = include_str!("../assets/fonts.css");
 
+/// The guide pages' rules (components' `GuideIndex`, `GuideArticle` and
+/// [`MediaFrame`]), with the card grid, media frame and gallery chrome
+/// zwipe.net's other pages share. A host loads it after its own sheet and
+/// before the kit's `SITE_CSS`, with [`MEDIA_FRAME_JS`].
+pub const GUIDES_CSS: &str = include_str!("../assets/guides.css");
+
+/// Marks a [`MediaFrame`]'s image or video ready once it can paint, which
+/// fades it in over its skeleton. A host runs it once per page.
+pub const MEDIA_FRAME_JS: &str = include_str!("../assets/media_frame.js");
+
 /// The deck page's cards on the two web sites: the wide page, the list's two columns from
 /// 1400px, the rows' rules and the Stacks view. Load it after [`MAGIC_CSS`] and the screen rules.
 /// The phone apps draw their stacks with their own rules and leave it out.

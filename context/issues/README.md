@@ -145,6 +145,7 @@ Who checked, on which live build, what they saw.
 | [429](429-narrow-sheet-keys-and-drag.md) | On the web at phone width, Printings ignores the arrow keys and Enter until clicked, and the filter can't be pulled down | fixing | scotland | orangui 4566a7e, fbfcc73 |
 | [432](432-star-undo.md) | Undo on the deck page skips starring and unstarring a card | fixing | thinker | - |
 | [433](433-web-app-404.md) | app.zwipe.net answers an unknown path with 200 | open | halo | - |
+| [439](439-web-first-paint-lock.md) | A fresh web app tab can sit on the List skeleton for about ten seconds | open | halo | - |
 
 ## Waiting for live verification
 

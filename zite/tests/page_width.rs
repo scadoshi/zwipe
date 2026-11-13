@@ -24,10 +24,13 @@ fn every_page_shares_one_1400px_column() {
     );
 }
 
+/// The guide pages' sheet, from components.
+const GUIDES_CSS: &str = include_str!("../../components/assets/guides.css");
+
 #[test]
 fn running_text_fills_its_panel() {
     assert!(
-        !CSS.contains("70ch"),
+        !CSS.contains("70ch") && !GUIDES_CSS.contains("70ch"),
         "no text is capped to a reading measure"
     );
 }

@@ -2,8 +2,9 @@
 //! link reads as one by the accent color alone, so no sheet these surfaces load sets an
 //! underline. The kit's own sheets carry the same gate in orangui.
 
-const SHEETS: [(&str, &str); 9] = [
+const SHEETS: [(&str, &str); 10] = [
     ("magic.css", include_str!("../assets/magic.css")),
+    ("guides.css", include_str!("../assets/guides.css")),
     ("filter.css", include_str!("../assets/filter.css")),
     (
         "screens/base.css",

@@ -114,6 +114,7 @@ fn bare_tones(body: &str) -> Vec<&'static str> {
 fn tone_text_reads_its_ink() {
     let sheets = [
         ("magic.css", include_str!("../assets/magic.css")),
+        ("guides.css", include_str!("../assets/guides.css")),
         ("filter.css", include_str!("../assets/filter.css")),
         (
             "screens/base.css",
