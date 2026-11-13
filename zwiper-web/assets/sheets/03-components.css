@@ -1230,6 +1230,15 @@ a.nav-dropdown-item.active:visited {
     transition: none !important;
 }
 
+/* While a sheet is open, a pull down on it never reaches the browser's
+   pull-to-refresh, which would reload the page and lose what the sheet
+   holds: its content keeps its overscroll, and so does the page under it. */
+html:has(.bottom-sheet.show),
+html:has(.bottom-sheet.show) body,
+.bottom-sheet .sheet-content {
+    overscroll-behavior-y: contain;
+}
+
 /* ---- Sheet handle (orangui::SheetHandle) ----
    Where a sheet that pulls is dragged from: a short bar at the top of a
    bottom sheet, a short upright bar on a drawer's inner edge, with a little

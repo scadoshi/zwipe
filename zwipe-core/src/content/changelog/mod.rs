@@ -71,6 +71,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "A card's details drawer opening on the other side from last time slides in from its own edge instead of sweeping across the page, on the web and in the app",
         "On the web, a banner's close button is named for screen readers",
         "Account's Log out sits with your account details instead of in the Danger zone, on the web and in the app",
+        "A drawer let go over the page or outside the window no longer sticks mid-drag, and a pull down on an open sheet no longer reloads the page, on the web and zwipe.net",
     ],
 }];
 

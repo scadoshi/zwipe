@@ -191,6 +191,7 @@ pub fn DrawerSheet(
                 onpointermove: move |evt| drag.follow(&evt),
                 onpointerup: move |evt| drag.release(&evt),
                 onpointercancel: move |evt| drag.cancel(&evt),
+                onlostpointercapture: move |evt| drag.cancel(&evt),
                 SheetHandle { toward, drag }
                 div {
                     class: "sheet-header",
