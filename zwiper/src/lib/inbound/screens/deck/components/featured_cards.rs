@@ -5,42 +5,21 @@
 //! [`FlippableCardImage`] so DFC commanders can show both faces. Cards share
 //! the row's width and shrink together instead of wrapping.
 
-use std::time::Duration;
-
 use dioxus::prelude::*;
-use tokio::time;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ImageSize;
 
 use super::super::card::components::flippable_card_image::FlippableCardImage;
 
-/// Seconds the row waits for the card images before it opens anyway.
-const REVEAL_TIMEOUT_SECS: u64 = 4;
-
-/// How long the first deal takes once the row opens, in milliseconds: the row's 0.8s height
-/// transition, the sixth card's 0.9s stagger and its 0.78s drop (`screens-b.css`).
-const DEAL_MS: u64 = 2_500;
-
 /// One labeled featured card: image (when available) above name + role chip.
 /// Tapping it fires `on_tap` with the card, and the tap stops at the card so
 /// the screen's tap-off doesn't see it. Nothing covers a featured card, so it
-/// never floats: the first tap acts. `on_load` fires once the image has its
-/// bytes, or at once when the card has none.
+/// never floats: the first tap acts.
 #[component]
-fn FeaturedCard(
-    card: Card,
-    role: String,
-    on_tap: EventHandler<Card>,
-    on_load: EventHandler<()>,
-) -> Element {
+fn FeaturedCard(card: Card, role: String, on_tap: EventHandler<Card>) -> Element {
     let name = card.scryfall_data.name.clone();
     let sd = card.scryfall_data.clone();
     let has_image = sd.primary_image_url(ImageSize::Normal).is_some();
-    use_effect(use_reactive!(|has_image| {
-        if !has_image {
-            on_load.call(());
-        }
-    }));
     rsx! {
         div {
             class: "deck-featured-card",
@@ -56,7 +35,6 @@ fn FeaturedCard(
                     size: ImageSize::Normal,
                     class: "deck-featured-image".to_string(),
                     draggable: false,
-                    on_load: move |()| on_load.call(()),
                 }
             }
             div { class: "deck-featured-chips",
@@ -74,14 +52,9 @@ fn FeaturedCard(
 
 /// The featured row. While the deck loads it is a ghost at the row's height
 /// when `ghost` says the deck likely features a card, else nothing; once
-/// loaded, nothing when there is nothing to feature.
-///
-/// A row that opens on a page already loaded holds zero height until every
-/// card's image has loaded, or 4 s pass, then opens and deals the cards in.
-/// A row that follows its ghost is open from the start, its cards in place
-/// over ghost image boxes that their art fills as it loads, so nothing under
-/// it moves. Once open it stays open, so a card starred later joins without
-/// a re-deal of the row.
+/// loaded, nothing when there is nothing to feature. The row holds its
+/// height from its first frame, each card's image box ghosted until its art
+/// fades in, so nothing under it moves.
 #[component]
 pub fn FeaturedCards(
     /// `(card, role label)` pairs, command zone first then MVPs.
@@ -94,26 +67,6 @@ pub fn FeaturedCards(
     /// Fired with the tapped card: the host opens its details or its image.
     on_tap: EventHandler<Card>,
 ) -> Element {
-    let mut images_loaded: Signal<usize> = use_signal(|| 0);
-    let mut timed_out: Signal<bool> = use_signal(|| false);
-    let mut opened: Signal<bool> = use_signal(|| false);
-    // Whether the row first drew as its ghost, so it opens in place.
-    let held = use_hook(|| !loaded && ghost);
-    let mut dealt: Signal<bool> = use_signal(|| false);
-    use_future(move || async move {
-        time::sleep(Duration::from_secs(REVEAL_TIMEOUT_SECS)).await;
-        timed_out.set(true);
-    });
-    let total = cards.len();
-    use_effect(use_reactive!(|total| {
-        if !opened() && (timed_out() || images_loaded() >= total) {
-            opened.set(true);
-            spawn(async move {
-                time::sleep(Duration::from_millis(DEAL_MS)).await;
-                dealt.set(true);
-            });
-        }
-    }));
     if !loaded {
         return if ghost {
             rsx! { FeaturedGhost {} }
@@ -124,23 +77,11 @@ pub fn FeaturedCards(
     if cards.is_empty() {
         return rsx! {};
     }
-    let class = match (held, opened(), dealt()) {
-        (true, _, _) => "deck-featured held",
-        (false, true, true) => "deck-featured ready dealt",
-        (false, true, false) => "deck-featured ready",
-        (false, false, _) => "deck-featured",
-    };
     rsx! {
-        section { class: "{class}",
+        section { class: "deck-featured",
             div { class: "deck-featured-row scroll-fade-x", "data-settle-scope": "",
                 for (card, role) in cards {
-                    FeaturedCard {
-                        key: "{card.scryfall_data.id}",
-                        card,
-                        role,
-                        on_tap,
-                        on_load: move |()| images_loaded += 1,
-                    }
+                    FeaturedCard { key: "{card.scryfall_data.id}", card, role, on_tap }
                 }
             }
         }
@@ -152,13 +93,14 @@ pub fn FeaturedCards(
 #[component]
 fn FeaturedGhost() -> Element {
     rsx! {
-        section { class: "deck-featured held", "aria-hidden": "true",
+        section { class: "deck-featured", "aria-hidden": "true",
             div { class: "deck-featured-row",
                 div { class: "deck-featured-card",
                     div { class: "deck-featured-image" }
+                    // Chip boxes at a loaded card's chips' height, filled as ghosts.
                     div { class: "deck-featured-chips",
-                        span { class: "skeleton-bar skeleton-chip skeleton-chip-md" }
-                        span { class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
+                        span { class: "stat-chip deck-featured-ghost-chip", style: "width: 7rem;", "\u{a0}" }
+                        span { class: "stat-chip deck-featured-ghost-chip", style: "width: 4.5rem;", "\u{a0}" }
                     }
                 }
             }

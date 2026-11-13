@@ -2986,74 +2986,42 @@ body .toast-container [role="alertdialog"] {
  ================================ */
 
 /* Command zone + MVPs on one line at the top of the deck screen, each card
-   labeled underneath, mirroring the zite share page's featured row. The
-   section holds zero height until every card's image has loaded (`.ready`),
-   then opens to the row's height, and the cards deal in after it. 0fr to 1fr
-   animates to whatever height the card count gives without measuring. */
+   labeled underneath, mirroring the zite share page's featured row. The row
+   holds its height from its first frame, its loading ghost included, and
+   each card's image box shows the ghost fill until its art fades in over it,
+   so nothing under the row moves while the deck and its images land. */
 .deck-featured {
     display: grid;
-    grid-template-rows: 0fr;
     grid-template-columns: minmax(0, 1fr);
-    transition: grid-template-rows 0.8s cubic-bezier(0.33, 1, 0.68, 1);
     /* Breathing room before the group-by controls below. */
     margin-bottom: 1rem;
 }
 
-.deck-featured.ready {
-    grid-template-rows: 1fr;
-}
-
-/* A row that follows its ghost (and the ghost itself) is open from the
-   start, its cards in place and their image boxes ghosted until the art
-   fills them, so nothing under the row moves when the deck lands. */
-.deck-featured.held {
-    grid-template-rows: 1fr;
-    transition: none;
-}
-
-.deck-featured.held .deck-featured-card {
-    opacity: 1;
-}
-
-.deck-featured.held .deck-featured-image {
-    border-radius: 4.75% / 3.5%;
-    background-color: var(--border-muted);
-}
-
-/* Once the row is open it scrolls sideways within the page's width,
-   snapping to a card and faded at an edge with more past it (the kit's
-   scroll-fade-x). Before then it clips, for the height transition. */
-.deck-featured.ready .deck-featured-row {
-    overflow-x: auto;
-    overflow-y: hidden;
-    scroll-snap-type: x mandatory;
-    overscroll-behavior-x: contain;
-    scrollbar-width: none;
-}
-
-.deck-featured.ready .deck-featured-row::-webkit-scrollbar {
-    display: none;
-}
-
 /* The cards share the row up to 11rem each while they fit, centered; past
    about two and a third on a phone they keep that width and the row
-   scrolls. */
+   scrolls sideways within the page's width, snapping to a card and faded at
+   an edge with more past it (the kit's scroll-fade-x). */
 .deck-featured-row {
     display: flex;
     flex-wrap: nowrap;
     justify-content: flex-start;
     justify-content: safe center;
-    /* Layout inside the row stays inside it while the height moves. */
-    contain: layout;
     gap: 0.5rem;
     min-width: 0;
-    min-height: 0;
-    overflow: hidden;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
     /* Room inside the row's clip for each card's shadow, given back by the
        margins so the row sits and sizes where it did. */
     padding: 0.5rem 0.75rem 0;
     margin: -0.5rem -0.75rem 0;
     scroll-padding-inline: 0.75rem;
+}
+
+.deck-featured-row::-webkit-scrollbar {
+    display: none;
 }
 
 .deck-featured-card {
@@ -3062,60 +3030,9 @@ body .toast-container [role="alertdialog"] {
     max-width: 11rem;
     scroll-snap-align: start;
     text-align: center;
-    /* Invisible until the row is ready; the deal below brings it in. */
-    opacity: 0;
-    /* A card starred after the row opened is a layout change, not an
-       entrance, so its siblings ease their width share instead of snapping. */
+    /* A card starred later is a layout change, not an entrance, so its
+       siblings ease their width share instead of snapping. */
     transition: flex-grow 0.3s ease;
-}
-
-/* Cards deal in from above once the row has opened: drop + settle with a
-   slight tilt, at the size they keep. Width is not animated: growing cards in
-   sequence reflows the row on each one and reads as a scramble rather than a
-   deal. `both` holds a card invisible through its delay and visible after. */
-.deck-featured.ready .deck-featured-card {
-    animation: deck-featured-deal 0.78s cubic-bezier(0.33, 1, 0.68, 1) both;
-    /* Starts once the height transition above has finished. */
-    animation-delay: 0.8s;
-}
-
-/* Once the first deal is done (`.dealt`), a card starred later joins as a
-   layout change: no deal, so it never waits out the delay invisible. */
-.deck-featured.ready.dealt .deck-featured-card {
-    animation: none;
-    opacity: 1;
-}
-
-/* Staggered like a real deal: each card lands a beat after the one before. */
-.deck-featured.ready .deck-featured-card:nth-child(2) {
-    animation-delay: calc(0.8s + 180ms);
-}
-
-.deck-featured.ready .deck-featured-card:nth-child(3) {
-    animation-delay: calc(0.8s + 360ms);
-}
-
-.deck-featured.ready .deck-featured-card:nth-child(4) {
-    animation-delay: calc(0.8s + 540ms);
-}
-
-.deck-featured.ready .deck-featured-card:nth-child(5) {
-    animation-delay: calc(0.8s + 720ms);
-}
-
-.deck-featured.ready .deck-featured-card:nth-child(6) {
-    animation-delay: calc(0.8s + 900ms);
-}
-
-@keyframes deck-featured-deal {
-    from {
-        opacity: 0;
-        transform: translateY(-1.5rem) rotate(-3deg);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0) rotate(0deg);
-    }
 }
 
 /* Reserve the card's footprint before the image loads. The img inside starts
@@ -3124,6 +3041,8 @@ body .toast-container [role="alertdialog"] {
 .deck-featured-image {
     width: 100%;
     aspect-ratio: 5 / 7;
+    border-radius: 4.75% / 3.5%;
+    background-color: var(--border-muted);
 }
 
 .deck-featured-card .deck-featured-image img {
@@ -3154,6 +3073,13 @@ body .toast-container [role="alertdialog"] {
     padding: 0.1rem 0.45rem;
     font-size: 0.62rem;
     border-radius: 0.5rem;
+}
+
+/* The row's loading ghost: its chips at a loaded card's chips' size, in the
+   ghost fill. */
+.stat-chip.deck-featured-ghost-chip {
+    border-color: transparent;
+    background-color: var(--border-muted);
 }
 
 .deck-featured-name {
