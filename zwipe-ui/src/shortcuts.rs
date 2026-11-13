@@ -111,6 +111,11 @@ pub const EVERYWHERE_ROWS: [SheetRow; 3] = [
 #[must_use]
 pub fn deck_cards_rows(editable: Editable) -> Vec<SheetRow> {
     let reads = card_read_rows();
+    let moves: [SheetRow; 2] = [
+        (&["↑", "↓", "←", "→"], "Move between cards"),
+        (&["h", "j", "k", "l"], "Move between cards"),
+    ];
+    let open: SheetRow = (&["Enter"], "Open the card");
     let edits: [SheetRow; 6] = [
         (&["m"], "Maybeboard"),
         (&["s"], "Sideboard"),
@@ -124,8 +129,10 @@ pub fn deck_cards_rows(editable: Editable) -> Vec<SheetRow> {
         Editable::Yes => &edits[..],
         Editable::No => &[],
     };
-    reads
+    moves
         .into_iter()
+        .chain([open])
+        .chain(reads)
         .chain(edits.iter().copied())
         .chain([filter])
         .collect()
@@ -202,7 +209,7 @@ pub fn examples_rows() -> [SheetRow; 4] {
 }
 
 /// The line the deck cards page's sheet shows above its keys.
-pub const DECK_CARDS_NOTE: &str = "Hover or open a card, then press its key";
+pub const DECK_CARDS_NOTE: &str = "Move to a card, or hover it, then press its key";
 
 #[cfg(test)]
 mod tests {
@@ -254,7 +261,12 @@ mod tests {
             .into_iter()
             .flat_map(|(keys, _)| keys.iter().copied())
             .collect();
-        assert_eq!(read_only, ["p", "i", "v", "d", "f"]);
+        assert_eq!(
+            read_only,
+            [
+                "↑", "↓", "←", "→", "h", "j", "k", "l", "Enter", "p", "i", "v", "d", "f"
+            ]
+        );
         let editable = deck_cards_rows(Editable::Yes);
         for key in ["m", "s", "Shift+S", "-", "+", "u", UNDO_COMBO] {
             assert!(

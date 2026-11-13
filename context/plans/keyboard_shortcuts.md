@@ -34,6 +34,8 @@ Each key acts on one card: the card under the cursor (a list row or a stack card
 | `S` (Shift+S) | Star or unstar it, as the details' Star button does, cap included: a fourth star is refused with the server's "This deck already has 3 MVPs" toast and rolls back |
 | `-` | One copy fewer, as the stepper's `-` does: at one copy it removes the card, with Undo |
 | `+` (or `=` without Shift) | One copy more, as the stepper's `+` does, with no cap |
+| `↑` `↓` `←` `→`, `h` `j` `k` `l` | Move the keyboard cursor between cards (`deck_keyboard_nav.md`): up and down in a column, left and right to the nearest card in the next column; Home and End to the first and last card while the cursor shows. The cursor card is the card the keys act on until the mouse moves |
+| Enter | Open the cursor card, as a click does |
 | `u`, Ctrl+Z (Cmd+Z) | Undo, as the dock's Undo does; nothing when there is nothing to undo. Not a card key: it doesn't need a card, and it waits for the details drawer to close |
 
 A key whose button the card doesn't have does nothing: `m` on a maybeboard card, `s` on a sideboard card, Shift+S off the main board, `m`, `s`, `-` and `+` on a command zone card or a token, and `v` on a single-faced card. `i` on a stack card whose details aren't open opens the same image view on the face the stack shows; with its details open it presses the drawer's Image. `s` here is Sideboard; Synergy's `s` belongs to Add.

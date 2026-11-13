@@ -185,7 +185,7 @@ pub fn sheet_note(screen: &ShortcutsScreen) -> Option<&'static str> {
 
 #[cfg(test)]
 mod tests {
-    use zwipe_ui::deck_cards::keys as hover_keys;
+    use zwipe_ui::deck_cards::{cursor, keys as hover_keys};
 
     use super::*;
 
@@ -341,20 +341,24 @@ mod tests {
         let rows = sheet_rows(&ShortcutsScreen::DeckCards);
         assert_eq!(
             sheet_note(&ShortcutsScreen::DeckCards),
-            Some("Hover or open a card, then press its key")
+            Some("Move to a card, or hover it, then press its key")
         );
         assert_eq!(sheet_note(&ShortcutsScreen::Swipe(ADD_LABELS)), None);
         // Every listed key really does what its row says on the deck cards screen.
         for (keys, does) in &rows {
             for label in *keys {
-                let key = if *label == "Shift+H" {
-                    "H"
-                } else if *label == "Shift+S" {
-                    "S"
-                } else {
-                    label
+                let key = match *label {
+                    "Shift+H" => "H",
+                    "Shift+S" => "S",
+                    "↑" => "ArrowUp",
+                    "↓" => "ArrowDown",
+                    "←" => "ArrowLeft",
+                    "→" => "ArrowRight",
+                    other => other,
                 };
-                let known = hover_keys::hover_key(key, Editable::Yes).is_some()
+                let known = cursor::move_for(key).is_some()
+                    || key == "Enter"
+                    || hover_keys::hover_key(key, Editable::Yes).is_some()
                     || card_key(key).is_some()
                     || undo_letter(key)
                     || global_key(key).is_some()

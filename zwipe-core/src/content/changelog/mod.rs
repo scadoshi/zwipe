@@ -88,6 +88,7 @@ pub const UPCOMING: &[Release] = &[
             "A deck's Cards slide in over its Profile and slide back out, and an edit made there shows on the Profile right away, on the web and in the app",
             "On the web, Caps Lock no longer changes what a letter shortcut does",
             "On the web, an Oracle tag's Examples keep Next, Back one and the details eye on one bar",
+            "On the web's deck page, the arrow keys or h, j, k and l move between cards and Enter opens one, in List and Stacks",
         ],
     },
     Release {

@@ -152,6 +152,7 @@ Who checked, on which live build, what they saw.
 | [441](441-signed-out-nav.md) | The web app's signed-out nav lists Forgot password | fixing | thinker | - |
 | [437](437-examples-one-dock.md) | At phone width the Examples controls wrap, the eye on a row of its own | fixing | scotland | - |
 | [442](442-held-deck.md) | Profile and Cards share one up-to-date deck so a star or a Warnings fix never reads a stale copy | fixing | laptop | issue/held-deck |
+| [440](440-deck-keyboard-nav.md) | The deck page's cards can't be reached from the keyboard | fixing | scotland | - |
 
 ## Waiting for live verification
 

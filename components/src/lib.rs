@@ -63,6 +63,7 @@ mod cover_flow;
 mod danger_zone;
 pub mod data_action;
 mod deck_cards_view;
+mod deck_cursor;
 mod deck_group;
 mod deck_hover_keys;
 mod deck_page;

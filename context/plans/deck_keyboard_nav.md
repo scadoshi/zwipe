@@ -1,6 +1,6 @@
 # Keyboard navigation of the deck page's cards (440)
 
-Status: plan, for Scotty's read before any code. Owner: scotland.
+Status: v1 built 2026-11-13 with Scotty's five picks (the recommendations under Decisions). Owner: scotland. Two changes from the plan as written: every card was already a Tab stop (List lines are `role=button` with `tabindex=0`, stack cards are buttons), so v1 moves focus between them and keeps that Tab order instead of a roving `tabindex`; and up and down read the order from the cards as drawn (columns in page order, folded groups out) rather than rebuilding it from the sections, so they never disagree with the screen. The decisions stay in `zwipe_ui::deck_cards::cursor`; the browser side is `components/src/deck_cursor.rs`.
 
 The web deck page (owner and shared, List and Stacks) gets a keyboard cursor: the arrow keys and `h` `j` `k` `l` move it between cards, Enter or `d` opens the card under it, and every card key (`p` `i` `v` `m` `s` Shift+S `-` `+`) acts on it as it acts on a hovered card today. A mouse user sees nothing new; a keyboard user can work the whole page without touching the mouse.
 

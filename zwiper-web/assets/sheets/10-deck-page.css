@@ -206,3 +206,11 @@
     background: transparent;
     pointer-events: none;
 }
+
+/* The keyboard cursor scrolls its card into view clear of the sticky header
+   above and the docks below. */
+.web-deck-row .card-row-compact,
+.card-stack-slot .card-stack-card {
+    scroll-margin-top: 5.5rem;
+    scroll-margin-bottom: 6.5rem;
+}

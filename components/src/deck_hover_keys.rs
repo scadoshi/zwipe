@@ -15,14 +15,16 @@ use zwipe_ui::deck_cards::keys::{self as hover_keys, HoverAction, HoverKey, RowI
 use zwipe_ui::shortcuts::Editable;
 
 use crate::deck_cards_view::{DeckEditActions, OnPrinting, StackDetails};
+use crate::deck_cursor;
 use crate::keys::{STACK_DETAILS_CLASS, use_page_keys_through};
 use crate::meld::{MeldSource, MeldToggle};
 
 /// Sends the card the deck cards screen's keys act on: the card the details drawer shows, as
-/// `stack:<id>` so `d` closes it, else the deepest card under the cursor, as `stack:<id>` for a
+/// `stack:<id>` so `d` closes it, else the keyboard cursor's card when a key moved last
+/// ([`crate::deck_cursor`]), else the deepest card under the mouse, as `stack:<id>` for a
 /// stack card or a featured card in the deck head or `row:<id>` for a list row, else the list
 /// row whose details are open, else an empty string.
-const KEY_CARD_JS: &str = "const drawer = document.querySelector('.bottom-sheet.show.__DRAWER__[data-card]'); const under = document.querySelectorAll('[data-row]:hover'); const row = document.querySelector('.web-deck-row.selected[data-row]'); const card = under.length ? under[under.length - 1] : row; dioxus.send(drawer ? 'stack:' + drawer.getAttribute('data-card') : card ? (card.matches('.card-stack-slot, .deck-head-card-image') ? 'stack:' : 'row:') + card.getAttribute('data-row') : '');";
+const KEY_CARD_JS: &str = "const drawer = document.querySelector('.bottom-sheet.show.__DRAWER__[data-card]'); const keyed = __KEYED__; const under = document.querySelectorAll('[data-row]:hover'); const row = document.querySelector('.web-deck-row.selected[data-row]'); const card = keyed || (under.length ? under[under.length - 1] : row); dioxus.send(drawer ? 'stack:' + drawer.getAttribute('data-card') : card ? (card.matches('.card-stack-slot, .deck-head-card-image') ? 'stack:' : 'row:') + card.getAttribute('data-row') : '');";
 
 /// Clicks list row `__ID__`'s line, which opens or closes its details as a click on it does.
 const ROW_TOGGLE_JS: &str = "const line = document.querySelector('.web-deck-row[data-row=\"__ID__\"] .card-row-compact'); if (line) line.click();";
@@ -81,6 +83,7 @@ pub fn use_deck_hover_keys(keys: DeckHoverKeys) {
     } = keys;
     let editable = editable(actions.as_ref());
     let meld_source = try_use_context::<MeldSource>();
+    deck_cursor::use_deck_cursor(details);
     use_page_keys_through(
         STACK_DETAILS_CLASS,
         hover_keys::hover_keys(editable),
@@ -92,8 +95,11 @@ pub fn use_deck_hover_keys(keys: DeckHoverKeys) {
                 return;
             };
             spawn(async move {
-                let mut found =
-                    document::eval(&KEY_CARD_JS.replace("__DRAWER__", STACK_DETAILS_CLASS));
+                let mut found = document::eval(
+                    &KEY_CARD_JS
+                        .replace("__DRAWER__", STACK_DETAILS_CLASS)
+                        .replace("__KEYED__", &deck_cursor::keyed_js()),
+                );
                 let Ok(found) = found.recv::<String>().await else {
                     return;
                 };
@@ -180,7 +186,9 @@ mod tests {
 
     #[test]
     fn the_card_the_drawer_shows_stays_the_keyed_card_over_any_hovered_one() {
-        let js = KEY_CARD_JS.replace("__DRAWER__", STACK_DETAILS_CLASS);
+        let js = KEY_CARD_JS
+            .replace("__DRAWER__", STACK_DETAILS_CLASS)
+            .replace("__KEYED__", &deck_cursor::keyed_js());
         let drawer = format!(".bottom-sheet.show.{STACK_DETAILS_CLASS}[data-card]");
         assert!(js.contains(&drawer), "the drawer names its card: {js}");
         assert!(

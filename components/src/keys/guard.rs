@@ -23,6 +23,21 @@ pub const TYPING_TAGS: [&str; 3] = ["INPUT", "TEXTAREA", "SELECT"];
 /// An open sheet or drawer.
 const OPEN_SHEET: &str = ".bottom-sheet.show";
 
+/// The image preview, an overlay of its own that is neither a sheet nor a dialog.
+const IMAGE_PREVIEW: &str = ".image-preview-container";
+
+/// The guard for the deck page's cursor keys ([`guard_js`]'s typing and combo checks): they reach
+/// the page while no modal is open but the sheet with `sheet_class`, the deck page's details
+/// drawer, which they pass through, and no image preview shows.
+#[must_use]
+pub fn cursor_guard_js(sheet_class: &str) -> String {
+    let modals = MODAL_SELECTORS.join(", ");
+    let overlays = format!(
+        "[...document.querySelectorAll('{modals}')].every((m) => m.matches('{OPEN_SHEET}.{sheet_class}')) && !document.querySelector('{IMAGE_PREVIEW}')"
+    );
+    browser_guard(Modifiers::Refused, &overlays)
+}
+
 /// Open overlays that keep the screen's keys to themselves: a dialog and a sheet or drawer.
 pub const OVERLAY_SELECTORS: [&str; 2] = [".alert-dialog[data-state=\"open\"]", OPEN_SHEET];
 
@@ -172,6 +187,26 @@ mod tests {
             through.contains(&format!("['S'].includes({PRESSED_KEY})")),
             "{through}"
         );
+    }
+
+    #[test]
+    fn the_cursor_keys_pass_only_the_details_drawer_and_never_a_modal_or_the_image() {
+        let js = cursor_guard_js(STACK_DETAILS_CLASS);
+        for modal in MODAL_SELECTORS {
+            assert!(js.contains(modal), "{modal} keeps the keys: {js}");
+        }
+        assert!(
+            js.contains(&format!(
+                "m.matches('.bottom-sheet.show.{STACK_DETAILS_CLASS}')"
+            )),
+            "{js}"
+        );
+        assert!(
+            js.contains("!document.querySelector('.image-preview-container')"),
+            "{js}"
+        );
+        assert!(js.contains("e.ctrlKey || e.altKey || e.metaKey"), "{js}");
+        assert!(js.contains("'INPUT'"), "never while typing: {js}");
     }
 
     #[test]

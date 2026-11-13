@@ -16,6 +16,7 @@ use crate::deck::form::Slot;
 use crate::stores::undo::UndoAction;
 
 pub mod columns;
+pub mod cursor;
 pub mod keys;
 pub mod listing;
 pub mod stacks;
