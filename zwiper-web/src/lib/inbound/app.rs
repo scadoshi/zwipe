@@ -207,7 +207,7 @@ if (!window.__zwipeHintFocus) {
 "#;
 
 /// Where focus goes around every other dialog (a hint has its own,
-/// [`HINT_FOCUS_JS`]), installed once. As one opens it takes focus on its
+/// [`HINT_FOCUS_JS`], and the leave guard's its own Stay), installed once. As one opens it takes focus on its
 /// first field (Clone's name), else its primary action (a non-danger
 /// confirm, such as Share's Create link), else its first link (Buy's
 /// stores), else its Cancel, so a danger dialog never starts on its danger
@@ -223,7 +223,7 @@ if (!window.__zwipeDialogFocus) {
     const FIRST = ['input:not([type="hidden"]):not([disabled]), textarea:not([disabled]), select:not([disabled])', '.alert-dialog-actions .alert-dialog-action:not([disabled])', '.alert-dialog-actions a[href]', '.alert-dialog-actions .alert-dialog-cancel:not([disabled])'];
     new MutationObserver(() => {
         const open = document.querySelector('.alert-dialog[data-state="open"]');
-        if (open && !open.querySelector('.hint-body, .hint-line, .hint-bullets')) {
+        if (open && !open.matches('.web-leave-dialog') && !open.querySelector('.hint-body, .hint-line, .hint-bullets')) {
             if (opener) return;
             const active = document.activeElement;
             opener = active && active !== document.body ? active : (pressed || document.body);
