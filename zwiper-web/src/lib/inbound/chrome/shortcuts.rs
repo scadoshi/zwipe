@@ -15,7 +15,7 @@ pub use zwipe_ui::shortcuts::{
     flow_key, global_key, undo_letter,
 };
 use zwipe_ui::shortcuts::{
-    DECK_CARDS_NOTE, EVERYWHERE_ROWS, Editable, FLIP_ROW, SheetRow, card_read_rows,
+    DECK_CARDS_NOTE, EVERYWHERE_ROWS, Editable, FLIP_ROW, SheetRow, card_read_rows, card_rows_rows,
     deck_cards_rows, examples_rows,
 };
 
@@ -169,7 +169,7 @@ pub fn sheet_rows(screen: &ShortcutsScreen) -> Vec<SheetRow> {
         }
         ShortcutsScreen::DeckCards => deck_cards_rows(Editable::Yes),
         ShortcutsScreen::Examples => examples_rows().to_vec(),
-        ShortcutsScreen::CardRows => card_read_rows().to_vec(),
+        ShortcutsScreen::CardRows => card_rows_rows(),
     };
     own.into_iter().chain(EVERYWHERE_ROWS).collect()
 }
@@ -180,7 +180,7 @@ pub fn sheet_rows(screen: &ShortcutsScreen) -> Vec<SheetRow> {
 pub fn claims_steps(screen: &ShortcutsScreen) -> bool {
     match screen {
         ShortcutsScreen::Swipe(_) | ShortcutsScreen::DeckCards | ShortcutsScreen::Examples => true,
-        ShortcutsScreen::CardRows => false,
+        ShortcutsScreen::CardRows => true,
     }
 }
 
@@ -461,9 +461,28 @@ mod tests {
         assert!(claims_steps(&ShortcutsScreen::DeckCards));
         assert!(claims_steps(&ShortcutsScreen::Examples));
         assert!(
-            !claims_steps(&ShortcutsScreen::CardRows),
-            "Playstyle and Activity's keys leave j and k"
+            claims_steps(&ShortcutsScreen::CardRows),
+            "the card-row screens' cursor moves on j and k"
         );
+    }
+
+    #[test]
+    fn the_card_row_screens_list_their_cursor_keys_then_the_card_keys() {
+        let rows = sheet_rows(&ShortcutsScreen::CardRows);
+        let actions: Vec<&str> = rows.iter().take(7).map(|(_, does)| *does).collect();
+        assert_eq!(
+            actions,
+            [
+                "Move between cards",
+                "Move between cards",
+                "First or last card",
+                "Open the card",
+                "Printings",
+                zwipe_ui::shortcuts::card_read_rows()[1].1,
+                FLIP_ROW,
+            ]
+        );
+        assert_eq!(rows.first().map(|(keys, _)| *keys), Some(&["↑", "↓"][..]));
     }
 
     #[test]
