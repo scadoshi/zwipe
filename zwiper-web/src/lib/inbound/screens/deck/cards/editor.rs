@@ -9,7 +9,6 @@ use std::collections::{HashMap, HashSet};
 
 use chrono::{DateTime, Utc};
 use components::keys::{focus_by_id, use_undo_key};
-use components::swipe_stack::{Swipe, use_swipe_key_handler};
 use components::{DeckEditActions, DeckHoverKeys, DeckRowHost, TOAST_QUICK, use_deck_hover_keys};
 use dioxus::core::spawn_forever;
 use dioxus::prelude::*;
@@ -180,7 +179,7 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
     use_context_provider(|| ShowRowArt(show_art));
     let collapsed: Signal<HashSet<String>> = use_signal(HashSet::new);
     let mut selected: Signal<Option<Uuid>> = use_signal(|| None);
-    let mut face = use_signal(|| 0usize);
+    let face = use_signal(|| 0usize);
     let faces: Signal<HashMap<Uuid, usize>> = use_signal(HashMap::new);
     // The Stacks view's reveal, which `d` moves as a click does; absent where the screen has no
     // stacks.
@@ -889,42 +888,6 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
         )
     });
 
-    // On the computer layout the keyboard cursor takes the arrows (`components::deck_cursor`);
-    // narrower, they step the open row.
-    let computer = components::use_computer();
-    use_swipe_key_handler(
-        vec![Swipe::Up, Swipe::Down],
-        Callback::new(move |swipe: Swipe| {
-            if *computer.peek() {
-                return;
-            }
-            let list: Vec<Uuid> = listing
-                .peek()
-                .rows
-                .iter()
-                .map(|r| r.card.scryfall_data.id)
-                .collect();
-            if list.is_empty() {
-                return;
-            }
-            let at = selected
-                .peek()
-                .and_then(|id| list.iter().position(|v| *v == id));
-            let next = match (swipe, at) {
-                (Swipe::Up, None) => list.len().saturating_sub(1),
-                (Swipe::Down, Some(i)) => i.saturating_add(1).min(list.len().saturating_sub(1)),
-                (_, Some(i)) => i.saturating_sub(1),
-                (_, None) => 0,
-            };
-            if let Some(id) = list.get(next) {
-                selected.set(Some(*id));
-                face.set(0);
-                document::eval(&format!(
-                    "const el = document.querySelector('[data-row=\"{id}\"]'); if (el) el.scrollIntoView({{ block: 'nearest' }});"
-                ));
-            }
-        }),
-    );
     // Shift+H opens the shortcuts sheet with this screen's keys.
     use_offer_shortcuts(ShortcutsScreen::DeckCards);
     // `p`, `i`, `v`, `d`, `m`, `s`, Shift+S, `-` and `+` act on the card under the cursor, else

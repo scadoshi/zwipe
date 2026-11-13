@@ -7,8 +7,8 @@
 //! The browser gathers the cards as drawn, columns left to right and each card top to bottom, and
 //! [`zwipe_ui::deck_cards::cursor`] decides where a move lands. The keys pass through the details
 //! drawer, which follows the cursor to each new card, and never through any other sheet, dialog,
-//! large modal or the image preview. Only the computer layout takes them (a mouse with hover, from
-//! 900px), so a phone or a touch screen never sees the cursor.
+//! large modal or the image preview. They answer at any width, a narrow window or a tablet's
+//! keyboard too: a key is the keyboard's own proof, and a touch never moves the cursor.
 //!
 //! Which card the card keys act on reads the cursor too (`KEYED_JS`): the card in focus when the
 //! last input was a key, else the card under the mouse. A mouse move that scrolls nothing counts as
@@ -20,7 +20,6 @@ use zwipe_ui::deck_cards::cursor::{MOVE_KEYS, Move, Snapshot, Stop, move_for};
 
 use crate::deck_cards_view::StackDetails;
 use crate::keys::{PRESSED_KEY, STACK_DETAILS_CLASS, cursor_guard_js};
-use crate::media::COMPUTER_QUERY;
 
 /// The cards the cursor stops on: List rows and stack cards. A featured card in the deck head is
 /// not one.
@@ -80,8 +79,8 @@ if (!window.__zwipeDeckTrack) {
 }
 "#;
 
-/// Registers one page's cursor keys: a move key under the guard, on the computer layout, while
-/// the page draws cards, gathers the cards as drawn and sends `[key, from, columns]`, `from` the
+/// Registers one page's cursor keys: a move key under the guard, at any width, while the page
+/// draws cards, gathers the cards as drawn and sends `[key, from, columns]`, `from` the
 /// card the move starts at (the hovered card when the mouse moved last, else the card in focus,
 /// else the last cursor), each column `[[id, center_y, in_view], ...]`, and `open`: `drawer`
 /// while the details drawer shows, `row` while a List row is open, else empty. Home and End only
@@ -95,7 +94,7 @@ const onKey = (e) => {
     if (!stack.length || stack[stack.length - 1] !== '__ID__') return;
     const key = __KEY__;
     if (!__MOVES__.includes(key) || e.shiftKey && key.startsWith('Arrow')) return;
-    if (!matchMedia('__POINTER__').matches || !__GUARD__) return;
+    if (!__GUARD__) return;
     const all = [...document.querySelectorAll(stops)].filter((s) => s.offsetParent !== null && !s.closest('[inert]'));
     if (!all.length) return;
     const focused = document.activeElement && document.activeElement.closest && document.activeElement.closest(stops);
@@ -197,7 +196,6 @@ pub(crate) fn use_deck_cursor(details: Option<StackDetails>) {
             .replace("__STOPS__", STOP_SELECTOR)
             .replace("__KEY__", PRESSED_KEY)
             .replace("__MOVES__", &format!("{MOVE_KEYS:?}"))
-            .replace("__POINTER__", COMPUTER_QUERY)
             .replace("__GUARD__", &cursor_guard_js(STACK_DETAILS_CLASS))
             .replace("__DRAWER__", STACK_DETAILS_CLASS);
         spawn(async move {
@@ -325,8 +323,11 @@ mod tests {
     }
 
     #[test]
-    fn the_keys_reach_only_a_mouse_page_and_pass_only_the_drawer() {
-        assert!(NAV_JS.contains("matchMedia('__POINTER__')"), "{NAV_JS}");
+    fn the_keys_reach_any_width_and_pass_only_the_drawer() {
+        assert!(
+            !NAV_JS.contains("matchMedia") && !NAV_JS.contains("__POINTER__"),
+            "a key reaches the cursor at any width, a keyboard's own proof: {NAV_JS}"
+        );
         assert!(
             NAV_JS.contains("e.shiftKey && key.startsWith('Arrow')"),
             "{NAV_JS}"

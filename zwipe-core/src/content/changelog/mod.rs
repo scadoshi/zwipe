@@ -75,6 +75,7 @@ pub const UPCOMING: &[Release] = &[
             "On a phone, a card's details drawer scrolls its own content with a vertical swipe, and an opened card role or tag scrolls into view",
             "A card's details drawer on a deck's Cards opens on the side away from the card's column, and on a phone drags toward that side to close",
             "On the web's deck page, holding a key to run down the cards swaps the details drawer at once instead of fading each card",
+            "On the web's deck page, the arrow keys and h, j, k and l move between cards at any window width, a tablet's keyboard included",
         ],
     },
     Release {
