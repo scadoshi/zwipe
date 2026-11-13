@@ -6,6 +6,7 @@ use zwipe_core::domain::user::models::hints::MarkHintShown;
 use zwipe_core::domain::user::requests::get_user::GetUser;
 use zwipe_core::domain::user::settings::{UpdateSettings, UserSettings};
 
+use crate::domain::user::models::account_summary::AccountSummary;
 use crate::domain::user::models::get_user::GetUserError;
 use crate::domain::user::models::hints::MarkHintShownError;
 use crate::domain::user::models::settings::{FetchSettingsError, UpdateSettingsError};
@@ -36,6 +37,10 @@ impl<R: UserRepository> UserService for Service<R> {
 
     async fn fetch_user(&self, request: &GetUser) -> Result<User, GetUserError> {
         self.repo.fetch_user(request.user_id).await
+    }
+
+    async fn fetch_account_summary(&self, user_id: Uuid) -> Result<AccountSummary, GetUserError> {
+        self.repo.fetch_account_summary(user_id).await
     }
 
     // == settings ==

@@ -584,26 +584,22 @@ where
         Ok(user)
     }
 
-    async fn admin_change_username(
-        &self,
-        account: &AccountRef,
-        new_username: &Username,
-    ) -> Result<(Username, User), ChangeUsernameError> {
+    async fn fetch_account(&self, account: &AccountRef) -> Result<User, AuthenticateUserError> {
         let user_id = match account {
             AccountRef::Id(id) => Some(*id),
             AccountRef::Username(username) => self
                 .auth_repo
                 .fetch_user_id_by_username(username)
                 .await
-                .map_err(ChangeUsernameError::Database)?,
+                .map_err(AuthenticateUserError::Database)?,
             AccountRef::Email(email) => self
                 .auth_repo
                 .fetch_user_id_by_email(email.as_ref())
                 .await
-                .map_err(ChangeUsernameError::Database)?,
+                .map_err(AuthenticateUserError::Database)?,
         };
         let Some(user_id) = user_id else {
-            return Err(AuthenticateUserError::UserNotFound.into());
+            return Err(AuthenticateUserError::UserNotFound);
         };
         let lookup = AuthenticateUser {
             identifier: user_id.to_string(),
@@ -616,6 +612,24 @@ where
             .auth_repo
             .fetch_user_with_password_hash(&lookup)
             .await?;
+        Ok(held.into())
+    }
+
+    async fn admin_delete_user(&self, user_id: Uuid) -> Result<(), DeleteUserError> {
+        self.auth_repo
+            .delete_user(&DeleteUser {
+                user_id,
+                password: Secret::new(""),
+            })
+            .await
+    }
+
+    async fn admin_change_username(
+        &self,
+        account: &AccountRef,
+        new_username: &Username,
+    ) -> Result<(Username, User), ChangeUsernameError> {
+        let held = self.fetch_account(account).await?;
         let request = ChangeUsername {
             user_id: held.id,
             new_username: new_username.clone(),

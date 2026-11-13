@@ -14,6 +14,9 @@ use zwipe_core::domain::user::settings::{
     UserSettings,
 };
 
+use crate::domain::user::models::account_summary::{
+    AccountSummary, AuditEntry, RECENT_AUDIT_EVENTS,
+};
 use crate::domain::user::models::get_user::GetUserError;
 use crate::domain::user::models::hints::MarkHintShownError;
 use crate::domain::user::models::settings::{FetchSettingsError, UpdateSettingsError};
@@ -104,6 +107,33 @@ impl UserRepository for Postgres {
         .await?;
 
         Ok(self.with_pending_email(User::from(database_user)).await?)
+    }
+
+    async fn fetch_account_summary(&self, user_id: Uuid) -> Result<AccountSummary, GetUserError> {
+        let user = self.fetch_user(user_id).await?;
+        let row = query!(
+            r#"SELECT u.created_at, u.last_active_at,
+                      (SELECT count(*) FROM decks d WHERE d.user_id = u.id) AS "deck_count!"
+               FROM users u WHERE u.id = $1"#,
+            user_id
+        )
+        .fetch_one(&self.pool)
+        .await?;
+        let recent_audit = query_as!(
+            AuditEntry,
+            "SELECT action, occurred_at FROM user_audit_log WHERE user_id = $1 ORDER BY occurred_at DESC, id DESC LIMIT $2",
+            user_id,
+            RECENT_AUDIT_EVENTS
+        )
+        .fetch_all(&self.pool)
+        .await?;
+        Ok(AccountSummary {
+            user,
+            created_at: row.created_at,
+            last_active_at: row.last_active_at,
+            deck_count: row.deck_count,
+            recent_audit,
+        })
     }
 
     // == hints ==

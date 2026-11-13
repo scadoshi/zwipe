@@ -449,10 +449,32 @@ Account changes made from the server only, never from the app. It is not part of
 ```bash
 cd ~/zwipe-src && git pull
 SQLX_OFFLINE=true cargo build --release --bin zerver-admin
-sudo bash -c 'set -a; . /etc/zwipe/zerver.env; set +a; /home/scadoshi/zwipe-src/target/release/zerver-admin rename <username|id|email> <new-username>'
+sudo bash -c 'set -a; . /etc/zwipe/zerver.env; set +a; /home/scadoshi/zwipe-src/target/release/zerver-admin <command> ...'
 ```
 
-`rename` renames an account the way a user's own change does (the username rules, a name no other account holds in any case, the `username_changed` audit row) without the password or the reserved-name check, and mails the account that its old name is now reserved. `--no-notice` sends nothing; `--reply-to <address>` sets where replies go, which is otherwise the server's `SUPPORT_EMAIL_ADDRESS` (support@zwipe.net). The account is read as an id when it is a uuid, an email when it is a valid email, and a username otherwise, so a username that is itself an email is named by its id. `zerver-admin --help` and `zerver-admin rename --help` list the commands and options.
+Every command names the account by its exact username, its id or its exact email: a uuid reads as an id, a valid email as an email, anything else as a username, so a username that is itself an email is named by its id. Each goes through zerver's own services, as the app's requests do. `zerver-admin --help` lists the commands and `zerver-admin <command> --help` their options.
+
+A command that takes something away (`sign-out-all`, `delete`) asks for the account's username to be typed back before it acts. `--yes` skips the question; `--dry-run` finds the account, says what would happen and changes nothing.
+
+### How to try each command on a dummy account
+
+Define `za` once per shell so each line below runs the binary with zerver's environment:
+
+```bash
+za() { sudo bash -c 'set -a; . /etc/zwipe/zerver.env; set +a; exec /home/scadoshi/zwipe-src/target/release/zerver-admin "$@"' zerver-admin "$@"; }
+za show dummy1                                   # username, email, verified, created, last active, decks, latest audit events
+za rename dummy1 dummy2 --no-notice              # rename; drop --no-notice to mail the reserved-name notice
+za rename dummy2 dummy3 --reply-to me@zwipe.net  # notice replies go to me@zwipe.net instead of SUPPORT_EMAIL_ADDRESS
+za sign-out-all dummy3 --dry-run                 # says what it would do; then run without --dry-run and type dummy3
+za resend-verification dummy3                    # a fresh verify link to the account's address (refused once verified)
+za delete dummy3                                 # type dummy3 to confirm; --yes skips the question
+```
+
+- `show` changes nothing and writes no audit row.
+- `rename` works like a user's own change (the username rules, no other account may hold the name in any case, the `username_changed` audit row) but skips the password and the reserved-name check, which is how Scotty claims a reserved name. It then emails the account that its old name is now reserved, with replies going to `SUPPORT_EMAIL_ADDRESS` (support@zwipe.net) unless `--reply-to` names another address.
+- `sign-out-all` revokes every refresh token (audit `signed_out_everywhere`). An access token already issued stays valid until it expires, up to `ACCESS_TOKEN_MINUTES`.
+- `resend-verification` sends the same email as the app's resend (audit `verification_email_sent`).
+- `delete` is the user's own delete without the password. The account's audit rows go with it, so the delete is recorded in the server log (`admin_account_deleted`).
 
 ## systemd Service
 

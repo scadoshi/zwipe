@@ -19,6 +19,7 @@ use zwipe_core::domain::user::models::hints::MarkHintShown;
 use zwipe_core::domain::user::requests::get_user::GetUser;
 use zwipe_core::domain::user::settings::{UpdateSettings, UserSettings};
 
+use crate::domain::user::models::account_summary::AccountSummary;
 use crate::domain::user::models::get_user::GetUserError;
 use crate::domain::user::models::hints::MarkHintShownError;
 use crate::domain::user::models::settings::{FetchSettingsError, UpdateSettingsError};
@@ -32,6 +33,13 @@ pub trait UserRepository: Clone + Send + Sync + 'static {
     ///
     /// Returns user data without password hash (use `AuthRepository` for that).
     fn fetch_user(&self, user_id: Uuid) -> impl Future<Output = Result<User, GetUserError>> + Send;
+
+    /// The account `user_id` at a glance: when it was made and last active, its deck count and its
+    /// latest audit events.
+    fn fetch_account_summary(
+        &self,
+        user_id: Uuid,
+    ) -> impl Future<Output = Result<AccountSummary, GetUserError>> + Send;
 
     /// Fetches display settings for a user. Returns defaults if no row exists.
     fn fetch_settings(
@@ -63,6 +71,17 @@ pub trait UserService: Clone + Send + Sync + 'static {
         &self,
         request: &GetUser,
     ) -> impl Future<Output = Result<User, GetUserError>> + Send;
+
+    /// The account `user_id` at a glance, for `zerver-admin show`.
+    ///
+    /// # Errors
+    ///
+    /// [`GetUserError::NotFound`] when the account is gone, and [`GetUserError::Database`] on a
+    /// database failure.
+    fn fetch_account_summary(
+        &self,
+        user_id: Uuid,
+    ) -> impl Future<Output = Result<AccountSummary, GetUserError>> + Send;
 
     // == settings ==
 

@@ -355,6 +355,30 @@ pub trait AuthService: Clone + Send + Sync + 'static {
         request: &ChangeUsername,
     ) -> impl Future<Output = Result<User, ChangeUsernameError>> + Send;
 
+    /// The account `account` names: by exact username, id or exact email. For `zerver-admin`;
+    /// nothing in the app reaches it.
+    ///
+    /// # Errors
+    ///
+    /// [`AuthenticateUserError::UserNotFound`] when no account matches, and
+    /// [`AuthenticateUserError::Database`] on a database failure.
+    fn fetch_account(
+        &self,
+        account: &AccountRef,
+    ) -> impl Future<Output = Result<User, AuthenticateUserError>> + Send;
+
+    /// Deletes `user_id` and everything it owns, the way the user's own delete does but without
+    /// the password, for `zerver-admin`.
+    ///
+    /// # Errors
+    ///
+    /// [`DeleteUserError::NotFound`] when the account is gone, and
+    /// [`DeleteUserError::Database`] on a database failure.
+    fn admin_delete_user(
+        &self,
+        user_id: Uuid,
+    ) -> impl Future<Output = Result<(), DeleteUserError>> + Send;
+
     /// Renames the account `account` names (by exact username, id or exact email) to
     /// `new_username` as a user's own change does, without the password and without the
     /// reserved-name check, for Scotty claiming a reserved name from the server. Answers the

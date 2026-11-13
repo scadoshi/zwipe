@@ -140,6 +140,7 @@ Who checked, on which live build, what they saw.
 | [424](424-overlay-layers.md) | Themes opens under the card details drawer | fixing | laptop | issue/424-overlay-layers, orangui 73ee2f6 |
 | [425](425-zite-soft-404.md) | zwipe.net answers an unknown path with a 200, and Esc leaves the featured card's art open | fixing | scotland | - |
 | [426](426-zerver-admin-clap.md) | zerver-admin parses its own arguments and reads the account as a string at lookup | fixing | thinker | - |
+| [427](427-zerver-admin-commands.md) | zerver-admin has no way to inspect, sign out, re-verify, delete, lock or re-email an account | fixing | thinker | - |
 
 ## Waiting for live verification
 

@@ -59,6 +59,10 @@ pub enum AuditAction {
     Refresh,
     /// User logged out (revoked their sessions).
     Logout,
+    /// An admin revoked every session the account holds.
+    SignedOutEverywhere,
+    /// An admin sent the account a fresh verification email.
+    VerificationEmailSent,
 }
 
 impl AuditAction {
@@ -72,6 +76,8 @@ impl AuditAction {
             AuditAction::Login => "login",
             AuditAction::Refresh => "refresh",
             AuditAction::Logout => "logout",
+            AuditAction::SignedOutEverywhere => "signed_out_everywhere",
+            AuditAction::VerificationEmailSent => "verification_email_sent",
         }
     }
 }
