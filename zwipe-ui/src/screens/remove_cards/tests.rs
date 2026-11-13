@@ -1005,3 +1005,90 @@ fn undo_puts_a_removed_card_back_with_its_star() {
         "the create restores the star"
     );
 }
+
+#[test]
+fn a_starred_card_swiped_to_the_maybeboard_gets_its_star_back_on_undo() {
+    let mut built = deck_of(&["Adriana", "Shock"]);
+    let starred_at: DateTime<Utc> = "2026-01-02T03:04:05Z".parse().unwrap();
+    built.entries[0].deck_card.mvp_at = Some(starred_at);
+    let deck_id = built.deck_profile.id;
+    let card_id = built.entries[0].card.scryfall_data.id;
+    let mut state = loaded(built);
+
+    let recorded = swipe_and_land(&mut state, Action::Move);
+    assert!(
+        matches!(recorded, UndoAction::MovedBoard { starred: Some(at), .. } if at == starred_at),
+        "the deck's undo log keeps the star the move dropped: {recorded:?}"
+    );
+    assert_eq!(
+        state.entries()[0].deck_card.mvp_at,
+        None,
+        "off the main board it is unstarred, as the server has it"
+    );
+
+    let effects = state.update(Action::Undo);
+    let effects = state.update(Action::Taken {
+        ticket: ticket_of(&effects),
+        taken: Some(recorded),
+    });
+    let ticket = ticket_of(&effects);
+    assert!(
+        matches!(
+            effects.as_slice(),
+            [
+                _,
+                Effect::RestoreBoard {
+                    board: Board::Deck,
+                    ..
+                }
+            ]
+        ),
+        "the move back goes alone: {effects:?}"
+    );
+    let landed = state.update(Action::Landed { ticket });
+    let Some(Effect::RestoreStar {
+        ticket: star,
+        deck_id: d,
+        card_id: c,
+    }) = landed
+        .iter()
+        .find(|e| matches!(e, Effect::RestoreStar { .. }))
+        .cloned()
+    else {
+        panic!("once it is back, the star follows: {landed:?}");
+    };
+    assert_eq!((d, c), (deck_id, card_id));
+    let _ = state.update(Action::Landed { ticket: star });
+    assert_eq!(state.entries()[0].deck_card.board, Board::Deck);
+    assert_eq!(state.entries()[0].deck_card.mvp_at, Some(starred_at));
+}
+
+#[test]
+fn a_refused_star_leaves_the_undone_move_standing_unstarred() {
+    let mut built = deck_of(&["Adriana", "Shock"]);
+    built.entries[0].deck_card.mvp_at = Some(Utc::now());
+    let mut state = loaded(built);
+    let recorded = swipe_and_land(&mut state, Action::Move);
+    let effects = state.update(Action::Undo);
+    let effects = state.update(Action::Taken {
+        ticket: ticket_of(&effects),
+        taken: Some(recorded),
+    });
+    let landed = state.update(Action::Landed {
+        ticket: ticket_of(&effects),
+    });
+    let Some(Effect::RestoreStar { ticket: star, .. }) = landed
+        .iter()
+        .find(|e| matches!(e, Effect::RestoreStar { .. }))
+        .cloned()
+    else {
+        panic!("{landed:?}");
+    };
+    let _ = state.update(Action::Failed { ticket: star });
+    assert_eq!(
+        state.entries()[0].deck_card.board,
+        Board::Deck,
+        "the move back stands"
+    );
+    assert_eq!(state.entries()[0].deck_card.mvp_at, None);
+}

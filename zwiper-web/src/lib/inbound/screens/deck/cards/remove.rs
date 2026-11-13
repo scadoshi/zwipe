@@ -306,7 +306,12 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                 stack.write().insert_current(card.clone());
                 restore.call(((card, board, quantity, mvp_at), taken));
             }
-            RemoveAction::MoveBoard { card, from, .. } => {
+            RemoveAction::MoveBoard {
+                card,
+                from,
+                starred,
+                ..
+            } => {
                 let card = *card;
                 let card_id = card.scryfall_data.id;
                 let taken = undo.write().take_newest(deck_id, |a| {
@@ -322,6 +327,20 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                     return;
                 }
                 stack.write().insert_current(card);
+                // Back on the main board its star follows once the move lands, in a write of its
+                // own so a refused star can't take the move with it, unless the deck already has
+                // its three MVPs.
+                let wants_star = starred.filter(|_| from == Board::Deck);
+                let capped = wants_star.is_some()
+                    && zwipe_ui::deck_cards::mvp_count(&entries.peek())
+                        >= zwipe_ui::deck_cards::MAX_MVPS;
+                if capped {
+                    toast.info(
+                        zwipe_ui::screens::deck_cards::MVP_CAP_REACHED.to_string(),
+                        quick,
+                    );
+                }
+                let restar = wants_star.filter(|_| !capped);
                 spawn(async move {
                     let fresh = match ensure_fresh(session, client).await {
                         Ok(fresh) => fresh,
@@ -350,6 +369,23 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                                 e.deck_card.board = from;
                             }
                             confirm.success("Undid move");
+                            if let Some(at) = restar {
+                                let star = HttpPatchDeckCard::with_mvp(true);
+                                match http.update_deck_card(deck_id, card_id, &star, &fresh).await {
+                                    Ok(_) => {
+                                        if let Some(e) = entries
+                                            .write()
+                                            .iter_mut()
+                                            .find(|e| e.deck_card.scryfall_data_id == card_id)
+                                        {
+                                            e.deck_card.mvp_at = Some(at);
+                                        }
+                                    }
+                                    Err(e) => {
+                                        toast.error(e.to_user_message(), ToastOptions::default());
+                                    }
+                                }
+                            }
                         }
                         Err(e) => {
                             tracing::warn!("undo failed: {e}");
@@ -454,10 +490,17 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                 } else {
                     Board::Maybeboard
                 };
+                // Off the main board the server drops the star; its time goes with the move so
+                // undo can put it back.
+                let starred = entry
+                    .as_ref()
+                    .and_then(|e| e.deck_card.mvp_at)
+                    .filter(|_| to != Board::Deck);
                 stack.write().record(RemoveAction::MoveBoard {
                     card: Box::new(card.clone()),
                     from,
                     to,
+                    starred,
                 });
                 let card_name = card.scryfall_data.name;
                 spawn_forever(async move {
@@ -475,7 +518,7 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                                 card_id,
                                 card_name,
                                 from,
-                                starred: None,
+                                starred,
                             },
                         );
                     }
@@ -492,6 +535,9 @@ pub fn RemoveDeckCard(deck_id: Uuid) -> Element {
                     .find(|e| e.deck_card.scryfall_data_id == card_id)
                 {
                     e.deck_card.board = to;
+                    if to != Board::Deck {
+                        e.deck_card.mvp_at = None;
+                    }
                 }
                 stack.write().remove_current();
                 let mut line = OneLine::default();

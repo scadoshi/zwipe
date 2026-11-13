@@ -17,6 +17,7 @@ use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilde
 use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
 use zwipe_core::domain::deck::Board;
 use zwipe_core::domain::user::hints::OneTimeHint;
+use zwipe_core::http::contracts::deck_card::HttpPatchDeckCard;
 use zwipe_ui::generation::Ticket;
 use zwipe_ui::screens::remove_cards::{
     self, Action, BoardFilter, Destination, Effect, State, UndoClaim,
@@ -169,6 +170,11 @@ impl Driver {
                 card_id,
                 board,
             } => self.restore_board(ticket, deck_id, card_id, board),
+            Effect::RestoreStar {
+                ticket,
+                deck_id,
+                card_id,
+            } => self.restore_star(ticket, deck_id, card_id),
             Effect::RecordUndo { deck_id, action } => {
                 undo_store.push(deck_id, from_shared(action));
             }
@@ -270,6 +276,30 @@ impl Driver {
                     tracing::warn!("undo board move (update deck card) failed: {e}");
                     tracing::warn!("undo failed: {e}");
                     toast.error(shared_undo::UNDO_FAILED.to_owned(), ToastOptions::default());
+                    self.dispatch(Action::Failed { ticket });
+                }
+            }
+        });
+    }
+
+    /// Stars the card again once an undo has moved it back; a refusal shows the server's word and
+    /// the card stays back, unstarred.
+    fn restore_star(self, ticket: Ticket, deck_id: Uuid, card_id: Uuid) {
+        let Self { toast, client, .. } = self;
+        let request = HttpPatchDeckCard::with_mvp(true);
+        spawn(async move {
+            let Some(session) = self.fresh_session().await else {
+                self.dispatch(Action::Failed { ticket });
+                return;
+            };
+            match client()
+                .update_deck_card(deck_id, card_id, &request, &session)
+                .await
+            {
+                Ok(_) => self.dispatch(Action::Landed { ticket }),
+                Err(e) => {
+                    tracing::warn!("undo star (update deck card) failed: {e}");
+                    toast.error(e.to_user_message(), ToastOptions::default());
                     self.dispatch(Action::Failed { ticket });
                 }
             }

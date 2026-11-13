@@ -302,6 +302,15 @@ pub enum Effect {
         /// When it was starred as an MVP, if it was.
         mvp_at: Option<DateTime<Utc>>,
     },
+    /// Stars the card again (`HttpPatchDeckCard::with_mvp(true)`) once an undo has moved it back to the main board, in a write of its own so a refused star can't take the move with it; answers with [`Action::Landed`] or [`Action::Failed`]. On a failure the client shows the server's word; the card stays back, unstarred.
+    RestoreStar {
+        /// The ticket to hand back with the reply.
+        ticket: Ticket,
+        /// The deck.
+        deck_id: Uuid,
+        /// The card's printing ID.
+        card_id: Uuid,
+    },
     /// Undoes a move: sends the card back to `board` with [`board_request`] and answers with [`Action::Landed`] or [`Action::Failed`]. A failure here is the undo's own: the client words it as one.
     RestoreBoard {
         /// The ticket to hand back with the reply.
@@ -399,6 +408,8 @@ enum Pending {
         card_id: Uuid,
         card_name: String,
         from: Option<Board>,
+        /// Its star time, when the move took it off the main board.
+        starred: Option<DateTime<Utc>>,
     },
     /// An undo waiting for the client to take its log entry.
     Claim(RemoveAction),
@@ -412,7 +423,11 @@ enum Pending {
         card_id: Uuid,
         from: Board,
         taken: Option<UndoAction>,
+        /// The star to put back once the card is back on the main board.
+        restar: Option<DateTime<Utc>>,
     },
+    /// An undone move's star going back on, at its old time.
+    Restar { card_id: Uuid, at: DateTime<Utc> },
 }
 
 /// An undone remove waiting on its own delete: what the restore puts back.
@@ -705,15 +720,22 @@ impl State {
         } else {
             Board::Maybeboard
         };
+        // Off the main board the server drops the star; its time goes with the move so undo can put it back.
+        let starred = self
+            .entry(card_id)
+            .and_then(|e| e.deck_card.mvp_at)
+            .filter(|_| to != Board::Deck);
         self.stack.record(RemoveAction::MoveBoard {
             card: Box::new(card),
             from,
             to,
+            starred,
         });
         let ticket = self.wait(Pending::Move {
             card_id,
             card_name,
             from: held,
+            starred,
         });
         let message = if to.is_maybeboard() {
             MOVED_TO_MAYBEBOARD
@@ -736,6 +758,9 @@ impl State {
             .find(|e| e.card.scryfall_data.id == card_id)
         {
             entry.deck_card.board = to;
+            if to != Board::Deck {
+                entry.deck_card.mvp_at = None;
+            }
         }
         self.stack.remove_current();
         effects.extend(self.crossings(lands, price));
@@ -843,7 +868,12 @@ impl State {
                     },
                 ]
             }
-            RemoveAction::MoveBoard { card, from, .. } => {
+            RemoveAction::MoveBoard {
+                card,
+                from,
+                starred,
+                ..
+            } => {
                 let card_id = card.scryfall_data.id;
                 let back = self
                     .entry(card_id)
@@ -852,10 +882,21 @@ impl State {
                     return already_changed();
                 }
                 self.stack.insert_current(*card);
+                // Back on the main board its star follows once the move lands, unless the deck already has its three MVPs.
+                let wants_star = starred.filter(|_| from == Board::Deck);
+                let capped = wants_star.is_some()
+                    && crate::deck_cards::mvp_count(&self.entries) >= crate::deck_cards::MAX_MVPS;
                 let ticket = self.wait(Pending::UndoMove {
                     card_id,
                     from,
                     taken,
+                    restar: wants_star.filter(|_| !capped),
+                });
+                let capped_toast = capped.then(|| {
+                    Effect::Toast(Toast::quick(
+                        ToastKind::Info,
+                        crate::screens::deck_cards::MVP_CAP_REACHED,
+                    ))
                 });
                 vec![
                     Effect::Enter(direction),
@@ -866,6 +907,9 @@ impl State {
                         board: from,
                     },
                 ]
+                .into_iter()
+                .chain(capped_toast)
+                .collect()
             }
         }
     }
@@ -911,16 +955,32 @@ impl State {
                 card_id,
                 card_name,
                 from: Some(from),
+                starred,
             }) => vec![Effect::RecordUndo {
                 deck_id,
                 action: UndoAction::MovedBoard {
                     card_id,
                     card_name,
                     from,
-                    starred: None,
+                    starred,
                 },
             }],
-            Some(Pending::UndoMove { card_id, from, .. }) => {
+            Some(Pending::Restar { card_id, at }) => {
+                if let Some(entry) = self
+                    .entries
+                    .iter_mut()
+                    .find(|e| e.card.scryfall_data.id == card_id)
+                {
+                    entry.deck_card.mvp_at = Some(at);
+                }
+                Vec::new()
+            }
+            Some(Pending::UndoMove {
+                card_id,
+                from,
+                restar,
+                ..
+            }) => {
                 if let Some(entry) = self
                     .entries
                     .iter_mut()
@@ -928,10 +988,21 @@ impl State {
                 {
                     entry.deck_card.board = from;
                 }
-                vec![Effect::Confirm(Toast::quick(
+                // The star follows in a write of its own, now the card is back.
+                let star = restar.map(|at| {
+                    let ticket = self.wait(Pending::Restar { card_id, at });
+                    Effect::RestoreStar {
+                        ticket,
+                        deck_id,
+                        card_id,
+                    }
+                });
+                std::iter::once(Effect::Confirm(Toast::quick(
                     ToastKind::Success,
                     UNDID_MOVE,
-                ))]
+                )))
+                .chain(star)
+                .collect()
             }
             _ => Vec::new(),
         }

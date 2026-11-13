@@ -130,6 +130,8 @@ pub enum RemoveAction {
         from: Board,
         /// The board it went to.
         to: Board,
+        /// Its star time when the move took it off the main board, which drops the star, so undo stars it again.
+        starred: Option<DateTime<Utc>>,
     },
 }
 

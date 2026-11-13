@@ -164,6 +164,7 @@ Who checked, on which live build, what they saw.
 | [458](458-enter-submits-sheet.md) | Enter does nothing in an open sheet with a main action | fixing | laptop | issue/458-enter-submits-sheet |
 | [464](464-rarity-chips-grow.md) | The filter's Rarity section grows from 3 to 6 chips while it opens | reported | - | - |
 | [466](466-details-drawer-again.md) | On a phone, a card's details from Cards should be the side drawer, not a full screen | fixing | scotland | orangui 9039b70 |
+| [467](467-remove-swipe-star.md) | The Remove screen's swipe to the maybeboard drops a card's star, and its undo moves it back unstarred | fixing | thinker | - |
 | [468](468-phone-web-strip.md) | Phone web's featured strip is small; the app's is big and scrolls (and 465: the third card cut off, the page jumps) | fixing | thinker | - |
 
 ## Waiting for live verification
