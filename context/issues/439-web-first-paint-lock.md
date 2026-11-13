@@ -16,6 +16,8 @@ halo:
 
 - **Follow-ups from Surfer and droider on the ghost.** The Stacks ghost lays out in the loaded stacks' column count: two on touch, else the count the measured width fits (the same `use_stacks_width` and `columns::column_count` `DeckStacks` uses), the grid before the first measure as the loaded stacks start. The web's Cards layer (`?view=cards` at phone width) shows the saved view's ghost while the deck loads; it showed none. The app's featured strip holds its place with one ghost card while the deck loads (unless the profile has landed with no command zone card), and a strip that follows its ghost opens in place with its cards over ghost image boxes, so the controls under it never move.
 
+- **The ghost's columns at 1450.** The ghost had four stacks, so the grid it falls back to drew four columns where the loaded page drew six. It now reads the width the loaded stacks measure (`LAST_WIDTH`, from the `DeckStacks` mounted under it while the deck loads) rather than measuring itself, and draws at least one stack per column. The width script also waits up to two seconds of frames for the stacks to mount. Checked on the web app with a backend that never answers, so the page stays loading: six ghost columns of six stacks at 1450 and four at 1100, the counts the loaded stacks take.
+
 ## Checked
 - Real Chrome on real time (DevTools protocol), the app's lock script with a stub bridge: behind a holder that never lets go, a tab goes on at 2.06s and the holder keeps its lock; with a holder that lets go at 650ms, the waiting tab gets the lock at 656ms.
 - The Stacks ghost in headless Chrome with the web app's sheets: four stacks of 1, 6, 3 and 4 tucked cards under their chips.

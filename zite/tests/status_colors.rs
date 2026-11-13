@@ -3,16 +3,13 @@
 
 use components::status_uses;
 
-const ALLOWED: [&str; 9] = [
+const ALLOWED: [&str; 6] = [
     ".dead-end .panel-title",
     ".outcome-error .panel-title",
     ".outcome-success .panel-title",
     ".shipped-tag",
     ".status-message.error",
     ".status-message.success",
-    ".swipe-add",
-    ".swipe-maybe",
-    ".swipe-skip",
 ];
 
 #[test]

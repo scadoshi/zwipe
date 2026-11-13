@@ -26,11 +26,36 @@ fn canonical(path: &str) -> String {
     format!("{WEB_BASE}{path}")
 }
 
+/// Sets the page's one `rel=canonical` link to `href` while the screen is
+/// up, and takes it out when the screen goes, so moving between guides in
+/// the app never leaves two in the head.
+fn use_canonical(href: &str) {
+    let href = href.to_owned();
+    use_effect(use_reactive!(|href| {
+        document::eval(&set_canonical_js(&href));
+    }));
+    use_drop(|| {
+        document::eval(DROP_CANONICAL_JS);
+    });
+}
+
+/// A script that makes `href` the page's one canonical link. `href` is a
+/// zwipe.net address built from a guide's slug, so it carries no quote.
+fn set_canonical_js(href: &str) -> String {
+    format!(
+        "let link = document.head.querySelector('link[rel=canonical]'); if (!link) {{ link = document.createElement('link'); link.rel = 'canonical'; document.head.appendChild(link); }} link.href = '{href}';"
+    )
+}
+
+/// Takes the page's canonical link out.
+const DROP_CANONICAL_JS: &str =
+    "document.head.querySelectorAll('link[rel=canonical]').forEach((link) => link.remove());";
+
 /// The guides index.
 #[component]
 pub fn Guides() -> Element {
+    use_canonical(&canonical("/guides/"));
     rsx! {
-        document::Link { rel: "canonical", href: canonical("/guides/") }
         ScreenFrame { title: "Guides", titled: true,
             div { class: "screen-content content-enter",
                 div { class: "web-guides", GuideIndex { href: guide_href } }
@@ -42,7 +67,12 @@ pub fn Guides() -> Element {
 /// The guide named `slug`, or a page saying there is none.
 #[component]
 pub fn GuidePage(slug: String) -> Element {
-    let Some(guide) = find(&slug) else {
+    let guide = find(&slug);
+    use_canonical(&canonical(&guide.map_or_else(
+        || "/guides/".to_owned(),
+        |g| format!("/guides/{}/", g.slug),
+    )));
+    let Some(guide) = guide else {
         return rsx! {
             ScreenFrame { title: "Guide not found", titled: true,
                 div { class: "screen-content content-enter",
@@ -52,7 +82,6 @@ pub fn GuidePage(slug: String) -> Element {
         };
     };
     rsx! {
-        document::Link { rel: "canonical", href: canonical(&format!("/guides/{}/", guide.slug)) }
         ScreenFrame { title: guide.title, titled: true,
             div { class: "screen-content content-enter",
                 div { class: "web-guides guide-page",
@@ -74,5 +103,11 @@ mod tests {
             format!("{WEB_BASE}/guides/filtering/")
         );
         assert_eq!(guide_href("filtering"), "/guides/filtering");
+        let js = set_canonical_js(&canonical("/guides/filtering/"));
+        assert!(js.contains("querySelector('link[rel=canonical]')"), "{js}");
+        assert!(
+            js.contains(&format!("link.href = '{WEB_BASE}/guides/filtering/'")),
+            "{js}"
+        );
     }
 }

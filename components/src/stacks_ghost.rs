@@ -6,7 +6,7 @@
 use dioxus::prelude::*;
 use zwipe_ui::deck_cards::{columns, stacks};
 
-use crate::deck_cards_view::use_stacks_width;
+use crate::deck_cards_view::LAST_WIDTH;
 
 /// Ghost cards in each stack: the Commander's one, then fuller groups.
 const STACK_CARDS: [usize; 4] = [1, 6, 3, 4];
@@ -15,23 +15,31 @@ const STACK_CARDS: [usize; 4] = [1, 6, 3, 4];
 const NAME_CHARS: [u8; 4] = [9, 12, 8, 10];
 
 /// The ghost stacks, in [`crate::DeckStacks`]'s layout: with `touch` (phones)
-/// two columns, else as many as the measured width fits, the same count the
-/// loaded stacks take, each stack in the shorter column as they lie. Before
-/// the first measure, the page's grid, as the loaded stacks start.
+/// two columns, else as many as the width the stacks last measured fits (the
+/// loaded stacks' own measure, read here so the two never disagree), at
+/// least one stack in each, each stack in the shorter column as they lie.
+/// Before any measure, the page's grid, as the loaded stacks start.
 #[component]
 pub fn DeckStacksGhost(#[props(default)] touch: bool) -> Element {
-    let width = use_stacks_width(touch);
-    let stacks: Vec<Element> = STACK_CARDS
-        .into_iter()
-        .zip(NAME_CHARS)
-        .enumerate()
-        .map(|(i, (cards, chars))| ghost_stack(i, cards, chars))
-        .collect();
+    let width = LAST_WIDTH();
     let column_total = if touch {
         Some(2)
     } else {
-        width().map(columns::column_count)
+        width.map(columns::column_count)
     };
+    // One stack for each column at least, so a wide page's ghost fills its row.
+    let count = column_total.unwrap_or(0).max(STACK_CARDS.len());
+    let shapes: Vec<(usize, u8)> = STACK_CARDS
+        .into_iter()
+        .zip(NAME_CHARS)
+        .cycle()
+        .take(count)
+        .collect();
+    let stacks: Vec<Element> = shapes
+        .iter()
+        .enumerate()
+        .map(|(i, &(cards, chars))| ghost_stack(i, cards, chars))
+        .collect();
     let Some(column_total) = column_total else {
         return rsx! {
             div { class: "deck-stacks", "aria-hidden": "true",
@@ -41,9 +49,9 @@ pub fn DeckStacksGhost(#[props(default)] touch: bool) -> Element {
             }
         };
     };
-    let heights: Vec<u32> = STACK_CARDS
+    let heights: Vec<u32> = shapes
         .iter()
-        .map(|&cards| columns::stack_height(cards, false))
+        .map(|&(cards, _)| columns::stack_height(cards, false))
         .collect();
     let mut laid: Vec<Vec<Element>> = vec![Vec::new(); column_total.max(1)];
     for (column, stack) in columns::place(&heights, column_total)

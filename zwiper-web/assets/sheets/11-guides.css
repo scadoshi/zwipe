@@ -243,6 +243,39 @@
     margin-bottom: var(--panel-gap);
 }
 
+/* The bullet and swipe lists' indent, ink and row gap, as zwipe.net draws
+   every list. */
+.guide-content :is(.guide-bullets, .guide-swipe) {
+    padding-left: 1.25rem;
+    color: var(--text-subtle);
+}
+
+.guide-content :is(.guide-bullets, .guide-swipe) li {
+    margin-bottom: 0.375rem;
+}
+
+/* A swipe's direction in the app's gesture colors (zwipe_ui::guides::
+   swipe_class), on a guide's swipe legend and zwipe.net's home hero alike. */
+.swipe-add {
+    color: var(--ink-color-success, var(--color-success));
+    font-weight: 600;
+}
+
+.swipe-skip {
+    color: var(--ink-color-error, var(--color-error));
+    font-weight: 600;
+}
+
+.swipe-maybe {
+    color: var(--ink-color-warning, var(--color-warning));
+    font-weight: 600;
+}
+
+.swipe-undo {
+    color: var(--ink-accent-tertiary, var(--accent-tertiary));
+    font-weight: 600;
+}
+
 /* The search box fills the row's middle inside the kit's clear wrap, whose
    × slides in beside it while there is text. */
 .guide-filter > .input-clear-wrap {

@@ -717,12 +717,12 @@ pub fn DeckStacks(
 
 /// The width the stacks last measured, in hundredths of a rem, so stacks mounted again lay out
 /// their columns from the first render.
-static LAST_WIDTH: GlobalSignal<Option<u32>> = Signal::global(|| None);
+pub(crate) static LAST_WIDTH: GlobalSignal<Option<u32>> = Signal::global(|| None);
 
 /// The width the stacks have on the page, in hundredths of a rem, kept current as it changes:
 /// the content box of the element the stacks sit in, which stays put while the stacks swap
 /// their grid for columns. `None` until it is first measured, and off the browser.
-pub(crate) fn use_stacks_width(touch: bool) -> Signal<Option<u32>> {
+fn use_stacks_width(touch: bool) -> Signal<Option<u32>> {
     let mut width = use_signal(|| *LAST_WIDTH.peek());
     use_effect(move || {
         if touch {
@@ -747,19 +747,27 @@ pub(crate) fn use_stacks_width(touch: bool) -> Signal<Option<u32>> {
 }
 
 /// Sends the width of the element the stacks sit in, in hundredths of a rem, then again on each
-/// change.
+/// change, waiting up to about two seconds of frames for the stacks to mount.
 const STACKS_WIDTH_JS: &str = r"
-const stacks = document.querySelector('.deck-stacks');
-const frame = stacks && stacks.parentElement;
-if (frame) {
-  const send = (px) => {
-    const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-    dioxus.send(Math.floor(px / rem * 100));
-  };
+const send = (px) => {
+  const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+  dioxus.send(Math.floor(px / rem * 100));
+};
+// The stacks can mount a frame after this runs, so it looks again each frame for a while.
+let tries = 0;
+const watch = () => {
+  const stacks = document.querySelector('.deck-stacks');
+  const frame = stacks && stacks.parentElement;
+  if (!frame) {
+    if (tries++ < 120) requestAnimationFrame(watch);
+    return;
+  }
+  if (window.__zwStacksWidth) window.__zwStacksWidth.disconnect();
   const sizes = new ResizeObserver((entries) => { for (const e of entries) send(e.contentRect.width); });
   sizes.observe(frame);
   window.__zwStacksWidth = sizes;
-}
+};
+watch();
 ";
 
 /// Stops measuring the stacks' width.

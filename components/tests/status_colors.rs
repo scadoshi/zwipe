@@ -1,11 +1,17 @@
 //! Status colors mean an outcome. Decoration draws from the palette slots. The
 //! one rule in the Magic sheet that marks an outcome is the Danger zone title,
-//! over a panel of destructive actions; no other may name a status color, in it
-//! or in the guides' sheet.
+//! over a panel of destructive actions, and the guides' sheet colors a swipe's
+//! outcome on its legend; no other rule in either may name a status color.
 
 use components::status_uses;
 
-const ALLOWED: [&str; 1] = [".settings-list-title.danger-zone-title"];
+const ALLOWED: [&str; 4] = [
+    ".settings-list-title.danger-zone-title",
+    // A swipe's direction on a guide's legend: add, skip, maybe.
+    ".swipe-add",
+    ".swipe-maybe",
+    ".swipe-skip",
+];
 
 #[test]
 fn status_colors_only_where_they_mean_something() {

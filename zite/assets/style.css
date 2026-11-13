@@ -935,23 +935,6 @@ h2.panel-title {
     border: 0;
 }
 
-.swipe-add {
-    color: var(--ink-color-success, var(--color-success));
-    font-weight: 600;
-}
-.swipe-skip {
-    color: var(--ink-color-error, var(--color-error));
-    font-weight: 600;
-}
-.swipe-maybe {
-    color: var(--ink-color-warning, var(--color-warning));
-    font-weight: 600;
-}
-.swipe-undo {
-    color: var(--ink-accent-tertiary, var(--accent-tertiary));
-    font-weight: 600;
-}
-
 .hero-chips {
     display: flex;
     justify-content: center;
