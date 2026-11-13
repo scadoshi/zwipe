@@ -243,6 +243,12 @@ mod tests {
             "@media (max-width: 899px)",
             "a phone shows three"
         );
+        assert!(
+            WEB_CSS.contains(
+                ".web-scroll-screen:has(.skeleton-deck-tile) > .screen-content {\n    flex: 1 1 0;\n    min-height: 0;\n    overflow: hidden;\n}"
+            ),
+            "the ghost takes the room above the footer and no more, so the page doesn't scroll while it loads"
+        );
         assert_eq!(
             query_for(".skeleton-deck-tile:nth-child(n + 6)"),
             "@media (min-width: 900px) and (max-width: 1399px)",

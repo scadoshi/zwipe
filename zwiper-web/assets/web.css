@@ -2491,6 +2491,15 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
     }
 }
 
+/* While the Decks list's ghost shows, the screen's content takes the room
+   above the footer and no more, cutting off the ghost rows that don't fit, so
+   the page never scrolls while it loads. */
+.web-scroll-screen:has(.skeleton-deck-tile) > .screen-content {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow: hidden;
+}
+
 /* The Decks list's loading ghost fills the list as the window draws it: three
    tiles on a phone, five in one wide column, all ten in two columns. */
 @media (max-width: 899px) {
