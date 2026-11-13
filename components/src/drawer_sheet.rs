@@ -11,7 +11,7 @@
 //! clicks in the content as usual.
 
 use dioxus::prelude::*;
-use orangui::{Pull, SheetHandle, use_sheet_drag_toward};
+use orangui::{OpenFocus, Pull, SheetHandle, use_sheet_drag_toward, use_sheet_entry};
 
 use crate::media::{KIT_MODAL_PX, use_min_width};
 use crate::{ActionDock, Button, ButtonVariant, DockPlace, SheetDim, SheetFrame, SheetWide};
@@ -61,6 +61,16 @@ impl DrawerEdge {
 )]
 const CLOSE_MS: u32 = 300;
 
+/// The way the sheet pulls to close: a drawer, at every width (`every_width`) or on a `wide`
+/// window, toward its `edge`; below the wide window a bottom sheet, down.
+fn drawer_pull(every_width: bool, wide: bool, edge: DrawerEdge) -> Pull {
+    if every_width || wide {
+        edge.pull()
+    } else {
+        Pull::Down
+    }
+}
+
 /// The sheet, shown while `open`. Its title bar holds the ×, then `title`
 /// unless it is empty (a sheet whose content titles itself), followed by
 /// `title_trailing` when given, such as a card's mana cost. The × and a
@@ -79,17 +89,9 @@ const CLOSE_MS: u32 = 300;
 /// backdrop dims the page ([`SheetDim`]). The sheet is a `dialog` named by
 /// `title`, and `aria-modal` while it dims the page. `data_card` is the id of
 /// the card it shows, for the keys that act on that card. `edge` is the edge a drawer at every
-/// width runs along, the right unless given; it is pulled toward that edge.
-/// The way the sheet pulls to close: a drawer, at every width (`every_width`) or on a `wide`
-/// window, toward its `edge`; below the wide window a bottom sheet, down.
-fn drawer_pull(every_width: bool, wide: bool, edge: DrawerEdge) -> Pull {
-    if every_width || wide {
-        edge.pull()
-    } else {
-        Pull::Down
-    }
-}
-
+/// width runs along, the right unless given; it is pulled toward that edge. As it opens its ×
+/// takes focus, which goes back as it closes, unless `focus` is [`OpenFocus::Kept`]; while focus is
+/// in it, Tab stays inside and Esc closes it.
 #[component]
 pub fn DrawerSheet(
     open: ReadSignal<bool>,
@@ -104,8 +106,10 @@ pub fn DrawerSheet(
     #[props(default)] dim: SheetDim,
     #[props(default)] data_card: Option<String>,
     #[props(default)] edge: DrawerEdge,
+    #[props(default)] focus: OpenFocus,
     children: Element,
 ) -> Element {
+    use_sheet_entry(open, &title, focus);
     let shown = open();
     // Whether the content is mounted: from opening until the slide out ends.
     let mut content_up = use_signal(move || *open.peek());

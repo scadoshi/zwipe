@@ -53,6 +53,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "The keyboard shortcuts sheet lists ? only on a page with a hint, on the web and on zwipe.net",
         "The web's keyboard shortcuts sheet drops the line above a deck's keys",
         "Home's welcome names Create deck as its button does, and leaves out verifying your email once it is verified, on the web and in the app",
+        "Sheets and drawers take focus as they open, keep Tab inside, close on Esc and give focus back to what opened them, on the web and in the app",
     ],
 }];
 

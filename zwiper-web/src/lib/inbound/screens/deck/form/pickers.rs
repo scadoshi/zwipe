@@ -11,7 +11,7 @@
 
 use components::hint::{ContentHintDialog, HintBody, guide_for_screen};
 use components::icons::CHECK;
-use components::keys::{SHEET_ENTER_OR_CLOSE, focus_by_id, use_page_keys};
+use components::keys::{SHEET_ENTER_OR_CLOSE, focus_by_id, use_page_keys, use_sheet_focus};
 use components::{
     ActionDock, AlertDialog, BackArrow, Button, ButtonVariant, Chip, ClearWrap, DialogAction,
     DockAction, DrawerSheet, HintDialog, PageHeader, TOAST_NORMAL, TOAST_QUICK, use_min_width,
@@ -62,6 +62,10 @@ pub(crate) fn use_pickers_cover(form: &DeckForm) -> bool {
     )
 }
 
+/// What takes focus as a picker opens as a screen: its back arrow, so no field raises a phone's
+/// keyboard.
+const SCREEN_ENTRY: &str = ".web-picker-screen.show .page-header-support";
+
 /// The picker, open on `open`. From [`PICKER_DRAWER_PX`] it is components' [`DrawerSheet`] as
 /// a drawer at every width, sliding in from the right: the kit's drawer on a wide window, the
 /// window's height along the right edge below it, its title bar's × and a backdrop tap calling
@@ -69,7 +73,8 @@ pub(crate) fn use_pickers_cover(form: &DeckForm) -> bool {
 /// no slide, its header's back arrow calls `on_back`, and the form under it is hidden
 /// ([`use_pickers_cover`]). The dock's checkmark calls `on_save` and stays off while
 /// `unchanged`. The body mounts while open (and, as a drawer, through the slide out), so its
-/// keys stop answering once the picker is gone.
+/// keys stop answering once the picker is gone. As a screen its back arrow takes focus as it
+/// opens and the opener gets it back as it closes; as a drawer, its ×.
 #[component]
 fn PickerSheet(
     open: Signal<bool>,
@@ -83,6 +88,8 @@ fn PickerSheet(
     children: Element,
 ) -> Element {
     let wide = use_min_width(PICKER_DRAWER_PX);
+    let as_screen = use_memo(move || open() && !wide());
+    use_sheet_focus(as_screen.into(), SCREEN_ENTRY);
     let save = rsx! {
         DockAction {
             label: "Save",

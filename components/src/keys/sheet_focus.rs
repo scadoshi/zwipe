@@ -79,10 +79,10 @@ pub fn use_sheet_focus_handing_back(open: ReadSignal<bool>, body: &'static str) 
 
 /// Remembers the focused element under `id`, with its action and its place among the elements
 /// with that action, and focuses `body` once the sheet has drawn, trying again until it takes
-/// focus while focus is on the page or the opener.
+/// focus while focus is on the page, the opener or the sheet's × the kit focused as it opened.
 fn focus_js(id: &Uuid, body: &str) -> String {
     format!(
-        "{{ const store = window.__zwipeSheetFocus = window.__zwipeSheetFocus || {{}}; const el = document.activeElement; const action = el && el.getAttribute && el.getAttribute('data-action'); const sel = action ? '[data-action=\"' + action + '\"]' : null; store['{id}'] = {{ el, sel, at: sel ? [...document.querySelectorAll(sel)].indexOf(el) : -1 }}; const until = Date.now() + {FOCUS_TRY_MS}; const take = () => {{ const b = document.querySelector('{body}'); const a = document.activeElement; if (b && b.contains(a)) return; if (b && (!a || a === document.body || a === el)) b.focus({{ preventScroll: true }}); if ((!b || !b.contains(document.activeElement)) && Date.now() < until && (!document.activeElement || document.activeElement === document.body || document.activeElement === el)) setTimeout(take, {FOCUS_RETRY_MS}); }}; setTimeout(take, {FOCUS_DELAY_MS}); }}"
+        "{{ const store = window.__zwipeSheetFocus = window.__zwipeSheetFocus || {{}}; const el = document.activeElement; const action = el && el.getAttribute && el.getAttribute('data-action'); const sel = action ? '[data-action=\"' + action + '\"]' : null; store['{id}'] = {{ el, sel, at: sel ? [...document.querySelectorAll(sel)].indexOf(el) : -1 }}; const until = Date.now() + {FOCUS_TRY_MS}; const take = () => {{ const b = document.querySelector('{body}'); const a = document.activeElement; if (b && b.contains(a)) return; if (b && (!a || a === document.body || a === el || a === window.__oranguiSheetEntry)) b.focus({{ preventScroll: true }}); if ((!b || !b.contains(document.activeElement)) && Date.now() < until && (!document.activeElement || document.activeElement === document.body || document.activeElement === el || document.activeElement === window.__oranguiSheetEntry)) setTimeout(take, {FOCUS_RETRY_MS}); }}; setTimeout(take, {FOCUS_DELAY_MS}); }}"
     )
 }
 

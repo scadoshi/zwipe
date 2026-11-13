@@ -1193,6 +1193,12 @@ a.nav-dropdown-item.active:visited {
     overflow: hidden;
 }
 
+/* A sheet with no × takes focus itself as it opens, with no ring: the ring
+   shows on the control Tab moves to next. */
+.bottom-sheet:focus {
+    outline: none;
+}
+
 /* A sheet pulled by its header follows the pointer with no easing, over
    whatever form it takes; letting go drops the class, and its transition
    slides it home or away. */

@@ -1,4 +1,6 @@
-use components::{CardDetailsCost, CardDetailsPanel, DrawerSheet, use_meld, use_overlay_back};
+use components::{
+    CardDetailsCost, CardDetailsPanel, DrawerSheet, OpenFocus, use_meld, use_overlay_back,
+};
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::Card;
@@ -84,6 +86,7 @@ pub(crate) fn CardDetailsSheet(
                 open.set(false);
             },
             every_width: true,
+            focus: OpenFocus::Kept,
             class: "card-details-drawer",
             CardDetailsPanel {
                 card,

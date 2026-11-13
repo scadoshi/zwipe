@@ -6,7 +6,8 @@ use zwipe_core::domain::card::Card;
 
 use crate::drawer_swap::use_drawer_swap;
 use crate::{
-    CardDetailsCost, CardDetailsPanel, DrawerEdge, DrawerSheet, use_meld, use_overlay_back,
+    CardDetailsCost, CardDetailsPanel, DrawerEdge, DrawerSheet, OpenFocus, use_meld,
+    use_overlay_back,
 };
 
 /// `card`'s details as a drawer, while `open`. Its foot carries `Flip` for a multi-faced card,
@@ -61,6 +62,7 @@ pub fn CardDetailsSheet(
                 open.set(false);
             },
             every_width: true,
+            focus: OpenFocus::Kept,
             edge,
             class,
             data_card: shown_id,
