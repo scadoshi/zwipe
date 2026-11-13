@@ -26,7 +26,7 @@ const RESTORE_WATCH_MS: u32 = 3000;
 /// that had focus, and hands focus back to that element as `open` turns false or the sheet
 /// unmounts open. `body` names the open sheet's own body, such as
 /// `.bottom-sheet.show .sheet-body`, so a closed copy of the sheet never matches.
-pub fn use_sheet_focus(open: ReadSignal<bool>, body: &'static str) {
+pub fn use_sheet_focus(open: ReadSignal<bool>, body: impl Into<String>) {
     let _ = use_sheet_focus_handing_back(open, body);
 }
 
@@ -50,8 +50,9 @@ impl SheetFocus {
 /// [`use_sheet_focus`], with a [`SheetFocus`] that names where focus goes back to when the
 /// opener will not be there.
 #[must_use]
-pub fn use_sheet_focus_handing_back(open: ReadSignal<bool>, body: &'static str) -> SheetFocus {
+pub fn use_sheet_focus_handing_back(open: ReadSignal<bool>, body: impl Into<String>) -> SheetFocus {
     let id = use_hook(Uuid::new_v4);
+    let body: String = use_hook(|| body.into());
     let mut was_open = use_signal(|| false);
     let mut hand_back = use_signal(|| None::<Vec<String>>);
     use_effect(move || {
@@ -63,7 +64,7 @@ pub fn use_sheet_focus_handing_back(open: ReadSignal<bool>, body: &'static str) 
         was_open.set(now);
         let script = if now {
             hand_back.set(None);
-            focus_js(&id, body)
+            focus_js(&id, &body)
         } else {
             restore_js(&id, hand_back.peek().as_deref())
         };

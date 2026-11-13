@@ -3,7 +3,7 @@
 //! Beyond is hidden.
 
 use components::icons::{CHECK, DockIcon};
-use components::keys::SHEET_ENTER_OR_CLOSE;
+use components::keys::{SHEET_ENTER_OR_CLOSE, use_sheet_focus};
 use components::{BottomSheet, Chip, SheetFrame, SheetWide, TOAST_QUICK};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -16,12 +16,16 @@ use crate::inbound::caches::UbFranchises;
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::one_time_hint::{self, OneTimeHint};
 
+/// The open Exceptions sheet's ×.
+const EXCEPTIONS_CLOSE: &str = ".bottom-sheet.show[aria-label=\"Exceptions\"] .sheet-close";
+
 /// Edits a draft of `exceptions`, the saved list, copied in on each open.
 /// The dock's checkmark closes at once and writes the draft; the saved list
 /// changes only when the server answers. The ×, a click outside, a drag down
 /// and Esc discard the draft, saying `Exceptions unchanged` when it differed. The first open in a visit
 /// to Config fires the one-time hint; `hint_open` is Config's, so the row's
-/// `?` and the sheet's open the same dialog.
+/// `?` and the sheet's open the same dialog. Its × takes focus as it opens
+/// and the opener gets it back as it closes, as a [`components::DrawerSheet`]'s does.
 #[component]
 pub(super) fn ExceptionsSheet(
     mut open: Signal<bool>,
@@ -35,6 +39,7 @@ pub(super) fn ExceptionsSheet(
     let toast = use_toast();
     let mut draft: Signal<Vec<String>> = use_signal(Vec::new);
     let mut hint_fired = use_signal(|| false);
+    use_sheet_focus(open.into(), EXCEPTIONS_CLOSE);
 
     use_hook(move || franchises.ensure(client));
     use_effect(move || {

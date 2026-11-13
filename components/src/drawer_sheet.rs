@@ -10,7 +10,9 @@
 
 use dioxus::prelude::*;
 use orangui::{Pull, use_sheet_drag_toward};
+use uuid::Uuid;
 
+use crate::keys::use_sheet_focus;
 use crate::media::{KIT_MODAL_PX, use_min_width};
 use crate::{ActionDock, Button, ButtonVariant, DockPlace, SheetDim, SheetFrame, SheetWide};
 
@@ -44,6 +46,18 @@ impl DrawerEdge {
     }
 }
 
+/// What takes focus as a drawer opens.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+pub enum DrawerFocus {
+    /// Its ×, the first control, so the keyboard starts inside the sheet;
+    /// focus goes back to the opener as it closes.
+    #[default]
+    Close,
+    /// Nothing: a sheet that places focus itself, or one the keyboard stays
+    /// outside of, such as the card details beside a list the cursor walks.
+    Kept,
+}
+
 /// How long the sheet takes to slide out, in milliseconds: the kit's 0.3s
 /// sheet transform.
 #[cfg_attr(
@@ -71,6 +85,8 @@ const CLOSE_MS: u32 = 300;
 /// `title`, and `aria-modal` while it dims the page. `data_card` is the id of
 /// the card it shows, for the keys that act on that card. `edge` is the edge a drawer at every
 /// width runs along, the right unless given; it is pulled toward that edge.
+/// `focus` is what takes focus as it opens ([`DrawerFocus`]), its × unless
+/// given.
 #[component]
 pub fn DrawerSheet(
     open: ReadSignal<bool>,
@@ -85,9 +101,16 @@ pub fn DrawerSheet(
     #[props(default)] dim: SheetDim,
     #[props(default)] data_card: Option<String>,
     #[props(default)] edge: DrawerEdge,
+    #[props(default)] focus: DrawerFocus,
     children: Element,
 ) -> Element {
     let shown = open();
+    let sheet_id = use_hook(|| Uuid::new_v4().simple().to_string());
+    let takes_focus = use_memo(move || focus == DrawerFocus::Close && open());
+    use_sheet_focus(
+        takes_focus.into(),
+        format!("[data-sheet=\"{sheet_id}\"].show .sheet-close"),
+    );
     // Whether the content is mounted: from opening until the slide out ends.
     let mut content_up = use_signal(move || *open.peek());
     use_effect(move || {
@@ -145,6 +168,7 @@ pub fn DrawerSheet(
                 class: if shown { "bottom-sheet show {reach}{side} {class}{pulled}" } else { "bottom-sheet {reach}{side} {class}" },
                 style: sheet_style,
                 "data-card": data_card,
+                "data-sheet": "{sheet_id}",
                 role: "dialog",
                 "aria-label": (!title.is_empty()).then(|| title.clone()),
                 "aria-modal": modal,
