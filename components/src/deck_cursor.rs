@@ -46,7 +46,7 @@ if (!window.__zwipeDeckTrack) {
         const stop = e.target.closest && e.target.closest(stops);
         if (stop) window.__zwipeDeckCursor = stop.getAttribute('data-row');
         const line = e.target.closest && e.target.closest('.web-card-row .card-row-compact');
-        if (line && line !== previewed && window.__zwipeCursorPreview && window.__zwipeDeckInput === 'key') {
+        if (line && line !== previewed && window.__zwipeCursorPreview && window.__zwipeDeckInput === 'key' && !document.querySelector('.web-card-row .card-row.expanded')) {
             unpreview();
             previewed = line;
             line.dispatchEvent(new MouseEvent('mouseenter'));
@@ -249,7 +249,8 @@ const PREVIEW_OFF_JS: &str = "window.__zwipeCursorPreview = false;";
 /// Activity's Most skipped, Playstyle's lists): the same keys as the deck page over its card rows,
 /// in one column. Enter opens or closes a row, an open row follows the cursor, and, when the last
 /// input was a key, the cursor's card shows its image in the screen's hover stack as hovering its
-/// row does.
+/// row does. While a row is open none shows, as an open row shows none, so a move that opens the
+/// next row in its place leaves no image behind.
 pub fn use_card_list_cursor() {
     use_hook(|| {
         document::eval(PREVIEW_ON_JS);
@@ -536,6 +537,14 @@ mod tests {
                 "a card row draws no box of its own (display: contents), so its card row is measured: {js}"
             );
         }
+    }
+
+    #[test]
+    fn the_cursor_shows_no_image_while_a_row_is_open() {
+        assert!(
+            TRACK_JS.contains("!document.querySelector('.web-card-row .card-row.expanded')"),
+            "an open row shows no image, and the next row opens in its place: {TRACK_JS}"
+        );
     }
 
     #[test]

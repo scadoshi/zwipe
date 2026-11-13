@@ -38,3 +38,14 @@ On release with 478, the maybeboard does the same at 600px with a keyboard. The 
 
 ## Verification
 -
+
+## Follow-up: the preview with a row open
+surfer: while j moves an open row, the hover preview hangs half-faded over the Show chips.
+
+Before, local maybeboard at 1440, a row open, j: each move flashes the preview in at full opacity, and it fades out over about 400ms. Sampled every 100ms, it was at 1, 0.50, 0.15 and 0.01, then gone. Held keys catch it half-faded.
+
+Cause: `deck_cursor`'s `TRACK_JS` fires the next row's hover enter on focus, and then the follow opens that row, which lets the preview go.
+
+Fix: no keyboard preview while a card row is open, as an open row shows none. Test `the_cursor_shows_no_image_while_a_row_is_open`, red first.
+
+After: no preview at all in any sample (3 of 3). With no row open, the preview still follows ↓, j and k.
