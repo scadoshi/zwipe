@@ -8,7 +8,7 @@
 
 use std::collections::HashMap;
 
-use components::{DeckEditActions, DeckRow, DeckStackDrawer, StackDetails};
+use components::{DeckEditActions, DeckRow, DeckStackDrawer, StackDetails, use_stack_details};
 use dioxus::dioxus_core::NoOpMutations;
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -105,10 +105,7 @@ fn open_drawer(actions: Option<DeckEditActions>) -> Element {
         reveal.apply(Gesture::Click(id));
         reveal
     });
-    let details = StackDetails {
-        reveal,
-        details_open: use_signal(|| true),
-    };
+    let details = use_stack_details(reveal, use_signal(|| true));
     let faces = use_signal(HashMap::new);
     let boards: HashMap<Uuid, Board> = HashMap::new();
     rsx! {
@@ -163,10 +160,7 @@ fn group(key: &str, n: usize) -> (components::DeckSection, Vec<RowInfo>) {
 #[test]
 fn the_list_lays_its_groups_down_two_plain_columns_in_order() {
     fn app() -> Element {
-        let details = StackDetails {
-            reveal: use_signal(Reveal::default),
-            details_open: use_signal(|| false),
-        };
+        let details = use_stack_details(use_signal(Reveal::default), use_signal(|| false));
         rsx! {
             components::DeckCardsView {
                 sections: vec![group("Creatures", 6), group("Lands", 2), group("Artifacts", 2)],
@@ -205,10 +199,7 @@ fn the_list_lays_its_groups_down_two_plain_columns_in_order() {
 
 /// Two stacks, in tap mode with `touch`.
 fn stacks(touch: bool) -> Element {
-    let details = StackDetails {
-        reveal: use_signal(Reveal::default),
-        details_open: use_signal(|| false),
-    };
+    let details = use_stack_details(use_signal(Reveal::default), use_signal(|| false));
     rsx! {
         components::DeckStacks {
             sections: vec![group("Creatures", 3), group("Lands", 2)],
@@ -240,10 +231,7 @@ fn a_second_tap_opens_the_drawer_and_a_tap_off_keeps_it() {
         static DETAILS: std::cell::Cell<Option<StackDetails>> = const { std::cell::Cell::new(None) };
     }
     fn app() -> Element {
-        let details = StackDetails {
-            reveal: use_signal(Reveal::default),
-            details_open: use_signal(|| false),
-        };
+        let details = use_stack_details(use_signal(Reveal::default), use_signal(|| false));
         DETAILS.with(|d| d.set(Some(details)));
         rsx! {}
     }
@@ -315,10 +303,7 @@ thread_local! {
 fn back_app() -> Element {
     let stack = components::use_overlay_back_stack();
     use_context_provider(|| stack);
-    let details = StackDetails {
-        reveal: use_signal(Reveal::default),
-        details_open: use_signal(|| false),
-    };
+    let details = use_stack_details(use_signal(Reveal::default), use_signal(|| false));
     BACK.with(|b| b.set(Some(BackProbe { stack, details })));
     rsx! {
         components::DeckStacks {
@@ -412,10 +397,7 @@ thread_local! {
 }
 
 fn masonry_app() -> Element {
-    let details = StackDetails {
-        reveal: use_signal(Reveal::default),
-        details_open: use_signal(|| false),
-    };
+    let details = use_stack_details(use_signal(Reveal::default), use_signal(|| false));
     let folded: std::collections::HashSet<String> =
         FOLDED.with(|f| f.borrow().iter().cloned().collect());
     rsx! {

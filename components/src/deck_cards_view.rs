@@ -17,6 +17,7 @@ use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCur
 use zwipe_core::domain::deck::{Board, Format};
 use zwipe_ui::buy::group_cards;
 use zwipe_ui::deck::form::Slot;
+use zwipe_ui::deck_cards::columns::Side;
 use zwipe_ui::deck_cards::keys::{RowInfo, RowKind, card_label};
 use zwipe_ui::deck_cards::listing::{Listed, RowMeta, main_row_of};
 use zwipe_ui::deck_cards::stacks::{CardsView, Gesture, Reveal, VIEW_LABEL};
@@ -24,8 +25,8 @@ use zwipe_ui::deck_cards::{Group, columns};
 
 use crate::{
     CardBoardMoves, CardDetailsSheet, CardEditButtons, CardRow, CardStack, CartButton, Chip,
-    DeckBand, DeckGroupSection, DeckSection, GroupBuy, StackCard, TailPlace, group_tail,
-    use_overlay_back_action,
+    DeckBand, DeckGroupSection, DeckSection, DrawerEdge, GroupBuy, StackCard, TailPlace,
+    group_tail, use_overlay_back_action,
 };
 
 /// The deck's edits, each taking the card's id: a quantity change by a step, a move to a board,
@@ -70,55 +71,73 @@ pub struct DeckRowHost {
     pub on_examples: Option<Callback<String>>,
 }
 
-/// The stacks' reveal and whether the open card's drawer shows, which a click on a card and the
-/// `d` key both move. A screen with stacks provides it as context.
+/// The stacks' reveal, whether the open card's drawer shows and the edge it opens from, which a
+/// click on a card and the `d` key both move. A screen with stacks makes it with
+/// [`use_stack_details`] and provides it as context.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct StackDetails {
     /// Which card shows in full and which card's details are open.
     pub reveal: Signal<Reveal>,
     /// Whether the open card's details drawer shows.
     pub details_open: Signal<bool>,
+    /// The edge the drawer opens from: away from the column of the stack card it opened on
+    /// ([`columns::drawer_side`]), the right for a featured card. It holds through the close, so
+    /// the drawer slides out the way it came in.
+    pub side: Signal<Side>,
+    /// The stack cards whose drawer opens on the left, as [`DeckStacks`] last laid them out.
+    pub opens_left: Signal<HashSet<Uuid>>,
+}
+
+/// The [`StackDetails`] over `reveal` and `details_open`, the drawer on the right until a card
+/// opens it.
+pub fn use_stack_details(reveal: Signal<Reveal>, details_open: Signal<bool>) -> StackDetails {
+    StackDetails {
+        reveal,
+        details_open,
+        side: use_signal(|| Side::Right),
+        opens_left: use_signal(HashSet::new),
+    }
 }
 
 impl StackDetails {
     /// A click on card `id`: its details open, in place of any open one, or close where they are
     /// open.
     pub fn click(self, id: Uuid) {
-        let Self {
-            mut reveal,
-            mut details_open,
-        } = self;
+        let Self { mut reveal, .. } = self;
         reveal.write().apply(Gesture::Click(id));
-        details_open.set(reveal.peek().open().is_some());
+        self.settle(self.side_of(id));
     }
 
     /// A click or tap on featured card `id`: its details open, or close where they are open,
     /// without revealing the same card in the stacks.
     pub fn feature(self, id: Uuid) {
-        let Self {
-            mut reveal,
-            mut details_open,
-        } = self;
+        let Self { mut reveal, .. } = self;
         reveal.write().apply(Gesture::Feature(id));
-        details_open.set(reveal.peek().open().is_some());
+        self.settle(Side::Right);
     }
 
     /// A tap on card `id` (phones): the first reveals it, a second on the revealed card opens its
     /// details, and one on the open card closes them.
     pub fn tap(self, id: Uuid) {
-        let Self {
-            mut reveal,
-            mut details_open,
-        } = self;
+        let Self { mut reveal, .. } = self;
         reveal.write().apply(Gesture::Tap(id));
-        details_open.set(reveal.peek().open().is_some());
+        self.settle(self.side_of(id));
     }
 
     /// Card `from`'s printing is now `to`: its reveal and its open details move with it, so the
     /// drawer stays on the card.
     pub fn rekey(self, from: Uuid, to: Uuid) {
-        let Self { mut reveal, .. } = self;
+        let Self {
+            mut reveal,
+            mut opens_left,
+            ..
+        } = self;
         reveal.write().rekey(from, to);
+        if opens_left.peek().contains(&from) {
+            let mut set = opens_left.write();
+            set.remove(&from);
+            set.insert(to);
+        }
     }
 
     /// A tap off every card (phones): the reveal goes back to the open card, or to none.
@@ -127,6 +146,30 @@ impl StackDetails {
         if reveal.peek().revealed() != reveal.peek().open() {
             reveal.write().apply(Gesture::Dismiss);
         }
+    }
+
+    /// The edge stack card `id`'s drawer opens from.
+    fn side_of(self, id: Uuid) -> Side {
+        if self.opens_left.peek().contains(&id) {
+            Side::Left
+        } else {
+            Side::Right
+        }
+    }
+
+    /// Shows the drawer while a card is open, on `side` when one is.
+    fn settle(self, side: Side) {
+        let Self {
+            reveal,
+            mut details_open,
+            side: mut shown_side,
+            ..
+        } = self;
+        let open = reveal.peek().open().is_some();
+        if open && *shown_side.peek() != side {
+            shown_side.set(side);
+        }
+        details_open.set(open);
     }
 }
 
@@ -633,11 +676,38 @@ pub fn DeckStacks(
     let shown = reveal();
     let shown_faces = faces();
     let folded = collapsed();
-    // Each stack with its height as the columns weigh it.
+    // Each stack's height as the columns weigh it.
+    let heights: Vec<u32> = sections
+        .iter()
+        .map(|(section, rows)| columns::stack_height(rows.len(), folded.contains(&section.key)))
+        .collect();
+    // Two columns on a phone; on a wide page as many as its width fits, once it is measured.
+    let column_total = if touch {
+        Some(2)
+    } else {
+        width().map(columns::column_count)
+    };
+    let placed: Vec<usize> = column_total.map_or_default(|total| columns::place(&heights, total));
+    // The cards whose drawer opens on the left: those in the right half of the columns.
+    let left: HashSet<Uuid> = column_total.map_or_default(|total| {
+        sections
+            .iter()
+            .zip(&placed)
+            .filter(|(_, column)| columns::drawer_side(**column, total) == Side::Left)
+            .flat_map(|((_, rows), _)| rows.iter().map(|r| r.card.scryfall_data.id))
+            .collect()
+    });
+    let mut opens_left = details.opens_left;
+    use_effect(use_reactive!(|left| {
+        if *opens_left.peek() != left {
+            opens_left.set(left);
+        }
+    }));
+    // Each stack with its height.
     let stacks: Vec<(u32, Element)> = sections
         .into_iter()
-        .map(|(section, rows)| {
-            let height = columns::stack_height(rows.len(), folded.contains(&section.key));
+        .zip(heights)
+        .map(|((section, rows), height)| {
             let trailing =
                 group_tail(TailPlace::Stack, section.title.clone(), rows.clone(), currency, group_buy);
             let ids: Vec<Uuid> = rows.iter().map(|r| r.card.scryfall_data.id).collect();
@@ -672,12 +742,6 @@ pub fn DeckStacks(
             (height, stack)
         })
         .collect();
-    // Two columns on a phone; on a wide page as many as its width fits, once it is measured.
-    let column_total = if touch {
-        Some(2)
-    } else {
-        width().map(columns::column_count)
-    };
     let Some(column_total) = column_total else {
         return rsx! {
             div { class: "deck-stacks",
@@ -688,12 +752,8 @@ pub fn DeckStacks(
         };
     };
     // Columns of their own heights, each stack under the one above it in its column.
-    let heights: Vec<u32> = stacks.iter().map(|(height, _)| *height).collect();
     let mut laid: Vec<Vec<Element>> = vec![Vec::new(); column_total.max(1)];
-    for (column, (_, stack)) in columns::place(&heights, column_total)
-        .into_iter()
-        .zip(stacks)
-    {
+    for (column, (_, stack)) in placed.into_iter().zip(stacks) {
         if let Some(held) = laid.get_mut(column) {
             held.push(stack);
         }
@@ -808,6 +868,8 @@ pub fn DeckStackDrawer(
     let StackDetails {
         reveal,
         details_open,
+        side,
+        ..
     } = details;
     let drawn = reveal().drawn();
     let Some(row) = rows
@@ -871,6 +933,10 @@ pub fn DeckStackDrawer(
             },
             describe_tag,
             on_examples,
+            edge: match side() {
+                Side::Left => DrawerEdge::Left,
+                Side::Right => DrawerEdge::Right,
+            },
         }
     }
 }
@@ -910,10 +976,7 @@ mod tests {
     /// Pointer stacks on a page 40rem across, a width measured before they mount.
     fn app() -> Element {
         use_hook(|| *LAST_WIDTH.write() = Some(4000));
-        let details = StackDetails {
-            reveal: use_signal(Reveal::default),
-            details_open: use_signal(|| false),
-        };
+        let details = use_stack_details(use_signal(Reveal::default), use_signal(|| false));
         rsx! {
             DeckStacks {
                 sections: vec![group("Creatures", 30, 100), group("Lands", 1, 200), group("Artifacts", 1, 300), group("Enchantments", 1, 400), group("Instants", 1, 500)],
@@ -935,10 +998,7 @@ mod tests {
     fn touch_app() -> Element {
         let stack = crate::use_overlay_back_stack();
         use_context_provider(|| stack);
-        let details = StackDetails {
-            reveal: use_signal(Reveal::default),
-            details_open: use_signal(|| false),
-        };
+        let details = use_stack_details(use_signal(Reveal::default), use_signal(|| false));
         TOUCH.with(|t| t.set(Some((details, stack))));
         rsx! {
             DeckStacks {
@@ -951,6 +1011,88 @@ mod tests {
                 touch: true,
             }
         }
+    }
+
+    thread_local! {
+        static SIDES: std::cell::Cell<Option<StackDetails>> = const { std::cell::Cell::new(None) };
+    }
+
+    /// Touch stacks in a phone's two columns, Creatures on the left and Lands on the right.
+    fn sides_app() -> Element {
+        let stack = crate::use_overlay_back_stack();
+        use_context_provider(|| stack);
+        let details = use_stack_details(use_signal(Reveal::default), use_signal(|| false));
+        SIDES.with(|t| t.set(Some(details)));
+        rsx! {
+            DeckStacks {
+                sections: vec![group("Creatures", 3, 100), group("Lands", 1, 200)],
+                currency: PriceCurrency::default(),
+                collapsed: use_signal(HashSet::new),
+                details,
+                faces: use_signal(HashMap::new),
+                group_buy: use_group_buy(),
+                touch: true,
+            }
+        }
+    }
+
+    #[test]
+    fn a_card_s_drawer_opens_on_the_side_away_from_its_column_and_a_featured_one_on_the_right() {
+        let settle = |dom: &mut VirtualDom| {
+            for _ in 0..6 {
+                dom.process_events();
+                dom.render_immediate(&mut NoOpMutations);
+            }
+        };
+        let mut dom = VirtualDom::new(sides_app);
+        dom.rebuild_in_place();
+        settle(&mut dom);
+        let details = SIDES.with(std::cell::Cell::get).unwrap();
+        let html = dioxus_ssr::render(&dom);
+        let lands = html.find(r#"data-fold="Lands""#).unwrap();
+        let second_column = html
+            .match_indices(r#"class="deck-stacks-column""#)
+            .nth(1)
+            .unwrap()
+            .0;
+        assert!(lands > second_column, "Lands lie in the right column");
+        let side = |dom: &VirtualDom| dom.in_runtime(|| *details.side.peek());
+        let land = Uuid::from_u128(200);
+        let creature = Uuid::from_u128(101);
+        assert_eq!(
+            dom.in_runtime(|| details.opens_left.peek().clone()),
+            HashSet::from([land]),
+            "only the right column's cards open on the left"
+        );
+        for _ in 0..2 {
+            dom.in_runtime(|| details.tap(land));
+            settle(&mut dom);
+        }
+        assert!(dom.in_runtime(|| *details.details_open.peek()));
+        assert_eq!(side(&dom), Side::Left, "a right column card");
+        for _ in 0..2 {
+            dom.in_runtime(|| details.tap(creature));
+            settle(&mut dom);
+        }
+        assert_eq!(side(&dom), Side::Right, "a left column card, swapped in");
+        dom.in_runtime(|| details.click(land));
+        settle(&mut dom);
+        assert_eq!(side(&dom), Side::Left, "a click swaps it back");
+        dom.in_runtime(|| details.click(land));
+        settle(&mut dom);
+        assert!(!dom.in_runtime(|| *details.details_open.peek()));
+        assert_eq!(
+            side(&dom),
+            Side::Left,
+            "a close keeps the side it slides out on"
+        );
+        dom.in_runtime(|| details.feature(land));
+        settle(&mut dom);
+        assert_eq!(
+            side(&dom),
+            Side::Right,
+            "a featured card, though it stacks on the right"
+        );
     }
 
     #[test]

@@ -28,7 +28,19 @@
         transform: translateX(0);
     }
 
-    /* It pulls to the right from anywhere on it (DrawerSheet), so its
+    /* Along the left edge (DrawerSheet's `edge`), the same gap in from the
+       left, sliding in from the left. */
+    .sheet-form-drawer > .bottom-sheet.drawer-every-width.drawer-left {
+        left: round(var(--drawer-float-gap), 1px);
+        right: auto;
+        transform: translateX(calc(-100% - var(--drawer-float-gap) - 1px));
+    }
+
+    .sheet-form-drawer > .bottom-sheet.drawer-every-width.drawer-left.show {
+        transform: translateX(0);
+    }
+
+    /* It pulls toward its edge from anywhere on it (DrawerSheet), so its
        content scrolls only vertically: a sideways move pulls. Each scroll
        container inside it (the content, the card panel's body) is where a
        touch's allowed moves stop combining, so everything in it carries the
@@ -36,6 +48,12 @@
     .sheet-form-drawer > .bottom-sheet.drawer-every-width,
     .sheet-form-drawer > .bottom-sheet.drawer-every-width * {
         touch-action: pan-y;
+    }
+
+    /* Its title bar has nothing to scroll, so a touch there is the pull's
+       alone, in any direction. */
+    .sheet-form-drawer > .bottom-sheet.drawer-every-width > .sheet-header {
+        touch-action: none;
     }
 
     .sheet-form-drawer > .bottom-sheet.drawer-every-width .sheet-dock {

@@ -14,6 +14,36 @@ use orangui::{Pull, use_sheet_drag_toward};
 use crate::media::{KIT_MODAL_PX, use_min_width};
 use crate::{ActionDock, Button, ButtonVariant, DockPlace, SheetDim, SheetFrame, SheetWide};
 
+/// The edge a drawer at every width runs along and slides in from.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+pub enum DrawerEdge {
+    /// The right edge.
+    #[default]
+    Right,
+    /// The left edge (`drawer-left`), mirroring the right in both forms.
+    Left,
+}
+
+impl DrawerEdge {
+    /// The class a drawer along this edge carries, with its leading space.
+    #[must_use]
+    pub const fn class(self) -> &'static str {
+        match self {
+            Self::Right => "",
+            Self::Left => " drawer-left",
+        }
+    }
+
+    /// The way a drawer along this edge is pulled to close: toward it.
+    #[must_use]
+    pub const fn pull(self) -> Pull {
+        match self {
+            Self::Right => Pull::Right,
+            Self::Left => Pull::Left,
+        }
+    }
+}
+
 /// How long the sheet takes to slide out, in milliseconds: the kit's 0.3s
 /// sheet transform.
 #[cfg_attr(
@@ -39,7 +69,8 @@ const CLOSE_MS: u32 = 300;
 /// slide out, so the sheet opened last is on top. `dim` says whether its
 /// backdrop dims the page ([`SheetDim`]). The sheet is a `dialog` named by
 /// `title`, and `aria-modal` while it dims the page. `data_card` is the id of
-/// the card it shows, for the keys that act on that card.
+/// the card it shows, for the keys that act on that card. `edge` is the edge a drawer at every
+/// width runs along, the right unless given; it is pulled toward that edge.
 #[component]
 pub fn DrawerSheet(
     open: ReadSignal<bool>,
@@ -53,6 +84,7 @@ pub fn DrawerSheet(
     #[props(default)] layer: Option<u32>,
     #[props(default)] dim: SheetDim,
     #[props(default)] data_card: Option<String>,
+    #[props(default)] edge: DrawerEdge,
     children: Element,
 ) -> Element {
     let shown = open();
@@ -70,6 +102,7 @@ pub fn DrawerSheet(
     } else {
         ""
     };
+    let side = if every_width { edge.class() } else { "" };
     let mut held = use_signal(|| None::<u32>);
     use_effect(use_reactive!(|layer| {
         if layer.is_some() {
@@ -84,7 +117,7 @@ pub fn DrawerSheet(
     // edge, to the right.
     let wide = use_min_width(KIT_MODAL_PX);
     let pulls = !wide();
-    let toward = if every_width { Pull::Right } else { Pull::Down };
+    let toward = if every_width { edge.pull() } else { Pull::Down };
     // A sheet that dims the page at this width is modal; an undimmed drawer leaves the page in use.
     let modal = (dim == SheetDim::Always || !wide()).then_some("true");
     let close = use_callback(move |()| on_close.call(()));
@@ -109,19 +142,19 @@ pub fn DrawerSheet(
                 onpointercancel: move |evt| drag.cancel(&evt),
             }
             div {
-                class: if shown { "bottom-sheet show {reach} {class}{pulled}" } else { "bottom-sheet {reach} {class}" },
+                class: if shown { "bottom-sheet show {reach}{side} {class}{pulled}" } else { "bottom-sheet {reach}{side} {class}" },
                 style: sheet_style,
                 "data-card": data_card,
                 role: "dialog",
                 "aria-label": (!title.is_empty()).then(|| title.clone()),
                 "aria-modal": modal,
                 onmounted: move |evt| drag.mounted(evt),
-                // A drawer is pulled to the right from anywhere on it: its content scrolls
+                // A drawer is pulled toward its edge from anywhere on it: its content scrolls
                 // only vertically (`touch-action: pan-y`), and the pull starts only once a move
                 // runs sideways, so a vertical swipe scrolls the content with the sheet left
                 // untouched.
                 onpointerdown: move |evt| {
-                    if pulls && toward == Pull::Right {
+                    if pulls && toward != Pull::Down {
                         drag.arm(&evt);
                     }
                 },
@@ -131,8 +164,10 @@ pub fn DrawerSheet(
                 div {
                     class: "sheet-header",
                     style: "position: relative;",
+                    // The title bar has nothing to scroll (`touch-action: none` on a drawer), so
+                    // it pulls at once, whichever way; the sheet's arm below then stands aside.
                     onpointerdown: move |evt| {
-                        if pulls && toward == Pull::Down {
+                        if pulls {
                             drag.start(&evt);
                         }
                     },

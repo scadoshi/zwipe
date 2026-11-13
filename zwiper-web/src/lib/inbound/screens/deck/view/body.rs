@@ -164,6 +164,7 @@ pub(crate) fn DeckPageBody(
             let StackDetails {
                 mut reveal,
                 mut details_open,
+                ..
             } = details;
             details_open.set(false);
             reveal.set(Reveal::default());

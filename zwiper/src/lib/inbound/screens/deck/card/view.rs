@@ -4,8 +4,9 @@ use ::components::featured_strip::FeaturedStrip;
 use components::icons::{self};
 use components::{
     Button, ButtonVariant, CardGroup, CardsViewSwitch, Chip, DeckEditActions, DeckRowHost,
-    DeckSection, DeckStackDrawer, DeckStacks, DockAction, DockFilter, GroupBuyDialog, StackDetails,
-    TailPlace, Toasts, group_tail, use_group_buy, use_settle, use_stack_details_sync, use_toast,
+    DeckSection, DeckStackDrawer, DeckStacks, DockAction, DockFilter, GroupBuyDialog, TailPlace,
+    Toasts, group_tail, use_group_buy, use_settle, use_stack_details, use_stack_details_sync,
+    use_toast,
 };
 use dioxus::core::spawn_forever;
 use dioxus::prelude::*;
@@ -766,10 +767,7 @@ pub fn View(deck_id: Uuid) -> Element {
     // The stacks' reveal and open card, the face each card shows, and the
     // folds as the model holds them, which the stack headers read.
     let details_open = use_signal(|| false);
-    let stack_details = StackDetails {
-        reveal,
-        details_open,
-    };
+    let stack_details = use_stack_details(reveal, details_open);
     let stack_faces: Signal<HashMap<Uuid, usize>> = use_signal(HashMap::new);
     let mut folds: Signal<HashSet<String>> = use_signal(HashSet::new);
     use_effect(move || {

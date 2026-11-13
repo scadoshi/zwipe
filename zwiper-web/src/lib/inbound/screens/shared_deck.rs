@@ -10,8 +10,8 @@ use std::collections::{HashMap, HashSet};
 use components::hint::ContentHintDialog;
 use components::keys::{ShortcutsList, use_offer_shortcuts};
 use components::{
-    DeckFacts, DeckHoverKeys, DeckRowHost, DockFilter, LoadFailed, StackDetails,
-    use_deck_hover_keys,
+    DeckFacts, DeckHoverKeys, DeckRowHost, DockFilter, LoadFailed, use_deck_hover_keys,
+    use_stack_details,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -278,10 +278,8 @@ fn SharedDeckView(
     // The stacks' reveal and whether the open card's drawer shows.
     let reveal = use_signal(Reveal::default);
     let details_open = use_signal(|| false);
-    let details = use_context_provider(|| StackDetails {
-        reveal,
-        details_open,
-    });
+    let stack_details = use_stack_details(reveal, details_open);
+    let details = use_context_provider(|| stack_details);
 
     // The rows as the owner's deck page lists them, from the same pass, with each card's
     // quantity, board and star.

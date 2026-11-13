@@ -5,7 +5,9 @@ use dioxus::prelude::*;
 use zwipe_core::domain::card::Card;
 
 use crate::drawer_swap::use_drawer_swap;
-use crate::{CardDetailsCost, CardDetailsPanel, DrawerSheet, use_meld, use_overlay_back};
+use crate::{
+    CardDetailsCost, CardDetailsPanel, DrawerEdge, DrawerSheet, use_meld, use_overlay_back,
+};
 
 /// `card`'s details as a drawer, while `open`. Its foot carries `Flip` for a multi-faced card,
 /// `Image` when the host passes `on_image` (called with the shown face) and the card has art, and
@@ -14,7 +16,7 @@ use crate::{CardDetailsCost, CardDetailsPanel, DrawerSheet, use_meld, use_overla
 /// where the host shows them. `class` names the drawer, and a host that adds its
 /// own class keeps `card-details-drawer` in it. The shown face follows `face` when the host
 /// passes one. The drawer carries the card's id as its `data-card`, so the keys that act on a
-/// card find the one it shows. Swapping to another card while it is open crossfades (`use_drawer_swap`).
+/// card find the one it shows. `edge` is the edge it runs along, the right unless given. Swapping to another card while it is open crossfades (`use_drawer_swap`).
 #[component]
 pub fn CardDetailsSheet(
     open: Signal<bool>,
@@ -28,6 +30,7 @@ pub fn CardDetailsSheet(
     #[props(default)] on_face_change: Option<EventHandler<usize>>,
     #[props(default)] describe_tag: Option<Callback<String, Option<String>>>,
     #[props(default)] on_examples: Option<Callback<String>>,
+    #[props(default)] edge: DrawerEdge,
 ) -> Element {
     let layer = use_overlay_back(open);
     use_drawer_swap();
@@ -58,6 +61,7 @@ pub fn CardDetailsSheet(
                 open.set(false);
             },
             every_width: true,
+            edge,
             class,
             data_card: shown_id,
             CardDetailsPanel {

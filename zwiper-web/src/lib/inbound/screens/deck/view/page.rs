@@ -8,7 +8,7 @@
 //! remove, the filter and undo, then Edit, Clone and Share.
 
 use components::icons::{CloneIcon, DockIcon, EditIcon, MINUS, PLUS, ShareIcon, UNDO};
-use components::{DeckFacts, DeckRowHost, StackDetails};
+use components::{DeckFacts, DeckRowHost, use_stack_details};
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
@@ -63,10 +63,8 @@ pub fn DeckWidePage(
     // The stacks' reveal and the open card, before the editor, whose `d` moves them as a click.
     let reveal = use_signal(Reveal::default);
     let details_open = use_signal(|| false);
-    let stack_details_state = use_context_provider(|| StackDetails {
-        reveal,
-        details_open,
-    });
+    let stack_details = use_stack_details(reveal, details_open);
+    let stack_details_state = use_context_provider(|| stack_details);
     let ed = use_deck_editor(deck_id);
     let Editor {
         deck,

@@ -31,7 +31,8 @@ pub fn split_at(rows: &[usize]) -> usize {
     best.1
 }
 
-/// A column of the phones' Stacks view.
+/// A side of the Stacks view: a column of the phones' two, or the edge a card's details drawer
+/// opens from ([`drawer_side`]).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Side {
     /// The left column.
@@ -99,6 +100,19 @@ pub fn place(heights: &[u32], columns: usize) -> Vec<usize> {
         .collect()
 }
 
+/// The edge a card's details drawer opens from, for a card in stack `column` (`0` the leftmost)
+/// of `columns`: away from the card, so it stays in view. A card in the right half opens a drawer
+/// on the left; one in the left half, or the middle column of an odd count, opens it on the
+/// right.
+#[must_use]
+pub fn drawer_side(column: usize, columns: usize) -> Side {
+    if column.saturating_mul(2) >= columns.max(1) {
+        Side::Left
+    } else {
+        Side::Right
+    }
+}
+
 /// A stack column's narrowest width on a wide page, in hundredths of a rem: the 12.5rem the
 /// stacks' grid fit as many of as it could.
 pub const STACK_MIN_CENTIREM: u32 = 1250;
@@ -122,6 +136,25 @@ pub fn column_count(width: u32) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_card_s_drawer_opens_on_the_side_away_from_its_column() {
+        assert_eq!(drawer_side(0, 2), Side::Right, "phone, left column");
+        assert_eq!(drawer_side(1, 2), Side::Left, "phone, right column");
+        assert_eq!(drawer_side(0, 1), Side::Right, "a single column");
+        for (column, want) in [(0, Side::Right), (1, Side::Right), (2, Side::Left)] {
+            assert_eq!(drawer_side(column, 3), want, "column {column} of three");
+        }
+        for (column, want) in [
+            (0, Side::Right),
+            (1, Side::Right),
+            (2, Side::Left),
+            (3, Side::Left),
+        ] {
+            assert_eq!(drawer_side(column, 4), want, "column {column} of four");
+        }
+        assert_eq!(drawer_side(0, 0), Side::Right, "no columns");
+    }
 
     #[test]
     fn the_columns_split_where_their_rows_are_most_even() {

@@ -138,7 +138,8 @@ pub use cover_flow::CoverFlow;
 pub use danger_zone::DangerZoneAction;
 pub use deck_cards_view::{
     CardsViewSwitch, DRAWER_CLASSES, DeckCardsView, DeckEditActions, DeckRow, DeckRowHost,
-    DeckStackDrawer, DeckStacks, OnPrinting, StackDetails, deck_sections, use_stack_details_sync,
+    DeckStackDrawer, DeckStacks, OnPrinting, StackDetails, deck_sections, use_stack_details,
+    use_stack_details_sync,
 };
 pub use deck_group::DeckGroupSection;
 pub use deck_hover_keys::{DeckHoverKeys, use_deck_hover_keys};
@@ -155,7 +156,7 @@ pub use details_eye::{
     DETAILS_HIDDEN_CLASS, DetailsEye, DetailsEyeHost, DockEye, EyePress, Surface, beside_fits,
     eye_lit, starts_hidden, use_details_eye,
 };
-pub use drawer_sheet::DrawerSheet;
+pub use drawer_sheet::{DrawerEdge, DrawerSheet};
 pub use flippable_card_image::{FlippableCardImage, reset_image_ease};
 pub use fold::{FOLD_AT, Fold, SEE_LESS, SEE_MORE, SeeMore, fold_split};
 pub use group_buy::{GroupBuy, GroupBuyDialog, use_group_buy};
