@@ -10,6 +10,9 @@ For every issue you're sent:
 4. **Look at the screen.** Not only the DOM. Does it animate, line up, sit on top of the right thing, read clearly? Back a screenshot with what you checked in the DOM or network when it matters.
 5. **Both places.** The app and phone web, wide and 390, owner and shared deck, signed in and out, wherever the change lives.
 6. **Break it.** Then try your own ways: other widths, Back and gestures, rotate, reload, background and return, fast or repeated input, focus in a field, a sheet or drawer open, slow network, odd orders, long lists, empty states.
-7. **Report.** PASS or FAIL per check, the steps, the clips by path, anything you couldn't check, and everything else you noticed, asked for or not. End with a word on how it feels to use.
+7. **Sweep the neighbors.** For a big change, or one to a shared component (a sheet, drawer, layer, header, chip, the deck page), the worker's report names every screen that uses it. Check each of those too, not only the screen the issue was about. A change to Cards once broke card details on every phone screen.
+8. **Report.** PASS or FAIL per check, the steps, the clips by path, anything you couldn't check, and everything else you noticed, asked for or not. End with a word on how it feels to use.
 
 Run the standing deck-page list on any deck or sheet change: keys with sheets open, dim per sheet (wide and phone), phone web matching the app, focus on open, drag to dismiss, Undo covering every action. Leave the test account and decks the way you found them.
+
+When a batch settles, the composer sends a final walkthrough: the whole app on the emulator and the whole web app, at 1440, 1000, 720 and 390, and at browser zoom 90%, 100%, 125% and 150%. Every screen, every sheet, a word on anything off.

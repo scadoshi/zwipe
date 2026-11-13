@@ -82,6 +82,10 @@ Never write "fixed" for something you didn't rerun.
 
 Then try to break the fix your own way and report everything you find, asked for or not: other widths and devices, Back and gestures, rotate, reload, background and return, fast or repeated input, focus in a field, a sheet or drawer open, slow network, odd orders, long lists, empty states.
 
+### 6b. Sweep the neighbors (worker and QA)
+
+A change to a shared piece (a sheet, drawer, layer, header, chip, the deck page) reaches every screen that uses it. The worker's report lists those screens, and QA checks each one, not only the one the issue named. When a batch settles, QA does a final walkthrough of the whole app and the whole web app at 1440, 1000, 720 and 390, and at browser zoom 90%, 100%, 125% and 150%.
+
 ### 7. Close the loop (the composer)
 
 - Nothing closes on a worker's say-so. It closes when QA's after passes, or when Scotty says so.

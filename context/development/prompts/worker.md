@@ -18,6 +18,7 @@ Every report ends with:
 - **Changed:** files.
 - **Checked:** commands and exit status, what you looked at and at what width.
 - **Not checked:** what you couldn't run (a real phone, iOS Safari, signed in). Say it plainly.
+- **Also touches:** every other screen that uses what you changed, so QA can sweep them.
 - **Tester steps:** the before steps and what they should show now.
 
 Never write "fixed" for something you didn't rerun. If the same kind of bug keeps coming back, or a fix needs a product or design call, stop and ask the composer.
