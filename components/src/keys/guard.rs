@@ -38,18 +38,6 @@ pub fn cursor_guard_js(sheet_class: &str) -> String {
     browser_guard(Modifiers::Refused, &overlays)
 }
 
-/// The guard for an open sheet's own keys ([`guard_js`]'s typing and combo checks): they reach
-/// the sheet while it is the topmost open modal, a shown sheet holding an element that matches
-/// `holding` (a selector), so a dialog or another sheet over it keeps them.
-#[must_use]
-pub fn top_sheet_guard_js(holding: &str) -> String {
-    let modals = MODAL_SELECTORS.join(", ");
-    let on_top = format!(
-        "(() => {{ const open = [...document.querySelectorAll('{modals}')]; const top = open[open.length - 1]; return !!top && top.matches('{OPEN_SHEET}') && !!top.querySelector('{holding}'); }})()"
-    );
-    browser_guard(Modifiers::Refused, &on_top)
-}
-
 /// Open overlays that keep the screen's keys to themselves: a dialog and a sheet or drawer.
 pub const OVERLAY_SELECTORS: [&str; 2] = [".alert-dialog[data-state=\"open\"]", OPEN_SHEET];
 

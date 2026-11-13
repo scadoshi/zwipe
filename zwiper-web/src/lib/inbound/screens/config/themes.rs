@@ -4,7 +4,7 @@
 //! out, a pick is kept on this device (the root stores every theme change)
 //! and a profile's theme takes over at login.
 
-use components::{SheetFrame, SheetWide, ThemeConfig, ThemeSheet, use_theme_cursor};
+use components::{SheetFrame, SheetWide, ThemeConfig, ThemeSheet};
 use dioxus::prelude::*;
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::http::contracts::user::HttpUpdateSettings;
@@ -63,7 +63,7 @@ pub(crate) fn use_toggle_dark_mode() -> Callback<()> {
 
 /// The kit's theme sheet, saving a kept pick to the account. A click
 /// previews a row. On a computer the arrows and `h` `j` `k` `l` move focus
-/// through the rows and Enter picks the focused one ([`use_theme_cursor`]);
+/// through the rows and Enter picks the focused one (the kit's theme cursor);
 /// elsewhere the arrows move the preview. Esc is `Back`. A kept pick says nothing, since the
 /// page already shows it; a failed save toasts and leaves the preview
 /// applied, as the app does, and a discarded pick wipes back out.
@@ -72,7 +72,6 @@ pub(crate) fn ThemesSheet(open: Signal<bool>) -> Element {
     let mut theme: Signal<ThemeConfig> = use_context();
     let session: Signal<Option<Session>> = use_context();
     let authed = use_authed();
-    use_theme_cursor(open);
 
     let save = move |picked: ThemeConfig| {
         ThemeStore::browser().save(&picked);

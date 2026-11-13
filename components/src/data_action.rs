@@ -19,8 +19,9 @@ pub const MELD: &str = "meld";
 /// A deck card's Star toggle.
 pub const STAR: &str = "star";
 
-/// The menu's palette button, which opens the theme sheet.
-pub const THEMES: &str = "themes";
+/// The menu's palette button, which opens the theme sheet: orangui's mark, which its page keys'
+/// `t` presses too.
+pub const THEMES: &str = orangui::THEMES_ACTION;
 
 /// What the flip key presses, the first the card shows: its flip control, else, a card with one
 /// face, its Meld toggle.

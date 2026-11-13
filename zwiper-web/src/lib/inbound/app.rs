@@ -128,7 +128,8 @@ pub fn App() -> Element {
     components::use_settle();
     // The keyboard shortcuts sheet, over every route, the auth screens included, opened by
     // Shift+H, a hint's keyboard button or a swipe screen's dock button.
-    let shortcuts_open = use_shortcuts_root();
+    // The screen scrolls in its own column under the nav, not the document.
+    let shortcuts_open = use_shortcuts_root(Some(".web-main > .web-scroll-screen"));
 
     rsx! {
         document::Link { rel: "icon", href: FAVICON }

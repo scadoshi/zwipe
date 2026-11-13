@@ -33,6 +33,7 @@ fn Screen() -> Element {
     use_offer_shortcuts(ShortcutsList {
         rows: vec![(&["p"], "Printings"), (&["d"], "Card details")],
         note: Some("Hover a card"),
+        claims_steps: false,
     });
     rsx! {}
 }
@@ -40,7 +41,7 @@ fn Screen() -> Element {
 #[test]
 fn the_sheet_lists_the_offering_screen_s_keys_and_note() {
     fn app() -> Element {
-        let open = use_shortcuts_root();
+        let open = use_shortcuts_root(None);
         rsx! {
             Screen {}
             ShortcutsSheet { open }
@@ -60,7 +61,7 @@ fn the_sheet_lists_the_offering_screen_s_keys_and_note() {
 #[test]
 fn with_no_screen_offering_keys_the_sheet_lists_the_keys_every_page_answers() {
     fn app() -> Element {
-        let open = use_shortcuts_root();
+        let open = use_shortcuts_root(None);
         rsx! {
             ShortcutsSheet { open }
         }

@@ -14,5 +14,6 @@ pub fn use_offer_shortcuts(screen: ShortcutsScreen) {
     keys::use_offer_shortcuts(ShortcutsList {
         rows: shortcuts::sheet_rows(&screen),
         note: shortcuts::sheet_note(&screen),
+        claims_steps: shortcuts::claims_steps(&screen),
     });
 }

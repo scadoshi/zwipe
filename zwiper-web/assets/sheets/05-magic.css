@@ -3227,48 +3227,6 @@ footer.site-footer .site-footer-note {
     animation: none;
 }
 
-/* The keyboard shortcuts sheet: one row per key, its keys in the hint's key
-   style at the left, what it does after them. The keys column is as wide as
-   the sheet's widest keys, each row on the list's grid. The keys sit inline
-   in text, spaced as words, as they do in a page hint, so they draw the
-   hint's own squircle. */
-.web-shortcuts {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: grid;
-    grid-template-columns: max-content 1fr;
-    gap: 0.6rem 0.75rem;
-}
-
-.web-shortcut {
-    display: grid;
-    grid-column: 1 / -1;
-    grid-template-columns: subgrid;
-    align-items: center;
-}
-
-.web-shortcut-does {
-    color: var(--text-primary);
-}
-
-/* The line above the keys on a screen whose keys need one. */
-.web-shortcuts-note {
-    margin: 0 0 0.75rem;
-    color: var(--ink-text-muted, var(--text-muted));
-}
-
-/* With no overlay stack, the shortcuts sheet opens over any screen: the
-   full-window Commander swipe (210) and the dictionary and examples
-   overlays (220, 230) too. */
-.web-shortcuts-layer .sheet-backdrop {
-    z-index: var(--overlay-z, 240);
-}
-
-.web-shortcuts-layer .bottom-sheet {
-    z-index: calc(var(--overlay-z, 240) + 1);
-}
-
 /* A card group that folds (DeckGroupSection, a deck page band or stack, a
    decks list group): its header, its arrow and its body. */
 

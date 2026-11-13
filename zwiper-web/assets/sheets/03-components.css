@@ -1322,6 +1322,45 @@ a.nav-dropdown-item.active:visited {
     padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
 }
 
+/* ---- Keyboard shortcuts (orangui::ShortcutsSheet, ShortcutRow) ----
+   One row per key: its keys in the hint's key style at the left, what it
+   does after them. The keys column is as wide as the widest keys, each row
+   on the list's grid; the keys sit inline, spaced as words. The sheet opens
+   over every overlay. */
+
+.shortcuts {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 0.6rem 0.75rem;
+}
+
+.shortcut {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+    align-items: center;
+}
+
+.shortcut-does {
+    color: var(--text-primary);
+}
+
+.shortcuts-note {
+    margin: 0 0 0.75rem;
+    color: var(--ink-text-muted, var(--text-muted));
+}
+
+.shortcuts-layer .sheet-backdrop {
+    z-index: var(--overlay-z, 240);
+}
+
+.shortcuts-layer .bottom-sheet {
+    z-index: calc(var(--overlay-z, 240) + 1);
+}
+
 /* ---- Sheet forms on a wide window (orangui::SheetFrame) ----
    The frame has no box; above the bar breakpoint it moves the sheet it
    wraps. A modal centers and settles in. A drawer is an inset panel along

@@ -3,6 +3,8 @@
 //! the rows the shortcuts sheet lists for the deck cards page. A deck page that cannot be edited
 //! (a shared deck) answers only the keys that read ([`Editable::No`]).
 
+use orangui_core::page_keys;
+
 use crate::hint::KeyIcon;
 
 /// Whether the deck page on show can be edited: the owner's own deck, or a shared deck read by
@@ -104,12 +106,15 @@ pub fn global_key(key: &str) -> Option<GlobalKey> {
 /// One row of the shortcuts sheet: its keys as the sheet writes them, and what they do.
 pub type SheetRow = (&'static [&'static str], &'static str);
 
-/// The rows every page's sheet ends with: the keys every page answers, then the theme sheet's,
-/// which opens from every page.
-pub const EVERYWHERE_ROWS: [SheetRow; 7] = [
-    (&["Esc"], "Close the open sheet"),
+/// The rows every page's sheet ends with: the keys every page answers (orangui's page keys but
+/// the steps, which a screen's own `j` and `k` can take), then the theme sheet's, which opens from
+/// every page.
+pub const EVERYWHERE_ROWS: [SheetRow; 9] = [
+    page_keys::CLOSE_ROW,
     (&["?"], "This page's hint"),
-    (&["Shift+H"], "These shortcuts"),
+    page_keys::SHORTCUTS_ROW,
+    page_keys::TOP_ROW,
+    page_keys::BOTTOM_ROW,
     THEME_ROWS[0],
     THEME_ROWS[1],
     THEME_ROWS[2],
@@ -118,11 +123,14 @@ pub const EVERYWHERE_ROWS: [SheetRow; 7] = [
 
 /// The theme sheet's rows: `t` opens it, its cursor moves through the themes and Enter picks one.
 pub const THEME_ROWS: [SheetRow; 4] = [
-    (&["t"], "Themes"),
-    (&["↑", "↓", "←", "→"], "Move between themes in Themes"),
-    (&["h", "j", "k", "l"], "Move between themes in Themes"),
-    (&["Enter"], "Pick the theme in Themes"),
+    page_keys::THEMES_ROW,
+    page_keys::THEME_SHEET_ROWS[0],
+    page_keys::THEME_SHEET_ROWS[1],
+    page_keys::THEME_SHEET_ROWS[2],
 ];
+
+/// The step rows, on a screen whose own keys leave `j` and `k` to scroll the page.
+pub const STEP_ROWS: [SheetRow; 2] = page_keys::STEP_ROWS;
 
 /// The deck cards page's own rows, the read-only page's being only the keys that read.
 #[must_use]

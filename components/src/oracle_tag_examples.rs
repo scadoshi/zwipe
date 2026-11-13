@@ -153,6 +153,7 @@ pub fn OracleTagExamples(
     // Shift+H lists the modal's keys while it is open.
     use_offer_shortcuts(ShortcutsList {
         rows: examples_rows().into_iter().chain(EVERYWHERE_ROWS).collect(),
+        claims_steps: true,
         note: None,
     });
     // `v` flips the top card or shows its meld and `d` opens or closes its details, as on every

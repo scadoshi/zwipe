@@ -174,6 +174,16 @@ pub fn sheet_rows(screen: &ShortcutsScreen) -> Vec<SheetRow> {
     own.into_iter().chain(EVERYWHERE_ROWS).collect()
 }
 
+/// Whether `screen`'s own keys use `j` and `k` (the swipes, the deck cursor, the examples' down
+/// swipe), so they don't scroll the page there.
+#[must_use]
+pub fn claims_steps(screen: &ShortcutsScreen) -> bool {
+    match screen {
+        ShortcutsScreen::Swipe(_) | ShortcutsScreen::DeckCards | ShortcutsScreen::Examples => true,
+        ShortcutsScreen::CardRows => false,
+    }
+}
+
 /// The line the shortcuts sheet shows above the keys on `screen`, if it needs one.
 #[must_use]
 pub fn sheet_note(screen: &ShortcutsScreen) -> Option<&'static str> {
@@ -360,6 +370,7 @@ mod tests {
                     other => other,
                 };
                 let known = cursor::move_for(key).is_some()
+                    || page_key_label(label)
                     || key == "Enter"
                     || hover_keys::hover_key(key, Editable::Yes).is_some()
                     || card_key(key).is_some()
@@ -392,6 +403,8 @@ mod tests {
                 "Close the open sheet",
                 "This page's hint",
                 "These shortcuts",
+                "To the top",
+                "To the bottom",
                 "Themes",
                 "Move between themes in Themes",
                 "Move between themes in Themes",
@@ -420,6 +433,7 @@ mod tests {
             for label in *keys {
                 let key = typed(label);
                 let known = swipe_screen_shortcut(&key).is_some()
+                    || page_key_label(label)
                     || global_key(&key).is_some()
                     || key == "Esc"
                     || key == UNDO_COMBO;
@@ -428,10 +442,27 @@ mod tests {
         }
     }
 
+    /// Whether `label` is one of orangui's page keys the root answers on every screen, as a sheet
+    /// writes them: `gg` and Shift+G (orangui's tests hold what they do).
+    fn page_key_label(label: &str) -> bool {
+        matches!(label, "gg" | "Shift+G")
+    }
+
     /// Whether `row` is one of the theme sheet's own keys, which work in that sheet rather than on
     /// the screen; its `t` row opens it from the screen.
     fn in_theme_sheet(row: &SheetRow) -> bool {
         THEME_ROWS.contains(row) && global_key(row.0.first().copied().unwrap_or_default()).is_none()
+    }
+
+    #[test]
+    fn a_screen_whose_keys_use_j_and_k_keeps_them_and_the_rest_scroll() {
+        assert!(claims_steps(&ShortcutsScreen::Swipe(ADD_LABELS)));
+        assert!(claims_steps(&ShortcutsScreen::DeckCards));
+        assert!(claims_steps(&ShortcutsScreen::Examples));
+        assert!(
+            !claims_steps(&ShortcutsScreen::CardRows),
+            "Playstyle and Activity's keys leave j and k"
+        );
     }
 
     #[test]
@@ -521,6 +552,7 @@ mod tests {
                     Some(Shortcut::Swipe(swipe)) => [Swipe::Left, Swipe::Down].contains(&swipe),
                     _ => card_key(key).is_some_and(|k| k != CardKey::Filter),
                 } || global_key(key).is_some()
+                    || page_key_label(label)
                     || key == "Esc";
                 assert!(works, "{label} for {does}");
             }

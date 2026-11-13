@@ -12,7 +12,7 @@ mod shortcuts_sheet;
 pub use guard::{
     KEYED_MODAL, MODAL_HINT_BUTTON, MODAL_SELECTORS, OVERLAY_SELECTORS, PRESSED_KEY,
     STACK_DETAILS_CLASS, TYPING_TAGS, cursor_guard_js, guard_js, guard_js_through,
-    guard_js_with_modifiers, hint_guard_js, modal_hint_js, press_first_js, top_sheet_guard_js,
+    guard_js_with_modifiers, hint_guard_js, modal_hint_js, press_first_js,
 };
 pub use page_keys::{
     focus_by_id, use_page_keys, use_page_keys_through, use_scoped_keys, use_undo_key,

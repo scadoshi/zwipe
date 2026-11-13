@@ -195,7 +195,7 @@ fn App() -> Element {
     use_context_provider(|| theme);
     use_context_provider(|| Replay(Signal::new(0u32)));
     // The keyboard shortcuts sheet, which Shift+H opens on a page that offers it.
-    let shortcuts_open = ::components::keys::use_shortcuts_root();
+    let shortcuts_open = ::components::keys::use_shortcuts_root(None);
     // A card drawn without its image shrinks its text to fit its box.
     ::components::use_card_proxy_fit();
     // Lists marked to settle, as Guides' cards under a filter, ease into place.

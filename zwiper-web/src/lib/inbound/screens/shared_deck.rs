@@ -263,6 +263,7 @@ fn SharedDeckView(
             .chain(shortcuts::EVERYWHERE_ROWS)
             .collect(),
         note: Some(shortcuts::DECK_CARDS_NOTE),
+        claims_steps: true,
     });
     let boards = use_signal(Boards::default);
     let show_zone = use_signal(|| true);

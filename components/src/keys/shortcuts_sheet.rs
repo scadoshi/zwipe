@@ -12,7 +12,7 @@ use zwipe_ui::shortcuts::{self, GlobalKey, RowPart, SheetRow};
 use crate::hint::KeyGlyph;
 use crate::keys::guard;
 use crate::media::use_computer;
-use crate::{BottomSheet, DialogAction, HintKey, SheetFrame, SheetWide, data_action};
+use crate::{DialogAction, HintKey, data_action};
 
 /// The hint's keyboard button's icon: a keyboard, its keys and space bar.
 const KEYBOARD: &str = "M3 7h18v10H3zM7 10.5h.01M10.5 10.5h.01M14 10.5h.01M17.5 10.5h.01M8 14h8";
@@ -33,6 +33,8 @@ pub struct ShortcutsList {
     pub rows: Vec<SheetRow>,
     /// The line the sheet shows above the keys.
     pub note: Option<&'static str>,
+    /// Whether the screen's own keys use `j` and `k`, so they don't scroll the page there.
+    pub claims_steps: bool,
 }
 
 /// The mounted screens that offer the sheet, newest last, which [`use_offer_shortcuts`] keeps:
@@ -44,17 +46,44 @@ pub struct ShortcutsOffered(pub Signal<Vec<ShortcutsList>>);
 /// keys of a page with no hint of its own. Call once, above every route. Every page offers the
 /// keys it answers anywhere ([`shortcuts::EVERYWHERE_ROWS`], the theme sheet's among them), so
 /// Shift+H and the hint's keyboard button work on every page, and a screen with keys of its own
-/// lists those over them.
-pub fn use_shortcuts_root() -> Signal<bool> {
+/// lists those over them. The page keys scroll `scroller` (a selector), else the document.
+pub fn use_shortcuts_root(scroller: Option<&'static str>) -> Signal<bool> {
     let open = use_context_provider(|| ShortcutsOpen(Signal::new(false))).0;
     use_context_provider(|| {
         ShortcutsOffered(Signal::new(vec![ShortcutsList {
             rows: shortcuts::EVERYWHERE_ROWS.to_vec(),
             note: None,
+            claims_steps: false,
         }]))
     });
     use_global_keys(None);
+    use_page_scroll_keys(scroller);
     open
+}
+
+/// orangui's page keys under every route: `g` `g` and Shift+G to the top and bottom on every
+/// screen, and `j` and `k` a step where the newest offered screen leaves them to the page
+/// ([`ShortcutsList::claims_steps`]), in `scroller` (a selector) or the document. `t` and Shift+H stay [`use_global_keys`]'s, and every modal
+/// in [`MODAL_SELECTORS`](crate::keys::MODAL_SELECTORS) keeps the keys from the page.
+fn use_page_scroll_keys(scroller: Option<&'static str>) {
+    let offered = try_use_context::<ShortcutsOffered>().map(|ShortcutsOffered(stack)| stack);
+    let steps = use_memo(move || {
+        offered.is_some_and(|stack| {
+            stack
+                .read()
+                .last()
+                .is_some_and(|screen| !screen.claims_steps)
+        })
+    });
+    orangui::use_page_keys(
+        orangui::PageKeys {
+            themes: false,
+            shortcuts: None,
+            blocked_by: &guard::MODAL_SELECTORS,
+            scroller,
+        },
+        steps.into(),
+    );
 }
 
 /// Offers `screen`'s keys while this screen is mounted, so Shift+H and the hint's keyboard button
@@ -128,70 +157,37 @@ pub fn use_global_keys(on_hint: Option<Callback<()>>) {
     });
 }
 
-/// What takes focus as the shortcuts sheet opens: its close button, so Esc, Enter and Tab act on
-/// the sheet however it was opened (Shift+H, or a hint's keyboard button, whose hint hands focus
-/// back to the page as it closes).
-const SHEET_FOCUS: &str = ".web-shortcuts-layer .bottom-sheet.show .sheet-close";
-
-/// Takes focus off anything inside the closed shortcuts sheet.
-const LEAVE_CLOSED_JS: &str = "{ const a = document.activeElement; if (a && a.closest && a.closest('.web-shortcuts-layer') && !a.closest('.bottom-sheet.show')) a.blur(); }";
-
 /// The shortcuts sheet: every key of the newest screen that offers it with what it does, in the
-/// hint's key style. It sits above every screen, a full-window one included. Focus moves into it as
-/// it opens and back as it closes ([`use_sheet_focus`](crate::keys::use_sheet_focus)).
+/// hint's key style, on orangui's [`ShortcutsSheet`](orangui::ShortcutsSheet), which sits above
+/// every screen, takes focus as it opens, keeps Tab inside and gives focus back as it closes. A
+/// screen that leaves `j` and `k` to the page lists the step rows too.
 #[component]
 pub fn ShortcutsSheet(open: Signal<bool>) -> Element {
-    crate::keys::use_sheet_focus(open.into(), SHEET_FOCUS);
-    // With no opener left to take focus back (the hint's button is gone, or the page had it),
-    // focus leaves the closed sheet rather than staying on its hidden close button.
-    use_effect(move || {
-        if !open() {
-            document::eval(LEAVE_CLOSED_JS);
-        }
-    });
     let offered = try_use_context::<ShortcutsOffered>().map(|ShortcutsOffered(stack)| stack);
     // No screen offering the sheet (the one that did has gone): nothing to list.
     let Some(screen) = offered.and_then(|stack| stack.read().last().cloned()) else {
         return rsx! {};
     };
+    let steps: &[SheetRow] = if screen.claims_steps {
+        &[]
+    } else {
+        &shortcuts::STEP_ROWS
+    };
+    let rows = screen.rows.iter().copied().chain(steps.iter().copied());
     rsx! {
-        div { class: "web-shortcuts-layer",
-        SheetFrame { wide: SheetWide::Modal,
-            BottomSheet {
-                open,
-                title: SHORTCUTS_LABEL.to_string(),
-                closable: true,
-                if let Some(note) = screen.note {
-                    p { class: "web-shortcuts-note", "{note}" }
-                }
-                ul { class: "web-shortcuts",
-                    for (at, (keys, does)) in screen.rows.into_iter().enumerate() {
-                        li { key: "{at}", class: "web-shortcut",
-                            span { class: "web-shortcut-keys",
-                                for (i, label) in keys.iter().copied().enumerate() {
-                                    span { key: "{label}",
-                                        if i > 0 {
-                                            " "
-                                        }
-                                        HintKey { "{label}" }
-                                    }
-                                }
-                            }
-                            // An icon button shows its icon beside its name, so the sheet teaches it.
-                            span { class: "web-shortcut-does",
-                                for part in shortcuts::row_parts(does) {
-                                    match part {
-                                        RowPart::Icon(icon) => rsx! { HintKey { KeyGlyph { icon } } },
-                                        RowPart::Text(words) => rsx! { "{words}" },
-                                    }
-                                }
-                            }
+        orangui::ShortcutsSheet { open, note: screen.note.map(str::to_owned),
+            for (at, (keys, does)) in rows.enumerate() {
+                orangui::ShortcutRow { key: "{at}", keys: keys.iter().map(ToString::to_string).collect::<Vec<_>>(),
+                    // An icon button shows its icon beside its name, so the sheet teaches it.
+                    for part in shortcuts::row_parts(does) {
+                        match part {
+                            RowPart::Icon(icon) => rsx! { HintKey { KeyGlyph { icon } } },
+                            RowPart::Text(words) => rsx! { "{words}" },
                         }
                     }
                 }
             }
         }
-    }
     }
 }
 
@@ -297,24 +293,6 @@ mod tests {
         }
         assert!(js.contains("open[open.length - 1]"), "the topmost: {js}");
         assert!(js.contains(guard::MODAL_HINT_BUTTON), "{js}");
-    }
-
-    #[test]
-    fn closing_the_sheet_takes_focus_out_of_it() {
-        assert!(
-            LEAVE_CLOSED_JS
-                .contains("a.closest('.web-shortcuts-layer') && !a.closest('.bottom-sheet.show')"),
-            "{LEAVE_CLOSED_JS}"
-        );
-        assert!(LEAVE_CLOSED_JS.contains("a.blur()"), "{LEAVE_CLOSED_JS}");
-    }
-
-    #[test]
-    fn the_open_sheet_s_close_button_takes_focus() {
-        assert_eq!(
-            SHEET_FOCUS,
-            ".web-shortcuts-layer .bottom-sheet.show .sheet-close"
-        );
     }
 
     #[test]
