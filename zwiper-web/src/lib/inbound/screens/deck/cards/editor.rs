@@ -121,6 +121,16 @@ impl Editor {
     }
 }
 
+/// Who sets a star: a toggle, which records undo, or an undo, which toasts `message` once the
+/// server takes it.
+#[derive(Debug, Clone, PartialEq)]
+enum StarBy {
+    /// The Star button or Shift+S.
+    Toggle,
+    /// Undo, with its toast.
+    Undo(String),
+}
+
 /// The engine for `deck_id`: fetches the deck and its tokens, parks the
 /// filter on leave, and binds the keys (↑ ↓ move the selection, `+` and `-`
 /// change its quantity, F flips it, `/` focuses Quick add, Ctrl+Z undoes).
@@ -422,6 +432,11 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
         if from == target {
             return;
         }
+        let moved = screens::deck_cards::moved_to(
+            *entry.deck_card.quantity,
+            &entry.card.scryfall_data.name,
+            target,
+        );
         if record {
             undo.write().push(
                 deck_id,
@@ -455,16 +470,14 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
             }
         });
         if record {
-            toast.info(
-                screens::deck_cards::moved_to(target),
-                ToastOptions::default().duration(TOAST_QUICK),
-            );
+            toast.info(moved, ToastOptions::default().duration(TOAST_QUICK));
         }
     });
 
-    // Sets a row's star time at once and patches the star to match; a toggle records undo once the server takes it.
+    // Sets a row's star time at once and patches the star to match. A toggle records undo once
+    // the server takes it; an undo raises its toast then, so a refusal shows alone.
     let set_star = use_callback(
-        move |(card_id, at, record): (Uuid, Option<DateTime<Utc>>, bool)| {
+        move |(card_id, at, by): (Uuid, Option<DateTime<Utc>>, StarBy)| {
             let Some(entry) = entries
                 .peek()
                 .iter()
@@ -487,7 +500,10 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
             set_mvp(at);
             spawn(async move {
                 let request = HttpPatchDeckCard::with_mvp(at.is_some());
-                let name = if record { "toggle_mvp" } else { "undo" };
+                let name = match by {
+                    StarBy::Toggle => "toggle_mvp",
+                    StarBy::Undo(_) => "undo",
+                };
                 match authed
                     .try_run(name, |c, s| async move {
                         c.update_deck_card(deck_id, card_id, &request, &s).await
@@ -496,15 +512,18 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
                 {
                     Ok(saved) => {
                         set_mvp(saved.mvp_at);
-                        if record {
-                            undo.write().push(
+                        match by {
+                            StarBy::Toggle => undo.write().push(
                                 deck_id,
                                 UndoAction::MvpToggled {
                                     card_id,
                                     card_name,
                                     before: old,
                                 },
-                            );
+                            ),
+                            StarBy::Undo(message) => {
+                                toast.info(message, ToastOptions::default().duration(TOAST_QUICK));
+                            }
                         }
                     }
                     Err(_) => set_mvp(old),
@@ -514,7 +533,9 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
     );
 
     let toggle_mvp = use_callback(move |(card_id, starred): (Uuid, bool)| {
-        set_star.call((card_id, (!starred).then(Utc::now), /* record */ true));
+        // A star adds or takes a featured card, which moves the cards under the strip.
+        components::settle::watch();
+        set_star.call((card_id, (!starred).then(Utc::now), StarBy::Toggle));
     });
 
     let save_printing = use_callback(move |picked: Card| {
@@ -557,6 +578,10 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
                 .await
                 .is_some()
             {
+                // The open details follow the card to its new printing.
+                if let Some(details) = stack_details {
+                    details.rekey(old_id, new_id);
+                }
                 if let Some(e) = entries
                     .write()
                     .iter_mut()
@@ -581,6 +606,8 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
     });
 
     let apply_undo = use_callback(move |()| {
+        // An undo can add or take a featured card and move the cards under it.
+        components::settle::watch();
         let popped = undo.write().pop(deck_id);
         let Some(action) = popped else {
             return;
@@ -657,11 +684,15 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
             UndoAction::MvpToggled {
                 card_id, before, ..
             } => {
-                set_star.call((card_id, before, /* record */ false));
+                set_star.call((card_id, before, StarBy::Undo(message)));
+                return;
             }
             UndoAction::PrintingChanged { old_card, new_id } => {
                 let old_card = *old_card;
                 let old_id = old_card.scryfall_data.id;
+                if let Some(details) = stack_details {
+                    details.rekey(new_id, old_id);
+                }
                 if let Some(e) = entries
                     .write()
                     .iter_mut()

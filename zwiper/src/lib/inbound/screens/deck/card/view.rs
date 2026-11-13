@@ -184,11 +184,18 @@ struct Driver {
     hint_open: Signal<bool>,
     /// The deck the deck route already holds, which the screen opens on without a fetch.
     held: Option<HeldDeck>,
+    /// The stacks' reveal and open card, which a printing change rekeys.
+    reveal: Signal<Reveal>,
 }
 
 impl Driver {
     /// Applies `action` to the model and performs what it returns.
     fn dispatch(self, action: Action) {
+        // A star or an undo can add or take a featured card and move the cards under it, so the
+        // page settles around it.
+        if matches!(action, Action::ToggleMvp { .. } | Action::Undo(_)) {
+            components::settle::watch();
+        }
         let mut model = self.model;
         let effects = model.write().update(action);
         for effect in effects {
@@ -218,7 +225,9 @@ impl Driver {
                 hint_dialog::open_and_record_hint(hint.key(), session, client, hint_open);
             }
             Effect::FetchDeck { ticket, deck_id } => self.fetch_deck(ticket, deck_id),
-            effect @ (Effect::FetchTokens { .. } | Effect::SearchCards { .. }) => {
+            effect @ (Effect::FetchTokens { .. }
+            | Effect::SearchCards { .. }
+            | Effect::FetchPrintings { .. }) => {
                 self.fetch(effect);
             }
             effect @ (Effect::CreateCard { .. }
@@ -240,6 +249,10 @@ impl Driver {
                 usage_buffer.peek().record_removal(deck_id, oracle_id);
             }
             Effect::RecordUndo(action) => undo_log.push(to_app_undo(*action)),
+            Effect::PrintingSwapped { old_id, new_id } => {
+                let mut reveal = self.reveal;
+                reveal.write().rekey(old_id, new_id);
+            }
             Effect::ForgetRemoval { card_id } => {
                 let mut log = undo_log.0;
                 take_newest_in(
@@ -315,6 +328,20 @@ impl Driver {
                             cards: page.cards,
                         },
                         None => Action::Failed { ticket },
+                    });
+                });
+            }
+            Effect::FetchPrintings { ticket, oracle_id } => {
+                let client = self.client;
+                spawn(async move {
+                    // Quiet: a failure adds the picked printing as before.
+                    let http = client.peek().clone();
+                    self.dispatch(match http.fetch_printings(oracle_id).await {
+                        Ok(printings) => Action::PrintingsLoaded { ticket, printings },
+                        Err(e) => {
+                            tracing::warn!("quick add printings failed: {e}");
+                            Action::Failed { ticket }
+                        }
                     });
                 });
             }
@@ -626,6 +653,8 @@ pub fn View(deck_id: Uuid) -> Element {
     use_context_provider(|| CollapseExpanded(should_collapse_expanded));
 
     let deck_cards_hint_open = use_signal(|| false);
+    // The stacks' reveal and open card, before the driver, which rekeys it when a printing changes.
+    let reveal = use_signal(Reveal::default);
 
     // With the deck the route holds, the screen starts loaded on it, so it never draws its ghost;
     // what that load asks for next runs once it mounts.
@@ -656,6 +685,7 @@ pub fn View(deck_id: Uuid) -> Element {
         printing_sheet_open,
         hint_open: deck_cards_hint_open,
         held,
+        reveal,
     };
 
     use_effect(move || {
@@ -709,7 +739,6 @@ pub fn View(deck_id: Uuid) -> Element {
     let view = use_signal(cards_view_store::restored);
     // The stacks' reveal and open card, the face each card shows, and the
     // folds as the model holds them, which the stack headers read.
-    let reveal = use_signal(Reveal::default);
     let details_open = use_signal(|| false);
     let stack_details = StackDetails {
         reveal,
@@ -1001,7 +1030,7 @@ pub fn View(deck_id: Uuid) -> Element {
                         on_tap: move |card: Card| {
                             let id = card.scryfall_data.id;
                             match featured_open(id, &listed_ids.peek()) {
-                                FeaturedOpen::Details => stack_details.click(id),
+                                FeaturedOpen::Details => stack_details.feature(id),
                                 FeaturedOpen::Image => {
                                     let mut preview = preview_card;
                                     preview.set(Some((card.scryfall_data, 0)));

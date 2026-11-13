@@ -40,6 +40,8 @@ fn FeaturedCard(
     rsx! {
         div {
             class: "deck-featured-card",
+            // Named for the settle, so the strip's cards slide when a star adds or takes one.
+            "data-settle-key": "featured-{card.scryfall_data.id}",
             onclick: move |event: MouseEvent| {
                 event.stop_propagation();
                 on_tap.call(card.clone());
@@ -102,7 +104,7 @@ pub fn FeaturedCards(
     };
     rsx! {
         section { class: "{class}",
-            div { class: "deck-featured-row scroll-fade-x",
+            div { class: "deck-featured-row scroll-fade-x", "data-settle-scope": "",
                 for (card, role) in cards {
                     FeaturedCard {
                         key: "{card.scryfall_data.id}",

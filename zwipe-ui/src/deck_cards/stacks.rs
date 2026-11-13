@@ -105,6 +105,10 @@ pub enum Gesture {
     /// A tap on a card (phones): the first reveals it, a second on the same
     /// card opens its details, and one more closes them.
     Tap(Uuid),
+    /// A click or tap on a featured card: its details open, or close where they are open, as a
+    /// click does, but the same card in the stacks stays tucked, since the details did not come
+    /// from it.
+    Feature(Uuid),
     /// The details closed (their ×, Escape, the backdrop, the back gesture).
     Close,
     /// A tap off every card (phones): the reveal goes back to the open card,
@@ -172,6 +176,8 @@ pub struct Reveal {
     open: Option<Uuid>,
     /// The last card whose details opened, kept through a close.
     drawn: Option<Uuid>,
+    /// Whether the open details came from the featured strip, so no stack card shows for them.
+    featured: bool,
 }
 
 impl Reveal {
@@ -181,7 +187,12 @@ impl Reveal {
     #[must_use]
     pub fn revealed_in(&self, cards: &[Uuid]) -> Option<Uuid> {
         let here = |card: Option<Uuid>| card.filter(|c| cards.contains(c));
-        here(self.hovered).or_else(|| here(self.open))
+        here(self.hovered).or_else(|| here(self.pinned()))
+    }
+
+    /// The open card when the stacks show it: none for details the featured strip opened.
+    const fn pinned(&self) -> Option<Uuid> {
+        if self.featured { None } else { self.open }
     }
 
     /// The card shown in full in its stack: the one under the pointer, else
@@ -190,7 +201,7 @@ impl Reveal {
     pub const fn revealed(&self) -> Option<Uuid> {
         match self.hovered {
             Some(card) => Some(card),
-            None => self.open,
+            None => self.pinned(),
         }
     }
 
@@ -217,6 +228,16 @@ impl Reveal {
         }
     }
 
+    /// Moves every mark on `from` to `to`: a card whose printing changed keeps its reveal and its
+    /// open details under its new id.
+    pub fn rekey(&mut self, from: Uuid, to: Uuid) {
+        for mark in [&mut self.hovered, &mut self.open, &mut self.drawn] {
+            if *mark == Some(from) {
+                *mark = Some(to);
+            }
+        }
+    }
+
     /// Applies `gesture`.
     pub fn apply(&mut self, gesture: Gesture) {
         match gesture {
@@ -226,15 +247,26 @@ impl Reveal {
                     self.hovered = None;
                 }
             }
-            Gesture::Click(card) => self.pin(card),
+            Gesture::Click(card) => {
+                self.featured = false;
+                self.pin(card);
+            }
             Gesture::Tap(card) => {
                 if self.revealed() == Some(card) {
+                    self.featured = false;
                     self.pin(card);
                 } else {
                     self.hovered = Some(card);
                 }
             }
-            Gesture::Close => self.open = None,
+            Gesture::Feature(card) => {
+                self.pin(card);
+                self.featured = self.open.is_some();
+            }
+            Gesture::Close => {
+                self.open = None;
+                self.featured = false;
+            }
             Gesture::Dismiss => self.hovered = None,
         }
     }
@@ -242,6 +274,58 @@ impl Reveal {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn details_from_the_featured_strip_leave_the_stack_card_tucked() {
+        let (card, other) = (Uuid::new_v4(), Uuid::new_v4());
+        let mut reveal = Reveal::default();
+        reveal.apply(Gesture::Feature(card));
+        assert_eq!(reveal.open(), Some(card), "the details open");
+        assert_eq!(reveal.drawn(), Some(card), "the drawer shows the card");
+        assert_eq!(reveal.revealed(), None, "no stack card shows for them");
+        assert_eq!(reveal.revealed_in(&[card, other]), None);
+
+        reveal.apply(Gesture::Hover(other));
+        assert_eq!(reveal.revealed(), Some(other), "a hover still reveals");
+        reveal.apply(Gesture::Leave(other));
+        assert_eq!(reveal.revealed(), None);
+
+        reveal.apply(Gesture::Click(card));
+        assert_eq!(reveal.open(), None, "a click on the open card closes it");
+        reveal.apply(Gesture::Click(card));
+        assert_eq!(
+            reveal.revealed(),
+            Some(card),
+            "the stack's own click reveals it"
+        );
+
+        reveal.apply(Gesture::Feature(other));
+        assert_eq!(reveal.open(), Some(other));
+        assert_eq!(reveal.revealed(), None);
+        reveal.apply(Gesture::Close);
+        reveal.apply(Gesture::Click(card));
+        assert_eq!(
+            reveal.revealed(),
+            Some(card),
+            "a close forgets where the details came from"
+        );
+    }
+
+    #[test]
+    fn a_new_printing_keeps_the_open_details_on_its_card() {
+        let (old, new, other) = (Uuid::new_v4(), Uuid::new_v4(), Uuid::new_v4());
+        let mut reveal = Reveal::default();
+        reveal.apply(Gesture::Click(old));
+        reveal.rekey(old, new);
+        assert_eq!(reveal.open(), Some(new));
+        assert_eq!(reveal.drawn(), Some(new));
+        assert_eq!(reveal.revealed(), Some(new));
+        reveal.rekey(other, old);
+        assert_eq!(
+            reveal.open(),
+            Some(new),
+            "another card's change moves nothing"
+        );
+    }
 
     #[test]
     fn entering_stacks_deals_once_the_cards_are_in() {

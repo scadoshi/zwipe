@@ -17,6 +17,7 @@ use crate::deck::view::{self, Done};
 use crate::deck::warning::{self, Fix};
 use crate::generation::{Generation, Ticket};
 use crate::screens::deck_form;
+use crate::stores::undo::UndoAction;
 use crate::toast::{Line, Toast, keep_one};
 
 /// The screen's title.
@@ -450,6 +451,13 @@ pub enum Effect {
     },
     /// Opens this one-time hint if the user hasn't seen it, and records it as seen.
     OfferHint(OneTimeHint),
+    /// Pushes `action` onto deck `deck_id`'s undo log, which the deck cards view's Undo walks.
+    RecordUndo {
+        /// The deck the change was made to.
+        deck_id: Uuid,
+        /// What its undo needs.
+        action: Box<UndoAction>,
+    },
     /// Sets a card's quantity; answers with [`Action::QuantitySet`].
     SetQuantity {
         /// The ticket to hand back.
@@ -809,8 +817,26 @@ impl State {
             return Vec::new();
         };
         match (mutation, landed) {
-            (Mutation::SetQuantity { quantity, .. }, Landed::QuantitySet) => {
+            (Mutation::SetQuantity { card, quantity }, Landed::QuantitySet) => {
                 let mut effects = vec![Effect::Toast(Done::QuantitySet(quantity).toast())];
+                // The deck as loaded still holds the copies before the fix.
+                let before = self.deck().and_then(|deck| {
+                    deck.entries
+                        .iter()
+                        .find(|e| e.deck_card.scryfall_data_id == card)
+                });
+                if let (Some(entry), Some(deck_id)) = (before, self.deck_id) {
+                    let baseline = *entry.deck_card.quantity;
+                    effects.push(Effect::RecordUndo {
+                        deck_id,
+                        action: Box::new(UndoAction::QuantityChanged {
+                            card_id: card,
+                            card_name: entry.card.scryfall_data.name.clone(),
+                            net: quantity.saturating_sub(baseline),
+                            baseline,
+                        }),
+                    });
+                }
                 effects.extend(self.fetch_deck());
                 effects
             }

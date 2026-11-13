@@ -161,6 +161,13 @@ fn the_hint_waits_for_the_first_card() {
     let (mut state, _) = loaded_with(Vec::new(), deck_profile("Empty"));
     let result = card("Sol Ring");
     let effects = state.update(Action::AddCard(Box::new(result.clone())));
+    let [Effect::FetchPrintings { ticket, .. }] = effects.as_slice() else {
+        panic!("an add asks for the printings: {effects:?}");
+    };
+    let effects = state.update(Action::PrintingsLoaded {
+        ticket: *ticket,
+        printings: Vec::new(),
+    });
     let [Effect::CreateCard { ticket, .. }] = effects.as_slice() else {
         panic!("an add creates the card");
     };
@@ -512,6 +519,16 @@ fn a_quick_add_joins_the_deck_records_undo_and_toasts() {
         cards: vec![signet.clone()],
     });
     let effects = state.update(Action::AddCard(Box::new(signet.clone())));
+    let [Effect::FetchPrintings { ticket, oracle_id }] = effects.as_slice() else {
+        panic!("an add asks for the card's printings first: {effects:?}");
+    };
+    assert_eq!(Some(*oracle_id), signet.scryfall_data.oracle_id);
+    assert!(state.quick_add().is_none(), "the pick closes the results");
+    assert_eq!(state.quick_query(), "", "and clears the search");
+    let effects = state.update(Action::PrintingsLoaded {
+        ticket: *ticket,
+        printings: Vec::new(),
+    });
     let [
         Effect::CreateCard {
             ticket,
@@ -521,11 +538,10 @@ fn a_quick_add_joins_the_deck_records_undo_and_toasts() {
         },
     ] = effects.as_slice()
     else {
-        panic!("an add creates the card: {effects:?}");
+        panic!("with no regular printing the pick is added as it is: {effects:?}");
     };
     assert_eq!(request.quantity, 1);
-    assert!(state.quick_add().is_none(), "the pick closes the results");
-    assert_eq!(state.quick_query(), "", "and clears the search");
+    assert_eq!(request.scryfall_data_id, id(&signet).to_string());
     let ticket = *ticket;
     let deck_card = deck(deck_profile("D"), vec![signet.clone()]).entries[0]
         .deck_card
@@ -804,7 +820,10 @@ fn a_move_records_toasts_and_rolls_back_on_failure() {
     );
     assert_eq!(
         toasts(&effects),
-        [(ToastKind::Info, "Moved to sideboard".to_owned())]
+        [(
+            ToastKind::Info,
+            "Moved 1 Sol Ring to the sideboard".to_owned()
+        )]
     );
     assert_eq!(state.row(ring).map(|r| r.board), Some(Board::Sideboard));
     let Some(Effect::PatchCard {
@@ -894,12 +913,17 @@ fn a_printing_swaps_after_the_server_takes_it() {
     assert_eq!(
         undo_records(&effects),
         [UndoAction::PrintingChanged {
-            old_card: Box::new(old),
+            old_card: Box::new(old.clone()),
             new_id: id(&new)
         }]
     );
     assert!(state.row(id(&new)).is_some());
     assert_eq!(state.printing().map(id), Some(id(&new)));
+    assert!(
+        matches!(effects.first(), Some(Effect::PrintingSwapped { old_id, new_id })
+            if *old_id == id(&old) && *new_id == id(&new)),
+        "the client moves the open details to the new printing before the list refilters: {effects:?}"
+    );
 }
 
 #[test]
@@ -1057,6 +1081,11 @@ fn undo_restores_a_printing() {
         effects.last(),
         Some(Effect::PatchCard { op: Op::Undo, card_id, .. }) if *card_id == id(&cards[0])
     ));
+    assert!(
+        matches!(effects.first(), Some(Effect::PrintingSwapped { old_id, new_id })
+            if *old_id == id(&cards[0]) && *new_id == id(&old)),
+        "undo moves the open details back too: {effects:?}"
+    );
 }
 
 #[test]
@@ -1150,7 +1179,18 @@ fn the_copy_matches_the_app() {
     let labels: Vec<&str> = BOARD_CHIPS.into_iter().map(board_label).collect();
     assert_eq!(labels, ["Main", "Maybe", "Side"]);
     assert_eq!(added("Sol Ring"), "Added Sol Ring");
-    assert_eq!(moved_to(Board::Maybeboard), "Moved to maybeboard");
+    assert_eq!(
+        moved_to(8, "Mountain", Board::Maybeboard),
+        "Moved 8 Mountain to the maybeboard"
+    );
+    assert_eq!(
+        moved_to(1, "Sol Ring", Board::Sideboard),
+        "Moved 1 Sol Ring to the sideboard"
+    );
+    assert_eq!(
+        moved_to(2, "Forest", Board::Deck),
+        "Moved 2 Forest to the mainboard"
+    );
     assert_eq!(group_title("Creature", 4), "Creature (4)");
     assert_eq!(group_title("", 4), "(4)");
     assert_eq!(lands_title(36), "Lands (36)");
@@ -1454,9 +1494,9 @@ fn undo_unstars_a_star_without_recording() {
         before: None,
     })));
     assert!(!state.row(ring).unwrap().mvp);
-    assert_eq!(
-        toasts(&effects),
-        [(ToastKind::Info, "Unstarred Sol Ring".to_owned())]
+    assert!(
+        toasts(&effects).is_empty(),
+        "the toast waits for the server"
     );
     let Some(Effect::PatchCard {
         ticket,
@@ -1473,6 +1513,10 @@ fn undo_unstars_a_star_without_recording() {
         deck_card: Box::new(state.entries[0].deck_card.clone()),
     });
     assert!(undo_records(&landed).is_empty(), "no ping-pong");
+    assert_eq!(
+        toasts(&landed),
+        [(ToastKind::Info, "Unstarred Sol Ring".to_owned())]
+    );
 }
 
 #[test]
@@ -1487,9 +1531,9 @@ fn undo_restars_an_unstar_at_its_old_star_time_and_rolls_back_on_failure() {
         before: Some(starred_at),
     })));
     assert_eq!(state.entries[0].deck_card.mvp_at, Some(starred_at));
-    assert_eq!(
-        toasts(&effects),
-        [(ToastKind::Info, "Starred Sol Ring".to_owned())]
+    assert!(
+        toasts(&effects).is_empty(),
+        "the toast waits for the server"
     );
     let Some(Effect::PatchCard {
         ticket,
@@ -1501,8 +1545,34 @@ fn undo_restars_an_unstar_at_its_old_star_time_and_rolls_back_on_failure() {
         panic!("undo patches the star back: {effects:?}");
     };
     assert!(matches!(request.mvp, Patch::Set(Some(true))));
-    let _ = state.update(Action::Failed { ticket: *ticket });
+    let refused = state.update(Action::Failed { ticket: *ticket });
     assert_eq!(state.entries[0].deck_card.mvp_at, None);
+    assert!(
+        toasts(&refused).is_empty(),
+        "a refused re-star raises no success toast; the client shows the refusal"
+    );
+}
+
+#[test]
+fn an_undone_restar_toasts_once_the_server_takes_it() {
+    let (mut state, cards) = loaded();
+    let ring = id(&cards[0]);
+    let effects = state.update(Action::Undo(Box::new(UndoAction::MvpToggled {
+        card_id: ring,
+        card_name: "Sol Ring".to_owned(),
+        before: Some(Utc::now()),
+    })));
+    let Some(Effect::PatchCard { ticket, .. }) = effects.last() else {
+        panic!("undo patches the star back: {effects:?}");
+    };
+    let landed = state.update(Action::Patched {
+        ticket: *ticket,
+        deck_card: Box::new(state.entries[0].deck_card.clone()),
+    });
+    assert_eq!(
+        toasts(&landed),
+        [(ToastKind::Info, "Starred Sol Ring".to_owned())]
+    );
 }
 
 #[test]
@@ -1551,4 +1621,71 @@ fn a_star_undo_the_deck_moved_past_says_already_changed() {
             "unstarred already, or gone"
         );
     }
+}
+
+/// A regular, priced printing of `of` at `usd`, released in `year`.
+fn priced_printing(of: &Card, usd: &str, year: i32) -> Card {
+    let mut c = card(&of.scryfall_data.name);
+    c.scryfall_data.oracle_id = of.scryfall_data.oracle_id;
+    c.scryfall_data.lang = "en".to_owned();
+    c.scryfall_data.finishes = vec!["nonfoil".to_owned()];
+    c.scryfall_data.layout = "normal".to_owned();
+    c.scryfall_data.set_type = "expansion".to_owned();
+    c.scryfall_data.border_color = "black".to_owned();
+    c.scryfall_data.prices.usd = Some(usd.to_owned());
+    c.scryfall_data.released_at = chrono::NaiveDate::from_ymd_opt(year, 1, 1).unwrap();
+    c
+}
+
+#[test]
+fn a_quick_add_lands_the_cheapest_regular_printing() {
+    let (mut state, _) = loaded();
+    let signet = card("Arcane Signet");
+    let effects = state.update(Action::AddCard(Box::new(signet.clone())));
+    let [Effect::FetchPrintings { ticket, .. }] = effects.as_slice() else {
+        panic!("{effects:?}");
+    };
+    let newest = priced_printing(&signet, "2.50", 2026);
+    let cheapest = priced_printing(&signet, "0.30", 2018);
+    let mut promo = priced_printing(&signet, "0.05", 2024);
+    promo.scryfall_data.promo = true;
+    let effects = state.update(Action::PrintingsLoaded {
+        ticket: *ticket,
+        printings: vec![newest, cheapest.clone(), promo],
+    });
+    let [
+        Effect::CreateCard {
+            ticket, request, ..
+        },
+    ] = effects.as_slice()
+    else {
+        panic!("{effects:?}");
+    };
+    assert_eq!(request.scryfall_data_id, id(&cheapest).to_string());
+    let deck_card = deck(deck_profile("D"), vec![cheapest.clone()]).entries[0]
+        .deck_card
+        .clone();
+    let _ = state.update(Action::Created {
+        ticket: *ticket,
+        deck_card: Box::new(deck_card),
+    });
+    assert!(
+        state.row(id(&cheapest)).is_some(),
+        "the row is that printing"
+    );
+}
+
+#[test]
+fn a_quick_add_whose_printings_fail_adds_the_pick() {
+    let (mut state, _) = loaded();
+    let signet = card("Arcane Signet");
+    let effects = state.update(Action::AddCard(Box::new(signet.clone())));
+    let [Effect::FetchPrintings { ticket, .. }] = effects.as_slice() else {
+        panic!("{effects:?}");
+    };
+    let effects = state.update(Action::Failed { ticket: *ticket });
+    let [Effect::CreateCard { request, .. }] = effects.as_slice() else {
+        panic!("the add still goes through: {effects:?}");
+    };
+    assert_eq!(request.scryfall_data_id, id(&signet).to_string());
 }

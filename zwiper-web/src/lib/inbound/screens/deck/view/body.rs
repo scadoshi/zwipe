@@ -186,7 +186,7 @@ pub(crate) fn DeckPageBody(
     let open_featured =
         use_callback(
             move |id: Uuid| match deck_cards::featured_open(id, &listed_ids.peek()) {
-                FeaturedOpen::Details => details.click(id),
+                FeaturedOpen::Details => details.feature(id),
                 FeaturedOpen::Image => {
                     if let Some(card) = featured_cards.iter().find(|c| c.scryfall_data.id == id) {
                         preview.set(Some((card.scryfall_data.clone(), 0)));

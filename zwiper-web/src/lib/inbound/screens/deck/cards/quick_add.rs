@@ -12,11 +12,13 @@ use components::{ClearWrap, TOAST_QUICK};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
+use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
 use zwipe_core::domain::deck::DeckEntry;
 use zwipe_core::http::contracts::deck_card::HttpCreateDeckCard;
+use zwipe_ui::card::default_printing;
 use zwipe_ui::generation::Generation;
 use zwipe_ui::stores::undo::UndoAction;
 use zwipe_ui::timing::{QUICK_ADD_DEBOUNCE, QUICK_ADD_LIMIT, QUICK_ADD_MIN_CHARS};
@@ -41,6 +43,7 @@ pub(crate) fn QuickAdd(
     on_added: EventHandler<()>,
 ) -> Element {
     let authed = use_authed();
+    let client: Signal<ZwipeClient> = use_context();
     let usage = telemetry::use_usage();
     let toast = use_toast();
     let CardStores { mut undo, .. } = use_context();
@@ -94,13 +97,30 @@ pub(crate) fn QuickAdd(
         });
     });
 
-    let mut add = move |card: Card| {
-        let id = card.scryfall_data.id;
+    // A pick lands the card's cheapest regular printing, or the pick itself when its printings
+    // fail to load or none qualifies.
+    let mut add = move |picked: Card| {
         query.set(String::new());
         results.set(Vec::new());
         show.set(false);
-        let request = HttpCreateDeckCard::new(&card.scryfall_data, 1, None);
         spawn(async move {
+            let card = match picked.scryfall_data.oracle_id {
+                Some(oracle_id) => {
+                    let http = client.peek().clone();
+                    match http.fetch_printings(oracle_id).await {
+                        Ok(printings) => default_printing::cheapest_regular(&printings)
+                            .cloned()
+                            .unwrap_or(picked),
+                        Err(e) => {
+                            tracing::warn!("quick add printings failed: {e}");
+                            picked
+                        }
+                    }
+                }
+                None => picked,
+            };
+            let id = card.scryfall_data.id;
+            let request = HttpCreateDeckCard::new(&card.scryfall_data, 1, None);
             let Some(deck_card) = authed
                 .run("quick_add_card", |c, s| async move {
                     c.create_deck_card(deck_id, &request, &s).await

@@ -1,0 +1,23 @@
+# 436. Deck page rough edges: Fix to isn't undoable, Select closes the drawer, the move toast hides the count, Quick add lands the newest printing
+
+State: fixing | Owner: thinker | Type: issue | PR: - | Build seen: -
+
+## Report
+Composer for Scotty, 2026-11-12, from surfer's exploration: (1) phone-width Profile > Warnings "Fix to 1" must be undoable (Undo on that screen, and Cards' Undo covers it); (2) Printings > Select must not close the card drawer underneath; (3) To maybeboard/sideboard moves the whole entry, so the toast says how many: "Moved 8 Mountain to the maybeboard"; (4) Quick add defaults to the card's cheapest regular printing (no promos or special treatments), not the newest. Added from droider on 432: an undone re-star the server refuses showed "Starred X" beside the refusal; when an MVP leaves the strip the commander snaps to center and the page below jumps; a featured card's open details float the same card in the Stacks column behind.
+
+## Fix
+thinker:
+- Fix to: the quantity fix records `UndoAction::QuantityChanged` on the deck's undo log once the server takes it, on the web (`WarningFixes::fix_quantity`) and in the app (the deck view model's `Effect::RecordUndo`), so Cards' Undo (and the wide deck page's) puts the copies back. The phone-width Profile screen has no Undo control of its own; see below.
+- Select: a printing change rekeys the stacks' reveal and open details from the old printing's id to the new one (`Reveal::rekey`, the deck cards model's `Effect::PrintingSwapped`, and the web editor), and Undo of it rekeys back, so the drawer stays on the card.
+- Move toast: `moved_to(copies, card_name, board)` reads "Moved 8 Mountain to the maybeboard", on the web and in the app.
+- Quick add: a pick loads the card's printings and lands `card::default_printing::cheapest_regular`: English, paper, regular size, not a promo, sold in nonfoil, no Art Series, token or memorabilia printing, and no borderless, full-art, textless, showcase, extended-art, etched or inverted frame; cheapest by USD, the newest of a tie. With no such priced printing, or when the printings fail to load, the pick lands as before. No contract change.
+- An undone star's toast waits for the server, so a refusal shows alone, on the web and in the app.
+- The app's featured strip is a settle scope with its cards keyed (the web's deck page already settles its head cards), and a star or an undo starts a settle watch on both, so the featured cards slide and the stacks under them ease (moves over the settle's 40px threshold).
+- A featured card's details open with `Gesture::Feature`, which opens the drawer without revealing the same card in the stacks; a stack click or a close clears it.
+
+## Open
+- An Undo control on the phone-width Profile screen itself (asked of the composer).
+
+## Verification
+- `cargo test -p zwipe-ui` (the quick add printing step and choice, rekey, the move toast, the featured gesture, the undo record of a fix, the delayed star toast).
+- Phone width, owner deck: Profile > Warnings > Fix to 1, then Cards > Undo: the copies come back. Open a card's details, Printings > Select another: the drawer stays on the card. Move an 8-copy land to the maybeboard: "Moved 8 Mountain to the maybeboard". Quick add a card with promos: the row is its cheapest regular printing. Open the commander from the strip in Stacks: the column card stays tucked. Unstar the only MVP: the commander slides to center.

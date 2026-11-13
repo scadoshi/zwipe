@@ -92,6 +92,17 @@ impl StackDetails {
         details_open.set(reveal.peek().open().is_some());
     }
 
+    /// A click or tap on featured card `id`: its details open, or close where they are open,
+    /// without revealing the same card in the stacks.
+    pub fn feature(self, id: Uuid) {
+        let Self {
+            mut reveal,
+            mut details_open,
+        } = self;
+        reveal.write().apply(Gesture::Feature(id));
+        details_open.set(reveal.peek().open().is_some());
+    }
+
     /// A tap on card `id` (phones): the first reveals it, a second on the revealed card opens its
     /// details, and one on the open card closes them.
     pub fn tap(self, id: Uuid) {
@@ -101,6 +112,13 @@ impl StackDetails {
         } = self;
         reveal.write().apply(Gesture::Tap(id));
         details_open.set(reveal.peek().open().is_some());
+    }
+
+    /// Card `from`'s printing is now `to`: its reveal and its open details move with it, so the
+    /// drawer stays on the card.
+    pub fn rekey(self, from: Uuid, to: Uuid) {
+        let Self { mut reveal, .. } = self;
+        reveal.write().rekey(from, to);
     }
 
     /// A tap off every card (phones): the reveal goes back to the open card, or to none.

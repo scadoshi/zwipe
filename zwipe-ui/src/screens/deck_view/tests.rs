@@ -2,6 +2,7 @@ use zwipe_core::domain::deck::{DeckOtherTag, Format, WarningAction};
 use zwipe_core::domain::site::APP_BASE;
 
 use super::*;
+use crate::stores::undo::UndoAction;
 use crate::test_support::{card, deck, deck_profile};
 use crate::toast::{QUICK, ToastKind};
 
@@ -1001,5 +1002,37 @@ fn the_dock_reads_edit_clone_share_buy_then_cards() {
             DockItem::Cards
         ],
         "no cart without a store link"
+    );
+}
+
+#[test]
+fn a_quantity_fix_goes_on_the_decks_undo_log() {
+    let (profile, mut built) = two_cards("Elves");
+    let card = built.entries[0].deck_card.scryfall_data_id;
+    built.entries[0].deck_card.quantity = zwipe_core::domain::deck::Quantity::new(3).unwrap();
+    let mut state = loaded(&profile, built);
+    let effects = state.update(Action::SetQuantity { card, quantity: 1 });
+    let effects = state.update(Action::QuantitySet {
+        ticket: ticket_of(&effects),
+    });
+    let recorded: Vec<_> = effects
+        .iter()
+        .filter_map(|e| match e {
+            Effect::RecordUndo { deck_id, action } => Some((*deck_id, (**action).clone())),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(
+        recorded,
+        [(
+            profile.id,
+            UndoAction::QuantityChanged {
+                card_id: card,
+                card_name: "Sol Ring".to_owned(),
+                net: -2,
+                baseline: 3,
+            }
+        )],
+        "Cards' Undo puts the three copies back"
     );
 }

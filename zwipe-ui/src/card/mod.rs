@@ -1,5 +1,6 @@
 //! A card as text: each face's name, mana cost, type line, rules text and stats.
 
+pub mod default_printing;
 pub mod info;
 
 use zwipe_core::domain::card::scryfall_data::ScryfallData;

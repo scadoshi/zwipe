@@ -31,12 +31,14 @@ use zwipe_core::http::contracts::deck_card::HttpPatchDeckCard;
 use zwipe_ui::deck::form::Slot;
 use zwipe_ui::deck::view::DeckView;
 use zwipe_ui::screens::deck_view::{EDIT, LOAD_FAILED, MoreItem, delete_body};
+use zwipe_ui::stores::undo::UndoAction;
 use zwipe_ui::telemetry::vocabulary::{DeckScreen, Screen, component};
 
 use self::cards_layer::use_cards_route;
 use self::dialogs::{DeckDialogsHost, use_deck_dialogs};
 use self::page::DeckWidePage;
 use self::sections::WarningFixes;
+use crate::inbound::card_stores::CardStores;
 use crate::inbound::cards::card_row::{CardOverlaysHost, use_card_overlays};
 use crate::inbound::cards::otag::{OtagExamplesHost, use_otag_reveals};
 use crate::inbound::chrome::authed::use_authed;
@@ -103,6 +105,7 @@ fn DeckViewScreen(deck_id: Uuid, view: Option<DeckView>) -> Element {
         }));
     // Quiet: the profile fetch beside it raises the one toast a failed
     // visit gets.
+    let CardStores { undo, .. } = use_context();
     let mut deck: Resource<Result<Deck, ClientError>> =
         use_resource(use_reactive!(|deck_id| async move {
             authed
@@ -171,6 +174,14 @@ fn DeckViewScreen(deck_id: Uuid, view: Option<DeckView>) -> Element {
     let fixes = WarningFixes {
         fix_quantity: use_callback(move |(card, quantity): (Uuid, i32)| {
             let request = HttpPatchDeckCard::new(Some(quantity), None);
+            // What the fix changes, for the deck's undo log, which Cards' Undo walks.
+            let before = deck.peek().as_ref().and_then(|loaded| {
+                let entries = &loaded.as_ref().ok()?.entries;
+                entries
+                    .iter()
+                    .find(|e| e.deck_card.scryfall_data_id == card)
+                    .map(|e| (e.card.scryfall_data.name.clone(), *e.deck_card.quantity))
+            });
             spawn(async move {
                 if authed
                     .run("update_card_quantity", |c, s| async move {
@@ -179,6 +190,18 @@ fn DeckViewScreen(deck_id: Uuid, view: Option<DeckView>) -> Element {
                     .await
                     .is_some()
                 {
+                    if let Some((card_name, baseline)) = before {
+                        let mut undo = undo;
+                        undo.write().push(
+                            deck_id,
+                            UndoAction::QuantityChanged {
+                                card_id: card,
+                                card_name,
+                                net: quantity.saturating_sub(baseline),
+                                baseline,
+                            },
+                        );
+                    }
                     toast.info(
                         format!("Quantity set to {quantity}"),
                         ToastOptions::default().duration(TOAST_QUICK),

@@ -29,6 +29,7 @@ use zwipe_ui::screens::deck_view::{
     self, Action, Destination, Dialog, DockItem, Effect, MoreItem, Section, State,
 };
 
+use super::card::components::undo_log::{UndoAction, UndoStore};
 use super::components::clone_deck_dialog::CloneDeckDialog;
 use super::components::collapsible_section::CollapsibleSection;
 use super::components::deck_budget_section::DeckBudgetSection;
@@ -72,6 +73,8 @@ pub(crate) struct Driver {
     hint_open: Signal<bool>,
     dialogs: DeckDialogs,
     opener: DeckOpener,
+    /// The per-deck undo stacks the deck cards screen walks.
+    undo_store: UndoStore,
 }
 
 // By hand: the handles have no `PartialEq`. One model is one driver.
@@ -145,6 +148,10 @@ impl Driver {
                     self.client,
                     self.hint_open,
                 );
+            }
+            Effect::RecordUndo { deck_id, action } => {
+                let mut store = self.undo_store;
+                store.push(deck_id, UndoAction::from(*action));
             }
             Effect::SetQuantity {
                 ticket,
@@ -478,6 +485,7 @@ pub fn ViewDeck(deck_id: Uuid, view: Option<DeckView>) -> Element {
         hint_open: use_signal(|| false),
         dialogs: use_deck_dialogs(),
         opener: use_context(),
+        undo_store: use_context(),
     };
     // First-deck tour: opens once per account when the model offers it on
     // the first Load; the header "?" reopens it on demand.

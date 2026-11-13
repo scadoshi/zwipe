@@ -24,6 +24,7 @@ use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_core::http::contracts::deck::HttpUpdateDeckProfile;
 use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard};
 
+use crate::card::default_printing;
 use crate::deck::command_zone::Slot;
 use crate::deck_cards::keys::{RowInfo, RowKind};
 use crate::deck_cards::{self, Boards, Display, Write, Zone};
@@ -142,15 +143,16 @@ pub fn added(name: &str) -> String {
 /// The toast after a move to the mainboard, from any screen.
 pub const MOVED_TO_MAINBOARD: &str = "Moved to mainboard";
 
-/// The toast after a row's move to `board`. The words are the copy's
-/// (mainboard), not the board's wire name (deck).
+/// The toast after a row's move to `board`, which takes all its copies: "Moved 8 Mountain to the
+/// maybeboard". The words are the copy's (mainboard), not the board's wire name (deck).
 #[must_use]
-pub fn moved_to(board: Board) -> String {
-    match board {
-        Board::Deck => MOVED_TO_MAINBOARD.to_owned(),
-        Board::Maybeboard => "Moved to maybeboard".to_owned(),
-        Board::Sideboard => "Moved to sideboard".to_owned(),
-    }
+pub fn moved_to(copies: i32, card_name: &str, board: Board) -> String {
+    let to = match board {
+        Board::Deck => "mainboard",
+        Board::Maybeboard => "maybeboard",
+        Board::Sideboard => "sideboard",
+    };
+    format!("Moved {copies} {card_name} to the {to}")
 }
 
 /// A card group's header: `label` and its copy count, or the count alone for a color group, whose pips stand in for the label.
@@ -373,6 +375,13 @@ pub enum Action {
     },
     /// Adds a Quick add result to the main board. It clears the search and closes the results at once, and joins the deck when the server confirms.
     AddCard(Box<Card>),
+    /// The [`Effect::FetchPrintings`] holding `ticket` brought the card's printings.
+    PrintingsLoaded {
+        /// The ticket from the effect this answers.
+        ticket: Ticket,
+        /// Every printing of the card.
+        printings: Vec<Card>,
+    },
     /// The [`Effect::CreateCard`] holding `ticket` created this deck card.
     Created {
         /// The ticket from the effect this answers.
@@ -476,6 +485,13 @@ pub enum Effect {
         /// The search, from [`quick_add_query`].
         query: Box<CardQuery>,
     },
+    /// Fetches every printing of the card `oracle_id` names, for Quick add to land the cheapest regular one; answers with [`Action::PrintingsLoaded`] or [`Action::Failed`].
+    FetchPrintings {
+        /// The ticket to hand back.
+        ticket: Ticket,
+        /// The card's oracle id.
+        oracle_id: Uuid,
+    },
     /// Creates a deck card; answers with [`Action::Created`] or [`Action::Failed`].
     CreateCard {
         /// The ticket to hand back.
@@ -540,6 +556,13 @@ pub enum Effect {
     },
     /// Pushes this entry onto the deck's undo log.
     RecordUndo(Box<UndoAction>),
+    /// A row's printing changed from `old_id` to `new_id`; the client moves what it keys by the old id (the open details, the reveal) to the new one, so the drawer stays on the card.
+    PrintingSwapped {
+        /// The printing before.
+        old_id: Uuid,
+        /// The printing now.
+        new_id: Uuid,
+    },
     /// Takes the newest [`UndoAction::Removed`] entry for this card off the undo log, after its delete failed.
     ForgetRemoval {
         /// The card's printing id.
@@ -618,6 +641,8 @@ enum Pending {
         card_id: Uuid,
         before: Option<DateTime<Utc>>,
         record: bool,
+        /// Undo's toast, raised once the server takes the patch.
+        toast: Option<String>,
     },
     Printing {
         old: Box<Card>,
@@ -628,6 +653,8 @@ enum Pending {
         old: Box<Card>,
         new: Box<Card>,
     },
+    /// A Quick add pick waiting on its printings.
+    QuickAddPrintings(Box<Card>),
     /// Undo's re-create of a removed card.
     Recreate(Uuid),
     /// An undo call whose reply changes nothing.
@@ -743,12 +770,7 @@ impl State {
                 Vec::new()
             }
             Action::Loaded { ticket, deck, zone } => self.loaded(ticket, *deck, *zone),
-            Action::TokensLoaded { ticket, tokens } => {
-                if self.settle(ticket).is_some() {
-                    self.tokens = Some(tokens);
-                }
-                Vec::new()
-            }
+            Action::TokensLoaded { ticket, tokens } => self.tokens_loaded(ticket, tokens),
             Action::Failed { ticket } => self.failed(ticket),
             Action::Gone { ticket } => self.gone(ticket),
             Action::Filter(filter) => {
@@ -794,6 +816,9 @@ impl State {
                 Vec::new()
             }
             Action::AddCard(card) => self.add_card(*card),
+            Action::PrintingsLoaded { ticket, printings } => {
+                self.quick_printings(ticket, &printings)
+            }
             Action::Created { ticket, deck_card } => self.created(ticket, *deck_card),
             Action::Patched { ticket, deck_card } => self.patched(ticket, &deck_card),
             Action::Deleted { ticket } => {
@@ -916,6 +941,7 @@ impl State {
                 self.tokens = Some(Vec::new());
                 Vec::new()
             }
+            Pending::QuickAddPrintings(picked) => self.create_card(*picked),
             Pending::Search => {
                 if self.quick.waiting == Some(ticket) {
                     self.quick.waiting = None;
@@ -1028,11 +1054,43 @@ impl State {
         self.quick.open = false;
     }
 
+    /// The deck's tokens landed.
+    fn tokens_loaded(&mut self, ticket: Ticket, tokens: Vec<Card>) -> Vec<Effect> {
+        if self.settle(ticket).is_some() {
+            self.tokens = Some(tokens);
+        }
+        Vec::new()
+    }
+
+    /// A Quick add pick: the results close, and the card's printings load so the add lands its cheapest regular printing.
     fn add_card(&mut self, card: Card) -> Vec<Effect> {
+        if self.deck_id.is_none() {
+            return Vec::new();
+        }
+        self.close_quick_add();
+        let Some(oracle_id) = card.scryfall_data.oracle_id else {
+            return self.create_card(card);
+        };
+        let ticket = self.request(Pending::QuickAddPrintings(Box::new(card)));
+        vec![Effect::FetchPrintings { ticket, oracle_id }]
+    }
+
+    /// The picked card's printings landed: the add takes the cheapest regular one, or the pick when none qualifies.
+    fn quick_printings(&mut self, ticket: Ticket, printings: &[Card]) -> Vec<Effect> {
+        let Some(Pending::QuickAddPrintings(picked)) = self.settle(ticket) else {
+            return Vec::new();
+        };
+        let chosen = default_printing::cheapest_regular(printings)
+            .cloned()
+            .unwrap_or(*picked);
+        self.create_card(chosen)
+    }
+
+    /// Creates `card` on the main board at one copy.
+    fn create_card(&mut self, card: Card) -> Vec<Effect> {
         let Some(deck_id) = self.deck_id else {
             return Vec::new();
         };
-        self.close_quick_add();
         let request = HttpCreateDeckCard::new(&card.scryfall_data, 1, None);
         let ticket = self.request(Pending::QuickAdd(Box::new(card)));
         vec![Effect::CreateCard {
@@ -1094,22 +1152,22 @@ impl State {
                 card_id,
                 before,
                 record,
+                toast,
             }) => {
                 let Some(entry) = self.entry_mut(card_id) else {
                     return Vec::new();
                 };
                 entry.deck_card.mvp_at = deck_card.mvp_at;
                 let card_name = entry.card.scryfall_data.name.clone();
-                record
-                    .then(|| {
-                        Effect::RecordUndo(Box::new(UndoAction::MvpToggled {
-                            card_id,
-                            card_name,
-                            before,
-                        }))
-                    })
-                    .into_iter()
-                    .collect()
+                let undo = record.then(|| {
+                    Effect::RecordUndo(Box::new(UndoAction::MvpToggled {
+                        card_id,
+                        card_name,
+                        before,
+                    }))
+                });
+                let toast = toast.map(|text| Effect::Toast(Toast::quick(ToastKind::Info, text)));
+                undo.into_iter().chain(toast).collect()
             }
             Some(Pending::Printing { old, new }) => {
                 let old_id = old.scryfall_data.id;
@@ -1120,6 +1178,7 @@ impl State {
                 }
                 self.printing = Some((*new, None));
                 vec![
+                    Effect::PrintingSwapped { old_id, new_id },
                     Effect::RecordUndo(Box::new(UndoAction::PrintingChanged {
                         old_card: old,
                         new_id,
@@ -1331,11 +1390,16 @@ impl State {
         let Some(deck_id) = self.deck_id else {
             return Vec::new();
         };
-        let (from, card_name) = self
-            .entry(card_id)
-            .map_or((Board::Deck, String::new()), |e| {
-                (e.deck_card.board, e.card.scryfall_data.name.clone())
-            });
+        let (from, card_name, copies) =
+            self.entry(card_id)
+                .map_or((Board::Deck, String::new(), 0), |e| {
+                    (
+                        e.deck_card.board,
+                        e.card.scryfall_data.name.clone(),
+                        *e.deck_card.quantity,
+                    )
+                });
+        let toast = moved_to(copies, &card_name, board);
         let mut effects = Vec::new();
         if record {
             effects.push(Effect::RecordUndo(Box::new(UndoAction::MovedBoard {
@@ -1360,10 +1424,7 @@ impl State {
             op: Op::MoveBoard,
         });
         if record {
-            effects.push(Effect::Toast(Toast::quick(
-                ToastKind::Info,
-                moved_to(board),
-            )));
+            effects.push(Effect::Toast(Toast::quick(ToastKind::Info, toast)));
         }
         effects
     }
@@ -1372,11 +1433,17 @@ impl State {
         let star = self
             .entry(card_id)
             .is_some_and(|e| e.deck_card.mvp_at.is_none());
-        self.set_mvp(card_id, star.then_some(now), Op::ToggleMvp)
+        self.set_mvp(card_id, star.then_some(now), Op::ToggleMvp, None)
     }
 
-    /// Sets the row's star time to `mvp_at` at once and patches the star to match. A toggle (`op` [`Op::ToggleMvp`]) records undo when the server takes it; undo's own patch does not.
-    fn set_mvp(&mut self, card_id: Uuid, mvp_at: Option<DateTime<Utc>>, op: Op) -> Vec<Effect> {
+    /// Sets the row's star time to `mvp_at` at once and patches the star to match. A toggle (`op` [`Op::ToggleMvp`]) records undo when the server takes it; undo's own patch does not, and raises `toast` then instead, so a refusal shows alone.
+    fn set_mvp(
+        &mut self,
+        card_id: Uuid,
+        mvp_at: Option<DateTime<Utc>>,
+        op: Op,
+        toast: Option<String>,
+    ) -> Vec<Effect> {
         let Some(deck_id) = self.deck_id else {
             return Vec::new();
         };
@@ -1388,6 +1455,7 @@ impl State {
             card_id,
             before,
             record: op == Op::ToggleMvp,
+            toast,
         });
         vec![
             Effect::Refilter,
@@ -1460,10 +1528,8 @@ impl State {
         if let Some(why) = self.undo_refusal(&action) {
             return vec![Effect::Toast(Toast::quick(ToastKind::Info, why))];
         }
-        let toast = Effect::Toast(Toast::quick(
-            ToastKind::Info,
-            deck_cards::undo_message(&action),
-        ));
+        let message = deck_cards::undo_message(&action);
+        let toast = Effect::Toast(Toast::quick(ToastKind::Info, message.clone()));
         match action {
             UndoAction::Added { card_id, .. } => {
                 self.entries.retain(|e| e.card.scryfall_data.id != card_id);
@@ -1498,11 +1564,7 @@ impl State {
             }
             UndoAction::MvpToggled {
                 card_id, before, ..
-            } => {
-                let mut effects = self.set_mvp(card_id, before, Op::Undo);
-                effects.insert(1, toast);
-                effects
-            }
+            } => self.set_mvp(card_id, before, Op::Undo, Some(message)),
             UndoAction::PrintingChanged { old_card, new_id } => {
                 let old_id = old_card.scryfall_data.id;
                 if let Some(entry) = self.entry_mut(new_id) {
@@ -1511,6 +1573,10 @@ impl State {
                 }
                 let ticket = self.request(Pending::Quiet);
                 vec![
+                    Effect::PrintingSwapped {
+                        old_id: new_id,
+                        new_id: old_id,
+                    },
                     Effect::Refilter,
                     toast,
                     Effect::PatchCard {

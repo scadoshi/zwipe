@@ -116,9 +116,11 @@ async fn show_reads_the_account_its_decks_and_its_latest_audit_events(pool: PgPo
     assert_eq!(summary.user.email.as_ref(), "hank@test.local");
     assert_eq!(summary.deck_count, 2);
     assert_eq!(
+        // Sign-up's login row lands from a background task, so it can come after.
         summary
             .recent_audit
-            .first()
+            .iter()
+            .find(|entry| entry.action != "login")
             .map(|entry| entry.action.as_str()),
         Some("signed_out_everywhere"),
         "newest first: {:?}",
