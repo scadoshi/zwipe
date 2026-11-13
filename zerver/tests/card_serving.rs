@@ -672,7 +672,11 @@ async fn quick_add_lists_names_that_start_with_the_query_first(pool: sqlx::PgPoo
         "Absolute Virtue",
         "Absolver Thrull",
         "Pristine Sol",
+        "Sol Ring",
         "Sol Talisman",
+        "Solar Array",
+        "Solar Blast",
+        "Soltari Foot Soldier",
         "Solemn Simulacrum",
     ]
     .into_iter()
@@ -684,12 +688,12 @@ async fn quick_add_lists_names_that_start_with_the_query_first(pool: sqlx::PgPoo
     assert_eq!(
         names,
         [
-            "Solemn Simulacrum",
+            "Sol Ring",
             "Sol Talisman",
-            "Abby, Merciless Soldier",
-            "Pristine Sol",
-            "Absolute Grace"
+            "Solar Array",
+            "Solar Blast",
+            "Solemn Simulacrum"
         ],
-        "names that start with it, then a word that does, then the rest, each by the database's name order"
+        "a first word that is the query, then a name that starts with it, each by the database's name order"
     );
 }

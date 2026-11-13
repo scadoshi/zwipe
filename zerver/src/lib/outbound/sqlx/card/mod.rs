@@ -1425,22 +1425,28 @@ impl CardRepository for MyPostgres {
                 qb.push(", ");
             }
             // The closest names lead, folded and stripped as the name filter
-            // is: the whole name, then a name that starts with the query, then
-            // one with a word that does, so typing "Sol" finds Sol Ring before
-            // Absolute Grace even when the limit cuts the rest short. The query
-            // holds only letters, digits and spaces, so ILIKE without a
-            // wildcard is equality.
+            // is: the whole name, then a name whose first word is the query,
+            // then one that starts with it, then one with a word that does, so
+            // typing "Sol" finds Sol Ring before Solar Array and Absolute Grace
+            // even when the limit cuts the rest short. The query holds only
+            // letters, digits and spaces, so ILIKE without a wildcard is
+            // equality.
+            // Each name takes its closest tier only, one rank, ascending.
             if let Some(query_string) = criteria.name_contains() {
-                for pattern in [
+                qb.push("CASE");
+                let tiers = [
                     query_string.to_owned(),
+                    format!("{query_string} %"),
                     format!("{query_string}%"),
                     format!("% {query_string}%"),
-                ] {
-                    qb.push("(");
+                ];
+                for (rank, pattern) in tiers.into_iter().enumerate() {
+                    qb.push(" WHEN ");
                     qb.push(STRIP_NAME);
                     qb.push_bind(pattern);
-                    qb.push(") DESC, ");
+                    qb.push(format!(" THEN {rank}"));
                 }
+                qb.push(" ELSE 4 END ASC, ");
             }
             let col = match order_by {
                 CardSortKey::Name => "name",
