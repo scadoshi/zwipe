@@ -11,8 +11,8 @@
 use std::collections::{HashMap, HashSet};
 
 use components::{
-    BackArrow, CardGroup, DeckEditActions, DeckRow, DeckRowHost, DeckSection, DeckStacks, GroupBuy,
-    PageHeader, StackDetails, TailPlace, group_tail, use_overlay_back_action, use_pointer,
+    CardGroup, DeckEditActions, DeckRow, DeckRowHost, DeckSection, DeckStacks, GroupBuy,
+    StackDetails, TailPlace, group_tail, use_overlay_back_action, use_pointer,
 };
 use dioxus::history::history;
 use dioxus::prelude::*;
@@ -25,6 +25,7 @@ use zwipe_ui::deck_cards::stacks::CardsView;
 use zwipe_ui::screens::deck_cards::TITLE;
 
 use crate::inbound::router::Route;
+use crate::inbound::shell::use_overlay_nav;
 
 /// The query a deck's route carries while its Cards are open.
 const CARDS_QUERY: &str = "view=cards";
@@ -40,6 +41,16 @@ pub(crate) fn use_cards_route(
 ) -> Callback<bool> {
     let navigator = use_navigator();
     let mut opened_here = use_signal(|| false);
+    // A tab that opens straight on the Cards gets the Profile under them, so Back lands there.
+    let profile_route = route(None);
+    let cards_route = route(Some(DeckView::Cards));
+    use_effect(move || {
+        if history().current_route().contains(CARDS_QUERY) && !navigator.can_go_back() {
+            opened_here.set(true);
+            navigator.replace(profile_route.clone());
+            navigator.push(cards_route.clone());
+        }
+    });
     use_callback(move |open: bool| {
         let on_cards = history().current_route().contains(CARDS_QUERY);
         if open {
@@ -94,27 +105,29 @@ pub(crate) fn DeckCardsLayer(
     controls: Element,
     // The floating icon bar's buttons.
     dock: Element,
+    // Opens the Cards' hint from the nav's `?`.
+    on_hint: Callback<()>,
     on_close: Callback<()>,
+    // Whether the layer is sliding out, and the end of each of its animations.
+    leaving: bool,
+    on_animation_end: Callback<String>,
 ) -> Element {
     let open = use_signal(|| true);
     let layer = use_overlay_back_action(open.into(), on_close);
+    // The nav over the layer names the Cards, opens their hint and its back arrow closes them.
+    use_overlay_nav(open, TITLE.to_owned(), on_hint, on_close);
     let pointer = use_pointer();
     let touch = !pointer();
     let stacks_on = view() == CardsView::Stacks;
     let mut folds = collapsed;
     rsx! {
         div {
-            class: "screen web-cards-layer web-scroll-screen",
+            class: if leaving { "screen web-cards-layer web-scroll-screen deck-cards-layer leaving" } else { "screen web-cards-layer web-scroll-screen deck-cards-layer" },
+            onanimationend: move |event: AnimationEvent| on_animation_end.call(event.animation_name()),
             role: "dialog",
             "aria-modal": "true",
             "aria-label": TITLE,
             style: layer().map(|z| format!("--overlay-z: {z};")),
-            PageHeader {
-                title: TITLE,
-                leading: rsx! {
-                    BackArrow { class: "page-header-support", onclick: move |()| on_close.call(()) }
-                },
-            }
             div {
                 class: "screen-content web-deck-cards-view",
                 "data-settle-scope": "",

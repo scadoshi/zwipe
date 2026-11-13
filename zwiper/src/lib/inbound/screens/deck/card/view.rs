@@ -55,6 +55,7 @@ use crate::inbound::screens::deck::components::skeletons::{
     ChipGhost, ChipRowGhost, DeckCardListSkeleton, QuickAddSkeleton,
 };
 use crate::inbound::screens::deck::missing_deck;
+use crate::inbound::screens::deck::view::HeldDeck;
 use crate::inbound::screens::oracle_tag_examples::OracleTagExamples;
 use crate::outbound::cards_view_store;
 
@@ -181,6 +182,8 @@ struct Driver {
     expanded_card: Signal<Option<Uuid>>,
     printing_sheet_open: Signal<bool>,
     hint_open: Signal<bool>,
+    /// The deck the deck route already holds, which the screen opens on without a fetch.
+    held: Option<HeldDeck>,
 }
 
 impl Driver {
@@ -421,6 +424,24 @@ impl Driver {
     /// keep their tolerant handling inside. The profile goes to the model as
     /// soon as it lands, so the header draws before the cards.
     fn fetch_deck(self, ticket: Ticket, deck_id: Uuid) {
+        // The deck the route holds answers at once, with no fetch and no ghost.
+        let held = self
+            .held
+            .and_then(|held| held.0.peek().clone())
+            .filter(|deck| deck.deck_profile.id == deck_id);
+        if let Some(deck) = held {
+            let zone = Zone::of_deck(&deck);
+            self.dispatch(Action::ProfileLoaded {
+                ticket,
+                profile: Box::new(deck.deck_profile.clone()),
+            });
+            self.dispatch(Action::Loaded {
+                ticket,
+                deck: Box::new(deck),
+                zone: Box::new(zone),
+            });
+            return;
+        }
         let Self { authed, .. } = self;
         spawn(async move {
             let loaded = authed
@@ -596,6 +617,7 @@ pub fn View(deck_id: Uuid) -> Element {
         expanded_card,
         printing_sheet_open,
         hint_open: deck_cards_hint_open,
+        held: try_use_context::<HeldDeck>(),
     };
 
     use_effect(move || {

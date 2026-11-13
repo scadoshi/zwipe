@@ -6,6 +6,7 @@ pub mod export;
 pub mod form;
 pub mod list;
 pub mod pickers;
+pub mod profile;
 pub mod view;
 pub mod warning;
 

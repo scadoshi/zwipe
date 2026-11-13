@@ -43,7 +43,6 @@ use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, open_and_record_hint};
 use crate::inbound::chrome::shortcuts::{self, CardKey, ShortcutsScreen};
 use crate::inbound::chrome::shortcuts_sheet::use_offer_shortcuts;
-use crate::inbound::screens::deck::view::cards::zone as zone_of;
 use crate::inbound::telemetry;
 use crate::outbound::timer;
 
@@ -227,7 +226,7 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
             let Some(fetched) = fetched else {
                 return;
             };
-            let held = zone_of(&fetched);
+            let held = Zone::of_deck(&fetched);
             let mut list = fetched.entries.clone();
             held.strip(&mut list);
             zone.set(held);

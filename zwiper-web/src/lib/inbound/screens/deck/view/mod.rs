@@ -7,12 +7,12 @@
 //! as the app's model does with `Action::Gone`.
 
 pub mod body;
-pub mod cards;
 pub(crate) mod cards_layer;
 pub mod dialogs;
 pub(crate) mod ghost;
 pub mod page;
 pub mod panels;
+pub(crate) mod profile;
 pub mod sections;
 
 use std::iter;
@@ -26,7 +26,6 @@ use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
 use zwipe_core::domain::deck::{Deck, DeckProfile};
 use zwipe_core::http::contracts::deck_card::HttpPatchDeckCard;
 use zwipe_ui::deck::form::Slot;
@@ -36,13 +35,8 @@ use zwipe_ui::telemetry::vocabulary::{DeckScreen, Screen, component};
 
 use self::cards_layer::use_cards_route;
 use self::dialogs::{DeckDialogsHost, use_deck_dialogs};
-use self::ghost::{DeckViewGhost, StatsSectionsGhost};
 use self::page::DeckWidePage;
-use self::panels::{DangerZonePanel, DataPanel};
-use self::sections::{
-    BudgetSection, ProfileCard, StatsSections, TagsSection, WarningFixes, WarningsSection,
-};
-use crate::domain::deck::{has_budget, metrics_possible, tag_count};
+use self::sections::WarningFixes;
 use crate::inbound::cards::card_row::{CardOverlaysHost, use_card_overlays};
 use crate::inbound::cards::otag::{OtagExamplesHost, use_otag_reveals};
 use crate::inbound::chrome::authed::use_authed;
@@ -91,7 +85,6 @@ fn DeckViewScreen(deck_id: Uuid, view: Option<DeckView>) -> Element {
     let mut share_open = dialogs.share;
     let examples = use_otag_reveals();
     let overlays = use_card_overlays();
-    let open_section: Signal<Option<String>> = use_signal(|| Some("Budget".to_owned()));
     let mut currency = use_signal(|| PriceCurrency::Usd);
     let mut share_token: Signal<Option<Uuid>> = use_signal(|| None);
     let mut seeded_for: Signal<Option<Uuid>> = use_signal(|| None);
@@ -256,13 +249,6 @@ fn DeckViewScreen(deck_id: Uuid, view: Option<DeckView>) -> Element {
         }),
     };
 
-    let loaded_deck: Option<Deck> = deck.read().as_ref().and_then(|r| r.as_ref().ok()).cloned();
-    let deck_loading = deck.read().is_none();
-    let metrics = loaded_deck
-        .as_ref()
-        .filter(|d| !d.entries.is_empty() || !d.command_zone_cards.is_empty())
-        .map(|d| DeckMetrics::from_entries_and_command_zone(&d.entries, &d.command_zone_cards));
-    let warnings = loaded_deck.as_ref().map_or_default(|d| d.warnings.clone());
     let loaded_profile: Option<Result<DeckProfile, ()>> = profile
         .read()
         .as_ref()
@@ -289,52 +275,12 @@ fn DeckViewScreen(deck_id: Uuid, view: Option<DeckView>) -> Element {
         .and_then(|r| r.as_ref().ok())
         .map_or_else(|| TITLE.to_owned(), |p| p.name.to_string());
 
-    // On a phone, the app's Profile: the Profile card, the accordion with Budget open, Data
-    // and Danger zone.
-    let phone_profile = match loaded_profile.clone() {
-        Some(Ok(p)) => {
-            let cards = metrics.as_ref().map_or_else(
-                || usize::try_from(p.card_count).unwrap_or(0),
-                |m| m.total_cards,
-            );
-            rsx! {
-                div { class: "content-enter web-deck-view",
-                    ProfileCard { profile: p.clone(), commander: commander(), cards }
-                    if has_budget(&p, metrics.is_some()) {
-                        BudgetSection {
-                            profile: p.clone(),
-                            metrics: metrics.clone(),
-                            currency,
-                            open_section,
-                        }
-                    }
-                    if tag_count(&p) > 0 {
-                        TagsSection { profile: p.clone(), open_section }
-                    }
-                    if metrics.is_none() && deck_loading && metrics_possible(&p) {
-                        StatsSectionsGhost {}
-                    } else {
-                        StatsSections { metrics: metrics.clone(), land_target: p.land_target, open_section }
-                    }
-                    if !warnings.is_empty() {
-                        WarningsSection { deck_id, warnings, fixes, open_section }
-                    }
-                    DataPanel { deck_id, has_cards: metrics.is_some() }
-                    DangerZonePanel { dialogs }
-                }
-            }
-        }
-        _ => rsx! {
-            DeckViewGhost {}
-        },
-    };
-
     rsx! {
         ScreenFrame {
             title: deck_title,
             on_hint,
-            // The wide page's head names the deck once its profile is in.
-            titled: wide() && matches!(loaded_profile, Some(Ok(_))),
+            // The deck's head names it in its own h1 on a wide window and atop the Cards.
+            titled: (wide() || view.is_some()) && matches!(loaded_profile, Some(Ok(_))),
             div { class: "screen-content",
                 match loaded_profile {
                     Some(Err(())) => rsx! {
@@ -349,7 +295,6 @@ fn DeckViewScreen(deck_id: Uuid, view: Option<DeckView>) -> Element {
                             dialogs,
                             cards_open: view.is_some(),
                             on_cards,
-                            phone_profile: phone_profile,
                             // The deck's own actions, before the cart and Cards.
                             profile_dock: rsx! {
                                 button {

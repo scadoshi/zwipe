@@ -27,6 +27,7 @@ use zwipe_core::domain::deck::{Board, DeckEntry, Format, deck_tag_label};
 use zwipe_core::domain::share_link;
 use zwipe_core::http::contracts::deck::HttpSharedDeck;
 use zwipe_ui::deck::form::Slot;
+use zwipe_ui::deck::profile::{DeckInfo, shared_warnings};
 use zwipe_ui::deck::view::{DeckView, StatsProfile};
 use zwipe_ui::deck_cards::keys::RowKind;
 use zwipe_ui::deck_cards::listing::Listed;
@@ -39,9 +40,12 @@ use zwipe_ui::{buy, filter};
 
 use crate::inbound::cards::card_row::{CardOverlays, use_card_overlays};
 use crate::inbound::cards::otag::{OtagDescribe, OtagExamplesOpen, use_otag_reveals};
+use crate::inbound::chrome::media::use_wide;
 use crate::inbound::router::Route;
 use crate::inbound::screens::deck::view::body::DeckPageBody;
 use crate::inbound::screens::deck::view::cards_layer::use_cards_route;
+use crate::inbound::screens::deck::view::panels::DataPanel;
+use crate::inbound::screens::deck::view::profile::{DeckFoot, DeckProfilePhone};
 use crate::inbound::session::return_to;
 use crate::inbound::shell::ScreenFrame;
 
@@ -92,6 +96,11 @@ pub fn SharedDeck(owner: String, slug: String, token: String, view: Option<DeckV
         })
     };
     let cards_open = view.is_some();
+    let export = Route::SharedDeckExport {
+        owner: owner.clone(),
+        slug: slug.clone(),
+        token: token.clone(),
+    };
     let client: Signal<ZwipeClient> = use_context();
     // A signed-out reader who signs in from here comes back to this deck.
     let session: Signal<Option<Session>> = use_context();
@@ -145,6 +154,8 @@ pub fn SharedDeck(owner: String, slug: String, token: String, view: Option<DeckV
     let mut hint_open = use_signal(|| false);
     let on_hint = use_callback(move |()| hint_open.set(true));
     let shortcuts_action = use_shortcuts_action();
+    let wide = use_wide();
+    let loaded = matches!(&*result.read(), Some(Ok(_)));
     let title = match &*result.read() {
         Some(Ok(deck)) => deck.name.clone(),
         _ => SHARED_DECK_TITLE.to_owned(),
@@ -153,9 +164,13 @@ pub fn SharedDeck(owner: String, slug: String, token: String, view: Option<DeckV
     rsx! {
         // Reachable only by having the link; keep crawlers out of the page itself.
         document::Meta { name: "robots", content: "noindex" }
-        ScreenFrame { title, on_hint: Some(on_hint),
+        ScreenFrame {
+            title,
+            on_hint: Some(on_hint),
+            // The deck's head names it in its own h1 on a wide window and atop the Cards.
+            titled: loaded && (wide() || cards_open),
             match &*result.read() {
-                None => rsx! { SharedDeckView { deck: None, cards_open, on_cards } },
+                None => rsx! { SharedDeckView { deck: None, cards_open, on_cards, export, on_hint } },
                 Some(Err(FetchError::NotShared)) => rsx! {
                     div { class: "content-enter web-page shared-deck-note",
                         Panel { title: "Deck not shared",
@@ -174,7 +189,7 @@ pub fn SharedDeck(owner: String, slug: String, token: String, view: Option<DeckV
                     }
                 },
                 Some(Ok(deck)) => rsx! {
-                    SharedDeckView { deck: Some(deck.clone()), cards_open, on_cards }
+                    SharedDeckView { deck: Some(deck.clone()), cards_open, on_cards, export, on_hint }
                 },
             }
         }
@@ -194,6 +209,10 @@ fn SharedDeckView(
     deck: Option<HttpSharedDeck>,
     cards_open: bool,
     on_cards: Callback<bool>,
+    // The deck's Export screen.
+    export: Route,
+    // What the nav's `?` opens, over the page or its Cards.
+    on_hint: Callback<()>,
 ) -> Element {
     // The image preview and the printing sheet, to look at only.
     let overlays = use_card_overlays();
@@ -340,6 +359,18 @@ fn SharedDeckView(
                 examples,
                 cards_open,
                 on_cards,
+                cards_hint: on_hint,
+                phone_profile: rsx! {
+                    DeckProfilePhone {
+                        info: None,
+                        stats: StatsProfile::default(),
+                        metrics: None,
+                        currency,
+                        warnings: Vec::new(),
+                        actions: None,
+                        data: rsx! {},
+                    }
+                },
             }
         };
     };
@@ -401,6 +432,19 @@ fn SharedDeckView(
     let metrics = has_cards(&deck)
         .then(|| DeckMetrics::from_entries_and_command_zone(&deck.entries, &zone_cards));
     let deck_buy = has_cards(&deck).then(|| buy::shared_deck_links(&deck));
+    // The Profile and the foot, as the owner's: Warnings read only, and Export alone in Data.
+    let stats = StatsProfile::from(&deck);
+    let warnings = shared_warnings(&deck);
+    let info = DeckInfo::of_shared(
+        &deck,
+        metrics.as_ref().map_or_else(
+            || usize::try_from(display_count).unwrap_or(0),
+            |m| m.total_cards,
+        ),
+    );
+    let data = rsx! {
+        DataPanel { import: None, export, has_cards: metrics.is_some() }
+    };
 
     rsx! {
         DeckPageBody {
@@ -431,8 +475,8 @@ fn SharedDeckView(
             sources,
             row_currency: PriceCurrency::Usd,
             currency,
-            stats: Some(StatsProfile::from(&deck)),
-            metrics,
+            stats: Some(stats.clone()),
+            metrics: metrics.clone(),
             land_target: deck.land_target,
             deck_buy,
             actions: None,
@@ -442,6 +486,21 @@ fn SharedDeckView(
             examples,
             cards_open,
             on_cards,
+            cards_hint: on_hint,
+            phone_profile: rsx! {
+                DeckProfilePhone {
+                    info,
+                    stats,
+                    metrics,
+                    currency,
+                    warnings: warnings.clone(),
+                    actions: None,
+                    data: data.clone(),
+                }
+            },
+            foot: rsx! {
+                DeckFoot { loaded: true, warnings, actions: None, data }
+            },
             // The Profile's filter, before the cart and Cards.
             profile_dock: rsx! {
                 DockFilter {

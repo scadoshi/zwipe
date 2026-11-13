@@ -14,7 +14,7 @@ use components::{
     DeckEditActions, DeckFacts, DeckFold, DeckHead, DeckPage, DeckRowHost, DeckStackDrawer,
     DistributionsBody, DockFilter, DrawOddsStepper, FeaturedCard, GroupBuyDialog, HoverStackHost,
     ManaBody, StackDetails, StoreDialog, TagsBody, charted, deck_sections, use_group_buy,
-    use_hover_stack, use_stack_details_sync,
+    use_hover_stack, use_layer_presence, use_stack_details_sync,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -124,6 +124,8 @@ pub(crate) fn DeckPageBody(
     // On a phone, the Profile in place of the page's head, stats and foot.
     #[props(default)] phone_profile: Option<Element>,
     #[props(default)] cards_dock_tail: Option<Element>,
+    // On a phone, what the nav's `?` opens over the Cards layer.
+    #[props(default)] cards_hint: Option<Callback<()>>,
     // Quick add, at the head of the controls.
     #[props(default)] quick_add: Option<Element>,
     // The foot under the stats.
@@ -145,6 +147,8 @@ pub(crate) fn DeckPageBody(
     // A phone draws the Profile as the page and the Cards as a layer over it.
     let wide = use_wide();
     let phone = !wide();
+    // The Cards layer stays up while it slides out.
+    let layer = use_layer_presence(phone && cards_open);
     // A wide window shows the cards on the page; a route that opens them scrolls there once
     // the cards are in.
     use_effect(use_reactive!(|loaded, cards_open| {
@@ -385,7 +389,7 @@ pub(crate) fn DeckPageBody(
         }
         }
         if phone {
-            if cards_open {
+            if layer.shown() {
                 DeckCardsLayer {
                     sections,
                     view,
@@ -405,6 +409,9 @@ pub(crate) fn DeckPageBody(
                     head,
                     controls,
                     on_close: move |()| on_cards.call(false),
+                    on_hint: cards_hint.unwrap_or_else(|| Callback::new(|()| {})),
+                    leaving: layer.leaving(),
+                    on_animation_end: move |name: String| layer.ended(&name),
                     // The layer's dock: the caller's lead, the filter, then the caller's tail.
                     dock: rsx! {
                         {dock_lead}
@@ -419,7 +426,8 @@ pub(crate) fn DeckPageBody(
                         {cards_dock_tail}
                     },
                 }
-            } else {
+            }
+            if !cards_open {
                 // The Profile's dock: the caller's buttons, then Cards, the screen's main action.
                 div { class: "action-dock action-dock-right content-enter-delayed",
                     {profile_dock}

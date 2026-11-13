@@ -40,6 +40,13 @@ impl Back {
             | Route::Register {}
             | Route::ForgotPassword {}
             | Route::SharedDeck { .. } => None,
+            // A shared deck's Export goes back to the deck.
+            Route::SharedDeckExport { owner, slug, token } => Some(Back::To(Route::SharedDeck {
+                owner: owner.clone(),
+                slug: slug.clone(),
+                token: token.clone(),
+                view: None,
+            })),
             Route::DeckList {}
             | Route::Activity {}
             | Route::Playstyle {}
@@ -122,6 +129,7 @@ pub const fn section_of(route: &Route) -> Option<Section> {
         | Route::Register {}
         | Route::ForgotPassword {}
         | Route::SharedDeck { .. }
+        | Route::SharedDeckExport { .. }
         | Route::NotFound { .. } => None,
     }
 }

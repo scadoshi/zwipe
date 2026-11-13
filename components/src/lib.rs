@@ -82,6 +82,7 @@ mod hover_stack;
 mod identity_pips;
 pub mod keys;
 mod keyword_chips;
+mod layer_presence;
 mod load_failed;
 mod media;
 mod media_frame;
@@ -161,6 +162,7 @@ pub use home_decks::HomeDecks;
 pub use hover_stack::{HoverStack, HoverStackHost, use_hover_stack};
 pub use identity_pips::IdentityPips;
 pub use keyword_chips::{KeywordChips, KeywordReminders};
+pub use layer_presence::{LAYER_OUT, LayerPresence, use_layer_presence};
 pub use load_failed::LoadFailed;
 pub use media::{
     COMPUTER_QUERY, KIT_MODAL_PX, POINTER_QUERY, WIDE_PX, use_computer, use_min_width, use_pointer,

@@ -1,36 +1,38 @@
-//! The two panels at the foot of the deck view: Data holds Import and
-//! Export, Danger zone holds Clear skips and Delete, titled and buttoned
+//! The two panels at the foot of the deck view: Data holds Import (the
+//! owner's) and Export, Danger zone holds Clear skips and Delete, titled and buttoned
 //! in red.
 
 use components::{Button, ButtonVariant};
 use dioxus::prelude::*;
-use uuid::Uuid;
 use zwipe_ui::screens::deck_view::{DANGER_ZONE, DATA, MoreItem};
 
 use super::dialogs::DeckDialogs;
 use crate::inbound::router::Route;
 
-/// The Data panel for `deck_id`: Import, and Export once the deck has a
-/// card.
+/// The Data panel: Import where the owner's `import` route is given, and
+/// Export (to the `export` route) once the deck has a card. A shared deck
+/// offers Export alone.
 #[component]
-pub fn DataPanel(deck_id: Uuid, has_cards: bool) -> Element {
+pub fn DataPanel(import: Option<Route>, export: Route, has_cards: bool) -> Element {
     let navigator = use_navigator();
     rsx! {
         div { class: "settings-list", "data-settle-key": "data",
             div { class: "settings-list-header",
                 span { class: "settings-list-title", {DATA} }
             }
-            ActionRow {
-                item: MoreItem::ImportCards,
-                onclick: move |()| {
-                    navigator.push(Route::ImportDeck { deck_id });
-                },
+            if let Some(route) = import {
+                ActionRow {
+                    item: MoreItem::ImportCards,
+                    onclick: move |()| {
+                        navigator.push(route.clone());
+                    },
+                }
             }
             ActionRow {
                 item: MoreItem::ExportCards,
                 disabled: !has_cards,
                 onclick: move |()| {
-                    navigator.push(Route::ExportDeck { deck_id });
+                    navigator.push(export.clone());
                 },
             }
         }

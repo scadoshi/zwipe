@@ -1,7 +1,7 @@
 //! Export: the deck as a decklist that round-trips through Import, with the
 //! boards to include and `Copy`.
 //!
-//! A screen at every width: the `Export` chips over the decklist. Copy is
+//! The owner's deck and a shared deck export the same way. A screen at every width: the `Export` chips over the decklist. Copy is
 //! the icon in the dock at the bottom right.
 
 use components::icons::{COPY, DockIcon};
@@ -9,8 +9,9 @@ use components::{Chip, TOAST_QUICK};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
-use zwipe_client::ClientError;
+use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::deck::Deck;
+use zwipe_core::http::contracts::deck::HttpSharedDeck;
 use zwipe_ui::deck::export::{self, Boards};
 use zwipe_ui::telemetry::vocabulary::{DeckScreen, Screen};
 
@@ -27,9 +28,7 @@ use crate::outbound::browser;
 pub fn ExportDeck(deck_id: Uuid) -> Element {
     telemetry::use_telemetry_screen(Screen::Deck(DeckScreen::Export));
     let authed = use_authed();
-    let toast = use_toast();
-    let hint_open = use_one_time_hint(OneTimeHint::Export);
-    let mut boards = use_signal(Boards::default);
+    let boards = use_signal(Boards::default);
     let deck: Resource<Result<Deck, ClientError>> = use_resource(move || async move {
         authed
             .try_run("load_deck", |c, s| async move {
@@ -44,9 +43,49 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
     });
     let loading = deck.read().is_none();
     let failed = matches!(&*deck.read(), Some(Err(_)));
+    rsx! {
+        ExportView { text: text(), loading, failed, boards }
+    }
+}
+
+/// The Export screen for the shared deck `token` names, read only, as the owner's.
+#[component]
+pub fn SharedDeckExport(owner: String, slug: String, token: String) -> Element {
+    telemetry::use_telemetry_screen(Screen::Deck(DeckScreen::Export));
+    let client: Signal<ZwipeClient> = use_context();
+    let boards = use_signal(Boards::default);
+    let deck: Resource<Option<HttpSharedDeck>> = use_resource(use_reactive!(|token| async move {
+        let token = token.parse::<Uuid>().ok()?;
+        let http = client.peek().clone();
+        http.fetch_shared_deck(token).await.ok()
+    }));
+    let text = use_memo(move || {
+        let held = deck.read();
+        let loaded = held.as_ref()?.as_ref()?;
+        Some(export::shared_text(loaded, boards()))
+    });
+    let loading = deck.read().is_none();
+    let failed = matches!(&*deck.read(), Some(None));
+    rsx! {
+        ExportView { text: text(), loading, failed, boards }
+    }
+}
+
+/// The Export screen's body for a decklist `text`, `None` while the deck loads (`loading`) or
+/// once it failed (`failed`), with the `boards` chips and Copy in the dock.
+#[component]
+fn ExportView(
+    text: Option<String>,
+    loading: bool,
+    failed: bool,
+    mut boards: Signal<Boards>,
+) -> Element {
+    let toast = use_toast();
+    let hint_open = use_one_time_hint(OneTimeHint::Export);
     let on = boards();
+    let held = text.clone();
     let copy = use_callback(move |()| {
-        if let Some(list) = text() {
+        if let Some(list) = held.clone() {
             browser::copy_to_clipboard(&list);
             toast.info(
                 "Copied to clipboard".to_string(),
@@ -89,7 +128,7 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                 }
                 div { class: "import-scroll",
                     div { class: "container-sm web-export-body",
-                        if let Some(list) = text() {
+                        if let Some(list) = text.clone() {
                             div { class: "web-form-panel",
                                 div { class: "settings-list-header web-form-head",
                                     span { class: "settings-list-title", "Decklist" }
@@ -124,7 +163,7 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
                 button {
                     class: "action-dock-btn",
                     "aria-label": "Copy",
-                    disabled: text().is_none(),
+                    disabled: text.is_none(),
                     onclick: move |_| copy.call(()),
                     DockIcon { path: COPY }
                 }

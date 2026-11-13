@@ -6,7 +6,8 @@
 use components::icons::{CloneIcon, DockIcon, EditIcon, ShareIcon};
 use components::{
     AlertDialog, Button, ButtonVariant, CART, Chip, DialogAction, LoadFailed, StoreDialog,
-    TOAST_NORMAL, ToastOptions, Toasts, use_back_online, use_overlay_back_action, use_toast,
+    TOAST_NORMAL, ToastOptions, Toasts, use_back_online, use_layer_presence,
+    use_overlay_back_action, use_toast,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -14,6 +15,7 @@ use uuid::Uuid;
 use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
+use zwipe_core::domain::deck::Deck;
 use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
 use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_core::http::contracts::deck::HttpCloneDeck;
@@ -413,18 +415,25 @@ impl Driver {
     }
 }
 
+/// The deck the deck route has loaded, which its Cards layer opens on without a fetch. The deck
+/// view provides it and keeps it to the deck it shows.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct HeldDeck(pub Signal<Option<Deck>>);
+
 /// The deck's Cards screen as a full-screen layer over its Profile, while the route holds
-/// `?view=cards`. It sits on the overlay stack, so the OS back closes it first; closing it goes
-/// back to the Profile's entry, as the screen's own back arrow does.
+/// `?view=cards`, sliding in and, while `leaving`, back out. It sits on the overlay stack, so
+/// the OS back closes it first; closing it goes back to the Profile's entry, as the screen's own
+/// back arrow does.
 #[component]
-fn CardsLayer(deck_id: Uuid) -> Element {
+fn CardsLayer(deck_id: Uuid, leaving: bool, on_animation_end: Callback<String>) -> Element {
     let navigator = use_navigator();
     let open = use_signal(|| true);
     let layer = use_overlay_back_action(open.into(), Callback::new(move |()| navigator.go_back()));
     rsx! {
         div {
-            class: "app-cards-layer",
+            class: if leaving { "app-cards-layer leaving" } else { "app-cards-layer" },
             style: layer().map(|z| format!("--overlay-z: {z};")),
+            onanimationend: move |event: AnimationEvent| on_animation_end.call(event.animation_name()),
             CardsScreen { deck_id }
         }
     }
@@ -473,6 +482,27 @@ pub fn ViewDeck(deck_id: Uuid, view: Option<DeckView>) -> Element {
     // First-deck tour: opens once per account when the model offers it on
     // the first Load; the header "?" reopens it on demand.
     let first_deck_hint_open = driver.hint_open;
+    // The Cards layer stays up while it slides out.
+    let cards_layer = use_layer_presence(view.is_some());
+    // The deck as loaded, for the Cards layer to open on.
+    let held = use_signal(|| None::<Deck>);
+    use_context_provider(|| HeldDeck(held));
+    use_effect(move || {
+        let mut held = held;
+        let shown = driver.model.read().deck().cloned();
+        if *held.peek() != shown {
+            held.set(shown);
+        }
+    });
+    // Closing the Cards loads the deck again, in place, so the Profile shows what changed there.
+    let mut was_open = use_signal(|| view.is_some());
+    use_effect(use_reactive!(|view| {
+        let open = view.is_some();
+        if *was_open.peek() && !open {
+            driver.dispatch(Action::Load(deck_id));
+        }
+        was_open.set(open);
+    }));
 
     // Fetches the deck on mount and again when the route's deck id changes
     // without a remount, as cloning does (ViewDeck to ViewDeck).
@@ -859,8 +889,12 @@ pub fn ViewDeck(deck_id: Uuid, view: Option<DeckView>) -> Element {
 
             OneTimeHintDialog { open: first_deck_hint_open, hint: OneTimeHint::FirstDeck }
 
-            if view.is_some() {
-                CardsLayer { deck_id }
+            if cards_layer.shown() {
+                CardsLayer {
+                    deck_id,
+                    leaving: cards_layer.leaving(),
+                    on_animation_end: move |name: String| cards_layer.ended(&name),
+                }
             }
 
             }

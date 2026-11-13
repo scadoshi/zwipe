@@ -10,11 +10,11 @@ use components::{
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
-use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
+use zwipe_core::domain::deck::DeckWarning;
 use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
-use zwipe_core::domain::deck::{DeckProfile, DeckWarning};
 use zwipe_ui::deck::form::Slot;
+use zwipe_ui::deck::profile::DeckInfo;
 use zwipe_ui::deck::view::StatsProfile;
 use zwipe_ui::deck::warning::{self, Fix};
 
@@ -24,16 +24,13 @@ use crate::inbound::chrome::section::CollapsibleSection;
 use crate::inbound::router::Route;
 
 /// The Profile card: name, card count, format, the command zone and power
-/// level. The deck's own actions sit in the screen's dock. The commander
-/// row prefers the fetched card's name.
+/// level, and who shares a shared deck. The deck's own actions sit in the
+/// screen's dock.
 #[component]
-pub fn ProfileCard(profile: DeckProfile, commander: Option<Card>, cards: usize) -> Element {
-    let label = Slot::Commander.label(profile.format);
-    let commander_name = commander
-        .map(|c| c.scryfall_data.name)
-        .or_else(|| profile.commander_name.clone())
-        .unwrap_or_else(|| "None".to_owned());
-    let format = profile
+pub fn ProfileCard(info: DeckInfo) -> Element {
+    let label = Slot::Commander.label(info.format);
+    let commander_name = info.commander.clone().unwrap_or_else(|| "None".to_owned());
+    let format = info
         .format
         .map_or_else(|| "None".to_owned(), |f| f.display_name().to_owned());
     rsx! {
@@ -41,22 +38,25 @@ pub fn ProfileCard(profile: DeckProfile, commander: Option<Card>, cards: usize) 
             div { class: "settings-list-header",
                 span { class: "settings-list-title", "Profile" }
             }
-            InfoRow { label: "Name", value: profile.name.to_string() }
-            InfoRow { label: "Cards", value: cards.to_string() }
+            InfoRow { label: "Name", value: info.name.clone() }
+            if let Some(owner) = info.owner.clone() {
+                InfoRow { label: "Shared by", value: owner }
+            }
+            InfoRow { label: "Cards", value: info.cards.to_string() }
             InfoRow { label: "Format", value: format }
-            if profile.format.is_some_and(|f| f.has_commander()) {
+            if info.format.is_some_and(|f| f.has_commander()) {
                 InfoRow { label, value: commander_name }
             }
-            if let Some(name) = profile.partner_commander_name.clone() {
-                InfoRow { label: Slot::Partner.label(profile.format), value: name }
+            if let Some(name) = info.partner.clone() {
+                InfoRow { label: Slot::Partner.label(info.format), value: name }
             }
-            if let Some(name) = profile.background_name.clone() {
-                InfoRow { label: Slot::Background.label(profile.format), value: name }
+            if let Some(name) = info.background.clone() {
+                InfoRow { label: Slot::Background.label(info.format), value: name }
             }
-            if let Some(name) = profile.signature_spell_name.clone() {
-                InfoRow { label: Slot::SignatureSpell.label(profile.format), value: name }
+            if let Some(name) = info.signature_spell.clone() {
+                InfoRow { label: Slot::SignatureSpell.label(info.format), value: name }
             }
-            if let Some(power) = profile.power_level {
+            if let Some(power) = info.power_level {
                 InfoRow { label: "Power level", value: power.display_name() }
             }
         }
@@ -67,7 +67,7 @@ pub fn ProfileCard(profile: DeckProfile, commander: Option<Card>, cards: usize) 
 /// header over [`BudgetBody`].
 #[component]
 pub fn BudgetSection(
-    profile: DeckProfile,
+    stats: StatsProfile,
     metrics: Option<DeckMetrics>,
     currency: Signal<PriceCurrency>,
     open_section: Signal<Option<String>>,
@@ -79,18 +79,18 @@ pub fn BudgetSection(
     });
     rsx! {
         CollapsibleSection { title: "Budget", open_section, header_accessory: accessory,
-            BudgetBody { profile: StatsProfile::from(&profile), metrics, currency }
+            BudgetBody { profile: stats, metrics, currency }
         }
     }
 }
 
 /// The Tags section of the phone's accordion, over [`TagsBody`].
 #[component]
-pub fn TagsSection(profile: DeckProfile, open_section: Signal<Option<String>>) -> Element {
-    let count = crate::domain::deck::tag_count(&profile);
+pub fn TagsSection(stats: StatsProfile, open_section: Signal<Option<String>>) -> Element {
+    let count = stats.tag_count();
     rsx! {
         CollapsibleSection { title: "Tags", badge: count.to_string(), open_section,
-            TagsBody { profile: StatsProfile::from(&profile) }
+            TagsBody { profile: stats }
         }
     }
 }
@@ -141,32 +141,42 @@ pub struct WarningFixes {
     pub remove: Callback<Uuid>,
 }
 
+/// The owner's deck and its warnings' fixes; a shared deck has none, and its
+/// warnings read only.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct WarningActions {
+    /// The deck the fixes change.
+    pub deck_id: Uuid,
+    /// What the fix buttons do.
+    pub fixes: WarningFixes,
+}
+
 /// The Warnings section: [`WarningsBody`] in the phone's accordion.
 #[component]
 pub fn WarningsSection(
-    deck_id: Uuid,
     warnings: Vec<DeckWarning>,
-    fixes: WarningFixes,
+    actions: Option<WarningActions>,
     open_section: Signal<Option<String>>,
 ) -> Element {
     let count = warnings.len();
     rsx! {
         CollapsibleSection { title: "Warnings", warn: true, badge: count.to_string(), open_section,
-            WarningsBody { deck_id, warnings, fixes }
+            WarningsBody { warnings, actions }
         }
     }
 }
 
-/// Warnings' body: each warning's message and, on the right, its fix.
+/// Warnings' body: each warning's message and, on the right, its fix where
+/// the owner's `actions` are given.
 #[component]
-pub fn WarningsBody(deck_id: Uuid, warnings: Vec<DeckWarning>, fixes: WarningFixes) -> Element {
+pub fn WarningsBody(warnings: Vec<DeckWarning>, actions: Option<WarningActions>) -> Element {
     let navigator = use_navigator();
     rsx! {
         div { style: "display:flex;flex-direction:column;",
                 for (i, item) in warnings.into_iter().enumerate() {
                     div { key: "{i}", class: "settings-row deck-warning-row",
                         span { class: "text-muted", "{item}" }
-                        if let Some(fix) = warning::fix(&item) {
+                        if let (Some(fix), Some(WarningActions { deck_id, fixes })) = (warning::fix(&item), actions) {
                             span { class: "deck-warning-fixes",
                                 for (j, label) in warning::labels(fix).into_iter().enumerate() {
                                     Button {

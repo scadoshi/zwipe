@@ -150,6 +150,7 @@ Who checked, on which live build, what they saw.
 | [439](439-web-first-paint-lock.md) | A fresh web app tab can sit on the List skeleton for about ten seconds | fixing | halo | release |
 | [435](435-softer-float.md) | The Stacks float pops up and sways like a metronome, and a tap reveal snaps open | fixing | laptop | issue/435-softer-float |
 | [430](430-one-deck-route.md) | A deck's Profile and Cards are separate screens on narrow web and in the app, and the shared deck splits them with a chip row | fixing | laptop | issue/430-one-deck-route |
+| [438](438-one-profile.md) | At phone width the shared deck's Profile isn't the owner's, and a shared deck hides its warnings and Export | fixing | laptop | issue/438-one-profile |
 
 ## Waiting for live verification
 

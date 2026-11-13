@@ -14,6 +14,7 @@ use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::deck_tag_label;
+use zwipe_ui::deck::profile::DeckInfo;
 use zwipe_ui::deck::view::StatsProfile;
 use zwipe_ui::deck_cards::stacks::Reveal;
 use zwipe_ui::filter::picker::Sources;
@@ -22,9 +23,9 @@ use zwipe_ui::{buy, deck_cards};
 
 use super::body::DeckPageBody;
 use super::dialogs::DeckDialogs;
-use super::ghost::DeckFootGhost;
 use super::panels::{DangerZonePanel, DataPanel};
-use super::sections::{WarningFixes, WarningsBody};
+use super::profile::{DeckFoot, DeckProfilePhone};
+use super::sections::{WarningActions, WarningFixes};
 use crate::inbound::card_stores::CardStores;
 use crate::inbound::cards::card_row::use_card_overlays;
 use crate::inbound::cards::otag::use_otag_reveals;
@@ -44,11 +45,10 @@ pub fn DeckWidePage(
     fixes: WarningFixes,
     fixed: ReadSignal<u32>,
     dialogs: DeckDialogs,
-    // On a phone, whether the Cards layer is open, what opens and closes it, the Profile, and the
-    // Profile's dock before the cart and Cards.
+    // On a phone, whether the Cards layer is open, what opens and closes it, and the Profile's
+    // dock before the cart and Cards.
     cards_open: bool,
     on_cards: Callback<bool>,
-    phone_profile: Element,
     profile_dock: Element,
 ) -> Element {
     let navigator = use_navigator();
@@ -183,6 +183,41 @@ pub fn DeckWidePage(
     });
     let land_target = held_profile.as_ref().and_then(|p| p.land_target);
     let stats = held_profile.as_ref().map(StatsProfile::from);
+    // On a phone, the Profile, read from the cards as edited here, as the wide page's facts are,
+    // so an edit in the Cards layer shows on it at once.
+    let info = held_profile.as_ref().map(|p| {
+        let cards = metrics.as_ref().map_or_else(
+            || usize::try_from(p.card_count).unwrap_or(0),
+            |m| m.total_cards,
+        );
+        let commander = zone
+            .read()
+            .commander
+            .as_ref()
+            .map(|c| c.scryfall_data.name.clone());
+        DeckInfo::of_profile(p, cards, commander)
+    });
+    let phone_profile = rsx! {
+        DeckProfilePhone {
+            info,
+            stats: stats.clone().unwrap_or_default(),
+            metrics: metrics.clone(),
+            metrics_loading: !loaded(),
+            currency,
+            warnings: warnings.clone(),
+            actions: Some(WarningActions { deck_id, fixes }),
+            data: rsx! {
+                DataPanel {
+                    import: Some(Route::ImportDeck { deck_id }),
+                    export: Route::ExportDeck { deck_id },
+                    has_cards,
+                }
+            },
+            danger: rsx! {
+                DangerZonePanel { dialogs }
+            },
+        }
+    };
 
     rsx! {
         DeckPageBody {
@@ -223,6 +258,11 @@ pub fn DeckWidePage(
             examples,
             cards_open,
             on_cards,
+            // The nav's `?` over the Cards opens their hint.
+            cards_hint: Callback::new(move |()| {
+                let mut hint_open = hint_open;
+                hint_open.set(true);
+            }),
             phone_profile,
             profile_dock,
             // The Cards layer's undo, after the filter.
@@ -241,25 +281,20 @@ pub fn DeckWidePage(
                 QuickAdd { deck_id, entries, on_added: move |()| {} }
             },
             foot: rsx! {
-                if !loaded() {
-                    DeckFootGhost {}
-                } else {
-                    div { class: "web-column",
-                        if !warnings.is_empty() {
-                            div { class: "web-section open warn web-deck-warnings", "data-settle-key": "warnings",
-                                div { class: "web-section-head",
-                                    div { class: "web-section-title",
-                                        span { class: "settings-list-title", "Warnings" }
-                                        span { class: "web-section-badge", "{warnings.len()}" }
-                                    }
-                                }
-                                hr { class: "web-section-rule" }
-                                WarningsBody { deck_id, warnings, fixes }
-                            }
+                DeckFoot {
+                    loaded: loaded(),
+                    warnings,
+                    actions: Some(WarningActions { deck_id, fixes }),
+                    data: rsx! {
+                        DataPanel {
+                            import: Some(Route::ImportDeck { deck_id }),
+                            export: Route::ExportDeck { deck_id },
+                            has_cards,
                         }
-                        DataPanel { deck_id, has_cards }
-                    }
-                    DangerZonePanel { dialogs }
+                    },
+                    danger: rsx! {
+                        DangerZonePanel { dialogs }
+                    },
                 }
             },
             // Add and remove, before the filter.

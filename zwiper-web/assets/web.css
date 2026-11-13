@@ -2009,20 +2009,13 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 }
 
 /* A deck's Cards on a phone (DeckCardsLayer): a full-screen layer over its
-   Profile at its place on the overlay stack, scrolling as a screen does. */
+   Profile at its place on the overlay stack, under the nav, which takes its
+   title, `?` and back arrow, scrolling as a screen does. */
 .web-cards-layer {
+    top: var(--web-nav-h, 4.7rem);
     z-index: var(--overlay-z, 200);
     overflow-x: hidden;
     overflow-y: auto;
-    background-color: var(--bg-primary);
-}
-
-/* Its header with the back button stays at the top while the cards scroll,
-   as the app's screen header does. */
-.web-cards-layer > .page-header {
-    position: sticky;
-    top: 0;
-    z-index: 1;
     background-color: var(--bg-primary);
 }
 

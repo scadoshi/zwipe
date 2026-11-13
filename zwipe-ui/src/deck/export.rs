@@ -3,8 +3,10 @@
 //! Each line is `{qty} {name} ({SET}) {collector number}`, the form Moxfield
 //! and MTGA write, so an import lands the exact printing.
 
+use uuid::Uuid;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
-use zwipe_core::domain::deck::{Board, Deck};
+use zwipe_core::domain::deck::{Board, Deck, DeckEntry};
+use zwipe_core::http::contracts::deck::HttpSharedDeck;
 
 /// Which boards the export includes. At least one is always on.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -66,8 +68,8 @@ fn line(quantity: i32, printing: &ScryfallData) -> String {
 }
 
 /// One line for each entry on `board`, in served order.
-fn board_lines(deck: &Deck, board: Board) -> Vec<String> {
-    deck.entries
+fn board_lines(entries: &[DeckEntry], board: Board) -> Vec<String> {
+    entries
         .iter()
         .filter(|e| e.deck_card.board == board)
         .map(|e| line(*e.deck_card.quantity, &e.card.scryfall_data))
@@ -78,23 +80,9 @@ fn board_lines(deck: &Deck, board: Board) -> Vec<String> {
 #[must_use]
 pub fn text(deck: &Deck, boards: Boards) -> String {
     let profile = &deck.deck_profile;
-    let mut lines: Vec<String> = Vec::new();
     // A command-zone card the deck carries writes its printing; one it
     // doesn't writes the profile's name alone.
-    let command_zone: Vec<String> = [
-        (profile.commander_id, profile.commander_name.as_deref()),
-        (
-            profile.partner_commander_id,
-            profile.partner_commander_name.as_deref(),
-        ),
-        (profile.background_id, profile.background_name.as_deref()),
-        (
-            profile.signature_spell_id,
-            profile.signature_spell_name.as_deref(),
-        ),
-    ]
-    .into_iter()
-    .filter_map(|(id, name)| {
+    let slot = |id: Option<Uuid>, name: Option<&str>| -> Option<String> {
         let printing = id.and_then(|id| {
             deck.command_zone_cards
                 .iter()
@@ -105,15 +93,51 @@ pub fn text(deck: &Deck, boards: Boards) -> String {
             (None, Some(name)) => Some(format!("1 {name}")),
             (None, None) => None,
         }
-    })
+    };
+    let command_zone: Vec<String> = [
+        slot(profile.commander_id, profile.commander_name.as_deref()),
+        slot(
+            profile.partner_commander_id,
+            profile.partner_commander_name.as_deref(),
+        ),
+        slot(profile.background_id, profile.background_name.as_deref()),
+        slot(
+            profile.signature_spell_id,
+            profile.signature_spell_name.as_deref(),
+        ),
+    ]
+    .into_iter()
+    .flatten()
     .collect();
+    decklist(command_zone, &deck.entries, boards)
+}
+
+/// A shared deck's decklist, in the same form as [`text`].
+#[must_use]
+pub fn shared_text(deck: &HttpSharedDeck, boards: Boards) -> String {
+    let command_zone: Vec<String> = [
+        &deck.commander,
+        &deck.partner_commander,
+        &deck.background,
+        &deck.signature_spell,
+    ]
+    .into_iter()
+    .flatten()
+    .map(|card| line(1, &card.scryfall_data))
+    .collect();
+    decklist(command_zone, &deck.entries, boards)
+}
+
+/// The command zone's lines under their heading, then each included board that has cards.
+fn decklist(command_zone: Vec<String>, entries: &[DeckEntry], boards: Boards) -> String {
+    let mut lines: Vec<String> = Vec::new();
     if !command_zone.is_empty() {
         lines.push("// Commander".to_owned());
         lines.extend(command_zone);
         lines.push(String::new());
     }
     if boards.deck {
-        let cards = board_lines(deck, Board::Deck);
+        let cards = board_lines(entries, Board::Deck);
         if !cards.is_empty() {
             lines.push("// Deck".to_owned());
             lines.extend(cards);
@@ -123,7 +147,7 @@ pub fn text(deck: &Deck, boards: Boards) -> String {
         (boards.maybe, Board::Maybeboard, "// Maybeboard"),
         (boards.side, Board::Sideboard, "// Sideboard"),
     ] {
-        let cards = board_lines(deck, board);
+        let cards = board_lines(entries, board);
         if on && !cards.is_empty() {
             lines.push(String::new());
             lines.push(heading.to_owned());
@@ -135,11 +159,39 @@ pub fn text(deck: &Deck, boards: Boards) -> String {
 
 #[cfg(test)]
 mod tests {
-    use uuid::Uuid;
     use zwipe_core::domain::deck::requests::import_deck_cards::{ImportDeckCards, NamedPrinting};
     use zwipe_core::domain::deck::{ImportMode, Quantity};
 
     use super::*;
+
+    #[test]
+    fn a_shared_deck_writes_its_commander_then_its_deck_as_the_owner_s_does() {
+        let commander = crate::test_support::card("Krenko, Mob Boss");
+        let held = crate::test_support::deck(
+            crate::test_support::deck_profile("Goblins"),
+            vec![crate::test_support::card("Goblin Guide")],
+        );
+        let shared: HttpSharedDeck = serde_json::from_value(serde_json::json!({
+            "name": "Goblins",
+            "format": "commander",
+            "commander": commander,
+            "partner_commander": null,
+            "background": null,
+            "signature_spell": null,
+            "entries": held.entries,
+        }))
+        .unwrap();
+        let list = shared_text(&shared, Boards::default());
+        let lines: Vec<&str> = list.lines().collect();
+        assert_eq!(lines.first().copied(), Some("// Commander"), "{list}");
+        assert!(
+            lines
+                .get(1)
+                .is_some_and(|l| l.starts_with("1 Krenko, Mob Boss (")),
+            "{list}"
+        );
+        assert!(list.contains("// Deck\n1 Goblin Guide ("), "{list}");
+    }
     use crate::test_support::{card, deck, deck_profile};
 
     #[test]

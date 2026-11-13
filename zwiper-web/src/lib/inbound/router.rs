@@ -25,7 +25,7 @@ use crate::inbound::screens::deck::cards::add::AddDeckCard;
 use crate::inbound::screens::deck::cards::remove::RemoveDeckCard;
 use crate::inbound::screens::deck::create::CreateDeck;
 use crate::inbound::screens::deck::edit::EditDeck;
-use crate::inbound::screens::deck::export::ExportDeck;
+use crate::inbound::screens::deck::export::{ExportDeck, SharedDeckExport};
 use crate::inbound::screens::deck::import::ImportDeck;
 use crate::inbound::screens::deck::list::DeckList;
 use crate::inbound::screens::deck::view::ViewDeck;
@@ -80,6 +80,9 @@ pub enum Route {
         /// A shared deck at its public link, read only. Only the token names the deck.
         #[route("/:owner/deck/:slug/:token?:view")]
         SharedDeck { owner: String, slug: String, token: String, view: Option<DeckView> },
+        /// A shared deck's decklist, read only, as the owner's Export.
+        #[route("/:owner/deck/:slug/:token/export")]
+        SharedDeckExport { owner: String, slug: String, token: String },
 
     // == authed ==
     #[layout(AuthGate)]
@@ -293,6 +296,14 @@ mod tests {
                     view: Some(DeckView::Cards),
                 },
                 format!("/scotty/deck/elves-go-wide/{d}?view=cards"),
+            ),
+            (
+                Route::SharedDeckExport {
+                    owner: "scotty".to_owned(),
+                    slug: "elves-go-wide".to_owned(),
+                    token: d.to_string(),
+                },
+                format!("/scotty/deck/elves-go-wide/{d}/export"),
             ),
         ];
         for (route, path) in routes {

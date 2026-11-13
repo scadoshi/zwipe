@@ -63,6 +63,7 @@ fn is_open(route: &Route) -> bool {
         Route::PrivacyPolicy {}
             | Route::About {}
             | Route::SharedDeck { .. }
+            | Route::SharedDeckExport { .. }
             | Route::NotFound { .. }
     )
 }

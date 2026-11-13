@@ -10,7 +10,7 @@ use zwipe_core::domain::card::search_card::cards::{Cards, sort_deck_entries};
 use zwipe_core::domain::card::search_card::group_cards::{CardGroup, GroupByOption, GroupCards};
 use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
 use zwipe_core::domain::deck::validate_deck::{DeckCommandZone, validate_deck};
-use zwipe_core::domain::deck::{Board, DeckEntry, DeckProfile, DeckWarning, Format};
+use zwipe_core::domain::deck::{Board, Deck, DeckEntry, DeckProfile, DeckWarning, Format};
 
 use crate::deck::form::Slot;
 use crate::stores::undo::UndoAction;
@@ -34,6 +34,26 @@ pub struct Zone {
 }
 
 impl Zone {
+    /// A deck's command zone from the cards it carries, each matched to its slot by the
+    /// profile's printing id.
+    #[must_use]
+    pub fn of_deck(deck: &Deck) -> Self {
+        let profile = &deck.deck_profile;
+        let find = |id: Option<Uuid>| -> Option<Card> {
+            let id = id?;
+            deck.command_zone_cards
+                .iter()
+                .find(|c| c.scryfall_data.id == id)
+                .cloned()
+        };
+        Self {
+            commander: find(profile.commander_id),
+            partner: find(profile.partner_commander_id),
+            background: find(profile.background_id),
+            signature: find(profile.signature_spell_id),
+        }
+    }
+
     /// The card in `slot`, if any.
     #[must_use]
     pub fn slot(&self, slot: Slot) -> Option<&Card> {
