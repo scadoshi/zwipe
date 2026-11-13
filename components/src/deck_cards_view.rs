@@ -17,12 +17,13 @@ use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCur
 use zwipe_core::domain::deck::{Board, Format};
 use zwipe_ui::buy::group_cards;
 use zwipe_ui::deck::form::Slot;
-use zwipe_ui::deck_cards::columns::Side;
+use zwipe_ui::deck_cards::columns::{Side, Span};
 use zwipe_ui::deck_cards::keys::{RowInfo, RowKind, card_label};
 use zwipe_ui::deck_cards::listing::{Listed, RowMeta, main_row_of};
 use zwipe_ui::deck_cards::stacks::{CardsView, Gesture, Reveal, VIEW_LABEL};
 use zwipe_ui::deck_cards::{Group, columns};
 
+use crate::keys::STACK_DETAILS_CLASS;
 use crate::{
     CardBoardMoves, CardDetailsSheet, CardEditButtons, CardRow, CardStack, CartButton, Chip,
     DeckBand, DeckGroupSection, DeckSection, DrawerEdge, GroupBuy, StackCard, TailPlace,
@@ -71,7 +72,7 @@ pub struct DeckRowHost {
     pub on_examples: Option<Callback<String>>,
 }
 
-/// The stacks' reveal, whether the open card's drawer shows and the edge it opens from, which a
+/// The stacks' reveal, whether the open card's drawer shows and the edge it shows on, which a
 /// click on a card and the `d` key both move. A screen with stacks makes it with
 /// [`use_stack_details`] and provides it as context.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -80,12 +81,10 @@ pub struct StackDetails {
     pub reveal: Signal<Reveal>,
     /// Whether the open card's details drawer shows.
     pub details_open: Signal<bool>,
-    /// The edge the drawer opens from: away from the column of the stack card it opened on
-    /// ([`columns::drawer_side`]), the right for a featured card. It holds through the close, so
-    /// the drawer slides out the way it came in.
+    /// The edge the drawer shows on ([`columns::drawer_side`], measured as a card opens): the
+    /// right unless it would cover the card. It holds through the close, so the drawer slides
+    /// out the way it came.
     pub side: Signal<Side>,
-    /// The stack cards whose drawer opens on the left, as [`DeckStacks`] last laid them out.
-    pub opens_left: Signal<HashSet<Uuid>>,
 }
 
 /// The [`StackDetails`] over `reveal` and `details_open`, the drawer on the right until a card
@@ -95,8 +94,58 @@ pub fn use_stack_details(reveal: Signal<Reveal>, details_open: Signal<bool>) -> 
         reveal,
         details_open,
         side: use_signal(|| Side::Right),
-        opens_left: use_signal(HashSet::new),
     }
+}
+
+/// Where a card opened from, which the drawer's side is measured against.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Opened {
+    /// A card in the stacks.
+    Stack(Uuid),
+    /// A featured card.
+    Featured(Uuid),
+}
+
+impl Opened {
+    /// The selector of the card's element.
+    fn selector(self) -> String {
+        match self {
+            Self::Stack(id) => format!(".card-stack-slot[data-row=\"{id}\"]"),
+            Self::Featured(id) => format!("[data-settle-key=\"featured-{id}\"]"),
+        }
+    }
+}
+
+/// Sends `[card left, card right, right drawer left, right drawer right, page width]` for the
+/// card `__CARD__` and the stacks' drawer, in CSS pixels, the right drawer's place mirrored from
+/// the left one's while the drawer is on the left; `null` when either is missing. The drawer's
+/// place comes from its offsets, which leave out the slide's transform.
+const MEASURE_JS: &str = "const card = document.querySelector('__CARD__'); const drawer = document.querySelector('.bottom-sheet.__DRAWER__'); if (!card || !drawer) return null; const c = card.getBoundingClientRect(); const width = document.documentElement.clientWidth; let left = drawer.offsetLeft; let right = left + drawer.offsetWidth; if (drawer.classList.contains('drawer-left')) { const l = left; left = width - right; right = width - l; } return [c.left, c.right, left, right, width];";
+
+/// [`MEASURE_JS`] for the card `opened`.
+fn measure_js(opened: Opened) -> String {
+    MEASURE_JS
+        .replace("__CARD__", &opened.selector())
+        .replace("__DRAWER__", STACK_DETAILS_CLASS)
+}
+
+/// The side the drawer shows `opened` on, from `now`, measured in the browser; `None` off it or
+/// when the card or the drawer is not on the page.
+async fn measured_side(opened: Opened, now: Side) -> Option<Side> {
+    let [card_left, card_right, left, right, width] = document::eval(&measure_js(opened))
+        .join::<Option<[f64; 5]>>()
+        .await
+        .ok()
+        .flatten()?;
+    Some(columns::drawer_side(
+        Span {
+            left: card_left,
+            right: card_right,
+        },
+        Span { left, right },
+        width,
+        now,
+    ))
 }
 
 impl StackDetails {
@@ -105,7 +154,7 @@ impl StackDetails {
     pub fn click(self, id: Uuid) {
         let Self { mut reveal, .. } = self;
         reveal.write().apply(Gesture::Click(id));
-        self.settle(self.side_of(id));
+        self.show(Opened::Stack(id));
     }
 
     /// A click or tap on featured card `id`: its details open, or close where they are open,
@@ -113,7 +162,7 @@ impl StackDetails {
     pub fn feature(self, id: Uuid) {
         let Self { mut reveal, .. } = self;
         reveal.write().apply(Gesture::Feature(id));
-        self.settle(Side::Right);
+        self.show(Opened::Featured(id));
     }
 
     /// A tap on card `id` (phones): the first reveals it, a second on the revealed card opens its
@@ -121,23 +170,14 @@ impl StackDetails {
     pub fn tap(self, id: Uuid) {
         let Self { mut reveal, .. } = self;
         reveal.write().apply(Gesture::Tap(id));
-        self.settle(self.side_of(id));
+        self.show(Opened::Stack(id));
     }
 
     /// Card `from`'s printing is now `to`: its reveal and its open details move with it, so the
     /// drawer stays on the card.
     pub fn rekey(self, from: Uuid, to: Uuid) {
-        let Self {
-            mut reveal,
-            mut opens_left,
-            ..
-        } = self;
+        let Self { mut reveal, .. } = self;
         reveal.write().rekey(from, to);
-        if opens_left.peek().contains(&from) {
-            let mut set = opens_left.write();
-            set.remove(&from);
-            set.insert(to);
-        }
     }
 
     /// A tap off every card (phones): the reveal goes back to the open card, or to none.
@@ -148,28 +188,33 @@ impl StackDetails {
         }
     }
 
-    /// The edge stack card `id`'s drawer opens from.
-    fn side_of(self, id: Uuid) -> Side {
-        if self.opens_left.peek().contains(&id) {
-            Side::Left
-        } else {
-            Side::Right
-        }
-    }
-
-    /// Shows the drawer while a card is open, on `side` when one is.
-    fn settle(self, side: Side) {
+    /// Shows the drawer while a card is open, on the side measured for `opened` (from where an
+    /// open drawer is, from the right for a closed one), once it is measured; closes it at once
+    /// when none is.
+    fn show(self, opened: Opened) {
         let Self {
             reveal,
             mut details_open,
             side: mut shown_side,
-            ..
         } = self;
-        let open = reveal.peek().open().is_some();
-        if open && *shown_side.peek() != side {
-            shown_side.set(side);
-        }
-        details_open.set(open);
+        let Some(id) = reveal.peek().open() else {
+            details_open.set(false);
+            return;
+        };
+        let now = if *details_open.peek() {
+            *shown_side.peek()
+        } else {
+            Side::Right
+        };
+        spawn(async move {
+            let side = measured_side(opened, now).await.unwrap_or(now);
+            if *shown_side.peek() != side {
+                shown_side.set(side);
+            }
+            if reveal.peek().open() == Some(id) && !*details_open.peek() {
+                details_open.set(true);
+            }
+        });
     }
 }
 
@@ -688,21 +733,6 @@ pub fn DeckStacks(
         width().map(columns::column_count)
     };
     let placed: Vec<usize> = column_total.map_or_default(|total| columns::place(&heights, total));
-    // The cards whose drawer opens on the left: those in the right half of the columns.
-    let left: HashSet<Uuid> = column_total.map_or_default(|total| {
-        sections
-            .iter()
-            .zip(&placed)
-            .filter(|(_, column)| columns::drawer_side(**column, total) == Side::Left)
-            .flat_map(|((_, rows), _)| rows.iter().map(|r| r.card.scryfall_data.id))
-            .collect()
-    });
-    let mut opens_left = details.opens_left;
-    use_effect(use_reactive!(|left| {
-        if *opens_left.peek() != left {
-            opens_left.set(left);
-        }
-    }));
     // Each stack with its height.
     let stacks: Vec<(u32, Element)> = sections
         .into_iter()
@@ -1037,7 +1067,7 @@ mod tests {
     }
 
     #[test]
-    fn a_card_s_drawer_opens_on_the_side_away_from_its_column_and_a_featured_one_on_the_right() {
+    fn a_card_opens_its_drawer_where_nothing_measures_on_the_right_and_closes_at_once() {
         let settle = |dom: &mut VirtualDom| {
             for _ in 0..6 {
                 dom.process_events();
@@ -1048,50 +1078,56 @@ mod tests {
         dom.rebuild_in_place();
         settle(&mut dom);
         let details = SIDES.with(std::cell::Cell::get).unwrap();
-        let html = dioxus_ssr::render(&dom);
-        let lands = html.find(r#"data-fold="Lands""#).unwrap();
-        let second_column = html
-            .match_indices(r#"class="deck-stacks-column""#)
-            .nth(1)
-            .unwrap()
-            .0;
-        assert!(lands > second_column, "Lands lie in the right column");
+        let open = |dom: &VirtualDom| dom.in_runtime(|| *details.details_open.peek());
         let side = |dom: &VirtualDom| dom.in_runtime(|| *details.side.peek());
         let land = Uuid::from_u128(200);
-        let creature = Uuid::from_u128(101);
-        assert_eq!(
-            dom.in_runtime(|| details.opens_left.peek().clone()),
-            HashSet::from([land]),
-            "only the right column's cards open on the left"
-        );
         for _ in 0..2 {
-            dom.in_runtime(|| details.tap(land));
+            dom.in_scope(ScopeId::APP, || details.tap(land));
             settle(&mut dom);
         }
-        assert!(dom.in_runtime(|| *details.details_open.peek()));
-        assert_eq!(side(&dom), Side::Left, "a right column card");
-        for _ in 0..2 {
-            dom.in_runtime(|| details.tap(creature));
-            settle(&mut dom);
-        }
-        assert_eq!(side(&dom), Side::Right, "a left column card, swapped in");
-        dom.in_runtime(|| details.click(land));
-        settle(&mut dom);
-        assert_eq!(side(&dom), Side::Left, "a click swaps it back");
-        dom.in_runtime(|| details.click(land));
-        settle(&mut dom);
-        assert!(!dom.in_runtime(|| *details.details_open.peek()));
-        assert_eq!(
-            side(&dom),
-            Side::Left,
-            "a close keeps the side it slides out on"
+        assert!(
+            open(&dom),
+            "the second tap opens it, once its side is settled"
         );
-        dom.in_runtime(|| details.feature(land));
+        assert_eq!(side(&dom), Side::Right, "unmeasured, it stays on the right");
+        dom.in_scope(ScopeId::APP, || details.click(land));
+        assert!(
+            !open(&dom),
+            "a close shuts it at once, with nothing to measure"
+        );
+        dom.in_scope(ScopeId::APP, || details.feature(land));
         settle(&mut dom);
-        assert_eq!(
-            side(&dom),
-            Side::Right,
-            "a featured card, though it stacks on the right"
+        assert!(open(&dom), "a featured card opens it");
+    }
+
+    #[test]
+    fn the_side_is_measured_on_the_card_it_opened_from_and_the_drawer_s_place() {
+        let id = Uuid::nil();
+        let stack = measure_js(Opened::Stack(id));
+        assert!(
+            stack.contains(&format!(
+                "document.querySelector('.card-stack-slot[data-row=\"{id}\"]')"
+            )),
+            "{stack}"
+        );
+        assert!(
+            stack.contains("document.querySelector('.bottom-sheet.deck-stack-details')"),
+            "{stack}"
+        );
+        assert!(
+            stack.contains("let left = drawer.offsetLeft; let right = left + drawer.offsetWidth;"),
+            "the drawer's place leaves out its slide: {stack}"
+        );
+        assert!(
+            stack.contains("if (drawer.classList.contains('drawer-left')) { const l = left; left = width - right; right = width - l; }"),
+            "a left drawer's place mirrors to the right one's: {stack}"
+        );
+        let featured = measure_js(Opened::Featured(id));
+        assert!(
+            featured.contains(&format!(
+                "document.querySelector('[data-settle-key=\"featured-{id}\"]')"
+            )),
+            "{featured}"
         );
     }
 
@@ -1110,10 +1146,10 @@ mod tests {
         let id = Uuid::from_u128(101);
         let depth = |dom: &VirtualDom| dom.in_runtime(|| stack.depth());
         assert_eq!(depth(&dom), 0, "nothing revealed");
-        dom.in_runtime(|| details.tap(id));
+        dom.in_scope(ScopeId::APP, || details.tap(id));
         settle(&mut dom);
         assert_eq!(depth(&dom), 1, "the reveal takes a step");
-        dom.in_runtime(|| details.tap(id));
+        dom.in_scope(ScopeId::APP, || details.tap(id));
         settle(&mut dom);
         assert!(
             dom.in_runtime(|| *details.details_open.peek()),

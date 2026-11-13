@@ -245,18 +245,19 @@ fn a_second_tap_opens_the_drawer_and_a_tap_off_keeps_it() {
             (reveal.revealed(), *details.details_open.peek())
         })
     };
-    dom.in_runtime(|| details.tap(id));
+    dom.in_scope(ScopeId::APP, || details.tap(id));
     assert_eq!(state(&dom), (Some(id), false), "the first tap reveals");
     dom.in_runtime(|| details.dismiss());
     assert_eq!(state(&dom), (None, false), "a tap off closes the reveal");
-    dom.in_runtime(|| {
+    dom.in_scope(ScopeId::APP, || {
         details.tap(id);
         details.tap(id);
     });
+    settle(&mut dom);
     assert_eq!(
         state(&dom),
         (Some(id), true),
-        "the second tap opens the drawer"
+        "the second tap opens the drawer once its side is settled"
     );
     dom.in_runtime(|| details.dismiss());
     assert_eq!(
@@ -334,7 +335,7 @@ fn back_after(touch: bool, taps: usize) -> (VirtualDom, BackProbe) {
     let probe = BACK.with(std::cell::Cell::get).unwrap();
     let id = Uuid::new_v4();
     for _ in 0..taps {
-        dom.in_runtime(|| probe.details.tap(id));
+        dom.in_scope(ScopeId::APP, || probe.details.tap(id));
     }
     settle(&mut dom);
     (dom, probe)

@@ -32,7 +32,7 @@ pub fn split_at(rows: &[usize]) -> usize {
 }
 
 /// A side of the Stacks view: a column of the phones' two, or the edge a card's details drawer
-/// opens from ([`drawer_side`]).
+/// shows on ([`drawer_side`]).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Side {
     /// The left column.
@@ -100,16 +100,44 @@ pub fn place(heights: &[u32], columns: usize) -> Vec<usize> {
         .collect()
 }
 
-/// The edge a card's details drawer opens from, for a card in stack `column` (`0` the leftmost)
-/// of `columns`: away from the card, so it stays in view. A card in the right half opens a drawer
-/// on the left; one in the left half, or the middle column of an odd count, opens it on the
-/// right.
+/// A horizontal extent on the page, in CSS pixels from its left edge.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Span {
+    /// The left edge.
+    pub left: f64,
+    /// The right edge.
+    pub right: f64,
+}
+
+impl Span {
+    /// How far this span and `other` overlap, zero where they don't.
+    #[must_use]
+    pub fn overlap(self, other: Self) -> f64 {
+        (self.right.min(other.right) - self.left.max(other.left)).max(0.0)
+    }
+}
+
+/// The edge a card's details drawer shows on, for a card spanning `card` on a page `width` across
+/// whose right drawer sits at `right` (the left one mirrors it), the drawer on `now` (the right
+/// for a closed one): it stays unless it would cover the card, and moves to the other edge only
+/// where that one covers the card less. On a wide page that opens it on the left only over a card
+/// the right one would cover; on a phone, where either covers nearly every card, it goes where it
+/// covers less.
 #[must_use]
-pub fn drawer_side(column: usize, columns: usize) -> Side {
-    if column.saturating_mul(2) >= columns.max(1) {
-        Side::Left
+pub fn drawer_side(card: Span, right: Span, width: f64, now: Side) -> Side {
+    let left = Span {
+        left: width - right.right,
+        right: width - right.left,
+    };
+    let (here, other, there) = match now {
+        Side::Right => (right, Side::Left, left),
+        Side::Left => (left, Side::Right, right),
+    };
+    let covered = card.overlap(here);
+    if covered > 0.0 && card.overlap(there) < covered {
+        other
     } else {
-        Side::Right
+        now
     }
 }
 
@@ -137,23 +165,67 @@ pub fn column_count(width: u32) -> usize {
 mod tests {
     use super::*;
 
+    /// A span from `left` to `right`.
+    fn span(left: f64, right: f64) -> Span {
+        Span { left, right }
+    }
+
     #[test]
-    fn a_card_s_drawer_opens_on_the_side_away_from_its_column() {
-        assert_eq!(drawer_side(0, 2), Side::Right, "phone, left column");
-        assert_eq!(drawer_side(1, 2), Side::Left, "phone, right column");
-        assert_eq!(drawer_side(0, 1), Side::Right, "a single column");
-        for (column, want) in [(0, Side::Right), (1, Side::Right), (2, Side::Left)] {
-            assert_eq!(drawer_side(column, 3), want, "column {column} of three");
-        }
-        for (column, want) in [
-            (0, Side::Right),
-            (1, Side::Right),
-            (2, Side::Left),
-            (3, Side::Left),
+    fn a_wide_drawer_opens_on_the_left_only_over_a_card_it_would_cover() {
+        // 1440 wide, the right drawer at 1040 to 1424, so the left one at 16 to 400.
+        let right = span(1040.0, 1424.0);
+        for (card, want) in [
+            (span(24.0, 239.0), Side::Right),
+            (span(730.0, 945.0), Side::Right),
+            (span(965.0, 1181.0), Side::Left),
+            (span(1201.0, 1416.0), Side::Left),
         ] {
-            assert_eq!(drawer_side(column, 4), want, "column {column} of four");
+            assert_eq!(
+                drawer_side(card, right, 1440.0, Side::Right),
+                want,
+                "{card:?} from a closed drawer"
+            );
         }
-        assert_eq!(drawer_side(0, 0), Side::Right, "no columns");
+    }
+
+    #[test]
+    fn an_open_drawer_stays_where_it_is_unless_the_card_is_under_it() {
+        let right = span(1040.0, 1424.0);
+        assert_eq!(
+            drawer_side(span(730.0, 945.0), right, 1440.0, Side::Left),
+            Side::Left,
+            "clear of the left drawer: it stays"
+        );
+        assert_eq!(
+            drawer_side(span(259.0, 475.0), right, 1440.0, Side::Left),
+            Side::Right,
+            "under the left drawer: it goes right"
+        );
+        assert_eq!(
+            drawer_side(span(965.0, 1181.0), right, 1440.0, Side::Right),
+            Side::Left,
+            "under the right drawer: it goes left"
+        );
+    }
+
+    #[test]
+    fn a_phone_drawer_covering_every_card_goes_where_it_covers_less() {
+        // 390 wide, the right drawer at 38 to 380, so the left one at 10 to 352.
+        let right = span(38.0, 380.0);
+        let left_column = span(16.0, 190.0);
+        let right_column = span(200.0, 374.0);
+        for now in [Side::Right, Side::Left] {
+            assert_eq!(
+                drawer_side(left_column, right, 390.0, now),
+                Side::Right,
+                "left column, open {now:?}"
+            );
+            assert_eq!(
+                drawer_side(right_column, right, 390.0, now),
+                Side::Left,
+                "right column, open {now:?}"
+            );
+        }
     }
 
     #[test]

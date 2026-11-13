@@ -172,6 +172,7 @@ Who checked, on which live build, what they saw.
 | [475](475-printings-name-artist.md) | Printings doesn't name the card or its artist | fixing | laptop | issue/475-printings-name-artist |
 | [477](477-held-key-drawer.md) | Holding J with a card's details drawer open drops the frame rate | fixing | scotland | - |
 | [478](478-cursor-any-width.md) | The deck page's keyboard cursor only works on the computer layout | fixing | scotland | - |
+| [481](481-drawer-side-measured.md) | A card's details drawer opens on the left only when a right drawer would cover the card | fixing | scotland | - |
 | [480](480-deck-shortcuts-missing-keys.md) | The deck page's shortcuts sheet leaves out keys that work | fixing | thinker | - |
 
 ## Waiting for live verification
