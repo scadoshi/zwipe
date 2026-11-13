@@ -142,6 +142,9 @@ inherits = "dev"
 [profile.wasm-release]
 inherits = "release"
 strip = "debuginfo"
+opt-level = "z"
+lto = true
+codegen-units = 1
 
 # tao 0.37.0 vendored as 0.34.9. See vendor/tao/VENDOR.md.
 [patch.crates-io]
