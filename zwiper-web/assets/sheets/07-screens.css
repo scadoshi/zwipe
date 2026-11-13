@@ -3032,6 +3032,11 @@ body .toast-container [role="alertdialog"] {
     min-width: 0;
     min-height: 0;
     overflow: hidden;
+    /* Room inside the row's clip for each card's shadow, given back by the
+       margins so the row sits and sizes where it did. */
+    padding: 0.5rem 0.75rem 0;
+    margin: -0.5rem -0.75rem 0;
+    scroll-padding-inline: 0.75rem;
 }
 
 .deck-featured-card {

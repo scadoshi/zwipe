@@ -1,7 +1,8 @@
 //! The deck cards view's featured strip: the command zone with each card's
 //! role, then the main board's MVPs, oldest star first. The row stays shut
 //! until every image has loaded or a few seconds pass, then deals the cards
-//! in; a click opens the card's image.
+//! in; a tap opens the card's details, or its image when no listed card has
+//! them.
 
 use std::time::Duration;
 
@@ -36,7 +37,13 @@ fn FeaturedCard(
         "stat-chip deck-featured-role-zone"
     };
     rsx! {
-        div { class: "deck-featured-card", onclick: move |_| on_tap.call(card.clone()),
+        div {
+            class: "deck-featured-card",
+            // The tap stops at the card, so the screen's tap-off doesn't close what it opens.
+            onclick: move |event: MouseEvent| {
+                event.stop_propagation();
+                on_tap.call(card.clone());
+            },
             if has_image {
                 components::FlippableCardImage {
                     sd,

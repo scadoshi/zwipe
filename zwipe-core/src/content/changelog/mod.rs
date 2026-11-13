@@ -65,6 +65,7 @@ pub const UPCOMING: &[Release] = &[
             "On zwipe.net, Esc closes the featured card's art as a click does",
             "On a phone or a narrow window, the web's deck cards get the View chip and Stacks as the app has them, and each List group shows its price and cart",
             "Undo on a deck's cards puts back a star or an unstar, on the web and in the app",
+            "On a phone, a deck's featured card opens its details on the first tap, and the strip no longer cuts off a card's shadow",
             "On the web at phone width, Printings takes the arrow keys and Enter as soon as it opens",
             "On the web at phone width, the filter's title bar pulls it down to close, as Printings' does",
             "On the web, Change username, Change email and Change password put the cursor in their first field as they open",

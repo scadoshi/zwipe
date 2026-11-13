@@ -928,14 +928,13 @@ pub fn View(deck_id: Uuid) -> Element {
                     FeaturedCards {
                         cards: featured_cards,
                         loaded,
-                        // A first tap floats the card, a second opens its details as the same
-                        // card in the List or Stacks does; a card no listed row has opens its
-                        // image.
-                        revealed: reveal().revealed(),
+                        // The first tap opens the card's details, as a click does on the web:
+                        // nothing covers a featured card, so there is nothing to float clear
+                        // first. A card no listed row has opens its image.
                         on_tap: move |card: Card| {
                             let id = card.scryfall_data.id;
                             match featured_open(id, &listed_ids.peek()) {
-                                FeaturedOpen::Details => stack_details.tap(id),
+                                FeaturedOpen::Details => stack_details.click(id),
                                 FeaturedOpen::Image => {
                                     let mut preview = preview_card;
                                     preview.set(Some((card.scryfall_data, 0)));

@@ -18,6 +18,7 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::group_cards::GroupByOption;
 use zwipe_core::domain::deck::{Board, deck_tag_label};
+use zwipe_ui::deck_cards::FeaturedOpen;
 use zwipe_ui::deck_cards::stacks::{CardsView, Reveal};
 use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::filter::picker::Sources;
@@ -200,7 +201,15 @@ pub fn ViewDeckCard(deck_id: Uuid) -> Element {
                     FeaturedCards {
                         cards: featured,
                         loaded: loaded(),
-                        on_tap: move |card: Card| preview.set(Some((card.scryfall_data, 0))),
+                        // One tap opens the card's details in the drawer, as the same card in the
+                        // List or Stacks does, or its image when no listed card has details.
+                        on_tap: move |card: Card| {
+                            let id = card.scryfall_data.id;
+                            match deck_cards::featured_open(id, &listed_ids.peek()) {
+                                FeaturedOpen::Details => details.click(id),
+                                FeaturedOpen::Image => preview.set(Some((card.scryfall_data, 0))),
+                            }
+                        },
                     }
                     if loaded() {
                         QuickAdd { deck_id, entries, on_added: move |()| {} }
