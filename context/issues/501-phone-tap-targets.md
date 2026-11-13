@@ -18,3 +18,4 @@ scotland:
 
 ## Verification
 - Headless at 390: every card action 32px high with a 44px reach on Playstyle and a deck's List; no two visible reaches overlap (Playstyle's five, wrapped). At 1440 they stay 22px with no reach.
+- Surfer's after on 869fced20: Playstyle passes; a deck's List with a card open fails: its two action rows (Image, Printings, the stepper and Star; then To maybeboard and To sideboard) stand 8px apart, so their reaches overlap (a tap 3px under Printings hits To maybeboard), and the bottom row's reach is clipped by the open row's `overflow: hidden`. Before, headless 390: gap 8, five overlapping pairs, the reach clipped at 488 of 490. Cause: `.card-action-row` keeps its 0.5rem top margin on a phone, less than two reaches. Fix: on a phone a row stands 0.75rem below the one above, and the last keeps 0.375rem under it. After: gap 12, no overlapping pairs, nothing clipped; Playstyle still none.

@@ -26,4 +26,13 @@ fn a_phone_s_card_actions_reach_a_touch_size_and_keep_their_spacing() {
         row.contains("gap: 0.75rem;"),
         "reaches don't overlap: {row}"
     );
+    assert!(
+        row.contains("margin-top: 0.75rem;"),
+        "a stacked row stands clear of the one above: {row}"
+    );
+    let last = rule(MAGIC, media, ".card-action-row:last-child {").expect("the last row's rule");
+    assert!(
+        last.contains("margin-bottom: 0.375rem;"),
+        "the bottom row's reach stays inside a clipping row: {last}"
+    );
 }
