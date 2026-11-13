@@ -58,6 +58,12 @@ pub struct ZwipeClient {
 #[cfg(not(target_arch = "wasm32"))]
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
 
+/// How long an idle connection stays in the pool. Cloudflare's edge keeps one for 400 seconds,
+/// but a phone's network can drop an idle socket well before that, and a dropped one only shows
+/// when the next request fails on it.
+#[cfg(not(target_arch = "wasm32"))]
+const POOL_IDLE_TIMEOUT: Duration = Duration::from_secs(30);
+
 impl ZwipeClient {
     /// Builds a client pointed at `base_url`.
     pub fn new(base_url: Url) -> Self {
@@ -72,13 +78,14 @@ impl ZwipeClient {
 #[cfg(not(target_arch = "wasm32"))]
 #[expect(
     clippy::expect_used,
-    reason = "a builder with only a timeout set has nothing to fail on"
+    reason = "a builder with only timeouts set has nothing to fail on"
 )]
 fn build_client() -> Client {
     Client::builder()
         .timeout(REQUEST_TIMEOUT)
+        .pool_idle_timeout(POOL_IDLE_TIMEOUT)
         .build()
-        .expect("reqwest client with only a timeout set always builds")
+        .expect("reqwest client with only timeouts set always builds")
 }
 
 /// The browser's fetch has no client-wide timeout; the page's own navigation
@@ -159,6 +166,97 @@ mod tests {
         );
     }
 
+    /// A signed-in session for calls that need one.
+    #[expect(
+        clippy::unwrap_used,
+        reason = "a test helper: a fixed session always parses"
+    )]
+    fn session() -> zwipe_core::domain::auth::models::session::Session {
+        serde_json::from_value(serde_json::json!({
+                "user": {
+                    "id": "00000000-0000-0000-0000-000000000001",
+                    "username": "scotty",
+                    "email": "scotty@zwipe.net",
+                    "email_verified_at": null,
+                },
+                "access_token": {"value": "aGVhZA.cGF5bG9hZA.c2ln", "expires_at": "2030-01-01T01:00:00Z"},
+                "refresh_token": {"value": "r", "expires_at": "2030-01-15T00:00:00Z"},
+                "settings": zwipe_core::domain::user::UserSettings::default(),
+            }))
+            .unwrap()
+    }
+
+    /// A server whose first connection answers one request, then takes the next and drops the
+    /// socket without answering, as a link that went stale while the pool held it; every later
+    /// connection answers. Answers with how many connections it took.
+    #[expect(
+        clippy::unwrap_used,
+        reason = "a test helper: a socket error fails the test"
+    )]
+    async fn stale_after_one(listener: TcpListener) -> usize {
+        const OK: &[u8] =
+            b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: 2\r\n\r\n[]";
+        let mut buf = vec![0_u8; 8192];
+        let (mut first, _) = listener.accept().await.unwrap();
+        let _ = first.read(&mut buf).await.unwrap();
+        first.write_all(OK).await.unwrap();
+        let _ = first.read(&mut buf).await;
+        drop(first);
+        let mut taken: usize = 1;
+        while let Ok(Ok((mut next, _))) =
+            tokio::time::timeout(Duration::from_millis(500), listener.accept()).await
+        {
+            taken = taken.saturating_add(1);
+            if next.read(&mut buf).await.unwrap_or(0) > 0 {
+                next.write_all(OK).await.unwrap();
+            }
+        }
+        taken
+    }
+
+    #[tokio::test]
+    async fn a_get_on_a_stale_pooled_connection_goes_again_on_a_fresh_one() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let server = tokio::spawn(stale_after_one(listener));
+        let client = ZwipeClient::new(Url::parse(&format!("http://{addr}")).unwrap());
+        let printings = || zwipe_core::http::endpoints::card::GetPrintings(uuid::Uuid::nil());
+
+        client.call(printings(), None).await.unwrap();
+        let again = client.call(printings(), None).await;
+
+        assert!(again.is_ok(), "the GET goes again: {again:?}");
+        assert_eq!(server.await.unwrap(), 2, "on one fresh connection");
+    }
+
+    #[tokio::test]
+    async fn a_write_on_a_stale_pooled_connection_is_not_sent_twice() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let server = tokio::spawn(stale_after_one(listener));
+        let client = ZwipeClient::new(Url::parse(&format!("http://{addr}")).unwrap());
+
+        client
+            .call(
+                zwipe_core::http::endpoints::card::GetPrintings(uuid::Uuid::nil()),
+                None,
+            )
+            .await
+            .unwrap();
+        let share = client
+            .call(
+                zwipe_core::http::endpoints::deck::ShareDeck(uuid::Uuid::nil()),
+                Some(&session()),
+            )
+            .await;
+
+        assert!(
+            matches!(share, Err(ClientError::Network(_))),
+            "a write fails rather than risk landing twice: {share:?}"
+        );
+        assert_eq!(server.await.unwrap(), 1, "and opens no second connection");
+    }
+
     #[tokio::test(start_paused = true)]
     async fn a_deck_card_search_gives_up_on_a_server_that_never_answers() {
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
@@ -176,18 +274,7 @@ mod tests {
             );
         filter.set_name_contains("elf");
         let query = filter.build().unwrap();
-        let session: zwipe_core::domain::auth::models::session::Session = serde_json::from_value(serde_json::json!({
-                "user": {
-                    "id": "00000000-0000-0000-0000-000000000001",
-                    "username": "scotty",
-                    "email": "scotty@zwipe.net",
-                    "email_verified_at": null,
-                },
-                "access_token": {"value": "aGVhZA.cGF5bG9hZA.c2ln", "expires_at": "2030-01-01T01:00:00Z"},
-                "refresh_token": {"value": "r", "expires_at": "2030-01-15T00:00:00Z"},
-                "settings": zwipe_core::domain::user::UserSettings::default(),
-            }))
-            .unwrap();
+        let session = session();
 
         let started = tokio::time::Instant::now();
         let result = client

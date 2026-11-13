@@ -124,8 +124,44 @@ impl ZwipeClient {
 
         info!("{} {}", E::METHOD.as_str(), url);
         hold_for_skeleton_audit(E::METHOD).await;
-        Ok(request.send().await?)
+        send_once_more_if_dropped(request, E::METHOD).await
     }
+}
+
+/// Sends `request`, and sends a GET once more on a fresh connection when the first try's
+/// connection drops before the reply: a pooled socket the network let go of while it sat idle
+/// fails the moment it is written to. A write never goes twice, as it may have landed.
+#[cfg(not(target_arch = "wasm32"))]
+async fn send_once_more_if_dropped(
+    request: reqwest::RequestBuilder,
+    method: Method,
+) -> Result<reqwest::Response, ClientError> {
+    let again = matches!(method, Method::Get)
+        .then(|| request.try_clone())
+        .flatten();
+    match (request.send().await, again) {
+        (Err(e), Some(again)) if dropped(&e) => {
+            tracing::warn!(error = %e, "connection dropped; sending the GET again");
+            Ok(again.send().await?)
+        }
+        (sent, _) => Ok(sent?),
+    }
+}
+
+/// The browser keeps its own connections.
+#[cfg(target_arch = "wasm32")]
+async fn send_once_more_if_dropped(
+    request: reqwest::RequestBuilder,
+    _method: Method,
+) -> Result<reqwest::Response, ClientError> {
+    Ok(request.send().await?)
+}
+
+/// Whether `e` is a connection failing under the request rather than the server's answer or a
+/// timeout: reqwest's "error sending request", or a connection that could not be made.
+#[cfg(not(target_arch = "wasm32"))]
+fn dropped(e: &reqwest::Error) -> bool {
+    (e.is_request() || e.is_connect()) && !e.is_timeout()
 }
 
 /// A response body with when the copy was made.
