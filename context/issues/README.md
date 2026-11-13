@@ -166,6 +166,7 @@ Who checked, on which live build, what they saw.
 | [466](466-details-drawer-again.md) | On a phone, a card's details from Cards should be the side drawer, not a full screen | fixing | scotland | orangui 9039b70 |
 | [467](467-remove-swipe-star.md) | The Remove screen's swipe to the maybeboard drops a card's star, and its undo moves it back unstarred | fixing | thinker | - |
 | [468](468-phone-web-strip.md) | Phone web's featured strip is small; the app's is big and scrolls (and 465: the third card cut off, the page jumps) | fixing | thinker | - |
+| [472](472-dialog-focus-and-resize-loop.md) | The deck page's Buy, Clone and Share dialogs don't take focus, and Stacks logs a ResizeObserver loop | fixing | scotland | - |
 
 ## Waiting for live verification
 

@@ -67,6 +67,7 @@ pub const UPCOMING: &[Release] = &[
             "On phone web, a deck's Cards opened from a link show Cards in the header",
             "On the web, Enter runs an open sheet's main action, or closes the sheet when nothing changed",
             "On a phone, a card's details drawer on a deck's Cards dims the page and closes on a tap outside, its x, or a drag to the right, on the web and in the app",
+            "On the web, a dialog opens with the cursor in its first field or on its main button, and hands focus back when it closes",
         ],
     },
     Release {

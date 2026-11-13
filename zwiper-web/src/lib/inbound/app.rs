@@ -87,6 +87,7 @@ pub fn App() -> Element {
     });
     use_hook(|| {
         document::eval(HINT_FOCUS_JS);
+        document::eval(DIALOG_FOCUS_JS);
     });
     // A swipe screen's card slides clear of its docked details panel.
     components::use_details_clear();
@@ -205,6 +206,47 @@ if (!window.__zwipeHintFocus) {
 }
 "#;
 
+/// Where focus goes around every other dialog (a hint has its own,
+/// [`HINT_FOCUS_JS`]), installed once. As one opens it takes focus on its
+/// first field (Clone's name), else its primary action (a non-danger
+/// confirm, such as Share's Create link), else its first link (Buy's
+/// stores), else its Cancel, so a danger dialog never starts on its danger
+/// button. As it closes, once it has faded out of the page, focus returns
+/// to the element it was opened from, while that is still in the page and
+/// nothing else took focus.
+const DIALOG_FOCUS_JS: &str = r#"
+if (!window.__zwipeDialogFocus) {
+    window.__zwipeDialogFocus = true;
+    let pressed = null;
+    let opener = null;
+    document.addEventListener('pointerdown', (e) => { pressed = e.target; }, true);
+    const FIRST = ['input:not([type="hidden"]):not([disabled]), textarea:not([disabled]), select:not([disabled])', '.alert-dialog-actions .alert-dialog-action:not([disabled])', '.alert-dialog-actions a[href]', '.alert-dialog-actions .alert-dialog-cancel:not([disabled])'];
+    new MutationObserver(() => {
+        const open = document.querySelector('.alert-dialog[data-state="open"]');
+        if (open && !open.querySelector('.hint-body, .hint-line, .hint-bullets')) {
+            if (opener) return;
+            const active = document.activeElement;
+            opener = active && active !== document.body ? active : (pressed || document.body);
+            if (open.contains(active)) return;
+            const target = FIRST.map((sel) => open.querySelector(sel)).find(Boolean);
+            if (target) target.focus({ preventScroll: true });
+        } else if (!open && opener) {
+            const from = opener;
+            opener = null;
+            // The closing dialog keeps focus through its fade, then leaves the page: wait it out.
+            let tries = 0;
+            const back = () => {
+                if (!from.isConnected || from === document.body) return;
+                const now = document.activeElement;
+                if (!now || now === document.body || !now.isConnected) { from.focus({ preventScroll: true }); return; }
+                if (now.closest('.alert-dialog') && tries++ < 12) setTimeout(back, 50);
+            };
+            back();
+        }
+    }).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-state'] });
+}
+"#;
+
 /// The page-wide keys. While a dialog is open the kit's own listener runs
 /// Escape and Enter, and the kit's theme sheet handles its arrows and
 /// Enter, so this one steps aside. Otherwise Escape sends `true` to the
@@ -287,6 +329,35 @@ fn stat_hint_topic(topic: components::StatTopic) -> HintTopic {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_dialog_opens_on_its_first_field_else_its_primary_else_a_link_else_cancel() {
+        let order = [
+            "input:not([type=\"hidden\"])",
+            ".alert-dialog-actions .alert-dialog-action:not([disabled])",
+            ".alert-dialog-actions a[href]",
+            ".alert-dialog-actions .alert-dialog-cancel:not([disabled])",
+        ];
+        let at: Vec<usize> = order
+            .iter()
+            .map(|sel| DIALOG_FOCUS_JS.find(sel).unwrap_or(usize::MAX))
+            .collect();
+        assert!(at.iter().all(|i| *i != usize::MAX), "{DIALOG_FOCUS_JS}");
+        assert!(at.windows(2).all(|w| w[0] < w[1]), "in that order: {at:?}");
+        assert!(
+            DIALOG_FOCUS_JS
+                .contains("!open.querySelector('.hint-body, .hint-line, .hint-bullets')"),
+            "a hint keeps its own focus"
+        );
+        assert!(
+            DIALOG_FOCUS_JS.contains("if (!from.isConnected || from === document.body) return;"),
+            "closing hands focus back to the opener"
+        );
+        assert!(
+            DIALOG_FOCUS_JS.contains("now.closest('.alert-dialog') && tries++ < 12"),
+            "after the dialog's fade"
+        );
+    }
 
     #[test]
     fn a_closing_hint_leaves_focus_to_a_sheet_it_opened() {

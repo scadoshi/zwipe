@@ -750,9 +750,13 @@ fn use_stacks_width(touch: bool) -> Signal<Option<u32>> {
 /// Sends the width of the element the stacks sit in, in hundredths of a rem, then again on each
 /// change, waiting up to about two seconds of frames for the stacks to mount.
 const STACKS_WIDTH_JS: &str = r"
+let last = null;
 const send = (px) => {
   const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-  dioxus.send(Math.floor(px / rem * 100));
+  const width = Math.floor(px / rem * 100);
+  if (width === last) return;
+  last = width;
+  dioxus.send(width);
 };
 // The stacks can mount a frame after this runs, so it looks again each frame for a while.
 let tries = 0;
@@ -764,7 +768,10 @@ const watch = () => {
     return;
   }
   if (window.__zwStacksWidth) window.__zwStacksWidth.disconnect();
-  const sizes = new ResizeObserver((entries) => { for (const e of entries) send(e.contentRect.width); });
+  // The width goes out a frame later and only when it changed: the columns it lays out can
+  // bring the page's scrollbar and change this width again, which, answered inside the
+  // observer's callback, the browser reports as a loop.
+  const sizes = new ResizeObserver((entries) => { const width = entries[entries.length - 1].contentRect.width; requestAnimationFrame(() => send(width)); });
   sizes.observe(frame);
   window.__zwStacksWidth = sizes;
 };
@@ -1039,6 +1046,8 @@ mod tests {
             "new ResizeObserver",
             "contentRect.width",
             "/ rem * 100",
+            "requestAnimationFrame(() => send(width))",
+            "if (width === last) return;",
         ] {
             assert!(
                 STACKS_WIDTH_JS.contains(part),
