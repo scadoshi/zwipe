@@ -69,6 +69,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "A long hint shows all its text, and one taller than the screen scrolls as a whole, on the web and in the app",
         "On the web, Create deck shows its Create button from the start and says when the deck needs a name",
         "A card's details drawer opening on the other side from last time slides in from its own edge instead of sweeping across the page, on the web and in the app",
+        "On the web, a banner's close button is named for screen readers",
     ],
 }];
 
