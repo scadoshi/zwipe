@@ -14,11 +14,15 @@ use common::{FakeEmailSender, TEST_JWT_SECRET, TestApp};
 use serde_json::{Value, json};
 use sqlx::PgPool;
 use zwipe::domain::auth::models::access_token::JwtSecret;
+use zwipe::domain::auth::models::account_ref::AccountRef;
 use zwipe::domain::auth::requests::change_username::ChangeUsernameError;
+use zwipe::domain::email::models::{SendEmail, SendEmailError};
+use zwipe::domain::email::ports::{EmailSender, SendEmailFuture};
 use zwipe::domain::{auth, metrics};
 use zwipe::inbound::admin::{self, NoticeOutcome, RenameNotice};
 use zwipe::outbound::sqlx::postgres::Postgres;
 use zwipe::wiring::{Auth, Metrics};
+use zwipe_core::domain::Email;
 use zwipe_core::domain::user::username::Username;
 use zwipe_core::http::paths::{CHANGE_USERNAME_ROUTE, LOGIN_ROUTE, REGISTER_ROUTE};
 
@@ -63,24 +67,57 @@ fn name(raw: &str) -> Username {
     Username::new(raw).unwrap()
 }
 
-/// The auth and metrics services `zerver-admin` builds, mailing into a fake sender.
+/// Parses an account the way `zerver-admin` reads its argument.
+#[expect(
+    clippy::unwrap_used,
+    reason = "a test helper: a fixture account that fails to parse fails the test"
+)]
+fn account(raw: &str) -> AccountRef {
+    raw.parse().unwrap()
+}
+
+#[expect(
+    clippy::unwrap_used,
+    reason = "a test helper: a fixture address that fails to parse fails the test"
+)]
+fn email(raw: &str) -> Email {
+    Email::new(raw).unwrap()
+}
+
+/// An email sender whose every send fails, as the provider being down does.
+#[derive(Clone, Debug)]
+struct FailingEmailSender;
+
+impl EmailSender for FailingEmailSender {
+    fn send_email(&self, _email: SendEmail) -> SendEmailFuture<'_> {
+        Box::pin(async { Err(SendEmailError::ApiError(503, "unavailable".to_owned())) })
+    }
+}
+
+/// The auth and metrics services `zerver-admin` builds, mailing through `sender`.
 #[expect(
     clippy::unwrap_used,
     reason = "a test helper: the fixed test secret is valid"
 )]
-fn services(pool: &PgPool) -> (Auth, Metrics, FakeEmailSender) {
+fn services_sending(pool: &PgPool, sender: Arc<dyn EmailSender>) -> (Auth, Metrics) {
     let db = Postgres::from_pool(pool.clone());
-    let emails = FakeEmailSender::default();
     let auth = auth::services::Service::new(
         db.clone(),
         db.clone(),
-        Arc::new(emails.clone()),
+        sender,
         JwtSecret::new(TEST_JWT_SECRET).unwrap(),
         chrono::Duration::hours(24),
         "http://localhost".to_owned(),
         "support@zwipe.net".to_owned(),
     );
-    (auth, metrics::services::Service::new(db), emails)
+    (auth, metrics::services::Service::new(db))
+}
+
+/// The auth and metrics services `zerver-admin` builds, mailing into a fake sender.
+fn services(pool: &PgPool) -> (Auth, Metrics, FakeEmailSender) {
+    let emails = FakeEmailSender::default();
+    let (auth, metrics) = services_sending(pool, Arc::new(emails.clone()));
+    (auth, metrics, emails)
 }
 
 #[sqlx::test]
@@ -156,7 +193,7 @@ async fn an_account_keeps_a_reserved_name_it_already_holds(pool: PgPool) {
     admin::rename_account(
         &auth,
         &metrics,
-        "placeholder",
+        &account("placeholder"),
         &name("Scotty"),
         RenameNotice::Skip,
     )
@@ -217,10 +254,10 @@ async fn the_admin_rename_sets_a_reserved_name_audits_and_mails_the_notice(pool:
     let renamed = admin::rename_account(
         &auth,
         &metrics,
-        "Test",
+        &account("Test"),
         &name("naxol56196"),
         RenameNotice::Send {
-            reply_to: Some("scotty@zwipe.net".to_owned()),
+            reply_to: email("scotty@zwipe.net"),
         },
     )
     .await
@@ -274,7 +311,7 @@ async fn the_admin_rename_finds_an_account_by_id_and_can_skip_the_notice(pool: P
     let renamed = admin::rename_account(
         &auth,
         &metrics,
-        &user_id,
+        &account(&user_id),
         &name("zwipe"),
         RenameNotice::Skip,
     )
@@ -284,8 +321,14 @@ async fn the_admin_rename_finds_an_account_by_id_and_can_skip_the_notice(pool: P
     assert!(matches!(renamed.notice, NoticeOutcome::Skipped));
     assert_eq!(emails.count(), before, "no notice went out");
 
-    let taken =
-        admin::rename_account(&auth, &metrics, "zwipe", &name("Alice"), RenameNotice::Skip).await;
+    let taken = admin::rename_account(
+        &auth,
+        &metrics,
+        &account("zwipe"),
+        &name("Alice"),
+        RenameNotice::Skip,
+    )
+    .await;
     assert!(
         matches!(taken, Err(ChangeUsernameError::Duplicate)),
         "a name another account holds in any case: {taken:?}"
@@ -293,7 +336,7 @@ async fn the_admin_rename_finds_an_account_by_id_and_can_skip_the_notice(pool: P
     let missing = admin::rename_account(
         &auth,
         &metrics,
-        "nobody_here",
+        &account("nobody_here"),
         &name("scott"),
         RenameNotice::Skip,
     )
@@ -302,4 +345,80 @@ async fn the_admin_rename_finds_an_account_by_id_and_can_skip_the_notice(pool: P
         matches!(missing, Err(ChangeUsernameError::AuthenticateUserError(_))),
         "no such account: {missing:?}"
     );
+}
+
+#[sqlx::test]
+async fn the_admin_rename_finds_an_account_by_email(pool: PgPool) {
+    let _ = TestApp::new(pool.clone()).register("dana").await;
+    let (auth, metrics, emails) = services(&pool);
+
+    let renamed = admin::rename_account(
+        &auth,
+        &metrics,
+        &account("dana@test.local"),
+        &name("dana_two"),
+        RenameNotice::Send {
+            reply_to: email("support@zwipe.net"),
+        },
+    )
+    .await
+    .unwrap();
+    assert_eq!(&*renamed.old_username, "dana");
+    assert_eq!(&*renamed.user.username, "dana_two");
+    assert!(matches!(renamed.notice, NoticeOutcome::Sent));
+
+    let sent = emails.sent.lock().unwrap();
+    let notice = sent.last().unwrap();
+    assert_eq!(notice.to, "dana@test.local");
+    assert_eq!(notice.reply_to.as_deref(), Some("support@zwipe.net"));
+}
+
+#[sqlx::test]
+async fn an_email_address_no_account_holds_finds_nothing(pool: PgPool) {
+    let _ = TestApp::new(pool.clone()).register("erin").await;
+    let (auth, metrics, _) = services(&pool);
+    let missing = admin::rename_account(
+        &auth,
+        &metrics,
+        &account("someone@test.local"),
+        &name("erin_two"),
+        RenameNotice::Skip,
+    )
+    .await;
+    assert!(
+        matches!(missing, Err(ChangeUsernameError::AuthenticateUserError(_))),
+        "{missing:?}"
+    );
+}
+
+#[sqlx::test]
+async fn the_rename_stands_when_the_notice_fails(pool: PgPool) {
+    let _ = TestApp::new(pool.clone()).register("frank").await;
+    let (auth, metrics) = services_sending(&pool, Arc::new(FailingEmailSender));
+
+    let renamed = admin::rename_account(
+        &auth,
+        &metrics,
+        &account("frank"),
+        &name("frank_two"),
+        RenameNotice::Send {
+            reply_to: email("support@zwipe.net"),
+        },
+    )
+    .await
+    .unwrap();
+    assert!(
+        matches!(renamed.notice, NoticeOutcome::Failed(_)),
+        "{:?}",
+        renamed.notice
+    );
+
+    let held: String = sqlx::query_scalar("SELECT username FROM users WHERE id = $1")
+        .bind(renamed.user.id)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(held, "frank_two", "the rename went through");
+    let (status, _) = login(&pool, "frank_two").await;
+    assert_eq!(status, StatusCode::OK);
 }

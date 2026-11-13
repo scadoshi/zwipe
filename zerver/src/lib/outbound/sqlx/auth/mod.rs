@@ -509,6 +509,18 @@ impl AuthRepository for Postgres {
         Ok(user_id)
     }
 
+    async fn fetch_user_id_by_username(
+        &self,
+        username: &Username,
+    ) -> Result<Option<Uuid>, anyhow::Error> {
+        let user_id: Option<Uuid> =
+            query_scalar!("SELECT id FROM users WHERE username = $1", &**username)
+                .fetch_optional(&self.pool)
+                .await
+                .map_err(|e| anyhow::anyhow!("{e}"))?;
+        Ok(user_id)
+    }
+
     async fn is_password_reset_on_cooldown(&self, user_id: Uuid) -> Result<bool, anyhow::Error> {
         let on_cooldown: bool = query_scalar!(
             r#"SELECT EXISTS(

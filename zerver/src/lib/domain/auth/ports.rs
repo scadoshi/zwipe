@@ -15,6 +15,7 @@ use zwipe_core::domain::user::username::Username;
 
 use crate::domain::auth::models::UserWithPasswordHash;
 use crate::domain::auth::models::access_token::JwtSecret;
+use crate::domain::auth::models::account_ref::AccountRef;
 use crate::domain::auth::requests::authenticate_user::{AuthenticateUser, AuthenticateUserError};
 use crate::domain::auth::requests::cancel_email_change::CancelEmailChangeError;
 use crate::domain::auth::requests::change_email::{ChangeEmail, ChangeEmailError};
@@ -232,6 +233,14 @@ pub trait AuthRepository: Clone + Send + Sync + 'static {
         email: &str,
     ) -> impl Future<Output = Result<Option<Uuid>, anyhow::Error>> + Send;
 
+    /// Looks up a user ID by exact username. Returns `None` if no account holds it.
+    ///
+    /// Never exposes `UserNotFound` in error; only DB failures are returned.
+    fn fetch_user_id_by_username(
+        &self,
+        username: &Username,
+    ) -> impl Future<Output = Result<Option<Uuid>, anyhow::Error>> + Send;
+
     /// Returns `true` if a password reset token was issued for this user in the last 5 minutes.
     fn is_password_reset_on_cooldown(
         &self,
@@ -346,8 +355,8 @@ pub trait AuthService: Clone + Send + Sync + 'static {
         request: &ChangeUsername,
     ) -> impl Future<Output = Result<User, ChangeUsernameError>> + Send;
 
-    /// Renames the account named or numbered `account` (its exact username, its id or its email)
-    /// to `new_username` as a user's own change does, without the password and without the
+    /// Renames the account `account` names (by exact username, id or exact email) to
+    /// `new_username` as a user's own change does, without the password and without the
     /// reserved-name check, for Scotty claiming a reserved name from the server. Answers the
     /// account's old name and the account as renamed. Nothing in the app reaches it, and it sends
     /// no email; see [`Self::send_reserved_name_notice`].
@@ -360,12 +369,12 @@ pub trait AuthService: Clone + Send + Sync + 'static {
     /// [`ChangeUsernameError::Database`] on a database failure.
     fn admin_change_username(
         &self,
-        account: &str,
+        account: &AccountRef,
         new_username: &Username,
     ) -> impl Future<Output = Result<(Username, User), ChangeUsernameError>> + Send;
 
     /// Tells `user`, now renamed from `old_username`, that Zwipe reserved its old name: a plain
-    /// text and an HTML body, replies to `reply_to` when given.
+    /// text and an HTML body, with replies going to `reply_to`.
     ///
     /// # Errors
     ///
@@ -374,7 +383,7 @@ pub trait AuthService: Clone + Send + Sync + 'static {
         &self,
         user: &User,
         old_username: &Username,
-        reply_to: Option<&str>,
+        reply_to: &Email,
     ) -> impl Future<Output = Result<(), SendEmailError>> + Send;
 
     /// Holds a new email as pending after verifying the password, and mails a

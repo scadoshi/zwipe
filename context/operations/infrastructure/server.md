@@ -452,7 +452,7 @@ SQLX_OFFLINE=true cargo build --release --bin zerver-admin
 sudo bash -c 'set -a; . /etc/zwipe/zerver.env; set +a; /home/scadoshi/zwipe-src/target/release/zerver-admin rename <username|id|email> <new-username>'
 ```
 
-`rename` renames an account the way a user's own change does (the username rules, a name no other account holds in any case, the `username_changed` audit row) without the password or the reserved-name check, and mails the account that its old name is now reserved. `--no-notice` sends nothing; `--reply-to <address>` sets where replies go.
+`rename` renames an account the way a user's own change does (the username rules, a name no other account holds in any case, the `username_changed` audit row) without the password or the reserved-name check, and mails the account that its old name is now reserved. `--no-notice` sends nothing; `--reply-to <address>` sets where replies go, which is otherwise the server's `SUPPORT_EMAIL_ADDRESS` (support@zwipe.net). The account is read as an id when it is a uuid, an email when it is a valid email, and a username otherwise, so a username that is itself an email is named by its id. `zerver-admin --help` and `zerver-admin rename --help` list the commands and options.
 
 ## systemd Service
 

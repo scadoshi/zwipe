@@ -1,8 +1,10 @@
 //! Account changes made from the server only, for `zerver-admin`. Nothing in the app reaches them.
 
+use zwipe_core::domain::Email;
 use zwipe_core::domain::user::User;
 use zwipe_core::domain::user::username::Username;
 
+use crate::domain::auth::models::account_ref::AccountRef;
 use crate::domain::auth::ports::AuthService;
 use crate::domain::auth::requests::change_username::ChangeUsernameError;
 use crate::domain::email::models::SendEmailError;
@@ -12,10 +14,10 @@ use crate::domain::metrics::ports::MetricsService;
 /// Whether a rename tells the account, by email, that its old name is now reserved.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RenameNotice {
-    /// Sends the notice, with replies going to `reply_to` when given.
+    /// Sends the notice, with replies going to `reply_to`.
     Send {
-        /// Where a reply goes; `None` replies to the sending address.
-        reply_to: Option<String>,
+        /// Where a reply goes: the server's support address unless the command names another.
+        reply_to: Email,
     },
     /// Sends nothing.
     Skip,
@@ -43,7 +45,7 @@ pub struct Renamed {
     pub notice: NoticeOutcome,
 }
 
-/// Renames the account `account` (its exact username, id or email) to `new_username` the way a
+/// Renames the account `account` names (by exact username, id or exact email) to `new_username` the way a
 /// user's own change does, minus the password and the reserved-name check, records the
 /// `username_changed` audit row, then sends or skips the reserved-name notice.
 ///
@@ -55,7 +57,7 @@ pub struct Renamed {
 pub async fn rename_account(
     auth: &impl AuthService,
     metrics: &impl MetricsService,
-    account: &str,
+    account: &AccountRef,
     new_username: &Username,
     notice: RenameNotice,
 ) -> Result<Renamed, ChangeUsernameError> {
@@ -69,7 +71,7 @@ pub async fn rename_account(
     let notice = match notice {
         RenameNotice::Skip => NoticeOutcome::Skipped,
         RenameNotice::Send { reply_to } => match auth
-            .send_reserved_name_notice(&user, &old_username, reply_to.as_deref())
+            .send_reserved_name_notice(&user, &old_username, &reply_to)
             .await
         {
             Ok(()) => NoticeOutcome::Sent,

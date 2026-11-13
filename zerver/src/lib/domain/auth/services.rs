@@ -6,6 +6,7 @@ use chrono::{DateTime, Duration, Utc};
 use rand::Rng;
 use sha2::Digest;
 use uuid::Uuid;
+use zwipe_core::domain::Email;
 use zwipe_core::domain::auth::models::access_token::AccessToken;
 use zwipe_core::domain::auth::models::secret::Secret;
 use zwipe_core::domain::auth::models::session::Session;
@@ -16,6 +17,7 @@ use zwipe_core::domain::user::username::Username;
 use crate::domain::auth::lockout::LoginLockout;
 use crate::domain::auth::models::UserWithPasswordHash;
 use crate::domain::auth::models::access_token::{AccessTokenExt, JwtSecret};
+use crate::domain::auth::models::account_ref::AccountRef;
 use crate::domain::auth::models::password::{self, HashedPassword, Password};
 use crate::domain::auth::notice_cooldown::NoticeCooldown;
 use crate::domain::auth::ports::{AuthRepository, AuthService};
@@ -584,11 +586,27 @@ where
 
     async fn admin_change_username(
         &self,
-        account: &str,
+        account: &AccountRef,
         new_username: &Username,
     ) -> Result<(Username, User), ChangeUsernameError> {
+        let user_id = match account {
+            AccountRef::Id(id) => Some(*id),
+            AccountRef::Username(username) => self
+                .auth_repo
+                .fetch_user_id_by_username(username)
+                .await
+                .map_err(ChangeUsernameError::Database)?,
+            AccountRef::Email(email) => self
+                .auth_repo
+                .fetch_user_id_by_email(email.as_ref())
+                .await
+                .map_err(ChangeUsernameError::Database)?,
+        };
+        let Some(user_id) = user_id else {
+            return Err(AuthenticateUserError::UserNotFound.into());
+        };
         let lookup = AuthenticateUser {
-            identifier: account.to_owned(),
+            identifier: user_id.to_string(),
             password: Secret::new(""),
             platform: None,
             client_version: None,
@@ -613,7 +631,7 @@ where
         &self,
         user: &User,
         old_username: &Username,
-        reply_to: Option<&str>,
+        reply_to: &Email,
     ) -> Result<(), SendEmailError> {
         let fill = |template: &str, old: &str, new: &str| {
             template
@@ -636,7 +654,7 @@ where
                 subject: RESERVED_NAME_SUBJECT.to_owned(),
                 html_body: html,
                 text_body: Some(text),
-                reply_to: reply_to.map(str::to_owned),
+                reply_to: Some(reply_to.to_string()),
             })
             .await
     }
