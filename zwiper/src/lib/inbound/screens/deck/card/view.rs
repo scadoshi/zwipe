@@ -787,6 +787,10 @@ pub fn View(deck_id: Uuid) -> Element {
     let filter = filter_builder.read().clone();
     let model = driver.model.read();
     let loaded = model.is_loaded();
+    // Whether the deck likely features a card: until its profile says otherwise, yes.
+    let featured_ghost = model
+        .profile()
+        .is_none_or(|profile| !zwipe_ui::screens::deck_cards::zone_requests(profile).is_empty());
     let deck_name = model.profile().map_or_default(|p| p.name.to_string());
     let deck_format = model.profile().and_then(|p| p.format);
     let deck_power = model.profile().and_then(|p| p.power_level);
@@ -1015,15 +1019,13 @@ pub fn View(deck_id: Uuid) -> Element {
                         }
                     }
 
-                    // No ghost for the featured strip: it holds anywhere from
-                    // zero to six cards, so any fixed count is wrong most of
-                    // the time and resolving to fewer reads as cards vanishing.
-                    // The cards deal themselves in from above instead, which
-                    // already carries the arrival. The rest of the screen keeps
-                    // its skeleton.
+                    // The featured strip holds its place with one ghost card while the deck
+                    // loads, unless the profile has landed with no command zone card,
+                    // so the controls under it never move when the cards arrive.
                     FeaturedCards {
                         cards: featured_cards,
                         loaded,
+                        ghost: featured_ghost,
                         // The first tap opens the card's details, as a click does on the web:
                         // nothing covers a featured card, so there is nothing to float clear
                         // first. A card no listed row has opens its image.

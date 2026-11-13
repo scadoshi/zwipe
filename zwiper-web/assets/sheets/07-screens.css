@@ -3003,6 +3003,23 @@ body .toast-container [role="alertdialog"] {
     grid-template-rows: 1fr;
 }
 
+/* A row that follows its ghost (and the ghost itself) is open from the
+   start, its cards in place and their image boxes ghosted until the art
+   fills them, so nothing under the row moves when the deck lands. */
+.deck-featured.held {
+    grid-template-rows: 1fr;
+    transition: none;
+}
+
+.deck-featured.held .deck-featured-card {
+    opacity: 1;
+}
+
+.deck-featured.held .deck-featured-image {
+    border-radius: 4.75% / 3.5%;
+    background-color: var(--border-muted);
+}
+
 /* Once the row is open it scrolls sideways within the page's width,
    snapping to a card and faded at an edge with more past it (the kit's
    scroll-fade-x). Before then it clips, for the height transition. */

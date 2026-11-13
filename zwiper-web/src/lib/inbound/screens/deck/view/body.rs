@@ -403,6 +403,7 @@ pub(crate) fn DeckPageBody(
                     details,
                     group_buy,
                     dealing: dealing(),
+                    loaded,
                     empty: loaded && shown_boards.main && no_main,
                     actions,
                     host,

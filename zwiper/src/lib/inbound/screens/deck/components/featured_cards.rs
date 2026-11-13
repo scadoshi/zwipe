@@ -68,22 +68,33 @@ fn FeaturedCard(
     }
 }
 
-/// The featured row. Renders nothing until the deck has loaded or when there
-/// is nothing to feature. The row holds zero height until every card's image
-/// has loaded, or 4 s pass, then opens and deals the cards in. Once open it
-/// stays open, so a card starred later joins without a re-deal of the row.
+/// The featured row. While the deck loads it is a ghost at the row's height
+/// when `ghost` says the deck likely features a card, else nothing; once
+/// loaded, nothing when there is nothing to feature.
+///
+/// A row that opens on a page already loaded holds zero height until every
+/// card's image has loaded, or 4 s pass, then opens and deals the cards in.
+/// A row that follows its ghost is open from the start, its cards in place
+/// over ghost image boxes that their art fills as it loads, so nothing under
+/// it moves. Once open it stays open, so a card starred later joins without
+/// a re-deal of the row.
 #[component]
 pub fn FeaturedCards(
     /// `(card, role label)` pairs, command zone first then MVPs.
     cards: Vec<(Card, String)>,
     /// Whether the deck's cards and command zone have all arrived.
     loaded: bool,
+    /// Whether to hold the row's place with a ghost while the deck loads.
+    #[props(default)]
+    ghost: bool,
     /// Fired with the tapped card: the host opens its details or its image.
     on_tap: EventHandler<Card>,
 ) -> Element {
     let mut images_loaded: Signal<usize> = use_signal(|| 0);
     let mut timed_out: Signal<bool> = use_signal(|| false);
     let mut opened: Signal<bool> = use_signal(|| false);
+    // Whether the row first drew as its ghost, so it opens in place.
+    let held = use_hook(|| !loaded && ghost);
     use_future(move || async move {
         time::sleep(Duration::from_secs(REVEAL_TIMEOUT_SECS)).await;
         timed_out.set(true);
@@ -94,13 +105,20 @@ pub fn FeaturedCards(
             opened.set(true);
         }
     }));
-    if !loaded || cards.is_empty() {
+    if !loaded {
+        return if ghost {
+            rsx! { FeaturedGhost {} }
+        } else {
+            rsx! {}
+        };
+    }
+    if cards.is_empty() {
         return rsx! {};
     }
-    let class = if opened() {
-        "deck-featured ready"
-    } else {
-        "deck-featured"
+    let class = match (held, opened()) {
+        (true, _) => "deck-featured held",
+        (false, true) => "deck-featured ready",
+        (false, false) => "deck-featured",
     };
     rsx! {
         section { class: "{class}",
@@ -112,6 +130,25 @@ pub fn FeaturedCards(
                         role,
                         on_tap,
                         on_load: move |()| images_loaded += 1,
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// The row's ghost: one card's image box and its name and role chips, at the
+/// row's open height.
+#[component]
+fn FeaturedGhost() -> Element {
+    rsx! {
+        section { class: "deck-featured held", "aria-hidden": "true",
+            div { class: "deck-featured-row",
+                div { class: "deck-featured-card",
+                    div { class: "deck-featured-image" }
+                    div { class: "deck-featured-chips",
+                        span { class: "skeleton-bar skeleton-chip skeleton-chip-md" }
+                        span { class: "skeleton-bar skeleton-chip skeleton-chip-sm" }
                     }
                 }
             }

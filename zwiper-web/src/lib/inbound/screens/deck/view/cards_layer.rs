@@ -11,8 +11,8 @@
 use std::collections::{HashMap, HashSet};
 
 use components::{
-    CardGroup, DeckEditActions, DeckRow, DeckRowHost, DeckSection, DeckStacks, GroupBuy,
-    StackDetails, TailPlace, group_tail, use_overlay_back_action, use_pointer,
+    CardGroup, DeckEditActions, DeckRow, DeckRowHost, DeckSection, DeckStacks, DeckStacksGhost,
+    GroupBuy, StackDetails, TailPlace, group_tail, use_overlay_back_action, use_pointer,
 };
 use dioxus::history::history;
 use dioxus::prelude::*;
@@ -24,6 +24,7 @@ use zwipe_ui::deck_cards::keys::RowInfo;
 use zwipe_ui::deck_cards::stacks::CardsView;
 use zwipe_ui::screens::deck_cards::TITLE;
 
+use super::ghost::DeckBandsGhost;
 use crate::inbound::router::Route;
 use crate::inbound::shell::use_overlay_nav;
 
@@ -94,6 +95,8 @@ pub(crate) fn DeckCardsLayer(
     group_buy: GroupBuy,
     // Whether the stacks deal their cards in.
     dealing: bool,
+    // Whether the deck's cards have arrived; until then the layer shows the saved view's ghost.
+    loaded: bool,
     // Whether the deck has no main board cards to show.
     empty: bool,
     // The rows' edits; `None` for a shared deck.
@@ -144,7 +147,11 @@ pub(crate) fn DeckCardsLayer(
                     {controls}
                 }
                 div { class: "web-deck-cards-list",
-                    if stacks_on {
+                    if !loaded && stacks_on {
+                        DeckStacksGhost { key: "{touch}", touch }
+                    } else if !loaded {
+                        DeckBandsGhost {}
+                    } else if stacks_on {
                         DeckStacks {
                             // A change of input lays the stacks out again for it.
                             key: "{touch}",

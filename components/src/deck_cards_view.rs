@@ -722,7 +722,7 @@ static LAST_WIDTH: GlobalSignal<Option<u32>> = Signal::global(|| None);
 /// The width the stacks have on the page, in hundredths of a rem, kept current as it changes:
 /// the content box of the element the stacks sit in, which stays put while the stacks swap
 /// their grid for columns. `None` until it is first measured, and off the browser.
-fn use_stacks_width(touch: bool) -> Signal<Option<u32>> {
+pub(crate) fn use_stacks_width(touch: bool) -> Signal<Option<u32>> {
     let mut width = use_signal(|| *LAST_WIDTH.peek());
     use_effect(move || {
         if touch {

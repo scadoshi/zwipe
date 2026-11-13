@@ -6,6 +6,8 @@
 use dioxus::prelude::*;
 use zwipe_ui::deck_cards::{columns, stacks};
 
+use crate::deck_cards_view::use_stacks_width;
+
 /// Ghost cards in each stack: the Commander's one, then fuller groups.
 const STACK_CARDS: [usize; 4] = [1, 6, 3, 4];
 
@@ -13,17 +15,24 @@ const STACK_CARDS: [usize; 4] = [1, 6, 3, 4];
 const NAME_CHARS: [u8; 4] = [9, 12, 8, 10];
 
 /// The ghost stacks, in [`crate::DeckStacks`]'s layout: with `touch` (phones)
-/// two columns, each stack in the shorter one as the loaded stacks lie; else
-/// the page's grid.
+/// two columns, else as many as the measured width fits, the same count the
+/// loaded stacks take, each stack in the shorter column as they lie. Before
+/// the first measure, the page's grid, as the loaded stacks start.
 #[component]
 pub fn DeckStacksGhost(#[props(default)] touch: bool) -> Element {
+    let width = use_stacks_width(touch);
     let stacks: Vec<Element> = STACK_CARDS
         .into_iter()
         .zip(NAME_CHARS)
         .enumerate()
         .map(|(i, (cards, chars))| ghost_stack(i, cards, chars))
         .collect();
-    if !touch {
+    let column_total = if touch {
+        Some(2)
+    } else {
+        width().map(columns::column_count)
+    };
+    let Some(column_total) = column_total else {
         return rsx! {
             div { class: "deck-stacks", "aria-hidden": "true",
                 for stack in stacks {
@@ -31,19 +40,27 @@ pub fn DeckStacksGhost(#[props(default)] touch: bool) -> Element {
                 }
             }
         };
-    }
+    };
     let heights: Vec<u32> = STACK_CARDS
         .iter()
         .map(|&cards| columns::stack_height(cards, false))
         .collect();
-    let mut laid: Vec<Vec<Element>> = vec![Vec::new(); 2];
-    for (column, stack) in columns::place(&heights, 2).into_iter().zip(stacks) {
+    let mut laid: Vec<Vec<Element>> = vec![Vec::new(); column_total.max(1)];
+    for (column, stack) in columns::place(&heights, column_total)
+        .into_iter()
+        .zip(stacks)
+    {
         if let Some(held) = laid.get_mut(column) {
             held.push(stack);
         }
     }
+    let class = if touch {
+        "deck-stacks deck-stacks-columns deck-stacks-touch"
+    } else {
+        "deck-stacks deck-stacks-columns"
+    };
     rsx! {
-        div { class: "deck-stacks deck-stacks-columns deck-stacks-touch", "aria-hidden": "true",
+        div { class, "aria-hidden": "true",
             for (at , held) in laid.into_iter().enumerate() {
                 div { key: "{at}", class: "deck-stacks-column",
                     for stack in held {
