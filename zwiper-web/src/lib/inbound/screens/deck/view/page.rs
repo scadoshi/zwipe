@@ -13,7 +13,7 @@ use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use zwipe_core::domain::deck::deck_tag_label;
+use zwipe_core::domain::deck::{Deck, deck_tag_label};
 use zwipe_ui::deck::profile::DeckInfo;
 use zwipe_ui::deck::view::StatsProfile;
 use zwipe_ui::deck_cards::stacks::Reveal;
@@ -37,13 +37,15 @@ use crate::inbound::screens::deck::cards::editor::{Editor, use_deck_editor, use_
 use crate::inbound::screens::deck::cards::quick_add::QuickAdd;
 
 /// The page for `deck_id`. `fixes` are the warnings' fixes, and `fixed`
-/// counts the ones that have landed: each reloads the deck.
+/// counts the ones that have landed: each reloads the deck. `deck_copy` holds
+/// the deck as the page's editor last fetched it, for the host's fixes.
 #[component]
 pub fn DeckWidePage(
     deck_id: Uuid,
     currency: Signal<PriceCurrency>,
     fixes: WarningFixes,
     fixed: ReadSignal<u32>,
+    mut deck_copy: Signal<Option<Deck>>,
     dialogs: DeckDialogs,
     // On a phone, whether the Cards layer is open, what opens and closes it, and the Profile's
     // dock before the cart and Cards.
@@ -105,6 +107,13 @@ pub fn DeckWidePage(
             .collect::<Vec<_>>()
     });
     use_stack_details_sync(reveal, details_open, listed_ids);
+    // The host's copy of the deck follows the editor's, the one fetch of it the page makes.
+    use_effect(move || {
+        let fetched = deck.read().clone();
+        if *deck_copy.peek() != fetched {
+            deck_copy.set(fetched);
+        }
+    });
     // A fix made at the foot reloads the deck once it has landed, so the
     // rows, the counts and the warnings follow.
     use_effect(move || {

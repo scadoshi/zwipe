@@ -103,25 +103,15 @@ fn DeckViewScreen(deck_id: Uuid, view: Option<DeckView>) -> Element {
                 })
                 .await
         }));
-    // Quiet: the profile fetch beside it raises the one toast a failed
-    // visit gets.
     let CardStores { undo, .. } = use_context();
-    let mut deck: Resource<Result<Deck, ClientError>> =
-        use_resource(use_reactive!(|deck_id| async move {
-            authed
-                .try_run_quiet("load_deck", |c, s| async move {
-                    c.fetch_deck(deck_id, &s).await
-                })
-                .await
-        }));
+    // The deck as the page's editor last fetched it, which the page keeps current: the fixes
+    // read a card's quantity from it before they change it.
+    let deck_copy: Signal<Option<Deck>> = use_signal(|| None);
 
     // Tries a failed load again, from Retry or the connection coming back.
     let retry = use_callback(move |()| {
         if matches!(&*profile.peek(), Some(Err(_))) {
             profile.restart();
-        }
-        if matches!(&*deck.peek(), Some(Err(_))) {
-            deck.restart();
         }
     });
     use_back_online(retry);
@@ -130,8 +120,7 @@ fn DeckViewScreen(deck_id: Uuid, view: Option<DeckView>) -> Element {
     // screen in history so Back never reopens it; the fetch's toast has
     // already said why.
     use_effect(move || {
-        let gone = matches!(&*profile.read(), Some(Err(ClientError::NotFound(_))))
-            || matches!(&*deck.read(), Some(Err(ClientError::NotFound(_))));
+        let gone = matches!(&*profile.read(), Some(Err(ClientError::NotFound(_))));
         if gone {
             navigator.replace(Route::DeckList {});
         }
@@ -175,8 +164,8 @@ fn DeckViewScreen(deck_id: Uuid, view: Option<DeckView>) -> Element {
         fix_quantity: use_callback(move |(card, quantity): (Uuid, i32)| {
             let request = HttpPatchDeckCard::new(Some(quantity), None);
             // What the fix changes, for the deck's undo log, which Cards' Undo walks.
-            let before = deck.peek().as_ref().and_then(|loaded| {
-                let entries = &loaded.as_ref().ok()?.entries;
+            let before = deck_copy.peek().as_ref().and_then(|loaded| {
+                let entries = &loaded.entries;
                 entries
                     .iter()
                     .find(|e| e.deck_card.scryfall_data_id == card)
@@ -208,7 +197,6 @@ fn DeckViewScreen(deck_id: Uuid, view: Option<DeckView>) -> Element {
                     );
                     // The reload can take a warning away, so the page settles around it.
                     components::settle::watch();
-                    deck.restart();
                     fixed.with_mut(|n| *n = n.wrapping_add(1));
                 }
             });
@@ -232,7 +220,6 @@ fn DeckViewScreen(deck_id: Uuid, view: Option<DeckView>) -> Element {
                 commander.set(None);
                 components::settle::watch();
                 profile.restart();
-                deck.restart();
                 fixed.with_mut(|n| *n = n.wrapping_add(1));
             });
         }),
@@ -255,7 +242,6 @@ fn DeckViewScreen(deck_id: Uuid, view: Option<DeckView>) -> Element {
                             ToastOptions::default().duration(TOAST_QUICK),
                         );
                         components::settle::watch();
-                        deck.restart();
                         fixed.with_mut(|n| *n = n.wrapping_add(1));
                     }
                     Err(e) => {
@@ -319,6 +305,7 @@ fn DeckViewScreen(deck_id: Uuid, view: Option<DeckView>) -> Element {
                             currency,
                             fixes,
                             fixed,
+                            deck_copy,
                             dialogs,
                             cards_open: view.is_some(),
                             on_cards,
@@ -354,5 +341,27 @@ fn DeckViewScreen(deck_id: Uuid, view: Option<DeckView>) -> Element {
         FirstDeckHintDialog { open: hint_open, wide: wide() }
         CardOverlaysHost { overlays }
         OtagExamplesHost { examples }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn the_deck_s_page_fetches_the_deck_once_through_its_editor() {
+        let view = include_str!("mod.rs");
+        let page = include_str!("page.rs");
+        let editor = include_str!("../cards/editor.rs");
+        let fetches = |source: &str| source.matches(".fetch_deck(").count();
+        assert_eq!(
+            fetches(view),
+            1,
+            "only this test names the fetch in the view"
+        );
+        assert_eq!(fetches(page), 0);
+        assert_eq!(
+            fetches(editor),
+            1,
+            "the editor's load is the page's one fetch"
+        );
     }
 }
