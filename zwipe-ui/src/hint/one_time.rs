@@ -141,39 +141,7 @@ fn content(title: &str, blocks: Vec<Block>) -> HintContent {
 #[expect(clippy::too_many_lines, reason = "a lookup table, one arm per hint")]
 pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
     Some(match hint {
-        OneTimeHint::FirstLogin => content(
-            "Welcome to Zwipe",
-            vec![
-                bullet(vec![
-                    key("Decks"),
-                    text(" shows your latest. "),
-                    key("Create a deck"),
-                    text(" starts one; "),
-                    key("All decks"),
-                    text(" opens the full list"),
-                ]),
-                bullet(vec![
-                    key("Colors"),
-                    text(" counts your decks' cards by color. "),
-                    key("Playstyle"),
-                    text(" suggests commanders"),
-                ]),
-                bullet(vec![
-                    key("Account"),
-                    text(", the "),
-                    icon_key(KeyIcon::Person),
-                    text(" up top or in the menu, has your email, password and Log out. "),
-                    key("Settings"),
-                    text(", the "),
-                    icon_key(KeyIcon::Cog),
-                    text(" beside it, sets your theme and which cards show"),
-                ]),
-                bullet(vec![
-                    emph("Verify your email", Role::Warning),
-                    text(" in Account to lift the deck and card limits"),
-                ]),
-            ],
-        ),
+        OneTimeHint::FirstLogin => welcome(/* ask_to_verify */ true),
         OneTimeHint::Profile => content(
             "Your account",
             vec![
@@ -622,6 +590,53 @@ pub fn swipe_select(mode: SwipeSelectMode) -> HintContent {
     content(title, blocks)
 }
 
+/// [`content_for`] for an account whose email is verified (`email_verified`) or not: a verified
+/// account's welcome leaves out verifying it. Every other hint reads the same.
+#[must_use]
+pub fn content_for_user(hint: OneTimeHint, email_verified: bool) -> Option<HintContent> {
+    if hint == OneTimeHint::FirstLogin {
+        return Some(welcome(!email_verified));
+    }
+    content_for(hint)
+}
+
+/// Home's welcome, with the line that asks to verify the email when `ask_to_verify`.
+fn welcome(ask_to_verify: bool) -> HintContent {
+    let mut blocks = vec![
+        bullet(vec![
+            key("Decks"),
+            text(" shows your latest. "),
+            key(crate::screens::home::NEW_DECK),
+            text(" starts one; "),
+            key("All decks"),
+            text(" opens the full list"),
+        ]),
+        bullet(vec![
+            key("Colors"),
+            text(" counts your decks' cards by color. "),
+            key("Playstyle"),
+            text(" suggests commanders"),
+        ]),
+        bullet(vec![
+            key("Account"),
+            text(", the "),
+            icon_key(KeyIcon::Person),
+            text(" up top or in the menu, has your email, password and Log out. "),
+            key("Settings"),
+            text(", the "),
+            icon_key(KeyIcon::Cog),
+            text(" beside it, sets your theme and which cards show"),
+        ]),
+    ];
+    if ask_to_verify {
+        blocks.push(bullet(vec![
+            emph("Verify your email", Role::Warning),
+            text(" in Account to lift the deck and card limits"),
+        ]));
+    }
+    content("Welcome to Zwipe", blocks)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -652,6 +667,36 @@ mod tests {
     }
 
     #[test]
+    fn a_verified_account_s_welcome_leaves_out_verifying_the_email() {
+        let lines = |verified| -> Vec<String> {
+            content_for_user(OneTimeHint::FirstLogin, verified)
+                .unwrap()
+                .blocks
+                .iter()
+                .map(Block::plain)
+                .collect()
+        };
+        let verify = "Verify your email in Account to lift the deck and card limits".to_owned();
+        assert!(
+            lines(false).contains(&verify),
+            "an unverified account is told"
+        );
+        assert!(!lines(true).contains(&verify), "a verified one is not");
+        assert_eq!(lines(true).len(), 3);
+        assert_eq!(
+            content_for_user(OneTimeHint::Profile, true),
+            content_for(OneTimeHint::Profile),
+            "every other hint reads the same"
+        );
+    }
+
+    #[test]
+    fn the_welcome_names_create_deck_as_its_button_does() {
+        let first = content_for(OneTimeHint::FirstLogin).unwrap().blocks[0].plain();
+        assert!(first.contains(crate::screens::home::NEW_DECK), "{first}");
+    }
+
+    #[test]
     fn home_s_hint_is_short_and_plain() {
         let welcome = content_for(OneTimeHint::FirstLogin).unwrap();
         assert_eq!(welcome.title, "Welcome to Zwipe");
@@ -659,7 +704,7 @@ mod tests {
         assert_eq!(
             lines,
             [
-                "Decks shows your latest. Create a deck starts one; All decks opens the full list",
+                "Decks shows your latest. Create deck starts one; All decks opens the full list",
                 "Colors counts your decks' cards by color. Playstyle suggests commanders",
                 "Account, the person up top or in the menu, has your email, password and Log out. Settings, the cog beside it, sets your theme and which cards show",
                 "Verify your email in Account to lift the deck and card limits",

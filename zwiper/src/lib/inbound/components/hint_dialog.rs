@@ -73,12 +73,18 @@ pub fn open_and_record_hint(
     });
 }
 
-/// The dialog `hint` opens: its copy from [`one_time::content_for`] and its
+/// The dialog `hint` opens: its copy from [`one_time::content_for_user`], for the session's account, and its
 /// guide link, when zwipe.net has one. Nothing for a hint whose copy is
 /// built per overlay, like Swipe select.
 #[component]
 pub fn OneTimeHintDialog(open: Signal<bool>, hint: OneTimeHint) -> Element {
-    let Some(content) = one_time::content_for(hint) else {
+    // The session's account says whether its email is verified, which Home's welcome reads.
+    let session: Signal<Option<Session>> = use_context();
+    let verified = session
+        .read()
+        .as_ref()
+        .is_some_and(|s| s.user.email_verified_at.is_some());
+    let Some(content) = one_time::content_for_user(hint, verified) else {
         return rsx! {};
     };
     rsx! {
