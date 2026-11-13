@@ -19,7 +19,7 @@ use zwipe_core::domain::deck::{
 use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_core::http::contracts::deck::{HttpCreateDeckProfile, HttpUpdateDeckProfile};
 
-use crate::deck::form::{self, Cascade, FormValues, Slot, Step};
+use crate::deck::form::{self, Cascade, FormValues, LeftZones, Slot, Step};
 use crate::deck::pickers::{self, Draft, PartnerAutofill, Picker, TagPicker, Tapped};
 use crate::generation::{Generation, Ticket};
 use crate::hint::HintTopic;
@@ -565,6 +565,9 @@ pub struct State {
     asking_discard: bool,
     /// The oracle tags the deck tags seeded last, which the next reseed swaps out.
     applied_seed: Vec<String>,
+    /// Each format's command zone as this form last left that format, which picking it again
+    /// brings back. Only for as long as the form is open.
+    left_zones: LeftZones<ZoneSnapshot>,
     catalog: Vec<DeckTagView>,
     saving: bool,
     waiting: Vec<(Ticket, Request)>,
@@ -592,6 +595,7 @@ impl State {
             picker: None,
             asking_discard: false,
             applied_seed: Vec::new(),
+            left_zones: LeftZones::default(),
             catalog: Vec::new(),
             saving: false,
             waiting: Vec::new(),
@@ -1163,13 +1167,58 @@ impl State {
         }]
     }
 
-    /// Picks or clears the format, emptying each slot the change clears.
+    /// Picks or clears the format, emptying each slot the change clears. The command zone the
+    /// old format had is kept for it, and a format this form left before gets its own back.
     fn set_format(&mut self, format: Option<Format>) {
+        let zone = self.zone_snapshot();
+        self.left_zones.leave(self.values.format, format, || zone);
         let cascade = match format {
             Some(format) => self.values.pick_format(format),
             None => self.values.clear_format(),
         };
         self.apply(&cascade);
+        if let Some(zone) = self.left_zones.back(format) {
+            self.restore_zone(zone);
+        }
+    }
+
+    /// The command zone and what its fields show, with the land target.
+    fn zone_snapshot(&self) -> ZoneSnapshot {
+        ZoneSnapshot {
+            land_target: self.values.land_target,
+            commander: self.values.commander.clone(),
+            commander_display: self.searches.commander.display.clone(),
+            partner: self.values.partner.clone(),
+            partner_field: self.searches.partner.field(),
+            background: self.values.background.clone(),
+            background_field: self.searches.background.field(),
+            signature_spell: self.values.signature_spell.clone(),
+            signature_spell_display: self.searches.signature_spell.display.clone(),
+        }
+    }
+
+    /// Puts the command zone in `zone` back, with what its fields showed. The land target stays as
+    /// the format change left it.
+    fn restore_zone(&mut self, zone: ZoneSnapshot) {
+        let ZoneSnapshot {
+            land_target: _,
+            commander,
+            commander_display,
+            partner,
+            partner_field,
+            background,
+            background_field,
+            signature_spell,
+            signature_spell_display,
+        } = zone;
+        self.values.commander = commander;
+        self.searches.commander.display = commander_display;
+        self.values.partner = partner;
+        self.searches.partner.set_field(partner_field);
+        self.values.background = background;
+        self.searches.background.set_field(background_field);
+        self.values.signature_spell = signature_spell;
+        self.searches.signature_spell.display = signature_spell_display;
     }
 
     /// Resets what the fields show for the slots a knock-on clear emptied.
@@ -1224,17 +1273,7 @@ impl State {
         self.picker = Some(match picker {
             Picker::Format => OpenPicker::Format {
                 draft: Draft::format(self.values.format),
-                zone: Box::new(ZoneSnapshot {
-                    land_target: self.values.land_target,
-                    commander: self.values.commander.clone(),
-                    commander_display: self.searches.commander.display.clone(),
-                    partner: self.values.partner.clone(),
-                    partner_field: self.searches.partner.field(),
-                    background: self.values.background.clone(),
-                    background_field: self.searches.background.field(),
-                    signature_spell: self.values.signature_spell.clone(),
-                    signature_spell_display: self.searches.signature_spell.display.clone(),
-                }),
+                zone: Box::new(self.zone_snapshot()),
             },
             Picker::DeckTags => self.tag_draft(TagPicker::DeckTags),
             Picker::OracleTags => self.tag_draft(TagPicker::OracleTags),

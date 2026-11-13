@@ -17,7 +17,7 @@ use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::deck::{DeckOtherTag, DeckProfile, Format, PowerLevel};
-use zwipe_ui::deck::form::{Slot, follow_land_target};
+use zwipe_ui::deck::form::{LeftZones, Slot, follow_land_target};
 use zwipe_ui::screens::deck_form;
 
 use crate::domain::deck::FormValues;
@@ -122,7 +122,14 @@ pub struct DeckForm {
     pub tags_open: Signal<bool>,
     /// Whether the oracle tag picker is open.
     pub oracle_tags_open: Signal<bool>,
+    /// Each format's command zone as this form last left it, which picking the format again
+    /// brings back, for as long as the form is open.
+    pub left_zones: Signal<LeftZones<Zone>>,
 }
+
+/// The command zone as it stands: each slot's card and what its field shows, in [`Slot::ALL`]'s
+/// order.
+pub type Zone = [(Option<Card>, String); 4];
 
 impl DeckForm {
     /// The state of `slot`.
@@ -172,10 +179,39 @@ impl DeckForm {
             .set(zwipe_core::domain::deck::seed_oracle_tags(&profile.tags));
     }
 
+    /// The command zone as it stands.
+    fn zone(self) -> Zone {
+        Slot::ALL.map(|slot| {
+            let state = self.slot(slot);
+            (state.card.peek().clone(), state.text.peek().clone())
+        })
+    }
+
+    /// Keeps the zone for the format the form leaves for `to`, which picking it again brings back.
+    fn leave_format(mut self, to: Option<Format>) {
+        let zone = self.zone();
+        let from = *self.format.peek();
+        self.left_zones.write().leave(from, to, || zone);
+    }
+
+    /// Puts back the zone `format` had when the form last left it, if it did.
+    fn zone_back(self, format: Format) {
+        let Some(zone) = self.left_zones.peek().back(Some(format)) else {
+            return;
+        };
+        for (slot, (card, text)) in Slot::ALL.into_iter().zip(zone) {
+            let mut state = self.slot(slot);
+            state.card.set(card);
+            state.text.set(text);
+        }
+    }
+
     /// Sets the format from the picker: the commander goes, and the
     /// signature spell unless the new format has one. A land target still at
-    /// the old format's usual count moves to the new one's.
+    /// the old format's usual count moves to the new one's. A format this
+    /// form left before gets its command zone back.
     pub fn select_format(mut self, format: Format) {
+        self.leave_format(Some(format));
         let target =
             follow_land_target(*self.land_target.peek(), *self.format.peek(), Some(format));
         self.land_target.set(target);
@@ -184,10 +220,12 @@ impl DeckForm {
         if !format.has_signature_spell() {
             self.signature_spell.clear_card();
         }
+        self.zone_back(format);
     }
 
     /// Clears the format, the commander and the signature spell.
     pub fn clear_format(mut self) {
+        self.leave_format(None);
         self.format.set(None);
         self.commander.clear_card();
         self.signature_spell.clear_card();
@@ -213,6 +251,7 @@ pub fn use_deck_form() -> DeckForm {
         tags: Signal::new(Vec::new()),
         applied_seed: Signal::new(Vec::new()),
         oracle_tags: Signal::new(Vec::new()),
+        left_zones: Signal::new(LeftZones::default()),
         other_tags: Signal::new(Vec::new()),
         format_open: Signal::new(false),
         tags_open: Signal::new(false),

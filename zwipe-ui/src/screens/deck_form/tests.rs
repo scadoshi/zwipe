@@ -681,6 +681,70 @@ fn a_format_change_clears_the_command_zone_and_turns_every_filter_on() {
 }
 
 #[test]
+fn a_format_picked_back_within_the_form_brings_its_command_zone_back() {
+    let mut state = create();
+    let _ = state.update(Action::TapFormat(Format::Commander));
+    let _ = state.update(Action::PickSwiped {
+        slot: Slot::Commander,
+        card: Box::new(card("Krenko")),
+    });
+    let _ = state.update(Action::TapFormat(Format::Oathbreaker));
+    assert_eq!(
+        names(&state, Slot::Commander),
+        None,
+        "Oathbreaker clears it"
+    );
+    let _ = state.update(Action::PickSwiped {
+        slot: Slot::Commander,
+        card: Box::new(card("Walker")),
+    });
+    let _ = state.update(Action::PickSwiped {
+        slot: Slot::SignatureSpell,
+        card: Box::new(card("Spell")),
+    });
+
+    let _ = state.update(Action::TapFormat(Format::Commander));
+    assert_eq!(
+        names(&state, Slot::Commander).as_deref(),
+        Some("Krenko"),
+        "Commander's own commander comes back"
+    );
+    assert_eq!(state.display(Slot::Commander), "Krenko");
+    assert_eq!(names(&state, Slot::SignatureSpell), None);
+
+    let _ = state.update(Action::TapFormat(Format::Oathbreaker));
+    assert_eq!(names(&state, Slot::Commander).as_deref(), Some("Walker"));
+    assert_eq!(
+        names(&state, Slot::SignatureSpell).as_deref(),
+        Some("Spell")
+    );
+
+    let _ = state.update(Action::ClearFormat);
+    assert_eq!(names(&state, Slot::Commander), None);
+    let _ = state.update(Action::TapFormat(Format::Oathbreaker));
+    assert_eq!(
+        names(&state, Slot::Commander).as_deref(),
+        Some("Walker"),
+        "a cleared format picked again brings its zone back"
+    );
+}
+
+#[test]
+fn a_new_form_brings_back_nothing_from_another() {
+    let mut first = create();
+    let _ = first.update(Action::TapFormat(Format::Commander));
+    let _ = first.update(Action::PickSwiped {
+        slot: Slot::Commander,
+        card: Box::new(card("Krenko")),
+    });
+    let _ = first.update(Action::TapFormat(Format::Oathbreaker));
+    let mut second = create();
+    let _ = second.update(Action::TapFormat(Format::Oathbreaker));
+    let _ = second.update(Action::TapFormat(Format::Commander));
+    assert_eq!(names(&second, Slot::Commander), None);
+}
+
+#[test]
 fn the_format_picker_puts_the_command_zone_back_on_back() {
     let mut state = create();
     let _ = state.update(Action::TapFormat(Format::Commander));
