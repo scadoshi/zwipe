@@ -424,11 +424,18 @@
   grid-template-rows: 1fr;
   /* Visible at steady state so floating search results (.search-float-results)
      can escape the panel; the open keyframes pin overflow to hidden for the
-     animation's 300ms (both endpoints hold the same discrete value), and the
+     animation's 180ms (both endpoints hold the same discrete value), and the
      closed base rule clips the collapse transition. */
   overflow: visible;
   padding-bottom: 0.5rem;
-  animation: accordion-open 300ms ease;
+  animation: accordion-open 180ms ease;
+}
+
+/* While a section is open, any other shuts at once: one layout change per
+   tap, so nothing above the opened section moves it after it shows. A lone
+   section closing keeps the ease. */
+.accordion:has(.accordion-content[data-open="true"]) .accordion-content:not([data-open="true"]) {
+  transition: none;
 }
 
 /* Inner wrapper needed for grid animation */
@@ -437,13 +444,14 @@
   overflow: hidden;
 }
 
-/* An opening section's rows stay hidden while its height eases open, then
-   fade in whole: no row shows half revealed, and none moves while seen. */
+/* An opening section's rows stay hidden through most of its height ease and
+   fade in whole as it ends: no row shows half revealed, and none moves while
+   seen. */
 .accordion-content[data-open="true"] > * {
   overflow: visible;
   animation:
-    accordion-open-guard 300ms ease,
-    accordion-content-in 150ms ease 300ms both;
+    accordion-open-guard 180ms ease,
+    accordion-content-in 120ms ease 80ms both;
 }
 
 @keyframes accordion-content-in {
@@ -458,7 +466,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .accordion-content[data-open="true"] > * {
-    animation: accordion-open-guard 300ms ease;
+    animation: accordion-open-guard 180ms ease;
   }
 }
 

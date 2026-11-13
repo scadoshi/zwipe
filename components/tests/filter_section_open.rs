@@ -17,8 +17,8 @@ fn rule(selector: &str) -> Option<&'static str> {
 fn an_opening_section_fades_its_rows_in_after_the_height_ease() {
     let body = rule(r#".accordion-content[data-open="true"] > *"#).unwrap_or_default();
     assert!(
-        body.contains("accordion-content-in 150ms ease 300ms both"),
-        "the rows wait out the 300ms ease hidden, then fade in: {body}"
+        body.contains("accordion-content-in 120ms ease 80ms both"),
+        "the rows stay hidden through most of the 180ms ease, then fade in: {body}"
     );
     assert!(FILTER_CSS.contains("@keyframes accordion-content-in"));
 }
@@ -37,4 +37,13 @@ fn the_open_section_scrolls_into_view_at_once() {
         OPEN_SECTION_SCROLL_JS.contains(r#".accordion-item[data-open="true"]"#),
         "the open item, not a counted position: {OPEN_SECTION_SCROLL_JS}"
     );
+}
+
+#[test]
+fn a_section_that_closes_for_another_shuts_at_once() {
+    let body = rule(
+        r#".accordion:has(.accordion-content[data-open="true"]) .accordion-content:not([data-open="true"])"#,
+    )
+    .unwrap_or_default();
+    assert!(body.contains("transition: none"), "{body}");
 }

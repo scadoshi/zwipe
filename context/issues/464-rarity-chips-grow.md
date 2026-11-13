@@ -25,5 +25,21 @@ Local web, shared Atraxa deck, 1009x958, headless Chrome screencast of dock Filt
 - **Before:** the first chip line shows, then the second, while the sheet scrolls.
 - **After:** the header holds still while the section opens empty, and the sheet moves once at about 300 ms. All 6 chips fade in together from about 330 ms, already in place.
 
-## Verification
--
+## Follow-up
+surfer's after (halo `~/surfer-shots/after-464/`) passed the main goal, with notes:
+1. **Lag:** the empty beat read as lag: about 350 ms open but empty, then a 130 ms fade.
+2. **Intermittent second scroll step:** 2 of 25.
+3. **"Include x" line pushing the chips:** retracted by surfer, a sampler artifact; re-measured, no push.
+
+Cause of 2: the section that closed for the new one eased shut over 300 ms, the same span as the one-shot scroll's delay. When the timer fired before the collapse ended, the rest of the collapse moved the content again, through the browser's scroll anchoring or a clamp.
+
+Fix:
+- **Open ease:** 180 ms. The rows fade in from 80 ms over 120 ms, overlapping its end.
+- **Switching sections:** while a section is open, any other shuts at once (`.accordion:has(...)` with no transition), so a tap is one layout change. A lone section closing keeps its ease.
+- **Scroll:** runs once, the frame after the tap draws (`requestAnimationFrame`), before the rows show.
+- **Bottom pad:** so a section near the end reaches the top at once, the accordion takes a bottom pad of one sheet height, trimmed after the ease to the room the position still needs. A close resets it.
+
+Checked: 24 opens (Rarity, Sort, Types, Config, Mana, Price, switching each way, three fresh loads, first opens included) at 1440 in headless Chrome, sampling every frame:
+- the rows first show 74 to 94 ms after the section renders and are fully in by 175 to 195 ms;
+- nothing moves once any row is visible (0 of 24);
+- the sheet scrolls at most one step after the instant shut, both before the rows show.

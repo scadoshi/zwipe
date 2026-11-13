@@ -256,8 +256,8 @@ pub(crate) fn CardFilterSheet(
                     collapsible: true,
 
                     AccordionItem { index: next_idx(),
-                        on_change: move |is_open| {
-                            if is_open { let _ = document::eval(components::OPEN_SECTION_SCROLL_JS); }
+                        on_change: move |_| {
+                            let _ = document::eval(components::OPEN_SECTION_SCROLL_JS);
                         },
                         AccordionTrigger {
                             {Section::Name.title()}
@@ -267,8 +267,8 @@ pub(crate) fn CardFilterSheet(
                     }
 
                     AccordionItem { index: next_idx(),
-                        on_change: move |is_open| {
-                            if is_open { let _ = document::eval(components::OPEN_SECTION_SCROLL_JS); }
+                        on_change: move |_| {
+                            let _ = document::eval(components::OPEN_SECTION_SCROLL_JS);
                         },
                         AccordionTrigger {
                             {Section::OracleText.title()}
@@ -278,8 +278,8 @@ pub(crate) fn CardFilterSheet(
                     }
 
                     AccordionItem { index: next_idx(),
-                        on_change: move |is_open| {
-                            if is_open { let _ = document::eval(components::OPEN_SECTION_SCROLL_JS); }
+                        on_change: move |_| {
+                            let _ = document::eval(components::OPEN_SECTION_SCROLL_JS);
                         },
                         AccordionTrigger {
                             {Section::Types.title()}
@@ -289,8 +289,8 @@ pub(crate) fn CardFilterSheet(
                     }
 
                     AccordionItem { index: next_idx(),
-                        on_change: move |is_open| {
-                            if is_open { let _ = document::eval(components::OPEN_SECTION_SCROLL_JS); }
+                        on_change: move |_| {
+                            let _ = document::eval(components::OPEN_SECTION_SCROLL_JS);
                         },
                         AccordionTrigger {
                             {Section::Mana.title()}
@@ -300,8 +300,8 @@ pub(crate) fn CardFilterSheet(
                     }
 
                     AccordionItem { index: next_idx(),
-                        on_change: move |is_open| {
-                            if is_open { let _ = document::eval(components::OPEN_SECTION_SCROLL_JS); }
+                        on_change: move |_| {
+                            let _ = document::eval(components::OPEN_SECTION_SCROLL_JS);
                         },
                         AccordionTrigger {
                             {Section::Combat.title()}
@@ -311,8 +311,8 @@ pub(crate) fn CardFilterSheet(
                     }
 
                     AccordionItem { index: next_idx(),
-                        on_change: move |is_open| {
-                            if is_open { let _ = document::eval(components::OPEN_SECTION_SCROLL_JS); }
+                        on_change: move |_| {
+                            let _ = document::eval(components::OPEN_SECTION_SCROLL_JS);
                         },
                         AccordionTrigger {
                             {Section::FlavorText.title()}
@@ -322,8 +322,8 @@ pub(crate) fn CardFilterSheet(
                     }
 
                     AccordionItem { index: next_idx(),
-                        on_change: move |is_open| {
-                            if is_open { let _ = document::eval(components::OPEN_SECTION_SCROLL_JS); }
+                        on_change: move |_| {
+                            let _ = document::eval(components::OPEN_SECTION_SCROLL_JS);
                         },
                         AccordionTrigger {
                             {Section::Artist.title()}
@@ -333,8 +333,8 @@ pub(crate) fn CardFilterSheet(
                     }
 
                     AccordionItem { index: next_idx(),
-                        on_change: move |is_open| {
-                            if is_open { let _ = document::eval(components::OPEN_SECTION_SCROLL_JS); }
+                        on_change: move |_| {
+                            let _ = document::eval(components::OPEN_SECTION_SCROLL_JS);
                         },
                         AccordionTrigger {
                             {Section::Rarity.title()}
@@ -344,8 +344,8 @@ pub(crate) fn CardFilterSheet(
                     }
 
                     AccordionItem { index: next_idx(),
-                        on_change: move |is_open| {
-                            if is_open { let _ = document::eval(components::OPEN_SECTION_SCROLL_JS); }
+                        on_change: move |_| {
+                            let _ = document::eval(components::OPEN_SECTION_SCROLL_JS);
                         },
                         AccordionTrigger {
                             {Section::CardRoles.title()}
@@ -355,8 +355,8 @@ pub(crate) fn CardFilterSheet(
                     }
 
                     AccordionItem { index: next_idx(),
-                        on_change: move |is_open| {
-                            if is_open { let _ = document::eval(components::OPEN_SECTION_SCROLL_JS); }
+                        on_change: move |_| {
+                            let _ = document::eval(components::OPEN_SECTION_SCROLL_JS);
                         },
                         AccordionTrigger {
                             {Section::OracleTags.title()}
@@ -373,8 +373,8 @@ pub(crate) fn CardFilterSheet(
                     }
 
                     AccordionItem { index: next_idx(),
-                        on_change: move |is_open| {
-                            if is_open { let _ = document::eval(components::OPEN_SECTION_SCROLL_JS); }
+                        on_change: move |_| {
+                            let _ = document::eval(components::OPEN_SECTION_SCROLL_JS);
                         },
                         AccordionTrigger {
                             {Section::Set.title()}
@@ -385,8 +385,8 @@ pub(crate) fn CardFilterSheet(
 
                     if show_format_filter {
                         AccordionItem { index: next_idx(),
-                            on_change: move |is_open| {
-                                if is_open { let _ = document::eval(components::OPEN_SECTION_SCROLL_JS); }
+                            on_change: move |_| {
+                            let _ = document::eval(components::OPEN_SECTION_SCROLL_JS);
                             },
                             AccordionTrigger {
                                 {Section::Format.title()}
@@ -397,8 +397,8 @@ pub(crate) fn CardFilterSheet(
                     }
 
                     AccordionItem { index: next_idx(),
-                        on_change: move |is_open| {
-                            if is_open { let _ = document::eval(components::OPEN_SECTION_SCROLL_JS); }
+                        on_change: move |_| {
+                            let _ = document::eval(components::OPEN_SECTION_SCROLL_JS);
                         },
                         AccordionTrigger {
                             {Section::Price.title()}
@@ -408,8 +408,8 @@ pub(crate) fn CardFilterSheet(
                     }
 
                     AccordionItem { index: next_idx(),
-                        on_change: move |is_open| {
-                            if is_open { let _ = document::eval(components::OPEN_SECTION_SCROLL_JS); }
+                        on_change: move |_| {
+                            let _ = document::eval(components::OPEN_SECTION_SCROLL_JS);
                         },
                         AccordionTrigger {
                             {Section::Sort.title()}
@@ -419,8 +419,8 @@ pub(crate) fn CardFilterSheet(
                     }
 
                     AccordionItem { index: next_idx(),
-                        on_change: move |is_open| {
-                            if is_open { let _ = document::eval(components::OPEN_SECTION_SCROLL_JS); }
+                        on_change: move |_| {
+                            let _ = document::eval(components::OPEN_SECTION_SCROLL_JS);
                         },
                         AccordionTrigger {
                             {Section::Config.title()}

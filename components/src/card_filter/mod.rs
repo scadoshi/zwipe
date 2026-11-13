@@ -194,6 +194,7 @@ pub fn CardFilterPanel(
     let mut toggle_section = move |section: Section| {
         if open_section.peek().as_ref() == Some(&section) {
             set_open(None);
+            document::eval(OPEN_SECTION_SCROLL_JS);
             return;
         }
         set_open(Some(section));
@@ -343,12 +344,14 @@ fn section_id(section: Section) -> String {
     format!("filter-section-{section:?}")
 }
 
-/// Scrolls the filter's open section to the top of its sheet, as the app does: once, instantly,
-/// at 300 ms, as the height ease ends and the section's rows start to fade in (`filter.css`,
-/// `accordion-content-in`), so the sheet moves once, before the rows show, and never under the
-/// pointer. By then the section has its full height, so even one near the sheet's end reaches the
-/// top. One section opens at a time, so the open one is the one that asked.
-pub const OPEN_SECTION_SCROLL_JS: &str = "(() => { const go = () => { const el = document.querySelector('#filter-accordion .accordion-item[data-open=\"true\"]'); if (el) el.scrollIntoView({ behavior: 'instant', block: 'start' }); }; setTimeout(go, 300); })()";
+/// Brings the filter's open section to the top of its sheet, as the app does, the frame after the
+/// tap draws it and before its rows show (they fade in from 80 ms, `filter.css`), so nothing ever
+/// moves under the pointer. One section opens at a time, and the one that closes for it shuts at
+/// once, so this is the tap's only layout change. The scroll is instant and runs once. A section
+/// near the sheet's end could not reach the top until its height had eased open, so the accordion
+/// takes a bottom pad of one sheet's height for the jump, trimmed once the ease ends (220 ms) to
+/// exactly the room the position still needs. With no section open the pad goes.
+pub const OPEN_SECTION_SCROLL_JS: &str = "(() => { const acc = document.getElementById('filter-accordion'); if (!acc) return; const box = (n) => { for (let p = n.parentElement; p; p = p.parentElement) { const o = getComputedStyle(p).overflowY; if (o === 'auto' || o === 'scroll') return p; } return document.scrollingElement; }; requestAnimationFrame(() => { const el = acc.querySelector('.accordion-item[data-open=\"true\"]'); if (!el) { acc.style.paddingBottom = ''; return; } const sc = box(acc); acc.style.paddingBottom = sc.clientHeight + 'px'; el.scrollIntoView({ behavior: 'instant', block: 'start' }); setTimeout(() => { const pad = parseFloat(acc.style.paddingBottom) || 0; const slack = sc.scrollHeight - sc.scrollTop - sc.clientHeight; acc.style.paddingBottom = Math.max(0, pad - slack) + 'px'; }, 220); }); })()";
 
 /// How long a section takes to ease shut, in milliseconds: the accordion's
 /// 300ms collapse.
