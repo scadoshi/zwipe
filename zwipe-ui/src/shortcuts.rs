@@ -174,6 +174,20 @@ pub fn everywhere_groups() -> Vec<SheetGroup> {
     })
 }
 
+/// `groups` with the hint key's row ([`HINT_ROW`]) taken out, for a page with no hint, where `?`
+/// does nothing. A group left with no rows goes too.
+#[must_use]
+pub fn without_hint(groups: Vec<SheetGroup>) -> Vec<SheetGroup> {
+    groups
+        .into_iter()
+        .map(|group| {
+            let rows = group.rows.into_iter().filter(|row| *row != HINT_ROW);
+            SheetGroup::new(group.title, rows)
+        })
+        .filter(|group| !group.rows.is_empty())
+        .collect()
+}
+
 /// Every row of `groups` in order, for checks that read the sheet as one list.
 #[must_use]
 pub fn rows_of(groups: &[SheetGroup]) -> Vec<SheetRow> {
@@ -355,9 +369,6 @@ pub fn examples_rows() -> [SheetRow; 4] {
     ]
 }
 
-/// The line the deck cards page's sheet shows above its keys.
-pub const DECK_CARDS_NOTE: &str = "Move to a card, or hover it, then press its key";
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -461,6 +472,20 @@ mod tests {
                 ("In Themes", vec!["↑", "h", "gg", "Enter"]),
             ]
         );
+    }
+
+    #[test]
+    fn a_page_with_no_hint_loses_only_the_hint_key() {
+        assert_eq!(
+            outline(&without_hint(everywhere_groups())),
+            vec![
+                ("Navigation", vec!["gg", "Shift+G", "j", "k"]),
+                ("Page", vec!["t", "Shift+H", "Esc"]),
+                ("In Themes", vec!["↑", "h", "gg", "Enter"]),
+            ]
+        );
+        let only_hint = vec![SheetGroup::new("Page", [HINT_ROW])];
+        assert!(without_hint(only_hint).is_empty(), "an emptied group goes");
     }
 
     #[test]

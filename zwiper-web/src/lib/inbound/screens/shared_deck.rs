@@ -259,7 +259,7 @@ fn SharedDeckView(
     // The read-only deck page's keys on the shortcuts sheet.
     use_offer_shortcuts(ShortcutsList {
         groups: shortcuts::deck_cards_groups(Editable::No),
-        note: Some(shortcuts::DECK_CARDS_NOTE),
+        note: None,
         claims_steps: true,
     });
     let boards = use_signal(Boards::default);

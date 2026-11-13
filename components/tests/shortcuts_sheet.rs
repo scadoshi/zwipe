@@ -6,7 +6,9 @@
     reason = "test helpers: a failed runtime build fails the test"
 )]
 
-use components::keys::{ShortcutsList, ShortcutsSheet, use_offer_shortcuts, use_shortcuts_root};
+use components::keys::{
+    ShortcutsList, ShortcutsSheet, use_global_keys, use_offer_shortcuts, use_shortcuts_root,
+};
 use dioxus::dioxus_core::NoOpMutations;
 use dioxus::prelude::*;
 
@@ -84,4 +86,67 @@ fn with_no_screen_offering_keys_the_sheet_lists_the_keys_every_page_answers() {
         assert!(html.contains(text), "{text}: {html}");
     }
     assert!(!html.contains("Printings"), "{html}");
+}
+
+/// The hint key's row, as the sheet writes what it does, HTML-escaped.
+const HINT_ROW: &str = "This page&#39;s hint";
+
+/// A page whose `?` opens its hint.
+#[component]
+fn HintedPage() -> Element {
+    use_global_keys(Some(use_callback(|()| {})));
+    rsx! {}
+}
+
+/// A page with no hint.
+#[component]
+fn PlainPage() -> Element {
+    use_global_keys(None);
+    rsx! {}
+}
+
+#[test]
+fn a_site_with_no_hint_lists_no_hint_key() {
+    fn app() -> Element {
+        let open = use_shortcuts_root(None);
+        rsx! {
+            ShortcutsSheet { open }
+        }
+    }
+    let html = render(app);
+    assert!(!html.contains(HINT_ROW), "{html}");
+    assert!(
+        html.contains("These shortcuts"),
+        "the other page keys stay: {html}"
+    );
+}
+
+#[test]
+fn a_page_with_a_hint_lists_the_hint_key() {
+    fn app() -> Element {
+        let open = use_shortcuts_root(None);
+        rsx! {
+            HintedPage {}
+            ShortcutsSheet { open }
+        }
+    }
+    let html = render(app);
+    assert!(html.contains(HINT_ROW), "{html}");
+}
+
+#[test]
+fn a_page_with_no_hint_over_one_with_a_hint_lists_no_hint_key() {
+    fn app() -> Element {
+        let open = use_shortcuts_root(None);
+        rsx! {
+            HintedPage {}
+            PlainPage {}
+            ShortcutsSheet { open }
+        }
+    }
+    let html = render(app);
+    assert!(
+        !html.contains(HINT_ROW),
+        "the newest page answers ?: {html}"
+    );
 }

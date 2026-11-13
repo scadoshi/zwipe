@@ -1,5 +1,6 @@
 //! The web's screens offer their keys to components' shortcuts sheet: each [`ShortcutsScreen`]'s
-//! groups and note, a swipe screen's swipes named as its dock names them.
+//! groups, a swipe screen's swipes named as its dock names them. The groups say where each key
+//! acts, so no screen sets a note above them.
 
 use components::keys::{self, ShortcutsList};
 pub use components::keys::{
@@ -13,7 +14,7 @@ use crate::inbound::chrome::shortcuts::{self, ShortcutsScreen};
 pub fn use_offer_shortcuts(screen: ShortcutsScreen) {
     keys::use_offer_shortcuts(ShortcutsList {
         groups: shortcuts::sheet_groups(&screen),
-        note: shortcuts::sheet_note(&screen),
+        note: None,
         claims_steps: shortcuts::claims_steps(&screen),
     });
 }

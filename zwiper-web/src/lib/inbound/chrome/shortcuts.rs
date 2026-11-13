@@ -11,7 +11,7 @@ pub use components::keys::{
 pub use components::swipe_stack::SWIPE_LETTERS;
 use components::swipe_stack::{Swipe, swipe_key};
 use zwipe_ui::shortcuts::{
-    self, DECK_CARDS_NOTE, Editable, FLIP_ROW, ScreenKeys, SheetGroup, SheetRow, card_rows_groups,
+    self, Editable, FLIP_ROW, ScreenKeys, SheetGroup, SheetRow, card_rows_groups,
     deck_cards_groups, examples_groups, rows_of,
 };
 pub use zwipe_ui::shortcuts::{
@@ -191,15 +191,6 @@ pub fn claims_steps(screen: &ShortcutsScreen) -> bool {
     }
 }
 
-/// The line the shortcuts sheet shows above the keys on `screen`, if it needs one.
-#[must_use]
-pub fn sheet_note(screen: &ShortcutsScreen) -> Option<&'static str> {
-    match screen {
-        ShortcutsScreen::Swipe(_) | ShortcutsScreen::Examples => None,
-        ShortcutsScreen::DeckCards | ShortcutsScreen::CardRows => Some(DECK_CARDS_NOTE),
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use zwipe_ui::deck_cards::{cursor, keys as hover_keys};
@@ -359,11 +350,6 @@ mod tests {
     #[test]
     fn the_deck_cards_sheet_lists_only_that_screen_s_keys() {
         let rows = sheet_rows(&ShortcutsScreen::DeckCards);
-        assert_eq!(
-            sheet_note(&ShortcutsScreen::DeckCards),
-            Some("Move to a card, or hover it, then press its key")
-        );
-        assert_eq!(sheet_note(&ShortcutsScreen::Swipe(ADD_LABELS)), None);
         // Every listed key really does what its row says on the deck cards screen.
         for (keys, does) in &rows {
             for label in *keys {

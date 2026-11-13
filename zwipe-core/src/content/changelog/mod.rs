@@ -46,7 +46,14 @@ pub const MOBILE_STORE_VERSION: Version = Version::new(1, 18, 15);
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[];
+pub const UPCOMING: &[Release] = &[Release {
+    version: Version::new(1, 21, 4),
+    date: None,
+    entries: &[
+        "The keyboard shortcuts sheet lists ? only on a page with a hint, on the web and on zwipe.net",
+        "The web's keyboard shortcuts sheet drops the line above a deck's keys",
+    ],
+}];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[

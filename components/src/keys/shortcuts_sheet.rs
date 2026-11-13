@@ -44,6 +44,16 @@ pub struct ShortcutsList {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ShortcutsOffered(pub Signal<Vec<ShortcutsList>>);
 
+/// Every live [`use_global_keys`] registration in mount order, each with whether its page has a
+/// hint. The newest answers `?`, so the sheet lists the hint key only while it has one.
+#[derive(Debug, Clone, Copy, PartialEq)]
+struct PageHints(Signal<Vec<(Uuid, bool)>>);
+
+/// Whether the newest page's `?` opens a hint.
+fn newest_has_hint(hints: Option<PageHints>) -> bool {
+    hints.is_some_and(|PageHints(stack)| stack.read().last().is_some_and(|(_, hint)| *hint))
+}
+
 /// Provides [`ShortcutsOpen`] and [`ShortcutsOffered`] to the routes under it and answers the
 /// keys of a page with no hint of its own. Call once, above every route. Every page offers the
 /// keys it answers anywhere ([`shortcuts::everywhere_groups`], the theme sheet's among them), so
@@ -51,6 +61,7 @@ pub struct ShortcutsOffered(pub Signal<Vec<ShortcutsList>>);
 /// lists those over them. The page keys scroll `scroller` (a selector), else the document.
 pub fn use_shortcuts_root(scroller: Option<&'static str>) -> Signal<bool> {
     let open = use_context_provider(|| ShortcutsOpen(Signal::new(false))).0;
+    use_context_provider(|| PageHints(Signal::new(Vec::new())));
     use_context_provider(|| {
         ShortcutsOffered(Signal::new(vec![ShortcutsList {
             groups: shortcuts::everywhere_groups(),
@@ -117,10 +128,30 @@ pub fn use_offer_shortcuts(screen: ShortcutsList) {
 pub fn use_global_keys(on_hint: Option<Callback<()>>) {
     let open = try_use_context::<ShortcutsOpen>().map(|ShortcutsOpen(open)| open);
     let offered = try_use_context::<ShortcutsOffered>().map(|ShortcutsOffered(stack)| stack);
+    let hints = try_use_context::<PageHints>().map(|PageHints(stack)| stack);
+    let id = use_hook(Uuid::new_v4);
+    use_hook(move || {
+        if let Some(mut stack) = hints {
+            stack.write().push((id, on_hint.is_some()));
+        }
+    });
     // The page's current hint, which can change between renders.
     let mut hint = use_signal(|| on_hint);
-    use_effect(use_reactive!(|on_hint| hint.set(on_hint)));
-    let id = use_hook(Uuid::new_v4);
+    use_effect(use_reactive!(|on_hint| {
+        hint.set(on_hint);
+        if let Some(mut stack) = hints {
+            let has = on_hint.is_some();
+            let entry = stack
+                .peek()
+                .iter()
+                .position(|(at, had)| *at == id && *had != has);
+            if let Some(entry) = entry
+                && let Some(slot) = stack.write().get_mut(entry)
+            {
+                slot.1 = has;
+            }
+        }
+    }));
     use_hook(move || {
         let script = GLOBAL_KEYS_JS
             .replace("__KEY__", guard::PRESSED_KEY)
@@ -155,6 +186,9 @@ pub fn use_global_keys(on_hint: Option<Callback<()>>) {
         });
     });
     use_drop(move || {
+        if let Some(mut stack) = hints {
+            stack.write().retain(|(at, _)| *at != id);
+        }
         document::eval(&GLOBAL_KEYS_DROP_JS.replace("__ID__", &id.to_string()));
     });
 }
@@ -162,14 +196,19 @@ pub fn use_global_keys(on_hint: Option<Callback<()>>) {
 /// The shortcuts sheet: every key of the newest screen that offers it with what it does, in its
 /// groups, in the hint's key style, on orangui's [`ShortcutsSheet`](orangui::ShortcutsSheet),
 /// which sits above every screen, closes from its `Got it`, takes focus as it opens, keeps Tab
-/// inside and gives focus back as it closes.
+/// inside and gives focus back as it closes. The hint key's row shows only while the newest page
+/// has a hint for `?` to open.
 #[component]
 pub fn ShortcutsSheet(open: Signal<bool>) -> Element {
     let offered = try_use_context::<ShortcutsOffered>().map(|ShortcutsOffered(stack)| stack);
+    let hints = try_use_context::<PageHints>();
     // No screen offering the sheet (the one that did has gone): nothing to list.
-    let Some(screen) = offered.and_then(|stack| stack.read().last().cloned()) else {
+    let Some(mut screen) = offered.and_then(|stack| stack.read().last().cloned()) else {
         return rsx! {};
     };
+    if !newest_has_hint(hints) {
+        screen.groups = shortcuts::without_hint(screen.groups);
+    }
     rsx! {
         orangui::ShortcutsSheet { open, note: screen.note.map(str::to_owned),
             for group in screen.groups {
