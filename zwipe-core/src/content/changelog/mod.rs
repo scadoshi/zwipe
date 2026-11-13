@@ -46,7 +46,11 @@ pub const MOBILE_STORE_VERSION: Version = Version::new(1, 18, 15);
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[];
+pub const UPCOMING: &[Release] = &[Release {
+    version: Version::new(1, 21, 0),
+    date: None,
+    entries: &["Share puts Stop sharing first, apart from Copy link, on the web and in the app"],
+}];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
