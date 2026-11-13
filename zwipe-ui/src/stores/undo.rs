@@ -4,6 +4,7 @@
 
 use std::collections::HashMap;
 
+use chrono::{DateTime, Utc};
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::deck::{Board, DeckEntry};
@@ -52,6 +53,15 @@ pub enum UndoAction {
         card_name: String,
         /// The board it left.
         from: Board,
+    },
+    /// A card was starred or unstarred; undo puts its star back as `before` had it.
+    MvpToggled {
+        /// The card's printing ID.
+        card_id: Uuid,
+        /// Its name, for the undo toast.
+        card_name: String,
+        /// Its star time before the toggle; `None` when it was not starred.
+        before: Option<DateTime<Utc>>,
     },
     /// A deck card changed printing; undo restores `old_card`.
     PrintingChanged {

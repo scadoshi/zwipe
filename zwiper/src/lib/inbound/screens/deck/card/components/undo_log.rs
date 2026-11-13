@@ -12,6 +12,7 @@
 
 use std::collections::HashMap;
 
+use chrono::{DateTime, Utc};
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
@@ -44,6 +45,12 @@ pub(crate) enum UndoAction {
         card_id: Uuid,
         card_name: String,
         from: Board,
+    },
+    /// A card was starred or unstarred; undo puts its star back as `before` had it.
+    MvpToggled {
+        card_id: Uuid,
+        card_name: String,
+        before: Option<DateTime<Utc>>,
     },
     /// A regular deck card changed printing; undo restores the old printing.
     PrintingChanged { old_card: Card, new_id: Uuid },
@@ -84,6 +91,15 @@ impl From<UndoAction> for zwipe_ui::stores::undo::UndoAction {
                 card_id,
                 card_name,
                 from,
+            },
+            UndoAction::MvpToggled {
+                card_id,
+                card_name,
+                before,
+            } => Self::MvpToggled {
+                card_id,
+                card_name,
+                before,
             },
             UndoAction::PrintingChanged { old_card, new_id } => Self::PrintingChanged {
                 old_card: Box::new(old_card),
@@ -130,6 +146,15 @@ impl From<zwipe_ui::stores::undo::UndoAction> for UndoAction {
                 card_id,
                 card_name,
                 from,
+            },
+            Shared::MvpToggled {
+                card_id,
+                card_name,
+                before,
+            } => Self::MvpToggled {
+                card_id,
+                card_name,
+                before,
             },
             Shared::PrintingChanged { old_card, new_id } => Self::PrintingChanged {
                 old_card: *old_card,

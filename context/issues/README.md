@@ -142,6 +142,7 @@ Who checked, on which live build, what they saw.
 | [426](426-zerver-admin-clap.md) | zerver-admin parses its own arguments and reads the account as a string at lookup | fixing | thinker | - |
 | [427](427-zerver-admin-commands.md) | zerver-admin has no way to inspect, sign out, re-verify, delete, lock or re-email an account | fixing | thinker | - |
 | [428](428-narrow-web-stacks.md) | Narrow web's deck cards have no View chip, no Stacks and no group price or cart | fixing | laptop | feature/428-narrow-web-stacks |
+| [432](432-star-undo.md) | Undo on the deck page skips starring and unstarring a card | fixing | thinker | - |
 | [433](433-web-app-404.md) | app.zwipe.net answers an unknown path with 200 | open | halo | - |
 
 ## Waiting for live verification

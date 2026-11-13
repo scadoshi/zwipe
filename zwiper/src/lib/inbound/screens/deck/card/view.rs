@@ -86,6 +86,15 @@ fn to_app_undo(action: SharedUndo) -> UndoAction {
             card_name,
             from,
         },
+        SharedUndo::MvpToggled {
+            card_id,
+            card_name,
+            before,
+        } => UndoAction::MvpToggled {
+            card_id,
+            card_name,
+            before,
+        },
         SharedUndo::PrintingChanged { old_card, new_id } => UndoAction::PrintingChanged {
             old_card: *old_card,
             new_id,
@@ -129,6 +138,15 @@ fn to_shared_undo(action: UndoAction) -> SharedUndo {
             card_id,
             card_name,
             from,
+        },
+        UndoAction::MvpToggled {
+            card_id,
+            card_name,
+            before,
+        } => SharedUndo::MvpToggled {
+            card_id,
+            card_name,
+            before,
         },
         UndoAction::PrintingChanged { old_card, new_id } => SharedUndo::PrintingChanged {
             old_card: Box::new(old_card),

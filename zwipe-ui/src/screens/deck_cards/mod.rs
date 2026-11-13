@@ -105,6 +105,9 @@ pub const CARD_REMOVED: &str = "Card removed";
 /// The toast for an undo entry the deck has moved past.
 pub const ALREADY_CHANGED: &str = "Already changed";
 
+/// The toast when an undo would star a fourth MVP, in the server's words.
+pub const MVP_CAP_REACHED: &str = "This deck already has 3 MVPs";
+
 /// The collapse key of the tokens section.
 pub const TOKENS_KEY: &str = "Tokens";
 
@@ -614,6 +617,7 @@ enum Pending {
     Mvp {
         card_id: Uuid,
         before: Option<DateTime<Utc>>,
+        record: bool,
     },
     Printing {
         old: Box<Card>,
@@ -953,7 +957,9 @@ impl State {
                 }
                 vec![Effect::Refilter]
             }
-            Pending::Mvp { card_id, before } => {
+            Pending::Mvp {
+                card_id, before, ..
+            } => {
                 if let Some(entry) = self.entry_mut(card_id) {
                     entry.deck_card.mvp_at = before;
                 }
@@ -1084,11 +1090,26 @@ impl State {
                 })
                 .into_iter()
                 .collect(),
-            Some(Pending::Mvp { card_id, .. }) => {
-                if let Some(entry) = self.entry_mut(card_id) {
-                    entry.deck_card.mvp_at = deck_card.mvp_at;
-                }
-                Vec::new()
+            Some(Pending::Mvp {
+                card_id,
+                before,
+                record,
+            }) => {
+                let Some(entry) = self.entry_mut(card_id) else {
+                    return Vec::new();
+                };
+                entry.deck_card.mvp_at = deck_card.mvp_at;
+                let card_name = entry.card.scryfall_data.name.clone();
+                record
+                    .then(|| {
+                        Effect::RecordUndo(Box::new(UndoAction::MvpToggled {
+                            card_id,
+                            card_name,
+                            before,
+                        }))
+                    })
+                    .into_iter()
+                    .collect()
             }
             Some(Pending::Printing { old, new }) => {
                 let old_id = old.scryfall_data.id;
@@ -1348,23 +1369,34 @@ impl State {
     }
 
     fn toggle_mvp(&mut self, card_id: Uuid, now: DateTime<Utc>) -> Vec<Effect> {
+        let star = self
+            .entry(card_id)
+            .is_some_and(|e| e.deck_card.mvp_at.is_none());
+        self.set_mvp(card_id, star.then_some(now), Op::ToggleMvp)
+    }
+
+    /// Sets the row's star time to `mvp_at` at once and patches the star to match. A toggle (`op` [`Op::ToggleMvp`]) records undo when the server takes it; undo's own patch does not.
+    fn set_mvp(&mut self, card_id: Uuid, mvp_at: Option<DateTime<Utc>>, op: Op) -> Vec<Effect> {
         let Some(deck_id) = self.deck_id else {
             return Vec::new();
         };
         let before = self.entry(card_id).and_then(|e| e.deck_card.mvp_at);
-        let star = before.is_none();
         if let Some(entry) = self.entry_mut(card_id) {
-            entry.deck_card.mvp_at = star.then_some(now);
+            entry.deck_card.mvp_at = mvp_at;
         }
-        let ticket = self.request(Pending::Mvp { card_id, before });
+        let ticket = self.request(Pending::Mvp {
+            card_id,
+            before,
+            record: op == Op::ToggleMvp,
+        });
         vec![
             Effect::Refilter,
             Effect::PatchCard {
                 ticket,
                 deck_id,
                 card_id,
-                request: Box::new(HttpPatchDeckCard::with_mvp(star)),
-                op: Op::ToggleMvp,
+                request: Box::new(HttpPatchDeckCard::with_mvp(mvp_at.is_some())),
+                op,
             },
         ]
     }
@@ -1402,18 +1434,31 @@ impl State {
         }
     }
 
+    /// Why `action` can't be undone, as its toast: the deck moved past it, or it would star a fourth MVP.
+    fn undo_refusal(&self, action: &UndoAction) -> Option<&'static str> {
+        let stale = deck_cards::is_stale(action, &self.entries, &self.zone)
+            || matches!(action, UndoAction::QuantityChanged { net, .. } if net.checked_neg().is_none());
+        if stale {
+            return Some(ALREADY_CHANGED);
+        }
+        let restar = matches!(
+            action,
+            UndoAction::MvpToggled {
+                before: Some(_),
+                ..
+            }
+        );
+        (restar && deck_cards::mvp_count(&self.entries) >= deck_cards::MAX_MVPS)
+            .then_some(MVP_CAP_REACHED)
+    }
+
     /// Reverses a popped undo entry. A stale entry is consumed with [`ALREADY_CHANGED`] instead of a doomed request.
     fn undo(&mut self, action: UndoAction) -> Vec<Effect> {
         let Some(deck_id) = self.deck_id else {
             return Vec::new();
         };
-        let stale = deck_cards::is_stale(&action, &self.entries, &self.zone)
-            || matches!(action, UndoAction::QuantityChanged { net, .. } if net.checked_neg().is_none());
-        if stale {
-            return vec![Effect::Toast(Toast::quick(
-                ToastKind::Info,
-                ALREADY_CHANGED,
-            ))];
+        if let Some(why) = self.undo_refusal(&action) {
+            return vec![Effect::Toast(Toast::quick(ToastKind::Info, why))];
         }
         let toast = Effect::Toast(Toast::quick(
             ToastKind::Info,
@@ -1449,6 +1494,13 @@ impl State {
             UndoAction::MovedBoard { card_id, from, .. } => {
                 let mut effects = self.move_to(card_id, from, false);
                 effects.push(toast);
+                effects
+            }
+            UndoAction::MvpToggled {
+                card_id, before, ..
+            } => {
+                let mut effects = self.set_mvp(card_id, before, Op::Undo);
+                effects.insert(1, toast);
                 effects
             }
             UndoAction::PrintingChanged { old_card, new_id } => {

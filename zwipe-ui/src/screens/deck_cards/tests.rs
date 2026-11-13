@@ -1383,3 +1383,172 @@ fn the_folds_read_as_one_set() {
         "the Stacks view's headers fold from the same set as the List"
     );
 }
+
+/// Stars `card_id` and lands the server's reply, answering what the reply raised.
+fn star_and_land(state: &mut State, card_id: Uuid, now: DateTime<Utc>) -> Vec<Effect> {
+    let effects = state.update(Action::ToggleMvp { card_id, now });
+    let Some(Effect::PatchCard { ticket, .. }) = effects.last() else {
+        panic!("a toggle patches: {effects:?}");
+    };
+    let ticket = *ticket;
+    let deck_card = state
+        .entries
+        .iter()
+        .find(|e| e.card.scryfall_data.id == card_id)
+        .unwrap()
+        .deck_card
+        .clone();
+    state.update(Action::Patched {
+        ticket,
+        deck_card: Box::new(deck_card),
+    })
+}
+
+#[test]
+fn a_star_and_an_unstar_record_undo_once_the_server_takes_them() {
+    let (mut state, cards) = loaded();
+    let ring = id(&cards[0]);
+    let now = Utc::now();
+
+    let starred = star_and_land(&mut state, ring, now);
+    assert_eq!(
+        undo_records(&starred),
+        [UndoAction::MvpToggled {
+            card_id: ring,
+            card_name: "Sol Ring".to_owned(),
+            before: None,
+        }]
+    );
+
+    let landed = state.entries[0].deck_card.mvp_at;
+    let unstarred = star_and_land(&mut state, ring, now);
+    assert_eq!(
+        undo_records(&unstarred),
+        [UndoAction::MvpToggled {
+            card_id: ring,
+            card_name: "Sol Ring".to_owned(),
+            before: landed,
+        }]
+    );
+
+    let effects = state.update(Action::ToggleMvp { card_id: ring, now });
+    let Some(Effect::PatchCard { ticket, .. }) = effects.last() else {
+        panic!("a star patches");
+    };
+    let failed = state.update(Action::Failed { ticket: *ticket });
+    assert!(
+        undo_records(&effects).is_empty() && undo_records(&failed).is_empty(),
+        "a refused star records nothing"
+    );
+}
+
+#[test]
+fn undo_unstars_a_star_without_recording() {
+    let (mut state, cards) = loaded();
+    let ring = id(&cards[0]);
+    state.entries[0].deck_card.mvp_at = Some(Utc::now());
+
+    let effects = state.update(Action::Undo(Box::new(UndoAction::MvpToggled {
+        card_id: ring,
+        card_name: "Sol Ring".to_owned(),
+        before: None,
+    })));
+    assert!(!state.row(ring).unwrap().mvp);
+    assert_eq!(
+        toasts(&effects),
+        [(ToastKind::Info, "Unstarred Sol Ring".to_owned())]
+    );
+    let Some(Effect::PatchCard {
+        ticket,
+        request,
+        op: Op::Undo,
+        ..
+    }) = effects.last()
+    else {
+        panic!("undo patches the star off: {effects:?}");
+    };
+    assert!(matches!(request.mvp, Patch::Set(Some(false))));
+    let landed = state.update(Action::Patched {
+        ticket: *ticket,
+        deck_card: Box::new(state.entries[0].deck_card.clone()),
+    });
+    assert!(undo_records(&landed).is_empty(), "no ping-pong");
+}
+
+#[test]
+fn undo_restars_an_unstar_at_its_old_star_time_and_rolls_back_on_failure() {
+    let (mut state, cards) = loaded();
+    let ring = id(&cards[0]);
+    let starred_at: DateTime<Utc> = "2026-01-02T03:04:05Z".parse().unwrap();
+
+    let effects = state.update(Action::Undo(Box::new(UndoAction::MvpToggled {
+        card_id: ring,
+        card_name: "Sol Ring".to_owned(),
+        before: Some(starred_at),
+    })));
+    assert_eq!(state.entries[0].deck_card.mvp_at, Some(starred_at));
+    assert_eq!(
+        toasts(&effects),
+        [(ToastKind::Info, "Starred Sol Ring".to_owned())]
+    );
+    let Some(Effect::PatchCard {
+        ticket,
+        request,
+        op: Op::Undo,
+        ..
+    }) = effects.last()
+    else {
+        panic!("undo patches the star back: {effects:?}");
+    };
+    assert!(matches!(request.mvp, Patch::Set(Some(true))));
+    let _ = state.update(Action::Failed { ticket: *ticket });
+    assert_eq!(state.entries[0].deck_card.mvp_at, None);
+}
+
+#[test]
+fn undoing_an_unstar_with_three_mvps_starred_says_the_deck_is_full() {
+    let mut cards = library();
+    cards.extend(["Alpha", "Beta", "Gamma"].map(|name| typed(name, "Instant")));
+    let (mut state, _) = loaded_with(cards.clone(), deck_profile("Deck"));
+    let now = Utc::now();
+    for entry in state.entries.iter_mut().skip(4) {
+        entry.deck_card.mvp_at = Some(now);
+    }
+
+    let effects = state.update(Action::Undo(Box::new(UndoAction::MvpToggled {
+        card_id: id(&cards[0]),
+        card_name: "Sol Ring".to_owned(),
+        before: Some(now),
+    })));
+    assert_eq!(
+        toasts(&effects),
+        [(ToastKind::Info, MVP_CAP_REACHED.to_owned())]
+    );
+    assert_eq!(effects.len(), 1, "no doomed request");
+    assert_eq!(state.entries[0].deck_card.mvp_at, None);
+}
+
+#[test]
+fn a_star_undo_the_deck_moved_past_says_already_changed() {
+    let (mut state, cards) = loaded();
+    let ring = id(&cards[0]);
+    for action in [
+        UndoAction::MvpToggled {
+            card_id: Uuid::new_v4(),
+            card_name: "Gone".to_owned(),
+            before: None,
+        },
+        UndoAction::MvpToggled {
+            card_id: ring,
+            card_name: "Sol Ring".to_owned(),
+            before: None,
+        },
+    ] {
+        let effects = state.update(Action::Undo(Box::new(action)));
+        assert_eq!(
+            toasts(&effects),
+            [(ToastKind::Info, ALREADY_CHANGED.to_owned())],
+            "unstarred already, or gone"
+        );
+    }
+}

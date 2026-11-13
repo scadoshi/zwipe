@@ -361,6 +361,15 @@ fn into_shared(action: UndoAction) -> shared_undo::UndoAction {
             card_name,
             from,
         },
+        UndoAction::MvpToggled {
+            card_id,
+            card_name,
+            before,
+        } => shared_undo::UndoAction::MvpToggled {
+            card_id,
+            card_name,
+            before,
+        },
         UndoAction::PrintingChanged { old_card, new_id } => {
             shared_undo::UndoAction::PrintingChanged {
                 old_card: Box::new(old_card),
@@ -408,6 +417,15 @@ fn from_shared(action: shared_undo::UndoAction) -> UndoAction {
             card_id,
             card_name,
             from,
+        },
+        shared_undo::UndoAction::MvpToggled {
+            card_id,
+            card_name,
+            before,
+        } => UndoAction::MvpToggled {
+            card_id,
+            card_name,
+            before,
         },
         shared_undo::UndoAction::PrintingChanged { old_card, new_id } => {
             UndoAction::PrintingChanged {

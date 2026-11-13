@@ -7,7 +7,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use components::keys::{focus_by_id, use_undo_key};
 use components::swipe_stack::{Swipe, use_swipe_key_handler};
 use components::{
@@ -476,34 +476,59 @@ pub(crate) fn use_deck_editor(deck_id: Uuid, on_failure: LoadFailure) -> Editor 
         }
     });
 
-    let toggle_mvp = use_callback(move |(card_id, starred): (Uuid, bool)| {
-        let old = entries
-            .peek()
-            .iter()
-            .find(|e| e.deck_card.scryfall_data_id == card_id)
-            .and_then(|e| e.deck_card.mvp_at);
-        let mut set_mvp = move |at| {
-            if let Some(e) = entries
-                .write()
-                .iter_mut()
+    // Sets a row's star time at once and patches the star to match; a toggle records undo once the server takes it.
+    let set_star = use_callback(
+        move |(card_id, at, record): (Uuid, Option<DateTime<Utc>>, bool)| {
+            let Some(entry) = entries
+                .peek()
+                .iter()
                 .find(|e| e.deck_card.scryfall_data_id == card_id)
-            {
-                e.deck_card.mvp_at = at;
-            }
-        };
-        set_mvp((!starred).then(Utc::now));
-        spawn(async move {
-            let request = HttpPatchDeckCard::with_mvp(!starred);
-            match authed
-                .try_run("toggle_mvp", |c, s| async move {
-                    c.update_deck_card(deck_id, card_id, &request, &s).await
-                })
-                .await
-            {
-                Ok(saved) => set_mvp(saved.mvp_at),
-                Err(_) => set_mvp(old),
-            }
-        });
+                .cloned()
+            else {
+                return;
+            };
+            let old = entry.deck_card.mvp_at;
+            let card_name = entry.card.scryfall_data.name;
+            let mut set_mvp = move |at| {
+                if let Some(e) = entries
+                    .write()
+                    .iter_mut()
+                    .find(|e| e.deck_card.scryfall_data_id == card_id)
+                {
+                    e.deck_card.mvp_at = at;
+                }
+            };
+            set_mvp(at);
+            spawn(async move {
+                let request = HttpPatchDeckCard::with_mvp(at.is_some());
+                let name = if record { "toggle_mvp" } else { "undo" };
+                match authed
+                    .try_run(name, |c, s| async move {
+                        c.update_deck_card(deck_id, card_id, &request, &s).await
+                    })
+                    .await
+                {
+                    Ok(saved) => {
+                        set_mvp(saved.mvp_at);
+                        if record {
+                            undo.write().push(
+                                deck_id,
+                                UndoAction::MvpToggled {
+                                    card_id,
+                                    card_name,
+                                    before: old,
+                                },
+                            );
+                        }
+                    }
+                    Err(_) => set_mvp(old),
+                }
+            });
+        },
+    );
+
+    let toggle_mvp = use_callback(move |(card_id, starred): (Uuid, bool)| {
+        set_star.call((card_id, (!starred).then(Utc::now), /* record */ true));
     });
 
     let save_printing = use_callback(move |picked: Card| {
@@ -579,6 +604,17 @@ pub(crate) fn use_deck_editor(deck_id: Uuid, on_failure: LoadFailure) -> Editor 
             toast.info("Already changed".to_string(), quick);
             return;
         }
+        if matches!(
+            action,
+            UndoAction::MvpToggled {
+                before: Some(_),
+                ..
+            }
+        ) && deck_cards::mvp_count(&entries.peek()) >= deck_cards::MAX_MVPS
+        {
+            toast.info(screens::deck_cards::MVP_CAP_REACHED.to_string(), quick);
+            return;
+        }
         let message = deck_cards::undo_message(&action);
         match action {
             UndoAction::Added { card_id, .. } => {
@@ -631,6 +667,11 @@ pub(crate) fn use_deck_editor(deck_id: Uuid, on_failure: LoadFailure) -> Editor 
             }
             UndoAction::MovedBoard { card_id, from, .. } => {
                 move_to_board.call((card_id, from, /* record */ false));
+            }
+            UndoAction::MvpToggled {
+                card_id, before, ..
+            } => {
+                set_star.call((card_id, before, /* record */ false));
             }
             UndoAction::PrintingChanged { old_card, new_id } => {
                 let old_card = *old_card;

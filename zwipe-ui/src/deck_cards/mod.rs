@@ -413,6 +413,18 @@ impl Bursts {
     }
 }
 
+/// How many main board cards a deck may star as MVPs; the server refuses a fourth.
+pub const MAX_MVPS: usize = 3;
+
+/// How many main board cards in `entries` are starred.
+#[must_use]
+pub fn mvp_count(entries: &[DeckEntry]) -> usize {
+    entries
+        .iter()
+        .filter(|e| e.deck_card.mvp_at.is_some() && e.deck_card.board == Board::Deck)
+        .count()
+}
+
 /// Whether an undo entry no longer applies to the deck as it stands, and the button should only say "Already changed".
 #[must_use]
 pub fn is_stale(action: &UndoAction, entries: &[DeckEntry], zone: &Zone) -> bool {
@@ -422,6 +434,12 @@ pub fn is_stale(action: &UndoAction, entries: &[DeckEntry], zone: &Zone) -> bool
         | UndoAction::QuantityChanged { card_id, .. }
         | UndoAction::MovedBoard { card_id, .. } => !present(*card_id),
         UndoAction::Removed { entry, .. } => present(entry.deck_card.scryfall_data_id),
+        UndoAction::MvpToggled {
+            card_id, before, ..
+        } => entries
+            .iter()
+            .find(|e| e.deck_card.scryfall_data_id == *card_id)
+            .is_none_or(|e| e.deck_card.mvp_at.is_some() == before.is_some()),
         UndoAction::PrintingChanged { new_id, .. } => !present(*new_id),
         UndoAction::CommandZonePrintingChanged { slot, new_id, .. } => {
             zone.slot(*slot).map(|c| c.scryfall_data.id) != Some(*new_id)
@@ -443,6 +461,16 @@ pub fn undo_message(action: &UndoAction) -> String {
         UndoAction::MovedBoard {
             card_name, from, ..
         } => format!("{card_name} back to {}", from.display_name()),
+        UndoAction::MvpToggled {
+            card_name,
+            before: None,
+            ..
+        } => format!("Unstarred {card_name}"),
+        UndoAction::MvpToggled {
+            card_name,
+            before: Some(_),
+            ..
+        } => format!("Starred {card_name}"),
         UndoAction::PrintingChanged { old_card, .. }
         | UndoAction::CommandZonePrintingChanged { old_card, .. } => {
             format!("{} printing restored", old_card.scryfall_data.name)
