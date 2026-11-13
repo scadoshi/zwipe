@@ -3,9 +3,7 @@
 //! What the screen knows and does is `zwipe_ui::screens::deck_view`; this
 //! file draws its state and performs its effects.
 
-use ::components::screen_return::{
-    ScreenReturns, UNDER_LAYER, replay_entrances, use_screen_returns,
-};
+use ::components::screen_return::{ScreenReturns, replay_entrances, use_screen_returns};
 use components::icons::{CloneIcon, DockIcon, EditIcon, ShareIcon};
 use components::{
     AlertDialog, Button, ButtonVariant, CART, Chip, DialogAction, LoadFailed, StoreDialog,
@@ -619,15 +617,18 @@ pub fn ViewDeck(deck_id: Uuid, view: Option<DeckView>) -> Element {
 
     rsx! {
             div {
-                class: if profile_covered { "screen deck-profile-screen {UNDER_LAYER}" } else { "screen deck-profile-screen" },
-                "inert": profile_covered.then_some(""),
+                // The Cards layer is a child of this screen, so a covered Profile hides its own
+                // children (`profile-covered`) and makes its content inert, never the screen.
+                class: if profile_covered { "screen deck-profile-screen profile-covered" } else { "screen deck-profile-screen" },
                 ScreenHeader {
                     title: deck_view::TITLE,
                     hint: first_deck_hint_open,
                     back: move |()| driver.dispatch(Action::Back),
                 }
 
-                div { class: "screen-content",
+                div {
+                    class: "screen-content",
+                    "inert": profile_covered.then_some(""),
                     match profile {
                         Some(deck_profile) => {
                             rsx! {
@@ -822,7 +823,9 @@ pub fn ViewDeck(deck_id: Uuid, view: Option<DeckView>) -> Element {
             // The deck's own actions and Cards, the screen's main action,
             // float at the bottom right.
             if !failed {
-                div { class: "action-dock action-dock-right content-enter-delayed",
+                div {
+                    class: "action-dock action-dock-right content-enter-delayed",
+                    "inert": profile_covered.then_some(""),
                     for item in deck_view::dock(store_links.is_some()) {
                         match item {
                             DockItem::Edit => rsx! {

@@ -18,6 +18,8 @@ scotland:
 
 - 466 takes the card details out of this: they are a drawer over the Cards again, so the Cards stay in view under them, dimmed, and nothing replays when the drawer closes. Profile to Cards keeps the route feel.
 
+- Regression on 31b3ab105 (droider, emulator and Scotty's phone, 3 of 3): in the app, Cards opened to the grid tiles alone. Cause: `zwiper/src/lib/inbound/screens/deck/view.rs`, the Cards layer renders inside the Profile's `.screen` (the `if cards_layer.shown()` block sits before that div's closing brace), so `under-layer` and `inert` on the Profile's screen hid and froze the Cards with it; the web's Profile wrapper is a sibling of its layer, so phone web was fine. Fix: the Profile's screen takes `profile-covered`, which hides its children but `.app-cards-layer` (`magic.css`, pinned by `components/tests/profile_covered.rs`), and `inert` goes on its content and dock instead.
+
 ## Verification
 - Phone web (412): open a deck's Cards: the Profile is hidden and inert under it; Stacks deal and the strip deals in. Open a card's details (two taps on a stack card): the Cards are hidden and inert under them. Back: the Cards come back with the strip and the stacks dealing again. Back: the Profile comes back with its entrance.
 - Fresh load on `/decks/<id>?view=cards`: the header reads "Cards".

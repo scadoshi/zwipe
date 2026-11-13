@@ -3510,3 +3510,9 @@ footer.site-footer .site-footer-note {
 .under-layer {
     visibility: hidden !important;
 }
+
+/* The app's deck Profile under its Cards: the Cards layer is a child of the
+   Profile's screen, so the Profile hides its own children, never itself. */
+.screen.profile-covered > :not(.app-cards-layer) {
+    visibility: hidden !important;
+}
