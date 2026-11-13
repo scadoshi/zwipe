@@ -67,6 +67,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Edit deck opens with its saved commander already in place, on the web and in the app",
         "Every sheet and drawer shows a handle where to drag it, and on a wide window a drawer drags closed with the mouse too, on the web and in the app",
         "A long hint shows all its text, and one taller than the screen scrolls as a whole, on the web and in the app",
+        "On the web, Create deck shows its Create button from the start and says when the deck needs a name",
     ],
 }];
 

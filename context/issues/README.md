@@ -184,6 +184,7 @@ Who checked, on which live build, what they saw.
 | [484](484-deck-list-ghost-rows.md) | The Decks list's loading ghost shows three decks on a wide screen | fixing | thinker | - |
 | [476](476-new-build-notice.md) | A web page that stays open never hears of a newer build | fixing | laptop | issue/476-new-build-notice |
 | [488](488-hint-esc-focus-and-row-toasts.md) | Esc after the `?` hint sends focus to the deck title, and `+` and Shift+S raise no toast | fixing | thinker | - |
+| [494](494-create-deck-button-hidden.md) | Create deck's empty form shows no Create button | fixing | thinker | - |
 | [491](491-reveal-back-step.md) | In Stacks, revealing a tucked card takes a Back step | fixing | laptop | issue/491-reveal-no-step |
 | [492](492-format-zone-back.md) | Switching a deck's format away and back loses its commander | fixing | laptop | issue/492-format-zone-back |
 | [469](469-exceptions-side-sheet.md) | On a wide window, Exceptions opens as a centered modal, and its Change is off with no reason | fixing | laptop | issue/469-exceptions-drawer |

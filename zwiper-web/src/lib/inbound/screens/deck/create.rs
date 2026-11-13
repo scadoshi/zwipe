@@ -1,6 +1,7 @@
-//! Create deck: the deck form, with Save as the dock's checkmark once the
-//! name passes. A commander handed over by Playstyle or the commander
-//! maybeboard arrives with the format set to Commander.
+//! Create deck: the deck form, with Create as the dock's checkmark from the
+//! start; with no name it shows the name's error instead of saving. A
+//! commander handed over by Playstyle or the commander maybeboard arrives
+//! with the format set to Commander.
 
 use components::icons::{CHECK, DockIcon};
 use dioxus::prelude::*;
@@ -88,7 +89,6 @@ pub fn CreateDeck() -> Element {
         });
     });
 
-    let valid = deck_form::name_error(&(form.name)()).is_none();
     // A phone's open picker is a screen over the form.
     let pickers_cover = use_pickers_cover(&form);
     rsx! {
@@ -102,17 +102,15 @@ pub fn CreateDeck() -> Element {
             div { class: "screen-content content-enter",
                 DeckFields { form, on_enter: move |()| submit.call(()) }
             }
-            // Save as the action dock's checkmark, pinned bottom right, once
-            // the form is valid; dimmed while the save is out.
-            if valid {
-                div { class: "action-dock action-dock-right",
-                    button {
-                        class: "action-dock-btn",
-                        "aria-label": if saving() { "Saving…" } else { "Create" },
-                        disabled: saving(),
-                        onclick: move |_| submit.call(()),
-                        DockIcon { path: CHECK }
-                    }
+            // Create as the action dock's checkmark, pinned bottom right;
+            // dimmed while the save is out.
+            div { class: "action-dock action-dock-right",
+                button {
+                    class: "action-dock-btn",
+                    "aria-label": if saving() { "Saving…" } else { "Create" },
+                    disabled: saving(),
+                    onclick: move |_| submit.call(()),
+                    DockIcon { path: CHECK }
                 }
             }
         }
