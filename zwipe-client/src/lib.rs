@@ -26,11 +26,15 @@ pub mod user;
 /// Client version gate operations.
 pub mod version;
 
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 #[cfg(not(target_arch = "wasm32"))]
 use std::time::Duration;
 
 pub use error::ClientError;
 use reqwest::{Client, Url};
+use uuid::Uuid;
+use zwipe_core::domain::card::Card;
 
 /// HTTP client for the ZWIPE backend API.
 ///
@@ -43,6 +47,9 @@ pub struct ZwipeClient {
     pub client: Client,
     /// Scheme, host and port every request path is joined onto.
     pub base_url: Url,
+    /// The cards fetched so far by printing id, shared by every clone, so a card two screens
+    /// show (a deck's commander on its page and on Edit) comes from the server once a session.
+    cards: Arc<Mutex<HashMap<Uuid, Card>>>,
 }
 
 /// Longest a request may take end to end. A stalled socket otherwise holds
@@ -57,6 +64,7 @@ impl ZwipeClient {
         Self {
             client: build_client(),
             base_url,
+            cards: Arc::default(),
         }
     }
 }

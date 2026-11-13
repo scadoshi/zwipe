@@ -72,6 +72,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "On the web, a banner's close button is named for screen readers",
         "Account's Log out sits with your account details instead of in the Danger zone, on the web and in the app",
         "A drawer let go over the page or outside the window no longer sticks mid-drag, and a pull down on an open sheet no longer reloads the page, on the web and zwipe.net",
+        "Edit deck reuses the commander the deck's page already loaded, on the web and in the app",
     ],
 }];
 
