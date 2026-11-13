@@ -142,7 +142,7 @@ fn screen_key(key: &str) -> Option<ScreenKey> {
     if shortcuts::card_key(key) == Some(CardKey::Filter) {
         return Some(ScreenKey::Filter);
     }
-    (key == "/").then_some(ScreenKey::QuickAdd)
+    (key == shortcuts::QUICK_ADD_KEY).then_some(ScreenKey::QuickAdd)
 }
 
 /// The commander maybeboard screen.

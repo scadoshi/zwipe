@@ -11,8 +11,8 @@ pub use components::keys::{
 pub use components::swipe_stack::SWIPE_LETTERS;
 use components::swipe_stack::{Swipe, swipe_key};
 pub use zwipe_ui::shortcuts::{
-    CardKey, FlowKey, GLOBAL_KEYS, GlobalKey, HINT_KEY, UNDO_COMBO, card_key, flow_key, global_key,
-    undo_letter,
+    CardKey, FlowKey, GLOBAL_KEYS, GlobalKey, HINT_KEY, QUICK_ADD_KEY, UNDO_COMBO, card_key,
+    flow_key, global_key, undo_letter,
 };
 use zwipe_ui::shortcuts::{
     DECK_CARDS_NOTE, EVERYWHERE_ROWS, Editable, FLIP_ROW, SheetRow, card_read_rows,
@@ -377,7 +377,8 @@ mod tests {
                     || undo_letter(key)
                     || global_key(key).is_some()
                     || key == "Esc"
-                    || key == UNDO_COMBO;
+                    || key == UNDO_COMBO
+                    || key == QUICK_ADD_KEY;
                 assert!(known, "{label} for {does}");
             }
         }

@@ -61,10 +61,7 @@ fn screen_key(key: &str) -> Option<ScreenKey> {
     if shortcuts::card_key(key) == Some(CardKey::Filter) {
         return Some(ScreenKey::Filter);
     }
-    match key {
-        "/" => Some(ScreenKey::QuickAdd),
-        _ => None,
-    }
+    (key == shortcuts::QUICK_ADD_KEY).then_some(ScreenKey::QuickAdd)
 }
 
 use zwipe_ui::deck_cards::keys::RowKind;

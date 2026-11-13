@@ -132,13 +132,18 @@ pub const THEME_ROWS: [SheetRow; 4] = [
 /// The step rows, on a screen whose own keys leave `j` and `k` to scroll the page.
 pub const STEP_ROWS: [SheetRow; 2] = page_keys::STEP_ROWS;
 
-/// The deck cards page's own rows, the read-only page's being only the keys that read.
+/// The key that puts the cursor in a page's Quick add.
+pub const QUICK_ADD_KEY: &str = "/";
+
+/// The deck cards page's own rows, the read-only page's being only the keys that read, with no
+/// Quick add.
 #[must_use]
 pub fn deck_cards_rows(editable: Editable) -> Vec<SheetRow> {
     let reads = card_read_rows();
-    let moves: [SheetRow; 2] = [
+    let moves: [SheetRow; 3] = [
         (&["↑", "↓", "←", "→"], "Move between cards"),
         (&["h", "j", "k", "l"], "Move between cards"),
+        (&["Home", "End"], "First or last card"),
     ];
     let open: SheetRow = (&["Enter"], "Open the card");
     let edits: [SheetRow; 6] = [
@@ -150,9 +155,10 @@ pub fn deck_cards_rows(editable: Editable) -> Vec<SheetRow> {
         (&["u", UNDO_COMBO], "Undo"),
     ];
     let filter: SheetRow = (&["f"], "Filter");
-    let edits = match editable {
-        Editable::Yes => &edits[..],
-        Editable::No => &[],
+    let quick_add: SheetRow = (&[QUICK_ADD_KEY], "Quick add");
+    let (edits, quick_add) = match editable {
+        Editable::Yes => (&edits[..], Some(quick_add)),
+        Editable::No => (&[][..], None),
     };
     moves
         .into_iter()
@@ -160,6 +166,7 @@ pub fn deck_cards_rows(editable: Editable) -> Vec<SheetRow> {
         .chain(reads)
         .chain(edits.iter().copied())
         .chain([filter])
+        .chain(quick_add)
         .collect()
 }
 
@@ -281,6 +288,26 @@ mod tests {
     }
 
     #[test]
+    fn every_key_the_deck_page_answers_is_listed() {
+        let listed = |editable| -> Vec<&str> {
+            deck_cards_rows(editable)
+                .into_iter()
+                .flat_map(|(keys, _)| keys.iter().copied())
+                .collect()
+        };
+        let owner = listed(Editable::Yes);
+        let shared = listed(Editable::No);
+        // The cursor's moves, Home and End among them.
+        for key in ["Home", "End"] {
+            assert!(owner.contains(&key), "{key} on the owner's deck");
+            assert!(shared.contains(&key), "{key} on a shared deck");
+        }
+        // `/` focuses Quick add, which only the owner's page has.
+        assert!(owner.contains(&"/"), "/ on the owner's deck: {owner:?}");
+        assert!(!shared.contains(&"/"), "a shared deck has no Quick add");
+    }
+
+    #[test]
     fn a_read_only_deck_lists_only_the_keys_that_read() {
         let read_only: Vec<&str> = deck_cards_rows(Editable::No)
             .into_iter()
@@ -289,7 +316,8 @@ mod tests {
         assert_eq!(
             read_only,
             [
-                "↑", "↓", "←", "→", "h", "j", "k", "l", "Enter", "p", "i", "v", "d", "f"
+                "↑", "↓", "←", "→", "h", "j", "k", "l", "Home", "End", "Enter", "p", "i", "v", "d",
+                "f"
             ]
         );
         let editable = deck_cards_rows(Editable::Yes);
