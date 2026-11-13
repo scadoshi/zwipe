@@ -313,9 +313,10 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
         signal_toast(toast, price);
     };
 
-    // A quantity undo's entry, by card, until its debounced write lands: a failed write puts it
-    // back on the log so the undo can be tried again.
-    let mut undo_retry: Signal<HashMap<Uuid, UndoAction>> = use_signal(HashMap::new);
+    // A quantity undo's toast and entry, by card, until its debounced write lands: the toast
+    // shows then, and a failed write puts the entry back on the log so the undo can be tried
+    // again.
+    let mut undo_retry: Signal<HashMap<Uuid, (String, UndoAction)>> = use_signal(HashMap::new);
     let change_quantity = use_callback(move |(card_id, delta, record): (Uuid, i32, bool)| {
         let current = meta.peek().get(&card_id).map_or(1, |m| m.qty);
         let Some(target) = current.checked_add(delta) else {
@@ -373,20 +374,30 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
             };
             let removed = removed_rows.write().remove(&card_id);
             let retry = undo_retry.write().remove(&card_id);
-            let mut put_back = move || {
-                if let Some(entry) = retry.clone() {
-                    undo.write().push(deck_id, entry);
+            let mut put_back = {
+                let retry = retry.clone();
+                move || {
+                    if let Some((_, entry)) = retry.clone() {
+                        undo.write().push(deck_id, entry);
+                    }
+                }
+            };
+            let landed = move || {
+                if let Some((message, _)) = retry.clone() {
+                    toast.info(message, ToastOptions::default().duration(TOAST_QUICK));
                 }
             };
             match burst.write() {
-                Write::Nothing => {}
+                Write::Nothing => landed(),
                 Write::Delete => {
                     let reply = authed
                         .try_run("change_quantity", |c, s| async move {
                             c.delete_deck_card(deck_id, card_id, &s).await
                         })
                         .await;
-                    if reply.is_err() {
+                    if reply.is_ok() {
+                        landed();
+                    } else {
                         put_back();
                         undo.write().take_newest(deck_id, |a| {
                             matches!(a, UndoAction::Removed { entry, .. } if entry.deck_card.scryfall_data_id == card_id)
@@ -425,7 +436,7 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
                                 baseline: burst.baseline,
                             },
                         ),
-                        Ok(_) => {}
+                        Ok(_) => landed(),
                         Err(_) => {
                             put_back();
                             if let Ok(quantity) = Quantity::new(burst.baseline)
@@ -681,6 +692,7 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
             toast.info(screens::deck_cards::MVP_CAP_REACHED.to_string(), quick);
             return;
         }
+        // The toast, raised once the undo's write lands.
         let message = deck_cards::undo_message(&action);
         // The entry, to put back on the log if its write fails, so the undo can be tried again.
         let retry = action.clone();
@@ -704,7 +716,9 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
                             c.delete_undone_deck_card(deck_id, card_id, &s).await
                         })
                         .await;
-                    if deleted.is_none() {
+                    if deleted.is_some() {
+                        toast.info(message, quick);
+                    } else {
                         if let Some(row) = row {
                             entries.write().push(row);
                         }
@@ -739,6 +753,7 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
                         {
                             e.deck_card = saved;
                         }
+                        toast.info(message, quick);
                     } else {
                         entries
                             .write()
@@ -748,7 +763,7 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
                 });
             }
             UndoAction::QuantityChanged { card_id, net, .. } => {
-                undo_retry.write().insert(card_id, retry);
+                undo_retry.write().insert(card_id, (message, retry));
                 change_quantity.call((card_id, net.saturating_neg(), /* record */ false));
             }
             UndoAction::MovedBoard {
@@ -775,13 +790,11 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
                     wants_star.filter(|_| !capped),
                     Some((message, retry)),
                 ));
-                return;
             }
             UndoAction::MvpToggled {
                 card_id, before, ..
             } => {
                 set_star.call((card_id, before, StarBy::Undo(message, Box::new(retry))));
-                return;
             }
             UndoAction::PrintingChanged { old_card, new_id } => {
                 let old_card = *old_card;
@@ -809,7 +822,9 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
                             c.update_deck_card(deck_id, new_id, &request, &s).await
                         })
                         .await;
-                    if saved.is_none() {
+                    if saved.is_some() {
+                        toast.info(message, quick);
+                    } else {
                         // The printing the server still holds comes back on the row.
                         if let Some(card) = shown
                             && let Some(e) = entries
@@ -839,14 +854,15 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
                             c.update_deck_profile(deck_id, &request, &s).await
                         })
                         .await;
-                    if saved.is_none() {
+                    if saved.is_some() {
+                        toast.info(message, quick);
+                    } else {
                         *zone.write().slot_mut(slot) = shown;
                         put_back();
                     }
                 });
             }
         }
-        toast.info(message, quick);
     });
 
     let reset_filter = use_callback(move |()| {

@@ -36,3 +36,9 @@ surfer, after 8096283c4: offline, Undo of a move fails (no false toast), but the
 - Fix: the shared model keeps each undo by the ticket of the write it waits on (`undoing`; a quantity undo moves from its debounce to its write) and records it again on that write's failure, so the app's Undo comes back; the web editor's Undo puts the entry back from every branch's failure (delete, create, quantity through `undo_retry`, move, star, printing, command zone). The web's failed undo of an add also puts the row back, and a failed printing or command zone undo shows the printing the server still holds. A star refused after a successful move back stays spent (the move landed).
 - Tests: `an_undo_whose_write_fails_goes_back_on_the_log` (red without the re-record), `an_undo_that_lands_stays_spent`.
 
+
+## Follow-up: an offline Undo claimed success
+surfer, after 85180e115: offline, Undo of an add toasted "Removed Lightning Bolt" and Undo of a printing toasted "Sol Ring printing restored" about 70ms before "Connection error", though nothing changed. The move's toast already waited.
+- Cause: the shared model (`undo_writes`) and the web editor (`apply_undo`) raised the undo's toast with the instant change, before the write, for an add, a removal, a quantity, a printing and a command zone printing. The move and the star already toasted on landing.
+- Fix: the model keeps each undo's toast with its entry (`Undoing`) and raises it when the write it waits on lands, or when a quantity undo's debounce nets to no write; a failure raises none. The web editor raises it in each branch's success, a quantity undo through `undo_retry`.
+- Tests: `an_undo_toasts_only_once_its_write_lands`, `an_undone_removal_toasts_only_once_its_re_add_lands`, `a_quantity_undo_toasts_only_once_its_debounced_write_lands` (all red before the fix), `a_quantity_undo_that_nets_to_no_write_still_says_so` (red with the no-write toast removed).

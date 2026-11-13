@@ -981,16 +981,8 @@ fn undo_reverses_an_add() {
     })));
     assert!(matches!(
         effects.as_slice(),
-        [
-            Effect::Refilter,
-            Effect::Toast(_),
-            Effect::DeleteCard { op: Op::Undo, .. }
-        ]
+        [Effect::Refilter, Effect::DeleteCard { op: Op::Undo, .. }]
     ));
-    assert_eq!(
-        toasts(&effects),
-        [(ToastKind::Info, "Removed Sol Ring".to_owned())]
-    );
     assert!(state.row(ring).is_none());
 }
 
@@ -1008,10 +1000,6 @@ fn undo_re_adds_a_removal_and_drops_it_on_failure() {
         entry: Box::new(entry),
         baseline: 3,
     })));
-    assert_eq!(
-        toasts(&effects),
-        [(ToastKind::Info, "Re-added Sol Ring".to_owned())]
-    );
     assert_eq!(state.quantity(ring), 3);
     let Some(Effect::CreateCard {
         ticket, request, ..
@@ -1036,10 +1024,6 @@ fn undo_of_a_quantity_taps_the_inverse_without_recording() {
         baseline: 3,
     })));
     assert_eq!(state.quantity(ring), 3);
-    assert_eq!(
-        toasts(&effects).last(),
-        Some(&(ToastKind::Info, "Sol Ring back to \u{00d7}3".to_owned()))
-    );
     let ticket = debounce(&effects);
     let effects = state.update(Action::Debounced { ticket });
     let [Effect::PatchCard { ticket, .. }] = effects.as_slice() else {
@@ -1089,10 +1073,6 @@ fn undo_restores_a_printing() {
         old_card: Box::new(old.clone()),
         new_id: id(&cards[0]),
     })));
-    assert_eq!(
-        toasts(&effects),
-        [(ToastKind::Info, "Sol Ring printing restored".to_owned())]
-    );
     assert!(state.row(id(&old)).is_some());
     assert!(matches!(
         effects.last(),
@@ -2024,5 +2004,174 @@ fn an_undo_that_lands_stays_spent() {
     assert!(
         undo_records(&late).is_empty(),
         "a landed undo never comes back"
+    );
+}
+
+/// What lands the undo's first write in `effects`: the server's yes to that write.
+fn landing(state: &State, effects: &[Effect]) -> Action {
+    let deck_card = || Box::new(state.entries[0].deck_card.clone());
+    match effects.iter().find(|e| {
+        matches!(
+            e,
+            Effect::PatchCard { .. }
+                | Effect::DeleteCard { .. }
+                | Effect::CreateCard { .. }
+                | Effect::PatchProfile { .. }
+        )
+    }) {
+        Some(Effect::PatchCard { ticket, .. }) => Action::Patched {
+            ticket: *ticket,
+            deck_card: deck_card(),
+        },
+        Some(Effect::DeleteCard { ticket, .. }) => Action::Deleted { ticket: *ticket },
+        Some(Effect::CreateCard { ticket, .. }) => Action::Created {
+            ticket: *ticket,
+            deck_card: deck_card(),
+        },
+        Some(Effect::PatchProfile { ticket, .. }) => Action::ProfilePatched { ticket: *ticket },
+        _ => panic!("no write in {effects:?}"),
+    }
+}
+
+/// The server's answer to the first write in `effects`: its yes when `lands`, else a failure.
+fn answer(state: &State, effects: &[Effect], lands: bool) -> Action {
+    if lands {
+        landing(state, effects)
+    } else {
+        Action::Failed {
+            ticket: write_ticket(effects),
+        }
+    }
+}
+
+/// Whether `effects` raise the toast `message`.
+fn says(effects: &[Effect], message: &str) -> bool {
+    toasts(effects).iter().any(|(_, t)| t == message)
+}
+
+#[test]
+fn an_undo_toasts_only_once_its_write_lands() {
+    let commander = card("Boss");
+    for lands in [true, false] {
+        for case in 0..3 {
+            let (mut state, _, ticket, _) = loading(blank());
+            let _ = state.update(Action::Loaded {
+                ticket,
+                deck: Box::new(deck(deck_profile("D"), vec![card("Sol Ring")])),
+                zone: Box::new(Zone {
+                    commander: Some(commander.clone()),
+                    ..Zone::default()
+                }),
+            });
+            let ring = ring_of(&state);
+            let (message, action) = match case {
+                0 => (
+                    "Removed Sol Ring",
+                    UndoAction::Added {
+                        card_id: ring,
+                        card_name: "Sol Ring".to_owned(),
+                    },
+                ),
+                1 => (
+                    "Sol Ring printing restored",
+                    UndoAction::PrintingChanged {
+                        old_card: Box::new(card("Sol Ring")),
+                        new_id: ring,
+                    },
+                ),
+                _ => (
+                    "Boss printing restored",
+                    UndoAction::CommandZonePrintingChanged {
+                        slot: Slot::Commander,
+                        old_card: Box::new(card("Boss")),
+                        new_id: id(&commander),
+                    },
+                ),
+            };
+            let effects = state.update(Action::Undo(Box::new(action)));
+            assert!(
+                toasts(&effects).is_empty(),
+                "{message}: nothing is said before the server answers: {effects:?}"
+            );
+            let reply = answer(&state, &effects, lands);
+            let after = state.update(reply);
+            assert_eq!(says(&after, message), lands, "{message}: {after:?}");
+        }
+    }
+}
+
+#[test]
+fn an_undone_removal_toasts_only_once_its_re_add_lands() {
+    for lands in [true, false] {
+        let (mut state, _) = loaded();
+        let entry = state.entries[0].clone();
+        let _ = state.update(Action::ChangeQuantity {
+            card_id: ring_of(&state),
+            delta: -1,
+        });
+        let effects = state.update(Action::Undo(Box::new(UndoAction::Removed {
+            entry: Box::new(entry),
+            baseline: 3,
+        })));
+        assert!(toasts(&effects).is_empty(), "{effects:?}");
+        let reply = answer(&state, &effects, lands);
+        assert_eq!(says(&state.update(reply), "Re-added Sol Ring"), lands);
+    }
+}
+
+#[test]
+fn a_quantity_undo_toasts_only_once_its_debounced_write_lands() {
+    for lands in [true, false] {
+        let (mut state, _) = loaded();
+        let effects = state.update(Action::Undo(Box::new(UndoAction::QuantityChanged {
+            card_id: ring_of(&state),
+            card_name: "Sol Ring".to_owned(),
+            net: -2,
+            baseline: 3,
+        })));
+        assert!(toasts(&effects).is_empty(), "{effects:?}");
+        let written = state.update(Action::Debounced {
+            ticket: debounce(&effects),
+        });
+        assert!(toasts(&written).is_empty(), "{written:?}");
+        let reply = answer(&state, &written, lands);
+        assert_eq!(
+            says(&state.update(reply), "Sol Ring back to \u{00d7}3"),
+            lands
+        );
+    }
+}
+
+/// The first row's card.
+fn ring_of(state: &State) -> Uuid {
+    state.entries[0].card.scryfall_data.id
+}
+
+#[test]
+fn a_quantity_undo_that_nets_to_no_write_still_says_so() {
+    let (mut state, _) = loaded();
+    let ring = ring_of(&state);
+    let _ = state.update(Action::ChangeQuantity {
+        card_id: ring,
+        delta: 1,
+    });
+    let effects = state.update(Action::Undo(Box::new(UndoAction::QuantityChanged {
+        card_id: ring,
+        card_name: "Sol Ring".to_owned(),
+        net: 1,
+        baseline: 3,
+    })));
+    let written = state.update(Action::Debounced {
+        ticket: debounce(&effects),
+    });
+    assert!(
+        !written
+            .iter()
+            .any(|e| matches!(e, Effect::PatchCard { .. })),
+        "the tap and its undo cancel out: {written:?}"
+    );
+    assert_eq!(
+        toasts(&written),
+        [(ToastKind::Info, "Sol Ring back to \u{00d7}3".to_owned())]
     );
 }
