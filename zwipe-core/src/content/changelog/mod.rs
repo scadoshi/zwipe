@@ -96,6 +96,7 @@ pub const UPCOMING: &[Release] = &[
             "On the web, Caps Lock no longer changes what a letter shortcut does",
             "On the web, an Oracle tag's Examples keep Next, Back one and the details eye on one bar",
             "On the web's deck page, a featured card's details leave the page undimmed in List as in Stacks",
+            "On the web, the Commander maybeboard, Activity and Playstyle take the arrow keys or h, j, k and l to move between cards, with the card's image following, and Enter opens one",
             "A List group's price and cart sit at the end of its title's line on a phone, on the web and in the app",
             "On a phone, a deck's Profile and Cards come and go as screens do, each entering fresh with nothing showing beneath, on the web and in the app",
             "On phone web, a deck's Cards opened from a link show Cards in the header",
