@@ -32,9 +32,11 @@
         max-width: var(--web-field-max);
     }
 
-    /* A dialog's field, as Clone deck's name, sits centered under the
-       dialog's message. */
-    .alert-dialog-description > .input {
+    /* A dialog's field, as Clone deck's name or Delete account's password
+       in its show-and-hide wrapper, sits centered under the dialog's
+       message at a field's width. */
+    .alert-dialog-description > .input,
+    .alert-dialog-description > .password-input-wrapper {
         display: block;
         max-width: var(--web-field-max);
         margin-left: auto;
