@@ -14,7 +14,8 @@ use common::{FakeEmailSender, TEST_JWT_SECRET, TestApp};
 use serde_json::{Value, json};
 use sqlx::PgPool;
 use zwipe::domain::auth::models::access_token::JwtSecret;
-use zwipe::domain::auth::models::account_ref::AccountRef;
+use zwipe::domain::auth::models::account_ref::{AccountRef, FetchAccountError};
+use zwipe::domain::auth::ports::AuthService;
 use zwipe::domain::auth::requests::change_username::ChangeUsernameError;
 use zwipe::domain::email::models::{SendEmail, SendEmailError};
 use zwipe::domain::email::ports::{EmailSender, SendEmailFuture};
@@ -23,6 +24,7 @@ use zwipe::inbound::admin::{self, NoticeOutcome, RenameNotice};
 use zwipe::outbound::sqlx::postgres::Postgres;
 use zwipe::wiring::{Auth, Metrics};
 use zwipe_core::domain::Email;
+use zwipe_core::domain::user::User;
 use zwipe_core::domain::user::username::Username;
 use zwipe_core::http::paths::{CHANGE_USERNAME_ROUTE, LOGIN_ROUTE, REGISTER_ROUTE};
 
@@ -74,6 +76,15 @@ fn name(raw: &str) -> Username {
 )]
 fn account(raw: &str) -> AccountRef {
     raw.parse().unwrap()
+}
+
+/// The account `raw` names, found as `zerver-admin` finds it.
+#[expect(
+    clippy::unwrap_used,
+    reason = "a test helper: a fixture account that is missing fails the test"
+)]
+async fn held(auth: &Auth, raw: &str) -> User {
+    auth.fetch_account(&account(raw)).await.unwrap()
 }
 
 #[expect(
@@ -193,7 +204,7 @@ async fn an_account_keeps_a_reserved_name_it_already_holds(pool: PgPool) {
     admin::rename_account(
         &auth,
         &metrics,
-        &account("placeholder"),
+        &held(&auth, "placeholder").await,
         &name("Scotty"),
         RenameNotice::Skip,
     )
@@ -254,7 +265,7 @@ async fn the_admin_rename_sets_a_reserved_name_audits_and_mails_the_notice(pool:
     let renamed = admin::rename_account(
         &auth,
         &metrics,
-        &account("Test"),
+        &held(&auth, "Test").await,
         &name("naxol56196"),
         RenameNotice::Send {
             reply_to: email("scotty@zwipe.net"),
@@ -311,7 +322,7 @@ async fn the_admin_rename_finds_an_account_by_id_and_can_skip_the_notice(pool: P
     let renamed = admin::rename_account(
         &auth,
         &metrics,
-        &account(&user_id),
+        &held(&auth, &user_id).await,
         &name("zwipe"),
         RenameNotice::Skip,
     )
@@ -324,7 +335,7 @@ async fn the_admin_rename_finds_an_account_by_id_and_can_skip_the_notice(pool: P
     let taken = admin::rename_account(
         &auth,
         &metrics,
-        &account("zwipe"),
+        &held(&auth, "zwipe").await,
         &name("Alice"),
         RenameNotice::Skip,
     )
@@ -333,16 +344,9 @@ async fn the_admin_rename_finds_an_account_by_id_and_can_skip_the_notice(pool: P
         matches!(taken, Err(ChangeUsernameError::Duplicate)),
         "a name another account holds in any case: {taken:?}"
     );
-    let missing = admin::rename_account(
-        &auth,
-        &metrics,
-        &account("nobody_here"),
-        &name("scott"),
-        RenameNotice::Skip,
-    )
-    .await;
+    let missing = auth.fetch_account(&account("nobody_here")).await;
     assert!(
-        matches!(missing, Err(ChangeUsernameError::AuthenticateUserError(_))),
+        matches!(&missing, Err(e @ FetchAccountError::NotFound(_)) if e.to_string() == "no account named nobody_here"),
         "no such account: {missing:?}"
     );
 }
@@ -355,7 +359,7 @@ async fn the_admin_rename_finds_an_account_by_email(pool: PgPool) {
     let renamed = admin::rename_account(
         &auth,
         &metrics,
-        &account("dana@test.local"),
+        &held(&auth, "dana@test.local").await,
         &name("dana_two"),
         RenameNotice::Send {
             reply_to: email("support@zwipe.net"),
@@ -376,17 +380,10 @@ async fn the_admin_rename_finds_an_account_by_email(pool: PgPool) {
 #[sqlx::test]
 async fn an_email_address_no_account_holds_finds_nothing(pool: PgPool) {
     let _ = TestApp::new(pool.clone()).register("erin").await;
-    let (auth, metrics, _) = services(&pool);
-    let missing = admin::rename_account(
-        &auth,
-        &metrics,
-        &account("someone@test.local"),
-        &name("erin_two"),
-        RenameNotice::Skip,
-    )
-    .await;
+    let (auth, _, _) = services(&pool);
+    let missing = auth.fetch_account(&account("someone@test.local")).await;
     assert!(
-        matches!(missing, Err(ChangeUsernameError::AuthenticateUserError(_))),
+        matches!(&missing, Err(e @ FetchAccountError::NotFound(_)) if e.to_string() == "no account with email someone@test.local"),
         "{missing:?}"
     );
 }
@@ -399,7 +396,7 @@ async fn the_rename_stands_when_the_notice_fails(pool: PgPool) {
     let renamed = admin::rename_account(
         &auth,
         &metrics,
-        &account("frank"),
+        &held(&auth, "frank").await,
         &name("frank_two"),
         RenameNotice::Send {
             reply_to: email("support@zwipe.net"),

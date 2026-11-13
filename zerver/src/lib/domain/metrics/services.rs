@@ -5,7 +5,7 @@ use zwipe_core::domain::auth::models::platform::ClientPlatform;
 use zwipe_core::http::contracts::metrics::{AnonymousEventKind, HttpCrashReport, HttpUsageBatch};
 
 use crate::domain::metrics::models::errors::MetricsError;
-use crate::domain::metrics::models::kinds::{AuditAction, EventKind};
+use crate::domain::metrics::models::kinds::{AdminAction, AuditAction, EventKind};
 use crate::domain::metrics::models::lifetime_counters::LifetimeCounters;
 use crate::domain::metrics::models::public_metrics::PublicMetrics;
 use crate::domain::metrics::ports::{MetricsRepository, MetricsService};
@@ -51,6 +51,14 @@ impl<R: MetricsRepository> MetricsService for Service<R> {
 
     async fn record_audit(&self, user_id: Uuid, action: AuditAction) -> Result<(), MetricsError> {
         self.repo.record_audit(user_id, action).await
+    }
+
+    async fn record_admin_action(
+        &self,
+        account_id: Uuid,
+        action: AdminAction,
+    ) -> Result<(), MetricsError> {
+        self.repo.record_admin_action(account_id, action).await
     }
 
     async fn record_anonymous_event(

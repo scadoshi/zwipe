@@ -452,9 +452,9 @@ SQLX_OFFLINE=true cargo build --release --bin zerver-admin
 sudo bash -c 'set -a; . /etc/zwipe/zerver.env; set +a; /home/scadoshi/zwipe-src/target/release/zerver-admin <command> ...'
 ```
 
-Every command names the account by its exact username, its id or its exact email: a uuid reads as an id, a valid email as an email, anything else as a username, so a username that is itself an email is named by its id. Each goes through zerver's own services, as the app's requests do. `zerver-admin --help` lists the commands and `zerver-admin <command> --help` their options.
+Every command names the account by its exact username, its id or its exact email: a uuid reads as an id, a valid email as an email, anything else as a username, so a username that is itself an email is named by its id. Each goes through zerver's own services, as the app's requests do, and each one that runs writes an `admin_action_log` row (account id, action, time; no foreign key, so it outlives a deleted account). `zerver-admin --help` lists the commands and `zerver-admin <command> --help` their options.
 
-A command that takes something away (`sign-out-all`, `delete`) asks for the account's username to be typed back before it acts. `--yes` skips the question; `--dry-run` finds the account, says what would happen and changes nothing.
+A command that takes something away (`lock`, `sign-out-all`, `delete`, `change-email`) asks for the account's username to be typed back before it acts. `--yes` skips the question; `--dry-run` finds the account, says what would happen and changes nothing. Any other reply stops with an error and changes nothing. An error prints as one line, such as `error: no account named zatest1`, and exits non-zero; no backtrace, even with `RUST_BACKTRACE` set in the env file.
 
 ### How to try each command on a dummy account
 
@@ -462,19 +462,24 @@ Define `za` once per shell so each line below runs the binary with zerver's envi
 
 ```bash
 za() { sudo bash -c 'set -a; . /etc/zwipe/zerver.env; set +a; exec /home/scadoshi/zwipe-src/target/release/zerver-admin "$@"' zerver-admin "$@"; }
-za show dummy1                                   # username, email, verified, created, last active, decks, latest audit events
-za rename dummy1 dummy2 --no-notice              # rename; drop --no-notice to mail the reserved-name notice
-za rename dummy2 dummy3 --reply-to me@zwipe.net  # notice replies go to me@zwipe.net instead of SUPPORT_EMAIL_ADDRESS
-za sign-out-all dummy3 --dry-run                 # says what it would do; then run without --dry-run and type dummy3
-za resend-verification dummy3                    # a fresh verify link to the account's address (refused once verified)
-za delete dummy3                                 # type dummy3 to confirm; --yes skips the question
+za show dummy1                                     # username, email, verified, locked, created, last active, decks, latest audit events
+za rename dummy1 dummy2 --no-notice                # rename; drop --no-notice to mail the reserved-name notice
+za rename dummy2 dummy3 --reply-to me@zwipe.net    # notice replies go to me@zwipe.net instead of SUPPORT_EMAIL_ADDRESS
+za lock dummy3 --reason "testing"                  # type dummy3; sign-in and refresh now fail as a wrong password does
+za unlock dummy3                                   # clears the lock; dummy3 signs in again
+za sign-out-all dummy3 --dry-run                   # says what it would do; then run without --dry-run and type dummy3
+za resend-verification dummy3                      # a fresh verify link to the account's address (refused once verified)
+za change-email dummy3 dummy3.new@example.com      # type dummy3; switches at once, verify link to the new address, notice to the old
+za delete dummy3                                   # type dummy3 to confirm; --yes skips the question
 ```
 
-- `show` changes nothing and writes no audit row.
+- `show` changes nothing. It writes only its `admin_action_log` row.
 - `rename` works like a user's own change (the username rules, no other account may hold the name in any case, the `username_changed` audit row) but skips the password and the reserved-name check, which is how Scotty claims a reserved name. It then emails the account that its old name is now reserved, with replies going to `SUPPORT_EMAIL_ADDRESS` (support@zwipe.net) unless `--reply-to` names another address.
-- `sign-out-all` revokes every refresh token (audit `signed_out_everywhere`). An access token already issued stays valid until it expires, up to `ACCESS_TOKEN_MINUTES`.
+- `lock` sets `users.locked_at` and `locked_reason` (audit `account_locked`). Sign-in answers the account exactly as a wrong password does, the same 401 the wrong-password lockout gives, so old apps show what they show today; its sessions stop refreshing. An access token already issued stays valid until it expires, up to `ACCESS_TOKEN_MINUTES`. `unlock` clears the stored lock (audit `account_unlocked`); the running zerver's lockout for wrong passwords is separate and expires on its own after 30 minutes.
+- `sign-out-all` revokes every refresh token (audit `signed_out_everywhere`). An issued access token stays valid until it expires.
 - `resend-verification` sends the same email as the app's resend (audit `verification_email_sent`).
-- `delete` is the user's own delete without the password. The account's audit rows go with it, so the delete is recorded in the server log (`admin_account_deleted`).
+- `change-email` switches the address at once after the same taken check as the user's own change, leaves it unverified and mails it a verification link the way registration does, and tells the old address "Your Zwipe email was changed", from the support address with replies to `SUPPORT_EMAIL_ADDRESS` unless `--reply-to` names another (audit `email_changed`). A pending email change is dropped. If an email fails, the switch stands and the command says which.
+- `delete` is the user's own delete without the password. The account's audit rows go with it; its `admin_action_log` rows stay.
 
 ## systemd Service
 

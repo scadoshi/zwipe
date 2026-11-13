@@ -6,12 +6,14 @@
 //! # Module Organization
 //!
 //! - [`access_token`]: JWT access token generation and validation
+//! - [`account_lock`](crate::domain::auth::models::account_lock): an admin's lock on an account
 //! - [`account_ref`](crate::domain::auth::models::account_ref): which account a server-side admin command names
 //! - [`password`]: Password validation, hashing, and verification
 //! - [`refresh_token`](zwipe_core::domain::auth::models::refresh_token): Long-lived refresh token management
 //! - [`session`](zwipe_core::domain::auth::models::session): Session entity and constants
 
 pub mod access_token;
+pub mod account_lock;
 pub mod account_ref;
 pub mod password;
 

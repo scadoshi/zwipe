@@ -17,10 +17,12 @@ use zwipe_core::domain::user::username::Username;
 use crate::domain::auth::lockout::LoginLockout;
 use crate::domain::auth::models::UserWithPasswordHash;
 use crate::domain::auth::models::access_token::{AccessTokenExt, JwtSecret};
-use crate::domain::auth::models::account_ref::AccountRef;
+use crate::domain::auth::models::account_lock::AccountLock;
+use crate::domain::auth::models::account_ref::{AccountRef, FetchAccountError};
 use crate::domain::auth::models::password::{self, HashedPassword, Password};
 use crate::domain::auth::notice_cooldown::NoticeCooldown;
 use crate::domain::auth::ports::{AuthRepository, AuthService};
+use crate::domain::auth::requests::admin_change_email::AdminChangeEmailError;
 use crate::domain::auth::requests::authenticate_user::{AuthenticateUser, AuthenticateUserError};
 use crate::domain::auth::requests::cancel_email_change::CancelEmailChangeError;
 use crate::domain::auth::requests::change_email::{ChangeEmail, ChangeEmailError};
@@ -418,6 +420,17 @@ where
             tracing::warn!(event = "login_failure", reason = "locked", identifier = %request.identifier, ip = %client_ip);
             return Err(AuthenticateUserError::AccountLocked);
         }
+        // An admin's lock holds every address off, answered as the lockout is.
+        if self
+            .auth_repo
+            .fetch_account_lock(user_with_password_hash.id)
+            .await
+            .map_err(AuthenticateUserError::Database)?
+            .is_some()
+        {
+            tracing::warn!(event = "login_failure", reason = "admin_locked", identifier = %request.identifier);
+            return Err(AuthenticateUserError::AccountLocked);
+        }
 
         let (user, password_hash) = user_with_password_hash.into_parts();
 
@@ -511,6 +524,15 @@ where
         request: &RefreshSession,
     ) -> Result<Session, RefreshSessionError> {
         let user = self.user_repo.fetch_user(request.user_id).await?;
+        if self
+            .auth_repo
+            .fetch_account_lock(request.user_id)
+            .await
+            .map_err(RefreshSessionError::Database)?
+            .is_some()
+        {
+            return Err(RefreshSessionError::AccountLocked(request.user_id));
+        }
         let settings = self
             .user_repo
             .fetch_settings(request.user_id)
@@ -584,22 +606,21 @@ where
         Ok(user)
     }
 
-    async fn fetch_account(&self, account: &AccountRef) -> Result<User, AuthenticateUserError> {
+    async fn fetch_account(&self, account: &AccountRef) -> Result<User, FetchAccountError> {
         let user_id = match account {
             AccountRef::Id(id) => Some(*id),
-            AccountRef::Username(username) => self
-                .auth_repo
-                .fetch_user_id_by_username(username)
-                .await
-                .map_err(AuthenticateUserError::Database)?,
-            AccountRef::Email(email) => self
-                .auth_repo
-                .fetch_user_id_by_email(email.as_ref())
-                .await
-                .map_err(AuthenticateUserError::Database)?,
+            AccountRef::Username(username) => {
+                self.auth_repo.fetch_user_id_by_username(username).await?
+            }
+            AccountRef::Email(email) => {
+                self.auth_repo
+                    .fetch_user_id_by_email(email.as_ref())
+                    .await?
+            }
         };
+        let missing = || FetchAccountError::NotFound(account.clone());
         let Some(user_id) = user_id else {
-            return Err(AuthenticateUserError::UserNotFound);
+            return Err(missing());
         };
         let lookup = AuthenticateUser {
             identifier: user_id.to_string(),
@@ -608,11 +629,11 @@ where
             client_version: None,
             client_ip: None,
         };
-        let held = self
-            .auth_repo
-            .fetch_user_with_password_hash(&lookup)
-            .await?;
-        Ok(held.into())
+        match self.auth_repo.fetch_user_with_password_hash(&lookup).await {
+            Ok(held) => Ok(held.into()),
+            Err(AuthenticateUserError::UserNotFound) => Err(missing()),
+            Err(e) => Err(FetchAccountError::Database(e.into())),
+        }
     }
 
     async fn admin_delete_user(&self, user_id: Uuid) -> Result<(), DeleteUserError> {
@@ -626,19 +647,84 @@ where
 
     async fn admin_change_username(
         &self,
-        account: &AccountRef,
+        user: &User,
         new_username: &Username,
-    ) -> Result<(Username, User), ChangeUsernameError> {
-        let held = self.fetch_account(account).await?;
+    ) -> Result<User, ChangeUsernameError> {
         let request = ChangeUsername {
-            user_id: held.id,
+            user_id: user.id,
             new_username: new_username.clone(),
             password: Secret::new(""),
         };
-        let user = self
-            .rename(&held.username, &request, ReservedCheck::Skip)
+        self.rename(&user.username, &request, ReservedCheck::Skip)
+            .await
+    }
+
+    async fn fetch_account_lock(
+        &self,
+        user_id: Uuid,
+    ) -> Result<Option<AccountLock>, anyhow::Error> {
+        self.auth_repo.fetch_account_lock(user_id).await
+    }
+
+    async fn lock_account(&self, user_id: Uuid, reason: Option<&str>) -> Result<(), anyhow::Error> {
+        self.auth_repo.lock_account(user_id, reason).await?;
+        tracing::info!(event = "account_locked", %user_id);
+        Ok(())
+    }
+
+    async fn unlock_account(&self, user_id: Uuid) -> Result<(), anyhow::Error> {
+        self.auth_repo.unlock_account(user_id).await?;
+        tracing::info!(event = "account_unlocked", %user_id);
+        Ok(())
+    }
+
+    async fn check_admin_email_change(
+        &self,
+        user: &User,
+        email: &Email,
+    ) -> Result<(), AdminChangeEmailError> {
+        if user.email.as_ref() == email.as_ref() {
+            return Err(AdminChangeEmailError::Unchanged);
+        }
+        let holder = self
+            .auth_repo
+            .fetch_user_id_by_email(email.as_ref())
             .await?;
-        Ok((held.username, user))
+        if holder.is_some_and(|id| id != user.id) {
+            return Err(AdminChangeEmailError::Taken);
+        }
+        Ok(())
+    }
+
+    async fn admin_change_email(
+        &self,
+        user: &User,
+        email: &Email,
+    ) -> Result<User, AdminChangeEmailError> {
+        self.check_admin_email_change(user, email).await?;
+        let switched = self.auth_repo.admin_change_email(user.id, email).await?;
+        tracing::info!(event = "admin_email_changed", user_id = %user.id);
+        Ok(switched)
+    }
+
+    async fn send_email_changed_notice(
+        &self,
+        user: &User,
+        old_email: &Email,
+        reply_to: &Email,
+    ) -> Result<(), SendEmailError> {
+        let html = include_str!("email_templates/email_changed.html")
+            .replace("{new_email}", &escape_html(user.email.as_ref()))
+            .replace("{support_email}", &escape_html(&self.support_email));
+        self.email_sender
+            .send_email(SendEmail {
+                to: old_email.to_string(),
+                subject: "Your Zwipe email was changed".to_owned(),
+                html_body: html,
+                text_body: None,
+                reply_to: Some(reply_to.to_string()),
+            })
+            .await
     }
 
     async fn send_reserved_name_notice(

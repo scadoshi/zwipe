@@ -41,6 +41,26 @@ impl FromStr for AccountRef {
     }
 }
 
+/// Why [`AccountRef`] found no account.
+#[derive(Debug, thiserror::Error)]
+pub enum FetchAccountError {
+    /// No account has that username, id or email.
+    #[error("{}", not_found(.0))]
+    NotFound(AccountRef),
+    /// A database failure.
+    #[error(transparent)]
+    Database(#[from] anyhow::Error),
+}
+
+/// "no account named zatest1", "no account with id ...", "no account with email ...".
+fn not_found(account: &AccountRef) -> String {
+    match account {
+        AccountRef::Username(username) => format!("no account named {username}"),
+        AccountRef::Id(id) => format!("no account with id {id}"),
+        AccountRef::Email(email) => format!("no account with email {email}"),
+    }
+}
+
 impl Display for AccountRef {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -78,6 +98,18 @@ mod tests {
             "not@an@email".parse::<AccountRef>(),
             Ok(AccountRef::Username(name)) if &*name == "not@an@email"
         ));
+    }
+
+    #[test]
+    fn a_missing_account_reads_as_a_lookup() {
+        let miss = |raw: &str| FetchAccountError::NotFound(raw.parse().unwrap()).to_string();
+        assert_eq!(miss("zatest1"), "no account named zatest1");
+        assert_eq!(
+            miss("nobody@example.com"),
+            "no account with email nobody@example.com"
+        );
+        let id = Uuid::nil();
+        assert_eq!(miss(&id.to_string()), format!("no account with id {id}"));
     }
 
     #[test]

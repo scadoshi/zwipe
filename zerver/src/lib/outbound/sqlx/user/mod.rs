@@ -14,6 +14,7 @@ use zwipe_core::domain::user::settings::{
     UserSettings,
 };
 
+use crate::domain::auth::models::account_lock::AccountLock;
 use crate::domain::user::models::account_summary::{
     AccountSummary, AuditEntry, RECENT_AUDIT_EVENTS,
 };
@@ -112,7 +113,7 @@ impl UserRepository for Postgres {
     async fn fetch_account_summary(&self, user_id: Uuid) -> Result<AccountSummary, GetUserError> {
         let user = self.fetch_user(user_id).await?;
         let row = query!(
-            r#"SELECT u.created_at, u.last_active_at,
+            r#"SELECT u.created_at, u.last_active_at, u.locked_at, u.locked_reason,
                       (SELECT count(*) FROM decks d WHERE d.user_id = u.id) AS "deck_count!"
                FROM users u WHERE u.id = $1"#,
             user_id
@@ -127,8 +128,13 @@ impl UserRepository for Postgres {
         )
         .fetch_all(&self.pool)
         .await?;
+        let lock = row.locked_at.map(|locked_at| AccountLock {
+            locked_at,
+            reason: row.locked_reason,
+        });
         Ok(AccountSummary {
             user,
+            lock,
             created_at: row.created_at,
             last_active_at: row.last_active_at,
             deck_count: row.deck_count,

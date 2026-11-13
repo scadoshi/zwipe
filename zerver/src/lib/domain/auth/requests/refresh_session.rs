@@ -90,6 +90,10 @@ pub enum RefreshSessionError {
     #[error("given refresh token has been revoked; user attempting: {0}")]
     Revoked(Uuid),
 
+    /// An admin locked the account, so its sessions no longer refresh. Answered as a revoked token.
+    #[error("account is locked; user attempting: {0}")]
+    AccountLocked(Uuid),
+
     /// The refresh token belongs to a different user.
     ///
     /// This is a security violation - someone is attempting to use another

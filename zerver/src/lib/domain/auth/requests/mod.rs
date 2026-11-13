@@ -23,6 +23,7 @@
 //! - [`revoke_sessions`]: Delete all user sessions (logout)
 //! - [`verify_email`]: Email verification
 
+pub mod admin_change_email;
 pub mod authenticate_user;
 pub mod cancel_email_change;
 pub mod change_email;

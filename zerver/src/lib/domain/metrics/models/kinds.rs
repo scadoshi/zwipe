@@ -63,6 +63,10 @@ pub enum AuditAction {
     SignedOutEverywhere,
     /// An admin sent the account a fresh verification email.
     VerificationEmailSent,
+    /// An admin locked the account against sign-in.
+    AccountLocked,
+    /// An admin unlocked the account.
+    AccountUnlocked,
 }
 
 impl AuditAction {
@@ -78,11 +82,57 @@ impl AuditAction {
             AuditAction::Logout => "logout",
             AuditAction::SignedOutEverywhere => "signed_out_everywhere",
             AuditAction::VerificationEmailSent => "verification_email_sent",
+            AuditAction::AccountLocked => "account_locked",
+            AuditAction::AccountUnlocked => "account_unlocked",
         }
     }
 }
 
 impl fmt::Display for AuditAction {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+/// A `zerver-admin` command that ran against an account, for the `admin_action_log`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AdminAction {
+    /// `show` read the account.
+    Show,
+    /// `rename` renamed it.
+    Rename,
+    /// `lock` locked it.
+    Lock,
+    /// `unlock` unlocked it.
+    Unlock,
+    /// `sign-out-all` revoked its sessions.
+    SignOutAll,
+    /// `resend-verification` mailed it a verify link.
+    ResendVerification,
+    /// `delete` deleted it.
+    Delete,
+    /// `change-email` switched its address.
+    ChangeEmail,
+}
+
+impl AdminAction {
+    /// String form stored in the `admin_action_log.action` column.
+    #[must_use]
+    pub fn as_str(self) -> &'static str {
+        match self {
+            AdminAction::Show => "show",
+            AdminAction::Rename => "rename",
+            AdminAction::Lock => "lock",
+            AdminAction::Unlock => "unlock",
+            AdminAction::SignOutAll => "sign_out_all",
+            AdminAction::ResendVerification => "resend_verification",
+            AdminAction::Delete => "delete",
+            AdminAction::ChangeEmail => "change_email",
+        }
+    }
+}
+
+impl fmt::Display for AdminAction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(self.as_str())
     }

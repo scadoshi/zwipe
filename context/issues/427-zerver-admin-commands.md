@@ -14,8 +14,13 @@ thinker, first part:
 - `sign-out-all` and `delete` ask for the username typed back; `--yes` skips, `--dry-run` reports and changes nothing.
 - The account lookup is `AuthService::fetch_account(&AccountRef)`, shared with `rename`.
 
-Open, waiting on Scotty: `lock`/`unlock` (no stored lock exists; needs a migration and a sign-in check) and `change-email` (pending link or immediate switch).
+Second part, after Scotty's answers:
+- Migration `20261112120000_account_lock_and_admin_action_log.sql`, additive only: nullable `users.locked_at` and `locked_reason` (NULL for every existing account, so nothing changes for it), and a new `admin_action_log` (account id, action, time; no foreign key, no username or email). No contract changes: old apps send and read what they did.
+- `lock <account> [--reason]`: login answers a locked account with `AccountLocked`, the same 401 "invalid credentials" the wrong-password lockout gives; refresh answers 401 "invalid refresh token" as a revoked token does. `unlock` clears the stored lock; the in-memory lockout expires on its own. Audit `account_locked` / `account_unlocked`.
+- `change-email <account> <new-email> [--reply-to]`: the taken check, the address switched at once and unverified, a pending change dropped, a verification email to the new address, and "Your Zwipe email was changed" to the old one with replies to the support address. Audit `email_changed`.
+- Every command writes an `admin_action_log` row, `show` and `delete` included.
+- The lookup has its own `FetchAccountError` ("no account named zatest1", "no account with email ..."). Errors print as one `error:` line with their causes and exit non-zero, never with a backtrace; a wrong confirmation is an error. The prompts read "Type zatest1 to sign it out everywhere:", "Type zatest1 to delete it:".
 
 ## Verification
-- `cargo test -p zerver --bin zerver-admin` (parsing, the confirmation, the summary) and `--test admin_commands` (lookup, show, sign-out-all, resend-verification, delete).
+- `cargo test -p zerver --bin zerver-admin` (parsing, the confirmation, the summary) and `--test admin_commands` (lookup, show, sign-out-all, resend-verification, delete, lock and unlock against login and refresh, change-email, the action log outliving a delete).
 - On the server, the dummy-account lines in `operations/infrastructure/server.md` under zerver-admin.

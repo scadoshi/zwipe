@@ -11,7 +11,7 @@ use zwipe_core::http::contracts::metrics::{
 };
 
 use crate::domain::metrics::models::errors::MetricsError;
-use crate::domain::metrics::models::kinds::{AuditAction, EventKind};
+use crate::domain::metrics::models::kinds::{AdminAction, AuditAction, EventKind};
 use crate::domain::metrics::models::lifetime_counters::LifetimeCounters;
 use crate::domain::metrics::models::public_metrics::PublicMetrics;
 use crate::domain::metrics::ports::MetricsRepository;
@@ -785,6 +785,22 @@ impl MetricsRepository for Postgres {
                VALUES ($1, $2)"#,
             user_id,
             action_str,
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(db)?;
+        Ok(())
+    }
+
+    async fn record_admin_action(
+        &self,
+        account_id: Uuid,
+        action: AdminAction,
+    ) -> Result<(), MetricsError> {
+        query!(
+            "INSERT INTO admin_action_log (account_id, action) VALUES ($1, $2)",
+            account_id,
+            action.as_str(),
         )
         .execute(&self.pool)
         .await

@@ -39,6 +39,10 @@ impl From<RefreshSessionError> for ApiError {
                 tracing::warn!(event = "token_refresh_failure", reason = "revoked", user_id = %u);
                 Self::Unauthorized("invalid refresh token".to_string())
             }
+            RefreshSessionError::AccountLocked(u) => {
+                tracing::warn!(event = "token_refresh_failure", reason = "locked", user_id = %u);
+                Self::Unauthorized("invalid refresh token".to_string())
+            }
             RefreshSessionError::Forbidden(u) => {
                 tracing::warn!(event = "token_refresh_failure", reason = "forbidden", user_id = %u);
                 Self::Forbidden("invalid refresh token".to_string())

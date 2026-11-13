@@ -15,8 +15,10 @@ use zwipe_core::domain::user::User;
 use zwipe_core::domain::user::username::Username;
 
 use crate::domain::auth::models::UserWithPasswordHash;
+use crate::domain::auth::models::account_lock::AccountLock;
 use crate::domain::auth::models::password::HashedPassword;
 use crate::domain::auth::ports::AuthRepository;
+use crate::domain::auth::requests::admin_change_email::AdminChangeEmailError;
 use crate::domain::auth::requests::authenticate_user::{AuthenticateUser, AuthenticateUserError};
 use crate::domain::auth::requests::cancel_email_change::CancelEmailChangeError;
 use crate::domain::auth::requests::change_email::ChangeEmailError;
@@ -507,6 +509,78 @@ impl AuthRepository for Postgres {
             .await
             .map_err(|e| anyhow::anyhow!("{e}"))?;
         Ok(user_id)
+    }
+
+    async fn fetch_account_lock(
+        &self,
+        user_id: Uuid,
+    ) -> Result<Option<AccountLock>, anyhow::Error> {
+        let row = query!(
+            "SELECT locked_at, locked_reason FROM users WHERE id = $1",
+            user_id
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+        Ok(row.and_then(|row| {
+            row.locked_at.map(|locked_at| AccountLock {
+                locked_at,
+                reason: row.locked_reason,
+            })
+        }))
+    }
+
+    async fn lock_account(&self, user_id: Uuid, reason: Option<&str>) -> Result<(), anyhow::Error> {
+        query!(
+            "UPDATE users SET locked_at = COALESCE(locked_at, NOW()), locked_reason = $2 WHERE id = $1",
+            user_id,
+            reason
+        )
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    async fn unlock_account(&self, user_id: Uuid) -> Result<(), anyhow::Error> {
+        query!(
+            "UPDATE users SET locked_at = NULL, locked_reason = NULL WHERE id = $1",
+            user_id
+        )
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    async fn admin_change_email(
+        &self,
+        user_id: Uuid,
+        email: &Email,
+    ) -> Result<User, AdminChangeEmailError> {
+        let mut tx = self.pool.begin().await.map_err(anyhow::Error::from)?;
+        let switched = query_as!(
+            DatabaseUser,
+            "UPDATE users SET email = $1, email_verified_at = NULL WHERE id = $2 RETURNING id, username, email, email_verified_at, hints_shown",
+            email.as_ref(),
+            user_id
+        )
+        .fetch_optional(&mut *tx)
+        .await;
+        let database_user = match switched {
+            Ok(Some(user)) => user,
+            Ok(None) => return Err(AdminChangeEmailError::NotFound),
+            Err(e) if e.is_unique_constraint_violation() => {
+                return Err(AdminChangeEmailError::Taken);
+            }
+            Err(e) => return Err(anyhow::Error::from(e).into()),
+        };
+        query!(
+            "DELETE FROM email_change_requests WHERE user_id = $1",
+            user_id
+        )
+        .execute(&mut *tx)
+        .await
+        .map_err(anyhow::Error::from)?;
+        tx.commit().await.map_err(anyhow::Error::from)?;
+        Ok(User::from(database_user))
     }
 
     async fn fetch_user_id_by_username(

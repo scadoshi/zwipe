@@ -7,7 +7,7 @@ use zwipe_core::domain::auth::models::platform::ClientPlatform;
 use zwipe_core::http::contracts::metrics::{AnonymousEventKind, HttpCrashReport, HttpUsageBatch};
 
 use crate::domain::metrics::models::errors::MetricsError;
-use crate::domain::metrics::models::kinds::{AuditAction, EventKind};
+use crate::domain::metrics::models::kinds::{AdminAction, AuditAction, EventKind};
 use crate::domain::metrics::models::lifetime_counters::LifetimeCounters;
 use crate::domain::metrics::models::public_metrics::PublicMetrics;
 
@@ -54,6 +54,13 @@ pub trait MetricsRepository: Clone + Send + Sync + 'static {
         &self,
         user_id: Uuid,
         action: AuditAction,
+    ) -> impl Future<Output = Result<(), MetricsError>> + Send;
+
+    /// Appends an `admin_action_log` row: `action` ran against `account_id`.
+    fn record_admin_action(
+        &self,
+        account_id: Uuid,
+        action: AdminAction,
     ) -> impl Future<Output = Result<(), MetricsError>> + Send;
 
     /// Appends a pre-auth funnel event row keyed by the client session id, with the platform that sent it (`None` from an older client).
@@ -133,6 +140,14 @@ pub trait MetricsService: Clone + Send + Sync + 'static {
         &self,
         user_id: Uuid,
         action: AuditAction,
+    ) -> impl Future<Output = Result<(), MetricsError>> + Send;
+
+    /// Records that a `zerver-admin` command ran against `account_id`. The row names no username
+    /// or email and outlives the account.
+    fn record_admin_action(
+        &self,
+        account_id: Uuid,
+        action: AdminAction,
     ) -> impl Future<Output = Result<(), MetricsError>> + Send;
 
     /// Records a pre-auth funnel event from an unauthenticated client.

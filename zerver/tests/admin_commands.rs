@@ -9,18 +9,22 @@ mod common;
 
 use std::sync::Arc;
 
+use axum::http::StatusCode;
 use common::{FakeEmailSender, TEST_JWT_SECRET, TestApp};
+use serde_json::{Value, json};
 use sqlx::PgPool;
 use uuid::Uuid;
 use zwipe::domain::auth::models::access_token::JwtSecret;
-use zwipe::domain::auth::models::account_ref::AccountRef;
+use zwipe::domain::auth::models::account_ref::{AccountRef, FetchAccountError};
 use zwipe::domain::auth::ports::AuthService;
-use zwipe::domain::auth::requests::authenticate_user::AuthenticateUserError;
+use zwipe::domain::auth::requests::admin_change_email::AdminChangeEmailError;
 use zwipe::domain::{auth, metrics, user};
-use zwipe::inbound::admin::{self, ResendVerificationError};
+use zwipe::inbound::admin::{self, NoticeOutcome, ResendVerificationError};
 use zwipe::outbound::sqlx::postgres::Postgres;
 use zwipe::wiring::{Auth, Metrics, Users};
+use zwipe_core::domain::Email;
 use zwipe_core::domain::user::User;
+use zwipe_core::http::paths::{LOGIN_ROUTE, REFRESH_SESSION_ROUTE};
 
 /// The services `zerver-admin` builds, mailing into a fake sender.
 #[expect(
@@ -84,7 +88,7 @@ async fn an_account_is_found_by_username_id_or_email_and_not_otherwise(pool: PgP
         assert!(
             matches!(
                 auth.fetch_account(&account).await,
-                Err(AuthenticateUserError::UserNotFound)
+                Err(FetchAccountError::NotFound(_))
             ),
             "{raw}"
         );
@@ -106,7 +110,7 @@ async fn show_reads_the_account_its_decks_and_its_latest_audit_events(pool: PgPo
     }
     admin::sign_out_all(&auth, &metrics, &hank).await.unwrap();
 
-    let summary = admin::show_account(&users, &hank).await.unwrap();
+    let summary = admin::show_account(&users, &metrics, &hank).await.unwrap();
     assert_eq!(summary.user.id.to_string(), user_id);
     assert_eq!(&*summary.user.username, "hank");
     assert_eq!(summary.user.email.as_ref(), "hank@test.local");
@@ -121,7 +125,7 @@ async fn show_reads_the_account_its_decks_and_its_latest_audit_events(pool: PgPo
         summary.recent_audit
     );
     let audits_before = admin_audits(&pool, hank.id).await;
-    let _ = admin::show_account(&users, &hank).await.unwrap();
+    let _ = admin::show_account(&users, &metrics, &hank).await.unwrap();
     assert_eq!(
         admin_audits(&pool, hank.id).await,
         audits_before,
@@ -197,10 +201,10 @@ async fn delete_removes_the_account_and_only_that_account(pool: PgPool) {
     let app = TestApp::new(pool.clone());
     let _ = app.register("kate").await;
     let _ = app.register("lars").await;
-    let (auth, ..) = services(&pool);
+    let (auth, _, metrics, _) = services(&pool);
     let kate = find(&auth, "kate").await;
 
-    admin::delete_account(&auth, &kate).await.unwrap();
+    admin::delete_account(&auth, &metrics, &kate).await.unwrap();
     let left: Vec<String> = sqlx::query_scalar("SELECT username FROM users ORDER BY username")
         .fetch_all(&pool)
         .await
@@ -209,6 +213,165 @@ async fn delete_removes_the_account_and_only_that_account(pool: PgPool) {
     let account: AccountRef = "kate".parse().unwrap();
     assert!(matches!(
         auth.fetch_account(&account).await,
-        Err(AuthenticateUserError::UserNotFound)
+        Err(FetchAccountError::NotFound(_))
     ));
+}
+
+/// Signs in as `identifier` with `password`, from an address of its own.
+async fn login_with(pool: &PgPool, identifier: &str, password: &str) -> (StatusCode, Value) {
+    TestApp::new(pool.clone())
+        .post(
+            LOGIN_ROUTE,
+            json!({ "identifier": identifier, "password": password }),
+            None,
+        )
+        .await
+}
+
+/// Refreshes `session`, from an address of its own.
+#[expect(
+    clippy::indexing_slicing,
+    reason = "a test helper: JSON indexing answers null for a missing key"
+)]
+async fn refresh(pool: &PgPool, session: &Value) -> (StatusCode, Value) {
+    TestApp::new(pool.clone())
+        .post(
+            REFRESH_SESSION_ROUTE,
+            json!({
+                "user_id": session["user"]["id"],
+                "refresh_token": session["refresh_token"]["value"],
+            }),
+            None,
+        )
+        .await
+}
+
+/// `account_id`'s `admin_action_log` actions, oldest first.
+#[expect(
+    clippy::unwrap_used,
+    reason = "a test helper: a failed query fails the test"
+)]
+async fn admin_actions(pool: &PgPool, account_id: Uuid) -> Vec<String> {
+    sqlx::query_scalar("SELECT action FROM admin_action_log WHERE account_id = $1 ORDER BY id")
+        .bind(account_id)
+        .fetch_all(pool)
+        .await
+        .unwrap()
+}
+
+#[sqlx::test]
+async fn a_lock_refuses_sign_in_and_refresh_as_a_wrong_password_does_until_unlocked(pool: PgPool) {
+    let _ = TestApp::new(pool.clone()).register("mona").await;
+    let (auth, users, metrics, _) = services(&pool);
+    let mona = find(&auth, "mona").await;
+    let (status, session) = login_with(&pool, "mona", "TestPass123!").await;
+    assert_eq!(status, StatusCode::OK, "{session}");
+    let wrong_password = login_with(&pool, "mona", "WrongPass123!").await;
+    assert_eq!(wrong_password.0, StatusCode::UNAUTHORIZED);
+
+    admin::lock_account(&auth, &metrics, &mona, Some("chargeback"))
+        .await
+        .unwrap();
+    assert_eq!(
+        login_with(&pool, "mona", "TestPass123!").await,
+        wrong_password,
+        "the right password answers as a wrong one, as the lockout does"
+    );
+    let (status, _) = refresh(&pool, &session).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED, "sessions stop refreshing");
+    let summary = admin::show_account(&users, &metrics, &mona).await.unwrap();
+    let lock = summary.lock.unwrap();
+    assert_eq!(lock.reason.as_deref(), Some("chargeback"));
+
+    admin::unlock_account(&auth, &metrics, &mona).await.unwrap();
+    let (status, body) = login_with(&pool, "mona", "TestPass123!").await;
+    assert_eq!(status, StatusCode::OK, "signs in again: {body}");
+    assert!(
+        admin::show_account(&users, &metrics, &mona)
+            .await
+            .unwrap()
+            .lock
+            .is_none()
+    );
+    assert_eq!(
+        admin_audits(&pool, mona.id).await,
+        ["account_locked", "account_unlocked"]
+    );
+    assert_eq!(
+        admin_actions(&pool, mona.id).await,
+        ["lock", "show", "unlock", "show"]
+    );
+}
+
+#[sqlx::test]
+async fn the_admin_action_log_outlives_a_deleted_account(pool: PgPool) {
+    let _ = TestApp::new(pool.clone()).register("nina").await;
+    let (auth, users, metrics, _) = services(&pool);
+    let nina = find(&auth, "nina").await;
+    let _ = admin::show_account(&users, &metrics, &nina).await.unwrap();
+    admin::sign_out_all(&auth, &metrics, &nina).await.unwrap();
+    admin::delete_account(&auth, &metrics, &nina).await.unwrap();
+    assert_eq!(
+        admin_actions(&pool, nina.id).await,
+        ["show", "sign_out_all", "delete"]
+    );
+    let names: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM information_schema.columns WHERE table_name = 'admin_action_log' AND column_name IN ('username', 'email')",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(names, 0, "the log names no username or email");
+}
+
+#[sqlx::test]
+async fn change_email_switches_at_once_verifies_the_new_address_and_tells_the_old(pool: PgPool) {
+    let app = TestApp::new(pool.clone());
+    let _ = app.register("olga").await;
+    let _ = app.register("pete").await;
+    let (auth, _, metrics, emails) = services(&pool);
+    let olga = find(&auth, "olga").await;
+    let new = Email::new("olga.new@test.local").unwrap();
+    let reply_to = Email::new("support@zwipe.net").unwrap();
+
+    let switched = admin::change_email(&auth, &metrics, &olga, &new, &reply_to)
+        .await
+        .unwrap();
+    assert_eq!(switched.old_email.as_ref(), "olga@test.local");
+    assert_eq!(switched.user.email.as_ref(), "olga.new@test.local");
+    assert!(
+        switched.user.email_verified_at.is_none(),
+        "the new address is unverified"
+    );
+    assert!(matches!(switched.verification, NoticeOutcome::Sent));
+    assert!(matches!(switched.notice, NoticeOutcome::Sent));
+
+    {
+        let sent = emails.sent.lock().unwrap();
+        let [verify, notice] = sent.as_slice() else {
+            panic!("two emails: {sent:?}");
+        };
+        assert_eq!(verify.to, "olga.new@test.local");
+        assert!(verify.html_body.contains("/verify/"), "a verify link");
+        assert_eq!(notice.to, "olga@test.local");
+        assert_eq!(notice.subject, "Your Zwipe email was changed");
+        assert_eq!(notice.reply_to.as_deref(), Some("support@zwipe.net"));
+        assert!(notice.html_body.contains("olga.new@test.local"));
+    }
+    assert_eq!(admin_audits(&pool, olga.id).await, ["email_changed"]);
+    assert_eq!(admin_actions(&pool, olga.id).await, ["change_email"]);
+    let (status, _) = login_with(&pool, "olga.new@test.local", "TestPass123!").await;
+    assert_eq!(status, StatusCode::OK, "signs in at the new address");
+
+    let moved = find(&auth, "olga").await;
+    let taken = Email::new("pete@test.local").unwrap();
+    assert!(matches!(
+        admin::change_email(&auth, &metrics, &moved, &taken, &reply_to).await,
+        Err(AdminChangeEmailError::Taken)
+    ));
+    assert!(matches!(
+        admin::change_email(&auth, &metrics, &moved, &new, &reply_to).await,
+        Err(AdminChangeEmailError::Unchanged)
+    ));
+    assert_eq!(emails.count(), 2, "a refused change mails nothing");
 }

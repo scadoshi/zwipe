@@ -15,7 +15,9 @@ use zwipe_core::domain::user::username::Username;
 
 use crate::domain::auth::models::UserWithPasswordHash;
 use crate::domain::auth::models::access_token::JwtSecret;
-use crate::domain::auth::models::account_ref::AccountRef;
+use crate::domain::auth::models::account_lock::AccountLock;
+use crate::domain::auth::models::account_ref::{AccountRef, FetchAccountError};
+use crate::domain::auth::requests::admin_change_email::AdminChangeEmailError;
 use crate::domain::auth::requests::authenticate_user::{AuthenticateUser, AuthenticateUserError};
 use crate::domain::auth::requests::cancel_email_change::CancelEmailChangeError;
 use crate::domain::auth::requests::change_email::{ChangeEmail, ChangeEmailError};
@@ -233,6 +235,32 @@ pub trait AuthRepository: Clone + Send + Sync + 'static {
         email: &str,
     ) -> impl Future<Output = Result<Option<Uuid>, anyhow::Error>> + Send;
 
+    /// The admin lock on `user_id`, if it has one.
+    fn fetch_account_lock(
+        &self,
+        user_id: Uuid,
+    ) -> impl Future<Output = Result<Option<AccountLock>, anyhow::Error>> + Send;
+
+    /// Locks `user_id`, keeping the first lock's time and setting `reason`.
+    fn lock_account(
+        &self,
+        user_id: Uuid,
+        reason: Option<&str>,
+    ) -> impl Future<Output = Result<(), anyhow::Error>> + Send;
+
+    /// Clears `user_id`'s lock.
+    fn unlock_account(
+        &self,
+        user_id: Uuid,
+    ) -> impl Future<Output = Result<(), anyhow::Error>> + Send;
+
+    /// Sets `user_id`'s email to `email` at once, unverified, dropping any pending email change.
+    fn admin_change_email(
+        &self,
+        user_id: Uuid,
+        email: &Email,
+    ) -> impl Future<Output = Result<User, AdminChangeEmailError>> + Send;
+
     /// Looks up a user ID by exact username. Returns `None` if no account holds it.
     ///
     /// Never exposes `UserNotFound` in error; only DB failures are returned.
@@ -360,12 +388,83 @@ pub trait AuthService: Clone + Send + Sync + 'static {
     ///
     /// # Errors
     ///
-    /// [`AuthenticateUserError::UserNotFound`] when no account matches, and
-    /// [`AuthenticateUserError::Database`] on a database failure.
+    /// [`FetchAccountError::NotFound`] when no account matches, and
+    /// [`FetchAccountError::Database`] on a database failure.
     fn fetch_account(
         &self,
         account: &AccountRef,
-    ) -> impl Future<Output = Result<User, AuthenticateUserError>> + Send;
+    ) -> impl Future<Output = Result<User, FetchAccountError>> + Send;
+
+    /// The admin lock on `user_id`, if it has one.
+    ///
+    /// # Errors
+    ///
+    /// A database failure.
+    fn fetch_account_lock(
+        &self,
+        user_id: Uuid,
+    ) -> impl Future<Output = Result<Option<AccountLock>, anyhow::Error>> + Send;
+
+    /// Locks `user_id`: sign-in answers it as the lockout does, and its sessions stop refreshing.
+    /// Locking a locked account keeps its first lock time and sets the new `reason`.
+    ///
+    /// # Errors
+    ///
+    /// A database failure.
+    fn lock_account(
+        &self,
+        user_id: Uuid,
+        reason: Option<&str>,
+    ) -> impl Future<Output = Result<(), anyhow::Error>> + Send;
+
+    /// Clears `user_id`'s admin lock. A running zerver's in-memory lockout for wrong passwords is
+    /// separate and expires on its own.
+    ///
+    /// # Errors
+    ///
+    /// A database failure.
+    fn unlock_account(
+        &self,
+        user_id: Uuid,
+    ) -> impl Future<Output = Result<(), anyhow::Error>> + Send;
+
+    /// Whether `user` may switch to `email`: not its current address and no other account's.
+    ///
+    /// # Errors
+    ///
+    /// [`AdminChangeEmailError::Unchanged`], [`AdminChangeEmailError::Taken`], or a database
+    /// failure.
+    fn check_admin_email_change(
+        &self,
+        user: &User,
+        email: &Email,
+    ) -> impl Future<Output = Result<(), AdminChangeEmailError>> + Send;
+
+    /// Switches `user` to `email` at once after [`Self::check_admin_email_change`], unverified and
+    /// with any pending change dropped, for `zerver-admin`. Sends no email.
+    ///
+    /// # Errors
+    ///
+    /// The [`AdminChangeEmailError`] from the check, [`AdminChangeEmailError::NotFound`] when the
+    /// account is gone, or a database failure.
+    fn admin_change_email(
+        &self,
+        user: &User,
+        email: &Email,
+    ) -> impl Future<Output = Result<User, AdminChangeEmailError>> + Send;
+
+    /// Tells `old_email` that `user`'s address is now `user.email`, with replies going to
+    /// `reply_to`.
+    ///
+    /// # Errors
+    ///
+    /// The [`SendEmailError`] when the email does not go out.
+    fn send_email_changed_notice(
+        &self,
+        user: &User,
+        old_email: &Email,
+        reply_to: &Email,
+    ) -> impl Future<Output = Result<(), SendEmailError>> + Send;
 
     /// Deletes `user_id` and everything it owns, the way the user's own delete does but without
     /// the password, for `zerver-admin`.
@@ -379,23 +478,21 @@ pub trait AuthService: Clone + Send + Sync + 'static {
         user_id: Uuid,
     ) -> impl Future<Output = Result<(), DeleteUserError>> + Send;
 
-    /// Renames the account `account` names (by exact username, id or exact email) to
-    /// `new_username` as a user's own change does, without the password and without the
-    /// reserved-name check, for Scotty claiming a reserved name from the server. Answers the
-    /// account's old name and the account as renamed. Nothing in the app reaches it, and it sends
-    /// no email; see [`Self::send_reserved_name_notice`].
+    /// Renames `user` to `new_username` as a user's own change does, without the password and
+    /// without the reserved-name check, for Scotty claiming a reserved name from the server.
+    /// Answers the account as renamed. Nothing in the app reaches it, and it sends no email; see
+    /// [`Self::send_reserved_name_notice`].
     ///
     /// # Errors
     ///
-    /// [`ChangeUsernameError::AuthenticateUserError`] when no account matches `account`,
     /// [`ChangeUsernameError::Unchanged`] when it already has that name,
     /// [`ChangeUsernameError::Duplicate`] when another account holds it in any case, and
     /// [`ChangeUsernameError::Database`] on a database failure.
     fn admin_change_username(
         &self,
-        account: &AccountRef,
+        user: &User,
         new_username: &Username,
-    ) -> impl Future<Output = Result<(Username, User), ChangeUsernameError>> + Send;
+    ) -> impl Future<Output = Result<User, ChangeUsernameError>> + Send;
 
     /// Tells `user`, now renamed from `old_username`, that Zwipe reserved its old name: a plain
     /// text and an HTML body, with replies going to `reply_to`.

@@ -3,6 +3,8 @@
 use chrono::{DateTime, Utc};
 use zwipe_core::domain::user::User;
 
+use crate::domain::auth::models::account_lock::AccountLock;
+
 /// How many audit events an account summary carries, newest first.
 pub const RECENT_AUDIT_EVENTS: i64 = 10;
 
@@ -11,6 +13,8 @@ pub const RECENT_AUDIT_EVENTS: i64 = 10;
 pub struct AccountSummary {
     /// The account: username, email, whether it is verified, a pending email change.
     pub user: User,
+    /// The admin's lock on it; `None` when it signs in as usual.
+    pub lock: Option<AccountLock>,
     /// When the account was made.
     pub created_at: DateTime<Utc>,
     /// The last authenticated request it made; `None` before its first.
