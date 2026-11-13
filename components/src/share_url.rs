@@ -8,16 +8,28 @@ use crate::DialogAction;
 
 /// `url` in an accent chip centered under the dialog's text, hugging the
 /// link's width. It stays on one line while the dialog fits it and otherwise
-/// breaks at any character. A tap selects all of it, so it can be copied by
-/// hand as well as with Copy link.
+/// breaks at any character. A tap selects all of it, and so does Tab, which
+/// stops on it, so it can be copied by hand (Ctrl+C) as well as with Copy
+/// link.
 #[component]
 pub fn ShareUrl(url: String) -> Element {
     rsx! {
         div { class: "share-url",
-            span { class: "stat-chip share-url-chip", "{url}" }
+            span {
+                class: "stat-chip share-url-chip",
+                tabindex: "0",
+                "aria-label": "Share link",
+                onfocus: move |_| {
+                    document::eval(SELECT_LINK_JS);
+                },
+                "{url}"
+            }
         }
     }
 }
+
+/// Selects the whole link in the focused chip.
+const SELECT_LINK_JS: &str = "(() => { const chip = document.activeElement; if (!chip || !chip.matches('.share-url-chip')) return; const range = document.createRange(); range.selectNodeContents(chip); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range); })();";
 
 /// The Share dialog's actions while the deck is shared, in order: Stop sharing (`on_stop`) first,
 /// set apart from the rest by the kit's dialog sheet, then Close and Copy link (`on_copy`), where
@@ -59,6 +71,18 @@ mod tests {
                     .collect()
             })
         })
+    }
+
+    #[test]
+    fn the_link_is_a_tab_stop_that_selects_itself() {
+        let html =
+            dioxus_ssr::render_element(rsx! { ShareUrl { url: "https://x.test/d".to_owned() } });
+        assert!(html.contains("tabindex=\"0\""), "{html}");
+        assert!(html.contains("aria-label=\"Share link\""), "{html}");
+        assert!(
+            SELECT_LINK_JS.contains("range.selectNodeContents(chip)"),
+            "{SELECT_LINK_JS}"
+        );
     }
 
     #[test]

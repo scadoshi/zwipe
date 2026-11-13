@@ -39,6 +39,10 @@ const MANIFEST: Asset = asset!("/assets/site.webmanifest");
 /// app's `header_hide.js`, keyed to the shell's header and scroller.
 const HEADER_HIDE_JS: &str = include_str!("../../../assets/header_hide.js");
 
+/// Every element a screen scrolls in: the screen's column and any layer over it (a deck's
+/// Cards). The page keys scroll the topmost one shown.
+const PAGE_SCROLLERS: &str = ".web-scroll-screen";
+
 /// The app root. Launch it with a [`ZwipeClient`](zwipe_client::ZwipeClient)
 /// in the root context.
 #[component]
@@ -132,8 +136,9 @@ pub fn App() -> Element {
     components::use_settle();
     // The keyboard shortcuts sheet, over every route, the auth screens included, opened by
     // Shift+H, a hint's keyboard button or a swipe screen's dock button.
-    // The screen scrolls in its own column under the nav, not the document.
-    let shortcuts_open = use_shortcuts_root(Some(".web-main > .web-scroll-screen"));
+    // The screen scrolls in its own column under the nav, not the document; a layer over it
+    // (a deck's Cards) scrolls on its own, and the topmost shown one takes the page keys.
+    let shortcuts_open = use_shortcuts_root(Some(PAGE_SCROLLERS));
 
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
@@ -250,15 +255,13 @@ if (!window.__zwipeDialogFocus) {
         } else if (!open && opener) {
             const from = opener;
             opener = null;
-            // The closing dialog keeps focus through its fade, then leaves the page: wait it out.
-            let tries = 0;
-            const back = () => {
-                if (!from.isConnected || from === document.body) return;
-                const now = document.activeElement;
-                if (!now || now === document.body || !now.isConnected) { from.focus({ preventScroll: true }); return; }
-                if (now.closest('.alert-dialog') && tries++ < 12) setTimeout(back, 50);
-            };
-            back();
+            // The closed dialog stays in the page, hidden, with focus on its button: that, or the
+            // page, hands focus back. Another dialog open by now keeps it.
+            if (!from.isConnected || from === document.body) return;
+            const now = document.activeElement;
+            const left = !now || now === document.body || !now.isConnected
+                || !!(now.closest && now.closest('.alert-dialog:not([data-state="open"])'));
+            if (left) from.focus({ preventScroll: true });
         }
     }).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-state'] });
 }
@@ -373,8 +376,16 @@ mod tests {
             "closing hands focus back to the opener"
         );
         assert!(
-            DIALOG_FOCUS_JS.contains("now.closest('.alert-dialog') && tries++ < 12"),
-            "after the dialog's fade"
+            DIALOG_FOCUS_JS.contains("now.closest('.alert-dialog:not([data-state=\"open\"])')"),
+            "from the closed dialog, which stays in the page"
+        );
+    }
+
+    #[test]
+    fn the_page_keys_reach_a_layer_over_the_screen_as_well_as_the_screen() {
+        assert_eq!(
+            PAGE_SCROLLERS, ".web-scroll-screen",
+            "the deck's Cards layer is one too"
         );
     }
 
@@ -385,6 +396,14 @@ mod tests {
         assert!(
             KEYS_JS.contains("if (e.key === 'Escape') {\n        e.preventDefault();"),
             "{KEYS_JS}"
+        );
+    }
+
+    #[test]
+    fn a_closed_dialog_hands_focus_back_to_its_opener_though_it_stays_in_the_page() {
+        assert!(
+            DIALOG_FOCUS_JS.contains("now.closest('.alert-dialog:not([data-state=\"open\"])')"),
+            "focus left in the closed dialog goes back to the opener: {DIALOG_FOCUS_JS}"
         );
     }
 

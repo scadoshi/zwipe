@@ -58,6 +58,8 @@ pub const UPCOMING: &[Release] = &[Release {
         "On the web's deck page in List, holding a key with a card open opens the card you stop on instead of each one on the way",
         "On the web's deck page, a featured card's details drawer opens on the left when a right one would cover the card, as a stack card's does",
         "On a phone's web app, the deck form's Format, Deck tags and Oracle tags pickers open as a screen with a back arrow, as in the app",
+        "On the web, gg and Shift+G scroll a deck's Cards when they are open, not the Profile under them",
+        "On the web, Share's link is a Tab stop that selects itself for copying",
     ],
 }];
 
