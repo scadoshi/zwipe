@@ -128,10 +128,27 @@ pub fn use_global_keys(on_hint: Option<Callback<()>>) {
     });
 }
 
+/// What takes focus as the shortcuts sheet opens: its close button, so Esc, Enter and Tab act on
+/// the sheet however it was opened (Shift+H, or a hint's keyboard button, whose hint hands focus
+/// back to the page as it closes).
+const SHEET_FOCUS: &str = ".web-shortcuts-layer .bottom-sheet.show .sheet-close";
+
+/// Takes focus off anything inside the closed shortcuts sheet.
+const LEAVE_CLOSED_JS: &str = "{ const a = document.activeElement; if (a && a.closest && a.closest('.web-shortcuts-layer') && !a.closest('.bottom-sheet.show')) a.blur(); }";
+
 /// The shortcuts sheet: every key of the newest screen that offers it with what it does, in the
-/// hint's key style. It sits above every screen, a full-window one included.
+/// hint's key style. It sits above every screen, a full-window one included. Focus moves into it as
+/// it opens and back as it closes ([`use_sheet_focus`](crate::keys::use_sheet_focus)).
 #[component]
 pub fn ShortcutsSheet(open: Signal<bool>) -> Element {
+    crate::keys::use_sheet_focus(open.into(), SHEET_FOCUS);
+    // With no opener left to take focus back (the hint's button is gone, or the page had it),
+    // focus leaves the closed sheet rather than staying on its hidden close button.
+    use_effect(move || {
+        if !open() {
+            document::eval(LEAVE_CLOSED_JS);
+        }
+    });
     let offered = try_use_context::<ShortcutsOffered>().map(|ShortcutsOffered(stack)| stack);
     // No screen offering the sheet (the one that did has gone): nothing to list.
     let Some(screen) = offered.and_then(|stack| stack.read().last().cloned()) else {
@@ -280,6 +297,24 @@ mod tests {
         }
         assert!(js.contains("open[open.length - 1]"), "the topmost: {js}");
         assert!(js.contains(guard::MODAL_HINT_BUTTON), "{js}");
+    }
+
+    #[test]
+    fn closing_the_sheet_takes_focus_out_of_it() {
+        assert!(
+            LEAVE_CLOSED_JS
+                .contains("a.closest('.web-shortcuts-layer') && !a.closest('.bottom-sheet.show')"),
+            "{LEAVE_CLOSED_JS}"
+        );
+        assert!(LEAVE_CLOSED_JS.contains("a.blur()"), "{LEAVE_CLOSED_JS}");
+    }
+
+    #[test]
+    fn the_open_sheet_s_close_button_takes_focus() {
+        assert_eq!(
+            SHEET_FOCUS,
+            ".web-shortcuts-layer .bottom-sheet.show .sheet-close"
+        );
     }
 
     #[test]

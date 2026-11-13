@@ -167,6 +167,7 @@ pub fn App() -> Element {
 /// under it. As it closes focus returns to where it was opened from: the
 /// open drawer, else the form or panel it sits in, else the page's main
 /// column; never the nav, and never the `?`, which Enter would open again.
+/// A sheet that opened as the hint closed keeps focus for itself.
 /// The opener is the focused element, or the last thing pressed where a
 /// click does not focus a button (Safari).
 const HINT_FOCUS_JS: &str = r#"
@@ -190,6 +191,9 @@ if (!window.__zwipeHintFocus) {
         } else if (!open && opener) {
             const from = opener;
             opener = null;
+            // A sheet the hint opened (the shortcuts sheet from its keyboard button) takes focus itself.
+            const opened = [...document.querySelectorAll('.bottom-sheet.show, .bottom-sheet-premount')].some((s) => !s.contains(from));
+            if (opened) return;
             const inNav = from.closest('.web-app-nav, nav');
             const target = from.closest('.bottom-sheet.show')
                 || (!inNav && from.closest('form, .web-form-panel, .panel-card, .settings-list'))
@@ -276,5 +280,24 @@ fn stat_hint_topic(topic: components::StatTopic) -> HintTopic {
         components::StatTopic::ColorChart => HintTopic::ColorChart,
         components::StatTopic::ManaFulfillment => HintTopic::ManaFulfillment,
         components::StatTopic::DrawOdds => HintTopic::DrawOdds,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_closing_hint_leaves_focus_to_a_sheet_it_opened() {
+        assert!(
+            HINT_FOCUS_JS.contains(
+                "[...document.querySelectorAll('.bottom-sheet.show, .bottom-sheet-premount')].some((s) => !s.contains(from))"
+            ),
+            "{HINT_FOCUS_JS}"
+        );
+        assert!(
+            HINT_FOCUS_JS.contains("if (opened) return;"),
+            "{HINT_FOCUS_JS}"
+        );
     }
 }

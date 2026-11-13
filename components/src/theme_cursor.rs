@@ -28,7 +28,8 @@ const CURRENT_ROW: &str = ".bottom-sheet.show:has(.theme-swatches) .pref-row.sel
 /// listens on the window before anything else hears the key, so the kit's arrow keys, which
 /// preview a row, never see a move. Home and End answer only while a row has focus.
 /// `__zwipeThemeFocus` focuses a row by its place and scrolls it into the sheet's view, and
-/// `__zwipeThemeReveal` scrolls the row in focus into view once the sheet has given it focus.
+/// `__zwipeThemeReveal` scrolls the row in focus into view once the sheet has given it focus. A
+/// row that opens its group comes into view with the group's heading above it.
 const NAV_JS: &str = r"
 window.__zwipeThemeNav = window.__zwipeThemeNav || [];
 window.__zwipeThemeNav.push('__ID__');
@@ -46,9 +47,11 @@ const reveal = (row, sheet, smooth) => {
     if (!box) return;
     const b = box.getBoundingClientRect();
     const r = row.getBoundingClientRect();
+    const label = row.previousElementSibling;
+    const head = label && label.matches('.theme-group-label') ? label.getBoundingClientRect() : r;
     const pad = 8;
     let top = null;
-    if (r.top < b.top + pad) top = box.scrollTop + r.top - b.top - pad;
+    if (head.top < b.top + pad) top = Math.max(0, box.scrollTop + head.top - b.top - pad);
     else if (r.bottom > b.bottom - pad) top = box.scrollTop + r.bottom - b.bottom + pad;
     const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (top !== null) box.scrollTo({ top, behavior: smooth && !still ? 'smooth' : 'auto' });
@@ -218,6 +221,20 @@ mod tests {
         assert!(
             !js.contains("'Enter'"),
             "Enter stays the focused row's click: {js}"
+        );
+    }
+
+    #[test]
+    fn a_row_that_opens_its_group_shows_the_heading_above_it() {
+        assert!(
+            NAV_JS.contains(
+                "label.matches('.theme-group-label') ? label.getBoundingClientRect() : r"
+            ),
+            "{NAV_JS}"
+        );
+        assert!(
+            NAV_JS.contains("if (head.top < b.top + pad)"),
+            "scrolling up reveals from the heading: {NAV_JS}"
         );
     }
 
