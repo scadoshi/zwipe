@@ -198,13 +198,16 @@
     grid-template-columns: minmax(0, 1fr);
 }
 
-/* The deck page's card details drawer, opened from a stack, a featured card
-   or a row, leaves the page live: its backdrop neither dims nor catches a
-   click, so a click on another card swaps that card in. Escape and the
-   drawer's × close it. */
-.sheet-form-drawer:has(> .deck-stack-details) > .sheet-backdrop {
-    background: transparent;
-    pointer-events: none;
+/* On the wide layout the deck page's card details drawer, opened from a
+   stack, a featured card or a row, leaves the page live: its backdrop
+   neither dims nor catches a click, so a click on another card swaps that
+   card in. Escape and the drawer's × close it. On a phone it dims as every
+   sheet does, and a tap on the dim only closes it. */
+@media (min-width: 900px) {
+    .sheet-form-drawer:has(> .deck-stack-details) > .sheet-backdrop {
+        background: transparent;
+        pointer-events: none;
+    }
 }
 
 /* The keyboard cursor scrolls its card into view clear of the sticky header
