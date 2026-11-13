@@ -31,5 +31,10 @@ laptop.
 - Undo after closing and reopening the Cards: not reproduced (closed by the nav's back arrow, the browser's Back and Esc; Undo stays live). The undo log is the tab's root store, so only a full page load clears it, which a move does when a newer build is live (`fresh_build`).
 - A fresh tab on `?view=cards`: Chrome skips history entries a page adds before the user's first tap, and the Profile entry and the layer's own entry are both added on load. Moving them to the first tap would mean rewriting entries the overlay history (431) counts, so it is left as is; the layer's back arrow lands on the Profile.
 
+### surfer on 438
+- One tap on Cards pushed `?view=cards` twice: the route's entry and the entry 431 gives every open overlay. The layer counts as an overlay its route stands for (`RouteOverlays`, `use_route_overlay`): it stays on the overlay stack for its place and Esc, the follower leaves it out of the entries it owns, and a browser back with only it open is the route's own pop, which the trail history sees, so the router closes it. Closing goes back over the one entry whenever the app has one behind it. Widening and narrowing with it open move no history (`?view=cards` on a wide window is the one page at its cards).
+- A card's drawer carried across 900px as the wide side panel over the phone Profile: crossing the breakpoint either way now closes it.
+- Checked at 390: one open adds one entry; browser Back, Forward, the nav's back arrow and Esc each move one; widen to 1000 and narrow again leave history as it is; the filter over the layer takes its own entry, so Back closes it, then the layer. At 1000 a stack card's drawer, narrowed to 800, closes; the phone layer's drawer, widened to 1000, closes.
+
 ## Verification
 -

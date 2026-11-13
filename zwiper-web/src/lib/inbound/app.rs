@@ -12,7 +12,7 @@ use zwipe_core::domain::logo;
 use zwipe_core::domain::user::models::settings::PipStyle;
 
 use crate::inbound::chrome::hint_topic::{HintHost, HintTopic, InfoButton};
-use crate::inbound::chrome::leave_guard::{self, GuardedHistory};
+use crate::inbound::chrome::leave_guard::{self, GuardedHistory, RouteOverlays};
 use crate::inbound::chrome::overlay_steps::StepMove;
 use crate::inbound::chrome::splash;
 use crate::inbound::chrome::trail::TrailHistory;
@@ -50,14 +50,20 @@ pub fn App() -> Element {
     let mut overlay_back_stack = use_overlay_back_stack();
     use_context_provider(|| overlay_back_stack);
     leave_guard::watch_overlays(overlay_back_stack);
-    // Each open overlay owns a browser history entry, so the browser's back closes it. The
-    // history follows the stack once it settles, so an overlay that leaves and comes straight
-    // back, as one does while it draws again, moves nothing.
+    // Each open overlay owns a browser history entry, so the browser's back closes it, but for
+    // one its route already stands for. The history follows the stack once it settles, so an
+    // overlay that leaves and comes straight back, as one does while it draws again, moves
+    // nothing.
+    let route_overlays = use_context_provider(|| RouteOverlays(Signal::new(0)));
     use_effect(move || {
         let _ = overlay_back_stack.depth();
+        let _ = route_overlays.0();
         spawn(async move {
             timer::sleep(OVERLAY_SETTLE).await;
-            match leave_guard::follow_overlays(overlay_back_stack.depth()) {
+            let owning = overlay_back_stack
+                .depth()
+                .saturating_sub(*route_overlays.0.peek());
+            match leave_guard::follow_overlays(owning) {
                 Some(StepMove::Close(n)) => {
                     for _ in 0..n {
                         overlay_back_stack.close_top();

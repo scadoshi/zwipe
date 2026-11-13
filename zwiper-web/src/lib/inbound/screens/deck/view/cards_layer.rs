@@ -25,6 +25,7 @@ use zwipe_ui::deck_cards::stacks::CardsView;
 use zwipe_ui::screens::deck_cards::TITLE;
 
 use super::ghost::DeckBandsGhost;
+use crate::inbound::chrome::leave_guard::use_route_overlay;
 use crate::inbound::router::Route;
 use crate::inbound::shell::use_overlay_nav;
 
@@ -32,22 +33,20 @@ use crate::inbound::shell::use_overlay_nav;
 const CARDS_QUERY: &str = "view=cards";
 
 /// Opens (`true`) and closes (`false`) a deck's Cards through its route, `route` giving the
-/// deck's route with a view. Opening pushes the route with `?view=cards`, so the browser's Back
-/// closes the layer. Closing goes back one entry when the layer opened from this screen, and
-/// otherwise (a link or a refresh that opened on the Cards) puts the Profile in its place, so
-/// closing never leaves the deck. A close that comes from the browser's own back, which has
-/// already left the Cards, only records the Profile as the screen's place.
+/// deck's route with a view. Opening pushes the route with `?view=cards`, one history entry, so
+/// the browser's Back closes the layer. Closing goes back over that entry when the app has one
+/// behind it, the Profile it opened from, and otherwise (a link that opened on the Cards) puts the
+/// Profile in its place, so closing never leaves the deck. A close that comes from the browser's
+/// own back, which has already left the Cards, only records the Profile as the screen's place.
 pub(crate) fn use_cards_route(
     route: impl Fn(Option<DeckView>) -> Route + 'static,
 ) -> Callback<bool> {
     let navigator = use_navigator();
-    let mut opened_here = use_signal(|| false);
     // A tab that opens straight on the Cards gets the Profile under them, so Back lands there.
     let profile_route = route(None);
     let cards_route = route(Some(DeckView::Cards));
     use_effect(move || {
         if history().current_route().contains(CARDS_QUERY) && !navigator.can_go_back() {
-            opened_here.set(true);
             navigator.replace(profile_route.clone());
             navigator.push(cards_route.clone());
         }
@@ -55,16 +54,10 @@ pub(crate) fn use_cards_route(
     use_callback(move |open: bool| {
         let on_cards = history().current_route().contains(CARDS_QUERY);
         if open {
-            opened_here.set(true);
             navigator.push(route(Some(DeckView::Cards)));
-        } else if !on_cards {
-            opened_here.set(false);
-            navigator.replace(route(None));
-        } else if *opened_here.peek() && navigator.can_go_back() {
-            opened_here.set(false);
+        } else if on_cards && navigator.can_go_back() {
             navigator.go_back();
         } else {
-            opened_here.set(false);
             navigator.replace(route(None));
         }
     })
@@ -117,6 +110,8 @@ pub(crate) fn DeckCardsLayer(
 ) -> Element {
     let open = use_signal(|| true);
     let layer = use_overlay_back_action(open.into(), on_close);
+    // Its route's `?view=cards` entry is its history entry, so the overlay stack adds none.
+    use_route_overlay();
     // The nav over the layer names the Cards, opens their hint and its back arrow closes them.
     use_overlay_nav(open, TITLE.to_owned(), on_hint, on_close);
     let pointer = use_pointer();

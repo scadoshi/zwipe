@@ -60,6 +60,11 @@ pub(crate) enum PopMeaning {
 }
 
 impl OverlaySteps {
+    /// How many history entries the open overlays own.
+    pub(crate) const fn owned(&self) -> usize {
+        self.owned
+    }
+
     /// Follows the stack at `depth` open overlays: an entry for each one that opened, and one
     /// move back over the entries of those that closed some other way.
     pub(crate) fn follow(&mut self, depth: usize) -> Option<StepMove> {

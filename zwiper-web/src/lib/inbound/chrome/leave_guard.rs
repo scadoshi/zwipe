@@ -89,6 +89,8 @@ struct Guard {
     shown: RefCell<String>,
     /// The history entries the open overlays own.
     steps: Cell<OverlaySteps>,
+    /// How many open overlays a route's entry stands for ([`RouteOverlays`]).
+    route_overlays: Cell<usize>,
 }
 
 thread_local! {
@@ -132,6 +134,12 @@ fn undo_pop() -> bool {
 /// read once the overlay has closed, so an overlay the route holds open (a
 /// deck's Cards layer), whose close moves the route itself, keeps that move.
 fn close_overlay_on_pop() -> bool {
+    // With only an overlay its route stands for open (a deck's Cards), the pop is the route's
+    // own: the router moves and the overlay closes with its route.
+    let route_owned = GUARD.with(|g| g.route_overlays.get() > 0 && g.steps.get().owned() == 0);
+    if route_owned {
+        return false;
+    }
     let found = GUARD.with(|g| {
         let overlays = g.overlays.get()?;
         let inner = g.inner.borrow().clone()?;
@@ -200,6 +208,37 @@ fn show_current() {
 /// Records `route` as the one on screen.
 fn show(route: String) {
     GUARD.with(|g| *g.shown.borrow_mut() = route);
+}
+
+/// How many open overlays a route's own history entry already stands for, such as a deck's
+/// Cards layer at `?view=cards`. They sit on the overlay stack for their place and Esc, but own
+/// no entry of their own, so one open adds one entry and one close takes one away.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct RouteOverlays(pub Signal<usize>);
+
+/// Counts the caller as an overlay its route stands for, while it is mounted.
+pub fn use_route_overlay() {
+    let held = try_use_context::<RouteOverlays>();
+    use_hook(move || {
+        GUARD.with(|g| {
+            g.route_overlays
+                .set(g.route_overlays.get().saturating_add(1));
+        });
+        if let Some(RouteOverlays(mut count)) = held {
+            let now = *count.peek();
+            count.set(now.saturating_add(1));
+        }
+    });
+    use_drop(move || {
+        GUARD.with(|g| {
+            g.route_overlays
+                .set(g.route_overlays.get().saturating_sub(1));
+        });
+        if let Some(RouteOverlays(mut count)) = held {
+            let now = *count.peek();
+            count.set(now.saturating_sub(1));
+        }
+    });
 }
 
 /// Lets the browser's back and forward close the top of `overlays` before

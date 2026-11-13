@@ -27,7 +27,7 @@ use zwipe_core::domain::deck::{Board, Format};
 use zwipe_ui::buy::{self, BuyLink};
 use zwipe_ui::deck::view::StatsProfile;
 use zwipe_ui::deck_cards::listing::{Listed, RowMeta};
-use zwipe_ui::deck_cards::stacks::CardsView;
+use zwipe_ui::deck_cards::stacks::{CardsView, Reveal};
 use zwipe_ui::deck_cards::{self, Boards, FeaturedOpen};
 use zwipe_ui::filter;
 use zwipe_ui::filter::draft::SheetConfig;
@@ -147,6 +147,20 @@ pub(crate) fn DeckPageBody(
     // A phone draws the Profile as the page and the Cards as a layer over it.
     let wide = use_wide();
     let phone = !wide();
+    // A card's drawer takes the page's form, the wide side panel or the phone's sheet over the
+    // Cards, so crossing the breakpoint closes it rather than carry one form into the other.
+    let mut drew_phone = use_signal(|| phone);
+    use_effect(use_reactive!(|phone| {
+        if *drew_phone.peek() != phone {
+            drew_phone.set(phone);
+            let StackDetails {
+                mut reveal,
+                mut details_open,
+            } = details;
+            details_open.set(false);
+            reveal.set(Reveal::default());
+        }
+    }));
     // The Cards layer stays up while it slides out.
     let layer = use_layer_presence(phone && cards_open);
     // A wide window shows the cards on the page; a route that opens them scrolls there once
