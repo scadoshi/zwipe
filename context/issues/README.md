@@ -177,7 +177,9 @@ Who checked, on which live build, what they saw.
 | [481](481-drawer-side-measured.md) | A card's details drawer opens on the left only when a right drawer would cover the card | fixing | scotland | - |
 | [493](493-phone-pickers-as-screens.md) | On phone web the deck form's pickers slide in as a sheet; the app shows them as a screen | fixing | scotland | - |
 | [501](501-phone-tap-targets.md) | On a phone, a card row's actions and the changelog's carets are small tap targets | fixing | scotland | - |
+| [502](502-delete-account-field.md) | Delete account's password field stretches across the dialog on a wide window | fixing | scotland | - |
 | [503](503-hints-grow.md) | A tall hint cuts its last lines with no sign it scrolls | fixing | scotland | - |
+| [505](505-touch-field-zoom.md) | Focusing Quick add on a phone zooms the page | fixing | scotland | - |
 | [509](509-banner-dismiss-name.md) | A banner's dismiss button has no name a screen reader can say | fixing | scotland | orangui a495fe0 |
 | [510](510-edit-commander-fetched-twice.md) | Opening Edit deck fetches the commander's card twice | fixing | scotland | - |
 | [480](480-deck-shortcuts-missing-keys.md) | The deck page's shortcuts sheet leaves out keys that work | fixing | thinker | - |

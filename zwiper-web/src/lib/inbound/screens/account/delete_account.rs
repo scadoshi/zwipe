@@ -114,7 +114,9 @@ mod tests {
     #[test]
     fn the_password_field_takes_a_field_s_width_on_a_wide_window() {
         let rule = ".alert-dialog-description > .input,\n    .alert-dialog-description > .password-input-wrapper {";
-        let at = WEB_CSS.find(rule).expect("the dialog field rule covers a password field");
+        let at = WEB_CSS
+            .find(rule)
+            .expect("the dialog field rule covers a password field");
         let body = WEB_CSS
             .get(at..)
             .and_then(|s| s.split('}').next())
