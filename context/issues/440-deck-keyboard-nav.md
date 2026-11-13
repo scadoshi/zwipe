@@ -21,5 +21,7 @@ scotland:
 
   - Undo of a printing change (surfer): the cursor follows the card back to its old printing's id (`deck_cursor::follow_card`, called by the save and its Undo, the command zone's too), so focus lands on the restored card instead of moving on to the next one.
 
+  - Open List rows: the editor's older up/down row stepper (`use_swipe_key_handler` with Up and Down) answered the same keys beside the cursor, so after Enter shut a row the next `↓` opened the list's first row. On the computer layout it now yields to the cursor; narrower it steps the open row as before. With the cursor, what follows it is what shows open: the drawer swaps to the new card, an open List row gives way to the new card's row, and with nothing open only the cursor moves.
+
 ## Verification
 Surfer's 28 tests in the plan's section 7.

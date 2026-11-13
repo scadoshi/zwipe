@@ -764,9 +764,15 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
         )
     });
 
+    // On the computer layout the keyboard cursor takes the arrows (`components::deck_cursor`);
+    // narrower, they step the open row.
+    let computer = components::use_computer();
     use_swipe_key_handler(
         vec![Swipe::Up, Swipe::Down],
         Callback::new(move |swipe: Swipe| {
+            if *computer.peek() {
+                return;
+            }
             let list: Vec<Uuid> = listing
                 .peek()
                 .rows

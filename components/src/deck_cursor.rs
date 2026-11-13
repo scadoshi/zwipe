@@ -83,7 +83,8 @@ if (!window.__zwipeDeckTrack) {
 /// Registers one page's cursor keys: a move key under the guard, on the computer layout, while
 /// the page draws cards, gathers the cards as drawn and sends `[key, from, columns]`, `from` the
 /// card the move starts at (the hovered card when the mouse moved last, else the card in focus,
-/// else the last cursor) and each column `[[id, center_y, in_view], ...]`. Home and End only
+/// else the last cursor), each column `[[id, center_y, in_view], ...]`, and `open`: `drawer`
+/// while the details drawer shows, `row` while a List row is open, else empty. Home and End only
 /// answer while a card has focus from a key.
 const NAV_JS: &str = r"
 window.__zwipeDeckNav = window.__zwipeDeckNav || [];
@@ -113,7 +114,8 @@ const onKey = (e) => {
     const as = (s) => { const r = s.getBoundingClientRect(); return [s.getAttribute('data-row'), r.top + r.height / 2, r.bottom > 0 && r.top < height]; };
     const columns = holders.length ? holders.map((h) => all.filter((s) => h.contains(s)).map(as)) : [all.map(as)];
     window.__zwipeDeckOrder = columns.flat().map((s) => s[0]);
-    dioxus.send([key, from, columns]);
+    const open = document.querySelector('.bottom-sheet.show.__DRAWER__') ? 'drawer' : document.querySelector('.web-deck-row.selected') ? 'row' : '';
+    dioxus.send([key, from, columns, open]);
 };
 window['__zwipeDeckNav__ID__'] = onKey;
 document.addEventListener('keydown', onKey);
@@ -154,6 +156,31 @@ fn follow_js(from: Uuid, to: Uuid) -> String {
         .replace("__TO__", &to.to_string())
 }
 
+/// What follows the cursor to its new card: what the page shows open as it moves.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Follow {
+    /// The details drawer shows: it swaps to the new card.
+    Drawer,
+    /// A List row is open: the new card's row opens in its place.
+    Row,
+    /// Nothing is open: only the cursor moves.
+    Nothing,
+}
+
+impl Follow {
+    /// What `open`, as the browser sends it, means.
+    fn of(open: &str) -> Self {
+        match open {
+            "drawer" => Self::Drawer,
+            "row" => Self::Row,
+            _ => Self::Nothing,
+        }
+    }
+}
+
+/// Opens list row `__ID__` where it is shut, as a click on its line does, which shuts the open one.
+const OPEN_ROW_JS: &str = "const row = document.querySelector('.web-deck-row[data-row=\"__ID__\"]'); if (row && !row.classList.contains('selected')) row.querySelector('.card-row-compact')?.click();";
+
 /// One card as the browser sends it: its id, vertical center and whether it is in view.
 type SentStop = (String, f64, bool);
 
@@ -170,11 +197,12 @@ pub(crate) fn use_deck_cursor(details: Option<StackDetails>) {
             .replace("__KEY__", PRESSED_KEY)
             .replace("__MOVES__", &format!("{MOVE_KEYS:?}"))
             .replace("__POINTER__", COMPUTER_QUERY)
-            .replace("__GUARD__", &cursor_guard_js(STACK_DETAILS_CLASS));
+            .replace("__GUARD__", &cursor_guard_js(STACK_DETAILS_CLASS))
+            .replace("__DRAWER__", STACK_DETAILS_CLASS);
         spawn(async move {
             let mut keys = document::eval(&script);
-            while let Ok((key, from, columns)) = keys
-                .recv::<(String, Option<String>, Vec<Vec<SentStop>>)>()
+            while let Ok((key, from, columns, open)) = keys
+                .recv::<(String, Option<String>, Vec<Vec<SentStop>>, String)>()
                 .await
             {
                 let Some(step) = move_for(&key) else {
@@ -187,11 +215,18 @@ pub(crate) fn use_deck_cursor(details: Option<StackDetails>) {
                 };
                 order.set(snapshot.order());
                 document::eval(&format!("window.__zwipeDeckFocus('{target}');"));
-                if let Some(details) = details
-                    && *details.details_open.peek()
-                    && details.reveal.peek().open() != Some(target)
-                {
-                    details.click(target);
+                match Follow::of(&open) {
+                    Follow::Drawer => {
+                        if let Some(details) = details
+                            && details.reveal.peek().open() != Some(target)
+                        {
+                            details.click(target);
+                        }
+                    }
+                    Follow::Row => {
+                        document::eval(&OPEN_ROW_JS.replace("__ID__", &target.to_string()));
+                    }
+                    Follow::Nothing => {}
                 }
             }
         });
@@ -312,6 +347,21 @@ mod tests {
         assert!(
             js.contains(&format!("id === '{}' ? '{}' : id", id(1), id(2))),
             "{js}"
+        );
+    }
+
+    #[test]
+    fn what_shows_open_decides_what_follows_the_cursor() {
+        assert_eq!(Follow::of("drawer"), Follow::Drawer);
+        assert_eq!(Follow::of("row"), Follow::Row);
+        assert_eq!(Follow::of(""), Follow::Nothing);
+        assert!(
+            NAV_JS.contains("document.querySelector('.bottom-sheet.show.__DRAWER__') ? 'drawer' : document.querySelector('.web-deck-row.selected') ? 'row' : ''"),
+            "{NAV_JS}"
+        );
+        assert!(
+            OPEN_ROW_JS.contains("!row.classList.contains('selected')"),
+            "{OPEN_ROW_JS}"
         );
     }
 
