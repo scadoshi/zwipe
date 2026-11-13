@@ -198,10 +198,11 @@
     grid-template-columns: minmax(0, 1fr);
 }
 
-/* A card's details drawer opened from the stacks leaves the stacks live:
-   its backdrop neither dims nor catches a click, so a click on another card
-   swaps that card in. Escape and the drawer's × close it. */
-body:has(.deck-stacks) .sheet-form-drawer:has(> .card-details-drawer) > .sheet-backdrop {
+/* The deck page's card details drawer, opened from a stack, a featured card
+   or a row, leaves the page live: its backdrop neither dims nor catches a
+   click, so a click on another card swaps that card in. Escape and the
+   drawer's × close it. */
+.sheet-form-drawer:has(> .deck-stack-details) > .sheet-backdrop {
     background: transparent;
     pointer-events: none;
 }

@@ -13,9 +13,12 @@
 //! then goes past `fresh_build::after_move`, which loads the page in full
 //! once a newer build is live.
 //!
-//! The browser's back or forward with a sheet or dialog open closes the top
-//! one instead, armed or not, and puts the screen's URL back; the guard only
-//! asks once nothing is open.
+//! Each sheet or dialog that opens owns a browser history entry
+//! (`overlay_steps`), so the browser's back closes the
+//! top one instead, armed or not, and the guard only asks once nothing is
+//! open. One closed another way takes its entry back out. An overlay with no
+//! entry of its own, such as one open as the screen showed, still closes on a
+//! back, which puts the screen's URL back.
 
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
@@ -27,6 +30,7 @@ use dioxus::history::History;
 use dioxus::prelude::*;
 
 use crate::inbound::chrome::fresh_build;
+use crate::inbound::chrome::overlay_steps::{OverlaySteps, PopMeaning, StepMove};
 use crate::inbound::router::Route;
 
 /// A move the guard held back.
@@ -83,6 +87,8 @@ struct Guard {
     /// The route on screen, which a back or forward that closes an overlay
     /// puts back.
     shown: RefCell<String>,
+    /// The history entries the open overlays own.
+    steps: Cell<OverlaySteps>,
 }
 
 thread_local! {
@@ -140,6 +146,37 @@ fn close_overlay_on_pop() -> bool {
     let shown = GUARD.with(|g| g.shown.borrow().clone());
     inner.push(shown);
     true
+}
+
+/// Runs `f` on the overlays' history entries.
+fn with_steps<R>(f: impl FnOnce(&mut OverlaySteps) -> R) -> R {
+    GUARD.with(|g| {
+        let mut steps = g.steps.get();
+        let out = f(&mut steps);
+        g.steps.set(steps);
+        out
+    })
+}
+
+/// Follows the overlay stack at `depth` open overlays, returning the move the browser's history
+/// makes so each open overlay owns an entry. Call it from an effect that reads the stack's depth.
+pub(crate) fn follow_overlays(depth: usize) -> Option<StepMove> {
+    with_steps(|steps| steps.follow(depth))
+}
+
+/// On a pop of the browser's history, closes the top overlay when the pop went back over its
+/// entry, and swallows the page's own moves. Returns whether the pop is handled.
+fn pop_overlay_step() -> bool {
+    match with_steps(OverlaySteps::pop) {
+        PopMeaning::Own => true,
+        PopMeaning::CloseTop => {
+            if let Some(mut overlays) = GUARD.with(|g| g.overlays.get()) {
+                overlays.close_top();
+            }
+            true
+        }
+        PopMeaning::Route => false,
+    }
 }
 
 /// Whether a screen holds unsaved changes.
@@ -232,7 +269,14 @@ impl History for GuardedHistory {
     }
 
     fn go_back(&self) {
-        if !hold(Held::Back) {
+        if hold(Held::Back) {
+            return;
+        }
+        // With overlays open, the back goes past their entries to the route before.
+        let owned = with_steps(OverlaySteps::leave);
+        if owned > 0 {
+            document::eval(&StepMove::Back(owned.saturating_add(1)).script());
+        } else {
             self.inner.go_back();
         }
     }
@@ -249,6 +293,9 @@ impl History for GuardedHistory {
 
     fn push(&self, route: String) {
         if route == self.inner.current_route() || !hold(Held::Push(route.clone())) {
+            if route != self.inner.current_route() {
+                with_steps(OverlaySteps::route_moved);
+            }
             self.inner.push(route.clone());
             show(route);
             fresh_build::after_move();
@@ -269,7 +316,7 @@ impl History for GuardedHistory {
 
     fn updater(&self, callback: Arc<dyn Fn() + Send + Sync>) {
         self.inner.updater(Arc::new(move || {
-            if close_overlay_on_pop() || undo_pop() {
+            if pop_overlay_step() || close_overlay_on_pop() || undo_pop() {
                 return;
             }
             show_current();

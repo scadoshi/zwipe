@@ -143,6 +143,7 @@ Who checked, on which live build, what they saw.
 | [427](427-zerver-admin-commands.md) | zerver-admin has no way to inspect, sign out, re-verify, delete, lock or re-email an account | fixing | thinker | - |
 | [428](428-narrow-web-stacks.md) | Narrow web's deck cards have no View chip, no Stacks and no group price or cart | fixing | laptop | feature/428-narrow-web-stacks |
 | [429](429-narrow-sheet-keys-and-drag.md) | On the web at phone width, Printings ignores the arrow keys and Enter until clicked, and the filter can't be pulled down | fixing | scotland | orangui 4566a7e, fbfcc73 |
+| [431](431-drawer-card-keys.md) | With a card's details drawer open on the web deck page, the card keys do nothing | fixing | scotland | orangui 3bd2f9b |
 | [432](432-star-undo.md) | Undo on the deck page skips starring and unstarring a card | fixing | thinker | - |
 | [433](433-web-app-404.md) | app.zwipe.net answers an unknown path with 200 | open | halo | - |
 | [434](434-featured-first-tap.md) | On a phone, a featured card floats on the first tap instead of opening, and the strip clips it | fixing | thinker | - |

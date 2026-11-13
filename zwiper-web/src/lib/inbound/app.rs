@@ -2,6 +2,8 @@
 //! dialogs and the router. The stylesheets are linked in `index.html`'s head
 //! at build ([`sheets`](crate::inbound::sheets)).
 
+use std::time::Duration;
+
 use components::{
     DialogHostView, ThemeConfig, ToastStack, use_dialog_host, use_overlay_back_stack,
 };
@@ -19,13 +21,15 @@ use crate::inbound::screens::update_required::UpdateRequired;
 use crate::inbound::session::upkeep;
 use crate::inbound::shell::{DeckOpener, MenuOpen, use_footer_lift};
 use crate::inbound::{caches, card_stores, catalog, telemetry};
-use crate::outbound::browser;
 use crate::outbound::details_store::DetailsStore;
+use crate::outbound::{browser, timer};
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 const FAVICON_16: Asset = asset!("/assets/favicon-16x16.png");
 const FAVICON_32: Asset = asset!("/assets/favicon-32x32.png");
 const APPLE_TOUCH_ICON: Asset = asset!("/assets/icon-180.png");
+/// How long the overlay stack holds still before the browser's history follows it.
+const OVERLAY_SETTLE: Duration = Duration::from_millis(50);
 /// The install manifest; its 192 and 512 icons sit unhashed in `public/icons`.
 const MANIFEST: Asset = asset!("/assets/site.webmanifest");
 /// The header's scroll follow at phone width: the web's own copy of the
@@ -45,6 +49,18 @@ pub fn App() -> Element {
     let mut overlay_back_stack = use_overlay_back_stack();
     use_context_provider(|| overlay_back_stack);
     leave_guard::watch_overlays(overlay_back_stack);
+    // Each open overlay owns a browser history entry, so the browser's back closes it. The
+    // history follows the stack once it settles, so an overlay that leaves and comes straight
+    // back, as one does while it draws again, moves nothing.
+    use_effect(move || {
+        let _ = overlay_back_stack.depth();
+        spawn(async move {
+            timer::sleep(OVERLAY_SETTLE).await;
+            if let Some(step) = leave_guard::follow_overlays(overlay_back_stack.depth()) {
+                document::eval(&step.script());
+            }
+        });
+    });
     use_future(move || async move {
         let mut escapes = document::eval(KEYS_JS);
         while escapes.recv::<bool>().await.is_ok() {

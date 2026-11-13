@@ -35,7 +35,8 @@ const CLOSE_MS: u32 = 300;
 /// (`use_overlay_back`), which the sheet draws at, holding it through the
 /// slide out, so the sheet opened last is on top. `dim` says whether its
 /// backdrop dims the page ([`SheetDim`]). The sheet is a `dialog` named by
-/// `title`, and `aria-modal` while it dims the page.
+/// `title`, and `aria-modal` while it dims the page. `data_card` is the id of
+/// the card it shows, for the keys that act on that card.
 #[component]
 pub fn DrawerSheet(
     open: ReadSignal<bool>,
@@ -48,6 +49,7 @@ pub fn DrawerSheet(
     #[props(default)] dock: Option<Element>,
     #[props(default)] layer: Option<u32>,
     #[props(default)] dim: SheetDim,
+    #[props(default)] data_card: Option<String>,
     children: Element,
 ) -> Element {
     let shown = open();
@@ -104,6 +106,7 @@ pub fn DrawerSheet(
             div {
                 class: if shown { "bottom-sheet show {reach} {class}{pulled}" } else { "bottom-sheet {reach} {class}" },
                 style: sheet_style,
+                "data-card": data_card,
                 role: "dialog",
                 "aria-label": (!title.is_empty()).then(|| title.clone()),
                 "aria-modal": modal,

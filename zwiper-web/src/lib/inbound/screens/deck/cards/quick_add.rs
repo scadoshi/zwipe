@@ -5,7 +5,8 @@
 //! names, and surfaces skipped and removed cards too, since a typed name is
 //! deliberate. The results sit under the box, pushing the rows below down.
 //! ↑ and ↓ move through them and Enter adds the highlighted one; a pick
-//! clears the box, which closes them. `/` focuses the box.
+//! clears the box, which closes them. Esc closes them and leaves the box, so the page's keys
+//! answer again. `/` focuses the box.
 
 use components::{ClearWrap, TOAST_QUICK};
 use dioxus::prelude::*;
@@ -27,6 +28,9 @@ use crate::outbound::timer;
 
 /// The input's id, for `/`.
 pub(crate) const QUICK_ADD_ID: &str = "quick-add";
+
+/// Takes focus off the box.
+const BLUR_JS: &str = "document.getElementById('__ID__')?.blur();";
 
 /// The Quick add row. A picked card lands in `entries`, and `on_added` lets
 /// the view run its pass again.
@@ -168,6 +172,11 @@ pub(crate) fn QuickAdd(
                                     e.prevent_default();
                                     add(card);
                                 }
+                            }
+                            Key::Escape => {
+                                results.set(Vec::new());
+                                show.set(false);
+                                document::eval(&BLUR_JS.replace("__ID__", QUICK_ADD_ID));
                             }
                             _ => {}
                         },

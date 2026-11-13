@@ -1,5 +1,6 @@
-//! The deck cards page's hover keys: `p`, `i`, `v` and `d` read the card under the cursor, else
-//! the card open in the Stacks drawer, else the open list row, and on an editable deck `m`, `s`,
+//! The deck cards page's hover keys: `p`, `i`, `v` and `d` read the card the details drawer
+//! shows, from a stack, a featured card or a row, else the card under the cursor, else the open
+//! list row, and on an editable deck `m`, `s`,
 //! Shift+S, `-` and `+` edit it, each as the card's own button does. A deck with no edit actions
 //! (a shared deck) answers only the keys that read. The keys still reach the page through the
 //! Stacks view's details drawer; every other key waits for it to close.
@@ -17,18 +18,19 @@ use crate::deck_cards_view::{DeckEditActions, OnPrinting, StackDetails};
 use crate::keys::{STACK_DETAILS_CLASS, use_page_keys_through};
 use crate::meld::{MeldSource, MeldToggle};
 
-/// Sends the card the deck cards screen's keys act on, as `stack:<id>` for a stack card or a
-/// featured card in the deck head, or `row:<id>` for a list row: the deepest one under the cursor, else the card open in the Stacks
-/// view's details drawer, else the list row whose details are open, else an empty string.
-const KEY_CARD_JS: &str = "const under = document.querySelectorAll('[data-row]:hover'); const drawer = document.querySelector('.bottom-sheet.show.__DRAWER__') && document.querySelector('.card-stack-slot.open[data-row]'); const row = document.querySelector('.web-deck-row.selected[data-row]'); const card = under.length ? under[under.length - 1] : drawer || row; dioxus.send(card ? (card.matches('.card-stack-slot, .deck-head-card-image') ? 'stack:' : 'row:') + card.getAttribute('data-row') : '');";
+/// Sends the card the deck cards screen's keys act on: the card the details drawer shows, as
+/// `stack:<id>` so `d` closes it, else the deepest card under the cursor, as `stack:<id>` for a
+/// stack card or a featured card in the deck head or `row:<id>` for a list row, else the list
+/// row whose details are open, else an empty string.
+const KEY_CARD_JS: &str = "const drawer = document.querySelector('.bottom-sheet.show.__DRAWER__[data-card]'); const under = document.querySelectorAll('[data-row]:hover'); const row = document.querySelector('.web-deck-row.selected[data-row]'); const card = under.length ? under[under.length - 1] : row; dioxus.send(drawer ? 'stack:' + drawer.getAttribute('data-card') : card ? (card.matches('.card-stack-slot, .deck-head-card-image') ? 'stack:' : 'row:') + card.getAttribute('data-row') : '');";
 
 /// Clicks list row `__ID__`'s line, which opens or closes its details as a click on it does.
 const ROW_TOGGLE_JS: &str = "const line = document.querySelector('.web-deck-row[data-row=\"__ID__\"] .card-row-compact'); if (line) line.click();";
 
 /// Clicks the first details button marked with one of `__ACTIONS__` ([`crate::data_action`]) of
-/// card `__ID__`: in the Stacks view's drawer while that card is open there, else in its list
-/// row. Sends whether it found the button.
-const PRESS_JS: &str = "const open = document.querySelector('.bottom-sheet.show.__DRAWER__') && document.querySelector('.card-stack-slot.open[data-row=\"__ID__\"]'); const host = open ? document.querySelector('.bottom-sheet.show.__DRAWER__') : document.querySelector('.web-deck-row[data-row=\"__ID__\"]'); const button = host && __ACTIONS__.map((a) => host.querySelector('button.card-action-btn[data-action=\"' + a + '\"]')).find(Boolean); if (button) button.click(); dioxus.send(!!button);";
+/// card `__ID__`: in the details drawer while it shows that card, else in its list row. Sends
+/// whether it found the button.
+const PRESS_JS: &str = "const host = document.querySelector('.bottom-sheet.show.__DRAWER__[data-card=\"__ID__\"]') || document.querySelector('.web-deck-row[data-row=\"__ID__\"]'); const button = host && __ACTIONS__.map((a) => host.querySelector('button.card-action-btn[data-action=\"' + a + '\"]')).find(Boolean); if (button) button.click(); dioxus.send(!!button);";
 
 /// What the deck page hands its hover keys.
 #[derive(Clone, Copy, PartialEq)]
@@ -174,6 +176,33 @@ mod tests {
                 .contains("card.matches('.card-stack-slot, .deck-head-card-image') ? 'stack:'"),
             "{KEY_CARD_JS}"
         );
+    }
+
+    #[test]
+    fn the_card_the_drawer_shows_stays_the_keyed_card_over_any_hovered_one() {
+        let js = KEY_CARD_JS.replace("__DRAWER__", STACK_DETAILS_CLASS);
+        let drawer = format!(".bottom-sheet.show.{STACK_DETAILS_CLASS}[data-card]");
+        assert!(js.contains(&drawer), "the drawer names its card: {js}");
+        assert!(
+            js.contains("drawer ? 'stack:' + drawer.getAttribute('data-card')"),
+            "the drawer's card comes first, as a stack card so d closes it: {js}"
+        );
+        assert!(
+            !js.contains(".card-stack-slot.open"),
+            "a featured card or a list row's drawer has no open stack slot: {js}"
+        );
+    }
+
+    #[test]
+    fn a_key_presses_the_button_in_the_drawer_showing_its_card() {
+        let js = PRESS_JS.replace("__DRAWER__", STACK_DETAILS_CLASS);
+        assert!(
+            js.contains(&format!(
+                ".bottom-sheet.show.{STACK_DETAILS_CLASS}[data-card=\"__ID__\"]"
+            )),
+            "{js}"
+        );
+        assert!(!js.contains(".card-stack-slot.open"), "{js}");
     }
 
     #[test]

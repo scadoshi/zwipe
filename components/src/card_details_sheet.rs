@@ -13,7 +13,8 @@ use crate::{CardDetailsCost, CardDetailsPanel, DrawerSheet, use_meld, use_overla
 /// description, where the host has a catalog, and `on_examples` opens a tag's example cards,
 /// where the host shows them. `class` names the drawer, and a host that adds its
 /// own class keeps `card-details-drawer` in it. The shown face follows `face` when the host
-/// passes one. Swapping to another card while it is open crossfades (`use_drawer_swap`).
+/// passes one. The drawer carries the card's id as its `data-card`, so the keys that act on a
+/// card find the one it shows. Swapping to another card while it is open crossfades (`use_drawer_swap`).
 #[component]
 pub fn CardDetailsSheet(
     open: Signal<bool>,
@@ -45,6 +46,7 @@ pub fn CardDetailsSheet(
     let title_card = meld.apply(&card);
     let name = title_card.scryfall_data.name.clone();
     let on_image = on_image.map(|handler| EventHandler::new(move |()| handler.call(face())));
+    let shown_id = card.scryfall_data.id.to_string();
     rsx! {
         DrawerSheet {
             layer: layer(),
@@ -57,6 +59,7 @@ pub fn CardDetailsSheet(
             },
             every_width: true,
             class,
+            data_card: shown_id,
             CardDetailsPanel {
                 card,
                 headless: true,

@@ -72,6 +72,10 @@ pub const UPCOMING: &[Release] = &[
             "Screen readers announce an open sheet as a dialog named by its title",
             "In Stacks, a tapped card eases open and the revealed card drifts in softly, on the web and in the app",
             "A deck opens on its Profile with Cards in the dock, which opens the cards over it and closes with Back, for your decks and shared ones, on the web and in the app",
+            "On the web's deck page, the card keys act on the card the details drawer shows, wherever it opened from",
+            "On the web's deck page, a featured card's details leave the page undimmed in List as in Stacks",
+            "On the web, Esc closes Quick add's suggestions and leaves the box, so the card keys work again",
+            "On the web, Back closes the open sheets one at a time before it leaves the page, on a phone too",
         ],
     },
     Release {
