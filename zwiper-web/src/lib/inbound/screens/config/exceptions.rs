@@ -2,6 +2,7 @@
 //! that still show while Universes Beyond is hidden.
 
 use components::icons::{CHECK, DockIcon};
+use components::keys::SHEET_ENTER_OR_CLOSE;
 use components::{BottomSheet, Chip, SheetFrame, SheetWide, TOAST_QUICK};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -128,7 +129,7 @@ pub(super) fn ExceptionsSheet(
                 // differs from the saved list.
                 div { class: "action-dock action-dock-right sheet-dock",
                     button {
-                        class: "action-dock-btn",
+                        class: "action-dock-btn {SHEET_ENTER_OR_CLOSE}",
                         "aria-label": "Save",
                         disabled: unchanged,
                         onclick: save,

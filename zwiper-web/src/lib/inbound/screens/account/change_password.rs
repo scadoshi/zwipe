@@ -2,7 +2,7 @@
 //! confirm dialog stacked on top.
 
 use components::icons::{CHECK, DockIcon};
-use components::keys::use_sheet_focus;
+use components::keys::{SHEET_ENTER, use_sheet_focus};
 use components::{
     AlertDialog, BottomSheet, Button, ButtonVariant, DialogAction, SheetFrame, SheetWide,
     TOAST_NORMAL, TOAST_QUICK, TextInput,
@@ -196,7 +196,7 @@ pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
                 // Save floats at the sheet's bottom right.
                 div { class: "action-dock action-dock-right sheet-dock",
                     button {
-                        class: "action-dock-btn",
+                        class: "action-dock-btn {SHEET_ENTER}",
                         "aria-label": if is_loading() { "Saving…" } else { "Save changes" },
                         disabled: is_loading(),
                         onclick: move |_| ask_to_confirm(),

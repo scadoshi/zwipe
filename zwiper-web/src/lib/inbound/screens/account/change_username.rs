@@ -1,7 +1,7 @@
 //! The Change username sheet, a centered modal on a wide window.
 
 use components::icons::{CHECK, DockIcon};
-use components::keys::use_sheet_focus;
+use components::keys::{SHEET_ENTER, use_sheet_focus};
 use components::{BottomSheet, SheetFrame, SheetWide, TOAST_QUICK, TextInput};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -127,7 +127,7 @@ pub(super) fn ChangeUsernameSheet(mut open: Signal<bool>) -> Element {
                 // Save floats at the sheet's bottom right.
                 div { class: "action-dock action-dock-right sheet-dock",
                     button {
-                        class: "action-dock-btn",
+                        class: "action-dock-btn {SHEET_ENTER}",
                         "aria-label": if is_loading() { "Saving…" } else { "Save changes" },
                         // An error line showing holds Save; the password's never does.
                         disabled: is_loading() || username_error.is_some(),

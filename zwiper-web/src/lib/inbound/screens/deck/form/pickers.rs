@@ -11,7 +11,7 @@
 
 use components::hint::{ContentHintDialog, HintBody, guide_for_screen};
 use components::icons::CHECK;
-use components::keys::{focus_by_id, use_page_keys};
+use components::keys::{SHEET_ENTER_OR_CLOSE, focus_by_id, use_page_keys};
 use components::{
     AlertDialog, Button, ButtonVariant, Chip, ClearWrap, DialogAction, DockAction, DrawerSheet,
     HintDialog, TOAST_NORMAL, TOAST_QUICK, use_overlay_back_action, use_picker_search,
@@ -72,6 +72,7 @@ fn PickerSheet(
                     label: "Save",
                     icon: CHECK,
                     disabled: unchanged,
+                    class: SHEET_ENTER_OR_CLOSE.to_owned(),
                     onclick: move |()| on_save.call(()),
                 }
             },

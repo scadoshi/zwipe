@@ -62,6 +62,7 @@ pub const UPCOMING: &[Release] = &[
             "A List group's price and cart sit at the end of its title's line on a phone, on the web and in the app",
             "On a phone, a deck's Profile, Cards and card details come and go as screens do, each entering fresh with nothing showing beneath, on the web and in the app",
             "On phone web, a deck's Cards opened from a link show Cards in the header",
+            "On the web, Enter runs an open sheet's main action, or closes the sheet when nothing changed",
         ],
     },
     Release {

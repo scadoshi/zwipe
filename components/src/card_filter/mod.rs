@@ -39,6 +39,7 @@ use zwipe_ui::toast::{Toast, ToastKind};
 
 use self::rows::{SectionRows, bump};
 use crate::icons::{CHECK, ERASER};
+use crate::keys::SHEET_ENTER_OR_CLOSE;
 use crate::{DockAction, DrawerSheet, SheetDim, use_overlay_back};
 
 /// What the panel hands the host's dictionary: whether it is open, and
@@ -300,6 +301,7 @@ pub fn CardFilterPanel(
             label: card_filter::APPLY,
             icon: CHECK,
             disabled: unchanged,
+            class: SHEET_ENTER_OR_CLOSE.to_owned(),
             onclick: move |()| apply(),
         }
     };
