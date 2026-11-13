@@ -46,8 +46,7 @@ pub const MOBILE_STORE_VERSION: Version = Version::new(1, 18, 15);
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[
-];
+pub const UPCOMING: &[Release] = &[];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
@@ -61,6 +60,8 @@ pub const RELEASES: &[Release] = &[
             "Shift+H opens the keyboard shortcuts on every screen, in two columns on a wide window",
             "On the web, Esc closes only the sheet on top",
             "Cloning a deck on the web selects the copy's name, so typing replaces it",
+            "On the web, the deck page's shortcuts list Home and End, and / for Quick add",
+            "On the web, the Decks list's loading view fills a wide window",
         ],
     },
     Release {
