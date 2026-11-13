@@ -342,34 +342,33 @@ fn back_after(touch: bool, taps: usize) -> (VirtualDom, BackProbe) {
 }
 
 #[test]
-fn back_clears_a_revealed_card_before_leaving() {
-    let (mut dom, probe) = back_after(true, 1);
+fn back_passes_by_a_revealed_card() {
+    let (dom, probe) = back_after(true, 1);
     let BackProbe { mut stack, details } = probe;
     assert!(
-        dom.in_runtime(|| stack.close_top()),
-        "back takes the reveal"
+        dom.in_runtime(|| details.reveal.peek().revealed())
+            .is_some(),
+        "the tap reveals the card"
     );
-    settle(&mut dom);
-    assert_eq!(dom.in_runtime(|| details.reveal.peek().revealed()), None);
     assert!(
         !dom.in_runtime(|| stack.close_top()),
-        "the next back leaves"
+        "a reveal takes no back step, so back leaves"
     );
 }
 
 #[test]
-fn back_passes_by_stacks_with_nothing_revealed_and_an_open_card_keeps_the_reveal_s_step() {
+fn the_stacks_hold_no_back_step_revealed_open_or_not() {
     let (dom, probe) = back_after(true, 0);
     let BackProbe { mut stack, .. } = probe;
     assert!(!dom.in_runtime(|| stack.close_top()), "nothing revealed");
-    // The open card's drawer registers its own step over this one (its host mounts it), so
-    // Back closes the drawer first and the reveal after.
+    // The open card's drawer registers its own step (its host mounts it), so Back closes the
+    // drawer and then leaves.
     let (dom, probe) = back_after(true, 2);
     let BackProbe { stack, .. } = probe;
     assert_eq!(
         dom.in_runtime(|| stack.depth()),
-        1,
-        "the reveal keeps its step under the open card's drawer"
+        0,
+        "no step of the stacks' own under the open card's drawer"
     );
     let (dom, probe) = back_after(false, 1);
     let BackProbe { mut stack, .. } = probe;

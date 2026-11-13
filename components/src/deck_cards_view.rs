@@ -27,7 +27,7 @@ use crate::keys::STACK_DETAILS_CLASS;
 use crate::{
     CardBoardMoves, CardDetailsSheet, CardEditButtons, CardRow, CardStack, CartButton, Chip,
     DeckBand, DeckGroupSection, DeckSection, DrawerEdge, GroupBuy, StackCard, TailPlace,
-    group_tail, use_overlay_back_action,
+    group_tail,
 };
 
 /// The deck's edits, each taking the card's id: a quantity change by a step, a move to a board,
@@ -670,8 +670,8 @@ pub fn DeckRow(
 /// bottom. Hover reveals a card in place; a click opens it in the drawer.
 ///
 /// With `touch`, for a touch screen, the stacks are in [`CardStack`]'s tap mode: a first tap reveals a
-/// card, a second opens it in the drawer, and the OS back clears a revealed card before it leaves
-/// the screen. The stacks lie in two columns of their own heights ([`columns::masonry`]), each
+/// card, a second opens it in the drawer. A reveal takes no back step: Back closes the drawer where
+/// one is open, else leaves the screen as it would with nothing revealed. The stacks lie in two columns of their own heights ([`columns::masonry`]), each
 /// under the one above it in its column (`.deck-stacks-touch`), so a fold or a reveal moves only
 /// its own column. A
 /// header press calls `on_fold` with the group's key where the host passes it, else folds it in
@@ -689,16 +689,6 @@ pub fn DeckStacks(
     #[props(default)] on_fold: Option<EventHandler<String>>,
 ) -> Element {
     let mut reveal = details.reveal;
-    // A revealed card holds a back step of its own, under the open card's drawer's, so the drawer
-    // pushes and pops its own step and Back closes it before the reveal.
-    let revealing = use_memo(move || touch && reveal().revealed().is_some());
-    // Back clears the reveal with no click behind it, so it starts the settle itself and the
-    // rows the reveal pushed down slide back up.
-    let dismiss = use_callback(move |()| {
-        crate::settle::watch();
-        details.dismiss();
-    });
-    use_overlay_back_action(revealing.into(), dismiss);
     let width = use_stacks_width(touch);
     // A fold reweighs the stacks and can move some to another column, so it starts the settle,
     // which slides them there.
@@ -1132,7 +1122,7 @@ mod tests {
     }
 
     #[test]
-    fn a_revealed_card_s_details_take_a_back_step_of_their_own_over_the_reveal_s() {
+    fn a_reveal_takes_no_back_step_and_only_the_details_drawer_takes_one() {
         let settle = |dom: &mut VirtualDom| {
             for _ in 0..6 {
                 dom.process_events();
@@ -1148,36 +1138,24 @@ mod tests {
         assert_eq!(depth(&dom), 0, "nothing revealed");
         dom.in_scope(ScopeId::APP, || details.tap(id));
         settle(&mut dom);
-        assert_eq!(depth(&dom), 1, "the reveal takes a step");
+        assert!(
+            dom.in_runtime(|| details.reveal.peek().revealed() == Some(id)),
+            "the first tap reveals the card"
+        );
+        assert_eq!(
+            depth(&dom),
+            0,
+            "a reveal takes no back step, so Back closes or leaves what shows"
+        );
         dom.in_scope(ScopeId::APP, || details.tap(id));
         settle(&mut dom);
         assert!(
             dom.in_runtime(|| *details.details_open.peek()),
             "the second tap opens it"
         );
-        // The details drawer registers its own step, mounted here by the host; this stands in.
-        assert_eq!(
-            depth(&dom),
-            1,
-            "the reveal keeps its step while the details are open"
-        );
-        // Closing them as the page does (use_stack_details_sync): the drawer shuts, the open
-        // card closes, and the card stays revealed.
-        dom.in_runtime(|| {
-            let mut open = details.details_open;
-            open.set(false);
-            let mut reveal = details.reveal;
-            reveal.write().apply(Gesture::Close);
-        });
-        settle(&mut dom);
-        assert_eq!(
-            depth(&dom),
-            1,
-            "closing the details leaves the reveal's step"
-        );
-        dom.in_runtime(|| details.dismiss());
-        settle(&mut dom);
-        assert_eq!(depth(&dom), 0, "the reveal's step goes with it");
+        // The details drawer registers its own step, mounted here by the host; the stacks add
+        // none under it.
+        assert_eq!(depth(&dom), 0, "the stacks hold no step under the drawer");
     }
 
     #[test]

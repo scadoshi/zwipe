@@ -181,6 +181,7 @@ Who checked, on which live build, what they saw.
 | [484](484-deck-list-ghost-rows.md) | The Decks list's loading ghost shows three decks on a wide screen | fixing | thinker | - |
 | [476](476-new-build-notice.md) | A web page that stays open never hears of a newer build | fixing | laptop | issue/476-new-build-notice |
 | [488](488-hint-esc-focus-and-row-toasts.md) | Esc after the `?` hint sends focus to the deck title, and `+` and Shift+S raise no toast | fixing | thinker | - |
+| [491](491-reveal-back-step.md) | In Stacks, revealing a tucked card takes a Back step | fixing | laptop | issue/491-reveal-no-step |
 
 ## Waiting for live verification
 
