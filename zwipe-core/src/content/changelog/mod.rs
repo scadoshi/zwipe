@@ -86,6 +86,7 @@ pub const UPCOMING: &[Release] = &[
             "A shared deck on a phone opens on the same Profile as your own decks, and every shared deck shows its warnings and offers Export",
             "A deck's Cards slide in over its Profile and slide back out, and an edit made there shows on the Profile right away, on the web and in the app",
             "On the web, Caps Lock no longer changes what a letter shortcut does",
+            "On the web, an Oracle tag's Examples keep Next, Back one and the details eye on one bar",
         ],
     },
     Release {

@@ -153,6 +153,7 @@ Who checked, on which live build, what they saw.
 | [436](436-deck-page-fixes.md) | Deck page rough edges: Fix to isn't undoable, Select closes the drawer, the move toast hides the count, Quick add lands the newest printing | fixing | thinker | - |
 | [438](438-one-profile.md) | At phone width the shared deck's Profile isn't the owner's, and a shared deck hides its warnings and Export | fixing | laptop | issue/438-one-profile |
 | [441](441-signed-out-nav.md) | The web app's signed-out nav lists Forgot password | fixing | thinker | - |
+| [437](437-examples-one-dock.md) | At phone width the Examples controls wrap, the eye on a row of its own | fixing | scotland | - |
 
 ## Waiting for live verification
 

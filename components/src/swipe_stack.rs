@@ -474,7 +474,9 @@ fn ExitingCard(gone: Exiting, on_end: EventHandler<Uuid>) -> Element {
 /// in as `children`: one button per direction in `buttons`, each with its
 /// arrow and the action's name, the name hiding below the breakpoint. The
 /// two docks sit side by side at the bottom right on a wide window and the
-/// swipes' stack over the other below it. The buttons route as the arrow
+/// swipes' stack over the other below it. A surface with one or two controls
+/// of its own passes them as `tail` instead, after a rule in the swipes' own
+/// dock, so the whole set is one bar at every width. The buttons route as the arrow
 /// keys do ([`SwipeRoute::of`]): through `control` while `card_on_top`,
 /// else down calls `on_undo` and the rest are off.
 #[component]
@@ -483,6 +485,7 @@ pub fn SwipeDock(
     buttons: Vec<(Swipe, &'static str)>,
     card_on_top: bool,
     on_undo: EventHandler<()>,
+    #[props(default)] tail: Option<Element>,
     children: Element,
 ) -> Element {
     rsx! {
@@ -508,6 +511,10 @@ pub fn SwipeDock(
                             }
                         }
                     }
+                }
+                if let Some(tail) = tail {
+                    span { class: "action-dock-divider" }
+                    {tail}
                 }
             }
             {children}

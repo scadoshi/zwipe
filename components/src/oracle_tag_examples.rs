@@ -259,15 +259,15 @@ pub fn OracleTagExamples(
                     }
                 }
             }
-            // Card details as the action dock; Back is the header's arrow.
+            // The swipes, a rule and the details eye as one dock; Back is the header's arrow.
             SwipeDock {
                 control,
                 buttons: vec![(Swipe::Left, "Next"), (Swipe::Down, "Back one")],
                 card_on_top: has_card,
                 on_undo: move |()| go_back.call(()),
-                div { class: "action-dock action-dock-right",
+                tail: rsx! {
                     DockEye { eye, disabled: !has_card }
-                }
+                },
             }
             ExamplesHint { open: hint_open }
             if let Some(card) = current {
