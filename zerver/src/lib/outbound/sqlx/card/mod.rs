@@ -217,6 +217,23 @@ const DISMISSAL_TTL_DAYS: i32 = 7;
 /// lever. (`context/archive/commander_select_ordering.md` §2.)
 const POPULARITY_RANK: &str = "pop.pop_decks DESC NULLS LAST, latest_cards.edhrec_rank ASC NULLS LAST, latest_cards.name ASC, latest_cards.id";
 
+/// A best match's popularity: the card's EDHREC rank, or, for one of the 100 most-helmed
+/// commanders in `commander_popularity`, its place among them when that is smaller.
+/// Read through scalar subqueries rather than a join; unranked and uncounted is NULL.
+const BEST_MATCH_POPULARITY: &str = "LEAST(latest_cards.edhrec_rank, \
+     (SELECT s.pos FROM (SELECT 1 + (SELECT count(*) FROM commander_popularity c2 \
+     WHERE c2.decks > cp.decks) AS pos FROM commander_popularity cp \
+     WHERE cp.oracle_id = latest_cards.oracle_id) s WHERE s.pos <= 100))";
+
+/// The popularity at or under which a best match lifts a name with a word that starts with the
+/// query into the first-word tier.
+const VERY_POPULAR: i64 = 300;
+
+/// A name folded for a best match's word check: hyphens break words ("The Ur-Dragon" holds the
+/// word "Dragon"), then the rest of the punctuation goes, as the name filter strips it.
+const WORDS_NAME: &str =
+    "regexp_replace(regexp_replace(f_unaccent(name), '-', ' ', 'g'), '[^a-zA-Z0-9 ]', '', 'g')";
+
 /// The popularity join, aliased so it exposes only `pop_decks`, never a bare
 /// `name`/`oracle_id`/`decks`, which would collide with `latest_cards` and the
 /// shared WHERE filters (name search, exclude-oracle_ids) and make those
@@ -1433,8 +1450,11 @@ impl CardRepository for MyPostgres {
             // cuts the rest short; under any other sort the chosen column
             // leads and the tiers only break its ties. The query holds
             // only letters, digits and spaces, so ILIKE without a wildcard is
-            // equality.
-            let push_tiers = |qb: &mut QueryBuilder<sqlx::Postgres>| {
+            // equality. A best match also lifts a very popular name with a
+            // word that starts with the query into the first-word tier, so
+            // "bolt" offers Lightning Bolt and "ring" Sol Ring; a match inside
+            // a word never lifts.
+            let push_tiers = |qb: &mut QueryBuilder<sqlx::Postgres>, lift: bool| {
                 let Some(query_string) = criteria.name_contains() else {
                     return;
                 };
@@ -1450,13 +1470,22 @@ impl CardRepository for MyPostgres {
                     qb.push(STRIP_NAME);
                     qb.push_bind(pattern);
                     qb.push(format!(" THEN {rank}"));
+                    if lift && rank == 1 {
+                        qb.push(format!(
+                            " WHEN {BEST_MATCH_POPULARITY} <= {VERY_POPULAR} AND ({WORDS_NAME} ILIKE "
+                        ));
+                        qb.push_bind(format!("{query_string}%"));
+                        qb.push(format!(" OR {WORDS_NAME} ILIKE "));
+                        qb.push_bind(format!("% {query_string}%"));
+                        qb.push(") THEN 1");
+                    }
                 }
                 qb.push(" ELSE 4 END ASC");
             };
             if matches!(order_by, CardSortKey::Name | CardSortKey::BestMatch)
                 && criteria.name_contains().is_some()
             {
-                push_tiers(&mut qb);
+                push_tiers(&mut qb, order_by == CardSortKey::BestMatch);
                 qb.push(", ");
             }
             let col = match order_by {
@@ -1469,7 +1498,8 @@ impl CardRepository for MyPostgres {
                 CardSortKey::PriceUsd => "(prices->>'usd')::NUMERIC",
                 CardSortKey::PriceEur => "(prices->>'eur')::NUMERIC",
                 CardSortKey::PriceTix => "(prices->>'tix')::NUMERIC",
-                CardSortKey::EdhrecRank | CardSortKey::BestMatch => "edhrec_rank",
+                CardSortKey::EdhrecRank => "edhrec_rank",
+                CardSortKey::BestMatch => BEST_MATCH_POPULARITY,
                 CardSortKey::Random => "RANDOM()",
             };
             qb.push(col);
@@ -1494,7 +1524,7 @@ impl CardRepository for MyPostgres {
             ) && criteria.name_contains().is_some()
             {
                 qb.push(", ");
-                push_tiers(&mut qb);
+                push_tiers(&mut qb, false);
             }
             if matches!(order_by, CardSortKey::EdhrecRank | CardSortKey::BestMatch) {
                 qb.push(", name ASC");

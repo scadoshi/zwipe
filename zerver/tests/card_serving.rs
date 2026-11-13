@@ -790,13 +790,13 @@ async fn best_match_ranks_each_name_tier_by_popularity(pool: sqlx::PgPool) {
         ("Lightning Greaves", Some(30)),
         ("Lightning Helix", Some(400)),
         ("Lightning Mauler", Some(7000)),
-        ("Chain Lightning", Some(300)),
-        ("Lightningsnare", Some(15)),
+        ("Chain Lightning", Some(5739)),
+        ("Lightningsnare", Some(15_000)),
         ("Sol Ring", Some(1)),
-        ("Solemn Simulacrum", Some(40)),
+        ("Solemn Simulacrum", Some(44)),
         ("Sol Talisman", Some(20_000)),
         ("Soltari Foot Soldier", None),
-        ("Abby, Merciless Soldier", Some(5)),
+        ("Abby, Merciless Soldier", Some(15_530)),
     ]
     .into_iter()
     .map(|(name, rank)| {
@@ -832,11 +832,157 @@ async fn best_match_ranks_each_name_tier_by_popularity(pool: sqlx::PgPool) {
         names,
         [
             "Sol Ring",
-            "Sol Talisman",
             "Solemn Simulacrum",
+            "Sol Talisman",
             "Soltari Foot Soldier",
             "Abby, Merciless Soldier"
         ],
-        "Sol Ring leads, an unranked name comes last in its tier, and a word inside a name after"
+        "Sol Ring leads, Solemn (44) joins the first-word tier, an unranked name comes last in its tier, and a word inside a name after"
+    );
+}
+
+/// A deck whose Quick add searches a pool of real names at their real EDHREC ranks, with The
+/// Ur-Dragon the most-helmed commander, with its app, token and deck.
+async fn popular_pool(pool: &sqlx::PgPool) -> (TestApp, String, Uuid) {
+    let app = TestApp::new(pool.clone());
+    let (token, uid) = app.register("popularpool").await;
+    app.verify_email(&uid).await;
+    let (status, deck) = app
+        .post(
+            DECK_ROUTE,
+            json!({ "name": "Popular", "format": "commander" }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED, "{deck}");
+    let deck_id: Uuid = deck["id"].as_str().unwrap().parse().unwrap();
+    let ranked = [
+        ("Lightning Bolt", Some(158)),
+        ("Bolt Bend", Some(507)),
+        ("Boltwave", Some(1380)),
+        ("Bolt Hound", Some(13_653)),
+        ("Boltbender", Some(10_699)),
+        ("Forked Bolt", Some(12_454)),
+        ("Demon Bolt", Some(11_198)),
+        ("Sol Ring", Some(1)),
+        ("The One Ring", Some(96)),
+        ("Smothering Tithe", Some(68)),
+        ("Rings of Brighthearth", Some(1419)),
+        ("Ringsight", Some(2427)),
+        ("Ring of Three Wishes", Some(10_727)),
+        ("Ringwraiths", Some(6782)),
+        ("The Ur-Dragon", Some(2702)),
+        ("Dragonskull Summit", Some(82)),
+        ("Goldspan Dragon", Some(361)),
+        ("Dragon Tempest", Some(841)),
+        ("Dragon's Hoard", Some(1196)),
+        ("Dragonlord Ojutai", Some(7366)),
+        ("Solemn Simulacrum", Some(44)),
+        ("Sol Talisman", Some(2439)),
+        ("Soltari Foot Soldier", None),
+        ("Abby, Merciless Soldier", Some(15_530)),
+        ("Isolated Chapel", Some(88)),
+        ("Mountain", None),
+        ("Mountain Valley", Some(3136)),
+        ("Cori Mountain Monastery", Some(3451)),
+        ("Lightning Greaves", Some(13)),
+        ("Lightning Strike", Some(2238)),
+        ("Lightning Helix", Some(3801)),
+        ("Redirect Lightning", Some(492)),
+        ("Chain Lightning", Some(5739)),
+    ];
+    let cards: Vec<_> = ranked
+        .into_iter()
+        .map(|(name, rank)| {
+            let c = card(name).type_line("Instant");
+            match rank {
+                Some(rank) => c.edhrec_rank(rank),
+                None => c,
+            }
+        })
+        .collect();
+    let ur_dragon = cards
+        .iter()
+        .find(|c| c.name() == "The Ur-Dragon")
+        .and_then(common::CardFixture::oracle_id)
+        .unwrap();
+    seed_cards(pool, &cards).await;
+    sqlx::query("INSERT INTO commander_popularity (oracle_id, name, decks) VALUES ($1, 'The Ur-Dragon', 40000), ($2, 'Somebody Else', 900)")
+        .bind(ur_dragon)
+        .bind(Uuid::new_v4())
+        .execute(pool)
+        .await
+        .unwrap();
+    (app, token, deck_id)
+}
+
+#[sqlx::test]
+async fn a_very_popular_word_match_joins_the_first_word_tier(pool: sqlx::PgPool) {
+    let (app, token, deck_id) = popular_pool(&pool).await;
+    let offers = |query: &'static str| quick_add_names(&app, deck_id, &token, query);
+    assert_eq!(
+        offers("bolt").await,
+        [
+            "Lightning Bolt",
+            "Bolt Bend",
+            "Bolt Hound",
+            "Boltwave",
+            "Boltbender"
+        ],
+        "a word match in EDHREC's top 300 leads a less played first word"
+    );
+    assert_eq!(
+        offers("ring").await,
+        [
+            "Sol Ring",
+            "The One Ring",
+            "Ring of Three Wishes",
+            "Rings of Brighthearth",
+            "Ringsight"
+        ],
+        "Smothering Tithe holds 'ring' inside a word, so it never lifts"
+    );
+    assert_eq!(
+        offers("dragon").await,
+        [
+            "The Ur-Dragon",
+            "Dragonskull Summit",
+            "Dragon Tempest",
+            "Dragon's Hoard",
+            "Dragonlord Ojutai"
+        ],
+        "the most-helmed commander lifts, its hyphen a word break; Goldspan Dragon (361) doesn't"
+    );
+}
+
+#[sqlx::test]
+async fn the_closest_names_still_lead_where_nothing_popular_is_further_down(pool: sqlx::PgPool) {
+    let (app, token, deck_id) = popular_pool(&pool).await;
+    let offers = |query: &'static str| quick_add_names(&app, deck_id, &token, query);
+    assert_eq!(
+        offers("sol").await,
+        [
+            "Sol Ring",
+            "Solemn Simulacrum",
+            "Sol Talisman",
+            "Soltari Foot Soldier",
+            "Abby, Merciless Soldier"
+        ],
+        "Sol Ring leads; Isolated Chapel (88) holds 'sol' inside a word"
+    );
+    assert_eq!(
+        offers("mountain").await,
+        ["Mountain", "Mountain Valley", "Cori Mountain Monastery"],
+        "the exact name leads"
+    );
+    assert_eq!(
+        offers("lightning").await,
+        [
+            "Lightning Greaves",
+            "Lightning Bolt",
+            "Lightning Strike",
+            "Lightning Helix",
+            "Redirect Lightning"
+        ]
     );
 }

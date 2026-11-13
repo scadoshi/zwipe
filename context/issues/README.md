@@ -176,6 +176,7 @@ Who checked, on which live build, what they saw.
 | [478](478-cursor-any-width.md) | The deck page's keyboard cursor only works on the computer layout | fixing | scotland | - |
 | [481](481-drawer-side-measured.md) | A card's details drawer opens on the left only when a right drawer would cover the card | fixing | scotland | - |
 | [480](480-deck-shortcuts-missing-keys.md) | The deck page's shortcuts sheet leaves out keys that work | fixing | thinker | - |
+| [482](482-quick-add-popular-word-match.md) | Quick add leaves a very popular card behind less played names that start with the query | fixing | thinker | - |
 | [483](483-card-row-cursor.md) | The Commander maybeboard, Activity and Playstyle have no keyboard cursor | fixing | laptop | issue/483-card-cursor |
 | [484](484-deck-list-ghost-rows.md) | The Decks list's loading ghost shows three decks on a wide screen | fixing | thinker | - |
 | [476](476-new-build-notice.md) | A web page that stays open never hears of a newer build | fixing | laptop | issue/476-new-build-notice |

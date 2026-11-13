@@ -49,7 +49,10 @@ pub const MOBILE_STORE_VERSION: Version = Version::new(1, 18, 15);
 pub const UPCOMING: &[Release] = &[Release {
     version: Version::new(1, 21, 0),
     date: None,
-    entries: &["Share puts Stop sharing first, apart from Copy link, on the web and in the app"],
+    entries: &[
+        "Share puts Stop sharing first, apart from Copy link, on the web and in the app",
+        "Quick add offers a very popular card first even when less played names start with what you typed",
+    ],
 }];
 
 /// Shipped releases, newest first.
