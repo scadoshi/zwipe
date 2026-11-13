@@ -1,5 +1,5 @@
-//! Account: the `Account` list, the change sheets as centered modals, and
-//! a Danger zone panel at the bottom with Log out and Delete account. The
+//! Account: the `Account` list ending in Log out, the change sheets as
+//! centered modals, and a Danger zone panel at the bottom with Delete account. The
 //! version, website and privacy policy live on About.
 
 mod change_email;
@@ -127,21 +127,20 @@ pub fn Account() -> Element {
                                     }
                                 }
                             }
-                        }
-                        div { class: "settings-list danger-zone",
-                            div { class: "settings-list-header",
-                                span { class: "settings-list-title danger-zone-title", {model::DANGER_ZONE} }
-                            }
                             div { class: "settings-row",
                                 span { class: "settings-row-label", {model::LOG_OUT} }
                                 div { class: "settings-row-value",
                                     Button {
                                         variant: ButtonVariant::Action,
-                                        danger: true,
                                         onclick: move |_| logout_open.set(true),
                                         {model::LOG_OUT}
                                     }
                                 }
+                            }
+                        }
+                        div { class: "settings-list danger-zone",
+                            div { class: "settings-list-header",
+                                span { class: "settings-list-title danger-zone-title", {model::DANGER_ZONE} }
                             }
                             div { class: "settings-row",
                                 span { class: "settings-row-label", {MoreItem::DeleteAccount.label()} }

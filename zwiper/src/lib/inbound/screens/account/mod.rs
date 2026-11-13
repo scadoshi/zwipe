@@ -147,22 +147,23 @@ pub fn Account() -> Element {
                                         }
                                     }
                                 }
+
+                                div {
+                                    class: "settings-row",
+                                    span { class: "settings-row-label", {model::LOG_OUT} }
+                                    div { class: "settings-row-value",
+                                        Button {
+                                            variant: ButtonVariant::Action,
+                                            onclick: move |_| driver.dispatch(Action::LogOut),
+                                            {model::LOG_OUT}
+                                        }
+                                    }
+                                }
                             }
 
                             div { class: "settings-list danger-zone",
                                 div { class: "settings-list-header",
                                     span { class: "settings-list-title danger-zone-title", {model::DANGER_ZONE} }
-                                }
-                                div { class: "settings-row",
-                                    span { class: "settings-row-label", {model::LOG_OUT} }
-                                    div { class: "settings-row-value",
-                                        Button {
-                                            variant: ButtonVariant::Action,
-                                            danger: true,
-                                            onclick: move |_| driver.dispatch(Action::LogOut),
-                                            {model::LOG_OUT}
-                                        }
-                                    }
                                 }
                                 div { class: "settings-row",
                                     span { class: "settings-row-label", {MoreItem::DeleteAccount.label()} }

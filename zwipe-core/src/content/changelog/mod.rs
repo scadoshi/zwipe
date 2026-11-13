@@ -70,6 +70,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "On the web, Create deck shows its Create button from the start and says when the deck needs a name",
         "A card's details drawer opening on the other side from last time slides in from its own edge instead of sweeping across the page, on the web and in the app",
         "On the web, a banner's close button is named for screen readers",
+        "Account's Log out sits with your account details instead of in the Danger zone, on the web and in the app",
     ],
 }];
 

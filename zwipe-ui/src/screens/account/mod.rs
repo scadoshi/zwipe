@@ -37,10 +37,10 @@ pub const UNVERIFIED: &str = "Unverified";
 /// The Password row's value.
 pub const PASSWORD_MASK: &str = "•••••••";
 
-/// The button that asks to log out.
+/// The button that asks to log out, the Account list's last row.
 pub const LOG_OUT: &str = "Log out";
 
-/// The title of the panel at the foot of the screen that holds Log out and Delete account.
+/// The title of the panel at the foot of the screen that holds Delete account.
 pub const DANGER_ZONE: &str = "Danger zone";
 
 /// The Delete account row's button.
@@ -149,7 +149,7 @@ impl Row {
     }
 }
 
-/// An action in the Danger zone panel besides Log out.
+/// An action in the Danger zone panel.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum MoreItem {
     /// Opens the Delete account dialog.
