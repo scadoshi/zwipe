@@ -37,6 +37,16 @@ mod tests {
     }
 
     #[test]
+    fn the_activity_heatmap_scales_to_its_column_once_a_year_nearly_fits() {
+        // At 720 the column is 670px and the year's grid 726px: from 640px wide it scales to the
+        // column rather than scrolling the last few weeks at a phone's cell size.
+        assert_eq!(
+            query_for(".web-activity-heat .activity-scroll"),
+            "@media (min-width: 640px)"
+        );
+    }
+
+    #[test]
     fn a_computer_is_a_hovering_precise_pointer_on_the_wide_layout() {
         assert_eq!(
             COMPUTER_QUERY,

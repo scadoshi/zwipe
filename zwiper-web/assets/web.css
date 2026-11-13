@@ -1735,9 +1735,11 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
     }
 }
 
-@media (min-width: 900px) {
-    /* A year fits, so the heatmap scales to its column instead of scrolling;
-       the grid's inline pixel width is the phone's scroll width. */
+@media (min-width: 640px) {
+    /* A year fits, or nearly (the column is 670px at 720 and the grid 726px),
+       so the heatmap scales to its column instead of scrolling the last weeks
+       at a phone's cell size; the grid's inline pixel width is the phone's
+       scroll width. */
     .web-activity-heat .activity-scroll {
         overflow-x: visible;
         mask-image: none;

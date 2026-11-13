@@ -76,6 +76,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "On a phone's web app, typing in Quick add or another search no longer zooms the page",
         "On the web, Delete account's password field is a normal width on a wide window",
         "The app loads a screen after it sits idle instead of saying it couldn't",
+        "On the web, Activity's heatmap fills its box from 640px wide instead of scrolling the last weeks in a strip",
     ],
 }];
 
