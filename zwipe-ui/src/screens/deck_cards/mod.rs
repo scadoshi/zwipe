@@ -235,30 +235,6 @@ pub fn in_deck<'a>(query: &str, entries: &'a [DeckEntry]) -> Option<&'a str> {
         .or_else(|| names().find(|name| name.to_lowercase().contains(&wanted)))
 }
 
-/// `cards` from a Quick add search for `query`, the closest names first: those that start with it, then those with a word that does, then the rest, each keeping the server's order. A search for "Sol" lists Solemn Simulacrum before Absolute Grace.
-#[must_use]
-pub fn rank_quick_add(query: &str, mut cards: Vec<Card>) -> Vec<Card> {
-    let wanted = query.trim().to_lowercase();
-    if wanted.is_empty() {
-        return cards;
-    }
-    let rank = |card: &Card| {
-        let name = card.scryfall_data.name.to_lowercase();
-        if name.starts_with(&wanted) {
-            0
-        } else if name
-            .split(|c: char| !c.is_alphanumeric())
-            .any(|word| word.starts_with(&wanted))
-        {
-            1
-        } else {
-            2
-        }
-    };
-    cards.sort_by_key(rank);
-    cards
-}
-
 /// The command zone slots a profile names, in the order the client fetches their cards: commander, signature spell, partner, background.
 #[must_use]
 pub fn zone_requests(profile: &DeckProfile) -> Vec<(Slot, Uuid)> {
@@ -940,7 +916,7 @@ impl State {
                 if self.settle(ticket).is_some() && self.quick.waiting == Some(ticket) {
                     self.quick.waiting = None;
                     self.quick.searching = false;
-                    self.quick.results = rank_quick_add(&self.quick.query, cards);
+                    self.quick.results = cards;
                     self.quick.open = true;
                 }
                 Vec::new()

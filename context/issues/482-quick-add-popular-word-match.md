@@ -28,3 +28,11 @@ Search's Name sort keeps its tiers without the lift and orders by name.
 ## Not checked
 - Whether prod's `commander_popularity` holds The Ur-Dragon in its top 100; without it "dragon" leads with Dragonskull Summit.
 - The query's cost on prod data: the commander subqueries run per matched row; a lookup by primary key, then a count only for a commander.
+
+## Follow-up: the deck page's chips put the lifted card last
+surfer, after 7c41480de: the server answers right, but the deck page's Quick add chips list "bolt" as Bolt Bend, Bolt Hound, Keranos, Boltwave, then Lightning Bolt (4 of 4); ring and dragon the same. The Commander maybeboard's chips match the server.
+- Before: headless Chrome at 1440 with the deck search answered in the server's order (Lightning Bolt, Bolt Bend, Bolt Hound, Boltwave, Boltbender), "bolt" typed into Quick add: the chips put Lightning Bolt last, 4 of 4.
+- Cause: `zwipe_ui::screens::deck_cards::rank_quick_add` regrouped the server's results by starts-with, then word-start, and both the app's model (`Action::Searched`) and the web's `quick_add.rs` ran it, demoting every lifted card. The maybeboard never called it.
+- Fix: `rank_quick_add` is gone; both clients keep the server's order.
+- Test: `quick_add_keeps_the_server_s_order` (red before with the same order surfer saw; it replaces `quick_add_lists_the_closest_names_first`).
+- After: same setup, 4 of 4, the chips in the server's order, Lightning Bolt first.

@@ -1765,28 +1765,24 @@ fn a_search_for_a_card_the_deck_holds_says_so_instead_of_no_results() {
 }
 
 #[test]
-fn quick_add_lists_the_closest_names_first() {
-    let found = vec![
-        card("Absolute Grace"),
-        card("Consolidate"),
-        card("Pristine Sol"),
-        card("Solemn Simulacrum"),
-        card("Sol Talisman"),
-    ];
-    let ranked: Vec<String> = rank_quick_add("sol", found)
-        .into_iter()
-        .map(|c| c.scryfall_data.name)
+fn quick_add_keeps_the_server_s_order() {
+    let (mut state, _) = loaded();
+    let ticket = debounce(&state.update(Action::Type("bolt".to_owned())));
+    let _ = state.update(Action::Debounced { ticket });
+    // The server's best match lifts a very popular word match ahead of the names that start
+    // with the query.
+    let _ = state.update(Action::Searched {
+        ticket,
+        cards: vec![card("Lightning Bolt"), card("Bolt Bend"), card("Boltwave")],
+    });
+    let Some(QuickAddResults::Found(found)) = state.quick_add() else {
+        panic!("the reply shows");
+    };
+    let names: Vec<&str> = found
+        .iter()
+        .map(|c| c.scryfall_data.name.as_str())
         .collect();
-    assert_eq!(
-        ranked,
-        [
-            "Solemn Simulacrum",
-            "Sol Talisman",
-            "Pristine Sol",
-            "Absolute Grace",
-            "Consolidate"
-        ]
-    );
+    assert_eq!(names, ["Lightning Bolt", "Bolt Bend", "Boltwave"]);
 }
 
 #[test]

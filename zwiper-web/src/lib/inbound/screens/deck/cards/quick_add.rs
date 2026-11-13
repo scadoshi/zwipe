@@ -84,7 +84,7 @@ pub(crate) fn QuickAdd(
             }
             searching.set(false);
             match reply {
-                Some(page) => results.set(deck_cards::rank_quick_add(&query.peek(), page.cards)),
+                Some(page) => results.set(page.cards),
                 None => show.set(false),
             }
         });
