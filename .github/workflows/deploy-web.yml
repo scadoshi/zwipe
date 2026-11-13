@@ -91,7 +91,8 @@ jobs:
         run: dx build --release --platform web
 
       - name: Add headers and the version file
-        # No 404.html: Pages then serves index.html with a 200 for app routes.
+        # No 404.html: Pages then serves index.html for every path, and
+        # functions/_middleware.js turns a path no route matches into a 404.
         run: |
           cp zwiper-web/deploy/_headers target/dx/zwiper-web/release/web/public/_headers
           printf '{"build":"%s"}\n' "$ZWIPER_BUILD" > target/dx/zwiper-web/release/web/public/version.json

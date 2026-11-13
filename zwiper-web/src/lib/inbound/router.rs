@@ -354,4 +354,72 @@ mod tests {
             );
         }
     }
+
+    /// The Pages Function that answers an unknown path with a 404.
+    const NOT_FOUND_FUNCTION: &str = include_str!("../../../functions/_middleware.js");
+
+    /// This file, for its redirects' paths.
+    const ROUTER_SOURCE: &str = include_str!("router.rs");
+
+    #[test]
+    fn the_404_function_lists_every_route_and_redirect() {
+        use dioxus::router::routable::SegmentType;
+
+        let mut want: Vec<String> = Route::flatten_site_map()
+            .filter(|segments| {
+                !segments
+                    .iter()
+                    .any(|s| matches!(s, SegmentType::CatchAll(_)))
+            })
+            .map(|segments| {
+                let path: String = segments
+                    .iter()
+                    .filter_map(|segment| match segment {
+                        SegmentType::Static("") => None,
+                        SegmentType::Static(s) => Some(format!("/{s}")),
+                        SegmentType::Dynamic(name) => Some(format!("/:{name}")),
+                        _ => None,
+                    })
+                    .collect();
+                if path.is_empty() {
+                    "/".to_owned()
+                } else {
+                    path
+                }
+            })
+            .collect();
+        want.extend(
+            ROUTER_SOURCE
+                .lines()
+                .filter_map(|line| line.trim().strip_prefix("#[redirect(\""))
+                .filter_map(|rest| rest.split_once('"'))
+                .map(|(path, _)| path.to_owned()),
+        );
+        want.sort();
+        want.dedup();
+        let listed = NOT_FOUND_FUNCTION
+            .split_once("const ROUTES = [")
+            .and_then(|(_, rest)| rest.split_once("];"))
+            .map(|(list, _)| list)
+            .expect("ROUTES in the function");
+        let mut got: Vec<String> = listed
+            .lines()
+            .map(|line| {
+                line.trim()
+                    .trim_end_matches(',')
+                    .trim_matches('"')
+                    .to_owned()
+            })
+            .filter(|line| !line.is_empty())
+            .collect();
+        got.sort();
+        assert_eq!(
+            got, want,
+            "functions/_middleware.js ROUTES differs from the Route enum"
+        );
+        assert!(
+            want.contains(&"/changelog".to_owned()),
+            "the redirects are read: {want:?}"
+        );
+    }
 }
