@@ -219,7 +219,12 @@ pub fn PrintingSheet(
                             e.prevent_default();
                             step(Step::Forward);
                         }
-                        Some(FlowKey::Select) => save.call(()),
+                        // Enter's own press would land on the Printings button once focus
+                        // goes back to it, opening the sheet again.
+                        Some(FlowKey::Select) => {
+                            e.prevent_default();
+                            save.call(());
+                        }
                         None => {}
                     },
                     if failed {
@@ -342,8 +347,13 @@ fn CoverFlowSheet(
                                 e.prevent_default();
                                 step(Step::Forward);
                             }
-                            Some(FlowKey::Select) if !read_only => on_select.call(()),
-                            _ => {}
+                            Some(FlowKey::Select) => {
+                                e.prevent_default();
+                                if !read_only {
+                                    on_select.call(());
+                                }
+                            }
+                            None => {}
                         },
                         if failed {
                             LoadFailed { message: model::LOAD_FAILED, on_retry: move |()| on_retry.call(()) }

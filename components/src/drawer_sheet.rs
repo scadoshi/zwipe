@@ -82,6 +82,7 @@ pub fn DrawerSheet(
     let modal = (dim == SheetDim::Always || !wide()).then_some("true");
     let close = use_callback(move |()| on_close.call(()));
     let drag = use_sheet_drag(open, close);
+    let pulled = if pulls { drag.class() } else { "" };
     let sheet_style = match (layer_style.clone(), drag.style().filter(|_| pulls)) {
         (Some(layer), Some(drag)) => Some(format!("{layer} {drag}")),
         (layer, drag) => layer.or(drag),
@@ -101,7 +102,7 @@ pub fn DrawerSheet(
                 onpointercancel: move |evt| drag.cancel(&evt),
             }
             div {
-                class: if shown { "bottom-sheet show {reach} {class}" } else { "bottom-sheet {reach} {class}" },
+                class: if shown { "bottom-sheet show {reach} {class}{pulled}" } else { "bottom-sheet {reach} {class}" },
                 style: sheet_style,
                 role: "dialog",
                 "aria-label": (!title.is_empty()).then(|| title.clone()),

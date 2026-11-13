@@ -1193,6 +1193,14 @@ a.nav-dropdown-item.active:visited {
     overflow: hidden;
 }
 
+/* A sheet pulled by its header follows the pointer with no easing, over
+   whatever form it takes; letting go drops the class, and its transition
+   slides it home or away. */
+.bottom-sheet.sheet-dragging {
+    transform: translateY(var(--sheet-drag, 0px)) !important;
+    transition: none !important;
+}
+
 /* On a light theme the sheet lifts off the page: its shadow doubles up,
    since a light shadow alone barely marks a cream edge on a cream page. */
 [class*="theme-"][class*="-light"] .bottom-sheet {

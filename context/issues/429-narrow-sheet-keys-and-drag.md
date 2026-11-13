@@ -13,8 +13,17 @@ scotland:
 - orangui 4566a7e moves the bottom sheet's header pull into `SheetDrag` (`use_sheet_drag`), with `BottomSheet` on it unchanged. `DrawerSheet` (the filter, card details, the deck form's pickers) pulls through it while it is a bottom sheet: below the kit's modal width and not a drawer at every width, which leaves the filter; card details and the pickers float in from the right at every width. The Oracle tag dictionary is a full screen below that width.
 - orangui fbfcc73 makes `BottomSheet` a `dialog` named by its title, `aria-modal` while it dims the page (`SheetDim::Always`). `DrawerSheet` does the same, `aria-modal` while it dims at the window's width, as do the wide Printings modal and the Oracle tags modal.
 
+- Fix after droider's pass on 5f4ceccf7 (orangui `drag-release`):
+  - A short pull left the sheet where it was let go, on the web and in the app. Dioxus's `style` setter puts back any inline property a new value leaves out, so once 424 gave every sheet an inline `--overlay-z`, the pull's inline `transform` and `transition` outlived it. The pull now writes only `--sheet-drag` inline, and the `sheet-dragging` class, which it carries while held, moves the sheet by it; dropping the class lets the sheet's transition take it home. `BottomSheet` (Printings, Themes, the account sheets, every app sheet) and `DrawerSheet` (the filter) both carry it.
+  - Enter in Printings saved but its own press then landed on the Printings button that had focus back, opening the sheet again on the old card; Enter takes the default away in both forms now.
+  - Focus after a save: the row draws a new Printings button for the new printing, so the hook finds the opener again by its `data-action` and its place among the buttons with that action, for up to 3s while focus is on nothing else.
+  - The body takes focus a second time once the sheet has slid in (350ms) if the tap that opened it handed focus back to the page or the opener, as droider saw on the shared deck.
+
 ## Verification
 - At phone width, open a card's Printings: right arrow, left arrow, `l` and `h` step at once with no click, Enter saves a different printing, and focus goes back to the Printings button after it closes. The same on a shared deck, where Enter does nothing.
 - At phone width, open the filter and drag its title bar down past a quarter of its height: it closes; a short drag springs it back. The same on a shared deck.
 - At phone width, open Account > Change username: the new username field has focus with no tap, and closing the sheet puts focus back on the Change button. The same for Change email and Change password.
 - A screen reader names an open sheet by its title, as a dialog.
+- Pull any sheet's title bar down 100px and let go: it slides back with its transition; past a quarter of its height it closes. On the web (filter, Printings, Themes, Change username) and in the app.
+- Owner deck at phone width: open Printings, step with the arrows, press Enter once: it saves and closes, and focus is on the card's Printings button.
+- Shared deck at phone width: open Printings: the arrows and `h`/`l` step with no tap first.

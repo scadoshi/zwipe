@@ -348,6 +348,7 @@ pub fn CardRow(
                                     rsx! {
                                         button {
                                             class: "card-action-btn",
+                                            "data-action": crate::data_action::PRINTINGS,
                                             onclick: move |evt| {
                                                 evt.stop_propagation();
                                                 handler.call(card_clone.clone());
