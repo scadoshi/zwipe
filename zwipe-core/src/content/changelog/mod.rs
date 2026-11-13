@@ -53,6 +53,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Share puts Stop sharing first, apart from Copy link, on the web and in the app",
         "Quick add offers a very popular card first even when less played names start with what you typed",
         "On the web, closing a hint with Esc puts focus back on the card the keyboard cursor was on",
+        "In a deck's Stacks, revealing a tucked card takes no Back step, so Back closes what is open or leaves Cards, on the web and in the app",
     ],
 }];
 
