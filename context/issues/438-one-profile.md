@@ -14,7 +14,7 @@ laptop.
 - A tab opened straight on `?view=cards` gets the Profile put under it (`use_cards_route` replaces the entry with the Profile and pushes the Cards), so Back lands on the Profile.
 - The Cards layer slides in from the right and back out the same way, on the web and in the app (`use_layer_presence` in components: the layer stays mounted while it slides out and drops on its own `animationend`, so it needs no clock; `magic.css` holds the slide).
 - The web layer sits under the nav, which takes its title, `?` (the Cards' hint) and back arrow through `use_overlay_nav`, beside the menu, as the app's header has them.
-- One loaded deck: on the web the phone Profile reads the editor's live deck, as the wide page's facts do, so an edit in the layer shows on it at once. In the app the deck view holds its deck in `HeldDeck`; the Cards screen answers its own deck fetch from it (no fetch, no ghost) and the deck view loads again in place when the layer closes. `Zone::of_deck` (zwipe-ui) reads the command zone from a deck for both.
+- One loaded deck: on the web the phone Profile reads the editor's live deck, as the wide page's facts do, so an edit in the layer shows on it at once. In the app the deck view holds its deck in `HeldDeck`; the Cards screen starts its model loaded on it (no fetch, no ghost frame) and answers any later deck fetch from it and the deck view loads again in place when the layer closes. `Zone::of_deck` (zwipe-ui) reads the command zone from a deck for both.
 
 ## Checked (headless Chrome, app.zwipe.net local)
 - Shared deck at 390: the Profile card (Name, Shared by, Cards, Format, Commander, Power level), Budget, Tags, Distributions, Mana, Draw odds, Data with Export alone; no head chips or featured strip; one h1. "Krenko goblins" shared shows the owner's same six warnings with no Fix.
@@ -22,6 +22,7 @@ laptop.
 - Owner at 390: the same Profile; an edit in the Cards layer (+1) reads 48 on the Profile at once, and Undo puts back 47.
 - A fresh tab on `?view=cards` (history of one): Back lands on the Profile.
 - The layer slides in and out; the nav over it shows Back, `?` and the menu.
+- App (iOS simulator, local zerver): the Cards layer opens on the loaded cards with no ghost frame; +1 in the layer, then Back: the layer slides out and the Profile reads 48; Undo puts back 47.
 - Wide 1450: the shared foot shows Warnings read only and Data; one h1 on both pages.
 
 ## Verification

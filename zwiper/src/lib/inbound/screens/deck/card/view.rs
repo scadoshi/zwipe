@@ -18,7 +18,7 @@ use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
 use zwipe_core::domain::card::search_card::group_cards::GroupByOption;
-use zwipe_core::domain::deck::{self, Board};
+use zwipe_core::domain::deck::{self, Board, Deck};
 use zwipe_core::domain::user::hints::OneTimeHint;
 use zwipe_core::http::contracts::deck_card::HttpPatchDeckCard;
 use zwipe_ui::deck::command_zone::Slot;
@@ -475,6 +475,30 @@ impl Driver {
     }
 }
 
+/// The screen's model loaded on `deck`, as a load answered by it would leave it, with the effects
+/// that load still asks for (the tokens, the hint).
+fn seeded_state(deck_id: Uuid, deck: &Deck, filter: Box<CardQueryBuilder>) -> (State, Vec<Effect>) {
+    let mut state = State::new();
+    let mut pending = Vec::new();
+    for effect in state.update(Action::Load { deck_id, filter }) {
+        let Effect::FetchDeck { ticket, .. } = effect else {
+            pending.push(effect);
+            continue;
+        };
+        let zone = Zone::of_deck(deck);
+        pending.extend(state.update(Action::ProfileLoaded {
+            ticket,
+            profile: Box::new(deck.deck_profile.clone()),
+        }));
+        pending.extend(state.update(Action::Loaded {
+            ticket,
+            deck: Box::new(deck.clone()),
+            zone: Box::new(zone),
+        }));
+    }
+    (state, pending)
+}
+
 /// The route a destination opens, or `None` for the screen before this one.
 fn route(destination: Destination) -> Option<Router> {
     match destination {
@@ -603,8 +627,22 @@ pub fn View(deck_id: Uuid) -> Element {
 
     let deck_cards_hint_open = use_signal(|| false);
 
+    // With the deck the route holds, the screen starts loaded on it, so it never draws its ghost;
+    // what that load asks for next runs once it mounts.
+    let held = try_use_context::<HeldDeck>();
+    let seeded = use_hook(|| {
+        let deck = held
+            .and_then(|held| held.0.peek().clone())
+            .filter(|deck| deck.deck_profile.id == deck_id)?;
+        let filter = Box::new(filter_builder.peek().clone());
+        Some(seeded_state(deck_id, &deck, filter))
+    });
+    let (start, pending) = seeded.map_or_else(
+        || (State::new(), None),
+        |(state, effects)| (state, Some(effects)),
+    );
     let driver = Driver {
-        model: use_signal(State::new),
+        model: use_signal(move || start),
         navigator,
         toast,
         authed,
@@ -617,12 +655,19 @@ pub fn View(deck_id: Uuid) -> Element {
         expanded_card,
         printing_sheet_open,
         hint_open: deck_cards_hint_open,
-        held: try_use_context::<HeldDeck>(),
+        held,
     };
 
     use_effect(move || {
         let filter = Box::new(filter_builder.peek().clone());
-        driver.dispatch(Action::Load { deck_id, filter });
+        match pending.clone() {
+            Some(effects) => {
+                for effect in effects {
+                    driver.perform(effect);
+                }
+            }
+            None => driver.dispatch(Action::Load { deck_id, filter }),
+        }
     });
 
     // A tap inside the debounce window must still reach the server when the
