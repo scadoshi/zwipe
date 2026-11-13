@@ -11,8 +11,8 @@ use dioxus::prelude::*;
 
 use crate::inbound::screens::config::{ThemesSheet, use_toggle_dark_mode};
 
-/// The signed-in menu's theme buttons, two footer icons: the palette opens
-/// the Themes sheet and folds the menu, and the sun or moon names the mode
+/// The signed-in menu's theme buttons, two footer icons: the palette (and
+/// `t`, which presses it) opens the Themes sheet and folds the menu, and the sun or moon names the mode
 /// in use and flips it, saving at once.
 #[component]
 pub fn MenuTheme(mut open: Signal<bool>) -> Element {
@@ -24,6 +24,7 @@ pub fn MenuTheme(mut open: Signal<bool>) -> Element {
         button {
             class: "btn-action nav-icon",
             "aria-label": "Theme",
+            "data-action": components::data_action::THEMES,
             onclick: move |_| {
                 open.set(false);
                 sheet_open.set(true);

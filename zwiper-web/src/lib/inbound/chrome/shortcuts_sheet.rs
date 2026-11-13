@@ -9,7 +9,7 @@ pub use components::keys::{
 use crate::inbound::chrome::shortcuts::{self, ShortcutsScreen};
 
 /// Offers `screen`'s keys while it is mounted, so Shift+H opens the shortcuts sheet with them.
-/// Elsewhere Shift+H does nothing.
+/// Elsewhere it lists only the keys every page answers.
 pub fn use_offer_shortcuts(screen: ShortcutsScreen) {
     keys::use_offer_shortcuts(ShortcutsList {
         rows: shortcuts::sheet_rows(&screen),

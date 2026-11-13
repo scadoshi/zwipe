@@ -1,6 +1,6 @@
-//! The keyboard shortcuts on screen: the sheet that lists them, the keys that open things (`?`
-//! the page's hint everywhere, Shift+H the sheet on a screen with keys), and the keyboard button
-//! in the hint of a screen with keys that opens the sheet on a computer.
+//! The keyboard shortcuts on screen: the sheet that lists them, the keys that open things on
+//! every page (`?` the page's hint, Shift+H the sheet, `t` the theme sheet), and the keyboard
+//! button in a hint that opens the sheet on a computer.
 //!
 //! Components never know a host's screens. A screen offers its keys as a [`ShortcutsList`], and
 //! the sheet lists the newest one's.
@@ -12,7 +12,7 @@ use zwipe_ui::shortcuts::{self, GlobalKey, RowPart, SheetRow};
 use crate::hint::KeyGlyph;
 use crate::keys::guard;
 use crate::media::use_computer;
-use crate::{BottomSheet, DialogAction, HintKey, SheetFrame, SheetWide};
+use crate::{BottomSheet, DialogAction, HintKey, SheetFrame, SheetWide, data_action};
 
 /// The hint's keyboard button's icon: a keyboard, its keys and space bar.
 const KEYBOARD: &str = "M3 7h18v10H3zM7 10.5h.01M10.5 10.5h.01M14 10.5h.01M17.5 10.5h.01M8 14h8";
@@ -41,16 +41,25 @@ pub struct ShortcutsList {
 pub struct ShortcutsOffered(pub Signal<Vec<ShortcutsList>>);
 
 /// Provides [`ShortcutsOpen`] and [`ShortcutsOffered`] to the routes under it and answers the
-/// keys of a page with no hint of its own. Call once, in the frame around every route.
+/// keys of a page with no hint of its own. Call once, above every route. Every page offers the
+/// keys it answers anywhere ([`shortcuts::EVERYWHERE_ROWS`], the theme sheet's among them), so
+/// Shift+H and the hint's keyboard button work on every page, and a screen with keys of its own
+/// lists those over them.
 pub fn use_shortcuts_root() -> Signal<bool> {
     let open = use_context_provider(|| ShortcutsOpen(Signal::new(false))).0;
-    use_context_provider(|| ShortcutsOffered(Signal::new(Vec::new())));
+    use_context_provider(|| {
+        ShortcutsOffered(Signal::new(vec![ShortcutsList {
+            rows: shortcuts::EVERYWHERE_ROWS.to_vec(),
+            note: None,
+        }]))
+    });
     use_global_keys(None);
     open
 }
 
 /// Offers `screen`'s keys while this screen is mounted, so Shift+H and the hint's keyboard button
-/// open the shortcuts sheet with them. Elsewhere Shift+H does nothing.
+/// open the shortcuts sheet with them. Elsewhere the sheet lists only the keys every page
+/// answers.
 pub fn use_offer_shortcuts(screen: ShortcutsList) {
     let offered = try_use_context::<ShortcutsOffered>().map(|ShortcutsOffered(stack)| stack);
     let pushed = screen.clone();
@@ -69,8 +78,9 @@ pub fn use_offer_shortcuts(screen: ShortcutsList) {
     });
 }
 
-/// Answers `?` with `on_hint`, the page's own hint as its `?` button opens it, and Shift+H with
-/// the shortcuts sheet while a screen that offers it is mounted ([`use_offer_shortcuts`]), while this
+/// Answers `?` with `on_hint`, the page's own hint as its `?` button opens it, Shift+H with the
+/// shortcuts sheet while a screen that offers it is mounted ([`use_offer_shortcuts`]), and `t`
+/// with the theme sheet, pressing the button marked [`data_action::THEMES`], while this
 /// registration is the newest and the key reaches the screen. A page without a hint passes
 /// `None`, and `?` does nothing there.
 pub fn use_global_keys(on_hint: Option<Callback<()>>) {
@@ -105,6 +115,9 @@ pub fn use_global_keys(on_hint: Option<Callback<()>>) {
                             open.set(true);
                         }
                     }
+                    Some(GlobalKey::Themes) => {
+                        document::eval(&guard::press_first_js("body", &[data_action::THEMES]));
+                    }
                     None => {}
                 }
             }
@@ -135,8 +148,8 @@ pub fn ShortcutsSheet(open: Signal<bool>) -> Element {
                     p { class: "web-shortcuts-note", "{note}" }
                 }
                 ul { class: "web-shortcuts",
-                    for (keys, does) in screen.rows {
-                        li { key: "{does}", class: "web-shortcut",
+                    for (at, (keys, does)) in screen.rows.into_iter().enumerate() {
+                        li { key: "{at}", class: "web-shortcut",
                             span { class: "web-shortcut-keys",
                                 for (i, label) in keys.iter().copied().enumerate() {
                                     span { key: "{label}",

@@ -8,7 +8,7 @@
 use std::collections::{HashMap, HashSet};
 
 use components::hint::ContentHintDialog;
-use components::keys::{ShortcutsList, use_offer_shortcuts, use_shortcuts_action};
+use components::keys::{ShortcutsList, use_offer_shortcuts};
 use components::{
     DeckFacts, DeckHoverKeys, DeckRowHost, DockFilter, LoadFailed, Panel, StackDetails,
     use_deck_hover_keys,
@@ -153,7 +153,6 @@ pub fn SharedDeck(owner: String, slug: String, token: String, view: Option<DeckV
     // `?` opens the page's hint, whose keyboard button opens the shortcuts sheet on a computer.
     let mut hint_open = use_signal(|| false);
     let on_hint = use_callback(move |()| hint_open.set(true));
-    let shortcuts_action = use_shortcuts_action();
     let wide = use_wide();
     let loaded = matches!(&*result.read(), Some(Ok(_)));
     let title = match &*result.read() {
@@ -198,7 +197,6 @@ pub fn SharedDeck(owner: String, slug: String, token: String, view: Option<DeckV
         ContentHintDialog {
             open: hint_open,
             content: hint_copy::content(),
-            actions: shortcuts_action.into_iter().collect::<Vec<_>>(),
         }
     }
 }

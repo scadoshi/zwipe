@@ -186,6 +186,7 @@ pub fn sheet_note(screen: &ShortcutsScreen) -> Option<&'static str> {
 #[cfg(test)]
 mod tests {
     use zwipe_ui::deck_cards::{cursor, keys as hover_keys};
+    use zwipe_ui::shortcuts::THEME_ROWS;
 
     use super::*;
 
@@ -250,6 +251,8 @@ mod tests {
     fn shift_h_opens_the_sheet_and_question_mark_the_hint() {
         assert_eq!(global_key("?"), Some(GlobalKey::Hint));
         assert_eq!(global_key("H"), Some(GlobalKey::Shortcuts));
+        assert_eq!(global_key("t"), Some(GlobalKey::Themes));
+        assert_eq!(global_key("T"), None, "lowercase t only");
         assert_eq!(global_key("h"), None, "lowercase h stays Skip");
         assert_eq!(
             swipe_screen_shortcut("H"),
@@ -389,6 +392,10 @@ mod tests {
                 "Close the open sheet",
                 "This page's hint",
                 "These shortcuts",
+                "Themes",
+                "Move between themes in Themes",
+                "Move between themes in Themes",
+                "Pick the theme in Themes",
             ]
         );
         assert_eq!(rows.first().map(|(keys, _)| *keys), Some(&["→", "l"][..]));
@@ -399,7 +406,8 @@ mod tests {
             Some(&["↓", "j", "u", UNDO_COMBO][..]),
             "u and Ctrl+Z undo beside the down swipe"
         );
-        // Every listed key really does what its row says.
+        // Every listed key really does what its row says; the theme sheet's own rows are checked
+        // in `every_theme_sheet_key_works_there`.
         let typed = |label: &str| match label {
             "→" => "ArrowRight".to_owned(),
             "←" => "ArrowLeft".to_owned(),
@@ -408,7 +416,7 @@ mod tests {
             "Shift+H" => "H".to_owned(),
             other => other.to_owned(),
         };
-        for (keys, does) in &rows {
+        for (keys, does) in rows.iter().filter(|row| !in_theme_sheet(row)) {
             for label in *keys {
                 let key = typed(label);
                 let known = swipe_screen_shortcut(&key).is_some()
@@ -417,6 +425,43 @@ mod tests {
                     || key == UNDO_COMBO;
                 assert!(known, "{label} for {does}");
             }
+        }
+    }
+
+    /// Whether `row` is one of the theme sheet's own keys, which work in that sheet rather than on
+    /// the screen; its `t` row opens it from the screen.
+    fn in_theme_sheet(row: &SheetRow) -> bool {
+        THEME_ROWS.contains(row) && global_key(row.0.first().copied().unwrap_or_default()).is_none()
+    }
+
+    #[test]
+    fn every_theme_sheet_key_works_there() {
+        for (keys, does) in THEME_ROWS {
+            for label in keys {
+                let key = match *label {
+                    "↑" => "ArrowUp",
+                    "↓" => "ArrowDown",
+                    "←" => "ArrowLeft",
+                    "→" => "ArrowRight",
+                    other => other,
+                };
+                let works = cursor::move_for(key).is_some()
+                    || key == "Enter"
+                    || global_key(key) == Some(GlobalKey::Themes);
+                assert!(works, "{label} for {does}");
+            }
+        }
+        for screen in [
+            ShortcutsScreen::Swipe(ADD_LABELS),
+            ShortcutsScreen::DeckCards,
+            ShortcutsScreen::Examples,
+            ShortcutsScreen::CardRows,
+        ] {
+            let rows = sheet_rows(&screen);
+            assert!(
+                THEME_ROWS.iter().all(|row| rows.contains(row)),
+                "{screen:?} lists the theme sheet's keys"
+            );
         }
     }
 
@@ -463,8 +508,9 @@ mod tests {
 
     #[test]
     fn every_key_the_examples_sheet_lists_works_there() {
-        for (keys, does) in sheet_rows(&ShortcutsScreen::Examples) {
-            for label in keys {
+        let rows = sheet_rows(&ShortcutsScreen::Examples);
+        for (keys, does) in rows.iter().filter(|row| !in_theme_sheet(row)) {
+            for label in *keys {
                 let key = match *label {
                     "←" => "ArrowLeft",
                     "↓" => "ArrowDown",

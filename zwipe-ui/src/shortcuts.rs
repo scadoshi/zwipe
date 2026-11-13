@@ -79,20 +79,24 @@ pub enum GlobalKey {
     Hint,
     /// Opens the shortcuts sheet.
     Shortcuts,
+    /// Opens the theme sheet, as the menu's palette button does.
+    Themes,
 }
 
 /// The key that opens a hint: the topmost open modal's, else the page's.
 pub const HINT_KEY: &str = "?";
 
 /// The keys that work everywhere ([`global_key`]).
-pub const GLOBAL_KEYS: [&str; 2] = [HINT_KEY, "H"];
+pub const GLOBAL_KEYS: [&str; 3] = [HINT_KEY, "H", "t"];
 
-/// The global action `key` stands for: `?` the page's hint, Shift+H (`H`) the shortcuts sheet.
+/// The global action `key` stands for: `?` the page's hint, Shift+H (`H`) the shortcuts sheet,
+/// `t` the theme sheet (lowercase only, as Shift+T is no key).
 #[must_use]
 pub fn global_key(key: &str) -> Option<GlobalKey> {
     match key {
         "?" => Some(GlobalKey::Hint),
         "H" => Some(GlobalKey::Shortcuts),
+        "t" => Some(GlobalKey::Themes),
         _ => None,
     }
 }
@@ -100,11 +104,24 @@ pub fn global_key(key: &str) -> Option<GlobalKey> {
 /// One row of the shortcuts sheet: its keys as the sheet writes them, and what they do.
 pub type SheetRow = (&'static [&'static str], &'static str);
 
-/// The rows every page's sheet ends with: the keys every page answers.
-pub const EVERYWHERE_ROWS: [SheetRow; 3] = [
+/// The rows every page's sheet ends with: the keys every page answers, then the theme sheet's,
+/// which opens from every page.
+pub const EVERYWHERE_ROWS: [SheetRow; 7] = [
     (&["Esc"], "Close the open sheet"),
     (&["?"], "This page's hint"),
     (&["Shift+H"], "These shortcuts"),
+    THEME_ROWS[0],
+    THEME_ROWS[1],
+    THEME_ROWS[2],
+    THEME_ROWS[3],
+];
+
+/// The theme sheet's rows: `t` opens it, its cursor moves through the themes and Enter picks one.
+pub const THEME_ROWS: [SheetRow; 4] = [
+    (&["t"], "Themes"),
+    (&["↑", "↓", "←", "→"], "Move between themes in Themes"),
+    (&["h", "j", "k", "l"], "Move between themes in Themes"),
+    (&["Enter"], "Pick the theme in Themes"),
 ];
 
 /// The deck cards page's own rows, the read-only page's being only the keys that read.

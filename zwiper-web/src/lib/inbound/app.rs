@@ -14,6 +14,7 @@ use zwipe_core::domain::user::models::settings::PipStyle;
 use crate::inbound::chrome::hint_topic::{HintHost, HintTopic, InfoButton};
 use crate::inbound::chrome::leave_guard::{self, GuardedHistory, RouteOverlays};
 use crate::inbound::chrome::overlay_steps::StepMove;
+use crate::inbound::chrome::shortcuts_sheet::{ShortcutsSheet, use_shortcuts_root};
 use crate::inbound::chrome::splash;
 use crate::inbound::chrome::trail::TrailHistory;
 use crate::inbound::router::Route;
@@ -125,6 +126,9 @@ pub fn App() -> Element {
     components::use_card_proxy_fit();
     // Lists and groups marked to settle ease into place instead of snapping.
     components::use_settle();
+    // The keyboard shortcuts sheet, over every route, the auth screens included, opened by
+    // Shift+H, a hint's keyboard button or a swipe screen's dock button.
+    let shortcuts_open = use_shortcuts_root();
 
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
@@ -146,6 +150,7 @@ pub fn App() -> Element {
                 ToastStack {
                     default_duration: components::TOAST_NORMAL,
                     Router::<Route> {}
+                    ShortcutsSheet { open: shortcuts_open }
                     HintHost {}
                     DialogHostView {}
                 }

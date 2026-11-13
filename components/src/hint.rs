@@ -147,13 +147,18 @@ pub fn HintColored(color: String, children: Element) -> Element {
 }
 
 /// A hint's dialog drawn from its `content`, with `actions` (a guide link,
-/// as a rule) before its dismiss button.
+/// as a rule) before its dismiss button, then the keyboard button that opens
+/// the shortcuts sheet on a computer where the shortcuts sheet is offered
+/// ([`use_shortcuts_action`](crate::keys::use_shortcuts_action)).
 #[component]
 pub fn ContentHintDialog(
     open: Signal<bool>,
     content: HintContent,
     #[props(default)] actions: Vec<DialogAction>,
 ) -> Element {
+    let shortcuts = crate::keys::use_shortcuts_action();
+    let mut actions = actions;
+    actions.extend(shortcuts);
     rsx! {
         HintDialog { open, title: content.title.clone(), actions,
             HintBody { blocks: content.blocks }

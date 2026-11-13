@@ -21,7 +21,7 @@ use crate::back_arrow::BackArrow;
 use crate::card_skeleton::CardSkeleton;
 use crate::details_eye::{DockEye, Surface, use_details_eye};
 use crate::hint::{ContentHintDialog, guide_for_one_time};
-use crate::keys::{ShortcutsList, use_offer_shortcuts, use_page_keys, use_shortcuts_action};
+use crate::keys::{ShortcutsList, use_offer_shortcuts, use_page_keys};
 use crate::swipe_stack::{
     self, Swipe, SwipeDock, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
 };
@@ -286,15 +286,13 @@ pub fn OracleTagExamples(
     }
 }
 
-/// The examples' hint, with the keyboard button where the screen offers its keys.
+/// The examples' hint.
 #[component]
 fn ExamplesHint(open: Signal<bool>) -> Element {
-    let shortcuts = use_shortcuts_action();
     let Some(content) = one_time::content_for(OneTimeHint::OtagExamples) else {
         return rsx! {};
     };
-    let mut actions = guide_for_one_time(OneTimeHint::OtagExamples);
-    actions.extend(shortcuts);
+    let actions = guide_for_one_time(OneTimeHint::OtagExamples);
     rsx! {
         ContentHintDialog { open, content, actions }
     }

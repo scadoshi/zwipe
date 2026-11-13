@@ -1,5 +1,5 @@
-//! The shortcuts sheet lists the keys of the newest screen that offers it, and nothing while none
-//! does.
+//! The shortcuts sheet lists the keys of the newest screen that offers it, and the keys every page
+//! answers while none does.
 
 #![expect(
     clippy::unwrap_used,
@@ -58,7 +58,7 @@ fn the_sheet_lists_the_offering_screen_s_keys_and_note() {
 }
 
 #[test]
-fn with_no_screen_offering_it_the_sheet_lists_nothing() {
+fn with_no_screen_offering_keys_the_sheet_lists_the_keys_every_page_answers() {
     fn app() -> Element {
         let open = use_shortcuts_root();
         rsx! {
@@ -66,5 +66,13 @@ fn with_no_screen_offering_it_the_sheet_lists_nothing() {
         }
     }
     let html = render(app);
-    assert!(!html.contains("Keyboard shortcuts"), "{html}");
+    for text in [
+        "Keyboard shortcuts",
+        "These shortcuts",
+        "Move between themes in Themes",
+        "Pick the theme in Themes",
+    ] {
+        assert!(html.contains(text), "{text}: {html}");
+    }
+    assert!(!html.contains("Printings"), "{html}");
 }
