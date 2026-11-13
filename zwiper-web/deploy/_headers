@@ -8,10 +8,10 @@
 # when the script changes and the hash here does not.
 #
 # Every response revalidates (no-cache), so a refresh always loads the
-# newest index.html and the bundle it names, except the bundle itself: its
-# wasm, scripts and stylesheets carry a content hash in their names, so a
-# browser keeps them for a year without asking again. The version file the app reads
-# to find a newer build is never stored at all.
+# newest index.html and the bundle it names. The bundle is not marked
+# immutable: Pages applies these rules to 404s too, and an asset fetched in
+# the gap before it reached the edge would stay a cached 404 for a year. The
+# version file the app reads to find a newer build is never stored at all.
 /*
   Cache-Control: no-cache
   X-Content-Type-Options: nosniff
@@ -23,15 +23,3 @@
 /version.json
   ! Cache-Control
   Cache-Control: no-store
-
-/assets/*.wasm
-  ! Cache-Control
-  Cache-Control: public, max-age=31536000, immutable
-
-/assets/*.js
-  ! Cache-Control
-  Cache-Control: public, max-age=31536000, immutable
-
-/assets/*.css
-  ! Cache-Control
-  Cache-Control: public, max-age=31536000, immutable
