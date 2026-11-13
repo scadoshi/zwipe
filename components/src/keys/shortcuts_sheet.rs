@@ -8,7 +8,7 @@
 
 use dioxus::prelude::*;
 use uuid::Uuid;
-use zwipe_ui::shortcuts::{self, GlobalKey, RowPart, SheetRow};
+use zwipe_ui::shortcuts::{self, GlobalKey, RowPart, SheetGroup};
 
 use crate::hint::KeyGlyph;
 use crate::keys::guard;
@@ -26,12 +26,13 @@ pub const SHORTCUTS_LABEL: &str = "Keyboard shortcuts";
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ShortcutsOpen(pub Signal<bool>);
 
-/// The keys one screen lists in the shortcuts sheet: each row's keys and what they do, the
-/// screen's own first and then the keys every screen answers, and the line above them, if any.
+/// The keys one screen lists in the shortcuts sheet, in groups under small headings, the keys
+/// every screen answers among them ([`shortcuts::sheet_groups`]), and the line above them, if
+/// any.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ShortcutsList {
-    /// Each key, with its other names, and what it does.
-    pub rows: Vec<SheetRow>,
+    /// The groups, each a heading over its keys and what they do.
+    pub groups: Vec<SheetGroup>,
     /// The line the sheet shows above the keys.
     pub note: Option<&'static str>,
     /// Whether the screen's own keys use `j` and `k`, so they don't scroll the page there.
@@ -45,14 +46,14 @@ pub struct ShortcutsOffered(pub Signal<Vec<ShortcutsList>>);
 
 /// Provides [`ShortcutsOpen`] and [`ShortcutsOffered`] to the routes under it and answers the
 /// keys of a page with no hint of its own. Call once, above every route. Every page offers the
-/// keys it answers anywhere ([`shortcuts::EVERYWHERE_ROWS`], the theme sheet's among them), so
+/// keys it answers anywhere ([`shortcuts::everywhere_groups`], the theme sheet's among them), so
 /// Shift+H and the hint's keyboard button work on every page, and a screen with keys of its own
 /// lists those over them. The page keys scroll `scroller` (a selector), else the document.
 pub fn use_shortcuts_root(scroller: Option<&'static str>) -> Signal<bool> {
     let open = use_context_provider(|| ShortcutsOpen(Signal::new(false))).0;
     use_context_provider(|| {
         ShortcutsOffered(Signal::new(vec![ShortcutsList {
-            rows: shortcuts::EVERYWHERE_ROWS.to_vec(),
+            groups: shortcuts::everywhere_groups(),
             note: None,
             claims_steps: false,
         }]))
@@ -158,10 +159,10 @@ pub fn use_global_keys(on_hint: Option<Callback<()>>) {
     });
 }
 
-/// The shortcuts sheet: every key of the newest screen that offers it with what it does, in the
-/// hint's key style, on orangui's [`ShortcutsSheet`](orangui::ShortcutsSheet), which sits above
-/// every screen, takes focus as it opens, keeps Tab inside and gives focus back as it closes. A
-/// screen that leaves `j` and `k` to the page lists the step rows too.
+/// The shortcuts sheet: every key of the newest screen that offers it with what it does, in its
+/// groups, in the hint's key style, on orangui's [`ShortcutsSheet`](orangui::ShortcutsSheet),
+/// which sits above every screen, closes from its `Got it`, takes focus as it opens, keeps Tab
+/// inside and gives focus back as it closes.
 #[component]
 pub fn ShortcutsSheet(open: Signal<bool>) -> Element {
     let offered = try_use_context::<ShortcutsOffered>().map(|ShortcutsOffered(stack)| stack);
@@ -169,22 +170,19 @@ pub fn ShortcutsSheet(open: Signal<bool>) -> Element {
     let Some(screen) = offered.and_then(|stack| stack.read().last().cloned()) else {
         return rsx! {};
     };
-    let steps: &[SheetRow] = if screen.claims_steps {
-        &[]
-    } else {
-        &shortcuts::STEP_ROWS
-    };
-    let count = screen.rows.len().saturating_add(steps.len());
-    let rows = screen.rows.iter().copied().chain(steps.iter().copied());
     rsx! {
-        orangui::ShortcutsSheet { open, note: screen.note.map(str::to_owned), rows: count,
-            for (at, (keys, does)) in rows.enumerate() {
-                orangui::ShortcutRow { key: "{at}", keys: keys.iter().map(ToString::to_string).collect::<Vec<_>>(),
-                    // An icon button shows its icon beside its name, so the sheet teaches it.
-                    for part in shortcuts::row_parts(does) {
-                        match part {
-                            RowPart::Icon(icon) => rsx! { HintKey { KeyGlyph { icon } } },
-                            RowPart::Text(words) => rsx! { "{words}" },
+        orangui::ShortcutsSheet { open, note: screen.note.map(str::to_owned),
+            for group in screen.groups {
+                orangui::ShortcutGroup { key: "{group.title}", title: group.title.to_string(),
+                    for (at, (keys, does)) in group.rows.into_iter().enumerate() {
+                        orangui::ShortcutRow { key: "{at}", keys: keys.iter().map(ToString::to_string).collect::<Vec<_>>(),
+                            // An icon button shows its icon beside its name, so the sheet teaches it.
+                            for part in shortcuts::row_parts(does) {
+                                match part {
+                                    RowPart::Icon(icon) => rsx! { HintKey { KeyGlyph { icon } } },
+                                    RowPart::Text(words) => rsx! { "{words}" },
+                                }
+                            }
                         }
                     }
                 }

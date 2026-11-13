@@ -62,6 +62,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "On the web, Share's link is a Tab stop that selects itself for copying",
         "On the web's Settings, Exceptions opens beside the page on a wide window, and its Change says why it is off while Universes Beyond shows",
         "On a phone, a card's Image, Printings and other actions are bigger to tap, on the web and in the app",
+        "The keyboard shortcuts sheet groups its keys under small headings and closes with Got it, as a hint does",
     ],
 }];
 

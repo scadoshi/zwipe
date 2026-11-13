@@ -258,10 +258,7 @@ fn SharedDeckView(
     let mut filter_open = use_signal(|| false);
     // The read-only deck page's keys on the shortcuts sheet.
     use_offer_shortcuts(ShortcutsList {
-        rows: shortcuts::deck_cards_rows(Editable::No)
-            .into_iter()
-            .chain(shortcuts::EVERYWHERE_ROWS)
-            .collect(),
+        groups: shortcuts::deck_cards_groups(Editable::No),
         note: Some(shortcuts::DECK_CARDS_NOTE),
         claims_steps: true,
     });

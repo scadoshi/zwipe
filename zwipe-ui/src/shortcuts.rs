@@ -106,31 +106,82 @@ pub fn global_key(key: &str) -> Option<GlobalKey> {
 /// One row of the shortcuts sheet: its keys as the sheet writes them, and what they do.
 pub type SheetRow = (&'static [&'static str], &'static str);
 
-/// The rows every page's sheet ends with: the keys every page answers (orangui's page keys but
-/// the steps, which a screen's own `j` and `k` can take), then the theme sheet's, which opens from
-/// every page.
-pub const EVERYWHERE_ROWS: [SheetRow; 9] = [
-    page_keys::CLOSE_ROW,
-    (&["?"], "This page's hint"),
-    page_keys::SHORTCUTS_ROW,
-    page_keys::TOP_ROW,
-    page_keys::BOTTOM_ROW,
-    THEME_ROWS[0],
-    THEME_ROWS[1],
-    THEME_ROWS[2],
-    THEME_ROWS[3],
-];
+/// A group of the shortcuts sheet: a small heading over its rows.
+pub type SheetGroup = page_keys::KeyGroup;
 
-/// The theme sheet's rows: `t` opens it, its cursor moves through the themes and Enter picks one.
-pub const THEME_ROWS: [SheetRow; 4] = [
-    page_keys::THEMES_ROW,
-    page_keys::THEME_SHEET_ROWS[0],
-    page_keys::THEME_SHEET_ROWS[1],
-    page_keys::THEME_SHEET_ROWS[2],
-];
+/// The hint key's row, on a screen with a hint.
+pub const HINT_ROW: SheetRow = (&["?"], "This page's hint");
+
+/// The theme sheet's own rows, under [`page_keys::IN_THEMES`].
+pub const THEME_SHEET_ROWS: [SheetRow; 4] = page_keys::THEME_SHEET_ROWS;
 
 /// The step rows, on a screen whose own keys leave `j` and `k` to scroll the page.
 pub const STEP_ROWS: [SheetRow; 2] = page_keys::STEP_ROWS;
+
+/// One screen's keys by group, before the keys every page has join them ([`sheet_groups`]).
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct ScreenKeys {
+    /// The screen's moves, first under Navigation.
+    pub moves: Vec<SheetRow>,
+    /// The move that opens what the cursor is on, last under Navigation.
+    pub open: Option<SheetRow>,
+    /// The keys that act on a card.
+    pub card: Vec<SheetRow>,
+    /// A swipe screen's four directions.
+    pub swipe: Vec<SheetRow>,
+    /// The screen's own tools, first under Page.
+    pub page: Vec<SheetRow>,
+    /// Whether `j` and `k` scroll the page here (the screen's own keys don't take them).
+    pub steps: bool,
+}
+
+/// The sheet's groups for a screen's `keys`, with the keys every page has: Swipe (a swipe screen's
+/// directions lead), Navigation (its moves, the ends, the steps where on, then its open), Card, Page (its tools, then Themes, the
+/// hint, these shortcuts and Esc) and In Themes. A group with no rows is left out.
+#[must_use]
+pub fn sheet_groups(keys: ScreenKeys) -> Vec<SheetGroup> {
+    let steps: &[SheetRow] = if keys.steps { &STEP_ROWS } else { &[] };
+    let navigation = keys
+        .moves
+        .into_iter()
+        .chain([page_keys::TOP_ROW, page_keys::BOTTOM_ROW])
+        .chain(steps.iter().copied())
+        .chain(keys.open);
+    let page = keys.page.into_iter().chain([
+        page_keys::THEMES_ROW,
+        HINT_ROW,
+        page_keys::SHORTCUTS_ROW,
+        page_keys::CLOSE_ROW,
+    ]);
+    [
+        SheetGroup::new(page_keys::SWIPE, keys.swipe),
+        SheetGroup::new(page_keys::NAVIGATION, navigation),
+        SheetGroup::new(page_keys::CARD, keys.card),
+        SheetGroup::new(page_keys::PAGE, page),
+        SheetGroup::new(page_keys::IN_THEMES, THEME_SHEET_ROWS),
+    ]
+    .into_iter()
+    .filter(|group| !group.rows.is_empty())
+    .collect()
+}
+
+/// The groups of a screen with no keys of its own: the keys every page has, the steps on.
+#[must_use]
+pub fn everywhere_groups() -> Vec<SheetGroup> {
+    sheet_groups(ScreenKeys {
+        steps: true,
+        ..ScreenKeys::default()
+    })
+}
+
+/// Every row of `groups` in order, for checks that read the sheet as one list.
+#[must_use]
+pub fn rows_of(groups: &[SheetGroup]) -> Vec<SheetRow> {
+    groups
+        .iter()
+        .flat_map(|group| group.rows.iter().copied())
+        .collect()
+}
 
 /// The key that puts the cursor in a page's Quick add.
 pub const QUICK_ADD_KEY: &str = "/";
@@ -185,6 +236,53 @@ pub fn card_rows_rows() -> Vec<SheetRow> {
         .chain([open])
         .chain(card_read_rows())
         .collect()
+}
+
+/// The deck cards page's groups: the cursor's moves and Enter under Navigation; the keys that
+/// read a card, then (owner's page) the ones that change it, under Card; Undo, the filter and
+/// Quick add (owner's page) under Page. The cursor keeps `j` and `k`.
+#[must_use]
+pub fn deck_cards_groups(editable: Editable) -> Vec<SheetGroup> {
+    let rows = deck_cards_rows(editable);
+    let find = |key: &str| rows.iter().copied().find(|row| row.0.contains(&key));
+    let pick =
+        |keys: &[&str]| -> Vec<SheetRow> { keys.iter().filter_map(|key| find(key)).collect() };
+    sheet_groups(ScreenKeys {
+        moves: pick(&["↑", "h", "Home"]),
+        open: find("Enter"),
+        card: pick(&["p", "i", "v", "d", "m", "s", "Shift+S", "-", "+"]),
+        page: pick(&["u", "f", QUICK_ADD_KEY]),
+        ..ScreenKeys::default()
+    })
+}
+
+/// The Oracle tag examples' groups: its two swipes, then the keys that read a card.
+#[must_use]
+pub fn examples_groups() -> Vec<SheetGroup> {
+    let [next, back, details, flip] = examples_rows();
+    sheet_groups(ScreenKeys {
+        swipe: vec![next, back],
+        card: vec![details, flip],
+        ..ScreenKeys::default()
+    })
+}
+
+/// A screen of card rows with no editing (the Commander maybeboard, Activity, Playstyle): the
+/// cursor's moves and Enter under Navigation, the keys that read a card under Card. The cursor
+/// keeps `j` and `k`.
+#[must_use]
+pub fn card_rows_groups() -> Vec<SheetGroup> {
+    let rows = card_rows_rows();
+    let find = |key: &str| rows.iter().copied().find(|row| row.0.contains(&key));
+    sheet_groups(ScreenKeys {
+        moves: ["↑", "j", "Home"]
+            .iter()
+            .filter_map(|key| find(key))
+            .collect(),
+        open: find("Enter"),
+        card: card_read_rows().to_vec(),
+        ..ScreenKeys::default()
+    })
 }
 
 /// The keys that read a card under the cursor or open: Printings, Image, Flip and details. A deck
@@ -302,6 +400,89 @@ mod tests {
             .find(|(keys, _)| keys == &["Shift+S"])
             .map(|(_, does)| does);
         assert_eq!(star, Some("[[star]] Star"));
+    }
+
+    /// Each group's title and its rows' first keys.
+    fn outline(groups: &[SheetGroup]) -> Vec<(&'static str, Vec<&'static str>)> {
+        groups
+            .iter()
+            .map(|group| {
+                let firsts = group
+                    .rows
+                    .iter()
+                    .filter_map(|(keys, _)| keys.first().copied());
+                (group.title, firsts.collect())
+            })
+            .collect()
+    }
+
+    #[test]
+    fn the_owner_s_deck_page_groups_its_keys_as_approved() {
+        assert_eq!(
+            outline(&deck_cards_groups(Editable::Yes)),
+            vec![
+                (
+                    "Navigation",
+                    vec!["↑", "h", "Home", "gg", "Shift+G", "Enter"]
+                ),
+                (
+                    "Card",
+                    vec!["p", "i", "v", "d", "m", "s", "Shift+S", "-", "+"]
+                ),
+                ("Page", vec!["u", "f", "/", "t", "?", "Shift+H", "Esc"]),
+                ("In Themes", vec!["↑", "h", "gg", "Enter"]),
+            ]
+        );
+    }
+
+    #[test]
+    fn a_shared_deck_groups_only_the_keys_that_read() {
+        assert_eq!(
+            outline(&deck_cards_groups(Editable::No)),
+            vec![
+                (
+                    "Navigation",
+                    vec!["↑", "h", "Home", "gg", "Shift+G", "Enter"]
+                ),
+                ("Card", vec!["p", "i", "v", "d"]),
+                ("Page", vec!["f", "t", "?", "Shift+H", "Esc"]),
+                ("In Themes", vec!["↑", "h", "gg", "Enter"]),
+            ]
+        );
+    }
+
+    #[test]
+    fn a_screen_with_no_keys_lists_the_steps_and_the_keys_every_page_has() {
+        assert_eq!(
+            outline(&everywhere_groups()),
+            vec![
+                ("Navigation", vec!["gg", "Shift+G", "j", "k"]),
+                ("Page", vec!["t", "?", "Shift+H", "Esc"]),
+                ("In Themes", vec!["↑", "h", "gg", "Enter"]),
+            ]
+        );
+    }
+
+    #[test]
+    fn the_examples_and_card_rows_group_their_keys() {
+        assert_eq!(
+            outline(&examples_groups()).get(..3).map(<[_]>::to_vec),
+            Some(vec![
+                ("Swipe", vec!["←", "↓"]),
+                ("Navigation", vec!["gg", "Shift+G"]),
+                ("Card", vec!["d", "v"]),
+            ])
+        );
+        assert_eq!(
+            outline(&card_rows_groups()).get(..2).map(<[_]>::to_vec),
+            Some(vec![
+                (
+                    "Navigation",
+                    vec!["↑", "j", "Home", "gg", "Shift+G", "Enter"]
+                ),
+                ("Card", vec!["p", "i", "v", "d"]),
+            ])
+        );
     }
 
     #[test]

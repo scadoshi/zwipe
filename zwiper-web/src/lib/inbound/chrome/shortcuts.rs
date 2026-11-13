@@ -10,13 +10,13 @@ pub use components::keys::{
 };
 pub use components::swipe_stack::SWIPE_LETTERS;
 use components::swipe_stack::{Swipe, swipe_key};
+use zwipe_ui::shortcuts::{
+    self, DECK_CARDS_NOTE, Editable, FLIP_ROW, ScreenKeys, SheetGroup, SheetRow, card_rows_groups,
+    deck_cards_groups, examples_groups, rows_of,
+};
 pub use zwipe_ui::shortcuts::{
     CardKey, FlowKey, GLOBAL_KEYS, GlobalKey, HINT_KEY, QUICK_ADD_KEY, UNDO_COMBO, card_key,
     flow_key, global_key, undo_letter,
-};
-use zwipe_ui::shortcuts::{
-    DECK_CARDS_NOTE, EVERYWHERE_ROWS, Editable, FLIP_ROW, SheetRow, card_rows_rows,
-    deck_cards_rows, examples_rows,
 };
 
 /// What a key does on a swipe screen (Add, Remove, Commander swipe): the same action as its
@@ -140,38 +140,43 @@ pub enum ShortcutsScreen {
     CardRows,
 }
 
-/// The rows the shortcuts sheet lists on `screen`: each key, with its vim letter if it has one,
-/// and what it does, the screen's own keys first and then the keys every screen answers.
+/// The groups the shortcuts sheet lists on `screen` ([`shortcuts::sheet_groups`]): each key, with
+/// its vim letter if it has one, and what it does, the screen's own under their headings and the
+/// keys every screen answers among them.
 #[must_use]
-pub fn sheet_rows(screen: &ShortcutsScreen) -> Vec<SheetRow> {
-    let own: Vec<SheetRow> = match screen {
+pub fn sheet_groups(screen: &ShortcutsScreen) -> Vec<SheetGroup> {
+    match screen {
         ShortcutsScreen::Swipe(labels) => {
-            let swipes = [
+            let swipe = [
                 Some((&["→", "l"][..], labels.right)),
                 Some((&["←", "h"][..], labels.left)),
                 labels.up.map(|up| (&["↑", "k"][..], up)),
                 Some((&["↓", "j", "u", UNDO_COMBO][..], labels.down)),
             ];
-            let rest: [(&'static [&'static str], &'static str); 5] = [
+            let card: [SheetRow; 3] = [
                 (&["p"], "Printings"),
                 (&["d"], "Card details"),
                 (&["v"], FLIP_ROW),
-                (&["f"], "Filter"),
-                (&["r"], "Refresh"),
             ];
+            let tools: [SheetRow; 2] = [(&["f"], "Filter"), (&["r"], "Refresh")];
             let synergy = labels.synergy.then_some((&["s"][..], "Synergy on or off"));
-            swipes
-                .into_iter()
-                .flatten()
-                .chain(rest)
-                .chain(synergy)
-                .collect()
+            shortcuts::sheet_groups(ScreenKeys {
+                swipe: swipe.into_iter().flatten().collect(),
+                card: card.to_vec(),
+                page: tools.into_iter().chain(synergy).collect(),
+                ..ScreenKeys::default()
+            })
         }
-        ShortcutsScreen::DeckCards => deck_cards_rows(Editable::Yes),
-        ShortcutsScreen::Examples => examples_rows().to_vec(),
-        ShortcutsScreen::CardRows => card_rows_rows(),
-    };
-    own.into_iter().chain(EVERYWHERE_ROWS).collect()
+        ShortcutsScreen::DeckCards => deck_cards_groups(Editable::Yes),
+        ShortcutsScreen::Examples => examples_groups(),
+        ShortcutsScreen::CardRows => card_rows_groups(),
+    }
+}
+
+/// Every row [`sheet_groups`] lists on `screen`, in order.
+#[must_use]
+pub fn sheet_rows(screen: &ShortcutsScreen) -> Vec<SheetRow> {
+    rows_of(&sheet_groups(screen))
 }
 
 /// Whether `screen`'s own keys use `j` and `k` (the swipes, the deck page's and the card rows'
@@ -198,7 +203,7 @@ pub fn sheet_note(screen: &ShortcutsScreen) -> Option<&'static str> {
 #[cfg(test)]
 mod tests {
     use zwipe_ui::deck_cards::{cursor, keys as hover_keys};
-    use zwipe_ui::shortcuts::THEME_ROWS;
+    use zwipe_ui::shortcuts::THEME_SHEET_ROWS;
 
     use super::*;
 
@@ -397,21 +402,22 @@ mod tests {
                 "Skip",
                 "Maybeboard",
                 "Undo",
+                "To the top",
+                "To the bottom",
                 "Printings",
                 "Card details",
                 FLIP_ROW,
                 "Filter",
                 "Refresh",
                 "Synergy on or off",
-                "Close the open sheet",
+                "Themes",
                 "This page's hint",
                 "These shortcuts",
-                "To the top",
-                "To the bottom",
-                "Themes",
-                "Move between themes in Themes",
-                "Move between themes in Themes",
-                "Pick the theme in Themes",
+                "Close the open sheet",
+                "Move between themes",
+                "Move between themes",
+                "First or last theme",
+                "Pick the theme",
             ]
         );
         assert_eq!(rows.first().map(|(keys, _)| *keys), Some(&["→", "l"][..]));
@@ -452,9 +458,9 @@ mod tests {
     }
 
     /// Whether `row` is one of the theme sheet's own keys, which work in that sheet rather than on
-    /// the screen; its `t` row opens it from the screen.
+    /// the screen.
     fn in_theme_sheet(row: &SheetRow) -> bool {
-        THEME_ROWS.contains(row) && global_key(row.0.first().copied().unwrap_or_default()).is_none()
+        THEME_SHEET_ROWS.contains(row)
     }
 
     #[test]
@@ -471,13 +477,15 @@ mod tests {
     #[test]
     fn the_card_row_screens_list_their_cursor_keys_then_the_card_keys() {
         let rows = sheet_rows(&ShortcutsScreen::CardRows);
-        let actions: Vec<&str> = rows.iter().take(7).map(|(_, does)| *does).collect();
+        let actions: Vec<&str> = rows.iter().take(9).map(|(_, does)| *does).collect();
         assert_eq!(
             actions,
             [
                 "Move between cards",
                 "Move between cards",
                 "First or last card",
+                "To the top",
+                "To the bottom",
                 "Open the card",
                 "Printings",
                 zwipe_ui::shortcuts::card_read_rows()[1].1,
@@ -489,7 +497,7 @@ mod tests {
 
     #[test]
     fn every_theme_sheet_key_works_there() {
-        for (keys, does) in THEME_ROWS {
+        for (keys, does) in THEME_SHEET_ROWS {
             for label in keys {
                 let key = match *label {
                     "↑" => "ArrowUp",
@@ -498,9 +506,8 @@ mod tests {
                     "→" => "ArrowRight",
                     other => other,
                 };
-                let works = cursor::move_for(key).is_some()
-                    || key == "Enter"
-                    || global_key(key) == Some(GlobalKey::Themes);
+                let works =
+                    cursor::move_for(key).is_some() || key == "Enter" || page_key_label(label);
                 assert!(works, "{label} for {does}");
             }
         }
@@ -512,7 +519,8 @@ mod tests {
         ] {
             let rows = sheet_rows(&screen);
             assert!(
-                THEME_ROWS.iter().all(|row| rows.contains(row)),
+                THEME_SHEET_ROWS.iter().all(|row| rows.contains(row))
+                    && rows.iter().any(|(keys, _)| keys.contains(&"t")),
                 "{screen:?} lists the theme sheet's keys"
             );
         }

@@ -1359,24 +1359,43 @@ a.nav-dropdown-item.active:visited {
     color: var(--ink-text-muted, var(--text-muted));
 }
 
-/* On a wide window the sheet widens and the rows fall into two columns,
-   read top to bottom then across, so a screen with many keys needs no
-   scroll; the host gives the row count as --shortcut-rows (half, rounded
-   up). Below it, one column. */
+/* The groups, each under a small heading. On a wide window the sheet widens
+   and the groups, each kept whole, fill two columns. */
+.shortcut-groups {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.shortcut-group-title {
+    margin: 0 0 0.5rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-text-muted, var(--text-muted));
+}
+
 @media (min-width: 60rem) {
     .shortcuts-layer .sheet-form-modal > .bottom-sheet {
         width: min(52rem, calc(100vw - 4rem));
     }
 
-    .shortcuts[style*="--shortcut-rows"] {
-        grid-template-columns: max-content 1fr max-content 1fr;
-        grid-template-rows: repeat(var(--shortcut-rows), auto);
-        grid-auto-flow: column;
-        column-gap: 1.5rem;
+    .shortcut-groups {
+        columns: 2;
+        column-gap: 2rem;
+        display: block;
     }
 
-    .shortcuts[style*="--shortcut-rows"] > .shortcut {
-        grid-column: span 2;
+    .shortcut-group {
+        break-inside: avoid;
+        margin-bottom: 0.75rem;
+    }
+
+    /* Two columns hold more rows at once, a little closer, so a screen
+       with many keys (the deck page) fits a laptop's window. */
+    .shortcut-groups .shortcuts {
+        row-gap: 0.35rem;
     }
 }
 

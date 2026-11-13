@@ -13,7 +13,7 @@ use dioxus::prelude::*;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::user::models::hints::OneTimeHint;
 use zwipe_ui::hint::one_time;
-use zwipe_ui::shortcuts::{self, CardKey, EVERYWHERE_ROWS, examples_rows};
+use zwipe_ui::shortcuts::{self, CardKey};
 use zwipe_ui::stack::{CardStack, Direction, StackAction};
 use zwipe_ui::timing::{EXAMPLES_MAX_CARDS, LOAD_MORE_AT, PAGE_SIZE};
 
@@ -152,7 +152,7 @@ pub fn OracleTagExamples(
     });
     // Shift+H lists the modal's keys while it is open.
     use_offer_shortcuts(ShortcutsList {
-        rows: examples_rows().into_iter().chain(EVERYWHERE_ROWS).collect(),
+        groups: shortcuts::examples_groups(),
         claims_steps: true,
         note: None,
     });

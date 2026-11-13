@@ -31,7 +31,10 @@ fn render(app: fn() -> Element) -> String {
 #[component]
 fn Screen() -> Element {
     use_offer_shortcuts(ShortcutsList {
-        rows: vec![(&["p"], "Printings"), (&["d"], "Card details")],
+        groups: vec![zwipe_ui::shortcuts::SheetGroup::new(
+            "Card",
+            [(&["p"][..], "Printings"), (&["d"][..], "Card details")],
+        )],
         note: Some("Hover a card"),
         claims_steps: false,
     });
@@ -53,6 +56,8 @@ fn the_sheet_lists_the_offering_screen_s_keys_and_note() {
         "Card details",
         "Hover a card",
         "Keyboard shortcuts",
+        "shortcut-group-title",
+        "Got it",
     ] {
         assert!(html.contains(text), "{text}: {html}");
     }
@@ -70,8 +75,11 @@ fn with_no_screen_offering_keys_the_sheet_lists_the_keys_every_page_answers() {
     for text in [
         "Keyboard shortcuts",
         "These shortcuts",
-        "Move between themes in Themes",
-        "Pick the theme in Themes",
+        "Move between themes",
+        "Pick the theme",
+        "Navigation",
+        "In Themes",
+        "Got it",
     ] {
         assert!(html.contains(text), "{text}: {html}");
     }

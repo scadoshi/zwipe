@@ -10,7 +10,7 @@ use crate::DialogAction;
 /// link's width. It stays on one line while the dialog fits it and otherwise
 /// breaks at any character. A tap selects all of it, and so does Tab, which
 /// stops on it, so it can be copied by hand (Ctrl+C) as well as with Copy
-/// link.
+/// link; the selection goes as focus moves on.
 #[component]
 pub fn ShareUrl(url: String) -> Element {
     rsx! {
@@ -22,11 +22,17 @@ pub fn ShareUrl(url: String) -> Element {
                 onfocus: move |_| {
                     document::eval(SELECT_LINK_JS);
                 },
+                onblur: move |_| {
+                    document::eval(UNSELECT_LINK_JS);
+                },
                 "{url}"
             }
         }
     }
 }
+
+/// Lets go of the link's selection as focus leaves it, so it doesn't stay drawn selected.
+const UNSELECT_LINK_JS: &str = "(() => { const sel = window.getSelection(); const node = sel.anchorNode; const el = node && (node.nodeType === 1 ? node : node.parentElement); if (el && el.closest('.share-url-chip')) sel.removeAllRanges(); })();";
 
 /// Selects the whole link in the focused chip.
 const SELECT_LINK_JS: &str = "(() => { const chip = document.activeElement; if (!chip || !chip.matches('.share-url-chip')) return; const range = document.createRange(); range.selectNodeContents(chip); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range); })();";
@@ -82,6 +88,18 @@ mod tests {
         assert!(
             SELECT_LINK_JS.contains("range.selectNodeContents(chip)"),
             "{SELECT_LINK_JS}"
+        );
+    }
+
+    #[test]
+    fn leaving_the_link_lets_go_of_its_selection() {
+        assert!(
+            UNSELECT_LINK_JS.contains("const el = node && (node.nodeType === 1 ? node : node.parentElement); if (el && el.closest('.share-url-chip'))"),
+            "the selection is anchored on the chip itself (selectNodeContents) or a text node in it: {UNSELECT_LINK_JS}"
+        );
+        assert!(
+            UNSELECT_LINK_JS.contains("sel.removeAllRanges()"),
+            "{UNSELECT_LINK_JS}"
         );
     }
 
