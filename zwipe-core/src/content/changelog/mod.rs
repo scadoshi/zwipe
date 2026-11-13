@@ -47,9 +47,25 @@ pub const MOBILE_STORE_VERSION: Version = Version::new(1, 18, 15);
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
 pub const UPCOMING: &[Release] = &[
+];
+
+/// Shipped releases, newest first.
+pub const RELEASES: &[Release] = &[
+    Release {
+        version: Version::new(1, 20, 5),
+        date: NaiveDate::from_ymd_opt(2026, 11, 13),
+        entries: &[
+            "On the web and zwipe.net, t opens Themes on every screen, where the arrow keys and h, j, k and l move through the themes and Enter picks one",
+            "On the web and zwipe.net, gg and Shift+G glide to the top or bottom, and j and k scroll a short step where the screen doesn't use them, at any window width",
+            "Inside a sheet, gg and Shift+G go to its first or last item",
+            "Shift+H opens the keyboard shortcuts on every screen, in two columns on a wide window",
+            "On the web, Esc closes only the sheet on top",
+            "Cloning a deck on the web selects the copy's name, so typing replaces it",
+        ],
+    },
     Release {
         version: Version::new(1, 20, 4),
-        date: None,
+        date: NaiveDate::from_ymd_opt(2026, 11, 13),
         entries: &[
             "The web app loads faster the first time after an update, its download a third smaller, and later visits reuse what the browser already has",
             "A shared deck's link preview credits the art with the artist tag Printings shows",
@@ -62,7 +78,7 @@ pub const UPCOMING: &[Release] = &[
     },
     Release {
         version: Version::new(1, 20, 3),
-        date: None,
+        date: NaiveDate::from_ymd_opt(2026, 11, 13),
         entries: &[
             "Quick add offers the most played cards first among names that match as closely",
             "On the Remove screen, undoing a move to the maybeboard puts the card's MVP star back",
@@ -74,7 +90,7 @@ pub const UPCOMING: &[Release] = &[
     },
     Release {
         version: Version::new(1, 20, 2),
-        date: None,
+        date: NaiveDate::from_ymd_opt(2026, 11, 13),
         entries: &[
             "On a phone, a deck's Profile and Cards come and go as screens do, each entering fresh with nothing showing beneath, on the web and in the app",
             "On phone web, a deck's Cards opened from a link show Cards in the header",
@@ -87,7 +103,7 @@ pub const UPCOMING: &[Release] = &[
     },
     Release {
         version: Version::new(1, 20, 1),
-        date: None,
+        date: NaiveDate::from_ymd_opt(2026, 11, 13),
         entries: &[
             "On the web's deck page, the arrow keys or h, j, k and l move between cards and Enter opens one, in List and Stacks",
             "On the web's deck page, the arrow keys and h, j, k and l move between cards at any window width, a tablet's keyboard included",
@@ -102,7 +118,7 @@ pub const UPCOMING: &[Release] = &[
     },
     Release {
         version: Version::new(1, 20, 0),
-        date: None,
+        date: NaiveDate::from_ymd_opt(2026, 11, 13),
         entries: &[
             "A deck opens on its Profile with Cards in the dock, which opens the cards over it and closes with Back, for your decks and shared ones, on the web and in the app",
             "A deck's Cards slide in over its Profile and slide back out, and an edit made there shows on the Profile right away, on the web and in the app",
@@ -116,7 +132,7 @@ pub const UPCOMING: &[Release] = &[
     },
     Release {
         version: Version::new(1, 19, 12),
-        date: None,
+        date: NaiveDate::from_ymd_opt(2026, 11, 13),
         entries: &[
             "A featured card's details no longer lift the same card in Stacks",
             "On the web, the signed-out nav offers Log in and Create account, with Forgot password on the Log in screen",
@@ -129,7 +145,7 @@ pub const UPCOMING: &[Release] = &[
     },
     Release {
         version: Version::new(1, 19, 11),
-        date: None,
+        date: NaiveDate::from_ymd_opt(2026, 11, 13),
         entries: &[
             "On a phone, a deck's featured card opens its details on the first tap, and the strip no longer cuts off a card's shadow",
             "A warning's Fix to on a deck's profile can be undone from its cards, on the web and in the app",
@@ -142,7 +158,7 @@ pub const UPCOMING: &[Release] = &[
     },
     Release {
         version: Version::new(1, 19, 10),
-        date: None,
+        date: NaiveDate::from_ymd_opt(2026, 11, 13),
         entries: &[
             "A deck's featured cards open their details and take the card keys as the same cards in the list do, on the web and in the app",
             "A new username can't be one of Zwipe's own names or one that differs from another account's only in case",
@@ -155,7 +171,7 @@ pub const UPCOMING: &[Release] = &[
     },
     Release {
         version: Version::new(1, 19, 9),
-        date: None,
+        date: NaiveDate::from_ymd_opt(2026, 11, 13),
         entries: &[
             "Printings loads as one fan of card ghosts, with ghosts of its chips, on the web and in the app",
             "Printings runs its cards out to the sheet's edges with no fade, its arrows over the cards, on the web and in the app",
@@ -168,7 +184,7 @@ pub const UPCOMING: &[Release] = &[
     },
     Release {
         version: Version::new(1, 19, 8),
-        date: None,
+        date: NaiveDate::from_ymd_opt(2026, 11, 13),
         entries: &[
             "In the app, each card group in a deck's List has its price and a cart that buys its cards, as its stack does",
             "On the web's deck page, each column of Stacks runs on its own, every stack right under the one above it",
@@ -184,7 +200,7 @@ pub const UPCOMING: &[Release] = &[
     },
     Release {
         version: Version::new(1, 19, 7),
-        date: None,
+        date: NaiveDate::from_ymd_opt(2026, 11, 13),
         entries: &[
             "On the web, cards, decks and guides ease into place when a fold, a Show or Sort chip, a filter, a row's action or Undo moves them, instead of jumping",
             "The nav bar, a field's label and the Draw odds bars no longer jump when they change",
@@ -197,7 +213,7 @@ pub const UPCOMING: &[Release] = &[
     },
     Release {
         version: Version::new(1, 19, 6),
-        date: None,
+        date: NaiveDate::from_ymd_opt(2026, 11, 13),
         entries: &[
             "On the web, the Commander maybeboard takes p, i, v and d on a card, as Playstyle and Activity do",
             "The Commander maybeboard sorts by Newest saved, Name, Mana value or Color, and remembers the order",
@@ -210,7 +226,7 @@ pub const UPCOMING: &[Release] = &[
     },
     Release {
         version: Version::new(1, 19, 5),
-        date: None,
+        date: NaiveDate::from_ymd_opt(2026, 11, 13),
         entries: &[
             "On the web's deck page, Quick add ends where the widest chip row under it does",
             "Home's counters on the web have an Activity button, as in the app",
@@ -224,7 +240,7 @@ pub const UPCOMING: &[Release] = &[
     },
     Release {
         version: Version::new(1, 19, 4),
-        date: None,
+        date: NaiveDate::from_ymd_opt(2026, 11, 13),
         entries: &[
             "Suggested commanders and the commander swipe on the web end with the site's footer, as Add does",
             "On the web, Playstyle and Activity take p, i, v and d on a card",
@@ -236,7 +252,7 @@ pub const UPCOMING: &[Release] = &[
     },
     Release {
         version: Version::new(1, 19, 3),
-        date: None,
+        date: NaiveDate::from_ymd_opt(2026, 11, 13),
         entries: &[
             "The Share dialog's link is a colored chip that wraps only when the screen is too narrow for it",
             "Charts grow in when their page opens or their section expands",
@@ -247,7 +263,7 @@ pub const UPCOMING: &[Release] = &[
     },
     Release {
         version: Version::new(1, 19, 2),
-        date: None,
+        date: NaiveDate::from_ymd_opt(2026, 11, 13),
         entries: &[
             "The deck page on the web deals its featured cards in, as a shared deck does",
             "Back returns to the screen you came from instead of looping between Create deck and Decks",
@@ -259,7 +275,7 @@ pub const UPCOMING: &[Release] = &[
     },
     Release {
         version: Version::new(1, 19, 1),
-        date: None,
+        date: NaiveDate::from_ymd_opt(2026, 11, 13),
         entries: &[
             "On the web, u and Ctrl+Z undo on the deck page and the swipe screens",
             "On the web's deck page, d opens or closes a card's details",
@@ -271,7 +287,7 @@ pub const UPCOMING: &[Release] = &[
     },
     Release {
         version: Version::new(1, 19, 0),
-        date: None,
+        date: NaiveDate::from_ymd_opt(2026, 11, 13),
         entries: &[
             "The deck page on the web can show its cards as stacks, one per group, beside the list",
             "The web's deck page runs the window's width, its list in two columns on a wide screen",
@@ -281,10 +297,6 @@ pub const UPCOMING: &[Release] = &[
             "A shared deck shows who shared it under its name",
         ],
     },
-];
-
-/// Shipped releases, newest first.
-pub const RELEASES: &[Release] = &[
     Release {
         version: Version::new(1, 18, 17),
         date: NaiveDate::from_ymd_opt(2026, 11, 11),
