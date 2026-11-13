@@ -1427,10 +1427,11 @@ impl CardRepository for MyPostgres {
             // The name tiers, folded and stripped as the name filter is: the
             // whole name, then a name whose first word is the query, then one
             // that starts with it, then one with a word that does, each name
-            // in its closest tier only. They lead a Name sort, so typing "Sol"
-            // finds Sol Ring before Solar Array and Absolute Grace even when
-            // the limit cuts the rest short; under any other sort the chosen
-            // column leads and the tiers only break its ties. The query holds
+            // in its closest tier only. They lead a Name sort and a best match
+            // (which ranks each tier by popularity), so typing "Sol" finds Sol
+            // Ring before Solar Array and Absolute Grace even when the limit
+            // cuts the rest short; under any other sort the chosen column
+            // leads and the tiers only break its ties. The query holds
             // only letters, digits and spaces, so ILIKE without a wildcard is
             // equality.
             let push_tiers = |qb: &mut QueryBuilder<sqlx::Postgres>| {
@@ -1452,7 +1453,9 @@ impl CardRepository for MyPostgres {
                 }
                 qb.push(" ELSE 4 END ASC");
             };
-            if order_by == CardSortKey::Name && criteria.name_contains().is_some() {
+            if matches!(order_by, CardSortKey::Name | CardSortKey::BestMatch)
+                && criteria.name_contains().is_some()
+            {
                 push_tiers(&mut qb);
                 qb.push(", ");
             }
@@ -1466,11 +1469,14 @@ impl CardRepository for MyPostgres {
                 CardSortKey::PriceUsd => "(prices->>'usd')::NUMERIC",
                 CardSortKey::PriceEur => "(prices->>'eur')::NUMERIC",
                 CardSortKey::PriceTix => "(prices->>'tix')::NUMERIC",
-                CardSortKey::EdhrecRank => "edhrec_rank",
+                CardSortKey::EdhrecRank | CardSortKey::BestMatch => "edhrec_rank",
                 CardSortKey::Random => "RANDOM()",
             };
             qb.push(col);
-            if order_by != CardSortKey::Random {
+            // Best match is best first, whatever the direction.
+            if order_by == CardSortKey::BestMatch {
+                qb.push(" ASC");
+            } else if order_by != CardSortKey::Random {
                 qb.push(match request.direction() {
                     SortDirection::Ascending => " ASC",
                     SortDirection::Descending => " DESC",
@@ -1479,16 +1485,18 @@ impl CardRepository for MyPostgres {
             // edhrec_rank is nullable (obscure/new cards lack a rank): keep them
             // but sort last in either direction, with a name tiebreak so paging
             // through the unranked tail stays stable.
-            if order_by == CardSortKey::EdhrecRank {
+            if matches!(order_by, CardSortKey::EdhrecRank | CardSortKey::BestMatch) {
                 qb.push(" NULLS LAST");
             }
-            if !matches!(order_by, CardSortKey::Name | CardSortKey::Random)
-                && criteria.name_contains().is_some()
+            if !matches!(
+                order_by,
+                CardSortKey::Name | CardSortKey::BestMatch | CardSortKey::Random
+            ) && criteria.name_contains().is_some()
             {
                 qb.push(", ");
                 push_tiers(&mut qb);
             }
-            if order_by == CardSortKey::EdhrecRank {
+            if matches!(order_by, CardSortKey::EdhrecRank | CardSortKey::BestMatch) {
                 qb.push(", name ASC");
             }
         } else if wildcard_serving {

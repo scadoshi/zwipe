@@ -761,3 +761,82 @@ async fn a_chosen_sort_beats_the_name_tiers_which_only_break_its_ties(pool: sqlx
         "the Name sort keeps the tiers, then the name"
     );
 }
+
+#[sqlx::test]
+async fn best_match_ranks_each_name_tier_by_popularity(pool: sqlx::PgPool) {
+    use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
+    let app = TestApp::new(pool.clone());
+    let (token, uid) = app.register("bestmatcher").await;
+    app.verify_email(&uid).await;
+    let (status, deck) = app
+        .post(
+            DECK_ROUTE,
+            json!({ "name": "Burn", "format": "commander" }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED, "{deck}");
+    let deck_id: Uuid = deck["id"].as_str().unwrap().parse().unwrap();
+
+    // Ranks as EDHREC has them: lower is more played, and None is unranked.
+    let cards: Vec<_> = [
+        ("Lightning Angel", Some(9000)),
+        ("Lightning Axe", Some(4000)),
+        ("Lightning Berserker", Some(3000)),
+        ("Lightning Blast", None),
+        ("Lightning Blow", None),
+        ("Lightning Bolt", Some(20)),
+        ("Lightning Dragon", Some(12_000)),
+        ("Lightning Greaves", Some(30)),
+        ("Lightning Helix", Some(400)),
+        ("Lightning Mauler", Some(7000)),
+        ("Chain Lightning", Some(300)),
+        ("Lightningsnare", Some(15)),
+        ("Sol Ring", Some(1)),
+        ("Solemn Simulacrum", Some(40)),
+        ("Sol Talisman", Some(20_000)),
+        ("Soltari Foot Soldier", None),
+        ("Abby, Merciless Soldier", Some(5)),
+    ]
+    .into_iter()
+    .map(|(name, rank)| {
+        let c = card(name).type_line("Instant");
+        match rank {
+            Some(rank) => c.edhrec_rank(rank),
+            None => c,
+        }
+    })
+    .collect();
+    seed_cards(&pool, &cards).await;
+
+    let names = sorted_names(&app, deck_id, &token, "lightning", CardSortKey::BestMatch).await;
+    assert_eq!(
+        names,
+        [
+            "Lightning Bolt",
+            "Lightning Greaves",
+            "Lightning Helix",
+            "Lightning Berserker",
+            "Lightning Axe"
+        ],
+        "the first-word tier by popularity, ahead of a more popular name further down the tiers"
+    );
+    let by_name = quick_add_names(&app, deck_id, &token, "lightning").await;
+    assert!(
+        !by_name.contains(&"Lightning Bolt".to_owned()),
+        "the Name sort stays alphabetical within a tier: {by_name:?}"
+    );
+
+    let names = sorted_names(&app, deck_id, &token, "Sol", CardSortKey::BestMatch).await;
+    assert_eq!(
+        names,
+        [
+            "Sol Ring",
+            "Sol Talisman",
+            "Solemn Simulacrum",
+            "Soltari Foot Soldier",
+            "Abby, Merciless Soldier"
+        ],
+        "Sol Ring leads, an unranked name comes last in its tier, and a word inside a name after"
+    );
+}

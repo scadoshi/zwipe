@@ -167,6 +167,7 @@ Who checked, on which live build, what they saw.
 | [467](467-remove-swipe-star.md) | The Remove screen's swipe to the maybeboard drops a card's star, and its undo moves it back unstarred | fixing | thinker | - |
 | [468](468-phone-web-strip.md) | Phone web's featured strip is small; the app's is big and scrolls (and 465: the third card cut off, the page jumps) | fixing | thinker | - |
 | [472](472-dialog-focus-and-resize-loop.md) | The deck page's Buy, Clone and Share dialogs don't take focus, and Stacks logs a ResizeObserver loop | fixing | scotland | - |
+| [473](473-quick-add-popularity.md) | Quick add offers obscure cards before popular ones within a name tier | fixing | thinker | - |
 | [474](474-drawer-side.md) | A card's details drawer opens on the side away from the card's column | fixing | scotland | orangui c1e6a62 |
 | [475](475-printings-name-artist.md) | Printings doesn't name the card or its artist | fixing | laptop | issue/475-printings-name-artist |
 

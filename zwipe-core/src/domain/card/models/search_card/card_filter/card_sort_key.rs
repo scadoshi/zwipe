@@ -22,6 +22,11 @@ pub enum CardSortKey {
     PriceTix,
     EdhrecRank,
     Random,
+    /// The closest names to the name query first (the whole name, then a first word that is
+    /// the query, then a name that starts with it, then a word that does), each tier by EDHREC
+    /// rank, unranked last, then by name. Quick add's order; a sort picker doesn't offer it,
+    /// so [`CardSortKey::all`] leaves it out.
+    BestMatch,
 }
 
 #[expect(missing_docs, reason = "the method names say what each returns")]
@@ -89,6 +94,12 @@ impl CardSortKey {
                 .edhrec_rank
                 .unwrap_or(i32::MAX)
                 .cmp(&b.edhrec_rank.unwrap_or(i32::MAX)),
+            // With no query to tier by, popularity then name.
+            Self::BestMatch => a
+                .edhrec_rank
+                .unwrap_or(i32::MAX)
+                .cmp(&b.edhrec_rank.unwrap_or(i32::MAX))
+                .then_with(|| a.name.cmp(&b.name)),
             Self::Random => Ordering::Equal,
         }
     }
@@ -142,6 +153,25 @@ impl std::fmt::Display for CardSortKey {
             Self::PriceTix => write!(f, "Price (TIX)"),
             Self::EdhrecRank => write!(f, "Popularity (EDHREC)"),
             Self::Random => write!(f, "Random"),
+            Self::BestMatch => write!(f, "Best match"),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_sort_picker_never_offers_best_match() {
+        assert!(!CardSortKey::all().contains(&CardSortKey::BestMatch));
+    }
+
+    #[test]
+    fn best_match_travels_by_its_name() {
+        assert_eq!(
+            serde_json::to_string(&CardSortKey::BestMatch).unwrap(),
+            "\"BestMatch\""
+        );
     }
 }
