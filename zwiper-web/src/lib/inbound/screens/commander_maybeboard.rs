@@ -10,6 +10,7 @@
 
 use std::collections::HashSet;
 
+use components::deck_cursor::use_card_list_cursor;
 use components::keys::focus_by_id;
 use components::{
     ActionDock, AlertDialog, Button, ButtonVariant, CardListFold, Chip, ClearWrap,
@@ -403,6 +404,8 @@ pub fn CommanderMaybeboard() -> Element {
         None => {}
     });
     use_card_row_keys_and(filtered, expanded_card, Some(screen_keys));
+    // The arrow keys and h, j, k and l move a cursor through the rows.
+    use_card_list_cursor();
     let filtered = filtered();
     let colors = selected_colors();
     let has_entries = !entries().is_empty();

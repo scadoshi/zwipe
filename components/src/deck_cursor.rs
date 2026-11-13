@@ -21,9 +21,11 @@ use zwipe_ui::deck_cards::cursor::{MOVE_KEYS, Move, Snapshot, Stop, move_for};
 use crate::deck_cards_view::StackDetails;
 use crate::keys::{PRESSED_KEY, STACK_DETAILS_CLASS, cursor_guard_js};
 
-/// The cards the cursor stops on: List rows and stack cards. A featured card in the deck head is
-/// not one.
-pub(crate) const STOP_SELECTOR: &str = ".web-deck-row[data-row], .card-stack-slot[data-row]";
+/// The cards the cursor stops on: the deck page's List rows and stack cards, and the card rows of
+/// the screens that list cards without editing them ([`use_card_list_cursor`]). A featured card in
+/// the deck head is not one.
+pub(crate) const STOP_SELECTOR: &str =
+    ".web-deck-row[data-row], .card-stack-slot[data-row], .web-card-row[data-row]";
 
 /// Installs, once a tab, the page-wide trackers the cursor reads: the last input (`key` or
 /// `mouse`), the card in focus, `__zwipeDeckFocus`, which focuses a card by id and keeps it in
@@ -36,14 +38,24 @@ if (!window.__zwipeDeckTrack) {
     window.__zwipeDeckTrack = true;
     window.__zwipeDeckInput = 'mouse';
     const stops = '__STOPS__';
-    document.addEventListener('mousemove', (e) => { if (e.movementX || e.movementY) window.__zwipeDeckInput = 'mouse'; }, true);
+    let previewed = null;
+    const unpreview = () => { if (previewed) { const line = previewed; previewed = null; line.dispatchEvent(new MouseEvent('mouseleave')); } };
+    document.addEventListener('mousemove', (e) => { if (e.movementX || e.movementY) { window.__zwipeDeckInput = 'mouse'; unpreview(); } }, true);
     document.addEventListener('pointerdown', () => { window.__zwipeDeckInput = 'mouse'; }, true);
     document.addEventListener('focusin', (e) => {
         const stop = e.target.closest && e.target.closest(stops);
         if (stop) window.__zwipeDeckCursor = stop.getAttribute('data-row');
+        const line = e.target.closest && e.target.closest('.web-card-row .card-row-compact');
+        if (line && line !== previewed && window.__zwipeCursorPreview && window.__zwipeDeckInput === 'key') {
+            unpreview();
+            previewed = line;
+            line.dispatchEvent(new MouseEvent('mouseenter'));
+        }
     }, true);
-    const find = (id) => document.querySelector('.web-deck-row[data-row="' + id + '"], .card-stack-slot[data-row="' + id + '"]');
-    const live = (el) => el && el.offsetParent !== null && !el.closest('[inert]') ? el : null;
+    document.addEventListener('focusout', (e) => { if (e.target === previewed) unpreview(); }, true);
+    const find = (id) => [...document.querySelectorAll(stops)].find((s) => s.getAttribute('data-row') === id);
+    const box = (s) => (s && getComputedStyle(s).display === 'contents' && s.firstElementChild) || s;
+    const live = (el) => el && box(el).offsetParent !== null && !el.closest('[inert]') ? el : null;
     window.__zwipeDeckFocus = (id, held) => {
         const stop = live(find(id));
         if (!stop) return null;
@@ -95,7 +107,8 @@ const onKey = (e) => {
     const key = __KEY__;
     if (!__MOVES__.includes(key) || e.shiftKey && key.startsWith('Arrow')) return;
     if (!__GUARD__) return;
-    const all = [...document.querySelectorAll(stops)].filter((s) => s.offsetParent !== null && !s.closest('[inert]'));
+    const box = (s) => (s && getComputedStyle(s).display === 'contents' && s.firstElementChild) || s;
+    const all = [...document.querySelectorAll(stops)].filter((s) => box(s).offsetParent !== null && !s.closest('[inert]'));
     if (!all.length) return;
     const focused = document.activeElement && document.activeElement.closest && document.activeElement.closest(stops);
     const shows = window.__zwipeDeckInput === 'key' && focused;
@@ -111,10 +124,10 @@ const onKey = (e) => {
     const paired = listed && getComputedStyle(listed).display === 'grid';
     const holders = stacked.length ? stacked : paired ? [...listed.querySelectorAll(':scope > .deck-list-column')] : [];
     const height = window.innerHeight;
-    const as = (s) => { const r = s.getBoundingClientRect(); return [s.getAttribute('data-row'), r.top + r.height / 2, r.bottom > 0 && r.top < height]; };
+    const as = (s) => { const r = box(s).getBoundingClientRect(); return [s.getAttribute('data-row'), r.top + r.height / 2, r.bottom > 0 && r.top < height]; };
     const columns = holders.length ? holders.map((h) => all.filter((s) => h.contains(s)).map(as)) : [all.map(as)];
     window.__zwipeDeckOrder = columns.flat().map((s) => s[0]);
-    const open = document.querySelector('.bottom-sheet.show.__DRAWER__') ? 'drawer' : document.querySelector('.web-deck-row.selected') ? 'row' : '';
+    const open = document.querySelector('.bottom-sheet.show.__DRAWER__') ? 'drawer' : document.querySelector('.web-deck-row.selected, .web-card-row .card-row.expanded') ? 'row' : '';
     dioxus.send([key, from, columns, open]);
 };
 window['__zwipeDeckNav__ID__'] = onKey;
@@ -135,7 +148,8 @@ window.__zwipeDeckNav = (window.__zwipeDeckNav || []).filter((id) => id !== '__I
 pub(crate) const KEYED_JS: &str = "(window.__zwipeDeckInput === 'key' ? ((document.activeElement && document.activeElement.closest && document.activeElement.closest('__STOPS__')) || (window.__zwipeDeckHandOn && window.__zwipeDeckHandOn())) : null)";
 
 /// [`KEYED_JS`] with its selector filled in.
-pub(crate) fn keyed_js() -> String {
+#[must_use]
+pub fn keyed_js() -> String {
     KEYED_JS.replace("__STOPS__", STOP_SELECTOR)
 }
 
@@ -179,7 +193,28 @@ impl Follow {
 }
 
 /// Opens list row `__ID__` where it is shut, as a click on its line does, which shuts the open one.
-const OPEN_ROW_JS: &str = "const row = document.querySelector('.web-deck-row[data-row=\"__ID__\"]'); if (row && !row.classList.contains('selected')) row.querySelector('.card-row-compact')?.click();";
+const OPEN_ROW_JS: &str = "const row = document.querySelector('.web-deck-row[data-row=\"__ID__\"], .web-card-row[data-row=\"__ID__\"]'); if (row && !row.classList.contains('selected') && !row.querySelector('.card-row.expanded')) row.querySelector('.card-row-compact')?.click();";
+
+/// Marks the screen as one whose cursor card shows its image as hover does.
+const PREVIEW_ON_JS: &str = "window.__zwipeCursorPreview = true;";
+
+/// Unmarks it.
+const PREVIEW_OFF_JS: &str = "window.__zwipeCursorPreview = false;";
+
+/// The cursor on a screen that lists cards without editing them (the Commander maybeboard,
+/// Activity's Most skipped, Playstyle's lists): the same keys as the deck page over its card rows,
+/// in one column. Enter opens or closes a row, an open row follows the cursor, and, when the last
+/// input was a key, the cursor's card shows its image in the screen's hover stack as hovering its
+/// row does.
+pub fn use_card_list_cursor() {
+    use_hook(|| {
+        document::eval(PREVIEW_ON_JS);
+    });
+    use_drop(|| {
+        document::eval(PREVIEW_OFF_JS);
+    });
+    use_deck_cursor(None);
+}
 
 /// One card as the browser sends it: its id, vertical center and whether it is in view.
 type SentStop = (String, f64, bool);
@@ -371,12 +406,47 @@ mod tests {
     }
 
     #[test]
+    fn a_screen_of_card_rows_stops_on_its_rows() {
+        assert!(
+            STOP_SELECTOR.contains(".web-card-row[data-row]"),
+            "{STOP_SELECTOR}"
+        );
+        assert!(
+            NAV_JS.contains(".web-card-row .card-row.expanded"),
+            "an open card row counts as an open row: {NAV_JS}"
+        );
+        assert!(
+            OPEN_ROW_JS.contains("row.querySelector('.card-row.expanded')"),
+            "a card row that is shut opens: {OPEN_ROW_JS}"
+        );
+        for js in [NAV_JS, TRACK_JS] {
+            assert!(
+                js.contains("getComputedStyle(s).display === 'contents'"),
+                "a card row draws no box of its own (display: contents), so its card row is measured: {js}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_screen_that_asks_shows_the_cursor_card_s_image_as_hover_does() {
+        assert!(
+            TRACK_JS.contains("window.__zwipeCursorPreview && window.__zwipeDeckInput === 'key'"),
+            "only on a screen that asks, and only after a key: {TRACK_JS}"
+        );
+        assert!(
+            TRACK_JS.contains("new MouseEvent('mouseenter')")
+                && TRACK_JS.contains("new MouseEvent('mouseleave')"),
+            "the row's own hover enter and leave: {TRACK_JS}"
+        );
+    }
+
+    #[test]
     fn what_shows_open_decides_what_follows_the_cursor() {
         assert_eq!(Follow::of("drawer"), Follow::Drawer);
         assert_eq!(Follow::of("row"), Follow::Row);
         assert_eq!(Follow::of(""), Follow::Nothing);
         assert!(
-            NAV_JS.contains("document.querySelector('.bottom-sheet.show.__DRAWER__') ? 'drawer' : document.querySelector('.web-deck-row.selected') ? 'row' : ''"),
+            NAV_JS.contains("document.querySelector('.bottom-sheet.show.__DRAWER__') ? 'drawer' : document.querySelector('.web-deck-row.selected, .web-card-row .card-row.expanded') ? 'row' : ''"),
             "{NAV_JS}"
         );
         assert!(
@@ -388,7 +458,8 @@ mod tests {
     #[test]
     fn a_page_scrolling_under_a_still_mouse_is_not_mouse_input() {
         assert!(
-            TRACK_JS.contains("if (e.movementX || e.movementY) window.__zwipeDeckInput = 'mouse'"),
+            TRACK_JS
+                .contains("if (e.movementX || e.movementY) { window.__zwipeDeckInput = 'mouse';"),
             "{TRACK_JS}"
         );
     }

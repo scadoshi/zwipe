@@ -10,6 +10,7 @@
 
 pub mod sections;
 
+use components::deck_cursor::use_card_list_cursor;
 use components::{HoverStackHost, use_hover_stack};
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -156,6 +157,8 @@ pub fn Activity() -> Element {
         })
     });
     use_card_row_keys(pass_cards, expanded_card);
+    // The arrow keys and h, j, k and l move a cursor through the rows.
+    use_card_list_cursor();
 
     rsx! {
         ScreenFrame {

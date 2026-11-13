@@ -49,14 +49,22 @@ pub(crate) fn row_key(key: &str) -> Option<RowKey> {
     }
 }
 
-/// Sends the card under the cursor, else the stack card whose drawer is open, as `stack:<id>`
-/// or `row:<id>`, else an empty string.
-const KEY_CARD_JS: &str = "const under = document.querySelectorAll('[data-row]:hover'); const open = document.querySelector('.bottom-sheet.show.__DRAWER__') && document.querySelector('.card-stack-slot.open[data-row]'); const card = under.length ? under[under.length - 1] : open; dioxus.send(card ? (card.classList.contains('card-stack-slot') ? 'stack:' : 'row:') + card.getAttribute('data-row') : '');";
+/// Sends the keyboard cursor's card when a key moved last ([`components::deck_cursor`]), else the
+/// card under the mouse, else the stack card whose drawer is open, as `stack:<id>` or
+/// `row:<id>`, else an empty string.
+const KEY_CARD_JS: &str = "const keyed = __KEYED__; const under = document.querySelectorAll('[data-row]:hover'); const open = document.querySelector('.bottom-sheet.show.__DRAWER__') && document.querySelector('.card-stack-slot.open[data-row]'); const card = keyed || (under.length ? under[under.length - 1] : open); dioxus.send(card ? (card.classList.contains('card-stack-slot') ? 'stack:' : 'row:') + card.getAttribute('data-row') : '');";
+
+/// [`KEY_CARD_JS`] with the drawer's class and the cursor's card filled in.
+fn key_card_js() -> String {
+    KEY_CARD_JS
+        .replace("__DRAWER__", STACK_DETAILS_CLASS)
+        .replace("__KEYED__", &components::deck_cursor::keyed_js())
+}
 
 /// Answers [`ROW_KEYS`] on a screen listing `cards` as rows (expanding `expanded_card`), as
 /// stacks, or both in different sections, and offers the screen's shortcuts on Shift+H. A key
 /// acts on the card under the cursor, a stack card or a row, else on the open stack card, else
-/// on the expanded row. The image and
+/// on the expanded row; after a key, the keyboard cursor's card comes first. The image and
 /// Printings open in the screen's [`CardOverlays`], faces turn in its [`RowFaces`] and the
 /// stacks' details move in its [`StackDetails`], each where the screen provides it.
 pub(crate) fn use_card_row_keys(cards: Memo<Vec<Card>>, expanded_card: Signal<Option<Uuid>>) {
@@ -86,8 +94,7 @@ pub(crate) fn use_card_row_keys_and(
                 return;
             };
             spawn(async move {
-                let mut found =
-                    document::eval(&KEY_CARD_JS.replace("__DRAWER__", STACK_DETAILS_CLASS));
+                let mut found = document::eval(&key_card_js());
                 let hovered = found.recv::<String>().await.ok().and_then(|found| {
                     let (kind, id) = found.split_once(':')?;
                     Some((kind == "stack", Uuid::try_parse(id).ok()?))
@@ -146,6 +153,17 @@ pub(crate) fn use_card_row_keys_and(
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn a_card_key_acts_on_the_cursor_card_after_a_key() {
+        let js = key_card_js();
+        assert!(
+            js.contains("const card = keyed || (under.length ? under[under.length - 1] : open);"),
+            "the cursor's card first, then the hovered one, then the open stack: {js}"
+        );
+        assert!(js.contains("window.__zwipeDeckInput === 'key'"), "{js}");
+    }
+
     use super::*;
 
     #[test]
