@@ -26,7 +26,7 @@ use zwipe_client::{ClientError, ZwipeClient};
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
-use zwipe_core::domain::deck::{Deck, DeckProfile};
+use zwipe_core::domain::deck::{DeckEntry, DeckProfile};
 use zwipe_core::http::contracts::deck_card::HttpPatchDeckCard;
 use zwipe_ui::deck::form::Slot;
 use zwipe_ui::deck::view::DeckView;
@@ -104,9 +104,9 @@ fn DeckViewScreen(deck_id: Uuid, view: Option<DeckView>) -> Element {
                 .await
         }));
     let CardStores { undo, .. } = use_context();
-    // The deck as the page's editor last fetched it, which the page keeps current: the fixes
-    // read a card's quantity from it before they change it.
-    let deck_copy: Signal<Option<Deck>> = use_signal(|| None);
+    // The deck's rows as the page's editor holds them, its edits since the fetch included,
+    // which the page keeps current: the fixes read a card's row from it before they change it.
+    let rows: Signal<Vec<DeckEntry>> = use_signal(Vec::new);
 
     // Tries a failed load again, from Retry or the connection coming back.
     let retry = use_callback(move |()| {
@@ -164,13 +164,11 @@ fn DeckViewScreen(deck_id: Uuid, view: Option<DeckView>) -> Element {
         fix_quantity: use_callback(move |(card, quantity): (Uuid, i32)| {
             let request = HttpPatchDeckCard::new(Some(quantity), None);
             // What the fix changes, for the deck's undo log, which Cards' Undo walks.
-            let before = deck_copy.peek().as_ref().and_then(|loaded| {
-                let entries = &loaded.entries;
-                entries
-                    .iter()
-                    .find(|e| e.deck_card.scryfall_data_id == card)
-                    .map(|e| (e.card.scryfall_data.name.clone(), *e.deck_card.quantity))
-            });
+            let before = rows
+                .peek()
+                .iter()
+                .find(|e| e.deck_card.scryfall_data_id == card)
+                .map(|e| (e.card.scryfall_data.name.clone(), *e.deck_card.quantity));
             spawn(async move {
                 if authed
                     .run("update_card_quantity", |c, s| async move {
@@ -227,10 +225,7 @@ fn DeckViewScreen(deck_id: Uuid, view: Option<DeckView>) -> Element {
         // `Session expired`.
         remove: use_callback(move |card: Uuid| {
             // The row as it stands, for the deck's undo log, which Cards' Undo walks.
-            let undone = deck_copy
-                .peek()
-                .as_ref()
-                .and_then(|loaded| UndoAction::removal(&loaded.entries, card));
+            let undone = UndoAction::removal(&rows.peek(), card);
             spawn(async move {
                 let current = session.peek().clone();
                 let result = match current {
@@ -314,7 +309,7 @@ fn DeckViewScreen(deck_id: Uuid, view: Option<DeckView>) -> Element {
                             currency,
                             fixes,
                             fixed,
-                            deck_copy,
+                            rows,
                             dialogs,
                             cards_open: view.is_some(),
                             on_cards,
