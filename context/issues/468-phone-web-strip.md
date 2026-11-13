@@ -22,3 +22,9 @@ thinker:
 - Fix: the cap is 14rem, so on any phone each card is exactly half the row and two fill it; every stop, the end included, lands on a card start.
 - Checked headless at 412 and 390 with four cards: at the end the visible cards start at 0 and half the row (0/194 at 412, 0/183 at 390), and a scroll left at 100px snaps to the next card start.
 
+
+## Follow-up: the role chip sat beside a short name
+droider: at 412, with the strip at its end, the MVP chip sat beside "Aurelia, the Law Above" but under "Anim Pakal, Thousandth Moon", so the labels under the cards didn't line up (web and app). Nothing was clipped.
+- Cause: `.deck-featured-chips` (`components/assets/screens/screens-b.css`) was a wrapping row, so a name short enough left room for the role chip on its line.
+- Fix: the chips stack in a column, centered: the name on its own line (ellipsized at the card's width) and the role under it, on every card.
+- Checked: headless Chrome at 412 with three MVPs ("Sol Ring", "Aurelia, the Law Above", "Arcane Signet"): before, three cards had the chip beside the name (chip block 40px) and Aurelia below (46px); after, all four below at 46px.

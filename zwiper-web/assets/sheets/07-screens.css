@@ -3094,18 +3094,17 @@ body .toast-container [role="alertdialog"] {
     box-shadow: var(--shadow-md);
 }
 
-/* The name chip, then the role chip, wrapping and centered under the image
-   as Home's deck tiles set theirs. A long name ellipsizes inside its chip. */
+/* The name chip, then the role chip on its own line, centered under the
+   image. A long name ellipsizes inside its chip. */
 .deck-featured-chips {
     display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-content: flex-start;
+    flex-direction: column;
+    align-items: center;
     gap: 0.25rem;
     margin-top: 0.4rem;
     min-width: 0;
-    /* Room for two lines of chips, wrapped or not, so the strip keeps its
-       height when a card with a long name comes or goes. */
+    /* The name on one line and the role under it on every card, so the
+       strip keeps its height when a card comes or goes. */
     min-height: 2.5rem;
 }
 
@@ -3123,6 +3122,7 @@ body .toast-container [role="alertdialog"] {
 }
 
 .deck-featured-name {
+    max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
