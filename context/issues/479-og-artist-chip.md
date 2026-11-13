@@ -18,6 +18,9 @@ laptop:
 - **Layout version:** `SHARE_PREVIEW_LAYOUT` goes from 2 to 3 (zwipe-core and the share Function's `PREVIEW_LAYOUT`), so unfurlers and the edge fetch the new drawing.
 - **Test:** `the_art_credit_is_the_artist_chip_with_the_image_icon` fails on the old footer.
 
+## Follow-up
+Scotty: the chip sits on a 45 degree line from the panel's bottom-left corner. `credit_origin` places it as far in from the panel's left edge as it is up from the bottom (22px each); the test `the_art_credit_sits_on_a_diagonal_from_the_panel_s_corner` failed at 48 vs 22 before. Goldens regenerated; the layout stays 3 (not shipped yet).
+
 ## Checked
 Before and after at 1200x630 from the local zerver, same deck.
 

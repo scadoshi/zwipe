@@ -324,7 +324,7 @@ async fn assert_golden(name: &str, deck: &HttpSharedDeck) {
 /// `PREVIEW_LAYOUT` in the Pages Function, then record both here.
 const GOLDEN_LAYOUT: (u32, &str) = (
     3,
-    "434eea4596c5b109aa3407e67642bb4aa9fb4cfb6832dd107714d4036a4c9945",
+    "adf47be332511bd43818b03536f29d980f99f7b4eede2715167d90ddd6ec9dca",
 );
 
 #[test]
