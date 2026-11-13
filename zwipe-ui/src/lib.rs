@@ -23,6 +23,7 @@ pub mod deck_signals;
 pub mod dictionary;
 pub mod filter;
 pub mod generation;
+pub mod guides;
 pub mod hint;
 pub mod home;
 pub mod pending_settings;
