@@ -10,7 +10,7 @@ use std::collections::{HashMap, HashSet};
 use components::hint::ContentHintDialog;
 use components::keys::{ShortcutsList, use_offer_shortcuts};
 use components::{
-    DeckFacts, DeckHoverKeys, DeckRowHost, DockFilter, LoadFailed, Panel, StackDetails,
+    DeckFacts, DeckHoverKeys, DeckRowHost, DockFilter, LoadFailed, StackDetails,
     use_deck_hover_keys,
 };
 use dioxus::prelude::*;
@@ -46,19 +46,45 @@ use crate::inbound::screens::deck::view::body::DeckPageBody;
 use crate::inbound::screens::deck::view::cards_layer::use_cards_route;
 use crate::inbound::screens::deck::view::panels::DataPanel;
 use crate::inbound::screens::deck::view::profile::{DeckFoot, DeckProfilePhone};
+use crate::inbound::screens::not_found::DeadEnd;
 use crate::inbound::session::return_to;
 use crate::inbound::shell::ScreenFrame;
 
 /// The tab's title while the deck loads or when it can't be shown.
 const SHARED_DECK_TITLE: &str = "Shared deck";
 
+/// The dead end's title for a share link that opens no deck.
+pub(crate) const NOT_SHARED_TITLE: &str = "Deck not shared";
+
+/// The dead end's line for a share link that opens no deck.
+pub(crate) const NOT_SHARED_LINE: &str = "This deck is no longer shared. The owner may have stopped sharing it, or the link may be incomplete.";
+
 /// How a shared deck's fetch can fail, from the reader's point of view.
 #[derive(Debug, Clone, PartialEq)]
-enum FetchError {
+pub(crate) enum FetchError {
     /// 404: never shared, or sharing was stopped.
     NotShared,
     /// Anything else, worth a retry.
     Network,
+}
+
+/// The shared deck `token` names. A token that can't parse can't resolve, the same as the
+/// server's 404, and both are [`FetchError::NotShared`].
+pub(crate) async fn fetch_shared(
+    client: Signal<ZwipeClient>,
+    token: &str,
+) -> Result<HttpSharedDeck, FetchError> {
+    let Ok(token) = token.parse::<Uuid>() else {
+        return Err(FetchError::NotShared);
+    };
+    let http = client.peek().clone();
+    http.fetch_shared_deck(token).await.map_err(|e| match e {
+        ClientError::NotFound(_) => FetchError::NotShared,
+        other => {
+            tracing::warn!("shared deck failed to load: {other}");
+            FetchError::Network
+        }
+    })
 }
 
 /// The shared deck's command zone in its slots.
@@ -114,18 +140,7 @@ pub fn SharedDeck(owner: String, slug: String, token: String, view: Option<DeckV
     let link_token = token.clone();
     let mut result: Resource<Result<HttpSharedDeck, FetchError>> =
         use_resource(use_reactive!(|token| async move {
-            // A token that can't parse can't resolve, the same as the server's 404.
-            let Ok(token) = token.parse::<Uuid>() else {
-                return Err(FetchError::NotShared);
-            };
-            let http = client.peek().clone();
-            http.fetch_shared_deck(token).await.map_err(|e| match e {
-                ClientError::NotFound(_) => FetchError::NotShared,
-                other => {
-                    tracing::warn!("shared deck failed to load: {other}");
-                    FetchError::Network
-                }
-            })
+            fetch_shared(client, &token).await
         }));
 
     // A stale owner or slug moves to the canonical link, in place.
@@ -155,6 +170,7 @@ pub fn SharedDeck(owner: String, slug: String, token: String, view: Option<DeckV
     let on_hint = use_callback(move |()| hint_open.set(true));
     let wide = use_wide();
     let loaded = matches!(&*result.read(), Some(Ok(_)));
+    let not_shared = matches!(&*result.read(), Some(Err(FetchError::NotShared)));
     let title = match &*result.read() {
         Some(Ok(deck)) => deck.name.clone(),
         _ => SHARED_DECK_TITLE.to_owned(),
@@ -166,19 +182,14 @@ pub fn SharedDeck(owner: String, slug: String, token: String, view: Option<DeckV
         ScreenFrame {
             title,
             on_hint: Some(on_hint),
-            // The deck's head names it in its own h1 on a wide window and atop the Cards.
-            titled: loaded && (wide() || cards_open),
+            // The deck's head names it in its own h1 on a wide window and atop the Cards, and the
+            // dead end in its card's.
+            titled: loaded && (wide() || cards_open) || not_shared,
             div { class: "screen-content",
             match &*result.read() {
                 None => rsx! { SharedDeckView { deck: None, cards_open, on_cards, export, on_hint } },
                 Some(Err(FetchError::NotShared)) => rsx! {
-                    div { class: "content-enter web-page shared-deck-note",
-                        Panel { title: "Deck not shared",
-                            p { class: "subtitle",
-                                "This deck is no longer shared. The owner may have stopped sharing it, or the link may be incomplete."
-                            }
-                        }
-                    }
+                    DeadEnd { title: NOT_SHARED_TITLE, line: NOT_SHARED_LINE }
                 },
                 Some(Err(FetchError::Network)) => rsx! {
                     div { class: "content-enter web-page shared-deck-note",

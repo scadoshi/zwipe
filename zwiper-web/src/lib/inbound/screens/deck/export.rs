@@ -19,6 +19,10 @@ use super::skeletons::ChipRowSkeleton;
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::ghost::GhostText;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog, use_one_time_hint};
+use crate::inbound::screens::not_found::DeadEnd;
+use crate::inbound::screens::shared_deck::{
+    FetchError, NOT_SHARED_LINE, NOT_SHARED_TITLE, fetch_shared,
+};
 use crate::inbound::shell::ScreenFrame;
 use crate::inbound::telemetry;
 use crate::outbound::browser;
@@ -48,24 +52,33 @@ pub fn ExportDeck(deck_id: Uuid) -> Element {
     }
 }
 
-/// The Export screen for the shared deck `token` names, read only, as the owner's.
+/// The Export screen for the shared deck `token` names, read only, as the owner's. A link that
+/// opens no deck ends on the shared deck's dead end.
 #[component]
 pub fn SharedDeckExport(owner: String, slug: String, token: String) -> Element {
     telemetry::use_telemetry_screen(Screen::Deck(DeckScreen::Export));
     let client: Signal<ZwipeClient> = use_context();
     let boards = use_signal(Boards::default);
-    let deck: Resource<Option<HttpSharedDeck>> = use_resource(use_reactive!(|token| async move {
-        let token = token.parse::<Uuid>().ok()?;
-        let http = client.peek().clone();
-        http.fetch_shared_deck(token).await.ok()
-    }));
+    let deck: Resource<Result<HttpSharedDeck, FetchError>> =
+        use_resource(use_reactive!(|token| async move {
+            fetch_shared(client, &token).await
+        }));
     let text = use_memo(move || {
         let held = deck.read();
-        let loaded = held.as_ref()?.as_ref()?;
+        let loaded = held.as_ref()?.as_ref().ok()?;
         Some(export::shared_text(loaded, boards()))
     });
     let loading = deck.read().is_none();
-    let failed = matches!(&*deck.read(), Some(None));
+    let failed = matches!(&*deck.read(), Some(Err(_)));
+    if matches!(&*deck.read(), Some(Err(FetchError::NotShared))) {
+        return rsx! {
+            ScreenFrame { title: "Export", titled: true,
+                div { class: "screen-content",
+                    DeadEnd { title: NOT_SHARED_TITLE, line: NOT_SHARED_LINE }
+                }
+            }
+        };
+    }
     rsx! {
         ExportView { text: text(), loading, failed, boards }
     }
