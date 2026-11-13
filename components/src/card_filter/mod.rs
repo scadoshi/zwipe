@@ -203,7 +203,7 @@ pub fn CardFilterPanel(
                 handler.call(());
             }
         }
-        scroll_section_into_view(section);
+        document::eval(OPEN_SECTION_SCROLL_JS);
     };
 
     let on_use = use_callback(move |slug: String| {
@@ -343,17 +343,12 @@ fn section_id(section: Section) -> String {
     format!("filter-section-{section:?}")
 }
 
-/// How long an opened section waits before scrolling, in milliseconds,
-/// so it scrolls from where the accordion has started to open it.
-const SECTION_SCROLL_DELAY_MS: u32 = 50;
-
-/// Scrolls an opened section to the top of its panel, as the app does.
-fn scroll_section_into_view(section: Section) {
-    let id = section_id(section);
-    document::eval(&format!(
-        "setTimeout(() => {{ const el = document.getElementById('{id}'); if (el) el.scrollIntoView({{ behavior: 'smooth', block: 'start' }}); }}, {SECTION_SCROLL_DELAY_MS})"
-    ));
-}
+/// Scrolls the filter's open section to the top of its sheet, as the app does: once, instantly,
+/// at 300 ms, as the height ease ends and the section's rows start to fade in (`filter.css`,
+/// `accordion-content-in`), so the sheet moves once, before the rows show, and never under the
+/// pointer. By then the section has its full height, so even one near the sheet's end reaches the
+/// top. One section opens at a time, so the open one is the one that asked.
+pub const OPEN_SECTION_SCROLL_JS: &str = "(() => { const go = () => { const el = document.querySelector('#filter-accordion .accordion-item[data-open=\"true\"]'); if (el) el.scrollIntoView({ behavior: 'instant', block: 'start' }); }; setTimeout(go, 300); })()";
 
 /// How long a section takes to ease shut, in milliseconds: the accordion's
 /// 300ms collapse.

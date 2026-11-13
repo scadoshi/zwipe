@@ -114,7 +114,7 @@ pub use card_details::{
     CardDetails, CardDetailsCost, CardDetailsPanel, CardDetailsPanelSkeleton, card_face_count,
 };
 pub use card_details_sheet::CardDetailsSheet;
-pub use card_filter::{CardFilterPanel, DictionarySlot};
+pub use card_filter::{CardFilterPanel, DictionarySlot, OPEN_SECTION_SCROLL_JS};
 pub use card_group::{CardGroup, TailPlace, group_tail};
 pub use card_icon_button::{
     CardIconButton, IMAGE_ICON, IMAGE_LABEL, ImageButton, MELD, STAR, StarButton,

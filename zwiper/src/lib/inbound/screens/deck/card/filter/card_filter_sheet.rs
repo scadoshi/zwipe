@@ -257,7 +257,7 @@ pub(crate) fn CardFilterSheet(
 
                     AccordionItem { index: next_idx(),
                         on_change: move |is_open| {
-                            if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(1)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
+                            if is_open { let _ = document::eval(components::OPEN_SECTION_SCROLL_JS); }
                         },
                         AccordionTrigger {
                             {Section::Name.title()}
@@ -268,7 +268,7 @@ pub(crate) fn CardFilterSheet(
 
                     AccordionItem { index: next_idx(),
                         on_change: move |is_open| {
-                            if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(2)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
+                            if is_open { let _ = document::eval(components::OPEN_SECTION_SCROLL_JS); }
                         },
                         AccordionTrigger {
                             {Section::OracleText.title()}
@@ -279,7 +279,7 @@ pub(crate) fn CardFilterSheet(
 
                     AccordionItem { index: next_idx(),
                         on_change: move |is_open| {
-                            if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(3)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
+                            if is_open { let _ = document::eval(components::OPEN_SECTION_SCROLL_JS); }
                         },
                         AccordionTrigger {
                             {Section::Types.title()}
@@ -290,7 +290,7 @@ pub(crate) fn CardFilterSheet(
 
                     AccordionItem { index: next_idx(),
                         on_change: move |is_open| {
-                            if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(4)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
+                            if is_open { let _ = document::eval(components::OPEN_SECTION_SCROLL_JS); }
                         },
                         AccordionTrigger {
                             {Section::Mana.title()}
@@ -301,7 +301,7 @@ pub(crate) fn CardFilterSheet(
 
                     AccordionItem { index: next_idx(),
                         on_change: move |is_open| {
-                            if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(5)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
+                            if is_open { let _ = document::eval(components::OPEN_SECTION_SCROLL_JS); }
                         },
                         AccordionTrigger {
                             {Section::Combat.title()}
@@ -312,7 +312,7 @@ pub(crate) fn CardFilterSheet(
 
                     AccordionItem { index: next_idx(),
                         on_change: move |is_open| {
-                            if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(6)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
+                            if is_open { let _ = document::eval(components::OPEN_SECTION_SCROLL_JS); }
                         },
                         AccordionTrigger {
                             {Section::FlavorText.title()}
@@ -323,7 +323,7 @@ pub(crate) fn CardFilterSheet(
 
                     AccordionItem { index: next_idx(),
                         on_change: move |is_open| {
-                            if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(7)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
+                            if is_open { let _ = document::eval(components::OPEN_SECTION_SCROLL_JS); }
                         },
                         AccordionTrigger {
                             {Section::Artist.title()}
@@ -334,7 +334,7 @@ pub(crate) fn CardFilterSheet(
 
                     AccordionItem { index: next_idx(),
                         on_change: move |is_open| {
-                            if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(8)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
+                            if is_open { let _ = document::eval(components::OPEN_SECTION_SCROLL_JS); }
                         },
                         AccordionTrigger {
                             {Section::Rarity.title()}
@@ -345,7 +345,7 @@ pub(crate) fn CardFilterSheet(
 
                     AccordionItem { index: next_idx(),
                         on_change: move |is_open| {
-                            if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(9)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
+                            if is_open { let _ = document::eval(components::OPEN_SECTION_SCROLL_JS); }
                         },
                         AccordionTrigger {
                             {Section::CardRoles.title()}
@@ -356,7 +356,7 @@ pub(crate) fn CardFilterSheet(
 
                     AccordionItem { index: next_idx(),
                         on_change: move |is_open| {
-                            if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(9)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
+                            if is_open { let _ = document::eval(components::OPEN_SECTION_SCROLL_JS); }
                         },
                         AccordionTrigger {
                             {Section::OracleTags.title()}
@@ -374,7 +374,7 @@ pub(crate) fn CardFilterSheet(
 
                     AccordionItem { index: next_idx(),
                         on_change: move |is_open| {
-                            if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(9)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
+                            if is_open { let _ = document::eval(components::OPEN_SECTION_SCROLL_JS); }
                         },
                         AccordionTrigger {
                             {Section::Set.title()}
@@ -386,7 +386,7 @@ pub(crate) fn CardFilterSheet(
                     if show_format_filter {
                         AccordionItem { index: next_idx(),
                             on_change: move |is_open| {
-                                if is_open { let _ = document::eval("setTimeout(() => { const el = document.querySelector('#filter-accordion .accordion-item:nth-child(10)'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50)"); }
+                                if is_open { let _ = document::eval(components::OPEN_SECTION_SCROLL_JS); }
                             },
                             AccordionTrigger {
                                 {Section::Format.title()}
@@ -398,10 +398,7 @@ pub(crate) fn CardFilterSheet(
 
                     AccordionItem { index: next_idx(),
                         on_change: move |is_open| {
-                            if is_open { let _ = document::eval(
-                                &format!("setTimeout(() => {{ const el = document.querySelector('#filter-accordion .accordion-item:nth-child({})'); if (el) el.scrollIntoView({{ behavior: 'smooth', block: 'start' }}); }}, 50)",
-                                if show_format_filter { 11 } else { 10 })
-                            ); }
+                            if is_open { let _ = document::eval(components::OPEN_SECTION_SCROLL_JS); }
                         },
                         AccordionTrigger {
                             {Section::Price.title()}
@@ -412,10 +409,7 @@ pub(crate) fn CardFilterSheet(
 
                     AccordionItem { index: next_idx(),
                         on_change: move |is_open| {
-                            if is_open { let _ = document::eval(
-                                &format!("setTimeout(() => {{ const el = document.querySelector('#filter-accordion .accordion-item:nth-child({})'); if (el) el.scrollIntoView({{ behavior: 'smooth', block: 'start' }}); }}, 50)",
-                                if show_format_filter { 12 } else { 11 })
-                            ); }
+                            if is_open { let _ = document::eval(components::OPEN_SECTION_SCROLL_JS); }
                         },
                         AccordionTrigger {
                             {Section::Sort.title()}
@@ -426,10 +420,7 @@ pub(crate) fn CardFilterSheet(
 
                     AccordionItem { index: next_idx(),
                         on_change: move |is_open| {
-                            if is_open { let _ = document::eval(
-                                &format!("setTimeout(() => {{ const el = document.querySelector('#filter-accordion .accordion-item:nth-child({})'); if (el) el.scrollIntoView({{ behavior: 'smooth', block: 'start' }}); }}, 50)",
-                                if show_format_filter { 13 } else { 12 })
-                            ); }
+                            if is_open { let _ = document::eval(components::OPEN_SECTION_SCROLL_JS); }
                         },
                         AccordionTrigger {
                             {Section::Config.title()}
