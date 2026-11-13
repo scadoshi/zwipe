@@ -111,7 +111,6 @@ pub(super) fn ChangeEmailSheet(mut open: Signal<bool>) -> Element {
                         autocomplete: "email",
                         maxlength: email::MAX_LENGTH,
                         label: "New email",
-                        placeholder: "New email",
                         error: email_error.as_deref().map(sentence_case),
                     }
                     TextInput {
@@ -120,7 +119,6 @@ pub(super) fn ChangeEmailSheet(mut open: Signal<bool>) -> Element {
                         name: "password",
                         autocomplete: "current-password",
                         label: "Password",
-                        placeholder: "Password",
                         input_type: "password",
                         error: password_error.as_deref().map(sentence_case),
                     }

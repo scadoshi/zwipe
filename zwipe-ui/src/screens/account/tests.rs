@@ -822,21 +822,21 @@ fn the_copy_matches_the_app() {
         titles,
         ["Change username", "Change email", "Change password"]
     );
-    let fields: Vec<(&str, &str, bool)> = Sheet::ALL
+    let fields: Vec<(&str, bool)> = Sheet::ALL
         .iter()
         .flat_map(|sheet| sheet.fields())
-        .map(|f| (f.label(), f.placeholder(), f.is_masked()))
+        .map(|f| (f.label(), f.is_masked()))
         .collect();
     assert_eq!(
         fields,
         [
-            ("New username", "New username", false),
-            ("Password", "Password", true),
-            ("New email", "New email", false),
-            ("Password", "Password", true),
-            ("Current password", "Current password", true),
-            ("New password", "New password", true),
-            ("Confirm password", "Confirm new", true),
+            ("New username", false),
+            ("Password", true),
+            ("New email", false),
+            ("Password", true),
+            ("Current password", true),
+            ("New password", true),
+            ("Confirm password", true),
         ]
     );
     assert_eq!(

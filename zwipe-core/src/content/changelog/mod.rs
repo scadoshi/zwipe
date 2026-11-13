@@ -80,6 +80,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "On Home, a deck tile's name chip has tighter sides, so a short name shows whole instead of ending in an ellipsis",
         "Log in, Create account and Forgot password show each field's name once, on the web and in the app",
         "On the web, a deck's page loads the deck once instead of twice",
+        "Account's Change username, email and password show each field's name once, on the web and in the app",
     ],
 }];
 

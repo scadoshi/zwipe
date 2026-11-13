@@ -109,7 +109,6 @@ pub(super) fn ChangeUsernameSheet(mut open: Signal<bool>) -> Element {
                         autocomplete: "username",
                         maxlength: username::MAX_LENGTH,
                         label: "New username",
-                        placeholder: "New username",
                         error: username_error.as_deref().map(sentence_case),
                     }
                     TextInput {
@@ -118,7 +117,6 @@ pub(super) fn ChangeUsernameSheet(mut open: Signal<bool>) -> Element {
                         name: "password",
                         autocomplete: "current-password",
                         label: "Password",
-                        placeholder: "Password",
                         input_type: "password",
                         error: password_error.as_deref().map(sentence_case),
                     }

@@ -93,15 +93,6 @@ impl Field {
         }
     }
 
-    /// The placeholder inside the empty field.
-    #[must_use]
-    pub fn placeholder(self) -> &'static str {
-        match self {
-            Self::ConfirmPassword => "Confirm new",
-            other => other.label(),
-        }
-    }
-
     /// Whether the field hides what is typed.
     #[must_use]
     pub fn is_masked(self) -> bool {

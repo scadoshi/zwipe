@@ -193,3 +193,24 @@ pub fn Account() -> Element {
             }
     }
 }
+
+#[cfg(test)]
+mod placeholder_tests {
+    /// Each account form's source, by name.
+    const FORMS: [(&str, &str); 3] = [
+        ("change_password", include_str!("change_password.rs")),
+        ("change_username", include_str!("change_username.rs")),
+        ("change_email", include_str!("change_email.rs")),
+    ];
+
+    #[test]
+    fn an_account_field_shows_its_label_once_with_no_placeholder() {
+        for (name, source) in FORMS {
+            assert!(source.contains("label:"), "{name} labels its fields");
+            assert!(
+                !source.contains("placeholder:"),
+                "{name} repeats a label as the field's placeholder"
+            );
+        }
+    }
+}

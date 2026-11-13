@@ -168,7 +168,6 @@ pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
                         name: "current-password",
                         autocomplete: "current-password",
                         label: "Current password",
-                        placeholder: "Current password",
                         input_type: "password",
                     }
                     TextInput {
@@ -177,7 +176,6 @@ pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
                         name: "new-password",
                         autocomplete: "new-password",
                         label: "New password",
-                        placeholder: "New password",
                         input_type: "password",
                         error: password_error.as_deref().map(sentence_case),
                         on_info: hint_topic::open_topic(HintTopic::Password),
@@ -188,7 +186,6 @@ pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
                         name: "confirm-password",
                         autocomplete: "new-password",
                         label: "Confirm password",
-                        placeholder: "Confirm new",
                         input_type: "password",
                     }
                     button { r#type: "submit", hidden: true }

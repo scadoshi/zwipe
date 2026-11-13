@@ -39,7 +39,6 @@ pub fn ChangeUsernameSheet(open: Signal<bool>) -> Element {
                     autocomplete: "username",
                     maxlength: username::MAX_LENGTH,
                     label: Field::NewUsername.label(),
-                    placeholder: Field::NewUsername.placeholder(),
                     error: username_error.as_deref().map(sentence_case),
                 }
 
@@ -49,7 +48,6 @@ pub fn ChangeUsernameSheet(open: Signal<bool>) -> Element {
                     name: "password",
                     autocomplete: "current-password",
                     label: Field::Password.label(),
-                    placeholder: Field::Password.placeholder(),
                     input_type: "password",
                     error: password_error.as_deref().map(sentence_case),
                 }

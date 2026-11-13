@@ -54,7 +54,6 @@ pub fn ChangePasswordSheet(open: Signal<bool>) -> Element {
                     name: "current-password",
                     autocomplete: "current-password",
                     label: Field::CurrentPassword.label(),
-                    placeholder: Field::CurrentPassword.placeholder(),
                     input_type: "password",
                 }
 
@@ -64,7 +63,6 @@ pub fn ChangePasswordSheet(open: Signal<bool>) -> Element {
                     name: "new-password",
                     autocomplete: "new-password",
                     label: Field::NewPassword.label(),
-                    placeholder: Field::NewPassword.placeholder(),
                     input_type: "password",
                     error: password_error.as_deref().map(sentence_case),
                     on_info: info_button::open_topic(HintTopic::Password),
@@ -76,7 +74,6 @@ pub fn ChangePasswordSheet(open: Signal<bool>) -> Element {
                     name: "confirm-password",
                     autocomplete: "new-password",
                     label: Field::ConfirmPassword.label(),
-                    placeholder: Field::ConfirmPassword.placeholder(),
                     input_type: "password",
                 }
             }

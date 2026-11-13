@@ -40,7 +40,6 @@ pub fn ChangeEmailSheet(open: Signal<bool>) -> Element {
                     autocomplete: "email",
                     maxlength: email::MAX_LENGTH,
                     label: Field::NewEmail.label(),
-                    placeholder: Field::NewEmail.placeholder(),
                     error: email_error.as_deref().map(sentence_case),
                 }
 
@@ -50,7 +49,6 @@ pub fn ChangeEmailSheet(open: Signal<bool>) -> Element {
                     name: "password",
                     autocomplete: "current-password",
                     label: Field::Password.label(),
-                    placeholder: Field::Password.placeholder(),
                     input_type: "password",
                     error: password_error.as_deref().map(sentence_case),
                 }
