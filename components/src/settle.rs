@@ -48,8 +48,11 @@ pub const WATCH_MS: u32 = 900;
 pub const JUMP_PX: u32 = 40;
 
 /// Controls inside a [`TRIGGER`] row that never start a watch, since they
-/// fold groups rather than reorder them: the deck page's fold-all button.
-pub const NOT_TRIGGERS: &str = ".deck-fold-all";
+/// fold rather than reorder: the deck page's fold-all button and the Decks
+/// list's Tags fold. A watch over a fold slides the rows under it from where
+/// they were while the fold's own height transition still moves them, which
+/// jitters.
+pub const NOT_TRIGGERS: &str = ".deck-fold-all, .web-deck-tags-fold";
 
 /// The keys that start a watch outside a text field, as `KeyboardEvent.key`:
 /// the deck page's undo, board moves, star and quantity steps.

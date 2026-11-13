@@ -392,4 +392,19 @@ mod tests {
             "a web.css rule hides the Tags fold chip: {rules:?}"
         );
     }
+
+    /// Opening or shutting the Tags fold only grows or shrinks it, so it must not start the
+    /// page's settle: a watch would slide the deck rows from where they were while the fold's
+    /// height transition is still pushing them, which jitters.
+    #[test]
+    fn the_tags_fold_never_starts_the_settle() {
+        let skipped: Vec<&str> = components::settle::NOT_TRIGGERS
+            .split(',')
+            .map(str::trim)
+            .collect();
+        assert!(
+            skipped.contains(&".web-deck-tags-fold"),
+            "the settle's non-triggers {skipped:?} leave out the Tags fold"
+        );
+    }
 }
