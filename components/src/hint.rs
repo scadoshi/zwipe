@@ -8,13 +8,14 @@
 //! icon looks the same in the app's hint and on the web.
 //!
 //! [`guide_for_screen`], [`guide_for_one_time`] and [`guide_for_swipe_select`] are the "See guide ↗"
-//! action a screen's main hint offers when zwipe.net has a guide that goes
+//! action a screen's main hint offers when a guide goes
 //! deeper: the one-time hint a screen opens with, or its header hint. A
 //! panel's or field's `?` answers its own quick question and offers no guide.
 //! Which guide goes with which hint is `zwipe-ui`'s
 //! [`guide`] map. The action is a
-//! [`DialogAction::Link`]: the app opens it in its in-app browser, the web
-//! in the same tab.
+//! [`DialogAction::Link`]: the phone app opens app.zwipe.net's guide in its
+//! in-app browser, and the web app its own guide page in a new tab, so the
+//! page under the dialog keeps its state.
 
 use dioxus::prelude::*;
 use orangui::icons::{
@@ -25,6 +26,7 @@ use orangui::{
     DialogAction, HintBullet, HintBullets, HintDialog, HintKey, HintLine, ModeIcon, PaletteIcon,
 };
 use zwipe_core::domain::user::hints::OneTimeHint;
+use zwipe_ui::hint::guide::GuideBase;
 use zwipe_ui::hint::{Block, HintContent, HintTopic, KeyIcon, Span, SwipeSelectMode, guide};
 
 /// A run of blocks as drawn: consecutive bullets share one list.
@@ -182,11 +184,19 @@ pub fn guide_for_swipe_select(mode: SwipeSelectMode) -> Vec<DialogAction> {
     guide_action(Some(guide::swipe_select_slug(mode)))
 }
 
+/// Where this build's guide links point: the web app's own guide pages in
+/// the browser build, app.zwipe.net's from the phone app.
+const GUIDE_BASE: GuideBase = if cfg!(target_arch = "wasm32") {
+    GuideBase::WebApp
+} else {
+    GuideBase::Phone
+};
+
 /// A link to the guide named `slug`, or nothing without one.
 fn guide_action(slug: Option<&'static str>) -> Vec<DialogAction> {
     slug.map(|slug| DialogAction::Link {
         label: SEE_GUIDE.to_string(),
-        href: guide::url(slug),
+        href: guide::url(GUIDE_BASE, slug),
     })
     .into_iter()
     .collect()
@@ -203,7 +213,7 @@ mod tests {
             matches!(
                 actions.as_slice(),
                 [DialogAction::Link { label, href }]
-                    if label == SEE_GUIDE && href == "https://zwipe.net/guides/land-targets/"
+                    if label == SEE_GUIDE && href == "https://app.zwipe.net/guides/land-targets"
             ),
             "actions {actions:?}"
         );
@@ -218,7 +228,7 @@ mod tests {
     fn a_one_time_hint_links_to_its_guide() {
         assert!(matches!(
             guide_for_one_time(OneTimeHint::Filter).as_slice(),
-            [DialogAction::Link { href, .. }] if href == "https://zwipe.net/guides/filtering/"
+            [DialogAction::Link { href, .. }] if href == "https://app.zwipe.net/guides/filtering"
         ));
         assert_eq!(guide_for_one_time(OneTimeHint::Config), Vec::new());
     }
@@ -227,7 +237,7 @@ mod tests {
     fn swipe_select_links_by_its_overlay() {
         assert!(matches!(
             guide_for_swipe_select(SwipeSelectMode::Suggested { has_filter: false }).as_slice(),
-            [DialogAction::Link { href, .. }] if href == "https://zwipe.net/guides/playstyle/"
+            [DialogAction::Link { href, .. }] if href == "https://app.zwipe.net/guides/playstyle"
         ));
     }
 }

@@ -17,13 +17,14 @@
 //! carry the cascade order: the fonts, orangui's themes and components, the
 //! nav's fold under this app's width (`chrome::media::nav_fold_css`), the
 //! Magic UI, orangui's app sheet, the screens, the toasts, the filter, the
-//! deck page's cards, and last `web.css`.
+//! deck page's cards, the guides (with the kit's gallery base), and last
+//! `web.css`.
 
 use dioxus::prelude::*;
 
 /// Every stylesheet the app uses, in cascade order, each linked in the head
 /// of the built `index.html`.
-pub const SHEETS: [Asset; 11] = [
+pub const SHEETS: [Asset; 12] = [
     asset!(
         "/assets/sheets/01-fonts.css",
         AssetOptions::css().with_static_head(true)
@@ -65,6 +66,10 @@ pub const SHEETS: [Asset; 11] = [
         AssetOptions::css().with_static_head(true)
     ),
     asset!(
+        "/assets/sheets/11-guides.css",
+        AssetOptions::css().with_static_head(true)
+    ),
+    asset!(
         "/assets/web.css",
         AssetOptions::css().with_static_head(true)
     ),
@@ -97,7 +102,7 @@ mod tests {
     use crate::inbound::chrome::media;
 
     /// Each copied sheet's file in `assets/sheets`, with the css it copies.
-    fn copies() -> [(&'static str, String); 10] {
+    fn copies() -> [(&'static str, String); 11] {
         [
             ("01-fonts.css", components::FONTS_CSS.to_owned()),
             ("02-themes.css", components::THEMES_CSS.to_owned()),
@@ -109,7 +114,18 @@ mod tests {
             ("08-toast.css", components::TOAST_CSS.to_owned()),
             ("09-filter.css", components::FILTER_CSS.to_owned()),
             ("10-deck-page.css", components::DECK_PAGE_CSS.to_owned()),
+            ("11-guides.css", guides_css()),
         ]
+    }
+
+    /// The guides' sheet: the kit's gallery base (the part of `SITE_CSS`
+    /// between its Gallery and Site footer headings, which the guides'
+    /// gallery stands on and the app loads nowhere else), then `GUIDES_CSS`.
+    fn guides_css() -> String {
+        let site = components::SITE_CSS;
+        let from = site.find("/* ---- Gallery ---- */").unwrap();
+        let to = site.find("/* ---- Site footer").unwrap();
+        format!("{}{}", &site[from..to], components::GUIDES_CSS)
     }
 
     fn crate_dir() -> &'static Path {

@@ -31,7 +31,7 @@ pub enum Back {
 impl Back {
     /// The back arrow's target from `route`, or `None` on Home and the auth
     /// screens, whose left corner is empty. A deck goes back to the screen
-    /// that opened it, a screen inside a deck goes up the deck tree, the maybeboard to Playstyle, Privacy policy to About,
+    /// that opened it, a screen inside a deck goes up the deck tree, the maybeboard to Playstyle, Privacy policy to About, a guide to the guides,
     /// and a section goes to the screen before it.
     pub fn of(route: &Route) -> Option<Back> {
         match route {
@@ -53,7 +53,9 @@ impl Back {
             | Route::Account {}
             | Route::Config {}
             | Route::About {}
+            | Route::Guides {}
             | Route::NotFound { .. } => Some(Back::Previous),
+            Route::GuidePage { .. } => Some(Back::To(Route::Guides {})),
             Route::CreateDeck {} => Some(Back::To(Route::DeckList {})),
             Route::ViewDeck { deck_id, .. } => Some(Back::Opener(*deck_id)),
             Route::EditDeck { deck_id }
@@ -130,6 +132,8 @@ pub const fn section_of(route: &Route) -> Option<Section> {
         | Route::ForgotPassword {}
         | Route::SharedDeck { .. }
         | Route::SharedDeckExport { .. }
+        | Route::Guides {}
+        | Route::GuidePage { .. }
         | Route::NotFound { .. } => None,
     }
 }

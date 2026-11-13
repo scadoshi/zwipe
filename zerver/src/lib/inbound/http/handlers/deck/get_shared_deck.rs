@@ -26,9 +26,9 @@ impl From<GetSharedDeckError> for ApiError {
 }
 
 /// Public shared-deck read, no auth: possession of the token is the
-/// authority. Revoked or never-issued tokens 404. Responses may be CF-cached
-/// briefly (~5 min): a shared deck updating a few minutes late is fine, and a
-/// revoked token dying a few minutes late is acceptable.
+/// authority. Revoked or never-issued tokens 404. The response carries no
+/// cache header and no Cloudflare cache rule covers it, so a reader sees the
+/// deck as last saved and a stopped share ends at once.
 ///
 /// Of the owner, the response carries only the username. A malformed token
 /// is answered exactly like a revoked one, so the endpoint never confirms

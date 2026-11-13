@@ -1,6 +1,6 @@
-//! Which zwipe.net guide goes with each hint, for the "See guide ↗" link a hint dialog offers.
+//! Which guide goes with each hint, for the "See guide ↗" link a hint dialog offers.
 //!
-//! A hint answers the quick question; its guide on zwipe.net answers the long one. Every client links the same hint to the same guide through [`HintTopic::guide_slug`] and [`one_time_slug`], and builds the address with [`url`]. A hint with no guide gets no link. Both matches are exhaustive, so a new hint has to say whether it has a guide.
+//! A hint answers the quick question; its guide answers the long one. Every client links the same hint to the same guide through [`HintTopic::guide_slug`] and [`one_time_slug`], and builds the address with [`url`]: the web app to its own guide pages, the phone app to the web app's in the browser. A hint with no guide gets no link. Both matches are exhaustive, so a new hint has to say whether it has a guide.
 //!
 //! Only screen hints link out: the one-time hint a screen opens with and the `?` in a screen's header (the format, deck tag and oracle tag pickers), while a panel's or field's `?` inside a screen shows no link even when its topic has a slug here.
 
@@ -8,13 +8,25 @@ use zwipe_core::domain::user::hints::OneTimeHint;
 
 use super::{HintTopic, SwipeSelectMode};
 
-/// Where zite serves its guides; a slug goes on the end.
-pub const GUIDE_BASE: &str = "https://zwipe.net/guides/";
+/// The client a guide link opens from.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum GuideBase {
+    /// The web app, whose guide pages sit at `/guides/<slug>` on its own site.
+    WebApp,
+    /// The phone app, which carries no guides: the web app's open in the browser.
+    Phone,
+}
 
-/// The address of the guide named `slug`, slashed as zite serves it.
+/// Where the web app serves its guides, for a link from outside it; a slug goes on the end.
+pub const WEB_APP_GUIDES: &str = "https://app.zwipe.net/guides/";
+
+/// The address of the guide named `slug`, as a link from `base` names it.
 #[must_use]
-pub fn url(slug: &str) -> String {
-    format!("{GUIDE_BASE}{slug}/")
+pub fn url(base: GuideBase, slug: &str) -> String {
+    match base {
+        GuideBase::WebApp => format!("/guides/{slug}"),
+        GuideBase::Phone => format!("{WEB_APP_GUIDES}{slug}"),
+    }
 }
 
 impl HintTopic {
@@ -266,7 +278,11 @@ mod tests {
     }
 
     #[test]
-    fn the_url_is_the_base_and_the_slug() {
-        assert_eq!(url("deck-stats"), "https://zwipe.net/guides/deck-stats/");
+    fn the_web_app_links_its_own_guide_and_the_phone_the_web_app_s() {
+        assert_eq!(url(GuideBase::WebApp, "deck-stats"), "/guides/deck-stats");
+        assert_eq!(
+            url(GuideBase::Phone, "deck-stats"),
+            "https://app.zwipe.net/guides/deck-stats"
+        );
     }
 }

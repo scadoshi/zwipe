@@ -7,6 +7,7 @@ pub mod auth;
 pub mod commander_maybeboard;
 pub mod config;
 pub mod deck;
+pub mod guides;
 pub mod home;
 pub mod not_found;
 pub mod oracle_tag_dictionary;

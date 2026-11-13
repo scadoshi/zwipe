@@ -3013,3 +3013,26 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
     }
 }
 
+/* ---- Guides ----
+   The guide pages zwipe.net draws (components' GuideIndex and GuideArticle),
+   in the page's column with zwipe.net's side room. */
+.web-guides {
+    width: 100%;
+    max-width: var(--web-page-max);
+    margin: 0 auto;
+    padding: 0 1.5rem 1rem;
+    box-sizing: border-box;
+    text-align: left;
+}
+
+/* The screen scrolls under the nav rather than the window, so the gallery
+   docks a gap below the screen's top, not a nav's height below it. */
+.web-guides .guide-gallery-col {
+    top: 1rem;
+}
+
+@media (max-width: 899px) {
+    .web-guides {
+        padding: 0 1rem 1rem;
+    }
+}

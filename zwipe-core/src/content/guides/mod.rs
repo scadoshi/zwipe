@@ -991,9 +991,7 @@ pub static GUIDES: &[Guide] = &[
             Block::P(
                 "Below is the full card list with Group by, Show, and Filter by, expandable rows, collapsible headers, and a section for the tokens your cards make.",
             ),
-            Block::Note(
-                "The page tracks your latest saved deck, usually within a few minutes of an edit.",
-            ),
+            Block::Note("The page shows the deck as you last saved it, every time it opens."),
             Block::H2("Stop sharing"),
             Block::P(
                 "Same dialog, Stop sharing. The link stops working right away, and sharing again makes a new one.",

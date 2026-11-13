@@ -35,7 +35,7 @@ pub fn PublicFrame() -> Element {
 /// The layout over every route but the auth screens: the signed-in nav
 /// with a live session, so the one [`Shell`] stays mounted from screen to
 /// screen. Without one, a route open to everyone (Privacy policy, About,
-/// Not found) gets the public nav, and an authed route draws nothing while
+/// a shared deck, the guides, Not found) gets the public nav, and an authed route draws nothing while
 /// its gate sends the user to Login. The keyboard shortcuts sheet sits over
 /// all of them, opened by Shift+H or a swipe screen's dock button.
 #[component]
@@ -64,6 +64,8 @@ fn is_open(route: &Route) -> bool {
             | Route::About {}
             | Route::SharedDeck { .. }
             | Route::SharedDeckExport { .. }
+            | Route::Guides {}
+            | Route::GuidePage { .. }
             | Route::NotFound { .. }
     )
 }

@@ -244,7 +244,7 @@ pub fn GuideIndex(href: Callback<&'static str, String>) -> Element {
     let hits = guides::hits(selected(), &query());
     let typed = query().trim().to_owned();
     rsx! {
-        div { class: "page-header",
+        div { class: "page-header guide-index-head",
             Panel { title: "Guides", title_h1: true,
                 p { class: "tagline", "How Zwipe works, one feature at a time." }
             }

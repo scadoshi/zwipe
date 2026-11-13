@@ -29,6 +29,7 @@ use crate::inbound::screens::deck::export::{ExportDeck, SharedDeckExport};
 use crate::inbound::screens::deck::import::ImportDeck;
 use crate::inbound::screens::deck::list::DeckList;
 use crate::inbound::screens::deck::view::ViewDeck;
+use crate::inbound::screens::guides::{GuidePage, Guides};
 use crate::inbound::screens::home::Home;
 use crate::inbound::screens::not_found::NotFound;
 use crate::inbound::screens::playstyle::Playstyle;
@@ -42,8 +43,8 @@ use crate::inbound::shell::{OpenFrame, PublicFrame};
 /// [`PublicFrame`]; everything else sits in one [`OpenFrame`], so a
 /// signed-in user keeps the one top nav
 /// [`Shell`](crate::inbound::shell::Shell) from screen to screen, About and
-/// Privacy policy included. Privacy policy, About and Not found are open to
-/// everyone, and the rest need a session ([`AuthGate`]). `/changelog`
+/// Privacy policy included. Privacy policy, About, a shared deck, the guides
+/// and Not found are open to everyone, and the rest need a session ([`AuthGate`]). `/changelog`
 /// redirects to About and `/config` to Settings.
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
@@ -83,6 +84,12 @@ pub enum Route {
         /// A shared deck's decklist, read only, as the owner's Export.
         #[route("/:owner/deck/:slug/:token/export")]
         SharedDeckExport { owner: String, slug: String, token: String },
+        /// The guides, the pages zwipe.net draws.
+        #[route("/guides")]
+        Guides {},
+        /// One guide.
+        #[route("/guides/:slug")]
+        GuidePage { slug: String },
 
     // == authed ==
     #[layout(AuthGate)]

@@ -135,6 +135,34 @@
         guides
  ==================== */
 
+/* The index's heading, the article's panel and the blocks' spacing, at the
+   values zwipe.net's own sheet gives .page-header, .panel and .section, for a
+   host without that sheet. */
+.guide-index-head {
+    margin-bottom: var(--panel-gap);
+}
+
+.guide-index-head h1 {
+    margin-bottom: 0.25rem;
+}
+
+.guide-index-head .tagline {
+    color: var(--ink-text-muted, var(--text-muted));
+    font-size: 0.9rem;
+}
+
+.guide-content.panel {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-sm);
+    padding: 1.5rem;
+}
+
+:is(.guide-content, .guide-related).section {
+    margin-bottom: var(--panel-gap);
+}
+
 /* The search box fills the row's middle inside the kit's clear wrap, whose
    × slides in beside it while there is text. */
 .guide-filter > .input-clear-wrap {
