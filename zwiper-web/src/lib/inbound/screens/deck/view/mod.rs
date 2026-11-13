@@ -206,6 +206,8 @@ fn DeckViewScreen(deck_id: Uuid, view: Option<DeckView>) -> Element {
                         format!("Quantity set to {quantity}"),
                         ToastOptions::default().duration(TOAST_QUICK),
                     );
+                    // The reload can take a warning away, so the page settles around it.
+                    components::settle::watch();
                     deck.restart();
                     fixed.with_mut(|n| *n = n.wrapping_add(1));
                 }
@@ -228,6 +230,7 @@ fn DeckViewScreen(deck_id: Uuid, view: Option<DeckView>) -> Element {
                     ToastOptions::default().duration(TOAST_QUICK),
                 );
                 commander.set(None);
+                components::settle::watch();
                 profile.restart();
                 deck.restart();
                 fixed.with_mut(|n| *n = n.wrapping_add(1));
@@ -251,6 +254,7 @@ fn DeckViewScreen(deck_id: Uuid, view: Option<DeckView>) -> Element {
                             "Card removed".to_string(),
                             ToastOptions::default().duration(TOAST_QUICK),
                         );
+                        components::settle::watch();
                         deck.restart();
                         fixed.with_mut(|n| *n = n.wrapping_add(1));
                     }

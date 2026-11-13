@@ -20,6 +20,7 @@ use zwipe_core::domain::deck::DeckEntry;
 use zwipe_core::http::contracts::deck_card::HttpCreateDeckCard;
 use zwipe_ui::card::default_printing;
 use zwipe_ui::generation::Generation;
+use zwipe_ui::screens::deck_cards;
 use zwipe_ui::stores::undo::UndoAction;
 use zwipe_ui::timing::{QUICK_ADD_DEBOUNCE, QUICK_ADD_LIMIT, QUICK_ADD_MIN_CHARS};
 
@@ -91,7 +92,7 @@ pub(crate) fn QuickAdd(
             }
             searching.set(false);
             match reply {
-                Some(page) => results.set(page.cards),
+                Some(page) => results.set(deck_cards::rank_quick_add(&query.peek(), page.cards)),
                 None => show.set(false),
             }
         });
@@ -208,7 +209,15 @@ pub(crate) fn QuickAdd(
                     if searching() {
                         div { class: "chip-unselected", "Searching…" }
                     } else if shown.is_empty() {
-                        div { class: "chip-unselected", "No results" }
+                        // The server leaves the deck's own cards out, so an empty search may mean one of them.
+                        match deck_cards::in_deck(&query(), &entries.read()) {
+                            Some(name) => rsx! {
+                                div { class: "chip-unselected", {deck_cards::already_in_deck(name)} }
+                            },
+                            None => rsx! {
+                                div { class: "chip-unselected", "{deck_cards::NO_RESULTS}" }
+                            },
+                        }
                     } else {
                         for (i, card) in shown.into_iter().enumerate() {
                             button {

@@ -15,8 +15,12 @@ thinker:
 - The app's featured strip is a settle scope with its cards keyed (the web's deck page already settles its head cards), and a star or an undo starts a settle watch on both, so the featured cards slide and the stacks under them ease (moves over the settle's 40px threshold).
 - A featured card's details open with `Gesture::Feature`, which opens the drawer without revealing the same card in the stacks; a stack click or a close clears it.
 
-## Open
-- An Undo control on the phone-width Profile screen itself (asked of the composer).
+Follow-ups from droider (second commit):
+- Star loss after Fix to 1 and the stale phone-Profile Undo: the server keeps the star on a quantity patch (`zerver/tests/deck_cards.rs` `a_quantity_patch_keeps_the_star`, through the reload too). The client cause is the Profile's held deck going stale against the Cards layer's edits, which laptop's 442 syncs; no workaround here.
+- No Undo control on the phone Profile, per Scotty: a fix there is undone from Cards' Undo.
+- Warnings: the panel stays up for the visit once it had warnings, saying "No warnings left" after the last fix, and the phone Profile's sections settle (each section keyed, a fix starting a watch), so the page doesn't jump under the next tap.
+- The strip: a card starred after the first deal joins without replaying the deal (`.dealt`, app and web), which was the appear, vanish, fade-in flicker; the chip line holds two rows, so the strip keeps its height when an MVP leaves; and the app waits for the settle watch to run (`settle::watched`) before applying a star or an undo, since the webview runs scripts apart from the screen's updates.
+- Quick add: an empty search that a card of the deck answers says "Sol Ring is already in this deck" (the server leaves the deck's cards out), and results list names that start with the query, then words that do, then the rest. "Sol" listing unrelated cards was the substring match ("Absolute Grace") sorted by name; it is not the color identity filter.
 
 ## Verification
 - `cargo test -p zwipe-ui` (the quick add printing step and choice, rekey, the move toast, the featured gesture, the undo record of a fix, the delayed star toast).

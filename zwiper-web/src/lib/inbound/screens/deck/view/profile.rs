@@ -17,6 +17,18 @@ use super::sections::{
     WarningsSection,
 };
 
+/// Whether the deck has had warnings this visit: true from the first render with any, and kept
+/// after a fix clears the last one.
+fn use_warned(any: bool) -> bool {
+    let mut warned = use_signal(|| any);
+    use_effect(use_reactive!(|any| {
+        if any {
+            warned.set(true);
+        }
+    }));
+    warned() || any
+}
+
 /// The Profile on a phone; see the module's doc. Until `info` is in it draws its ghost, and
 /// while the deck's cards are still loading (`metrics_loading`) the stats draw theirs.
 #[component]
@@ -36,13 +48,17 @@ pub(crate) fn DeckProfilePhone(
     #[props(default)] danger: Option<Element>,
 ) -> Element {
     let open_section: Signal<Option<String>> = use_signal(|| Some("Budget".to_owned()));
+    // Warnings stay up for the visit once there were any, so a fix that clears the last one
+    // leaves the page where it was.
+    let warned = use_warned(!warnings.is_empty());
     let Some(info) = info else {
         return rsx! {
             DeckViewGhost {}
         };
     };
     rsx! {
-        div { class: "content-enter web-deck-view",
+        // The sections settle when one comes, goes or changes height.
+        div { class: "content-enter web-deck-view", "data-settle-scope": "",
             ProfileCard { info }
             if stats.has_budget(metrics.is_some()) {
                 BudgetSection {
@@ -60,7 +76,7 @@ pub(crate) fn DeckProfilePhone(
             } else {
                 StatsSections { metrics, land_target: stats.land_target, open_section }
             }
-            if !warnings.is_empty() {
+            if warned {
                 WarningsSection { warnings, actions, open_section }
             }
             {data}
@@ -79,6 +95,7 @@ pub(crate) fn DeckFoot(
     data: Element,
     #[props(default)] danger: Option<Element>,
 ) -> Element {
+    let warned = use_warned(!warnings.is_empty());
     if !loaded {
         return rsx! {
             DeckFootGhost {}
@@ -86,7 +103,7 @@ pub(crate) fn DeckFoot(
     }
     rsx! {
         div { class: "web-column",
-            if !warnings.is_empty() {
+            if warned {
                 div { class: "web-section open warn web-deck-warnings", "data-settle-key": "warnings",
                     div { class: "web-section-head",
                         div { class: "web-section-title",

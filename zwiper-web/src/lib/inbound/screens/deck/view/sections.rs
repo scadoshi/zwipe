@@ -166,13 +166,22 @@ pub fn WarningsSection(
     }
 }
 
+/// The Warnings panel's line once a fix has cleared the last warning.
+pub const NO_WARNINGS_LEFT: &str = "No warnings left";
+
 /// Warnings' body: each warning's message and, on the right, its fix where
-/// the owner's `actions` are given.
+/// the owner's `actions` are given. Once a fix has cleared the last one it says so, so the
+/// panel stays where it was.
 #[component]
 pub fn WarningsBody(warnings: Vec<DeckWarning>, actions: Option<WarningActions>) -> Element {
     let navigator = use_navigator();
     rsx! {
         div { style: "display:flex;flex-direction:column;",
+                if warnings.is_empty() {
+                    div { class: "settings-row deck-warning-row",
+                        span { class: "text-muted", "{NO_WARNINGS_LEFT}" }
+                    }
+                }
                 for (i, item) in warnings.into_iter().enumerate() {
                     div { key: "{i}", class: "settings-row deck-warning-row",
                         span { class: "text-muted", "{item}" }

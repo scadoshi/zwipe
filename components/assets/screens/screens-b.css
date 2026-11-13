@@ -1002,6 +1002,13 @@
     animation-delay: 0.8s;
 }
 
+/* Once the first deal is done (`.dealt`), a card starred later joins as a
+   layout change: no deal, so it never waits out the delay invisible. */
+.deck-featured.ready.dealt .deck-featured-card {
+    animation: none;
+    opacity: 1;
+}
+
 /* Staggered like a real deal: each card lands a beat after the one before. */
 .deck-featured.ready .deck-featured-card:nth-child(2) {
     animation-delay: calc(0.8s + 180ms);
@@ -1057,9 +1064,13 @@
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
+    align-content: flex-start;
     gap: 0.25rem;
     margin-top: 0.4rem;
     min-width: 0;
+    /* Room for two lines of chips, wrapped or not, so the strip keeps its
+       height when a card with a long name comes or goes. */
+    min-height: 2.5rem;
 }
 
 .deck-featured-chips > .stat-chip {

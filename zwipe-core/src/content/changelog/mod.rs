@@ -70,6 +70,7 @@ pub const UPCOMING: &[Release] = &[
             "Picking a printing keeps the card's details open on that card",
             "Moving a card to the maybeboard or sideboard says how many copies moved",
             "Quick add lands a card's cheapest regular printing instead of its newest",
+            "Quick add says when the card you search for is already in the deck, and lists the closest names first",
             "The featured cards and the cards under them ease into place when a star adds or takes one",
             "A featured card's details no longer lift the same card in Stacks",
             "On the web, the signed-out nav offers Log in and Create account, with Forgot password on the Log in screen",

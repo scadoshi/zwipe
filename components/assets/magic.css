@@ -2462,6 +2462,13 @@ html.keyboard-up .web-dock-pair {
     animation: deck-head-deal 0.78s cubic-bezier(0.33, 1, 0.68, 1) both;
 }
 
+/* Once the first deal is done (`.dealt`), a card starred later joins as a
+   layout change, without a deal of its own. */
+.deck-head-deal.ready.dealt .deck-head-card {
+    animation: none;
+    opacity: 1;
+}
+
 .deck-head-deal.ready .deck-head-card:nth-child(2) {
     animation-delay: 180ms;
 }

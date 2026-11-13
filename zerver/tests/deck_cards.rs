@@ -863,3 +863,60 @@ async fn a_full_podium_creates_the_card_unstarred(pool: sqlx::PgPool) {
     .unwrap();
     assert_eq!(starred, 3);
 }
+
+/// A quantity change, such as a warning's Fix to 1, leaves the card's star and its time alone.
+#[sqlx::test]
+async fn a_quantity_patch_keeps_the_star(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, did) = deck_for(&app, "fixer").await;
+    let deck_id = did.parse().unwrap();
+    let elf = card("Llanowar Elves").type_line("Creature");
+    let (sid, oid) = (elf.id(), elf.oracle_id().unwrap());
+    seed_cards(&pool, &[elf]).await;
+    let (status, body) = app
+        .post(
+            &create_deck_card_route(deck_id),
+            json!({ "scryfall_data_id": sid.to_string(), "oracle_id": oid.to_string(), "quantity": 4 }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED, "add: {body}");
+    let (status, starred) = app
+        .patch(
+            &update_deck_card_route(deck_id, sid),
+            json!({ "mvp": true }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "star: {starred}");
+    let star_time = starred["mvp_at"].clone();
+    assert!(star_time.is_string(), "{starred}");
+
+    let (status, fixed) = app
+        .patch(
+            &update_deck_card_route(deck_id, sid),
+            json!({ "quantity": 1 }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "fix: {fixed}");
+    assert_eq!(fixed["quantity"], 1);
+    assert_eq!(fixed["mvp_at"], star_time, "the star survives the fix");
+
+    let (status, deck) = app
+        .get(&zwipe_core::http::paths::deck_route(deck_id), Some(&token))
+        .await;
+    assert_eq!(status, StatusCode::OK, "{deck}");
+    let entry = deck["entries"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|e| e["deck_card"]["scryfall_data_id"] == sid.to_string())
+        .unwrap()
+        .clone();
+    assert_eq!(entry["deck_card"]["quantity"], 1);
+    assert_eq!(
+        entry["deck_card"]["mvp_at"], star_time,
+        "the reloaded deck still has the star"
+    );
+}

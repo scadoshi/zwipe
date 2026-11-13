@@ -262,11 +262,22 @@ pub fn use_settle() {
 /// The script [`watch`] runs: the installed settling's watch, when there is one.
 const WATCH_JS: &str = "window.__zwSettleWatch && window.__zwSettleWatch();";
 
+/// [`WATCH_JS`] answering once it has run, for [`watched`].
+const WATCHED_JS: &str = "window.__zwSettleWatch && window.__zwSettleWatch(); return true;";
+
 /// Starts a watch from a change no click or key made, as a trigger does: call it
 /// before the change, so the page's things are noted where they show. Without
 /// [`use_settle`] on the page it does nothing.
 pub fn watch() {
     document::eval(WATCH_JS);
+}
+
+/// Starts a watch and waits until the page has run it, then returns: a change made after the
+/// await is caught even where the script and the page's updates travel separately, as in the
+/// app's webview.
+pub async fn watched() {
+    // The answer only says the script ran; a page without the settling answers too.
+    let _ = document::eval(WATCHED_JS).await;
 }
 
 #[cfg(test)]

@@ -53,6 +53,10 @@ const CARDS_SCROLL_JS: &str = "document.querySelector('.deck-controls')?.scrollI
 /// How long the featured cards wait for their images before they deal anyway.
 const FEATURED_WAIT: Duration = Duration::from_secs(4);
 
+/// How long the first deal of the featured cards takes: the sixth card's 0.9s stagger and its
+/// 0.78s drop (`magic.css`).
+const FEATURED_DEAL: Duration = Duration::from_millis(1_700);
+
 /// The deck page's body; see the module's doc. The owner's deck page fills it from its editor, a
 /// shared deck from the shared deck.
 #[component]
@@ -189,10 +193,20 @@ pub(crate) fn DeckPageBody(
         featured_timed_out.set(true);
     });
     let featured_ready = featured_timed_out() || featured_loaded() >= featured.len();
-    let featured_class = if featured_ready {
-        "deck-head-deal ready"
-    } else {
-        "deck-head-deal"
+    // Once the first deal is done, a card starred later joins without one.
+    let mut featured_dealt = use_signal(|| false);
+    use_effect(use_reactive!(|featured_ready| {
+        if featured_ready && !*featured_dealt.peek() {
+            spawn(async move {
+                timer::sleep(FEATURED_DEAL).await;
+                featured_dealt.set(true);
+            });
+        }
+    }));
+    let featured_class = match (featured_ready, featured_dealt()) {
+        (true, true) => "deck-head-deal ready dealt",
+        (true, false) => "deck-head-deal ready",
+        _ => "deck-head-deal",
     };
     // A featured card opens its details in the drawer, as the same card in the List or Stacks
     // does, or its image when no listed card has details to show.

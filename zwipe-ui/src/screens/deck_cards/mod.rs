@@ -215,6 +215,50 @@ pub fn quick_add_query(query: &str) -> CardQueryBuilder {
     builder
 }
 
+/// The Quick add chip when the search names a card the deck already holds: "Sol Ring is already in this deck".
+#[must_use]
+pub fn already_in_deck(card_name: &str) -> String {
+    format!("{card_name} is already in this deck")
+}
+
+/// The name of the deck's card a Quick add search for `query` means, when the server found nothing new: one named exactly that in any case, else one whose name starts with it, else one whose name holds it. `None` for a blank query or no such card. The server leaves the deck's own cards out of the search, so this says why it came back empty.
+#[must_use]
+pub fn in_deck<'a>(query: &str, entries: &'a [DeckEntry]) -> Option<&'a str> {
+    let wanted = query.trim().to_lowercase();
+    if wanted.is_empty() {
+        return None;
+    }
+    let names = || entries.iter().map(|e| e.card.scryfall_data.name.as_str());
+    names()
+        .find(|name| name.to_lowercase() == wanted)
+        .or_else(|| names().find(|name| name.to_lowercase().starts_with(&wanted)))
+        .or_else(|| names().find(|name| name.to_lowercase().contains(&wanted)))
+}
+
+/// `cards` from a Quick add search for `query`, the closest names first: those that start with it, then those with a word that does, then the rest, each keeping the server's order. A search for "Sol" lists Solemn Simulacrum before Absolute Grace.
+#[must_use]
+pub fn rank_quick_add(query: &str, mut cards: Vec<Card>) -> Vec<Card> {
+    let wanted = query.trim().to_lowercase();
+    if wanted.is_empty() {
+        return cards;
+    }
+    let rank = |card: &Card| {
+        let name = card.scryfall_data.name.to_lowercase();
+        if name.starts_with(&wanted) {
+            0
+        } else if name
+            .split(|c: char| !c.is_alphanumeric())
+            .any(|word| word.starts_with(&wanted))
+        {
+            1
+        } else {
+            2
+        }
+    };
+    cards.sort_by_key(rank);
+    cards
+}
+
 /// The command zone slots a profile names, in the order the client fetches their cards: commander, signature spell, partner, background.
 #[must_use]
 pub fn zone_requests(profile: &DeckProfile) -> Vec<(Slot, Uuid)> {
@@ -281,6 +325,8 @@ pub enum QuickAddResults {
     Searching,
     /// The search found nothing: one [`NO_RESULTS`] chip.
     Empty,
+    /// The search found nothing new, and this card of the deck answers it: one [`already_in_deck`] chip, in place of [`NO_RESULTS`].
+    InDeck(String),
     /// The cards found, in the search's order, each a chip.
     Found(Vec<Card>),
 }
@@ -844,7 +890,7 @@ impl State {
                 if self.settle(ticket).is_some() && self.quick.waiting == Some(ticket) {
                     self.quick.waiting = None;
                     self.quick.searching = false;
-                    self.quick.results = cards;
+                    self.quick.results = rank_quick_add(&self.quick.query, cards);
                     self.quick.open = true;
                 }
                 Vec::new()
@@ -2013,7 +2059,9 @@ impl State {
         Some(if self.quick.searching {
             QuickAddResults::Searching
         } else if self.quick.results.is_empty() {
-            QuickAddResults::Empty
+            in_deck(&self.quick.query, &self.entries).map_or(QuickAddResults::Empty, |name| {
+                QuickAddResults::InDeck(name.to_owned())
+            })
         } else {
             QuickAddResults::Found(self.quick.results.clone())
         })

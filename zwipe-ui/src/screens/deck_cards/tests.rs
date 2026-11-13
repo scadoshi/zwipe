@@ -460,7 +460,11 @@ fn quick_add_debounces_searches_and_shows_results() {
         ticket,
         cards: Vec::new(),
     });
-    assert_eq!(state.quick_add(), Some(QuickAddResults::Empty));
+    assert_eq!(
+        state.quick_add(),
+        Some(QuickAddResults::InDeck("Sol Ring".to_owned())),
+        "an empty search the deck's Sol Ring answers says so"
+    );
 }
 
 #[test]
@@ -1735,4 +1739,59 @@ fn the_deck_handed_back_counts_the_main_board_as_it_stands() {
     });
     let after = state.deck().expect("loaded").deck_profile.card_count;
     assert_eq!(after, before + 2, "the Profile's count follows the edit");
+}
+
+#[test]
+fn a_search_for_a_card_the_deck_holds_says_so_instead_of_no_results() {
+    let (mut state, _) = loaded();
+    for query in ["Sol Ring", "sol ring", "sol r"] {
+        let ticket = debounce(&state.update(Action::Type(query.to_owned())));
+        let _ = state.update(Action::Debounced { ticket });
+        let _ = state.update(Action::Searched {
+            ticket,
+            cards: Vec::new(),
+        });
+        assert_eq!(
+            state.quick_add(),
+            Some(QuickAddResults::InDeck("Sol Ring".to_owned())),
+            "{query}"
+        );
+    }
+    assert_eq!(
+        already_in_deck("Sol Ring"),
+        "Sol Ring is already in this deck"
+    );
+
+    let ticket = debounce(&state.update(Action::Type("Krenko".to_owned())));
+    let _ = state.update(Action::Debounced { ticket });
+    let _ = state.update(Action::Searched {
+        ticket,
+        cards: Vec::new(),
+    });
+    assert_eq!(state.quick_add(), Some(QuickAddResults::Empty));
+}
+
+#[test]
+fn quick_add_lists_the_closest_names_first() {
+    let found = vec![
+        card("Absolute Grace"),
+        card("Consolidate"),
+        card("Pristine Sol"),
+        card("Solemn Simulacrum"),
+        card("Sol Talisman"),
+    ];
+    let ranked: Vec<String> = rank_quick_add("sol", found)
+        .into_iter()
+        .map(|c| c.scryfall_data.name)
+        .collect();
+    assert_eq!(
+        ranked,
+        [
+            "Solemn Simulacrum",
+            "Sol Talisman",
+            "Pristine Sol",
+            "Absolute Grace",
+            "Consolidate"
+        ]
+    );
 }

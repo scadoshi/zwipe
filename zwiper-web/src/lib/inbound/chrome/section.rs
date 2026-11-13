@@ -39,6 +39,8 @@ pub fn CollapsibleSection(
     rsx! {
         div {
             class,
+            // Named for the settle, so a section that comes or goes eases the ones under it.
+            "data-settle-key": "section-{id}",
             onclick: move |_| {
                 if is_open {
                     open_section.set(None);

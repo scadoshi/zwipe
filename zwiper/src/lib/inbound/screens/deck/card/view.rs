@@ -192,10 +192,20 @@ impl Driver {
     /// Applies `action` to the model and performs what it returns.
     fn dispatch(self, action: Action) {
         // A star or an undo can add or take a featured card and move the cards under it, so the
-        // page settles around it.
+        // page settles around it. The watch has to note the cards before they move, and the
+        // webview runs scripts apart from the screen's updates, so the change waits for it.
         if matches!(action, Action::ToggleMvp { .. } | Action::Undo(_)) {
-            components::settle::watch();
+            spawn(async move {
+                components::settle::watched().await;
+                self.apply(action);
+            });
+            return;
         }
+        self.apply(action);
+    }
+
+    /// Runs `action` through the model and performs its effects.
+    fn apply(self, action: Action) {
         let mut model = self.model;
         let effects = model.write().update(action);
         for effect in effects {

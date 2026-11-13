@@ -17,6 +17,10 @@ use super::super::card::components::flippable_card_image::FlippableCardImage;
 /// Seconds the row waits for the card images before it opens anyway.
 const REVEAL_TIMEOUT_SECS: u64 = 4;
 
+/// How long the first deal takes once the row opens, in milliseconds: the row's 0.8s height
+/// transition, the sixth card's 0.9s stagger and its 0.78s drop (`screens-b.css`).
+const DEAL_MS: u64 = 2_500;
+
 /// One labeled featured card: image (when available) above name + role chip.
 /// Tapping it fires `on_tap` with the card, and the tap stops at the card so
 /// the screen's tap-off doesn't see it. Nothing covers a featured card, so it
@@ -95,6 +99,7 @@ pub fn FeaturedCards(
     let mut opened: Signal<bool> = use_signal(|| false);
     // Whether the row first drew as its ghost, so it opens in place.
     let held = use_hook(|| !loaded && ghost);
+    let mut dealt: Signal<bool> = use_signal(|| false);
     use_future(move || async move {
         time::sleep(Duration::from_secs(REVEAL_TIMEOUT_SECS)).await;
         timed_out.set(true);
@@ -103,6 +108,10 @@ pub fn FeaturedCards(
     use_effect(use_reactive!(|total| {
         if !opened() && (timed_out() || images_loaded() >= total) {
             opened.set(true);
+            spawn(async move {
+                time::sleep(Duration::from_millis(DEAL_MS)).await;
+                dealt.set(true);
+            });
         }
     }));
     if !loaded {
@@ -115,10 +124,11 @@ pub fn FeaturedCards(
     if cards.is_empty() {
         return rsx! {};
     }
-    let class = match (held, opened()) {
-        (true, _) => "deck-featured held",
-        (false, true) => "deck-featured ready",
-        (false, false) => "deck-featured",
+    let class = match (held, opened(), dealt()) {
+        (true, _, _) => "deck-featured held",
+        (false, true, true) => "deck-featured ready dealt",
+        (false, true, false) => "deck-featured ready",
+        (false, false, _) => "deck-featured",
     };
     rsx! {
         section { class: "{class}",

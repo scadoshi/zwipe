@@ -67,6 +67,11 @@ pub fn QuickAdd(
                                 div { class: "chip-unselected card-filter-result", "{deck_cards::NO_RESULTS}" }
                             }
                         },
+                        QuickAddResults::InDeck(name) => rsx! {
+                            div { class: "card-filter-results quick-add-results",
+                                div { class: "chip-unselected card-filter-result", {deck_cards::already_in_deck(&name)} }
+                            }
+                        },
                         QuickAddResults::Found(cards) => rsx! {
                             div { class: "card-filter-results quick-add-results",
                                 for (i, card) in cards.iter().cloned().enumerate() {
