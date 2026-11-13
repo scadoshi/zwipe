@@ -169,6 +169,7 @@ pub fn SharedDeck(owner: String, slug: String, token: String, view: Option<DeckV
             on_hint: Some(on_hint),
             // The deck's head names it in its own h1 on a wide window and atop the Cards.
             titled: loaded && (wide() || cards_open),
+            div { class: "screen-content",
             match &*result.read() {
                 None => rsx! { SharedDeckView { deck: None, cards_open, on_cards, export, on_hint } },
                 Some(Err(FetchError::NotShared)) => rsx! {
@@ -191,6 +192,7 @@ pub fn SharedDeck(owner: String, slug: String, token: String, view: Option<DeckV
                 Some(Ok(deck)) => rsx! {
                     SharedDeckView { deck: Some(deck.clone()), cards_open, on_cards, export, on_hint }
                 },
+            }
             }
         }
         ContentHintDialog {

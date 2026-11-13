@@ -54,10 +54,13 @@
 
     // A header whose screen sits at the top is fully shown. The shell keeps
     // its header across screens, so one that slid away on a scrolled screen
-    // would otherwise arrive on the next screen already gone.
+    // would otherwise arrive on the next screen already gone. The screen is
+    // the innermost scroll area: a layer over the page (a deck's Cards)
+    // scrolls on its own, from its top.
     const reset = () => {
         for (const nav of document.querySelectorAll(".web-shell > .web-app-nav")) {
-            const area = nav.parentElement.querySelector(".web-scroll-screen");
+            const areas = nav.parentElement.querySelectorAll(".web-scroll-screen");
+            const area = areas.item(areas.length - 1);
             if (phone.matches && area && area.scrollTop > 0) continue;
             if (area) lastTop.delete(area);
             offset.delete(nav);

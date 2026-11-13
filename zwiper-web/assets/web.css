@@ -2741,7 +2741,8 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 
 /* ---- Deck view ---- */
 
-/* Below the breakpoint the page is the app's one stack. */
+/* Below the breakpoint the page is the app's one stack, its end clear of
+   the floating dock. */
 @media (max-width: 899px) {
     .web-deck-view {
         width: calc(100% - 2rem);
@@ -2749,7 +2750,7 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
         display: flex;
         flex-direction: column;
         gap: var(--panel-gap);
-        padding: 1rem 0;
+        padding: 1rem 0 6rem;
     }
 }
 

@@ -25,5 +25,11 @@ laptop.
 - App (iOS simulator, local zerver): the Cards layer opens on the loaded cards with no ghost frame; +1 in the layer, then Back: the layer slides out and the Profile reads 48; Undo puts back 47.
 - Wide 1450: the shared foot shows Warnings read only and Data; one h1 on both pages.
 
+### droider on ba40e1ebb
+- The shared screen sits in the owner's `screen-content`, so its phone Profile is centered as the owner's is; the phone Profile ends 6rem clear of the floating dock.
+- Opening the Cards from a scrolled Profile showed the nav slid away: the header's reset (`header_hide.js`) read the page's scroller, not the layer nested in it. It reads the innermost scroll area now, so the nav comes back as the layer opens at its top.
+- Undo after closing and reopening the Cards: not reproduced (closed by the nav's back arrow, the browser's Back and Esc; Undo stays live). The undo log is the tab's root store, so only a full page load clears it, which a move does when a newer build is live (`fresh_build`).
+- A fresh tab on `?view=cards`: Chrome skips history entries a page adds before the user's first tap, and the Profile entry and the layer's own entry are both added on load. Moving them to the first tap would mean rewriting entries the overlay history (431) counts, so it is left as is; the layer's back arrow lands on the Profile.
+
 ## Verification
 -
