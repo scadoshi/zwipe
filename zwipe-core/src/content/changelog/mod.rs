@@ -46,48 +46,63 @@ pub const MOBILE_STORE_VERSION: Version = Version::new(1, 18, 15);
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[Release {
-    version: Version::new(1, 21, 0),
-    date: None,
-    entries: &[
-        "Share puts Stop sharing first, apart from Copy link, on the web and in the app",
-        "Quick add offers a very popular card first even when less played names start with what you typed",
-        "On the web, closing a hint with Esc puts focus back on the card the keyboard cursor was on",
-        "In a deck's Stacks, revealing a tucked card takes no Back step, so Back closes what is open or leaves Cards, on the web and in the app",
-        "Switching a deck's format away and back while editing brings back the commander and the rest of the command zone, on the web and in the app",
-        "On the web's deck page in List, holding a key with a card open opens the card you stop on instead of each one on the way",
-        "On the web's deck page, a featured card's details drawer opens on the left when a right one would cover the card, as a stack card's does",
-        "On a phone's web app, the deck form's Format, Deck tags and Oracle tags pickers open as a screen with a back arrow, as in the app",
-        "On the web, gg and Shift+G scroll a deck's Cards when they are open, not the Profile under them",
-        "On the web, Share's link is a Tab stop that selects itself for copying",
-        "On the web's Settings, Exceptions opens beside the page on a wide window, and its Change says why it is off while Universes Beyond shows",
-        "On a phone, a card's Image, Printings and other actions are bigger to tap, on the web and in the app",
-        "The keyboard shortcuts sheet groups its keys under small headings and closes with Got it, as a hint does",
-        "On the web, the new version notice shows again for a later version after an earlier one was closed",
-        "Edit deck opens with its saved commander already in place, on the web and in the app",
-        "Every sheet and drawer shows a handle where to drag it, and on a wide window a drawer drags closed with the mouse too, on the web and in the app",
-        "A long hint shows all its text, and one taller than the screen scrolls as a whole, on the web and in the app",
-        "On the web, Create deck shows its Create button from the start and says when the deck needs a name",
-        "A card's details drawer opening on the other side from last time slides in from its own edge instead of sweeping across the page, on the web and in the app",
-        "On the web, a banner's close button is named for screen readers",
-        "Account's Log out sits with your account details instead of in the Danger zone, on the web and in the app",
-        "A drawer let go over the page or outside the window no longer sticks mid-drag, and a pull down on an open sheet no longer reloads the page, on the web and zwipe.net",
-        "Edit deck reuses the commander the deck's page already loaded, on the web and in the app",
-        "On a phone's web app, typing in Quick add or another search no longer zooms the page",
-        "On the web, Delete account's password field is a normal width on a wide window",
-        "The app loads a screen after it sits idle instead of saying it couldn't",
-        "On the web, Activity's heatmap fills its box from 640px wide instead of scrolling the last weeks in a strip",
-        "On Home, a deck tile's name chip has tighter sides, so a short name shows whole instead of ending in an ellipsis",
-        "Log in, Create account and Forgot password show each field's name once, on the web and in the app",
-        "On the web, a deck's page loads the deck once instead of twice",
-        "Account's Change username, email and password show each field's name once, on the web and in the app",
-        "Home's ? opens its welcome again, now shorter, on the web and in the app",
-        "A card taken out by a deck warning's Remove comes back with Undo, on the web and in the app",
-    ],
-}];
+pub const UPCOMING: &[Release] = &[];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
+    Release {
+        version: Version::new(1, 21, 3),
+        date: NaiveDate::from_ymd_opt(2026, 11, 13),
+        entries: &[
+            "Account's Log out sits with your account details instead of in the Danger zone, on the web and in the app",
+            "Sign-in forms and Account's Change sheets show each field's name once, on the web and in the app",
+            "On the web, Delete account's password field is a normal width on a wide window",
+            "The app loads a screen after it sits idle instead of saying it couldn't",
+            "On the web, closing the new version notice no longer hides it for the next version",
+            "On Home, a short deck name shows whole in its tile instead of ending in an ellipsis",
+        ],
+    },
+    Release {
+        version: Version::new(1, 21, 2),
+        date: NaiveDate::from_ymd_opt(2026, 11, 13),
+        entries: &[
+            "Every sheet and drawer shows a drag handle, and on a wide window a drawer drags closed with the mouse, on the web and in the app",
+            "A card's drawer that opens on the other side slides in from its own edge instead of sweeping across the page, on the web and in the app",
+            "On the web and zwipe.net, a drawer no longer sticks mid-drag, and pulling down on an open sheet no longer reloads the page",
+            "On a phone, a card's Image, Printings and other actions are bigger to tap, on the web and in the app",
+            "On a phone's web app, typing in Quick add or another search no longer zooms the page",
+            "On the web's Settings, Exceptions opens beside the page on a wide window, and its Change says why it's off",
+            "On the web, Activity's heatmap fills its box from 640px wide instead of scrolling in a strip",
+        ],
+    },
+    Release {
+        version: Version::new(1, 21, 1),
+        date: NaiveDate::from_ymd_opt(2026, 11, 13),
+        entries: &[
+            "The keyboard shortcuts sheet groups its keys under headings and closes with Got it",
+            "On the web, closing a hint with Esc puts focus back on the card the keyboard cursor was on",
+            "On the web's deck page in List, holding a key with a card open opens only the card you stop on",
+            "On the web, gg and Shift+G scroll a deck's Cards when they are open, not the Profile under them",
+            "On the web, Share's link is a Tab stop that selects itself for copying",
+            "A hint taller than the screen scrolls instead of cutting off its text, on the web and in the app",
+            "Home's ? opens its welcome again, now shorter, on the web and in the app",
+        ],
+    },
+    Release {
+        version: Version::new(1, 21, 0),
+        date: NaiveDate::from_ymd_opt(2026, 11, 13),
+        entries: &[
+            "Quick add offers a very popular card first even when less played names start with what you typed",
+            "Share puts Stop sharing first, apart from Copy link, on the web and in the app",
+            "In a deck's Stacks, revealing a tucked card no longer takes a Back step, on the web and in the app",
+            "Switching a deck's format away and back while editing keeps its command zone, on the web and in the app",
+            "Edit deck opens with its saved commander already in place, on the web and in the app",
+            "On a phone's web app, the deck form's pickers open as their own screen with a back arrow, as in the app",
+            "On the web, Create deck shows its Create button from the start and says when the deck needs a name",
+            "On the web's deck page, a featured card's drawer opens on the left when a right one would cover it",
+            "A card taken out by a deck warning's Remove comes back with Undo, on the web and in the app",
+        ],
+    },
     Release {
         version: Version::new(1, 20, 5),
         date: NaiveDate::from_ymd_opt(2026, 11, 13),
