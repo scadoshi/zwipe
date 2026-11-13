@@ -185,3 +185,20 @@ fn pips(deck: &DeckTile) -> Element {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn the_name_chip_keeps_tight_sides_and_still_ellipsizes() {
+        let css = crate::MAGIC_CSS;
+        let at = css
+            .find("\n.home-deck-tile-name {")
+            .expect("the name chip's rule");
+        let rule = css
+            .get(at..)
+            .and_then(|rest| rest.split_once('}'))
+            .map_or("", |(body, _)| body);
+        assert!(rule.contains("padding-inline: 0.4rem;"), "{rule}");
+        assert!(rule.contains("text-overflow: ellipsis;"), "{rule}");
+    }
+}

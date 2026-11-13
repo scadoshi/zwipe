@@ -77,6 +77,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "On the web, Delete account's password field is a normal width on a wide window",
         "The app loads a screen after it sits idle instead of saying it couldn't",
         "On the web, Activity's heatmap fills its box from 640px wide instead of scrolling the last weeks in a strip",
+        "On Home, a deck tile's name chip has tighter sides, so a short name shows whole instead of ending in an ellipsis",
         "Log in, Create account and Forgot password show each field's name once, on the web and in the app",
         "On the web, a deck's page loads the deck once instead of twice",
     ],
