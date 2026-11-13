@@ -1,6 +1,7 @@
 //! The frames screens draw in.
 
 use components::SiteFooter;
+use components::screen_return::{UNDER_LAYER, replay_entrances, use_screen_returns};
 use dioxus::prelude::*;
 use zwipe_core::domain::auth::models::session::Session;
 
@@ -75,14 +76,24 @@ fn is_open(route: &Route) -> bool {
 /// draws its own heading with the title, so the frame's screen-reader one
 /// stays out. `on_back` gives the screen a back arrow of its own, in place
 /// of the one its route has (or the empty slot where the route has none).
+/// While `covered`, a screen of its own is over it (a form's picker on a
+/// phone): it is not painted, focused or tapped, and when the cover comes
+/// off its entrances run again, as a route coming back would.
 #[component]
 pub fn ScreenFrame(
     title: String,
     #[props(default)] on_hint: Option<Callback<()>>,
     #[props(default)] titled: bool,
     #[props(default)] on_back: Option<Callback<()>>,
+    #[props(default)] covered: bool,
     children: Element,
 ) -> Element {
+    let returns = use_screen_returns(covered);
+    use_effect(move || {
+        if returns() > 0 {
+            replay_entrances(FRAME_ROOT);
+        }
+    });
     let page = try_use_context::<Signal<Option<PageTitle>>>();
     // `?` opens the same hint the `?` button does.
     use_global_keys(on_hint);
@@ -103,7 +114,9 @@ pub fn ScreenFrame(
     });
     rsx! {
         document::Title { "{title} | Zwipe" }
-        div { class: "screen web-screen web-scroll-screen",
+        div {
+            class: if covered { "screen web-screen web-scroll-screen {UNDER_LAYER}" } else { "screen web-screen web-scroll-screen" },
+            "inert": covered.then_some(""),
             // Under the nav a screen has no header bar; the title stays for
             // assistive tech.
             if !titled {
@@ -114,6 +127,9 @@ pub fn ScreenFrame(
         }
     }
 }
+
+/// The element a [`ScreenFrame`] draws, as its entrances' replay finds it.
+const FRAME_ROOT: &str = ".screen.web-screen";
 
 /// zwipe.net's footer at a page's end: Privacy policy on the app's own
 /// route, Community and Contribute out to zwipe.net. [`ScreenFrame`] ends

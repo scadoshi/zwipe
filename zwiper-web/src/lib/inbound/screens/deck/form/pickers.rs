@@ -1,7 +1,7 @@
-//! The form's three pickers: format, deck tags and oracle tags. Each is the
-//! kit's sheet as the card filter draws it: a drawer along the right edge on
-//! a wide window and a bottom sheet below the breakpoint, with the title
-//! bar's ×, the search, the definition bar, the chip grid, and Save as the
+//! The form's three pickers: format, deck tags and oracle tags. Each is a
+//! drawer along the right edge with the title bar's × from 600px, and a
+//! screen over the form with a back arrow narrower, as the app's are; either
+//! has the search, the definition bar, the chip grid, and Save as the
 //! checkmark in the dock at its bottom right.
 //!
 //! Each opens on a snapshot. The ×, a backdrop tap and Esc close quietly
@@ -13,8 +13,9 @@ use components::hint::{ContentHintDialog, HintBody, guide_for_screen};
 use components::icons::CHECK;
 use components::keys::{SHEET_ENTER_OR_CLOSE, focus_by_id, use_page_keys};
 use components::{
-    AlertDialog, Button, ButtonVariant, Chip, ClearWrap, DialogAction, DockAction, DrawerSheet,
-    HintDialog, TOAST_NORMAL, TOAST_QUICK, use_overlay_back_action, use_picker_search,
+    ActionDock, AlertDialog, BackArrow, Button, ButtonVariant, Chip, ClearWrap, DialogAction,
+    DockAction, DrawerSheet, HintDialog, PageHeader, TOAST_NORMAL, TOAST_QUICK, use_min_width,
+    use_overlay_back_action, use_picker_search,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -38,14 +39,37 @@ use crate::inbound::catalog::CatalogCache;
 use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::screens::oracle_tag_dictionary::OracleTagDictionary;
 
-/// The picker's sheet, components' [`DrawerSheet`] as a drawer at every
-/// width, sliding in from the right on `open`: the kit's drawer on a wide
-/// window, the window's height along the right edge below it, and the whole
-/// window over the grid backdrop where a drawer no longer fits. The
-/// title bar's × and a backdrop tap call `on_back`; the dock's checkmark
-/// calls `on_save` and stays off while `unchanged`. The body mounts while
-/// open and through the slide out, so its keys stop answering once the
-/// picker is gone.
+/// The width, in pixels, from which a picker is a drawer beside the form; narrower it is a
+/// screen over it.
+const PICKER_DRAWER_PX: u32 = 600;
+
+/// Whether an open picker covers the form, as a screen over another does: on a window
+/// narrower than [`PICKER_DRAWER_PX`] (`narrow`) while any of the three (`open`) is open.
+pub(crate) fn covers_form(narrow: bool, open: [bool; 3]) -> bool {
+    narrow && open.contains(&true)
+}
+
+/// Whether the form's pickers cover it now ([`covers_form`]), kept current.
+pub(crate) fn use_pickers_cover(form: &DeckForm) -> bool {
+    let wide = use_min_width(PICKER_DRAWER_PX);
+    covers_form(
+        !wide(),
+        [
+            (form.format_open)(),
+            (form.tags_open)(),
+            (form.oracle_tags_open)(),
+        ],
+    )
+}
+
+/// The picker, open on `open`. From [`PICKER_DRAWER_PX`] it is components' [`DrawerSheet`] as
+/// a drawer at every width, sliding in from the right: the kit's drawer on a wide window, the
+/// window's height along the right edge below it, its title bar's × and a backdrop tap calling
+/// `on_back`. Narrower it is a screen over the form, as the app's pickers are: it fades in with
+/// no slide, its header's back arrow calls `on_back`, and the form under it is hidden
+/// ([`use_pickers_cover`]). The dock's checkmark calls `on_save` and stays off while
+/// `unchanged`. The body mounts while open (and, as a drawer, through the slide out), so its
+/// keys stop answering once the picker is gone.
 #[component]
 fn PickerSheet(
     open: Signal<bool>,
@@ -58,6 +82,39 @@ fn PickerSheet(
     layer: Option<u32>,
     children: Element,
 ) -> Element {
+    let wide = use_min_width(PICKER_DRAWER_PX);
+    let save = rsx! {
+        DockAction {
+            label: "Save",
+            icon: CHECK,
+            disabled: unchanged,
+            class: SHEET_ENTER_OR_CLOSE.to_owned(),
+            onclick: move |()| on_save.call(()),
+        }
+    };
+    if !wide() {
+        let shown = open();
+        return rsx! {
+            div {
+                class: if shown { "screen swipe-select-screen web-picker-screen show" } else { "screen swipe-select-screen web-picker-screen" },
+                style: layer.map(|z| format!("--overlay-z: {z};")),
+                components::GridCells { still: true }
+                if shown {
+                    PageHeader {
+                        title,
+                        leading: rsx! {
+                            BackArrow { class: "page-header-support", onclick: move |()| on_back.call(()) }
+                        },
+                        on_hint: move |()| hint_open.set(true),
+                    }
+                    div { class: "screen-content content-enter",
+                        PickerBody { search_id, {children} }
+                    }
+                    ActionDock { {save} }
+                }
+            }
+        };
+    }
     rsx! {
         DrawerSheet {
             open,
@@ -67,15 +124,7 @@ fn PickerSheet(
             on_hint: move |()| hint_open.set(true),
             class: "web-picker-sheet",
             every_width: true,
-            dock: rsx! {
-                DockAction {
-                    label: "Save",
-                    icon: CHECK,
-                    disabled: unchanged,
-                    class: SHEET_ENTER_OR_CLOSE.to_owned(),
-                    onclick: move |()| on_save.call(()),
-                }
-            },
+            dock: save,
             PickerBody { search_id, {children} }
         }
     }
@@ -90,10 +139,7 @@ fn PickerBody(search_id: &'static str, children: Element) -> Element {
         }
     }));
     rsx! {
-        div { class: "web-picker-body",
-            components::GridCells { still: true }
-            {children}
-        }
+        div { class: "web-picker-body", {children} }
     }
 }
 
@@ -743,6 +789,61 @@ mod tests {
             seed.set(vec!["ramp".to_owned()]);
         });
         form
+    }
+
+    /// An open picker as a narrow window draws it (off the browser no width matches).
+    #[component]
+    fn NarrowPicker() -> Element {
+        rsx! {
+            PickerSheet {
+                open: use_signal(|| true),
+                title: "Format",
+                search_id: "format-search",
+                hint_open: use_signal(|| false),
+                unchanged: true,
+                on_back: |()| {},
+                on_save: |()| {},
+                layer: Some(205),
+                div { class: "picker-probe" }
+            }
+        }
+    }
+
+    #[test]
+    fn a_narrow_picker_is_a_screen_with_a_back_arrow_not_a_sliding_sheet() {
+        let mut dom = VirtualDom::new(NarrowPicker);
+        dom.rebuild_in_place();
+        let html = dioxus_ssr::render(&dom);
+        assert!(
+            html.contains("class=\"screen swipe-select-screen web-picker-screen show\""),
+            "the picker shows as a screen: {html}"
+        );
+        assert!(html.contains("--overlay-z: 205;"), "at its layer: {html}");
+        assert!(
+            html.contains("aria-label=\"Back\""),
+            "a back arrow leads: {html}"
+        );
+        assert!(html.contains("picker-probe"), "its body shows: {html}");
+        assert!(
+            !html.contains("bottom-sheet") && !html.contains("sheet-close"),
+            "no sheet and no x: {html}"
+        );
+    }
+
+    #[test]
+    fn a_narrow_picker_covers_the_form_while_open() {
+        assert!(
+            !covers_form(false, [true, false, false]),
+            "a wide window keeps the form beside it"
+        );
+        assert!(!covers_form(true, [false, false, false]), "nothing open");
+        for open in [
+            [true, false, false],
+            [false, true, false],
+            [false, false, true],
+        ] {
+            assert!(covers_form(true, open), "{open:?}");
+        }
     }
 
     #[test]

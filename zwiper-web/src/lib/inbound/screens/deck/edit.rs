@@ -15,6 +15,7 @@ use zwipe_ui::telemetry::vocabulary::{DeckScreen, Screen};
 
 use super::form::fields::DeckFields;
 use super::form::overlays::DeckFormOverlays;
+use super::form::pickers::use_pickers_cover;
 use super::form::{DECK_LEAVE, use_deck_form};
 use super::skeletons::EditDeckSkeleton;
 use crate::domain;
@@ -142,9 +143,12 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
         Some(Err(_)) => Some(false),
         None => None,
     };
+    // A phone's open picker is a screen over the form.
+    let pickers_cover = use_pickers_cover(&form);
     rsx! {
         ScreenFrame {
             title: "Edit deck",
+            covered: pickers_cover,
             on_hint: move |()| {
                 let mut hint_open = hint_open;
                 hint_open.set(true);

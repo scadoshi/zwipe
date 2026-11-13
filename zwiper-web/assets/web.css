@@ -2570,40 +2570,6 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
     --content-pad-bottom: 5rem;
 }
 
-/* A picker is a drawer down to a window that keeps some page beside it.
-   Narrower, the drawer takes the whole window over the grid backdrop, as
-   the app's phone pickers do. */
-.web-picker-body > .grid-cells {
-    display: none;
-}
-
-@media (max-width: 599px) {
-    .sheet-form-drawer > .bottom-sheet.web-picker-sheet.drawer-every-width {
-        inset: 0;
-        width: auto;
-        padding-top: env(safe-area-inset-top, 0px);
-        border: none;
-        border-radius: 0;
-        box-shadow: none;
-        background-color: transparent;
-    }
-
-    .web-picker-sheet > .sheet-content {
-        background-color: transparent;
-    }
-
-    .web-picker-body > .grid-cells {
-        display: block;
-    }
-
-    /* The checkmark floats a dock gap in from the corner, as a screen's
-       dock does: the dock's own right margin is that gap. */
-    .sheet-form-drawer > .bottom-sheet.web-picker-sheet.drawer-every-width .sheet-dock {
-        right: 0;
-        bottom: var(--dock-gap);
-    }
-}
-
 /* ---- The oracle tag dictionary as the kit's modal ----
 
    From the kit's modal width the dictionary is its modal, the large

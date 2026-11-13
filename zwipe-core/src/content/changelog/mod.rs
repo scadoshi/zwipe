@@ -57,6 +57,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Switching a deck's format away and back while editing brings back the commander and the rest of the command zone, on the web and in the app",
         "On the web's deck page in List, holding a key with a card open opens the card you stop on instead of each one on the way",
         "On the web's deck page, a featured card's details drawer opens on the left when a right one would cover the card, as a stack card's does",
+        "On a phone's web app, the deck form's Format, Deck tags and Oracle tags pickers open as a screen with a back arrow, as in the app",
     ],
 }];
 

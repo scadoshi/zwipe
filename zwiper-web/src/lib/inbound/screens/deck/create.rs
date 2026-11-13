@@ -12,6 +12,7 @@ use zwipe_ui::telemetry::vocabulary::{DeckScreen, Screen};
 use super::form::command_zone::autofill_named_partner;
 use super::form::fields::DeckFields;
 use super::form::overlays::DeckFormOverlays;
+use super::form::pickers::use_pickers_cover;
 use super::form::{DECK_LEAVE, use_deck_form};
 use crate::domain;
 use crate::domain::deck::FormStart;
@@ -88,9 +89,12 @@ pub fn CreateDeck() -> Element {
     });
 
     let valid = deck_form::name_error(&(form.name)()).is_none();
+    // A phone's open picker is a screen over the form.
+    let pickers_cover = use_pickers_cover(&form);
     rsx! {
         ScreenFrame {
             title: "Create deck",
+            covered: pickers_cover,
             on_hint: move |()| {
                 let mut hint_open = hint_open;
                 hint_open.set(true);
