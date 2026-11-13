@@ -1,6 +1,12 @@
 /* The drawer sheet (components::DrawerSheet) and the card filter panel
    (components::CardFilterPanel). */
 
+/* A closed drawer moved to its other edge (DrawerSheet's `edge`) jumps
+   there unseen, so it opens from that edge. */
+.bottom-sheet.drawer-edge-jump {
+    transition: none !important;
+}
+
 /* A drawer at every width (DrawerSheet's `every_width`). Above the kit's
    breakpoint it is the kit's drawer. Below it the drawer floats along the
    right edge: under the status bar and the header (the kit's --app-nav-h),

@@ -84,3 +84,29 @@ fn a_floating_drawer_s_title_bar_leaves_every_move_to_its_pull() {
     assert!(at.is_some(), "the title bar takes no pan");
     assert!(at > pan, "after the content's pan-y, which it overrides");
 }
+
+#[test]
+fn a_closed_drawer_changing_edge_jumps_there_with_no_slide() {
+    use components::DrawerEdge;
+    assert!(
+        DrawerEdge::Left.jumps(DrawerEdge::Right, false),
+        "closed, now on the left, last shown on the right"
+    );
+    assert!(
+        !DrawerEdge::Right.jumps(DrawerEdge::Right, false),
+        "the same edge"
+    );
+    assert!(
+        !DrawerEdge::Left.jumps(DrawerEdge::Right, true),
+        "an open drawer eases"
+    );
+    let rule = ".bottom-sheet.drawer-edge-jump {";
+    let at = FILTER
+        .find(rule)
+        .unwrap_or_else(|| panic!("no rule {rule}"));
+    let body = FILTER
+        .get(at..)
+        .and_then(|s| s.split('}').next())
+        .unwrap_or_default();
+    assert!(body.contains("transition: none !important;"), "{body}");
+}

@@ -44,6 +44,13 @@ impl DrawerEdge {
             Self::Left => Pull::Left,
         }
     }
+    /// Whether a drawer moving to this edge, last shown on `shown_on`, jumps there with no
+    /// slide (`drawer-edge-jump`): only while it is closed (`open` false), so it waits off this
+    /// edge and opens from it, rather than easing across the page from the other.
+    #[must_use]
+    pub fn jumps(self, shown_on: Self, open: bool) -> bool {
+        !open && self != shown_on
+    }
 }
 
 /// How long the sheet takes to slide out, in milliseconds: the kit's 0.3s
@@ -115,6 +122,18 @@ pub fn DrawerSheet(
         ""
     };
     let side = if every_width { edge.class() } else { "" };
+    // The edge it last showed on: moved to another while closed, it jumps there unseen.
+    let mut shown_on = use_signal(|| edge);
+    use_effect(use_reactive!(|edge, shown| {
+        if shown && *shown_on.peek() != edge {
+            shown_on.set(edge);
+        }
+    }));
+    let jump = if edge.jumps(*shown_on.peek(), shown) {
+        " drawer-edge-jump"
+    } else {
+        ""
+    };
     let mut held = use_signal(|| None::<u32>);
     use_effect(use_reactive!(|layer| {
         if layer.is_some() {
@@ -152,7 +171,7 @@ pub fn DrawerSheet(
                 onpointercancel: move |evt| drag.cancel(&evt),
             }
             div {
-                class: if shown { "bottom-sheet show sheet-pulls {reach}{side} {class}{pulled}" } else { "bottom-sheet {reach}{side} {class}" },
+                class: if shown { "bottom-sheet show sheet-pulls {reach}{side} {class}{pulled}" } else { "bottom-sheet {reach}{side}{jump} {class}" },
                 style: sheet_style,
                 "data-card": data_card,
                 role: "dialog",

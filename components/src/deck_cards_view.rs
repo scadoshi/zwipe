@@ -125,6 +125,9 @@ impl Opened {
 /// place comes from its offsets, which leave out the slide's transform.
 const MEASURE_JS: &str = "const card = [...document.querySelectorAll('__CARD__')].find((el) => el.offsetParent !== null); const drawer = document.querySelector('.bottom-sheet.__DRAWER__'); if (!card || !drawer) return null; const c = card.getBoundingClientRect(); const width = document.documentElement.clientWidth; let left = drawer.offsetLeft; let right = left + drawer.offsetWidth; if (drawer.classList.contains('drawer-left')) { const l = left; left = width - right; right = width - l; } return [c.left, c.right, left, right, width];";
 
+/// Answers once the page has painted a frame after this runs: two animation frames.
+const NEXT_FRAME_JS: &str = "await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))); return true;";
+
 /// [`MEASURE_JS`] for the card `opened`.
 fn measure_js(opened: Opened) -> String {
     MEASURE_JS
@@ -192,8 +195,8 @@ impl StackDetails {
     }
 
     /// Shows the drawer while a card is open, on the side measured for `opened` (from where an
-    /// open drawer is, from the right for a closed one), once it is measured; closes it at once
-    /// when none is.
+    /// open drawer is, from the right for a closed one), once it is measured and, when a closed
+    /// drawer changes side, once it has jumped there; closes it at once when none is.
     fn show(self, opened: Opened) {
         let Self {
             reveal,
@@ -213,6 +216,11 @@ impl StackDetails {
             let side = measured_side(opened, now).await.unwrap_or(now);
             if *shown_side.peek() != side {
                 shown_side.set(side);
+                // A closed drawer moving edge jumps there unseen (`DrawerEdge::jumps`) a frame
+                // before it opens, so it slides in from its new edge.
+                if !*details_open.peek() {
+                    let _ = document::eval(NEXT_FRAME_JS).join::<bool>().await;
+                }
             }
             if reveal.peek().open() == Some(id) && !*details_open.peek() {
                 details_open.set(true);
@@ -1096,6 +1104,10 @@ mod tests {
     #[test]
     fn the_side_is_measured_on_the_card_it_opened_from_and_the_drawer_s_place() {
         let id = Uuid::nil();
+        assert!(
+            NEXT_FRAME_JS.contains("requestAnimationFrame(() => requestAnimationFrame(done))"),
+            "a new side paints before the drawer opens: {NEXT_FRAME_JS}"
+        );
         let stack = measure_js(Opened::Stack(id));
         assert!(
             stack.contains(&format!(
