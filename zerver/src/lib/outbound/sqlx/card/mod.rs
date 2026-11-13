@@ -1424,15 +1424,19 @@ impl CardRepository for MyPostgres {
                 push_returned(&mut qb, d);
                 qb.push(", ");
             }
-            // The closest names lead, folded and stripped as the name filter
-            // is: the whole name, then a name whose first word is the query,
-            // then one that starts with it, then one with a word that does, so
-            // typing "Sol" finds Sol Ring before Solar Array and Absolute Grace
-            // even when the limit cuts the rest short. The query holds only
-            // letters, digits and spaces, so ILIKE without a wildcard is
+            // The name tiers, folded and stripped as the name filter is: the
+            // whole name, then a name whose first word is the query, then one
+            // that starts with it, then one with a word that does, each name
+            // in its closest tier only. They lead a Name sort, so typing "Sol"
+            // finds Sol Ring before Solar Array and Absolute Grace even when
+            // the limit cuts the rest short; under any other sort the chosen
+            // column leads and the tiers only break its ties. The query holds
+            // only letters, digits and spaces, so ILIKE without a wildcard is
             // equality.
-            // Each name takes its closest tier only, one rank, ascending.
-            if let Some(query_string) = criteria.name_contains() {
+            let push_tiers = |qb: &mut QueryBuilder<sqlx::Postgres>| {
+                let Some(query_string) = criteria.name_contains() else {
+                    return;
+                };
                 qb.push("CASE");
                 let tiers = [
                     query_string.to_owned(),
@@ -1446,7 +1450,11 @@ impl CardRepository for MyPostgres {
                     qb.push_bind(pattern);
                     qb.push(format!(" THEN {rank}"));
                 }
-                qb.push(" ELSE 4 END ASC, ");
+                qb.push(" ELSE 4 END ASC");
+            };
+            if order_by == CardSortKey::Name && criteria.name_contains().is_some() {
+                push_tiers(&mut qb);
+                qb.push(", ");
             }
             let col = match order_by {
                 CardSortKey::Name => "name",
@@ -1472,7 +1480,16 @@ impl CardRepository for MyPostgres {
             // but sort last in either direction, with a name tiebreak so paging
             // through the unranked tail stays stable.
             if order_by == CardSortKey::EdhrecRank {
-                qb.push(" NULLS LAST, name ASC");
+                qb.push(" NULLS LAST");
+            }
+            if !matches!(order_by, CardSortKey::Name | CardSortKey::Random)
+                && criteria.name_contains().is_some()
+            {
+                qb.push(", ");
+                push_tiers(&mut qb);
+            }
+            if order_by == CardSortKey::EdhrecRank {
+                qb.push(", name ASC");
             }
         } else if wildcard_serving {
             // Close the pool CTE and take two slices of it

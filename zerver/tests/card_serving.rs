@@ -577,13 +577,24 @@ async fn deck_serve_with_promo_shows_the_promo_printing(pool: sqlx::PgPool) {
 
 /// Quick add's search (zwipe-ui's `quick_add_query`, rebuilt here: name holds the query, synergy off, skipped included, by name, five at most) for `query` on `deck_id`: the names it offers, in order.
 async fn quick_add_names(app: &TestApp, deck_id: Uuid, token: &str, query: &str) -> Vec<String> {
-    use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
     use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
+    sorted_names(app, deck_id, token, query, CardSortKey::Name).await
+}
+
+/// The first five names a deck search for `query` sorted by `sort`, ascending, answers.
+async fn sorted_names(
+    app: &TestApp,
+    deck_id: Uuid,
+    token: &str,
+    query: &str,
+    sort: zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey,
+) -> Vec<String> {
+    use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
     let mut builder = CardQueryBuilder::with_name_contains(query);
     builder
         .set_synergy(false)
         .set_include_skipped(true)
-        .set_sort(CardSortKey::Name)
+        .set_sort(sort)
         .set_limit(5);
     let body = serde_json::to_value(builder.build().unwrap()).unwrap();
     let (status, reply) = app
@@ -695,5 +706,58 @@ async fn quick_add_lists_names_that_start_with_the_query_first(pool: sqlx::PgPoo
             "Solemn Simulacrum"
         ],
         "a first word that is the query, then a name that starts with it, each by the database's name order"
+    );
+}
+
+#[sqlx::test]
+async fn a_chosen_sort_beats_the_name_tiers_which_only_break_its_ties(pool: sqlx::PgPool) {
+    use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
+    let app = TestApp::new(pool.clone());
+    let (token, uid) = app.register("pricesorter").await;
+    app.verify_email(&uid).await;
+    let (status, deck) = app
+        .post(
+            DECK_ROUTE,
+            json!({ "name": "Mardu", "format": "commander" }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED, "{deck}");
+    let deck_id: Uuid = deck["id"].as_str().unwrap().parse().unwrap();
+
+    let cards: Vec<_> = [
+        ("Sol Ring", "1.50"),
+        ("Solar Blast", "0.40"),
+        ("Renewed Solidarity", "3.66"),
+        ("Absolute Grace", "0.10"),
+        ("Consolidate", "0.25"),
+        ("Sol Talisman", "0.25"),
+    ]
+    .into_iter()
+    .map(|(name, usd)| card(name).type_line("Artifact").usd(usd))
+    .collect();
+    seed_cards(&pool, &cards).await;
+
+    assert_eq!(
+        sorted_names(&app, deck_id, &token, "Sol", CardSortKey::PriceUsd).await,
+        [
+            "Absolute Grace",
+            "Sol Talisman",
+            "Consolidate",
+            "Solar Blast",
+            "Sol Ring"
+        ],
+        "cheapest first; at $0.25 the first-word Sol Talisman breaks the tie over Consolidate"
+    );
+    assert_eq!(
+        quick_add_names(&app, deck_id, &token, "Sol").await,
+        [
+            "Sol Ring",
+            "Sol Talisman",
+            "Solar Blast",
+            "Renewed Solidarity",
+            "Absolute Grace"
+        ],
+        "the Name sort keeps the tiers, then the name"
     );
 }
