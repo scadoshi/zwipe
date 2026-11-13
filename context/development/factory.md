@@ -35,14 +35,59 @@ Every bug, nit and small feature is a file in [`../issues/`](../issues/README.md
 
 ## The control: before, cause, after
 
-"Looks good" is not a test. An agent that glanced at a change and a second agent that agreed have proved nothing. Every bug and every visible change carries a control: proof it was broken, a traced cause, and proof it now works, by the same steps.
+"Looks good" is not a test. An agent that glanced at a change and a second agent that agreed have proved nothing. Every bug and every visible change carries a control: proof it was broken, a traced cause, and proof it now works by the same steps. Agents forget this, so every brief points here and every report follows it.
 
-1. **Before.** QA reproduces the problem on a named build with exact steps (device or width, account, deck, taps or keys in order) and saves a clip or still named `before-NNN`. If the steps don't show the problem, say so: that's a finding too, and the issue goes back for detail.
-2. **Cause.** The worker follows the repro into the code until it can name the line or rule that produces the bug and say why. "I changed X and it seems fine" isn't a cause. The fix changes that cause, with a test that fails before and passes after where one can be written.
-3. **After.** The worker's report ends with the steps a tester follows to confirm it's gone. QA runs exactly the before steps on the deployed build and saves `after-NNN`. Same steps, opposite result, or it isn't fixed.
-4. **Break it.** Then QA tries to break the fix its own way: other widths and devices, Back and gestures, reload, fast or repeated input, focus in a field, a sheet open, slow network, odd orders. QA reports anything it finds, asked for or not.
+### 1. Before (QA or the reporter)
 
-Surfer and Droid don't go idle on a change until they've shown its before and after and tried to break it. Nothing closes on a worker's say-so.
+- Exact steps from a clean start: build hash, app or browser, width or device, account, deck, then each tap or key in order.
+- Expected and actual, in words, with any error text or status code.
+- How often: run it from a clean start a few times and give the count ("3 of 3", "1 of 5") and anything that changes it (first load only, phone web only, after Back).
+- Save a clip or still as `before-NNN`. If the steps don't show the problem, say so. That is a finding, and the issue goes back for detail. No repro, no fix.
+
+### 2. Cause (the worker)
+
+- Follow the repro into the code until you can name the file and line or rule that produces it, with evidence: a failing assertion, a log line, the DOM or state you saw.
+- The cause has to explain the conditions: why phone web and not the app, why 1 of 5, why only after a reload. If it doesn't, it isn't the cause yet.
+- If you can't run the thing that fails (device, browser, data), say so. A guess is a proposal, not a fix.
+- If the same kind of bug keeps coming back, stop patching and tell the composer. The design may be wrong.
+
+### 3. Fix (the worker)
+
+- Write the test that fails first and watch it fail for the stated reason. Then fix. Never edit or weaken that test to get green.
+- Negative control: put the old code back and see the test go red again.
+- Change the cause, not the symptom. No swallowed errors, no retries or timeouts added to make it pass, no deleted checks, unless the report says why.
+- Smallest diff that fixes it. No unrelated edits.
+
+### 4. Report (the worker)
+
+End every report with:
+
+- **Cause:** file, line, why.
+- **Changed:** files.
+- **Checked:** exact commands and their exit status (run with `set -o pipefail`; never judge a gate through `| tail` or by grepping for "failed").
+- **Not checked:** what you couldn't run (a real phone, iOS Safari, signed in). Mark it unknown, don't imply it passed.
+- **Tester steps:** the before steps, and what they should show now.
+
+Never write "fixed" for something you didn't rerun.
+
+### 5. After (QA)
+
+- Check the deployed build is the one that holds the fix (version.json, the commit, the app's build) before testing.
+- Run exactly the before steps, from a clean start, the same number of times. Save `after-NNN`. Same steps, opposite result, or it isn't fixed.
+- Look at the screen, not only the DOM: it animates, lines up, isn't covered or clipped. Pair a screenshot with what you checked in the DOM or network when it matters.
+- Check both places it lives: the app and phone web, wide and 390, owner and shared.
+- QA observes and reports. It doesn't fix, merge or deploy.
+
+### 6. Break it (QA)
+
+Then try to break the fix your own way and report everything you find, asked for or not: other widths and devices, Back and gestures, rotate, reload, background and return, fast or repeated input, focus in a field, a sheet or drawer open, slow network, odd orders, long lists, empty states.
+
+### 7. Close the loop (the composer)
+
+- Nothing closes on a worker's say-so. It closes when QA's after passes, or when Scotty says so.
+- Every bug QA or Scotty catches after a "pass" becomes a regression test, or a line in QA's standing list, so the factory catches it next time.
+- After two failed rounds on the same issue, stop and rewrite the brief instead of sending another fix.
+- Design, scope and data questions go to Scotty, not to a guess.
 
 ## Gates
 
