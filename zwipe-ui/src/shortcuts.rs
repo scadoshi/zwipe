@@ -170,9 +170,26 @@ pub fn deck_cards_rows(editable: Editable) -> Vec<SheetRow> {
         .collect()
 }
 
+/// The rows of a screen of card rows with no editing (the Commander maybeboard, Activity,
+/// Playstyle): the cursor's keys, one column so only up and down, then the keys that read a card.
+#[must_use]
+pub fn card_rows_rows() -> Vec<SheetRow> {
+    let moves: [SheetRow; 3] = [
+        (&["↑", "↓"], "Move between cards"),
+        (&["j", "k"], "Move between cards"),
+        (&["Home", "End"], "First or last card"),
+    ];
+    let open: SheetRow = (&["Enter"], "Open the card");
+    moves
+        .into_iter()
+        .chain([open])
+        .chain(card_read_rows())
+        .collect()
+}
+
 /// The keys that read a card under the cursor or open: Printings, Image, Flip and details. A deck
-/// page lists them first; a screen of card rows with no editing (Playstyle, Activity) lists only
-/// them.
+/// page lists them after its cursor's keys, as a screen of card rows does
+/// ([`card_rows_rows`]).
 #[must_use]
 pub fn card_read_rows() -> [SheetRow; 4] {
     [
