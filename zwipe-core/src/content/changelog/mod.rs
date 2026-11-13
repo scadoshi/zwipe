@@ -46,19 +46,20 @@ pub const MOBILE_STORE_VERSION: Version = Version::new(1, 18, 15);
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[Release {
-    version: Version::new(1, 21, 4),
-    date: None,
-    entries: &[
-        "The keyboard shortcuts sheet lists ? only on a page with a hint, on the web and on zwipe.net",
-        "The web's keyboard shortcuts sheet drops the line above a deck's keys",
-        "Home's welcome names Create deck as its button does, and leaves out verifying your email once it is verified, on the web and in the app",
-        "Sheets and drawers take focus as they open, keep Tab inside, close on Esc and give focus back to what opened them, on the web and in the app",
-    ],
-}];
+pub const UPCOMING: &[Release] = &[];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
+    Release {
+        version: Version::new(1, 21, 4),
+        date: NaiveDate::from_ymd_opt(2026, 11, 13),
+        entries: &[
+            "The keyboard shortcuts sheet lists ? only on a page with a hint, on the web and on zwipe.net",
+            "The web's keyboard shortcuts sheet drops the line above a deck's keys",
+            "Home's welcome names Create deck as its button does, and leaves out verifying your email once it is verified, on the web and in the app",
+            "Sheets and drawers take focus as they open, keep Tab inside, close on Esc and give focus back to what opened them, on the web and in the app",
+        ],
+    },
     Release {
         version: Version::new(1, 21, 3),
         date: NaiveDate::from_ymd_opt(2026, 11, 13),

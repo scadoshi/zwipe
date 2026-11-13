@@ -12,7 +12,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "1.21.3"
+version = "1.21.4"
 
 [workspace.dependencies]
 anyhow = "1.0.100"
