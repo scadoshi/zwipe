@@ -55,6 +55,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "On the web, closing a hint with Esc puts focus back on the card the keyboard cursor was on",
         "In a deck's Stacks, revealing a tucked card takes no Back step, so Back closes what is open or leaves Cards, on the web and in the app",
         "Switching a deck's format away and back while editing brings back the commander and the rest of the command zone, on the web and in the app",
+        "On the web's deck page in List, holding a key with a card open opens the card you stop on instead of each one on the way",
     ],
 }];
 

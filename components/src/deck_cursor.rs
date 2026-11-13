@@ -93,8 +93,9 @@ if (!window.__zwipeDeckTrack) {
 /// Registers one page's cursor keys: a move key under the guard, at any width, while the page
 /// draws cards, gathers the cards as drawn and sends `[key, from, columns]`, `from` the
 /// card the move starts at (the hovered card when the mouse moved last, else the card in focus,
-/// else the last cursor), each column `[[id, center_y, in_view], ...]`, and `open`: `drawer`
-/// while the details drawer shows, `row` while a List row is open, else empty. Home and End only
+/// else the last cursor), each column `[[id, center_y, in_view], ...]`, `open`: `drawer`
+/// while the details drawer shows, `row` while a List row is open, else empty, and whether the
+/// key repeats. Home and End only
 /// answer while a card has focus from a key.
 const NAV_JS: &str = r"
 window.__zwipeDeckNav = window.__zwipeDeckNav || [];
@@ -127,7 +128,7 @@ const onKey = (e) => {
     const columns = holders.length ? holders.map((h) => all.filter((s) => h.contains(s)).map(as)) : [all.map(as)];
     window.__zwipeDeckOrder = columns.flat().map((s) => s[0]);
     const open = document.querySelector('.bottom-sheet.show.__DRAWER__') ? 'drawer' : document.querySelector('.web-deck-row.selected, .web-card-row .card-row.expanded') ? 'row' : '';
-    dioxus.send([key, from, columns, open]);
+    dioxus.send([key, from, columns, open, e.repeat]);
 };
 window['__zwipeDeckNav__ID__'] = onKey;
 document.addEventListener('keydown', onKey);
@@ -193,6 +194,27 @@ impl Follow {
     }
 }
 
+/// When the cursor's new List row opens, while a row is open.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum RowOpen {
+    /// At once: a single press.
+    Now,
+    /// Once the key rests ([`ROW_SETTLE_MS`]): a held key's repeats only move the cursor, since
+    /// each row opening lays out and paints the whole list again.
+    Settled,
+}
+
+impl RowOpen {
+    /// When a key that repeats or not (`held`) opens its row.
+    fn of(held: bool) -> Self {
+        if held { Self::Settled } else { Self::Now }
+    }
+}
+
+/// How long a held key rests before its row opens, in milliseconds: a few repeats' worth.
+#[cfg(target_arch = "wasm32")]
+const ROW_SETTLE_MS: u32 = 150;
+
 /// Opens list row `__ID__` where it is shut, as a click on its line does, which shuts the open one.
 const OPEN_ROW_JS: &str = "const row = document.querySelector('.web-deck-row[data-row=\"__ID__\"], .web-card-row[data-row=\"__ID__\"]'); if (row && !row.classList.contains('selected') && !row.querySelector('.card-row.expanded')) row.querySelector('.card-row-compact')?.click();";
 
@@ -225,6 +247,8 @@ type SentStop = (String, f64, bool);
 pub(crate) fn use_deck_cursor(details: Option<StackDetails>) {
     let id = use_hook(Uuid::new_v4);
     let mut order = use_signal(Vec::<Uuid>::new);
+    // Each row move, so a settled opening that a later move overtook does nothing.
+    let row_moves = use_signal(|| 0u32);
     use_hook(move || {
         document::eval(&TRACK_JS.replace("__STOPS__", STOP_SELECTOR));
         let script = NAV_JS
@@ -236,8 +260,8 @@ pub(crate) fn use_deck_cursor(details: Option<StackDetails>) {
             .replace("__DRAWER__", STACK_DETAILS_CLASS);
         spawn(async move {
             let mut keys = document::eval(&script);
-            while let Ok((key, from, columns, open)) = keys
-                .recv::<(String, Option<String>, Vec<Vec<SentStop>>, String)>()
+            while let Ok((key, from, columns, open, held)) = keys
+                .recv::<(String, Option<String>, Vec<Vec<SentStop>>, String, bool)>()
                 .await
             {
                 let Some(step) = move_for(&key) else {
@@ -260,9 +284,7 @@ pub(crate) fn use_deck_cursor(details: Option<StackDetails>) {
                             details.click(target);
                         }
                     }
-                    Follow::Row => {
-                        document::eval(&OPEN_ROW_JS.replace("__ID__", &target.to_string()));
-                    }
+                    Follow::Row => open_row(row_moves, target, RowOpen::of(held)),
                     Follow::Nothing => {}
                 }
             }
@@ -271,6 +293,30 @@ pub(crate) fn use_deck_cursor(details: Option<StackDetails>) {
     use_drop(move || {
         document::eval(&NAV_DROP_JS.replace("__ID__", &id.to_string()));
     });
+}
+
+/// Opens List row `target` as `when` says: at once, or once no later row move has come for
+/// [`ROW_SETTLE_MS`]. Off the browser nothing is timed and it opens at once.
+fn open_row(mut moves: Signal<u32>, target: Uuid, when: RowOpen) {
+    let count = moves.peek().wrapping_add(1);
+    moves.set(count);
+    let open = move || {
+        document::eval(&OPEN_ROW_JS.replace("__ID__", &target.to_string()));
+    };
+    match when {
+        RowOpen::Now => open(),
+        #[cfg(target_arch = "wasm32")]
+        RowOpen::Settled => {
+            spawn(async move {
+                gloo_timers::future::TimeoutFuture::new(ROW_SETTLE_MS).await;
+                if *moves.peek() == count {
+                    open();
+                }
+            });
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        RowOpen::Settled => open(),
+    }
 }
 
 /// The browser's columns as a [`Snapshot`], dropping any card whose id doesn't parse.
@@ -315,6 +361,24 @@ mod tests {
 
     fn sent(n: u128, y: f64) -> SentStop {
         (id(n).to_string(), y, true)
+    }
+
+    #[test]
+    fn a_held_key_opens_its_row_only_once_it_settles() {
+        assert!(
+            NAV_JS.contains("dioxus.send([key, from, columns, open, e.repeat]);"),
+            "the keys say whether they repeat: {NAV_JS}"
+        );
+        assert_eq!(
+            RowOpen::of(false),
+            RowOpen::Now,
+            "a single press opens it at once"
+        );
+        assert_eq!(
+            RowOpen::of(true),
+            RowOpen::Settled,
+            "a repeat waits for the key to rest"
+        );
     }
 
     #[test]
