@@ -153,7 +153,7 @@ Who checked, on which live build, what they saw.
 | [442](442-held-deck.md) | Profile and Cards share one up-to-date deck so a star or a Warnings fix never reads a stale copy | fixing | laptop | issue/held-deck |
 | [440](440-deck-keyboard-nav.md) | The deck page's cards can't be reached from the keyboard | fixing | scotland | - |
 | [448](448-featured-deal-on-entry.md) | The featured strip no longer deals in when the Cards open | fixing | thinker | - |
-| [449](449-details-as-screen.md) | On a phone, a card's details from Cards slide in as a sheet instead of opening as a screen | fixing | scotland | - |
+| [449](449-details-as-screen.md) | On a phone, a card's details from Cards slide in as a sheet instead of opening as a screen | withdrawn (466) | scotland | - |
 | [452](452-menu-under-cards.md) | On phone web, the menu opens under the Cards layer | fixing | thinker | - |
 | [453](453-cards-under-header.md) | On phone web, scrolling Cards leaves a header-height strip above the first row | fixing | scotland | - |
 | [454](454-strip-quick-add-gap.md) | On phone web, the featured chips touch Quick add | fixing | thinker | - |
@@ -163,6 +163,7 @@ Who checked, on which live build, what they saw.
 | [461](461-move-undo-star.md) | A starred card moved to the maybeboard and undone comes back unstarred | fixing | thinker | - |
 | [458](458-enter-submits-sheet.md) | Enter does nothing in an open sheet with a main action | fixing | laptop | issue/458-enter-submits-sheet |
 | [464](464-rarity-chips-grow.md) | The filter's Rarity section grows from 3 to 6 chips while it opens | reported | - | - |
+| [466](466-details-drawer-again.md) | On a phone, a card's details from Cards should be the side drawer, not a full screen | fixing | scotland | orangui 9039b70 |
 
 ## Waiting for live verification
 

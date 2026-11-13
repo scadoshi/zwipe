@@ -13,8 +13,7 @@ use crate::{CardDetailsCost, CardDetailsPanel, DrawerSheet, use_meld, use_overla
 /// description, where the host has a catalog, and `on_examples` opens a tag's example cards,
 /// where the host shows them. `class` names the drawer, and a host that adds its
 /// own class keeps `card-details-drawer` in it. The shown face follows `face` when the host
-/// passes one. With `screen_on_phone` it is a screen of its own on a phone
-/// ([`DrawerSheet`]'s). The drawer carries the card's id as its `data-card`, so the keys that act on a
+/// passes one. The drawer carries the card's id as its `data-card`, so the keys that act on a
 /// card find the one it shows. Swapping to another card while it is open crossfades (`use_drawer_swap`).
 #[component]
 pub fn CardDetailsSheet(
@@ -29,7 +28,6 @@ pub fn CardDetailsSheet(
     #[props(default)] on_face_change: Option<EventHandler<usize>>,
     #[props(default)] describe_tag: Option<Callback<String, Option<String>>>,
     #[props(default)] on_examples: Option<Callback<String>>,
-    #[props(default)] screen_on_phone: bool,
 ) -> Element {
     let layer = use_overlay_back(open);
     use_drawer_swap();
@@ -62,7 +60,6 @@ pub fn CardDetailsSheet(
             every_width: true,
             class,
             data_card: shown_id,
-            screen_on_phone,
             CardDetailsPanel {
                 card,
                 headless: true,

@@ -47,8 +47,8 @@ pub(crate) fn use_cards_view() -> Signal<CardsView> {
 }
 
 /// Whether the stacks deal their cards in: from entering Stacks in `view` once the cards are
-/// `loaded`, and again each time `entries` changes (the Cards opening, or coming back from a
-/// card's details), for as long as the longest stack takes.
+/// `loaded`, and again each time `entries` changes (the Cards opening), for as long as the
+/// longest stack takes.
 pub(crate) fn use_stacks_dealing(
     view: Signal<CardsView>,
     loaded: bool,

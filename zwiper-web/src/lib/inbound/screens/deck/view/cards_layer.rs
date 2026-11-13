@@ -10,7 +10,6 @@
 
 use std::collections::{HashMap, HashSet};
 
-use components::screen_return::UNDER_LAYER;
 use components::{
     CardGroup, DeckEditActions, DeckRow, DeckRowHost, DeckSection, DeckStacks, DeckStacksGhost,
     GroupBuy, StackDetails, TailPlace, group_tail, use_overlay_back_action, use_pointer,
@@ -108,8 +107,6 @@ pub(crate) fn DeckCardsLayer(
     // Whether the layer is sliding out, and the end of each of its animations.
     leaving: bool,
     on_animation_end: Callback<String>,
-    // Whether a card's details screen covers the layer, which then isn't painted or reached.
-    #[props(default)] covered: bool,
 ) -> Element {
     let open = use_signal(|| true);
     let layer = use_overlay_back_action(open.into(), on_close);
@@ -123,12 +120,7 @@ pub(crate) fn DeckCardsLayer(
     let mut folds = collapsed;
     rsx! {
         div {
-            class: format!(
-                "screen web-cards-layer web-scroll-screen deck-cards-layer{}{}",
-                if leaving { " leaving" } else { "" },
-                if covered { format!(" {UNDER_LAYER}") } else { String::new() },
-            ),
-            "inert": covered.then_some(""),
+            class: if leaving { "screen web-cards-layer web-scroll-screen deck-cards-layer leaving" } else { "screen web-cards-layer web-scroll-screen deck-cards-layer" },
             onanimationend: move |event: AnimationEvent| on_animation_end.call(event.animation_name()),
             role: "dialog",
             "aria-modal": "true",

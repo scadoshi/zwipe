@@ -16,6 +16,8 @@ scotland:
 - App (`deck/view.rs`, `deck/card/view.rs`, `featured_cards.rs`): the same for the Profile under Cards and, at phone width, the Cards under a card's details; `FeaturedCards` deals again on its screen's `ScreenReturns`.
 - The header: the nav keeps the page's title and the overlays' titles apart (`OverlayTitles`, a stack); it shows the newest overlay's, else the page's, so a page setting its title late no longer takes the nav from an overlay over it.
 
+- 466 takes the card details out of this: they are a drawer over the Cards again, so the Cards stay in view under them, dimmed, and nothing replays when the drawer closes. Profile to Cards keeps the route feel.
+
 ## Verification
 - Phone web (412): open a deck's Cards: the Profile is hidden and inert under it; Stacks deal and the strip deals in. Open a card's details (two taps on a stack card): the Cards are hidden and inert under them. Back: the Cards come back with the strip and the stacks dealing again. Back: the Profile comes back with its entrance.
 - Fresh load on `/decks/<id>?view=cards`: the header reads "Cards".

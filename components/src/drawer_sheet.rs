@@ -2,17 +2,16 @@
 //! draw: the kit's drawer along the right edge on a wide window and its
 //! bottom sheet below the breakpoint, or the drawer at every width, with a
 //! title bar (×, title and an optional `?`), the content and a dock at its
-//! bottom right. As a bottom sheet its title bar pulls it down as the kit's
-//! [`BottomSheet`](crate::BottomSheet)'s does ([`use_sheet_drag`]).
+//! bottom right. Below the kit's modal width its title bar pulls it away as
+//! the kit's [`BottomSheet`](crate::BottomSheet)'s does
+//! ([`use_sheet_drag_toward`]): a bottom sheet down, a drawer at every width,
+//! which floats along the right edge there, to the right.
 
 use dioxus::prelude::*;
-use orangui::use_sheet_drag;
+use orangui::{Pull, use_sheet_drag_toward};
 
-use crate::media::{KIT_MODAL_PX, WIDE_PX, use_min_width};
-use crate::{
-    ActionDock, BackArrow, Button, ButtonVariant, DockPlace, GridCells, SheetDim, SheetFrame,
-    SheetWide,
-};
+use crate::media::{KIT_MODAL_PX, use_min_width};
+use crate::{ActionDock, Button, ButtonVariant, DockPlace, SheetDim, SheetFrame, SheetWide};
 
 /// How long the sheet takes to slide out, in milliseconds: the kit's 0.3s
 /// sheet transform.
@@ -39,10 +38,7 @@ const CLOSE_MS: u32 = 300;
 /// slide out, so the sheet opened last is on top. `dim` says whether its
 /// backdrop dims the page ([`SheetDim`]). The sheet is a `dialog` named by
 /// `title`, and `aria-modal` while it dims the page. `data_card` is the id of
-/// the card it shows, for the keys that act on that card. With `screen_on_phone`, below the web's
-/// wide layout (the phone app and a phone's web) the sheet is a screen of its own instead of a
-/// floating drawer: it fills the window with the grid tiles behind it, comes and goes with no
-/// slide and no dim, and has a back arrow in place of its ×, as a route change looks.
+/// the card it shows, for the keys that act on that card.
 #[component]
 pub fn DrawerSheet(
     open: ReadSignal<bool>,
@@ -56,7 +52,6 @@ pub fn DrawerSheet(
     #[props(default)] layer: Option<u32>,
     #[props(default)] dim: SheetDim,
     #[props(default)] data_card: Option<String>,
-    #[props(default)] screen_on_phone: bool,
     children: Element,
 ) -> Element {
     let shown = open();
@@ -83,14 +78,16 @@ pub fn DrawerSheet(
     let layer_style = held()
         .filter(|_| shown || content_up())
         .map(|z| format!("--overlay-z: {z};"));
-    // Below the kit's modal width a sheet that is not a drawer at every width
-    // is the bottom sheet, which its title bar pulls down.
+    // Below the kit's modal width the sheet's title bar pulls it away: a
+    // bottom sheet down, a drawer at every width, floating along the right
+    // edge, to the right.
     let wide = use_min_width(KIT_MODAL_PX);
-    let pulls = !every_width && !wide();
+    let pulls = !wide();
+    let toward = if every_width { Pull::Right } else { Pull::Down };
     // A sheet that dims the page at this width is modal; an undimmed drawer leaves the page in use.
     let modal = (dim == SheetDim::Always || !wide()).then_some("true");
     let close = use_callback(move |()| on_close.call(()));
-    let drag = use_sheet_drag(open, close);
+    let drag = use_sheet_drag_toward(open, close, toward);
     let pulled = if pulls { drag.class() } else { "" };
     let sheet_style = match (layer_style.clone(), drag.style().filter(|_| pulls)) {
         (Some(layer), Some(drag)) => Some(format!("{layer} {drag}")),
@@ -100,15 +97,10 @@ pub fn DrawerSheet(
         SheetDim::Always => "",
         SheetDim::Phone => " sheet-dim-phone",
     };
-    // Below the web's wide layout a sheet that asks for it is a screen of its own.
-    let phone = !use_min_width(WIDE_PX)();
-    let screen = screen_on_phone && phone;
-    let screen_class = if screen { " drawer-screen" } else { "" };
-    let modal = if screen { Some("true") } else { modal };
     rsx! {
         SheetFrame { wide: SheetWide::Drawer,
             div {
-                class: if shown { "sheet-backdrop show {reach}{dim_class}{screen_class}" } else { "sheet-backdrop {reach}{dim_class}{screen_class}" },
+                class: if shown { "sheet-backdrop show {reach}{dim_class}" } else { "sheet-backdrop {reach}{dim_class}" },
                 style: layer_style,
                 onclick: move |_| on_close.call(()),
                 onpointermove: move |evt| drag.follow(&evt),
@@ -116,7 +108,7 @@ pub fn DrawerSheet(
                 onpointercancel: move |evt| drag.cancel(&evt),
             }
             div {
-                class: if shown { "bottom-sheet show {reach} {class}{pulled}{screen_class}" } else { "bottom-sheet {reach} {class}{screen_class}" },
+                class: if shown { "bottom-sheet show {reach} {class}{pulled}" } else { "bottom-sheet {reach} {class}" },
                 style: sheet_style,
                 "data-card": data_card,
                 role: "dialog",
@@ -126,9 +118,6 @@ pub fn DrawerSheet(
                 onpointermove: move |evt| drag.follow(&evt),
                 onpointerup: move |evt| drag.release(&evt),
                 onpointercancel: move |evt| drag.cancel(&evt),
-                if screen && (shown || content_up()) {
-                    GridCells { still: true }
-                }
                 div {
                     class: "sheet-header",
                     style: "position: relative;",
@@ -137,16 +126,12 @@ pub fn DrawerSheet(
                             drag.start(&evt);
                         }
                     },
-                    if screen {
-                        BackArrow { class: "sheet-back", onclick: move |()| on_close.call(()) }
-                    } else {
-                        button {
-                            class: "sheet-close",
-                            "aria-label": "Close",
-                            onpointerdown: move |evt| evt.stop_propagation(),
-                            onclick: move |_| on_close.call(()),
-                            "\u{00d7}"
-                        }
+                    button {
+                        class: "sheet-close",
+                        "aria-label": "Close",
+                        onpointerdown: move |evt| evt.stop_propagation(),
+                        onclick: move |_| on_close.call(()),
+                        "\u{00d7}"
                     }
                     if !title.is_empty() || title_trailing.is_some() {
                         span { class: "sheet-title", "{title}" {title_trailing} }

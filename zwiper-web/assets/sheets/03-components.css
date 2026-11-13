@@ -1201,6 +1201,12 @@ a.nav-dropdown-item.active:visited {
     transition: none !important;
 }
 
+/* A drawer along the right edge pulled to the right, the same way. */
+.bottom-sheet.sheet-dragging-right {
+    transform: translateX(var(--sheet-drag, 0px)) !important;
+    transition: none !important;
+}
+
 /* On a light theme the sheet lifts off the page: its shadow doubles up,
    since a light shadow alone barely marks a cream edge on a cream page. */
 [class*="theme-"][class*="-light"] .bottom-sheet {

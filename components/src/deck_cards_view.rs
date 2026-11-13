@@ -866,8 +866,6 @@ pub fn DeckStackDrawer(
             },
             describe_tag,
             on_examples,
-            // On a phone the card's details are a screen of their own over Cards.
-            screen_on_phone: true,
         }
     }
 }

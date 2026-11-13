@@ -42,46 +42,6 @@
     }
 }
 
-/* A drawer that is a screen of its own on a phone (DrawerSheet's
-   `screen_on_phone`): below the web's wide layout it fills the window over
-   everything, with its own grid tiles behind it (the GridCells it holds, on
-   the sink, isolated so the layer paints inside it), and comes and goes at
-   once, with no slide, no corners and no dim, as a route change does. Its
-   header clears the status bar. */
-@media (max-width: 899px) {
-    .sheet-form-drawer > .bottom-sheet.drawer-every-width.drawer-screen {
-        inset: 0;
-        width: auto;
-        max-height: none;
-        border: 0;
-        border-radius: 0;
-        box-shadow: none;
-        transform: none;
-        transition: none;
-        isolation: isolate;
-        background-color: var(--bg-sink);
-        padding-top: env(safe-area-inset-top, 0px);
-    }
-
-    .sheet-form-drawer > .sheet-backdrop.drawer-screen,
-    .sheet-form-drawer > .sheet-backdrop.drawer-screen.show {
-        background: transparent;
-        transition: none;
-    }
-
-    .sheet-form-drawer > .bottom-sheet.drawer-screen > .sheet-header,
-    .sheet-form-drawer > .bottom-sheet.drawer-screen > .sheet-content {
-        background: transparent;
-    }
-
-    .sheet-form-drawer > .bottom-sheet.drawer-screen > .sheet-header > .sheet-back {
-        position: absolute;
-        left: 0.75rem;
-        top: 50%;
-        translate: 0 -50%;
-    }
-}
-
 /* ---- From the screens' sheet: the label rows, the compact and narrow boxes,
    the stepper, the picker's floating results, the small chips, the clear
    buttons and the layout helpers the panel's rows use ---- */

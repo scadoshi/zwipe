@@ -48,9 +48,6 @@ use crate::outbound::timer;
 /// The phone's Profile, the page the Cards layer covers.
 const PROFILE_ROOT: &str = ".deck-profile-page";
 
-/// The phone's Cards layer, which a card's details screen covers.
-const CARDS_ROOT: &str = ".web-cards-layer";
-
 /// The stat panels' fold keys, shut when the page opens.
 const FOLDED_STATS: [&str; 5] = ["Budget", "Tags", "Distributions", "Mana", "Draw odds"];
 
@@ -226,13 +223,10 @@ pub(crate) fn DeckPageBody(
             deal();
         }
     }));
-    // On a phone the screen another covers is gone until it comes back, and comes back as if
-    // entered fresh (screen_return): the Profile under the Cards, the Cards under a card's
-    // details.
+    // On a phone the Profile under the Cards is gone until the Cards close, and comes back as
+    // if entered fresh (screen_return).
     let profile_covered = phone && layer.shown();
-    let cards_covered = profile_covered && (details.details_open)();
     let profile_returns = use_screen_returns(profile_covered);
-    let cards_returns = use_screen_returns(cards_covered);
     let profile_back = profile_returns();
     use_effect(use_reactive!(|profile_back| {
         if profile_back > 0 {
@@ -240,16 +234,8 @@ pub(crate) fn DeckPageBody(
             deal();
         }
     }));
-    let cards_back = cards_returns();
-    use_effect(use_reactive!(|cards_back| {
-        if cards_back > 0 {
-            replay_entrances(CARDS_ROOT);
-            deal();
-        }
-    }));
-    // The stacks deal on entering Stacks, each time the Cards open, and on coming back from a
-    // card's details.
-    let stack_entries = u32::from(layer_open).wrapping_add(cards_back.wrapping_mul(2));
+    // The stacks deal on entering Stacks and each time the Cards open.
+    let stack_entries = u32::from(layer_open);
     let dealing = use_stacks_dealing(view, loaded, stack_entries);
     let featured_class = match (featured_ready, featured_dealt()) {
         (true, true) => "deck-head-deal ready dealt",
@@ -493,7 +479,6 @@ pub(crate) fn DeckPageBody(
                     head,
                     controls,
                     on_close: move |()| on_cards.call(false),
-                    covered: cards_covered,
                     on_hint: cards_hint.unwrap_or_else(|| Callback::new(|()| {})),
                     leaving: layer.leaving(),
                     on_animation_end: move |name: String| layer.ended(&name),
