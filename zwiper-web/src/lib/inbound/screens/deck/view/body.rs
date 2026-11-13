@@ -35,9 +35,7 @@ use zwipe_ui::filter::picker::Sources;
 use zwipe_ui::screens::deck_view::CARDS;
 
 use super::cards_layer::DeckCardsLayer;
-use super::ghost::{
-    DeckBandsGhost, DeckControlsGhost, DeckHeadGhost, DeckStacksGhost, DeckStatsGhost,
-};
+use super::ghost::{DeckBandsGhost, DeckControlsGhost, DeckHeadGhost, DeckStatsGhost};
 use crate::inbound::card_filter::CardFilterPanel;
 use crate::inbound::cards::card_row::{CardOverlays, CardOverlaysHost};
 use crate::inbound::cards::otag::{OtagDescribe, OtagExamples, OtagExamplesHost, OtagExamplesOpen};
@@ -315,7 +313,7 @@ pub(crate) fn DeckPageBody(
                 bands: rsx! {
                     // The ghost follows the saved view.
                     if !loaded && view() == CardsView::Stacks {
-                        DeckStacksGhost {}
+                        components::DeckStacksGhost { touch: phone }
                     } else if !loaded {
                         DeckBandsGhost {}
                     }

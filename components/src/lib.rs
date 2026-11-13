@@ -96,6 +96,7 @@ mod role_tags;
 pub mod settle;
 mod share_url;
 mod site_footer;
+mod stacks_ghost;
 mod staple_decks_chip;
 pub mod swipe_stack;
 mod theme;
@@ -197,6 +198,7 @@ pub use role_tags::{OtagDef, RoleTags};
 pub use settle::use_settle;
 pub use share_url::ShareUrl;
 pub use site_footer::SiteFooter;
+pub use stacks_ghost::DeckStacksGhost;
 pub use staple_decks_chip::StapleDecksChip;
 pub use theme::{pip_style_class, theme_from_settings};
 

@@ -1054,7 +1054,12 @@ pub fn View(deck_id: Uuid) -> Element {
                                 .map(|words| ChipGhost::Text(words.to_string()))
                                 .to_vec(),
                         }
-                        DeckCardListSkeleton {}
+                        // The cards' ghost follows the saved view.
+                        if view() == CardsView::Stacks {
+                            components::DeckStacksGhost { touch: true }
+                        } else {
+                            DeckCardListSkeleton {}
+                        }
                     }
 
                     if stacks_on {

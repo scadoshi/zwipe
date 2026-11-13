@@ -27,7 +27,7 @@ const PHONE_CAPTURE: Pixels = Pixels {
 #[must_use]
 pub fn image_size(file: &str) -> Pixels {
     match file {
-        "share-your-deck/02-shared-page.webp" => Pixels {
+        "share-your-deck/02-shared-page-app.webp" => Pixels {
             width: 1236,
             height: 1213,
         },
@@ -984,8 +984,8 @@ pub static GUIDES: &[Guide] = &[
                 "The page mirrors your deck view: name, format, and tags up top, your commander and starred MVPs as card images (tap one for the full art), and the same collapsible sections as the app: Budget, Tags, Distributions, Mana, and Draw odds.",
             ),
             Block::Image {
-                file: "share-your-deck/02-shared-page.webp",
-                alt: "A shared deck in a browser at app.zwipe.net: featured cards, Budget and Tags, the card list below",
+                file: "share-your-deck/02-shared-page-app.webp",
+                alt: "A shared deck in a browser at app.zwipe.net: its commander featured, the View and Group by controls, the card list below",
                 caption: None,
             },
             Block::P(

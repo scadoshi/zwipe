@@ -3343,6 +3343,22 @@ footer.site-footer .site-footer-note {
     padding: var(--panel-gap) 0;
 }
 
+/* ---- Deck cards: the Stacks ghost ----
+   DeckStacksGhost, while the deck loads in Stacks: a ghost card keeps the
+   card's shape, and an edge in the page's color parts each tucked strip
+   from the one under it. */
+.skeleton-bar.deck-stacks-ghost-card {
+    height: auto;
+    border-radius: 4.75% / 3.4%;
+    box-shadow: 0 0 0 1px var(--bg-primary);
+}
+
+.skeleton-bar.deck-stacks-ghost-name {
+    display: inline-block;
+    height: 0.7rem;
+    max-width: 100%;
+}
+
 /* ---- Deck cards: touch Stacks ----
    The phone app's and narrow web's stacks in tap mode (DeckStacks with
    touch), which mark their columns .deck-stacks-touch. */
