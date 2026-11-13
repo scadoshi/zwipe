@@ -68,15 +68,26 @@ pub(crate) enum FetchError {
     Network,
 }
 
-/// The shared deck `token` names. A token that can't parse can't resolve, the same as the
-/// server's 404, and both are [`FetchError::NotShared`].
+impl FetchError {
+    /// Whether the link ends on the dead end ([`NOT_SHARED_TITLE`]) rather than a retry.
+    pub(crate) fn is_dead_end(&self) -> bool {
+        matches!(self, Self::NotShared)
+    }
+}
+
+/// The deck id a share link's `token` carries. A token that can't parse can't resolve, the same
+/// as the server's 404.
+fn token_id(token: &str) -> Result<Uuid, FetchError> {
+    token.parse::<Uuid>().map_err(|_| FetchError::NotShared)
+}
+
+/// The shared deck `token` names. A malformed token ([`token_id`]) and the server's 404 are both
+/// [`FetchError::NotShared`].
 pub(crate) async fn fetch_shared(
     client: Signal<ZwipeClient>,
     token: &str,
 ) -> Result<HttpSharedDeck, FetchError> {
-    let Ok(token) = token.parse::<Uuid>() else {
-        return Err(FetchError::NotShared);
-    };
+    let token = token_id(token)?;
     let http = client.peek().clone();
     http.fetch_shared_deck(token).await.map_err(|e| match e {
         ClientError::NotFound(_) => FetchError::NotShared,
@@ -170,7 +181,7 @@ pub fn SharedDeck(owner: String, slug: String, token: String, view: Option<DeckV
     let on_hint = use_callback(move |()| hint_open.set(true));
     let wide = use_wide();
     let loaded = matches!(&*result.read(), Some(Ok(_)));
-    let not_shared = matches!(&*result.read(), Some(Err(FetchError::NotShared)));
+    let not_shared = matches!(&*result.read(), Some(Err(e)) if e.is_dead_end());
     let title = match &*result.read() {
         Some(Ok(deck)) => deck.name.clone(),
         _ => SHARED_DECK_TITLE.to_owned(),
@@ -188,10 +199,10 @@ pub fn SharedDeck(owner: String, slug: String, token: String, view: Option<DeckV
             div { class: "screen-content",
             match &*result.read() {
                 None => rsx! { SharedDeckView { deck: None, cards_open, on_cards, export, on_hint } },
-                Some(Err(FetchError::NotShared)) => rsx! {
+                Some(Err(e)) if e.is_dead_end() => rsx! {
                     DeadEnd { title: NOT_SHARED_TITLE, line: NOT_SHARED_LINE }
                 },
-                Some(Err(FetchError::Network)) => rsx! {
+                Some(Err(_)) => rsx! {
                     div { class: "content-enter web-page shared-deck-note",
                         LoadFailed {
                             message: "Couldn't load this deck",
@@ -524,5 +535,27 @@ fn SharedDeckView(
                 }
             },
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_malformed_or_unknown_token_ends_on_the_dead_end_and_a_network_failure_retries() {
+        let malformed = token_id("not-a-token").err();
+        assert_eq!(
+            malformed,
+            Some(FetchError::NotShared),
+            "a token that can't parse"
+        );
+        assert!(malformed.is_some_and(|e| e.is_dead_end()));
+        assert!(FetchError::NotShared.is_dead_end(), "the server's 404");
+        assert!(
+            !FetchError::Network.is_dead_end(),
+            "a network failure keeps Retry"
+        );
+        assert!(token_id(&Uuid::nil().to_string()).is_ok());
     }
 }

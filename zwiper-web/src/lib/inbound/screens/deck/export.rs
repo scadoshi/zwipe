@@ -70,7 +70,7 @@ pub fn SharedDeckExport(owner: String, slug: String, token: String) -> Element {
     });
     let loading = deck.read().is_none();
     let failed = matches!(&*deck.read(), Some(Err(_)));
-    if matches!(&*deck.read(), Some(Err(FetchError::NotShared))) {
+    if matches!(&*deck.read(), Some(Err(e)) if e.is_dead_end()) {
         return rsx! {
             ScreenFrame { title: "Export", titled: true,
                 div { class: "screen-content",
