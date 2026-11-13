@@ -21,3 +21,8 @@ Checked before A:
 ## Tests
 - `zerver/tests/card_serving.rs` `best_match_ranks_each_name_tier_by_popularity`: "lightning" gives Lightning Bolt, Greaves, Helix, Berserker, Axe, while the Name sort's five leave Bolt out; "Sol" still leads with Sol Ring, an unranked name last in its tier. Red with `BestMatch` ordering by name.
 - `card_sort_key.rs`: `all()` leaves `BestMatch` out; it travels as `"BestMatch"`.
+
+## B
+- `zwipe_ui::screens::deck_cards::quick_add_query` sends `CardSortKey::BestMatch`; the app's deck Cards takes it from the model, and the web's Quick add (`zwiper-web/.../deck/cards/quick_add.rs`) now builds its query with the same function instead of its own copy.
+- The commander maybeboard's Quick add (`commander_maybeboard::search_query`) still sends Name.
+- Tests: `quick_add_query_turns_synergy_off_and_sorts_by_best_match`; the zerver `quick_add_names` helper rebuilds the query with `BestMatch`, and the Quick add tests pass under it.

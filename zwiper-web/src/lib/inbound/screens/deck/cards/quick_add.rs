@@ -14,15 +14,13 @@ use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::Card;
-use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
-use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
 use zwipe_core::domain::deck::DeckEntry;
 use zwipe_core::http::contracts::deck_card::HttpCreateDeckCard;
 use zwipe_ui::card::default_printing;
 use zwipe_ui::generation::Generation;
 use zwipe_ui::screens::deck_cards;
 use zwipe_ui::stores::undo::UndoAction;
-use zwipe_ui::timing::{QUICK_ADD_DEBOUNCE, QUICK_ADD_LIMIT, QUICK_ADD_MIN_CHARS};
+use zwipe_ui::timing::{QUICK_ADD_DEBOUNCE, QUICK_ADD_MIN_CHARS};
 
 use crate::inbound::card_stores::CardStores;
 use crate::inbound::chrome::authed::use_authed;
@@ -71,13 +69,7 @@ pub(crate) fn QuickAdd(
             if !searches.peek().is_current(ticket) {
                 return;
             }
-            let mut builder = CardQueryBuilder::with_name_contains(&trimmed);
-            builder
-                .set_synergy(false)
-                .set_include_skipped(true)
-                .set_sort(CardSortKey::Name)
-                .set_limit(QUICK_ADD_LIMIT);
-            let Ok(filter) = builder.build() else {
+            let Ok(filter) = deck_cards::quick_add_query(&trimmed).build() else {
                 show.set(false);
                 return;
             };

@@ -203,14 +203,14 @@ pub struct StackGroup {
     pub rows: Vec<RowInfo>,
 }
 
-/// The Quick add search for `query`: cards whose name holds the trimmed query, synergy off, skipped cards included, sorted by name, [`timing::QUICK_ADD_LIMIT`] at most. The server leaves out cards already in the deck.
+/// The Quick add search for `query`: cards whose name holds the trimmed query, synergy off, skipped cards included, the closest names first and the most played first within each (`CardSortKey::BestMatch`), [`timing::QUICK_ADD_LIMIT`] at most. The server leaves out cards already in the deck.
 #[must_use]
 pub fn quick_add_query(query: &str) -> CardQueryBuilder {
     let mut builder = CardQueryBuilder::with_name_contains(query.trim());
     builder
         .set_synergy(false)
         .set_include_skipped(true)
-        .set_sort(CardSortKey::Name)
+        .set_sort(CardSortKey::BestMatch)
         .set_limit(timing::QUICK_ADD_LIMIT);
     builder
 }

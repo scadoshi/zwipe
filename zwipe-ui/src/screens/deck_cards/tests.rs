@@ -468,10 +468,10 @@ fn quick_add_debounces_searches_and_shows_results() {
 }
 
 #[test]
-fn quick_add_query_turns_synergy_off_and_sorts_by_name() {
+fn quick_add_query_turns_synergy_off_and_sorts_by_best_match() {
     let query = quick_add_query("  sol ");
     assert_eq!(query.name_contains(), Some("sol"));
-    assert_eq!(query.sort(), Some(CardSortKey::Name));
+    assert_eq!(query.sort(), Some(CardSortKey::BestMatch));
 }
 
 #[test]

@@ -575,10 +575,10 @@ async fn deck_serve_with_promo_shows_the_promo_printing(pool: sqlx::PgPool) {
     assert_eq!(served, vec![(want.as_str(), true)], "{body}");
 }
 
-/// Quick add's search (zwipe-ui's `quick_add_query`, rebuilt here: name holds the query, synergy off, skipped included, by name, five at most) for `query` on `deck_id`: the names it offers, in order.
+/// Quick add's search (zwipe-ui's `quick_add_query`, rebuilt here: name holds the query, synergy off, skipped included, best match, five at most) for `query` on `deck_id`: the names it offers, in order.
 async fn quick_add_names(app: &TestApp, deck_id: Uuid, token: &str, query: &str) -> Vec<String> {
     use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
-    sorted_names(app, deck_id, token, query, CardSortKey::Name).await
+    sorted_names(app, deck_id, token, query, CardSortKey::BestMatch).await
 }
 
 /// The first five names a deck search for `query` sorted by `sort`, ascending, answers.
@@ -809,7 +809,7 @@ async fn best_match_ranks_each_name_tier_by_popularity(pool: sqlx::PgPool) {
     .collect();
     seed_cards(&pool, &cards).await;
 
-    let names = sorted_names(&app, deck_id, &token, "lightning", CardSortKey::BestMatch).await;
+    let names = quick_add_names(&app, deck_id, &token, "lightning").await;
     assert_eq!(
         names,
         [
@@ -821,13 +821,13 @@ async fn best_match_ranks_each_name_tier_by_popularity(pool: sqlx::PgPool) {
         ],
         "the first-word tier by popularity, ahead of a more popular name further down the tiers"
     );
-    let by_name = quick_add_names(&app, deck_id, &token, "lightning").await;
+    let by_name = sorted_names(&app, deck_id, &token, "lightning", CardSortKey::Name).await;
     assert!(
         !by_name.contains(&"Lightning Bolt".to_owned()),
         "the Name sort stays alphabetical within a tier: {by_name:?}"
     );
 
-    let names = sorted_names(&app, deck_id, &token, "Sol", CardSortKey::BestMatch).await;
+    let names = quick_add_names(&app, deck_id, &token, "Sol").await;
     assert_eq!(
         names,
         [

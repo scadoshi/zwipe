@@ -56,6 +56,7 @@ pub const UPCOMING: &[Release] = &[
             "On the web, the Decks list opens and closes its Tags without the decks jittering",
             "Undoing a move to the maybeboard or sideboard puts the card's MVP star back",
             "Undo on a deck's cards says what it undid only once the change is saved, on the web and in the app",
+            "Quick add offers the most played cards first among names that match as closely",
             "On the web's deck page, the arrow keys or h, j, k and l move between cards and Enter opens one, in List and Stacks",
             "On the web's deck page, the card keys act on the card the details drawer shows, wherever it opened from",
             "On the web, Esc closes Quick add's suggestions and leaves the box, so the card keys work again",
