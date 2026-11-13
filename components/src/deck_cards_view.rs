@@ -107,20 +107,23 @@ enum Opened {
 }
 
 impl Opened {
-    /// The selector of the card's element.
+    /// The selector of the card's element: a stack card's slot, or a featured card in the
+    /// phone's strip or the wide page's head, whichever the page draws.
     fn selector(self) -> String {
         match self {
             Self::Stack(id) => format!(".card-stack-slot[data-row=\"{id}\"]"),
-            Self::Featured(id) => format!("[data-settle-key=\"featured-{id}\"]"),
+            Self::Featured(id) => format!(
+                "[data-settle-key=\"featured-{id}\"], .deck-head-card-image[data-row=\"{id}\"]"
+            ),
         }
     }
 }
 
 /// Sends `[card left, card right, right drawer left, right drawer right, page width]` for the
-/// card `__CARD__` and the stacks' drawer, in CSS pixels, the right drawer's place mirrored from
+/// first card matching `__CARD__` that shows and the stacks' drawer, in CSS pixels, the right drawer's place mirrored from
 /// the left one's while the drawer is on the left; `null` when either is missing. The drawer's
 /// place comes from its offsets, which leave out the slide's transform.
-const MEASURE_JS: &str = "const card = document.querySelector('__CARD__'); const drawer = document.querySelector('.bottom-sheet.__DRAWER__'); if (!card || !drawer) return null; const c = card.getBoundingClientRect(); const width = document.documentElement.clientWidth; let left = drawer.offsetLeft; let right = left + drawer.offsetWidth; if (drawer.classList.contains('drawer-left')) { const l = left; left = width - right; right = width - l; } return [c.left, c.right, left, right, width];";
+const MEASURE_JS: &str = "const card = [...document.querySelectorAll('__CARD__')].find((el) => el.offsetParent !== null); const drawer = document.querySelector('.bottom-sheet.__DRAWER__'); if (!card || !drawer) return null; const c = card.getBoundingClientRect(); const width = document.documentElement.clientWidth; let left = drawer.offsetLeft; let right = left + drawer.offsetWidth; if (drawer.classList.contains('drawer-left')) { const l = left; left = width - right; right = width - l; } return [c.left, c.right, left, right, width];";
 
 /// [`MEASURE_JS`] for the card `opened`.
 fn measure_js(opened: Opened) -> String {
@@ -1096,7 +1099,7 @@ mod tests {
         let stack = measure_js(Opened::Stack(id));
         assert!(
             stack.contains(&format!(
-                "document.querySelector('.card-stack-slot[data-row=\"{id}\"]')"
+                "[...document.querySelectorAll('.card-stack-slot[data-row=\"{id}\"]')].find((el) => el.offsetParent !== null)"
             )),
             "{stack}"
         );
@@ -1115,9 +1118,9 @@ mod tests {
         let featured = measure_js(Opened::Featured(id));
         assert!(
             featured.contains(&format!(
-                "document.querySelector('[data-settle-key=\"featured-{id}\"]')"
+                "[...document.querySelectorAll('[data-settle-key=\"featured-{id}\"], .deck-head-card-image[data-row=\"{id}\"]')].find((el) => el.offsetParent !== null)"
             )),
-            "{featured}"
+            "the phone strip's card or the wide head's, whichever shows: {featured}"
         );
     }
 

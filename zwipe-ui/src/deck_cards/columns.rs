@@ -189,6 +189,15 @@ mod tests {
     }
 
     #[test]
+    fn a_featured_card_right_of_center_opens_the_drawer_on_the_left() {
+        // Surfer's 1000 wide page: Adriana at 505 to 713, the right drawer at 600 to 984.
+        assert_eq!(
+            drawer_side(span(505.0, 713.0), span(600.0, 984.0), 1000.0, Side::Right),
+            Side::Left
+        );
+    }
+
+    #[test]
     fn an_open_drawer_stays_where_it_is_unless_the_card_is_under_it() {
         let right = span(1040.0, 1424.0);
         assert_eq!(
