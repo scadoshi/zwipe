@@ -521,11 +521,13 @@ fn card_stack_dealing() {
             };
             let cards = vec![
                 StackCard {
+                    board: None,
                     card: named(1, "Top"),
                     qty: 1,
                     face: 0,
                 },
                 StackCard {
+                    board: None,
                     card: named(2, "Bottom"),
                     qty: 1,
                     face: 0,
@@ -561,16 +563,19 @@ fn card_stack_tap() {
             };
             let cards = vec![
                 StackCard {
+                    board: None,
                     card: named(1, "Top"),
                     qty: 1,
                     face: 0,
                 },
                 StackCard {
+                    board: None,
                     card: named(2, "Middle"),
                     qty: 2,
                     face: 0,
                 },
                 StackCard {
+                    board: None,
                     card: named(3, "Bottom"),
                     qty: 1,
                     face: 0,
@@ -619,21 +624,25 @@ fn card_stack_revealed() {
             artless.scryfall_data.card_faces = None;
             let cards = vec![
                 StackCard {
+                    board: None,
                     card: named(1, "Top"),
                     qty: 1,
                     face: 0,
                 },
                 StackCard {
+                    board: None,
                     card: named(2, "Middle"),
                     qty: 1,
                     face: 0,
                 },
                 StackCard {
+                    board: None,
                     card: named(3, "Bottom"),
                     qty: 4,
                     face: 0,
                 },
                 StackCard {
+                    board: None,
                     card: artless,
                     qty: 1,
                     face: 0,

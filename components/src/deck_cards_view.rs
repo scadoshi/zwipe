@@ -17,7 +17,7 @@ use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCur
 use zwipe_core::domain::deck::{Board, Format};
 use zwipe_ui::buy::group_cards;
 use zwipe_ui::deck::form::Slot;
-use zwipe_ui::deck_cards::keys::{RowInfo, RowKind};
+use zwipe_ui::deck_cards::keys::{RowInfo, RowKind, card_label};
 use zwipe_ui::deck_cards::listing::{Listed, RowMeta, main_row_of};
 use zwipe_ui::deck_cards::stacks::{CardsView, Gesture, Reveal, VIEW_LABEL};
 use zwipe_ui::deck_cards::{Group, columns};
@@ -521,7 +521,9 @@ pub fn DeckRow(
         .copied()
         .unwrap_or(0)))();
     let is_selected = use_memo(use_reactive!(|card_id| selected() == Some(card_id)))();
+    let listed_board = board;
     let RowInfo { card, qty, kind } = row;
+    let row_name = card.scryfall_data.name.clone();
     let RowActions {
         on_qty,
         on_move,
@@ -560,6 +562,7 @@ pub fn DeckRow(
                     on_qty_change: on_qty,
                     on_move_to: on_move,
                     current_board: board,
+                    label: card_label(&row_name, qty, Some(listed_board)),
                     on_printing: on_print,
                     mvp,
                     on_toggle_mvp: on_star,
@@ -644,7 +647,7 @@ pub fn DeckStacks(
                 .into_iter()
                 .map(|row| {
                     let face = shown_faces.get(&row.card.scryfall_data.id).copied().unwrap_or(0);
-                    StackCard { card: row.card, qty: row.qty, face }
+                    StackCard { board: match row.kind { RowKind::Board(board) => Some(board), _ => None }, card: row.card, qty: row.qty, face }
                 })
                 .collect();
             let stack = rsx! {

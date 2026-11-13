@@ -33,16 +33,17 @@ pub fn use_sheet_focus(open: ReadSignal<bool>, body: &'static str) {
 /// The hand back of a sheet's focus, from [`use_sheet_focus_handing_back`].
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SheetFocus {
-    /// The element focus goes back to in place of the opener, as a selector.
-    hand_back: Signal<Option<String>>,
+    /// The elements focus goes back to in place of the opener, as selectors, the first that is in
+    /// the page and not inert taking it.
+    hand_back: Signal<Option<Vec<String>>>,
 }
 
 impl SheetFocus {
-    /// Hands focus back to the element matching `selector` once it is in the page, in place of
-    /// the opener: for a sheet whose action draws its opener anew, such as Printings, whose save
-    /// draws the row again for the new printing.
-    pub fn hand_back_to(mut self, selector: String) {
-        self.hand_back.set(Some(selector));
+    /// Hands focus back to the first element matching one of `selectors`, in order, once it is in
+    /// the page and not inert, in place of the opener: for a sheet whose action draws its opener
+    /// anew, such as Printings, whose save draws the row again for the new printing.
+    pub fn hand_back_to(mut self, selectors: Vec<String>) {
+        self.hand_back.set(Some(selectors));
     }
 }
 
@@ -52,7 +53,7 @@ impl SheetFocus {
 pub fn use_sheet_focus_handing_back(open: ReadSignal<bool>, body: &'static str) -> SheetFocus {
     let id = use_hook(Uuid::new_v4);
     let mut was_open = use_signal(|| false);
-    let mut hand_back = use_signal(|| None::<String>);
+    let mut hand_back = use_signal(|| None::<Vec<String>>);
     use_effect(move || {
         let now = open();
         let before = *was_open.peek();
@@ -89,10 +90,11 @@ fn focus_js(id: &Uuid, body: &str) -> String {
 /// that is in the page, or, once a save draws the opener anew, the element with its action in its
 /// place, skipping an inert one. It keeps at it while focus falls to the page, until focus is on a
 /// new element or the user moved it on.
-fn restore_js(id: &Uuid, hand_back: Option<&str>) -> String {
-    let hand_back = hand_back.map_or_else(|| "null".to_owned(), |s| format!("{s:?}"));
+fn restore_js(id: &Uuid, hand_back: Option<&[String]>) -> String {
+    let hand_back =
+        hand_back.map_or_else(|| "null".to_owned(), |selectors| format!("{selectors:?}"));
     format!(
-        "{{ const store = window.__zwipeSheetFocus || {{}}; const kept = store['{id}']; delete store['{id}']; const handBack = {hand_back}; if (kept && kept.el !== document.body) {{ const live = (t) => t && t.isConnected && !t.closest('[inert]') && t.focus ? t : null; const find = () => (handBack && [...document.querySelectorAll(handBack)].map(live).find(Boolean)) || live(kept.el) || live(kept.sel && kept.at >= 0 ? document.querySelectorAll(kept.sel)[kept.at] : null); const give = () => {{ const t = find(); if (t && document.activeElement !== t) t.focus({{ preventScroll: true }}); }}; give(); const until = Date.now() + {RESTORE_WATCH_MS}; const watch = setInterval(() => {{ const a = document.activeElement; const t = find(); if (Date.now() > until || (a && a !== document.body && a !== kept.el && a !== t) || (t && a === t && t !== kept.el)) {{ clearInterval(watch); return; }} if (!a || a === document.body) give(); }}, 100); }} }}"
+        "{{ const store = window.__zwipeSheetFocus || {{}}; const kept = store['{id}']; delete store['{id}']; const handBack = {hand_back}; if (kept && kept.el !== document.body) {{ const live = (t) => t && t.isConnected && !t.closest('[inert]') && t.focus ? t : null; const find = () => (handBack && handBack.map((sel) => [...document.querySelectorAll(sel)].map(live).find(Boolean)).find(Boolean)) || live(kept.el) || live(kept.sel && kept.at >= 0 ? document.querySelectorAll(kept.sel)[kept.at] : null); const give = () => {{ const t = find(); if (t && document.activeElement !== t) t.focus({{ preventScroll: true }}); }}; give(); const until = Date.now() + {RESTORE_WATCH_MS}; const watch = setInterval(() => {{ const a = document.activeElement; const t = find(); if (Date.now() > until || (a && a !== document.body && a !== kept.el && a !== t) || (t && a === t && t !== kept.el)) {{ clearInterval(watch); return; }} if (!a || a === document.body) give(); }}, 100); }} }}"
     )
 }
 
@@ -151,13 +153,19 @@ mod tests {
     #[test]
     fn a_named_hand_back_comes_first_and_an_inert_element_never_takes_focus() {
         let id = Uuid::nil();
-        let js = restore_js(&id, Some("[data-row=\"x\"] [data-action=\"printings\"]"));
+        let selectors = vec![
+            "[data-row=\"x\"] [data-action=\"printings\"]".to_owned(),
+            ".card".to_owned(),
+        ];
+        let js = restore_js(&id, Some(&selectors));
         assert!(
-            js.contains(r#"const handBack = "[data-row=\"x\"] [data-action=\"printings\"]";"#),
-            "{js}"
+            js.contains(
+                r#"const handBack = ["[data-row=\"x\"] [data-action=\"printings\"]", ".card"];"#
+            ),
+            "the selectors in order: {js}"
         );
         assert!(
-            js.contains("(handBack && [...document.querySelectorAll(handBack)].map(live).find(Boolean)) || live(kept.el)"),
+            js.contains("(handBack && handBack.map((sel) => [...document.querySelectorAll(sel)].map(live).find(Boolean)).find(Boolean)) || live(kept.el)"),
             "{js}"
         );
         assert!(js.contains("!t.closest('[inert]')"), "{js}");

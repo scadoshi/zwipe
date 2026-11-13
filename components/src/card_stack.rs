@@ -11,6 +11,8 @@ use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ImageSize;
+use zwipe_core::domain::deck::Board;
+use zwipe_ui::deck_cards::keys::card_label;
 use zwipe_ui::deck_cards::stacks;
 
 use crate::CardProxy;
@@ -28,6 +30,8 @@ pub struct StackCard {
     pub qty: i32,
     /// The face it shows, `0` the front: a two-faced card shows its back after a flip.
     pub face: usize,
+    /// Its board, where it isn't the main deck, named in its accessible name.
+    pub board: Option<Board>,
 }
 
 /// The stack of `cards`, top to bottom. `revealed` shows in full, the cards
@@ -91,7 +95,7 @@ pub fn CardStack(
     }
     rsx! {
         div { class: "{stack_class}", role: "list",
-            for (index, (((StackCard { card, qty, face }, tucked), shifted), exposed)) in cards.into_iter().zip(tucks).zip(shifts).zip(full).enumerate() {
+            for (index, (((StackCard { card, qty, face, board }, tucked), shifted), exposed)) in cards.into_iter().zip(tucks).zip(shifts).zip(full).enumerate() {
                 {
                     let id = card.scryfall_data.id;
                     let name = card.scryfall_data.name.clone();
@@ -113,7 +117,7 @@ pub fn CardStack(
                     if revealed == Some(id) {
                         class.push_str(" revealed");
                     }
-                    let label = if qty > 1 { format!("{name}, {qty} copies") } else { name };
+                    let label = card_label(&name, qty, board);
                     rsx! {
                         // `data-row` names the card, as a list row does, so a
                         // host can find the card under the cursor.

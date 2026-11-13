@@ -54,13 +54,19 @@ const NARROW_BODY: &str = ".web-printing-sheet .bottom-sheet.show .web-printing-
 /// The open modal's body, which takes the keys from the kit's modal width on.
 const WIDE_BODY: &str = ".web-flow-sheet.show .web-flow-body";
 
-/// The Printings buttons of the card with Scryfall id `id`: in its row and in a details drawer
-/// showing it.
-fn handback_selector(id: Uuid) -> String {
-    format!(
-        "[data-row=\"{id}\"] [data-action=\"{action}\"], [data-card=\"{id}\"] [data-action=\"{action}\"]",
-        action = crate::data_action::PRINTINGS
-    )
+/// Where focus goes after a save draws the card with Scryfall id `id` anew, in order: its
+/// Printings button in its row or in a details drawer showing it, else the card itself, a List
+/// row's line or a stack card, where its row is shut or it is in Stacks.
+fn handback_selectors(id: Uuid) -> Vec<String> {
+    let action = crate::data_action::PRINTINGS;
+    vec![
+        format!(
+            "[data-row=\"{id}\"] [data-action=\"{action}\"], [data-card=\"{id}\"] [data-action=\"{action}\"]"
+        ),
+        format!(
+            ".web-deck-row[data-row=\"{id}\"] .card-row-compact, .card-stack-slot[data-row=\"{id}\"] .card-stack-card"
+        ),
+    ]
 }
 
 /// Which way a step through the printings goes.
@@ -183,7 +189,7 @@ pub fn PrintingSheet(
         if let Some(picked) = visible_for_save.clone() {
             // The save draws the card again as the new printing, with a Printings button of its
             // own, which takes the focus.
-            let reopen = handback_selector(picked.scryfall_data.id);
+            let reopen = handback_selectors(picked.scryfall_data.id);
             narrow_focus.hand_back_to(reopen.clone());
             wide_focus.hand_back_to(reopen);
             on_save.call(picked);
@@ -463,14 +469,19 @@ mod tests {
     use super::*;
 
     #[test]
-    fn focus_goes_back_to_the_saved_printings_button_in_its_row_or_drawer() {
+    fn focus_goes_back_to_the_saved_printings_button_else_the_card_itself() {
         let id = Uuid::nil();
-        let selector = handback_selector(id);
+        let selectors = handback_selectors(id);
+        assert_eq!(selectors.len(), 2, "{selectors:?}");
         assert_eq!(
-            selector,
-            format!(
-                "[data-row=\"{id}\"] [data-action=\"printings\"], [data-card=\"{id}\"] [data-action=\"printings\"]"
-            )
+            selectors.first().map(String::as_str),
+            Some(format!("[data-row=\"{id}\"] [data-action=\"printings\"], [data-card=\"{id}\"] [data-action=\"printings\"]").as_str())
+        );
+        assert!(
+            selectors.get(1).is_some_and(|s| s.contains(&format!(
+                ".card-stack-slot[data-row=\"{id}\"] .card-stack-card"
+            ))),
+            "{selectors:?}"
         );
     }
 }

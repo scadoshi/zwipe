@@ -13,5 +13,11 @@ scotland:
 - A redraw that drops focus to the page while a key moved last (Undo, a removed card) puts focus back on the cursor card, or the next one.
 - The shortcuts sheet lists the moves and Enter; the note reads "Move to a card, or hover it, then press its key".
 
+- After surfer's pass on c3c0d6b71:
+  - (19) A Printings save hands focus to the saved card's own Printings button, else, where its row is shut or it sits in Stacks, to the card itself, so the cursor takes the new printing's id (`SheetFocus::hand_back_to` takes selectors in order).
+  - (27) The cursor answers only on the computer layout (`COMPUTER_QUERY`: a mouse with hover, from 900px), as the plan says; a narrow window with a mouse no longer takes it.
+  - (25) A List row's line and a stack card are named by `zwipe_ui::deck_cards::keys::card_label`: the name, its copies when more than one, and its board when it isn't the main deck ("Mountain, 8 copies, sideboard").
+  - End in Stacks lands on the last column's bottom card at 1000, 1440 and 1920 under Type and Mana value grouping; not reproduced as stopping in the first column. Down crosses from one stack into the next in its column (Commander into Lands under Type).
+
 ## Verification
 Surfer's 28 tests in the plan's section 7.

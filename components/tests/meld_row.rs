@@ -108,7 +108,7 @@ fn a_half_s_meld_is_one_state_for_its_details_image_and_stack_card() {
             }
             div { class: "the-stack",
                 CardStack {
-                    cards: vec![StackCard { card: half, qty: 1, face: 0 }],
+                    cards: vec![StackCard { card: half, qty: 1, face: 0, board: None }],
                     on_hover: |_| {},
                     on_leave: |_| {},
                     on_select: |_| {},

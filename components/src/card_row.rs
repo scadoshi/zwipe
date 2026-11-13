@@ -63,6 +63,10 @@ pub fn CardRow(
     on_qty_change: Option<EventHandler<i32>>,
     on_move_to: Option<EventHandler<Board>>,
     current_board: Option<Board>,
+    /// The line's accessible name in place of its text, such as a deck row's name with its copies
+    /// and board.
+    #[props(default)]
+    label: Option<String>,
     on_printing: Option<EventHandler<Card>>,
     /// MVP star state: `Some(true)` filled, `Some(false)` outline, `None` = no
     /// star rendered (non-mainboard rows, tokens, command zone).
@@ -265,6 +269,7 @@ pub fn CardRow(
                 role: "button",
                 tabindex: "0",
                 "aria-expanded": "{is_expanded}",
+                "aria-label": label,
                 onclick: move |_| toggle(expanded_card, card_id, hover_stack, &held_on_click),
                 onkeydown: move |evt: KeyboardEvent| {
                     if evt.key() == Key::Enter || evt.key() == Key::Character(" ".into()) {

@@ -6,6 +6,8 @@
 //! one whose details are open. A read-only deck page ([`Editable::No`]) answers only `p`, `i`,
 //! `v` and `d`.
 
+use std::fmt::Write;
+
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::deck::Board;
@@ -484,5 +486,41 @@ mod tests {
         for key in READ_ONLY_HOVER_KEYS {
             assert!(HOVER_KEYS.contains(&key), "{key} also on the owner's deck");
         }
+    }
+}
+
+/// A card's accessible name on the deck page, a List row's or a stack card's: its name, its
+/// copies when more than one, and its board when it isn't the main deck, as in "Mountain, 8
+/// copies, sideboard".
+#[must_use]
+pub fn card_label(name: &str, qty: i32, board: Option<Board>) -> String {
+    let mut label = name.to_owned();
+    if qty > 1 {
+        let _ = write!(label, ", {qty} copies");
+    }
+    match board {
+        Some(Board::Maybeboard) => label.push_str(", maybeboard"),
+        Some(Board::Sideboard) => label.push_str(", sideboard"),
+        Some(Board::Deck) | None => {}
+    }
+    label
+}
+
+#[cfg(test)]
+mod label_tests {
+    use super::*;
+
+    #[test]
+    fn a_label_names_the_copies_and_any_board_but_the_main_deck() {
+        assert_eq!(
+            card_label("Mountain", 8, Some(Board::Sideboard)),
+            "Mountain, 8 copies, sideboard"
+        );
+        assert_eq!(
+            card_label("Abrade", 1, Some(Board::Maybeboard)),
+            "Abrade, maybeboard"
+        );
+        assert_eq!(card_label("Krenko", 1, Some(Board::Deck)), "Krenko");
+        assert_eq!(card_label("Goblin", 3, None), "Goblin, 3 copies");
     }
 }
