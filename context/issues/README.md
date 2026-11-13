@@ -170,6 +170,7 @@ Who checked, on which live build, what they saw.
 | [473](473-quick-add-popularity.md) | Quick add offers obscure cards before popular ones within a name tier | fixing | thinker | - |
 | [474](474-drawer-side.md) | A card's details drawer opens on the side away from the card's column | fixing | scotland | orangui c1e6a62 |
 | [475](475-printings-name-artist.md) | Printings doesn't name the card or its artist | fixing | laptop | issue/475-printings-name-artist |
+| [479](479-og-artist-chip.md) | A shared deck's link preview credits the art with a plain "Art" label and text | fixing | laptop | issue/479-og-artist |
 
 ## Waiting for live verification
 

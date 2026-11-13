@@ -116,8 +116,10 @@ pub enum Tone {
     Palette5,
     /// `stat-chip-money`: the price.
     Money,
-    /// `stat-chip-muted`: the deck tags and the art credit's label.
+    /// `stat-chip-muted`: the deck tags.
     Muted,
+    /// `detail-chip-artist`: the art credit.
+    Palette6,
 }
 
 /// One tag: a label drawn as the deck list's chip in a tone.
@@ -477,6 +479,7 @@ fn chip(out: &mut String, palette: &Palette, x: i64, top: i64, label: &str, tone
         Tone::Palette5 => (&palette.palette_5, &palette.ink.palette_5, 0.35),
         Tone::Money => (&palette.money, &palette.ink.money, 0.35),
         Tone::Muted => (&palette.muted, &palette.ink.muted, 0.30),
+        Tone::Palette6 => (&palette.palette_6, &palette.ink.palette_6, 0.35),
     };
     let tint = mix(&palette.bg, color, 0.12).unwrap_or_else(|| palette.bg.clone());
     let border = mix(&palette.bg, color, edge).unwrap_or_else(|| color.clone());
@@ -553,8 +556,64 @@ const COLORLESS_FILL: &str = "#beb9b2";
 /// The colorless pip's ink, the app's.
 const COLORLESS_INK: &str = "#393835";
 
-/// The footer under the rule: an "Art" label tag followed by the artists of
-/// the art drawn on the left, and the brand on the right.
+/// The Image icon, Lucide's `image` drawn as one path in a 24-unit box: the art credit's mark, as
+/// the app's artist chip draws it (`components::IMAGE_ICON`).
+const IMAGE_ICON: &str = "M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM9 7a2 2 0 1 0 0 4 2 2 0 1 0 0-4zM21 15l-3.086-3.086a2 2 0 0 0-2.828 0L6 21";
+
+/// The icon's size in the art credit's chip.
+const ICON_SIZE: i64 = 22;
+
+/// The space between the icon and the artist's name.
+const ICON_GAP: i64 = 8;
+
+/// The art credit as the app's artist chip draws it: one chip in the `--palette-6` tone holding
+/// the Image icon and `names`, cut to fit `room` pixels. Returns its width.
+fn artist_chip(
+    out: &mut String,
+    palette: &Palette,
+    x: i64,
+    top: i64,
+    names: &str,
+    room: i64,
+) -> i64 {
+    let lead = ICON_SIZE.saturating_add(ICON_GAP);
+    let names = fit(
+        names,
+        room.saturating_sub(CHIP_PAD * 2).saturating_sub(lead),
+        CHIP_SIZE,
+    );
+    let ink = palette.ink.palette_6.clone();
+    let tint = mix(&palette.bg, &palette.palette_6, 0.12).unwrap_or_else(|| palette.bg.clone());
+    let border =
+        mix(&palette.bg, &palette.palette_6, 0.35).unwrap_or_else(|| palette.palette_6.clone());
+    let chip_w = text_width(&names, CHIP_SIZE)
+        .saturating_add(lead)
+        .saturating_add(CHIP_PAD * 2);
+    let _ = write!(
+        out,
+        r#"<rect x="{x}" y="{top}" width="{chip_w}" height="{CHIP_H}" rx="12" fill="{tint}" stroke="{border}" stroke-width="2"/>"#
+    );
+    let icon_x = x.saturating_add(CHIP_PAD);
+    let icon_y = top.saturating_add(CHIP_H.saturating_sub(ICON_SIZE) / 2);
+    let scale = f64_of(ICON_SIZE) / 24.0;
+    let _ = write!(
+        out,
+        r#"<path d="{IMAGE_ICON}" transform="translate({icon_x} {icon_y}) scale({scale:.4})" fill="none" stroke="{ink}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>"#
+    );
+    text(
+        out,
+        icon_x.saturating_add(lead),
+        top.saturating_add(CHIP_BASELINE),
+        CHIP_SIZE,
+        400,
+        &ink,
+        &names,
+    );
+    chip_w
+}
+
+/// The footer under the rule: the art credit chip with the artists of the art drawn on the left,
+/// and the brand on the right.
 fn draw_footer(
     out: &mut String,
     palette: &Palette,
@@ -585,23 +644,12 @@ fn draw_footer(
     if artists.is_empty() {
         return;
     }
-    let label_w = chip(out, palette, x0, top, "Art", Tone::Muted);
-    let names_x = x0.saturating_add(label_w).saturating_add(CHIP_GAP + 4);
     let brand_w = text_width(BRAND, BRAND_SIZE).saturating_add(BRAND_SPACING.saturating_mul(9));
     let room = right
         .saturating_sub(brand_w)
         .saturating_sub(24)
-        .saturating_sub(names_x);
-    let names = fit(&artists.join(" and "), room, CHIP_SIZE);
-    text(
-        out,
-        names_x,
-        baseline,
-        CHIP_SIZE,
-        400,
-        &palette.text,
-        &names,
-    );
+        .saturating_sub(x0);
+    artist_chip(out, palette, x0, top, &artists.join(" and "), room);
 }
 
 /// A curve bar's width.
@@ -876,6 +924,30 @@ mod tests {
         assert!(light.iter().all(|c| *c < 0.5), "{light:?}");
         let dark = hex_rgb(&pip_ink("#282828")).unwrap();
         assert!(dark.iter().all(|c| *c > 0.4), "{dark:?}");
+    }
+
+    #[test]
+    fn the_art_credit_is_the_artist_chip_with_the_image_icon() {
+        let palette = Palette::of(&zwipe_core::domain::user::theme::ThemeConfig::default());
+        let art = Art {
+            url: "art".to_owned(),
+            artist: Some("Svetlin Velinov".to_owned()),
+        };
+        let preview = Preview {
+            name: "Goblins".to_owned(),
+            colors: Vec::new(),
+            tags: Vec::new(),
+            curve: [0; 7],
+            art: vec![art.clone()],
+        };
+        let svg = svg(&preview, &palette, &[&art]);
+        let (_, footer) = svg.rsplit_once("zwipe.net</text>").unwrap();
+        assert!(
+            footer.contains(r#"<path d="M5 3h14a2 2 0 0 1 2 2v14"#),
+            "the Image icon leads the credit: {footer}"
+        );
+        assert!(footer.contains("Svetlin Velinov"), "{footer}");
+        assert!(!footer.contains(">Art<"), "no separate Art label: {footer}");
     }
 
     #[test]

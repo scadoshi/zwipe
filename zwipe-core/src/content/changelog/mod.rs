@@ -74,6 +74,7 @@ pub const UPCOMING: &[Release] = &[
             "A filter section opens with its choices appearing whole and in place, so a quick tap lands where you aimed, on the web and in the app",
             "On a phone, a card's details drawer scrolls its own content with a vertical swipe, and an opened card role or tag scrolls into view",
             "A card's details drawer on a deck's Cards opens on the side away from the card's column, and on a phone drags toward that side to close",
+            "A shared deck's link preview credits the art with the artist tag Printings shows",
         ],
     },
     Release {

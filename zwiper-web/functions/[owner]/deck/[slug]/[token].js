@@ -145,7 +145,7 @@ const ART_CROP_SIZE = { width: 626, height: 457 };
 
 /// The preview image's layout version, zwipe-core's `SHARE_PREVIEW_LAYOUT`.
 /// Unfurlers cache the image by URL, so a new drawing needs a new `v`.
-const PREVIEW_LAYOUT = 2;
+const PREVIEW_LAYOUT = 3;
 
 /// The deck's generated preview image on the API, versioned by the layout
 /// and the unix seconds of its `updated_at` (`2-1794023263`, the version
