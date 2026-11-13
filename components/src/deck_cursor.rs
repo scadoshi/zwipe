@@ -22,10 +22,9 @@ use crate::deck_cards_view::StackDetails;
 use crate::keys::{PRESSED_KEY, STACK_DETAILS_CLASS, cursor_guard_js};
 
 /// The cards the cursor stops on: the deck page's List rows and stack cards, and the card rows of
-/// the screens that list cards without editing them ([`use_card_list_cursor`]). A featured card in
-/// the deck head is not one.
-pub(crate) const STOP_SELECTOR: &str =
-    ".web-deck-row[data-row], .card-stack-slot[data-row], .web-card-row[data-row]";
+/// the screens that list cards without editing them ([`use_card_list_cursor`]). A deck row's own
+/// card row inside it is not a second stop, and a featured card in the deck head is not one.
+pub(crate) const STOP_SELECTOR: &str = ".web-deck-row[data-row], .card-stack-slot[data-row], .web-card-row[data-row]:not(.web-deck-row > *)";
 
 /// Installs, once a tab, the page-wide trackers the cursor reads: the last input (`key` or
 /// `mouse`), the card in focus, `__zwipeDeckFocus`, which focuses a card by id and keeps it in
@@ -33,7 +32,7 @@ pub(crate) const STOP_SELECTOR: &str =
 /// page, the next card after it in the last reading order, else the one before. While a key moved
 /// last, a page change that drops focus to the page (a redraw, an Undo, a removed card) hands it
 /// back that way.
-const TRACK_JS: &str = r#"
+const TRACK_JS: &str = r"
 if (!window.__zwipeDeckTrack) {
     window.__zwipeDeckTrack = true;
     window.__zwipeDeckInput = 'mouse';
@@ -89,7 +88,7 @@ if (!window.__zwipeDeckTrack) {
         }, 150);
     }).observe(document.body, { childList: true, subtree: true });
 }
-"#;
+";
 
 /// Registers one page's cursor keys: a move key under the guard, at any width, while the page
 /// draws cards, gathers the cards as drawn and sends `[key, from, columns]`, `from` the
@@ -147,7 +146,9 @@ window.__zwipeDeckNav = (window.__zwipeDeckNav || []).filter((id) => id !== '__I
 /// when the mouse moved last.
 pub(crate) const KEYED_JS: &str = "(window.__zwipeDeckInput === 'key' ? ((document.activeElement && document.activeElement.closest && document.activeElement.closest('__STOPS__')) || (window.__zwipeDeckHandOn && window.__zwipeDeckHandOn())) : null)";
 
-/// [`KEYED_JS`] with its selector filled in.
+/// A script expression for the card the card keys act on from the keyboard cursor: when the last
+/// input was a key, the card in focus, else the card the cursor moves on to from one that left;
+/// `null` when the mouse moved last.
 #[must_use]
 pub fn keyed_js() -> String {
     KEYED_JS.replace("__STOPS__", STOP_SELECTOR)
@@ -410,6 +411,10 @@ mod tests {
         assert!(
             STOP_SELECTOR.contains(".web-card-row[data-row]"),
             "{STOP_SELECTOR}"
+        );
+        assert!(
+            STOP_SELECTOR.contains(".web-card-row[data-row]:not(.web-deck-row > *)"),
+            "a deck row's own card row is not a second stop for the same card: {STOP_SELECTOR}"
         );
         assert!(
             NAV_JS.contains(".web-card-row .card-row.expanded"),
