@@ -147,3 +147,17 @@ fn a_printing_with_no_artist_has_no_artist_chip() {
     assert!(html.contains("card-prices"), "{html}");
     assert!(!html.contains("detail-chip-artist"), "{html}");
 }
+
+#[test]
+fn the_narrow_sheet_says_which_printing_shows() {
+    let html = render(|| open_sheet(true));
+    let (_, facts) = html.split_once(r#"class="printing-facts""#).unwrap();
+    let (facts, _) = facts.split_once("</div>").unwrap();
+    let data = card().scryfall_data;
+    assert!(facts.contains(&data.set_name), "the set: {facts}");
+    assert!(
+        facts.contains(&format!("#{}", data.collector_number)),
+        "the number: {facts}"
+    );
+    assert!(facts.contains("1 of 1"), "its place: {facts}");
+}

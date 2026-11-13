@@ -261,6 +261,7 @@ pub fn PrintingSheet(
                         // printing shows.
                         div { class: "web-printing-foot",
                             if let Some(card) = visible.clone().filter(|_| !loading) {
+                                PrintingFacts { card: card.clone(), at, count }
                                 ArtistChip { card }
                             }
                             div { class: "web-printing-foot-row",
@@ -429,6 +430,20 @@ fn CoverFlowSheet(
                     }
                 }
             }
+        }
+    }
+}
+
+/// Which printing `card` is, on one line under a narrow sheet's cover flow: its set and collector
+/// number as chips, then its place among the `count` printings (`at` from 0), as the wide modal's
+/// info row shows them. The set's name is cut short before the line wraps.
+#[component]
+pub fn PrintingFacts(card: Card, at: usize, count: usize) -> Element {
+    rsx! {
+        div { class: "printing-facts",
+            span { class: "stat-chip stat-chip-p3 printing-facts-set", "{card.scryfall_data.set_name}" }
+            span { class: "stat-chip stat-chip-muted", "#{card.scryfall_data.collector_number}" }
+            span { class: "printing-facts-count", "{at.saturating_add(1)} of {count}" }
         }
     }
 }
