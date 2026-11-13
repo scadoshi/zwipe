@@ -617,6 +617,13 @@
     transition: all 0.2s ease;
 }
 
+/* An action that cannot be undone, leading the row, stands apart from the
+   others, so it reads as its own choice and Tab from the primary action
+   never reaches it next. */
+.alert-dialog-actions > .alert-dialog-action-danger:first-child {
+    margin-inline-end: 0.75rem;
+}
+
 /* An icon action stands as tall as the text actions beside it, its icon
    centered. */
 .alert-dialog-actions > .alert-dialog-icon {

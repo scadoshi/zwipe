@@ -405,23 +405,6 @@ if (!window.__zwipeLeaveUnload) {
 }
 "#;
 
-/// Keeps Tab on the dialog's two buttons while it is open.
-const TAB_JS: &str = r"
-if (!window.__zwipeLeaveTab) {
-    window.__zwipeLeaveTab = true;
-    document.addEventListener('keydown', (e) => {
-        if (e.key !== 'Tab') return;
-        const dialog = document.querySelector('.web-leave-dialog');
-        if (!dialog) return;
-        const buttons = Array.from(dialog.querySelectorAll('button'));
-        const at = buttons.indexOf(document.activeElement);
-        e.preventDefault();
-        const next = (at + (e.shiftKey ? -1 : 1) + buttons.length) % buttons.length;
-        buttons[next].focus();
-    }, true);
-}
-";
-
 /// Remembers what had focus and puts it on Stay.
 const FOCUS_STAY_JS: &str = "(() => { const stay = document.querySelector('.web-leave-dialog .web-leave-stay'); if (!stay) return; window.__zwipeLeaveFrom = document.activeElement; stay.focus(); })()";
 
@@ -487,7 +470,6 @@ pub fn LeaveDialog() -> Element {
     use_mounted_record();
     use_hook(|| {
         document::eval(UNLOAD_JS);
-        document::eval(TAB_JS);
     });
     use_effect(move || {
         if asking() {

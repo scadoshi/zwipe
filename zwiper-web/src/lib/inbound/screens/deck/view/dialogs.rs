@@ -160,19 +160,7 @@ pub fn DeckDialogsHost(
     let (share_body, share_actions) = if share_token().is_some() {
         (
             "Anyone with the link can view this deck. Stop sharing disables the link; sharing again creates a new one.",
-            vec![
-                DialogAction::Dismiss("Close".into()),
-                DialogAction::Confirm {
-                    label: "Copy link".into(),
-                    danger: false,
-                    on_confirm: copy_shared,
-                },
-                DialogAction::Confirm {
-                    label: deck_view::STOP_SHARE.into(),
-                    danger: true,
-                    on_confirm: stop_share,
-                },
-            ],
+            components::shared_link_actions(copy_shared, stop_share),
         )
     } else {
         (

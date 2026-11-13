@@ -204,7 +204,7 @@ pub use printing_sheet::{
 };
 pub use role_tags::{OtagDef, RoleTags};
 pub use settle::use_settle;
-pub use share_url::ShareUrl;
+pub use share_url::{ShareUrl, shared_link_actions};
 pub use site_footer::SiteFooter;
 pub use stacks_ghost::DeckStacksGhost;
 pub use staple_decks_chip::StapleDecksChip;

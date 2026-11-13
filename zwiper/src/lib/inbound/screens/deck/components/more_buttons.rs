@@ -72,19 +72,7 @@ pub(crate) fn MoreButtons(
     });
 
     let share_actions = if share_url.is_some() {
-        vec![
-            DialogAction::Dismiss(deck_view::CLOSE.into()),
-            DialogAction::Confirm {
-                label: deck_view::COPY_LINK.into(),
-                danger: false,
-                on_confirm: copy_shared_link,
-            },
-            DialogAction::Confirm {
-                label: deck_view::STOP_SHARE.into(),
-                danger: true,
-                on_confirm: stop_sharing,
-            },
-        ]
+        components::shared_link_actions(copy_shared_link, stop_sharing)
     } else {
         vec![
             DialogAction::Dismiss(deck_view::CLOSE.into()),
