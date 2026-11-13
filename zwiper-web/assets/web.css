@@ -2012,13 +2012,28 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 
 /* A deck's Cards on a phone (DeckCardsLayer): a full-screen layer over its
    Profile at its place on the overlay stack, under the nav, which takes its
-   title, `?` and back arrow, scrolling as a screen does. */
+   title, `?` and back arrow, scrolling as a screen does. Its own grid tiles
+   hide the Profile (the kit's `.screen:has(> .grid-cells)`). */
 .web-cards-layer {
     top: var(--web-nav-h, 4.7rem);
     z-index: var(--overlay-z, 200);
     overflow-x: hidden;
     overflow-y: auto;
-    background-color: var(--bg-primary);
+}
+
+/* Where the header floats and slides away on scroll (below the fold's edge,
+   media.rs's 1110px), the layer starts at the window's top under the
+   header, as every screen does, with the header's height as room above its
+   content, so its cards scroll up under the header and fill the space it
+   leaves. It sits under the header (101) and over the Profile; every sheet
+   opened over it is at 200 and up. */
+@media (max-width: 1109px) {
+    .web-cards-layer {
+        top: 0;
+        z-index: 100;
+        padding-top: var(--app-nav-h);
+        box-sizing: border-box;
+    }
 }
 
 /* The overlay scrolls as a screen under the nav does, down to the site's

@@ -3477,38 +3477,29 @@ footer.site-footer .site-footer-note {
     -webkit-tap-highlight-color: transparent;
 }
 
-/* ---- Deck: the Cards layer's slide ----
-   A deck's Cards slide in over its Profile from the right and slide back
-   out the same way (use_layer_presence), on the web's layer and the app's
-   Cards screen. The slide out's end drops the layer, so under reduced
-   motion it still runs, in a moment. */
+/* ---- Deck: the Cards layer comes and goes ----
+   A deck's Cards open over its Profile and close as a route change does,
+   there at once with nothing moving, on the web's layer and the app's Cards
+   screen (use_layer_presence). The keyframes still run, for a moment, since
+   the closing one's end drops the layer. */
 @keyframes deck-cards-layer-in {
     from {
-        translate: 100% 0;
+        opacity: 1;
     }
 }
 
 @keyframes deck-cards-layer-out {
     to {
-        translate: 100% 0;
+        opacity: 1;
     }
 }
 
 .deck-cards-layer,
 .app-cards-layer > .screen {
-    animation: deck-cards-layer-in 320ms var(--ease-enter) backwards;
+    animation: deck-cards-layer-in 1ms linear backwards;
 }
 
 .deck-cards-layer.leaving,
 .app-cards-layer.leaving > .screen {
-    animation: deck-cards-layer-out 260ms cubic-bezier(0.4, 0, 1, 1) forwards;
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .deck-cards-layer,
-    .app-cards-layer > .screen,
-    .deck-cards-layer.leaving,
-    .app-cards-layer.leaving > .screen {
-        animation-duration: 1ms;
-    }
+    animation: deck-cards-layer-out 1ms linear forwards;
 }

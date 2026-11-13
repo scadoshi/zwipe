@@ -89,6 +89,8 @@ pub const UPCOMING: &[Release] = &[
             "On the web, Caps Lock no longer changes what a letter shortcut does",
             "On the web, an Oracle tag's Examples keep Next, Back one and the details eye on one bar",
             "On the web's deck page, the arrow keys or h, j, k and l move between cards and Enter opens one, in List and Stacks",
+            "On a phone, a card's details open from a deck's Cards as a screen of their own, and Cards open and close at once, both over the grid tiles, on the web and in the app",
+            "On phone web, scrolling a deck's Cards lets them fill the space the header leaves",
         ],
     },
     Release {

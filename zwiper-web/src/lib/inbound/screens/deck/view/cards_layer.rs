@@ -126,6 +126,8 @@ pub(crate) fn DeckCardsLayer(
             "aria-modal": "true",
             "aria-label": TITLE,
             style: layer().map(|z| format!("--overlay-z: {z};")),
+            // The grid tiles, the layer's own, since it covers the Profile.
+            components::GridCells { still: true }
             div {
                 class: "screen-content web-deck-cards-view",
                 "data-settle-scope": "",

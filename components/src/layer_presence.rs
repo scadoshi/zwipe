@@ -1,7 +1,8 @@
-//! A full-screen layer that slides in and out, such as a deck's Cards over its Profile: it stays
-//! mounted while it slides out and drops once its slide ends, so closing eases as opening does.
-//! The slide is `magic.css`'s `deck-cards-layer-in` and `deck-cards-layer-out`; it times on the
-//! animation's own end, so it needs no clock and runs the same in the browser and the apps.
+//! A full-screen layer that comes and goes, such as a deck's Cards over its Profile: it stays
+//! mounted until its closing animation ends and drops then. The animations are `magic.css`'s
+//! `deck-cards-layer-in` and `deck-cards-layer-out`, a moment long with nothing moving, as a
+//! route change looks; it times on the animation's own end, so it needs no clock and runs the
+//! same in the browser and the apps.
 
 use dioxus::prelude::*;
 

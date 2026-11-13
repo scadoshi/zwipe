@@ -1006,6 +1006,8 @@ pub fn View(deck_id: Uuid) -> Element {
                 // A tap off every card closes the reveal, of a stack card or a featured card; a
                 // card's own tap stops at the card.
                 onclick: move |_| stack_details.dismiss(),
+                // The grid tiles, the screen's own, since Cards covers the deck's Profile.
+                ::components::GridCells { still: true }
                 ScreenHeader { title: deck_cards::TITLE, hint: deck_cards_hint_open, back: move |()| driver.dispatch(Action::Back) }
 
                 div { class: "screen-content",
