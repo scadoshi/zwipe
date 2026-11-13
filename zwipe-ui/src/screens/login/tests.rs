@@ -245,11 +245,8 @@ fn no_password_shows_in_debug() {
 #[test]
 fn the_fields_keep_the_apps_labels() {
     assert_eq!(
-        Field::ALL.map(|f| (f.label(), f.placeholder(), f.is_masked())),
-        [
-            ("Username or email", "Username or email", false),
-            ("Password", "Password", true),
-        ]
+        Field::ALL.map(|f| (f.label(), f.is_masked())),
+        [("Username or email", false), ("Password", true),]
     );
 }
 

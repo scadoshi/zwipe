@@ -135,7 +135,6 @@ pub fn ForgotPassword() -> Element {
                                 value: driver.email,
                                 id: "email",
                                 label: EMAIL,
-                                placeholder: EMAIL,
                                 input_type: "email",
                                 name: "email",
                                 autocomplete: "email",

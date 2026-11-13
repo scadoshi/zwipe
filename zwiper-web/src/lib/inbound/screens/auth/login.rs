@@ -187,7 +187,6 @@ pub fn Login() -> Element {
                                 name: "username",
                                 autocomplete: "username",
                                 label: Field::Identifier.label(),
-                                placeholder: Field::Identifier.placeholder(),
                             }
                             TextInput {
                                 value: driver.password,
@@ -195,7 +194,6 @@ pub fn Login() -> Element {
                                 name: "password",
                                 autocomplete: "current-password",
                                 label: Field::Password.label(),
-                                placeholder: Field::Password.placeholder(),
                                 input_type: "password",
                             }
                             // The form's one button, so Return in a field
