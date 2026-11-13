@@ -2,6 +2,7 @@
 //! confirm dialog stacked on top.
 
 use components::icons::{CHECK, DockIcon};
+use components::keys::use_sheet_focus;
 use components::{
     AlertDialog, BottomSheet, Button, ButtonVariant, DialogAction, SheetFrame, SheetWide,
     TOAST_NORMAL, TOAST_QUICK, TextInput,
@@ -30,6 +31,8 @@ use crate::inbound::telemetry;
 #[component]
 pub(super) fn ChangePasswordSheet(mut open: Signal<bool>) -> Element {
     telemetry::use_telemetry_screen(Screen::Profile(ProfileScreen::ChangePassword));
+    // The first field takes focus as the sheet opens, and the button that opened it gets it back.
+    use_sheet_focus(open.into(), ".bottom-sheet.show #current_password");
     let authed = use_authed();
     let toast = use_toast();
     let client: Signal<ZwipeClient> = use_context();

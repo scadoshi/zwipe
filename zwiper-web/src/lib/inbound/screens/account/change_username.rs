@@ -1,6 +1,7 @@
 //! The Change username sheet, a centered modal on a wide window.
 
 use components::icons::{CHECK, DockIcon};
+use components::keys::use_sheet_focus;
 use components::{BottomSheet, SheetFrame, SheetWide, TOAST_QUICK, TextInput};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -20,6 +21,8 @@ use crate::inbound::telemetry;
 #[component]
 pub(super) fn ChangeUsernameSheet(mut open: Signal<bool>) -> Element {
     telemetry::use_telemetry_screen(Screen::Profile(ProfileScreen::ChangeUsername));
+    // The first field takes focus as the sheet opens, and the button that opened it gets it back.
+    use_sheet_focus(open.into(), ".bottom-sheet.show #new_username");
     let mut session: Signal<Option<Session>> = use_context();
     let authed = use_authed();
     let toast = use_toast();

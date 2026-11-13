@@ -4,8 +4,9 @@
 //! side stacked behind it, moved by the arrows, a sideways scroll, a drag or swipe, or a tap on a
 //! side card. From the kit's modal width it fills a large modal, with Enter, a click on the middle
 //! card or `Select` picking it. Below that width it sits in a centered modal down to the
-//! breakpoint and a bottom sheet under it, with the prices at its bottom and Save at their right.
-//! It closes from its title bar's ×, a backdrop tap, a drag down or Esc.
+//! breakpoint and a bottom sheet under it, with the prices at its bottom and Save at their right,
+//! Enter saving. Either form takes focus as it opens, so the arrow keys, `h`, `l` and Enter work
+//! at once, and hands focus back as it closes. It closes from its title bar's ×, a backdrop tap, a drag down or Esc.
 //!
 //! Components never call the API. The host provides a [`PrintingsSource`]: the printings it has
 //! fetched, by the card's Oracle id, and a callback that fetches them. Without a source the sheet
@@ -21,6 +22,7 @@ use zwipe_ui::screens::printing_sheet as model;
 use zwipe_ui::shortcuts::{self, FlowKey};
 
 use crate::icons::{CHECK, DockIcon};
+use crate::keys::use_sheet_focus;
 use crate::media::{KIT_MODAL_PX, use_min_width};
 use crate::{BottomSheet, CoverFlow, LoadFailed, SheetFrame, SheetWide, use_overlay_back_action};
 
@@ -45,6 +47,12 @@ pub struct PrintingsSource {
     /// Fetches the printings of the card with this Oracle id.
     pub request: Callback<Uuid>,
 }
+
+/// The open bottom sheet's body, which takes the keys below the kit's modal width.
+const NARROW_BODY: &str = ".web-printing-sheet .bottom-sheet.show .web-printing-body";
+
+/// The open modal's body, which takes the keys from the kit's modal width on.
+const WIDE_BODY: &str = ".web-flow-sheet.show .web-flow-body";
 
 /// Which way a step through the printings goes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -164,6 +172,10 @@ pub fn PrintingSheet(
         }
     });
 
+    // The bottom sheet's body takes the keys as soon as it opens; the modal form focuses its own.
+    let narrow_open = use_memo(move || open() && !flow());
+    use_sheet_focus(narrow_open.into(), NARROW_BODY);
+
     let retry = use_callback(move |()| {
         let next = attempt.peek().wrapping_add(1);
         attempt.set(next);
@@ -188,7 +200,7 @@ pub fn PrintingSheet(
 
     rsx! {
         // `sheet-over` lifts the sheet above a details sheet already open
-        // under it. The body takes the arrow keys and Enter once clicked.
+        // under it. The body takes the arrow keys and Enter.
         div { class: "web-sheet web-sheet-modal web-printing-sheet sheet-over",
             BottomSheet {
                 open,
@@ -199,8 +211,14 @@ pub fn PrintingSheet(
                     class: "web-printing-body",
                     tabindex: "-1",
                     onkeydown: move |e: Event<KeyboardData>| match flow_press(&e) {
-                        Some(FlowKey::Back) => step(Step::Back),
-                        Some(FlowKey::Forward) => step(Step::Forward),
+                        Some(FlowKey::Back) => {
+                            e.prevent_default();
+                            step(Step::Back);
+                        }
+                        Some(FlowKey::Forward) => {
+                            e.prevent_default();
+                            step(Step::Forward);
+                        }
                         Some(FlowKey::Select) => save.call(()),
                         None => {}
                     },
@@ -229,6 +247,12 @@ pub fn PrintingSheet(
                                             "aria-label": "Save",
                                             disabled: !changed,
                                             onclick: move |_| save.call(()),
+                                            // Enter presses the button and stays off the body's pick.
+                                            onkeydown: move |e: Event<KeyboardData>| {
+                                                if e.key() == Key::Enter {
+                                                    e.stop_propagation();
+                                                }
+                                            },
                                             DockIcon { path: CHECK }
                                         }
                                     }
@@ -267,13 +291,7 @@ fn CoverFlowSheet(
     let selected = printings.get(at).cloned();
 
     // The body takes the keys as soon as the modal opens.
-    use_effect(move || {
-        if open() {
-            document::eval(
-                "setTimeout(() => { const b = document.querySelector('.web-flow-body'); if (b) b.focus(); }, 60)",
-            );
-        }
-    });
+    use_sheet_focus(open.into(), WIDE_BODY);
 
     // The arrow keys step as the flow's buttons do.
     let mut step = move |way: Step| {
@@ -300,6 +318,9 @@ fn CoverFlowSheet(
                 div {
                     class: if open() { "bottom-sheet show web-flow-sheet" } else { "bottom-sheet web-flow-sheet" },
                     style: layer().map(|z| format!("--overlay-z: {z};")),
+                    role: "dialog",
+                    "aria-label": "Printings",
+                    "aria-modal": "true",
                     div { class: "sheet-header", style: "position: relative;",
                         button {
                             class: "sheet-close",

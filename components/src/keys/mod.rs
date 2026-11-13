@@ -1,10 +1,11 @@
 //! The keys a screen answers in the browser: the guard that decides whether a key reaches a
-//! screen at all, the listeners screens register for their own keys and undo, and the shortcuts
+//! screen at all, the listeners screens register for their own keys and undo, the focus a keyed sheet takes as it opens, and the shortcuts
 //! sheet with the keys that work everywhere (`?` and Shift+H). The key maps themselves are pure
 //! and live in `zwipe_ui::shortcuts`.
 
 mod guard;
 mod page_keys;
+mod sheet_focus;
 mod shortcuts_sheet;
 
 pub use guard::{
@@ -13,6 +14,7 @@ pub use guard::{
     press_first_js,
 };
 pub use page_keys::{focus_by_id, use_page_keys, use_page_keys_through, use_undo_key};
+pub use sheet_focus::use_sheet_focus;
 pub use shortcuts_sheet::{
     SHORTCUTS_LABEL, ShortcutsList, ShortcutsOffered, ShortcutsOpen, ShortcutsSheet,
     shortcuts_action, use_global_keys, use_offer_shortcuts, use_shortcuts_action,

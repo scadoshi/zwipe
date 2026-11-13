@@ -186,7 +186,11 @@ pub fn OracleTagDictionary(mut open: Signal<bool>, on_use: EventHandler<String>)
                         class: if shown() { "sheet-backdrop show" } else { "sheet-backdrop" },
                         onclick: move |_| open.set(false),
                     }
-                    div { class,
+                    div {
+                        class,
+                        role: "dialog",
+                        "aria-label": "Oracle tags",
+                        "aria-modal": "true",
                         div { class: "sheet-header", style: "position: relative;",
                             button {
                                 class: "sheet-close",

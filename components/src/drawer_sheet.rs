@@ -2,10 +2,13 @@
 //! draw: the kit's drawer along the right edge on a wide window and its
 //! bottom sheet below the breakpoint, or the drawer at every width, with a
 //! title bar (×, title and an optional `?`), the content and a dock at its
-//! bottom right.
+//! bottom right. As a bottom sheet its title bar pulls it down as the kit's
+//! [`BottomSheet`](crate::BottomSheet)'s does ([`use_sheet_drag`]).
 
 use dioxus::prelude::*;
+use orangui::use_sheet_drag;
 
+use crate::media::{KIT_MODAL_PX, use_min_width};
 use crate::{ActionDock, Button, ButtonVariant, DockPlace, SheetDim, SheetFrame, SheetWide};
 
 /// How long the sheet takes to slide out, in milliseconds: the kit's 0.3s
@@ -31,7 +34,8 @@ const CLOSE_MS: u32 = 300;
 /// `layer` is the z-index its host's overlay registration hands back
 /// (`use_overlay_back`), which the sheet draws at, holding it through the
 /// slide out, so the sheet opened last is on top. `dim` says whether its
-/// backdrop dims the page ([`SheetDim`]).
+/// backdrop dims the page ([`SheetDim`]). The sheet is a `dialog` named by
+/// `title`, and `aria-modal` while it dims the page.
 #[component]
 pub fn DrawerSheet(
     open: ReadSignal<bool>,
@@ -70,6 +74,18 @@ pub fn DrawerSheet(
     let layer_style = held()
         .filter(|_| shown || content_up())
         .map(|z| format!("--overlay-z: {z};"));
+    // Below the kit's modal width a sheet that is not a drawer at every width
+    // is the bottom sheet, which its title bar pulls down.
+    let wide = use_min_width(KIT_MODAL_PX);
+    let pulls = !every_width && !wide();
+    // A sheet that dims the page at this width is modal; an undimmed drawer leaves the page in use.
+    let modal = (dim == SheetDim::Always || !wide()).then_some("true");
+    let close = use_callback(move |()| on_close.call(()));
+    let drag = use_sheet_drag(open, close);
+    let sheet_style = match (layer_style.clone(), drag.style().filter(|_| pulls)) {
+        (Some(layer), Some(drag)) => Some(format!("{layer} {drag}")),
+        (layer, drag) => layer.or(drag),
+    };
     let dim_class = match dim {
         SheetDim::Always => "",
         SheetDim::Phone => " sheet-dim-phone",
@@ -78,16 +94,34 @@ pub fn DrawerSheet(
         SheetFrame { wide: SheetWide::Drawer,
             div {
                 class: if shown { "sheet-backdrop show {reach}{dim_class}" } else { "sheet-backdrop {reach}{dim_class}" },
-                style: layer_style.clone(),
+                style: layer_style,
                 onclick: move |_| on_close.call(()),
+                onpointermove: move |evt| drag.follow(&evt),
+                onpointerup: move |evt| drag.release(&evt),
+                onpointercancel: move |evt| drag.cancel(&evt),
             }
             div {
                 class: if shown { "bottom-sheet show {reach} {class}" } else { "bottom-sheet {reach} {class}" },
-                style: layer_style,
-                div { class: "sheet-header", style: "position: relative;",
+                style: sheet_style,
+                role: "dialog",
+                "aria-label": (!title.is_empty()).then(|| title.clone()),
+                "aria-modal": modal,
+                onmounted: move |evt| drag.mounted(evt),
+                onpointermove: move |evt| drag.follow(&evt),
+                onpointerup: move |evt| drag.release(&evt),
+                onpointercancel: move |evt| drag.cancel(&evt),
+                div {
+                    class: "sheet-header",
+                    style: "position: relative;",
+                    onpointerdown: move |evt| {
+                        if pulls {
+                            drag.start(&evt);
+                        }
+                    },
                     button {
                         class: "sheet-close",
                         "aria-label": "Close",
+                        onpointerdown: move |evt| evt.stop_propagation(),
                         onclick: move |_| on_close.call(()),
                         "\u{00d7}"
                     }
