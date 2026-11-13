@@ -1062,12 +1062,23 @@ fn undo_moves_back_without_its_own_move_toast() {
         from: Board::Maybeboard,
         starred: None,
     })));
-    assert_eq!(
-        toasts(&effects),
-        [(ToastKind::Info, "Sol Ring back to maybeboard".to_owned())]
-    );
+    assert!(toasts(&effects).is_empty(), "the toast waits for the move");
     assert_eq!(undo_records(&effects), []);
     assert_eq!(state.row(ring).map(|r| r.board), Some(Board::Maybeboard));
+    let Some(Effect::PatchCard { ticket, .. }) = effects
+        .iter()
+        .find(|e| matches!(e, Effect::PatchCard { .. }))
+    else {
+        panic!("undo moves it: {effects:?}");
+    };
+    let landed = state.update(Action::Patched {
+        ticket: *ticket,
+        deck_card: Box::new(state.entries[0].deck_card.clone()),
+    });
+    assert_eq!(
+        toasts(&landed),
+        [(ToastKind::Info, "Sol Ring back to maybeboard".to_owned())]
+    );
 }
 
 #[test]
@@ -1826,7 +1837,13 @@ fn a_starred_card_moved_off_the_main_board_loses_its_star_and_undo_puts_it_back(
     );
 
     let effects = state.update(Action::Undo(Box::new(recorded)));
-    let Some(Effect::PatchCard { request, .. }) = effects
+    assert!(
+        toasts(&effects).is_empty(),
+        "the toast waits for the move to land: {effects:?}"
+    );
+    let Some(Effect::PatchCard {
+        ticket, request, ..
+    }) = effects
         .iter()
         .find(|e| matches!(e, Effect::PatchCard { .. }))
     else {
@@ -1834,11 +1851,75 @@ fn a_starred_card_moved_off_the_main_board_loses_its_star_and_undo_puts_it_back(
     };
     assert!(matches!(&request.board, Patch::Set(Some(b)) if b == "deck"));
     assert!(
-        matches!(request.mvp, Patch::Set(Some(true))),
-        "the move back stars it again in the same write"
+        matches!(request.mvp, Patch::Unchanged),
+        "the move back goes alone, so a refused star can't take it with it"
     );
     assert_eq!(state.row(ring).map(|r| r.board), Some(Board::Deck));
+    let mut moved_back = state.entries[0].deck_card.clone();
+    moved_back.mvp_at = None;
+    let landed = state.update(Action::Patched {
+        ticket: *ticket,
+        deck_card: Box::new(moved_back),
+    });
+    assert_eq!(
+        toasts(&landed),
+        [(ToastKind::Info, "Sol Ring back to deck".to_owned())]
+    );
+    let Some(Effect::PatchCard {
+        ticket: star_ticket,
+        request: star,
+        ..
+    }) = landed
+        .iter()
+        .find(|e| matches!(e, Effect::PatchCard { .. }))
+    else {
+        panic!("once it's back, the star follows: {landed:?}");
+    };
+    assert!(matches!(star.mvp, Patch::Set(Some(true))));
     assert_eq!(state.entries[0].deck_card.mvp_at, Some(starred_at));
+
+    // Another tab starred a third MVP meanwhile: the server refuses the star alone.
+    let refused = state.update(Action::Failed {
+        ticket: *star_ticket,
+    });
+    assert_eq!(
+        state.row(ring).map(|r| r.board),
+        Some(Board::Deck),
+        "the move back stands"
+    );
+    assert_eq!(
+        state.entries[0].deck_card.mvp_at, None,
+        "unstarred, as the server has it"
+    );
+    assert!(
+        toasts(&refused).is_empty(),
+        "no success toast for the refused star; the client shows the server's refusal"
+    );
+}
+
+#[test]
+fn a_refused_move_back_raises_no_success_toast() {
+    let (mut state, cards) = loaded();
+    let ring = id(&cards[0]);
+    let effects = state.update(Action::Undo(Box::new(UndoAction::MovedBoard {
+        card_id: ring,
+        card_name: "Sol Ring".to_owned(),
+        from: Board::Maybeboard,
+        starred: None,
+    })));
+    let Some(Effect::PatchCard { ticket, .. }) = effects
+        .iter()
+        .find(|e| matches!(e, Effect::PatchCard { .. }))
+    else {
+        panic!("undo moves it: {effects:?}");
+    };
+    let failed = state.update(Action::Failed { ticket: *ticket });
+    assert!(toasts(&effects).is_empty() && toasts(&failed).is_empty());
+    assert_eq!(
+        state.row(ring).map(|r| r.board),
+        Some(Board::Deck),
+        "it stays where it was"
+    );
 }
 
 #[test]

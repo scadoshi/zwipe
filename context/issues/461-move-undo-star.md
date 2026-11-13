@@ -23,3 +23,10 @@ thinker:
 ## Verification
 - `cargo test -p zwipe-ui` (`a_starred_card_moved_off_the_main_board_loses_its_star_and_undo_puts_it_back`, red with the restar removed) and `cargo test -p zerver --test deck_cards a_move_back`.
 - droider's steps on web and app: Adriana is starred after Undo and after a reload.
+
+## Follow-up: a refused star took the move back with it
+surfer, breaking 461 (two tabs): tab 1 moves Adriana to the maybeboard, tab 2 stars a third other MVP, tab 1 presses u. Both toasts showed ('already has 3 MVPs' and 'back to deck') but she stayed on the maybeboard after reload, and the Undo entry was spent.
+- Cause: Undo's move back sent `board` and `mvp: true` in one PATCH; with three MVPs already starred on the server (from the other tab, so the client's own count didn't know) the server refuses the whole write (`MvpCapReached`), the move included. The undo toast was raised before the write, so it claimed a move that never happened.
+- Fix: the move back goes alone; once the server takes it, the undo's toast shows and the star follows in a write of its own (shared model `AfterMove`, web `move_card` with `StarBy::Quiet`). A refused star leaves her back on the main board, unstarred, with the server's refusal toasted. A refused move raises no success toast and puts her back where she was. With three MVPs counted locally, the star isn't sent and the cap toast shows.
+- Tests: `a_starred_card_moved_off_the_main_board_loses_its_star_and_undo_puts_it_back` (now: move alone, toast on landing, then the star, then a refused star leaves her moved and unstarred), `a_refused_move_back_raises_no_success_toast`, `undo_moves_back_without_its_own_move_toast`.
+

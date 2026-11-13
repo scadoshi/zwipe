@@ -25,7 +25,6 @@ use zwipe_core::domain::card::search_card::group_cards::GroupByOption;
 use zwipe_core::domain::deck::deck_metrics::deck_price;
 use zwipe_core::domain::deck::{Board, Deck, DeckEntry, DeckProfile, Quantity};
 use zwipe_core::http::contracts::deck_card::{HttpCreateDeckCard, HttpPatchDeckCard};
-use zwipe_core::http::helpers::Patch;
 use zwipe_ui::deck::form::Slot;
 use zwipe_ui::deck_cards::{self, Boards, Bursts, Write, Zone};
 use zwipe_ui::deck_signals::{Crossing, budget_crossing, land_count, land_crossing};
@@ -130,6 +129,9 @@ enum StarBy {
     Toggle,
     /// Undo, with its toast.
     Undo(String),
+    /// Undo's move back putting the star back once the move has landed: no record and no toast
+    /// of its own; a refusal toasts the server's word and leaves the card unstarred.
+    Quiet,
 }
 
 /// The engine for `deck_id`: fetches the deck and its tokens, parks the
@@ -420,11 +422,77 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
         });
     });
 
+    // Sets a row's star time at once and patches the star to match. A toggle records undo once
+    // the server takes it; an undo raises its toast then, so a refusal shows alone.
+    let set_star = use_callback(
+        move |(card_id, at, by): (Uuid, Option<DateTime<Utc>>, StarBy)| {
+            let Some(entry) = entries
+                .peek()
+                .iter()
+                .find(|e| e.deck_card.scryfall_data_id == card_id)
+                .cloned()
+            else {
+                return;
+            };
+            let old = entry.deck_card.mvp_at;
+            let card_name = entry.card.scryfall_data.name;
+            let mut set_mvp = move |at| {
+                if let Some(e) = entries
+                    .write()
+                    .iter_mut()
+                    .find(|e| e.deck_card.scryfall_data_id == card_id)
+                {
+                    e.deck_card.mvp_at = at;
+                }
+            };
+            set_mvp(at);
+            spawn(async move {
+                let request = HttpPatchDeckCard::with_mvp(at.is_some());
+                let name = match by {
+                    StarBy::Toggle => "toggle_mvp",
+                    StarBy::Undo(_) | StarBy::Quiet => "undo",
+                };
+                match authed
+                    .try_run(name, |c, s| async move {
+                        c.update_deck_card(deck_id, card_id, &request, &s).await
+                    })
+                    .await
+                {
+                    Ok(saved) => {
+                        set_mvp(saved.mvp_at);
+                        match by {
+                            StarBy::Toggle => undo.write().push(
+                                deck_id,
+                                UndoAction::MvpToggled {
+                                    card_id,
+                                    card_name,
+                                    before: old,
+                                },
+                            ),
+                            StarBy::Undo(message) => {
+                                toast.info(message, ToastOptions::default().duration(TOAST_QUICK));
+                            }
+                            StarBy::Quiet => {}
+                        }
+                    }
+                    Err(_) => set_mvp(old),
+                }
+            });
+        },
+    );
+
     // A move to `target`. Off the main board a card loses its star, as the server drops it, and
     // the undo entry keeps the star time; `restar` stars it again in the same write, for undo's
-    // move back.
+    // move back, in a write of its own once the move lands, so a refused star can't take the move
+    // with it; `landed` is undo's toast, raised only then.
     let move_card = use_callback(
-        move |(card_id, target, record, restar): (Uuid, Board, bool, Option<DateTime<Utc>>)| {
+        move |(card_id, target, record, restar, landed): (
+            Uuid,
+            Board,
+            bool,
+            Option<DateTime<Utc>>,
+            Option<String>,
+        )| {
             let Some(entry) = entries
                 .peek()
                 .iter()
@@ -465,18 +533,9 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
                     e.deck_card.mvp_at = mvp_at;
                 }
             };
-            let shown_star = if unstars {
-                None
-            } else {
-                restar.or(was_starred)
-            };
-            set_board(target, shown_star);
+            set_board(target, if unstars { None } else { was_starred });
             spawn(async move {
-                let mut request =
-                    HttpPatchDeckCard::new(None, Some(target.display_name().to_owned()));
-                if restar.is_some() {
-                    request.mvp = Patch::Set(Some(true));
-                }
+                let request = HttpPatchDeckCard::new(None, Some(target.display_name().to_owned()));
                 match authed
                     .try_run("move_board", |c, s| async move {
                         c.update_deck_card(deck_id, card_id, &request, &s).await
@@ -484,7 +543,15 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
                     .await
                 {
                     // The reply carries the star as the server left it.
-                    Ok(saved) => set_board(target, saved.mvp_at),
+                    Ok(saved) => {
+                        set_board(target, saved.mvp_at);
+                        if let Some(message) = landed {
+                            toast.info(message, ToastOptions::default().duration(TOAST_QUICK));
+                        }
+                        if restar.is_some() {
+                            set_star.call((card_id, restar, StarBy::Quiet));
+                        }
+                    }
                     Err(_) => set_board(from, was_starred),
                 }
             });
@@ -494,66 +561,8 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
         },
     );
     let move_to_board = use_callback(move |(card_id, target, record): (Uuid, Board, bool)| {
-        move_card.call((card_id, target, record, None));
+        move_card.call((card_id, target, record, None, None));
     });
-
-    // Sets a row's star time at once and patches the star to match. A toggle records undo once
-    // the server takes it; an undo raises its toast then, so a refusal shows alone.
-    let set_star = use_callback(
-        move |(card_id, at, by): (Uuid, Option<DateTime<Utc>>, StarBy)| {
-            let Some(entry) = entries
-                .peek()
-                .iter()
-                .find(|e| e.deck_card.scryfall_data_id == card_id)
-                .cloned()
-            else {
-                return;
-            };
-            let old = entry.deck_card.mvp_at;
-            let card_name = entry.card.scryfall_data.name;
-            let mut set_mvp = move |at| {
-                if let Some(e) = entries
-                    .write()
-                    .iter_mut()
-                    .find(|e| e.deck_card.scryfall_data_id == card_id)
-                {
-                    e.deck_card.mvp_at = at;
-                }
-            };
-            set_mvp(at);
-            spawn(async move {
-                let request = HttpPatchDeckCard::with_mvp(at.is_some());
-                let name = match by {
-                    StarBy::Toggle => "toggle_mvp",
-                    StarBy::Undo(_) => "undo",
-                };
-                match authed
-                    .try_run(name, |c, s| async move {
-                        c.update_deck_card(deck_id, card_id, &request, &s).await
-                    })
-                    .await
-                {
-                    Ok(saved) => {
-                        set_mvp(saved.mvp_at);
-                        match by {
-                            StarBy::Toggle => undo.write().push(
-                                deck_id,
-                                UndoAction::MvpToggled {
-                                    card_id,
-                                    card_name,
-                                    before: old,
-                                },
-                            ),
-                            StarBy::Undo(message) => {
-                                toast.info(message, ToastOptions::default().duration(TOAST_QUICK));
-                            }
-                        }
-                    }
-                    Err(_) => set_mvp(old),
-                }
-            });
-        },
-    );
 
     let toggle_mvp = use_callback(move |(card_id, starred): (Uuid, bool)| {
         // A star adds or takes a featured card, which moves the cards under the strip.
@@ -709,13 +718,25 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
                 starred,
                 ..
             } => {
-                // The move back stars it again in the same write, unless a fourth star would be
-                // refused and take the move with it.
-                let restar = starred.filter(|_| {
-                    from == Board::Deck
-                        && deck_cards::mvp_count(&entries.peek()) < deck_cards::MAX_MVPS
-                });
-                move_card.call((card_id, from, /* record */ false, restar));
+                // Back on the main board the star follows once the move lands, unless the deck
+                // already has its three MVPs; the toast waits for the move too.
+                let wants_star = starred.filter(|_| from == Board::Deck);
+                let capped = wants_star.is_some()
+                    && deck_cards::mvp_count(&entries.peek()) >= deck_cards::MAX_MVPS;
+                if capped {
+                    toast.info(
+                        screens::deck_cards::MVP_CAP_REACHED.to_string(),
+                        ToastOptions::default().duration(TOAST_QUICK),
+                    );
+                }
+                move_card.call((
+                    card_id,
+                    from,
+                    /* record */ false,
+                    wants_star.filter(|_| !capped),
+                    Some(message),
+                ));
+                return;
             }
             UndoAction::MvpToggled {
                 card_id, before, ..
