@@ -146,27 +146,23 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
             vec![
                 bullet(vec![
                     key("Decks"),
-                    text(" lists your latest decks. "),
+                    text(" shows your latest. "),
                     key("Create a deck"),
-                    text(" starts one, and once you have decks "),
+                    text(" starts one; "),
                     key("All decks"),
-                    text(" opens the list"),
+                    text(" opens the full list"),
                 ]),
                 bullet(vec![
                     key("Colors"),
-                    text(" counts your decks' cards by color. Tap "),
+                    text(" counts your decks' cards by color. "),
                     key("Playstyle"),
-                    text(" for suggested commanders"),
+                    text(" suggests commanders"),
                 ]),
                 bullet(vec![
                     key("Account"),
                     text(", the "),
                     icon_key(KeyIcon::Person),
-                    text(
-                        " in the menu's footer (the top bar on a wide window), has your email, password and log out",
-                    ),
-                ]),
-                bullet(vec![
+                    text(" up top or in the menu, has your email, password and Log out. "),
                     key("Settings"),
                     text(", the "),
                     icon_key(KeyIcon::Cog),
@@ -174,7 +170,7 @@ pub fn content_for(hint: OneTimeHint) -> Option<HintContent> {
                 ]),
                 bullet(vec![
                     emph("Verify your email", Role::Warning),
-                    text(" in Account for full deck and card limits"),
+                    text(" in Account to lift the deck and card limits"),
                 ]),
             ],
         ),
@@ -653,18 +649,21 @@ mod tests {
             content_for(OneTimeHint::CreateDeck),
             content_for(OneTimeHint::EditDeck)
         );
+    }
+
+    #[test]
+    fn home_s_hint_is_short_and_plain() {
         let welcome = content_for(OneTimeHint::FirstLogin).unwrap();
         assert_eq!(welcome.title, "Welcome to Zwipe");
+        let lines: Vec<String> = welcome.blocks.iter().map(Block::plain).collect();
         assert_eq!(
-            welcome.blocks[0],
-            bullet(vec![
-                key("Decks"),
-                text(" lists your latest decks. "),
-                key("Create a deck"),
-                text(" starts one, and once you have decks "),
-                key("All decks"),
-                text(" opens the list"),
-            ])
+            lines,
+            [
+                "Decks shows your latest. Create a deck starts one; All decks opens the full list",
+                "Colors counts your decks' cards by color. Playstyle suggests commanders",
+                "Account, the person up top or in the menu, has your email, password and Log out. Settings, the cog beside it, sets your theme and which cards show",
+                "Verify your email in Account to lift the deck and card limits",
+            ]
         );
     }
 
@@ -717,7 +716,7 @@ mod tests {
         let welcome = content_for(OneTimeHint::FirstLogin).unwrap();
         assert_eq!(
             welcome.blocks[1].plain(),
-            "Colors counts your decks' cards by color. Tap Playstyle for suggested commanders"
+            "Colors counts your decks' cards by color. Playstyle suggests commanders"
         );
         let decks = content_for(OneTimeHint::DeckList).unwrap();
         assert_eq!(

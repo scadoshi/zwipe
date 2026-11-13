@@ -458,7 +458,7 @@ pub fn Home() -> Element {
 
     rsx! {
             div { class: "screen",
-                ScreenHeader { title: home::TITLE }
+                ScreenHeader { title: home::TITLE, hint: first_login_hint_open }
                 div { class: "screen-content home-content",
                 HomeHeroScoped {
                     figures,

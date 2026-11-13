@@ -440,7 +440,13 @@ pub fn Home() -> Element {
     drop(state);
 
     rsx! {
-        ScreenFrame { title: home::TITLE,
+        ScreenFrame {
+            title: home::TITLE,
+            // `?` opens the welcome, Home's own hint.
+            on_hint: move |()| {
+                let mut hint_open = driver.hint_open;
+                hint_open.set(true);
+            },
             div { class: "screen-content home-content web-home",
                 div { class: "web-page web-home-page",
                     div { class: "web-hero",

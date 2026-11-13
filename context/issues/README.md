@@ -191,6 +191,7 @@ Who checked, on which live build, what they saw.
 | [476](476-new-build-notice.md) | A web page that stays open never hears of a newer build | fixing | laptop | issue/476-new-build-notice |
 | [488](488-hint-esc-focus-and-row-toasts.md) | Esc after the `?` hint sends focus to the deck title, and `+` and Shift+S raise no toast | fixing | thinker | - |
 | [494](494-create-deck-button-hidden.md) | Create deck's empty form shows no Create button | fixing | thinker | - |
+| [496](496-home-hint.md) | Home has no `?` hint | fixing | thinker | - |
 | [497](497-log-out-in-danger-zone.md) | Account's Log out sits in the red Danger zone | fixing | thinker | - |
 | [511](511-idle-requests-fail.md) | The app says "Couldn't load" after a minute idle, and Retry fixes it | fixing | thinker | - |
 | [491](491-reveal-back-step.md) | In Stacks, revealing a tucked card takes a Back step | fixing | laptop | issue/491-reveal-no-step |
