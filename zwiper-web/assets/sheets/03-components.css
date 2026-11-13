@@ -1207,6 +1207,12 @@ a.nav-dropdown-item.active:visited {
     transition: none !important;
 }
 
+/* A drawer along the left edge pulled to the left, the same way. */
+.bottom-sheet.sheet-dragging-left {
+    transform: translateX(calc(-1 * var(--sheet-drag, 0px))) !important;
+    transition: none !important;
+}
+
 /* On a light theme the sheet lifts off the page: its shadow doubles up,
    since a light shadow alone barely marks a cream edge on a cream page. */
 [class*="theme-"][class*="-light"] .bottom-sheet {
@@ -1417,6 +1423,18 @@ a.nav-dropdown-item.active:visited {
     }
 
     .sheet-form-drawer > .bottom-sheet.show {
+        transform: translateX(0);
+    }
+
+    /* A drawer along the left edge (`drawer-left`): the same inset from
+       the left, sliding in from the left. */
+    .sheet-form-drawer > .bottom-sheet.drawer-left {
+        left: 1rem;
+        right: auto;
+        transform: translateX(calc(-100% - 1rem));
+    }
+
+    .sheet-form-drawer > .bottom-sheet.drawer-left.show {
         transform: translateX(0);
     }
 

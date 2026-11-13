@@ -70,6 +70,7 @@ pub const UPCOMING: &[Release] = &[
             "On the web, a dialog opens with the cursor in its first field or on its main button, and hands focus back when it closes",
             "Printings names the card at its top and credits the printing's artist, on the web and in the app",
             "A filter section opens with its choices appearing whole and in place, so a quick tap lands where you aimed, on the web and in the app",
+            "On a phone, a card's details drawer scrolls its own content with a vertical swipe, and an opened card role or tag scrolls into view",
         ],
     },
     Release {

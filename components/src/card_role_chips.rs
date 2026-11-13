@@ -17,7 +17,10 @@
 use std::collections::BTreeMap;
 
 use dioxus::prelude::*;
+use uuid::Uuid;
 use zwipe_core::domain::card::card_role;
+
+use crate::role_tags::{open_reveal_under, reveal_into_view_js};
 
 /// Card roles as chips; expandable to their grouped oracle tags, plus an "Other
 /// tags" bucket. `tags_by_role` is keyed by role slug (`CardRole`'s
@@ -65,6 +68,10 @@ pub fn CardRoleChips(
     }
 
     let mut open = use_signal(|| None::<usize>);
+    // Name the roles' block and their tags' block, so an opened role's tags and an opened tag's
+    // description each scroll into view within the drawer or page they open in.
+    let roles_block = use_hook(Uuid::new_v4);
+    let tags_block = use_hook(Uuid::new_v4);
     // `shown` holds the last-opened index and is NOT cleared on close, so the
     // revealed tags stay mounted while the container animates collapsing. Clearing
     // it (like `open`) would yank the DOM node instantly and snap the close shut.
@@ -88,7 +95,7 @@ pub fn CardRoleChips(
     let tags_expandable = describe_tag.is_some() || on_examples.is_some();
 
     rsx! {
-        div { class: "card-roles",
+        div { class: "card-roles", "data-reveal": "{roles_block}",
             if let Some(help) = help {
                 {help}
             }
@@ -110,6 +117,7 @@ pub fn CardRoleChips(
                                 } else {
                                     open.set(Some(i));
                                     shown.set(Some(i));
+                                    document::eval(&role_reveal_js(roles_block));
                                 }
                             },
                             "{label}"
@@ -122,7 +130,7 @@ pub fn CardRoleChips(
                     if !reveal_tags.is_empty() {
                         // Block-quote frame (matches the keyword reminder) so it
                         // reads as the tapped role's exposed oracle tags.
-                        div { class: "otag-reveal-block",
+                        div { class: "otag-reveal-block", "data-reveal": "{tags_block}",
                             div { class: "card-detail-meta card-detail-otags",
                                 for tag in reveal_tags.iter().cloned() {
                                     if tags_expandable {
@@ -141,6 +149,7 @@ pub fn CardRoleChips(
                                                         } else {
                                                             open_tag.set(Some(slug.clone()));
                                                             shown_tag.set(Some(slug.clone()));
+                                                            document::eval(&tag_reveal_js(tags_block));
                                                         }
                                                     },
                                                     "{tag}"
@@ -195,5 +204,58 @@ pub fn CardRoleChips(
                 }
             }
         }
+    }
+}
+
+/// Scrolls the roles' reveal in block `block` into view as it opens: the role's own, the block's
+/// direct child, not the tag description inside it.
+fn role_reveal_js(block: Uuid) -> String {
+    reveal_into_view_js(&format!("[data-reveal=\"{block}\"] > .keyword-reveal.open"))
+}
+
+/// Scrolls the tag description opened in block `block` into view as it opens.
+fn tag_reveal_js(block: Uuid) -> String {
+    reveal_into_view_js(&open_reveal_under(block))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn an_opened_role_and_an_opened_tag_each_scroll_their_reveal_into_view() {
+        let block = Uuid::nil();
+        let role = role_reveal_js(block);
+        assert!(
+            role.contains(&format!(
+                "document.querySelector('[data-reveal=\"{block}\"] > .keyword-reveal.open')"
+            )),
+            "the role's own reveal, not the tag's inside it: {role}"
+        );
+        let tag = tag_reveal_js(block);
+        assert!(
+            tag.contains(&format!(
+                "document.querySelector('[data-reveal=\"{block}\"] .keyword-reveal.open')"
+            )),
+            "{tag}"
+        );
+        for js in [role, tag] {
+            assert!(js.contains("scrollIntoView({ block: 'nearest'"), "{js}");
+        }
+    }
+
+    #[test]
+    fn the_roles_name_their_block_for_the_scroll() {
+        let html = dioxus_ssr::render_element(rsx! {
+            CardRoleChips {
+                roles: vec!["removal".to_owned()],
+                tags_by_role: BTreeMap::from([("removal".to_owned(), vec!["burn".to_owned()])]),
+                other_tags: vec!["typal-goblin".to_owned()],
+            }
+        });
+        assert!(
+            html.contains("class=\"card-roles\" data-reveal=\""),
+            "{html}"
+        );
     }
 }

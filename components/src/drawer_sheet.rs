@@ -5,7 +5,8 @@
 //! bottom right. Below the kit's modal width it pulls away as the kit's
 //! [`BottomSheet`](crate::BottomSheet) does ([`use_sheet_drag_toward`]): a
 //! bottom sheet down by its title bar, a drawer at every width, which floats
-//! along the right edge there, to the right from anywhere on it.
+//! along the right edge there, to the right from anywhere on it, once a move
+//! runs sideways ([`SheetDrag::arm`](orangui::SheetDrag::arm)).
 
 use dioxus::prelude::*;
 use orangui::{Pull, use_sheet_drag_toward};
@@ -116,11 +117,12 @@ pub fn DrawerSheet(
                 "aria-modal": modal,
                 onmounted: move |evt| drag.mounted(evt),
                 // A drawer is pulled to the right from anywhere on it: its content scrolls
-                // only vertically (`touch-action: pan-y`), so a sideways move pulls and a
-                // scroll cancels the pull.
+                // only vertically (`touch-action: pan-y`), and the pull starts only once a move
+                // runs sideways, so a vertical swipe scrolls the content with the sheet left
+                // untouched.
                 onpointerdown: move |evt| {
                     if pulls && toward == Pull::Right {
-                        drag.start(&evt);
+                        drag.arm(&evt);
                     }
                 },
                 onpointermove: move |evt| drag.follow(&evt),

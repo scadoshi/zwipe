@@ -78,7 +78,7 @@ pub fn RoleTags(
                                     } else {
                                         open_tag.set(Some(slug.clone()));
                                         shown_tag.set(Some(slug.clone()));
-                                        document::eval(&reveal_into_view_js(block));
+                                        document::eval(&reveal_into_view_js(&open_reveal_under(block)));
                                     }
                                 },
                                 "{tag}"
@@ -102,11 +102,17 @@ pub fn RoleTags(
 /// `keyword-reveal` transition.
 const REVEAL_OPEN_MS: u32 = 300;
 
-/// Scrolls the description opened in reveal block `block` into view once it has eased open, so
-/// its Examples button never sits below the fold of the drawer or page it opened in.
-fn reveal_into_view_js(block: Uuid) -> String {
+/// The open reveal under the element named `block` by its `data-reveal`.
+pub(crate) fn open_reveal_under(block: Uuid) -> String {
+    format!("[data-reveal=\"{block}\"] .keyword-reveal.open")
+}
+
+/// Scrolls the first open reveal matching `reveal` into view within its scroller once it has
+/// eased open, so what it opened (a description's Examples button, a role's tags) never sits
+/// below the fold of the drawer or page it opened in.
+pub(crate) fn reveal_into_view_js(reveal: &str) -> String {
     format!(
-        "setTimeout(() => {{ const r = document.querySelector('[data-reveal=\"{block}\"] .keyword-reveal.open'); if (r) r.scrollIntoView({{ block: 'nearest', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }}); }}, {REVEAL_OPEN_MS});"
+        "setTimeout(() => {{ const r = document.querySelector('{reveal}'); if (r) r.scrollIntoView({{ block: 'nearest', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }}); }}, {REVEAL_OPEN_MS});"
     )
 }
 
@@ -116,7 +122,7 @@ mod tests {
 
     #[test]
     fn an_opened_description_scrolls_into_view_after_it_eases_open() {
-        let js = reveal_into_view_js(Uuid::nil());
+        let js = reveal_into_view_js(&open_reveal_under(Uuid::nil()));
         assert!(
             js.contains(&format!(
                 "[data-reveal=\"{}\"] .keyword-reveal.open",
