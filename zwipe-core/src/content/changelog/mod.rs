@@ -60,6 +60,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "On a phone's web app, the deck form's Format, Deck tags and Oracle tags pickers open as a screen with a back arrow, as in the app",
         "On the web, gg and Shift+G scroll a deck's Cards when they are open, not the Profile under them",
         "On the web, Share's link is a Tab stop that selects itself for copying",
+        "On the web's Settings, Exceptions opens beside the page on a wide window, and its Change says why it is off while Universes Beyond shows",
     ],
 }];
 

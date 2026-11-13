@@ -75,6 +75,17 @@ pub fn pips_label(style: PipStyle) -> &'static str {
     }
 }
 
+/// Why Exceptions' Change is off while Universes Beyond shows: exceptions only matter while it is
+/// hidden.
+pub const EXCEPTIONS_LOCKED: &str = "Set Universes Beyond to Hide to choose exceptions";
+
+/// The reason Exceptions' Change gives for being off: [`EXCEPTIONS_LOCKED`] once the setting has
+/// loaded (`loaded`) and Universes Beyond shows (`hide` false), else none.
+#[must_use]
+pub fn exceptions_locked(loaded: bool, hide: bool) -> Option<&'static str> {
+    (loaded && !hide).then_some(EXCEPTIONS_LOCKED)
+}
+
 /// The line over the Exceptions sheet's chips, beside its clear button, for a draft of `count` franchises. The line folds away while the draft is empty, still reading "0 selected" as it goes.
 #[must_use]
 pub fn selected_line(count: usize) -> String {

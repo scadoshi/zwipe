@@ -2503,6 +2503,19 @@ body .toast-container [role="alertdialog"] {
     flex-wrap: wrap;
 }
 
+/* Why Exceptions' Change is off while Universes Beyond shows: a line under
+   the faded row, at full strength. */
+.settings-row.ub-exceptions-row:has(+ .ub-exceptions-reason) {
+    border-bottom: none;
+}
+
+.ub-exceptions-reason {
+    margin: 0;
+    padding: 0 1rem 0.75rem;
+    font-size: 0.8rem;
+    color: var(--ink-text-muted, var(--text-muted));
+}
+
 .ub-exception-chips {
     display: flex;
     flex-wrap: wrap;

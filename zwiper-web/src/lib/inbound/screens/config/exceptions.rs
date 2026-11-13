@@ -1,5 +1,6 @@
-//! The Exceptions sheet, a centered modal on a wide window: the franchises
-//! that still show while Universes Beyond is hidden.
+//! The Exceptions sheet, a side sheet on a wide window as the pickers are, and
+//! a bottom sheet below it: the franchises that still show while Universes
+//! Beyond is hidden.
 
 use components::icons::{CHECK, DockIcon};
 use components::keys::SHEET_ENTER_OR_CLOSE;
@@ -93,7 +94,7 @@ pub(super) fn ExceptionsSheet(
     let offered = franchises.0.read().loaded().cloned().unwrap_or_default();
 
     rsx! {
-        SheetFrame { wide: SheetWide::Modal,
+        SheetFrame { wide: SheetWide::Drawer,
             BottomSheet {
                 open,
                 title: "Exceptions".to_string(),

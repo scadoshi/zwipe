@@ -634,3 +634,19 @@ fn a_failed_swipe_confirmations_save_puts_the_value_back() {
 fn config_label(state: &State) -> &'static str {
     swipe_confirmations_label(state.swipe_confirmations())
 }
+
+#[test]
+fn change_says_why_it_is_off_only_while_universes_beyond_shows() {
+    assert_eq!(
+        exceptions_locked(true, false),
+        Some(EXCEPTIONS_LOCKED),
+        "loaded and showing: off, with the reason"
+    );
+    assert_eq!(exceptions_locked(true, true), None, "hiding: Change works");
+    assert_eq!(
+        exceptions_locked(false, false),
+        None,
+        "still loading: off, but not for that reason"
+    );
+    assert!(!EXCEPTIONS_LOCKED.contains('\u{2014}'));
+}

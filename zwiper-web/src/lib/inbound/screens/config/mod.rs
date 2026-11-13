@@ -297,6 +297,10 @@ pub fn Config() -> Element {
                                 }
                             }
                         }
+                        // Under the faded row, so the reason reads at full strength.
+                        if let Some(reason) = config::exceptions_locked(ub_loaded(), ub_hide()) {
+                            p { class: "ub-exceptions-reason", "{reason}" }
+                        }
                     }
                 }
             }
