@@ -73,24 +73,26 @@ fn is_open(route: &Route) -> bool {
 /// wide window ends it with zwipe.net's footer; a swipe screen fills the
 /// window, so its footer starts below the fold. `titled` says the screen
 /// draws its own heading with the title, so the frame's screen-reader one
-/// stays out.
+/// stays out. `on_back` gives the screen a back arrow of its own, in place
+/// of the one its route has (or the empty slot where the route has none).
 #[component]
 pub fn ScreenFrame(
     title: String,
     #[props(default)] on_hint: Option<Callback<()>>,
     #[props(default)] titled: bool,
+    #[props(default)] on_back: Option<Callback<()>>,
     children: Element,
 ) -> Element {
     let page = try_use_context::<Signal<Option<PageTitle>>>();
     // `?` opens the same hint the `?` button does.
     use_global_keys(on_hint);
     let nav_title = title.clone();
-    use_effect(use_reactive!(|nav_title, on_hint| {
+    use_effect(use_reactive!(|nav_title, on_hint, on_back| {
         if let Some(mut page) = page {
             page.set(Some(PageTitle {
                 title: nav_title,
                 on_hint,
-                on_back: None,
+                on_back,
             }));
         }
     }));

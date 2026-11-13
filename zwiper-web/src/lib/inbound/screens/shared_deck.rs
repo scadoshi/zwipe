@@ -48,7 +48,7 @@ use crate::inbound::screens::deck::view::panels::DataPanel;
 use crate::inbound::screens::deck::view::profile::{DeckFoot, DeckProfilePhone};
 use crate::inbound::screens::not_found::DeadEnd;
 use crate::inbound::session::return_to;
-use crate::inbound::shell::ScreenFrame;
+use crate::inbound::shell::{ScreenFrame, nav};
 
 /// The tab's title while the deck loads or when it can't be shown.
 const SHARED_DECK_TITLE: &str = "Shared deck";
@@ -184,15 +184,20 @@ pub fn SharedDeck(owner: String, slug: String, token: String, view: Option<DeckV
     let not_shared = matches!(&*result.read(), Some(Err(e)) if e.is_dead_end());
     let title = match &*result.read() {
         Some(Ok(deck)) => deck.name.clone(),
+        _ if not_shared => NOT_SHARED_TITLE.to_owned(),
         _ => SHARED_DECK_TITLE.to_owned(),
     };
+    // The dead end's header is its siblings' (Page not found, the dead link's Export): its own
+    // title, a back arrow to the screen before or Home, and no hint about a deck that isn't there.
+    let back_out = use_callback(move |()| nav::back_or(navigator, Route::Home {}));
 
     rsx! {
         // Reachable only by having the link; keep crawlers out of the page itself.
         document::Meta { name: "robots", content: "noindex" }
         ScreenFrame {
             title,
-            on_hint: Some(on_hint),
+            on_hint: (!not_shared).then_some(on_hint),
+            on_back: not_shared.then_some(back_out),
             // The deck's head names it in its own h1 on a wide window and atop the Cards, and the
             // dead end in its card's.
             titled: loaded && (wide() || cards_open) || not_shared,
