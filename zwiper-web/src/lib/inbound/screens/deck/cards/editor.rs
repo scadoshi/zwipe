@@ -554,6 +554,7 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
                     .await
                     .is_some()
                 {
+                    components::deck_cursor::follow_card(old_id, new_id);
                     *zone.write().slot_mut(slot) = Some(picked.clone());
                     undo.write().push(
                         deck_id,
@@ -578,6 +579,7 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
                 .await
                 .is_some()
             {
+                components::deck_cursor::follow_card(old_id, new_id);
                 // The open details follow the card to its new printing.
                 if let Some(details) = stack_details {
                     details.rekey(old_id, new_id);
@@ -690,6 +692,7 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
             UndoAction::PrintingChanged { old_card, new_id } => {
                 let old_card = *old_card;
                 let old_id = old_card.scryfall_data.id;
+                components::deck_cursor::follow_card(new_id, old_id);
                 if let Some(details) = stack_details {
                     details.rekey(new_id, old_id);
                 }
@@ -713,8 +716,13 @@ pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
                         .await;
                 });
             }
-            UndoAction::CommandZonePrintingChanged { slot, old_card, .. } => {
+            UndoAction::CommandZonePrintingChanged {
+                slot,
+                old_card,
+                new_id,
+            } => {
                 let old_id = old_card.scryfall_data.id;
+                components::deck_cursor::follow_card(new_id, old_id);
                 *zone.write().slot_mut(slot) = Some(*old_card);
                 let request = slot.update_request(Some(old_id));
                 spawn(async move {

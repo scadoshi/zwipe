@@ -19,5 +19,7 @@ scotland:
   - (25) A List row's line and a stack card are named by `zwipe_ui::deck_cards::keys::card_label`: the name, its copies when more than one, and its board when it isn't the main deck ("Mountain, 8 copies, sideboard").
   - End in Stacks lands on the last column's bottom card at 1000, 1440 and 1920 under Type and Mana value grouping; not reproduced as stopping in the first column. Down crosses from one stack into the next in its column (Commander into Lands under Type).
 
+  - Undo of a printing change (surfer): the cursor follows the card back to its old printing's id (`deck_cursor::follow_card`, called by the save and its Undo, the command zone's too), so focus lands on the restored card instead of moving on to the next one.
+
 ## Verification
 Surfer's 28 tests in the plan's section 7.

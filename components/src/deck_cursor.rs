@@ -10,7 +10,7 @@
 //! large modal or the image preview. Only the computer layout takes them (a mouse with hover, from
 //! 900px), so a phone or a touch screen never sees the cursor.
 //!
-//! Which card the card keys act on reads the cursor too ([`KEYED_JS`]): the card in focus when the
+//! Which card the card keys act on reads the cursor too (`KEYED_JS`): the card in focus when the
 //! last input was a key, else the card under the mouse. A mouse move that scrolls nothing counts as
 //! mouse input; a page scrolling under a still mouse does not.
 
@@ -135,6 +135,23 @@ pub(crate) const KEYED_JS: &str = "(window.__zwipeDeckInput === 'key' ? ((docume
 /// [`KEYED_JS`] with its selector filled in.
 pub(crate) fn keyed_js() -> String {
     KEYED_JS.replace("__STOPS__", STOP_SELECTOR)
+}
+
+/// Moves the cursor from card `__FROM__` to card `__TO__` where it sits on `__FROM__`, in the
+/// last reading order too, so a redraw hands focus to `__TO__`.
+const FOLLOW_JS: &str = "if (window.__zwipeDeckCursor === '__FROM__') window.__zwipeDeckCursor = '__TO__'; window.__zwipeDeckOrder = (window.__zwipeDeckOrder || []).map((id) => id === '__FROM__' ? '__TO__' : id);";
+
+/// Card `from` is now card `to`, as a printing change or its Undo makes it: the keyboard cursor
+/// follows it, so focus lands on the card in its new printing rather than moving on.
+pub fn follow_card(from: Uuid, to: Uuid) {
+    document::eval(&follow_js(from, to));
+}
+
+/// [`FOLLOW_JS`] for `from` and `to`.
+fn follow_js(from: Uuid, to: Uuid) -> String {
+    FOLLOW_JS
+        .replace("__FROM__", &from.to_string())
+        .replace("__TO__", &to.to_string())
 }
 
 /// One card as the browser sends it: its id, vertical center and whether it is in view.
@@ -278,6 +295,23 @@ mod tests {
         assert!(
             TRACK_JS.contains("if (live(find(id))) return window.__zwipeDeckFocus(id);"),
             "a card still drawn takes focus back: {TRACK_JS}"
+        );
+    }
+
+    #[test]
+    fn a_card_that_changes_id_keeps_the_cursor_and_its_place_in_the_order() {
+        let js = follow_js(id(1), id(2));
+        assert!(
+            js.contains(&format!(
+                "if (window.__zwipeDeckCursor === '{}') window.__zwipeDeckCursor = '{}';",
+                id(1),
+                id(2)
+            )),
+            "{js}"
+        );
+        assert!(
+            js.contains(&format!("id === '{}' ? '{}' : id", id(1), id(2))),
+            "{js}"
         );
     }
 
