@@ -33,6 +33,17 @@ Every bug, nit and small feature is a file in [`../issues/`](../issues/README.md
 6. **Deploy.** Only on Scotty's word: `git push origin origin/release:main`. Before asking, the composer writes `issues/verify-<sha>.md` listing every merged issue with who checks it where.
 7. **Verify.** After the deploy, Surfer and Droid hard-refresh and work through the verify file. Pass moves an issue to `verified`, then `closed`. Fail sends it back to `reproduced` with what they saw. Anything new they find goes in as `reported`.
 
+## The control: before, cause, after
+
+"Looks good" is not a test. An agent that glanced at a change and a second agent that agreed have proved nothing. Every bug and every visible change carries a control: proof it was broken, a traced cause, and proof it now works, by the same steps.
+
+1. **Before.** QA reproduces the problem on a named build with exact steps (device or width, account, deck, taps or keys in order) and saves a clip or still named `before-NNN`. If the steps don't show the problem, say so: that's a finding too, and the issue goes back for detail.
+2. **Cause.** The worker follows the repro into the code until it can name the line or rule that produces the bug and say why. "I changed X and it seems fine" isn't a cause. The fix changes that cause, with a test that fails before and passes after where one can be written.
+3. **After.** The worker's report ends with the steps a tester follows to confirm it's gone. QA runs exactly the before steps on the deployed build and saves `after-NNN`. Same steps, opposite result, or it isn't fixed.
+4. **Break it.** Then QA tries to break the fix its own way: other widths and devices, Back and gestures, reload, fast or repeated input, focus in a field, a sheet open, slow network, odd orders. QA reports anything it finds, asked for or not.
+
+Surfer and Droid don't go idle on a change until they've shown its before and after and tried to break it. Nothing closes on a worker's say-so.
+
 ## Gates
 
 Before pushing, the worker runs `cargo +nightly fmt --all`, `cargo clippy --workspace --all-targets -- -D warnings`, the tests for the crates it touched, and `RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps` (not `--lib`: CI documents the zite and zwiper binaries too). Wire changes follow [`api_evolution.md`](../architecture/api_evolution.md) and go through the composer first.
