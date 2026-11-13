@@ -853,6 +853,20 @@ i.ms.ms-cost.ms-gp {
     font-size: 0.8rem;
 }
 
+/* The app's price row starts at the left, as the web's narrow sheet's does, so a printing with
+   fewer prices doesn't shift the ones it has. */
+.app-printing-sheet .card-prices {
+    justify-content: flex-start;
+    padding-inline: 1.5rem;
+}
+
+/* The app's sheet body is a block, so its artist chip centers by its margins. */
+.app-printing-sheet .printing-artist {
+    display: flex;
+    width: fit-content;
+    margin: 0.5rem auto 0;
+}
+
 /* Printings' title bar keeps the title clear of the × on both sides, so a long name stays
    centered and is cut short before the button. */
 :is(.web-printing-sheet, .web-flow-sheet, .app-printing-sheet) .sheet-header {
