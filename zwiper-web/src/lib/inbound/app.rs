@@ -89,7 +89,7 @@ pub fn App() -> Element {
         }
     });
     use_hook(|| {
-        document::eval(HINT_FOCUS_JS);
+        document::eval(&hint_focus_js());
         document::eval(DIALOG_FOCUS_JS);
     });
     // A swipe screen's card slides clear of its docked details panel.
@@ -171,8 +171,9 @@ pub fn App() -> Element {
 /// once. As a hint opens it takes
 /// focus on its first button, so Enter answers the hint rather than the `?`
 /// under it. As it closes focus returns to where it was opened from: the
-/// open drawer, else the form or panel it sits in, else the page's main
-/// column; never the nav, and never the `?`, which Enter would open again.
+/// card the deck cursor held, else the open drawer, else the form or panel it
+/// sits in, else the page's main column; never the nav, and never the `?`,
+/// which Enter would open again.
 /// A sheet that opened as the hint closed keeps focus for itself.
 /// The opener is the focused element, or the last thing pressed where a
 /// click does not focus a button (Safari).
@@ -200,6 +201,8 @@ if (!window.__zwipeHintFocus) {
             // A sheet the hint opened (the shortcuts sheet from its keyboard button) takes focus itself.
             const opened = [...document.querySelectorAll('.bottom-sheet.show, .bottom-sheet-premount')].some((s) => !s.contains(from));
             if (opened) return;
+            const stop = from.isConnected && from.closest && from.closest('__STOPS__');
+            if (stop) { stop.focus({ preventScroll: true }); return; }
             const inNav = from.closest('.web-app-nav, nav');
             const target = from.closest('.bottom-sheet.show')
                 || (!inNav && from.closest('form, .web-form-panel, .panel-card, .settings-list'))
@@ -209,6 +212,11 @@ if (!window.__zwipeHintFocus) {
     }).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-state'] });
 }
 "#;
+
+/// [`HINT_FOCUS_JS`] with the deck cursor's stops filled in.
+fn hint_focus_js() -> String {
+    HINT_FOCUS_JS.replace("__STOPS__", components::deck_cursor::STOP_SELECTOR)
+}
 
 /// Where focus goes around every other dialog (a hint has its own,
 /// [`HINT_FOCUS_JS`], and the leave guard's its own Stay), installed once. As one opens it takes focus on its
@@ -396,6 +404,20 @@ mod tests {
             HEADER_HIDE_JS.contains("nav.style.overflow = pushed ? \"clip\" : \"\";"),
             "{HEADER_HIDE_JS}"
         );
+    }
+
+    #[test]
+    fn a_closing_hint_hands_focus_back_to_the_card_the_cursor_held() {
+        let script = hint_focus_js();
+        assert!(
+            script.contains(components::deck_cursor::STOP_SELECTOR),
+            "{script}"
+        );
+        assert!(
+            script.contains("const stop = from.isConnected && from.closest && from.closest("),
+            "{script}"
+        );
+        assert!(!script.contains("__STOPS__"), "{script}");
     }
 
     #[test]

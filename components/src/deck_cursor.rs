@@ -24,7 +24,7 @@ use crate::keys::{PRESSED_KEY, STACK_DETAILS_CLASS, cursor_guard_js};
 /// The cards the cursor stops on: the deck page's List rows and stack cards, and the card rows of
 /// the screens that list cards without editing them ([`use_card_list_cursor`]). A deck row's own
 /// card row inside it is not a second stop, and a featured card in the deck head is not one.
-pub(crate) const STOP_SELECTOR: &str = ".web-deck-row[data-row], .card-stack-slot[data-row], .web-card-row[data-row]:not(.web-deck-row > *)";
+pub const STOP_SELECTOR: &str = ".web-deck-row[data-row], .card-stack-slot[data-row], .web-card-row[data-row]:not(.web-deck-row > *)";
 
 /// Installs, once a tab, the page-wide trackers the cursor reads: the last input (`key` or
 /// `mouse`), the card in focus, `__zwipeDeckFocus`, which focuses a card by id and keeps it in
