@@ -1,6 +1,6 @@
 # Shared guides: one guide source for zwipe.net and the web app
 
-Issue 419. Status: approved 2026-11-12 (images by stable zwipe.net URL); phase 1 in progress. Phase 4 follows 418's pattern in `OpenFrame`: the routes in `is_open`, `None` arms in nav.rs `Back::of` and `section_of`.
+Issue 419. Status: built on release 2026-11-12, every phase plus Scotty's extras (gallery keys, tag links, the index filter in the address); waiting on the deploy and Surfer's live check. The screenshots sit at `zite/public/guide-images/` and serve from `https://zwipe.net/guide-images/`, not the `/guides/img/` path planned below; a guide's back arrow in the web app goes to the index; the web app's hint links open its guide in a new tab, as every dialog link does. The issue's Fix section has the details.
 
 ## Scotty's decisions
 
