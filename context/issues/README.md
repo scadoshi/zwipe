@@ -173,6 +173,7 @@ Who checked, on which live build, what they saw.
 | [477](477-held-key-drawer.md) | Holding J with a card's details drawer open drops the frame rate | fixing | scotland | - |
 | [478](478-cursor-any-width.md) | The deck page's keyboard cursor only works on the computer layout | fixing | scotland | - |
 | [480](480-deck-shortcuts-missing-keys.md) | The deck page's shortcuts sheet leaves out keys that work | fixing | thinker | - |
+| [483](483-card-row-cursor.md) | The Commander maybeboard, Activity and Playstyle have no keyboard cursor | fixing | laptop | issue/483-card-cursor |
 
 ## Waiting for live verification
 

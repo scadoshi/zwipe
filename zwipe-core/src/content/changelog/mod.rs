@@ -76,6 +76,7 @@ pub const UPCOMING: &[Release] = &[
             "A card's details drawer on a deck's Cards opens on the side away from the card's column, and on a phone drags toward that side to close",
             "On the web's deck page, holding a key to run down the cards swaps the details drawer at once instead of fading each card",
             "On the web's deck page, the arrow keys and h, j, k and l move between cards at any window width, a tablet's keyboard included",
+            "On the web, the Commander maybeboard, Activity and Playstyle take the arrow keys or h, j, k and l to move between cards, with the card's image following, and Enter opens one",
         ],
     },
     Release {
