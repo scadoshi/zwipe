@@ -279,8 +279,7 @@ pub fn svg(preview: &Preview, palette: &Palette, drawn: &[&Art]) -> String {
         r#"<rect x="{PANEL_X}" y="{rule_y}" width="{PANEL_W}" height="2" fill="{}"/>"#,
         palette.border_soft
     );
-    let footer_x = PANEL_X.saturating_add(PAD_X);
-    draw_footer(&mut out, palette, footer_x, right, rule_y, drawn);
+    draw_footer(&mut out, palette, right, rule_y, drawn);
     let _ = write!(
         out,
         r#"<rect {panel} fill="none" stroke="{}" stroke-width="2"/>"#,
@@ -612,19 +611,10 @@ fn artist_chip(
     chip_w
 }
 
-/// The footer under the rule: the art credit chip with the artists of the art drawn on the left,
-/// and the brand on the right.
-fn draw_footer(
-    out: &mut String,
-    palette: &Palette,
-    x0: i64,
-    right: i64,
-    rule_y: i64,
-    drawn: &[&Art],
-) {
-    const BRAND: &str = "zwipe.net";
-    const BRAND_SIZE: i64 = 28;
-    const BRAND_SPACING: i64 = 4;
+/// Where the art credit's chip starts: its left edge and top. It sits centered in the footer
+/// under the rule at `rule_y`, and as far in from the panel's left edge as it is up from the
+/// bottom, on a 45 degree line from that corner.
+fn credit_origin(rule_y: i64) -> (i64, i64) {
     let bottom = PANEL_Y.saturating_add(PANEL_H);
     let top = rule_y.saturating_add(
         bottom
@@ -633,6 +623,17 @@ fn draw_footer(
             .checked_div(2)
             .unwrap_or(0),
     );
+    let inset = bottom.saturating_sub(top).saturating_sub(CHIP_H);
+    (PANEL_X.saturating_add(inset), top)
+}
+
+/// The footer under the rule: the art credit chip with the artists of the art drawn, at
+/// [`credit_origin`], and the brand on the right.
+fn draw_footer(out: &mut String, palette: &Palette, right: i64, rule_y: i64, drawn: &[&Art]) {
+    const BRAND: &str = "zwipe.net";
+    const BRAND_SIZE: i64 = 28;
+    const BRAND_SPACING: i64 = 4;
+    let (x0, top) = credit_origin(rule_y);
     let baseline = top.saturating_add(CHIP_BASELINE);
     let _ = write!(
         out,
@@ -948,6 +949,15 @@ mod tests {
         );
         assert!(footer.contains("Svetlin Velinov"), "{footer}");
         assert!(!footer.contains(">Art<"), "no separate Art label: {footer}");
+    }
+
+    #[test]
+    fn the_art_credit_sits_on_a_diagonal_from_the_panel_s_corner() {
+        let rule_y = PANEL_Y.saturating_add(PANEL_H).saturating_sub(FOOTER_H);
+        let (x, top) = credit_origin(rule_y);
+        let left_inset = x - PANEL_X;
+        let bottom_inset = PANEL_Y + PANEL_H - (top + CHIP_H);
+        assert_eq!(left_inset, bottom_inset, "x {x}, top {top}");
     }
 
     #[test]
