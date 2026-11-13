@@ -152,6 +152,7 @@ Who checked, on which live build, what they saw.
 | [430](430-one-deck-route.md) | A deck's Profile and Cards are separate screens on narrow web and in the app, and the shared deck splits them with a chip row | fixing | laptop | issue/430-one-deck-route |
 | [436](436-deck-page-fixes.md) | Deck page rough edges: Fix to isn't undoable, Select closes the drawer, the move toast hides the count, Quick add lands the newest printing | fixing | thinker | - |
 | [438](438-one-profile.md) | At phone width the shared deck's Profile isn't the owner's, and a shared deck hides its warnings and Export | fixing | laptop | issue/438-one-profile |
+| [441](441-signed-out-nav.md) | The web app's signed-out nav lists Forgot password | fixing | thinker | - |
 
 ## Waiting for live verification
 

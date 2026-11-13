@@ -72,6 +72,7 @@ pub const UPCOMING: &[Release] = &[
             "Quick add lands a card's cheapest regular printing instead of its newest",
             "The featured cards and the cards under them ease into place when a star adds or takes one",
             "A featured card's details no longer lift the same card in Stacks",
+            "On the web, the signed-out nav offers Log in and Create account, with Forgot password on the Log in screen",
             "On the web at phone width, Printings takes the arrow keys and Enter as soon as it opens",
             "On the web at phone width, the filter's title bar pulls it down to close, as Printings' does",
             "On the web, Change username, Change email and Change password put the cursor in their first field as they open",

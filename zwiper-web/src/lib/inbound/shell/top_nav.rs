@@ -161,20 +161,25 @@ pub fn Shell() -> Element {
     }
 }
 
-/// The nav over the public screens: the mark, then the app's signed-out
-/// menu, `Log in`, `Create account` and `Forgot password`, the current one
-/// lit, and the footer's `!`, About icon and theme pair, in the bar on a
-/// wide window and under the folded list below the breakpoint.
+/// The signed-out menu: `Log in` and `Create account`. Forgot password is a
+/// link on the Log in screen, not a place in the nav.
+fn public_links() -> [(Route, &'static str); 2] {
+    [
+        (Route::Login {}, "Log in"),
+        (Route::Register {}, "Create account"),
+    ]
+}
+
+/// The nav over the public screens: the mark, then the signed-out menu
+/// ([`public_links`]), the current one lit, and the footer's `!`, About icon
+/// and theme pair, in the bar on a wide window and under the folded list
+/// below the breakpoint.
 #[component]
 pub fn PublicNav() -> Element {
     let route: Route = use_route();
     let open = use_menu_open(&route);
     let page: Signal<Option<PageTitle>> = use_context();
-    let links = [
-        (Route::Login {}, "Log in"),
-        (Route::Register {}, "Create account"),
-        (Route::ForgotPassword {}, "Forgot password"),
-    ];
+    let links = public_links();
     rsx! {
         div { class: "web-app-nav",
             NavBar {
@@ -318,6 +323,18 @@ fn BackButton(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_signed_out_menu_is_log_in_and_create_account_only() {
+        let labels: Vec<&str> = public_links().iter().map(|(_, label)| *label).collect();
+        assert_eq!(labels, ["Log in", "Create account"]);
+        assert!(
+            !public_links()
+                .iter()
+                .any(|(to, _)| *to == Route::ForgotPassword {}),
+            "Forgot password lives on the Log in screen"
+        );
+    }
 
     #[test]
     fn closing_an_overlay_restores_the_page_title_only_while_the_nav_shows_it() {
