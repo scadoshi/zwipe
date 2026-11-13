@@ -48,16 +48,48 @@ pub const MOBILE_STORE_VERSION: Version = Version::new(1, 18, 15);
 /// changelog with an "Upcoming" badge instead of "Latest".
 pub const UPCOMING: &[Release] = &[
     Release {
+        version: Version::new(1, 20, 4),
+        date: None,
+        entries: &[
+            "The web app loads faster the first time after an update, its download a third smaller, and later visits reuse what the browser already has",
+            "A shared deck's link preview credits the art with the artist tag Printings shows",
+            "On the web, Enter runs an open sheet's main action, or closes the sheet when nothing changed",
+            "On the web, a dialog opens with the cursor in its first field or on its main button, and hands focus back when it closes",
+            "Printings names the card at its top, and on a phone shows each printing's set, number and place as well as its artist, on the web and in the app",
+            "A filter section opens with its choices appearing whole and in place, so a quick tap lands where you aimed, on the web and in the app",
+        ],
+    },
+    Release {
+        version: Version::new(1, 20, 3),
+        date: None,
+        entries: &[
+            "Quick add offers the most played cards first among names that match as closely",
+            "On the Remove screen, undoing a move to the maybeboard puts the card's MVP star back",
+            "Undoing a move to the maybeboard or sideboard puts the card's MVP star back",
+            "Undo on a deck's cards says what it undid only once the change is saved, on the web and in the app",
+            "On the web, the Decks list opens and closes its Tags without the decks jittering",
+            "On the web's deck page, holding a key to run down the cards swaps the details drawer at once instead of fading each card",
+        ],
+    },
+    Release {
+        version: Version::new(1, 20, 2),
+        date: None,
+        entries: &[
+            "On a phone, a deck's Profile and Cards come and go as screens do, each entering fresh with nothing showing beneath, on the web and in the app",
+            "On phone web, a deck's Cards opened from a link show Cards in the header",
+            "On a phone, a card's details drawer on a deck's Cards dims the page and closes on a tap outside, its x, or a drag to the right, on the web and in the app",
+            "On a phone, a card's details drawer scrolls its own content with a vertical swipe, and an opened card role or tag scrolls into view",
+            "A card's details drawer on a deck's Cards opens on the side away from the card's column, and on a phone drags toward that side to close",
+            "On a phone's web app, the featured cards are the app's: big, scrolling sideways, and nothing under them moves when one joins or leaves",
+            "A List group's price and cart sit at the end of its title's line on a phone, on the web and in the app",
+        ],
+    },
+    Release {
         version: Version::new(1, 20, 1),
         date: None,
         entries: &[
-            "On the Remove screen, undoing a move to the maybeboard puts the card's MVP star back",
-            "On a phone's web app, the featured cards are the app's: big, scrolling sideways, and nothing under them moves when one joins or leaves",
-            "On the web, the Decks list opens and closes its Tags without the decks jittering",
-            "Undoing a move to the maybeboard or sideboard puts the card's MVP star back",
-            "Undo on a deck's cards says what it undid only once the change is saved, on the web and in the app",
-            "Quick add offers the most played cards first among names that match as closely",
             "On the web's deck page, the arrow keys or h, j, k and l move between cards and Enter opens one, in List and Stacks",
+            "On the web's deck page, the arrow keys and h, j, k and l move between cards at any window width, a tablet's keyboard included",
             "On the web's deck page, the card keys act on the card the details drawer shows, wherever it opened from",
             "On the web, Esc closes Quick add's suggestions and leaves the box, so the card keys work again",
             "On the web, Back closes the open sheets one at a time before it leaves the page, on a phone too",
