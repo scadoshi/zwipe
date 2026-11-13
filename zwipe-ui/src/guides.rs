@@ -220,6 +220,143 @@ pub fn hits(tag: Option<&str>, query: &str) -> Vec<&'static Guide> {
         .collect()
 }
 
+/// A step through a guide's gallery.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum GalleryStep {
+    /// To the screenshot before, wrapping to the last.
+    Back,
+    /// To the screenshot after, wrapping to the first.
+    Forward,
+}
+
+/// The keys that step a guide's gallery: the arrows, and `h` and `l`
+/// (lowercase only, since Shift+H opens the shortcuts sheet).
+pub const GALLERY_KEYS: [&str; 4] = ["ArrowLeft", "ArrowRight", "h", "l"];
+
+/// The gallery step `key` stands for.
+#[must_use]
+pub fn gallery_step(key: &str) -> Option<GalleryStep> {
+    match key {
+        "ArrowLeft" | "h" => Some(GalleryStep::Back),
+        "ArrowRight" | "l" => Some(GalleryStep::Forward),
+        _ => None,
+    }
+}
+
+/// The screenshot `step` lands on from `index` in a gallery of `total`,
+/// wrapping at either end as the gallery's buttons do.
+#[must_use]
+pub fn stepped(index: usize, total: usize, step: GalleryStep) -> usize {
+    if total == 0 {
+        return 0;
+    }
+    match step {
+        GalleryStep::Back => index
+            .checked_sub(1)
+            .unwrap_or_else(|| total.saturating_sub(1)),
+        GalleryStep::Forward => index.saturating_add(1).checked_rem(total).unwrap_or(0),
+    }
+}
+
+/// The index's filter as the query its address carries.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
+pub struct IndexFilter {
+    /// The tag chip on, one of [`TAGS`].
+    pub tag: Option<&'static str>,
+    /// What the search box holds, as typed.
+    pub query: String,
+}
+
+impl IndexFilter {
+    /// The filter a page address's query (`?tag=Commander&q=mana`, with or
+    /// without the `?`) holds. A tag no chip has, and anything else in the
+    /// query, are left out.
+    #[must_use]
+    pub fn from_search(search: &str) -> Self {
+        let mut filter = Self::default();
+        for pair in search.trim_start_matches('?').split('&') {
+            let (name, value) = pair.split_once('=').unwrap_or((pair, ""));
+            let value = decode(value);
+            match name {
+                "tag" => filter.tag = TAGS.iter().copied().find(|t| *t == value),
+                "q" => filter.query = value,
+                _ => {}
+            }
+        }
+        filter
+    }
+
+    /// The query the address carries for this filter, with its `?`, or
+    /// nothing with no tag and an empty search.
+    #[must_use]
+    pub fn to_search(&self) -> String {
+        let mut parts = Vec::new();
+        if let Some(tag) = self.tag {
+            parts.push(format!("tag={}", encode(tag)));
+        }
+        if !self.query.is_empty() {
+            parts.push(format!("q={}", encode(&self.query)));
+        }
+        if parts.is_empty() {
+            String::new()
+        } else {
+            format!("?{}", parts.join("&"))
+        }
+    }
+}
+
+/// `text` percent-encoded for a query value, a space as `+`.
+fn encode(text: &str) -> String {
+    let mut out = String::new();
+    for byte in text.bytes() {
+        match byte {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
+                out.push(char::from(byte));
+            }
+            b' ' => out.push('+'),
+            _ => {
+                out.push('%');
+                for nibble in [byte >> 4, byte & 0x0f] {
+                    out.extend(
+                        char::from_digit(u32::from(nibble), 16).map(|c| c.to_ascii_uppercase()),
+                    );
+                }
+            }
+        }
+    }
+    out
+}
+
+/// A query value decoded: `+` as a space and `%XX` as its byte. A broken
+/// escape stays as written.
+fn decode(text: &str) -> String {
+    let bytes = text.as_bytes();
+    let mut out = Vec::with_capacity(bytes.len());
+    let mut i = 0;
+    while let Some(&byte) = bytes.get(i) {
+        let escaped = (byte == b'%')
+            .then(|| bytes.get(i.saturating_add(1)..i.saturating_add(3)))
+            .flatten()
+            .and_then(|hex| std::str::from_utf8(hex).ok())
+            .and_then(|hex| u8::from_str_radix(hex, 16).ok());
+        match (byte, escaped) {
+            (_, Some(decoded)) => {
+                out.push(decoded);
+                i = i.saturating_add(3);
+            }
+            (b'+', None) => {
+                out.push(b' ');
+                i = i.saturating_add(1);
+            }
+            (other, None) => {
+                out.push(other);
+                i = i.saturating_add(1);
+            }
+        }
+    }
+    String::from_utf8_lossy(&out).into_owned()
+}
+
 #[cfg(test)]
 mod tests {
     use zwipe_core::content::guides::find;
@@ -345,5 +482,45 @@ mod tests {
             }
             assert_eq!(related(g).count(), g.related.len(), "{}", g.slug);
         }
+    }
+
+    #[test]
+    fn the_gallery_steps_by_arrow_and_by_h_and_l_wrapping_at_the_ends() {
+        assert_eq!(gallery_step("ArrowLeft"), Some(GalleryStep::Back));
+        assert_eq!(gallery_step("l"), Some(GalleryStep::Forward));
+        assert_eq!(gallery_step("H"), None, "Shift+H opens the shortcuts");
+        assert_eq!(stepped(0, 3, GalleryStep::Back), 2);
+        assert_eq!(stepped(2, 3, GalleryStep::Forward), 0);
+        assert_eq!(stepped(1, 3, GalleryStep::Forward), 2);
+        assert_eq!(stepped(0, 0, GalleryStep::Forward), 0);
+        for key in GALLERY_KEYS {
+            assert!(gallery_step(key).is_some(), "{key}");
+        }
+    }
+
+    #[test]
+    fn the_index_filter_round_trips_through_its_address() {
+        let filter = IndexFilter {
+            tag: Some("Deck stats"),
+            query: "mana & 100% curve".to_owned(),
+        };
+        let search = filter.to_search();
+        assert_eq!(search, "?tag=Deck+stats&q=mana+%26+100%25+curve");
+        assert_eq!(IndexFilter::from_search(&search), filter);
+        assert_eq!(IndexFilter::default().to_search(), "");
+        assert_eq!(IndexFilter::from_search(""), IndexFilter::default());
+        assert_eq!(
+            IndexFilter::from_search("?tag=Nope&q=%E2%9C%93&x=1&q2"),
+            IndexFilter {
+                tag: None,
+                query: "\u{2713}".to_owned()
+            },
+            "an unknown tag and other keys drop, UTF-8 decodes"
+        );
+        assert_eq!(
+            IndexFilter::from_search("q=100%").query,
+            "100%",
+            "a broken escape stays"
+        );
     }
 }

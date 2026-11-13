@@ -9,10 +9,11 @@
 use dioxus::prelude::*;
 use orangui::{ClearWrap, GalleryFooter, GalleryFrame, HintKey, Panel};
 use zwipe_core::content::guides::{Block, Guide, image_size, image_url};
-use zwipe_ui::guides::{self, Inline, Shot};
+use zwipe_ui::guides::{self, GALLERY_KEYS, IndexFilter, Inline, Shot};
 use zwipe_ui::hint::KeyIcon;
 
 use crate::hint::KeyGlyph;
+use crate::keys::use_scoped_keys;
 use crate::media_frame::MediaFrame;
 
 /// The cards' deal-in stagger per card, in milliseconds.
@@ -84,11 +85,22 @@ fn text_block(block: &'static Block) -> Element {
 }
 
 /// The guide's screenshots, one at a time with the gallery's previous and
-/// next chrome and the shot's caption under it.
+/// next chrome and the shot's caption under it. The arrow keys, and `h` and
+/// `l`, step it while focus is in the gallery or on nothing.
 #[component]
 fn GuideGallery(shots: Vec<Shot>) -> Element {
-    let index = use_signal(|| 0usize);
+    let mut index = use_signal(|| 0usize);
     let total = shots.len();
+    use_scoped_keys(
+        ".guide-gallery-col",
+        &GALLERY_KEYS,
+        Callback::new(move |key: String| {
+            if let Some(step) = guides::gallery_step(&key) {
+                let at = index();
+                index.set(guides::stepped(at, total, step));
+            }
+        }),
+    );
     let i = index().min(total.saturating_sub(1));
     let Some(&Shot { file, alt, caption }) = shots.get(i) else {
         return rsx! {};
@@ -168,13 +180,67 @@ fn tag_chips(guide: &'static Guide, class: &'static str) -> Element {
     }
 }
 
+/// A guide's tags as colored chips, each linking to `index`, the host's
+/// guides index, filtered to that tag.
+fn tag_links(guide: &'static Guide, class: &'static str, index: &str) -> Element {
+    rsx! {
+        div { class,
+            for t in guide.tags.iter().copied() {
+                Link {
+                    to: format!("{index}{}", IndexFilter { tag: Some(t), query: String::new() }.to_search()),
+                    class: "tag {guides::tag_color_class(t)}",
+                    "{t}"
+                }
+            }
+        }
+    }
+}
+
+/// A script that puts `search` (an [`IndexFilter::to_search`], percent-encoded
+/// so it needs no quoting beyond its quotes) as the page address's query,
+/// keeping the path, the hash and the history entry.
+fn replace_search_js(search: &str) -> String {
+    format!(
+        "history.replaceState(history.state, '', location.pathname + '{search}' + location.hash);"
+    )
+}
+
 /// The guides index: the page's heading, the filter row, and a card per
 /// guide that passes it, each linking to `href` of its slug. With none, a
 /// line saying so and a chip that clears the filter.
+///
+/// The filter lives in the page address's query ([`IndexFilter`]): the index
+/// opens on the one there, so Back from a guide and a shared link both show
+/// the same list, and each change replaces it in place.
 #[component]
 pub fn GuideIndex(href: Callback<&'static str, String>) -> Element {
     let mut selected = use_signal(|| Option::<&'static str>::None);
     let mut query = use_signal(String::new);
+    // Whether the address's filter is read yet; until then nothing is written over it.
+    let mut read = use_signal(|| false);
+    use_effect(move || {
+        spawn(async move {
+            if let Ok(search) = document::eval("return location.search")
+                .join::<String>()
+                .await
+            {
+                let filter = IndexFilter::from_search(&search);
+                selected.set(filter.tag);
+                query.set(filter.query);
+            }
+            read.set(true);
+        });
+    });
+    use_effect(move || {
+        let search = IndexFilter {
+            tag: selected(),
+            query: query(),
+        }
+        .to_search();
+        if read() {
+            document::eval(&replace_search_js(&search));
+        }
+    });
     let hits = guides::hits(selected(), &query());
     let typed = query().trim().to_owned();
     rsx! {
@@ -224,9 +290,14 @@ pub fn GuideIndex(href: Callback<&'static str, String>) -> Element {
 /// One guide: its article panel (the title as the page's `h1`, its tags and
 /// its text), with its screenshots in an "In the app" gallery beside it
 /// when it has any (above it on a phone), then its related guides, each
-/// linking to `href` of its slug.
+/// linking to `href` of its slug. Each tag links to `index`, the host's
+/// guides index, filtered to that tag.
 #[component]
-pub fn GuideArticle(guide: &'static Guide, href: Callback<&'static str, String>) -> Element {
+pub fn GuideArticle(
+    guide: &'static Guide,
+    href: Callback<&'static str, String>,
+    index: String,
+) -> Element {
     let shots = guides::shots(guide);
     let related: Vec<&'static Guide> = guides::related(guide).collect();
     let article = rsx! {
@@ -234,7 +305,7 @@ pub fn GuideArticle(guide: &'static Guide, href: Callback<&'static str, String>)
             // The panel's header anatomy (title and rule) on an h1, so the
             // page keeps its heading.
             h1 { class: "panel-title guide-title", "{guide.title}" }
-            {tag_chips(guide, "guide-title-tags")}
+            {tag_links(guide, "guide-title-tags", &index)}
             hr { class: "panel-rule" }
             for block in guide.blocks.iter() {
                 {text_block(block)}
@@ -342,7 +413,11 @@ mod tests {
                 GuideIndex { href: |slug| Site::Base { slug: String::from(slug) }.to_string() }
             },
             Page::Article(guide) => rsx! {
-                GuideArticle { guide, href: |slug| Site::Base { slug: String::from(slug) }.to_string() }
+                GuideArticle {
+                    guide,
+                    href: |slug| Site::Base { slug: String::from(slug) }.to_string(),
+                    index: "/".to_owned(),
+                }
             },
         }
     }
@@ -396,5 +471,15 @@ mod tests {
         assert!(page.contains(&image_url("")), "{page}");
         assert!(page.contains(r#"href="/base/"#), "{page}");
         assert!(page.contains("<h1"), "{page}");
+        let tag = guide.tags.first().unwrap();
+        let filtered = IndexFilter {
+            tag: Some(tag),
+            query: String::new(),
+        }
+        .to_search();
+        assert!(
+            page.contains(&format!(r#"href="/{filtered}""#)),
+            "a tag links to the index filtered to it: {page}"
+        );
     }
 }

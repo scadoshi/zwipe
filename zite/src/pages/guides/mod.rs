@@ -94,7 +94,7 @@ pub fn GuidePage(slug: String) -> Element {
         document::Script { r#type: "application/ld+json", "{json_ld}" }
         Nav {}
         main { id: "content", class: "page content-enter guide-page",
-            GuideArticle { guide: g, href: guide_href }
+            GuideArticle { guide: g, href: guide_href, index: Route::Guides {}.to_string() }
         }
         Footer {}
     }

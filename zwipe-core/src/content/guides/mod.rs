@@ -977,7 +977,7 @@ pub static GUIDES: &[Guide] = &[
                 caption: None,
             },
             Block::P(
-                "The link lives at zwipe.net until you turn it off. The same dialog has Copy link.",
+                "The link opens at app.zwipe.net until you turn it off. The same dialog has Copy link.",
             ),
             Block::H2("What viewers see"),
             Block::P(
@@ -985,7 +985,7 @@ pub static GUIDES: &[Guide] = &[
             ),
             Block::Image {
                 file: "share-your-deck/02-shared-page.webp",
-                alt: "A shared deck in a browser at zwipe.net: featured cards, Budget and Tags, the card list below",
+                alt: "A shared deck in a browser at app.zwipe.net: featured cards, Budget and Tags, the card list below",
                 caption: None,
             },
             Block::P(

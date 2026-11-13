@@ -69,12 +69,65 @@ pub fn use_undo_key(on_undo: Callback<()>) {
     });
 }
 
+/// Calls `on_key` with each of `keys` (`KeyboardEvent.key` names, such as
+/// `"ArrowLeft"`) pressed while focus sits inside `scope` (a CSS selector)
+/// or on nothing, and no text field, dialog or sheet has focus. The
+/// browser's default for the key, a scroll for an arrow, is held back.
+pub fn use_scoped_keys(
+    scope: &'static str,
+    keys: &'static [&'static str],
+    on_key: Callback<String>,
+) {
+    let id = use_hook(Uuid::new_v4);
+    use_hook(move || {
+        let names = keys
+            .iter()
+            .map(|key| format!("'{key}'"))
+            .collect::<Vec<_>>()
+            .join(", ");
+        let script = SCOPED_KEYS_JS
+            .replace("__ID__", &id.to_string())
+            .replace("__KEYS__", &names)
+            .replace("__SCOPE__", scope)
+            .replace("__GUARD__", &guard::guard_js());
+        spawn(async move {
+            let mut presses = document::eval(&script);
+            while let Ok(key) = presses.recv::<String>().await {
+                on_key.call(key);
+            }
+        });
+    });
+    use_drop(move || {
+        document::eval(&SCOPED_KEYS_DROP_JS.replace("__ID__", &id.to_string()));
+    });
+}
+
 /// Focuses the element with `id` and selects its text, for a `/` key.
 pub fn focus_by_id(id: &str) {
     document::eval(&format!(
         "const el = document.getElementById('{id}'); if (el) {{ el.focus(); if (el.select) el.select(); }}"
     ));
 }
+
+/// Registers one scoped key listener.
+const SCOPED_KEYS_JS: &str = r"
+const onKey = (e) => {
+    if (![__KEYS__].includes(e.key) || !__GUARD__) return;
+    const at = document.activeElement;
+    if (at && at !== document.body && !at.closest('__SCOPE__')) return;
+    e.preventDefault();
+    dioxus.send(e.key);
+};
+window['__zwipeScopedKey__ID__'] = onKey;
+document.addEventListener('keydown', onKey);
+";
+
+/// Removes one scoped key listener.
+const SCOPED_KEYS_DROP_JS: &str = r"
+const onKey = window['__zwipeScopedKey__ID__'];
+if (onKey) document.removeEventListener('keydown', onKey);
+delete window['__zwipeScopedKey__ID__'];
+";
 
 /// Registers one screen's key listener.
 const PAGE_KEYS_JS: &str = r"

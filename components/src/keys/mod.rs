@@ -13,7 +13,9 @@ pub use guard::{
     TYPING_TAGS, guard_js, guard_js_through, guard_js_with_modifiers, hint_guard_js, modal_hint_js,
     press_first_js,
 };
-pub use page_keys::{focus_by_id, use_page_keys, use_page_keys_through, use_undo_key};
+pub use page_keys::{
+    focus_by_id, use_page_keys, use_page_keys_through, use_scoped_keys, use_undo_key,
+};
 pub use sheet_focus::use_sheet_focus;
 pub use shortcuts_sheet::{
     SHORTCUTS_LABEL, ShortcutsList, ShortcutsOffered, ShortcutsOpen, ShortcutsSheet,
