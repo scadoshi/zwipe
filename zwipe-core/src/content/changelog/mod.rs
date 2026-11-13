@@ -42,7 +42,7 @@ pub struct Release {
 /// submission day, not when review clears; until Apple and Google release
 /// it, a phone may still offer the version before. Compiled in, not
 /// served: each client reads its own copy.
-pub const MOBILE_STORE_VERSION: Version = Version::new(1, 18, 15);
+pub const MOBILE_STORE_VERSION: Version = Version::new(1, 21, 4);
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
