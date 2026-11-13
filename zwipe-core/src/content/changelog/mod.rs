@@ -71,6 +71,7 @@ pub const UPCOMING: &[Release] = &[
             "On the web, Change username, Change email and Change password put the cursor in their first field as they open",
             "Screen readers announce an open sheet as a dialog named by its title",
             "In Stacks, a tapped card eases open and the revealed card drifts in softly, on the web and in the app",
+            "A deck opens on its Profile with Cards in the dock, which opens the cards over it and closes with Back, for your decks and shared ones, on the web and in the app",
         ],
     },
     Release {

@@ -138,7 +138,10 @@ impl Driver {
 /// The app's route for each destination.
 fn route(destination: Destination) -> Router {
     match destination {
-        Destination::Deck(deck_id) => Router::ViewDeck { deck_id },
+        Destination::Deck(deck_id) => Router::ViewDeck {
+            deck_id,
+            view: None,
+        },
         Destination::DeckList => Router::DeckList {},
     }
 }

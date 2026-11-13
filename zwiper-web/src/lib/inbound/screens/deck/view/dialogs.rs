@@ -265,6 +265,7 @@ fn CloneDeckDialog(source_deck_id: Uuid, default_name: String, open: Signal<bool
                     ToastOptions::default().duration(TOAST_QUICK),
                 );
                 navigator.push(Route::ViewDeck {
+                    view: None,
                     deck_id: cloned.deck_id,
                 });
                 true

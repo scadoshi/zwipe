@@ -17,7 +17,6 @@ use zwipe_core::domain::card::search_card::group_cards::GroupByOption;
 use zwipe_core::domain::deck::{Format, PowerLevel};
 use zwipe_ui::deck::cards_label;
 use zwipe_ui::deck::command_zone::Slot;
-use zwipe_ui::deck::view::DeckArea;
 use zwipe_ui::deck_cards::Display;
 
 use crate::icons::{DockIcon, FOLD, UNFOLD};
@@ -141,11 +140,10 @@ pub fn sections(
 /// The page: the head, the controls, the bands, then the stats and the
 /// host's foot, one panel gap apart.
 ///
-/// With `areas`, a phone splits the page under its head into the deck's
-/// profile (the stats and the foot) and its cards (the controls and the
-/// bands), with a Profile | Cards switch under the head that sets `areas`.
-/// Every part stays mounted: the stylesheet hides the area not picked below
-/// the wide layout, and a wide window shows both and no switch.
+/// With `split`, a phone shows only the deck's profile (the head, the stats
+/// and the foot): the controls and the bands stay mounted but hidden below
+/// the wide layout, and the host draws the cards in a layer of its own. A
+/// wide window shows the whole page either way.
 #[component]
 pub fn DeckPage(
     head: Element,
@@ -156,29 +154,18 @@ pub fn DeckPage(
     bands: Element,
     #[props(default)] stats: Option<Element>,
     #[props(default)] foot: Option<Element>,
-    #[props(default)] areas: Option<Signal<DeckArea>>,
+    #[props(default)] split: bool,
 ) -> Element {
-    let class = areas.map_or_else(
-        || "deck-page".to_owned(),
-        |area| format!("deck-page deck-page-areas {}", area().class()),
-    );
+    let class = if split {
+        "deck-page deck-page-split"
+    } else {
+        "deck-page"
+    };
     rsx! {
         // The whole page settles (`settle`): its groups, rows, head cards and
         // foot panels ease into place when a control moves them.
         div { class: "{class}", "data-settle-scope": "",
             {head}
-            if let Some(mut area) = areas {
-                div { class: "chip-row deck-area-switch",
-                    for choice in DeckArea::ALL {
-                        Chip {
-                            key: "{choice.class()}",
-                            selected: area() == choice,
-                            onclick: move |_| area.set(choice),
-                            {choice.label()}
-                        }
-                    }
-                }
-            }
             if let Some(controls) = controls {
                 div { class: "deck-controls", "data-settle-key": "controls", {controls} }
             }
@@ -304,7 +291,9 @@ pub fn FeaturedCard(
                 div {
                     class: "deck-head-card-image floatable float-on-hover",
                     "data-row": "{id}",
-                    onclick: move |_| {
+                    // The click stops at the card, so a page's tap-off never closes what it opens.
+                    onclick: move |event: MouseEvent| {
+                        event.stop_propagation();
                         if let Some(select) = on_select {
                             select.call(id);
                         } else if let Some(open) = on_open {
@@ -334,8 +323,9 @@ pub fn FeaturedCard(
     }
 }
 
-/// The rows over the cards: the host's `leading` row, Group by, the host's
-/// `boards` row and Show. The host holds every signal; `show_tokens`
+/// The rows over the cards: the host's `leading` row, the host's `view` row
+/// (List or Stacks), Group by, the host's `boards` row and Show, in the app's
+/// order. The host holds every signal; `show_tokens`
 /// is `None` for a list with no tokens, `show_zone` is `None` for a deck
 /// with no command zone, and `on_change` fires when a row
 /// changes what the list shows. With `on_fold_all` the Show row ends in the
@@ -353,6 +343,7 @@ pub fn DeckControls(
     #[props(default)] art_disabled: bool,
     #[props(default)] on_change: Option<Callback<()>>,
     #[props(default)] leading: Option<Element>,
+    #[props(default)] view: Option<Element>,
     #[props(default)] boards: Option<Element>,
 ) -> Element {
     let changed = move || {
@@ -363,6 +354,9 @@ pub fn DeckControls(
     rsx! {
         if let Some(leading) = leading {
             {leading}
+        }
+        if let Some(view) = view {
+            {view}
         }
         // `data-settle`: a regrouping eases the cards into their new groups
         // where the host installs it.

@@ -54,7 +54,6 @@ pub const fn section_of(route: &Router) -> Option<Section> {
         | Router::ImportDeck { .. }
         | Router::ExportDeck { .. }
         | Router::AddDeckCard { .. }
-        | Router::ViewDeckCard { .. }
         | Router::RemoveDeckCard { .. } => Some(Section::Decks),
         Router::SuggestedCommanders {} => Some(Section::Playstyle),
         Router::CommanderMaybeboard {} => Some(Section::Maybeboard),
@@ -222,11 +221,13 @@ mod tests {
         for route in [
             Router::CreateDeck,
             Router::EditDeck { deck_id },
-            Router::ViewDeck { deck_id },
+            Router::ViewDeck {
+                deck_id,
+                view: None,
+            },
             Router::ImportDeck { deck_id },
             Router::ExportDeck { deck_id },
             Router::AddDeckCard { deck_id },
-            Router::ViewDeckCard { deck_id },
             Router::RemoveDeckCard { deck_id },
         ] {
             assert_eq!(section_of(&route), Some(Section::Decks), "{route:?}");

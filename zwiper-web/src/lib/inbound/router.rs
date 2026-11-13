@@ -11,6 +11,7 @@
 
 use dioxus::prelude::*;
 use uuid::Uuid;
+use zwipe_ui::deck::view::DeckView;
 
 use crate::inbound::screens::about::About;
 use crate::inbound::screens::account::Account;
@@ -22,7 +23,6 @@ use crate::inbound::screens::commander_maybeboard::CommanderMaybeboard;
 use crate::inbound::screens::config::Config;
 use crate::inbound::screens::deck::cards::add::AddDeckCard;
 use crate::inbound::screens::deck::cards::remove::RemoveDeckCard;
-use crate::inbound::screens::deck::cards::view::ViewDeckCard;
 use crate::inbound::screens::deck::create::CreateDeck;
 use crate::inbound::screens::deck::edit::EditDeck;
 use crate::inbound::screens::deck::export::ExportDeck;
@@ -52,6 +52,7 @@ use crate::inbound::shell::{OpenFrame, PublicFrame};
 pub enum Route {
     #[redirect("/changelog", || Route::About {})]
     #[redirect("/config", || Route::Config {})]
+    #[redirect("/decks/:deck_id/cards", |deck_id: Uuid| Route::ViewDeck { deck_id, view: Some(DeckView::Cards) })]
     // == public: Home instead, for a load with a live session ==
     #[layout(SignedOutGate)]
     #[layout(PublicFrame)]
@@ -77,8 +78,8 @@ pub enum Route {
         #[route("/about")]
         About {},
         /// A shared deck at its public link, read only. Only the token names the deck.
-        #[route("/:owner/deck/:slug/:token")]
-        SharedDeck { owner: String, slug: String, token: String },
+        #[route("/:owner/deck/:slug/:token?:view")]
+        SharedDeck { owner: String, slug: String, token: String, view: Option<DeckView> },
 
     // == authed ==
     #[layout(AuthGate)]
@@ -111,8 +112,8 @@ pub enum Route {
         #[route("/decks/:deck_id/edit")]
         EditDeck { deck_id: Uuid },
         /// A deck: profile, sections and stats.
-        #[route("/decks/:deck_id")]
-        ViewDeck { deck_id: Uuid },
+        #[route("/decks/:deck_id?:view")]
+        ViewDeck { deck_id: Uuid, view: Option<DeckView> },
         /// Cards from a pasted list.
         #[route("/decks/:deck_id/import")]
         ImportDeck { deck_id: Uuid },
@@ -122,9 +123,6 @@ pub enum Route {
         /// Swipe to add cards.
         #[route("/decks/:deck_id/add")]
         AddDeckCard { deck_id: Uuid },
-        /// Every card in the deck.
-        #[route("/decks/:deck_id/cards")]
-        ViewDeckCard { deck_id: Uuid },
         /// Swipe to remove cards.
         #[route("/decks/:deck_id/remove")]
         RemoveDeckCard { deck_id: Uuid },
@@ -256,9 +254,21 @@ mod tests {
             (Route::CommanderMaybeboard {}, "/maybeboard".to_string()),
             (Route::Playstyle {}, "/playstyle".to_string()),
             (Route::CreateDeck {}, "/decks/new".to_string()),
-            (Route::ViewDeck { deck_id }, format!("/decks/{d}")),
+            (
+                Route::ViewDeck {
+                    deck_id,
+                    view: None,
+                },
+                format!("/decks/{d}"),
+            ),
+            (
+                Route::ViewDeck {
+                    deck_id,
+                    view: Some(DeckView::Cards),
+                },
+                format!("/decks/{d}?view=cards"),
+            ),
             (Route::EditDeck { deck_id }, format!("/decks/{d}/edit")),
-            (Route::ViewDeckCard { deck_id }, format!("/decks/{d}/cards")),
             (Route::AddDeckCard { deck_id }, format!("/decks/{d}/add")),
             (
                 Route::RemoveDeckCard { deck_id },
@@ -271,14 +281,45 @@ mod tests {
                     owner: "scotty".to_owned(),
                     slug: "elves-go-wide".to_owned(),
                     token: d.to_string(),
+                    view: None,
                 },
                 format!("/scotty/deck/elves-go-wide/{d}"),
             ),
+            (
+                Route::SharedDeck {
+                    owner: "scotty".to_owned(),
+                    slug: "elves-go-wide".to_owned(),
+                    token: d.to_string(),
+                    view: Some(DeckView::Cards),
+                },
+                format!("/scotty/deck/elves-go-wide/{d}?view=cards"),
+            ),
         ];
         for (route, path) in routes {
-            assert_eq!(route.to_string(), path);
+            // A route whose query holds nothing prints a bare `?`, which the trail history drops.
+            let printed = route.to_string();
+            assert_eq!(printed.strip_suffix('?').unwrap_or(&printed), path);
             assert_eq!(Route::from_str(&path).ok(), Some(route), "{path}");
         }
+    }
+
+    #[test]
+    fn the_old_cards_path_and_an_unknown_view_open_the_deck() {
+        let deck_id = id();
+        assert_eq!(
+            Route::from_str(&format!("/decks/{deck_id}/cards")).ok(),
+            Some(Route::ViewDeck {
+                deck_id,
+                view: Some(DeckView::Cards)
+            })
+        );
+        assert_eq!(
+            Route::from_str(&format!("/decks/{deck_id}?view=profile")).ok(),
+            Some(Route::ViewDeck {
+                deck_id,
+                view: None
+            })
+        );
     }
 
     #[test]

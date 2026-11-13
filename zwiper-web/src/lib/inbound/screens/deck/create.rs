@@ -78,6 +78,7 @@ pub fn CreateDeck() -> Element {
                 Ok(created) => {
                     guard.release();
                     navigator.replace(Route::ViewDeck {
+                        view: None,
                         deck_id: created.id,
                     });
                 }

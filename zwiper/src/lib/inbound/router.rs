@@ -4,6 +4,7 @@
 
 use dioxus::prelude::*;
 use uuid::Uuid;
+use zwipe_ui::deck::view::DeckView;
 
 use crate::inbound::components::auth::auth_gate::AuthGate;
 use crate::inbound::components::navigation::back_handler::BackHandlerLayout;
@@ -16,7 +17,6 @@ use crate::inbound::screens::auth::register::Register;
 use crate::inbound::screens::config::Config;
 use crate::inbound::screens::deck::card::add::Add as AddDeckCard;
 use crate::inbound::screens::deck::card::remove::Remove as RemoveDeckCard;
-use crate::inbound::screens::deck::card::view::View as ViewDeckCard;
 use crate::inbound::screens::deck::commander_maybeboard::CommanderMaybeboard;
 use crate::inbound::screens::deck::create::CreateDeck;
 use crate::inbound::screens::deck::edit::EditDeck;
@@ -33,6 +33,7 @@ use crate::inbound::screens::legal::privacy_policy::PrivacyPolicy;
 #[rustfmt::skip]
 #[expect(missing_docs, reason = "each route field is the URL parameter its path names")]
 pub enum Router {
+    #[redirect("/deck/card/view/:deck_id", |deck_id: Uuid| Router::ViewDeck { deck_id, view: Some(DeckView::Cards) })]
     // Wrap every route so the OS back-intent bridge (edge swipe / hardware
     // back) mounts once inside the router context and persists across routes.
     #[layout(BackHandlerLayout)]
@@ -96,8 +97,9 @@ pub enum Router {
     #[route("/deck/update/:deck_id")]
     EditDeck { deck_id: Uuid },
     /// View deck details: profile, stats, price breakdown, mana curve, type/color distribution.
-    #[route("/deck/get/:deck_id")]
-    ViewDeck { deck_id: Uuid },
+    /// With `?view=cards`, the deck's cards as a layer over it.
+    #[route("/deck/get/:deck_id?:view")]
+    ViewDeck { deck_id: Uuid, view: Option<DeckView> },
 
     /// Import cards from a plain-text decklist into the deck.
     #[route("/deck/card/import/:deck_id")]
@@ -109,11 +111,6 @@ pub enum Router {
     /// Swipe-based card search: swipe right to add cards to the deck.
     #[route("/deck/card/add/:deck_id")]
     AddDeckCard {
-        deck_id: Uuid,
-    },
-    /// Browse all cards in the deck: expandable rows with card details and image preview.
-    #[route("/deck/card/view/:deck_id")]
-    ViewDeckCard {
         deck_id: Uuid,
     },
     /// Swipe-based card removal: swipe right to remove cards from the deck.

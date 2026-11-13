@@ -78,14 +78,23 @@ pub fn take() -> Option<Route> {
 #[cfg(test)]
 mod tests {
     use uuid::Uuid;
+    use zwipe_ui::deck::view::DeckView;
 
     use super::*;
 
     #[test]
     fn a_deck_path_comes_back_as_its_route() {
         let deck_id = Uuid::from_u128(0x0123_4567_89ab_cdef_0123_4567_89ab_cdef);
-        let route = Route::ViewDeck { deck_id };
+        let route = Route::ViewDeck {
+            deck_id,
+            view: None,
+        };
         assert_eq!(return_route(&route.to_string()), Some(route));
+        let cards = Route::ViewDeck {
+            deck_id,
+            view: Some(DeckView::Cards),
+        };
+        assert_eq!(return_route(&cards.to_string()), Some(cards));
         assert_eq!(
             return_route("/decks/01234567-89ab-cdef-0123-456789abcdef/add"),
             Some(Route::AddDeckCard { deck_id })
@@ -102,6 +111,7 @@ mod tests {
                 owner: "scotty".to_owned(),
                 slug: "elves".to_owned(),
                 token: "01234567-89ab-cdef-0123-456789abcdef".to_owned(),
+                view: None,
             })
         );
     }

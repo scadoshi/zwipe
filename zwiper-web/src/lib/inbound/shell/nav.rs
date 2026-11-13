@@ -4,6 +4,7 @@
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
 use uuid::Uuid;
+use zwipe_ui::deck::view::DeckView;
 
 use crate::inbound::router::Route;
 
@@ -47,14 +48,19 @@ impl Back {
             | Route::About {}
             | Route::NotFound { .. } => Some(Back::Previous),
             Route::CreateDeck {} => Some(Back::To(Route::DeckList {})),
-            Route::ViewDeck { deck_id } => Some(Back::Opener(*deck_id)),
+            Route::ViewDeck { deck_id, .. } => Some(Back::Opener(*deck_id)),
             Route::EditDeck { deck_id }
             | Route::ImportDeck { deck_id }
-            | Route::ExportDeck { deck_id }
-            | Route::AddDeckCard { deck_id }
-            | Route::ViewDeckCard { deck_id }
-            | Route::RemoveDeckCard { deck_id } => {
-                Some(Back::To(Route::ViewDeck { deck_id: *deck_id }))
+            | Route::ExportDeck { deck_id } => Some(Back::To(Route::ViewDeck {
+                deck_id: *deck_id,
+                view: None,
+            })),
+            // Add and remove open from the deck's cards, and go back to them.
+            Route::AddDeckCard { deck_id } | Route::RemoveDeckCard { deck_id } => {
+                Some(Back::To(Route::ViewDeck {
+                    deck_id: *deck_id,
+                    view: Some(DeckView::Cards),
+                }))
             }
             Route::CommanderMaybeboard {} => Some(Back::To(Route::Playstyle {})),
             Route::PrivacyPolicy {} => Some(Back::To(Route::About {})),
@@ -105,7 +111,6 @@ pub const fn section_of(route: &Route) -> Option<Section> {
         | Route::ImportDeck { .. }
         | Route::ExportDeck { .. }
         | Route::AddDeckCard { .. }
-        | Route::ViewDeckCard { .. }
         | Route::RemoveDeckCard { .. } => Some(Section::Decks),
         Route::Activity {} => Some(Section::Activity),
         Route::Playstyle {} => Some(Section::Playstyle),
@@ -136,7 +141,10 @@ mod tests {
     fn deck_screens_light_up_decks() {
         let deck_id = Uuid::new_v4();
         for route in [
-            Route::ViewDeck { deck_id },
+            Route::ViewDeck {
+                deck_id,
+                view: None,
+            },
             Route::AddDeckCard { deck_id },
             Route::ExportDeck { deck_id },
             Route::CreateDeck {},
@@ -157,10 +165,23 @@ mod tests {
         let deck_id = Uuid::new_v4();
         assert_eq!(
             Back::of(&Route::AddDeckCard { deck_id }),
-            Some(Back::To(Route::ViewDeck { deck_id }))
+            Some(Back::To(Route::ViewDeck {
+                deck_id,
+                view: Some(DeckView::Cards)
+            }))
         );
         assert_eq!(
-            Back::of(&Route::ViewDeck { deck_id }),
+            Back::of(&Route::EditDeck { deck_id }),
+            Some(Back::To(Route::ViewDeck {
+                deck_id,
+                view: None
+            }))
+        );
+        assert_eq!(
+            Back::of(&Route::ViewDeck {
+                deck_id,
+                view: None
+            }),
             Some(Back::Opener(deck_id)),
             "a deck asks who opened it"
         );

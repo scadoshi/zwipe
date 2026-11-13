@@ -4,10 +4,8 @@
 
 pub mod add;
 pub(crate) mod editor;
-mod featured;
 pub(crate) mod quick_add;
 pub mod remove;
-pub mod view;
 
 use components::{CardDetailsPanel, CardDetailsPanelSkeleton, TOAST_NORMAL};
 use dioxus::prelude::*;

@@ -10,9 +10,7 @@ use std::collections::{HashMap, HashSet};
 use chrono::{DateTime, Utc};
 use components::keys::{focus_by_id, use_undo_key};
 use components::swipe_stack::{Swipe, use_swipe_key_handler};
-use components::{
-    DeckEditActions, DeckHoverKeys, DeckRow, DeckRowHost, TOAST_QUICK, use_deck_hover_keys,
-};
+use components::{DeckEditActions, DeckHoverKeys, DeckRowHost, TOAST_QUICK, use_deck_hover_keys};
 use dioxus::core::spawn_forever;
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -70,7 +68,7 @@ fn screen_key(key: &str) -> Option<ScreenKey> {
     }
 }
 
-pub(crate) use zwipe_ui::deck_cards::keys::{RowInfo, RowKind};
+use zwipe_ui::deck_cards::keys::RowKind;
 pub(crate) use zwipe_ui::deck_cards::listing::{Listed, RowMeta as Meta, board_of, list_rows};
 
 /// The engine's state and actions. `Copy`: every field is a signal, a memo
@@ -124,15 +122,6 @@ impl Editor {
     }
 }
 
-/// Whether a failed deck fetch raises its own toast.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum LoadFailure {
-    /// The fetch toasts, on a page with nothing else to say it.
-    Toast,
-    /// The fetch stays quiet: the host page's own fetch toasts and draws the failure.
-    Quiet,
-}
-
 /// The engine for `deck_id`: fetches the deck and its tokens, parks the
 /// filter on leave, and binds the keys (↑ ↓ move the selection, `+` and `-`
 /// change its quantity, F flips it, `/` focuses Quick add, Ctrl+Z undoes).
@@ -140,7 +129,7 @@ pub(crate) enum LoadFailure {
     clippy::too_many_lines,
     reason = "the engine's handlers share its signals and read as one piece"
 )]
-pub(crate) fn use_deck_editor(deck_id: Uuid, on_failure: LoadFailure) -> Editor {
+pub(crate) fn use_deck_editor(deck_id: Uuid) -> Editor {
     let toast = use_toast();
     // The screen's image preview, which `i` opens for a card that shows no Image button.
     let overlays = try_use_context::<CardOverlays>();
@@ -233,10 +222,8 @@ pub(crate) fn use_deck_editor(deck_id: Uuid, on_failure: LoadFailure) -> Editor 
     let reload = use_callback(move |()| {
         spawn(async move {
             let fetch = |c: ZwipeClient, s: Session| async move { c.fetch_deck(deck_id, &s).await };
-            let fetched = match on_failure {
-                LoadFailure::Toast => authed.run("load_deck", fetch).await,
-                LoadFailure::Quiet => authed.run_quiet("load_deck", fetch).await,
-            };
+            // Quiet: the deck view's own profile fetch raises the one toast.
+            let fetched = authed.run_quiet("load_deck", fetch).await;
             let Some(fetched) = fetched else {
                 return;
             };
@@ -900,34 +887,6 @@ pub(crate) fn use_deck_row_host(ed: &Editor) -> DeckRowHost {
         on_view_printing: overlays.is_some().then_some(on_view_printing),
         describe_tag,
         on_examples,
-    }
-}
-
-/// One listed row as a selectable [`DeckRow`] with the editing actions its kind allows, keyed by
-/// the card, so a change to one row (its details opening, its face turning) renders that row
-/// alone.
-pub(crate) fn row_view(
-    ed: &Editor,
-    host: DeckRowHost,
-    cur: PriceCurrency,
-    row_meta: &HashMap<Uuid, Meta>,
-    row: RowInfo,
-) -> Element {
-    let card_id = row.card.scryfall_data.id;
-    let board = board_of(row_meta, card_id);
-    rsx! {
-        DeckRow {
-            key: "{card_id}",
-            row,
-            board,
-            currency: cur,
-            selected: ed.selected,
-            face: ed.face,
-            faces: ed.faces,
-            show_art: Some(ed.show_art),
-            actions: Some(ed.edit_actions()),
-            host,
-        }
     }
 }
 

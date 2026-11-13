@@ -126,7 +126,13 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             saving.set(false);
             if saved.is_ok() {
                 guard.release();
-                nav::back_or(navigator, Route::ViewDeck { deck_id });
+                nav::back_or(
+                    navigator,
+                    Route::ViewDeck {
+                        deck_id,
+                        view: None,
+                    },
+                );
             }
         });
     });

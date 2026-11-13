@@ -338,3 +338,13 @@ body {
 .quick-add-results {
     margin-bottom: 0.5rem;
 }
+
+/* ---- Deck: the Cards layer ---- */
+
+/* A deck's Cards screen over its Profile while the route holds
+   ?view=cards, at its place on the overlay stack and opaque, so the
+   Profile under it never shows through. */
+.app-cards-layer > .screen {
+    z-index: var(--overlay-z, 200);
+    background-color: var(--bg-primary);
+}

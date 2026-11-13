@@ -1,4 +1,7 @@
-//! The deck view's rules: a phone's two areas ([`DeckArea`]), which sections show, the Tags badge, the Budget section's total, the share link, the clone dialog's prefill, and the toasts its actions raise.
+//! The deck view's rules: the route's view ([`DeckView`]), which sections show, the Tags badge, the Budget section's total, the share link, the clone dialog's prefill, and the toasts its actions raise.
+
+use std::fmt;
+use std::str::FromStr;
 
 use uuid::Uuid;
 use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCurrency;
@@ -9,37 +12,53 @@ use zwipe_core::http::contracts::deck::HttpSharedDeck;
 use crate::deck::command_zone::Slot;
 use crate::toast::{Toast, ToastKind};
 
-/// The two areas a deck's page splits into on a phone, under its head: its profile (the stat
-/// panels and the page's foot) or its cards (the controls and the groups). A wide window shows
-/// both.
+/// The part of a deck its route opens past the Profile, which the route's `view` query names:
+/// `?view=cards` opens the Cards. A route with no `view` opens the Profile, so the route holds an
+/// `Option<DeckView>` and there is no Profile value.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
-pub enum DeckArea {
-    /// The stat panels and the foot, which a deck opens on, as the app does.
+pub enum DeckView {
+    /// The deck's cards: on a phone a full-screen layer over the Profile, on a wide window the
+    /// same page scrolled to them. The only value, so it is also the default the router asks
+    /// for when it parses a query.
     #[default]
-    Profile,
-    /// The controls and the card groups.
     Cards,
 }
 
-impl DeckArea {
-    /// Both areas, in the switch's order.
-    pub const ALL: [Self; 2] = [Self::Profile, Self::Cards];
-
-    /// The switch's label.
+impl DeckView {
+    /// The query's value.
     #[must_use]
-    pub const fn label(self) -> &'static str {
+    pub const fn as_str(self) -> &'static str {
         match self {
-            Self::Profile => "Profile",
-            Self::Cards => "Cards",
+            Self::Cards => "cards",
         }
     }
+}
 
-    /// The page's class while this area shows, which the stylesheet reads on a phone.
-    #[must_use]
-    pub const fn class(self) -> &'static str {
-        match self {
-            Self::Profile => "area-profile",
-            Self::Cards => "area-cards",
+impl fmt::Display for DeckView {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+/// A `view` query value that names no [`DeckView`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ParseDeckViewError(pub String);
+
+impl fmt::Display for ParseDeckViewError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "unknown deck view {:?}", self.0)
+    }
+}
+
+impl std::error::Error for ParseDeckViewError {}
+
+impl FromStr for DeckView {
+    type Err = ParseDeckViewError;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        match value {
+            "cards" => Ok(Self::Cards),
+            other => Err(ParseDeckViewError(other.to_owned())),
         }
     }
 }
@@ -222,6 +241,14 @@ mod tests {
     use zwipe_core::domain::site::APP_BASE;
 
     use super::*;
+
+    #[test]
+    fn the_view_reads_and_writes_cards_and_nothing_else() {
+        assert_eq!("cards".parse::<DeckView>(), Ok(DeckView::Cards));
+        assert_eq!(DeckView::Cards.to_string(), "cards");
+        assert!("profile".parse::<DeckView>().is_err());
+        assert!("".parse::<DeckView>().is_err());
+    }
     use crate::test_support::deck_profile;
     use crate::toast::QUICK;
 
@@ -338,19 +365,5 @@ mod tests {
                 "{done:?}"
             );
         }
-    }
-
-    #[test]
-    fn a_phone_opens_a_deck_on_its_profile_then_offers_its_cards() {
-        assert_eq!(
-            DeckArea::default(),
-            DeckArea::Profile,
-            "as the app opens a deck"
-        );
-        assert_eq!(DeckArea::ALL, [DeckArea::Profile, DeckArea::Cards]);
-        let labels: Vec<&str> = DeckArea::ALL.iter().map(|a| a.label()).collect();
-        assert_eq!(labels, ["Profile", "Cards"]);
-        let classes: Vec<&str> = DeckArea::ALL.iter().map(|a| a.class()).collect();
-        assert_eq!(classes, ["area-profile", "area-cards"]);
     }
 }

@@ -251,7 +251,7 @@ fn staple_footer(staple: &HttpStaple, deck_count: u32, in_decks: Vec<StapleDeck>
             label: decks_label,
             decks: in_decks,
             on_open: move |deck_id: Uuid| {
-                navigator().push(Route::ViewDeck { deck_id });
+                navigator().push(Route::ViewDeck { deck_id, view: None });
             },
         }
     }

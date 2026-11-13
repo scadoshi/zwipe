@@ -143,6 +143,15 @@ impl TrailHistory {
     }
 }
 
+/// `route` without the bare `?` the router writes for a route whose query
+/// holds nothing, such as a deck's Profile (`/decks/<id>`).
+fn tidy(route: String) -> String {
+    match route.strip_suffix('?') {
+        Some(bare) => bare.to_owned(),
+        None => route,
+    }
+}
+
 impl History for TrailHistory {
     fn current_route(&self) -> String {
         self.inner.current_route()
@@ -171,6 +180,7 @@ impl History for TrailHistory {
     // The guard may hold a move for its dialog, so the trail records only a
     // move that landed.
     fn push(&self, route: String) {
+        let route = tidy(route);
         self.inner.push(route.clone());
         if self.inner.current_route() == route {
             with_trail(|trail| trail.push(route));
@@ -178,6 +188,7 @@ impl History for TrailHistory {
     }
 
     fn replace(&self, path: String) {
+        let path = tidy(path);
         self.inner.replace(path.clone());
         if self.inner.current_route() == path {
             with_trail(|trail| trail.replace(path));
@@ -208,6 +219,16 @@ mod tests {
 
     fn at(route: &str) -> Trail {
         Trail::new(route.to_owned())
+    }
+
+    #[test]
+    fn a_route_with_an_empty_query_drops_its_bare_question_mark() {
+        assert_eq!(tidy("/decks/1?".to_owned()), "/decks/1");
+        assert_eq!(
+            tidy("/decks/1?view=cards".to_owned()),
+            "/decks/1?view=cards"
+        );
+        assert_eq!(tidy("/decks".to_owned()), "/decks");
     }
 
     #[test]

@@ -121,20 +121,23 @@ fn undo_pop() -> bool {
     hold(Held::Popped)
 }
 
-/// On the browser's back or forward with a sheet or dialog open, puts the
-/// screen's URL back and closes the top one. Returns whether it did.
+/// On the browser's back or forward with a sheet or dialog open, closes the
+/// top one and puts the screen's URL back. Returns whether it did. The URL is
+/// read once the overlay has closed, so an overlay the route holds open (a
+/// deck's Cards layer), whose close moves the route itself, keeps that move.
 fn close_overlay_on_pop() -> bool {
     let found = GUARD.with(|g| {
         let overlays = g.overlays.get()?;
         let inner = g.inner.borrow().clone()?;
-        Some((overlays, inner, g.shown.borrow().clone()))
+        Some((overlays, inner))
     });
-    let Some((mut overlays, inner, shown)) = found else {
+    let Some((mut overlays, inner)) = found else {
         return false;
     };
     if !overlays.close_top() {
         return false;
     }
+    let shown = GUARD.with(|g| g.shown.borrow().clone());
     inner.push(shown);
     true
 }

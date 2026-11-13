@@ -807,7 +807,10 @@ impl Driver {
                     self.navigator.push(Router::CreateDeck);
                 }
                 Destination::Deck(deck_id) => {
-                    self.navigator.push(Router::ViewDeck { deck_id });
+                    self.navigator.push(Router::ViewDeck {
+                        deck_id,
+                        view: None,
+                    });
                 }
             },
             Effect::Toast(toast) => ui_toast::raise(self.toast, toast),

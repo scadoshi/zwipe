@@ -144,7 +144,10 @@ impl Driver {
 fn route(destination: Destination) -> Router {
     match destination {
         Destination::Home => Router::Home {},
-        Destination::Deck(deck_id) => Router::ViewDeck { deck_id },
+        Destination::Deck(deck_id) => Router::ViewDeck {
+            deck_id,
+            view: None,
+        },
         Destination::CreateDeck => Router::CreateDeck,
     }
 }
@@ -518,7 +521,10 @@ mod tests {
         assert_eq!(route(Destination::Home), Router::Home {});
         assert_eq!(
             route(Destination::Deck(deck_id)),
-            Router::ViewDeck { deck_id }
+            Router::ViewDeck {
+                deck_id,
+                view: None
+            }
         );
         assert_eq!(route(Destination::CreateDeck), Router::CreateDeck);
     }

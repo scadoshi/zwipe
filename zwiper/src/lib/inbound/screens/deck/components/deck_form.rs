@@ -258,7 +258,10 @@ impl Driver {
 fn route(destination: Destination) -> Option<Router> {
     match destination {
         Destination::Previous => None,
-        Destination::Deck(deck_id) => Some(Router::ViewDeck { deck_id }),
+        Destination::Deck(deck_id) => Some(Router::ViewDeck {
+            deck_id,
+            view: None,
+        }),
         Destination::DeckList => Some(Router::DeckList {}),
     }
 }

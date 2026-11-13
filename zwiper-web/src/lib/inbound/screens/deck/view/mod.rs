@@ -1,13 +1,14 @@
 //! The deck view. On a wide window it is the deck page both sites share
 //! (`page`): its facts and featured cards, the cards as
 //! bands, the stats folded under them, and Warnings, Data and Danger zone
-//! at the foot. Below the breakpoint it is the app's stack: the Profile
-//! card, the accordion with `Budget` open, Data and Danger zone, and Cards
-//! floating in the dock. A deck the server no longer has leaves for Decks,
+//! at the foot. Below the breakpoint it is the app's: the Profile card, the
+//! accordion with `Budget` open, Data and Danger zone, with Cards in the dock
+//! opening the deck's cards as a layer over it (`?view=cards`). A deck the server no longer has leaves for Decks,
 //! as the app's model does with `Action::Gone`.
 
 pub mod body;
 pub mod cards;
+pub(crate) mod cards_layer;
 pub mod dialogs;
 pub(crate) mod ghost;
 pub mod page;
@@ -16,11 +17,8 @@ pub mod sections;
 
 use std::iter;
 
-use components::icons::{CloneIcon, DockIcon, EditIcon, ShareIcon};
-use components::{
-    Button, ButtonVariant, CART, LoadFailed, StoreDialog, TOAST_NORMAL, TOAST_QUICK,
-    use_back_online,
-};
+use components::icons::{CloneIcon, EditIcon, ShareIcon};
+use components::{LoadFailed, TOAST_NORMAL, TOAST_QUICK, use_back_online};
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
 use uuid::Uuid;
@@ -31,13 +29,12 @@ use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCur
 use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
 use zwipe_core::domain::deck::{Deck, DeckProfile};
 use zwipe_core::http::contracts::deck_card::HttpPatchDeckCard;
-use zwipe_ui::buy;
 use zwipe_ui::deck::form::Slot;
-use zwipe_ui::screens::deck_view::{
-    CARDS, DockItem, EDIT, LOAD_FAILED, MoreItem, delete_body, dock,
-};
+use zwipe_ui::deck::view::DeckView;
+use zwipe_ui::screens::deck_view::{EDIT, LOAD_FAILED, MoreItem, delete_body};
 use zwipe_ui::telemetry::vocabulary::{DeckScreen, Screen, component};
 
+use self::cards_layer::use_cards_route;
 use self::dialogs::{DeckDialogsHost, use_deck_dialogs};
 use self::ghost::{DeckViewGhost, StatsSectionsGhost};
 use self::page::DeckWidePage;
@@ -62,21 +59,22 @@ const TITLE: &str = "Deck";
 /// opens another (a clone) or the browser's back and forward between two
 /// decks never shows one deck's state under the other's address.
 #[component]
-pub fn ViewDeck(deck_id: Uuid) -> Element {
+pub fn ViewDeck(deck_id: Uuid, view: Option<DeckView>) -> Element {
     // A key takes effect only among a list's items, so the body renders as a
     // list of one.
     rsx! {
         for deck_id in iter::once(deck_id) {
-            DeckViewScreen { key: "{deck_id}", deck_id }
+            DeckViewScreen { key: "{deck_id}", deck_id, view }
         }
     }
 }
 
 /// The deck view's body for one deck.
 #[component]
-fn DeckViewScreen(deck_id: Uuid) -> Element {
+fn DeckViewScreen(deck_id: Uuid, view: Option<DeckView>) -> Element {
     telemetry::use_telemetry_screen(Screen::Deck(DeckScreen::View));
     let navigator = use_navigator();
+    let on_cards = use_cards_route(move |view| Route::ViewDeck { deck_id, view });
     let wide = use_wide();
     let client: Signal<ZwipeClient> = use_context();
     let session: Signal<Option<Session>> = use_context();
@@ -101,8 +99,6 @@ fn DeckViewScreen(deck_id: Uuid) -> Element {
     // Counts the warning fixes that have landed, so the wide page reloads
     // its own copy of the deck after each.
     let mut fixed = use_signal(|| 0u32);
-    // The deck's store dialog, from the dock's cart.
-    let mut deck_buy_open = use_signal(|| false);
 
     let mut profile: Resource<Result<DeckProfile, ClientError>> =
         use_resource(use_reactive!(|deck_id| async move {
@@ -267,12 +263,10 @@ fn DeckViewScreen(deck_id: Uuid) -> Element {
         .filter(|d| !d.entries.is_empty() || !d.command_zone_cards.is_empty())
         .map(|d| DeckMetrics::from_entries_and_command_zone(&d.entries, &d.command_zone_cards));
     let warnings = loaded_deck.as_ref().map_or_default(|d| d.warnings.clone());
-    let deck_buy = loaded_deck.as_ref().map(buy::deck_links);
     let loaded_profile: Option<Result<DeckProfile, ()>> = profile
         .read()
         .as_ref()
         .map(|r| r.as_ref().cloned().map_err(|_| ()));
-    let shows_cards = loaded_profile.as_ref().is_some_and(Result::is_ok);
     let clone_name = loaded_profile
         .as_ref()
         .and_then(|r| r.as_ref().ok())
@@ -295,6 +289,46 @@ fn DeckViewScreen(deck_id: Uuid) -> Element {
         .and_then(|r| r.as_ref().ok())
         .map_or_else(|| TITLE.to_owned(), |p| p.name.to_string());
 
+    // On a phone, the app's Profile: the Profile card, the accordion with Budget open, Data
+    // and Danger zone.
+    let phone_profile = match loaded_profile.clone() {
+        Some(Ok(p)) => {
+            let cards = metrics.as_ref().map_or_else(
+                || usize::try_from(p.card_count).unwrap_or(0),
+                |m| m.total_cards,
+            );
+            rsx! {
+                div { class: "content-enter web-deck-view",
+                    ProfileCard { profile: p.clone(), commander: commander(), cards }
+                    if has_budget(&p, metrics.is_some()) {
+                        BudgetSection {
+                            profile: p.clone(),
+                            metrics: metrics.clone(),
+                            currency,
+                            open_section,
+                        }
+                    }
+                    if tag_count(&p) > 0 {
+                        TagsSection { profile: p.clone(), open_section }
+                    }
+                    if metrics.is_none() && deck_loading && metrics_possible(&p) {
+                        StatsSectionsGhost {}
+                    } else {
+                        StatsSections { metrics: metrics.clone(), land_target: p.land_target, open_section }
+                    }
+                    if !warnings.is_empty() {
+                        WarningsSection { deck_id, warnings, fixes, open_section }
+                    }
+                    DataPanel { deck_id, has_cards: metrics.is_some() }
+                    DangerZonePanel { dialogs }
+                }
+            }
+        }
+        _ => rsx! {
+            DeckViewGhost {}
+        },
+    };
+
     rsx! {
         ScreenFrame {
             title: deck_title,
@@ -306,53 +340,18 @@ fn DeckViewScreen(deck_id: Uuid) -> Element {
                     Some(Err(())) => rsx! {
                         LoadFailed { message: LOAD_FAILED, on_retry: retry }
                     },
-                    _ if wide() => rsx! {
-                        DeckWidePage { deck_id, currency, fixes, fixed, dialogs }
-                    },
-                    Some(Ok(p)) => {
-                        let cards = metrics
-                            .as_ref()
-                            .map_or_else(|| usize::try_from(p.card_count).unwrap_or(0), |m| m.total_cards);
-                        rsx! {
-                            // The app's stack.
-                            div { class: "content-enter web-deck-view",
-                                ProfileCard { profile: p.clone(), commander: commander(), cards }
-                                if has_budget(&p, metrics.is_some()) {
-                                    BudgetSection {
-                                        profile: p.clone(),
-                                        metrics: metrics.clone(),
-                                        currency,
-                                        open_section,
-                                    }
-                                }
-                                if tag_count(&p) > 0 {
-                                    TagsSection { profile: p.clone(), open_section }
-                                }
-                                if metrics.is_none() && deck_loading && metrics_possible(&p) {
-                                    StatsSectionsGhost {}
-                                } else {
-                                    StatsSections { metrics: metrics.clone(), land_target: p.land_target, open_section }
-                                }
-                                if !warnings.is_empty() {
-                                    WarningsSection { deck_id, warnings, fixes, open_section }
-                                }
-                                DataPanel { deck_id, has_cards: metrics.is_some() }
-                                DangerZonePanel { dialogs }
-                            }
-                        }
-                    }
-                    None => rsx! {
-                        DeckViewGhost {}
-                    },
-                }
-            }
-            // The deck's own actions and Cards, the screen's main action,
-            // float at the bottom right.
-            if shows_cards && !wide() {
-                div { class: "action-dock action-dock-right content-enter-delayed",
-                    for item in dock(deck_buy.is_some()) {
-                        match item {
-                            DockItem::Edit => rsx! {
+                    _ => rsx! {
+                        DeckWidePage {
+                            deck_id,
+                            currency,
+                            fixes,
+                            fixed,
+                            dialogs,
+                            cards_open: view.is_some(),
+                            on_cards,
+                            phone_profile: phone_profile,
+                            // The deck's own actions, before the cart and Cards.
+                            profile_dock: rsx! {
                                 button {
                                     class: "action-dock-btn",
                                     "aria-label": EDIT,
@@ -361,16 +360,12 @@ fn DeckViewScreen(deck_id: Uuid) -> Element {
                                     },
                                     EditIcon {}
                                 }
-                            },
-                            DockItem::Clone => rsx! {
                                 button {
                                     class: "action-dock-btn",
                                     "aria-label": MoreItem::CloneDeck.short_label(),
                                     onclick: move |_| clone_open.set(true),
                                     CloneIcon {}
                                 }
-                            },
-                            DockItem::Share => rsx! {
                                 button {
                                     class: "action-dock-btn",
                                     "aria-label": MoreItem::ShareDeck.short_label(),
@@ -378,37 +373,9 @@ fn DeckViewScreen(deck_id: Uuid) -> Element {
                                     ShareIcon {}
                                 }
                             },
-                            DockItem::Buy => rsx! {
-                                button {
-                                    class: "action-dock-btn",
-                                    "aria-label": buy::CART_LABEL,
-                                    onclick: move |_| deck_buy_open.set(true),
-                                    DockIcon { path: CART }
-                                }
-                            },
-                            DockItem::Divider => rsx! {
-                                span { class: "action-dock-divider" }
-                            },
-                            DockItem::Cards => rsx! {
-                                Button {
-                                    variant: ButtonVariant::Action,
-                                    onclick: move |_| {
-                                        navigator.push(Route::ViewDeckCard { deck_id });
-                                    },
-                                    {CARDS}
-                                }
-                            },
                         }
-                    }
+                    },
                 }
-            }
-        }
-        if let Some(links) = deck_buy.filter(|_| !wide()) {
-            StoreDialog {
-                open: deck_buy_open,
-                title: buy::DECK_TITLE.to_owned(),
-                body: buy::DECK_BODY.to_owned(),
-                links,
             }
         }
         DeckDialogsHost { deck_id, dialogs, share_token, deck_name, clone_name, delete_body }

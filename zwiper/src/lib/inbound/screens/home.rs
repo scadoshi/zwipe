@@ -367,7 +367,10 @@ impl Driver {
 fn route(destination: Destination) -> Router {
     match destination {
         Destination::Decks => Router::DeckList {},
-        Destination::Deck(deck_id) => Router::ViewDeck { deck_id },
+        Destination::Deck(deck_id) => Router::ViewDeck {
+            deck_id,
+            view: None,
+        },
         Destination::CreateDeck => Router::CreateDeck,
         Destination::Activity => Router::Activity {},
         Destination::Playstyle => Router::SuggestedCommanders {},
@@ -505,7 +508,10 @@ mod tests {
         let deck_id = Uuid::nil();
         assert_eq!(
             route(Destination::Deck(deck_id)),
-            Router::ViewDeck { deck_id }
+            Router::ViewDeck {
+                deck_id,
+                view: None
+            }
         );
         assert_eq!(route(Destination::CreateDeck), Router::CreateDeck);
         assert_eq!(route(Destination::Activity), Router::Activity {});

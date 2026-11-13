@@ -10,7 +10,8 @@ use std::collections::{HashMap, HashSet};
 use components::hint::ContentHintDialog;
 use components::keys::{ShortcutsList, use_offer_shortcuts, use_shortcuts_action};
 use components::{
-    DeckFacts, DeckHoverKeys, DeckRowHost, LoadFailed, Panel, StackDetails, use_deck_hover_keys,
+    DeckFacts, DeckHoverKeys, DeckRowHost, DockFilter, LoadFailed, Panel, StackDetails,
+    use_deck_hover_keys,
 };
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -25,9 +26,8 @@ use zwipe_core::domain::deck::deck_metrics::{self, DeckMetrics};
 use zwipe_core::domain::deck::{Board, DeckEntry, Format, deck_tag_label};
 use zwipe_core::domain::share_link;
 use zwipe_core::http::contracts::deck::HttpSharedDeck;
-use zwipe_ui::buy;
 use zwipe_ui::deck::form::Slot;
-use zwipe_ui::deck::view::{DeckArea, StatsProfile};
+use zwipe_ui::deck::view::{DeckView, StatsProfile};
 use zwipe_ui::deck_cards::keys::RowKind;
 use zwipe_ui::deck_cards::listing::Listed;
 use zwipe_ui::deck_cards::stacks::{CardsView, Reveal};
@@ -35,11 +35,13 @@ use zwipe_ui::deck_cards::{self, Boards, Zone, listing};
 use zwipe_ui::filter::picker::Sources;
 use zwipe_ui::hint::shared_deck as hint_copy;
 use zwipe_ui::shortcuts::{self, CardKey, Editable};
+use zwipe_ui::{buy, filter};
 
 use crate::inbound::cards::card_row::{CardOverlays, use_card_overlays};
 use crate::inbound::cards::otag::{OtagDescribe, OtagExamplesOpen, use_otag_reveals};
 use crate::inbound::router::Route;
 use crate::inbound::screens::deck::view::body::DeckPageBody;
+use crate::inbound::screens::deck::view::cards_layer::use_cards_route;
 use crate::inbound::session::return_to;
 use crate::inbound::shell::ScreenFrame;
 
@@ -78,8 +80,18 @@ fn has_cards(deck: &HttpSharedDeck) -> bool {
 /// link moves in place to the deck's current owner and slug when they differ; a server that sends
 /// no owner leaves it as it is.
 #[component]
-pub fn SharedDeck(owner: String, slug: String, token: String) -> Element {
+pub fn SharedDeck(owner: String, slug: String, token: String, view: Option<DeckView>) -> Element {
     let navigator = use_navigator();
+    let on_cards = {
+        let (owner, slug, token) = (owner.clone(), slug.clone(), token.clone());
+        use_cards_route(move |view| Route::SharedDeck {
+            owner: owner.clone(),
+            slug: slug.clone(),
+            token: token.clone(),
+            view,
+        })
+    };
+    let cards_open = view.is_some();
     let client: Signal<ZwipeClient> = use_context();
     // A signed-out reader who signs in from here comes back to this deck.
     let session: Signal<Option<Session>> = use_context();
@@ -124,6 +136,7 @@ pub fn SharedDeck(owner: String, slug: String, token: String) -> Element {
                 owner,
                 slug,
                 token: link_token.clone(),
+                view,
             });
         }
     });
@@ -142,7 +155,7 @@ pub fn SharedDeck(owner: String, slug: String, token: String) -> Element {
         document::Meta { name: "robots", content: "noindex" }
         ScreenFrame { title, on_hint: Some(on_hint),
             match &*result.read() {
-                None => rsx! { SharedDeckView { deck: None } },
+                None => rsx! { SharedDeckView { deck: None, cards_open, on_cards } },
                 Some(Err(FetchError::NotShared)) => rsx! {
                     div { class: "content-enter web-page shared-deck-note",
                         Panel { title: "Deck not shared",
@@ -161,7 +174,7 @@ pub fn SharedDeck(owner: String, slug: String, token: String) -> Element {
                     }
                 },
                 Some(Ok(deck)) => rsx! {
-                    SharedDeckView { deck: Some(deck.clone()) }
+                    SharedDeckView { deck: Some(deck.clone()), cards_open, on_cards }
                 },
             }
         }
@@ -177,9 +190,11 @@ pub fn SharedDeck(owner: String, slug: String, token: String) -> Element {
 /// Quick add or foot, and a dock of the filter and the cart. Until the deck is in (`None`), the
 /// body draws its ghosts.
 #[component]
-fn SharedDeckView(deck: Option<HttpSharedDeck>) -> Element {
-    // On a phone the page shows the deck's profile or its cards, under a switch below the head.
-    let area = use_signal(DeckArea::default);
+fn SharedDeckView(
+    deck: Option<HttpSharedDeck>,
+    cards_open: bool,
+    on_cards: Callback<bool>,
+) -> Element {
     // The image preview and the printing sheet, to look at only.
     let overlays = use_card_overlays();
     let CardOverlays {
@@ -323,7 +338,8 @@ fn SharedDeckView(deck: Option<HttpSharedDeck>) -> Element {
                 drawer_host: host,
                 overlays,
                 examples,
-                areas: Some(area),
+                cards_open,
+                on_cards,
             }
         };
     };
@@ -424,7 +440,19 @@ fn SharedDeckView(deck: Option<HttpSharedDeck>) -> Element {
             drawer_host: host,
             overlays,
             examples,
-            areas: Some(area),
+            cards_open,
+            on_cards,
+            // The Profile's filter, before the cart and Cards.
+            profile_dock: rsx! {
+                DockFilter {
+                    label: "Filter",
+                    dot: filter::shows_dot(&card_filter.read()),
+                    active: !card_filter.read().is_empty(),
+                    onclick: move |()| filter_open.set(true),
+                    on_reset: move |()| on_reset_filter.call(()),
+                    reset_label: "Reset filter",
+                }
+            },
         }
     }
 }

@@ -2,9 +2,9 @@ use std::collections::{HashMap, HashSet};
 
 use components::icons::{self};
 use components::{
-    Button, ButtonVariant, CardGroup, Chip, DeckEditActions, DeckRowHost, DeckSection,
-    DeckStackDrawer, DeckStacks, DockAction, DockFilter, GroupBuyDialog, StackDetails, TailPlace,
-    Toasts, group_tail, use_group_buy, use_settle, use_stack_details_sync, use_toast,
+    Button, ButtonVariant, CardGroup, CardsViewSwitch, Chip, DeckEditActions, DeckRowHost,
+    DeckSection, DeckStackDrawer, DeckStacks, DockAction, DockFilter, GroupBuyDialog, StackDetails,
+    TailPlace, Toasts, group_tail, use_group_buy, use_settle, use_stack_details_sync, use_toast,
 };
 use dioxus::core::spawn_forever;
 use dioxus::prelude::*;
@@ -24,7 +24,7 @@ use zwipe_core::http::contracts::deck_card::HttpPatchDeckCard;
 use zwipe_ui::deck::command_zone::Slot;
 use zwipe_ui::deck_cards::keys::RowInfo;
 use zwipe_ui::deck_cards::stacks::{
-    CardsView, DEAL_DURATION, DEAL_STAGGER_CAP, DealCue, Reveal, VIEW_LABEL, deal_delay,
+    CardsView, DEAL_DURATION, DEAL_STAGGER_CAP, DealCue, Reveal, deal_delay,
 };
 use zwipe_ui::deck_cards::{FeaturedOpen, Write, Zone, featured_open};
 use zwipe_ui::filter;
@@ -639,7 +639,7 @@ pub fn View(deck_id: Uuid) -> Element {
     });
 
     // List or Stacks, as last left on this device.
-    let mut view = use_signal(cards_view_store::restored);
+    let view = use_signal(cards_view_store::restored);
     // The stacks' reveal and open card, the face each card shows, and the
     // folds as the model holds them, which the stack headers read.
     let reveal = use_signal(Reveal::default);
@@ -956,19 +956,9 @@ pub fn View(deck_id: Uuid) -> Element {
                         }
 
                         // List or Stacks
-                        div { class: "chip-row",
-                            span { class: "stat-chip stat-chip-p1 chip-row-label", "{VIEW_LABEL}" }
-                            for choice in [CardsView::List, CardsView::Stacks] {
-                                Chip {
-                                    key: "{choice.key()}",
-                                    selected: view() == choice,
-                                    onclick: move |_| {
-                                        view.set(choice);
-                                        cards_view_store::infallible_save(choice);
-                                    },
-                                    "{choice.label()}"
-                                }
-                            }
+                        CardsViewSwitch {
+                            view,
+                            on_change: move |choice: CardsView| cards_view_store::infallible_save(choice),
                         }
 
                         // Group-by row

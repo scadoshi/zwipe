@@ -2002,6 +2002,30 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
     }
 }
 
+/* A wide deck page opened on its cards (`?view=cards`) scrolls their
+   controls into view clear of the nav. */
+.deck-page-wide .deck-controls {
+    scroll-margin-top: calc(var(--web-nav-h, 4.5rem) + 1rem);
+}
+
+/* A deck's Cards on a phone (DeckCardsLayer): a full-screen layer over its
+   Profile at its place on the overlay stack, scrolling as a screen does. */
+.web-cards-layer {
+    z-index: var(--overlay-z, 200);
+    overflow-x: hidden;
+    overflow-y: auto;
+    background-color: var(--bg-primary);
+}
+
+/* Its header with the back button stays at the top while the cards scroll,
+   as the app's screen header does. */
+.web-cards-layer > .page-header {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background-color: var(--bg-primary);
+}
+
 /* The overlay scrolls as a screen under the nav does, down to the site's
    footer, and clips sideways at the window's edge. */
 .swipe-select-screen.web-swipe-select {

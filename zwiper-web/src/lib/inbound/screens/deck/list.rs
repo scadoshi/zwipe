@@ -303,7 +303,7 @@ fn DeckRow(profile: DeckProfile) -> Element {
             settle_key: deck_id.to_string(),
             onpress: move |()| {
                 opener.record(deck_id, Route::DeckList {});
-                navigator.push(Route::ViewDeck { deck_id });
+                navigator.push(Route::ViewDeck { deck_id, view: None });
             },
             div { class: "deck-list-row",
                 for url in art {

@@ -6,7 +6,7 @@
 use components::icons::{CloneIcon, DockIcon, EditIcon, ShareIcon};
 use components::{
     AlertDialog, Button, ButtonVariant, CART, Chip, DialogAction, LoadFailed, StoreDialog,
-    TOAST_NORMAL, ToastOptions, Toasts, use_back_online, use_toast,
+    TOAST_NORMAL, ToastOptions, Toasts, use_back_online, use_overlay_back_action, use_toast,
 };
 use dioxus::prelude::*;
 use dioxus::router::Navigator;
@@ -21,6 +21,7 @@ use zwipe_core::http::contracts::deck_card::HttpPatchDeckCard;
 use zwipe_ui::buy;
 use zwipe_ui::colors::ColorCounts;
 use zwipe_ui::deck::command_zone::Slot;
+use zwipe_ui::deck::view::DeckView;
 use zwipe_ui::generation::Ticket;
 use zwipe_ui::screens::deck_view::{
     self, Action, Destination, Dialog, DockItem, Effect, MoreItem, Section, State,
@@ -51,6 +52,7 @@ use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::{DeckScreen, Screen, component, screen};
 use crate::inbound::components::{hint_dialog, ui_toast};
 use crate::inbound::router::Router;
+use crate::inbound::screens::deck::card::view::View as CardsScreen;
 use crate::inbound::screens::oracle_tag_examples::OracleTagExamples;
 use crate::outbound::open_url;
 
@@ -411,21 +413,44 @@ impl Driver {
     }
 }
 
+/// The deck's Cards screen as a full-screen layer over its Profile, while the route holds
+/// `?view=cards`. It sits on the overlay stack, so the OS back closes it first; closing it goes
+/// back to the Profile's entry, as the screen's own back arrow does.
+#[component]
+fn CardsLayer(deck_id: Uuid) -> Element {
+    let navigator = use_navigator();
+    let open = use_signal(|| true);
+    let layer = use_overlay_back_action(open.into(), Callback::new(move |()| navigator.go_back()));
+    rsx! {
+        div {
+            class: "app-cards-layer",
+            style: layer().map(|z| format!("--overlay-z: {z};")),
+            CardsScreen { deck_id }
+        }
+    }
+}
+
 /// The app's route for a place the deck view sends the user.
 fn route(destination: Destination) -> Router {
     match destination {
         Destination::Back | Destination::DeckList => Router::DeckList {},
         Destination::EditDeck(deck_id) => Router::EditDeck { deck_id },
-        Destination::DeckCards(deck_id) => Router::ViewDeckCard { deck_id },
+        Destination::DeckCards(deck_id) => Router::ViewDeck {
+            deck_id,
+            view: Some(DeckView::Cards),
+        },
         Destination::AddCards(deck_id) => Router::AddDeckCard { deck_id },
         Destination::ImportDeck(deck_id) => Router::ImportDeck { deck_id },
         Destination::ExportDeck(deck_id) => Router::ExportDeck { deck_id },
-        Destination::Deck(deck_id) => Router::ViewDeck { deck_id },
+        Destination::Deck(deck_id) => Router::ViewDeck {
+            deck_id,
+            view: None,
+        },
     }
 }
 
 #[component]
-pub fn ViewDeck(deck_id: Uuid) -> Element {
+pub fn ViewDeck(deck_id: Uuid, view: Option<DeckView>) -> Element {
     let client: Signal<ZwipeClient> = use_context();
     let session: Signal<Option<Session>> = use_context();
     // The share link starts with the signed-in user's username.
@@ -834,6 +859,10 @@ pub fn ViewDeck(deck_id: Uuid) -> Element {
 
             OneTimeHintDialog { open: first_deck_hint_open, hint: OneTimeHint::FirstDeck }
 
+            if view.is_some() {
+                CardsLayer { deck_id }
+            }
+
             }
     }
 }
@@ -852,7 +881,10 @@ mod tests {
         );
         assert_eq!(
             route(Destination::DeckCards(deck_id)),
-            Router::ViewDeckCard { deck_id }
+            Router::ViewDeck {
+                deck_id,
+                view: Some(DeckView::Cards)
+            }
         );
         assert_eq!(
             route(Destination::AddCards(deck_id)),
@@ -868,7 +900,10 @@ mod tests {
         );
         assert_eq!(
             route(Destination::Deck(deck_id)),
-            Router::ViewDeck { deck_id }
+            Router::ViewDeck {
+                deck_id,
+                view: None
+            }
         );
     }
 }

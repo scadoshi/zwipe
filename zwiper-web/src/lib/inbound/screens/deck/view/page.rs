@@ -32,9 +32,7 @@ use crate::inbound::cards::printing_sheet::PrintingSheet;
 use crate::inbound::cards::stack_view::{use_cards_view, use_stack_details_sync};
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, OneTimeHintDialog};
 use crate::inbound::router::Route;
-use crate::inbound::screens::deck::cards::editor::{
-    Editor, LoadFailure, use_deck_editor, use_deck_row_host,
-};
+use crate::inbound::screens::deck::cards::editor::{Editor, use_deck_editor, use_deck_row_host};
 use crate::inbound::screens::deck::cards::quick_add::QuickAdd;
 
 /// The page for `deck_id`. `fixes` are the warnings' fixes, and `fixed`
@@ -46,6 +44,12 @@ pub fn DeckWidePage(
     fixes: WarningFixes,
     fixed: ReadSignal<u32>,
     dialogs: DeckDialogs,
+    // On a phone, whether the Cards layer is open, what opens and closes it, the Profile, and the
+    // Profile's dock before the cart and Cards.
+    cards_open: bool,
+    on_cards: Callback<bool>,
+    phone_profile: Element,
+    profile_dock: Element,
 ) -> Element {
     let navigator = use_navigator();
     let DeckDialogs {
@@ -63,7 +67,7 @@ pub fn DeckWidePage(
         reveal,
         details_open,
     });
-    let ed = use_deck_editor(deck_id, LoadFailure::Quiet);
+    let ed = use_deck_editor(deck_id);
     let Editor {
         deck,
         entries,
@@ -217,6 +221,22 @@ pub fn DeckWidePage(
             drawer_host: DeckRowHost { on_view_printing: None, ..row_host },
             overlays,
             examples,
+            cards_open,
+            on_cards,
+            phone_profile,
+            profile_dock,
+            // The Cards layer's undo, after the filter.
+            cards_dock_tail: rsx! {
+                button {
+                    class: "action-dock-btn",
+                    "aria-label": "Undo",
+                    "data-action": components::data_action::UNDO,
+                    "data-settle": "",
+                    disabled: !undo_ready,
+                    onclick: move |_| apply_undo.call(()),
+                    DockIcon { path: UNDO }
+                }
+            },
             quick_add: rsx! {
                 QuickAdd { deck_id, entries, on_added: move |()| {} }
             },
