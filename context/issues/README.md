@@ -147,7 +147,6 @@ Who checked, on which live build, what they saw.
 | [434](434-featured-first-tap.md) | On a phone, a featured card floats on the first tap instead of opening, and the strip clips it | fixing | thinker | - |
 | [435](435-softer-float.md) | The Stacks float pops up and sways like a metronome, and a tap reveal snaps open | fixing | laptop | issue/435-softer-float |
 | [430](430-one-deck-route.md) | A deck's Profile and Cards are separate screens on narrow web and in the app, and the shared deck splits them with a chip row | fixing | laptop | issue/430-one-deck-route |
-| [436](436-deck-page-fixes.md) | Deck page rough edges: Fix to isn't undoable, Select closes the drawer, the move toast hides the count, Quick add lands the newest printing | fixing | thinker | - |
 | [438](438-one-profile.md) | At phone width the shared deck's Profile isn't the owner's, and a shared deck hides its warnings and Export | fixing | laptop | issue/438-one-profile |
 | [441](441-signed-out-nav.md) | The web app's signed-out nav lists Forgot password | fixing | thinker | - |
 | [437](437-examples-one-dock.md) | At phone width the Examples controls wrap, the eye on a row of its own | fixing | scotland | - |
