@@ -129,7 +129,6 @@ Who checked, on which live build, what they saw.
 | [408](408-stack-header-wrap.md) | Stack headers cut long names short, and the cart sits far from the price | fixing | halo | nits/halo-408 |
 | [407](407-byline-chip.md) | The shared deck's owner sits on its own line, not as a chip | fixing | laptop | - |
 | [414](414-sheet-icons-named.md) | The shortcuts sheet's icon rows show no names | fixing | halo | nits/halo-414 |
-| [419](419-shared-guides.md) | Guides live only on zwipe.net | fixing | halo | release, in phases |
 | [409](409-printings-skeleton.md) | Printings shows two different skeletons while it loads | fixing | laptop | issue/409-printings-skeleton |
 | [410](410-printings-edges.md) | Printings fades its cards out short of the sheet's edges | fixing | laptop | issue/410-printings-edges |
 | [417](417-featured-hover.md) | The deck head's featured cards don't answer the mouse | fixing | laptop | issue/417-featured-hover |
@@ -145,7 +144,6 @@ Who checked, on which live build, what they saw.
 | [429](429-narrow-sheet-keys-and-drag.md) | On the web at phone width, Printings ignores the arrow keys and Enter until clicked, and the filter can't be pulled down | fixing | scotland | orangui 4566a7e, fbfcc73 |
 | [431](431-drawer-card-keys.md) | With a card's details drawer open on the web deck page, the card keys do nothing | fixing | scotland | orangui 3bd2f9b |
 | [432](432-star-undo.md) | Undo on the deck page skips starring and unstarring a card | fixing | thinker | - |
-| [433](433-web-app-404.md) | app.zwipe.net answers an unknown path with 200 | fixing | halo | release |
 | [434](434-featured-first-tap.md) | On a phone, a featured card floats on the first tap instead of opening, and the strip clips it | fixing | thinker | - |
 | [439](439-web-first-paint-lock.md) | A fresh web app tab can sit on the List skeleton for about ten seconds | fixing | halo | release |
 | [435](435-softer-float.md) | The Stacks float pops up and sways like a metronome, and a tap reveal snaps open | fixing | laptop | issue/435-softer-float |

@@ -1,6 +1,6 @@
 # 419. Guides live only on zwipe.net
 
-State: fixing | Owner: halo | PR: pushed to release in phases | Build seen: ea76d3002
+State: closed | Owner: halo | PR: pushed to release in phases | Build seen: ea76d3002
 
 ## Report
 From Scotty, through the composer: guide content moves to one shared place that zwipe.net and the web app both render from. The web app gets public guide routes (signed in or out) with `rel=canonical` to zwipe.net. Every guide link inside the web app opens the web app's guide, and the phone app's guide links open app.zwipe.net's guide in the browser. The plan is `context/plans/shared_guides.md`.
@@ -15,4 +15,4 @@ halo, in phases:
 6. **Surfer's web differences:** the guide screens keep one `rel=canonical` in the head themselves (set on mount, updated per guide, taken out on unmount), since a `document::Link` outlives its screen in the app, so moving between guides leaves one (checked: index, guide, related guide, Back twice, one link each, the right address). The swipe legend's colors (`.swipe-add` and the rest) move from zwipe.net's sheet to `GUIDES_CSS`, with the status-color allowance, and the guide's bullet and swipe lists take zwipe.net's 1.25rem indent and ink. The index's heading drops the `page-header` class, which the app styles as its own screen header (narrow and centered), so it runs the page's width as on zwipe.net.
 
 ## Verification
--
+Surfer passed it live on app.zwipe.net and zwipe.net (the guide pages, the extras, the web app's guide routes and Surfer's three differences), through the composer, 2026-11-12.
