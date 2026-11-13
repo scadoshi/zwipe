@@ -1038,6 +1038,30 @@ fn a_quantity_fix_goes_on_the_decks_undo_log() {
 }
 
 #[test]
+fn a_removal_fix_goes_on_the_decks_undo_log() {
+    let (profile, built) = two_cards("Elves");
+    let card = built.entries[0].deck_card.scryfall_data_id;
+    let undone = UndoAction::removal(&built.entries, card).unwrap();
+    let mut state = loaded(&profile, built);
+    let effects = state.update(Action::RemoveCard { card });
+    let effects = state.update(Action::CardRemoved {
+        ticket: ticket_of(&effects),
+    });
+    let recorded: Vec<_> = effects
+        .iter()
+        .filter_map(|e| match e {
+            Effect::RecordUndo { deck_id, action } => Some((*deck_id, (**action).clone())),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(
+        recorded,
+        [(profile.id, undone)],
+        "Cards' Undo puts the removed row back"
+    );
+}
+
+#[test]
 fn a_fix_after_an_edit_in_the_cards_records_the_copies_as_they_stand() {
     let (profile, built) = two_cards("Elves");
     let card = built.entries[0].deck_card.scryfall_data_id;

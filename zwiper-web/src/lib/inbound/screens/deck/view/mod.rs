@@ -226,6 +226,11 @@ fn DeckViewScreen(deck_id: Uuid, view: Option<DeckView>) -> Element {
         // As in the app, straight to the client: a missing session reads
         // `Session expired`.
         remove: use_callback(move |card: Uuid| {
+            // The row as it stands, for the deck's undo log, which Cards' Undo walks.
+            let undone = deck_copy
+                .peek()
+                .as_ref()
+                .and_then(|loaded| UndoAction::removal(&loaded.entries, card));
             spawn(async move {
                 let current = session.peek().clone();
                 let result = match current {
@@ -237,6 +242,10 @@ fn DeckViewScreen(deck_id: Uuid, view: Option<DeckView>) -> Element {
                 };
                 match result {
                     Ok(()) => {
+                        if let Some(undone) = undone {
+                            let mut undo = undo;
+                            undo.write().push(deck_id, undone);
+                        }
                         toast.info(
                             "Card removed".to_string(),
                             ToastOptions::default().duration(TOAST_QUICK),

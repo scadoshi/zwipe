@@ -83,6 +83,23 @@ pub enum UndoAction {
     },
 }
 
+impl UndoAction {
+    /// The undo for taking card `card` out of a deck listing `entries`: its row as it stands,
+    /// put back at the copies it has. `None` when the deck lacks the card.
+    #[must_use]
+    pub fn removal(entries: &[DeckEntry], card: Uuid) -> Option<Self> {
+        let entry = entries
+            .iter()
+            .find(|e| e.deck_card.scryfall_data_id == card)?
+            .clone();
+        let baseline = *entry.deck_card.quantity;
+        Some(Self::Removed {
+            entry: Box::new(entry),
+            baseline,
+        })
+    }
+}
+
 /// The `board` of a create request that puts a card back on `board`: `None` for the main deck, which is the server's default.
 #[must_use]
 pub fn create_board_field(board: Board) -> Option<String> {
@@ -154,6 +171,26 @@ impl UndoStore {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_removal_s_undo_holds_the_row_at_its_copies() {
+        let counterspell = crate::test_support::card("Counterspell");
+        let id = counterspell.scryfall_data.id;
+        let deck = crate::test_support::deck(
+            crate::test_support::deck_profile("Isshin"),
+            vec![crate::test_support::card("Island"), counterspell],
+        );
+        let Some(UndoAction::Removed { entry, baseline }) = UndoAction::removal(&deck.entries, id)
+        else {
+            panic!("a removal");
+        };
+        assert_eq!(entry.deck_card.scryfall_data_id, id);
+        assert_eq!(baseline, 1);
+        assert!(
+            UndoAction::removal(&deck.entries, Uuid::nil()).is_none(),
+            "a card the deck lacks has nothing to undo"
+        );
+    }
 
     fn added(card_id: Uuid, name: &str) -> UndoAction {
         UndoAction::Added {

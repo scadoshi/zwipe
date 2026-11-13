@@ -881,8 +881,18 @@ impl State {
                 effects.extend(self.fetch_deck());
                 effects
             }
-            (Mutation::RemoveCard { .. }, Landed::CardRemoved) => {
+            (Mutation::RemoveCard { card }, Landed::CardRemoved) => {
                 let mut effects = vec![Effect::Toast(Done::CardRemoved.toast())];
+                // The deck as loaded still holds the row the fix took out.
+                let undone = self
+                    .deck()
+                    .and_then(|deck| UndoAction::removal(&deck.entries, card));
+                if let (Some(action), Some(deck_id)) = (undone, self.deck_id) {
+                    effects.push(Effect::RecordUndo {
+                        deck_id,
+                        action: Box::new(action),
+                    });
+                }
                 effects.extend(self.fetch_deck());
                 effects
             }
