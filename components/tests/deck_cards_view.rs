@@ -372,15 +372,18 @@ fn back_clears_a_revealed_card_before_leaving() {
 }
 
 #[test]
-fn back_passes_by_stacks_with_nothing_revealed_or_an_open_card() {
+fn back_passes_by_stacks_with_nothing_revealed_and_an_open_card_keeps_the_reveal_s_step() {
     let (dom, probe) = back_after(true, 0);
     let BackProbe { mut stack, .. } = probe;
     assert!(!dom.in_runtime(|| stack.close_top()), "nothing revealed");
+    // The open card's drawer registers its own step over this one (its host mounts it), so
+    // Back closes the drawer first and the reveal after.
     let (dom, probe) = back_after(true, 2);
-    let BackProbe { mut stack, .. } = probe;
-    assert!(
-        !dom.in_runtime(|| stack.close_top()),
-        "the open card's sheet takes back, not the stacks"
+    let BackProbe { stack, .. } = probe;
+    assert_eq!(
+        dom.in_runtime(|| stack.depth()),
+        1,
+        "the reveal keeps its step under the open card's drawer"
     );
     let (dom, probe) = back_after(false, 1);
     let BackProbe { mut stack, .. } = probe;

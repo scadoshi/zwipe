@@ -601,11 +601,9 @@ pub fn DeckStacks(
     #[props(default)] on_fold: Option<EventHandler<String>>,
 ) -> Element {
     let mut reveal = details.reveal;
-    // The open card's sheet takes the back itself; a card only revealed takes it here.
-    let revealing = use_memo(move || {
-        let shown = reveal();
-        touch && shown.revealed().is_some() && shown.open().is_none()
-    });
+    // A revealed card holds a back step of its own, under the open card's drawer's, so the drawer
+    // pushes and pops its own step and Back closes it before the reveal.
+    let revealing = use_memo(move || touch && reveal().revealed().is_some());
     // Back clears the reveal with no click behind it, so it starts the settle itself and the
     // rows the reveal pushed down slide back up.
     let dismiss = use_callback(move |()| {
@@ -919,6 +917,82 @@ mod tests {
                 group_buy: use_group_buy(),
             }
         }
+    }
+
+    thread_local! {
+        static TOUCH: std::cell::Cell<Option<(StackDetails, crate::OverlayBackStack)>> =
+            const { std::cell::Cell::new(None) };
+    }
+
+    /// Touch stacks under an overlay back stack, handing out their details and the stack.
+    fn touch_app() -> Element {
+        let stack = crate::use_overlay_back_stack();
+        use_context_provider(|| stack);
+        let details = StackDetails {
+            reveal: use_signal(Reveal::default),
+            details_open: use_signal(|| false),
+        };
+        TOUCH.with(|t| t.set(Some((details, stack))));
+        rsx! {
+            DeckStacks {
+                sections: vec![group("Creatures", 3, 100)],
+                currency: PriceCurrency::default(),
+                collapsed: use_signal(HashSet::new),
+                details,
+                faces: use_signal(HashMap::new),
+                group_buy: use_group_buy(),
+                touch: true,
+            }
+        }
+    }
+
+    #[test]
+    fn a_revealed_card_s_details_take_a_back_step_of_their_own_over_the_reveal_s() {
+        let settle = |dom: &mut VirtualDom| {
+            for _ in 0..6 {
+                dom.process_events();
+                dom.render_immediate(&mut NoOpMutations);
+            }
+        };
+        let mut dom = VirtualDom::new(touch_app);
+        dom.rebuild_in_place();
+        settle(&mut dom);
+        let (details, stack) = TOUCH.with(std::cell::Cell::get).unwrap();
+        let id = Uuid::from_u128(101);
+        let depth = |dom: &VirtualDom| dom.in_runtime(|| stack.depth());
+        assert_eq!(depth(&dom), 0, "nothing revealed");
+        dom.in_runtime(|| details.tap(id));
+        settle(&mut dom);
+        assert_eq!(depth(&dom), 1, "the reveal takes a step");
+        dom.in_runtime(|| details.tap(id));
+        settle(&mut dom);
+        assert!(
+            dom.in_runtime(|| *details.details_open.peek()),
+            "the second tap opens it"
+        );
+        // The details drawer registers its own step, mounted here by the host; this stands in.
+        assert_eq!(
+            depth(&dom),
+            1,
+            "the reveal keeps its step while the details are open"
+        );
+        // Closing them as the page does (use_stack_details_sync): the drawer shuts, the open
+        // card closes, and the card stays revealed.
+        dom.in_runtime(|| {
+            let mut open = details.details_open;
+            open.set(false);
+            let mut reveal = details.reveal;
+            reveal.write().apply(Gesture::Close);
+        });
+        settle(&mut dom);
+        assert_eq!(
+            depth(&dom),
+            1,
+            "closing the details leaves the reveal's step"
+        );
+        dom.in_runtime(|| details.dismiss());
+        settle(&mut dom);
+        assert_eq!(depth(&dom), 0, "the reveal's step goes with it");
     }
 
     #[test]

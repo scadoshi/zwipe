@@ -2,10 +2,10 @@
 //! draw: the kit's drawer along the right edge on a wide window and its
 //! bottom sheet below the breakpoint, or the drawer at every width, with a
 //! title bar (×, title and an optional `?`), the content and a dock at its
-//! bottom right. Below the kit's modal width its title bar pulls it away as
-//! the kit's [`BottomSheet`](crate::BottomSheet)'s does
-//! ([`use_sheet_drag_toward`]): a bottom sheet down, a drawer at every width,
-//! which floats along the right edge there, to the right.
+//! bottom right. Below the kit's modal width it pulls away as the kit's
+//! [`BottomSheet`](crate::BottomSheet) does ([`use_sheet_drag_toward`]): a
+//! bottom sheet down by its title bar, a drawer at every width, which floats
+//! along the right edge there, to the right from anywhere on it.
 
 use dioxus::prelude::*;
 use orangui::{Pull, use_sheet_drag_toward};
@@ -115,6 +115,14 @@ pub fn DrawerSheet(
                 "aria-label": (!title.is_empty()).then(|| title.clone()),
                 "aria-modal": modal,
                 onmounted: move |evt| drag.mounted(evt),
+                // A drawer is pulled to the right from anywhere on it: its content scrolls
+                // only vertically (`touch-action: pan-y`), so a sideways move pulls and a
+                // scroll cancels the pull.
+                onpointerdown: move |evt| {
+                    if pulls && toward == Pull::Right {
+                        drag.start(&evt);
+                    }
+                },
                 onpointermove: move |evt| drag.follow(&evt),
                 onpointerup: move |evt| drag.release(&evt),
                 onpointercancel: move |evt| drag.cancel(&evt),
@@ -122,7 +130,7 @@ pub fn DrawerSheet(
                     class: "sheet-header",
                     style: "position: relative;",
                     onpointerdown: move |evt| {
-                        if pulls {
+                        if pulls && toward == Pull::Down {
                             drag.start(&evt);
                         }
                     },

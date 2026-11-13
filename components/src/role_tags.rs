@@ -4,6 +4,7 @@
 //! deck view's Roles chart and the shared deck page's.
 
 use dioxus::prelude::*;
+use uuid::Uuid;
 
 /// An oracle tag's description with its Examples button.
 ///
@@ -49,6 +50,8 @@ pub fn RoleTags(
         return rsx! {};
     }
     let mut open_tag: Signal<Option<String>> = use_signal(|| None);
+    // Names the block, so an opened description scrolls into view within its scroller.
+    let block = use_hook(Uuid::new_v4);
     // The last opened tag, kept through a close so its description eases out.
     let mut shown_tag: Signal<Option<String>> = use_signal(|| None);
     let open = open_tag().filter(|slug| tags.contains(slug));
@@ -59,7 +62,7 @@ pub fn RoleTags(
         "keyword-reveal"
     };
     rsx! {
-        div { class: "otag-reveal-block",
+        div { class: "otag-reveal-block", "data-reveal": "{block}",
             div { class: "card-detail-meta card-detail-otags",
                 for tag in tags.iter().cloned() {
                     {
@@ -75,6 +78,7 @@ pub fn RoleTags(
                                     } else {
                                         open_tag.set(Some(slug.clone()));
                                         shown_tag.set(Some(slug.clone()));
+                                        document::eval(&reveal_into_view_js(block));
                                     }
                                 },
                                 "{tag}"
@@ -91,5 +95,36 @@ pub fn RoleTags(
                 }
             }
         }
+    }
+}
+
+/// How long a tag's description takes to ease open, in milliseconds, a frame over the
+/// `keyword-reveal` transition.
+const REVEAL_OPEN_MS: u32 = 300;
+
+/// Scrolls the description opened in reveal block `block` into view once it has eased open, so
+/// its Examples button never sits below the fold of the drawer or page it opened in.
+fn reveal_into_view_js(block: Uuid) -> String {
+    format!(
+        "setTimeout(() => {{ const r = document.querySelector('[data-reveal=\"{block}\"] .keyword-reveal.open'); if (r) r.scrollIntoView({{ block: 'nearest', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }}); }}, {REVEAL_OPEN_MS});"
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn an_opened_description_scrolls_into_view_after_it_eases_open() {
+        let js = reveal_into_view_js(Uuid::nil());
+        assert!(
+            js.contains(&format!(
+                "[data-reveal=\"{}\"] .keyword-reveal.open",
+                Uuid::nil()
+            )),
+            "{js}"
+        );
+        assert!(js.contains("block: 'nearest'"), "{js}");
+        assert!(js.contains(&format!("}}, {REVEAL_OPEN_MS});")), "{js}");
     }
 }

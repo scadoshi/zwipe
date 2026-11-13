@@ -28,6 +28,16 @@
         transform: translateX(0);
     }
 
+    /* It pulls to the right from anywhere on it (DrawerSheet), so its
+       content scrolls only vertically: a sideways move pulls. Each scroll
+       container inside it (the content, the card panel's body) is where a
+       touch's allowed moves stop combining, so everything in it carries the
+       rule. */
+    .sheet-form-drawer > .bottom-sheet.drawer-every-width,
+    .sheet-form-drawer > .bottom-sheet.drawer-every-width * {
+        touch-action: pan-y;
+    }
+
     .sheet-form-drawer > .bottom-sheet.drawer-every-width .sheet-dock {
         position: absolute;
         right: 1rem;
