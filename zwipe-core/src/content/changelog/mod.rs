@@ -73,6 +73,8 @@ pub const UPCOMING: &[Release] = &[
             "Printings names the card at its top, and on a phone shows each printing's set, number and place as well as its artist, on the web and in the app",
             "A filter section opens with its choices appearing whole and in place, so a quick tap lands where you aimed, on the web and in the app",
             "On a phone, a card's details drawer scrolls its own content with a vertical swipe, and an opened card role or tag scrolls into view",
+            "A card's details drawer on a deck's Cards opens on the side away from the card's column, and on a phone drags toward that side to close",
+            "A shared deck's link preview credits the art with the artist tag Printings shows",
             "A card's details drawer on a deck's Cards opens on the left when a right one would cover the card, and on a phone drags toward its side to close",
             "On the web's deck page, holding a key to run down the cards swaps the details drawer at once instead of fading each card",
             "On the web's deck page, the arrow keys and h, j, k and l move between cards at any window width, a tablet's keyboard included",

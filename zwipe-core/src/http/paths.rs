@@ -167,7 +167,7 @@ pub fn shared_deck_preview_route(token: Uuid) -> String {
 /// The preview image's layout version. Bump it whenever the drawing
 /// changes, along with `PREVIEW_LAYOUT` in zite's Pages Function: link
 /// unfurlers cache the image by URL, so a new layout needs a new `v`.
-pub const SHARE_PREVIEW_LAYOUT: u32 = 2;
+pub const SHARE_PREVIEW_LAYOUT: u32 = 3;
 
 /// The `v` a preview URL carries for a deck last updated at `updated_at`
 /// (unix seconds): the layout version and the update, `2-1794023263`. zerver

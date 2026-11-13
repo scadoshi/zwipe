@@ -42,7 +42,7 @@ pub struct Palette {
     pub palette_3: String,
     /// `--palette-5`: the power level's tag.
     pub palette_5: String,
-    /// `--palette-6`: the brand.
+    /// `--palette-6`: the brand and the art credit's chip.
     pub palette_6: String,
     /// `--color-money`: the price's tag.
     pub money: String,
@@ -63,6 +63,8 @@ pub struct Inks {
     pub palette_3: String,
     /// `--ink-palette-5`.
     pub palette_5: String,
+    /// `--ink-palette-6`.
+    pub palette_6: String,
     /// `--ink-color-money`.
     pub money: String,
     /// `--ink-text-muted`.
@@ -131,6 +133,7 @@ fn palette(body: &str, light: bool) -> Option<Palette> {
     let accent = color("accent-primary")?;
     let palette_3 = color("palette-3")?;
     let palette_5 = color("palette-5")?;
+    let palette_6 = color("palette-6")?;
     let money = color("color-money")?;
     let muted = color("text-muted")?;
     let ink = |name: &str, tone: &str| color(name).unwrap_or_else(|| tone.to_owned());
@@ -140,6 +143,7 @@ fn palette(body: &str, light: bool) -> Option<Palette> {
             accent: ink("ink-accent-primary", &accent),
             palette_3: ink("ink-palette-3", &palette_3),
             palette_5: ink("ink-palette-5", &palette_5),
+            palette_6: ink("ink-palette-6", &palette_6),
             money: ink("ink-color-money", &money),
             muted: ink("ink-text-muted", &muted),
         },
@@ -151,7 +155,7 @@ fn palette(body: &str, light: bool) -> Option<Palette> {
         accent,
         palette_3,
         palette_5,
-        palette_6: color("palette-6")?,
+        palette_6,
         money,
         mana: [
             color("mana-white")?,
