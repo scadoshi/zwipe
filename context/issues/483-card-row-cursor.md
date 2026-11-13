@@ -17,7 +17,7 @@ Local web, signed in, 1440. On the maybeboard (5 commanders), ↓, j, ↓: focus
 ## Fix
 laptop:
 - **`deck_cursor`:**
-  - adds `.web-card-row[data-row]` to its stops;
+  - adds `.web-card-row[data-row]` to its stops, except a deck row's own inner card row, which would otherwise be a second stop for the same card and hold the deck page's cursor in place (caught by a regression check on the deck page);
   - measures a `display: contents` stop by its first child;
   - counts an expanded card row as an open row, so an open row follows the cursor;
   - opens a shut card row the way it opens a deck row.
@@ -33,6 +33,8 @@ Local web at 1440, signed in. On the maybeboard (5 rows) and Playstyle (4 rows):
 - `i` opens the cursor card's image;
 - End and Home go to the last and first rows;
 - a mouse move hands the preview back to hover.
+
+On release with 478, the maybeboard does the same at 600px with a keyboard. The deck page's cursor still moves down rows and across columns.
 
 ## Verification
 -

@@ -15,7 +15,7 @@ pub use zwipe_ui::shortcuts::{
     flow_key, global_key, undo_letter,
 };
 use zwipe_ui::shortcuts::{
-    DECK_CARDS_NOTE, EVERYWHERE_ROWS, Editable, FLIP_ROW, SheetRow, card_read_rows, card_rows_rows,
+    DECK_CARDS_NOTE, EVERYWHERE_ROWS, Editable, FLIP_ROW, SheetRow, card_rows_rows,
     deck_cards_rows, examples_rows,
 };
 
@@ -174,13 +174,15 @@ pub fn sheet_rows(screen: &ShortcutsScreen) -> Vec<SheetRow> {
     own.into_iter().chain(EVERYWHERE_ROWS).collect()
 }
 
-/// Whether `screen`'s own keys use `j` and `k` (the swipes, the deck cursor, the examples' down
-/// swipe), so they don't scroll the page there.
+/// Whether `screen`'s own keys use `j` and `k` (the swipes, the deck page's and the card rows'
+/// cursor, the examples' down swipe), so they don't scroll the page there.
 #[must_use]
 pub fn claims_steps(screen: &ShortcutsScreen) -> bool {
     match screen {
-        ShortcutsScreen::Swipe(_) | ShortcutsScreen::DeckCards | ShortcutsScreen::Examples => true,
-        ShortcutsScreen::CardRows => true,
+        ShortcutsScreen::Swipe(_)
+        | ShortcutsScreen::DeckCards
+        | ShortcutsScreen::Examples
+        | ShortcutsScreen::CardRows => true,
     }
 }
 
