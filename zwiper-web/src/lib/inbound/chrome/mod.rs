@@ -10,7 +10,7 @@ pub mod leave_guard;
 pub mod logout_dialog;
 pub mod media;
 pub mod one_time_hint;
-mod overlay_steps;
+pub(crate) mod overlay_steps;
 pub mod section;
 pub mod shortcuts;
 pub mod shortcuts_sheet;

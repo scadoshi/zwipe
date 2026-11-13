@@ -84,6 +84,7 @@ pub const UPCOMING: &[Release] = &[
             "On the web, Back closes the open sheets one at a time before it leaves the page, on a phone too",
             "A shared deck on a phone opens on the same Profile as your own decks, and every shared deck shows its warnings and offers Export",
             "A deck's Cards slide in over its Profile and slide back out, and an edit made there shows on the Profile right away, on the web and in the app",
+            "On the web, Caps Lock no longer changes what a letter shortcut does",
         ],
     },
     Release {

@@ -22,7 +22,7 @@ use zwipe_ui::screens::printing_sheet as model;
 use zwipe_ui::shortcuts::{self, FlowKey};
 
 use crate::icons::{CHECK, DockIcon};
-use crate::keys::use_sheet_focus;
+use crate::keys::use_sheet_focus_handing_back;
 use crate::media::{KIT_MODAL_PX, use_min_width};
 use crate::{BottomSheet, CoverFlow, LoadFailed, SheetFrame, SheetWide, use_overlay_back_action};
 
@@ -53,6 +53,15 @@ const NARROW_BODY: &str = ".web-printing-sheet .bottom-sheet.show .web-printing-
 
 /// The open modal's body, which takes the keys from the kit's modal width on.
 const WIDE_BODY: &str = ".web-flow-sheet.show .web-flow-body";
+
+/// The Printings buttons of the card with Scryfall id `id`: in its row and in a details drawer
+/// showing it.
+fn handback_selector(id: Uuid) -> String {
+    format!(
+        "[data-row=\"{id}\"] [data-action=\"{action}\"], [data-card=\"{id}\"] [data-action=\"{action}\"]",
+        action = crate::data_action::PRINTINGS
+    )
+}
 
 /// Which way a step through the printings goes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -158,6 +167,11 @@ pub fn PrintingSheet(
         };
         index.set(next);
     };
+    // Each form's body takes the keys as soon as it opens.
+    let narrow_open = use_memo(move || open() && !flow());
+    let narrow_focus = use_sheet_focus_handing_back(narrow_open.into(), NARROW_BODY);
+    let wide_open = use_memo(move || open() && flow());
+    let wide_focus = use_sheet_focus_handing_back(wide_open.into(), WIDE_BODY);
     let visible_for_save = visible.clone();
     let save = use_callback(move |(): ()| {
         let Some(on_save) = on_save else {
@@ -167,14 +181,15 @@ pub fn PrintingSheet(
             return;
         }
         if let Some(picked) = visible_for_save.clone() {
+            // The save draws the card again as the new printing, with a Printings button of its
+            // own, which takes the focus.
+            let reopen = handback_selector(picked.scryfall_data.id);
+            narrow_focus.hand_back_to(reopen.clone());
+            wide_focus.hand_back_to(reopen);
             on_save.call(picked);
             open.set(false);
         }
     });
-
-    // The bottom sheet's body takes the keys as soon as it opens; the modal form focuses its own.
-    let narrow_open = use_memo(move || open() && !flow());
-    use_sheet_focus(narrow_open.into(), NARROW_BODY);
 
     let retry = use_callback(move |()| {
         let next = attempt.peek().wrapping_add(1);
@@ -294,9 +309,6 @@ fn CoverFlowSheet(
     let count = printings.len();
     let at = index().min(count.saturating_sub(1));
     let selected = printings.get(at).cloned();
-
-    // The body takes the keys as soon as the modal opens.
-    use_sheet_focus(open.into(), WIDE_BODY);
 
     // The arrow keys step as the flow's buttons do.
     let mut step = move |way: Step| {
@@ -444,4 +456,21 @@ fn flow_press(e: &Event<KeyboardData>) -> Option<FlowKey> {
         return None;
     }
     shortcuts::flow_key(&e.key().to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn focus_goes_back_to_the_saved_printings_button_in_its_row_or_drawer() {
+        let id = Uuid::nil();
+        let selector = handback_selector(id);
+        assert_eq!(
+            selector,
+            format!(
+                "[data-row=\"{id}\"] [data-action=\"printings\"], [data-card=\"{id}\"] [data-action=\"printings\"]"
+            )
+        );
+    }
 }

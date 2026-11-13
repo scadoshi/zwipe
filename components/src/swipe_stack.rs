@@ -21,7 +21,7 @@ use zwipe_ui::telemetry::SwipeDirection;
 use zwipe_ui::timing::TOP_PAINT_GRACE;
 
 use crate::icons::{ARROW_DOWN, ARROW_LEFT, ARROW_RIGHT, ARROW_UP, DockIcon};
-use crate::keys::{guard_js, press_first_js};
+use crate::keys::{PRESSED_KEY, guard_js, press_first_js};
 
 /// A drag this far along its axis, in pixels, commits; the app's distance.
 pub const COMMIT_PX: f64 = 90.0;
@@ -593,6 +593,7 @@ fn use_swipe_key_listener(keys: Vec<Swipe>, letters: Letters, on_key: Callback<S
     use_hook(move || {
         let wanted = swipe_keys(&keys, letters);
         let script = SWIPE_KEYS_JS
+            .replace("__KEY__", PRESSED_KEY)
             .replace("__ID__", &id.to_string())
             .replace("__KEYS__", &format!("{wanted:?}"))
             .replace("__GUARD__", &guard_js());
@@ -620,10 +621,10 @@ const wanted = __KEYS__;
 const onKey = (e) => {
     const stack = window.__zwipeSwipe;
     if (!stack.length || stack[stack.length - 1] !== '__ID__') return;
-    if (!wanted.includes(e.key) || !__GUARD__) return;
+    if (!wanted.includes(__KEY__) || !__GUARD__) return;
     e.preventDefault();
     if (e.repeat) return;
-    dioxus.send(e.key);
+    dioxus.send(__KEY__);
 };
 window['__zwipeSwipeKey__ID__'] = onKey;
 document.addEventListener('keydown', onKey);

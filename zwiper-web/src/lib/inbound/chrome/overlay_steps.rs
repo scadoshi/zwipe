@@ -16,6 +16,9 @@ pub(crate) struct OverlaySteps {
     swallow: usize,
     /// Whether the next pop is the router's own back past every owned entry.
     passing: bool,
+    /// Whether the last move was the browser's back closing the top overlay, which an overlay
+    /// rising in its place, such as a stack's revealed card under its closed drawer, follows.
+    after_pop: bool,
 }
 
 /// What the browser's history does to follow the open overlays.
@@ -25,17 +28,23 @@ pub(crate) enum StepMove {
     Push(usize),
     /// Goes back over this many owned entries in one move.
     Back(usize),
+    /// Closes this many top overlays: ones that rose as the browser's back closed the one above
+    /// them. An entry added then has no tap behind it, which a phone's back skips, so the back
+    /// closes them too.
+    Close(usize),
 }
 
 impl StepMove {
-    /// The browser script that makes the move.
-    pub(crate) fn script(self) -> String {
-        match self {
+    /// The browser script that makes the move; `None` for [`StepMove::Close`], which the overlay
+    /// stack makes.
+    pub(crate) fn script(self) -> Option<String> {
+        Some(match self {
             Self::Push(n) => format!(
                 "for (let i = 0; i < {n}; i++) history.pushState(history.state, '', location.href);"
             ),
             Self::Back(n) => format!("history.go(-{n});"),
-        }
+            Self::Close(_) => return None,
+        })
     }
 }
 
@@ -54,6 +63,10 @@ impl OverlaySteps {
     /// Follows the stack at `depth` open overlays: an entry for each one that opened, and one
     /// move back over the entries of those that closed some other way.
     pub(crate) fn follow(&mut self, depth: usize) -> Option<StepMove> {
+        let after_pop = std::mem::take(&mut self.after_pop);
+        if depth > self.owned && after_pop {
+            return Some(StepMove::Close(depth.saturating_sub(self.owned)));
+        }
         if depth > self.owned {
             let added = depth.saturating_sub(self.owned);
             self.owned = depth;
@@ -80,6 +93,7 @@ impl OverlaySteps {
         }
         if self.owned > 0 {
             self.owned = self.owned.saturating_sub(1);
+            self.after_pop = true;
             return PopMeaning::CloseTop;
         }
         PopMeaning::Route
@@ -183,13 +197,49 @@ mod tests {
     }
 
     #[test]
-    fn the_scripts_add_entries_at_the_same_url_and_go_back_in_one_move() {
-        assert!(
-            StepMove::Push(2)
-                .script()
-                .contains("history.pushState(history.state, '', location.href)")
+    fn an_overlay_rising_as_the_back_closes_the_one_above_it_closes_too() {
+        let mut steps = OverlaySteps::default();
+        steps.follow(1);
+        assert_eq!(
+            steps.follow(2),
+            Some(StepMove::Push(1)),
+            "the cards layer, the drawer"
         );
-        assert!(StepMove::Push(2).script().contains("i < 2"));
-        assert_eq!(StepMove::Back(3).script(), "history.go(-3);");
+        assert_eq!(steps.follow(3), Some(StepMove::Push(1)), "Printings");
+        assert_eq!(steps.pop(), PopMeaning::CloseTop, "back closes Printings");
+        assert_eq!(steps.follow(2), None);
+        assert_eq!(steps.pop(), PopMeaning::CloseTop, "back closes the drawer");
+        assert_eq!(
+            steps.follow(2),
+            Some(StepMove::Close(1)),
+            "the revealed card under it settles with no entry of its own"
+        );
+        assert_eq!(steps.follow(1), None);
+        assert_eq!(
+            steps.pop(),
+            PopMeaning::CloseTop,
+            "back closes the cards layer"
+        );
+    }
+
+    #[test]
+    fn an_overlay_opened_by_a_tap_after_a_back_still_gets_its_entry() {
+        let mut steps = OverlaySteps::default();
+        steps.follow(1);
+        steps.pop();
+        assert_eq!(steps.follow(0), None);
+        assert_eq!(steps.follow(1), Some(StepMove::Push(1)));
+    }
+
+    #[test]
+    fn the_scripts_add_entries_at_the_same_url_and_go_back_in_one_move() {
+        let push = StepMove::Push(2).script().unwrap_or_default();
+        assert!(push.contains("history.pushState(history.state, '', location.href)"));
+        assert!(push.contains("i < 2"));
+        assert_eq!(
+            StepMove::Back(3).script().as_deref(),
+            Some("history.go(-3);")
+        );
+        assert_eq!(StepMove::Close(1).script(), None);
     }
 }

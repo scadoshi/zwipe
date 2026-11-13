@@ -34,6 +34,7 @@ fn use_keys_under_guard(guard: String, on_key: Callback<String>) {
     let id = use_hook(Uuid::new_v4);
     use_hook(move || {
         let script = PAGE_KEYS_JS
+            .replace("__KEY__", guard::PRESSED_KEY)
             .replace("__ID__", &id.to_string())
             .replace("__GUARD__", &guard);
         spawn(async move {
@@ -86,6 +87,7 @@ pub fn use_scoped_keys(
             .collect::<Vec<_>>()
             .join(", ");
         let script = SCOPED_KEYS_JS
+            .replace("__KEY__", guard::PRESSED_KEY)
             .replace("__ID__", &id.to_string())
             .replace("__KEYS__", &names)
             .replace("__SCOPE__", scope)
@@ -112,11 +114,11 @@ pub fn focus_by_id(id: &str) {
 /// Registers one scoped key listener.
 const SCOPED_KEYS_JS: &str = r"
 const onKey = (e) => {
-    if (![__KEYS__].includes(e.key) || !__GUARD__) return;
+    if (![__KEYS__].includes(__KEY__) || !__GUARD__) return;
     const at = document.activeElement;
     if (at && at !== document.body && !at.closest('__SCOPE__')) return;
     e.preventDefault();
-    dioxus.send(e.key);
+    dioxus.send(__KEY__);
 };
 window['__zwipeScopedKey__ID__'] = onKey;
 document.addEventListener('keydown', onKey);
@@ -136,9 +138,9 @@ window.__zwipePageKeys.push('__ID__');
 const onKey = (e) => {
     const stack = window.__zwipePageKeys;
     if (!stack.length || stack[stack.length - 1] !== '__ID__') return;
-    if (e.key.length !== 1 || !__GUARD__) return;
-    if (e.key === '/') e.preventDefault();
-    dioxus.send(e.key);
+    if (__KEY__.length !== 1 || !__GUARD__) return;
+    if (__KEY__ === '/') e.preventDefault();
+    dioxus.send(__KEY__);
 };
 window['__zwipePageKey__ID__'] = onKey;
 document.addEventListener('keydown', onKey);

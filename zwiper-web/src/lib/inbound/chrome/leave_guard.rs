@@ -275,7 +275,9 @@ impl History for GuardedHistory {
         // With overlays open, the back goes past their entries to the route before.
         let owned = with_steps(OverlaySteps::leave);
         if owned > 0 {
-            document::eval(&StepMove::Back(owned.saturating_add(1)).script());
+            if let Some(script) = StepMove::Back(owned.saturating_add(1)).script() {
+                document::eval(&script);
+            }
         } else {
             self.inner.go_back();
         }

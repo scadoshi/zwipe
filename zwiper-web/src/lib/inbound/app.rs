@@ -13,6 +13,7 @@ use zwipe_core::domain::user::models::settings::PipStyle;
 
 use crate::inbound::chrome::hint_topic::{HintHost, HintTopic, InfoButton};
 use crate::inbound::chrome::leave_guard::{self, GuardedHistory};
+use crate::inbound::chrome::overlay_steps::StepMove;
 use crate::inbound::chrome::splash;
 use crate::inbound::chrome::trail::TrailHistory;
 use crate::inbound::router::Route;
@@ -56,8 +57,18 @@ pub fn App() -> Element {
         let _ = overlay_back_stack.depth();
         spawn(async move {
             timer::sleep(OVERLAY_SETTLE).await;
-            if let Some(step) = leave_guard::follow_overlays(overlay_back_stack.depth()) {
-                document::eval(&step.script());
+            match leave_guard::follow_overlays(overlay_back_stack.depth()) {
+                Some(StepMove::Close(n)) => {
+                    for _ in 0..n {
+                        overlay_back_stack.close_top();
+                    }
+                }
+                Some(step) => {
+                    if let Some(script) = step.script() {
+                        document::eval(&script);
+                    }
+                }
+                None => {}
             }
         });
     });

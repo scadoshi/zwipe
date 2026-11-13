@@ -12,6 +12,11 @@ pub fn press_first_js(scope: &str, actions: &[&str]) -> String {
     )
 }
 
+/// The key a keydown `e` stands for, as a script expression: `KeyboardEvent.key`, with a letter's
+/// case taken from Shift alone, so Caps Lock never turns `s` into Shift+S. The letter itself comes
+/// from the layout, so a key keeps the letter printed on it.
+pub const PRESSED_KEY: &str = "((k, shift) => k.length === 1 && k.toLowerCase() !== k.toUpperCase() ? (shift ? k.toUpperCase() : k.toLowerCase()) : k)(e.key, e.shiftKey)";
+
 /// Element tags that take typing: a key pressed while one has focus never reaches a screen.
 pub const TYPING_TAGS: [&str; 3] = ["INPUT", "TEXTAREA", "SELECT"];
 
@@ -75,7 +80,7 @@ pub fn guard_js_through(sheet_class: &str, keys: &[&str]) -> String {
         .collect::<Vec<_>>()
         .join(", ");
     let passing = format!(
-        "(!document.querySelector('{OPEN_SHEET}.{sheet_class}') || [{keys}].includes(e.key))"
+        "(!document.querySelector('{OPEN_SHEET}.{sheet_class}') || [{keys}].includes({PRESSED_KEY}))"
     );
     let overlays = format!("{} && {passing}", overlays_closed(Some(sheet_class)));
     browser_guard(Modifiers::Refused, &overlays)
@@ -150,6 +155,24 @@ mod tests {
     use zwipe_ui::deck_cards::keys as hover_keys;
 
     use super::*;
+
+    #[test]
+    fn a_letters_case_comes_from_shift_alone_so_caps_lock_changes_nothing() {
+        assert!(PRESSED_KEY.contains("(e.key, e.shiftKey)"), "{PRESSED_KEY}");
+        assert!(
+            PRESSED_KEY.contains("shift ? k.toUpperCase() : k.toLowerCase()"),
+            "{PRESSED_KEY}"
+        );
+        assert!(
+            PRESSED_KEY.contains("k.toLowerCase() !== k.toUpperCase()"),
+            "only a letter changes case: {PRESSED_KEY}"
+        );
+        let through = guard_js_through(STACK_DETAILS_CLASS, &["S"]);
+        assert!(
+            through.contains(&format!("['S'].includes({PRESSED_KEY})")),
+            "{through}"
+        );
+    }
 
     #[test]
     fn the_flip_key_presses_flip_else_meld() {

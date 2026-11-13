@@ -82,6 +82,7 @@ pub fn use_global_keys(on_hint: Option<Callback<()>>) {
     let id = use_hook(Uuid::new_v4);
     use_hook(move || {
         let script = GLOBAL_KEYS_JS
+            .replace("__KEY__", guard::PRESSED_KEY)
             .replace("__ID__", &id.to_string())
             .replace("__KEYS__", &format!("{:?}", shortcuts::GLOBAL_KEYS))
             .replace("__HINT_KEY__", &format!("'{}'", shortcuts::HINT_KEY))
@@ -202,18 +203,18 @@ window.__zwipeGlobalKeys.push('__ID__');
 const onKey = (e) => {
     const stack = window.__zwipeGlobalKeys;
     if (!stack.length || stack[stack.length - 1] !== '__ID__') return;
-    if (!__KEYS__.includes(e.key)) return;
+    if (!__KEYS__.includes(__KEY__)) return;
     // `?` opens the topmost open modal's hint; the page's only with no modal open.
-    if (e.key === __HINT_KEY__) {
+    if (__KEY__ === __HINT_KEY__) {
         if (!__HINT_GUARD__) return;
         e.preventDefault();
         if (__MODAL_HINT__) return;
-        dioxus.send(e.key);
+        dioxus.send(__KEY__);
         return;
     }
     if (!__GUARD__) return;
     e.preventDefault();
-    dioxus.send(e.key);
+    dioxus.send(__KEY__);
 };
 window['__zwipeGlobalKey__ID__'] = onKey;
 document.addEventListener('keydown', onKey);
@@ -254,11 +255,11 @@ mod tests {
     #[test]
     fn question_mark_goes_to_the_topmost_open_modal_before_the_page() {
         let at = GLOBAL_KEYS_JS
-            .find("e.key === __HINT_KEY__")
+            .find("__KEY__ === __HINT_KEY__")
             .expect("the hint key's branch");
         let branch = GLOBAL_KEYS_JS.get(at..).unwrap();
         let modal = branch.find("__MODAL_HINT__").unwrap();
-        let page = branch.find("dioxus.send(e.key)").unwrap();
+        let page = branch.find("dioxus.send(__KEY__)").unwrap();
         assert!(modal < page, "a modal answers before the page: {branch}");
         let js = guard::modal_hint_js();
         for modal in guard::MODAL_SELECTORS {
@@ -271,7 +272,7 @@ mod tests {
     #[test]
     fn the_global_listener_takes_its_keys_from_global_keys() {
         assert!(
-            GLOBAL_KEYS_JS.contains("__KEYS__.includes(e.key)"),
+            GLOBAL_KEYS_JS.contains("__KEYS__.includes(__KEY__)"),
             "{GLOBAL_KEYS_JS}"
         );
         for key in shortcuts::GLOBAL_KEYS {

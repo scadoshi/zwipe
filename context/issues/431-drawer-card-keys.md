@@ -12,8 +12,16 @@ scotland:
 - Esc in Quick add closes its suggestions and takes focus off the box.
 - Back: the browser's back closed the top overlay by putting the screen's URL back as a new entry. Chrome on Android skips an entry a page adds without a tap, so the next back skipped it and left. Each overlay that opens now owns a history entry, added as it opens; the browser's back goes over it and closes the top overlay, an overlay closed another way (×, Esc, the backdrop) takes its entry back out with a back the page swallows, and the router's own back goes past the entries in one move (`chrome/overlay_steps.rs`, orangui 3bd2f9b `OverlayBackStack::depth`). The history follows the stack once it holds still for 50ms, since an overlay drawn again leaves and rejoins the stack at once.
 
+- Follow-ups (droider, surfer):
+  - Touch Stacks on the Cards layer: Back closing the drawer let the revealed card under it register again, and the entry added for it, with no tap behind it, was one Android's back skips, so the next Back left Chrome. An overlay that rises as Back closes the one above it now closes too (`StepMove::Close`): Back over the drawer settles the revealed card, and the next Back closes Cards.
+  - Printings focus after a save (429's item C): the save hands focus to the saved card's own Printings button (`[data-row]` or `[data-card]` of its new id), skipping an inert one, and keeps at it while the row draws again; the sheet's body retries focus every 50ms for up to a second while the sheet is still hidden and refuses it.
+  - Caps Lock: the key listeners read a letter's case from Shift alone (`keys::PRESSED_KEY`), so Caps Lock with `s` sideboards and Shift+S stars, and Shift+H opens the shortcuts as before. The letter comes from the layout, not the physical key, so a key keeps the letter printed on it.
+
 ## Verification
 - Wide deck page, Stacks: open a stack card, hover another card, press Shift+S, `+`, `-`, `p`, `i`: each acts on the drawer's card; `d` closes the drawer. The same from a featured MVP card, and in List from a featured card. On the commander, `+` does nothing. On a shared deck, `p`, `i` and `d` work and the editing keys do nothing.
 - A featured card's drawer in List leaves the page undimmed on a wide window.
 - Type in Quick add, press Esc: the suggestions close, the box loses focus, and `p` on a hovered card opens its Printings.
 - Open a card's drawer, then its Printings; Back closes Printings, Back closes the drawer, Back leaves the page. Open both again and close them with Esc; one Back then leaves the page. On a phone (Android Chrome) the same, with no tab closing early.
+- Touch Stacks on the Cards layer: reveal a card, open its drawer, open Printings; Back closes Printings, Back closes the drawer and settles the card, Back closes Cards, Back leaves the deck. On a phone, Chrome never closes early.
+- Save a printing four times in a row with Enter: each closes the sheet with focus on the card's Printings button.
+- Caps Lock on: `s` moves a hovered card to the sideboard, Shift+S stars it.
