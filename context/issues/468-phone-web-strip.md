@@ -16,3 +16,9 @@ thinker:
 
 ## Verification
 - Phone web and app at 390, a deck with a commander and MVPs: the strip's cards are the same size on both (half the row), two fill it, a third scrolls; starring or unstarring a third card moves nothing below the strip.
+
+## Follow-up: a half card at the strip's edge (droider, after 468)
+- Cause: the cards were `min(11rem, half the row)`. At 412px the row's content is 380px but two 11rem (176px) cards take 360px, so at the scroll's end (scrollLeft = scrollWidth - clientWidth, droider's 348) the last two sit right-aligned and the 20px left shows a sliver of the card before them; snap was on (the app's stop at 184 is one card plus the gap) but the end isn't a card start.
+- Fix: the cap is 14rem, so on any phone each card is exactly half the row and two fill it; every stop, the end included, lands on a card start.
+- Checked headless at 412 and 390 with four cards: at the end the visible cards start at 0 and half the row (0/194 at 412, 0/183 at 390), and a scroll left at 100px snaps to the next card start.
+

@@ -3023,12 +3023,13 @@ body .toast-container [role="alertdialog"] {
     display: none;
 }
 
-/* Every card takes one width whatever the count, two to the row up to
-   11rem, so the strip's height holds when a card joins or leaves; a third
-   and later card scrolls in from the faded edge rather than shrinking the
-   rest. */
+/* Every card takes one width whatever the count, half the row, so the
+   strip's height holds when a card joins or leaves and two fill the row on
+   any phone: each scroll stop, the end included, lands on a card's start,
+   with no sliver of the card before it. A third and later card scrolls in
+   from the faded edge. The 14rem cap only binds past a phone's width. */
 .deck-featured-card {
-    flex: 0 0 min(11rem, calc((100% - 0.5rem) / 2));
+    flex: 0 0 min(14rem, calc((100% - 0.5rem) / 2));
     min-width: 0;
     scroll-snap-align: start;
     text-align: center;
