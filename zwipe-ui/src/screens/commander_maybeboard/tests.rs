@@ -270,7 +270,7 @@ fn the_search_asks_for_named_commanders() {
     let mut want = CardQueryBuilder::with_name_contains("atraxa");
     want.set_is_commander_in_format(Format::Commander)
         .set_is_token(false)
-        .set_sort(CardSortKey::Name)
+        .set_sort(CardSortKey::BestMatch)
         .set_limit(8);
     assert_eq!(search_query("  atraxa "), want, "the app's search");
 }

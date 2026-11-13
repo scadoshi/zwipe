@@ -23,7 +23,6 @@ use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::colors::Color;
 use zwipe_core::domain::card::search_card::card_filter::builder::CardQueryBuilder;
-use zwipe_core::domain::card::search_card::card_filter::card_sort_key::CardSortKey;
 use zwipe_core::domain::card::search_card::cards::Cards;
 use zwipe_core::domain::deck::format::Format;
 use zwipe_ui::commander::maybeboard::{self, Sort, SortBy, Step};
@@ -32,7 +31,7 @@ use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::generation::{Generation, Ticket};
 use zwipe_ui::screens::deck_list;
 use zwipe_ui::telemetry::vocabulary::Screen;
-use zwipe_ui::timing::{MAYBEBOARD_QUICK_ADD_LIMIT, QUICK_ADD_DEBOUNCE, QUICK_ADD_MIN_CHARS};
+use zwipe_ui::timing::{QUICK_ADD_DEBOUNCE, QUICK_ADD_MIN_CHARS};
 
 use crate::domain::commander_maybeboard;
 use crate::inbound::caches::CreateDeckSeed;
@@ -223,13 +222,8 @@ pub fn CommanderMaybeboard() -> Element {
             if !searches.peek().is_current(ticket) {
                 return;
             }
-            let mut builder = CardQueryBuilder::with_name_contains(q.trim());
-            builder
-                .set_is_commander_in_format(Format::Commander)
-                .set_is_token(false)
-                .set_sort(CardSortKey::Name)
-                .set_limit(MAYBEBOARD_QUICK_ADD_LIMIT);
-            let Ok(filter) = builder.build() else {
+            let Ok(filter) = zwipe_ui::screens::commander_maybeboard::search_query(&q).build()
+            else {
                 is_searching.set(false);
                 return;
             };

@@ -85,14 +85,14 @@ pub fn added(name: &str) -> String {
     format!("Added {name}")
 }
 
-/// The Quick add search for `query`: commanders in the Commander format whose name holds the trimmed query, no tokens, sorted by name, [`timing::MAYBEBOARD_QUICK_ADD_LIMIT`] at most.
+/// The Quick add search for `query`: commanders in the Commander format whose name holds the trimmed query, no tokens, the closest names first and the most played first within each (`CardSortKey::BestMatch`), [`timing::MAYBEBOARD_QUICK_ADD_LIMIT`] at most.
 #[must_use]
 pub fn search_query(query: &str) -> CardQueryBuilder {
     let mut builder = CardQueryBuilder::with_name_contains(query.trim());
     builder
         .set_is_commander_in_format(Format::Commander)
         .set_is_token(false)
-        .set_sort(CardSortKey::Name)
+        .set_sort(CardSortKey::BestMatch)
         .set_limit(timing::MAYBEBOARD_QUICK_ADD_LIMIT);
     builder
 }

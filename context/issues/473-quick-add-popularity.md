@@ -26,3 +26,6 @@ Checked before A:
 - `zwipe_ui::screens::deck_cards::quick_add_query` sends `CardSortKey::BestMatch`; the app's deck Cards takes it from the model, and the web's Quick add (`zwiper-web/.../deck/cards/quick_add.rs`) now builds its query with the same function instead of its own copy.
 - The commander maybeboard's Quick add (`commander_maybeboard::search_query`) still sends Name.
 - Tests: `quick_add_query_turns_synergy_off_and_sorts_by_best_match`; the zerver `quick_add_names` helper rebuilds the query with `BestMatch`, and the Quick add tests pass under it.
+
+## Follow-up: the commander maybeboard's Quick add
+The composer, for consistency: the maybeboard's Quick add goes on `BestMatch` too. `zwipe_ui::screens::commander_maybeboard::search_query` sends it (the app takes it from the model), and the web's maybeboard calls that function instead of its own copy. The commander search runs the same ORDER BY as the deck search (`search_scryfall_data_deck_aware`). Test: `the_search_asks_for_named_commanders` (red before).
