@@ -6,7 +6,8 @@
 //! same task, before the browser paints the change, and fade out over
 //! `SWAP_MS` while the new card's title bar and content fade in. Nothing
 //! runs under `prefers-reduced-motion`, and a drawer that kept its card
-//! drops the copies unseen.
+//! drops the copies unseen. A held key's repeats swap the card at once,
+//! dropping any fade still running.
 
 use dioxus::prelude::*;
 
@@ -70,8 +71,20 @@ const SWAP_JS: &str = r"
   document.addEventListener('click', (e) => {
     if (e.target instanceof Element && e.target.closest('.card-stack-card')) capture();
   }, true);
+  // A held key swaps the card at once: its repeats capture nothing and drop what still fades.
+  const drop = () => {
+    if (observer) observer.disconnect();
+    observer = null;
+    pending = null;
+    clearTimeout(expire);
+    for (const ghost of document.querySelectorAll('[data-drawer-ghost]')) ghost.remove();
+    const sheet = openDrawer();
+    if (sheet) for (const part of sheet.querySelectorAll(':scope > .sheet-header, :scope > .sheet-content')) for (const run of part.getAnimations()) run.cancel();
+  };
   document.addEventListener('keydown', (e) => {
-    if (!e.ctrlKey && !e.metaKey && !e.altKey) capture();
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.repeat) { drop(); return; }
+    capture();
   }, true);
 })();
 ";
@@ -86,6 +99,22 @@ pub(crate) fn use_drawer_swap() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_held_key_swaps_at_once_and_clears_the_ghosts() {
+        assert!(
+            SWAP_JS.contains("if (e.repeat) { drop(); return; }"),
+            "a key repeat captures nothing and drops what still fades"
+        );
+        assert!(
+            SWAP_JS.contains("const drop = () => {"),
+            "the drop clears the pending capture and every ghost"
+        );
+        assert!(
+            SWAP_JS.contains("for (const ghost of document.querySelectorAll('[data-drawer-ghost]')) ghost.remove();"),
+            "{SWAP_JS}"
+        );
+    }
 
     #[test]
     fn the_script_carries_its_duration() {

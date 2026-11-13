@@ -28,7 +28,7 @@ pub(crate) const STOP_SELECTOR: &str = ".web-deck-row[data-row], .card-stack-slo
 
 /// Installs, once a tab, the page-wide trackers the cursor reads: the last input (`key` or
 /// `mouse`), the card in focus, `__zwipeDeckFocus`, which focuses a card by id and keeps it in
-/// view, and `__zwipeDeckHandOn`, which focuses the cursor's card again, or, once it has left the
+/// view (at once while a key is held, `__zwipeDeckHeld`, else smoothly), and `__zwipeDeckHandOn`, which focuses the cursor's card again, or, once it has left the
 /// page, the next card after it in the last reading order, else the one before. While a key moved
 /// last, a page change that drops focus to the page (a redraw, an Undo, a removed card) hands it
 /// back that way.
@@ -45,13 +45,13 @@ if (!window.__zwipeDeckTrack) {
     }, true);
     const find = (id) => document.querySelector('.web-deck-row[data-row="' + id + '"], .card-stack-slot[data-row="' + id + '"]');
     const live = (el) => el && el.offsetParent !== null && !el.closest('[inert]') ? el : null;
-    window.__zwipeDeckFocus = (id) => {
+    window.__zwipeDeckFocus = (id, held) => {
         const stop = live(find(id));
         if (!stop) return null;
         const target = stop.querySelector('.card-row-compact, .card-stack-card') || stop;
         target.focus({ preventScroll: true });
         const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
-        target.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: still ? 'auto' : 'smooth' });
+        target.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: still || held ? 'auto' : 'smooth' });
         window.__zwipeDeckCursor = id;
         return stop;
     };
@@ -106,6 +106,7 @@ const onKey = (e) => {
     const from = fromEl ? fromEl.getAttribute('data-row') : (window.__zwipeDeckCursor || null);
     e.preventDefault();
     window.__zwipeDeckInput = 'key';
+    window.__zwipeDeckHeld = e.repeat;
     const stacked = [...document.querySelectorAll('.deck-stacks-column')];
     const listed = document.querySelector('.deck-list-columns');
     const paired = listed && getComputedStyle(listed).display === 'grid';
@@ -214,7 +215,9 @@ pub(crate) fn use_deck_cursor(details: Option<StackDetails>) {
                     continue;
                 };
                 order.set(snapshot.order());
-                document::eval(&format!("window.__zwipeDeckFocus('{target}');"));
+                document::eval(&format!(
+                    "window.__zwipeDeckFocus('{target}', window.__zwipeDeckHeld);"
+                ));
                 match Follow::of(&open) {
                     Follow::Drawer => {
                         if let Some(details) = details
@@ -278,6 +281,22 @@ mod tests {
 
     fn sent(n: u128, y: f64) -> SentStop {
         (id(n).to_string(), y, true)
+    }
+
+    #[test]
+    fn a_held_key_scrolls_the_cursor_at_once() {
+        assert!(
+            TRACK_JS.contains("window.__zwipeDeckFocus = (id, held) => {"),
+            "{TRACK_JS}"
+        );
+        assert!(
+            TRACK_JS.contains("behavior: still || held ? 'auto' : 'smooth'"),
+            "{TRACK_JS}"
+        );
+        assert!(
+            NAV_JS.contains("window.__zwipeDeckHeld = e.repeat;"),
+            "the keys mark a repeat for the focus that follows"
+        );
     }
 
     #[test]
