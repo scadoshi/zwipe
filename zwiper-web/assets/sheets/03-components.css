@@ -1359,6 +1359,27 @@ a.nav-dropdown-item.active:visited {
     color: var(--ink-text-muted, var(--text-muted));
 }
 
+/* On a wide window the sheet widens and the rows fall into two columns,
+   read top to bottom then across, so a screen with many keys needs no
+   scroll; the host gives the row count as --shortcut-rows (half, rounded
+   up). Below it, one column. */
+@media (min-width: 60rem) {
+    .shortcuts-layer .sheet-form-modal > .bottom-sheet {
+        width: min(52rem, calc(100vw - 4rem));
+    }
+
+    .shortcuts[style*="--shortcut-rows"] {
+        grid-template-columns: max-content 1fr max-content 1fr;
+        grid-template-rows: repeat(var(--shortcut-rows), auto);
+        grid-auto-flow: column;
+        column-gap: 1.5rem;
+    }
+
+    .shortcuts[style*="--shortcut-rows"] > .shortcut {
+        grid-column: span 2;
+    }
+}
+
 .shortcuts-layer .sheet-backdrop {
     z-index: var(--overlay-z, 240);
 }

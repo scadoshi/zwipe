@@ -1,6 +1,7 @@
 //! The keyboard shortcuts on screen: the sheet that lists them, the keys that open things on
 //! every page (`?` the page's hint, Shift+H the sheet, `t` the theme sheet), and the keyboard
-//! button in a hint that opens the sheet on a computer.
+//! button in a hint that opens the sheet where a keyboard is likely (a pointer that hovers and is
+//! precise, at any width).
 //!
 //! Components never know a host's screens. A screen offers its keys as a [`ShortcutsList`], and
 //! the sheet lists the newest one's.
@@ -11,7 +12,7 @@ use zwipe_ui::shortcuts::{self, GlobalKey, RowPart, SheetRow};
 
 use crate::hint::KeyGlyph;
 use crate::keys::guard;
-use crate::media::use_computer;
+use crate::media::use_pointer;
 use crate::{DialogAction, HintKey, data_action};
 
 /// The hint's keyboard button's icon: a keyboard, its keys and space bar.
@@ -173,9 +174,10 @@ pub fn ShortcutsSheet(open: Signal<bool>) -> Element {
     } else {
         &shortcuts::STEP_ROWS
     };
+    let count = screen.rows.len().saturating_add(steps.len());
     let rows = screen.rows.iter().copied().chain(steps.iter().copied());
     rsx! {
-        orangui::ShortcutsSheet { open, note: screen.note.map(str::to_owned),
+        orangui::ShortcutsSheet { open, note: screen.note.map(str::to_owned), rows: count,
             for (at, (keys, does)) in rows.enumerate() {
                 orangui::ShortcutRow { key: "{at}", keys: keys.iter().map(ToString::to_string).collect::<Vec<_>>(),
                     // An icon button shows its icon beside its name, so the sheet teaches it.
@@ -192,14 +194,15 @@ pub fn ShortcutsSheet(open: Signal<bool>) -> Element {
 }
 
 /// The keyboard button a screen's hint offers beside its guide link, which closes the hint and
-/// runs `on_click`: only while a screen with keys is `offered` and on a `computer`'s wide layout.
+/// runs `on_click`: only while a screen with keys is `offered` and a `keyboard` is likely (a
+/// pointer that hovers and is precise, at any width; not touch).
 #[must_use]
 pub fn shortcuts_action(
     offered: bool,
-    computer: bool,
+    keyboard: bool,
     on_click: Callback<()>,
 ) -> Option<DialogAction> {
-    (offered && computer).then(|| DialogAction::Icon {
+    (offered && keyboard).then(|| DialogAction::Icon {
         label: SHORTCUTS_LABEL.to_owned(),
         path: KEYBOARD,
         on_click,
@@ -211,14 +214,14 @@ pub fn shortcuts_action(
 pub fn use_shortcuts_action() -> Option<DialogAction> {
     let open = try_use_context::<ShortcutsOpen>().map(|ShortcutsOpen(open)| open);
     let offered = try_use_context::<ShortcutsOffered>().map(|ShortcutsOffered(stack)| stack);
-    let computer = use_computer();
+    let keyboard = use_pointer();
     let on_click = use_callback(move |()| {
         if let Some(mut open) = open {
             open.set(true);
         }
     });
     let offered_here = offered.is_some_and(|stack| !stack.read().is_empty());
-    shortcuts_action(offered_here, computer(), on_click)
+    shortcuts_action(offered_here, keyboard(), on_click)
 }
 
 /// Registers one page's listener for the keys that work everywhere. Only the newest
@@ -258,18 +261,18 @@ window.__zwipeGlobalKeys = (window.__zwipeGlobalKeys || []).filter((id) => id !=
 mod tests {
     use super::*;
 
-    /// The action for `offered` and `computer`, built inside a runtime as a callback needs.
-    fn action(offered: bool, computer: bool) -> Option<DialogAction> {
+    /// The action for `offered` and `keyboard`, built inside a runtime as a callback needs.
+    fn action(offered: bool, keyboard: bool) -> Option<DialogAction> {
         let dom = VirtualDom::new(|| rsx! {});
         dom.in_runtime(|| {
             dom.in_scope(ScopeId::ROOT, || {
-                shortcuts_action(offered, computer, Callback::new(|()| {}))
+                shortcuts_action(offered, keyboard, Callback::new(|()| {}))
             })
         })
     }
 
     #[test]
-    fn the_hint_offers_the_keyboard_button_on_a_computer_where_a_screen_has_keys() {
+    fn the_hint_offers_the_keyboard_button_where_a_keyboard_is_likely_and_a_screen_has_keys() {
         let Some(DialogAction::Icon { label, path, .. }) = action(true, true) else {
             panic!("the keyboard button");
         };

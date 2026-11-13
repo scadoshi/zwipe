@@ -208,7 +208,7 @@ if (!window.__zwipeHintFocus) {
 
 /// Where focus goes around every other dialog (a hint has its own,
 /// [`HINT_FOCUS_JS`], and the leave guard's its own Stay), installed once. As one opens it takes focus on its
-/// first field (Clone's name), else its primary action (a non-danger
+/// first field (Clone's name, its text selected), else its primary action (a non-danger
 /// confirm, such as Share's Create link), else its first link (Buy's
 /// stores), else its Cancel, so a danger dialog never starts on its danger
 /// button. As it closes, once it has faded out of the page, focus returns
@@ -220,6 +220,7 @@ if (!window.__zwipeDialogFocus) {
     let pressed = null;
     let opener = null;
     document.addEventListener('pointerdown', (e) => { pressed = e.target; }, true);
+    const TEXT = 'input:not([type]), input[type="text"], input[type="search"], textarea';
     const FIRST = ['input:not([type="hidden"]):not([disabled]), textarea:not([disabled]), select:not([disabled])', '.alert-dialog-actions .alert-dialog-action:not([disabled])', '.alert-dialog-actions a[href]', '.alert-dialog-actions .alert-dialog-cancel:not([disabled])'];
     new MutationObserver(() => {
         const open = document.querySelector('.alert-dialog[data-state="open"]');
@@ -229,7 +230,11 @@ if (!window.__zwipeDialogFocus) {
             opener = active && active !== document.body ? active : (pressed || document.body);
             if (open.contains(active)) return;
             const target = FIRST.map((sel) => open.querySelector(sel)).find(Boolean);
-            if (target) target.focus({ preventScroll: true });
+            if (target) {
+                target.focus({ preventScroll: true });
+                // A prefilled text field (Clone's name) selects its text, so typing replaces it.
+                if (target.matches(TEXT) && target.select) target.select();
+            }
         } else if (!open && opener) {
             const from = opener;
             opener = null;
@@ -254,13 +259,15 @@ if (!window.__zwipeDialogFocus) {
 /// submits the page's form panel when it has exactly one, as Enter in one
 /// of its fields does.
 ///
-/// Escape sends once the key's dispatch is over, so a dialog the close
+/// Escape is marked taken, so no later listener closes the same overlay
+/// again, and sends once the key's dispatch is over, so a dialog the close
 /// opens (a picker asking before it discards) draws after the kit's
 /// listener has passed on this same key and doesn't take it as a dismiss.
 const KEYS_JS: &str = r#"
 document.addEventListener('keydown', (e) => {
     if (document.querySelector('.alert-dialog[data-state="open"]')) return;
     if (e.key === 'Escape') {
+        e.preventDefault();
         setTimeout(() => dioxus.send(true), 0);
         return;
     }
@@ -356,6 +363,34 @@ mod tests {
         assert!(
             DIALOG_FOCUS_JS.contains("now.closest('.alert-dialog') && tries++ < 12"),
             "after the dialog's fade"
+        );
+    }
+
+    #[test]
+    fn escape_is_taken_once_the_root_closes_the_top_overlay_with_it() {
+        // Unmarked, the kit's last-chance Esc (a sheet's own close) closes the same overlay again,
+        // and on a history-backed layer (the deck's Cards) that is a second step back.
+        assert!(
+            KEYS_JS.contains("if (e.key === 'Escape') {\n        e.preventDefault();"),
+            "{KEYS_JS}"
+        );
+    }
+
+    #[test]
+    fn a_dialog_s_text_field_takes_focus_with_its_text_selected() {
+        assert!(
+            DIALOG_FOCUS_JS.contains("if (target.matches(TEXT) && target.select) target.select();"),
+            "typing replaces the prefilled name rather than adding to it: {DIALOG_FOCUS_JS}"
+        );
+    }
+
+    #[test]
+    fn a_header_pushed_up_keeps_its_closed_sheets_out_of_the_page() {
+        // translateY makes the header the containing block of the fixed theme drawer inside it,
+        // whose layout then overflows the window: a scrollbar, a narrower page, rewrapped text.
+        assert!(
+            HEADER_HIDE_JS.contains("nav.style.overflow = pushed ? \"clip\" : \"\";"),
+            "{HEADER_HIDE_JS}"
         );
     }
 

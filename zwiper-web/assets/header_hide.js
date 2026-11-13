@@ -48,6 +48,10 @@
             pushed = top <= 0 ? 0 : Math.min(height, Math.max(0, pushed));
             offset.set(nav, pushed);
             nav.style.transform = pushed ? `translateY(${-pushed}px)` : "";
+            // A transform makes the header the containing block of the closed theme drawer inside
+            // it, whose layout would spill past the window and give the page a scrollbar; while the
+            // header is pushed up nothing of it opens, so it clips.
+            nav.style.overflow = pushed ? "clip" : "";
         },
         { capture: true, passive: true },
     );
@@ -65,6 +69,7 @@
             if (area) lastTop.delete(area);
             offset.delete(nav);
             nav.style.transform = "";
+            nav.style.overflow = "";
         }
     };
     new MutationObserver(reset).observe(document.documentElement, { childList: true, subtree: true });
