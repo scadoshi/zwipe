@@ -8,6 +8,7 @@
 use std::collections::{HashMap, HashSet};
 use std::time::Duration;
 
+use components::featured_strip::FeaturedStrip;
 use components::icons::DockIcon;
 use components::screen_return::{UNDER_LAYER, replay_entrances, use_screen_returns};
 use components::{
@@ -295,21 +296,37 @@ pub(crate) fn DeckPageBody(
     let cart_divider = dock_tail.is_none();
     // The head: the name, its facts and the featured cards, on the page and atop the phone's
     // Cards layer.
+    // On a phone the featured cards are the app's strip under the head, the same component, so
+    // they scroll sideways at the app's size and deal in each time the Cards open or come back.
+    let strip: Vec<(Card, String)> = featured
+        .iter()
+        .map(|(card, role)| (card.clone(), role.to_string()))
+        .collect();
     let head: Element = rsx! {
         if let Some(facts) = facts {
-            DeckHead {
-                name,
-                byline,
-                facts,
-                has_featured: !featured.is_empty(),
-                featured_class: featured_class.to_string(),
-                for (card, role) in featured.iter().cloned() {
-                    FeaturedCard {
-                        key: "{card.scryfall_data.id}-{role}",
-                        card,
-                        role: role.to_string(),
-                        on_select: open_featured,
-                        on_load: on_featured_load,
+            if phone {
+                DeckHead { name, byline, facts, has_featured: false }
+                FeaturedStrip {
+                    cards: strip,
+                    loaded,
+                    deal_key: stack_entries,
+                    on_tap: move |card: Card| open_featured.call(card.scryfall_data.id),
+                }
+            } else {
+                DeckHead {
+                    name,
+                    byline,
+                    facts,
+                    has_featured: !featured.is_empty(),
+                    featured_class: featured_class.to_string(),
+                    for (card, role) in featured.iter().cloned() {
+                        FeaturedCard {
+                            key: "{card.scryfall_data.id}-{role}",
+                            card,
+                            role: role.to_string(),
+                            on_select: open_featured,
+                            on_load: on_featured_load,
+                        }
                     }
                 }
             }

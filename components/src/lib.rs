@@ -72,6 +72,7 @@ mod details_clear;
 mod details_eye;
 mod drawer_sheet;
 mod drawer_swap;
+pub mod featured_strip;
 mod flippable_card_image;
 mod fold;
 mod group_buy;

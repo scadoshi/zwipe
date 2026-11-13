@@ -2997,10 +2997,9 @@ body .toast-container [role="alertdialog"] {
     margin-bottom: 1rem;
 }
 
-/* The cards share the row up to 11rem each while they fit, centered; past
-   about two and a third on a phone they keep that width and the row
-   scrolls sideways within the page's width, snapping to a card and faded at
-   an edge with more past it (the kit's scroll-fade-x). */
+/* One or two cards sit centered; past two the row scrolls sideways within
+   the page's width, snapping to a card and faded at an edge with more past
+   it (the kit's scroll-fade-x). */
 .deck-featured-row {
     display: flex;
     flex-wrap: nowrap;
@@ -3024,15 +3023,15 @@ body .toast-container [role="alertdialog"] {
     display: none;
 }
 
+/* Every card takes one width whatever the count, two to the row up to
+   11rem, so the strip's height holds when a card joins or leaves; a third
+   and later card scrolls in from the faded edge rather than shrinking the
+   rest. */
 .deck-featured-card {
-    flex: 1 0 min(11rem, calc((100% - 1rem) / 2.3));
+    flex: 0 0 min(11rem, calc((100% - 0.5rem) / 2));
     min-width: 0;
-    max-width: 11rem;
     scroll-snap-align: start;
     text-align: center;
-    /* A card starred later is a layout change, not an entrance, so its
-       siblings ease their width share instead of snapping. */
-    transition: flex-grow 0.3s ease;
 }
 
 /* Each time the strip mounts with its cards (the Cards layer opening) they

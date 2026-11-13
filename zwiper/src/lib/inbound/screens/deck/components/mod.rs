@@ -20,8 +20,6 @@ pub(crate) mod deck_profile;
 pub(crate) mod deck_tags_section;
 /// Deck warnings section with remove buttons for card-specific warnings.
 pub(crate) mod deck_warnings;
-/// Featured strip: command zone + MVP card images at the top of the view.
-pub(crate) mod featured_cards;
 /// Full-screen format picker with definitions.
 pub(crate) mod format_select;
 /// The view screen's Share and Clear skips dialogs.

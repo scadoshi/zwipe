@@ -51,6 +51,7 @@ pub const UPCOMING: &[Release] = &[
         version: Version::new(1, 20, 1),
         date: None,
         entries: &[
+            "On a phone's web app, the featured cards are the app's: big, scrolling sideways, and nothing under them moves when one joins or leaves",
             "On the web, the Decks list opens and closes its Tags without the decks jittering",
             "Undoing a move to the maybeboard or sideboard puts the card's MVP star back",
             "On the web's deck page, the arrow keys or h, j, k and l move between cards and Enter opens one, in List and Stacks",

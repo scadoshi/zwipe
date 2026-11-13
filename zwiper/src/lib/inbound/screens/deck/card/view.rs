@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
+use ::components::featured_strip::FeaturedStrip;
 use components::icons::{self};
 use components::{
     Button, ButtonVariant, CardGroup, CardsViewSwitch, Chip, DeckEditActions, DeckRowHost,
@@ -50,7 +51,6 @@ use crate::inbound::screens::deck::card::filter::card_filter_sheet::{
     CardFilterSheet, CollapseExpanded,
 };
 use crate::inbound::screens::deck::card::filter::deck_cards::DeckCards;
-use crate::inbound::screens::deck::components::featured_cards::FeaturedCards;
 use crate::inbound::screens::deck::components::skeletons::{
     ChipGhost, ChipRowGhost, DeckCardListSkeleton, QuickAddSkeleton,
 };
@@ -1050,7 +1050,7 @@ pub fn View(deck_id: Uuid) -> Element {
                     // The featured strip holds its place with one ghost card while the deck
                     // loads, unless the profile has landed with no command zone card,
                     // so the controls under it never move when the cards arrive.
-                    FeaturedCards {
+                    FeaturedStrip {
                         cards: featured_cards,
                         loaded,
                         ghost: featured_ghost,
