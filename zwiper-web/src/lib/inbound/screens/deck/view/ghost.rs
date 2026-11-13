@@ -4,6 +4,7 @@
 //! the foot. Nothing in them works.
 
 use dioxus::prelude::*;
+use zwipe_ui::deck_cards::stacks;
 
 use crate::inbound::chrome::ghost::{
     GhostActionRow, GhostChip, GhostChipRow, GhostFold, GhostIconButton, GhostInfoRow, GhostList,
@@ -77,6 +78,36 @@ pub fn DeckBandsGhost() -> Element {
                         div { key: "{r}", class: "skeleton-card-row web-ghost-card-row",
                             div { class: "skeleton-bar skeleton-card-thumb" }
                             div { class: "skeleton-bar skeleton-card-bar-row" }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Ghost cards in each stack, the Commander's one then fuller groups.
+const STACK_CARDS: [usize; 4] = [1, 6, 3, 4];
+
+/// The bands in Stacks, the saved view: each stack's group chip over its
+/// cards, each after the first tucked under the one above it
+/// ([`stacks::tucked`]), as a loaded stack lies.
+#[component]
+pub fn DeckStacksGhost() -> Element {
+    rsx! {
+        div { class: "deck-stacks",
+            for (i, cards) in STACK_CARDS.into_iter().enumerate() {
+                div { key: "{i}", class: "deck-stack",
+                    div { class: "card-group-header",
+                        span { class: "stat-chip web-ghost-chip", GhostText { chars: 12 } }
+                    }
+                    div { class: "card-stack",
+                        for (c, tucked) in stacks::tucked(cards).into_iter().enumerate() {
+                            div {
+                                key: "{c}",
+                                class: if tucked { "card-stack-slot tucked" } else { "card-stack-slot" },
+                                div { class: "card-stack-card skeleton-bar web-ghost-stack-card" }
+                            }
                         }
                     }
                 }

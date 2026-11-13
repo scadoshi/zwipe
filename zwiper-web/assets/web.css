@@ -1918,6 +1918,14 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
     border-radius: 4.75% / 3.5%;
 }
 
+/* A Stacks ghost card keeps the card's shape, and an edge in the page's color
+   parts each tucked strip from the one under it. */
+.skeleton-bar.web-ghost-stack-card {
+    height: auto;
+    border-radius: 4.75% / 3.4%;
+    box-shadow: 0 0 0 1px var(--bg-primary);
+}
+
 .web-ghost-chip.web-ghost-button {
     line-height: normal;
 }

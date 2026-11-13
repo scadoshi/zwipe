@@ -27,9 +27,11 @@ fn refresh_lock() -> Arc<Mutex<()>> {
 ///
 /// The refresh runs in a task of its own, so a caller dropped mid-flight
 /// never loses a token rotation; the new session is stored before the signal
-/// changes. It holds the browser-wide [`CrossTabLock`], so tabs take turns:
-/// the store keeps no access token, so every tab refreshes as it loads, and
-/// each one in turn sends the cookie the one before it rotated.
+/// changes. It asks for the browser-wide [`CrossTabLock`], so tabs take
+/// turns: the store keeps no access token, so every tab refreshes as it
+/// loads, and each one in turn sends the cookie the one before it rotated.
+/// A tab waits only briefly for its turn, then refreshes anyway, and the lock
+/// goes back when the task ends, however it ends.
 ///
 /// # Errors
 ///
@@ -60,7 +62,7 @@ pub async fn ensure_fresh(
     let (tx, rx) = oneshot::channel();
     dioxus::core::spawn_forever(async move {
         let _guard = guard;
-        let lock = CrossTabLock::acquire().await;
+        let _lock = CrossTabLock::acquire().await;
         // The refresh token rides in the HttpOnly cookie, which the browser
         // sends on its own.
         let http = client.peek().clone();
@@ -82,7 +84,6 @@ pub async fn ensure_fresh(
                 Err(e)
             }
         };
-        lock.release();
         let _ = tx.send(result);
     });
 
