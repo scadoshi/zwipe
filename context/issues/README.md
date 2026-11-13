@@ -178,6 +178,7 @@ Who checked, on which live build, what they saw.
 | [480](480-deck-shortcuts-missing-keys.md) | The deck page's shortcuts sheet leaves out keys that work | fixing | thinker | - |
 | [483](483-card-row-cursor.md) | The Commander maybeboard, Activity and Playstyle have no keyboard cursor | fixing | laptop | issue/483-card-cursor |
 | [484](484-deck-list-ghost-rows.md) | The Decks list's loading ghost shows three decks on a wide screen | fixing | thinker | - |
+| [476](476-new-build-notice.md) | A web page that stays open never hears of a newer build | fixing | laptop | issue/476-new-build-notice |
 
 ## Waiting for live verification
 

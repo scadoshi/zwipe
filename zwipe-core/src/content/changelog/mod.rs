@@ -57,6 +57,7 @@ pub const UPCOMING: &[Release] = &[
             "On the web, a dialog opens with the cursor in its first field or on its main button, and hands focus back when it closes",
             "Printings names the card at its top, and on a phone shows each printing's set, number and place as well as its artist, on the web and in the app",
             "A filter section opens with its choices appearing whole and in place, so a quick tap lands where you aimed, on the web and in the app",
+            "On the web, a page left open says when a new version is out, with a Reload button",
         ],
     },
     Release {

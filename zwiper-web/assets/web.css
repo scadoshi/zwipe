@@ -3073,3 +3073,13 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
         padding: 0 1rem 1rem;
     }
 }
+
+/* ---- New version notice ----
+   The announcement banner, kept until its × or Reload: no countdown bar. */
+.new-build-notice .banner-progress {
+    display: none;
+}
+
+.new-build-notice .new-build-reload {
+    margin-left: 0.75rem;
+}

@@ -1,16 +1,22 @@
-//! Moves to a newer build at the next page change. The deploy bakes its
-//! commit into the bundle (`ZWIPER_BUILD`) and writes the same commit to
-//! `/version.json`. After a move the leave guard lets through, the app
-//! fetches that file, at most once per five minutes; once it names another
-//! build, the page the move went to loads in full, so the browser fetches
-//! the new bundle. Nothing polls: only a page change asks. A build without
-//! `ZWIPER_BUILD` (a local one) never asks.
+//! Moves to a newer build at the next page change, and tells a page that
+//! stays put that one is live. The deploy bakes its commit into the bundle
+//! (`ZWIPER_BUILD`) and writes the same commit to `/version.json`.
+//!
+//! After a move the leave guard lets through, the app fetches that file, at
+//! most once per five minutes; once it names another build, the page the
+//! move went to loads in full, so the browser fetches the new bundle.
+//!
+//! A page that stays also asks as the window takes focus or comes back into
+//! view, and every five minutes while it shows, at most once a minute
+//! ([`use_new_build_watch`]). Once a newer build is known,
+//! [`NewBuildNotice`] offers it: "New version available" with Reload, until
+//! it is dismissed or used. It never takes focus and never reloads by
+//! itself. A build without `ZWIPER_BUILD` (a local one) never asks.
+
+use components::Banner;
+use dioxus::prelude::*;
 
 /// The build this bundle is, baked in by the deploy.
-#[cfg_attr(
-    not(target_arch = "wasm32"),
-    expect(dead_code, reason = "the browser build reads it")
-)]
 const RUNNING_BUILD: Option<&str> = option_env!("ZWIPER_BUILD");
 
 /// Called after every move the leave guard lets through, once the URL is
@@ -21,6 +27,59 @@ pub(crate) fn after_move() {
     #[cfg(target_arch = "wasm32")]
     if let Some(running) = RUNNING_BUILD {
         browser::after_move(running);
+    }
+}
+
+/// The newer build the notice offers, once one is known. `Copy`: one signal,
+/// from [`use_new_build_watch`].
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct NewBuild(Signal<Option<String>>);
+
+/// Fires whenever the page should ask, while it shows: as the window takes
+/// focus, as the tab comes back into view, and every five minutes.
+#[cfg_attr(
+    not(target_arch = "wasm32"),
+    expect(dead_code, reason = "the browser build installs it")
+)]
+const WATCH_JS: &str = "const ask = () => { if (document.visibilityState === 'visible') dioxus.send(1); }; window.addEventListener('focus', ask); document.addEventListener('visibilitychange', ask); setInterval(ask, 300000); await new Promise(() => {});";
+
+/// Watches for a newer build while the page stays put and provides what
+/// [`NewBuildNotice`] shows. Mount once, at the app's root.
+pub fn use_new_build_watch() -> NewBuild {
+    let live = use_signal(|| None);
+    use_hook(move || {
+        #[cfg(target_arch = "wasm32")]
+        if let Some(running) = RUNNING_BUILD {
+            browser::watch(running, live);
+        }
+    });
+    use_context_provider(|| NewBuild(live))
+}
+
+/// "New version available" with Reload, in the corner where announcements
+/// show, while a build newer than this one is live. Its × dismisses it for
+/// that build: the banner is keyed by the build, so a later one shows again.
+#[component]
+pub fn NewBuildNotice() -> Element {
+    let NewBuild(live) = use_context();
+    let Some(build) = rules::notice_for(RUNNING_BUILD.unwrap_or_default(), live().as_deref())
+    else {
+        return rsx! {};
+    };
+    rsx! {
+        div { class: "banner-stack new-build-notice", role: "status",
+            Banner { key: "{build}",
+                "New version available"
+                button {
+                    r#type: "button",
+                    class: "btn-action new-build-reload",
+                    onclick: move |_| {
+                        document::eval("location.reload()");
+                    },
+                    "Reload"
+                }
+            }
+        }
     }
 }
 
@@ -48,6 +107,21 @@ mod rules {
     struct VersionFile {
         /// The live build's commit.
         build: String,
+    }
+
+    /// The least time between two asks from a page that stays: a minute.
+    const POLL_EVERY_MS: f64 = 60_000.0;
+
+    /// Whether a page that stays asks at `now_ms` (a focus, a return to view,
+    /// the five-minute tick), given the last fetch at `last_ms`.
+    pub(super) fn poll_due(last_ms: Option<f64>, now_ms: f64) -> bool {
+        last_ms.is_none_or(|last| now_ms - last >= POLL_EVERY_MS)
+    }
+
+    /// The build the notice offers: `live` when it is known and is not
+    /// `running`.
+    pub(super) fn notice_for(running: &str, live: Option<&str>) -> Option<String> {
+        live.filter(|live| *live != running).map(str::to_owned)
     }
 
     /// Whether a move at `now_ms` fetches the version file, given the last
@@ -83,6 +157,7 @@ mod rules {
 mod browser {
     use std::cell::Cell;
 
+    use dioxus::prelude::*;
     use wasm_bindgen::JsCast;
     use wasm_bindgen_futures::JsFuture;
     use web_sys::{RequestCache, RequestInit, Response, Window};
@@ -98,6 +173,48 @@ mod browser {
         static LAST_ASKED: Cell<Option<f64>> = const { Cell::new(None) };
         /// Whether a newer build is known to be live.
         static NEWER_LIVE: Cell<bool> = const { Cell::new(false) };
+        /// Where a newer build goes for the notice, once the root watches.
+        static NOTICE: Cell<Option<Signal<Option<String>>>> = const { Cell::new(None) };
+    }
+
+    /// Tells the notice that `live` is the newer build.
+    fn offer(live: String) {
+        if let Some(mut notice) = NOTICE.get() {
+            notice.set(Some(live));
+        }
+    }
+
+    /// [`super::use_new_build_watch`] for the bundle built as `running`: hands
+    /// the notice its signal and asks each time [`super::WATCH_JS`] fires.
+    pub(super) fn watch(running: &'static str, notice: Signal<Option<String>>) {
+        NOTICE.set(Some(notice));
+        spawn(async move {
+            let mut fires = document::eval(super::WATCH_JS);
+            while fires.recv::<u8>().await.is_ok() {
+                poll(running);
+            }
+        });
+    }
+
+    /// One ask from a page that stays, at most once a minute.
+    fn poll(running: &'static str) {
+        let Some(window) = web_sys::window() else {
+            return;
+        };
+        let asked_at = js_sys::Date::now();
+        if !rules::poll_due(LAST_ASKED.get(), asked_at) {
+            return;
+        }
+        LAST_ASKED.set(Some(asked_at));
+        wasm_bindgen_futures::spawn_local(async move {
+            let live = fetch_live(&window).await;
+            if rules::is_newer(running, live.as_deref())
+                && let Some(live) = live
+            {
+                NEWER_LIVE.set(true);
+                offer(live);
+            }
+        });
     }
 
     /// [`super::after_move`] for the bundle built as `running`.
@@ -124,6 +241,9 @@ mod browser {
                 return;
             }
             NEWER_LIVE.set(true);
+            if let Some(live) = live {
+                offer(live);
+            }
             let on = window.location().href().unwrap_or_default();
             let elapsed = js_sys::Date::now() - asked_at;
             if rules::reload_on_answer(&moved_to, &on, elapsed, leave_guard::is_armed()) {
@@ -165,6 +285,39 @@ mod tests {
         assert!(
             HEADERS.contains("/version.json\n  ! Cache-Control\n  Cache-Control: no-store\n"),
             "the version file is never stored"
+        );
+    }
+
+    #[test]
+    fn a_page_that_stays_asks_on_focus_at_most_once_a_minute() {
+        assert!(poll_due(None, 0.0), "the first focus asks");
+        assert!(
+            !poll_due(Some(1_000.0), 1_000.0 + 59_999.0),
+            "not again within the minute"
+        );
+        assert!(poll_due(Some(1_000.0), 1_000.0 + 60_000.0), "at a minute");
+        assert!(
+            !poll_due(Some(5_000.0), 4_000.0),
+            "a clock that went back waits"
+        );
+    }
+
+    #[test]
+    fn the_notice_offers_only_a_build_other_than_this_one() {
+        assert_eq!(
+            notice_for("aaa", Some("bbb")).as_deref(),
+            Some("bbb"),
+            "a newer build is offered"
+        );
+        assert_eq!(
+            notice_for("aaa", Some("aaa")),
+            None,
+            "the running build is not"
+        );
+        assert_eq!(
+            notice_for("aaa", None),
+            None,
+            "nothing known, nothing offered"
         );
     }
 

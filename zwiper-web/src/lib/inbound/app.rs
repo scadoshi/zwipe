@@ -11,6 +11,7 @@ use dioxus::prelude::*;
 use zwipe_core::domain::logo;
 use zwipe_core::domain::user::models::settings::PipStyle;
 
+use crate::inbound::chrome::fresh_build::{NewBuildNotice, use_new_build_watch};
 use crate::inbound::chrome::hint_topic::{HintHost, HintTopic, InfoButton};
 use crate::inbound::chrome::leave_guard::{self, GuardedHistory, RouteOverlays};
 use crate::inbound::chrome::overlay_steps::StepMove;
@@ -47,6 +48,8 @@ pub fn App() -> Element {
     caches::use_root_caches();
     catalog::use_catalog_cache();
     card_stores::use_card_stores();
+    // A page that stays put hears of a newer build.
+    use_new_build_watch();
     // Dialogs and sheets register here, so Esc closes the top one.
     let mut overlay_back_stack = use_overlay_back_stack();
     use_context_provider(|| overlay_back_stack);
@@ -157,6 +160,7 @@ pub fn App() -> Element {
                     ShortcutsSheet { open: shortcuts_open }
                     HintHost {}
                     DialogHostView {}
+                    NewBuildNotice {}
                 }
             }
         }
