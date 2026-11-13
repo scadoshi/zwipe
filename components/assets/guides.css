@@ -217,6 +217,14 @@
     transition: border-color 0.15s;
 }
 
+/* On a touch screen the search reads at 16px, under which iOS zooms the
+   page into the field as it takes focus. */
+@media (pointer: coarse) {
+    .guide-search-input {
+        font-size: 1rem;
+    }
+}
+
 .guide-search-input:focus {
     outline: none;
     border-color: var(--accent-primary);

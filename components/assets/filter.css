@@ -165,6 +165,14 @@
     border-radius: 0.5rem;
 }
 
+/* On a touch screen a compact field reads at 16px, under which iOS zooms
+   the page into the field as it takes focus. */
+@media (pointer: coarse) {
+    .input-compact {
+        font-size: 1rem;
+    }
+}
+
 /* A compact field in the kit's clear wrap keeps the compact spacing under
    it. */
 .input-clear-wrap:has(> .input-compact) {
