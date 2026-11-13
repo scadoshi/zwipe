@@ -47,3 +47,14 @@ Scotty, via the composer: ship (c) and (a) as on this branch; (b) stays a later 
 ## Not checked
 - A real phone. Production Cloudflare: the `_headers` splat rules (`/assets/*.wasm`) need a preview deploy to confirm Pages applies them and that `! Cache-Control` drops the `/*` value.
 - The wasm-opt pass: dx 0.7.10 ran none here, and production's wasm is the same size as my baseline (8.41 vs 8.44 MB).
+
+## Follow-up: the immutable rule cached a 404
+Surfer, after (a) shipped: a reload right after a deploy stayed blank. Chrome held a 404 for the new build's JS with `Cache-Control: public, max-age=31536000, immutable`, and kept serving it from its cache.
+
+Mechanism:
+- The new `index.html` went live before its hashed JS reached every edge, so the browser asked an edge for an `/assets/*.js` it did not have yet.
+- Pages answers a missing file with its SPA fallback: `index.html` with a 200, carrying the `_headers` rules for the requested path, the immutable `/assets/*.js` rule included.
+- `zwiper-web/functions/_middleware.js` turns a 200 `text/html` on an unrouted path into a 404 and keeps the response's headers, so the 404 went out immutable for a year.
+- The bad entry is keyed to that build's hashed URL: the next deploy that changes the bundle frees it, a deploy with an identical bundle does not.
+
+Decision (the composer): keep `Cache-Control: no-cache` everywhere and do not mark `/assets` immutable again, in `_headers` or anywhere else. Setting the header from the middleware by status (immutable only on a 200 for a `-dxh<hash>` file, `no-store` on the fallback) would work, but it is an edge case only a live deploy can test, for about 100 to 150 ms of 304s on a warm load. (c) stays shipped.
