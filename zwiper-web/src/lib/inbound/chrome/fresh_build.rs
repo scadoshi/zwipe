@@ -66,17 +66,20 @@ pub fn NewBuildNotice() -> Element {
     else {
         return rsx! {};
     };
+    // A key only remounts inside a list, so the one banner is a list of one.
     rsx! {
         div { class: "banner-stack new-build-notice", role: "status",
-            Banner { key: "{build}",
-                "New version available"
-                button {
-                    r#type: "button",
-                    class: "btn-action new-build-reload",
-                    onclick: move |_| {
-                        document::eval("location.reload()");
-                    },
-                    "Reload"
+            for build in [build] {
+                Banner { key: "{build}",
+                    "New version available"
+                    button {
+                        r#type: "button",
+                        class: "btn-action new-build-reload",
+                        onclick: move |_| {
+                            document::eval("location.reload()");
+                        },
+                        "Reload"
+                    }
                 }
             }
         }
@@ -266,6 +269,63 @@ mod browser {
         }
         let body = JsFuture::from(response.text().ok()?).await.ok()?;
         rules::live_build(&body.as_string()?)
+    }
+}
+
+#[cfg(test)]
+mod notice_tests {
+    use dioxus::core::Mutations;
+    use dioxus::prelude::*;
+
+    use super::{NewBuild, NewBuildNotice};
+
+    /// The notice under a root that offers `bbb`.
+    fn app() -> Element {
+        let live = use_signal(|| Some("bbb".to_owned()));
+        use_context_provider(|| NewBuild(live));
+        rsx! { NewBuildNotice {} }
+    }
+
+    /// The click handlers `edits` attaches: the banner's × and Reload each
+    /// time a banner mounts.
+    fn clicks_attached(edits: &Mutations) -> usize {
+        edits
+            .edits
+            .iter()
+            .filter(|edit| {
+                matches!(edit, dioxus::core::Mutation::NewEventListener { name, .. } if name == "click")
+            })
+            .count()
+    }
+
+    #[test]
+    fn a_later_build_mounts_a_fresh_banner_so_a_dismissed_one_shows_again() {
+        let mut dom = VirtualDom::new(app);
+        let first = dom.rebuild_to_vec();
+        assert_eq!(clicks_attached(&first), 2, "the banner's × and Reload");
+
+        dom.in_scope(ScopeId::APP, || {
+            let NewBuild(mut live) = consume_context();
+            live.set(Some("ccc".to_owned()));
+        });
+        let later = dom.render_immediate_to_vec();
+        assert_eq!(
+            clicks_attached(&later),
+            2,
+            "a new build mounts a new banner, whose dismissal starts over: {:#?}",
+            later.edits
+        );
+
+        dom.in_scope(ScopeId::APP, || {
+            let NewBuild(mut live) = consume_context();
+            live.set(Some("ccc".to_owned()));
+        });
+        let again = dom.render_immediate_to_vec();
+        assert_eq!(
+            clicks_attached(&again),
+            0,
+            "the same build asked again keeps its banner, dismissed or not"
+        );
     }
 }
 

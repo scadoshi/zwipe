@@ -25,5 +25,14 @@ Same setup as the before, 3 of 3 runs:
 - × hides it and a later focus doesn't bring it back;
 - Reload reloads the page.
 
+## Follow-up: a dismissed notice never showed for a later build
+Surfer: after × on the notice for one build, a newer build deployed later showed no notice.
+
+- Cause: the `Banner` holds its dismissed state, and `key: "{build}"` was meant to remount it per build, but Dioxus 0.7 compares keys only between items of a list. A lone keyed component is diffed in place, so the dismissed banner stayed dismissed for every later build. The once-a-minute throttle and the five-minute tick were not involved: the later build was fetched and offered.
+- Before: a build stamped `aaa`, served locally with `version.json` switched by hand, asked by a focus event a minute apart. bbb showed, × hid it, ccc offered later showed nothing. The new test failed: offering ccc produced no DOM edits at all.
+- Fix: the banner renders as a list of one (`for build in [build]`), so a new build's key mounts a fresh banner.
+- Test: `a_later_build_mounts_a_fresh_banner_so_a_dismissed_one_shows_again` counts the click handlers a render attaches: a later build mounts the × and Reload again; the same build offered again (negative control) attaches none.
+- After, same setup: bbb shows, × hides it, bbb asked again stays hidden, ccc shows.
+
 ## Verification
 -
