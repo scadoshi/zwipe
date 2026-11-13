@@ -1036,3 +1036,42 @@ fn a_quantity_fix_goes_on_the_decks_undo_log() {
         "Cards' Undo puts the three copies back"
     );
 }
+
+#[test]
+fn a_fix_after_an_edit_in_the_cards_records_the_copies_as_they_stand() {
+    let (profile, built) = two_cards("Elves");
+    let card = built.entries[0].deck_card.scryfall_data_id;
+    let mut state = loaded(&profile, built.clone());
+    // The Cards over the Profile raise Sol Ring to three copies and hand the deck back.
+    let mut edited = built;
+    edited.entries[0].deck_card.quantity = zwipe_core::domain::deck::Quantity::new(3).unwrap();
+    let _ = state.update(Action::DeckEdited(Box::new(edited)));
+    let effects = state.update(Action::SetQuantity { card, quantity: 1 });
+    let effects = state.update(Action::QuantitySet {
+        ticket: ticket_of(&effects),
+    });
+    let baselines: Vec<i32> = effects
+        .iter()
+        .filter_map(|e| match e {
+            Effect::RecordUndo { action, .. } => match **action {
+                UndoAction::QuantityChanged { baseline, .. } => Some(baseline),
+                _ => None,
+            },
+            _ => None,
+        })
+        .collect();
+    assert_eq!(
+        baselines,
+        [3],
+        "Undo puts back the three copies the Cards left"
+    );
+}
+
+#[test]
+fn an_edit_for_another_deck_changes_nothing() {
+    let (profile, built) = two_cards("Elves");
+    let mut state = loaded(&profile, built.clone());
+    let (_, other) = two_cards("Goblins");
+    let _ = state.update(Action::DeckEdited(Box::new(other)));
+    assert_eq!(state.deck(), Some(&built));
+}

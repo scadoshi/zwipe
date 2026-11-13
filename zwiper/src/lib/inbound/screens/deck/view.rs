@@ -422,8 +422,9 @@ impl Driver {
     }
 }
 
-/// The deck the deck route has loaded, which its Cards layer opens on without a fetch. The deck
-/// view provides it and keeps it to the deck it shows.
+/// The deck the deck route holds, the one source both its Profile and its Cards layer read: the
+/// deck view fills it from its load, the Cards open on it without a fetch and write each edit back
+/// into it, and the Profile takes those edits.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct HeldDeck(pub Signal<Option<Deck>>);
 
@@ -502,15 +503,17 @@ pub fn ViewDeck(deck_id: Uuid, view: Option<DeckView>) -> Element {
             held.set(shown);
         }
     });
-    // Closing the Cards loads the deck again, in place, so the Profile shows what changed there.
-    let mut was_open = use_signal(|| view.is_some());
-    use_effect(use_reactive!(|view| {
-        let open = view.is_some();
-        if *was_open.peek() && !open {
-            driver.dispatch(Action::Load(deck_id));
+    // The Cards write their edits into the held deck; the Profile takes each, so it shows the deck
+    // as it stands without a fetch.
+    use_effect(move || {
+        let edited = held.read().clone();
+        let Some(edited) = edited else {
+            return;
+        };
+        if driver.model.peek().deck() != Some(&edited) {
+            driver.dispatch(Action::DeckEdited(Box::new(edited)));
         }
-        was_open.set(open);
-    }));
+    });
 
     // Fetches the deck on mount and again when the route's deck id changes
     // without a remount, as cloning does (ViewDeck to ViewDeck).

@@ -1689,3 +1689,50 @@ fn a_quick_add_whose_printings_fail_adds_the_pick() {
     };
     assert_eq!(request.scryfall_data_id, id(&signet).to_string());
 }
+
+#[test]
+fn a_star_made_here_is_on_the_deck_the_next_open_starts_from() {
+    let (mut state, cards) = loaded();
+    let starred = id(&cards[0]);
+    let _ = state.update(Action::ToggleMvp {
+        card_id: starred,
+        now: chrono::Utc::now(),
+    });
+    let held = state.deck().expect("a loaded screen hands its deck back");
+    let star = |deck: &Deck| {
+        deck.entries
+            .iter()
+            .find(|e| e.deck_card.scryfall_data_id == starred)
+            .and_then(|e| e.deck_card.mvp_at)
+    };
+    assert!(star(&held).is_some(), "the held deck carries the star");
+
+    // Closing and opening the Cards again starts a new screen on the held deck, with no fetch.
+    let (mut reopened, _, ticket, _) = loading(blank());
+    let _ = reopened.update(Action::ProfileLoaded {
+        ticket,
+        profile: Box::new(held.deck_profile.clone()),
+    });
+    let _ = reopened.update(Action::Loaded {
+        ticket,
+        deck: Box::new(held),
+        zone: Box::default(),
+    });
+    let again = reopened.deck().expect("the reopened screen has the deck");
+    assert!(
+        star(&again).is_some(),
+        "the star is still there on reopening"
+    );
+}
+
+#[test]
+fn the_deck_handed_back_counts_the_main_board_as_it_stands() {
+    let (mut state, cards) = loaded();
+    let before = state.deck().expect("loaded").deck_profile.card_count;
+    let _ = state.update(Action::ChangeQuantity {
+        card_id: id(&cards[0]),
+        delta: 2,
+    });
+    let after = state.deck().expect("loaded").deck_profile.card_count;
+    assert_eq!(after, before + 2, "the Profile's count follows the edit");
+}

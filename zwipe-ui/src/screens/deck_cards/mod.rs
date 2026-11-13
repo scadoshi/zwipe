@@ -17,6 +17,7 @@ use zwipe_core::domain::card::search_card::card_filter::price_currency::PriceCur
 use zwipe_core::domain::card::search_card::card_filter::query::CardQuery;
 use zwipe_core::domain::card::search_card::cards::Cards;
 use zwipe_core::domain::card::search_card::group_cards::GroupByOption;
+use zwipe_core::domain::deck::validate_deck::{DeckCommandZone, validate_deck};
 use zwipe_core::domain::deck::{
     Board, Deck, DeckCard, DeckEntry, DeckProfile, Quantity, deck_metrics,
 };
@@ -709,6 +710,39 @@ enum HintOffer {
     #[default]
     Waiting,
     Offered,
+}
+
+impl State {
+    /// The deck as edited here, once it has loaded: the profile with its main board count, every
+    /// entry but the command zone's with their quantities, boards and stars as they stand, the
+    /// command zone's cards, and the warnings its format raises over them. A screen that holds the
+    /// deck too (the Profile under these Cards) takes it from here.
+    #[must_use]
+    pub fn deck(&self) -> Option<Deck> {
+        if !self.loaded {
+            return None;
+        }
+        let mut profile = self.profile.clone()?;
+        profile.card_count = self
+            .entries
+            .iter()
+            .filter(|e| e.deck_card.board == Board::Deck)
+            .map(|e| i64::from(*e.deck_card.quantity))
+            .fold(0, i64::saturating_add);
+        let zone = DeckCommandZone {
+            commander: self.zone.commander.as_ref(),
+            partner_commander: self.zone.partner.as_ref(),
+            background: self.zone.background.as_ref(),
+            signature_spell: self.zone.signature.as_ref(),
+        };
+        let warnings = validate_deck(&profile, &self.entries, &zone);
+        Some(Deck {
+            deck_profile: profile,
+            entries: self.entries.clone(),
+            warnings,
+            command_zone_cards: self.command_zone_cards.clone(),
+        })
+    }
 }
 
 impl Default for State {

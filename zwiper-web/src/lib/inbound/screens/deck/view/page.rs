@@ -115,6 +115,19 @@ pub fn DeckWidePage(
         }
     });
 
+    // A warning's quantity fix goes through the editor, the one deck the Profile and the Cards
+    // read, so it records its undo from the copies as they stand, edits in the Cards included.
+    let edit = ed.edit_actions();
+    let fixes = WarningFixes {
+        fix_quantity: Callback::new(move |(card, quantity): (Uuid, i32)| {
+            let now = meta.peek().get(&card).map_or(1, |m| m.qty);
+            let step = quantity.saturating_sub(now);
+            if step != 0 {
+                edit.change_quantity.call((card, step, true));
+            }
+        }),
+        ..fixes
+    };
     let held_profile = profile();
     let format = held_profile.as_ref().and_then(|p| p.format);
     let oathbreaker = format.is_some_and(|f| f.has_signature_spell());

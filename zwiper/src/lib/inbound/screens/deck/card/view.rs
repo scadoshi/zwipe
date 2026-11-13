@@ -688,6 +688,18 @@ pub fn View(deck_id: Uuid) -> Element {
         reveal,
     };
 
+    // Each edit here writes the deck as it stands back into the deck route's held deck, so the
+    // Profile and the next open read it.
+    use_effect(move || {
+        let Some(HeldDeck(mut held)) = held else {
+            return;
+        };
+        let edited = driver.model.read().deck();
+        if edited.is_some() && *held.peek() != edited {
+            held.set(edited);
+        }
+    });
+
     use_effect(move || {
         let filter = Box::new(filter_builder.peek().clone());
         match pending.clone() {

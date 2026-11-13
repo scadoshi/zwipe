@@ -319,6 +319,9 @@ pub enum Action {
         /// The deck with its entries, warnings and command-zone cards.
         deck: Box<Deck>,
     },
+    /// The deck as another screen edited it (its Cards over the Profile): it replaces the deck
+    /// shown, with no fetch, when it is the same deck and the deck has loaded.
+    DeckEdited(Box<Deck>),
     /// The commander's card arrived for the fetch holding `ticket`.
     CommanderLoaded {
         /// The ticket from the [`Effect::FetchCommander`] this answers.
@@ -750,6 +753,10 @@ impl State {
                 self.deck_loaded(ticket, *deck);
                 Vec::new()
             }
+            Action::DeckEdited(deck) => {
+                self.deck_edited(*deck);
+                Vec::new()
+            }
             Action::CommanderLoaded { ticket, card } => {
                 if self.commander_waiting == Some(ticket) {
                     self.commander_waiting = None;
@@ -800,6 +807,19 @@ impl State {
             Action::SkipsCleared { ticket } => self.land(ticket, Landed::SkipsCleared),
             Action::Deleted { ticket } => self.land(ticket, Landed::Deleted),
         }
+    }
+
+    fn deck_edited(&mut self, deck: Deck) {
+        if self.deck_id != Some(deck.deck_profile.id)
+            || !matches!(self.deck.value, Fetched::Loaded(_))
+        {
+            return;
+        }
+        let metrics =
+            (!deck.entries.is_empty() || !deck.command_zone_cards.is_empty()).then(|| {
+                DeckMetrics::from_entries_and_command_zone(&deck.entries, &deck.command_zone_cards)
+            });
+        self.deck.value = Fetched::Loaded(Loaded { deck, metrics });
     }
 
     fn deck_loaded(&mut self, ticket: Ticket, deck: Deck) {
