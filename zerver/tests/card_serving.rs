@@ -644,7 +644,52 @@ async fn quick_add_puts_an_exact_name_first_even_past_the_limit(pool: sqlx::PgPo
 
     let names = quick_add_names(&app, deck_id, &token, "Mount").await;
     assert_eq!(
-        names[0], "A Mountain Pass",
-        "a partial name keeps the name order: {names:?}"
+        names[..2],
+        ["Mountain", "A Mountain Pass"],
+        "a name that starts with the query leads, then the rest by name: {names:?}"
+    );
+}
+
+#[sqlx::test]
+async fn quick_add_lists_names_that_start_with_the_query_first(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, uid) = app.register("soladder").await;
+    app.verify_email(&uid).await;
+    let (status, deck) = app
+        .post(
+            DECK_ROUTE,
+            json!({ "name": "Artifacts", "format": "commander" }),
+            Some(&token),
+        )
+        .await;
+    assert_eq!(status, StatusCode::CREATED, "{deck}");
+    let deck_id: Uuid = deck["id"].as_str().unwrap().parse().unwrap();
+
+    let cards: Vec<_> = [
+        "Abby, Merciless Soldier",
+        "Absolute Grace",
+        "Absolute Law",
+        "Absolute Virtue",
+        "Absolver Thrull",
+        "Pristine Sol",
+        "Sol Talisman",
+        "Solemn Simulacrum",
+    ]
+    .into_iter()
+    .map(|name| card(name).type_line("Artifact"))
+    .collect();
+    seed_cards(&pool, &cards).await;
+
+    let names = quick_add_names(&app, deck_id, &token, "Sol").await;
+    assert_eq!(
+        names,
+        [
+            "Solemn Simulacrum",
+            "Sol Talisman",
+            "Abby, Merciless Soldier",
+            "Pristine Sol",
+            "Absolute Grace"
+        ],
+        "names that start with it, then a word that does, then the rest, each by the database's name order"
     );
 }

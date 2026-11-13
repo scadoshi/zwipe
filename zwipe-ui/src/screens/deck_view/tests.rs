@@ -1075,3 +1075,52 @@ fn an_edit_for_another_deck_changes_nothing() {
     let _ = state.update(Action::DeckEdited(Box::new(other)));
     assert_eq!(state.deck(), Some(&built));
 }
+
+#[test]
+fn warnings_stay_for_the_visit_after_the_last_is_fixed() {
+    let (profile, mut built) = two_cards("Elves");
+    let card = built.entries[0].deck_card.scryfall_data_id;
+    built.warnings = vec![DeckWarning::with_action(
+        "Sol Ring exceeds",
+        card,
+        WarningAction::FixQuantity(1),
+    )];
+    let mut fixed = built.clone();
+    let mut state = loaded(&profile, built);
+    assert!(state.sections().contains(&Section::Warnings));
+
+    let effects = state.update(Action::SetQuantity { card, quantity: 1 });
+    let effects = state.update(Action::QuantitySet {
+        ticket: ticket_of(&effects),
+    });
+    let Some(ticket) = effects.iter().find_map(|e| match e {
+        Effect::FetchDeck { ticket, .. } => Some(ticket),
+        _ => None,
+    }) else {
+        panic!("the fix reloads the deck: {effects:?}");
+    };
+    fixed.warnings.clear();
+    let _ = state.update(Action::DeckLoaded {
+        ticket: *ticket,
+        deck: Box::new(fixed),
+    });
+    assert_eq!(
+        state.warnings().len(),
+        0,
+        "the fix cleared the last warning"
+    );
+    assert!(
+        state.sections().contains(&Section::Warnings),
+        "the panel stays, saying {NO_WARNINGS_LEFT}"
+    );
+    assert_eq!(state.badge(Section::Warnings).as_deref(), Some("0"));
+
+    let (clean, built) = two_cards("Clean");
+    let mut other = loaded(&clean, built);
+    assert!(
+        !other.sections().contains(&Section::Warnings),
+        "a deck that never warned shows no panel"
+    );
+    other = State::new();
+    assert!(!other.sections().contains(&Section::Warnings));
+}

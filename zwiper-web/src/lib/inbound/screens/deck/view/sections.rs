@@ -17,6 +17,7 @@ use zwipe_ui::deck::form::Slot;
 use zwipe_ui::deck::profile::DeckInfo;
 use zwipe_ui::deck::view::StatsProfile;
 use zwipe_ui::deck::warning::{self, Fix};
+use zwipe_ui::screens::deck_view;
 
 use crate::inbound::cards::otag::{OtagDescribe, OtagExamplesOpen};
 use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
@@ -166,9 +167,6 @@ pub fn WarningsSection(
     }
 }
 
-/// The Warnings panel's line once a fix has cleared the last warning.
-pub const NO_WARNINGS_LEFT: &str = "No warnings left";
-
 /// Warnings' body: each warning's message and, on the right, its fix where
 /// the owner's `actions` are given. Once a fix has cleared the last one it says so, so the
 /// panel stays where it was.
@@ -179,7 +177,7 @@ pub fn WarningsBody(warnings: Vec<DeckWarning>, actions: Option<WarningActions>)
         div { style: "display:flex;flex-direction:column;",
                 if warnings.is_empty() {
                     div { class: "settings-row deck-warning-row",
-                        span { class: "text-muted", "{NO_WARNINGS_LEFT}" }
+                        span { class: "text-muted", "{deck_view::NO_WARNINGS_LEFT}" }
                     }
                 }
                 for (i, item) in warnings.into_iter().enumerate() {

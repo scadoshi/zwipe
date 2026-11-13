@@ -16,6 +16,12 @@ pub(crate) fn DeckWarnings(
 ) -> Element {
     rsx! {
         div { style: "display:flex;flex-direction:column;",
+            // Once a fix clears the last warning the panel stays and says so.
+            if warnings.is_empty() {
+                div { class: "settings-row deck-warning-row",
+                    span { class: "text-muted", "{deck_view::NO_WARNINGS_LEFT}" }
+                }
+            }
             for warning in warnings.iter() {
                 div { class: "settings-row deck-warning-row",
                     span { class: "text-muted", "{warning}" }

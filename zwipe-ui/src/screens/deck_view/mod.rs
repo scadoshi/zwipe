@@ -698,6 +698,9 @@ enum HintOffer {
     Offered,
 }
 
+/// The Warnings panel's line once a fix has cleared the last warning.
+pub const NO_WARNINGS_LEFT: &str = "No warnings left";
+
 /// The deck view for one visit. Starts loading with no deck; send [`Action::Load`] to start the fetches.
 ///
 /// Every request takes a fresh [`Ticket`] from one [`Generation`], so a ticket names exactly one request. A fetch's reply lands only while its ticket is the one still out for that fetch; a request that changes the deck lands only while no [`Action::Load`] has come since.
@@ -716,6 +719,8 @@ pub struct State {
     mutations: Vec<(Ticket, Mutation)>,
     hint: HintOffer,
     tickets: Generation,
+    /// Whether this deck has shown warnings this visit; Warnings stays up after a fix clears the last one, so the page doesn't move under the next tap.
+    warned: bool,
 }
 
 impl State {
@@ -819,6 +824,7 @@ impl State {
             (!deck.entries.is_empty() || !deck.command_zone_cards.is_empty()).then(|| {
                 DeckMetrics::from_entries_and_command_zone(&deck.entries, &deck.command_zone_cards)
             });
+        self.warned |= !deck.warnings.is_empty();
         self.deck.value = Fetched::Loaded(Loaded { deck, metrics });
     }
 
@@ -827,8 +833,13 @@ impl State {
             (!deck.entries.is_empty() || !deck.command_zone_cards.is_empty()).then(|| {
                 DeckMetrics::from_entries_and_command_zone(&deck.entries, &deck.command_zone_cards)
             });
-        self.deck
-            .settle(ticket, Fetched::Loaded(Loaded { deck, metrics }));
+        let warned = !deck.warnings.is_empty();
+        if self
+            .deck
+            .settle(ticket, Fetched::Loaded(Loaded { deck, metrics }))
+        {
+            self.warned |= warned;
+        }
     }
 
     /// Lands the reply to the request holding `ticket`, when it is still waiting and is the kind `landed` answers.
@@ -845,7 +856,9 @@ impl State {
                         .iter()
                         .find(|e| e.deck_card.scryfall_data_id == card)
                 });
-                if let (Some(entry), Some(deck_id)) = (before, self.deck_id) {
+                if let (Some(entry), Some(deck_id)) = (before, self.deck_id)
+                    && *entry.deck_card.quantity != quantity
+                {
                     let baseline = *entry.deck_card.quantity;
                     effects.push(Effect::RecordUndo {
                         deck_id,
@@ -894,6 +907,9 @@ impl State {
     }
 
     fn load(&mut self, deck_id: Uuid) -> Vec<Effect> {
+        if self.deck_id != Some(deck_id) {
+            self.warned = false;
+        }
         self.deck_id = Some(deck_id);
         self.mutations.clear();
         let mut effects: Vec<Effect> = self
@@ -1103,7 +1119,7 @@ impl State {
                 Section::Tags => view::tag_count(profile) > 0,
                 Section::Distributions | Section::DrawOdds => charted,
                 Section::Mana => charted || profile.land_target.is_some(),
-                Section::Warnings => !self.warnings().is_empty(),
+                Section::Warnings => self.warned || !self.warnings().is_empty(),
             })
             .collect()
     }
