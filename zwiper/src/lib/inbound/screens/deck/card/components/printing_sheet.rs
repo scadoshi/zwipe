@@ -5,8 +5,8 @@
 //! index, and performs its effects.
 
 use components::{
-    ArtistChip, BottomSheet, CardPricesGhost, CoverFlow, DockAction, LoadFailed, TOAST_NORMAL,
-    ToastOptions, Toasts, icons, use_toast,
+    ArtistChip, BottomSheet, CardPricesGhost, CoverFlow, DockAction, LoadFailed, PrintingFacts,
+    TOAST_NORMAL, ToastOptions, Toasts, icons, use_toast,
 };
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
@@ -154,6 +154,7 @@ pub(crate) fn PrintingSheet(
             sheet.shows_save(),
         )
     };
+    let printings_count = printings.len();
 
     rsx! {
         // `sheet-over` lifts the backdrop and sheet above a details sheet
@@ -179,6 +180,7 @@ pub(crate) fn PrintingSheet(
                         if status == Status::Loading {
                             CardPricesGhost {}
                         } else if let Some(card) = visible_card {
+                            PrintingFacts { card: card.clone(), at: current_idx, count: printings_count }
                             ArtistChip { card: card.clone() }
                             CardInfoDisplay { card }
                         }

@@ -827,6 +827,38 @@ i.ms.ms-cost.ms-gp {
     height: 1.1em;
 }
 
+/* Which printing shows, under a narrow sheet's cover flow: the set (cut short first), the
+   number and the place among the printings, on one centered line. */
+.printing-facts {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    min-width: 0;
+}
+
+.printing-facts-set {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.printing-facts > :not(.printing-facts-set) {
+    flex: none;
+}
+
+.printing-facts-count {
+    color: var(--ink-text-muted, var(--text-muted));
+    font-size: 0.8rem;
+}
+
+/* Printings' title bar keeps the title clear of the × on both sides, so a long name stays
+   centered and is cut short before the button. */
+:is(.web-printing-sheet, .web-flow-sheet, .app-printing-sheet) .sheet-header {
+    padding-inline: 3.6rem;
+}
+
 /* Printings is titled with the card's name, cut short where the bar can't hold it. */
 :is(.web-printing-sheet, .web-flow-sheet, .app-printing-sheet) .sheet-title {
     min-width: 0;

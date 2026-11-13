@@ -30,5 +30,20 @@ laptop:
 - The app on a device or simulator (same `ArtistChip` and stylesheet).
 - Below the kit's modal width (the narrow web sheet and the app), the dialog's screen-reader name is the card's name alone. orangui's `BottomSheet` takes its `aria-label` from `title`. A `label` prop on it would give `Printings of <name>` there too.
 
+## Follow-up
+surfer's after (halo `~/surfer-shots/after-475/`):
+- **Title under the ×:** at 390 a long title ran under the × (a 342px title from x 24).
+- **Missing facts:** the narrow sheet still had no set, number or position.
+
+Cause: the × is absolutely placed at the header's left (`.sheet-close`, 1rem in, 2.1rem wide), and the centered title had the whole bar.
+
+Fix:
+- **Title:** the printing sheets' header pads 3.6rem on each side, so the title stays centered and ends, cut short, before the ×.
+- **Facts:** `components::PrintingFacts` puts the set (cut short first), the `#number` and `n of N` on one centered line above the artist, in the narrow web sheet and the app.
+
+Checked at 390 on local web with Asmoranomardicadaistinaculdacar:
+- the title spans 58 to 332px with the × at 16 to 50px, ending in an ellipsis;
+- the facts line reads `The List  #MH2-186  5 of 6` within the sheet.
+
 ## Verification
 -
