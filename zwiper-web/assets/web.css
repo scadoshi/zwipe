@@ -954,17 +954,16 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
     }
 }
 
-/* A modal or drawer stays put. The kit's header drag (the bottom sheet's
-   drag-to-dismiss) starts from no part of its header but the controls, and
-   an open one keeps its place over the drag's inline transform. The kit
-   turns a sheet into a modal or drawer at 60rem, so a sheet narrower than
-   that still drags. */
+/* A modal stays put. The kit's header drag starts from no part of its
+   header but the controls, and an open one keeps its place over the drag's
+   inline transform. A drawer pulls toward its edge (the kit's pull, which
+   wins over its resting place). */
 @media (min-width: 60rem) {
-    :is(.sheet-form-modal, .sheet-form-drawer) > .bottom-sheet > .sheet-header {
+    .sheet-form-modal > .bottom-sheet > .sheet-header {
         pointer-events: none;
     }
 
-    :is(.sheet-form-modal, .sheet-form-drawer) > .bottom-sheet > .sheet-header
+    .sheet-form-modal > .bottom-sheet > .sheet-header
         :is(button, a, input, select, textarea) {
         pointer-events: auto;
     }

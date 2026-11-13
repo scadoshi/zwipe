@@ -1213,6 +1213,82 @@ a.nav-dropdown-item.active:visited {
     transition: none !important;
 }
 
+/* Over a framed sheet's resting place (a drawer's or a wide sheet's own
+   transform, which a host may pin), the pull still moves it. */
+.sheet-form > .bottom-sheet.show.sheet-dragging {
+    transform: translateY(var(--sheet-drag, 0px)) !important;
+    transition: none !important;
+}
+
+.sheet-form > .bottom-sheet.show.sheet-dragging-right {
+    transform: translateX(var(--sheet-drag, 0px)) !important;
+    transition: none !important;
+}
+
+.sheet-form > .bottom-sheet.show.sheet-dragging-left {
+    transform: translateX(calc(-1 * var(--sheet-drag, 0px))) !important;
+    transition: none !important;
+}
+
+/* ---- Sheet handle (orangui::SheetHandle) ----
+   Where a sheet that pulls is dragged from: a short bar at the top of a
+   bottom sheet, a short upright bar on a drawer's inner edge, with a little
+   room around it to grab. A pointer that hovers sees grab over it and the
+   title bar, and grabbing while it pulls. */
+.sheet-handle {
+    position: absolute;
+    z-index: 2;
+    border-radius: 999px;
+    background: var(--border-secondary);
+    touch-action: none;
+}
+
+.sheet-handle::before {
+    content: "";
+    position: absolute;
+    inset: -0.5rem;
+}
+
+.sheet-handle-down {
+    top: 0.4rem;
+    left: 50%;
+    width: 2.25rem;
+    height: 4px;
+    translate: -50% 0;
+}
+
+.sheet-handle-right {
+    left: 0.4rem;
+    top: 50%;
+    width: 4px;
+    height: 2.25rem;
+    translate: 0 -50%;
+}
+
+.sheet-handle-left {
+    right: 0.4rem;
+    top: 50%;
+    width: 4px;
+    height: 2.25rem;
+    translate: 0 -50%;
+}
+
+.bottom-sheet.sheet-pulls > .sheet-header {
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+@media (hover: hover) {
+    .bottom-sheet.sheet-pulls > .sheet-header,
+    .bottom-sheet.sheet-pulls > .sheet-handle {
+        cursor: grab;
+    }
+
+    .bottom-sheet.sheet-pulls:is(.sheet-dragging, .sheet-dragging-right, .sheet-dragging-left) > :is(.sheet-header, .sheet-handle) {
+        cursor: grabbing;
+    }
+}
+
 /* On a light theme the sheet lifts off the page: its shadow doubles up,
    since a light shadow alone barely marks a cream edge on a cream page. */
 [class*="theme-"][class*="-light"] .bottom-sheet {

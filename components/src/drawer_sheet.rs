@@ -2,14 +2,16 @@
 //! draw: the kit's drawer along the right edge on a wide window and its
 //! bottom sheet below the breakpoint, or the drawer at every width, with a
 //! title bar (×, title and an optional `?`), the content and a dock at its
-//! bottom right. Below the kit's modal width it pulls away as the kit's
-//! [`BottomSheet`](crate::BottomSheet) does ([`use_sheet_drag_toward`]): a
-//! bottom sheet down by its title bar, a drawer at every width, which floats
-//! along the right edge there, to the right from anywhere on it, once a move
-//! runs sideways ([`SheetDrag::arm`](orangui::SheetDrag::arm)).
+//! bottom right. It pulls away at every width as the kit's
+//! [`BottomSheet`](crate::BottomSheet) does ([`use_sheet_drag_toward`]), its
+//! handle showing where: a bottom sheet down by its title bar or handle, a
+//! drawer toward its edge by them too, and with a touch from anywhere on it
+//! once a move runs sideways ([`SheetDrag::arm`](orangui::SheetDrag::arm)).
+//! A mouse pulls only from the title bar or the handle, so it selects and
+//! clicks in the content as usual.
 
 use dioxus::prelude::*;
-use orangui::{Pull, use_sheet_drag_toward};
+use orangui::{Pull, SheetHandle, use_sheet_drag_toward};
 
 use crate::media::{KIT_MODAL_PX, use_min_width};
 use crate::{ActionDock, Button, ButtonVariant, DockPlace, SheetDim, SheetFrame, SheetWide};
@@ -71,6 +73,16 @@ const CLOSE_MS: u32 = 300;
 /// `title`, and `aria-modal` while it dims the page. `data_card` is the id of
 /// the card it shows, for the keys that act on that card. `edge` is the edge a drawer at every
 /// width runs along, the right unless given; it is pulled toward that edge.
+/// The way the sheet pulls to close: a drawer, at every width (`every_width`) or on a `wide`
+/// window, toward its `edge`; below the wide window a bottom sheet, down.
+fn drawer_pull(every_width: bool, wide: bool, edge: DrawerEdge) -> Pull {
+    if every_width || wide {
+        edge.pull()
+    } else {
+        Pull::Down
+    }
+}
+
 #[component]
 pub fn DrawerSheet(
     open: ReadSignal<bool>,
@@ -112,18 +124,16 @@ pub fn DrawerSheet(
     let layer_style = held()
         .filter(|_| shown || content_up())
         .map(|z| format!("--overlay-z: {z};"));
-    // Below the kit's modal width the sheet's title bar pulls it away: a
-    // bottom sheet down, a drawer at every width, floating along the right
-    // edge, to the right.
+    // It pulls away at every width: below the kit's modal width a bottom sheet
+    // down; a drawer, at every width or on a wide window, toward its edge.
     let wide = use_min_width(KIT_MODAL_PX);
-    let pulls = !wide();
-    let toward = if every_width { edge.pull() } else { Pull::Down };
+    let toward = drawer_pull(every_width, wide(), edge);
     // A sheet that dims the page at this width is modal; an undimmed drawer leaves the page in use.
     let modal = (dim == SheetDim::Always || !wide()).then_some("true");
     let close = use_callback(move |()| on_close.call(()));
     let drag = use_sheet_drag_toward(open, close, toward);
-    let pulled = if pulls { drag.class() } else { "" };
-    let sheet_style = match (layer_style.clone(), drag.style().filter(|_| pulls)) {
+    let pulled = drag.class();
+    let sheet_style = match (layer_style.clone(), drag.style()) {
         (Some(layer), Some(drag)) => Some(format!("{layer} {drag}")),
         (layer, drag) => layer.or(drag),
     };
@@ -142,35 +152,33 @@ pub fn DrawerSheet(
                 onpointercancel: move |evt| drag.cancel(&evt),
             }
             div {
-                class: if shown { "bottom-sheet show {reach}{side} {class}{pulled}" } else { "bottom-sheet {reach}{side} {class}" },
+                class: if shown { "bottom-sheet show sheet-pulls {reach}{side} {class}{pulled}" } else { "bottom-sheet {reach}{side} {class}" },
                 style: sheet_style,
                 "data-card": data_card,
                 role: "dialog",
                 "aria-label": (!title.is_empty()).then(|| title.clone()),
                 "aria-modal": modal,
                 onmounted: move |evt| drag.mounted(evt),
-                // A drawer is pulled toward its edge from anywhere on it: its content scrolls
-                // only vertically (`touch-action: pan-y`), and the pull starts only once a move
-                // runs sideways, so a vertical swipe scrolls the content with the sheet left
-                // untouched.
+                // A touch pulls a drawer toward its edge from anywhere on it: its content
+                // scrolls only vertically (`touch-action: pan-y`), and the pull starts only once
+                // a move runs sideways, so a vertical swipe scrolls the content with the sheet
+                // left untouched. A mouse pulls from the title bar or the handle only, so it
+                // selects and clicks in the content as usual.
                 onpointerdown: move |evt| {
-                    if pulls && toward != Pull::Down {
+                    if toward != Pull::Down && evt.pointer_type() == "touch" {
                         drag.arm(&evt);
                     }
                 },
                 onpointermove: move |evt| drag.follow(&evt),
                 onpointerup: move |evt| drag.release(&evt),
                 onpointercancel: move |evt| drag.cancel(&evt),
+                SheetHandle { toward, drag }
                 div {
                     class: "sheet-header",
                     style: "position: relative;",
                     // The title bar has nothing to scroll (`touch-action: none` on a drawer), so
                     // it pulls at once, whichever way; the sheet's arm below then stands aside.
-                    onpointerdown: move |evt| {
-                        if pulls {
-                            drag.start(&evt);
-                        }
-                    },
+                    onpointerdown: move |evt| drag.start(&evt),
                     button {
                         class: "sheet-close",
                         "aria-label": "Close",
@@ -219,4 +227,25 @@ fn close_after_slide(open: ReadSignal<bool>, mut content_up: Signal<bool>) {
 #[cfg(not(target_arch = "wasm32"))]
 fn close_after_slide(_open: ReadSignal<bool>, mut content_up: Signal<bool>) {
     content_up.set(false);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_drawer_pulls_toward_its_edge_at_every_width_and_a_bottom_sheet_down() {
+        assert_eq!(drawer_pull(true, false, DrawerEdge::Right), Pull::Right);
+        assert_eq!(drawer_pull(true, true, DrawerEdge::Left), Pull::Left);
+        assert_eq!(
+            drawer_pull(false, true, DrawerEdge::Right),
+            Pull::Right,
+            "a wide window's drawer"
+        );
+        assert_eq!(
+            drawer_pull(false, false, DrawerEdge::Right),
+            Pull::Down,
+            "a phone's bottom sheet"
+        );
+    }
 }

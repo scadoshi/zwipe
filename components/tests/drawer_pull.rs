@@ -67,8 +67,12 @@ fn a_left_drawer_sheet_carries_its_edge_class() {
     dom.rebuild_in_place();
     let html = dioxus_ssr::render(&dom);
     assert!(
-        html.contains("bottom-sheet show drawer-every-width drawer-left"),
+        html.contains("bottom-sheet show sheet-pulls drawer-every-width drawer-left"),
         "{html}"
+    );
+    assert!(
+        html.contains("sheet-handle sheet-handle-left"),
+        "its handle on the inner edge: {html}"
     );
 }
 
