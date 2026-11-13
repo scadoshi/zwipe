@@ -39,6 +39,8 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     let form = use_deck_form();
     let mut original: Signal<FormValues> = use_signal(FormValues::default);
     let mut saving = use_signal(|| false);
+    // The command-zone cards still on their way, once the deck is in.
+    let mut cards_out: Signal<Option<usize>> = use_signal(|| None);
 
     let deck: Resource<Result<Deck, ClientError>> = use_resource(move || async move {
         authed
@@ -49,7 +51,8 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     });
 
     // The profile fills the form at once; each command-zone card fills its
-    // slot, and its original, as it arrives, in any order.
+    // slot, and its original, as it arrives, in any order. The form draws
+    // once every card has answered, so a saved commander never shows empty.
     use_effect(move || {
         let Some(Ok(loaded)) = &*deck.read() else {
             return;
@@ -63,10 +66,12 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
             (Slot::Background, profile.background_id),
             (Slot::SignatureSpell, profile.signature_spell_id),
         ];
-        for (slot, id) in slots {
-            let Some(id) = id else {
-                continue;
-            };
+        let ids: Vec<(Slot, Uuid)> = slots
+            .into_iter()
+            .filter_map(|(slot, id)| id.map(|id| (slot, id)))
+            .collect();
+        cards_out.set(Some(ids.len()));
+        for (slot, id) in ids {
             spawn(async move {
                 let http = client.peek().clone();
                 match http.fetch_card(id).await {
@@ -89,6 +94,7 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
                         );
                     }
                 }
+                cards_out.with_mut(|out| *out = out.map(|n| n.saturating_sub(1)));
             });
         }
     });
@@ -139,9 +145,9 @@ pub fn EditDeck(deck_id: Uuid) -> Element {
     });
 
     let state = match &*deck.read() {
-        Some(Ok(_)) => Some(true),
+        Some(Ok(_)) if cards_out() == Some(0) => Some(true),
         Some(Err(_)) => Some(false),
-        None => None,
+        Some(Ok(_)) | None => None,
     };
     // A phone's open picker is a screen over the form.
     let pickers_cover = use_pickers_cover(&form);

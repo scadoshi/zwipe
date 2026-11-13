@@ -173,7 +173,11 @@ fn edit_loads_the_deck_then_its_command_zone() {
             (Slot::Partner, partner.scryfall_data.id)
         ]
     );
-    assert_eq!(state.status(), Status::Ready);
+    assert_eq!(
+        state.status(),
+        Status::Loading,
+        "the form ghosts until its command zone is in"
+    );
     assert_eq!(state.values().name, "Pirates");
     assert_eq!(state.save_label(), None, "nothing changed");
 
@@ -189,14 +193,32 @@ fn edit_loads_the_deck_then_its_command_zone() {
         ticket: tickets[1],
         card: Box::new(partner),
     });
+    assert_eq!(
+        state.status(),
+        Status::Loading,
+        "the commander is still out"
+    );
     let _ = state.update(Action::CardLoaded {
         ticket: tickets[0],
         card: Box::new(commander),
     });
+    assert_eq!(state.status(), Status::Ready, "every card is in");
     assert_eq!(names(&state, Slot::Partner).as_deref(), Some("Tymna"));
     assert_eq!(state.display(Slot::Commander), "Malcolm");
     assert_eq!(state.display(Slot::Partner), "Tymna");
     assert!(!state.has_changes(), "loaded cards are saved cards");
+}
+
+#[test]
+fn a_deck_with_no_command_zone_draws_as_it_loads() {
+    let profile = deck_profile("Plain");
+    let (mut state, ticket) = edit_loading(profile.id);
+    let effects = state.update(Action::Loaded {
+        ticket,
+        profile: Box::new(profile),
+    });
+    assert!(effects.is_empty(), "no card to fetch: {effects:?}");
+    assert_eq!(state.status(), Status::Ready);
 }
 
 #[test]
@@ -247,8 +269,9 @@ fn a_failed_card_load_leaves_the_slot_empty() {
         panic!("{effects:?}");
     };
     let ticket = *ticket;
+    assert_eq!(state.status(), Status::Loading);
     assert!(state.update(Action::Failed { ticket }).is_empty());
-    assert_eq!(state.status(), Status::Ready);
+    assert_eq!(state.status(), Status::Ready, "the form draws without it");
     let late = state.update(Action::CardLoaded {
         ticket,
         card: Box::new(card("Late")),

@@ -172,7 +172,7 @@ impl Mode {
 /// Where Edit's deck fetch stands, for the client to pick what it draws.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Status {
-    /// The deck is on its way: the form ghosts.
+    /// The deck, or a command-zone card it names, is on its way: the form ghosts.
     Loading,
     /// The deck failed to load: [`LOAD_FAILED`] in place of the form.
     Failed,
@@ -895,7 +895,6 @@ impl State {
         if self.take(ticket) != Some(Request::Deck) {
             return Vec::new();
         }
-        self.status = Status::Ready;
         let loaded = FormValues::saved(profile);
         self.values = FormValues {
             commander: self.values.commander.take(),
@@ -920,14 +919,29 @@ impl State {
             (Slot::Background, profile.background_id),
             (Slot::SignatureSpell, profile.signature_spell_id),
         ];
-        ids.into_iter()
+        let fetches = ids
+            .into_iter()
             .filter_map(|(slot, id)| id.map(|card_id| (slot, card_id)))
             .map(|(slot, card_id)| Effect::FetchCard {
                 ticket: self.request(Request::Card(slot)),
                 slot,
                 card_id,
             })
-            .collect()
+            .collect();
+        self.ready_once_cards_are_in();
+        fetches
+    }
+
+    /// Draws the form once no command-zone card is still on its way, so a
+    /// saved commander never shows as empty first.
+    fn ready_once_cards_are_in(&mut self) {
+        let card_out = self
+            .waiting
+            .iter()
+            .any(|(_, request)| matches!(request, Request::Card(_)));
+        if !card_out {
+            self.status = Status::Ready;
+        }
     }
 
     fn card_loaded(&mut self, ticket: Ticket, card: Card) -> Vec<Effect> {
@@ -945,6 +959,7 @@ impl State {
         } else {
             *self.values.slot_mut(slot) = Some(card);
         }
+        self.ready_once_cards_are_in();
         Vec::new()
     }
 
@@ -959,7 +974,8 @@ impl State {
         match self.take(ticket) {
             Some(Request::Deck) => self.status = Status::Failed,
             Some(Request::Save) => self.saving = false,
-            Some(Request::Card(_)) | None => {}
+            Some(Request::Card(_)) => self.ready_once_cards_are_in(),
+            None => {}
         }
     }
 
