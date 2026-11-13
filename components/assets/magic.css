@@ -949,6 +949,30 @@ i.ms.ms-cost.ms-gp {
     }
 }
 
+@media (max-width: 899px) {
+    /* A card's actions on a phone stand at a touch size: 2rem high, and
+       each reaches 0.375rem past its edges (the kit's banner-dismiss
+       reach), about 44px in all. The row spaces them so neighboring
+       reaches don't overlap. */
+    .card-action-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 2rem;
+        position: relative;
+    }
+
+    .card-action-btn::before {
+        content: "";
+        position: absolute;
+        inset: -0.375rem;
+    }
+
+    .card-action-row {
+        gap: 0.75rem;
+    }
+}
+
 .card-action-count {
     font-size: 0.85rem;
     min-width: 1.2rem;
