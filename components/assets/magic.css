@@ -2525,15 +2525,24 @@ html.keyboard-up .web-dock-pair {
     cursor: pointer;
 }
 
-/* ---- Float: a card lifts a little and sways slowly ----
+/* ---- Float: a card lifts a little and drifts slowly ----
    The featured cards under the mouse and the revealed card in a stack,
-   through the `floatable` classes below. A floating card's turn is its
-   sway's phase (`--float-phase`, -1 to 1, which runs only while it floats
-   and holds where it is when it stops) times its reach (`--float-reach`, 0 to 1, eased in and out) times its
-   swing (`--float-swing`, the widest turn), so when a card stops floating
-   it rights itself from wherever it was. Only translate, scale and rotate
-   move, and nothing floats under reduced motion. */
+   through the `floatable` classes below. One eased number, its reach
+   (`--float-reach`, 0 to 1), carries the whole float in and out: the lift
+   (`--float-lift`), the growth (`--float-grow`), and the drift, a turn
+   (`--float-phase`, -1 to 1, times `--float-swing`) and a bob
+   (`--float-bob`, 0 to 1, times `--float-bob-lift`) on two periods that
+   never line up, so the motion never repeats on a beat. The drift runs only
+   while the card floats and holds where it is when it stops, so the card
+   settles from wherever it was. Only translate, scale and rotate move, and
+   nothing floats under reduced motion. */
 @property --float-phase {
+    syntax: "<number>";
+    inherits: false;
+    initial-value: 0;
+}
+
+@property --float-bob {
     syntax: "<number>";
     inherits: false;
     initial-value: 0;
@@ -2545,8 +2554,7 @@ html.keyboard-up .web-dock-pair {
     initial-value: 0;
 }
 
-/* A pendulum: each swing slows at its ends and keeps its speed through the
-   middle. */
+/* A sine: it eases out of the middle, rounds each end and eases back. */
 @keyframes float-sway {
     0% {
         --float-phase: 0;
@@ -2568,26 +2576,40 @@ html.keyboard-up .web-dock-pair {
     }
 }
 
+@keyframes float-bob {
+    0% {
+        --float-bob: 0;
+        animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
+    }
+
+    50% {
+        --float-bob: 1;
+        animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
+    }
+
+    100% {
+        --float-bob: 0;
+    }
+}
+
 /* Any element floats with the `floatable` class, while it also has
    `floating` or, with `float-on-hover` and a mouse, while the pointer is on
-   it. `--float-lift` (how far it rises), `--float-grow` (its scale),
-   `--float-swing` (its widest turn) and `--float-delay` (how long it waits
-   before it starts) tune it; the defaults are the deck head's featured
-   cards. Stopping is never delayed. */
+   it. `--float-lift`, `--float-grow`, `--float-swing`, `--float-bob-lift`
+   and `--float-delay` (how long it waits before it starts) tune it; the
+   defaults are the deck head's featured cards. Stopping is never delayed. */
 @media (prefers-reduced-motion: no-preference) {
     .floatable {
-        rotate: calc(var(--float-phase) * var(--float-reach) * var(--float-swing, 1.25deg));
-        transition:
-            translate 0.3s cubic-bezier(0.33, 1, 0.68, 1),
-            scale 0.3s cubic-bezier(0.33, 1, 0.68, 1),
-            --float-reach 0.45s cubic-bezier(0.33, 1, 0.68, 1);
-        animation: float-sway 4.5s linear infinite paused;
+        rotate: calc(var(--float-phase) * var(--float-reach) * var(--float-swing, 0.8deg));
+        translate: 0 calc(-1 * var(--float-reach) * (var(--float-lift, 0.3rem) + var(--float-bob) * var(--float-bob-lift, 0.12rem)));
+        scale: calc(1 + var(--float-reach) * (var(--float-grow, 1.035) - 1));
+        transition: --float-reach 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        animation:
+            float-sway 6.2s linear infinite paused,
+            float-bob 3.9s linear infinite paused;
     }
 
     .floatable.floating {
         --float-reach: 1;
-        translate: 0 calc(-1 * var(--float-lift, 0.3rem));
-        scale: var(--float-grow, 1.035);
         transition-delay: var(--float-delay, 0s);
         animation-play-state: running;
     }
@@ -2596,8 +2618,6 @@ html.keyboard-up .web-dock-pair {
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
     .floatable.float-on-hover:hover {
         --float-reach: 1;
-        translate: 0 calc(-1 * var(--float-lift, 0.3rem));
-        scale: var(--float-grow, 1.035);
         transition-delay: var(--float-delay, 0s);
         animation-play-state: running;
     }
@@ -3095,6 +3115,15 @@ footer.site-footer .site-footer-note {
     margin-top: calc(-680 / 488 * 87%);
 }
 
+/* In tap mode a reveal pushes the cards after it down in the layout, so the
+   tuck itself eases open and closed on the same curve, carrying the column
+   below along with it. */
+.card-stack.tap .card-stack-slot {
+    transition:
+        transform var(--card-stack-move) var(--card-stack-ease),
+        margin-top var(--card-stack-move) var(--card-stack-ease);
+}
+
 .card-stack-slot.shifted {
     transform: translateY(87%);
 }
@@ -3158,15 +3187,17 @@ footer.site-footer .site-footer-note {
 }
 
 /* The revealed card floats (`floating`, set by CardStack), toned down from
-   the featured cards: a lift of 0.15rem, 1.5% larger and a swing of 0.6
-   degrees, starting once the cards below it have moved aside. Its slot sits
-   over the next one only while it is revealed: once it is not, the cards
-   below slide back over it in their own order as it settles. */
+   the featured cards: a lift of 0.15rem with a bob of 0.08rem, 1.5% larger
+   and a turn of 0.4 degrees, blending in while the cards below it move
+   aside. Its slot sits over the next one only while it is revealed: once it
+   is not, the cards below slide back over it in their own order as it
+   settles. */
 .card-stack-card {
     --float-lift: 0.15rem;
+    --float-bob-lift: 0.08rem;
     --float-grow: 1.015;
-    --float-swing: 0.6deg;
-    --float-delay: var(--card-stack-move);
+    --float-swing: 0.4deg;
+    --float-delay: calc(var(--card-stack-move) / 4);
 }
 
 .card-stack-slot.revealed {

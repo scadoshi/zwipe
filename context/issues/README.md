@@ -146,6 +146,7 @@ Who checked, on which live build, what they saw.
 | [432](432-star-undo.md) | Undo on the deck page skips starring and unstarring a card | fixing | thinker | - |
 | [433](433-web-app-404.md) | app.zwipe.net answers an unknown path with 200 | open | halo | - |
 | [439](439-web-first-paint-lock.md) | A fresh web app tab can sit on the List skeleton for about ten seconds | open | halo | - |
+| [435](435-softer-float.md) | The Stacks float pops up and sways like a metronome, and a tap reveal snaps open | fixing | laptop | issue/435-softer-float |
 
 ## Waiting for live verification
 
