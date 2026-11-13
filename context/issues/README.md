@@ -177,6 +177,7 @@ Who checked, on which live build, what they saw.
 | [481](481-drawer-side-measured.md) | A card's details drawer opens on the left only when a right drawer would cover the card | fixing | scotland | - |
 | [493](493-phone-pickers-as-screens.md) | On phone web the deck form's pickers slide in as a sheet; the app shows them as a screen | fixing | scotland | - |
 | [501](501-phone-tap-targets.md) | On a phone, a card row's actions and the changelog's carets are small tap targets | fixing | scotland | - |
+| [503](503-hints-grow.md) | A tall hint cuts its last lines with no sign it scrolls | fixing | scotland | - |
 | [480](480-deck-shortcuts-missing-keys.md) | The deck page's shortcuts sheet leaves out keys that work | fixing | thinker | - |
 | [482](482-quick-add-popular-word-match.md) | Quick add leaves a very popular card behind less played names that start with the query | fixing | thinker | - |
 | [483](483-card-row-cursor.md) | The Commander maybeboard, Activity and Playstyle have no keyboard cursor | fixing | laptop | issue/483-card-cursor |

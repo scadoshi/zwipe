@@ -66,6 +66,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "On the web, the new version notice shows again for a later version after an earlier one was closed",
         "Edit deck opens with its saved commander already in place, on the web and in the app",
         "Every sheet and drawer shows a handle where to drag it, and on a wide window a drawer drags closed with the mouse too, on the web and in the app",
+        "A long hint shows all its text, and one taller than the screen scrolls as a whole, on the web and in the app",
     ],
 }];
 

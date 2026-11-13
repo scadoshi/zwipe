@@ -659,6 +659,20 @@
     white-space: nowrap;
 }
 
+/* A hint grows to fit its text: its body keeps no scroll of its own, and
+   the dialog reaches to a margin short of the window. A hint taller than
+   that scrolls as a whole, title and buttons with it, like a page. */
+.alert-dialog:has(.hint-body, .hint-line, .hint-bullets) {
+    max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 2rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.alert-dialog:has(.hint-body, .hint-line, .hint-bullets) > .alert-dialog-description {
+    flex: none;
+    overflow: visible;
+}
+
 /* A hint's dialog on a phone takes the window's width, less a margin, so
    its lines run long enough to read. */
 @media (max-width: 899px) {

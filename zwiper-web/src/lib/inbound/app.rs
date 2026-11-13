@@ -199,7 +199,7 @@ if (!window.__zwipeHintFocus) {
             if (opener) return;
             const active = document.activeElement;
             opener = active && active !== document.body ? active : (pressed || document.body);
-            open.querySelector('.alert-dialog-actions > button')?.focus();
+            open.querySelector('.alert-dialog-actions > button')?.focus({ preventScroll: true });
         } else if (!open && opener) {
             const from = opener;
             opener = null;
@@ -437,6 +437,16 @@ mod tests {
             "{script}"
         );
         assert!(!script.contains("__STOPS__"), "{script}");
+    }
+
+    #[test]
+    fn an_opening_hint_takes_focus_without_scrolling_from_its_top() {
+        assert!(
+            HINT_FOCUS_JS.contains(
+                "open.querySelector('.alert-dialog-actions > button')?.focus({ preventScroll: true });"
+            ),
+            "a hint taller than the window opens at its title: {HINT_FOCUS_JS}"
+        );
     }
 
     #[test]
