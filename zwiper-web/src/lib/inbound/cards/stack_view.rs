@@ -47,11 +47,21 @@ pub(crate) fn use_cards_view() -> Signal<CardsView> {
 }
 
 /// Whether the stacks deal their cards in: from entering Stacks in `view` once the cards are
-/// `loaded`, for as long as the longest stack takes.
-pub(crate) fn use_stacks_dealing(view: Signal<CardsView>, loaded: bool) -> Signal<bool> {
+/// `loaded`, and again each time `entries` changes (the Cards opening, or coming back from a
+/// card's details), for as long as the longest stack takes.
+pub(crate) fn use_stacks_dealing(
+    view: Signal<CardsView>,
+    loaded: bool,
+    entries: u32,
+) -> Signal<bool> {
     let mut deal_cue = use_signal(DealCue::default);
     let mut dealing = use_signal(|| false);
-    use_effect(use_reactive!(|loaded| {
+    let mut last_entries = use_signal(|| entries);
+    use_effect(use_reactive!(|loaded, entries| {
+        if *last_entries.peek() != entries {
+            last_entries.set(entries);
+            deal_cue.write().again();
+        }
         if deal_cue.write().on(view(), loaded) {
             dealing.set(true);
             spawn(async move {

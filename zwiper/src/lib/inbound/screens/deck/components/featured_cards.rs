@@ -7,6 +7,7 @@
 
 use std::time::Duration;
 
+use ::components::screen_return::ScreenReturns;
 use dioxus::prelude::*;
 use tokio::time;
 use zwipe_core::domain::card::Card;
@@ -62,7 +63,8 @@ fn FeaturedCard(card: Card, role: String, on_tap: EventHandler<Card>) -> Element
 /// loaded, nothing when there is nothing to feature. The row holds its
 /// height from its first frame, each card's image box ghosted until its art
 /// fades in, so nothing under it moves. Each time it mounts with its cards (the
-/// Cards layer opening) they deal into that held space, opacity and transform
+/// Cards layer opening), and each time its screen comes back from under another
+/// ([`ScreenReturns`]), they deal into that held space, opacity and transform
 /// only; a card starred after the deal just joins.
 #[component]
 pub fn FeaturedCards(
@@ -77,12 +79,22 @@ pub fn FeaturedCards(
     on_tap: EventHandler<Card>,
 ) -> Element {
     let mut dealt = use_signal(|| false);
+    // Each deal outdates the one before it, so a return mid-deal restarts it cleanly.
+    let mut round = use_signal(|| 0u32);
     let dealing = loaded && !cards.is_empty();
-    use_effect(use_reactive!(|dealing| {
-        if dealing && !*dealt.peek() {
+    // The screen the row is on coming back from under another deals the row again.
+    let returns = try_use_context::<ScreenReturns>().map_or(0, |ScreenReturns(r)| r());
+    use_effect(use_reactive!(|dealing, returns| {
+        let fresh = *round.peek() == 0 || returns > 0;
+        if dealing && (fresh || !*dealt.peek()) {
+            let this = round.peek().wrapping_add(1);
+            round.set(this);
+            dealt.set(false);
             spawn(async move {
                 time::sleep(Duration::from_millis(DEAL_MS)).await;
-                dealt.set(true);
+                if *round.peek() == this {
+                    dealt.set(true);
+                }
             });
         }
     }));

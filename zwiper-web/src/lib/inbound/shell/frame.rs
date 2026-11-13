@@ -6,7 +6,7 @@ use zwipe_core::domain::auth::models::session::Session;
 
 use crate::inbound::chrome::shortcuts_sheet::use_global_keys;
 use crate::inbound::router::Route;
-use crate::inbound::shell::top_nav::{PageTitle, PublicNav, Shell};
+use crate::inbound::shell::top_nav::{OverlayTitles, PageTitle, PublicNav, Shell};
 
 /// zwipe.net's Community page, which the footer links out to.
 const COMMUNITY_URL: &str = "https://zwipe.net/community";
@@ -20,6 +20,7 @@ pub fn PublicFrame() -> Element {
     // Provided here, over both the nav and the screen, so a screen can put
     // its title in the folded nav.
     use_context_provider(|| Signal::new(None::<PageTitle>));
+    use_context_provider(|| OverlayTitles(Signal::new(Vec::new())));
     rsx! {
         div { class: "web-shell web-public",
             PublicNav {}

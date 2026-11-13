@@ -160,6 +160,12 @@ impl DealCue {
         }
         deal
     }
+
+    /// The stacks come back on screen from under another (`screen_return`): they deal again at
+    /// the next call that finds Stacks with its cards in, as on entering Stacks.
+    pub fn again(&mut self) {
+        self.armed = true;
+    }
 }
 
 /// Which card shows in full and which card's details are open. The open
@@ -373,6 +379,21 @@ mod tests {
         );
     }
     use super::*;
+
+    #[test]
+    fn stacks_back_from_under_another_screen_deal_again_once() {
+        let mut cue = DealCue::default();
+        assert!(cue.on(CardsView::Stacks, true), "the first entry deals");
+        assert!(!cue.on(CardsView::Stacks, true), "a rerender deals nothing");
+        cue.again();
+        assert!(cue.on(CardsView::Stacks, true), "a return deals again");
+        assert!(!cue.on(CardsView::Stacks, true), "once");
+        cue.again();
+        assert!(
+            !cue.on(CardsView::List, true),
+            "a return to the List deals nothing"
+        );
+    }
 
     #[test]
     fn only_the_revealed_card_and_the_last_show_in_full() {

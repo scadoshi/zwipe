@@ -3,6 +3,9 @@
 //! What the screen knows and does is `zwipe_ui::screens::deck_view`; this
 //! file draws its state and performs its effects.
 
+use ::components::screen_return::{
+    ScreenReturns, UNDER_LAYER, replay_entrances, use_screen_returns,
+};
 use components::icons::{CloneIcon, DockIcon, EditIcon, ShareIcon};
 use components::{
     AlertDialog, Button, ButtonVariant, CART, Chip, DialogAction, LoadFailed, StoreDialog,
@@ -491,8 +494,19 @@ pub fn ViewDeck(deck_id: Uuid, view: Option<DeckView>) -> Element {
     // First-deck tour: opens once per account when the model offers it on
     // the first Load; the header "?" reopens it on demand.
     let first_deck_hint_open = driver.hint_open;
-    // The Cards layer stays up while it slides out.
+    // The Cards layer stays up until its closing animation ends.
     let cards_layer = use_layer_presence(view.is_some());
+    // While the Cards cover the Profile it is gone, and it comes back as if entered fresh
+    // (screen_return): its entrances run again and its featured row deals again.
+    let profile_covered = cards_layer.shown();
+    let profile_returns = use_screen_returns(profile_covered);
+    use_context_provider(|| ScreenReturns(profile_returns));
+    let profile_back = profile_returns();
+    use_effect(use_reactive!(|profile_back| {
+        if profile_back > 0 {
+            replay_entrances(".deck-profile-screen");
+        }
+    }));
     // The deck as loaded, for the Cards layer to open on.
     let held = use_signal(|| None::<Deck>);
     use_context_provider(|| HeldDeck(held));
@@ -604,7 +618,9 @@ pub fn ViewDeck(deck_id: Uuid, view: Option<DeckView>) -> Element {
         chart_metrics.as_ref().map(DeckMetrics::mana_balance_rows);
 
     rsx! {
-            div { class: "screen",
+            div {
+                class: if profile_covered { "screen deck-profile-screen {UNDER_LAYER}" } else { "screen deck-profile-screen" },
+                "inert": profile_covered.then_some(""),
                 ScreenHeader {
                     title: deck_view::TITLE,
                     hint: first_deck_hint_open,

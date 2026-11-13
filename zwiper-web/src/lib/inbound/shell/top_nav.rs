@@ -6,9 +6,6 @@
 //! menu dropping from it. The header follows the scroll there
 //! (`assets/header_hide.js`).
 
-use std::cell::RefCell;
-use std::rc::Rc;
-
 use components::{BackArrow, InfoButton, NavBar, use_overlay_back};
 use dioxus::prelude::*;
 use zwipe_core::domain::logo;
@@ -47,6 +44,13 @@ if (nav) {
 }
 ";
 
+/// The titles of the overlay screens that hold the nav, oldest first: each covers the page under
+/// the nav, and the newest shows in place of the page's own ([`shown_title`]). Kept apart from the
+/// page's title, so a page that sets its title late (a deck's name arriving) never takes the nav
+/// from an overlay open over it.
+#[derive(Clone, Copy, PartialEq)]
+pub(super) struct OverlayTitles(pub(super) Signal<Vec<PageTitle>>);
+
 /// While `open`, an overlay screen that covers the page under the nav
 /// takes the nav's title and `?` (`title`, `on_hint`), and its back arrow
 /// calls `on_back`. Closing it gives the page's own back.
@@ -56,60 +60,47 @@ pub fn use_overlay_nav(
     on_hint: Callback<()>,
     on_back: Callback<()>,
 ) {
-    let page = try_use_context::<Signal<Option<PageTitle>>>();
-    // The page's own title, held while the overlay has the nav.
-    let held = use_hook(|| Rc::new(RefCell::new(None::<Option<PageTitle>>)));
-    let on_drop = Rc::clone(&held);
+    let titles = try_use_context::<OverlayTitles>();
     let mine = title.clone();
     use_effect(move || {
-        let Some(mut page) = page else {
+        let Some(OverlayTitles(mut titles)) = titles else {
             return;
         };
-        if open() {
-            if held.borrow().is_none() {
-                *held.borrow_mut() = Some(page.peek().clone());
-                page.set(Some(PageTitle {
-                    title: title.clone(),
-                    on_hint: Some(on_hint),
-                    on_back: Some(on_back),
-                }));
-            }
-        } else if let Some(previous) = held.borrow_mut().take()
-            && shows_overlay(page.peek().as_ref(), &title)
-        {
-            page.set(previous);
+        let held = titles.peek().iter().any(|t| t.title == title);
+        if open() && !held {
+            titles.write().push(PageTitle {
+                title: title.clone(),
+                on_hint: Some(on_hint),
+                on_back: Some(on_back),
+            });
+        } else if !open() && held {
+            titles.write().retain(|t| t.title != title);
         }
     });
     use_drop(move || {
-        if let (Some(mut page), Some(previous)) = (page, on_drop.borrow_mut().take())
-            && shows_overlay(page.peek().as_ref(), &mine)
-        {
-            page.set(previous);
+        if let Some(OverlayTitles(mut titles)) = titles {
+            titles.write().retain(|t| t.title != mine);
         }
     });
 }
 
-/// Whether the nav still shows the overlay titled `title`, so closing it
-/// may put the page's own title back. When the page itself is going (a
-/// browser back from under the overlay) its frame has already cleared or
-/// replaced the title, and the held one carries that page's callbacks,
-/// which are dropping with it: putting it back would hand the nav dead
-/// callbacks.
-fn shows_overlay(current: Option<&PageTitle>, title: &str) -> bool {
-    is_overlay_title(
-        current.map(|p| (p.title.as_str(), p.on_back.is_some())),
-        title,
-    )
+/// What the nav shows: the newest overlay's title, else the page's own.
+fn shown_title<'a, T>(overlays: &'a [T], page: Option<&'a T>) -> Option<&'a T> {
+    overlays.last().or(page)
 }
 
-/// [`shows_overlay`] on the nav's `(title, has a back override)`: an
-/// overlay's title is the one with a back override.
-fn is_overlay_title(current: Option<(&str, bool)>, title: &str) -> bool {
-    current.is_some_and(|(shown, overlay)| overlay && shown == title)
+/// The nav's title, `?` and back override: [`shown_title`] of the overlays over the page.
+fn use_shown_title(page: Signal<Option<PageTitle>>) -> Memo<Option<PageTitle>> {
+    let overlays = try_use_context::<OverlayTitles>();
+    use_memo(move || {
+        let held = overlays.map_or_default(|OverlayTitles(t)| t.read().clone());
+        let own = page.read().clone();
+        shown_title(&held, own.as_ref()).cloned()
+    })
 }
 
 /// The `?` a wide window's nav carries for the screen on view, if any.
-fn nav_hint(page: Signal<Option<PageTitle>>) -> Option<Callback<()>> {
+fn nav_hint(page: Memo<Option<PageTitle>>) -> Option<Callback<()>> {
     page.read().as_ref().and_then(|p| p.on_hint)
 }
 
@@ -124,7 +115,9 @@ pub fn Shell() -> Element {
     let route: Route = use_route();
     let current = section_of(&route);
     let open = use_menu_open(&route);
-    let page = use_context_provider(|| Signal::new(None::<PageTitle>));
+    let own = use_context_provider(|| Signal::new(None::<PageTitle>));
+    use_context_provider(|| OverlayTitles(Signal::new(Vec::new())));
+    let page = use_shown_title(own);
     use_effect(|| {
         document::eval(NAV_HEIGHT_JS);
     });
@@ -178,7 +171,8 @@ fn public_links() -> [(Route, &'static str); 2] {
 pub fn PublicNav() -> Element {
     let route: Route = use_route();
     let open = use_menu_open(&route);
-    let page: Signal<Option<PageTitle>> = use_context();
+    let own: Signal<Option<PageTitle>> = use_context();
+    let page = use_shown_title(own);
     let links = public_links();
     rsx! {
         div { class: "web-app-nav",
@@ -242,7 +236,7 @@ fn NavLink(to: Route, label: &'static str, current: bool, mut open: Signal<bool>
 
 /// The screen's title and `?`, in the middle of the folded nav.
 #[component]
-fn NavTitle(page: Signal<Option<PageTitle>>) -> Element {
+fn NavTitle(page: Memo<Option<PageTitle>>) -> Element {
     let Some(PageTitle { title, on_hint, .. }) = page() else {
         return rsx! {};
     };
@@ -283,7 +277,7 @@ fn NavMark(open: Signal<bool>) -> Element {
 #[component]
 fn BackButton(
     back: Option<Back>,
-    page: Signal<Option<PageTitle>>,
+    page: Memo<Option<PageTitle>>,
     mut open: Signal<bool>,
 ) -> Element {
     let navigator = use_navigator();
@@ -337,26 +331,15 @@ mod tests {
     }
 
     #[test]
-    fn closing_an_overlay_restores_the_page_title_only_while_the_nav_shows_it() {
-        assert!(is_overlay_title(
-            Some(("Swipe select", true)),
-            "Swipe select"
-        ));
-    }
-
-    #[test]
-    fn a_page_going_from_under_the_overlay_keeps_its_title_out() {
-        // The page's frame cleared the title as it went.
-        assert!(!is_overlay_title(None, "Swipe select"));
-        // Or the next page's frame already put its own up.
-        assert!(!is_overlay_title(
-            Some(("Goblin Horde", false)),
-            "Swipe select"
-        ));
-        // Another overlay with another title has the nav.
-        assert!(!is_overlay_title(
-            Some(("Suggested commanders", true)),
-            "Swipe select"
-        ));
+    fn an_overlay_s_title_shows_over_the_page_s_whenever_the_page_sets_its_own() {
+        let page = "Goblin Horde";
+        assert_eq!(shown_title(&["Cards"], Some(&page)), Some(&"Cards"));
+        assert_eq!(
+            shown_title(&["Cards", "Swipe select"], Some(&page)),
+            Some(&"Swipe select"),
+            "the newest overlay"
+        );
+        assert_eq!(shown_title::<&str>(&[], Some(&page)), Some(&"Goblin Horde"));
+        assert_eq!(shown_title::<&str>(&[], None), None);
     }
 }

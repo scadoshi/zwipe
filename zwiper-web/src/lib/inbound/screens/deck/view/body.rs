@@ -9,6 +9,7 @@ use std::collections::{HashMap, HashSet};
 use std::time::Duration;
 
 use components::icons::DockIcon;
+use components::screen_return::{UNDER_LAYER, replay_entrances, use_screen_returns};
 use components::{
     BudgetBody, Button, ButtonVariant, CART, Chip, CurrencyChips, DeckCardsView, DeckControls,
     DeckEditActions, DeckFacts, DeckFold, DeckHead, DeckPage, DeckRowHost, DeckStackDrawer,
@@ -43,6 +44,12 @@ use crate::inbound::cards::stack_view::{CardsViewSwitch, use_stacks_dealing};
 use crate::inbound::chrome::hint_topic::{HintTopic, InfoButton};
 use crate::inbound::chrome::media::use_wide;
 use crate::outbound::timer;
+
+/// The phone's Profile, the page the Cards layer covers.
+const PROFILE_ROOT: &str = ".deck-profile-page";
+
+/// The phone's Cards layer, which a card's details screen covers.
+const CARDS_ROOT: &str = ".web-cards-layer";
 
 /// The stat panels' fold keys, shut when the page opens.
 const FOLDED_STATS: [&str; 5] = ["Budget", "Tags", "Distributions", "Mana", "Draw odds"];
@@ -147,7 +154,6 @@ pub(crate) fn DeckPageBody(
     let hover_stack = use_hover_stack();
     let folded: Signal<HashSet<String>> =
         use_signal(|| FOLDED_STATS.into_iter().map(String::from).collect());
-    let dealing = use_stacks_dealing(view, loaded);
     // A phone draws the Profile as the page and the Cards as a layer over it.
     let wide = use_wide();
     let phone = !wide();
@@ -220,6 +226,31 @@ pub(crate) fn DeckPageBody(
             deal();
         }
     }));
+    // On a phone the screen another covers is gone until it comes back, and comes back as if
+    // entered fresh (screen_return): the Profile under the Cards, the Cards under a card's
+    // details.
+    let profile_covered = phone && layer.shown();
+    let cards_covered = profile_covered && (details.details_open)();
+    let profile_returns = use_screen_returns(profile_covered);
+    let cards_returns = use_screen_returns(cards_covered);
+    let profile_back = profile_returns();
+    use_effect(use_reactive!(|profile_back| {
+        if profile_back > 0 {
+            replay_entrances(PROFILE_ROOT);
+            deal();
+        }
+    }));
+    let cards_back = cards_returns();
+    use_effect(use_reactive!(|cards_back| {
+        if cards_back > 0 {
+            replay_entrances(CARDS_ROOT);
+            deal();
+        }
+    }));
+    // The stacks deal on entering Stacks, each time the Cards open, and on coming back from a
+    // card's details.
+    let stack_entries = u32::from(layer_open).wrapping_add(cards_back.wrapping_mul(2));
+    let dealing = use_stacks_dealing(view, loaded, stack_entries);
     let featured_class = match (featured_ready, featured_dealt()) {
         (true, true) => "deck-head-deal ready dealt",
         (true, false) => "deck-head-deal ready",
@@ -347,12 +378,19 @@ pub(crate) fn DeckPageBody(
     let phone_profile = phone_profile.filter(|_| phone);
     rsx! {
         if let Some(profile) = phone_profile {
-            {profile}
+            // The phone's Profile, gone while the Cards cover it and replayed on its return.
+            div {
+                class: if profile_covered { "deck-profile-page {UNDER_LAYER}" } else { "deck-profile-page" },
+                style: "display: contents;",
+                "inert": profile_covered.then_some(""),
+                {profile}
+            }
         } else {
         // The dock floats outside the page's entrance, whose transform would otherwise pin it to
         // the page instead of the window.
         div {
-            class: "content-enter web-page deck-page-wide",
+            class: if profile_covered { "content-enter web-page deck-page-wide deck-profile-page {UNDER_LAYER}" } else { "content-enter web-page deck-page-wide deck-profile-page" },
+            "inert": profile_covered.then_some(""),
             onmousemove: move |e| hover_stack.track(e.client_coordinates().x),
             DeckPage {
                 head: head.clone(),
@@ -455,6 +493,7 @@ pub(crate) fn DeckPageBody(
                     head,
                     controls,
                     on_close: move |()| on_cards.call(false),
+                    covered: cards_covered,
                     on_hint: cards_hint.unwrap_or_else(|| Callback::new(|()| {})),
                     leaving: layer.leaving(),
                     on_animation_end: move |name: String| layer.ended(&name),

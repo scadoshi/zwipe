@@ -1,5 +1,8 @@
 use std::collections::{HashMap, HashSet};
 
+use ::components::screen_return::{
+    ScreenReturns, UNDER_LAYER, replay_entrances, use_screen_returns,
+};
 use components::icons::{self};
 use components::{
     Button, ButtonVariant, CardGroup, CardsViewSwitch, Chip, DeckEditActions, DeckRowHost,
@@ -786,11 +789,27 @@ pub fn View(deck_id: Uuid) -> Element {
             .collect::<Vec<_>>()
     });
     use_stack_details_sync(reveal, details_open, listed_ids);
-    // The stacks deal in on entering Stacks, once the deck is in, for as
-    // long as the longest stack takes.
+    // While a card's details cover the Cards they are gone, and they come back as if entered
+    // fresh (screen_return): their entrances run again, the stacks deal again, and so does the
+    // featured row.
+    // Only on a phone, where the details are a screen of their own; a wide window keeps the
+    // drawer beside the Cards.
+    let wide = ::components::use_min_width(::components::WIDE_PX);
+    let cards_covered = details_open() && !wide();
+    let cards_returns = use_screen_returns(cards_covered);
+    use_context_provider(|| ScreenReturns(cards_returns));
+    // The stacks deal in on entering Stacks, once the deck is in, and again on coming back from
+    // a card's details, for as long as the longest stack takes.
     let mut deal_cue = use_signal(DealCue::default);
     let mut dealing = use_signal(|| false);
+    let mut dealt_returns = use_signal(|| 0u32);
     use_effect(move || {
+        let back = cards_returns();
+        if back != *dealt_returns.peek() {
+            dealt_returns.set(back);
+            deal_cue.write().again();
+            replay_entrances(".app-cards-layer > .screen");
+        }
         let shown = view();
         let ready = driver.model.read().is_loaded();
         if deal_cue.write().on(shown, ready) {
@@ -1000,7 +1019,8 @@ pub fn View(deck_id: Uuid) -> Element {
 
     rsx! {
             div {
-                class: "screen",
+                class: if cards_covered { "screen {UNDER_LAYER}" } else { "screen" },
+                "inert": cards_covered.then_some(""),
                 // Any tap while the stacks show can reveal a card or close one.
                 "data-settle": stacks_on.then_some(""),
                 // A tap off every card closes the reveal, of a stack card or a featured card; a

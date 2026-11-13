@@ -3503,3 +3503,10 @@ footer.site-footer .site-footer-note {
 .app-cards-layer.leaving > .screen {
     animation: deck-cards-layer-out 1ms linear forwards;
 }
+
+/* A screen another screen covers (screen_return.rs): not painted while the
+   one on top shows, as a screen left by a route change is gone. It also takes
+   `inert`, so nothing in it is focused or tapped. */
+.under-layer {
+    visibility: hidden !important;
+}

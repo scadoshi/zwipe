@@ -59,6 +59,8 @@ pub const UPCOMING: &[Release] = &[
             "On the web, an Oracle tag's Examples keep Next, Back one and the details eye on one bar",
             "On the web's deck page, a featured card's details leave the page undimmed in List as in Stacks",
             "A List group's price and cart sit at the end of its title's line on a phone, on the web and in the app",
+            "On a phone, a deck's Profile, Cards and card details come and go as screens do, each entering fresh with nothing showing beneath, on the web and in the app",
+            "On phone web, a deck's Cards opened from a link show Cards in the header",
         ],
     },
     Release {
