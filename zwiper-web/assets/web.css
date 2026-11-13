@@ -2491,6 +2491,20 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
     }
 }
 
+/* The Decks list's loading ghost fills the list as the window draws it: three
+   tiles on a phone, five in one wide column, all ten in two columns. */
+@media (max-width: 899px) {
+    .skeleton-deck-tile:nth-child(n + 4) {
+        display: none;
+    }
+}
+
+@media (min-width: 900px) and (max-width: 1399px) {
+    .skeleton-deck-tile:nth-child(n + 6) {
+        display: none;
+    }
+}
+
 /* ---- Deck form (Create, Edit) ---- */
 
 /* The panels sit a panel gap apart: inside a column, and between the two

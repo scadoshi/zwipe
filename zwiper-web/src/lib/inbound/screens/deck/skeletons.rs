@@ -19,16 +19,27 @@ pub fn ChipRowSkeleton(label: &'static str, chips: Vec<&'static str>) -> Element
     }
 }
 
+/// The Decks list ghost's tiles, each its chips' widths, varied so the ghost reads like mixed
+/// decks. Enough to fill a wide list: web.css shows three on a phone, five in one wide column
+/// and all ten in two columns from 1400px.
+const DECK_LIST_GHOST_TILES: [&[&str]; 10] = [
+    &["md", "lg", "xl", "sm", "md", "sm"],
+    &["md", "xl", "sm"],
+    &["lg", "md", "sm", "md"],
+    &["xl", "sm", "md"],
+    &["md", "md", "lg", "sm", "sm"],
+    &["lg", "xl", "sm"],
+    &["sm", "md", "xl", "md"],
+    &["md", "lg", "sm"],
+    &["xl", "md", "sm", "lg", "sm"],
+    &["lg", "sm", "md"],
+];
+
 /// The deck list while it loads: the `All` group's header as an empty chip
-/// at the loaded one's size, then three ghost rows of mixed widths, in the
-/// live list's own classes.
+/// at the loaded one's size, then ten ghost rows of mixed widths, in the live
+/// list's own classes; web.css shows as many as the list's width fills.
 #[component]
 pub fn DeckListSkeleton() -> Element {
-    const TILES: &[&[&str]] = &[
-        &["md", "lg", "xl", "sm", "md", "sm"],
-        &["md", "xl", "sm"],
-        &["lg", "md", "sm", "md"],
-    ];
     rsx! {
         div { class: "card-group deck-group",
             div { class: "card-group-header group-collapsible expanded skeleton-deck-list-header web-ghost-chip",
@@ -37,8 +48,8 @@ pub fn DeckListSkeleton() -> Element {
             }
             div { class: "collapsible open",
                 div { class: "collapsible-inner",
-                    for (i, chips) in TILES.iter().enumerate() {
-                        div { key: "{i}", class: "card-row deck-row",
+                    for (i, chips) in DECK_LIST_GHOST_TILES.iter().enumerate() {
+                        div { key: "{i}", class: "card-row deck-row skeleton-deck-tile",
                             div { class: "deck-list-row",
                                 div { class: "skeleton-bar skeleton-deck-list-art" }
                                 div { class: "deck-row-text",
@@ -200,5 +211,42 @@ pub fn EditDeckSkeleton() -> Element {
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const WEB_CSS: &str = include_str!("../../../../../assets/web.css");
+
+    /// The `@media` query that wraps the first rule for `selector` in web.css.
+    fn query_for(selector: &str) -> &'static str {
+        let at = WEB_CSS
+            .find(&format!("    {selector} {{"))
+            .unwrap_or_else(|| panic!("no rule for {selector}"));
+        let head = WEB_CSS.get(..at).unwrap();
+        let query = head.rfind("@media").unwrap();
+        let line = head.get(query..).unwrap();
+        line.get(..line.find('{').unwrap()).unwrap().trim()
+    }
+
+    #[test]
+    fn the_decks_ghost_fills_a_wide_list_and_keeps_the_phone_s_three() {
+        assert_eq!(
+            DECK_LIST_GHOST_TILES.len(),
+            10,
+            "five rows of two from 1400px"
+        );
+        assert_eq!(
+            query_for(".skeleton-deck-tile:nth-child(n + 4)"),
+            "@media (max-width: 899px)",
+            "a phone shows three"
+        );
+        assert_eq!(
+            query_for(".skeleton-deck-tile:nth-child(n + 6)"),
+            "@media (min-width: 900px) and (max-width: 1399px)",
+            "one wide column shows five"
+        );
     }
 }
