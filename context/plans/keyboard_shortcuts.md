@@ -53,7 +53,7 @@ These keys also work while the Stacks view's card details drawer is open, the on
 
 ## The shortcuts sheet
 
-- `H` (Shift+H) opens the shortcuts sheet on the swipe screens and the deck cards screen, listing only that screen's keys. On a swipe screen: the four directions with `hjkl`, named as that screen's dock names them, Undo with `u` and Ctrl+Z too, `p`, `d`, `v`, `f`, `r`, `s` where the screen has Synergy, Esc, `?` and `H`. The sheet lists only keys the screen answers. Lowercase `h` stays Skip; with Caps Lock on, `h` opens the sheet instead (accepted). On every other screen Shift+H does nothing.
+- `H` (Shift+H) opens the shortcuts sheet on the swipe screens and the deck cards screen, listing only that screen's keys. On a swipe screen: the four directions with `hjkl`, named as that screen's dock names them, Undo with `u` and Ctrl+Z too, `p`, `d`, `v`, `f`, `r`, `s` where the screen has Synergy, Esc, `?` and `H`. The sheet lists only keys the screen answers. Lowercase `h` stays Skip, Caps Lock or not: the keys read a letter's case from Shift alone (`keys::PRESSED_KEY`, 431). On every other screen Shift+H does nothing.
 
 ## Showing the shortcuts
 
