@@ -19,3 +19,12 @@ In Stacks a card the cursor focuses is raised through its focus (`components/src
 
 ## After
 Same setup, 3 of 3 each: Shift+G (381 to 1432) and `g` `g` (to 0) leave no card focused or raised; ArrowRight afterwards carries on from Sol Ring to the next column's card and brings it into view (2 of 2 each).
+
+## Reopened
+Scotty, via the composer: with real key presses, Shift+G still left the arrowed card raised, focused and outlined; `g` `g` cleared it.
+
+Cause: the listener compared the raw `KeyboardEvent.key`, while orangui's page keys read a letter's case from Shift alone (`PRESSED_KEY`). A Shift+G whose `key` arrives lowercase (Caps Lock, some layouts) scrolled the page to the bottom yet read as a first `g` here, so nothing let go; with Caps Lock, `g` `g` arrives as `G` and let go on the first press, which is why it looked fine.
+
+Fix: the listener reads the key through `PRESSED_KEY`, as the page keys do. Test `a_page_jump_reads_the_key_as_the_page_keys_do` (red before).
+
+Check: headless Chrome at 1440x700, reduced motion so the page jumps at once, the deck page in Stacks over mocked reads, trusted CDP key events, `↓` twice then Shift+G sent as `key: 'g'` with Shift: before, the page went to the bottom with the card still focused, raised and outlined; after, 3 of 3, no card focused or raised. Shift+G as `G`, `g` `g`, and `G` `G` without Shift (Caps Lock) also let go, and so does Shift+G with the mouse resting over the stacks.

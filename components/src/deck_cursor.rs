@@ -54,14 +54,16 @@ if (!window.__zwipeDeckTrack) {
     }, true);
     document.addEventListener('focusout', (e) => { if (e.target === previewed) unpreview(); }, true);
     // gg and Shift+G move the page, not the cursor: the cursor's card lets go, its id kept, so
-    // the next arrow carries on from it.
+    // the next arrow carries on from it. The key reads as the page keys read it, its case from
+    // Shift alone.
     let lastG = 0;
     document.addEventListener('keydown', (e) => {
         if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
+        const key = __KEY__;
         const now = Date.now();
-        const gg = e.key === 'g' && now - lastG < __GG__;
-        if (e.key === 'g') lastG = gg ? 0 : now;
-        const jump = e.key === 'G' || (e.key === 'g' && gg);
+        const gg = key === 'g' && now - lastG < __GG__;
+        if (key === 'g') lastG = gg ? 0 : now;
+        const jump = key === 'G' || gg;
         if (!jump) return;
         const at = document.activeElement;
         if (at && at.closest && at.closest(stops)) { window.__zwipeDeckInput = 'mouse'; at.blur(); }
@@ -232,10 +234,11 @@ const ROW_SETTLE_MS: u32 = 150;
 /// Opens list row `__ID__` where it is shut, as a click on its line does, which shuts the open one.
 const OPEN_ROW_JS: &str = "const row = document.querySelector('.web-deck-row[data-row=\"__ID__\"], .web-card-row[data-row=\"__ID__\"]'); if (row && !row.classList.contains('selected') && !row.querySelector('.card-row.expanded')) row.querySelector('.card-row-compact')?.click();";
 
-/// [`TRACK_JS`] with the cursor's stops and the page keys' gg window filled in.
+/// [`TRACK_JS`] with the cursor's stops, the pressed key and the page keys' gg window filled in.
 fn track_js() -> String {
     TRACK_JS
         .replace("__STOPS__", STOP_SELECTOR)
+        .replace("__KEY__", PRESSED_KEY)
         .replace("__GG__", &GG_WINDOW_MS.to_string())
 }
 
@@ -479,7 +482,7 @@ mod tests {
     fn a_page_jump_lets_go_of_the_cursor_card() {
         let script = track_js();
         assert!(
-            script.contains("const jump = e.key === 'G' || (e.key === 'g' && gg);"),
+            script.contains("const jump = key === 'G' || gg;"),
             "Shift+G and gg: {script}"
         );
         assert!(
@@ -491,8 +494,23 @@ mod tests {
             "the card lets go and stays let go, as the cursor's hand-back only follows a key: {script}"
         );
         assert!(
-            !script.contains("__STOPS__") && !script.contains("__GG__"),
+            !script.contains("__STOPS__")
+                && !script.contains("__GG__")
+                && !script.contains("__KEY__"),
             "every placeholder filled: {script}"
+        );
+    }
+
+    #[test]
+    fn a_page_jump_reads_the_key_as_the_page_keys_do() {
+        let script = track_js();
+        assert!(
+            script.contains(&format!("const key = {PRESSED_KEY};")),
+            "a Shift+G whose KeyboardEvent.key comes lowercase (Caps Lock) is still Shift+G, as the page keys that scroll read it: {script}"
+        );
+        assert!(
+            !script.contains("e.key ==="),
+            "no raw KeyboardEvent.key comparison left: {script}"
         );
     }
 
