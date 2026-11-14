@@ -60,6 +60,7 @@ pub struct Legalities {
 
 impl Legalities {
     /// Looks up a card's legality for the given format.
+    #[must_use]
     pub fn get(&self, format: &Format) -> Option<&LegalityKind> {
         match format {
             Format::Standard => self.standard.as_ref(),

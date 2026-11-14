@@ -33,11 +33,13 @@ impl Limit {
     pub const DEFAULT: u32 = 25;
 
     /// Creates a limit, clamping `value` to [`Limit::MAX`].
+    #[must_use]
     pub fn new(value: u32) -> Self {
         Self(value.min(Self::MAX))
     }
 
     /// The bounded value.
+    #[must_use]
     pub fn get(self) -> u32 {
         self.0
     }
@@ -123,16 +125,19 @@ impl CardQuery {
     }
 
     /// The predicate fields.
+    #[must_use]
     pub fn criteria(&self) -> &CardCriteria {
         &self.criteria
     }
 
     /// Bounded page size.
+    #[must_use]
     pub fn limit(&self) -> u32 {
         self.limit.get()
     }
 
     /// Pagination offset.
+    #[must_use]
     pub fn offset(&self) -> u32 {
         self.offset
     }
@@ -146,21 +151,25 @@ impl CardQuery {
     }
 
     /// Sort key (`order_by` on the wire).
+    #[must_use]
     pub fn sort(&self) -> Option<CardSortKey> {
         self.sort
     }
 
     /// Sort direction.
+    #[must_use]
     pub fn direction(&self) -> SortDirection {
         self.direction
     }
 
     /// Deck-aware synergy membership mode (see field docs).
+    #[must_use]
     pub fn synergy(&self) -> bool {
         self.synergy
     }
 
     /// Deck-aware suppression opt-out (see field docs).
+    #[must_use]
     pub fn include_skipped(&self) -> bool {
         self.include_skipped
     }

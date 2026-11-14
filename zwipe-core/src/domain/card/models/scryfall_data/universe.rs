@@ -244,6 +244,7 @@ pub struct UbFranchiseView {
 
 impl UbFranchise {
     /// This franchise as a wire view (slug + label).
+    #[must_use]
     pub fn view(&self) -> UbFranchiseView {
         UbFranchiseView {
             slug: self.slug.to_string(),
@@ -261,6 +262,7 @@ pub fn selectable_franchise_views() -> Vec<UbFranchiseView> {
 }
 
 /// Looks up a franchise by its stored slug, exception-only entries included.
+#[must_use]
 pub fn franchise_by_slug(slug: &str) -> Option<&'static UbFranchise> {
     selectable_franchises().find(|f| f.slug == slug)
 }
@@ -268,6 +270,7 @@ pub fn franchise_by_slug(slug: &str) -> Option<&'static UbFranchise> {
 /// Set names covered by the given exception slugs, for overlap against
 /// `latest_cards.printing_set_names`. Unknown slugs are ignored so a retired
 /// franchise slug in stored settings degrades to no exception.
+#[must_use]
 pub fn exception_set_names(slugs: &[String]) -> Vec<String> {
     slugs
         .iter()
@@ -278,6 +281,7 @@ pub fn exception_set_names(slugs: &[String]) -> Vec<String> {
 
 /// Returns `true` if a printing with this security stamp and set code is out
 /// of universe (Universes Beyond).
+#[must_use]
 pub fn is_out_of_universe(security_stamp: Option<&str>, set: &str) -> bool {
     security_stamp == Some("triangle") || all_set_codes().any(|code| code == set)
 }

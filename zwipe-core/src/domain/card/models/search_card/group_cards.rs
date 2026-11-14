@@ -36,6 +36,7 @@ pub enum GroupByOption {
 
 impl GroupByOption {
     /// Returns all grouping options.
+    #[must_use]
     pub fn all() -> Vec<Self> {
         vec![Self::CardType, Self::Cmc, Self::Color, Self::CardRole]
     }
@@ -72,6 +73,7 @@ impl CardGroup {
     /// groups carry no label, so they key off their pips instead; without
     /// this every colored group would share the empty string and collapse as
     /// one.
+    #[must_use]
     pub fn key(&self) -> String {
         if !self.label.is_empty() {
             return self.label.clone();

@@ -53,6 +53,7 @@ pub struct Deck {
 impl Deck {
     /// Creates a new deck from profile, entries, and warnings. The command zone
     /// starts empty; attach it with [`with_command_zone_cards`](Self::with_command_zone_cards).
+    #[must_use]
     pub fn new(
         deck_profile: DeckProfile,
         entries: Vec<DeckEntry>,

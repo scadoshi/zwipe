@@ -21,6 +21,7 @@ pub enum Color {
 
 impl Color {
     /// Returns the full color name (e.g., "White", "Blue").
+    #[must_use]
     pub fn to_long_name(&self) -> String {
         let s = match self {
             Self::White => "White",
@@ -33,6 +34,7 @@ impl Color {
     }
 
     /// Returns the single-letter color code (e.g., "W", "U", "B", "R", "G").
+    #[must_use]
     pub fn to_short_name(&self) -> String {
         let s = match self {
             Self::White => "W",
@@ -45,6 +47,7 @@ impl Color {
     }
 
     /// Returns all five colors in WUBRG order.
+    #[must_use]
     pub fn all() -> [Self; 5] {
         [Self::White, Self::Blue, Self::Black, Self::Red, Self::Green]
     }

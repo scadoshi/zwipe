@@ -26,6 +26,7 @@ pub struct ScreenReturns(pub ReadSignal<u32>);
 
 /// Counts the times `covered` turns false after being true: each a return of the screen it
 /// covered.
+#[must_use]
 pub fn use_screen_returns(covered: bool) -> ReadSignal<u32> {
     let mut returns = use_signal(|| 0u32);
     let mut was = use_signal(|| covered);

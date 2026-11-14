@@ -283,6 +283,7 @@ impl CardQueryBuilder {
     /// Creates a new filter builder with default values.
     ///
     /// Defaults: playable cards only, English, non-digital, non-promo, 25 result limit.
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
@@ -290,6 +291,7 @@ impl CardQueryBuilder {
     /// Checks if filter has any search criteria (ignoring config like limit/offset).
     ///
     /// Returns `true` if only config fields are set (would match all cards).
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         let mut default = self.clone();
         default.retain_config();
@@ -316,6 +318,7 @@ impl CardQueryBuilder {
     /// `deck_format`. Another format picked, even beside the deck's own,
     /// counts. Commander eligibility, partner, background and signature spell
     /// filters are user-set and count too. Pass `None` off a deck.
+    #[must_use]
     pub fn is_empty_ignoring_deck_context(&self, deck_format: Option<Format>) -> bool {
         self.without_deck_default(deck_format).is_empty()
     }
@@ -327,6 +330,7 @@ impl CardQueryBuilder {
     /// target is met, a default rather than a user choice, so it should not read as
     /// an active filter. Pass `lands_auto_excluded = true` when that default is
     /// in effect (the target is met) so a lone `Land` exclude doesn't count.
+    #[must_use]
     pub fn is_empty_ignoring_deck_context_and_auto_lands(
         &self,
         deck_format: Option<Format>,
@@ -354,6 +358,7 @@ impl CardQueryBuilder {
     /// or commander colors) do not count on their own: alone they're the
     /// unbounded full pool the add screen nudges the user past. A sort, or
     /// synergy mode's bounded pool, is intent enough to serve and reorder.
+    #[must_use]
     pub fn has_search_intent(&self, deck_format: Option<Format>) -> bool {
         !self.is_empty_ignoring_deck_context(deck_format) || self.sort.is_some() || self.synergy
     }
@@ -467,6 +472,7 @@ impl CardQueryBuilder {
     }
 
     /// Creates builder filtering by presence/absence of flavor text.
+    #[must_use]
     pub fn with_has_flavor_text(has_flavor_text: bool) -> Self {
         Self {
             has_flavor_text: Some(has_flavor_text),
@@ -543,6 +549,7 @@ impl CardQueryBuilder {
     }
 
     /// Creates builder matching any of the provided rarities.
+    #[must_use]
     pub fn with_rarity_equals_any(rarity_equals_any: Rarities) -> CardQueryBuilder {
         let rarity_equals_any = if rarity_equals_any.is_empty() {
             None
@@ -556,6 +563,7 @@ impl CardQueryBuilder {
     }
 
     /// Creates builder with exact CMC (converted mana cost) filter.
+    #[must_use]
     pub fn with_cmc_equals(cmc_equals: f64) -> CardQueryBuilder {
         CardQueryBuilder {
             cmc_equals: Some(cmc_equals),
@@ -564,6 +572,7 @@ impl CardQueryBuilder {
     }
 
     /// Creates builder with CMC range filter (inclusive).
+    #[must_use]
     pub fn with_cmc_range(cmc_range: (f64, f64)) -> CardQueryBuilder {
         CardQueryBuilder {
             cmc_range: Some(cmc_range),
@@ -634,6 +643,7 @@ impl CardQueryBuilder {
     }
 
     /// Creates builder with exact power filter (creature combat stat).
+    #[must_use]
     pub fn with_power_equals(power_equals: i32) -> CardQueryBuilder {
         CardQueryBuilder {
             power_equals: Some(power_equals),
@@ -642,6 +652,7 @@ impl CardQueryBuilder {
     }
 
     /// Creates builder with power range filter (inclusive).
+    #[must_use]
     pub fn with_power_range(power_range: (i32, i32)) -> CardQueryBuilder {
         CardQueryBuilder {
             power_range: Some(power_range),
@@ -650,6 +661,7 @@ impl CardQueryBuilder {
     }
 
     /// Creates builder with exact toughness filter.
+    #[must_use]
     pub fn with_toughness_equals(toughness_equals: i32) -> CardQueryBuilder {
         CardQueryBuilder {
             toughness_equals: Some(toughness_equals),
@@ -658,6 +670,7 @@ impl CardQueryBuilder {
     }
 
     /// Creates builder with toughness range filter (inclusive).
+    #[must_use]
     pub fn with_toughness_range(toughness_range: (i32, i32)) -> CardQueryBuilder {
         CardQueryBuilder {
             toughness_range: Some(toughness_range),
@@ -666,6 +679,7 @@ impl CardQueryBuilder {
     }
 
     /// Creates builder filtering by token status (tokens vs. real cards).
+    #[must_use]
     pub fn with_is_token(is_token: bool) -> CardQueryBuilder {
         CardQueryBuilder {
             is_token: Some(is_token),
@@ -674,6 +688,7 @@ impl CardQueryBuilder {
     }
 
     /// Creates builder filtering by playability (excludes un-cards, silver-bordered).
+    #[must_use]
     pub fn with_is_playable(is_playable: bool) -> CardQueryBuilder {
         CardQueryBuilder {
             is_playable: Some(is_playable),
@@ -682,6 +697,7 @@ impl CardQueryBuilder {
     }
 
     /// Creates builder filtering by digital-only status (Arena/MTGO exclusives).
+    #[must_use]
     pub fn with_digital(digital: bool) -> CardQueryBuilder {
         CardQueryBuilder {
             digital: Some(digital),
@@ -690,6 +706,7 @@ impl CardQueryBuilder {
     }
 
     /// Creates builder filtering by oversized card status.
+    #[must_use]
     pub fn with_oversized(oversized: bool) -> CardQueryBuilder {
         CardQueryBuilder {
             oversized: Some(oversized),
@@ -698,6 +715,7 @@ impl CardQueryBuilder {
     }
 
     /// Creates builder filtering by promotional card status.
+    #[must_use]
     pub fn with_promo(promo: bool) -> CardQueryBuilder {
         CardQueryBuilder {
             promo: Some(promo),
@@ -706,6 +724,7 @@ impl CardQueryBuilder {
     }
 
     /// Creates builder filtering by content warning flag.
+    #[must_use]
     pub fn with_content_warning(content_warning: bool) -> CardQueryBuilder {
         CardQueryBuilder {
             content_warning: Some(content_warning),
@@ -714,6 +733,7 @@ impl CardQueryBuilder {
     }
 
     /// Creates builder with specific result ordering (name, CMC, rarity, etc.).
+    #[must_use]
     pub fn with_sort(sort: CardSortKey) -> CardQueryBuilder {
         CardQueryBuilder {
             sort: Some(sort),

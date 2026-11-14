@@ -63,6 +63,7 @@ impl From<Swipe> for SwipeDirection {
 
 impl Swipe {
     /// The arrow key that swipes this way.
+    #[must_use]
     pub fn key(self) -> &'static str {
         match self {
             Self::Left => "ArrowLeft",
@@ -73,6 +74,7 @@ impl Swipe {
     }
 
     /// The arrow icon its dock button shows, a path for [`DockIcon`].
+    #[must_use]
     pub fn arrow(self) -> &'static str {
         match self {
             Self::Left => ARROW_LEFT,
@@ -102,6 +104,7 @@ impl Swipe {
 
     /// The swipe a drag of `(dx, dy)` pixels makes, if it went far enough.
     /// The longer axis decides.
+    #[must_use]
     pub fn of_drag(dx: f64, dy: f64) -> Option<Self> {
         if dx.abs() >= dy.abs() {
             if dx >= COMMIT_PX {
@@ -177,6 +180,7 @@ impl SwipeRoute {
     /// Routes `swipe` by whether a card is on top. With none, down goes
     /// straight to undo and never through [`SwipeControl`], where it would
     /// wait for the next stack to mount and swipe its first card.
+    #[must_use]
     pub fn of(swipe: Swipe, card_on_top: bool) -> Self {
         match (card_on_top, swipe) {
             (true, _) => Self::Stack,
@@ -187,6 +191,7 @@ impl SwipeRoute {
 }
 
 /// A control with nothing asked for yet.
+#[must_use]
 pub fn use_swipe_control() -> SwipeControl {
     SwipeControl(use_signal(|| None))
 }

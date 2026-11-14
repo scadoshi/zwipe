@@ -28,6 +28,7 @@ pub struct Card {
 
 impl Card {
     /// Creates a new card from profile and Scryfall data.
+    #[must_use]
     pub fn new(card_profile: CardProfile, scryfall_data: ScryfallData) -> Self {
         Self {
             card_profile,

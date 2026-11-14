@@ -68,6 +68,7 @@ const POOL_IDLE_TIMEOUT: Duration = Duration::from_secs(30);
 
 impl ZwipeClient {
     /// Builds a client pointed at `base_url`.
+    #[must_use]
     pub fn new(base_url: Url) -> Self {
         Self {
             client: build_client(),

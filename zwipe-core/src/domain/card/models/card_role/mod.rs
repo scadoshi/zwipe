@@ -77,6 +77,7 @@ pub enum CardRole {
 
 impl CardRole {
     /// All 27 category variants, alphabetical.
+    #[must_use]
     pub fn all() -> &'static [CardRole] {
         &[
             Self::Aggression,
@@ -110,6 +111,7 @@ impl CardRole {
     }
 
     /// Compact (≤5 char) abbreviation for chart labels.
+    #[must_use]
     pub fn to_short_name(&self) -> &'static str {
         match self {
             Self::Ramp => "ramp",
@@ -143,6 +145,7 @@ impl CardRole {
     }
 
     /// Human-readable display name.
+    #[must_use]
     pub fn display_name(&self) -> &'static str {
         match self {
             Self::Ramp => "Ramp",
@@ -214,6 +217,7 @@ pub struct CardRoleView {
 
 impl CardRole {
     /// This role as a wire catalog view (slug + labels).
+    #[must_use]
     pub fn to_view(&self) -> CardRoleView {
         CardRoleView {
             slug: self.to_string(),
@@ -228,6 +232,7 @@ impl CardRole {
 /// server-delivered slugs (`CardProfile.card_roles`); a server-added role still
 /// shows a readable label without a client release, while known roles keep their
 /// curated labels (e.g. `counters` → "+1/+1 Counters").
+#[must_use]
 pub fn role_label(slug: &str) -> String {
     CardRole::try_from(slug).map_or_else(
         |_| prettify_role_slug(slug),
@@ -237,6 +242,7 @@ pub fn role_label(slug: &str) -> String {
 
 /// The display name for a role's [`CardRole::to_short_name`], the key the
 /// deck metrics count roles under; the short name itself when no role has it.
+#[must_use]
 pub fn label_for_short_name(short: &str) -> &str {
     match CardRole::all()
         .iter()

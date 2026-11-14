@@ -195,6 +195,7 @@ impl DetailsEye {
 /// panel starts as [`starts_hidden`] says, from [`beside_fits`] and the
 /// eye's stored choice in the [`DetailsEyeHost`] in context; later resizes leave the eye as it
 /// is.
+#[must_use]
 pub fn use_details_eye(sheet: Signal<bool>, surface: Surface) -> DetailsEye {
     let wide = use_wide();
     let host = try_use_context::<DetailsEyeHost>();

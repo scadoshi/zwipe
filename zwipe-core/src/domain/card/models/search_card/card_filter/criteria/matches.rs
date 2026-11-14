@@ -43,6 +43,7 @@ impl CardCriteria {
         clippy::too_many_lines,
         reason = "one short check per criterion, in field order"
     )]
+    #[must_use]
     pub fn matches(&self, card: &Card) -> bool {
         let sd = &card.scryfall_data;
         let cp = &card.card_profile;

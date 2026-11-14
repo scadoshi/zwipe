@@ -29,6 +29,7 @@ pub struct HttpAuthenticateUser {
 
 impl HttpAuthenticateUser {
     /// Creates a new login request (no platform/version; set the fields to record them).
+    #[must_use]
     pub fn new(identifier: &str, password: &str) -> Self {
         Self {
             identifier: identifier.to_string(),
@@ -56,6 +57,7 @@ pub struct HttpRegisterUser {
 
 impl HttpRegisterUser {
     /// Creates a new registration request.
+    #[must_use]
     pub fn new(username: &str, email: &str, password: &str) -> Self {
         Self {
             username: username.to_string(),
@@ -113,6 +115,7 @@ impl std::fmt::Debug for HttpRefreshSession {
 
 impl HttpRefreshSession {
     /// Creates a new token refresh request (no version; set `.client_version` to record one).
+    #[must_use]
     pub fn new(user_id: &str, refresh_token: &str) -> Self {
         Self {
             user_id: user_id.to_string(),
@@ -142,6 +145,7 @@ pub struct HttpChangePassword {
 
 impl HttpChangePassword {
     /// Creates a new password change request.
+    #[must_use]
     pub fn new(current_password: &str, new_password: &str) -> Self {
         Self {
             current_password: Secret::new(current_password),
@@ -161,6 +165,7 @@ pub struct HttpChangeUsername {
 
 impl HttpChangeUsername {
     /// Creates a new username change request.
+    #[must_use]
     pub fn new(new_username: &str, password: &str) -> Self {
         Self {
             new_username: new_username.to_string(),
@@ -183,6 +188,7 @@ pub struct HttpChangeEmail {
 
 impl HttpChangeEmail {
     /// Creates an email change request.
+    #[must_use]
     pub fn new(email: &str, password: &str) -> Self {
         Self {
             email: email.to_string(),
@@ -239,6 +245,7 @@ pub struct HttpRequestPasswordReset {
 
 impl HttpRequestPasswordReset {
     /// Creates a new password reset request for the given email address.
+    #[must_use]
     pub fn new(email: &str) -> Self {
         Self {
             email: email.to_string(),

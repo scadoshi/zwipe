@@ -23,6 +23,7 @@ pub struct CommanderMaybeboardCard {
 
 impl CommanderMaybeboardCard {
     /// Creates a new commander maybeboard entry request.
+    #[must_use]
     pub fn new(user_id: Uuid, oracle_id: Uuid) -> Self {
         Self { user_id, oracle_id }
     }

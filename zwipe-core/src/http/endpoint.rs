@@ -29,6 +29,7 @@ pub enum Method {
 
 impl Method {
     /// The wire spelling, e.g. `"GET"`.
+    #[must_use]
     pub fn as_str(self) -> &'static str {
         match self {
             Method::Get => "GET",

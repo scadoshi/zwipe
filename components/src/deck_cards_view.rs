@@ -89,6 +89,7 @@ pub struct StackDetails {
 
 /// The [`StackDetails`] over `reveal` and `details_open`, the drawer on the right until a card
 /// opens it.
+#[must_use]
 pub fn use_stack_details(reveal: Signal<Reveal>, details_open: Signal<bool>) -> StackDetails {
     StackDetails {
         reveal,

@@ -376,6 +376,7 @@ impl ScryfallData {
     }
 
     /// Returns `true` if this card is any kind of land (basic, nonbasic, fetch, etc.).
+    #[must_use]
     pub fn is_land(&self) -> bool {
         self.type_line
             .as_deref()
@@ -384,6 +385,7 @@ impl ScryfallData {
 
     /// Returns `true` if this printing is out of universe (Universes Beyond):
     /// triangle security stamp, or a wholly-UB set. See [`universe`].
+    #[must_use]
     pub fn is_out_of_universe(&self) -> bool {
         universe::is_out_of_universe(self.security_stamp.as_deref(), &self.set)
     }
@@ -396,6 +398,7 @@ impl ScryfallData {
     /// `double_faced_token`, `reversible_card`, `art_series`) leave top-level `image_uris`
     /// as `None` and store per-face images in `card_faces[].image_uris` instead. Per
     /// Scryfall's API contract, `card_faces[0]` is the canonical front face.
+    #[must_use]
     pub fn primary_image_url(&self, size: ImageSize) -> Option<&str> {
         self.face_image_url(0, size)
     }
@@ -404,6 +407,7 @@ impl ScryfallData {
     /// source for row thumbnails. Same front-face fallback as
     /// [`Self::face_image_url`]: top-level `image_uris` first, then
     /// `card_faces[0]` (DFCs carry images per face).
+    #[must_use]
     pub fn art_crop_url(&self) -> Option<&str> {
         if let Some(url) = self
             .image_uris
@@ -422,6 +426,7 @@ impl ScryfallData {
     /// Returns the art-crop URL of face `face_index` (`0` is the front), falling back to the
     /// front's [`Self::art_crop_url`] where that face has no art of its own: a single-faced
     /// card, or a split card whose halves share one image.
+    #[must_use]
     pub fn face_art_crop_url(&self, face_index: usize) -> Option<&str> {
         self.card_faces
             .as_ref()
@@ -437,6 +442,7 @@ impl ScryfallData {
     /// `face_index == 0` returns the front face, falling back from top-level `image_uris`
     /// to `card_faces[0].image_uris`. Higher indices read only from `card_faces[idx]`
     /// (there is no top-level image for back faces).
+    #[must_use]
     pub fn face_image_url(&self, face_index: usize, size: ImageSize) -> Option<&str> {
         if face_index == 0
             && let Some(url) = self.image_uris.as_ref().and_then(|iu| iu.at_size(size))
@@ -452,6 +458,7 @@ impl ScryfallData {
 
     /// Returns the image of face `face_index` at `size`, or the front's where that face has no
     /// image of its own (a split card's halves share one): the image of the face a host shows.
+    #[must_use]
     pub fn shown_face_image_url(&self, face_index: usize, size: ImageSize) -> Option<&str> {
         self.face_image_url(face_index, size)
             .or_else(|| self.primary_image_url(size))
@@ -464,6 +471,7 @@ impl ScryfallData {
     /// `split` and `adventure` have a single physical image with both halves baked
     /// in; their `card_faces` entries lack per-face `image_uris`, so we treat
     /// them as single-faced for rendering purposes.
+    #[must_use]
     pub fn face_count(&self) -> usize {
         match self.card_faces.as_ref() {
             Some(faces) if faces.len() > 1 && faces.iter().all(|f| f.image_uris.is_some()) => {

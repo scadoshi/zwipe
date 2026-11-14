@@ -47,6 +47,7 @@ impl TryFrom<String> for Rarity {
 
 impl Rarity {
     /// Returns the long display name (e.g., "Common", "Mythic").
+    #[must_use]
     pub fn to_long_name(&self) -> String {
         match self {
             Self::Common => "Common".to_string(),
@@ -59,6 +60,7 @@ impl Rarity {
     }
 
     /// Returns the short code (e.g., "C", "M").
+    #[must_use]
     pub fn to_short_name(&self) -> String {
         match self {
             Self::Common => "C".to_string(),
@@ -71,6 +73,7 @@ impl Rarity {
     }
 
     /// Returns all rarity variants.
+    #[must_use]
     pub fn all() -> Vec<Self> {
         vec![
             Self::Common,

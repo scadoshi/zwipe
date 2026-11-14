@@ -33,6 +33,7 @@ impl HttpRelease {
     /// The day this release shipped: `released_on` when the server sent it,
     /// otherwise parsed from the display `date` an older server sends. `None`
     /// for an upcoming release, or a `date` that does not parse.
+    #[must_use]
     pub fn released_on(&self) -> Option<NaiveDate> {
         self.released_on
             .or_else(|| NaiveDate::parse_from_str(&self.date, DISPLAY_DATE_FORMAT).ok())

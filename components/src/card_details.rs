@@ -104,6 +104,7 @@ fn build_rules(card: &Card) -> Option<Vec<FaceRules>> {
 /// nothing to show. Hosts that place their own Flip control outside the component
 /// (e.g. an eyeball sheet putting it in a footer bar) use this to decide whether
 /// to render it.
+#[must_use]
 pub fn card_face_count(card: &Card) -> usize {
     build_rules(card).map_or(0, |f| f.len())
 }

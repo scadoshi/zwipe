@@ -26,21 +26,25 @@ pub enum Board {
 
 impl Board {
     /// Whether this card is in the active deck.
+    #[must_use]
     pub fn is_active(&self) -> bool {
         matches!(self, Self::Deck)
     }
 
     /// Whether this card is on the maybeboard.
+    #[must_use]
     pub fn is_maybeboard(&self) -> bool {
         matches!(self, Self::Maybeboard)
     }
 
     /// Whether this card is in the sideboard.
+    #[must_use]
     pub fn is_sideboard(&self) -> bool {
         matches!(self, Self::Sideboard)
     }
 
     /// Lowercase name matching the database TEXT column value.
+    #[must_use]
     pub fn display_name(&self) -> &str {
         match self {
             Self::Deck => "deck",

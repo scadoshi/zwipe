@@ -36,6 +36,7 @@ pub enum DeckOtherTag {
 
 impl DeckOtherTag {
     /// All other-tag variants, alphabetical.
+    #[must_use]
     pub fn all() -> &'static [DeckOtherTag] {
         &[
             Self::Budget,
@@ -47,6 +48,7 @@ impl DeckOtherTag {
     }
 
     /// Human-readable display name.
+    #[must_use]
     pub fn display_name(&self) -> &'static str {
         match self {
             Self::Budget => "Budget",
@@ -58,6 +60,7 @@ impl DeckOtherTag {
     }
 
     /// One-line, plain-language description, for the picker's hint dialog.
+    #[must_use]
     pub fn description(&self) -> &'static str {
         match self {
             Self::Budget => "Built to a tight price: cheap cards over expensive staples",

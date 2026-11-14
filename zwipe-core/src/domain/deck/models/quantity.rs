@@ -33,11 +33,13 @@ impl Quantity {
     }
 
     /// A single copy.
+    #[must_use]
     pub fn one() -> Self {
         Self(1)
     }
 
     /// A full playset.
+    #[must_use]
     pub fn four() -> Self {
         Self(4)
     }

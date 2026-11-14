@@ -25,6 +25,7 @@ pub enum AnonymousEventKind {
 
 impl AnonymousEventKind {
     /// String form stored in the `anonymous_events.kind` column.
+    #[must_use]
     pub fn as_str(self) -> &'static str {
         match self {
             AnonymousEventKind::AppOpened => "app_opened",
@@ -105,6 +106,7 @@ pub enum PileEndKind {
 
 impl PileEndKind {
     /// The stored label, matching the wire spelling.
+    #[must_use]
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Empty => "empty",

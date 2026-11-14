@@ -115,51 +115,63 @@ pub const CHANGELOG_ROUTE: &str = "/api/changelog";
 
 // == paths carrying an id ==
 
+#[must_use]
 pub fn card_route(scryfall_data_id: Uuid) -> String {
     format!("{CARD_ROUTE}/{scryfall_data_id}")
 }
 
+#[must_use]
 pub fn printings_route(oracle_id: Uuid) -> String {
     format!("{CARD_ROUTE}/{oracle_id}/printings")
 }
 
+#[must_use]
 pub fn oracle_tag_examples_route(slug: &OracleTagSlug) -> String {
     format!("{CARD_ROUTE}/oracle-tag/{slug}/examples")
 }
 
+#[must_use]
 pub fn deck_route(deck_id: Uuid) -> String {
     format!("{DECK_ROUTE}/{deck_id}")
 }
 
+#[must_use]
 pub fn deck_tokens_route(deck_id: Uuid) -> String {
     format!("{DECK_ROUTE}/{deck_id}/tokens")
 }
 
+#[must_use]
 pub fn deck_profile_route(deck_id: Uuid) -> String {
     format!("{DECK_ROUTE}/profile/{deck_id}")
 }
 
+#[must_use]
 pub fn update_deck_route(deck_id: Uuid) -> String {
     format!("{DECK_ROUTE}/{deck_id}")
 }
 
+#[must_use]
 pub fn delete_deck_route(deck_id: Uuid) -> String {
     format!("{DECK_ROUTE}/{deck_id}")
 }
 
+#[must_use]
 pub fn clone_deck_route(source_deck_id: Uuid) -> String {
     format!("{DECK_ROUTE}/{source_deck_id}/clone")
 }
 
+#[must_use]
 pub fn share_deck_route(deck_id: Uuid) -> String {
     format!("{DECK_ROUTE}/{deck_id}/share")
 }
 
+#[must_use]
 pub fn shared_deck_route(token: Uuid) -> String {
     format!("/api/share/deck/{token}")
 }
 
 /// A shared deck's preview image: the PNG its link unfurls with.
+#[must_use]
 pub fn shared_deck_preview_route(token: Uuid) -> String {
     format!("/api/share/deck/{token}/preview.png")
 }
@@ -172,54 +184,67 @@ pub const SHARE_PREVIEW_LAYOUT: u32 = 3;
 /// The `v` a preview URL carries for a deck last updated at `updated_at`
 /// (unix seconds): the layout version and the update, `2-1794023263`. zerver
 /// caches the image a year only under this exact value.
+#[must_use]
 pub fn shared_deck_preview_version(updated_at: i64) -> String {
     format!("{SHARE_PREVIEW_LAYOUT}-{updated_at}")
 }
 
+#[must_use]
 pub fn clear_deck_suppressions_route(deck_id: Uuid) -> String {
     format!("{DECK_ROUTE}/{deck_id}/suppressions")
 }
 
+#[must_use]
 pub fn skip_deck_card_route(deck_id: Uuid) -> String {
     format!("{DECK_ROUTE}/{deck_id}/suppressions")
 }
 
+#[must_use]
 pub fn unskip_deck_card_route(deck_id: Uuid, oracle_id: Uuid) -> String {
     format!("{DECK_ROUTE}/{deck_id}/suppressions/{oracle_id}")
 }
 
+#[must_use]
 pub fn add_commander_maybeboard_card_route(oracle_id: Uuid) -> String {
     format!("{COMMANDER_MAYBEBOARD_ROUTE}/{oracle_id}")
 }
 
+#[must_use]
 pub fn remove_commander_maybeboard_card_route(oracle_id: Uuid) -> String {
     format!("{COMMANDER_MAYBEBOARD_ROUTE}/{oracle_id}")
 }
 
+#[must_use]
 pub fn import_archidekt_deck_route(deck_id: Uuid) -> String {
     format!("{DECK_ROUTE}/{deck_id}/import/archidekt")
 }
 
+#[must_use]
 pub fn undismiss_commander_route(oracle_id: Uuid) -> String {
     format!("{COMMANDER_DISMISSALS_ROUTE}/{oracle_id}")
 }
 
+#[must_use]
 pub fn search_deck_cards_route(deck_id: Uuid) -> String {
     format!("{DECK_ROUTE}/{deck_id}/card/search")
 }
 
+#[must_use]
 pub fn create_deck_card_route(deck_id: Uuid) -> String {
     format!("{DECK_ROUTE}/{deck_id}/card")
 }
 
+#[must_use]
 pub fn update_deck_card_route(deck_id: Uuid, scryfall_data_id: Uuid) -> String {
     format!("{DECK_ROUTE}/{deck_id}/card/{scryfall_data_id}")
 }
 
+#[must_use]
 pub fn delete_deck_card_route(deck_id: Uuid, scryfall_data_id: Uuid) -> String {
     format!("{DECK_ROUTE}/{deck_id}/card/{scryfall_data_id}")
 }
 
+#[must_use]
 pub fn import_deck_cards_route(deck_id: Uuid) -> String {
     format!("{DECK_ROUTE}/{deck_id}/card/import")
 }

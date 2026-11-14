@@ -96,6 +96,7 @@ impl Cards {
     /// True if any card matches `criteria`. The single-card membership test
     /// (`Cards::from(vec![card]).any_match(...)`) needs no allocation dance;
     /// prefer calling [`CardCriteria::matches`](crate::domain::card::models::search_card::card_filter::criteria::CardCriteria::matches) directly when you hold one card.
+    #[must_use]
     pub fn any_match(&self, criteria: &CardCriteria) -> bool {
         self.0.iter().any(|card| criteria.matches(card))
     }

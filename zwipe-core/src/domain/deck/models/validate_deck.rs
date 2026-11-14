@@ -25,6 +25,7 @@ pub struct DeckCommandZone<'a> {
 impl DeckCommandZone<'_> {
     /// The present command-zone cards as owned clones, in zone order. Used by
     /// price calcs that fold the command zone into the deck total.
+    #[must_use]
     pub fn cards(&self) -> Vec<Card> {
         [
             self.commander,
@@ -44,6 +45,7 @@ impl DeckCommandZone<'_> {
 /// If the deck has no format set, returns an empty list.
 /// The `command_zone` provides card data for commander/partner/background/spell
 /// when they are not part of the deck entries.
+#[must_use]
 pub fn validate_deck(
     deck_profile: &DeckProfile,
     entries: &[DeckEntry],

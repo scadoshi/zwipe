@@ -59,6 +59,7 @@ fn newest_has_hint(hints: Option<PageHints>) -> bool {
 /// keys it answers anywhere ([`shortcuts::everywhere_groups`], the theme sheet's among them), so
 /// Shift+H and the hint's keyboard button work on every page, and a screen with keys of its own
 /// lists those over them. The page keys scroll `scroller` (a selector), else the document.
+#[must_use]
 pub fn use_shortcuts_root(scroller: Option<&'static str>) -> Signal<bool> {
     let open = use_context_provider(|| ShortcutsOpen(Signal::new(false))).0;
     use_context_provider(|| PageHints(Signal::new(Vec::new())));
@@ -248,6 +249,7 @@ pub fn shortcuts_action(
 
 /// The keyboard button for the hint of the screen on top ([`shortcuts_action`]), opening the
 /// shortcuts sheet, kept current as screens mount and the window changes.
+#[must_use]
 pub fn use_shortcuts_action() -> Option<DialogAction> {
     let open = try_use_context::<ShortcutsOpen>().map(|ShortcutsOpen(open)| open);
     let offered = try_use_context::<ShortcutsOffered>().map(|ShortcutsOffered(stack)| stack);

@@ -123,6 +123,7 @@ pub struct UpdateDeckProfile {
 
 impl UpdateDeckProfile {
     /// Creates a builder with the required fields.
+    #[must_use]
     pub fn builder(deck_id: Uuid, user_id: Uuid) -> UpdateDeckProfileBuilder {
         UpdateDeckProfileBuilder {
             deck_id,

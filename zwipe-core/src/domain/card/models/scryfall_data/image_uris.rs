@@ -45,6 +45,7 @@ pub struct ImageUris {
 
 impl ImageUris {
     /// Returns the URL for the requested size variant if available.
+    #[must_use]
     pub fn at_size(&self, size: ImageSize) -> Option<&str> {
         match size {
             ImageSize::Small => self.small.as_deref(),

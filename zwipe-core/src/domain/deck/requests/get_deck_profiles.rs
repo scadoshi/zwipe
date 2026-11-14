@@ -28,6 +28,7 @@ pub struct GetDeckProfiles {
 
 impl GetDeckProfiles {
     /// Creates a request for `user_id`'s decks.
+    #[must_use]
     pub fn new(user_id: Uuid) -> Self {
         Self { user_id }
     }

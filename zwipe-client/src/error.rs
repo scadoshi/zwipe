@@ -89,6 +89,7 @@ impl ClientError {
     }
 
     /// Returns a safe, user-facing message in sentence case: never leaks internal details like URLs or stack traces. The server's own lowercase message gets its first letter capitalized.
+    #[must_use]
     pub fn to_user_message(&self) -> String {
         let message = match self {
             ClientError::Network(_) => {

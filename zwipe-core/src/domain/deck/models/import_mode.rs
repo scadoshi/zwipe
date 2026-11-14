@@ -20,6 +20,7 @@ pub enum ImportMode {
 
 impl ImportMode {
     /// Whether this import replaces the target board's contents.
+    #[must_use]
     pub fn is_replace(&self) -> bool {
         matches!(self, Self::Replace)
     }

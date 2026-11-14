@@ -126,6 +126,7 @@ pub const NOISE_ORACLE_TAG_SLUGS: &[&str] = &[
 /// player-facing tag displays. See [`NOISE_ORACLE_TAG_SLUGS`]; also filters the
 /// card-name (`*-name`) and vanilla (`*-vanilla`) trivia families and
 /// `alliteration` / `type-addition-*` by pattern.
+#[must_use]
 pub fn is_noise_oracle_tag(slug: &str) -> bool {
     slug.ends_with("-vanilla")
         || slug.ends_with("-name")
@@ -140,6 +141,7 @@ pub fn is_noise_oracle_tag(slug: &str) -> bool {
 /// description-only matches, each tier alphabetical by slug. A blank query
 /// returns nothing; pickers show their curated/browse views instead. Callers
 /// apply their own result cap.
+#[must_use]
 pub fn search_oracle_tags(tags: &[OracleTag], query: &str) -> Vec<OracleTag> {
     let q = query.trim().to_lowercase();
     if q.is_empty() {

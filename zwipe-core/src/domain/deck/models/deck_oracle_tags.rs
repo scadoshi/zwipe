@@ -17,6 +17,7 @@ pub const MAX_DECK_ORACLE_TAGS: usize = 30;
 /// archetype's [`DeckTag::oracle_tag_slugs`], deduped, first-seen order. This is
 /// what a client unions into the deck's oracle tags when archetypes are picked
 /// (the flat "select a deck tag, its oracle tags pre-select" behavior).
+#[must_use]
 pub fn seed_oracle_tags(tags: &[String]) -> Vec<String> {
     let mut seen = HashSet::new();
     tags.iter()
@@ -32,6 +33,7 @@ pub fn seed_oracle_tags(tags: &[String]) -> Vec<String> {
 /// newly-served deck tag (or a re-tuned seed set) pre-select its oracle tags
 /// without a client release. Union of each selected tag's `seed_otags`, deduped,
 /// first-seen order; slugs absent from the catalog seed nothing.
+#[must_use]
 pub fn seed_oracle_tags_from_catalog(tags: &[String], catalog: &[DeckTagView]) -> Vec<String> {
     let mut seen = HashSet::new();
     tags.iter()
@@ -44,6 +46,7 @@ pub fn seed_oracle_tags_from_catalog(tags: &[String], catalog: &[DeckTagView]) -
 
 /// Dedupes raw oracle-tag slugs, preserving first-seen order (mirrors
 /// `parse_tags`' dedupe, minus the enum validation; slugs are free strings).
+#[must_use]
 pub fn dedupe_oracle_tags(raw: &[String]) -> Vec<String> {
     let mut seen = HashSet::new();
     raw.iter()

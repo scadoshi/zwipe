@@ -31,6 +31,7 @@ impl HttpCreateDeckCard {
     ///
     /// Takes `&ScryfallData` to extract the correct IDs, preventing callers
     /// from accidentally mixing up `scryfall_data_id` and `oracle_id`.
+    #[must_use]
     pub fn new(scryfall_data: &ScryfallData, quantity: i32, board: Option<String>) -> Self {
         Self {
             scryfall_data_id: scryfall_data.id.to_string(),
@@ -81,6 +82,7 @@ fn set_or_absent<T>(value: Option<T>) -> Patch<T> {
 
 impl HttpPatchDeckCard {
     /// Creates a new patch request (quantity and/or board).
+    #[must_use]
     pub fn new(quantity: Option<i32>, board: Option<String>) -> Self {
         Self {
             quantity: set_or_absent(quantity),
@@ -91,6 +93,7 @@ impl HttpPatchDeckCard {
     }
 
     /// Creates a patch request that changes the selected printing.
+    #[must_use]
     pub fn with_printing(scryfall_data_id: &str) -> Self {
         Self {
             quantity: Patch::Unchanged,
@@ -102,6 +105,7 @@ impl HttpPatchDeckCard {
 
     /// Creates a patch request that stars (true) or unstars (false) the card
     /// as a deck MVP.
+    #[must_use]
     pub fn with_mvp(mvp: bool) -> Self {
         Self {
             quantity: Patch::Unchanged,

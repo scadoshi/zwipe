@@ -76,6 +76,7 @@ pub struct HttpCreateDeckProfile {
 
 impl HttpCreateDeckProfile {
     /// Creates a builder with the required name field.
+    #[must_use]
     pub fn builder(name: &str) -> HttpCreateDeckProfileBuilder {
         HttpCreateDeckProfileBuilder {
             name: name.to_string(),
@@ -199,6 +200,7 @@ impl HttpCreateDeckProfileBuilder {
     }
 
     /// Builds the request.
+    #[must_use]
     pub fn build(self) -> HttpCreateDeckProfile {
         HttpCreateDeckProfile {
             name: self.name,
@@ -278,6 +280,7 @@ pub struct HttpUpdateDeckProfile {
 
 impl HttpUpdateDeckProfile {
     /// Creates a builder with all fields defaulting to unchanged.
+    #[must_use]
     pub fn builder() -> HttpUpdateDeckProfileBuilder {
         HttpUpdateDeckProfileBuilder {
             name: None,
@@ -409,6 +412,7 @@ impl HttpUpdateDeckProfileBuilder {
     }
 
     /// Builds the request.
+    #[must_use]
     pub fn build(self) -> HttpUpdateDeckProfile {
         HttpUpdateDeckProfile {
             name: self.name.map_or(Patch::Unchanged, |n| Patch::Set(Some(n))),

@@ -44,6 +44,7 @@ pub enum Format {
 
 impl Format {
     /// Returns the key used in the legalities JSONB (matches Legalities struct field names).
+    #[must_use]
     pub fn to_legality_key(&self) -> &str {
         match self {
             Self::Standard => "standard",
@@ -73,6 +74,7 @@ impl Format {
     }
 
     /// Human-readable display name.
+    #[must_use]
     pub fn display_name(&self) -> &str {
         match self {
             Self::Standard => "Standard",
@@ -102,6 +104,7 @@ impl Format {
     }
 
     /// The card pool this format draws from, for the picker's detail bullets.
+    #[must_use]
     pub fn card_pool(&self) -> &'static str {
         match self {
             Self::Standard => "Recent premier sets; rotates yearly",
@@ -130,6 +133,7 @@ impl Format {
     }
 
     /// Starting life total for this format.
+    #[must_use]
     pub fn starting_life(&self) -> u32 {
         match self {
             Self::Commander | Self::Predh => 40,
@@ -157,6 +161,7 @@ impl Format {
 
     /// Combat damage from a single commander that loses the game, if the format
     /// uses the commander-damage rule. `None` means the format has no such rule.
+    #[must_use]
     pub fn commander_damage(&self) -> Option<u32> {
         match self {
             Self::Commander | Self::Duel | Self::Predh => Some(21),
@@ -184,6 +189,7 @@ impl Format {
     }
 
     /// Minimum number of cards required by this format.
+    #[must_use]
     pub fn min_cards(&self) -> Option<u32> {
         match self {
             // 100-card singletons: the commander formats plus Gladiator
@@ -216,6 +222,7 @@ impl Format {
     }
 
     /// Maximum number of cards allowed by this format. `None` means no maximum.
+    #[must_use]
     pub fn max_cards(&self) -> Option<u32> {
         match self {
             // Exactly-100 commander singleton formats. `Brawl` is Arena's
@@ -251,6 +258,7 @@ impl Format {
     ///
     /// Derived from the format's deck size: ~37 for 100-card formats, ~17 for
     /// 60-card formats. `None` when the format implies no sensible default.
+    #[must_use]
     pub fn default_land_target(&self) -> Option<i32> {
         match self.min_cards()? {
             100 => Some(37),
@@ -260,6 +268,7 @@ impl Format {
     }
 
     /// Maximum copies of a single non-basic-land card.
+    #[must_use]
     pub fn copy_max(&self) -> u8 {
         match self {
             Self::Commander
@@ -289,6 +298,7 @@ impl Format {
     }
 
     /// Whether this format requires a commander.
+    #[must_use]
     pub fn has_commander(&self) -> bool {
         matches!(
             self,
@@ -304,11 +314,13 @@ impl Format {
     }
 
     /// Whether this format enforces color identity based on the commander.
+    #[must_use]
     pub fn checks_color_identity(&self) -> bool {
         self.has_commander()
     }
 
     /// Formats that require a commander, alphabetical.
+    #[must_use]
     pub fn commander_formats() -> &'static [Format] {
         &[
             Self::Brawl,
@@ -323,6 +335,7 @@ impl Format {
     }
 
     /// All format variants, commander formats first then alphabetical.
+    #[must_use]
     pub fn all() -> &'static [Format] {
         &[
             // commander formats
@@ -354,16 +367,19 @@ impl Format {
     }
 
     /// Whether this format supports a partner commander.
+    #[must_use]
     pub fn supports_partner(&self) -> bool {
         matches!(self, Self::Commander | Self::Duel | Self::Predh)
     }
 
     /// Whether this format supports a background enchantment.
+    #[must_use]
     pub fn supports_background(&self) -> bool {
         matches!(self, Self::Commander | Self::Duel | Self::Predh)
     }
 
     /// Whether this format has a signature spell (Oathbreaker only).
+    #[must_use]
     pub fn has_signature_spell(&self) -> bool {
         matches!(self, Self::Oathbreaker)
     }
@@ -371,11 +387,13 @@ impl Format {
     /// Whether this format supports sideboards.
     ///
     /// Commander-based formats (Commander, Brawl, Oathbreaker, etc.) do not use sideboards.
+    #[must_use]
     pub fn has_sideboard(&self) -> bool {
         !self.has_commander()
     }
 
     /// Maximum sideboard size, if any.
+    #[must_use]
     pub fn sideboard_max(&self) -> Option<u32> {
         if self.has_sideboard() { Some(15) } else { None }
     }

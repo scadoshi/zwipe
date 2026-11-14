@@ -32,6 +32,7 @@ fn ln_choose(n: u32, k: u32) -> f64 {
 /// `k` (more than exist, or too many to leave room for the rest of the hand).
 /// `draws` and `successes` are both capped at `deck_size`: you can't draw more
 /// cards than the deck holds, and a category can't hold more cards than the deck.
+#[must_use]
 pub fn p_exactly(deck_size: u32, successes: u32, draws: u32, k: u32) -> f64 {
     // Cap first. A 0-card draw (empty deck, or draws == 0) yields exactly 0
     // successes with certainty; the general computation below produces that
@@ -55,6 +56,7 @@ pub fn p_exactly(deck_size: u32, successes: u32, draws: u32, k: u32) -> f64 {
 
 /// `P(at least `threshold` of the category)` in `draws` cards.
 /// `threshold == 0` is certain (`1.0`).
+#[must_use]
 pub fn p_at_least(deck_size: u32, successes: u32, draws: u32, threshold: u32) -> f64 {
     if threshold == 0 {
         return 1.0;
@@ -67,6 +69,7 @@ pub fn p_at_least(deck_size: u32, successes: u32, draws: u32, threshold: u32) ->
 }
 
 /// Convenience for the headline question: `P(at least one of the category)`.
+#[must_use]
 pub fn p_at_least_one(deck_size: u32, successes: u32, draws: u32) -> f64 {
     p_at_least(deck_size, successes, draws, 1)
 }

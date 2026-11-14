@@ -262,6 +262,7 @@ pub enum DeckTag {
 impl DeckTag {
     /// All deck tag variants, alphabetical.
     #[expect(clippy::too_many_lines, reason = "a list of every variant")]
+    #[must_use]
     pub fn all() -> &'static [DeckTag] {
         &[
             Self::Adventures,
@@ -386,6 +387,7 @@ impl DeckTag {
 
     /// Human-readable display name.
     #[expect(clippy::too_many_lines, reason = "a lookup table, one arm per tag")]
+    #[must_use]
     pub fn display_name(&self) -> &'static str {
         match self {
             Self::Adventures => "Adventures",
@@ -511,6 +513,7 @@ impl DeckTag {
     /// One-line, plain-language definition of the strategy, for the tag picker's
     /// hint dialog.
     #[expect(clippy::too_many_lines, reason = "a lookup table, one arm per tag")]
+    #[must_use]
     pub fn description(&self) -> &'static str {
         match self {
             Self::Adventures => {
@@ -663,6 +666,7 @@ impl DeckTag {
     /// to be tuned over time as usage data and player feedback arrive. Archetypes
     /// too vague or niche to seed usefully return `&[]` (the user picks manually).
     #[expect(clippy::too_many_lines, reason = "a lookup table, one arm per tag")]
+    #[must_use]
     pub fn oracle_tag_slugs(&self) -> &'static [&'static str] {
         match self {
             Self::Aggro => &[
@@ -1059,6 +1063,7 @@ impl DeckTag {
 /// a known `DeckTag`, otherwise the prettified slug. Lets deck-tag display/selection
 /// work off server slugs (`DeckProfile.tags`); a server-added tag shows a readable
 /// label without a client release, while known tags keep their curated labels.
+#[must_use]
 pub fn deck_tag_label(slug: &str) -> String {
     DeckTag::try_from(slug).map_or_else(
         |_| prettify_deck_tag_slug(slug),

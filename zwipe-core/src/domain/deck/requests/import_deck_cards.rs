@@ -235,6 +235,7 @@ fn named_printing(s: &str) -> Option<NamedPrinting> {
 /// or `None` for a single-faced name. Import indexes a card under both its full
 /// name and this front face, so a decklist entry that names only the front
 /// still resolves.
+#[must_use]
 pub fn dfc_front_face(name: &str) -> Option<&str> {
     name.split_once(" // ").map(|(front, _)| front.trim())
 }
@@ -243,6 +244,7 @@ pub fn dfc_front_face(name: &str) -> Option<&str> {
 /// slash, trimmed. Collapses `"A // B"`, `"A / B"`, and `"A"` to the same key so
 /// all three resolve to the double-faced card. Returns the whole trimmed name
 /// when there's no slash.
+#[must_use]
 pub fn entry_front_face(name: &str) -> &str {
     match name.split_once('/') {
         Some((front, _)) => front.trim(),

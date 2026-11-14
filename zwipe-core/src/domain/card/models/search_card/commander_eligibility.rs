@@ -31,6 +31,7 @@ fn is_meld_result(card: &Card) -> bool {
 }
 
 /// Checks whether a card is a valid commander for the given format.
+#[must_use]
 pub fn is_valid_commander(card: &Card, format: &Format) -> bool {
     let sd = &card.scryfall_data;
     // Front face only, for every type test below. `oracle_text` stays whole:
@@ -133,6 +134,7 @@ pub enum PartnerKind {
 }
 
 /// Returns the partner kind for a card, if it has one.
+#[must_use]
 pub fn partner_kind(card: &Card) -> Option<PartnerKind> {
     let sd = &card.scryfall_data;
     let oracle_text = sd.oracle_text.as_deref().unwrap_or("");
@@ -165,6 +167,7 @@ pub fn partner_kind(card: &Card) -> Option<PartnerKind> {
 }
 
 /// Checks whether two cards can be partners.
+#[must_use]
 pub fn are_valid_partners(card_a: &Card, card_b: &Card) -> bool {
     let kind_a = partner_kind(card_a);
     let kind_b = partner_kind(card_b);
@@ -234,6 +237,7 @@ fn extract_named_partner(oracle_text: &str) -> Option<String> {
 // == Background Eligibility ==
 
 /// Whether a card has "Choose a Background" (making it background-eligible as commander).
+#[must_use]
 pub fn has_choose_a_background(card: &Card) -> bool {
     card.scryfall_data
         .oracle_text
@@ -244,6 +248,7 @@ pub fn has_choose_a_background(card: &Card) -> bool {
 }
 
 /// Whether a card is a Background enchantment.
+#[must_use]
 pub fn is_background_card(card: &Card) -> bool {
     is_background_type_line(card.scryfall_data.type_line.as_deref().unwrap_or(""))
 }
@@ -273,6 +278,7 @@ pub fn is_background_type_line(type_line: &str) -> bool {
 /// instant or sorcery is enough. Every other multi-face card is only its front
 /// face outside the stack (CR 712.4a), which is why the rest go through
 /// `front_face`.
+#[must_use]
 pub fn is_valid_signature_spell_type(card: &Card) -> bool {
     let sd = &card.scryfall_data;
     let type_line = sd.type_line.as_deref().unwrap_or("");
@@ -285,6 +291,7 @@ pub fn is_valid_signature_spell_type(card: &Card) -> bool {
 }
 
 /// Whether a signature spell is within the oathbreaker's color identity.
+#[must_use]
 pub fn is_signature_spell_in_color_identity(spell: &Card, oathbreaker: &Card) -> bool {
     let ob_colors = &oathbreaker.scryfall_data.color_identity;
     for color in spell.scryfall_data.color_identity.iter() {

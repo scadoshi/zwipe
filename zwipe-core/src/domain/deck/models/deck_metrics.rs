@@ -103,6 +103,7 @@ impl DeckMetrics {
 
     /// The type chart's word for a type: the type's singular, or a short
     /// word for the long ones, so each fits its column on a phone.
+    #[must_use]
     pub fn abbreviate_type(label: &str) -> &str {
         match label {
             "lands" => "Land",
@@ -119,6 +120,7 @@ impl DeckMetrics {
 
     /// Max-normalized bar height for chart rendering: the tallest bar reads
     /// 100, any nonzero count reads at least 4 (a visible sliver), zero is 0.
+    #[must_use]
     pub fn bar_pct(count: usize, max: usize) -> u32 {
         if max > 0 && count > 0 {
             // Widened to u128 so `count * 100` can't overflow. At most 100
@@ -137,6 +139,7 @@ impl DeckMetrics {
     }
 
     /// Chart-ready mana curve: `(count, height pct)` per CMC bucket (0–5, 6+).
+    #[must_use]
     pub fn mana_curve_bars(&self) -> [(usize, u32); 7] {
         let max = self.cmc_histogram.iter().copied().max().unwrap_or(0);
         std::array::from_fn(|i| {
@@ -148,6 +151,7 @@ impl DeckMetrics {
     /// Chart-ready type distribution: `(label, count, height pct)`, each
     /// label abbreviated unless the deck has a single type, whose one bar has
     /// the chart's width to itself.
+    #[must_use]
     pub fn type_bars(&self) -> Vec<(&'static str, usize, u32)> {
         let max = self.type_counts.iter().map(|(_, c)| *c).max().unwrap_or(0);
         let single = self.type_counts.len() == 1;
@@ -170,6 +174,7 @@ impl DeckMetrics {
     /// The cards per color in WUBRG order, then the colorless cards, zero
     /// counts included. A card counts once per color of its color identity,
     /// so a two-color card counts in both.
+    #[must_use]
     pub fn color_buckets(&self) -> ([usize; 5], usize) {
         let count_at = |slot: usize| {
             COLOR_LABELS.get(slot).map_or(0, |wanted| {
@@ -187,6 +192,7 @@ impl DeckMetrics {
 
     /// Chart-ready card-role distribution: `(label, count, width pct)`, `None`
     /// when the deck has no role-tagged cards.
+    #[must_use]
     pub fn card_role_bars(&self) -> Option<Vec<(&'static str, usize, u32)>> {
         if self.card_role_counts.is_empty() {
             return None;
@@ -208,6 +214,7 @@ impl DeckMetrics {
     /// Chart-ready per-color mana balance (consumed vs producible pips), only
     /// colors the deck actually consumes. Bar fill is produced over the row's
     /// max with the same 4% nonzero sliver floor as the other charts.
+    #[must_use]
     pub fn mana_balance_rows(&self) -> Vec<ManaBalanceRow> {
         let labels = ["W", "U", "B", "R", "G"];
         labels
@@ -230,6 +237,7 @@ impl DeckMetrics {
 
     /// Chart-ready oracle tag distribution: `(slug, count, width pct)`,
     /// `None` when no mainboard card carries a tag.
+    #[must_use]
     pub fn oracle_tag_bars(&self) -> Option<Vec<(String, usize, u32)>> {
         let max = self.oracle_tag_counts.iter().map(|(_, c)| *c).max()?;
         Some(
@@ -244,6 +252,7 @@ impl DeckMetrics {
     /// plus each card role by its display name, the largest bucket first and Land ahead of a role
     /// it ties. Library size is the mainboard (the commander sits in the
     /// command zone, not the library).
+    #[must_use]
     pub fn draw_odds_buckets(&self) -> (u32, Vec<(&'static str, u32)>) {
         let deck_size = display_count(self.land_count.saturating_add(self.nonland_count));
         let mut buckets: Vec<(&'static str, u32)> = vec![("Land", display_count(self.land_count))];
@@ -259,6 +268,7 @@ impl DeckMetrics {
     /// Computes metrics from deck entries, counting each card by its quantity.
     ///
     /// Maybeboard and sideboard cards are excluded; metrics reflect the active deck only.
+    #[must_use]
     pub fn from_entries(entries: &[DeckEntry]) -> Self {
         Self::from_entries_and_command_zone(entries, &[])
     }
@@ -273,6 +283,7 @@ impl DeckMetrics {
         clippy::too_many_lines,
         reason = "one pass over the entries that fills every metric at once"
     )]
+    #[must_use]
     pub fn from_entries_and_command_zone(entries: &[DeckEntry], command_zone: &[Card]) -> Self {
         let active_entries: Vec<DeckEntry> = entries
             .iter()
@@ -733,6 +744,7 @@ fn parse_price(price: Option<&str>) -> Option<f64> {
 /// Price of a single card in the given currency: the printing's own nonfoil
 /// price, the one its details show. `None` when the printing has no price in
 /// that currency; its foil and etched prices never stand in.
+#[must_use]
 pub fn card_price(scryfall_data: &ScryfallData, currency: PriceCurrency) -> Option<f64> {
     let prices = &scryfall_data.prices;
     match currency {
@@ -748,6 +760,7 @@ pub fn card_price(scryfall_data: &ScryfallData, currency: PriceCurrency) -> Opti
 /// Screens track the highest band already announced and only toast when the band
 /// increases, so each marker alerts exactly once (no re-fire on re-crossing, and
 /// nothing once already over). The toast itself reports the *exact* percentage.
+#[must_use]
 pub fn budget_tier(budget: f64, total: f64) -> u8 {
     if budget <= 0.0 {
         0
@@ -763,6 +776,7 @@ pub fn budget_tier(budget: f64, total: f64) -> u8 {
 /// Total price of the mainboard (active board) in the given currency,
 /// quantity-aware. Cards without a price in that currency contribute 0 (matching
 /// the deck price estimate), so the budget total is a lower bound.
+#[must_use]
 pub fn mainboard_total_price(entries: &[DeckEntry], currency: PriceCurrency) -> f64 {
     entries
         .iter()
@@ -778,6 +792,7 @@ pub fn mainboard_total_price(entries: &[DeckEntry], currency: PriceCurrency) -> 
 /// zone (commander, partner, background, signature spell). Command-zone cards
 /// already present as active entries are skipped so they are not double-counted.
 /// Cards without a price in that currency contribute 0.
+#[must_use]
 pub fn deck_price(entries: &[DeckEntry], command_zone: &[Card], currency: PriceCurrency) -> f64 {
     let command_zone_total: f64 = command_zone
         .iter()

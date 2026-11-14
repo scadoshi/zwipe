@@ -19,6 +19,7 @@ pub struct GetDeckProfile {
 
 impl GetDeckProfile {
     /// Creates a new deck profile retrieval request.
+    #[must_use]
     pub fn new(user_id: Uuid, deck_id: Uuid) -> Self {
         Self { user_id, deck_id }
     }

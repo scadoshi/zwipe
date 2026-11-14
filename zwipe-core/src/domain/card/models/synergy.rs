@@ -65,6 +65,7 @@ impl SynergyPayload {
     /// sanity check: a payload that parses but holds zero cards means the
     /// upstream shape moved, and is treated as a fetch failure rather than
     /// cached over good data.
+    #[must_use]
     pub fn card_count(&self) -> usize {
         self.lists.iter().map(|l| l.cards.len()).sum()
     }
@@ -73,6 +74,7 @@ impl SynergyPayload {
     /// when a card appears in multiple lists. Scoreless entries get a small
     /// floor score: still boosted above cards with no signal at all, but
     /// below anything actually scored.
+    #[must_use]
     pub fn into_scores(self) -> HashMap<String, f64> {
         const SCORELESS_FLOOR: f64 = -10.0;
         let mut scores: HashMap<String, f64> = HashMap::new();

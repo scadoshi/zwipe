@@ -15,21 +15,25 @@ impl CardQueryBuilder {
     // == Text Filter Getters ==
 
     /// Returns the name filter value.
+    #[must_use]
     pub fn name_contains(&self) -> Option<&str> {
         self.name_contains.as_deref()
     }
 
     /// Returns the oracle text filter value.
+    #[must_use]
     pub fn oracle_text_contains(&self) -> Option<&str> {
         self.oracle_text_contains.as_deref()
     }
 
     /// Returns the `oracle_text_contains_any` filter value.
+    #[must_use]
     pub fn oracle_text_contains_any(&self) -> Option<&[String]> {
         self.oracle_text_contains_any.as_deref()
     }
 
     /// Returns the `oracle_text_contains_all` filter value.
+    #[must_use]
     pub fn oracle_text_contains_all(&self) -> Option<&[String]> {
         self.oracle_text_contains_all.as_deref()
     }
@@ -37,21 +41,25 @@ impl CardQueryBuilder {
     // == Keywords Filter Getters ==
 
     /// Returns the `keywords_contains_any` filter value.
+    #[must_use]
     pub fn keywords_contains_any(&self) -> Option<&[String]> {
         self.keywords_contains_any.as_deref()
     }
 
     /// Returns the `keywords_contains_all` filter value.
+    #[must_use]
     pub fn keywords_contains_all(&self) -> Option<&[String]> {
         self.keywords_contains_all.as_deref()
     }
 
     /// Returns the flavor text filter value.
+    #[must_use]
     pub fn flavor_text_contains(&self) -> Option<&str> {
         self.flavor_text_contains.as_deref()
     }
 
     /// Returns the `has_flavor_text` filter value.
+    #[must_use]
     pub fn has_flavor_text(&self) -> Option<bool> {
         self.has_flavor_text
     }
@@ -59,26 +67,31 @@ impl CardQueryBuilder {
     // == Type Filter Getters ==
 
     /// Returns the type line filter value.
+    #[must_use]
     pub fn type_line_contains(&self) -> Option<&str> {
         self.type_line_contains.as_deref()
     }
 
     /// Returns the `type_line_contains_any` filter value.
+    #[must_use]
     pub fn type_line_contains_any(&self) -> Option<&[String]> {
         self.type_line_contains_any.as_deref()
     }
 
     /// Returns the `card_type_contains_any` filter value.
+    #[must_use]
     pub fn card_type_contains_any(&self) -> Option<&[CardType]> {
         self.card_type_contains_any.as_deref()
     }
 
     /// Returns the `type_line_contains_all` filter value.
+    #[must_use]
     pub fn type_line_contains_all(&self) -> Option<&[String]> {
         self.type_line_contains_all.as_deref()
     }
 
     /// Returns the `card_type_contains_all` filter value.
+    #[must_use]
     pub fn card_type_contains_all(&self) -> Option<&[CardType]> {
         self.card_type_contains_all.as_deref()
     }
@@ -86,16 +99,19 @@ impl CardQueryBuilder {
     // == Metadata Filter Getters ==
 
     /// Returns the set filter value.
+    #[must_use]
     pub fn set_equals_any(&self) -> Option<&[String]> {
         self.set_equals_any.as_deref()
     }
 
     /// Returns the artist filter value.
+    #[must_use]
     pub fn artist_equals_any(&self) -> Option<&[String]> {
         self.artist_equals_any.as_deref()
     }
 
     /// Returns the rarity filter value.
+    #[must_use]
     pub fn rarity_equals_any(&self) -> Option<&Rarities> {
         self.rarity_equals_any.as_ref()
     }
@@ -103,36 +119,43 @@ impl CardQueryBuilder {
     // == Mana Filter Getters ==
 
     /// Returns the CMC exact match filter value.
+    #[must_use]
     pub fn cmc_equals(&self) -> Option<f64> {
         self.cmc_equals
     }
 
     /// Returns the CMC range filter value.
+    #[must_use]
     pub fn cmc_range(&self) -> Option<(f64, f64)> {
         self.cmc_range
     }
 
     /// Returns the minimum price bound.
+    #[must_use]
     pub fn price_min(&self) -> Option<f64> {
         self.price_min
     }
 
     /// Returns the maximum price bound.
+    #[must_use]
     pub fn price_max(&self) -> Option<f64> {
         self.price_max
     }
 
     /// Returns the selected price currency (unset falls back to USD).
+    #[must_use]
     pub fn price_currency(&self) -> Option<PriceCurrency> {
         self.price_currency
     }
 
     /// Returns the `color_identity_equals` filter value.
+    #[must_use]
     pub fn color_identity_equals(&self) -> Option<&Colors> {
         self.color_identity_equals.as_ref()
     }
 
     /// Returns the `color_identity_within` filter value.
+    #[must_use]
     pub fn color_identity_within(&self) -> Option<&Colors> {
         self.color_identity_within.as_ref()
     }
@@ -140,11 +163,13 @@ impl CardQueryBuilder {
     // == Produced Mana Filter Getters ==
 
     /// Returns the `produced_mana_contains_any` filter value.
+    #[must_use]
     pub fn produced_mana_contains_any(&self) -> Option<&[String]> {
         self.produced_mana_contains_any.as_deref()
     }
 
     /// Returns the `produced_mana_contains_all` filter value.
+    #[must_use]
     pub fn produced_mana_contains_all(&self) -> Option<&[String]> {
         self.produced_mana_contains_all.as_deref()
     }
@@ -152,21 +177,25 @@ impl CardQueryBuilder {
     // == Combat Stat Getters ==
 
     /// Returns the power exact match filter value.
+    #[must_use]
     pub fn power_equals(&self) -> Option<i32> {
         self.power_equals
     }
 
     /// Returns the power range filter value.
+    #[must_use]
     pub fn power_range(&self) -> Option<(i32, i32)> {
         self.power_range
     }
 
     /// Returns the toughness exact match filter value.
+    #[must_use]
     pub fn toughness_equals(&self) -> Option<i32> {
         self.toughness_equals
     }
 
     /// Returns the toughness range filter value.
+    #[must_use]
     pub fn toughness_range(&self) -> Option<(i32, i32)> {
         self.toughness_range
     }
@@ -174,36 +203,43 @@ impl CardQueryBuilder {
     // == Card Flag Getters ==
 
     /// Returns the `is_token` filter value.
+    #[must_use]
     pub fn is_token(&self) -> Option<bool> {
         self.is_token
     }
 
     /// Returns the `is_playable` filter value.
+    #[must_use]
     pub fn is_playable(&self) -> Option<bool> {
         self.is_playable
     }
 
     /// Returns the digital filter value.
+    #[must_use]
     pub fn digital(&self) -> Option<bool> {
         self.digital
     }
 
     /// Returns the oversized filter value.
+    #[must_use]
     pub fn oversized(&self) -> Option<bool> {
         self.oversized
     }
 
     /// Returns the promo filter value.
+    #[must_use]
     pub fn promo(&self) -> Option<bool> {
         self.promo
     }
 
     /// Returns the `content_warning` filter value.
+    #[must_use]
     pub fn content_warning(&self) -> Option<bool> {
         self.content_warning
     }
 
     /// Returns the language filter value.
+    #[must_use]
     pub fn language(&self) -> Option<&str> {
         self.language.as_deref()
     }
@@ -211,11 +247,13 @@ impl CardQueryBuilder {
     // == Legalities Filter Getters ==
 
     /// Returns the `legalities_contains_any` filter value.
+    #[must_use]
     pub fn legalities_contains_any(&self) -> Option<&[String]> {
         self.legalities_contains_any.as_deref()
     }
 
     /// Returns the `legalities_contains_all` filter value.
+    #[must_use]
     pub fn legalities_contains_all(&self) -> Option<&[String]> {
         self.legalities_contains_all.as_deref()
     }
@@ -223,6 +261,7 @@ impl CardQueryBuilder {
     // == Commander Filter Getters ==
 
     /// Returns the commander eligibility format filter.
+    #[must_use]
     pub fn is_commander_in_format(&self) -> Option<&Format> {
         self.is_commander_in_format.as_ref()
     }
@@ -230,16 +269,19 @@ impl CardQueryBuilder {
     // == Partner/Background/Spell Getters ==
 
     /// Returns the partner card filter.
+    #[must_use]
     pub fn is_partner(&self) -> Option<bool> {
         self.is_partner
     }
 
     /// Returns the background card filter.
+    #[must_use]
     pub fn is_background(&self) -> Option<bool> {
         self.is_background
     }
 
     /// Returns the signature spell filter.
+    #[must_use]
     pub fn is_signature_spell(&self) -> Option<bool> {
         self.is_signature_spell
     }
@@ -247,31 +289,37 @@ impl CardQueryBuilder {
     // == Mechanical Category Getters ==
 
     /// Returns the mechanical category ANY filter.
+    #[must_use]
     pub fn card_roles_contains_any(&self) -> Option<&[String]> {
         self.card_roles_contains_any.as_deref()
     }
 
     /// Returns the mechanical category ALL filter.
+    #[must_use]
     pub fn card_roles_contains_all(&self) -> Option<&[String]> {
         self.card_roles_contains_all.as_deref()
     }
 
     /// Returns the mechanical category excludes filter.
+    #[must_use]
     pub fn card_roles_excludes(&self) -> Option<&[String]> {
         self.card_roles_excludes.as_deref()
     }
 
     /// Returns the oracle tags ANY filter.
+    #[must_use]
     pub fn oracle_tags_contains_any(&self) -> Option<&[String]> {
         self.oracle_tags_contains_any.as_deref()
     }
 
     /// Returns the oracle tags ALL filter.
+    #[must_use]
     pub fn oracle_tags_contains_all(&self) -> Option<&[String]> {
         self.oracle_tags_contains_all.as_deref()
     }
 
     /// Returns the oracle tags excludes filter.
+    #[must_use]
     pub fn oracle_tags_excludes(&self) -> Option<&[String]> {
         self.oracle_tags_excludes.as_deref()
     }
@@ -279,61 +327,73 @@ impl CardQueryBuilder {
     // == Exclude Filter Getters ==
 
     /// The substring a card name must not contain.
+    #[must_use]
     pub fn name_not_contains(&self) -> Option<&str> {
         self.name_not_contains.as_deref()
     }
 
     /// The substring the oracle text must not contain.
+    #[must_use]
     pub fn oracle_text_not_contains(&self) -> Option<&str> {
         self.oracle_text_not_contains.as_deref()
     }
 
     /// Substrings that each rule out a card when its oracle text has one.
+    #[must_use]
     pub fn oracle_text_excludes_any(&self) -> Option<&[String]> {
         self.oracle_text_excludes_any.as_deref()
     }
 
     /// Keywords that each rule out a card.
+    #[must_use]
     pub fn keywords_excludes(&self) -> Option<&[String]> {
         self.keywords_excludes.as_deref()
     }
 
     /// The substring the flavor text must not contain.
+    #[must_use]
     pub fn flavor_text_not_contains(&self) -> Option<&str> {
         self.flavor_text_not_contains.as_deref()
     }
 
     /// The substring the type line must not contain.
+    #[must_use]
     pub fn type_line_not_contains(&self) -> Option<&str> {
         self.type_line_not_contains.as_deref()
     }
 
     /// Substrings that each rule out a card when its type line has one.
+    #[must_use]
     pub fn type_line_excludes_any(&self) -> Option<&[String]> {
         self.type_line_excludes_any.as_deref()
     }
 
     /// Card types that each rule out a card.
+    #[must_use]
     pub fn card_type_excludes_any(&self) -> Option<&[CardType]> {
         self.card_type_excludes_any.as_deref()
     }
 
     /// Mana colors a card must not produce.
+    #[must_use]
     pub fn produced_mana_excludes(&self) -> Option<&[String]> {
         self.produced_mana_excludes.as_deref()
     }
 
     /// Rarities that each rule out a card.
+    #[must_use]
     pub fn rarity_excludes_any(&self) -> Option<&Rarities> {
         self.rarity_excludes_any.as_ref()
     }
 
     /// Set codes that each rule out a card.
+    #[must_use]
     pub fn set_excludes_any(&self) -> Option<&[String]> {
         self.set_excludes_any.as_deref()
     }
 
     /// Artists whose cards are ruled out.
+    #[must_use]
     pub fn artist_excludes_any(&self) -> Option<&[String]> {
         self.artist_excludes_any.as_deref()
     }
@@ -341,31 +401,37 @@ impl CardQueryBuilder {
     // == Pagination & Config Getters ==
 
     /// Returns the result limit.
+    #[must_use]
     pub fn limit(&self) -> u32 {
         self.limit
     }
 
     /// Returns the result offset.
+    #[must_use]
     pub fn offset(&self) -> u32 {
         self.offset
     }
 
     /// Returns the sort value.
+    #[must_use]
     pub fn sort(&self) -> Option<CardSortKey> {
         self.sort
     }
 
     /// The sort direction.
+    #[must_use]
     pub fn direction(&self) -> SortDirection {
         self.direction
     }
 
     /// Returns the deck-aware suppression opt-out flag.
+    #[must_use]
     pub fn include_skipped(&self) -> bool {
         self.include_skipped
     }
 
     /// Returns the deck-aware synergy membership flag.
+    #[must_use]
     pub fn synergy(&self) -> bool {
         self.synergy
     }

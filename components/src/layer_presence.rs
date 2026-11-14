@@ -44,6 +44,7 @@ impl LayerPresence {
 }
 
 /// The presence of a layer that is `open`: it mounts as it opens and slides out as it closes.
+#[must_use]
 pub fn use_layer_presence(open: bool) -> LayerPresence {
     let mut shown = use_signal(|| open);
     let mut leaving = use_signal(|| false);

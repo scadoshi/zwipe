@@ -33,6 +33,7 @@ pub enum PowerLevel {
 
 impl PowerLevel {
     /// All power levels, low to high (bracket 1 → 5).
+    #[must_use]
     pub fn all() -> &'static [PowerLevel] {
         &[
             Self::Exhibition,
@@ -44,6 +45,7 @@ impl PowerLevel {
     }
 
     /// Human-readable display name, including the bracket number.
+    #[must_use]
     pub fn display_name(&self) -> &'static str {
         match self {
             Self::Exhibition => "Exhibition (1)",
@@ -55,6 +57,7 @@ impl PowerLevel {
     }
 
     /// One-line, plain-language description of the bracket, for the picker.
+    #[must_use]
     pub fn description(&self) -> &'static str {
         match self {
             Self::Exhibition => "Ultra-casual showcase and theme decks; winning isn't the point",

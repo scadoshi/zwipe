@@ -17,6 +17,7 @@ pub enum PriceCurrency {
 
 impl PriceCurrency {
     /// JSONB key on `scryfall_data.prices` for this currency.
+    #[must_use]
     pub fn json_key(&self) -> &'static str {
         match self {
             Self::Usd => "usd",
@@ -26,6 +27,7 @@ impl PriceCurrency {
     }
 
     /// Short label for the currency chips.
+    #[must_use]
     pub fn label(&self) -> &'static str {
         match self {
             Self::Usd => "USD",
@@ -35,6 +37,7 @@ impl PriceCurrency {
     }
 
     /// Parses a currency from its [`json_key`](Self::json_key) ("usd"/"eur"/"tix").
+    #[must_use]
     pub fn from_key(key: &str) -> Option<PriceCurrency> {
         match key {
             "usd" => Some(Self::Usd),
@@ -45,11 +48,13 @@ impl PriceCurrency {
     }
 
     /// All currencies in display order.
+    #[must_use]
     pub fn all() -> &'static [PriceCurrency] {
         &[Self::Usd, Self::Eur, Self::Tix]
     }
 
     /// Formats an amount with this currency's symbol/suffix (2 decimals).
+    #[must_use]
     pub fn format_amount(&self, amount: f64) -> String {
         match self {
             Self::Usd => format!("${amount:.2}"),

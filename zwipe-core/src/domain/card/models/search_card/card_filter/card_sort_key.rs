@@ -31,6 +31,7 @@ pub enum CardSortKey {
 
 #[expect(missing_docs, reason = "the method names say what each returns")]
 impl CardSortKey {
+    #[must_use]
     pub fn all() -> Vec<Self> {
         vec![
             Self::Name,
@@ -55,6 +56,7 @@ impl CardSortKey {
     ///
     /// Shared by [`Cards::sorted`](crate::domain::card::search_card::cards::Cards::sorted)
     /// and deck-entry sorting so every in-memory sort agrees.
+    #[must_use]
     pub fn compare(self, a: &ScryfallData, b: &ScryfallData) -> Ordering {
         /// Parses an optional string stat, treating missing/non-numeric as MAX
         /// so those cards sort last in ascending order.
@@ -108,6 +110,7 @@ impl CardSortKey {
 impl CardSortKey {
     /// [`compare`](Self::compare) in `direction`, except that a card with no
     /// price under a price key sorts last both ways.
+    #[must_use]
     pub fn compare_in(
         self,
         a: &ScryfallData,

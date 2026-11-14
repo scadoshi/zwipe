@@ -64,11 +64,13 @@ impl DeckWarning {
     }
 
     /// Returns the `scryfall_data_id` of the offending card, if any.
+    #[must_use]
     pub fn scryfall_data_id(&self) -> Option<Uuid> {
         self.scryfall_data_id
     }
 
     /// Returns the suggested action, if any.
+    #[must_use]
     pub fn action(&self) -> Option<&WarningAction> {
         self.action.as_ref()
     }

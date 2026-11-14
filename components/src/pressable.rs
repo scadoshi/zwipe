@@ -5,6 +5,7 @@ use dioxus::prelude::*;
 
 /// Whether `evt` presses a button: Enter or Space. Cancels the key's default
 /// for them, so Space never scrolls the page.
+#[must_use]
 pub fn is_press(evt: &KeyboardEvent) -> bool {
     let pressed = evt.key() == Key::Enter || evt.key() == Key::Character(" ".into());
     if pressed {
