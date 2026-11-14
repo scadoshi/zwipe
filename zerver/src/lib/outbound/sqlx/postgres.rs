@@ -25,6 +25,11 @@ const IDLE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(300);
 /// How long a caller waits for a free connection before the acquire fails.
 const ACQUIRE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5);
 
+/// How long one card search statement may run before Postgres cancels it.
+/// Searches finish well under a second; the HTTP layer gives up at 30s
+/// without stopping the statement, so this is what frees the connection.
+const SEARCH_STATEMENT_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(10);
+
 /// Extension trait for detecting PostgreSQL constraint violations.
 ///
 /// Allows code to handle specific constraint errors differently from
@@ -126,6 +131,8 @@ pub struct Postgres {
     pub pool: sqlx::PgPool,
     /// Recent refresh rotations' successors, for the reuse window.
     pub refresh_reuse: RefreshReuse,
+    /// How long one card search statement may run before Postgres cancels it.
+    pub search_timeout: std::time::Duration,
 }
 
 impl Postgres {
@@ -135,7 +142,15 @@ impl Postgres {
         Self {
             pool,
             refresh_reuse: RefreshReuse::default(),
+            search_timeout: SEARCH_STATEMENT_TIMEOUT,
         }
+    }
+
+    /// The same adapter with card searches cancelled after `timeout`.
+    #[must_use]
+    pub fn with_search_timeout(mut self, timeout: std::time::Duration) -> Self {
+        self.search_timeout = timeout;
+        self
     }
 
     /// The same adapter with a refresh reuse `window`; zero turns it off.

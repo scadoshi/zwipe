@@ -1627,7 +1627,15 @@ impl CardRepository for MyPostgres {
             qb.push_bind(clamped_offset(request.offset()));
         }
 
-        let db_rows: Vec<DatabaseScryfallData> = qb.build_query_as().fetch_all(&self.pool).await?;
+        // The timeout is transaction-local, so the pooled connection keeps the
+        // default once the search ends.
+        let mut tx = self.pool.begin().await?;
+        sqlx::query("SELECT set_config('statement_timeout', $1, true)")
+            .bind(format!("{}ms", self.search_timeout.as_millis()))
+            .execute(&mut *tx)
+            .await?;
+        let db_rows: Vec<DatabaseScryfallData> = qb.build_query_as().fetch_all(&mut *tx).await?;
+        tx.commit().await?;
         let mut scryfall_data: Vec<ScryfallData> = db_rows
             .into_iter()
             .map(ScryfallData::try_from)
