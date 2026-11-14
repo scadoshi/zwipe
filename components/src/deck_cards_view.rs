@@ -633,7 +633,7 @@ pub fn DeckRow(
     } = row_actions(actions, card_id, kind, board);
     let slot = match kind {
         RowKind::Zone(slot) => Some(slot),
-        _ => None,
+        RowKind::Main { .. } | RowKind::Board(_) | RowKind::Token => None,
     };
     let on_print = on_printing
         .filter(|_| kind != RowKind::Token)
@@ -747,7 +747,7 @@ pub fn DeckStacks(
                 .into_iter()
                 .map(|row| {
                     let face = shown_faces.get(&row.card.scryfall_data.id).copied().unwrap_or(0);
-                    StackCard { board: match row.kind { RowKind::Board(board) => Some(board), _ => None }, card: row.card, qty: row.qty, face }
+                    StackCard { board: match row.kind { RowKind::Board(board) => Some(board), RowKind::Main { .. } | RowKind::Zone(_) | RowKind::Token => None }, card: row.card, qty: row.qty, face }
                 })
                 .collect();
             let stack = rsx! {
@@ -921,7 +921,7 @@ pub fn DeckStackDrawer(
     });
     let slot = match kind {
         RowKind::Zone(slot) => Some(slot),
-        _ => None,
+        RowKind::Main { .. } | RowKind::Board(_) | RowKind::Token => None,
     };
     let print_card = card.clone();
     let on_printings = on_printing

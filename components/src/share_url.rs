@@ -72,7 +72,9 @@ mod tests {
                     .map(|action| match action {
                         DialogAction::Dismiss(label) => (label, false),
                         DialogAction::Confirm { label, danger, .. } => (label, danger),
-                        _ => (String::new(), false),
+                        DialogAction::Link { .. }
+                        | DialogAction::Button(_)
+                        | DialogAction::Icon { .. } => (String::new(), false),
                     })
                     .collect()
             })
