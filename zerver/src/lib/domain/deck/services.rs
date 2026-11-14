@@ -1307,7 +1307,8 @@ where
             return Err(match e {
                 GetDeckProfileError::NotFound => CloneDeckError::SourceNotFound,
                 GetDeckProfileError::Forbidden => CloneDeckError::Forbidden,
-                other => CloneDeckError::GetSource(other),
+                other @ (GetDeckProfileError::Database(_)
+                | GetDeckProfileError::DeckProfileFromDb(_)) => CloneDeckError::GetSource(other),
             });
         }
 
@@ -1328,7 +1329,10 @@ where
             .map_err(|e| match e {
                 GetDeckProfileError::Forbidden => ShareDeckError::Forbidden,
                 GetDeckProfileError::NotFound => ShareDeckError::NotFound,
-                other => ShareDeckError::Database(other.into()),
+                other @ (GetDeckProfileError::Database(_)
+                | GetDeckProfileError::DeckProfileFromDb(_)) => {
+                    ShareDeckError::Database(other.into())
+                }
             })?;
         self.deck_repo.set_share_token(request.deck_id).await
     }
@@ -1339,7 +1343,10 @@ where
             .map_err(|e| match e {
                 GetDeckProfileError::Forbidden => ShareDeckError::Forbidden,
                 GetDeckProfileError::NotFound => ShareDeckError::NotFound,
-                other => ShareDeckError::Database(other.into()),
+                other @ (GetDeckProfileError::Database(_)
+                | GetDeckProfileError::DeckProfileFromDb(_)) => {
+                    ShareDeckError::Database(other.into())
+                }
             })?;
         self.deck_repo.clear_share_token(request.deck_id).await
     }
