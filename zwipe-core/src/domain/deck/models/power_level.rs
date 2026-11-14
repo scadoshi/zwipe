@@ -11,6 +11,8 @@
 
 use std::fmt;
 
+use serde::de::IntoDeserializer;
+use serde::de::value::{Error as ValueError, StrDeserializer};
 use serde::{Deserialize, Serialize};
 
 /// The official Commander Bracket a deck targets (1–5).
@@ -81,14 +83,30 @@ impl TryFrom<&str> for PowerLevel {
     type Error = InvalidPowerLevel;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        serde_json::from_str(&format!("\"{value}\""))
-            .map_err(|_| InvalidPowerLevel(value.to_string()))
+        let text: StrDeserializer<'_, ValueError> = value.into_deserializer();
+        Self::deserialize(text).map_err(|_| InvalidPowerLevel(value.to_owned()))
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn try_from_takes_the_text_as_is() {
+        assert_eq!(
+            PowerLevel::try_from("optimized").unwrap(),
+            PowerLevel::Optimized
+        );
+        assert!(
+            PowerLevel::try_from("\\u006fptimized").is_err(),
+            "an escaped spelling is not the slug"
+        );
+        assert!(
+            PowerLevel::try_from("optimized\"").is_err(),
+            "a quote is part of the text"
+        );
+    }
 
     #[test]
     fn serde_round_trip() {

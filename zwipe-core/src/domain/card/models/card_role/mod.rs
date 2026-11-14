@@ -9,6 +9,8 @@ pub mod role_tags;
 use std::fmt;
 
 pub use oracle_tag_gaps::classify_oracle_tag_gaps;
+use serde::de::IntoDeserializer;
+use serde::de::value::{Error as ValueError, StrDeserializer};
 use serde::{Deserialize, Serialize};
 
 /// Strategic role a card can fill in a deck.
@@ -192,8 +194,8 @@ impl TryFrom<&str> for CardRole {
     type Error = InvalidCardRole;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        serde_json::from_str(&format!("\"{value}\""))
-            .map_err(|_| InvalidCardRole(value.to_string()))
+        let text: StrDeserializer<'_, ValueError> = value.into_deserializer();
+        Self::deserialize(text).map_err(|_| InvalidCardRole(value.to_owned()))
     }
 }
 
@@ -263,6 +265,19 @@ fn prettify_role_slug(slug: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn try_from_takes_the_text_as_is() {
+        assert_eq!(CardRole::try_from("ramp").unwrap(), CardRole::Ramp);
+        assert!(
+            CardRole::try_from("\\u0072amp").is_err(),
+            "an escaped spelling is not the slug"
+        );
+        assert!(
+            CardRole::try_from("ramp\"").is_err(),
+            "a quote is part of the text"
+        );
+    }
 
     #[test]
     fn a_short_name_reads_as_its_role() {

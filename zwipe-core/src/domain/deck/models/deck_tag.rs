@@ -12,6 +12,8 @@
 
 use std::fmt;
 
+use serde::de::IntoDeserializer;
+use serde::de::value::{Error as ValueError, StrDeserializer};
 use serde::{Deserialize, Serialize};
 
 /// Maximum number of tags a single deck may carry.
@@ -955,7 +957,8 @@ impl TryFrom<&str> for DeckTag {
     type Error = InvalidDeckTag;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        serde_json::from_str(&format!("\"{value}\"")).map_err(|_| InvalidDeckTag(value.to_string()))
+        let text: StrDeserializer<'_, ValueError> = value.into_deserializer();
+        Self::deserialize(text).map_err(|_| InvalidDeckTag(value.to_owned()))
     }
 }
 
@@ -1038,6 +1041,19 @@ pub fn parse_tags(raw: &[String]) -> Result<Vec<DeckTag>, InvalidDeckTag> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn try_from_takes_the_text_as_is() {
+        assert_eq!(DeckTag::try_from("draw").unwrap(), DeckTag::Draw);
+        assert!(
+            DeckTag::try_from("\\u0064raw").is_err(),
+            "an escaped spelling is not the slug"
+        );
+        assert!(
+            DeckTag::try_from("draw\"").is_err(),
+            "a quote is part of the text"
+        );
+    }
 
     #[test]
     fn serde_round_trip() {

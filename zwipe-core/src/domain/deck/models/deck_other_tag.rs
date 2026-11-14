@@ -11,6 +11,8 @@
 
 use std::fmt;
 
+use serde::de::IntoDeserializer;
+use serde::de::value::{Error as ValueError, StrDeserializer};
 use serde::{Deserialize, Serialize};
 
 /// Maximum number of other-tags a single deck may carry.
@@ -84,8 +86,8 @@ impl TryFrom<&str> for DeckOtherTag {
     type Error = InvalidDeckOtherTag;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        serde_json::from_str(&format!("\"{value}\""))
-            .map_err(|_| InvalidDeckOtherTag(value.to_string()))
+        let text: StrDeserializer<'_, ValueError> = value.into_deserializer();
+        Self::deserialize(text).map_err(|_| InvalidDeckOtherTag(value.to_owned()))
     }
 }
 
@@ -110,6 +112,22 @@ pub fn parse_other_tags(raw: &[String]) -> Result<Vec<DeckOtherTag>, InvalidDeck
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn try_from_takes_the_text_as_is() {
+        assert_eq!(
+            DeckOtherTag::try_from("budget").unwrap(),
+            DeckOtherTag::Budget
+        );
+        assert!(
+            DeckOtherTag::try_from("\\u0062udget").is_err(),
+            "an escaped spelling is not the slug"
+        );
+        assert!(
+            DeckOtherTag::try_from("budget\"").is_err(),
+            "a quote is part of the text"
+        );
+    }
 
     #[test]
     fn serde_round_trip() {
