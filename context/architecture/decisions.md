@@ -203,3 +203,13 @@ The owner's counter-argument is the one that decided it: **partner-plus-backgrou
 **What actually guards correctness:** runtime validation in `validate_deck.rs`, which reports card-level problems (commander isn't legendary, signature spell isn't an instant or sorcery, partner lacks Partner) as `DeckWarning`s with optional one-tap `WarningAction`s. This is load-bearing and a sum type would have deleted part of it: **you cannot warn about a state your types can't hold**, and silently dropping an orphaned slot at parse time would hide the card from the UI while it still sat in the database.
 
 **Revisit when:** the deck-list restyle (command-zone art rows) actually consumes these fields. If rendering from flat fields proves awkward, the narrow fix is a per-slot `Option<CommandZoneSlot>` grouping id + name + art, which kills art-without-a-card (a real invariant) while staying agnostic about which slots may coexist. Do not reach for the combination enum.
+
+## Naming: Handler Verbs and Service Ports Stay
+
+**Decided: 2026-11-14.** Two deliberate exceptions to the scadoshi-rust naming rule (no `get_` prefix, no `Service` type names).
+
+The HTTP handlers named `get_*` (`get_deck`, `get_card`, `get_user` and the rest) keep the prefix. They pair with `create_*`, `patch_*` and `delete_*`, and each names the HTTP verb its route answers, so the prefix carries meaning there. Repository and service methods that do I/O still use `fetch_`.
+
+The hexagonal ports stay `XService` in each domain's `ports.rs`, implemented by `Service<R>` in `services.rs`. That is the ports-and-adapters vocabulary `CLAUDE.md` describes, and every domain follows it.
+
+Everything else follows the rule: a trait over a transaction is named for what it does (`RefreshTokenTxExt`), not `Helper`.

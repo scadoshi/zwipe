@@ -36,7 +36,7 @@ use crate::domain::auth::requests::register_user::{RegisterUser, RegisterUserErr
 use crate::domain::auth::requests::reset_password::ResetPasswordError;
 use crate::domain::auth::requests::revoke_sessions::RevokeSessionsError;
 use crate::domain::auth::requests::verify_email::VerifyEmailError;
-use crate::outbound::sqlx::auth::helpers::{RefreshFamily, TxHelper};
+use crate::outbound::sqlx::auth::helpers::{RefreshFamily, RefreshTokenTxExt};
 use crate::outbound::sqlx::auth::models::{DatabaseRefreshToken, DatabaseUserWithPasswordHash};
 use crate::outbound::sqlx::postgres::{IsConstraintViolation, Postgres};
 use crate::outbound::sqlx::user::models::DatabaseUser;

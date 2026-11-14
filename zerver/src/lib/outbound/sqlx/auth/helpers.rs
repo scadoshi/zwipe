@@ -42,7 +42,7 @@ impl RefreshFamily {
 ///
 /// These helpers allow composing multiple auth operations in a single transaction
 /// without committing prematurely. The caller is responsible for committing.
-pub trait TxHelper {
+pub trait RefreshTokenTxExt {
     /// Creates a new refresh token for the specified user in `family`.
     ///
     /// Generates a cryptographically secure token, stores its hash in the database,
@@ -69,7 +69,7 @@ pub trait TxHelper {
     ) -> impl Future<Output = Result<(), EnforceSessionMaximumError>> + Send;
 }
 
-impl TxHelper for PgTransaction<'_> {
+impl RefreshTokenTxExt for PgTransaction<'_> {
     async fn create_refresh_token(
         &mut self,
         user_id: Uuid,
