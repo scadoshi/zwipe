@@ -107,41 +107,71 @@ pub async fn cookie_refresh(
 
 /// Logs the browser out: ends the session its cookie's refresh token belongs
 /// to, leaving the user's other sessions alone, and expires the cookie.
-/// Without a stored cookie token for the user, the session is the one the
-/// access token's `family_id` claim names, and without that claim too the
-/// logout ends every session the user holds.
+///
+/// With an access token, a cookie of that user names the session; without a
+/// stored cookie token for the user, the session is the one the access
+/// token's `family_id` claim names, and without that claim too the logout
+/// ends every session the user holds.
+///
+/// Without a usable access token (expired, or the page could not refresh it
+/// first) the cookie alone names the session: the family its token belongs
+/// to ends, and a cookie whose token the server does not hold ends nothing,
+/// so a forged one logs nobody out. Either way the cookie expires.
 ///
 /// # Errors
 ///
-/// 401 without a valid access token, 403 for an origin outside
-/// `ALLOWED_ORIGINS`, 500 on a database failure.
+/// 403 for an origin outside `ALLOWED_ORIGINS`, 500 on a database failure.
 pub async fn cookie_logout(
-    user: AuthenticatedUser,
+    user: Result<AuthenticatedUser, StatusCode>,
     State(state): State<AppState>,
     Extension(origins): Extension<CookieOrigins>,
     headers: HeaderMap,
     jar: CookieJar,
 ) -> Result<(CookieJar, StatusCode), ApiError> {
     check_origin(&headers, &origins)?;
-    let cookie_family = match cookie_session(&jar, user.id) {
-        Some(session) => state
-            .auth_service
-            .fetch_refresh_family(&session)
-            .await
-            .map_err(ApiError::from)?,
-        None => None,
+    let request = match user {
+        Ok(user) => {
+            let cookie_family = match cookie_session(&jar, user.id) {
+                Some(session) => state
+                    .auth_service
+                    .fetch_refresh_family(&session)
+                    .await
+                    .map_err(ApiError::from)?,
+                None => None,
+            };
+            Some(RevokeSessions::family(
+                user.id,
+                cookie_family.or(user.family_id),
+            ))
+        }
+        Err(_) => match cookie_token(&jar) {
+            Some(session) => state
+                .auth_service
+                .fetch_refresh_family(&session)
+                .await
+                .map_err(ApiError::from)?
+                .map(|family| RevokeSessions::family(session.user_id, Some(family))),
+            None => None,
+        },
     };
-    let request = RevokeSessions::family(user.id, cookie_family.or(user.family_id));
-    let status = end_sessions(&state, &request).await?;
+    let status = match request {
+        Some(request) => end_sessions(&state, &request).await?,
+        None => StatusCode::NO_CONTENT,
+    };
     Ok((jar.remove(removal()), status))
+}
+
+/// The cookie's refresh token as a request for the user it names, `None`
+/// when there is no cookie or it does not parse.
+fn cookie_token(jar: &CookieJar) -> Option<RefreshSession> {
+    let (cookie_user, token) = jar.get(REFRESH_COOKIE).and_then(|c| parse(c.value()))?;
+    RefreshSession::new(&cookie_user, &token).ok()
 }
 
 /// The cookie's refresh token as a request for `user_id`, `None` when there
 /// is no cookie, it does not parse, or it names another user.
 fn cookie_session(jar: &CookieJar, user_id: Uuid) -> Option<RefreshSession> {
-    let (cookie_user, token) = jar.get(REFRESH_COOKIE).and_then(|c| parse(c.value()))?;
-    let session = RefreshSession::new(&cookie_user, &token).ok()?;
-    (session.user_id == user_id).then_some(session)
+    cookie_token(jar).filter(|session| session.user_id == user_id)
 }
 
 /// Refuses a request with no `Origin`, or one outside the allowed list.

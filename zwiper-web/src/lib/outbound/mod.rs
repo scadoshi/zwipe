@@ -7,6 +7,7 @@ pub mod counts_store;
 pub mod deck_sort_store;
 pub mod details_store;
 pub mod maybeboard_sort_store;
+pub mod pending_logout;
 pub mod scope_store;
 pub mod session_store;
 pub mod storage;

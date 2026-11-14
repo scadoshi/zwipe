@@ -291,7 +291,8 @@ pub const FIXED_ROUTES: &[(Method, &str, bool)] = &[
     (Method::Post, SEARCH_COMMANDERS_ROUTE, true),
     (Method::Post, VERIFY_EMAIL_ROUTE, false),
     (Method::Post, COOKIE_LOGIN_ROUTE, false),
-    (Method::Post, COOKIE_LOGOUT_ROUTE, true),
+    // Answers without a token too: the cookie alone names the session.
+    (Method::Post, COOKIE_LOGOUT_ROUTE, false),
     (Method::Post, COOKIE_REFRESH_ROUTE, false),
 ];
 

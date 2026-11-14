@@ -46,6 +46,8 @@ pub fn use_session_upkeep() -> UpgradeRequired {
     let built: ZwipeClient = use_context();
     let client = use_root_signal(|| built);
     use_context_provider(|| client);
+    // A logout the server never heard goes again before anything else needs the cookie.
+    crate::inbound::session::logout::use_pending_logout(client);
     crate::inbound::cards::meld::use_meld_source(client);
 
     let theme: Signal<ThemeConfig> = use_signal(|| {

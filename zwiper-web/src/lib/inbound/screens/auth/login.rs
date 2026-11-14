@@ -24,6 +24,7 @@ use crate::inbound::screens::auth::hero::{PublicFlavor, PublicHero};
 use crate::inbound::session::return_to;
 use crate::inbound::shell::ScreenFrame;
 use crate::inbound::telemetry;
+use crate::outbound::pending_logout::PendingLogout;
 use crate::outbound::session_store::SessionStore;
 use crate::outbound::theme_store::ThemeStore;
 
@@ -97,6 +98,8 @@ impl Driver {
             Effect::SetIdentifier(value) => identifier.set(value),
             Effect::ClearPassword => password.set(String::new()),
             Effect::SignedIn(new_session) => {
+                // The login replaced the cookie, so an older logout has nothing left to end.
+                PendingLogout::browser().clear();
                 SessionStore::browser().infallible_save(&new_session);
                 let profile = components::theme_from_settings(&new_session.settings);
                 ThemeStore::browser().save_synced(&profile);

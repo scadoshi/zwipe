@@ -128,6 +128,21 @@ impl Endpoint for CookieLogout {
     }
 }
 
+/// The browser's logout by its cookie alone, for when no access token can be had: ends the
+/// session the cookie's refresh token belongs to and expires the cookie.
+#[derive(Debug)]
+pub struct CookieLogoutAlone;
+impl Endpoint for CookieLogoutAlone {
+    const METHOD: Method = Method::Post;
+    const AUTH: bool = false;
+    const CREDENTIALS: bool = true;
+    type Request = ();
+    type Response = ();
+    fn path(&self) -> Cow<'static, str> {
+        Cow::Borrowed(COOKIE_LOGOUT_ROUTE)
+    }
+}
+
 /// Send another verification email to the signed-in user.
 #[derive(Debug)]
 pub struct ResendVerification;

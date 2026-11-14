@@ -356,6 +356,15 @@ pub fn public_routes() -> Router<AppState> {
                         .route(
                             "/cookie/refresh",
                             post(auth::cookie_refresh).layer(
+                                GovernorLayer::new(Arc::clone(&refresh_config))
+                                    .error_handler(stable_rate_limit),
+                            ),
+                        )
+                        // Public: the cookie alone logs the browser out when its
+                        // access token can't be had, so no bearer is required.
+                        .route(
+                            "/cookie/logout",
+                            post(auth::cookie_logout).layer(
                                 GovernorLayer::new(refresh_config).error_handler(stable_rate_limit),
                             ),
                         )
@@ -581,7 +590,6 @@ pub fn private_routes(jwt_secret: JwtSecret) -> Router<AppState> {
                     "/auth",
                     Router::new()
                         .route("/logout", post(auth::revoke_sessions))
-                        .route("/cookie/logout", post(auth::cookie_logout))
                         .route(
                             "/resend-verification",
                             post(auth::resend_verification).layer(

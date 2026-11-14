@@ -280,3 +280,94 @@ async fn logout_ends_the_browsers_session_and_keeps_the_app_signed_in(pool: sqlx
     let (status, body) = app.post(REFRESH_SESSION_ROUTE, refresh, None).await;
     assert_eq!(status, StatusCode::OK, "the app's session survives: {body}");
 }
+
+#[sqlx::test]
+async fn logout_with_the_cookie_alone_ends_its_session(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool);
+    let (_, _, pair) = cookie_login(&app, "nobearer").await;
+
+    // No access token: it expired, or the page could not refresh it first.
+    let (status, headers, _) = app
+        .send_raw(
+            Method::POST,
+            COOKIE_LOGOUT_ROUTE,
+            None,
+            None,
+            &[origin(), cookie(&pair)],
+        )
+        .await;
+    assert!(status.is_success(), "logout by the cookie: {status}");
+    assert!(
+        set_cookie(&headers).contains("Max-Age=0"),
+        "logout expires the cookie"
+    );
+
+    let (status, _, _) = app
+        .send_raw(
+            Method::POST,
+            COOKIE_REFRESH_ROUTE,
+            Some(serde_json::json!({})),
+            None,
+            &[origin(), cookie(&pair)],
+        )
+        .await;
+    assert_eq!(
+        status,
+        StatusCode::UNAUTHORIZED,
+        "the cookie no longer refreshes for the next person on this browser"
+    );
+}
+
+#[sqlx::test]
+async fn a_forged_cookie_logs_nobody_out(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool);
+    let (_, _, pair) = cookie_login(&app, "victim").await;
+    let user_id = pair
+        .split_once('=')
+        .and_then(|(_, value)| value.split_once('.'))
+        .map(|(id, _)| id.to_string())
+        .unwrap();
+
+    // The victim's id with a token that is not theirs.
+    let forged = format!("{COOKIE}={user_id}.deadbeef");
+    let (status, _, _) = app
+        .send_raw(
+            Method::POST,
+            COOKIE_LOGOUT_ROUTE,
+            None,
+            None,
+            &[origin(), cookie(&forged)],
+        )
+        .await;
+    assert!(status.is_success(), "nothing to end: {status}");
+
+    let (status, _, body) = app
+        .send_raw(
+            Method::POST,
+            COOKIE_REFRESH_ROUTE,
+            Some(serde_json::json!({})),
+            None,
+            &[origin(), cookie(&pair)],
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "the victim stays signed in: {body}");
+}
+
+#[sqlx::test]
+async fn logout_by_the_cookie_still_needs_an_allowed_origin(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool);
+    let (_, _, pair) = cookie_login(&app, "elsewhere").await;
+    let (status, _, _) = app
+        .send_raw(
+            Method::POST,
+            COOKIE_LOGOUT_ROUTE,
+            None,
+            None,
+            &[
+                (header::ORIGIN, "https://evil.example".to_string()),
+                cookie(&pair),
+            ],
+        )
+        .await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+}

@@ -195,6 +195,7 @@ Who checked, on which live build, what they saw.
 | [496](496-home-hint.md) | Home has no `?` hint | fixing | thinker | - |
 | [497](497-log-out-in-danger-zone.md) | Account's Log out sits in the red Danger zone | fixing | thinker | - |
 | [511](511-idle-requests-fail.md) | The app says "Couldn't load" after a minute idle, and Retry fixes it | fixing | thinker | - |
+| [516](516-web-logout-cookie.md) | A web logout that fails to reach the server leaves the refresh cookie live (zwipe-context #44) | fixing | thinker | - |
 | [491](491-reveal-back-step.md) | In Stacks, revealing a tucked card takes a Back step | fixing | laptop | issue/491-reveal-no-step |
 | [492](492-format-zone-back.md) | Switching a deck's format away and back loses its commander | fixing | laptop | issue/492-format-zone-back |
 | [469](469-exceptions-side-sheet.md) | On a wide window, Exceptions opens as a centered modal, and its Change is off with no reason | fixing | laptop | issue/469-exceptions-drawer |

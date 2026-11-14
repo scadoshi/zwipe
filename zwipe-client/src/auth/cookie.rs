@@ -4,7 +4,9 @@
 
 use zwipe_core::domain::auth::models::session::Session;
 use zwipe_core::http::contracts::auth::{HttpAuthenticateUser, HttpCookieRefresh};
-use zwipe_core::http::endpoints::auth::{CookieLogin, CookieLogout, CookieRefresh};
+use zwipe_core::http::endpoints::auth::{
+    CookieLogin, CookieLogout, CookieLogoutAlone, CookieRefresh,
+};
 
 use super::login::stamped;
 use crate::{ClientError, ZwipeClient};
@@ -45,5 +47,16 @@ impl ZwipeClient {
     /// error status, or the reply doesn't decode.
     pub async fn logout_cookie(&self, session: &Session) -> Result<(), ClientError> {
         self.call(CookieLogout, Some(session)).await
+    }
+
+    /// Logs the browser out by its cookie alone, for when no access token can be had: ends the
+    /// session the cookie belongs to and expires the cookie.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`ClientError`] when the request fails to complete or the server answers with an
+    /// error status.
+    pub async fn logout_cookie_alone(&self) -> Result<(), ClientError> {
+        self.call(CookieLogoutAlone, None).await
     }
 }
