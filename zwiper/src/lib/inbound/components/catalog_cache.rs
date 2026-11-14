@@ -58,7 +58,7 @@ impl<T> CatalogCell<T> {
     pub fn loaded(&self) -> Option<&T> {
         match self {
             CatalogCell::Loaded { data, .. } => Some(data),
-            _ => None,
+            CatalogCell::Loading | CatalogCell::Failed => None,
         }
     }
 
@@ -74,7 +74,7 @@ impl<T> CatalogCell<T> {
             CatalogCell::Loaded { fetched_at, .. } => fetched_at
                 .checked_add_signed(chrono::Duration::hours(CATALOG_TTL_HOURS))
                 .is_some_and(|deadline| Utc::now() >= deadline),
-            _ => false,
+            CatalogCell::Loading | CatalogCell::Failed => false,
         }
     }
 }
@@ -129,7 +129,7 @@ impl<T: Clone + PartialEq + 'static> CatalogSlot<T> {
             let current = cell.peek();
             match &*current {
                 CatalogCell::Loaded { .. } => current.is_stale(),
-                _ => true,
+                CatalogCell::Loading | CatalogCell::Failed => true,
             }
         };
         if !needs_fetch {

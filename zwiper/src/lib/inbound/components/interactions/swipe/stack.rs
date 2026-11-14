@@ -147,7 +147,7 @@ fn dispatch_latest(
         .unwrap_or(DeltaPoint::new(0.0, 0.0));
     let (from_x, from_y) = match dir {
         Direction::Up => (0.0, delta.y.min(0.0)),
-        _ => (delta.x, 0.0),
+        Direction::Left | Direction::Right | Direction::Down => (delta.x, 0.0),
     };
     exiting_overlay.write().push(ExitingCard {
         id: card.scryfall_data.id,
