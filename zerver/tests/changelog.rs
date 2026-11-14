@@ -119,3 +119,77 @@ async fn changelog_revalidates_on_every_load(pool: sqlx::PgPool) {
         .await;
     assert_eq!(status, StatusCode::OK, "a stale copy gets the new body");
 }
+
+#[sqlx::test]
+async fn the_changelog_answers_every_origin_alike_and_never_with_credentials(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool);
+    // The edge cache can hand one stored copy to any requester, so the copy must suit them all:
+    // the web app, zwipe.net, an origin off the list, and the native app, which sends none. The
+    // edge revalidates each load, so a 304 must say the same as a 200.
+    for origin in [
+        Some(common::TEST_ORIGIN),
+        Some("https://zwipe.net"),
+        Some("https://example.com"),
+        None,
+    ] {
+        let origin_header: Vec<(header::HeaderName, String)> =
+            origin.map_or_else(Vec::new, |o| vec![(header::ORIGIN, o.to_owned())]);
+        let (_, full, _) = app
+            .send_raw(Method::GET, CHANGELOG_ROUTE, None, None, &origin_header)
+            .await;
+        let mut conditional = origin_header.clone();
+        conditional.push((
+            header::IF_NONE_MATCH,
+            full.get(header::ETAG).unwrap().to_str().unwrap().to_owned(),
+        ));
+        let (status, not_modified, _) = app
+            .send_raw(Method::GET, CHANGELOG_ROUTE, None, None, &conditional)
+            .await;
+        assert_eq!(status, StatusCode::NOT_MODIFIED);
+        for headers in [full, not_modified] {
+            assert_eq!(
+                headers.get(header::ACCESS_CONTROL_ALLOW_ORIGIN).unwrap(),
+                "*",
+                "origin {origin:?}"
+            );
+            assert!(
+                !headers.contains_key(header::ACCESS_CONTROL_ALLOW_CREDENTIALS),
+                "no credentials for origin {origin:?}"
+            );
+        }
+    }
+}
+
+#[sqlx::test]
+async fn other_routes_still_answer_only_a_listed_origin_with_credentials(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool);
+    let (_, headers, _) = app
+        .send_raw(
+            Method::GET,
+            zwipe_core::http::paths::MIN_CLIENT_VERSION_ROUTE,
+            None,
+            None,
+            &[(header::ORIGIN, common::TEST_ORIGIN.to_owned())],
+        )
+        .await;
+    assert_eq!(
+        headers.get(header::ACCESS_CONTROL_ALLOW_ORIGIN).unwrap(),
+        common::TEST_ORIGIN
+    );
+    assert_eq!(
+        headers
+            .get(header::ACCESS_CONTROL_ALLOW_CREDENTIALS)
+            .unwrap(),
+        "true"
+    );
+    let (_, headers, _) = app
+        .send_raw(
+            Method::GET,
+            zwipe_core::http::paths::MIN_CLIENT_VERSION_ROUTE,
+            None,
+            None,
+            &[(header::ORIGIN, "https://example.com".to_owned())],
+        )
+        .await;
+    assert!(!headers.contains_key(header::ACCESS_CONTROL_ALLOW_ORIGIN));
+}

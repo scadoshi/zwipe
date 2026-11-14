@@ -177,11 +177,19 @@ Each rule's shape is the same: a path match (prefix or exact) → "Eligible for 
 ### Rule 3: `Cache changelog`
 
 - Condition: `http.request.uri.path eq "/api/changelog"` (exact match, not a prefix; it's a single endpoint)
-- Action: Eligible for cache · Ignore origin Cache-Control · Edge TTL **2 hours**
-- Why: `/api/changelog` serves the release history (compiled into the server binary, `zwipe_core::content::changelog`), public and identical for every user, fetched once per app launch. Edge caching keeps origin cold; the payload is tiny.
-- Freshness caveat: the changelog changes on **our deploys** (edit the const + ship `zerver`), not a sync. With the 2h edge TTL a freshly deployed entry can lag up to 2h. Default: accept it. To push it live now, purge the one URL after deploy: `https://api.zwipe.net/api/changelog` (Custom Purge → URL, or the API call below).
-- Compat requirement: same as Rule 1, the request must NOT carry `Authorization: Bearer` (CF bypasses cache for authenticated requests). zwipe-client's `fetch_changelog` sends none, and the route is in `public_routes()`.
+- Action: Eligible for cache · Edge TTL **2 hours**
+- What the edge does: it stores a copy but checks back with zerver on every request, because zerver answers `Cache-Control: public, no-cache` with an ETag. Responses show `cf-cache-status: REVALIDATED` (or `EXPIRED`), never `HIT`; zerver answers each check with a bodyless `304`. Observed 2026-11-13 at SJC, SEA and PDX. So the rule does not keep the origin cold; it saves the body, not the request.
+- Why `no-cache`: the changelog changes on **our deploys** (edit the const + ship `zerver`), and revalidating means a new entry shows on the next load instead of up to 2h later. No purge needed after a deploy.
+- CORS: zerver answers this route with `Access-Control-Allow-Origin: *` and no credentials, the same for every requester. The free plan can't put the `Origin` header in the cache key and Cloudflare ignores `Vary: origin`, so a stored copy goes to every origin; a copy that named one origin would fail the others' CORS check. Keep it that way if the rule ever changes to ignore the origin's `Cache-Control` and serve `HIT`s.
+- Compat requirement: same as Rule 1, the request must NOT carry `Authorization: Bearer` (CF bypasses cache for authenticated requests), and it must not ask for credentials, which `*` doesn't allow. zwipe-client's `fetch_changelog` sends neither, and the route is in `public_routes()`.
 - Client fallback: if the fetch ever misses, zwiper falls back to the copy compiled into its own binary, so a stale or unreachable edge never blanks the changelog screen.
+- Verification:
+
+  ```bash
+  curl -sI -H "Origin: https://app.zwipe.net" https://api.zwipe.net/api/changelog \
+    | grep -iE "cf-cache-status|access-control-allow"
+  # -> cf-cache-status: REVALIDATED, access-control-allow-origin: *, no allow-credentials
+  ```
 
 ### Adding a new cache rule
 

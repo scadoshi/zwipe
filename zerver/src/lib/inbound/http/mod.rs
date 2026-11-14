@@ -25,6 +25,7 @@ use tower_http::limit::RequestBodyLimitLayer;
 use tower_http::request_id::{MakeRequestUuid, PropagateRequestIdLayer, SetRequestIdLayer};
 use tower_http::timeout::TimeoutLayer;
 use uuid::Uuid;
+use zwipe_core::http::paths::CHANGELOG_ROUTE;
 
 use crate::domain::auth::access_token::JwtSecret;
 use crate::domain::auth::ports::AuthService;
@@ -145,6 +146,23 @@ async fn security_headers(request: Request, next: Next) -> Response {
         header::REFERRER_POLICY,
         HeaderValue::from_static("strict-origin-when-cross-origin"),
     );
+    response
+}
+
+/// Answers the changelog, which is public and the same for every requester, to any origin and
+/// never with credentials. The edge cache may hand one stored copy to every origin, so a copy that
+/// named one origin would fail the others' CORS check.
+async fn public_changelog_cors(request: Request, next: Next) -> Response {
+    let public = request.uri().path() == CHANGELOG_ROUTE;
+    let mut response = next.run(request).await;
+    if public {
+        let headers = response.headers_mut();
+        headers.insert(
+            header::ACCESS_CONTROL_ALLOW_ORIGIN,
+            HeaderValue::from_static("*"),
+        );
+        headers.remove(header::ACCESS_CONTROL_ALLOW_CREDENTIALS);
+    }
     response
 }
 
@@ -278,6 +296,8 @@ pub fn build_router(
                 // only because the origins are an explicit list, never `*`.
                 .allow_credentials(true),
         )
+        // Outside the CORS layer, so it has the last word on the changelog's headers.
+        .layer(axum::middleware::from_fn(public_changelog_cors))
         .layer(CompressionLayer::new())
         .layer(CatchPanicLayer::new())
         .layer(trace_layer)
