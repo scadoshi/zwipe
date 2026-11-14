@@ -287,9 +287,10 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
 
     /// The cheapest normal printing of each of `oracle_ids` by its USD price:
     /// English, paper, regular size, not a promo, sold in nonfoil, and never an
-    /// Art Series, token or memorabilia printing. A card with no such printing
-    /// that has a USD price is left out. Import lands these for a line that
-    /// names no printing.
+    /// Art Series, token or memorabilia printing. A USD price under a tenth of
+    /// the printing's EUR price is a bad figure and that printing is skipped.
+    /// A card with no such printing that has a USD price is left out. Import
+    /// lands these for a line that names no printing.
     fn fetch_cheapest_printings(
         &self,
         oracle_ids: &[uuid::Uuid],

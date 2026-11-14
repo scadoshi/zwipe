@@ -442,6 +442,7 @@ pub(crate) struct CardFixture {
     rarity: String,
     edhrec_rank: Option<i32>,
     usd: Option<String>,
+    eur: Option<String>,
     set: String,
     set_name: String,
     set_id: Uuid,
@@ -485,6 +486,7 @@ pub(crate) fn card(name: &str) -> CardFixture {
         rarity: "common".to_string(),
         edhrec_rank: None,
         usd: None,
+        eur: None,
         set: "TST".to_string(),
         set_name: "Test Set".to_string(),
         set_id: Uuid::from_u128(0x5e7),
@@ -622,6 +624,11 @@ impl CardFixture {
         self.usd = Some(usd.to_string());
         self
     }
+    /// The printing's EUR price (no `eur` key when unset).
+    pub(crate) fn eur(mut self, eur: &str) -> Self {
+        self.eur = Some(eur.to_string());
+        self
+    }
     pub(crate) fn set(mut self, code: &str, name: &str) -> Self {
         self.set = code.to_string();
         self.set_name = name.to_string();
@@ -723,7 +730,10 @@ pub(crate) async fn seed_cards(pool: &PgPool, cards: &[CardFixture]) {
              all_parts) ",
         );
         qb.push_values(cards.iter(), |mut b, c| {
-            let prices = json!({ "usd": c.usd });
+            let prices = match &c.eur {
+                Some(eur) => json!({ "usd": c.usd, "eur": eur }),
+                None => json!({ "usd": c.usd }),
+            };
             // Production stores rarity as the short code ("R"/"C"/…); the SQL
             // rarity filters compare against `to_short_name()`. Storing the long
             // word here would read back fine (try_from accepts both) but silently

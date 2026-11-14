@@ -2058,7 +2058,9 @@ impl CardRepository for MyPostgres {
             return Ok(vec![]);
         }
         // The USD price is a decimal string; one that won't parse as a number
-        // is treated as no price.
+        // is treated as no price. A USD price under a tenth of the printing's
+        // EUR price reads as a bad figure and that printing is skipped; with no
+        // EUR price the USD price stands. CASE keeps the casts behind the checks.
         let sql = format!(
             "SELECT DISTINCT ON (sd.oracle_id) sd.* FROM scryfall_data sd \
              JOIN card_profiles cp ON sd.id = cp.scryfall_data_id \
@@ -2066,6 +2068,9 @@ impl CardRepository for MyPostgres {
                AND sd.lang = 'en' AND NOT sd.digital AND NOT sd.oversized \
                AND NOT sd.promo AND 'nonfoil' = ANY(sd.finishes) \
                AND sd.prices->>'usd' ~ '^[0-9]+(\\.[0-9]+)?$' \
+               AND CASE WHEN sd.prices->>'eur' ~ '^[0-9]+(\\.[0-9]+)?$' \
+                   THEN (sd.prices->>'usd')::numeric >= (sd.prices->>'eur')::numeric / 10 \
+                   ELSE true END \
              ORDER BY sd.oracle_id, (sd.prices->>'usd')::numeric, \
                       sd.released_at DESC, sd.id"
         );

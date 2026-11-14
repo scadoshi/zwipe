@@ -228,6 +228,69 @@ async fn a_line_with_no_set_lands_the_cheapest_normal_printing(pool: sqlx::PgPoo
 }
 
 #[sqlx::test]
+async fn a_usd_price_under_a_tenth_of_eur_never_lands(pool: sqlx::PgPool) {
+    // Summer Magic Lightning Bolt: Scryfall reads $0.10 next to €5017.02.
+    let app = TestApp::new(pool.clone());
+    let (token, deck_id) = deck_for(&app, "summer").await;
+    let bolt = Uuid::from_u128(0xb018);
+    let foundations = card("Lightning Bolt")
+        .oracle(Some(bolt))
+        .set("fdc", "Foundations Commander")
+        .usd("0.82")
+        .eur("1.67");
+    let usd_only = card("Lightning Bolt")
+        .oracle(Some(bolt))
+        .set("m11", "Magic 2011")
+        .usd("0.90");
+    seed_cards(
+        &pool,
+        &[
+            card("Lightning Bolt")
+                .oracle(Some(bolt))
+                .set("sum", "Summer Magic / Edgar")
+                .usd("0.10")
+                .eur("5017.02"),
+            foundations.clone(),
+            usd_only,
+        ],
+    )
+    .await;
+
+    import(&app, &token, deck_id, "4 Lightning Bolt").await;
+    assert_eq!(
+        deck_rows(&pool, deck_id).await,
+        vec![(bolt, foundations.id())],
+        "the bad USD figure is skipped, the next cheapest lands"
+    );
+}
+
+#[sqlx::test]
+async fn a_printing_with_only_a_usd_price_still_lands_when_cheapest(pool: sqlx::PgPool) {
+    let app = TestApp::new(pool.clone());
+    let (token, deck_id) = deck_for(&app, "usdonly").await;
+    let bolt = Uuid::from_u128(0xb019);
+    let usd_only = card("Lightning Bolt")
+        .oracle(Some(bolt))
+        .set("m11", "Magic 2011")
+        .usd("0.10");
+    seed_cards(
+        &pool,
+        &[
+            usd_only.clone(),
+            card("Lightning Bolt")
+                .oracle(Some(bolt))
+                .set("fdc", "Foundations Commander")
+                .usd("0.82")
+                .eur("1.67"),
+        ],
+    )
+    .await;
+
+    import(&app, &token, deck_id, "4 Lightning Bolt").await;
+    assert_eq!(deck_rows(&pool, deck_id).await, vec![(bolt, usd_only.id())]);
+}
+
+#[sqlx::test]
 async fn a_card_with_no_priced_printing_lands_the_default_printing(pool: sqlx::PgPool) {
     let app = TestApp::new(pool.clone());
     let (token, deck_id) = deck_for(&app, "unpriced").await;

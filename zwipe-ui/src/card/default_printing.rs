@@ -3,7 +3,9 @@
 //! Regular means what import lands for a line that names no printing (English, paper, regular
 //! size, not a promo, sold in nonfoil, never an Art Series, token or memorabilia printing) and no
 //! special treatment on top: no borderless, full-art, textless, showcase, extended-art, etched or
-//! inverted frame. Cheapest is by the USD price; a tie goes to the newest.
+//! inverted frame. Cheapest is by the USD price; a tie goes to the newest. A USD price under a
+//! tenth of the same printing's EUR price reads as a bad figure, and that printing is skipped; a
+//! printing with only one of the two prices is judged by its USD price alone.
 
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
@@ -37,13 +39,26 @@ pub fn is_regular(printing: &ScryfallData) -> bool {
         && !special_frame
 }
 
-/// The USD price of `printing`, when it has one that reads as a number.
+/// A USD price below the EUR price divided by this reads as a bad figure.
+const USD_UNDER_EUR_DIVISOR: f64 = 10.0;
+
+/// The USD price of `printing`, when it has one that reads as a number and agrees with its EUR
+/// price (see the module doc).
 fn usd(printing: &ScryfallData) -> Option<f64> {
-    printing.prices.usd.as_deref()?.parse::<f64>().ok()
+    let usd = printing.prices.usd.as_deref()?.parse::<f64>().ok()?;
+    let eur = printing
+        .prices
+        .eur
+        .as_deref()
+        .and_then(|eur| eur.parse::<f64>().ok());
+    match eur {
+        Some(eur) if usd < eur / USD_UNDER_EUR_DIVISOR => None,
+        Some(_) | None => Some(usd),
+    }
 }
 
 /// The cheapest regular printing among `printings`, the newest of any tied; `None` when no
-/// regular printing has a USD price, and the caller keeps the printing it has.
+/// regular printing has a USD price it can trust, and the caller keeps the printing it has.
 #[must_use]
 pub fn cheapest_regular(printings: &[Card]) -> Option<&Card> {
     printings
@@ -136,6 +151,39 @@ mod tests {
         assert_eq!(
             cheapest_regular(&printings).map(|c| c.scryfall_data.id),
             Some(regular.scryfall_data.id)
+        );
+    }
+
+    #[test]
+    fn a_usd_price_under_a_tenth_of_eur_is_skipped() {
+        // Summer Magic Lightning Bolt: $0.10 next to €5017.02.
+        let mut summer_magic = printing(Some("0.10"), (1994, 7, 1));
+        summer_magic.scryfall_data.prices.eur = Some("5017.02".to_owned());
+        let mut foundations = printing(Some("0.82"), (2024, 11, 15));
+        foundations.scryfall_data.prices.eur = Some("1.67".to_owned());
+        let printings = [summer_magic, foundations.clone()];
+        assert_eq!(
+            cheapest_regular(&printings).map(|c| c.scryfall_data.id),
+            Some(foundations.scryfall_data.id),
+            "the bad USD figure loses to the next cheapest"
+        );
+    }
+
+    #[test]
+    fn a_printing_with_one_currency_or_close_prices_is_judged_by_usd() {
+        let usd_only = printing(Some("0.10"), (2020, 1, 1));
+        let mut eur_close = printing(Some("0.20"), (2021, 1, 1));
+        eur_close.scryfall_data.prices.eur = Some("2.00".to_owned());
+        let printings = [usd_only.clone(), eur_close.clone()];
+        assert_eq!(
+            cheapest_regular(&printings).map(|c| c.scryfall_data.id),
+            Some(usd_only.scryfall_data.id),
+            "no EUR price: the USD price stands"
+        );
+        assert_eq!(
+            cheapest_regular(&[eur_close.clone()]).map(|c| c.scryfall_data.id),
+            Some(eur_close.scryfall_data.id),
+            "USD at exactly a tenth of EUR still counts"
         );
     }
 
