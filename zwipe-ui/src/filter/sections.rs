@@ -458,7 +458,11 @@ impl Row {
     pub fn focusable(self) -> bool {
         match self {
             Self::Label { controls, .. } => controls,
-            _ => true,
+            Self::Text(_)
+            | Self::Number(_)
+            | Self::Chips(_)
+            | Self::Stepper(_)
+            | Self::Picker(_) => true,
         }
     }
 }

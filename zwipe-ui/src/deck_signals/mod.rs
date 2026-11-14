@@ -41,7 +41,7 @@ pub fn land_crossing(
         Crossing::Down | Crossing::Both if down => {
             Some((Level::Warning, format!("Below land target ({target})")))
         }
-        _ => None,
+        Crossing::Up | Crossing::Down | Crossing::Both => None,
     }
 }
 

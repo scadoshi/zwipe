@@ -74,7 +74,15 @@ impl HandledError {
     ) -> Self {
         let shaped = match kind {
             ErrorKind::Decode => decode_shape(message),
-            _ => message.to_owned(),
+            ErrorKind::Unauthorized
+            | ErrorKind::Forbidden
+            | ErrorKind::NotFound
+            | ErrorKind::Unprocessable
+            | ErrorKind::TooManyRequests
+            | ErrorKind::Conflict
+            | ErrorKind::BadRequest
+            | ErrorKind::PayloadTooLarge
+            | ErrorKind::Internal => message.to_owned(),
         };
         let message: String = shaped
             .chars()

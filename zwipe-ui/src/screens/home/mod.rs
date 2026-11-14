@@ -665,7 +665,7 @@ impl State {
                 ))
             }
             Panel::Flavor if self.flavor_fetch != FlavorFetch::Out => Some(self.fetch_flavor()),
-            _ => None,
+            Panel::Decks | Panel::PlayStyle | Panel::Flavor => None,
         }
     }
 

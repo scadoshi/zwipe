@@ -36,7 +36,11 @@ enum Setting {
 fn normalized(change: SettingChange) -> SettingChange {
     match change {
         SettingChange::DarkMode { theme, dark_mode } => SettingChange::Theme { theme, dark_mode },
-        other => other,
+        other @ (SettingChange::Theme { .. }
+        | SettingChange::Pips(_)
+        | SettingChange::SwipeConfirmations(_)
+        | SettingChange::HideUniversesBeyond(_)
+        | SettingChange::Exceptions(_)) => other,
     }
 }
 

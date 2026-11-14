@@ -131,7 +131,9 @@ pub fn username_error(raw: &str) -> Option<String> {
     Username::new(raw).err().map(|e| match e {
         InvalidUsername::BadWord => USERNAME_BAD_WORD.to_owned(),
         InvalidUsername::Whitespace => "Can't contain spaces".to_owned(),
-        other => sentence_case(&other.to_string()),
+        other @ (InvalidUsername::TooShort | InvalidUsername::TooLong) => {
+            sentence_case(&other.to_string())
+        }
     })
 }
 

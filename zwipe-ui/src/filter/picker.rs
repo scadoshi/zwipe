@@ -36,14 +36,14 @@ impl PickerField {
             Self::Include(MatchGroup::Tags) | Self::Exclude(MatchGroup::Tags) => {
                 "Search all Oracle tags"
             }
-            _ => "Type to search",
+            Self::Include(_) | Self::Exclude(_) | Self::Side(_) => "Type to search",
         }
     }
 
     fn cap(self) -> usize {
         match self {
             Self::Side(_) => NARROW_CAP,
-            _ => WIDE_CAP,
+            Self::Include(_) | Self::Exclude(_) => WIDE_CAP,
         }
     }
 
@@ -58,7 +58,11 @@ impl PickerField {
             MatchGroup::OracleWords => Some(Kind::OracleWords),
             MatchGroup::Keywords => Some(Kind::Keywords),
             MatchGroup::TypeLine => Some(Kind::CardTypes),
-            _ => None,
+            MatchGroup::Produced
+            | MatchGroup::Roles
+            | MatchGroup::Tags
+            | MatchGroup::BasicTypes
+            | MatchGroup::Legal => None,
         }
     }
 
