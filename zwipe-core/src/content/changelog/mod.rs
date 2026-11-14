@@ -46,19 +46,20 @@ pub const MOBILE_STORE_VERSION: Version = Version::new(1, 21, 4);
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[Release {
-    version: Version::new(1, 21, 5),
-    date: None,
-    entries: &[
-        "On the web's deck page, gg and Shift+G let go of the card the keyboard cursor had raised",
-        "Printings shows a printing's set, number, place, artist and prices as one row of chips, on the web and in the app",
-        "On the web, moving the keyboard cursor while a card is open no longer leaves a half-faded card image behind",
-        "Quick add and import skip a printing whose dollar price is under a tenth of its euro price when picking the cheapest one",
-    ],
-}];
+pub const UPCOMING: &[Release] = &[];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
+    Release {
+        version: Version::new(1, 21, 5),
+        date: NaiveDate::from_ymd_opt(2026, 11, 14),
+        entries: &[
+            "On the web's deck page, gg and Shift+G let go of the card the keyboard cursor had raised",
+            "Printings shows a printing's set, number, place, artist and prices as one row of chips, on the web and in the app",
+            "On the web, moving the keyboard cursor while a card is open no longer leaves a half-faded card image behind",
+            "Quick add and import skip a printing whose dollar price is under a tenth of its euro price when picking the cheapest one",
+        ],
+    },
     Release {
         version: Version::new(1, 21, 4),
         date: NaiveDate::from_ymd_opt(2026, 11, 13),
