@@ -16,21 +16,12 @@ use zwipe_core::domain::logo;
 /// Daily log files kept; the appender deletes older ones.
 const MAX_LOG_FILES: usize = 30;
 
+/// Returning the error prints it to stderr and exits nonzero, so systemd's `Restart=on-failure`
+/// fires.
 #[tokio::main]
-#[expect(
-    clippy::print_stderr,
-    reason = "the error goes to stderr before exit, when tracing may not be set up"
-)]
-async fn main() {
+async fn main() -> anyhow::Result<()> {
     logo::Zerver::print();
-    match run().await {
-        Ok(()) => (),
-        Err(e) => {
-            // Nonzero exit so systemd's Restart=on-failure fires.
-            eprintln!("main failed: {e:?}");
-            std::process::exit(1);
-        }
-    }
+    run().await
 }
 
 async fn run() -> anyhow::Result<()> {

@@ -40,6 +40,13 @@ impl GetScryfallData {
     }
 }
 
+/// Every `Uuid` is a valid card id, so a request built from one needs no parse.
+impl From<Uuid> for GetScryfallData {
+    fn from(id: Uuid) -> Self {
+        Self(id)
+    }
+}
+
 impl std::ops::Deref for GetScryfallData {
     type Target = Uuid;
     fn deref(&self) -> &Self::Target {

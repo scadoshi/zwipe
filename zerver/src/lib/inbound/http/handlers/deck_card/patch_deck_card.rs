@@ -18,6 +18,7 @@ use zwipe_core::http::helpers::Patch;
 
 use crate::domain::deck::models::deck_card::update_deck_card::UpdateDeckCardError;
 use crate::domain::deck::ports::DeckService;
+use crate::inbound::http::handlers::deck_card::parse_board;
 use crate::inbound::http::handlers::metrics::check_completion;
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState, To500};
@@ -105,11 +106,7 @@ pub async fn patch_deck_card(
     let printing = reject_null(body.scryfall_data_id, "scryfall_data_id")?;
     let mvp = reject_null(body.mvp, "mvp")?;
 
-    let board = board
-        .as_deref()
-        .map(zwipe_core::domain::deck::Board::try_from)
-        .transpose()
-        .map_err(|_| ApiError::UnprocessableEntity("invalid board value".to_string()))?;
+    let board = parse_board(board.as_deref())?;
     let request = UpdateDeckCard::patch(
         user.id,
         &deck_id,

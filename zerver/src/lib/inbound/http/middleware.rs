@@ -80,10 +80,14 @@ impl KeyExtractor for UserIdKeyExtractor {
             .and_then(|v| v.strip_prefix("Bearer "))
             .ok_or(GovernorError::UnableToExtractKey)?;
 
-        let jwt = Jwt::from_str(token).map_err(|_| GovernorError::UnableToExtractKey)?;
-        let claims = jwt
-            .validate(&self.jwt_secret)
-            .map_err(|_| GovernorError::UnableToExtractKey)?;
+        let jwt = Jwt::from_str(token).map_err(|e| {
+            tracing::debug!(error = %e, "rate limit key: malformed access token");
+            GovernorError::UnableToExtractKey
+        })?;
+        let claims = jwt.validate(&self.jwt_secret).map_err(|e| {
+            tracing::debug!(error = %e, "rate limit key: access token failed validation");
+            GovernorError::UnableToExtractKey
+        })?;
 
         Ok(claims.user_id)
     }
@@ -231,11 +235,18 @@ impl FromRequestParts<AppState> for AuthenticatedUser {
         let TypedHeader(Authorization(bearer)) =
             TypedHeader::<Authorization<Bearer>>::from_request_parts(parts, state)
                 .await
-                .map_err(|_| StatusCode::UNAUTHORIZED)?;
-        let jwt = Jwt::from_str(bearer.token()).map_err(|_| StatusCode::UNAUTHORIZED)?;
-        let claims = jwt
-            .validate(state.auth_service.jwt_secret())
-            .map_err(|_| StatusCode::UNAUTHORIZED)?;
+                .map_err(|e| {
+                    tracing::debug!(error = %e, "auth: no bearer authorization header");
+                    StatusCode::UNAUTHORIZED
+                })?;
+        let jwt = Jwt::from_str(bearer.token()).map_err(|e| {
+            tracing::debug!(error = %e, "auth: malformed access token");
+            StatusCode::UNAUTHORIZED
+        })?;
+        let claims = jwt.validate(state.auth_service.jwt_secret()).map_err(|e| {
+            tracing::debug!(error = %e, "auth: access token failed validation");
+            StatusCode::UNAUTHORIZED
+        })?;
 
         Ok(AuthenticatedUser::from(claims))
     }

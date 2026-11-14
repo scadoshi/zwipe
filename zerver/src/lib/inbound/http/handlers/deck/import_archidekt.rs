@@ -21,6 +21,7 @@ use zwipe_core::http::messages;
 
 use crate::domain::deck::ports::DeckService;
 use crate::domain::user::ports::UserService;
+use crate::inbound::http::handlers::deck_card::parse_board;
 use crate::inbound::http::handlers::metrics::check_completion;
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState, To500};
@@ -58,13 +59,7 @@ pub async fn import_archidekt_deck(
 ) -> Result<(StatusCode, Json<ImportDeckCardsResult>), ApiError> {
     let archidekt_id = ArchidektClient::extract_deck_id(&body.url)
         .ok_or_else(|| ApiError::UnprocessableEntity(messages::ARCHIDEKT_BAD_LINK.to_string()))?;
-    let board = body
-        .board
-        .as_deref()
-        .map(zwipe_core::domain::deck::Board::try_from)
-        .transpose()
-        .map_err(|_| ApiError::UnprocessableEntity("invalid board value".to_string()))?
-        .unwrap_or_default();
+    let board = parse_board(body.board.as_deref())?.unwrap_or_default();
 
     // Ownership first, so a request for someone else's deck (or no deck)
     // never spends a fetch against Archidekt from this origin.

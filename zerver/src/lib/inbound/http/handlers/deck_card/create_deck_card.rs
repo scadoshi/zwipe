@@ -12,6 +12,7 @@ use zwipe_core::http::messages;
 use crate::domain::deck::models::deck_card::create_deck_card::CreateDeckCardError;
 use crate::domain::deck::ports::DeckService;
 use crate::domain::user::ports::UserService;
+use crate::inbound::http::handlers::deck_card::parse_board;
 use crate::inbound::http::handlers::metrics::check_completion;
 use crate::inbound::http::middleware::AuthenticatedUser;
 use crate::inbound::http::{ApiError, AppState, To500};
@@ -80,12 +81,7 @@ pub async fn create_deck_card(
         .fetch_user(&GetUser::from(user.id))
         .await?;
     let email_verified = db_user.email_verified_at.is_some();
-    let board = body
-        .board
-        .as_deref()
-        .map(zwipe_core::domain::deck::Board::try_from)
-        .transpose()
-        .map_err(|_| ApiError::UnprocessableEntity("invalid board value".to_string()))?;
+    let board = parse_board(body.board.as_deref())?;
     let request = CreateDeckCard::new(
         user.id,
         &deck_id,

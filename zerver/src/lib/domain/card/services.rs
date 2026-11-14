@@ -183,9 +183,7 @@ impl<R: CardRepository> CardService for Service<R> {
             .await
             .map_err(GetScryfallDataError::Database)?
             .ok_or(GetScryfallDataError::NotFound)?;
-        // Infallible parse: the id came out of the database as a Uuid.
-        let request =
-            GetScryfallData::new(&id.to_string()).map_err(|_| GetScryfallDataError::NotFound)?;
+        let request = GetScryfallData::from(id);
         self.repo.fetch_card(&request).await
     }
 
