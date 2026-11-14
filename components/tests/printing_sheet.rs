@@ -120,7 +120,7 @@ fn the_header_names_the_card() {
 fn the_foot_credits_the_printing_s_artist_beside_the_image_icon() {
     let html = render(|| open_sheet(true));
     let (_, chip) = html
-        .split_once(r#"class="detail-chip detail-chip-artist printing-artist""#)
+        .split_once(r#"class="stat-chip stat-chip-p6 printing-artist""#)
         .unwrap();
     let (chip, _) = chip.split_once("</span>").unwrap();
     assert!(
@@ -145,7 +145,7 @@ fn a_printing_with_no_artist_has_no_artist_chip() {
     }
     let html = render(app);
     assert!(html.contains("printing-chips"), "{html}");
-    assert!(!html.contains("detail-chip-artist"), "{html}");
+    assert!(!html.contains("printing-artist"), "{html}");
 }
 
 #[test]
@@ -167,7 +167,7 @@ fn the_narrow_sheet_shows_its_printing_as_one_row_of_chips() {
         data.collector_number
     ));
     let place = at(r#"class="stat-chip stat-chip-muted">1 of 1"#);
-    let artist = at("detail-chip detail-chip-artist printing-artist");
+    let artist = at("stat-chip stat-chip-p6 printing-artist");
     let price = at(r#"class="stat-chip stat-chip-money""#);
     assert!(
         set < number && number < place && place < artist && artist < price,

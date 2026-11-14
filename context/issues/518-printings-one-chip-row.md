@@ -20,5 +20,8 @@ Headless Chrome, signed-in fake session, the printings read mocked with six prin
 ## After
 `target/composer/printings-after-390.png` and `-1440.png`: at 390 one centered row of chips wrapping onto three lines (set, number, place; artist and two prices; TIX); at 1440 one centered row ending in Select.
 
+## Follow-up: the radii
+Scotty: read-only chips should be a little rounder, and the artist chip too square. Measured in the open sheet: the set, number, place and price chips compute to 9.6px (`0.6rem`, orangui's `.stat-chip` default), the same as the deck head's read-only stat chips, so they already follow the read-only grammar; the artist chip was a card-details `detail-chip` at 6.4px (`0.4rem`) with tighter padding. It is now a `stat-chip stat-chip-p6` (the artist's palette-6 tone, as before), so every chip in the row has the same 9.6px radius and padding; the unused `.detail-chip-artist` rule is gone. After screenshots retaken at the same paths.
+
 ## Not checked
 - The app on a device: it draws the same component.

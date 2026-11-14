@@ -447,7 +447,7 @@ pub fn PrintingChipsGhost() -> Element {
             span { class: "skeleton-bar skeleton-chip skeleton-tinted stat-chip-p3 printing-chips-ghost-set" }
             span { class: "skeleton-bar skeleton-chip skeleton-tinted stat-chip-muted printing-chips-ghost-number" }
             span { class: "skeleton-bar skeleton-chip skeleton-tinted stat-chip-muted printing-chips-ghost-number" }
-            span { class: "skeleton-bar skeleton-chip skeleton-tinted detail-chip-artist printing-chips-ghost-artist" }
+            span { class: "skeleton-bar skeleton-chip skeleton-tinted stat-chip-p6 printing-chips-ghost-artist" }
             for i in 0..GHOST_PRICES {
                 span { key: "{i}", class: "skeleton-bar skeleton-chip skeleton-tinted stat-chip-money printing-chips-ghost-price" }
             }
@@ -455,15 +455,15 @@ pub fn PrintingChipsGhost() -> Element {
     }
 }
 
-/// The artist of `card`, a printing, as a chip: the Image icon, then the name. Nothing for a
-/// printing with no artist.
+/// The artist of `card`, a printing, as a read-only stat chip in the artist's tone, like the
+/// chips beside it: the Image icon, then the name. Nothing for a printing with no artist.
 #[component]
 pub fn ArtistChip(card: Card) -> Element {
     let Some(artist) = info::artist(&card.scryfall_data) else {
         return rsx! {};
     };
     rsx! {
-        span { class: "detail-chip detail-chip-artist printing-artist",
+        span { class: "stat-chip stat-chip-p6 printing-artist",
             DockIcon { path: IMAGE_ICON }
             "{artist}"
         }

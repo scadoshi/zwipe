@@ -803,12 +803,6 @@ i.ms.ms-cost.ms-gp {
     border-color: color-mix(in srgb, var(--palette-1) 35%, var(--tone-base, transparent));
 }
 
-.detail-chip-artist {
-    color: var(--ink-palette-6, var(--palette-6));
-    background-color: color-mix(in srgb, var(--palette-6) 12%, var(--tone-base, transparent));
-    border-color: color-mix(in srgb, var(--palette-6) 35%, var(--tone-base, transparent));
-}
-
 /* A printing's artist under Printings: the Image icon at the chip's text size, then the name. */
 .printing-artist {
     display: inline-flex;
