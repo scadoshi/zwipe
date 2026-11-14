@@ -1,175 +1,55 @@
 # Factory state
 
-The handoff for the composer session: where the factory stands, so a fresh or compacted composer can pick it up. The rules are in [`../development/factory.md`](../development/factory.md). Open issues are in [`../issues/`](../issues/README.md); nits 1 to 277 are archived in [`web_nits.md`](web_nits.md). Update this file whenever the queue changes shape.
+The handoff for the composer session: where the factory stands, so a fresh or compacted composer can pick it up. The rules are in [`../development/factory.md`](../development/factory.md). Open issues are in zwipe-context's GitHub issues and [`../issues/`](../issues/README.md). Older handoff logs are in this file's git history.
 
-## As of 2026-11-06, late night
+## As of 2026-11-14: stopped
 
-- `main` is at `811c3bbbe`, deployed and green (web, zite, zerver). `release` holds everything merged since. Scotty says when to push `release` to `main` (`git push origin origin/release:main`, a fast-forward; never switch the laptop's shared checkout). Then I watch the deploys and send Surfer to check the fixes.
-- scottyfermo.com (the portfolio) and orangui deploy from their own `main`. Scotty has pre-approved merging green worker PRs into both.
+Scotty stopped the factory on 2026-11-14 after a wind-down. Nothing is in flight, every agent is standing down, and no builds, dev servers or test sessions are running. Start nothing until Scotty says.
+
+- `main` = `release` at `f2c707615` (orangui repinned to `0a589a3`), deployed green: web, zerver, zite. Web is 1.21.4. UPCOMING 1.21.5 holds the 517 Shift+G, 518 Printings and #47 cheapest-printing lines.
+- Stores: Zwipe 1.21.4 and Cairn 1.4.2 submitted 2026-11-13. Cairn's Unreleased 1.4.3 has the centered menu icons (also in portfolio's changelog).
+- orangui main `0a589a3`, pinned in zwipe, portfolio (`fe77a09`) and Cairn (`357c8ec`).
+- Next phase (Scotty): marketing and signups. The web app is settled; AI features come later. No nit work.
+
+## Done in the last stretch (2026-11-12 to 11-14)
+
+- 1.21.4 cut and submitted to both stores, with Cairn 1.4.2.
+- Security fixes #43 (text criteria capped, search statement timeout), #44 (cookie logout), #46 (ACAO on /api/changelog). No changelog lines, by rule.
+- scadoshi-rust audit closed: zwipe-context #29 to #42, orangui #40 to #43. `clippy::wildcard_enum_match_arm` is on in zwipe and orangui and in the scadoshi-rust lint set (one-variant picks use `if let` or `matches!`; foreign enums take an `#[expect]`).
+- Verified live by Surfer: #47 (Quick add and import skip a printing whose USD is under a tenth of its EUR), #48 (no half-faded cursor image), 517 reopen (Shift+G with a lowercase key), portfolio #49 and the fleet chart no longer replaying on metric switches.
+- Laptop's leftover branches pruned (13 deleted); the list is in zwipe-context `ideas/laptop_branches_2026-11-14.md`.
+- Five QoL videos approved in zwipe-context `video-factory/finals/not-scheduled/`: Share your deck, Undo, Themes, Pick your commander, Quick add.
+
+## Parked
+
+- Themes: Scotty records the theme sweeps on his iPhone, then the video is re-cut with them.
+- The three web videos (vim bindings, card stacks, no mouse): parked by Scotty. Shot lists in zwipe-context `marketing/plans/31_scotty_shot_lists.md`.
+- `feat/tui` (zwipe-context #50): extra large, kept.
+- Branches kept on purpose: settings phase 3, pip-color-classic, rustmas `scadoshi`.
+- Scotty to re-upload `scadoshi-rust/dist/scadoshi-rust.zip` to claude.ai so agents load the two new match rules.
+- zwiper's iOS and Android cfg code wasn't checked by the new lint (it doesn't compile on a Mac desktop); the next mobile build checks it.
 
 ## Agents
 
 | Agent | Where | Role |
 |---|---|---|
-| composer | laptop `wZ:p1` | Triages, plans, reviews and merges. That's me. |
-| laptop | laptop `wV:p1`, `~/Developer/zwipe` | Worker. Owns the app, the simulator and the portfolio. |
-| halo | `herdr --machine halo`, worktree `~/Developer/zwipe-halo` only | Worker. Scotty builds to his phone from `~/Developer/zwipe` on halo, which stays on `main` and clean. |
-| thinker | `herdr --machine thinker` | Worker. |
-| scotland | `herdr --machine scotland` | Worker. |
-| surfer | halo `wS:p1` | QA for the three websites in Chrome. Its report is `~/Developer/surfer-report.md` on halo, with shots in `~/Developer/surfer-shots`. Parts 1 to 6 so far. |
-| droid | laptop `w0:p1` (unnamed in herdr; address it by pane) | QA for the Android app on the Pixel_9a emulator, against production as user `test`. It builds from its own clone, `~/Developer/droid/zwipe` on `origin/release`. Runbook: `~/Developer/droid/RUNBOOK.md`. Report: `~/Developer/droid/report.md`. |
+| composer | scotland-server | Triages, plans, merges `release` to `main`, keeps the Factory Board current. |
+| halo | `herdr --machine halo`, pane `wX:p1` | Worker. Store builds run on halo. |
+| laptop | `herdr --machine laptop`, pane `wV:p1` | Worker. Never pushes `release` or `main`: it pushes a branch and the composer merges. Video renders (ElevenLabs key on the laptop). |
+| thinker | `herdr --machine thinker`, pane `w5:p1` | Worker. |
+| scotland | local, `herdr agent prompt scotland` | Worker. |
+| surfer | halo `wS:p1` | QA for app.zwipe.net, zwipe.net and the portfolio in its own Chrome tab. Keys only through the browser tool into its tab, never OS-level keystrokes. |
+| droider | halo `wW:p1` | QA for Android in the emulator; video footage. |
 
-## Queues (each item is already sent to its worker)
+Factory Board: https://claude.ai/artifact/HQVvAtuU45Ze4FZE3eN8iw (collections `items`, `meta/board`, `meta/team`). Update it with each status message, `updatedAt` from `date -u`.
 
-| Worker | Now | Then |
-|---|---|---|
-| laptop | 131 (deck page top gap, finishing PR #248 with 128 to 130) | **150 and 151 first**: the see-through sheet and long-running app degradation, an investigation. Diagnosis goes to me before any fix. Then 144 (the light/dark race; ask before any wire change), then 145 (keyboard, Retry, D3). |
-| halo | 132 (toasts bottom left, stopping above the footer, app too), 133 (tag selectors: drawer or full screen), 137 (dock width) | 140 (44px tap targets, app and portfolio too), 142 (zwipe.net one column) |
-| scotland | 122 (the unsaved-changes guard) | 134 and 139 (docks stop above the footer; footer at every width), with 148 and 149 on that branch; 138 (portfolio chart labels, Escape); 146 (the app spacing sweep, D38 included) |
-| thinker | 123 (the skeleton audit, web and app) | 135 and 136 (fold carets everywhere; the Types chart); 141 (Activity heatmap); 143 (the `Theme` to `Themed` wire rename: Phase 1 in a PR, Phase 4 on `server/pip-themed` with no PR, a plan in `context/plans/pip_themed_wire.md`); 147 (copy and contrast, D28 and D37) |
-| surfer | Part 6: checking 115 to 127 on the live deploy, at full width and then narrower as Scotty resizes | |
-| droid | Idle after pass 1. It rechecks on Android once 145 to 147 merge. | |
+## How the loop runs
 
-## Overnight, 2026-11-06 into 11-07 (Scotty asleep: "keep the factory running")
-
-- Deployed `release` to `main` at `60d705459` (web, zerver and portfolio green; zite was finishing). Droid is on pass 2 against that build, and Surfer on Part 7, a fix check at whatever width its window has.
-- The composer keeps reviewing and merging worker PRs into `release`, copies each QA report into `context/qa/` with a row in its README, and commits. No more deploys to `main` until Scotty says.
-- Scotty's later word (before sleep, 2026-11-07): "anything that gets reported back that you're like 90% confident you can fix, just fix it." So 157 to 160 went out from Surfer's and Droid's findings. Anything less certain waits for his morning triage.
-- Overnight queues: halo has 156 (the auth logout, a PR left open for Scotty), then 159. Thinker has 135/136, then 158 (counts), 143, 153. Scotland has 146, then 157 and 160 (portfolio). Laptop has 151 (A: orangui, zwipe, Cairn on a branch), then 145.
-
-## Overnight progress log (2026-11-07)
-
-Merged into `release` after the `60d705459` deploy: #256 (134/139/148/149), #257 (123), #258 (154/155), #260 (146), #261 (151b, with orangui #10), #262 (159), #263 (135/136), #264 (145), #265 (122b), #266 (161, the browser-back crash), #267 (158B, honest Live labels), #268 (157, with orangui #11's per-theme ink colors), #269 (143 Phase 1, Themed), #270 (153, Swipe confirmations: Chip by default). Portfolio #9 (138) is live.
-Scotty approved #259 (156, auth) on 2026-11-07 and it merged into release. Next: once laptop's 162 and scotland's 160 land, deploy release to main and start another Droid and Surfer audit pass. The Cairn branch `fix/app-lifecycle` and the portfolio branch `changelog/cairn-day-rollover` wait on his review. Thinker's 158 (A), lifetime totals that never drop, is parked in `context/plans/lifetime_totals.md`.
-143 (#269), composer review: Phase 1 matches the `pip_color_wire.md` precedent. The wire still writes `theme`, both spellings are read, and a test proves PATCH, GET, login and refresh stay parseable by 1.15 to 1.18. Phase 4 sits on `server/pip-themed` with no PR. One deploy note: the migration narrows the CHECK to ('themed', 'classic'), so while the old zerver binary overlaps the migration it could write 'theme' and fail. That's the same brief window the `classic` migration had. Deploy at a quiet hour.
-For Scotty's triage: the picker × discarding live picks; a toast over the filter's Oracle tags row (720); Droid P2-4 (theme lost after a force-stop); the Synergy selection highlight (p7-11).
-
-## 2026-11-07, daytime (Scotty awake)
-
-- Deployed `release` to `main` at `48e5f81b9` (zerver, web, zite green). Since then merged into `release`: #271 (162), #272 (163, with orangui #12), #273 (167), #274 (164), #275 (169, orangui #13), #276 (173), #277 and #278 (176 hints), #279 (165, orangui #14), #281 (175 Remove/Undo), #282 (177 chip under the header), #283 (172 one toast per action). Portfolio #10 (160) and #11 (166, 168) are live.
-- Scotty's calls: login cap 5 to 10 (#280, test fix pending at halo); both QA agents keep sharing `test`; Cairn `fix/app-lifecycle` merged to Cairn main (`f777c35`) with its portfolio changelog; 158A option 1 approved (thinker, after the skeleton follow-up); the WebView crash fallback approved (laptop, spike first). The Dioxus bug is already dioxus#5885 (fix PRs #5886, #5890); a comment draft for Scotty is at `~/Developer/zwipe/target/dioxus-webview-terminate-issue.md`. Nothing filed.
-- In flight: halo 280 test fix, 181, then 170, 171; scotland 178 (priority), 179, 174; thinker skeletons (D5 D6 D7 D9), then 158A; laptop the WebView fallback.
-- Next deploy after this batch, with Scotty's go.
-- Deployed `3e72d3344` (2026-11-07 midday). Since then merged into release: #293 (158A, retired lifetime counters, a migration), #294 #297 #299 #300 #302 #303 (the scadoshi-rust audit, plus orangui #17 and Cairn main), #295 (crash fallback on the native run loop, orangui #16), #296 (182), #298 (183), #301 (184), #304 (175 dock and toast wrap, orangui #18), #305 (175 swipe-down at the end). Cairn main has the crash fallback (#4), backup/import, the Android fixes and the audit fixes. The next deploy waits on Scotty's go.
-- In flight: thinker 165 follow-up (card detail chips in light themes); scotland Droid's seven Cairn fixes. Parked for Scotty: the Quick add 'No results' pill.
-
-## PR #259 (156, the auth logout): composer review notes for Scotty
-
-Left open as agreed. The design is sound: a rotated token presented again within 30s gets the same successor (kept in memory per process), so racing tabs and a refresh lost to a page unload stop revoking the family. Past the window, a replay still revokes. The web adds a Web Lock so tabs refresh one at a time. The ownership check (Forbidden) runs before the reuse path. Points to decide or fix before merging:
-- `reuse.rs` recovers a poisoned lock with `PoisonError::into_inner`, which the Rust rules forbid ("a poisoned lock is an error the caller sees"). It should return an error, which on the refresh path means falling back to the replay branch.
-- The successor is remembered before the transaction commits. If the commit then fails, a racing loser is handed a token the database never stored, and its next refresh fails as NotFound. That's rare and fails safe (a logout), but `remember` after the commit, with losers re-reading, would be tighter.
-- The tradeoff: anyone holding a stolen token can redeem it within 30s of a legitimate rotation. That's the standard reuse-interval tradeoff (Auth0 and others do the same). The window is configurable.
-- The map is per process, so a restart or a second zerver instance forgets the window, and the race falls back to today's revoke. That's safe.
-- Halo flagged without changing it: the web refreshes on every tab load because it stores no access token, and the 5-session cap may evict an idle Firefox session. Either could still explain Scotty's Firefox drops.
-
-## Waiting on Scotty (as of 23:30)
-
-- Go on Surfer's Part 6 follow-ups for halo: 125 (the portfolio sweep, still two), 118 regressed in the phone details drawer (720 and 504), 52 (picker chip list fade), 53 (zwipe.net stats stuck while labeled Live), 54 (the deploy logged Chrome out; diagnose only).
-- A deploy of `release` to `main`. Nothing goes to Cairn's `main` and nothing is filed with Dioxus without him.
-- Halo, Surfer and Droid are idle and waiting.
-
-## Rules learned tonight
-
-- Surfer's and Droid's findings get reviewed with Scotty before anything is built. Scotty's own nits I log and send straight out.
-- A worker stuck on a permission prompt: press Esc, remove the cause (files go in the repo's `target/`), and re-prompt. Never approve a settings change.
-- Workers stop and ask the composer before any wire change. The composer plans it per `context/development/api_evolution.md` (template `context/plans/pip_color_wire.md`, tracker `context/plans/wire_changes.md`) and checks it before it ships.
-- Clean the laptop's Rust target folders once one passes about 100 GB, only while nothing is building, keeping `target/scotty-shots`.
-- Portfolio copy stays short and plain (the human skill).
-- Every agent reports back when it finishes or stops (`herdr --machine laptop agent prompt composer ...`). A `/clear` drops a pane's herdr name, so rename it after (`herdr agent rename wV:p1 laptop`).
-
-## Open threads
-
-- Wire migrations waiting on a floor: `natural` to `classic` (pip color) and `/preferences` to `/settings` are in `wire_changes.md`. `theme` to `themed` joins them once 143's Phase 1 merges.
-- Android status and nav bars don't follow the theme: a todo (D32).
-- Cairn: anything 151 finds for Cairn goes to Scotty, not straight to Cairn's `main`.
-
-## How the composer runs the loop
-
-- Plans and the worker preamble (`rules2.md`) live in `~/.claude/jobs/dfa7e2c1/tmp/plans/`. The composer's zwipe clone, used for board commits and conflict merges, is `~/.claude/jobs/dfa7e2c1/tmp/composer`.
-- Review each PR against scadoshi-rust and the repo rules, then merge into `release` once CI is green (`gh pr merge <n> -R scadoshi/zwipe --merge`). Workers never merge.
-- Conflicts are usually `zwipe-core/src/content/changelog/mod.rs`. Merge `origin/release` into the branch in the composer clone, run `~/.claude/jobs/dfa7e2c1/tmp/resolve_changelog.py` (it keeps both entries), and push. Never force-push. For a `Cargo.lock` conflict, take release's copy and `cargo update -p` the changed git dependencies.
-- After an orangui merge, the zwipe and portfolio PRs repin orangui to `main` before they merge.
-
-### Evening 2026-11-07
-- Deployed f699acc37 (Scotty's go). Since then merged to release, not deployed: #323 #324 #326 (196, 198, 199), #329 #335 #337 #342 (197, 208, 203, 209), #330 #331 #333 (202, 204, 205, 206), #332 (207 sideboard), #341 #345 (200, 201, promo), #339 #346 (210), #340 (211 parked), QA reports #322 #325 #327 #328 #334 #338 #343 #344.
-- Held: #336 (207 og tags via a zwipe.net move to Cloudflare Pages), waiting on Scotty's OK and his dashboard cutover (steps in deploy_web.md).
-- Waiting on Scotty: triage of Droid p7 + p8 and Surfer p15, p16, p17 findings; reqwest gzip/brotli on the app; 186 (web preview 379 vs app 333); Cloudflare zone cache settings (stats_second_source.md, also 211).
-- Running: Droid pass 9 (release APK, merged fixes incl. 210), Surfer Part 18 (copy proofread).
-
-### Late 2026-11-07
-- Deployed 80d5b43ab (Scotty's go). Merged since, not deployed: 213, 214, 215 (Any/All, additive wire field), 216 to 225, 203 and 206 follow-ups, web Quick add (#370), Config flags as filters (#373), copy pass #369 #372 #374, orangui#21 + pin (#366).
-- Only open PR: #336, held for Scotty's zwipe.net cutover (context/plans/share_preview.md).
-- Closed: 212 (Arzakon is WUBRG), the app promo printing (didn't reproduce on prod), synergy_applied (correct by contract).
-- Waiting on Scotty: deploy go; reqwest gzip/brotli on the app; Surfer p15-17 and p19 findings; Droid p11 (Activity 146 vs 303 swipes, Draw odds 'by turn 0').
-
-## Night of 2026-11-07 into 11-08 (Scotty asleep)
-
-- Live: `main` at 1e03520ef. zwipe.net is on Cloudflare Pages (`zwipe-site`), www redirects to the apex, GitHub Pages is gone (#416). No deploys until Scotty says.
-- The factory now runs through `context/issues/` (see `../development/factory.md`): at most two workers busy, every issue logged first, fixes need a failing test and a live verification.
-- Scotty's overnight word: Surfer and Droid work through `issues/verify-1e03520ef.md`. New findings get logged as `reported`. Only an obviously easy fix that can be verified next round goes to a worker; anything bigger stays logged.
-- In flight: thinker on #398's conflict then 285 (preview image); halo #406 and scotland #408 conflicts. Laptop idle.
-- ManaBox plan (`plans/collection.md`): Q1 answered (Add and Replace modes); Q2 to Q8 wait for Scotty one at a time.
-- Parked for Scotty: 282 (stale bundle after deploy), 284 (toast vs footer, reproduced).
-
-### Morning summary (2026-11-08)
-
-- Verify 1e03520ef: every line checked. All pass except 265 (Partner Swipe stack, fixed in #419) and an extra "Stack refreshed" toast (288, fixed in #421). 336 (share previews) checked by curl.
-- Merged since the deploy (not live): 221 web, 258, 270, 273, 278, 279, 280, 283, 287 (changelog split, workspace 1.18.8), 265, 288, 289, 290 part 1, #416 (GitHub Pages job removed).
-- New, waiting on Scotty: 282 (stale bundle after deploy), 284 (toast vs footer, reproduced), 286 (portfolio orangui line anchors), 290 part 2 (what Keep means on the discard prompt), 291 (logout revokes every session).
-- 285 (share preview image) merged in #424 and #425; samples sent to Scotty. Deploy note: zerver must deploy before zite (the zite build waits for it). Workers all idle.
-
-## 2026-11-08 limit
-Scotty raised the worker limit to 3 for now ("push it a little bit more"). Busy: thinker 285 part 2, halo 291, scotland 284.
-
-## Queue (2026-11-08, Scotty)
-1. Cairn clips (droid) -> Scotty review -> portfolio.
-2. Guide screenshots, issue 310 (droid) -> contact sheet -> swap.
-3. Store builds on halo (the halo worker; Scotty takes them there): IPA for Zwipe and Cairn (iOS), AAB for Zwipe (Play). Ask Scotty for the version at cut (changelog has 1.18.9-1.18.14 upcoming); date = cut day.
-4. Then: marketing video factory discussion (narrated shorts).
-
-## Scotty to-dos
-Done 2026-11-08: Cairn 1.4.0 What's New, both apps' store screenshots and headers.
-
-## Next deploy
-Optional, low priority: whenever a deploy next happens, a stale-tab check of 282 is nice to have. Not blocking; 282 already passed with a simulated deploy.
-
-## Next
-TikTok / marketing video factory discussion with Scotty.
-
-Stores, 2026-11-08 evening: Zwipe iOS 1.18.14 (114) resubmitted with the new screenshots and header; Cairn iOS 1.4.0 (14) resubmitted with the corrected What's New, new screenshots and header; Zwipe Android 1.18.14 (vc76) submitted. All in review.
-
-## Upcoming (Scotty, 2026-11-08)
-- **Meld support:** show a meld card's melded result the way a double-sided card flips. Planned after usage resets, Wednesday 2026-11-11.
-- **ManaBox integration:** build this week (plan: context/plans/collection.md, all 8 questions answered).
-- **Videos:** make marketing videos for both once they ship (video factory on laptop, slate in zwipe-context marketing/plans/).
-
-## End of night 2026-11-08
-- Six marketing videos approved and saved (zwipe-context video-factory/finals + iCloud): swipe-to-build, deck-stats, playstyle, oracle-tags, oracle-tags-explained, activity. goblin-build parked (voice, choppiness). 18 more specs ready.
-- Stores: Zwipe iOS/Android 1.18.14 and Cairn 1.4.0 in review; Cairn 1.4.1 delivered, submit when 1.4.0 clears.
-- 1.18.15 upcoming on release: 313 price chip, 314 menu flicker fix (verified on phone).
-- Private context moved to github.com/scadoshi/zwipe-context.
-- Next: ManaBox this week; meld after 2026-11-11.
-
-## Handoff 2026-11-09 morning
-- In flight: scotland on 316 (drawer stops at footer), 317 (pending-email expiry as a tag), 318 (Refresh + Resend on pending email; stop if a resend endpoint is missing). Changelog under 1.18.15. Merge on green.
-- Waiting on Scotty: whether to push halo zwipe scadoshi-rust (26 local commits, Oct 30).
-- Workers idle: laptop, droid, and-droid, halo, thinker; surfer stood down.
-- Videos: six approved in zwipe-context video-factory/finals + iCloud; goblin-build parked; 18 specs ready.
-
-## Handoff update 2026-11-09 (before compaction)
-- scotland: 316/317/318. orangui#29 merged (drawer floor var). zwipe #477 (server resend-email-change route) in CI: merge on green, then it needs a deploy (push release to main, ask Scotty for the go) BEFORE scotland's UI PR (316 floor, 317 tag, 318 Refresh+Resend, changelog 1.18.15) merges.
-- Videos: finals in zwipe-context video-factory/finals/<slug>/ (mp4 + post.md), iCloud mirrored. Scotty posting to YouTube Shorts; channel needs verification for clickable links.
-- Open with Scotty: push halo zwipe scadoshi-rust (26 local commits)? 
-
-## Composer handoff, 2026-11-09 evening (composer moving from laptop to scotland)
-
-Generic factory docs are being written in scotland-server (`context/factory/`); this section is zwipe's current state only.
-
-- Release = main at 679ef59ae plus docs. Web is 1.18.16 (cut #488). Floor 1.18.1.
-- Wire: pip names. Server accepts theme/natural in requests again (#494, issue 324 verified). Phase 2 is the 1.18.16 STORE build (first that writes classic/themed). Phase 3: floor to 1.18.16 once live in both stores. Phase 4: drop the request alias only then. Settings rename is done (#493); the app keeps a read fallback for stored sessions under `preferences` until 30 days after the floor reached 1.18.0.
-- Stores: Zwipe 1.18.15 (iOS 115, Android vc77) and Cairn 1.4.1 in review. Next Zwipe store build is 1.18.16 from release (halo), after 1.18.15 clears. Cairn 1.4.2 (Farquharson Meditations 8.36 quote) is undated on cairn main, rides the next Cairn cut.
-- Versioning: a version is cut when web ships it; stores take the latest cut later.
-- Videos: six finals scheduled on YouTube, TikTok, Instagram through Nov 20 (zwipe-context video-factory/finals/README.md). Batch 2026-11 (8 videos, doc approved: video-factory/batch-2026-11.md): Droid recording, laptop rendering; every final goes to Scotty before approval, then finals/<slug>/ + iCloud. New voices saved: Goblin r4TgR3IribRyPfJEA8TT, Starfleet Commander Qb5nz8nFZSXgHQQNmehP, Demon iAa729MjNE9cLScZ2mhS, Angel e6MTnMjBcwQoxLUPzRx7; artificer uses premade Daniel. Account at 10/10 custom voices.
-- Soapbox: Scotty talks to it directly now; composer stays out.
-- Usage (2026-11-10 00:18 UTC): 1,026 users, WAU 31, MAU 70, 12 signups in 7 days; zerver runs reports via `ssh -t zerver ./zwipe-usage.sh` (needs Scotty's sudo).
-- Workers idle except droid (recording) and laptop (rendering).
+- Workers gate locally (nightly fmt, clippy `-D warnings`, tests, rustdoc, wasm clippy) and push to `release`, rebasing if it moved. No PRs in zwipe. Laptop pushes a branch instead.
+- The composer fast-forwards `main` from `release` (`git push origin origin/release:main`) only after a full gate passed on the exact `release` head, and only once no `main` deploy is running. Then it waits for deploy-web, deploy-zerver and deploy-zite and sends QA to check the fix live.
+- orangui and portfolio: green worker PRs merge without asking; repin the hosts after an orangui merge. Cairn goes straight to its `main`, with every changelog entry mirrored in portfolio `src/changelog.rs`.
+- A worker checking hosts against an orangui branch must confirm with `cargo tree -i orangui` that the patch applied. A CLI `--config` patch reaches `cargo check` but not `cargo clippy`.
+- Workers stop and ask before any wire change; keep shipped apps' wire text and shapes as they are.
+- Security fixes get no changelog line. User-visible fixes get one line in UPCOMING.
+- A worker stuck on a permission prompt: Esc, move the cause into the repo's `target/`, re-prompt. Never approve a settings change.
+- Scotty's standing limits: production DB reads are his; the keystore password is never written down; Droider never prints the test password; Surfer never types passwords on production; never sign into Scotty's profile; don't move or resize windows.
