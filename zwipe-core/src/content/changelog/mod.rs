@@ -52,6 +52,7 @@ pub const UPCOMING: &[Release] = &[Release {
     entries: &[
         "On the web's deck page, gg and Shift+G let go of the card the keyboard cursor had raised",
         "Printings shows a printing's set, number, place, artist and prices as one row of chips, on the web and in the app",
+        "On the web, moving the keyboard cursor while a card is open no longer leaves a half-faded card image behind",
     ],
 }];
 
