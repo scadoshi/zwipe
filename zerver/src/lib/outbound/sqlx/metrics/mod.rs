@@ -1,6 +1,6 @@
 //! Metrics repository implementation.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::num::TryFromIntError;
 
 use sqlx::query;
@@ -241,6 +241,14 @@ impl MetricsRepository for Postgres {
             .iter()
             .filter(|s| known.contains(&s.commander_oracle_id))
             .collect();
+        // Pooled rows are shared by every user's flushes, so each flush upserts them in key
+        // order: two overlapping flushes then queue on the first shared row instead of
+        // deadlocking.
+        signals.sort_by_key(|s| {
+            let commander = s.deck_id.and_then(|id| deck_ctx.get(&id)).and_then(|c| c.0);
+            (commander, s.card_oracle_id)
+        });
+        select_signals.sort_by_key(|s| s.commander_oracle_id);
 
         // A day's worth of impressions per user. Past the cap the flush is
         // still accepted, but none of its signals reach the pooled tables, so
@@ -393,7 +401,7 @@ impl MetricsRepository for Postgres {
             // Aggregate gesture counts per (context_key, otag), then upsert once each.
             // Context comes from the deck resolved above: a Commander deck keys on
             // `commander:<oracle_id>`, a non-Commander deck on `format_ci:<format>:<CI>`.
-            let mut otag_tallies: HashMap<(String, String), OtagTally> = HashMap::new();
+            let mut otag_tallies: BTreeMap<(String, String), OtagTally> = BTreeMap::new();
             for sig in &signals {
                 let deck_c = sig.deck_id.and_then(|id| deck_ctx.get(&id));
                 let commander = deck_c.and_then(|c| c.0);
@@ -541,7 +549,7 @@ impl MetricsRepository for Postgres {
                 card_facets.insert(oracle_id, (colors, categories));
             }
 
-            let mut tallies: HashMap<(&str, String), i64> = HashMap::new();
+            let mut tallies: BTreeMap<(&str, String), i64> = BTreeMap::new();
             for sig in signals.iter().filter(|s| s.added > 0) {
                 let Some((colors, categories)) = card_facets.get(&sig.card_oracle_id) else {
                     continue;
