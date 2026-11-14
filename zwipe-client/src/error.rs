@@ -106,7 +106,9 @@ impl ClientError {
             | ClientError::UnprocessableEntity(message) => {
                 plain_message(message).unwrap_or_else(|| sentence_case(message))
             }
-            other => sentence_case(&other.to_string()),
+            other @ (ClientError::Unauthorized(_)
+            | ClientError::Forbidden(_)
+            | ClientError::TooManyRequests(_)) => sentence_case(&other.to_string()),
         };
         // A status with an empty body (a route the server doesn't have
         // yet answers 404 with none) would otherwise toast nothing.
@@ -320,7 +322,9 @@ mod tests {
                 ClientError::BadRequest(_) => "bad_request",
                 ClientError::PayloadTooLarge(_) => "payload_too_large",
                 ClientError::InternalServerError(_) => "internal",
-                other => panic!("expected a status variant for {status}, got {other:?}"),
+                other @ (ClientError::Network(_) | ClientError::Decode(_)) => {
+                    panic!("expected a status variant for {status}, got {other:?}")
+                }
             };
             assert_eq!(actual, expected, "wrong variant for {status}");
         }

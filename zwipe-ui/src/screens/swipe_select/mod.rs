@@ -262,7 +262,16 @@ fn toast_line(effect: &Effect) -> Option<Line<'_>> {
     match effect {
         Effect::Toast(toast) => Some(Line::Toast(toast)),
         Effect::Confirm(toast) => Some(Line::Confirm(toast)),
-        _ => None,
+        Effect::OfferHint(_)
+        | Effect::SearchCommanders { .. }
+        | Effect::LoadMore { .. }
+        | Effect::DismissCommander(_)
+        | Effect::UndismissCommander(_)
+        | Effect::AddMaybeboardCard { .. }
+        | Effect::RemoveMaybeboardCard { .. }
+        | Effect::Enter(_)
+        | Effect::Pick(_)
+        | Effect::Navigate(_) => None,
     }
 }
 

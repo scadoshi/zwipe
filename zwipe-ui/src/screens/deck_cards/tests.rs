@@ -23,9 +23,12 @@ fn blank() -> CardQueryBuilder {
 fn toasts(effects: &[Effect]) -> Vec<(ToastKind, String)> {
     effects
         .iter()
-        .filter_map(|e| match e {
-            Effect::Toast(t) => Some((t.kind, t.text.clone())),
-            _ => None,
+        .filter_map(|e| {
+            if let Effect::Toast(t) = e {
+                Some((t.kind, t.text.clone()))
+            } else {
+                None
+            }
         })
         .collect()
 }
@@ -33,9 +36,12 @@ fn toasts(effects: &[Effect]) -> Vec<(ToastKind, String)> {
 fn undo_records(effects: &[Effect]) -> Vec<UndoAction> {
     effects
         .iter()
-        .filter_map(|e| match e {
-            Effect::RecordUndo(a) => Some((**a).clone()),
-            _ => None,
+        .filter_map(|e| {
+            if let Effect::RecordUndo(a) = e {
+                Some((**a).clone())
+            } else {
+                None
+            }
         })
         .collect()
 }
@@ -43,9 +49,12 @@ fn undo_records(effects: &[Effect]) -> Vec<UndoAction> {
 fn debounce(effects: &[Effect]) -> Ticket {
     effects
         .iter()
-        .find_map(|e| match e {
-            Effect::Debounce { ticket, .. } => Some(*ticket),
-            _ => None,
+        .find_map(|e| {
+            if let Effect::Debounce { ticket, .. } = e {
+                Some(*ticket)
+            } else {
+                None
+            }
         })
         .expect("a debounce")
 }
@@ -797,9 +806,12 @@ fn leaving_flushes_every_waiting_burst() {
     let effects = state.update(Action::Leave);
     let writes: Vec<(Uuid, Write)> = effects
         .iter()
-        .filter_map(|e| match e {
-            Effect::Flush { card_id, write, .. } => Some((*card_id, *write)),
-            _ => None,
+        .filter_map(|e| {
+            if let Effect::Flush { card_id, write, .. } = e {
+                Some((*card_id, *write))
+            } else {
+                None
+            }
         })
         .collect();
     assert_eq!(writes, [(ring, Write::Set(3)), (maybe, Write::Delete)]);
@@ -1929,12 +1941,16 @@ fn undoing_the_move_of_a_starred_card_with_three_mvps_moves_it_back_unstarred() 
 fn write_ticket(effects: &[Effect]) -> Ticket {
     effects
         .iter()
-        .find_map(|e| match e {
-            Effect::PatchCard { ticket, .. }
+        .find_map(|e| {
+            if let Effect::PatchCard { ticket, .. }
             | Effect::DeleteCard { ticket, .. }
             | Effect::CreateCard { ticket, .. }
-            | Effect::PatchProfile { ticket, .. } => Some(*ticket),
-            _ => None,
+            | Effect::PatchProfile { ticket, .. } = e
+            {
+                Some(*ticket)
+            } else {
+                None
+            }
         })
         .unwrap_or_else(|| panic!("no write in {effects:?}"))
 }

@@ -348,7 +348,18 @@ fn toast_line(effect: &Effect) -> Option<Line<'_>> {
     match effect {
         Effect::Toast(toast) => Some(Line::Toast(toast)),
         Effect::Confirm(toast) => Some(Line::Confirm(toast)),
-        _ => None,
+        Effect::OfferHint(_)
+        | Effect::FetchDeck { .. }
+        | Effect::DeleteDeckCard { .. }
+        | Effect::MoveDeckCard { .. }
+        | Effect::TakeUndo { .. }
+        | Effect::RestoreDeckCard { .. }
+        | Effect::RestoreStar { .. }
+        | Effect::RestoreBoard { .. }
+        | Effect::RecordUndo { .. }
+        | Effect::Enter(_)
+        | Effect::Navigate(_)
+        | Effect::Replace(_) => None,
     }
 }
 
@@ -1070,7 +1081,13 @@ impl State {
                     undo: undo @ None,
                     ..
                 } if *id == card_id => Some(undo),
-                _ => None,
+                Pending::Load
+                | Pending::Remove { .. }
+                | Pending::Move { .. }
+                | Pending::Claim(_)
+                | Pending::UndoRemove { .. }
+                | Pending::UndoMove { .. }
+                | Pending::Restar { .. } => None,
             })
     }
 
@@ -1085,7 +1102,13 @@ impl State {
                     undo: undo @ Some(_),
                     ..
                 } if *id == card_id => undo.take(),
-                _ => None,
+                Pending::Load
+                | Pending::Remove { .. }
+                | Pending::Move { .. }
+                | Pending::Claim(_)
+                | Pending::UndoRemove { .. }
+                | Pending::UndoMove { .. }
+                | Pending::Restar { .. } => None,
             })
     }
 

@@ -71,9 +71,12 @@ fn top(state: &State) -> Option<String> {
 fn toasts(effects: &[Effect]) -> Vec<Toast> {
     effects
         .iter()
-        .filter_map(|e| match e {
-            Effect::Toast(toast) | Effect::Confirm(toast) => Some(toast.clone()),
-            _ => None,
+        .filter_map(|e| {
+            if let Effect::Toast(toast) | Effect::Confirm(toast) = e {
+                Some(toast.clone())
+            } else {
+                None
+            }
         })
         .collect()
 }
@@ -82,14 +85,18 @@ fn toasts(effects: &[Effect]) -> Vec<Toast> {
 fn ticket_of(effects: &[Effect]) -> Ticket {
     effects
         .iter()
-        .find_map(|e| match e {
-            Effect::DeleteDeckCard { ticket, .. }
+        .find_map(|e| {
+            if let Effect::DeleteDeckCard { ticket, .. }
             | Effect::MoveDeckCard { ticket, .. }
             | Effect::TakeUndo { ticket, .. }
             | Effect::RestoreDeckCard { ticket, .. }
             | Effect::RestoreBoard { ticket, .. }
-            | Effect::FetchDeck { ticket, .. } => Some(*ticket),
-            _ => None,
+            | Effect::FetchDeck { ticket, .. } = e
+            {
+                Some(*ticket)
+            } else {
+                None
+            }
         })
         .unwrap_or_else(|| panic!("no request in {effects:?}"))
 }

@@ -21,6 +21,10 @@ impl From<sqlx::Error> for CreateCardError {
 }
 
 impl From<sqlx::Error> for GetScryfallDataError {
+    #[expect(
+        clippy::wildcard_enum_match_arm,
+        reason = "sqlx::Error is a foreign enum: every variant but the ones handled is a database failure"
+    )]
     fn from(value: sqlx::Error) -> Self {
         match value {
             sqlx::Error::RowNotFound => GetScryfallDataError::NotFound,
@@ -30,6 +34,10 @@ impl From<sqlx::Error> for GetScryfallDataError {
 }
 
 impl From<sqlx::Error> for GetCardProfileError {
+    #[expect(
+        clippy::wildcard_enum_match_arm,
+        reason = "sqlx::Error is a foreign enum: every variant but the ones handled is a database failure"
+    )]
     fn from(value: sqlx::Error) -> Self {
         match value {
             sqlx::Error::RowNotFound => Self::NotFound,

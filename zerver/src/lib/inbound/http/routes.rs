@@ -61,6 +61,10 @@ fn unauthorized_on_missing_key(error: GovernorError) -> Response<Body> {
 /// Rate-limit error handler for the public, IP-keyed limiters: the stable 429
 /// body for `TooManyRequests`, library default for everything else (their key
 /// extraction never legitimately fails, so no 401 remap here).
+#[expect(
+    clippy::wildcard_enum_match_arm,
+    reason = "tower_governor's error is a foreign enum: every other error keeps the library's response"
+)]
 fn stable_rate_limit(error: GovernorError) -> Response<Body> {
     match error {
         GovernorError::TooManyRequests { wait_time, headers } => {

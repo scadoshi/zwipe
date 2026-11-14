@@ -215,7 +215,7 @@ pub(crate) fn ActivitySections(
                 span { class: "chip-note", "{line}" }
             }
         },
-        rates => rsx! {
+        rates @ (Rates::Uncharted(_) | Rates::Charted(_)) => rsx! {
             div { class: "activity-rates",
                 RateChips { rate, on_pick }
                 // Keyed on the rate, so a switch mounts a fresh chart:
@@ -250,7 +250,7 @@ pub(crate) fn ActivitySections(
                 span { class: "chip-note", "{line}" }
             }
         },
-        rates => rsx! {
+        rates @ (Rates::Uncharted(_) | Rates::Charted(_)) => rsx! {
             div { class: "activity-rates",
                 RateChips { rate, on_pick }
                 for label in [rate.label()] {

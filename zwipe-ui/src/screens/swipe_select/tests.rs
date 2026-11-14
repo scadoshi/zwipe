@@ -34,11 +34,14 @@ fn open(mode: Mode) -> Action {
 fn search_of(effects: &[Effect]) -> (Ticket, CardQuery) {
     let found: Vec<(Ticket, CardQuery)> = effects
         .iter()
-        .filter_map(|e| match e {
-            Effect::SearchCommanders { ticket, query } | Effect::LoadMore { ticket, query } => {
+        .filter_map(|e| {
+            if let Effect::SearchCommanders { ticket, query } | Effect::LoadMore { ticket, query } =
+                e
+            {
                 Some((*ticket, (**query).clone()))
+            } else {
+                None
             }
-            _ => None,
         })
         .collect();
     let [one] = found.as_slice() else {
@@ -130,7 +133,16 @@ fn suggested(pile: SuggestedPile) -> State {
 fn toast(effect: &Effect) -> &Toast {
     match effect {
         Effect::Toast(toast) | Effect::Confirm(toast) => toast,
-        other => panic!("not a toast: {other:?}"),
+        other @ (Effect::OfferHint(_)
+        | Effect::SearchCommanders { .. }
+        | Effect::LoadMore { .. }
+        | Effect::DismissCommander(_)
+        | Effect::UndismissCommander(_)
+        | Effect::AddMaybeboardCard { .. }
+        | Effect::RemoveMaybeboardCard { .. }
+        | Effect::Enter(_)
+        | Effect::Pick(_)
+        | Effect::Navigate(_)) => panic!("not a toast: {other:?}"),
     }
 }
 

@@ -517,7 +517,13 @@ mod tests {
     fn parse(args: &[&str]) -> Result<RenameArgs, clap::Error> {
         match command(args)? {
             Command::Rename(rename) => Ok(rename),
-            other => Err(clap::Error::raw(
+            other @ (Command::Show(_)
+            | Command::Lock(_)
+            | Command::Unlock(_)
+            | Command::SignOutAll(_)
+            | Command::ResendVerification(_)
+            | Command::Delete(_)
+            | Command::ChangeEmail(_)) => Err(clap::Error::raw(
                 ErrorKind::InvalidSubcommand,
                 format!("not a rename: {other:?}"),
             )),

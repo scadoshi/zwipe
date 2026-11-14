@@ -91,7 +91,16 @@ pub(crate) async fn fetch_shared(
     let http = client.peek().clone();
     http.fetch_shared_deck(token).await.map_err(|e| match e {
         ClientError::NotFound(_) => FetchError::NotShared,
-        other => {
+        other @ (ClientError::BadRequest(_)
+        | ClientError::Unauthorized(_)
+        | ClientError::Forbidden(_)
+        | ClientError::UnprocessableEntity(_)
+        | ClientError::Conflict(_)
+        | ClientError::PayloadTooLarge(_)
+        | ClientError::TooManyRequests(_)
+        | ClientError::InternalServerError(_)
+        | ClientError::Network(_)
+        | ClientError::Decode(_)) => {
             tracing::warn!("shared deck failed to load: {other}");
             FetchError::Network
         }

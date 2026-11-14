@@ -47,9 +47,12 @@ fn named(name: &str) -> CardQueryBuilder {
 fn toasts(effects: &[Effect]) -> Vec<(ToastKind, &str)> {
     effects
         .iter()
-        .filter_map(|effect| match effect {
-            Effect::Toast(toast) => Some((toast.kind, toast.text.as_str())),
-            _ => None,
+        .filter_map(|effect| {
+            if let Effect::Toast(toast) = effect {
+                Some((toast.kind, toast.text.as_str()))
+            } else {
+                None
+            }
         })
         .collect()
 }

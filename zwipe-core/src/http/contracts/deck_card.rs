@@ -151,6 +151,10 @@ pub struct HttpDeleteDeckCardQuery {
 
 /// `Some` for a real `true`/`false` (a boolean, or the text `"true"` or
 /// `"false"` a query string carries), `None` for anything else.
+#[expect(
+    clippy::wildcard_enum_match_arm,
+    reason = "serde_json::Value is a foreign enum: every other JSON shape is not a boolean"
+)]
 fn lenient_bool<'de, D>(deserializer: D) -> Result<Option<bool>, D::Error>
 where
     D: serde::Deserializer<'de>,

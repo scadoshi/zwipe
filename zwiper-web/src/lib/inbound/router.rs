@@ -362,6 +362,10 @@ mod tests {
     const ROUTER_SOURCE: &str = include_str!("router.rs");
 
     #[test]
+    #[expect(
+        clippy::wildcard_enum_match_arm,
+        reason = "the Dioxus router's SegmentType is a foreign, non-exhaustive enum"
+    )]
     fn the_404_function_lists_every_route_and_redirect() {
         use dioxus::router::routable::SegmentType;
 

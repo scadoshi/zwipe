@@ -44,8 +44,8 @@ fn page(cards: Vec<Card>) -> HttpDeckCardSearch {
 fn ticket_of(effects: &[Effect]) -> Ticket {
     effects
         .iter()
-        .find_map(|e| match e {
-            Effect::FetchDeck { ticket, .. }
+        .find_map(|e| {
+            if let Effect::FetchDeck { ticket, .. }
             | Effect::RefreshMaybeboard { ticket, .. }
             | Effect::Search { ticket, .. }
             | Effect::LoadMore { ticket, .. }
@@ -53,8 +53,12 @@ fn ticket_of(effects: &[Effect]) -> Ticket {
             | Effect::PromoteCard { ticket, .. }
             | Effect::TakeUndo { ticket, .. }
             | Effect::UndoAdd { ticket, .. }
-            | Effect::UndoPromote { ticket, .. } => Some(*ticket),
-            _ => None,
+            | Effect::UndoPromote { ticket, .. } = e
+            {
+                Some(*ticket)
+            } else {
+                None
+            }
         })
         .unwrap_or_else(|| panic!("no request in {effects:?}"))
 }
@@ -68,9 +72,12 @@ fn has_search(effects: &[Effect]) -> bool {
 fn toasts(effects: &[Effect]) -> Vec<Toast> {
     effects
         .iter()
-        .filter_map(|e| match e {
-            Effect::Toast(toast) | Effect::Confirm(toast) => Some(toast.clone()),
-            _ => None,
+        .filter_map(|e| {
+            if let Effect::Toast(toast) | Effect::Confirm(toast) = e {
+                Some(toast.clone())
+            } else {
+                None
+            }
         })
         .collect()
 }
@@ -416,14 +423,20 @@ fn a_failed_deck_fetch_comes_back_on_retry() {
     });
     let deck_ticket = effects
         .iter()
-        .find_map(|e| match e {
-            Effect::FetchDeck { ticket, .. } => Some(*ticket),
-            _ => None,
+        .find_map(|e| {
+            if let Effect::FetchDeck { ticket, .. } = e {
+                Some(*ticket)
+            } else {
+                None
+            }
         })
         .unwrap();
-    let search = effects.iter().find_map(|e| match e {
-        Effect::Search { ticket, .. } => Some(*ticket),
-        _ => None,
+    let search = effects.iter().find_map(|e| {
+        if let Effect::Search { ticket, .. } = e {
+            Some(*ticket)
+        } else {
+            None
+        }
     });
     let _ = state.update(Action::Failed {
         ticket: deck_ticket,

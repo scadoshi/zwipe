@@ -80,13 +80,16 @@ pub fn shots(guide: &Guide) -> Vec<Shot> {
     guide
         .blocks
         .iter()
-        .filter_map(|block| match *block {
-            Block::Image { file, alt, caption } => Some(Shot {
-                file,
-                alt,
-                caption: caption.unwrap_or(alt),
-            }),
-            _ => None,
+        .filter_map(|block| {
+            if let Block::Image { file, alt, caption } = *block {
+                Some(Shot {
+                    file,
+                    alt,
+                    caption: caption.unwrap_or(alt),
+                })
+            } else {
+                None
+            }
         })
         .collect()
 }
@@ -461,9 +464,12 @@ mod tests {
         let blocks: Vec<_> = guide
             .blocks
             .iter()
-            .filter_map(|b| match *b {
-                Block::Image { file, alt, caption } => Some((file, alt, caption)),
-                _ => None,
+            .filter_map(|b| {
+                if let Block::Image { file, alt, caption } = *b {
+                    Some((file, alt, caption))
+                } else {
+                    None
+                }
             })
             .collect();
         let got = shots(guide);

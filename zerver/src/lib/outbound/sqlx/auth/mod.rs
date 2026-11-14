@@ -275,6 +275,10 @@ impl AuthRepository for Postgres {
     /// family is deleted, so whoever holds the current token loses it too and
     /// the real device signs in again. A family older than
     /// [`REFRESH_ABSOLUTE_LIFESPAN`] is deleted the same way.
+    #[expect(
+        clippy::wildcard_enum_match_arm,
+        reason = "sqlx::Error is a foreign enum: every variant but the ones handled is a database failure"
+    )]
     async fn use_refresh_token(
         &self,
         request: &RefreshSession,

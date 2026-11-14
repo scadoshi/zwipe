@@ -31,8 +31,8 @@ fn none<T>() -> Vec<T> {
 fn ticket_of(effects: &[Effect]) -> Ticket {
     effects
         .iter()
-        .find_map(|effect| match effect {
-            Effect::FetchUser(t)
+        .find_map(|effect| {
+            if let Effect::FetchUser(t)
             | Effect::CheckVerification(t)
             | Effect::ResendVerification(t)
             | Effect::ResendEmailChange(t)
@@ -42,8 +42,12 @@ fn ticket_of(effects: &[Effect]) -> Ticket {
             | Effect::ChangeEmail { ticket: t, .. }
             | Effect::ChangePassword { ticket: t, .. }
             | Effect::RequestPasswordReset { ticket: t, .. }
-            | Effect::DeleteAccount { ticket: t, .. } => Some(*t),
-            _ => None,
+            | Effect::DeleteAccount { ticket: t, .. } = effect
+            {
+                Some(*t)
+            } else {
+                None
+            }
         })
         .expect("an effect holding a ticket")
 }
@@ -51,9 +55,12 @@ fn ticket_of(effects: &[Effect]) -> Ticket {
 fn wait_of(effects: &[Effect]) -> Ticket {
     effects
         .iter()
-        .find_map(|effect| match effect {
-            Effect::Wait(t) => Some(*t),
-            _ => None,
+        .find_map(|effect| {
+            if let Effect::Wait(t) = effect {
+                Some(*t)
+            } else {
+                None
+            }
         })
         .expect("a wait")
 }

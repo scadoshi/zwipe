@@ -280,9 +280,10 @@ mod tests {
     }
 
     fn name_of(action: &UndoAction) -> &str {
-        match action {
-            UndoAction::Added { card_name, .. } => card_name,
-            _ => panic!("test log only holds Added"),
+        if let UndoAction::Added { card_name, .. } = action {
+            card_name
+        } else {
+            panic!("test log only holds Added")
         }
     }
 

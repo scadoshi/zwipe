@@ -29,6 +29,10 @@ impl From<IntoUserWithPasswordHashError> for AuthenticateUserError {
 }
 
 impl From<sqlx::Error> for RegisterUserError {
+    #[expect(
+        clippy::wildcard_enum_match_arm,
+        reason = "sqlx::Error is a foreign enum: every variant but the ones handled is a database failure"
+    )]
     fn from(value: sqlx::Error) -> Self {
         match value {
             sqlx::Error::Database(ref db)
@@ -44,6 +48,10 @@ impl From<sqlx::Error> for RegisterUserError {
 }
 
 impl From<sqlx::Error> for AuthenticateUserError {
+    #[expect(
+        clippy::wildcard_enum_match_arm,
+        reason = "sqlx::Error is a foreign enum: every variant but the ones handled is a database failure"
+    )]
     fn from(value: sqlx::Error) -> Self {
         match value {
             sqlx::Error::RowNotFound => Self::UserNotFound,

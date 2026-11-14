@@ -480,6 +480,10 @@ fn NumberPair(
 /// rather than covering them. ↑ and ↓ move through the results, Enter picks
 /// the highlighted one, and a pick clears the search, which closes them.
 #[component]
+#[expect(
+    clippy::wildcard_enum_match_arm,
+    reason = "keyboard_types::Key is a foreign enum of every key; only the keys handled act"
+)]
 fn Picker(
     mut draft: Signal<FilterDraft>,
     field: PickerField,

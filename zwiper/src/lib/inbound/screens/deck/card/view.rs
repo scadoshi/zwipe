@@ -360,12 +360,34 @@ impl Driver {
                     });
                 });
             }
-            _ => {}
+            Effect::OfferHint(_)
+            | Effect::FetchDeck { .. }
+            | Effect::Debounce { .. }
+            | Effect::CreateCard { .. }
+            | Effect::PatchCard { .. }
+            | Effect::DeleteCard { .. }
+            | Effect::PatchProfile { .. }
+            | Effect::Flush { .. }
+            | Effect::RecordRemoval { .. }
+            | Effect::RecordUndo(_)
+            | Effect::PrintingSwapped { .. }
+            | Effect::ForgetRemoval { .. }
+            | Effect::ClearFilter
+            | Effect::Refilter
+            | Effect::Collapse
+            | Effect::OpenPrintings
+            | Effect::Navigate(_)
+            | Effect::Replace(_)
+            | Effect::Toast(_) => {}
         }
     }
 
     /// Sends one write and feeds its reply back through [`Self::dispatch`].
     /// Each reports and toasts its own failure.
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one arm per write effect, plus the listed effects this does not send"
+    )]
     fn request(self, effect: Effect) {
         let authed = self.authed;
         match effect {
@@ -457,7 +479,24 @@ impl Driver {
                     });
                 });
             }
-            _ => {}
+            Effect::OfferHint(_)
+            | Effect::FetchDeck { .. }
+            | Effect::FetchTokens { .. }
+            | Effect::Debounce { .. }
+            | Effect::SearchCards { .. }
+            | Effect::FetchPrintings { .. }
+            | Effect::Flush { .. }
+            | Effect::RecordRemoval { .. }
+            | Effect::RecordUndo(_)
+            | Effect::PrintingSwapped { .. }
+            | Effect::ForgetRemoval { .. }
+            | Effect::ClearFilter
+            | Effect::Refilter
+            | Effect::Collapse
+            | Effect::OpenPrintings
+            | Effect::Navigate(_)
+            | Effect::Replace(_)
+            | Effect::Toast(_) => {}
         }
     }
 

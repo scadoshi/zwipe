@@ -422,7 +422,13 @@ mod tests {
         let error = std::io::Error::other("db exploded");
         match error.to_500() {
             ApiError::InternalServerError(detail) => assert!(detail.contains("db exploded")),
-            other => panic!("expected InternalServerError, got {other:?}"),
+            other @ (ApiError::BadRequest(_)
+            | ApiError::UnprocessableEntity(_)
+            | ApiError::Unauthorized(_)
+            | ApiError::NotFound(_)
+            | ApiError::Forbidden(_)
+            | ApiError::TooManyRequests(_)
+            | ApiError::Conflict(_)) => panic!("expected InternalServerError, got {other:?}"),
         }
     }
 

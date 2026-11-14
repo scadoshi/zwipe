@@ -71,6 +71,10 @@ impl From<AuthenticateUserError> for ChangePasswordError {
 }
 
 impl From<sqlx::Error> for ChangePasswordError {
+    #[expect(
+        clippy::wildcard_enum_match_arm,
+        reason = "sqlx::Error is a foreign enum: every variant but the ones handled is a database failure"
+    )]
     fn from(value: sqlx::Error) -> Self {
         match value {
             sqlx::Error::RowNotFound => Self::UserNotFound,

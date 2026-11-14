@@ -100,37 +100,42 @@ fn ticket_of(effects: &[Effect], pick: fn(&Effect) -> Option<Ticket>) -> Ticket 
 }
 
 fn user_ticket(e: &Effect) -> Option<Ticket> {
-    match e {
-        Effect::FetchUser(t) => Some(*t),
-        _ => None,
+    if let Effect::FetchUser(t) = e {
+        Some(*t)
+    } else {
+        None
     }
 }
 
 fn counts_ticket(e: &Effect) -> Option<Ticket> {
-    match e {
-        Effect::FetchCounts(t) => Some(*t),
-        _ => None,
+    if let Effect::FetchCounts(t) = e {
+        Some(*t)
+    } else {
+        None
     }
 }
 
 fn my_counts_ticket(e: &Effect) -> Option<Ticket> {
-    match e {
-        Effect::FetchMyCounts(t) => Some(*t),
-        _ => None,
+    if let Effect::FetchMyCounts(t) = e {
+        Some(*t)
+    } else {
+        None
     }
 }
 
 fn play_style_ticket(e: &Effect) -> Option<Ticket> {
-    match e {
-        Effect::FetchPlayStyle(t) => Some(*t),
-        _ => None,
+    if let Effect::FetchPlayStyle(t) = e {
+        Some(*t)
+    } else {
+        None
     }
 }
 
 fn decks_ticket(e: &Effect) -> Option<Ticket> {
-    match e {
-        Effect::FetchDecks(t) => Some(*t),
-        _ => None,
+    if let Effect::FetchDecks(t) = e {
+        Some(*t)
+    } else {
+        None
     }
 }
 
@@ -146,9 +151,10 @@ fn deck(n: u128, name: &str) -> DeckTile {
 }
 
 fn flavor_ticket(e: &Effect) -> Option<Ticket> {
-    match e {
-        Effect::FetchFlavor(t) => Some(*t),
-        _ => None,
+    if let Effect::FetchFlavor(t) = e {
+        Some(*t)
+    } else {
+        None
     }
 }
 

@@ -104,6 +104,10 @@ allow_attributes_without_reason = "warn"
 undocumented_unsafe_blocks = "deny"
 multiple_unsafe_ops_per_block = "warn"
 
+# Matches on our own enums list their variants, so a new one fails to compile.
+# Foreign enums take an #[expect] with a reason.
+wildcard_enum_match_arm = "warn"
+
 # Casts and arithmetic that can silently lose information.
 as_conversions = "warn"
 arithmetic_side_effects = "warn"

@@ -105,7 +105,7 @@ impl UndoAction {
 pub fn create_board_field(board: Board) -> Option<String> {
     match board {
         Board::Deck => None,
-        other => Some(other.display_name().to_owned()),
+        other @ (Board::Maybeboard | Board::Sideboard) => Some(other.display_name().to_owned()),
     }
 }
 
@@ -202,7 +202,12 @@ mod tests {
     fn name_of(action: &UndoAction) -> &str {
         match action {
             UndoAction::Added { card_name, .. } => card_name,
-            other => panic!("only adds here: {other:?}"),
+            other @ (UndoAction::Removed { .. }
+            | UndoAction::QuantityChanged { .. }
+            | UndoAction::MovedBoard { .. }
+            | UndoAction::MvpToggled { .. }
+            | UndoAction::PrintingChanged { .. }
+            | UndoAction::CommandZonePrintingChanged { .. }) => panic!("only adds here: {other:?}"),
         }
     }
 

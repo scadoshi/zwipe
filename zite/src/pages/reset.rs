@@ -56,7 +56,16 @@ fn failure_message(error: &ClientError) -> String {
     match error {
         ClientError::UnprocessableEntity(reason) => format!("Password {reason}"),
         ClientError::Network(_) | ClientError::Decode(_) => error.to_user_message(),
-        _ => "This link is invalid or has expired. Request a new one from the app.".to_string(),
+        ClientError::BadRequest(_)
+        | ClientError::Unauthorized(_)
+        | ClientError::Forbidden(_)
+        | ClientError::NotFound(_)
+        | ClientError::Conflict(_)
+        | ClientError::PayloadTooLarge(_)
+        | ClientError::TooManyRequests(_)
+        | ClientError::InternalServerError(_) => {
+            "This link is invalid or has expired. Request a new one from the app.".to_string()
+        }
     }
 }
 
@@ -186,7 +195,7 @@ pub fn Reset(token: String) -> Element {
                     }
                     }
                 },
-                _ => rsx! {
+                ResetState::Form | ResetState::Loading | ResetState::Error(_) => rsx! {
                     Panel { title: "Reset password", title_h1: true, centered: true,
                         actions: rsx! {
                             button {

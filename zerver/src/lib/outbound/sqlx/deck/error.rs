@@ -53,6 +53,10 @@ impl From<sqlx::Error> for CreateDeckProfileError {
 }
 
 impl From<sqlx::Error> for GetDeckProfileError {
+    #[expect(
+        clippy::wildcard_enum_match_arm,
+        reason = "sqlx::Error is a foreign enum: every variant but the ones handled is a database failure"
+    )]
     fn from(value: sqlx::Error) -> Self {
         match value {
             sqlx::Error::RowNotFound => Self::NotFound,
@@ -62,6 +66,10 @@ impl From<sqlx::Error> for GetDeckProfileError {
 }
 
 impl From<sqlx::Error> for UpdateDeckProfileError {
+    #[expect(
+        clippy::wildcard_enum_match_arm,
+        reason = "sqlx::Error is a foreign enum: every variant but the ones handled is a database failure"
+    )]
     fn from(value: sqlx::Error) -> Self {
         match value {
             e if e.is_unique_constraint_violation() => Self::Duplicate,
@@ -123,6 +131,10 @@ impl From<sqlx::Error> for CreateDeckCardError {
 }
 
 impl From<sqlx::Error> for GetDeckCardError {
+    #[expect(
+        clippy::wildcard_enum_match_arm,
+        reason = "sqlx::Error is a foreign enum: every variant but the ones handled is a database failure"
+    )]
     fn from(value: sqlx::Error) -> Self {
         match value {
             sqlx::Error::RowNotFound => Self::NotFound,
@@ -132,6 +144,10 @@ impl From<sqlx::Error> for GetDeckCardError {
 }
 
 impl From<sqlx::Error> for UpdateDeckCardError {
+    #[expect(
+        clippy::wildcard_enum_match_arm,
+        reason = "sqlx::Error is a foreign enum: every variant but the ones handled is a database failure"
+    )]
     fn from(value: sqlx::Error) -> Self {
         match value {
             e if e.is_check_constraint_violation() => Self::QuantityUnderflow,

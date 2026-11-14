@@ -609,9 +609,10 @@ pub enum Effect {
 
 /// Which of an action's effects raise a toast, for [`keep_one`].
 fn toast_line(effect: &Effect) -> Option<Line<'_>> {
-    match effect {
-        Effect::Toast(toast) => Some(Line::Toast(toast)),
-        _ => None,
+    if let Effect::Toast(toast) = effect {
+        Some(Line::Toast(toast))
+    } else {
+        None
     }
 }
 
@@ -701,12 +702,16 @@ struct QuickAdd {
 
 /// The ticket of the first write among `effects`.
 fn first_write(effects: &[Effect]) -> Option<Ticket> {
-    effects.iter().find_map(|e| match e {
-        Effect::PatchCard { ticket, .. }
+    effects.iter().find_map(|e| {
+        if let Effect::PatchCard { ticket, .. }
         | Effect::DeleteCard { ticket, .. }
         | Effect::CreateCard { ticket, .. }
-        | Effect::PatchProfile { ticket, .. } => Some(*ticket),
-        _ => None,
+        | Effect::PatchProfile { ticket, .. } = e
+        {
+            Some(*ticket)
+        } else {
+            None
+        }
     })
 }
 
@@ -1717,9 +1722,12 @@ impl State {
         let effects = self.undo_writes(action.clone());
         // The write (or the debounce before it) the undo waits on; an entry refused before any write is spent.
         if let Some(ticket) = first_write(&effects).or_else(|| {
-            effects.iter().find_map(|e| match e {
-                Effect::Debounce { ticket, .. } => Some(*ticket),
-                _ => None,
+            effects.iter().find_map(|e| {
+                if let Effect::Debounce { ticket, .. } = e {
+                    Some(*ticket)
+                } else {
+                    None
+                }
             })
         }) {
             self.undoing.push(Undoing {
@@ -2039,7 +2047,7 @@ impl State {
             key: key.to_owned(),
             title: match board {
                 Board::Sideboard => sideboard_title(entries.len()),
-                _ => maybeboard_title(entries.len()),
+                Board::Deck | Board::Maybeboard => maybeboard_title(entries.len()),
             },
             pips: None,
             rows: entries

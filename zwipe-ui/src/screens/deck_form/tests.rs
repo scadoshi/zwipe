@@ -81,9 +81,12 @@ const NONE: &[String] = &[];
 fn toasts(effects: &[Effect]) -> Vec<Toast> {
     effects
         .iter()
-        .filter_map(|e| match e {
-            Effect::Toast(t) => Some(t.clone()),
-            _ => None,
+        .filter_map(|e| {
+            if let Effect::Toast(t) = e {
+                Some(t.clone())
+            } else {
+                None
+            }
         })
         .collect()
 }
@@ -91,9 +94,12 @@ fn toasts(effects: &[Effect]) -> Vec<Toast> {
 fn navigation(effects: &[Effect]) -> Vec<Destination> {
     effects
         .iter()
-        .filter_map(|e| match e {
-            Effect::Navigate(to) => Some(*to),
-            _ => None,
+        .filter_map(|e| {
+            if let Effect::Navigate(to) = e {
+                Some(*to)
+            } else {
+                None
+            }
         })
         .collect()
 }
@@ -161,9 +167,12 @@ fn edit_loads_the_deck_then_its_command_zone() {
     });
     let fetched: Vec<(Slot, Uuid)> = effects
         .iter()
-        .filter_map(|e| match e {
-            Effect::FetchCard { slot, card_id, .. } => Some((*slot, *card_id)),
-            _ => None,
+        .filter_map(|e| {
+            if let Effect::FetchCard { slot, card_id, .. } = e {
+                Some((*slot, *card_id))
+            } else {
+                None
+            }
         })
         .collect();
     assert_eq!(
@@ -184,9 +193,12 @@ fn edit_loads_the_deck_then_its_command_zone() {
     // The partner lands before the commander, and the commander keeps it.
     let tickets: Vec<Ticket> = effects
         .iter()
-        .filter_map(|e| match e {
-            Effect::FetchCard { ticket, .. } => Some(*ticket),
-            _ => None,
+        .filter_map(|e| {
+            if let Effect::FetchCard { ticket, .. } = e {
+                Some(*ticket)
+            } else {
+                None
+            }
         })
         .collect();
     let _ = state.update(Action::CardLoaded {

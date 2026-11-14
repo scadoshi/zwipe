@@ -424,9 +424,10 @@ pub enum Effect {
 
 /// Which of an action's effects raise a toast, for [`keep_one`].
 fn toast_line(effect: &Effect) -> Option<Line<'_>> {
-    match effect {
-        Effect::Toast(toast) => Some(Line::Toast(toast)),
-        _ => None,
+    if let Effect::Toast(toast) = effect {
+        Some(Line::Toast(toast))
+    } else {
+        None
     }
 }
 
@@ -699,7 +700,15 @@ impl State {
             | Action::ToggleFilter(_)
             | Action::PickResult { .. }
             | Action::PickSwiped { .. }) => self.command_zone(command_zone),
-            field => {
+            field @ (Action::TogglePowerLevel(_)
+            | Action::ClearPowerLevel
+            | Action::StepLand(_)
+            | Action::ClearLand
+            | Action::TypePrice(_)
+            | Action::ClearPrice
+            | Action::PickCurrency(_)
+            | Action::ToggleOtherTag(_)
+            | Action::ClearOtherTags) => {
                 self.field(field);
                 Vec::new()
             }
@@ -1008,7 +1017,38 @@ impl State {
                 }
             }
             Action::ClearOtherTags => self.values.other_tags.clear(),
-            _ => {}
+            Action::Load(_)
+            | Action::Loaded { .. }
+            | Action::CardLoaded { .. }
+            | Action::Failed { .. }
+            | Action::Gone { .. }
+            | Action::Catalog(_)
+            | Action::SetName(_)
+            | Action::ClearFormat
+            | Action::Type { .. }
+            | Action::TapInput(_)
+            | Action::ClearSearch(_)
+            | Action::ClearSlot(_)
+            | Action::ToggleFilter(_)
+            | Action::PickResult { .. }
+            | Action::PickSwiped { .. }
+            | Action::Debounced { .. }
+            | Action::Searched { .. }
+            | Action::PartnerSearched { .. }
+            | Action::OpenPicker(_)
+            | Action::TapFormat(_)
+            | Action::ToggleTag { .. }
+            | Action::RemoveTag { .. }
+            | Action::ClearTags(_)
+            | Action::AdoptOracleTag(_)
+            | Action::SavePicker
+            | Action::BackPicker
+            | Action::KeepPicker
+            | Action::DiscardPicker
+            | Action::Save
+            | Action::Created { .. }
+            | Action::Updated { .. }
+            | Action::Back => {}
         }
     }
 
@@ -1033,7 +1073,43 @@ impl State {
                 let adopted = pickers::adopt_oracle_tag(&mut self.values.oracle_tags, slug);
                 vec![Effect::Toast(adopted.toast())]
             }
-            _ => Vec::new(),
+            Action::Load(_)
+            | Action::Loaded { .. }
+            | Action::CardLoaded { .. }
+            | Action::Failed { .. }
+            | Action::Gone { .. }
+            | Action::Catalog(_)
+            | Action::SetName(_)
+            | Action::ClearFormat
+            | Action::Type { .. }
+            | Action::TapInput(_)
+            | Action::ClearSearch(_)
+            | Action::ClearSlot(_)
+            | Action::ToggleFilter(_)
+            | Action::PickResult { .. }
+            | Action::PickSwiped { .. }
+            | Action::Debounced { .. }
+            | Action::Searched { .. }
+            | Action::PartnerSearched { .. }
+            | Action::TogglePowerLevel(_)
+            | Action::ClearPowerLevel
+            | Action::StepLand(_)
+            | Action::ClearLand
+            | Action::TypePrice(_)
+            | Action::ClearPrice
+            | Action::PickCurrency(_)
+            | Action::ToggleOtherTag(_)
+            | Action::ClearOtherTags
+            | Action::OpenPicker(_)
+            | Action::TapFormat(_)
+            | Action::SavePicker
+            | Action::BackPicker
+            | Action::KeepPicker
+            | Action::DiscardPicker
+            | Action::Save
+            | Action::Created { .. }
+            | Action::Updated { .. }
+            | Action::Back => Vec::new(),
         }
     }
 
@@ -1078,7 +1154,40 @@ impl State {
                 self.pick(slot, *card)
             }
             Action::PickSwiped { slot, card } => self.pick(slot, *card),
-            _ => Vec::new(),
+            Action::Load(_)
+            | Action::Loaded { .. }
+            | Action::CardLoaded { .. }
+            | Action::Failed { .. }
+            | Action::Gone { .. }
+            | Action::Catalog(_)
+            | Action::SetName(_)
+            | Action::ClearFormat
+            | Action::Debounced { .. }
+            | Action::Searched { .. }
+            | Action::PartnerSearched { .. }
+            | Action::TogglePowerLevel(_)
+            | Action::ClearPowerLevel
+            | Action::StepLand(_)
+            | Action::ClearLand
+            | Action::TypePrice(_)
+            | Action::ClearPrice
+            | Action::PickCurrency(_)
+            | Action::ToggleOtherTag(_)
+            | Action::ClearOtherTags
+            | Action::OpenPicker(_)
+            | Action::TapFormat(_)
+            | Action::ToggleTag { .. }
+            | Action::RemoveTag { .. }
+            | Action::ClearTags(_)
+            | Action::AdoptOracleTag(_)
+            | Action::SavePicker
+            | Action::BackPicker
+            | Action::KeepPicker
+            | Action::DiscardPicker
+            | Action::Save
+            | Action::Created { .. }
+            | Action::Updated { .. }
+            | Action::Back => Vec::new(),
         }
     }
 

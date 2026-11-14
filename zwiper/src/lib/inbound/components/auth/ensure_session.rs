@@ -111,7 +111,14 @@ impl EnsureFresh for Signal<Option<Session>> {
                             current.infallible_delete();
                             session.set(None);
                         }
-                        _ => {
+                        ClientError::BadRequest(_)
+                        | ClientError::UnprocessableEntity(_)
+                        | ClientError::Conflict(_)
+                        | ClientError::PayloadTooLarge(_)
+                        | ClientError::TooManyRequests(_)
+                        | ClientError::InternalServerError(_)
+                        | ClientError::Network(_)
+                        | ClientError::Decode(_) => {
                             tracing::warn!("refresh failed transiently; keeping session: {e}");
                         }
                     }

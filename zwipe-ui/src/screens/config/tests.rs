@@ -50,9 +50,12 @@ fn loaded(settings: UserSettings) -> State {
 
 /// The ticket and change of the one [`Effect::Save`] in `effects`.
 fn save_in(effects: &[Effect]) -> (SaveTicket, SettingChange) {
-    let mut saves = effects.iter().filter_map(|effect| match effect {
-        Effect::Save { ticket, change } => Some((*ticket, change.clone())),
-        _ => None,
+    let mut saves = effects.iter().filter_map(|effect| {
+        if let Effect::Save { ticket, change } = effect {
+            Some((*ticket, change.clone()))
+        } else {
+            None
+        }
     });
     let (Some(save), None) = (saves.next(), saves.next()) else {
         panic!("one save: {effects:?}");

@@ -144,6 +144,10 @@ impl UserRepository for Postgres {
 
     // == hints ==
 
+    #[expect(
+        clippy::wildcard_enum_match_arm,
+        reason = "sqlx::Error is a foreign enum: every variant but the ones handled is a database failure"
+    )]
     async fn mark_hint_shown(&self, request: &MarkHintShown) -> Result<User, MarkHintShownError> {
         let database_user = query_as!(
             DatabaseUser,

@@ -79,6 +79,10 @@ pub fn autofill_named_partner(form: DeckForm, selected: &Card, authed: Authed, t
 
 /// The field for `slot`, labeled `label`.
 #[component]
+#[expect(
+    clippy::wildcard_enum_match_arm,
+    reason = "keyboard_types::Key is a foreign enum of every key; only the keys handled act"
+)]
 pub fn CommandZoneField(form: DeckForm, slot: Slot, label: String) -> Element {
     let state = form.slot(slot);
     let authed = use_authed();

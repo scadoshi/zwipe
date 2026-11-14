@@ -148,6 +148,10 @@ fn screen_key(key: &str) -> Option<ScreenKey> {
 
 /// The commander maybeboard screen.
 #[component]
+#[expect(
+    clippy::wildcard_enum_match_arm,
+    reason = "keyboard_types::Key is a foreign enum of every key; only the keys handled act"
+)]
 pub fn CommanderMaybeboard() -> Element {
     telemetry::use_telemetry_screen(Screen::CommanderMaybeboard);
     let navigator = use_navigator();

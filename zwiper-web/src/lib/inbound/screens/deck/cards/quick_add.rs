@@ -36,6 +36,10 @@ const BLUR_JS: &str = "document.getElementById('__ID__')?.blur();";
 /// The Quick add row. A picked card lands in `entries`, and `on_added` lets
 /// the view run its pass again.
 #[component]
+#[expect(
+    clippy::wildcard_enum_match_arm,
+    reason = "keyboard_types::Key is a foreign enum of every key; only the keys handled act"
+)]
 pub(crate) fn QuickAdd(
     deck_id: Uuid,
     mut entries: Signal<Vec<DeckEntry>>,

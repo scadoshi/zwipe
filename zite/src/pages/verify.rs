@@ -18,14 +18,13 @@ pub fn Verify(token: String) -> Element {
                 ));
             }
 
-            api::client()
-                .verify_email(token)
-                .await
-                .map_err(|e| match e {
-                    // A request that never landed is not a bad token; say so.
-                    ClientError::Network(_) | ClientError::Decode(_) => Some(e.to_user_message()),
-                    _ => None,
-                })
+            api::client().verify_email(token).await.map_err(|e| {
+                if let ClientError::Network(_) | ClientError::Decode(_) = e {
+                    Some(e.to_user_message())
+                } else {
+                    None
+                }
+            })
         }
     });
 

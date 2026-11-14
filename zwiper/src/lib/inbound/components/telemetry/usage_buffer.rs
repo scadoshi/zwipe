@@ -26,7 +26,17 @@ pub fn failure(error: &ClientError) -> Failure {
     match error {
         ClientError::Network(_) => Failure::Network(error.to_string()),
         ClientError::Decode(detail) => Failure::Decode(detail.to_string()),
-        api => Failure::Status(api.status().unwrap_or(500), api.to_string()),
+        api @ (ClientError::BadRequest(_)
+        | ClientError::Unauthorized(_)
+        | ClientError::Forbidden(_)
+        | ClientError::NotFound(_)
+        | ClientError::UnprocessableEntity(_)
+        | ClientError::Conflict(_)
+        | ClientError::PayloadTooLarge(_)
+        | ClientError::TooManyRequests(_)
+        | ClientError::InternalServerError(_)) => {
+            Failure::Status(api.status().unwrap_or(500), api.to_string())
+        }
     }
 }
 

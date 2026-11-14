@@ -1017,9 +1017,12 @@ fn a_quantity_fix_goes_on_the_decks_undo_log() {
     });
     let recorded: Vec<_> = effects
         .iter()
-        .filter_map(|e| match e {
-            Effect::RecordUndo { deck_id, action } => Some((*deck_id, (**action).clone())),
-            _ => None,
+        .filter_map(|e| {
+            if let Effect::RecordUndo { deck_id, action } = e {
+                Some((*deck_id, (**action).clone()))
+            } else {
+                None
+            }
         })
         .collect();
     assert_eq!(
@@ -1049,9 +1052,12 @@ fn a_removal_fix_goes_on_the_decks_undo_log() {
     });
     let recorded: Vec<_> = effects
         .iter()
-        .filter_map(|e| match e {
-            Effect::RecordUndo { deck_id, action } => Some((*deck_id, (**action).clone())),
-            _ => None,
+        .filter_map(|e| {
+            if let Effect::RecordUndo { deck_id, action } = e {
+                Some((*deck_id, (**action).clone()))
+            } else {
+                None
+            }
         })
         .collect();
     assert_eq!(
@@ -1076,12 +1082,14 @@ fn a_fix_after_an_edit_in_the_cards_records_the_copies_as_they_stand() {
     });
     let baselines: Vec<i32> = effects
         .iter()
-        .filter_map(|e| match e {
-            Effect::RecordUndo { action, .. } => match **action {
-                UndoAction::QuantityChanged { baseline, .. } => Some(baseline),
-                _ => None,
-            },
-            _ => None,
+        .filter_map(|e| {
+            if let Effect::RecordUndo { action, .. } = e
+                && let UndoAction::QuantityChanged { baseline, .. } = **action
+            {
+                Some(baseline)
+            } else {
+                None
+            }
         })
         .collect();
     assert_eq!(
@@ -1117,9 +1125,12 @@ fn warnings_stay_for_the_visit_after_the_last_is_fixed() {
     let effects = state.update(Action::QuantitySet {
         ticket: ticket_of(&effects),
     });
-    let Some(ticket) = effects.iter().find_map(|e| match e {
-        Effect::FetchDeck { ticket, .. } => Some(ticket),
-        _ => None,
+    let Some(ticket) = effects.iter().find_map(|e| {
+        if let Effect::FetchDeck { ticket, .. } = e {
+            Some(ticket)
+        } else {
+            None
+        }
     }) else {
         panic!("the fix reloads the deck: {effects:?}");
     };

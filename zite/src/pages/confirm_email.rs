@@ -37,7 +37,14 @@ pub fn ConfirmEmail(token: String) -> Element {
                         Failure::Other(e.to_user_message())
                     }
                     ClientError::Conflict(_) => Failure::Taken,
-                    _ => Failure::DeadLink,
+                    ClientError::BadRequest(_)
+                    | ClientError::Unauthorized(_)
+                    | ClientError::Forbidden(_)
+                    | ClientError::NotFound(_)
+                    | ClientError::UnprocessableEntity(_)
+                    | ClientError::PayloadTooLarge(_)
+                    | ClientError::TooManyRequests(_)
+                    | ClientError::InternalServerError(_) => Failure::DeadLink,
                 })
         }
     });

@@ -1280,7 +1280,21 @@ impl CardRepository for MyPostgres {
                     );
                 }
                 // Non-commander formats: no filter (should not happen, but safe)
-                _ => {}
+                Format::Standard
+                | Format::Future
+                | Format::Historic
+                | Format::Timeless
+                | Format::Gladiator
+                | Format::Pioneer
+                | Format::Modern
+                | Format::Legacy
+                | Format::Pauper
+                | Format::Vintage
+                | Format::Penny
+                | Format::Alchemy
+                | Format::OldSchool
+                | Format::Premodern
+                | Format::Explorer => {}
             }
         }
 
@@ -1427,7 +1441,13 @@ impl CardRepository for MyPostgres {
                 CardSortKey::PriceTix => {
                     Some("prices->>'tix' IS NOT NULL AND prices->>'tix' != ''")
                 }
-                _ => None,
+                CardSortKey::Name
+                | CardSortKey::Cmc
+                | CardSortKey::Rarity
+                | CardSortKey::ReleasedAt
+                | CardSortKey::EdhrecRank
+                | CardSortKey::Random
+                | CardSortKey::BestMatch => None,
             };
             if let Some(filter) = null_filter {
                 sep.push(filter);

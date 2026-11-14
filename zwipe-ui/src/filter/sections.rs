@@ -659,7 +659,12 @@ pub fn dictionary_for(row: Row) -> Option<PickerField> {
         Row::Label { text, .. } if text == TAGS_INCLUDE => Some(include),
         Row::Label { text, .. } if text == TAGS_EXCLUDE => Some(exclude),
         Row::Picker(field) if field == include || field == exclude => Some(field),
-        _ => None,
+        Row::Label { .. }
+        | Row::Text(_)
+        | Row::Number(_)
+        | Row::Chips(_)
+        | Row::Stepper(_)
+        | Row::Picker(_) => None,
     }
 }
 

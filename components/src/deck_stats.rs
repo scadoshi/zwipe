@@ -242,6 +242,10 @@ pub fn ManaBody(
 
 /// The draw odds with ← and → stepping the turn while one of its `-` and `+` buttons has focus.
 #[component]
+#[expect(
+    clippy::wildcard_enum_match_arm,
+    reason = "keyboard_types::Key is a foreign enum of every key; only the keys handled act"
+)]
 pub fn DrawOddsStepper(metrics: DeckMetrics) -> Element {
     let (deck_size, buckets) = metrics.draw_odds_buckets();
     rsx! {

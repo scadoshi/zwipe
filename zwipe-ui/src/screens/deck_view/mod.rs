@@ -546,9 +546,10 @@ pub enum Effect {
 
 /// Which of an action's effects raise a toast, for [`keep_one`].
 fn toast_line(effect: &Effect) -> Option<Line<'_>> {
-    match effect {
-        Effect::Toast(toast) => Some(Line::Toast(toast)),
-        _ => None,
+    if let Effect::Toast(toast) = effect {
+        Some(Line::Toast(toast))
+    } else {
+        None
     }
 }
 

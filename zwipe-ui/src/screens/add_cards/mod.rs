@@ -483,7 +483,29 @@ fn toast_line(effect: &Effect) -> Option<Line<'_>> {
     match effect {
         Effect::Toast(toast) => Some(Line::Toast(toast)),
         Effect::Confirm(toast) => Some(Line::Confirm(toast)),
-        _ => None,
+        Effect::OfferHint(_)
+        | Effect::FetchDeck { .. }
+        | Effect::RefreshMaybeboard { .. }
+        | Effect::Search { .. }
+        | Effect::LoadMore { .. }
+        | Effect::SkipCard { .. }
+        | Effect::UnskipCard { .. }
+        | Effect::AddCard { .. }
+        | Effect::DeleteUndoneAdd { .. }
+        | Effect::PromoteCard { .. }
+        | Effect::TakeUndo { .. }
+        | Effect::UndoAdd { .. }
+        | Effect::UndoPromote { .. }
+        | Effect::RecordUndo { .. }
+        | Effect::Enter { .. }
+        | Effect::StopEnter(_)
+        | Effect::SetFilter(_)
+        | Effect::Rerun
+        | Effect::ParkFilter { .. }
+        | Effect::EaseImages
+        | Effect::PileEnd { .. }
+        | Effect::Navigate(_)
+        | Effect::Replace(_) => None,
     }
 }
 
