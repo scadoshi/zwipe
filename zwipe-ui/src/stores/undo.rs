@@ -109,8 +109,8 @@ pub fn create_board_field(board: Board) -> Option<String> {
     }
 }
 
-/// Appends `action`, dropping the oldest past [`MAX_UNDO_ACTIONS`].
-fn push_capped(log: &mut Vec<UndoAction>, action: UndoAction) {
+/// Appends `action`, dropping the oldest past [`MAX_UNDO_ACTIONS`]. Generic so a client keeping its own action type caps its log the same way.
+pub fn push_capped<T>(log: &mut Vec<T>, action: T) {
     log.push(action);
     let overflow = log.len().saturating_sub(MAX_UNDO_ACTIONS);
     log.drain(..overflow);

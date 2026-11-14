@@ -397,7 +397,9 @@ async fn upkeep_once(
     client: Signal<ZwipeClient>,
     mut upgrade_required: Signal<bool>,
 ) {
-    // single-flight: free of races with any in-flight user action
+    // single-flight: free of races with any in-flight user action. The
+    // result is dropped: `ensure_fresh` logs a failed refresh and clears or
+    // keeps the session itself.
     let _ = session.ensure_fresh(client).await;
 
     // Min-version gate check. Fails open: only a successful response

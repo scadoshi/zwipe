@@ -18,9 +18,7 @@ use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::deck::{Board, DeckEntry};
 use zwipe_ui::deck::command_zone::Slot;
-
-/// Cap: enough to walk back a whole editing session; oldest entries drop.
-const MAX_UNDO_ACTIONS: usize = 100;
+use zwipe_ui::stores::undo::push_capped;
 
 /// One undoable mutation, carrying what its inverse needs. Quantity bursts
 /// coalesce through the debounce: one burst, one entry.
@@ -178,24 +176,12 @@ impl From<zwipe_ui::stores::undo::UndoAction> for UndoAction {
     }
 }
 
-/// Append with the cap enforced: shared by the live log and the parked
-/// stacks so both drop oldest identically.
-///
-/// Entries carry no id: the plan sketched a per-entry u64, but the as-built
-/// reconciliation (`take_newest` below) identifies an entry by matching its
-/// action: the swipe screens record actions before their server call
-/// resolves, so an id minted at record time had nothing to attach to, and a
-/// predicate over (variant, card) picks the same entry newest-first.
-fn push_capped(log: &mut Vec<UndoAction>, action: UndoAction) {
-    log.push(action);
-    // Zero when the log is within its cap, and the drain is then empty.
-    let overflow = log.len().saturating_sub(MAX_UNDO_ACTIONS);
-    log.drain(..overflow);
-}
-
 /// Newest-first predicate removal: the reconciliation primitive behind
 /// `UndoStore::take_newest`, split out so the selection logic is testable
 /// without a signal runtime.
+///
+/// Entries carry no id: the swipe screens record an action before its server
+/// call resolves, so a predicate over (variant, card) finds the entry instead.
 pub(crate) fn take_newest_in(
     log: &mut Vec<UndoAction>,
     matches: impl Fn(&UndoAction) -> bool,
@@ -282,6 +268,8 @@ impl UndoStore {
 
 #[cfg(test)]
 mod tests {
+    use zwipe_ui::stores::undo::MAX_UNDO_ACTIONS;
+
     use super::*;
 
     fn added(card_id: Uuid, name: &str) -> UndoAction {
