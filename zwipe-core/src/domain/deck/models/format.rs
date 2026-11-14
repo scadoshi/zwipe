@@ -135,7 +135,23 @@ impl Format {
             Self::Commander | Self::Predh => 40,
             Self::PauperCommander => 30,
             Self::Brawl | Self::StandardBrawl | Self::HistoricBrawl => 25,
-            _ => 20,
+            Self::Standard
+            | Self::Future
+            | Self::Historic
+            | Self::Timeless
+            | Self::Gladiator
+            | Self::Pioneer
+            | Self::Modern
+            | Self::Legacy
+            | Self::Pauper
+            | Self::Vintage
+            | Self::Penny
+            | Self::Oathbreaker
+            | Self::Alchemy
+            | Self::Duel
+            | Self::OldSchool
+            | Self::Premodern
+            | Self::Explorer => 20,
         }
     }
 
@@ -145,7 +161,25 @@ impl Format {
         match self {
             Self::Commander | Self::Duel | Self::Predh => Some(21),
             Self::PauperCommander => Some(16),
-            _ => None,
+            Self::Standard
+            | Self::Future
+            | Self::Historic
+            | Self::Timeless
+            | Self::Gladiator
+            | Self::Pioneer
+            | Self::Modern
+            | Self::Legacy
+            | Self::Pauper
+            | Self::Vintage
+            | Self::Penny
+            | Self::Oathbreaker
+            | Self::StandardBrawl
+            | Self::Brawl
+            | Self::Alchemy
+            | Self::OldSchool
+            | Self::Premodern
+            | Self::Explorer
+            | Self::HistoricBrawl => None,
         }
     }
 
@@ -195,7 +229,21 @@ impl Format {
             // Exactly-60 singleton formats.
             Self::StandardBrawl | Self::Oathbreaker => Some(60),
             // Gladiator (100-min, no cap) and open-pool constructed: no maximum.
-            _ => None,
+            Self::Standard
+            | Self::Future
+            | Self::Historic
+            | Self::Timeless
+            | Self::Gladiator
+            | Self::Pioneer
+            | Self::Modern
+            | Self::Legacy
+            | Self::Pauper
+            | Self::Vintage
+            | Self::Penny
+            | Self::Alchemy
+            | Self::OldSchool
+            | Self::Premodern
+            | Self::Explorer => None,
         }
     }
 
@@ -223,7 +271,20 @@ impl Format {
             | Self::Predh
             | Self::Oathbreaker
             | Self::Gladiator => 1,
-            _ => 4,
+            Self::Standard
+            | Self::Future
+            | Self::Historic
+            | Self::Timeless
+            | Self::Pioneer
+            | Self::Modern
+            | Self::Legacy
+            | Self::Pauper
+            | Self::Vintage
+            | Self::Penny
+            | Self::Alchemy
+            | Self::OldSchool
+            | Self::Premodern
+            | Self::Explorer => 4,
         }
     }
 

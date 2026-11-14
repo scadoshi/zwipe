@@ -93,7 +93,21 @@ pub fn is_valid_commander(card: &Card, format: &Format) -> bool {
         Format::Oathbreaker => type_line.contains("Planeswalker"),
 
         // Non-commander formats: nothing is a valid commander
-        _ => false,
+        Format::Standard
+        | Format::Future
+        | Format::Historic
+        | Format::Timeless
+        | Format::Gladiator
+        | Format::Pioneer
+        | Format::Modern
+        | Format::Legacy
+        | Format::Pauper
+        | Format::Vintage
+        | Format::Penny
+        | Format::Alchemy
+        | Format::OldSchool
+        | Format::Premodern
+        | Format::Explorer => false,
     }
 }
 

@@ -133,7 +133,15 @@ impl CardSortKey {
             Self::PriceUsd => data.prices.usd.as_deref(),
             Self::PriceEur => data.prices.eur.as_deref(),
             Self::PriceTix => data.prices.tix.as_deref(),
-            _ => return false,
+            Self::Name
+            | Self::Cmc
+            | Self::Power
+            | Self::Toughness
+            | Self::Rarity
+            | Self::ReleasedAt
+            | Self::EdhrecRank
+            | Self::Random
+            | Self::BestMatch => return false,
         };
         price.and_then(|s| s.parse::<f64>().ok()).is_none()
     }

@@ -934,7 +934,68 @@ impl DeckTag {
             Self::Flying => &["gives-flying", "gains-flying", "synergy-flying"],
             // Everything else seeds nothing by default (too vague/niche); the
             // user picks oracle tags manually. Expand as feedback arrives.
-            _ => &[],
+            Self::Adventures
+            | Self::Aikido
+            | Self::AlternateWincon
+            | Self::Blood
+            | Self::Bounce
+            | Self::Cascade
+            | Self::Chaos
+            | Self::Cheerios
+            | Self::Clues
+            | Self::CoinFlips
+            | Self::Colorless
+            | Self::Combo
+            | Self::CommanderMatters
+            | Self::CostReduction
+            | Self::Curses
+            | Self::Deathtouch
+            | Self::Defenders
+            | Self::Devotion
+            | Self::DiceRolling
+            | Self::Domain
+            | Self::Dungeons
+            | Self::Enchantments
+            | Self::Enchantress
+            | Self::Flash
+            | Self::GlassCannon
+            | Self::Goad
+            | Self::GoodStuff
+            | Self::Kicker
+            | Self::LandDestruction
+            | Self::LegendsMatter
+            | Self::Madness
+            | Self::Midrange
+            | Self::Morph
+            | Self::Mounts
+            | Self::Multicolor
+            | Self::Mutate
+            | Self::Outlaws
+            | Self::Party
+            | Self::Pillowfort
+            | Self::Plot
+            | Self::Politics
+            | Self::PowerMatters
+            | Self::Powerstones
+            | Self::Prison
+            | Self::Proliferate
+            | Self::Roles
+            | Self::Rooms
+            | Self::Sagas
+            | Self::Shrines
+            | Self::Snow
+            | Self::Speed
+            | Self::Stax
+            | Self::Stompy
+            | Self::Storm
+            | Self::Surveil
+            | Self::Tempo
+            | Self::ToughnessMatters
+            | Self::Tribal
+            | Self::Turbo
+            | Self::Werewolves
+            | Self::XSpells
+            | Self::Zoo => &[],
         }
     }
 }

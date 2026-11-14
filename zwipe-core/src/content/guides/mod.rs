@@ -51,7 +51,14 @@ pub fn screenshots(guide: &Guide) -> Vec<&'static str> {
         .iter()
         .filter_map(|block| match block {
             Block::Image { file, .. } => Some(*file),
-            _ => None,
+            Block::Lead(_)
+            | Block::H2(_)
+            | Block::P(_)
+            | Block::Steps(_)
+            | Block::Bullets(_)
+            | Block::Swipe(_)
+            | Block::Note(_)
+            | Block::Diagram(_) => None,
         })
         .collect()
 }
