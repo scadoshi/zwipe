@@ -15,6 +15,7 @@
 //! mouse input; a page scrolling under a still mouse does not.
 
 use dioxus::prelude::*;
+use orangui_core::page_keys::GG_WINDOW_MS;
 use uuid::Uuid;
 use zwipe_ui::deck_cards::cursor::{MOVE_KEYS, Move, Snapshot, Stop, move_for};
 
@@ -31,7 +32,7 @@ pub const STOP_SELECTOR: &str = ".web-deck-row[data-row], .card-stack-slot[data-
 /// view (at once while a key is held, `__zwipeDeckHeld`, else smoothly), and `__zwipeDeckHandOn`, which focuses the cursor's card again, or, once it has left the
 /// page, the next card after it in the last reading order, else the one before. While a key moved
 /// last, a page change that drops focus to the page (a redraw, an Undo, a removed card) hands it
-/// back that way.
+/// back that way. `g` `g` and Shift+G, which move the page, let go of the cursor's card.
 const TRACK_JS: &str = r"
 if (!window.__zwipeDeckTrack) {
     window.__zwipeDeckTrack = true;
@@ -52,6 +53,19 @@ if (!window.__zwipeDeckTrack) {
         }
     }, true);
     document.addEventListener('focusout', (e) => { if (e.target === previewed) unpreview(); }, true);
+    // gg and Shift+G move the page, not the cursor: the cursor's card lets go, its id kept, so
+    // the next arrow carries on from it.
+    let lastG = 0;
+    document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
+        const now = Date.now();
+        const gg = e.key === 'g' && now - lastG < __GG__;
+        if (e.key === 'g') lastG = gg ? 0 : now;
+        const jump = e.key === 'G' || (e.key === 'g' && gg);
+        if (!jump) return;
+        const at = document.activeElement;
+        if (at && at.closest && at.closest(stops)) { window.__zwipeDeckInput = 'mouse'; at.blur(); }
+    }, true);
     const find = (id) => [...document.querySelectorAll(stops)].find((s) => s.getAttribute('data-row') === id);
     const box = (s) => (s && getComputedStyle(s).display === 'contents' && s.firstElementChild) || s;
     const live = (el) => el && box(el).offsetParent !== null && !el.closest('[inert]') ? el : null;
@@ -218,6 +232,13 @@ const ROW_SETTLE_MS: u32 = 150;
 /// Opens list row `__ID__` where it is shut, as a click on its line does, which shuts the open one.
 const OPEN_ROW_JS: &str = "const row = document.querySelector('.web-deck-row[data-row=\"__ID__\"], .web-card-row[data-row=\"__ID__\"]'); if (row && !row.classList.contains('selected') && !row.querySelector('.card-row.expanded')) row.querySelector('.card-row-compact')?.click();";
 
+/// [`TRACK_JS`] with the cursor's stops and the page keys' gg window filled in.
+fn track_js() -> String {
+    TRACK_JS
+        .replace("__STOPS__", STOP_SELECTOR)
+        .replace("__GG__", &GG_WINDOW_MS.to_string())
+}
+
 /// Marks the screen as one whose cursor card shows its image as hover does.
 const PREVIEW_ON_JS: &str = "window.__zwipeCursorPreview = true;";
 
@@ -250,7 +271,7 @@ pub(crate) fn use_deck_cursor(details: Option<StackDetails>) {
     // Each row move, so a settled opening that a later move overtook does nothing.
     let row_moves = use_signal(|| 0u32);
     use_hook(move || {
-        document::eval(&TRACK_JS.replace("__STOPS__", STOP_SELECTOR));
+        document::eval(&track_js());
         let script = NAV_JS
             .replace("__ID__", &id.to_string())
             .replace("__STOPS__", STOP_SELECTOR)
@@ -450,6 +471,27 @@ mod tests {
         assert!(
             TRACK_JS.contains("if (live(find(id))) return window.__zwipeDeckFocus(id);"),
             "a card still drawn takes focus back: {TRACK_JS}"
+        );
+    }
+
+    #[test]
+    fn a_page_jump_lets_go_of_the_cursor_card() {
+        let script = track_js();
+        assert!(
+            script.contains("const jump = e.key === 'G' || (e.key === 'g' && gg);"),
+            "Shift+G and gg: {script}"
+        );
+        assert!(
+            script.contains(&format!("now - lastG < {GG_WINDOW_MS}")),
+            "the page keys' gg window: {script}"
+        );
+        assert!(
+            script.contains("window.__zwipeDeckInput = 'mouse'; at.blur();"),
+            "the card lets go and stays let go, as the cursor's hand-back only follows a key: {script}"
+        );
+        assert!(
+            !script.contains("__STOPS__") && !script.contains("__GG__"),
+            "every placeholder filled: {script}"
         );
     }
 
