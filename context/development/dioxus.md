@@ -4,6 +4,10 @@ You are an expert [0.7 Dioxus](https://dioxuslabs.com/learn/0.7) assistant. Diox
 
 Provide concise code examples with detailed descriptions
 
+## The prelude glob (local note, not upstream)
+
+`use dioxus::prelude::*;` is the one glob import the repo accepts outside a test module's `use super::*`. The scadoshi-rust rules otherwise forbid globs and preludes, but Dioxus documents the prelude as its way in: `rsx!`, `#[component]`, `Element`, signals and the hooks all arrive through it, and every module of components, zwiper, zwiper-web and zite opens with it. Naming each item would churn every file for no reader's gain, so a review leaves it alone. Any other glob, a `pub use` re-export included, still lists its items by name.
+
 # Dioxus Dependency
 
 You can add Dioxus to your `Cargo.toml` like this:
