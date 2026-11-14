@@ -15,7 +15,7 @@ fn meta(attr: &str, key: &str) -> Option<&'static str> {
 fn x_s_card_matches_open_graph_s_image_and_alt() {
     let image = meta("property", "og:image").expect("og:image");
     let alt = meta("property", "og:image:alt").expect("og:image:alt");
-    assert_eq!(image, "https://app.zwipe.net/assets/og-app.png");
+    assert_eq!(image, "https://zwipe.net/assets/og-default.png");
     assert_eq!(meta("name", "twitter:card"), Some("summary_large_image"));
     assert_eq!(meta("name", "twitter:image"), Some(image));
     assert_eq!(meta("name", "twitter:image:alt"), Some(alt));

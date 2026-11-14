@@ -19,11 +19,11 @@
 /// overrides it, for `wrangler pages dev` against a local zerver.
 const DEFAULT_API_BASE = "https://api.zwipe.net";
 
-/// The web app, for the canonical link and the fallback image.
+/// The web app, for the canonical link.
 const SITE = "https://app.zwipe.net";
 
-/// The app-wide preview image, used when the deck has no commander art.
-const DEFAULT_IMAGE = `${SITE}/assets/og-app.png`;
+/// zwipe.net's preview image, the one app.zwipe.net's head uses, for a deck with no commander art.
+const DEFAULT_IMAGE = "https://zwipe.net/assets/og-default.png";
 
 /// A share token is a UUID; anything else 404s without asking the API.
 const TOKEN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
