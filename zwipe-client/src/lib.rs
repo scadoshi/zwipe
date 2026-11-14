@@ -44,11 +44,13 @@ use zwipe_core::domain::card::Card;
 #[derive(Debug, Clone)]
 pub struct ZwipeClient {
     /// The underlying HTTP client.
-    pub client: Client,
+    client: Client,
     /// Scheme, host and port every request path is joined onto.
-    pub base_url: Url,
+    base_url: Url,
     /// The cards fetched so far by printing id, shared by every clone, so a card two screens
     /// show (a deck's commander on its page and on Edit) comes from the server once a session.
+    /// It never evicts, and a poisoned lock leaves it unused, so it suits a handful of cards a
+    /// session, not a bulk fetch.
     cards: Arc<Mutex<HashMap<Uuid, Card>>>,
 }
 
