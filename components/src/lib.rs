@@ -200,7 +200,7 @@ pub use orangui::{TOAST_CSS, ToastOptions, ToastStack, Toasts, use_toast};
 pub use picker_search::use_picker_search;
 pub use pressable::{Pressable, is_press};
 pub use printing_sheet::{
-    ArtistChip, CardPricesGhost, PrintingFacts, PrintingSheet, PrintingsFetch, PrintingsSource,
+    ArtistChip, PrintingChips, PrintingChipsGhost, PrintingSheet, PrintingsFetch, PrintingsSource,
 };
 pub use role_tags::{OtagDef, RoleTags};
 pub use settle::use_settle;

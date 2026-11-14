@@ -5,7 +5,7 @@
 //! index, and performs its effects.
 
 use components::{
-    ArtistChip, BottomSheet, CardPricesGhost, CoverFlow, DockAction, LoadFailed, PrintingFacts,
+    BottomSheet, CoverFlow, DockAction, LoadFailed, PrintingChips, PrintingChipsGhost,
     TOAST_NORMAL, ToastOptions, Toasts, icons, use_toast,
 };
 use dioxus::prelude::*;
@@ -14,7 +14,6 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ImageSize;
 use zwipe_ui::screens::printing_sheet::{self as model, Action, Effect, Mode, State, Status};
 
-use super::card_info::CardInfoDisplay;
 use super::flippable_card_image::FlippableCardImage;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::component;
@@ -176,13 +175,11 @@ pub(crate) fn PrintingSheet(
                         // and then takes them, so the fan stays in place.
                         CoverFlow { printings, index, loading: status == Status::Loading }
 
-                        // Info row for the printing in the middle
+                        // The printing in the middle as one row of chips.
                         if status == Status::Loading {
-                            CardPricesGhost {}
+                            PrintingChipsGhost {}
                         } else if let Some(card) = visible_card {
-                            PrintingFacts { card: card.clone(), at: current_idx, count: printings_count }
-                            ArtistChip { card: card.clone() }
-                            CardInfoDisplay { card }
+                            PrintingChips { card, at: current_idx, count: printings_count }
                         }
                     } else if let Some(card) = visible_card {
                         // Single printing: just show the image, no carousel
@@ -196,8 +193,7 @@ pub(crate) fn PrintingSheet(
                             }
                         }
 
-                        ArtistChip { card: card.clone() }
-                        CardInfoDisplay { card }
+                        PrintingChips { card, at: 0, count: 1 }
                     }
                 }
 

@@ -827,44 +827,42 @@ i.ms.ms-cost.ms-gp {
     height: 1.1em;
 }
 
-/* Which printing shows, under a narrow sheet's cover flow: the set (cut short first), the
-   number and the place among the printings, on one centered line. */
-.printing-facts {
+/* Which printing shows under Printings' cover flow, and what it costs: the set (cut short
+   first), the number, the place among the printings, the artist and the prices, as one centered
+   row of chips that wraps. */
+.printing-chips {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: center;
     gap: 0.4rem;
     min-width: 0;
+    margin-top: 0.5rem;
 }
 
-.printing-facts-set {
+.printing-chips-set {
     min-width: 0;
+    max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.printing-facts > :not(.printing-facts-set) {
-    flex: none;
+/* The row's ghost while the printings load, each chip at about its size. */
+.printing-chips-ghost-set {
+    width: 7.5rem;
 }
 
-.printing-facts-count {
-    color: var(--ink-text-muted, var(--text-muted));
-    font-size: 0.8rem;
+.printing-chips-ghost-number {
+    width: 3.25rem;
 }
 
-/* The app's price row starts at the left, as the web's narrow sheet's does, so a printing with
-   fewer prices doesn't shift the ones it has. */
-.app-printing-sheet .card-prices {
-    justify-content: flex-start;
-    padding-inline: 1.5rem;
+.printing-chips-ghost-artist {
+    width: 8rem;
 }
 
-/* The app's sheet body is a block, so its artist chip centers by its margins. */
-.app-printing-sheet .printing-artist {
-    display: flex;
-    width: fit-content;
-    margin: 0.5rem auto 0;
+.printing-chips-ghost-price {
+    width: 4.25rem;
 }
 
 /* Printings' title bar keeps the title clear of the × on both sides, so a long name stays

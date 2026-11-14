@@ -1192,9 +1192,9 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
     outline: none;
 }
 
-/* The foot at the sheet's bottom: the prices at the left and Save at the
-   right of one row. Save is the dock's button, sitting in
-   the row rather than floating over the sheet. */
+/* The foot at the sheet's bottom: the printing's chips, then Save at the
+   right. Save is the dock's button, sitting in the foot rather than floating
+   over the sheet. */
 .web-printing-foot {
     display: flex;
     flex-direction: column;
@@ -1204,13 +1204,8 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
 .web-printing-foot-row {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     gap: 0.75rem;
-}
-
-.web-printing-foot-row > .card-prices {
-    justify-content: flex-start;
-    margin: 0;
 }
 
 .action-dock.web-printing-save {
@@ -1294,30 +1289,12 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
         padding-top: 1rem;
     }
 
-    .web-flow-count {
-        color: var(--ink-text-muted, var(--text-muted));
-        font-size: 0.8rem;
+    /* The printing's chips share the row with Select, wrapping as one. */
+    .web-flow-info > .printing-chips {
+        display: contents;
     }
 
-    /* The ghosts of the set, number, prices, count and Select, each its
-       chip's size. */
-    .web-flow-ghost-set {
-        width: 7.5rem;
-    }
-
-    .web-flow-ghost-number {
-        width: 3rem;
-    }
-
-    .web-flow-ghost-price {
-        width: 4.25rem;
-    }
-
-    .web-flow-ghost-count {
-        width: 3.4rem;
-        height: 0.8rem;
-    }
-
+    /* Select's ghost, its button's size. */
     .web-flow-ghost-select {
         width: 2.2rem;
         border-radius: 0.5rem;

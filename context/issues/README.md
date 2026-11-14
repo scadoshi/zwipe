@@ -197,6 +197,7 @@ Who checked, on which live build, what they saw.
 | [511](511-idle-requests-fail.md) | The app says "Couldn't load" after a minute idle, and Retry fixes it | fixing | thinker | - |
 | [516](516-web-logout-cookie.md) | A web logout that fails to reach the server leaves the refresh cookie live (zwipe-context #44) | fixing | thinker | - |
 | [517](517-page-jump-keeps-cursor-card.md) | Shift+G leaves the cursor's card raised, its stack spilling over the Profile panels | fixing | thinker | - |
+| [518](518-printings-one-chip-row.md) | Printings stacks its facts, artist and prices on three lines | fixing | thinker | - |
 | [491](491-reveal-back-step.md) | In Stacks, revealing a tucked card takes a Back step | fixing | laptop | issue/491-reveal-no-step |
 | [492](492-format-zone-back.md) | Switching a deck's format away and back loses its commander | fixing | laptop | issue/492-format-zone-back |
 | [469](469-exceptions-side-sheet.md) | On a wide window, Exceptions opens as a centered modal, and its Change is off with no reason | fixing | laptop | issue/469-exceptions-drawer |

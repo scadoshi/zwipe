@@ -4,8 +4,9 @@
 //! side stacked behind it, moved by the arrows, a sideways scroll, a drag or swipe, or a tap on a
 //! side card. From the kit's modal width it fills a large modal, with Enter, a click on the middle
 //! card or `Select` picking it. Below that width it sits in a centered modal down to the
-//! breakpoint and a bottom sheet under it, with the prices at its bottom and Save at their right,
-//! Enter saving. Either form takes focus as it opens, so the arrow keys, `h`, `l` and Enter work
+//! breakpoint and a bottom sheet under it, with the printing's chips at its bottom and Save
+//! under them at the right, Enter saving. Both forms show which printing it is as one row of
+//! chips ([`PrintingChips`]). Either form takes focus as it opens, so the arrow keys, `h`, `l` and Enter work
 //! at once, and hands focus back as it closes. It closes from its title bar's ×, a backdrop tap, a drag down or Esc.
 //!
 //! Components never call the API. The host provides a [`PrintingsSource`]: the printings it has
@@ -256,20 +257,16 @@ pub fn PrintingSheet(
                         LoadFailed { message: model::LOAD_FAILED, on_retry: retry }
                     } else if loading || visible.is_some() {
                         CoverFlow { printings: all, index, loading }
-                        // The prices with Save at their right, at the
-                        // sheet's bottom. Save is grayed until a different
-                        // printing shows.
+                        // The printing's chips, then Save at the right, at
+                        // the sheet's bottom. Save is grayed until a
+                        // different printing shows.
                         div { class: "web-printing-foot",
-                            if let Some(card) = visible.clone().filter(|_| !loading) {
-                                PrintingFacts { card: card.clone(), at, count }
-                                ArtistChip { card }
+                            if let Some(card) = visible.filter(|_| !loading) {
+                                PrintingChips { card, at, count }
+                            } else {
+                                PrintingChipsGhost {}
                             }
                             div { class: "web-printing-foot-row",
-                                if let Some(card) = visible.filter(|_| !loading) {
-                                    CardPrices { card }
-                                } else {
-                                    CardPricesGhost {}
-                                }
                                 if loading && !read_only {
                                     div { class: "action-dock web-printing-save",
                                         span { class: "skeleton-bar skeleton-chip web-printing-save-ghost" }
@@ -336,10 +333,6 @@ fn CoverFlowSheet(
         };
         index.set(next.min(count.saturating_sub(1)));
     };
-    let prices = selected
-        .as_ref()
-        .map_or_default(|c| info::prices(&c.scryfall_data));
-
     rsx! {
         div { class: "web-flow",
             SheetFrame { wide: SheetWide::Modal,
@@ -394,25 +387,14 @@ fn CoverFlowSheet(
                             }
                             if loading {
                                 div { class: "web-flow-info",
-                                    span { class: "skeleton-bar skeleton-chip skeleton-tinted stat-chip-p3 web-flow-ghost-set" }
-                                    span { class: "skeleton-bar skeleton-chip skeleton-tinted stat-chip-muted web-flow-ghost-number" }
-                                    for i in 0..GHOST_PRICES {
-                                        span { key: "{i}", class: "skeleton-bar skeleton-chip skeleton-tinted stat-chip-money web-flow-ghost-price" }
-                                    }
-                                    span { class: "skeleton-bar web-flow-ghost-count" }
+                                    PrintingChipsGhost {}
                                     if !read_only {
                                         span { class: "skeleton-bar skeleton-chip web-flow-ghost-select" }
                                     }
                                 }
                             } else if let Some(card) = selected {
                                 div { class: "web-flow-info",
-                                    span { class: "stat-chip stat-chip-p3", "{card.scryfall_data.set_name}" }
-                                    span { class: "stat-chip stat-chip-muted", "#{card.scryfall_data.collector_number}" }
-                                    ArtistChip { card }
-                                    for price in prices {
-                                        span { key: "{price}", class: "stat-chip stat-chip-money", "{price}" }
-                                    }
-                                    span { class: "web-flow-count", "{at.saturating_add(1)} of {count}" }
+                                    PrintingChips { card, at, count }
                                     if !read_only {
                                         button {
                                             r#type: "button",
@@ -434,16 +416,41 @@ fn CoverFlowSheet(
     }
 }
 
-/// Which printing `card` is, on one line under a narrow sheet's cover flow: its set and collector
-/// number as chips, then its place among the `count` printings (`at` from 0), as the wide modal's
-/// info row shows them. The set's name is cut short before the line wraps.
+/// Which printing `card` is and what it costs, as one centered row of chips that wraps: its set
+/// (cut short first), its collector number, its place among the `count` printings (`at` from 0),
+/// its artist and its prices. Every Printings sheet draws it under its cover flow.
 #[component]
-pub fn PrintingFacts(card: Card, at: usize, count: usize) -> Element {
+pub fn PrintingChips(card: Card, at: usize, count: usize) -> Element {
+    let prices = info::prices(&card.scryfall_data);
     rsx! {
-        div { class: "printing-facts",
-            span { class: "stat-chip stat-chip-p3 printing-facts-set", "{card.scryfall_data.set_name}" }
+        div { class: "printing-chips",
+            span { class: "stat-chip stat-chip-p3 printing-chips-set", "{card.scryfall_data.set_name}" }
             span { class: "stat-chip stat-chip-muted", "#{card.scryfall_data.collector_number}" }
-            span { class: "printing-facts-count", "{at.saturating_add(1)} of {count}" }
+            span { class: "stat-chip stat-chip-muted", "{at.saturating_add(1)} of {count}" }
+            ArtistChip { card }
+            for price in prices {
+                span { key: "{price}", class: "stat-chip stat-chip-money", "{price}" }
+            }
+        }
+    }
+}
+
+/// How many price chips a printing's ghost shows: dollars, euros and tix.
+const GHOST_PRICES: usize = 3;
+
+/// The ghost of [`PrintingChips`] while the printings load: each chip's ghost in its tone, at
+/// about its size.
+#[component]
+pub fn PrintingChipsGhost() -> Element {
+    rsx! {
+        div { class: "printing-chips",
+            span { class: "skeleton-bar skeleton-chip skeleton-tinted stat-chip-p3 printing-chips-ghost-set" }
+            span { class: "skeleton-bar skeleton-chip skeleton-tinted stat-chip-muted printing-chips-ghost-number" }
+            span { class: "skeleton-bar skeleton-chip skeleton-tinted stat-chip-muted printing-chips-ghost-number" }
+            span { class: "skeleton-bar skeleton-chip skeleton-tinted detail-chip-artist printing-chips-ghost-artist" }
+            for i in 0..GHOST_PRICES {
+                span { key: "{i}", class: "skeleton-bar skeleton-chip skeleton-tinted stat-chip-money printing-chips-ghost-price" }
+            }
         }
     }
 }
@@ -459,35 +466,6 @@ pub fn ArtistChip(card: Card) -> Element {
         span { class: "detail-chip detail-chip-artist printing-artist",
             DockIcon { path: IMAGE_ICON }
             "{artist}"
-        }
-    }
-}
-
-/// The card's prices as chips, under a printing in the narrow sheet.
-#[component]
-fn CardPrices(card: Card) -> Element {
-    let prices = info::prices(&card.scryfall_data);
-    rsx! {
-        div { class: "card-prices",
-            for price in prices {
-                span { key: "{price}", class: "card-row-price card-price-chip", "{price}" }
-            }
-        }
-    }
-}
-
-/// How many price chips a printing's ghost shows: dollars, euros and tix.
-const GHOST_PRICES: usize = 3;
-
-/// The ghost of a printing's prices, under the cover flow while the
-/// printings load: a price chip's ghost in the money tone for each price.
-#[component]
-pub fn CardPricesGhost() -> Element {
-    rsx! {
-        div { class: "card-prices",
-            for i in 0..GHOST_PRICES {
-                span { key: "{i}", class: "skeleton-bar skeleton-chip skeleton-tinted stat-chip-money card-price-ghost" }
-            }
         }
     }
 }

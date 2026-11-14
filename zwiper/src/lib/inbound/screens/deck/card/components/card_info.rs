@@ -4,25 +4,9 @@ use components::{
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::Card;
-use zwipe_ui::card::info;
 
 use crate::inbound::components::catalog_cache::CatalogCache;
 use crate::inbound::components::interactions::swipe::stack::GhostCard;
-
-/// A card's prices as money chips on one line: USD, EUR then TIX, whichever
-/// it has, under a printing in the printing sheet. A swipe card's prices are
-/// in [`CardDetailsSheet`], with its other details.
-#[component]
-pub(crate) fn CardInfoDisplay(card: Card) -> Element {
-    let prices = info::prices(&card.scryfall_data);
-    rsx! {
-        div { class: "card-prices",
-            for price in prices {
-                span { key: "{price}", class: "card-row-price card-price-chip", "{price}" }
-            }
-        }
-    }
-}
 
 /// Resolves an oracle tag's description from the app-wide catalog cache, for
 /// the tappable tags in a card-role cluster. Warms the cache on mount so a cold

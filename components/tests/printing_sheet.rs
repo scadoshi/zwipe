@@ -68,7 +68,7 @@ fn an_open_sheet_asks_its_host_for_the_printings_and_draws_them() {
         "one request: {html}"
     );
     assert!(
-        html.contains("card-prices"),
+        html.contains("stat-chip stat-chip-money"),
         "the printing's prices: {html}"
     );
 }
@@ -84,7 +84,7 @@ fn a_sheet_that_only_looks_offers_no_save() {
     let html = render(|| open_sheet(false));
     assert!(!html.contains(r#"aria-label="Save""#), "{html}");
     assert!(
-        html.contains("card-prices"),
+        html.contains("printing-chips"),
         "it still shows the printing: {html}"
     );
 }
@@ -144,20 +144,34 @@ fn a_printing_with_no_artist_has_no_artist_chip() {
         }
     }
     let html = render(app);
-    assert!(html.contains("card-prices"), "{html}");
+    assert!(html.contains("printing-chips"), "{html}");
     assert!(!html.contains("detail-chip-artist"), "{html}");
 }
 
 #[test]
-fn the_narrow_sheet_says_which_printing_shows() {
+fn the_narrow_sheet_shows_its_printing_as_one_row_of_chips() {
     let html = render(|| open_sheet(true));
-    let (_, facts) = html.split_once(r#"class="printing-facts""#).unwrap();
-    let (facts, _) = facts.split_once("</div>").unwrap();
+    let (_, row) = html.split_once(r#"class="printing-chips""#).unwrap();
+    let (row, _) = row.split_once("</div>").unwrap();
     let data = card().scryfall_data;
-    assert!(facts.contains(&data.set_name), "the set: {facts}");
+    let at = |needle: &str| {
+        row.find(needle)
+            .unwrap_or_else(|| panic!("{needle:?} in the row: {row}"))
+    };
+    let set = at(&format!(
+        r#"class="stat-chip stat-chip-p3 printing-chips-set">{}"#,
+        data.set_name
+    ));
+    let number = at(&format!(
+        r#"class="stat-chip stat-chip-muted">#{}"#,
+        data.collector_number
+    ));
+    let place = at(r#"class="stat-chip stat-chip-muted">1 of 1"#);
+    let artist = at("detail-chip detail-chip-artist printing-artist");
+    let price = at(r#"class="stat-chip stat-chip-money""#);
     assert!(
-        facts.contains(&format!("#{}", data.collector_number)),
-        "the number: {facts}"
+        set < number && number < place && place < artist && artist < price,
+        "set, number, place, artist, then prices: {row}"
     );
-    assert!(facts.contains("1 of 1"), "its place: {facts}");
+    assert!(!html.contains("printing-facts"), "no second line: {html}");
 }
