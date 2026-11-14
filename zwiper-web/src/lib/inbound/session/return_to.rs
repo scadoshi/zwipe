@@ -34,7 +34,23 @@ pub fn return_route(path: &str) -> Option<Route> {
         | Route::PrivacyPolicy {}
         | Route::About {}
         | Route::NotFound { .. } => None,
-        _ => Some(route),
+        Route::SharedDeck { .. }
+        | Route::SharedDeckExport { .. }
+        | Route::Guides {}
+        | Route::GuidePage { .. }
+        | Route::Account {}
+        | Route::Config {}
+        | Route::Activity {}
+        | Route::DeckList {}
+        | Route::CommanderMaybeboard {}
+        | Route::Playstyle {}
+        | Route::CreateDeck {}
+        | Route::EditDeck { .. }
+        | Route::ViewDeck { .. }
+        | Route::ImportDeck { .. }
+        | Route::ExportDeck { .. }
+        | Route::AddDeckCard { .. }
+        | Route::RemoveDeckCard { .. } => Some(route),
     }
 }
 
@@ -128,6 +144,27 @@ mod tests {
             "",
         ] {
             assert_eq!(return_route(path), None, "{path:?}");
+        }
+    }
+
+    #[test]
+    fn the_open_pages_and_the_signed_in_screens_come_back() {
+        for path in [
+            "/guides",
+            "/guides/swiping",
+            "/scotty/deck/elves/01234567-89ab-cdef-0123-456789abcdef/export",
+            "/settings",
+            "/activity",
+            "/decks",
+            "/maybeboard",
+            "/playstyle",
+            "/decks/new",
+            "/decks/01234567-89ab-cdef-0123-456789abcdef/edit",
+            "/decks/01234567-89ab-cdef-0123-456789abcdef/import",
+            "/decks/01234567-89ab-cdef-0123-456789abcdef/export",
+            "/decks/01234567-89ab-cdef-0123-456789abcdef/remove",
+        ] {
+            assert!(return_route(path).is_some(), "{path:?}");
         }
     }
 

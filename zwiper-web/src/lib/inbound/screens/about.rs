@@ -86,7 +86,8 @@ pub fn About() -> Element {
     // cache as it stands.
     let model = use_signal(|| {
         let mut state = State::new();
-        let _ = state.update(Action::Load(cache.peek().clone()));
+        let effects = state.update(Action::Load(cache.peek().clone()));
+        debug_assert!(effects.is_empty(), "About's Load returns no effects");
         state
     });
     let driver = Driver {
