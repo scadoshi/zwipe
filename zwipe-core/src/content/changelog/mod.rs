@@ -51,6 +51,7 @@ pub const UPCOMING: &[Release] = &[Release {
     date: None,
     entries: &[
         "Printings opens on the face its card shows, and a Flip or Meld button, or v on the web, turns every printing at once, on the web and in the app",
+        "On the web's Playstyle, h, l and the left and right arrows move the keyboard cursor between Suggested commanders and Staples",
     ],
 }];
 

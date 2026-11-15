@@ -11,6 +11,7 @@ use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::deck::Board;
+use zwipe_ui::deck_cards::cursor::Walk;
 use zwipe_ui::deck_cards::keys::{self as hover_keys, HoverAction, HoverKey, RowInfo};
 use zwipe_ui::shortcuts::Editable;
 
@@ -83,7 +84,7 @@ pub fn use_deck_hover_keys(keys: DeckHoverKeys) {
     } = keys;
     let editable = editable(actions.as_ref());
     let meld_source = try_use_context::<MeldSource>();
-    deck_cursor::use_deck_cursor(details);
+    deck_cursor::use_deck_cursor(details, Walk::Columns);
     use_page_keys_through(
         STACK_DETAILS_CLASS,
         hover_keys::hover_keys(editable),

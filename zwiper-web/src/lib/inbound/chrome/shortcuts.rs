@@ -11,7 +11,7 @@ pub use components::keys::{
 pub use components::swipe_stack::SWIPE_LETTERS;
 use components::swipe_stack::{Swipe, swipe_key};
 use zwipe_ui::shortcuts::{
-    self, Editable, FLIP_ROW, ScreenKeys, SheetGroup, SheetRow, card_rows_groups,
+    self, Editable, FLIP_ROW, ListLayout, ScreenKeys, SheetGroup, SheetRow, card_rows_groups,
     deck_cards_groups, examples_groups, rows_of,
 };
 pub use zwipe_ui::shortcuts::{
@@ -136,8 +136,8 @@ pub enum ShortcutsScreen {
     /// An Oracle tag's example cards, swiped through in their modal.
     Examples,
     /// A screen of card rows with no editing (Playstyle, Activity), whose keys act on the card
-    /// under the cursor, else the open one.
-    CardRows,
+    /// under the cursor, else the open one, its lists laid out as the layout says.
+    CardRows(ListLayout),
 }
 
 /// The groups the shortcuts sheet lists on `screen` ([`shortcuts::sheet_groups`]): each key, with
@@ -169,7 +169,7 @@ pub fn sheet_groups(screen: &ShortcutsScreen) -> Vec<SheetGroup> {
         }
         ShortcutsScreen::DeckCards => deck_cards_groups(Editable::Yes),
         ShortcutsScreen::Examples => examples_groups(),
-        ShortcutsScreen::CardRows => card_rows_groups(),
+        ShortcutsScreen::CardRows(layout) => card_rows_groups(*layout),
     }
 }
 
@@ -187,7 +187,7 @@ pub fn claims_steps(screen: &ShortcutsScreen) -> bool {
         ShortcutsScreen::Swipe(_)
         | ShortcutsScreen::DeckCards
         | ShortcutsScreen::Examples
-        | ShortcutsScreen::CardRows => true,
+        | ShortcutsScreen::CardRows(_) => true,
     }
 }
 
@@ -482,14 +482,15 @@ mod tests {
         assert!(claims_steps(&ShortcutsScreen::DeckCards));
         assert!(claims_steps(&ShortcutsScreen::Examples));
         assert!(
-            claims_steps(&ShortcutsScreen::CardRows),
+            claims_steps(&ShortcutsScreen::CardRows(ListLayout::One))
+                && claims_steps(&ShortcutsScreen::CardRows(ListLayout::SideBySide)),
             "the card-row screens' cursor moves on j and k"
         );
     }
 
     #[test]
     fn the_card_row_screens_list_their_cursor_keys_then_the_card_keys() {
-        let rows = sheet_rows(&ShortcutsScreen::CardRows);
+        let rows = sheet_rows(&ShortcutsScreen::CardRows(ListLayout::One));
         let actions: Vec<&str> = rows.iter().take(9).map(|(_, does)| *does).collect();
         assert_eq!(
             actions,
@@ -528,7 +529,8 @@ mod tests {
             ShortcutsScreen::Swipe(ADD_LABELS),
             ShortcutsScreen::DeckCards,
             ShortcutsScreen::Examples,
-            ShortcutsScreen::CardRows,
+            ShortcutsScreen::CardRows(ListLayout::One),
+            ShortcutsScreen::CardRows(ListLayout::SideBySide),
         ] {
             let rows = sheet_rows(&screen);
             assert!(

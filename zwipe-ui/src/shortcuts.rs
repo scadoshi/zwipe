@@ -257,15 +257,33 @@ pub fn deck_cards_rows(editable: Editable) -> Vec<SheetRow> {
         .collect()
 }
 
+/// How a screen of card rows lays out its lists, which decides the cursor keys its sheet lists.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ListLayout {
+    /// One list (the Commander maybeboard, Activity): the cursor moves up and down.
+    One,
+    /// Two lists side by side (Playstyle's Suggested commanders and Staples): left and right
+    /// cross between them, as the deck page's columns do.
+    SideBySide,
+}
+
 /// The rows of a screen of card rows with no editing (the Commander maybeboard, Activity,
-/// Playstyle): the cursor's keys, one column so only up and down, then the keys that read a card.
+/// Playstyle): the cursor's keys, up and down for one list and the deck page's four ways for
+/// lists side by side, then the keys that read a card.
 #[must_use]
-pub fn card_rows_rows() -> Vec<SheetRow> {
-    let moves: [SheetRow; 3] = [
-        (&["↑", "↓"], "Move between cards"),
-        (&["j", "k"], "Move between cards"),
-        (&["Home", "End"], "First or last card"),
-    ];
+pub fn card_rows_rows(layout: ListLayout) -> Vec<SheetRow> {
+    let moves: [SheetRow; 3] = match layout {
+        ListLayout::One => [
+            (&["↑", "↓"], "Move between cards"),
+            (&["j", "k"], "Move between cards"),
+            (&["Home", "End"], "First or last card"),
+        ],
+        ListLayout::SideBySide => [
+            (&["↑", "↓", "←", "→"], "Move between cards"),
+            (&["h", "j", "k", "l"], "Move between cards"),
+            (&["Home", "End"], "First or last card"),
+        ],
+    };
     let open: SheetRow = (&["Enter"], "Open the card");
     moves
         .into_iter()
@@ -303,12 +321,12 @@ pub fn examples_groups() -> Vec<SheetGroup> {
     })
 }
 
-/// A screen of card rows with no editing (the Commander maybeboard, Activity, Playstyle): the
-/// cursor's moves and Enter under Navigation, the keys that read a card under Card. The cursor
-/// keeps `j` and `k`.
+/// A screen of card rows with no editing (the Commander maybeboard, Activity, Playstyle), its
+/// lists laid out as `layout`: the cursor's moves and Enter under Navigation, the keys that read
+/// a card under Card. The cursor keeps `j` and `k`.
 #[must_use]
-pub fn card_rows_groups() -> Vec<SheetGroup> {
-    let rows = card_rows_rows();
+pub fn card_rows_groups(layout: ListLayout) -> Vec<SheetGroup> {
+    let rows = card_rows_rows(layout);
     let find = |key: &str| rows.iter().copied().find(|row| row.0.contains(&key));
     sheet_groups(ScreenKeys {
         moves: ["↑", "j", "Home"]
@@ -523,7 +541,9 @@ mod tests {
             ])
         );
         assert_eq!(
-            outline(&card_rows_groups()).get(..2).map(<[_]>::to_vec),
+            outline(&card_rows_groups(ListLayout::One))
+                .get(..2)
+                .map(<[_]>::to_vec),
             Some(vec![
                 (
                     "Navigation",
@@ -531,6 +551,34 @@ mod tests {
                 ),
                 ("Card", vec!["p", "i", "v", "d"]),
             ])
+        );
+    }
+
+    #[test]
+    fn lists_side_by_side_list_left_and_right_as_the_deck_page_does() {
+        let moves =
+            |layout| -> Vec<SheetRow> { card_rows_rows(layout).into_iter().take(3).collect() };
+        assert_eq!(
+            moves(ListLayout::SideBySide),
+            deck_cards_rows(Editable::No)
+                .into_iter()
+                .take(3)
+                .collect::<Vec<_>>(),
+            "Playstyle's two lists move as the deck page's columns do"
+        );
+        assert_eq!(
+            moves(ListLayout::One).first().map(|row| row.0),
+            Some(&["↑", "↓"][..]),
+            "one list moves only up and down"
+        );
+        assert_eq!(
+            outline(&card_rows_groups(ListLayout::SideBySide))
+                .first()
+                .cloned(),
+            Some((
+                "Navigation",
+                vec!["↑", "h", "Home", "gg", "Shift+G", "Enter"]
+            ))
         );
     }
 
@@ -594,7 +642,8 @@ mod tests {
         let screens = [
             deck_cards_groups(Editable::Yes),
             deck_cards_groups(Editable::No),
-            card_rows_groups(),
+            card_rows_groups(ListLayout::One),
+            card_rows_groups(ListLayout::SideBySide),
             examples_groups(),
         ];
         for groups in screens {

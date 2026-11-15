@@ -3,13 +3,15 @@
 //! image, `v` flips it (or toggles a meld half's Meld) and `d` opens or
 //! closes its details, each as its own button or a click on it does. The
 //! card is the one under the cursor, else the one whose details are open.
-//! Shift+H lists them ([`ShortcutsScreen::CardRows`]).
+//! Shift+H lists them ([`ShortcutsScreen::CardRows`]), with the cursor's keys for the screen's
+//! [`ListLayout`].
 
 use components::keys::use_page_keys_through;
 use components::{MeldSource, MeldToggle};
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
+use zwipe_ui::shortcuts::ListLayout;
 
 use crate::inbound::cards::card_row::CardOverlays;
 use crate::inbound::cards::stack_view::{RowFaces, StackDetails};
@@ -66,9 +68,14 @@ fn key_card_js() -> String {
 /// acts on the card under the cursor, a stack card or a row, else on the open stack card, else
 /// on the expanded row; after a key, the keyboard cursor's card comes first. The image and
 /// Printings open in the screen's [`CardOverlays`], faces turn in its [`RowFaces`] and the
-/// stacks' details move in its [`StackDetails`], each where the screen provides it.
-pub(crate) fn use_card_row_keys(cards: Memo<Vec<Card>>, expanded_card: Signal<Option<Uuid>>) {
-    use_card_row_keys_and(cards, expanded_card, None);
+/// stacks' details move in its [`StackDetails`], each where the screen provides it. The sheet
+/// lists the cursor's keys for lists laid out as `layout`.
+pub(crate) fn use_card_row_keys(
+    cards: Memo<Vec<Card>>,
+    expanded_card: Signal<Option<Uuid>>,
+    layout: ListLayout,
+) {
+    use_card_row_keys_and(cards, expanded_card, layout, None);
 }
 
 /// [`use_card_row_keys`] on a screen with keys of its own: a key that is not a card key goes
@@ -76,13 +83,14 @@ pub(crate) fn use_card_row_keys(cards: Memo<Vec<Card>>, expanded_card: Signal<Op
 pub(crate) fn use_card_row_keys_and(
     cards: Memo<Vec<Card>>,
     expanded_card: Signal<Option<Uuid>>,
+    layout: ListLayout,
     screen_keys: Option<Callback<String>>,
 ) {
     let overlays = try_use_context::<CardOverlays>();
     let details = try_use_context::<StackDetails>();
     let faces = try_use_context::<RowFaces>();
     let melds = try_use_context::<MeldSource>();
-    use_offer_shortcuts(ShortcutsScreen::CardRows);
+    use_offer_shortcuts(ShortcutsScreen::CardRows(layout));
     use_page_keys_through(
         STACK_DETAILS_CLASS,
         &ROW_KEYS,
@@ -206,13 +214,15 @@ mod tests {
 
     #[test]
     fn the_shortcuts_sheet_lists_the_row_keys() {
-        let listed: Vec<&str> = shortcuts::sheet_rows(&ShortcutsScreen::CardRows)
-            .into_iter()
-            .flat_map(|(keys, _)| keys.iter().copied())
-            .collect();
-        for key in ["p", "i", "v", "d", "Shift+H"] {
-            assert!(listed.contains(&key), "{key}");
+        for layout in [ListLayout::One, ListLayout::SideBySide] {
+            let listed: Vec<&str> = shortcuts::sheet_rows(&ShortcutsScreen::CardRows(layout))
+                .into_iter()
+                .flat_map(|(keys, _)| keys.iter().copied())
+                .collect();
+            for key in ["p", "i", "v", "d", "Shift+H"] {
+                assert!(listed.contains(&key), "{layout:?} {key}");
+            }
+            assert!(!listed.contains(&"f"), "these screens have no filter");
         }
-        assert!(!listed.contains(&"f"), "these screens have no filter");
     }
 }

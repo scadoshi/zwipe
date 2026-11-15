@@ -31,6 +31,7 @@ use zwipe_ui::filter;
 use zwipe_ui::filter::draft::SheetConfig;
 use zwipe_ui::generation::{Generation, Ticket};
 use zwipe_ui::screens::deck_list;
+use zwipe_ui::shortcuts::ListLayout;
 use zwipe_ui::telemetry::vocabulary::Screen;
 use zwipe_ui::timing::{QUICK_ADD_DEBOUNCE, QUICK_ADD_MIN_CHARS};
 
@@ -407,7 +408,7 @@ pub fn CommanderMaybeboard() -> Element {
         Some(ScreenKey::Filter) => filter_open.set(true),
         None => {}
     });
-    use_card_row_keys_and(filtered, expanded_card, Some(screen_keys));
+    use_card_row_keys_and(filtered, expanded_card, ListLayout::One, Some(screen_keys));
     // The arrow keys and h, j, k and l move a cursor through the rows.
     use_card_list_cursor();
     let filtered = filtered();

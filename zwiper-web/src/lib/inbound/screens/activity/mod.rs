@@ -16,6 +16,7 @@ use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::http::contracts::suggestions::HttpActivity;
 use zwipe_ui::activity::has_anything;
+use zwipe_ui::shortcuts::ListLayout;
 use zwipe_ui::telemetry::vocabulary::Screen;
 
 use self::sections::{ACTIVITY_TITLE, ActivityRates, ActivityYear, HardPassesPanel, HeatGhost};
@@ -156,7 +157,7 @@ pub fn Activity() -> Element {
                 .collect::<Vec<_>>()
         })
     });
-    use_card_row_keys(pass_cards, expanded_card);
+    use_card_row_keys(pass_cards, expanded_card, ListLayout::One);
     // The arrow keys and h, j, k and l move a cursor through the rows.
     use_card_list_cursor();
 

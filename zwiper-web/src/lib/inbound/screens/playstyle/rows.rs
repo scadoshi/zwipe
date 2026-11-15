@@ -189,7 +189,7 @@ pub fn StaplesPanel(
         StapleColorChips { active_color, colors }
     };
     rsx! {
-        div { class: "web-playstyle-cell web-playstyle-staples",
+        div { class: "web-playstyle-cell web-playstyle-staples", "data-cursor-list": "",
             if wide {
                 div { class: "deck-controls", {filters.clone()} }
             }

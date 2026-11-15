@@ -37,6 +37,7 @@ use zwipe_ui::playstyle::{
     HELD_SIZE, LIST_SIZE, StapleDeck, empty_identity_line, of_identity, shown,
 };
 use zwipe_ui::screens::playstyle as model;
+use zwipe_ui::shortcuts::ListLayout;
 use zwipe_ui::telemetry::vocabulary::Screen;
 
 pub use self::chips::{IdentityPips, ShowIdentityChips};
@@ -113,8 +114,9 @@ pub fn Playstyle() -> Element {
             .chain(staples)
             .collect::<Vec<Card>>()
     });
-    use_card_row_keys(listed_cards, expanded_card);
-    // The arrow keys and h, j, k and l move a cursor through the rows.
+    use_card_row_keys(listed_cards, expanded_card, ListLayout::SideBySide);
+    // The arrow keys and h, j, k and l move a cursor through the rows: h and l cross between
+    // the two lists, each marked as a cursor list.
     use_card_list_cursor();
     let mut is_loading = use_signal(|| true);
     let mut load_failed = use_signal(|| false);
@@ -352,7 +354,7 @@ pub fn Playstyle() -> Element {
                                 }
                             }
                             div { class: "web-playstyle-list",
-                                div { class: "web-playstyle-cell web-playstyle-suggested",
+                                div { class: "web-playstyle-cell web-playstyle-suggested", "data-cursor-list": "",
                                     if wide() {
                                         div { class: "deck-controls", {show_chips.clone()} }
                                     }

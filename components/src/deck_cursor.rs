@@ -17,7 +17,7 @@
 use dioxus::prelude::*;
 use orangui_core::page_keys::GG_WINDOW_MS;
 use uuid::Uuid;
-use zwipe_ui::deck_cards::cursor::{MOVE_KEYS, Move, Snapshot, Stop, move_for};
+use zwipe_ui::deck_cards::cursor::{self, MOVE_KEYS, Move, Snapshot, Stop, Walk, move_for};
 
 use crate::deck_cards_view::StackDetails;
 use crate::keys::{PRESSED_KEY, STACK_DETAILS_CLASS, cursor_guard_js};
@@ -107,7 +107,9 @@ if (!window.__zwipeDeckTrack) {
 ";
 
 /// Registers one page's cursor keys: a move key under the guard, at any width, while the page
-/// draws cards, gathers the cards as drawn and sends `[key, from, columns]`, `from` the
+/// draws cards, gathers the cards as drawn (in columns: the deck page's stacks or paired List
+/// columns, else a screen's lists marked [`LIST_ATTR`] where it has more than one, else one) and
+/// sends `[key, from, columns]`, `from` the
 /// card the move starts at (the hovered card when the mouse moved last, else the card in focus,
 /// else the last cursor), each column `[[id, center_y, in_view], ...]`, `open`: `drawer`
 /// while the details drawer shows, `row` while a List row is open, else empty, and whether the
@@ -138,7 +140,8 @@ const onKey = (e) => {
     const stacked = [...document.querySelectorAll('.deck-stacks-column')];
     const listed = document.querySelector('.deck-list-columns');
     const paired = listed && getComputedStyle(listed).display === 'grid';
-    const holders = stacked.length ? stacked : paired ? [...listed.querySelectorAll(':scope > .deck-list-column')] : [];
+    const lists = [...document.querySelectorAll('[__LIST__]')];
+    const holders = stacked.length ? stacked : paired ? [...listed.querySelectorAll(':scope > .deck-list-column')] : lists.length > 1 ? lists : [];
     const height = window.innerHeight;
     const as = (s) => { const r = box(s).getBoundingClientRect(); return [s.getAttribute('data-row'), r.top + r.height / 2, r.bottom > 0 && r.top < height]; };
     const columns = holders.length ? holders.map((h) => all.filter((s) => h.contains(s)).map(as)) : [all.map(as)];
@@ -149,6 +152,11 @@ const onKey = (e) => {
 window['__zwipeDeckNav__ID__'] = onKey;
 document.addEventListener('keydown', onKey);
 ";
+
+/// The attribute that marks one list of a screen of card lists side by side (Playstyle's
+/// Suggested commanders and Staples): the cursor takes each as a column and walks them as
+/// [`Walk::Lists`], at any width, stacked or side by side.
+pub const LIST_ATTR: &str = "data-cursor-list";
 
 /// Removes one page's cursor keys.
 const NAV_DROP_JS: &str = r"
@@ -250,7 +258,9 @@ const PREVIEW_OFF_JS: &str = "window.__zwipeCursorPreview = false;";
 
 /// The cursor on a screen that lists cards without editing them (the Commander maybeboard,
 /// Activity's Most skipped, Playstyle's lists): the same keys as the deck page over its card rows,
-/// in one column. Enter opens or closes a row, an open row follows the cursor, and, when the last
+/// in one column, or over each list marked [`LIST_ATTR`] as [`Walk::Lists`] walks them, so `h` and
+/// `l` cross to the same place in the other list and `j` and `k` run on from one list into the
+/// next. Enter opens or closes a row, an open row follows the cursor, and, when the last
 /// input was a key, the cursor's card shows its image in the screen's hover stack as hovering its
 /// row does. While a row is open none shows, as an open row shows none, so a move that opens the
 /// next row in its place leaves no image behind.
@@ -261,15 +271,15 @@ pub fn use_card_list_cursor() {
     use_drop(|| {
         document::eval(PREVIEW_OFF_JS);
     });
-    use_deck_cursor(None);
+    use_deck_cursor(None, Walk::Lists);
 }
 
 /// One card as the browser sends it: its id, vertical center and whether it is in view.
 type SentStop = (String, f64, bool);
 
-/// Answers the deck page's cursor keys, as the module describes. `details` is the page's Stacks
-/// reveal and drawer, which follows the cursor while it is open.
-pub(crate) fn use_deck_cursor(details: Option<StackDetails>) {
+/// Answers the deck page's cursor keys, as the module describes, moving as `walk` says. `details`
+/// is the page's Stacks reveal and drawer, which follows the cursor while it is open.
+pub(crate) fn use_deck_cursor(details: Option<StackDetails>, walk: Walk) {
     let id = use_hook(Uuid::new_v4);
     let mut order = use_signal(Vec::<Uuid>::new);
     // Each row move, so a settled opening that a later move overtook does nothing.
@@ -279,6 +289,7 @@ pub(crate) fn use_deck_cursor(details: Option<StackDetails>) {
         let script = NAV_JS
             .replace("__ID__", &id.to_string())
             .replace("__STOPS__", STOP_SELECTOR)
+            .replace("__LIST__", LIST_ATTR)
             .replace("__KEY__", PRESSED_KEY)
             .replace("__MOVES__", &format!("{MOVE_KEYS:?}"))
             .replace("__GUARD__", &cursor_guard_js(STACK_DETAILS_CLASS))
@@ -294,7 +305,7 @@ pub(crate) fn use_deck_cursor(details: Option<StackDetails>) {
                 };
                 let snapshot = snapshot_of(&columns);
                 let from = from.and_then(|from| Uuid::try_parse(&from).ok());
-                let Some(target) = land(&snapshot, from, step, &order.peek()) else {
+                let Some(target) = land(&snapshot, from, step, walk, &order.peek()) else {
                     continue;
                 };
                 order.set(snapshot.order());
@@ -366,14 +377,21 @@ fn snapshot_of(columns: &[Vec<SentStop>]) -> Snapshot {
 }
 
 /// Where `step` from `from` lands: from a card no longer drawn, the card after it in `order` (the
-/// last reading order) that still is, else the one before; else as [`Snapshot::step`] moves.
-fn land(snapshot: &Snapshot, from: Option<Uuid>, step: Move, order: &[Uuid]) -> Option<Uuid> {
+/// last reading order) that still is, else the one before; else as [`cursor::step`] moves as
+/// `walk`.
+fn land(
+    snapshot: &Snapshot,
+    from: Option<Uuid>,
+    step: Move,
+    walk: Walk,
+    order: &[Uuid],
+) -> Option<Uuid> {
     if let Some(gone) = from.filter(|id| !snapshot.order().contains(id))
         && let Some(next) = snapshot.hand_on(gone, order)
     {
         return Some(next);
     }
-    snapshot.step(from, step)
+    cursor::step(snapshot, from, step, walk)
 }
 
 #[cfg(test)]
@@ -437,13 +455,39 @@ mod tests {
         let snapshot = snapshot_of(&[vec![sent(1, 10.0), sent(3, 50.0)]]);
         let order = vec![id(1), id(2), id(3)];
         assert_eq!(
-            land(&snapshot, Some(id(2)), Move::Down, &order),
+            land(&snapshot, Some(id(2)), Move::Down, Walk::Columns, &order),
             Some(id(3))
         );
         assert_eq!(
-            land(&snapshot, Some(id(1)), Move::Down, &order),
+            land(&snapshot, Some(id(1)), Move::Down, Walk::Columns, &order),
             Some(id(3)),
             "a card still drawn moves as usual"
+        );
+    }
+
+    #[test]
+    fn a_screen_s_marked_lists_are_its_columns_and_walk_as_lists() {
+        assert!(
+            NAV_JS.contains("const lists = [...document.querySelectorAll('[__LIST__]')];"),
+            "{NAV_JS}"
+        );
+        assert!(
+            NAV_JS.contains(": lists.length > 1 ? lists : [];"),
+            "two lists or more are columns, at any width; one list is one column: {NAV_JS}"
+        );
+        let snapshot = snapshot_of(&[
+            vec![sent(1, 10.0), sent(2, 50.0), sent(3, 90.0)],
+            vec![sent(11, 30.0)],
+        ]);
+        assert_eq!(
+            land(&snapshot, Some(id(3)), Move::Right, Walk::Lists, &[]),
+            Some(id(11)),
+            "the third commander to the only staple"
+        );
+        assert_eq!(
+            land(&snapshot, Some(id(3)), Move::Down, Walk::Lists, &[]),
+            Some(id(11)),
+            "the last commander on to the first staple"
         );
     }
 
