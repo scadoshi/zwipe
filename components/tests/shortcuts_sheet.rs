@@ -80,7 +80,7 @@ fn with_no_screen_offering_keys_the_sheet_lists_the_keys_every_page_answers() {
         "Move between themes",
         "Pick the theme",
         "Navigation",
-        "In Themes",
+        "In themes",
         "Got it",
     ] {
         assert!(html.contains(text), "{text}: {html}");

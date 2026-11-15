@@ -185,6 +185,13 @@ a.stat-chip {
     --tone-ink: var(--ink-color-money, var(--color-money));
 }
 
+/* A heading as a chip, in the theme's heading accent: a section's title
+   inside a panel, such as a chart's or a shortcuts group's, in sentence case. */
+.stat-chip-heading {
+    --tone: var(--accent-tertiary);
+    --tone-ink: var(--ink-accent-tertiary, var(--accent-tertiary));
+}
+
 /* The outcome tones: met, short of it, failed. */
 .tag-success,
 .stat-chip-success {
@@ -1464,13 +1471,11 @@ html:has(.bottom-sheet.show) body,
     gap: 1rem;
 }
 
+/* A group's heading holds its chip (`stat-chip-heading`). */
 .shortcut-group-title {
     margin: 0 0 0.5rem;
-    font-size: 0.72rem;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--ink-text-muted, var(--text-muted));
+    font-size: inherit;
+    font-weight: inherit;
 }
 
 @media (min-width: 60rem) {

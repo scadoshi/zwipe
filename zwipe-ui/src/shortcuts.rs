@@ -78,7 +78,7 @@ pub fn flow_key(key: &str) -> Option<FlowKey> {
 }
 
 /// The heading over the Printings sheet's own keys.
-pub const IN_PRINTINGS: &str = "In Printings";
+pub const IN_PRINTINGS: &str = "In printings";
 
 /// The Printings sheet's own rows ([`flow_key`]), listed under [`IN_PRINTINGS`] on every screen
 /// with keys that act on a card.
@@ -152,8 +152,8 @@ pub struct ScreenKeys {
 
 /// The sheet's groups for a screen's `keys`, with the keys every page has: Swipe (a swipe screen's
 /// directions lead), Navigation (its moves, the ends, the steps where on, then its open), Card, Page (its tools, then Themes, the
-/// hint, these shortcuts and Esc), In Printings where the screen has keys that act on a card, and
-/// In Themes. A group with no rows is left out.
+/// hint, these shortcuts and Esc), In printings where the screen has keys that act on a card, and
+/// In themes. A group with no rows is left out.
 #[must_use]
 pub fn sheet_groups(keys: ScreenKeys) -> Vec<SheetGroup> {
     let steps: &[SheetRow] = if keys.steps { &STEP_ROWS } else { &[] };
@@ -488,8 +488,8 @@ mod tests {
                     vec!["p", "i", "v", "d", "m", "s", "Shift+S", "-", "+"]
                 ),
                 ("Page", vec!["u", "f", "/", "t", "?", "Shift+H", "Esc"]),
-                ("In Printings", vec!["←", "h", "v", "Enter"]),
-                ("In Themes", vec!["↑", "h", "gg", "Enter"]),
+                ("In printings", vec!["←", "h", "v", "Enter"]),
+                ("In themes", vec!["↑", "h", "gg", "Enter"]),
             ]
         );
     }
@@ -505,8 +505,8 @@ mod tests {
                 ),
                 ("Card", vec!["p", "i", "v", "d"]),
                 ("Page", vec!["f", "t", "?", "Shift+H", "Esc"]),
-                ("In Printings", vec!["←", "h", "v", "Enter"]),
-                ("In Themes", vec!["↑", "h", "gg", "Enter"]),
+                ("In printings", vec!["←", "h", "v", "Enter"]),
+                ("In themes", vec!["↑", "h", "gg", "Enter"]),
             ]
         );
     }
@@ -518,7 +518,7 @@ mod tests {
             vec![
                 ("Navigation", vec!["gg", "Shift+G", "j", "k"]),
                 ("Page", vec!["t", "?", "Shift+H", "Esc"]),
-                ("In Themes", vec!["↑", "h", "gg", "Enter"]),
+                ("In themes", vec!["↑", "h", "gg", "Enter"]),
             ]
         );
     }
@@ -530,7 +530,7 @@ mod tests {
             vec![
                 ("Navigation", vec!["gg", "Shift+G", "j", "k"]),
                 ("Page", vec!["t", "Shift+H", "Esc"]),
-                ("In Themes", vec!["↑", "h", "gg", "Enter"]),
+                ("In themes", vec!["↑", "h", "gg", "Enter"]),
             ]
         );
         let only_hint = vec![SheetGroup::new("Page", [HINT_ROW])];
