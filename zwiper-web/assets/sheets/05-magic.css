@@ -1717,7 +1717,10 @@ i.ms.ms-cost.ms-gp {
     padding: 0.25rem 0 0;
 }
 
-/* Rows space by their own padding, like the deck charts' Roles rows. */
+/* Rows space by their own padding, like the deck charts' Roles rows. The
+   pip, the bar's thickness and the count read --color-bar-pip,
+   --color-bar-thickness, --color-bar-text and --color-bar-count-width, so a
+   host with room can scale them; the defaults are the compact bars. */
 .color-bar-row {
     display: flex;
     align-items: center;
@@ -1727,7 +1730,7 @@ i.ms.ms-cost.ms-gp {
 
 .color-bar-row > .ms {
     flex: 0 0 auto;
-    font-size: 0.85rem;
+    font-size: var(--color-bar-pip, 0.85rem);
 }
 
 /* The deck charts' bar: a blocky track the fill spans at full height. The
@@ -1735,7 +1738,7 @@ i.ms.ms-cost.ms-gp {
    cream background. */
 .color-bar-track {
     flex: 1;
-    height: 0.9rem;
+    height: var(--color-bar-thickness, 0.9rem);
     border-radius: 0.15rem;
     background-color: var(--border-secondary);
     overflow: hidden;
@@ -1749,9 +1752,9 @@ i.ms.ms-cost.ms-gp {
 }
 
 .color-bar-count {
-    flex: 0 0 2.2rem;
+    flex: 0 0 var(--color-bar-count-width, 2.2rem);
     text-align: right;
-    font-size: 0.85rem;
+    font-size: var(--color-bar-text, 0.85rem);
     font-variant-numeric: tabular-nums;
     color: var(--text-primary);
 }
@@ -1761,13 +1764,13 @@ i.ms.ms-cost.ms-gp {
 .color-bar-pip-ghost,
 .skeleton-bar.color-bar-pip-ghost {
     flex: 0 0 auto;
-    width: 1.15rem;
-    height: 1.15rem;
+    width: var(--color-bar-pip-ghost, 1.15rem);
+    height: var(--color-bar-pip-ghost, 1.15rem);
     border-radius: 0.25rem;
 }
 
 .skeleton-bar.color-bar-track {
-    height: 0.9rem;
+    height: var(--color-bar-thickness, 0.9rem);
     border-radius: 0.15rem;
 }
 

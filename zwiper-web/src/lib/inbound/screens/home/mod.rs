@@ -590,4 +590,76 @@ mod tests {
         assert_eq!(route(Destination::Activity), Route::Activity {});
         assert_eq!(route(Destination::Playstyle), Route::Playstyle {});
     }
+
+    /// The rule `selector` opens in `css`, up to its closing brace.
+    fn rule<'css>(css: &'css str, selector: &str) -> &'css str {
+        let start = css
+            .find(&format!("{selector} {{"))
+            .unwrap_or_else(|| panic!("no rule for {selector}"));
+        let rest = &css[start..];
+        &rest[..rest.find('}').unwrap()]
+    }
+
+    #[test]
+    fn side_by_side_the_colors_rows_share_the_panel_s_height_within_bounds() {
+        const WEB_CSS: &str = include_str!("../../../../../assets/web.css");
+        let wide = &WEB_CSS[WEB_CSS
+            .find("@media (min-width: 900px) {\n    /* zite's page from the top")
+            .unwrap()..];
+        let bars = rule(
+            wide,
+            ".web-home-page .web-column > .home-colors > .color-bars",
+        );
+        for want in [
+            "flex: 1 1 auto;",
+            "container-type: size;",
+            "min-height: calc(6 * 1.71rem + 0.35rem);",
+        ] {
+            assert!(bars.contains(want), "{want} in {bars}");
+        }
+        let row = rule(
+            wide,
+            ".web-home-page .web-column > .home-colors .color-bar-row",
+        );
+        for want in [
+            "--color-bar-row: clamp(1.71rem, 100cqh / 6, 2.75rem);",
+            "height: var(--color-bar-row);",
+            "--color-bar-pip: calc(var(--color-bar-row) * 0.85 / 1.71);",
+            "--color-bar-thickness: calc(var(--color-bar-row) * 0.9 / 1.71);",
+            "--color-bar-text: min(calc(var(--color-bar-row) * 0.85 / 1.71), 1.15rem);",
+            "flex: none;",
+        ] {
+            assert!(row.contains(want), "{want} in {row}");
+        }
+    }
+
+    #[test]
+    fn the_color_bars_read_their_sizes_with_today_s_as_the_default() {
+        let magic = components::MAGIC_CSS;
+        for (selector, want) in [
+            (
+                ".color-bar-row > .ms",
+                "font-size: var(--color-bar-pip, 0.85rem);",
+            ),
+            (
+                ".color-bar-track",
+                "height: var(--color-bar-thickness, 0.9rem);",
+            ),
+            (
+                ".color-bar-count",
+                "font-size: var(--color-bar-text, 0.85rem);",
+            ),
+            (
+                ".color-bar-count",
+                "flex: 0 0 var(--color-bar-count-width, 2.2rem);",
+            ),
+            (
+                ".skeleton-bar.color-bar-track",
+                "height: var(--color-bar-thickness, 0.9rem);",
+            ),
+        ] {
+            let found = rule(magic, selector);
+            assert!(found.contains(want), "{want} in {found}");
+        }
+    }
 }

@@ -1630,14 +1630,41 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
         min-height: 0;
     }
 
-    /* Side by side, Colors runs as tall as Decks, its bars at the top and
-       the rest empty panel. Stacked on a phone, each keeps its own height. */
+    /* Side by side, Colors runs as tall as Decks. Stacked on a phone, each
+       keeps its own height. */
     .web-home-page > .web-columns {
         align-items: stretch;
     }
 
     .web-home-page .web-column > .home-colors {
         flex: 1 1 auto;
+    }
+
+    /* The bars take the panel's height under its header, never less than
+       the six compact rows (1.71rem each: a 0.85rem count at the 1.6 line
+       height and the row's padding, over the bars' 0.35rem top padding),
+       and the rows share it evenly from there up to 2.75rem each, centered
+       once they reach it. The pip, the bar and the count scale with the
+       row from the compact bars' sizes at the least row, and the count
+       stops at 1.15rem. */
+    .web-home-page .web-column > .home-colors > .color-bars {
+        flex: 1 1 auto;
+        container-type: size;
+        min-height: calc(6 * 1.71rem + 0.35rem);
+        justify-content: center;
+    }
+
+    .web-home-page .web-column > .home-colors .color-bar-row {
+        --color-bar-row: clamp(1.71rem, 100cqh / 6, 2.75rem);
+        --color-bar-pip: calc(var(--color-bar-row) * 0.85 / 1.71);
+        --color-bar-thickness: calc(var(--color-bar-row) * 0.9 / 1.71);
+        --color-bar-text: min(calc(var(--color-bar-row) * 0.85 / 1.71), 1.15rem);
+        --color-bar-count-width: calc(var(--color-bar-text) * 2.2 / 0.85);
+        --color-bar-pip-ghost: calc(var(--color-bar-row) * 1.15 / 1.71);
+        flex: none;
+        box-sizing: border-box;
+        height: var(--color-bar-row);
+        padding: 0;
     }
 
     /* The recent decks' tiles keep their own size, centered in the panel. */

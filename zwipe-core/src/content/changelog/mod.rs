@@ -53,6 +53,7 @@ pub const UPCOMING: &[Release] = &[Release {
         "Printings opens on the face its card shows, and a Flip or Meld button, or v on the web, turns every printing at once, on the web and in the app",
         "On the web's Playstyle, h, l and the left and right arrows move the keyboard cursor between Suggested commanders and Staples",
         "Flipping or melding a card eases its details to the other face instead of cutting, on the web and in the app",
+        "On the web's Home, the Colors bars grow to fill the panel beside Decks on a wide screen",
     ],
 }];
 
