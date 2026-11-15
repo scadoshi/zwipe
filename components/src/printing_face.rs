@@ -1,6 +1,6 @@
 //! The face every printing in a Printings sheet shows: a two-faced card's front or back, or a
-//! meld half melded or not, turned for all the printings at once by the row's own Flip or Meld
-//! button ([`PrintingFaceButton`]) or by `v` on the web.
+//! meld half melded or not, turned for all the printings at once by the Flip or Meld button in
+//! the sheet's action dock ([`PrintingFaceButton`]) or by `v` on the web.
 //!
 //! The sheet opens on what its row shows: the face the row is on, and melded where the row's
 //! half is melded ([`MeldSource::on`]). Turning it in the sheet leaves the row as it was.
@@ -8,8 +8,9 @@
 use dioxus::prelude::*;
 use zwipe_core::domain::card::Card;
 
-use crate::card_details::{FlipButton, MeldButton};
+use crate::icons::{DockIcon, FLIP};
 use crate::meld::{MeldFetch, MeldSource, MeldToggle};
+use crate::{MELD, data_action};
 
 /// What turning a card's printings does.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -161,25 +162,41 @@ pub fn use_printing_face(
     printing_face
 }
 
-/// The row's own Flip or Meld button for every printing at once: Flip for a two-faced card, the
-/// Meld toggle for a meld half, nothing for a card that does not turn.
+/// The Flip or Meld button for every printing at once, as a button of the sheet's action dock
+/// beside Select: Flip for a two-faced card, the Meld toggle for a meld half, lit while on as the
+/// dock lights a toggle, and nothing for a card that does not turn. With `divided`, a rule follows
+/// it, between it and the dock's next button.
 #[component]
-pub fn PrintingFaceButton(printing_face: PrintingFace) -> Element {
-    match printing_face.turn {
-        FaceTurn::Flip(face_count) => rsx! {
-            FlipButton {
-                face_idx: printing_face.face,
-                current: (printing_face.face)().min(face_count.saturating_sub(1)),
-                face_count,
-                on_face_change: None,
-            }
-        },
-        FaceTurn::Meld => rsx! {
-            MeldButton {
-                on: (printing_face.melded)(),
-                on_toggle: move |()| printing_face.turn(),
-            }
-        },
-        FaceTurn::None => rsx! {},
+pub fn PrintingFaceButton(printing_face: PrintingFace, divided: bool) -> Element {
+    let (label, action, path, pressed) = match printing_face.turn {
+        FaceTurn::Flip(_) => ("Flip", data_action::FLIP, FLIP, None),
+        FaceTurn::Meld => (
+            "Meld",
+            data_action::MELD,
+            MELD,
+            Some((printing_face.melded)()),
+        ),
+        FaceTurn::None => return rsx! {},
+    };
+    rsx! {
+        button {
+            r#type: "button",
+            class: if pressed == Some(true) { "action-dock-btn action-dock-on" } else { "action-dock-btn" },
+            "data-action": action,
+            "aria-label": label,
+            "aria-pressed": pressed.map(|on| on.to_string()),
+            title: label,
+            onclick: move |_| printing_face.turn(),
+            // Enter presses the button and stays off the sheet's pick.
+            onkeydown: move |e: Event<KeyboardData>| {
+                if e.key() == Key::Enter {
+                    e.stop_propagation();
+                }
+            },
+            DockIcon { path }
+        }
+        if divided {
+            span { class: "action-dock-divider" }
+        }
     }
 }

@@ -258,8 +258,17 @@ fn foot_row(html: &str) -> &str {
     row
 }
 
+/// The dock in the sheet's foot row, where Select (Save) sits.
+fn dock(html: &str) -> &str {
+    let row = foot_row(html);
+    let (_, dock) = row
+        .split_once(r#"class="action-dock web-printing-save""#)
+        .unwrap_or_else(|| panic!("a dock in the foot row: {row}"));
+    dock
+}
+
 #[test]
-fn a_two_faced_card_s_sheet_offers_flip_left_of_save() {
+fn a_two_faced_card_s_flip_sits_in_save_s_dock_behind_a_rule() {
     fn app() -> Element {
         let asked = use_signal(Vec::new);
         use_context_provider(|| source(PrintingsFetch::Ready(vec![two_faced()]), asked));
@@ -269,18 +278,46 @@ fn a_two_faced_card_s_sheet_offers_flip_left_of_save() {
         }
     }
     let html = render(app);
-    let row = foot_row(&html);
-    let flip = row
+    let dock = dock(&html);
+    let flip = dock
         .find(r#"data-action="flip""#)
-        .unwrap_or_else(|| panic!("Flip in the foot row: {row}"));
-    let save = row
+        .unwrap_or_else(|| panic!("Flip in the dock: {dock}"));
+    let rule = dock
+        .find(r#"class="action-dock-divider""#)
+        .unwrap_or_else(|| panic!("a rule in the dock: {dock}"));
+    let save = dock
         .find(r#"aria-label="Save""#)
-        .unwrap_or_else(|| panic!("Save in the foot row: {row}"));
-    assert!(flip < save, "Flip left of Save: {row}");
+        .unwrap_or_else(|| panic!("Save in the dock: {dock}"));
     assert!(
-        row.contains(components::icons::FLIP),
-        "the row's own Flip icon: {row}"
+        flip < rule && rule < save,
+        "Flip, the rule, then Save: {dock}"
     );
+    assert_eq!(
+        dock.matches(r#"class="action-dock-btn""#).count(),
+        2,
+        "Flip is a dock button the size of Save: {dock}"
+    );
+    assert!(
+        dock.contains(components::icons::FLIP),
+        "the Flip icon: {dock}"
+    );
+}
+
+#[test]
+fn a_sheet_that_only_looks_docks_flip_alone_with_no_rule() {
+    fn app() -> Element {
+        let asked = use_signal(Vec::new);
+        use_context_provider(|| source(PrintingsFetch::Ready(vec![two_faced()]), asked));
+        let open = use_signal(|| true);
+        rsx! {
+            PrintingSheet { card: two_faced(), open }
+        }
+    }
+    let html = render(app);
+    let dock = dock(&html);
+    assert!(dock.contains(r#"data-action="flip""#), "{dock}");
+    assert!(!dock.contains("action-dock-divider"), "{dock}");
+    assert!(!dock.contains(r#"aria-label="Save""#), "{dock}");
 }
 
 #[test]
@@ -314,9 +351,10 @@ fn a_meld_half_s_sheet_offers_meld() {
         }
     }
     let html = render(app);
-    let row = foot_row(&html);
-    assert!(row.contains(r#"data-action="meld""#), "{row}");
-    assert!(row.contains(r#"aria-pressed="false""#), "off: {row}");
+    let dock = dock(&html);
+    assert!(dock.contains(r#"data-action="meld""#), "{dock}");
+    assert!(dock.contains(r#"aria-pressed="false""#), "off: {dock}");
+    assert!(!dock.contains("action-dock-on"), "unlit: {dock}");
 }
 
 #[test]
@@ -355,8 +393,12 @@ fn a_melded_row_s_sheet_opens_melded_and_melds_every_printing() {
         )),
         "the other printing's melded card is asked for: {html}"
     );
-    let row = foot_row(&html);
-    assert!(row.contains(r#"aria-pressed="true""#), "Meld on: {row}");
+    let dock = dock(&html);
+    assert!(dock.contains(r#"aria-pressed="true""#), "Meld on: {dock}");
+    assert!(
+        dock.contains(r#"class="action-dock-btn action-dock-on""#),
+        "lit as the dock lights a toggle: {dock}"
+    );
 }
 
 #[test]

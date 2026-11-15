@@ -1228,7 +1228,8 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
    From the kit's modal width the printing picker is a large modal over a
    dimmed page, layered over a details sheet as .sheet-over layers the
    narrow picker, with components' cover flow filling it. Under the flow
-   sit the selected printing's set, number and prices and Select. */
+   sit the selected printing's set, number and prices and the dock with
+   Select. */
 .web-flow {
     display: contents;
 }
@@ -1292,12 +1293,6 @@ html body:not(:has(:is(.action-dock, .swipe-bottom-row, .web-dock-pair):not(.bot
     /* The printing's chips share the row with Select, wrapping as one. */
     .web-flow-info > .printing-chips {
         display: contents;
-    }
-
-    /* Select's ghost, its button's size. */
-    .web-flow-ghost-select {
-        width: 2.2rem;
-        border-radius: 0.5rem;
     }
 }
 

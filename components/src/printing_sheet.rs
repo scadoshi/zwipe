@@ -25,7 +25,7 @@ use zwipe_ui::shortcuts::{self, FlowKey};
 use crate::icons::{CHECK, DockIcon};
 use crate::keys::use_sheet_focus_handing_back;
 use crate::media::{KIT_MODAL_PX, use_min_width};
-use crate::printing_face::{PrintingFace, PrintingFaceButton, use_printing_face};
+use crate::printing_face::{FaceTurn, PrintingFace, PrintingFaceButton, use_printing_face};
 use crate::{
     BottomSheet, CoverFlow, IMAGE_ICON, LoadFailed, SheetFrame, SheetWide, use_overlay_back_action,
 };
@@ -161,6 +161,7 @@ pub fn PrintingSheet(
     let changed = count > 0 && at != initial();
     let visible = all.get(at).cloned();
     let printing_face = use_printing_face(&card, face, open, &all);
+    let turns = printing_face.turn != FaceTurn::None;
     let shown = printing_face.shown(&all);
     let shown_face = (printing_face.face)();
 
@@ -282,27 +283,28 @@ pub fn PrintingSheet(
                                 PrintingChipsGhost {}
                             }
                             div { class: "web-printing-foot-row",
-                                if !loading {
-                                    PrintingFaceButton { printing_face }
-                                }
                                 if loading && !read_only {
                                     div { class: "action-dock web-printing-save",
                                         span { class: "skeleton-bar skeleton-chip web-printing-save-ghost" }
                                     }
-                                } else if !read_only {
+                                } else if !loading && (!read_only || turns) {
+                                    // Flip or Meld, then a rule, then Save.
                                     div { class: "action-dock web-printing-save",
-                                        button {
-                                            class: "action-dock-btn",
-                                            "aria-label": "Save",
-                                            disabled: !changed,
-                                            onclick: move |_| save.call(()),
-                                            // Enter presses the button and stays off the body's pick.
-                                            onkeydown: move |e: Event<KeyboardData>| {
-                                                if e.key() == Key::Enter {
-                                                    e.stop_propagation();
-                                                }
-                                            },
-                                            DockIcon { path: CHECK }
+                                        PrintingFaceButton { printing_face, divided: !read_only }
+                                        if !read_only {
+                                            button {
+                                                class: "action-dock-btn",
+                                                "aria-label": "Save",
+                                                disabled: !changed,
+                                                onclick: move |_| save.call(()),
+                                                // Enter presses the button and stays off the body's pick.
+                                                onkeydown: move |e: Event<KeyboardData>| {
+                                                    if e.key() == Key::Enter {
+                                                        e.stop_propagation();
+                                                    }
+                                                },
+                                                DockIcon { path: CHECK }
+                                            }
                                         }
                                     }
                                 }
@@ -416,22 +418,29 @@ fn CoverFlowSheet(
                                 div { class: "web-flow-info",
                                     PrintingChipsGhost {}
                                     if !read_only {
-                                        span { class: "skeleton-bar skeleton-chip web-flow-ghost-select" }
+                                        div { class: "action-dock web-printing-save",
+                                            span { class: "skeleton-bar skeleton-chip web-printing-save-ghost" }
+                                        }
                                     }
                                 }
                             } else if let Some(card) = selected {
                                 div { class: "web-flow-info",
                                     PrintingChips { card, at, count }
-                                    PrintingFaceButton { printing_face }
-                                    if !read_only {
-                                        button {
-                                            r#type: "button",
-                                            class: "btn-action btn-icon web-flow-select",
-                                            "aria-label": "Select",
-                                            title: "Select",
-                                            disabled: !changed,
-                                            onclick: move |_| on_select.call(()),
-                                            DockIcon { path: CHECK }
+                                    // Flip or Meld, then a rule, then Select.
+                                    if !read_only || printing_face.turn != FaceTurn::None {
+                                        div { class: "action-dock web-printing-save",
+                                            PrintingFaceButton { printing_face, divided: !read_only }
+                                            if !read_only {
+                                                button {
+                                                    r#type: "button",
+                                                    class: "action-dock-btn web-flow-select",
+                                                    "aria-label": "Select",
+                                                    title: "Select",
+                                                    disabled: !changed,
+                                                    onclick: move |_| on_select.call(()),
+                                                    DockIcon { path: CHECK }
+                                                }
+                                            }
                                         }
                                     }
                                 }

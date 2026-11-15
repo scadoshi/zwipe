@@ -219,13 +219,14 @@ pub(crate) fn PrintingSheet(
                 // printing it opened on.
                 if several && printing_face.turn != FaceTurn::None && !shows_save {
                     div { class: "action-dock action-dock-right sheet-dock",
-                        PrintingFaceButton { printing_face }
+                        PrintingFaceButton { printing_face, divided: false }
                     }
                 }
                 if shows_save {
                     div { class: "action-dock action-dock-right sheet-dock",
+                        // Flip or Meld, then a rule, then Save.
                         if several {
-                            PrintingFaceButton { printing_face }
+                            PrintingFaceButton { printing_face, divided: true }
                         }
                         DockAction {
                             label: model::SAVE,
