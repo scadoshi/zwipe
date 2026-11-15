@@ -4,7 +4,7 @@
 //! All card data originates from the Scryfall API and is synced to the local database
 //! for fast querying.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::future::Future;
 
 use chrono::{DateTime, Utc};
@@ -14,8 +14,11 @@ use zwipe_core::domain::card::oracle_tag::OracleTag;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::card::search_card::card_filter::CardQuery;
 
+use crate::domain::card::models::printing_removal::{
+    Printing, References, RemovalCounts, RemovalMode, RemovalPlan, RemovalReport, Survivors,
+};
 use crate::domain::card::models::search_card::error::SearchCardsError;
-use crate::domain::card::models::zervice_metrics::ZerviceMetrics;
+use crate::domain::card::models::zervice_metrics::{SyncedCards, ZerviceMetrics};
 use crate::domain::card::requests::create_card::CreateCardError;
 use crate::domain::card::requests::get_artists::GetArtistsError;
 use crate::domain::card::requests::get_card::GetCardError;
@@ -116,6 +119,34 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// Must be called after any operation that changes `scryfall_data` or `card_profiles`
     /// membership (e.g., after Scryfall sync + classification).
     fn refresh_latest_cards(&self) -> impl Future<Output = anyhow::Result<()>> + Send;
+
+    /// Every stored printing, as the removal plan reads it.
+    fn fetch_stored_printings(&self) -> impl Future<Output = anyhow::Result<Vec<Printing>>> + Send;
+
+    /// The cheapest regular printing of each of `oracle_ids`, by the same pick
+    /// [`fetch_cheapest_printings`](Self::fetch_cheapest_printings) makes, and the printing
+    /// `latest_cards` would show for each, both among printings not in `removed`.
+    fn fetch_printing_survivors(
+        &self,
+        oracle_ids: &[uuid::Uuid],
+        removed: &[uuid::Uuid],
+    ) -> impl Future<Output = anyhow::Result<Survivors>> + Send;
+
+    /// What points at each of `ids`: deck card rows and command zone slots. An id nothing
+    /// references is left out.
+    fn fetch_printing_references(
+        &self,
+        ids: &[uuid::Uuid],
+    ) -> impl Future<Output = anyhow::Result<HashMap<uuid::Uuid, References>>> + Send;
+
+    /// Applies `plan` in one transaction per batch: logs each removal in `removed_printings`,
+    /// moves every deck reference to a logged printing onto its replacement (stale ones an older
+    /// client wrote since included), then deletes each printing nothing still references, with its
+    /// card profile.
+    fn apply_printing_removals(
+        &self,
+        plan: &RemovalPlan,
+    ) -> impl Future<Output = anyhow::Result<RemovalCounts>> + Send;
 
     /// Refreshes the `card_signal_rollup` materialized view (pooled per-card
     /// suggestion signal feeding the default synergy ordering).
@@ -447,11 +478,28 @@ pub trait CardService: Clone + Send + Sync + 'static {
         scryfall_data: ScryfallData,
     ) -> impl Future<Output = Result<Card, CreateCardError>> + Send;
 
-    /// Syncs database with Scryfall bulk data.
+    /// Syncs database with Scryfall bulk data, returning the run's metrics and every printing id
+    /// the bulk file listed.
     fn scryfall_sync(
         &self,
         bulk_endpoint: BulkEndpoint,
-    ) -> impl Future<Output = anyhow::Result<ZerviceMetrics>> + Send;
+    ) -> impl Future<Output = anyhow::Result<SyncedCards>> + Send;
+
+    /// Removes the printings Scryfall deleted (`zwipe-context ideas/sync_remove_deleted_printings.md`):
+    /// every stored printing `bulk` (the ids of a complete bulk file) no longer lists, after its deck
+    /// references move to its card's cheapest regular survivor, else its preferred one. A deck-held
+    /// card with no other printing is kept and reported. [`RemovalMode::Preview`] computes the plan
+    /// and changes nothing. Running it again with the same file changes nothing more.
+    ///
+    /// # Errors
+    ///
+    /// An empty `bulk`, which is no file at all, or a database failure; an applied batch that
+    /// fails rolls back whole.
+    fn remove_deleted_printings(
+        &self,
+        bulk: &HashSet<uuid::Uuid>,
+        mode: RemovalMode,
+    ) -> impl Future<Output = anyhow::Result<RemovalReport>> + Send;
 
     /// Derives `card_roles` from Oracle Tags (18 subtrees + Tokens via
     /// `all_parts`), then merges the 4 heuristic stragglers (Pump/Stax/Protection/

@@ -1,4 +1,5 @@
-//! zerver-admin: account changes made from the server only, never from the app.
+//! zerver-admin: account changes made from the server only, never from the app, and a preview of
+//! the nightly printing removal.
 //!
 //! Every command names an account by its exact username, its id or its exact email, and goes
 //! through zerver's own services, as the app's requests do. Each one that runs writes an
@@ -19,11 +20,15 @@
 //! - `delete <account>` deletes the account and everything it owns, as the user's own delete does.
 //! - `change-email <account> <new-email> [--reply-to <address>]` switches the address at once,
 //!   mails the new one a verification link and tells the old one.
+//! - `removed-printings` downloads Scryfall's `default_cards` bulk file and prints what zervice's
+//!   printing removal would do with it: each printing it would remove, where its deck references
+//!   would move, and each deck-held card it would keep. It changes nothing.
 //!
 //! A command that takes something away asks for the account's username to be typed back before
 //! it acts; `--yes` skips that and `--dry-run` says what it would do and changes nothing. An error
 //! prints as one `error:` line with its causes and exits non-zero.
 
+use std::collections::HashSet;
 use std::io::{self, BufRead, Write};
 use std::process::ExitCode;
 use std::sync::Arc;
@@ -33,12 +38,15 @@ use clap::{Args, Parser, Subcommand};
 use zwipe::config::Config;
 use zwipe::domain::auth::models::account_ref::AccountRef;
 use zwipe::domain::auth::ports::AuthService;
+use zwipe::domain::card::models::printing_removal::RemovalMode;
+use zwipe::domain::card::ports::CardService;
 use zwipe::domain::user::models::account_summary::AccountSummary;
-use zwipe::domain::{auth, metrics, user};
+use zwipe::domain::{auth, card, metrics, user};
 use zwipe::inbound::admin::{self, NoticeOutcome, RenameNotice};
+use zwipe::inbound::external::scryfall::bulk::BulkEndpoint;
 use zwipe::outbound::resend::Resend;
 use zwipe::outbound::sqlx::postgres::Postgres;
-use zwipe::wiring::{Auth, Metrics, Users};
+use zwipe::wiring::{Auth, Cards, Metrics, Users};
 use zwipe_core::domain::Email;
 use zwipe_core::domain::site::SUPPORT_EMAIL;
 use zwipe_core::domain::user::User;
@@ -72,6 +80,8 @@ enum Command {
     Delete(DestructiveArgs),
     /// Switch an account's email at once, verify the new one and tell the old one
     ChangeEmail(ChangeEmailArgs),
+    /// Print what the nightly printing removal would do with today's bulk file; changes nothing
+    RemovedPrintings,
 }
 
 /// A command that names one account.
@@ -331,6 +341,8 @@ struct Services {
     users: Users,
     /// The audit and admin action logs.
     metrics: Metrics,
+    /// The card catalog, for the printing removal's preview.
+    cards: Cards,
     /// The server's support address, the default reply-to.
     support: Email,
 }
@@ -359,6 +371,7 @@ impl Services {
         Ok(Self {
             auth,
             users: user::services::Service::new(db.clone()),
+            cards: card::services::Service::new(db.clone()),
             metrics: metrics::services::Service::new(db),
             support,
         })
@@ -474,7 +487,32 @@ async fn run(command: Command) -> anyhow::Result<()> {
                 ));
             }
         }
+        Command::RemovedPrintings => preview_removed_printings(&s.cards).await?,
     }
+    Ok(())
+}
+
+/// `removed-printings`: downloads today's `default_cards` bulk file and prints what zervice's
+/// printing removal would do with it, changing nothing.
+///
+/// # Errors
+///
+/// A failed download or parse, or a database failure.
+async fn preview_removed_printings(cards: &Cards) -> anyhow::Result<()> {
+    report("downloading Scryfall's default_cards bulk file");
+    let bulk = BulkEndpoint::DefaultCards
+        .fetch_cards()
+        .await
+        .context("downloading the bulk file")?;
+    let ids: HashSet<uuid::Uuid> = bulk.iter().map(|sd| sd.id).collect();
+    report(&format!("the bulk file lists {} printing(s)", ids.len()));
+    let preview = cards
+        .remove_deleted_printings(&ids, RemovalMode::Preview)
+        .await?;
+    for line in preview.plan.lines() {
+        report(&line);
+    }
+    report("preview only: nothing changed");
     Ok(())
 }
 
@@ -523,7 +561,8 @@ mod tests {
             | Command::SignOutAll(_)
             | Command::ResendVerification(_)
             | Command::Delete(_)
-            | Command::ChangeEmail(_)) => Err(clap::Error::raw(
+            | Command::ChangeEmail(_)
+            | Command::RemovedPrintings) => Err(clap::Error::raw(
                 ErrorKind::InvalidSubcommand,
                 format!("not a rename: {other:?}"),
             )),
@@ -562,6 +601,15 @@ mod tests {
     #[test]
     fn the_command_line_is_well_formed() {
         Cli::command().debug_assert();
+    }
+
+    #[test]
+    fn removed_printings_takes_no_arguments() {
+        assert!(matches!(
+            command(&["removed-printings"]),
+            Ok(Command::RemovedPrintings)
+        ));
+        assert!(command(&["removed-printings", "--yes"]).is_err());
     }
 
     #[test]

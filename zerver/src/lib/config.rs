@@ -38,6 +38,10 @@ const RESEND_EMAIL_FROM_KEY: &str = "RESEND_EMAIL_FROM";
 /// Environment variable key for the log file directory.
 const LOG_DIR_KEY: &str = "LOG_DIR";
 const HEALTHCHECK_PING_URL_KEY: &str = "HEALTHCHECK_PING_URL";
+/// `on` lets zervice remove the printings Scryfall deleted; anything else, it only logs its plan.
+const PRINTING_REMOVAL_KEY: &str = "PRINTING_REMOVAL";
+/// `true` makes a zervice run preview its changes instead of writing them.
+const ZERVICE_DRY_RUN_KEY: &str = "ZERVICE_DRY_RUN";
 
 /// Default log directory on production servers.
 const LOG_DIR_DEFAULT: &str = "/var/log/zwipe";
@@ -262,6 +266,14 @@ pub struct ZerviceConfig {
     /// silence-based on the receiving side; the `OnFailure=` email covers
     /// "ran and failed", this covers "never ran at all".
     pub healthcheck_ping_url: Option<String>,
+
+    /// Whether the printing removal applies its plan (`PRINTING_REMOVAL=on`). Off by default: the
+    /// step logs what it would remove until Scotty has read a preview and switches it on.
+    pub printing_removal: bool,
+
+    /// Whether the run is a dry run (`ZERVICE_DRY_RUN=true`): its steps preview their changes and
+    /// write none, whatever `PRINTING_REMOVAL` says.
+    pub dry_run: bool,
 }
 
 /// Redacted: the database URL carries its password, and the ping URL's path
@@ -276,6 +288,8 @@ impl std::fmt::Debug for ZerviceConfig {
                 "healthcheck_ping_url",
                 &self.healthcheck_ping_url.as_ref().map(|_| "REDACTED"),
             )
+            .field("printing_removal", &self.printing_removal)
+            .field("dry_run", &self.dry_run)
             .finish()
     }
 }
@@ -296,13 +310,23 @@ impl ZerviceConfig {
         let rust_log = env_var_by_key(RUST_LOG_KEY)?;
         let log_dir = std::env::var(LOG_DIR_KEY).unwrap_or_else(|_| LOG_DIR_DEFAULT.to_string());
         let healthcheck_ping_url = std::env::var(HEALTHCHECK_PING_URL_KEY).ok();
+        let printing_removal = setting_is(PRINTING_REMOVAL_KEY, "on");
+        let dry_run = setting_is(ZERVICE_DRY_RUN_KEY, "true");
         Ok(Self {
             database_url,
             rust_log,
             log_dir,
             healthcheck_ping_url,
+            printing_removal,
+            dry_run,
         })
     }
+}
+
+/// Whether the environment variable `key` is set to `on_value`, in any case and without
+/// surrounding spaces. Unset or anything else is `false`, the safe side for a switch that writes.
+fn setting_is(key: &str, on_value: &str) -> bool {
+    std::env::var(key).is_ok_and(|value| value.trim().eq_ignore_ascii_case(on_value))
 }
 
 /// Retrieves an environment variable by key with a descriptive error on failure.

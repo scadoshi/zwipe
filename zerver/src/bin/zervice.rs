@@ -5,6 +5,7 @@ use tracing_subscriber::EnvFilter;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use zwipe::config::ZerviceConfig;
+use zwipe::domain::card::models::printing_removal::RemovalMode;
 use zwipe::domain::card::ports::CardService;
 use zwipe::domain::upkeep::ports::UpkeepService;
 use zwipe::domain::{card, upkeep};
@@ -72,11 +73,53 @@ async fn main() -> anyhow::Result<()> {
     let mut failures = 0u32;
 
     tracing::info!("step 1/5 card sync (default_cards): starting");
-    match card_service.scryfall_sync(BulkEndpoint::DefaultCards).await {
-        Ok(_) => tracing::info!("step 1/5 card sync: ok"),
+    let synced = match card_service.scryfall_sync(BulkEndpoint::DefaultCards).await {
+        Ok(synced) => {
+            tracing::info!("step 1/5 card sync: ok");
+            Some(synced)
+        }
         Err(e) => {
             failures = failures.saturating_add(1);
             tracing::error!("step 1/5 card sync FAILED (continuing): {e:#}");
+            None
+        }
+    };
+
+    // Only a complete bulk file says which printings Scryfall deleted, so the removal runs only
+    // when step 1 downloaded and parsed it in full.
+    let mode = RemovalMode::of(config.printing_removal, config.dry_run);
+    match synced {
+        Some(synced) => {
+            tracing::info!("step 1b/5 printing removal ({mode:?}): starting");
+            match card_service
+                .remove_deleted_printings(&synced.printing_ids, mode)
+                .await
+            {
+                Ok(report) => {
+                    for line in report.plan.lines() {
+                        tracing::info!("step 1b/5 printing removal: {line}");
+                    }
+                    if let Some(counts) = report.counts {
+                        tracing::info!(
+                            "step 1b/5 printing removal: removed {}, moved {} deck card(s) and {} slot(s)",
+                            counts.removed,
+                            counts.remapped_deck_cards,
+                            counts.remapped_slots
+                        );
+                    } else {
+                        tracing::info!(
+                            "step 1b/5 printing removal: preview only, nothing changed (PRINTING_REMOVAL=on and no ZERVICE_DRY_RUN applies it)"
+                        );
+                    }
+                }
+                Err(e) => {
+                    failures = failures.saturating_add(1);
+                    tracing::error!("step 1b/5 printing removal FAILED (continuing): {e:#}");
+                }
+            }
+        }
+        None => {
+            tracing::warn!("step 1b/5 printing removal: skipped, the card sync did not complete");
         }
     }
 

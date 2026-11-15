@@ -2,10 +2,22 @@
 //!
 //! Tracks progress, errors, and outcomes of Scryfall bulk data sync operations.
 
+use std::collections::HashSet;
+
 use anyhow::anyhow;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+/// A finished card sync: its metrics, and the id of every printing the bulk file listed, which
+/// the printing removal diffs the database against.
+#[derive(Debug, Clone)]
+pub struct SyncedCards {
+    /// The run's metrics, as recorded.
+    pub metrics: ZerviceMetrics,
+    /// Every printing id in the complete bulk file.
+    pub printing_ids: HashSet<Uuid>,
+}
 
 /// Share of the intended cards a sync must upsert to count as a partial success.
 const PARTIAL_SUCCESS_SHARE: f64 = 0.7;

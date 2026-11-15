@@ -458,6 +458,9 @@ impl DeckRepository for Postgres {
             return Err(UpdateDeckProfileError::Forbidden);
         }
         let mut tx = self.pool.begin().await?;
+        // A slot an older client sets to a printing zervice removed takes its replacement.
+        let translated = current_slots(&mut tx, request).await?;
+        let request = &translated;
         let mut qb = QueryBuilder::new("UPDATE decks SET ");
         let mut sep = qb.separated(", ");
         if let Some(name) = &request.name {
@@ -566,6 +569,10 @@ impl DeckRepository for Postgres {
         if owned.is_none() {
             return Err(UpdateDeckCardError::Forbidden);
         }
+        // A printing zervice removed, which an older client may still name the row by or swap to,
+        // stands for its replacement.
+        let translated = current_card_request(&mut tx, request).await?;
+        let request = &translated;
         if let Some(new_id) = request.new_scryfall_data_id {
             // A printing swap stays within the card: the row keeps its
             // oracle_id, so a printing of another card would break the
@@ -1264,11 +1271,14 @@ impl DeckRepository for Postgres {
             return Err(DeleteDeckCardError::Forbidden);
         }
         let mut tx = self.pool.begin().await?;
+        // A card an older client names by a printing zervice removed is the row its replacement
+        // holds.
+        let card_id = current_printing(&mut *tx, request.scryfall_data_id).await?;
         let deleted = query!(
             "DELETE FROM deck_cards WHERE deck_id = $1 AND scryfall_data_id = $2
              RETURNING oracle_id",
             request.deck_id,
-            request.scryfall_data_id
+            card_id
         )
         .fetch_optional(&mut *tx)
         .await?;
@@ -1585,6 +1595,72 @@ fn exceeds_card_limit(card_count: i64, adding: i64, card_limit: i64) -> bool {
 /// the `overlap` already in the deck. `None` when the total overflows `i64`.
 fn add_mode_total(card_count: i64, overlap: i64, import_total: i64) -> Option<i64> {
     card_count.checked_sub(overlap)?.checked_add(import_total)
+}
+
+/// `request` with each slot an older client sets to a printing zervice removed set to its
+/// replacement instead.
+async fn current_slots(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    request: &UpdateDeckProfile,
+) -> Result<UpdateDeckProfile, sqlx::Error> {
+    let mut slots = [
+        request.commander_id,
+        request.partner_commander_id,
+        request.background_id,
+        request.signature_spell_id,
+    ];
+    for slot in &mut slots {
+        if let Some(Some(id)) = slot {
+            *id = current_printing(&mut **tx, *id).await?;
+        }
+    }
+    let [
+        commander_id,
+        partner_commander_id,
+        background_id,
+        signature_spell_id,
+    ] = slots;
+    Ok(UpdateDeckProfile {
+        commander_id,
+        partner_commander_id,
+        background_id,
+        signature_spell_id,
+        ..request.clone()
+    })
+}
+
+/// `request` with the row it names and the printing it swaps to each set to the replacement when
+/// an older client names a printing zervice removed.
+async fn current_card_request(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    request: &UpdateDeckCard,
+) -> Result<UpdateDeckCard, sqlx::Error> {
+    let new_scryfall_data_id = match request.new_scryfall_data_id {
+        Some(id) => Some(current_printing(&mut **tx, id).await?),
+        None => None,
+    };
+    Ok(UpdateDeckCard {
+        scryfall_data_id: current_printing(&mut **tx, request.scryfall_data_id).await?,
+        new_scryfall_data_id,
+        ..request.clone()
+    })
+}
+
+/// The printing `id` stands for now: the live replacement `removed_printings` logs for a printing
+/// zervice removed (`zwipe-context ideas/sync_remove_deleted_printings.md`), which an older client
+/// may still name, else `id` itself.
+async fn current_printing<'e, E: sqlx::PgExecutor<'e>>(
+    executor: E,
+    id: uuid::Uuid,
+) -> Result<uuid::Uuid, sqlx::Error> {
+    let replacement: Option<Option<uuid::Uuid>> = query_scalar(
+        "SELECT rp.replacement_id FROM removed_printings rp WHERE rp.id = $1 \
+         AND EXISTS (SELECT 1 FROM scryfall_data sd WHERE sd.id = rp.replacement_id)",
+    )
+    .bind(id)
+    .fetch_optional(executor)
+    .await?;
+    Ok(replacement.flatten().unwrap_or(id))
 }
 
 #[cfg(test)]

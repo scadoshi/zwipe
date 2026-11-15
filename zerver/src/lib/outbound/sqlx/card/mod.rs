@@ -5,6 +5,7 @@ pub mod error;
 pub mod helpers;
 pub mod models;
 pub mod oracle_tag;
+mod printing_removal;
 pub mod zervice_metrics;
 
 use std::collections::HashMap;
@@ -27,6 +28,9 @@ use zwipe_core::domain::deck::requests::import_deck_cards;
 use zwipe_core::domain::deck::tag_profile::{PROFILE_EXCLUDED_TAG_PREFIX, PROFILE_TAG_LIMIT};
 
 use crate::domain::card::models::helpers::SleeveCardProfile;
+use crate::domain::card::models::printing_removal::{
+    Printing, References, RemovalCounts, RemovalPlan, Survivors,
+};
 use crate::domain::card::models::search_card::error::SearchCardsError;
 use crate::domain::card::models::zervice_metrics::ZerviceMetrics;
 use crate::domain::card::ports::{CardRepository, DeckServeContext};
@@ -406,6 +410,37 @@ impl CardRepository for MyPostgres {
         let zervice_metrics: ZerviceMetrics = database_zervice_metrics.try_into()?;
         tx.commit().await?;
         Ok(zervice_metrics)
+    }
+
+    async fn fetch_stored_printings(&self) -> anyhow::Result<Vec<Printing>> {
+        printing_removal::stored(&self.pool)
+            .await
+            .context("reading the stored printings")
+    }
+
+    async fn fetch_printing_survivors(
+        &self,
+        oracle_ids: &[uuid::Uuid],
+        removed: &[uuid::Uuid],
+    ) -> anyhow::Result<Survivors> {
+        printing_removal::survivors(&self.pool, oracle_ids, removed)
+            .await
+            .context("reading the surviving printings")
+    }
+
+    async fn fetch_printing_references(
+        &self,
+        ids: &[uuid::Uuid],
+    ) -> anyhow::Result<HashMap<uuid::Uuid, References>> {
+        printing_removal::references(&self.pool, ids)
+            .await
+            .context("reading what references the removed printings")
+    }
+
+    async fn apply_printing_removals(&self, plan: &RemovalPlan) -> anyhow::Result<RemovalCounts> {
+        printing_removal::apply(&self.pool, plan)
+            .await
+            .context("removing the deleted printings")
     }
 
     async fn refresh_latest_cards(&self) -> anyhow::Result<()> {
@@ -2057,22 +2092,14 @@ impl CardRepository for MyPostgres {
         if oracle_ids.is_empty() {
             return Ok(vec![]);
         }
-        // The USD price is a decimal string; one that won't parse as a number
-        // is treated as no price. A USD price under a tenth of the printing's
-        // EUR price reads as a bad figure and that printing is skipped; with no
-        // EUR price the USD price stands. CASE keeps the casts behind the checks.
+        // The pick the printing removal shares (`printing_removal::cheapest_regular_filter`).
         let sql = format!(
             "SELECT DISTINCT ON (sd.oracle_id) sd.* FROM scryfall_data sd \
              JOIN card_profiles cp ON sd.id = cp.scryfall_data_id \
-             WHERE sd.oracle_id = ANY($1) AND {IMPORTABLE_PRINTING} \
-               AND sd.lang = 'en' AND NOT sd.digital AND NOT sd.oversized \
-               AND NOT sd.promo AND 'nonfoil' = ANY(sd.finishes) \
-               AND sd.prices->>'usd' ~ '^[0-9]+(\\.[0-9]+)?$' \
-               AND CASE WHEN sd.prices->>'eur' ~ '^[0-9]+(\\.[0-9]+)?$' \
-                   THEN (sd.prices->>'usd')::numeric >= (sd.prices->>'eur')::numeric / 10 \
-                   ELSE true END \
-             ORDER BY sd.oracle_id, (sd.prices->>'usd')::numeric, \
-                      sd.released_at DESC, sd.id"
+             WHERE sd.oracle_id = ANY($1) AND {} \
+             ORDER BY sd.oracle_id, {}",
+            printing_removal::cheapest_regular_filter(),
+            printing_removal::CHEAPEST_REGULAR_ORDER
         );
         // Built from string constants only; every value is bound.
         let db_rows: Vec<DatabaseScryfallData> = query_as(sqlx::AssertSqlSafe(sql))

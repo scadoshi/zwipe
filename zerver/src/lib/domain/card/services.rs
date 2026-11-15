@@ -1,4 +1,8 @@
+use std::collections::HashSet;
+
+use anyhow::bail;
 use chrono::{DateTime, Utc};
+use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::card_profile::CardProfile;
 use zwipe_core::domain::card::card_role::{self, CardRole};
@@ -6,8 +10,9 @@ use zwipe_core::domain::card::oracle_tag::OracleTag;
 use zwipe_core::domain::card::scryfall_data::ScryfallData;
 use zwipe_core::domain::card::search_card::card_filter::CardQuery;
 
+use crate::domain::card::models::printing_removal::{self, RemovalMode, RemovalReport};
 use crate::domain::card::models::search_card::error::SearchCardsError;
-use crate::domain::card::models::zervice_metrics::{self, ZerviceMetrics};
+use crate::domain::card::models::zervice_metrics::{self, SyncedCards, ZerviceMetrics};
 use crate::domain::card::ports::{CardRepository, CardService};
 use crate::domain::card::requests::create_card::CreateCardError;
 use crate::domain::card::requests::get_artists::GetArtistsError;
@@ -85,7 +90,7 @@ impl<R: CardRepository> CardService for Service<R> {
         self.repo.upsert(&scryfall_data).await
     }
 
-    async fn scryfall_sync(&self, bulk_endpoint: BulkEndpoint) -> anyhow::Result<ZerviceMetrics> {
+    async fn scryfall_sync(&self, bulk_endpoint: BulkEndpoint) -> anyhow::Result<SyncedCards> {
         tracing::info!(
             "performing scryfall sync with {}",
             bulk_endpoint.to_snake_case()
@@ -100,7 +105,40 @@ impl<R: CardRepository> CardService for Service<R> {
         zervice_metrics.mark_as_completed();
         let zervice_metrics = self.repo.record_zervice_metrics(&zervice_metrics).await?;
         tracing::info!("sync complete: {}", zervice_metrics);
-        Ok(zervice_metrics)
+        Ok(SyncedCards {
+            metrics: zervice_metrics,
+            printing_ids: scryfall_data.iter().map(|sd| sd.id).collect(),
+        })
+    }
+
+    async fn remove_deleted_printings(
+        &self,
+        bulk: &HashSet<Uuid>,
+        mode: RemovalMode,
+    ) -> anyhow::Result<RemovalReport> {
+        if bulk.is_empty() {
+            bail!("the bulk file listed no printings; removing nothing");
+        }
+        let stored = self.repo.fetch_stored_printings().await?;
+        let gone = printing_removal::gone(&stored, bulk);
+        let removed: Vec<Uuid> = gone.iter().map(|p| p.id).collect();
+        let oracles: Vec<Uuid> = gone
+            .iter()
+            .filter_map(|p| p.oracle_id)
+            .collect::<HashSet<Uuid>>()
+            .into_iter()
+            .collect();
+        let survivors = self
+            .repo
+            .fetch_printing_survivors(&oracles, &removed)
+            .await?;
+        let references = self.repo.fetch_printing_references(&removed).await?;
+        let plan = printing_removal::plan(gone, &survivors, &references);
+        let counts = match mode {
+            RemovalMode::Apply => Some(self.repo.apply_printing_removals(&plan).await?),
+            RemovalMode::Preview => None,
+        };
+        Ok(RemovalReport { plan, counts })
     }
 
     async fn derive_card_categories(&self, batch_size: usize) -> anyhow::Result<(u64, usize)> {
