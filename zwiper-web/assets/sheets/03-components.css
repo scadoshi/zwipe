@@ -376,8 +376,10 @@ a.stat-chip {
     transition: border-color 0.15s;
 }
 
-.nav-toggle:hover {
-    border-color: var(--accent-primary);
+@media (hover: hover) {
+    .nav-toggle:hover {
+        border-color: var(--accent-primary);
+    }
 }
 
 .nav-toggle:active,
@@ -759,10 +761,12 @@ a.nav-dropdown-item {
     text-decoration: none;
 }
 
-.nav-dropdown-item:hover,
-a.nav-dropdown-item:visited:hover {
-    background-color: var(--border-primary);
-    color: var(--text-primary);
+@media (hover: hover) {
+    .nav-dropdown-item:hover,
+    a.nav-dropdown-item:visited:hover {
+        background-color: var(--border-primary);
+        color: var(--text-primary);
+    }
 }
 
 /* Accent-2 so the selection reads apart from the accent-1 subtitles. */
@@ -890,8 +894,10 @@ a.nav-dropdown-item.active:visited {
         color 0.15s;
 }
 
-.theme-picker-sheet .nav-dropdown-item:hover {
-    background-color: var(--bg-primary);
+@media (hover: hover) {
+    .theme-picker-sheet .nav-dropdown-item:hover {
+        background-color: var(--bg-primary);
+    }
 }
 
 .theme-picker-sheet .nav-dropdown-item.active {
@@ -1743,8 +1749,10 @@ html:has(.bottom-sheet.show) body,
     animation-delay: 1.2s;
 }
 
-.banner:hover .banner-progress {
-    animation-play-state: paused;
+@media (hover: hover) {
+    .banner:hover .banner-progress {
+        animation-play-state: paused;
+    }
 }
 
 @keyframes banner-countdown {
@@ -1960,8 +1968,10 @@ html:has(.bottom-sheet.show) body,
         animation: none;
     }
 
-    .release-card:hover {
-        transform: none;
+    @media (hover: hover) {
+        .release-card:hover {
+            transform: none;
+        }
     }
 }
 
@@ -1981,8 +1991,10 @@ html:has(.bottom-sheet.show) body,
     transition: border-color 0.2s;
 }
 
-.panel-card:hover {
-    border-color: var(--accent-primary);
+@media (hover: hover) {
+    .panel-card:hover {
+        border-color: var(--accent-primary);
+    }
 }
 
 .panel-eyebrow-row {
@@ -2073,9 +2085,11 @@ html:has(.bottom-sheet.show) body,
         color 0.2s;
 }
 
-.panel-action:hover {
-    border-color: var(--accent-primary);
-    color: var(--ink-accent-primary, var(--accent-primary));
+@media (hover: hover) {
+    .panel-action:hover {
+        border-color: var(--accent-primary);
+        color: var(--ink-accent-primary, var(--accent-primary));
+    }
 }
 
 /* Stepper button (DrawOdds turn stepper; the app's combat filter reuses it).
@@ -2121,8 +2135,10 @@ html:has(.bottom-sheet.show) body,
     border-radius: 0.3rem;
 }
 
-.password-toggle-btn:hover {
-    color: var(--ink-palette-1, var(--palette-1));
+@media (hover: hover) {
+    .password-toggle-btn:hover {
+        color: var(--ink-palette-1, var(--palette-1));
+    }
 }
 
 /* ---- Collapse (orangui::CollapseHeader, CollapseCaret, CollapseBody, CollapseAll) ---- */
@@ -2240,8 +2256,10 @@ html:has(.bottom-sheet.show) body,
     pointer-events: auto;
 }
 
-.input-clear-btn:hover {
-    color: var(--ink-palette-1, var(--palette-1));
+@media (hover: hover) {
+    .input-clear-btn:hover {
+        color: var(--ink-palette-1, var(--palette-1));
+    }
 }
 
 /* ==============================

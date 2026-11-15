@@ -51,6 +51,7 @@ pub const UPCOMING: &[Release] = &[Release {
     date: None,
     entries: &[
         "On the web's deck page, the keyboard cursor moves up from the cards into the featured cards with k or the up arrow, along them with h, l and the side arrows, and back down with j",
+        "On touch screens, a tapped button no longer stays highlighted",
     ],
 }];
 
