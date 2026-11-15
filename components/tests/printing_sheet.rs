@@ -407,3 +407,34 @@ fn a_single_faced_card_s_sheet_offers_neither_flip_nor_meld() {
     assert!(!html.contains(r#"data-action="flip""#), "{html}");
     assert!(!html.contains(r#"data-action="meld""#), "{html}");
 }
+
+#[test]
+fn a_sheet_its_host_gives_no_face_opens_on_the_face_its_drawer_handed_it() {
+    fn app() -> Element {
+        use_context_provider(|| components::PrintingsFace(Signal::new(1)));
+        let asked = use_signal(Vec::new);
+        use_context_provider(|| source(PrintingsFetch::Ready(vec![two_faced()]), asked));
+        let open = use_signal(|| true);
+        rsx! {
+            PrintingSheet { card: two_faced(), open }
+        }
+    }
+    let html = render(app);
+    assert!(html.contains(BACK_LARGE), "the back: {html}");
+    assert!(!html.contains(FRONT_LARGE), "not the front: {html}");
+}
+
+#[test]
+fn a_face_its_host_gives_wins_over_the_handed_one() {
+    fn app() -> Element {
+        use_context_provider(|| components::PrintingsFace(Signal::new(1)));
+        let asked = use_signal(Vec::new);
+        use_context_provider(|| source(PrintingsFetch::Ready(vec![two_faced()]), asked));
+        let open = use_signal(|| true);
+        rsx! {
+            PrintingSheet { card: two_faced(), open, face: 0 }
+        }
+    }
+    let html = render(app);
+    assert!(html.contains(FRONT_LARGE), "the row's front: {html}");
+}

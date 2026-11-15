@@ -20,6 +20,7 @@ use zwipe_core::domain::card::scryfall_data::ImageSize;
 
 use crate::icons::FLIP;
 use crate::meld::{MeldToggle, use_meld};
+use crate::printing_face::{PrintingsFace, hand_face_then};
 use crate::{
     CardIconButton, CardRoleChips, ImageButton, KeywordChips, MELD, OracleText, Panel, data_action,
 };
@@ -405,6 +406,9 @@ pub fn CardDetailsPanel(
     let face_idx = face.unwrap_or(internal_face);
     let cur = face_idx().min(face_count.saturating_sub(1));
     let current_face = faces.as_ref().and_then(|f| f.get(cur)).cloned();
+    // Printings opens on the face shown here.
+    let handed = try_use_context::<PrintingsFace>();
+    let on_printings = on_printings.map(|handler| hand_face_then(handed, cur, handler));
     let cost = current_face
         .as_ref()
         .map_or_default(|f| f.mana_cost.clone());

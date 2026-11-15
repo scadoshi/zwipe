@@ -6,7 +6,8 @@
 
 use components::{
     BottomSheet, CoverFlow, DockAction, FaceTurn, LoadFailed, PrintingChips, PrintingChipsGhost,
-    PrintingFaceButton, TOAST_NORMAL, ToastOptions, Toasts, icons, use_printing_face, use_toast,
+    PrintingFaceButton, TOAST_NORMAL, ToastOptions, Toasts, icons, use_opening_face,
+    use_printing_face, use_toast,
 };
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
@@ -14,7 +15,6 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ImageSize;
 use zwipe_ui::screens::printing_sheet::{self as model, Action, Effect, Mode, State, Status};
 
-use super::card_row::PrintingsFace;
 use super::flippable_card_image::FlippableCardImage;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::component;
@@ -111,17 +111,9 @@ pub(crate) fn PrintingSheet(
     #[props(default = model::SAVED)]
     saved_message: &'static str,
 ) -> Element {
-    // Every printing opens on the face `card`'s row shows ([`PrintingsFace`]);
-    // the row's Flip or Meld button, left of Save, turns them all together.
-    let row_face = try_use_context::<PrintingsFace>();
-    let face = row_face.map_or(0, |PrintingsFace(face)| face());
-    use_effect(move || {
-        if !open()
-            && let Some(PrintingsFace(mut face)) = row_face
-        {
-            face.set(0);
-        }
-    });
+    // Every printing opens on the face the row or details drawer that opened
+    // it shows; the Flip or Meld button in Save's dock turns them all together.
+    let face = use_opening_face(None, open);
     let mode = if on_save.is_some() {
         Mode::Pick
     } else {

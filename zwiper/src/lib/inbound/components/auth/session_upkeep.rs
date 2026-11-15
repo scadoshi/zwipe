@@ -31,7 +31,6 @@ use crate::inbound::components::telemetry::{anonymous, flush_loop};
 use crate::inbound::components::{meld_source, settings_sync};
 use crate::inbound::screens::auth::login::LoginPrefill;
 use crate::inbound::screens::deck::card::components::add_stack_cache::use_add_stack_cache;
-use crate::inbound::screens::deck::card::components::card_row::PrintingsFace;
 use crate::inbound::screens::deck::card::components::filter_store::use_filter_store;
 use crate::inbound::screens::deck::card::components::undo_log::use_undo_store;
 use crate::inbound::screens::deck::create::CreateDeckCommanderSeed;
@@ -155,7 +154,7 @@ fn use_session_and_client() -> (Signal<Option<Session>>, Signal<ZwipeClient>) {
         use_hook(|| Signal::new_in_scope(ZwipeClient::new(config.backend_url), ScopeId::ROOT));
     use_context_provider(|| client);
     meld_source::use_meld_source(client);
-    use_context_provider(|| PrintingsFace(Signal::new_in_scope(0usize, ScopeId::ROOT)));
+    components::use_printings_face_root();
 
     (session, client)
 }

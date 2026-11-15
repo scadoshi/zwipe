@@ -72,7 +72,7 @@ pub fn CardOverlaysHost(
         if let Some(card) = printing() {
             PrintingSheet {
                 key: "{card.scryfall_data.id}",
-                face: faces.and_then(|f| f.peek().get(&card.scryfall_data.id).copied()).unwrap_or(0),
+                face: Some(faces.and_then(|f| f.peek().get(&card.scryfall_data.id).copied()).unwrap_or(0)),
                 card,
                 open,
                 on_save: on_printing_save,

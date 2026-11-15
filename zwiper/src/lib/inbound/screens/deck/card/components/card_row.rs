@@ -1,4 +1,4 @@
-use components::CardRow as SharedCardRow;
+use components::{CardRow as SharedCardRow, PrintingsFace};
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
@@ -22,13 +22,6 @@ pub(crate) struct OtagExamplesOpen(pub(crate) Callback<String>);
 /// hosts keep art-free rows.
 #[derive(Clone, Copy)]
 pub(crate) struct ShowRowArt(pub(crate) Signal<bool>);
-
-/// Context: the face of the row whose Printings opened last, which the
-/// printing sheet opens every printing on and sets back to the front as it
-/// closes. Provided at the root; a sheet opened from anywhere else (a swipe
-/// card) opens on the front.
-#[derive(Clone, Copy)]
-pub(crate) struct PrintingsFace(pub(crate) Signal<usize>);
 
 /// Thin wrapper over the shared [`SharedCardRow`]: wires the app's fullscreen
 /// [`ImagePreview`] signals into the shared row's `on_image` action so call

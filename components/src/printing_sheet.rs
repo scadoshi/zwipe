@@ -25,7 +25,9 @@ use zwipe_ui::shortcuts::{self, FlowKey};
 use crate::icons::{CHECK, DockIcon};
 use crate::keys::use_sheet_focus_handing_back;
 use crate::media::{KIT_MODAL_PX, use_min_width};
-use crate::printing_face::{FaceTurn, PrintingFace, PrintingFaceButton, use_printing_face};
+use crate::printing_face::{
+    FaceTurn, PrintingFace, PrintingFaceButton, use_opening_face, use_printing_face,
+};
 use crate::{
     BottomSheet, CoverFlow, IMAGE_ICON, LoadFailed, SheetFrame, SheetWide, use_overlay_back_action,
 };
@@ -87,8 +89,9 @@ enum Step {
 /// leaving with a different printing showing calls `on_unchanged`. Without one it only browses: no
 /// Select or Save, and Enter does nothing.
 ///
-/// Every printing shows `face`, the face `card`'s row is on, and its melded card where the row's
-/// half is melded. The row's Flip or Meld button, left of Select, and `v` turn them all together
+/// Every printing shows `face`, the face `card`'s row is on, or where the host gives none the face
+/// its details drawer handed over ([`PrintingsFace`](crate::PrintingsFace)), and its melded card
+/// where the half is melded. The Flip or Meld button in Select's dock and `v` turn them all together
 /// ([`PrintingFace`]); a pick is still the printing itself.
 #[component]
 pub fn PrintingSheet(
@@ -96,8 +99,9 @@ pub fn PrintingSheet(
     mut open: Signal<bool>,
     #[props(default)] on_save: Option<EventHandler<Card>>,
     #[props(default)] on_unchanged: Option<EventHandler<()>>,
-    #[props(default)] face: usize,
+    #[props(default)] face: Option<usize>,
 ) -> Element {
+    let face = use_opening_face(face, open);
     let read_only = on_save.is_none();
     let source = try_use_context::<PrintingsSource>();
     // From the kit's modal width on, the picker is the cover flow.

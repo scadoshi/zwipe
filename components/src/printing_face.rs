@@ -12,6 +12,53 @@ use crate::icons::{DockIcon, FLIP};
 use crate::meld::{MeldFetch, MeldSource, MeldToggle};
 use crate::{MELD, data_action};
 
+/// The face of the card whose Printings opened last. A row or a details drawer hands the face it
+/// shows here as its Printings opens ([`hand_face_then`]), and a Printings sheet whose host gives
+/// no face of its own opens on it ([`use_opening_face`]), setting it back to the front as it
+/// closes. Provided once at the root ([`use_printings_face_root`]); without it every such sheet
+/// opens on the front.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct PrintingsFace(pub Signal<usize>);
+
+/// Provides the root's [`PrintingsFace`]. Call once, in the root component.
+pub fn use_printings_face_root() {
+    use_context_provider(|| PrintingsFace(Signal::new_in_scope(0, ScopeId::ROOT)));
+}
+
+/// `on_printings` handing `face`, the face shown, to `shown` first, so the sheet it opens starts
+/// on that face.
+#[must_use]
+pub fn hand_face_then(
+    shown: Option<PrintingsFace>,
+    face: usize,
+    on_printings: EventHandler<()>,
+) -> EventHandler<()> {
+    EventHandler::new(move |()| {
+        if let Some(PrintingsFace(mut handed)) = shown {
+            handed.set(face);
+        }
+        on_printings.call(());
+    })
+}
+
+/// The face a Printings sheet opens on: `face` when its host gives one (a row it knows), else the
+/// face handed to the [`PrintingsFace`] in context, else the front. The handed face goes back to
+/// the front each time the sheet closes.
+#[must_use]
+pub fn use_opening_face(face: Option<usize>, open: Signal<bool>) -> usize {
+    let shown = try_use_context::<PrintingsFace>();
+    use_effect(move || {
+        if !open()
+            && let Some(PrintingsFace(mut handed)) = shown
+            && *handed.peek() != 0
+        {
+            handed.set(0);
+        }
+    });
+    face.or_else(|| shown.map(|PrintingsFace(handed)| handed()))
+        .unwrap_or(0)
+}
+
 /// What turning a card's printings does.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FaceTurn {
@@ -198,5 +245,39 @@ pub fn PrintingFaceButton(printing_face: PrintingFace, divided: bool) -> Element
         if divided {
             span { class: "action-dock-divider" }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use dioxus::dioxus_core::NoOpMutations;
+
+    use super::*;
+
+    fn render(app: fn() -> Element) -> String {
+        let mut dom = VirtualDom::new(app);
+        dom.rebuild_in_place();
+        for _ in 0..4 {
+            dom.process_events();
+            dom.render_immediate(&mut NoOpMutations);
+        }
+        dioxus_ssr::render(&dom)
+    }
+
+    #[test]
+    fn a_printings_press_hands_the_shown_face_to_the_sheet_first() {
+        fn app() -> Element {
+            let shown = use_context_provider(|| PrintingsFace(Signal::new(0)));
+            let mut seen = use_signal(|| None);
+            let open = EventHandler::new(move |()| seen.set(Some(*shown.0.peek())));
+            let press = hand_face_then(Some(shown), 1, open);
+            use_hook(move || press.call(()));
+            rsx! { p { "{seen():?}" } }
+        }
+        let html = render(app);
+        assert!(
+            html.contains("Some(1)"),
+            "the sheet opens with the face in hand: {html}"
+        );
     }
 }

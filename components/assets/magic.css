@@ -2119,8 +2119,9 @@ html.keyboard-up .web-dock-pair {
     }
 
     /* A modal's own dock, above the drawer (an Oracle tag's examples opened
-       from the filter's dictionary), stays. */
-    body:has(.sheet-form-drawer > .bottom-sheet.show) .action-dock:not(.sheet-dock, .screen .screen *) {
+       from the filter's dictionary), stays, and so does the Printings sheet's
+       (Flip or Meld beside Select) when it opens from the drawer. */
+    body:has(.sheet-form-drawer > .bottom-sheet.show) .action-dock:not(.sheet-dock, .web-printing-save, .screen .screen *) {
         transform: translateY(calc(100% + 2rem));
         opacity: 0;
         visibility: hidden;
@@ -2134,7 +2135,7 @@ html.keyboard-up .web-dock-pair {
 }
 
 @media (min-width: 60rem) and (prefers-reduced-motion: reduce) {
-    body:has(.sheet-form-drawer > .bottom-sheet.show) .action-dock:not(.sheet-dock, .screen .screen *) {
+    body:has(.sheet-form-drawer > .bottom-sheet.show) .action-dock:not(.sheet-dock, .web-printing-save, .screen .screen *) {
         transform: none;
     }
 }
