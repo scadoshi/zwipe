@@ -51,8 +51,10 @@ jobs:
         with:
           shared-key: web-test
 
+      # zwipe-ui and zwipe-client are tested here, the one push workflow whose
+      # paths include them; test.yml also runs them, but only on pull requests.
       - name: Test
-        run: cargo test -p zwiper-web
+        run: cargo test -p zwiper-web -p zwipe-ui -p zwipe-client
 
   build:
     runs-on: ubuntu-latest
