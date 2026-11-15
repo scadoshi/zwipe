@@ -46,16 +46,17 @@ pub const MOBILE_STORE_VERSION: Version = Version::new(1, 21, 4);
 
 /// Versions in progress for the next release. Rendered at the top of the
 /// changelog with an "Upcoming" badge instead of "Latest".
-pub const UPCOMING: &[Release] = &[Release {
-    version: Version::new(1, 21, 7),
-    date: None,
-    entries: &[
-        "On the web's swipe screen, v and Flip turn the card's image and details together, and v switches a split, aftermath or adventure card's details to its other half",
-    ],
-}];
+pub const UPCOMING: &[Release] = &[];
 
 /// Shipped releases, newest first.
 pub const RELEASES: &[Release] = &[
+    Release {
+        version: Version::new(1, 21, 7),
+        date: NaiveDate::from_ymd_opt(2026, 11, 14),
+        entries: &[
+            "On the web's swipe screen, v and Flip turn the card's image and details together, and v switches a split, aftermath or adventure card's details to its other half",
+        ],
+    },
     Release {
         version: Version::new(1, 21, 6),
         date: NaiveDate::from_ymd_opt(2026, 11, 14),
