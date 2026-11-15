@@ -1,5 +1,5 @@
 //! zwipe.net's Changelog lives at /about/changelog/, linked from the About page beside Privacy
-//! policy and from the footer, not the top nav, and its first address /changelog moves there
+//! policy, not from the top nav or the footer, and its first address /changelog moves there
 //! for good.
 
 /// zwipe.net's root, with the nav and the footer.
@@ -30,9 +30,10 @@ fn the_top_nav_has_no_changelog() {
 }
 
 #[test]
-fn the_footer_lists_changelog_beside_privacy_community_and_contribute() {
+fn the_footer_lists_privacy_community_and_contribute_without_changelog() {
     let footer = between(MAIN, "::components::SiteFooter {", "}\n    }\n}").expect("the footer");
-    for page in ["Privacy", "Changelog", "Community", "Contribute"] {
+    assert!(!footer.contains("Route::Changelog {}"), "{footer}");
+    for page in ["Privacy", "Community", "Contribute"] {
         assert!(
             footer.contains(&format!(
                 r#"Link {{ to: Route::{page} {{}}, class: "nav-cta""#
