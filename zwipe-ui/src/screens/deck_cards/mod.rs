@@ -747,7 +747,6 @@ pub struct State {
     profile: Option<DeckProfile>,
     /// Every entry but the command zone's, on every board.
     entries: Vec<DeckEntry>,
-    command_zone_cards: Vec<Card>,
     zone: Zone,
     /// The cards the filter sheet picks its values from, as the deck loaded.
     filter_cards: Vec<Card>,
@@ -779,9 +778,10 @@ enum HintOffer {
 }
 
 impl State {
-    /// The deck as edited here, once it has loaded: the profile with its main board count, every
-    /// entry but the command zone's with their quantities, boards and stars as they stand, the
-    /// command zone's cards, and the warnings its format raises over them. A screen that holds the
+    /// The deck as edited here, once it has loaded: the profile with its main board count and
+    /// the command zone's printings as they stand, every entry but the command zone's with their
+    /// quantities, boards and stars as they stand, the command zone's cards at those printings, and
+    /// the warnings its format raises over them. A screen that holds the
     /// deck too (the Profile under these Cards) takes it from here.
     #[must_use]
     pub fn deck(&self) -> Option<Deck> {
@@ -795,6 +795,11 @@ impl State {
             .filter(|e| e.deck_card.board == Board::Deck)
             .map(|e| i64::from(*e.deck_card.quantity))
             .fold(0, i64::saturating_add);
+        let id = |card: Option<&Card>| card.map(|c| c.scryfall_data.id);
+        profile.commander_id = id(self.zone.commander.as_ref());
+        profile.partner_commander_id = id(self.zone.partner.as_ref());
+        profile.background_id = id(self.zone.background.as_ref());
+        profile.signature_spell_id = id(self.zone.signature.as_ref());
         let zone = DeckCommandZone {
             commander: self.zone.commander.as_ref(),
             partner_commander: self.zone.partner.as_ref(),
@@ -806,7 +811,7 @@ impl State {
             deck_profile: profile,
             entries: self.entries.clone(),
             warnings,
-            command_zone_cards: self.command_zone_cards.clone(),
+            command_zone_cards: self.zone.to_cards(),
         })
     }
 }
@@ -818,7 +823,6 @@ impl Default for State {
             loaded: false,
             profile: None,
             entries: Vec::new(),
-            command_zone_cards: Vec::new(),
             zone: Zone::default(),
             filter_cards: Vec::new(),
             tokens: None,
@@ -1012,13 +1016,7 @@ impl State {
         if self.settle(ticket).is_none() {
             return Vec::new();
         }
-        let Deck {
-            entries,
-            command_zone_cards,
-            ..
-        } = deck;
-        self.command_zone_cards = command_zone_cards;
-        let mut entries = entries;
+        let mut entries = deck.entries;
         for (_, card) in zone.cards() {
             if let Some(oracle_id) = card.scryfall_data.oracle_id {
                 entries.retain(|e| e.card.scryfall_data.oracle_id != Some(oracle_id));
@@ -1488,7 +1486,7 @@ impl State {
     }
 
     fn total_price(&self) -> f64 {
-        deck_metrics::deck_price(&self.entries, &self.command_zone_cards, self.currency())
+        deck_metrics::deck_price(&self.entries, &self.zone.to_cards(), self.currency())
     }
 
     /// The write a burst makes once its debounce is over.

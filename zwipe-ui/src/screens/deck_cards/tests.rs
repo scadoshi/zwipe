@@ -1,5 +1,6 @@
 use chrono::Duration as ChronoDuration;
 use zwipe_core::domain::deck::Format;
+use zwipe_core::domain::deck::deck_metrics::DeckMetrics;
 use zwipe_core::http::helpers::Patch;
 
 use super::*;
@@ -981,6 +982,64 @@ fn a_zone_printing_patches_the_profile() {
         }]
     );
     assert_eq!(state.featured()[0].0.scryfall_data.id, id(&new));
+}
+
+#[test]
+fn a_zone_printing_reprices_the_deck_the_deck_view_is_handed() {
+    let mut forest = card("Forest");
+    forest.scryfall_data.prices.usd = Some("0.25".to_owned());
+    let mut edgar = card("Edgar Markov");
+    edgar.scryfall_data.prices.usd = Some("123.79".to_owned());
+    let mut profile = deck_profile("Surfer test");
+    profile.commander_id = Some(id(&edgar));
+    let mut fetched = deck(profile.clone(), vec![forest]);
+    fetched.command_zone_cards = vec![edgar.clone()];
+    let (mut state, _, ticket, _) = loading(blank());
+    let _ = state.update(Action::ProfileLoaded {
+        ticket,
+        profile: Box::new(profile),
+    });
+    let _ = state.update(Action::Loaded {
+        ticket,
+        deck: Box::new(fetched),
+        zone: Box::new(Zone {
+            commander: Some(edgar.clone()),
+            ..Zone::default()
+        }),
+    });
+    let usd = |state: &State| {
+        let deck = state.deck().unwrap();
+        DeckMetrics::from_entries_and_command_zone(&deck.entries, &deck.command_zone_cards)
+            .total_price_usd
+            .map(|v| format!("{v:.2}"))
+    };
+    assert_eq!(usd(&state), Some("124.04".to_owned()), "as fetched");
+
+    // Judge Gift Cards 2021 #3: a foil-only printing with no USD price.
+    let mut judge = edgar.clone();
+    judge.scryfall_data.id = Uuid::new_v4();
+    judge.scryfall_data.prices.usd = None;
+    judge.scryfall_data.prices.usd_foil = Some("112.50".to_owned());
+    let _ = state.update(Action::OpenPrintings {
+        card: Box::new(edgar),
+        slot: Some(Slot::Commander),
+    });
+    let effects = state.update(Action::PickPrinting(Box::new(judge.clone())));
+    let Some(Effect::PatchProfile { ticket, .. }) = effects.first() else {
+        panic!("a zone printing patches the profile: {effects:?}");
+    };
+    let _ = state.update(Action::ProfilePatched { ticket: *ticket });
+
+    assert_eq!(
+        usd(&state),
+        Some("0.25".to_owned()),
+        "the unpriced printing adds nothing, as on load"
+    );
+    assert_eq!(
+        state.deck().unwrap().deck_profile.commander_id,
+        Some(id(&judge)),
+        "the profile names the printing the zone holds"
+    );
 }
 
 #[test]

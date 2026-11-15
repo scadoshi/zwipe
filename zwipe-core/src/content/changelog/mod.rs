@@ -52,6 +52,7 @@ pub const UPCOMING: &[Release] = &[Release {
     entries: &[
         "On the web's deck page, the keyboard cursor moves up from the cards into the featured cards with k or the up arrow, along them with h, l and the side arrows, and back down with j",
         "On touch screens, a tapped button no longer stays highlighted",
+        "A deck's total price follows a commander's printing change at once, including to a printing with no price, on the web and in the app",
     ],
 }];
 

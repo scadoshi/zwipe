@@ -160,10 +160,9 @@ pub fn DeckWidePage(
     // The owner's facts, stats and warnings follow the cards as edited here;
     // the store links stay the deck's as fetched.
     let held_deck = deck();
-    let metrics = held_deck.as_ref().and_then(|d| {
-        zone.read()
-            .live_metrics(&d.entries, &entries.read(), &d.command_zone_cards)
-    });
+    let metrics = held_deck
+        .as_ref()
+        .and_then(|d| zone.read().live_metrics(&d.entries, &entries.read()));
     let warnings = held_deck.as_ref().map_or_default(|d| {
         zone.read()
             .live_warnings(&d.deck_profile, &d.entries, &entries.read())

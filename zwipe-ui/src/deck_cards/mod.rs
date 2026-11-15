@@ -90,6 +90,16 @@ impl Zone {
         .collect()
     }
 
+    /// The zone's cards at the printings it holds, in slot order: the command zone cards a fresh
+    /// fetch would return.
+    #[must_use]
+    pub fn to_cards(&self) -> Vec<Card> {
+        self.cards()
+            .into_iter()
+            .map(|(_, card)| card.clone())
+            .collect()
+    }
+
     /// Drops every entry that shares an oracle ID with a command zone card, which never appear in the groups.
     pub fn strip(&self, entries: &mut Vec<DeckEntry>) {
         let oracles = self.oracles();
@@ -111,17 +121,13 @@ impl Zone {
             .collect()
     }
 
-    /// The deck's metrics as a fresh fetch would give them while the screen holds `live`: its entries as edited since the fetch, with this zone [stripped](Self::strip). The stripped entries come back from `fetched`, the deck's entries as fetched, and `zone_cards`, the fetched command zone cards, count once each. `None` when the deck holds no card at all.
+    /// The deck's metrics as a fresh fetch would give them while the screen holds `live`: its entries as edited since the fetch, with this zone [stripped](Self::strip). The stripped entries come back from `fetched`, the deck's entries as fetched, and the zone's cards count once each at the printings it holds, so a printing changed here prices the deck at once. `None` when the deck holds no card at all.
     #[must_use]
-    pub fn live_metrics(
-        &self,
-        fetched: &[DeckEntry],
-        live: &[DeckEntry],
-        zone_cards: &[Card],
-    ) -> Option<DeckMetrics> {
+    pub fn live_metrics(&self, fetched: &[DeckEntry], live: &[DeckEntry]) -> Option<DeckMetrics> {
         let all = self.rejoin(fetched, live);
+        let zone_cards = self.to_cards();
         (!all.is_empty() || !zone_cards.is_empty())
-            .then(|| DeckMetrics::from_entries_and_command_zone(&all, zone_cards))
+            .then(|| DeckMetrics::from_entries_and_command_zone(&all, &zone_cards))
     }
 
     /// The deck's warnings as a fresh fetch would give them while the screen holds `live`, worked out as the server does: the entries rejoined as for [`Self::live_metrics`], `fetched_profile` counting the main board's copies as they stand, and the command zone as this zone holds it.
@@ -594,18 +600,18 @@ mod tests {
         let mut live = fetched.clone();
         zone.strip(&mut live);
         let as_fetched = DeckMetrics::from_entries_and_command_zone(&fetched, &zone_cards);
-        let unedited = zone.live_metrics(&fetched, &live, &zone_cards).unwrap();
+        let unedited = zone.live_metrics(&fetched, &live).unwrap();
         assert_eq!(unedited.total_cards, as_fetched.total_cards);
         assert_eq!(unedited.total_price_usd, as_fetched.total_price_usd);
         assert_eq!(unedited.type_counts, as_fetched.type_counts);
 
         let mut added = deck(deck_profile("D"), vec![typed("Bee", "Creature — Insect")]).entries;
         live.append(&mut added);
-        let after_add = zone.live_metrics(&fetched, &live, &zone_cards).unwrap();
+        let after_add = zone.live_metrics(&fetched, &live).unwrap();
         assert_eq!(after_add.total_cards, as_fetched.total_cards + 1);
 
         live.retain(|e| e.card.scryfall_data.name != "Ant" && e.card.scryfall_data.name != "Bee");
-        let after_remove = zone.live_metrics(&fetched, &live, &zone_cards).unwrap();
+        let after_remove = zone.live_metrics(&fetched, &live).unwrap();
         assert_eq!(after_remove.total_cards, as_fetched.total_cards - 1);
     }
 
@@ -727,9 +733,50 @@ mod tests {
         );
     }
 
+    /// `card` at another printing: its own id and USD price, the same oracle.
+    fn reprint(card: &Card, usd: Option<&str>) -> Card {
+        let mut other = card.clone();
+        other.scryfall_data.id = Uuid::new_v4();
+        other.scryfall_data.prices.usd = usd.map(str::to_owned);
+        other.scryfall_data.prices.usd_foil = Some("112.50".to_owned());
+        other
+    }
+
+    #[test]
+    fn live_metrics_price_the_command_zone_at_its_printing_as_edited() {
+        let mut forest = typed("Forest", "Basic Land — Forest");
+        forest.scryfall_data.prices.usd = Some("0.25".to_owned());
+        let fetched = deck(deck_profile("Surfer test"), vec![forest]).entries;
+        let edgar = reprint(&card("Edgar Markov"), Some("123.79"));
+        let mut zone = Zone {
+            commander: Some(edgar.clone()),
+            ..Zone::default()
+        };
+        let usd = |zone: &Zone| {
+            zone.live_metrics(&fetched, &fetched)
+                .and_then(|m| m.total_price_usd)
+                .map(|v| format!("{v:.2}"))
+        };
+        assert_eq!(usd(&zone), Some("124.04".to_owned()), "as fetched");
+
+        zone.commander = Some(reprint(&edgar, Some("80.00")));
+        assert_eq!(
+            usd(&zone),
+            Some("80.25".to_owned()),
+            "a priced printing replaces the old price"
+        );
+
+        zone.commander = Some(reprint(&edgar, None));
+        assert_eq!(
+            usd(&zone),
+            Some("0.25".to_owned()),
+            "a printing with no USD price (Judge Gift Cards' Edgar) adds nothing, as on load"
+        );
+    }
+
     #[test]
     fn live_metrics_are_none_for_an_empty_deck() {
-        assert!(Zone::default().live_metrics(&[], &[], &[]).is_none());
+        assert!(Zone::default().live_metrics(&[], &[]).is_none());
     }
 
     #[test]
