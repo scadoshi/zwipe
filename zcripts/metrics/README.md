@@ -34,6 +34,7 @@ Read-only usage reports you run against the production database, then paste the 
 | `swipe-memory.sql` | Are durable skips used? Any deck near the 5k cap? | Occasional |
 | `errors.sql` | What's breaking for users in the field? Any contract drift? | After each release, then weekly |
 | `platforms.sql` | Who is on iOS, Android and the web: users, new users, usage and the signup funnel by platform | Weekly |
+| `zervice.sql` | Is the nightly job running, how long does it take, and what does it leave in the database? | Weekly, or after a sync looks off |
 
 All of them are **read-only** (no writes, no locks) and print `── header ──` sections so the output is self-describing. Run any of them the same way:
 
@@ -87,6 +88,10 @@ Client errors + crashes from the 1.7.4+ reporting pipeline: snapshot, daily shap
 ### `swipe-memory.sql`: durable skips
 
 Suppression totals with the skip/removal split, adoption among decks active in the last 30 days, per-deck depth distribution (flags anyone near the 5,000 cap), the 10 largest skip lists, and daily write volume.
+
+### `zervice.sql`: the nightly job
+
+What zervice's five steps do to the database. The card sync is the only step that records itself (one `zervice_metrics` row per run), so it gets the last 14 runs, a health line (hours since the last run, days without one, anything stuck in progress), weekly trends, night-over-night deltas and the cards that failed. The other steps record nothing, so their sections read what they leave behind: the catalog's size and printings per card, the newest sets, oracle tags and card profiles touched in the last day, each materialized view's size with a rough last-refresh proxy, and for the prunes whatever is past retention or due next. It ends with the list of steps that leave no record. Run it with `sudo -u postgres psql zwipe -f zcripts/metrics/zervice.sql`.
 
 ## Notes
 
