@@ -2,8 +2,9 @@
 //!
 //! A click on a stack card or on a Flip or Meld button, or a key, copies
 //! what the card details show as they show it: an open card details
-//! drawer's title bar and content, each open card row's art and detail, and
-//! each printing an open Printings sheet shows. If one then shows another card (a drawer's title changes) or
+//! drawer's title bar and content, each open card row's art and detail, a
+//! details pane's head and body beside the card, and each printing an open
+//! Printings sheet shows. If one then shows another card (a drawer's title changes) or
 //! another face (a face marker, `data-face`, changes: a flip, or a meld
 //! half melding), the copies are laid over it in the same task, before the
 //! browser paints the change, and fade out over `SWAP_MS` while the new
@@ -36,6 +37,10 @@ const SWAP_JS: &str = r"
   // laid in the card's own layout box rather than its turned outline.
   const PRINTING_PARTS = ':scope > img';
   const openPrintings = () => [...document.querySelectorAll('.bottom-sheet.show .cover-flow-stage > .cover-flow-card')].filter((card) => card.getClientRects().length > 0);
+  // A card's details as a pane of their own beside the card, as on a wide swipe screen; a
+  // drawer's panel crossfades with its drawer instead.
+  const PANE_PARTS = ':scope > .panel-head, :scope > .panel-body';
+  const openPanes = () => [...document.querySelectorAll('.card-details-panel')].filter((panel) => !panel.closest('.bottom-sheet') && panel.getClientRects().length > 0);
   // A row's own color is often see-through, so its copies take the first solid one behind it.
   const solidBehind = (el) => {
     for (let at = el; at; at = at.parentElement) {
@@ -58,7 +63,7 @@ const SWAP_JS: &str = r"
       if (!surface.changed()) continue;
       const box = surface.box.getBoundingClientRect();
       const fill = surface.fill();
-      // A row lays its copies over itself, so it holds them while they fade.
+      // A row or a pane lays its copies over itself, so it holds them while they fade.
       const hold = getComputedStyle(surface.box).position === 'static';
       if (hold) surface.box.style.position = 'relative';
       let left = surface.shots.length;
@@ -105,6 +110,16 @@ const SWAP_JS: &str = r"
       surface.changed = () => row.isConnected && row.classList.contains('expanded') && faceOf(row) !== surface.face;
       surfaces.push(surface);
     }
+    for (const panel of openPanes()) {
+      const surface = {
+        box: panel,
+        face: faceOf(panel),
+        shots: shotsOf(panel, PANE_PARTS).filter((shot) => shot.rect.width > 0 && shot.rect.height > 0),
+        fill: () => solidBehind(panel),
+      };
+      surface.changed = () => panel.isConnected && faceOf(panel) !== surface.face;
+      surfaces.push(surface);
+    }
     for (const card of openPrintings()) {
       const surface = {
         box: card,
@@ -144,6 +159,10 @@ const SWAP_JS: &str = r"
     for (const row of openRows()) {
       row.style.position = '';
       for (const part of row.querySelectorAll(ROW_PARTS)) for (const run of part.getAnimations()) run.cancel();
+    }
+    for (const panel of openPanes()) {
+      panel.style.position = '';
+      for (const part of panel.querySelectorAll(PANE_PARTS)) for (const run of part.getAnimations()) run.cancel();
     }
     for (const card of openPrintings()) for (const part of card.querySelectorAll(PRINTING_PARTS)) for (const run of part.getAnimations()) run.cancel();
   };
@@ -234,6 +253,22 @@ mod tests {
         assert!(
             SWAP_JS.contains("offsetLeft"),
             "a turned card's copy is laid in its own layout box, not its turned outline: {SWAP_JS}"
+        );
+    }
+
+    #[test]
+    fn a_details_pane_beside_the_card_crossfades_its_head_and_body() {
+        assert!(
+            SWAP_JS.contains("const openPanes = () =>"),
+            "a details panel outside any drawer is a surface: {SWAP_JS}"
+        );
+        assert!(
+            SWAP_JS.contains("!panel.closest('.bottom-sheet')"),
+            "a drawer's own panel crossfades with its drawer, once: {SWAP_JS}"
+        );
+        assert!(
+            SWAP_JS.contains(":scope > .panel-head, :scope > .panel-body"),
+            "{SWAP_JS}"
         );
     }
 
