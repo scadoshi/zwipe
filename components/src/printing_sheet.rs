@@ -60,19 +60,48 @@ const NARROW_BODY: &str = ".web-printing-sheet .bottom-sheet.show .web-printing-
 /// The open modal's body, which takes the keys from the kit's modal width on.
 const WIDE_BODY: &str = ".web-flow-sheet.show .web-flow-body";
 
-/// Where focus goes after a save draws the card with Scryfall id `id` anew, in order: its
+/// Where the sheet was opened from, which decides where focus goes back after a save.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Opener {
+    /// A featured card in the deck head, a stop of the keyboard cursor.
+    FeaturedCard,
+    /// Anywhere else: a row, a stack card, a drawer's Printings button.
+    Elsewhere,
+}
+
+/// Answers whether the sheet's opener is a featured card in the deck head: the element in focus
+/// is one, or the keyboard cursor sits on one (`head:`) while a key moved last, for a sheet whose
+/// own × took focus first.
+const OPENER_IS_FEATURED_JS: &str = "const a = document.activeElement; const featured = !!(a && a.matches && a.matches('__HEAD__')) || (window.__zwipeDeckInput === 'key' && String(window.__zwipeDeckCursor || '').startsWith('head:')); dioxus.send(featured);";
+
+/// [`OPENER_IS_FEATURED_JS`] with the featured cards' selector filled in.
+fn opener_is_featured_js() -> String {
+    OPENER_IS_FEATURED_JS.replace("__HEAD__", crate::deck_cursor::HEAD_SELECTOR)
+}
+
+/// Where focus goes after a save draws the card with Scryfall id `id` anew, in order: the
+/// featured card in its new printing when the sheet opened from a featured card, then its
 /// Printings button in its row or in a details drawer showing it, else the card itself, a List
 /// row's line or a stack card, where its row is shut or it is in Stacks.
-fn handback_selectors(id: Uuid) -> Vec<String> {
+fn handback_selectors(id: Uuid, opener: Opener) -> Vec<String> {
     let action = crate::data_action::PRINTINGS;
-    vec![
-        format!(
-            "[data-row=\"{id}\"] [data-action=\"{action}\"], [data-card=\"{id}\"] [data-action=\"{action}\"]"
-        ),
-        format!(
-            ".web-deck-row[data-row=\"{id}\"] .card-row-compact, .card-stack-slot[data-row=\"{id}\"] .card-stack-card"
-        ),
-    ]
+    let featured = match opener {
+        Opener::FeaturedCard => Some(format!(
+            ".deck-head-card-image[data-row=\"{id}\"], .deck-featured-card[data-row=\"{id}\"]"
+        )),
+        Opener::Elsewhere => None,
+    };
+    featured
+        .into_iter()
+        .chain([
+            format!(
+                "[data-row=\"{id}\"] [data-action=\"{action}\"], [data-card=\"{id}\"] [data-action=\"{action}\"]"
+            ),
+            format!(
+                ".web-deck-row[data-row=\"{id}\"] .card-row-compact, .card-stack-slot[data-row=\"{id}\"] .card-stack-card"
+            ),
+        ])
+        .collect()
 }
 
 /// Which way a step through the printings goes.
@@ -190,6 +219,22 @@ pub fn PrintingSheet(
         };
         index.set(next);
     };
+    // Where the sheet opened from, read as it opens, before its body takes focus.
+    let mut opener = use_signal(|| Opener::Elsewhere);
+    use_effect(move || {
+        if !open() {
+            return;
+        }
+        spawn(async move {
+            let mut asked = document::eval(&opener_is_featured_js());
+            let featured = asked.recv::<bool>().await.unwrap_or(false);
+            opener.set(if featured {
+                Opener::FeaturedCard
+            } else {
+                Opener::Elsewhere
+            });
+        });
+    });
     // Each form's body takes the keys as soon as it opens.
     let narrow_open = use_memo(move || open() && !flow());
     let narrow_focus = use_sheet_focus_handing_back(narrow_open.into(), NARROW_BODY);
@@ -206,7 +251,7 @@ pub fn PrintingSheet(
         if let Some(picked) = visible_for_save.clone() {
             // The save draws the card again as the new printing, with a Printings button of its
             // own, which takes the focus.
-            let reopen = handback_selectors(picked.scryfall_data.id);
+            let reopen = handback_selectors(picked.scryfall_data.id, *opener.peek());
             narrow_focus.hand_back_to(reopen.clone());
             wide_focus.hand_back_to(reopen);
             on_save.call(picked);
@@ -528,9 +573,36 @@ mod tests {
     use super::*;
 
     #[test]
+    fn a_sheet_opened_from_a_featured_card_hands_focus_back_to_that_featured_card() {
+        let id = Uuid::nil();
+        let selectors = handback_selectors(id, Opener::FeaturedCard);
+        assert_eq!(
+            selectors.first().map(String::as_str),
+            Some(
+                format!(
+                    ".deck-head-card-image[data-row=\"{id}\"], .deck-featured-card[data-row=\"{id}\"]"
+                )
+                .as_str()
+            ),
+            "the featured card in its new printing first: {selectors:?}"
+        );
+        assert_eq!(
+            selectors.get(1..),
+            Some(&handback_selectors(id, Opener::Elsewhere)[..]),
+            "then where any other opener's focus goes"
+        );
+        assert!(
+            OPENER_IS_FEATURED_JS.contains("__HEAD__")
+                && opener_is_featured_js().contains(crate::deck_cursor::HEAD_SELECTOR),
+            "the sheet asks whether its opener is a featured card: {}",
+            opener_is_featured_js()
+        );
+    }
+
+    #[test]
     fn focus_goes_back_to_the_saved_printings_button_else_the_card_itself() {
         let id = Uuid::nil();
-        let selectors = handback_selectors(id);
+        let selectors = handback_selectors(id, Opener::Elsewhere);
         assert_eq!(selectors.len(), 2, "{selectors:?}");
         assert_eq!(
             selectors.first().map(String::as_str),

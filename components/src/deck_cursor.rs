@@ -193,9 +193,9 @@ pub fn keyed_js() -> String {
     KEYED_JS.replace("__STOPS__", STOP_SELECTOR)
 }
 
-/// Moves the cursor from card `__FROM__` to card `__TO__` where it sits on `__FROM__`, in the
-/// last reading order too, so a redraw hands focus to `__TO__`.
-const FOLLOW_JS: &str = "if (window.__zwipeDeckCursor === '__FROM__') window.__zwipeDeckCursor = '__TO__'; window.__zwipeDeckOrder = (window.__zwipeDeckOrder || []).map((id) => id === '__FROM__' ? '__TO__' : id);";
+/// Moves the cursor from card `__FROM__` to card `__TO__` where it sits on `__FROM__` or on its
+/// featured card, in the last reading order too, so a redraw hands focus to `__TO__`.
+const FOLLOW_JS: &str = "if (window.__zwipeDeckCursor === '__FROM__') window.__zwipeDeckCursor = '__TO__'; if (window.__zwipeDeckCursor === 'head:__FROM__') window.__zwipeDeckCursor = 'head:__TO__'; window.__zwipeDeckOrder = (window.__zwipeDeckOrder || []).map((id) => id === '__FROM__' ? '__TO__' : id);";
 
 /// Card `from` is now card `to`, as a printing change or its Undo makes it: the keyboard cursor
 /// follows it, so focus lands on the card in its new printing rather than moving on.
@@ -725,6 +725,19 @@ mod tests {
         assert!(
             !script.contains("e.key ==="),
             "no raw KeyboardEvent.key comparison left: {script}"
+        );
+    }
+
+    #[test]
+    fn a_featured_card_that_changes_id_keeps_the_cursor_on_the_featured_card() {
+        let js = follow_js(id(1), id(2));
+        assert!(
+            js.contains(&format!(
+                "if (window.__zwipeDeckCursor === 'head:{}') window.__zwipeDeckCursor = 'head:{}';",
+                id(1),
+                id(2)
+            )),
+            "{js}"
         );
     }
 
