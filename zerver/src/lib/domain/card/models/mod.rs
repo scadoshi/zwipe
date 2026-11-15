@@ -10,3 +10,6 @@ pub mod synergy;
 
 /// Zervice metrics tracking for sync and classification operations.
 pub mod zervice_metrics;
+
+/// One recorded zervice step: when, how long, how it ended and what it counted.
+pub mod zervice_step;

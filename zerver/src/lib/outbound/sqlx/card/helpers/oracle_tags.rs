@@ -5,7 +5,7 @@
 //! with a non-`scryfall` `source` are left untouched. See `context/plans/otags/`.
 
 use anyhow::Context;
-use sqlx::{PgPool, QueryBuilder};
+use sqlx::{PgConnection, QueryBuilder};
 
 use crate::inbound::external::scryfall::oracle_tag::OracleTag;
 
@@ -29,15 +29,16 @@ fn flatten_correlations(tags: &[OracleTag]) -> Vec<(uuid::Uuid, &str)> {
 }
 
 /// Replaces the `oracle_tag` catalog and the scryfall-sourced card correlations
-/// from `tags`. Returns `(catalog_rows, correlation_rows)`.
+/// from `tags`, inside the caller's transaction `tx`. Returns `(catalog_rows, correlation_rows)`.
 ///
 /// # Errors
 ///
-/// Returns an error if the transaction or any of its statements fails.
-pub async fn sync_oracle_tags(pool: &PgPool, tags: &[OracleTag]) -> anyhow::Result<(usize, usize)> {
+/// Returns an error if any of its statements fails.
+pub async fn sync_oracle_tags(
+    tx: &mut PgConnection,
+    tags: &[OracleTag],
+) -> anyhow::Result<(usize, usize)> {
     let correlations = flatten_correlations(tags);
-
-    let mut tx = pool.begin().await?;
 
     // Catalog: full replace.
     sqlx::query("DELETE FROM oracle_tags")
@@ -140,7 +141,6 @@ pub async fn sync_oracle_tags(pool: &PgPool, tags: &[OracleTag]) -> anyhow::Resu
             .context("failed to insert card_oracle_tags batch")?;
     }
 
-    tx.commit().await?;
     Ok((tags.len(), correlations.len()))
 }
 

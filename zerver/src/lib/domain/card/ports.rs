@@ -19,6 +19,7 @@ use crate::domain::card::models::printing_removal::{
 };
 use crate::domain::card::models::search_card::error::SearchCardsError;
 use crate::domain::card::models::zervice_metrics::{SyncedCards, ZerviceMetrics};
+use crate::domain::card::models::zervice_step::StepRecord;
 use crate::domain::card::requests::create_card::CreateCardError;
 use crate::domain::card::requests::get_artists::GetArtistsError;
 use crate::domain::card::requests::get_card::GetCardError;
@@ -120,6 +121,13 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     /// membership (e.g., after Scryfall sync + classification).
     fn refresh_latest_cards(&self) -> impl Future<Output = anyhow::Result<()>> + Send;
 
+    /// Writes `record` as a `zervice_steps` row. It always commits, a dry run's steps included,
+    /// since the row describes the run rather than changing data.
+    fn record_zervice_step(
+        &self,
+        record: &StepRecord,
+    ) -> impl Future<Output = anyhow::Result<()>> + Send;
+
     /// Every stored printing, as the removal plan reads it.
     fn fetch_stored_printings(&self) -> impl Future<Output = anyhow::Result<Vec<Printing>>> + Send;
 
@@ -166,8 +174,9 @@ pub trait CardRepository: Clone + Send + Sync + 'static {
     ) -> impl Future<Output = anyhow::Result<(usize, usize)>> + Send;
 
     /// Rebuilds the `card_profiles.oracle_tags` JSONB projection from
-    /// `card_oracle_tags` (aggregated per `oracle_id`, fanned to every printing).
-    fn refresh_card_oracle_tags(&self) -> impl Future<Output = anyhow::Result<()>> + Send;
+    /// `card_oracle_tags` (aggregated per `oracle_id`, fanned to every printing), returning the
+    /// profiles it wrote.
+    fn refresh_card_oracle_tags(&self) -> impl Future<Output = anyhow::Result<u64>> + Send;
 
     // == get ==
 
@@ -485,6 +494,16 @@ pub trait CardService: Clone + Send + Sync + 'static {
         bulk_endpoint: BulkEndpoint,
     ) -> impl Future<Output = anyhow::Result<SyncedCards>> + Send;
 
+    /// Records one step of a zervice run in `zervice_steps`.
+    ///
+    /// # Errors
+    ///
+    /// The write failing.
+    fn record_zervice_step(
+        &self,
+        record: &StepRecord,
+    ) -> impl Future<Output = anyhow::Result<()>> + Send;
+
     /// Removes the printings Scryfall deleted (`zwipe-context ideas/sync_remove_deleted_printings.md`):
     /// every stored printing `bulk` (the ids of a complete bulk file) no longer lists, after its deck
     /// references move to its card's cheapest regular survivor, else its preferred one. A deck-held
@@ -523,8 +542,9 @@ pub trait CardService: Clone + Send + Sync + 'static {
     /// Tags bulk file (nightly, zervice). Returns `(catalog_rows, correlation_rows)`.
     fn sync_oracle_tags(&self) -> impl Future<Output = anyhow::Result<(usize, usize)>> + Send;
 
-    /// Rebuilds the `card_profiles.oracle_tags` projection (nightly, zervice).
-    fn refresh_card_oracle_tags(&self) -> impl Future<Output = anyhow::Result<()>> + Send;
+    /// Rebuilds the `card_profiles.oracle_tags` projection (nightly, zervice), returning the
+    /// profiles it wrote.
+    fn refresh_card_oracle_tags(&self) -> impl Future<Output = anyhow::Result<u64>> + Send;
 
     /// Rebuilds the server-grouped card display (`oracle_tags_by_role` +
     /// `other_oracle_tags`) from the tag hierarchy (nightly, zervice).

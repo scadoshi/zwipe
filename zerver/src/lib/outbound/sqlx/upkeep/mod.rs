@@ -4,7 +4,9 @@
 //! must be covered by `zcripts/server/sql/zervice_role.sql`. Uses runtime
 //! queries (not the `query!` macro) deliberately: the session and email-change
 //! prunes' grants are destruction-only (`DELETE` + column-scoped `SELECT` on
-//! the columns their WHERE reads), and these are four trivial deletes.
+//! the columns their WHERE reads), and these are four trivial deletes. Each runs
+//! in a transaction the adapter ends as its `Writes` say, so a dry run counts
+//! what it would delete and deletes nothing.
 
 use anyhow::Context;
 
@@ -13,43 +15,51 @@ use crate::outbound::sqlx::postgres::Postgres;
 
 impl UpkeepRepository for Postgres {
     async fn prune_client_errors(&self, retention_days: i32) -> anyhow::Result<u64> {
+        let mut tx = self.pool.begin().await.context("beginning the prune")?;
         let result = sqlx::query(
             "DELETE FROM client_errors WHERE received_at < NOW() - make_interval(days => $1)",
         )
         .bind(retention_days)
-        .execute(&self.pool)
+        .execute(&mut *tx)
         .await
         .context("pruning client_errors")?;
+        self.finish(tx).await.context("ending the prune")?;
         Ok(result.rows_affected())
     }
 
     async fn prune_crash_reports(&self, retention_days: i32) -> anyhow::Result<u64> {
+        let mut tx = self.pool.begin().await.context("beginning the prune")?;
         let result = sqlx::query(
             "DELETE FROM crash_reports WHERE received_at < NOW() - make_interval(days => $1)",
         )
         .bind(retention_days)
-        .execute(&self.pool)
+        .execute(&mut *tx)
         .await
         .context("pruning crash_reports")?;
+        self.finish(tx).await.context("ending the prune")?;
         Ok(result.rows_affected())
     }
 
     async fn prune_expired_sessions(&self, replaced_retention_days: i32) -> anyhow::Result<u64> {
+        let mut tx = self.pool.begin().await.context("beginning the prune")?;
         let result = sqlx::query(
             "DELETE FROM refresh_tokens WHERE (replaced_at IS NULL AND expires_at < NOW()) OR replaced_at < NOW() - make_interval(days => $1)",
         )
         .bind(replaced_retention_days)
-        .execute(&self.pool)
+        .execute(&mut *tx)
         .await
         .context("pruning expired and replaced refresh tokens")?;
+        self.finish(tx).await.context("ending the prune")?;
         Ok(result.rows_affected())
     }
 
     async fn prune_expired_email_changes(&self) -> anyhow::Result<u64> {
+        let mut tx = self.pool.begin().await.context("beginning the prune")?;
         let result = sqlx::query("DELETE FROM email_change_requests WHERE expires_at < NOW()")
-            .execute(&self.pool)
+            .execute(&mut *tx)
             .await
             .context("pruning expired email_change_requests")?;
+        self.finish(tx).await.context("ending the prune")?;
         Ok(result.rows_affected())
     }
 }

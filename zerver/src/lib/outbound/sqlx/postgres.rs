@@ -123,6 +123,17 @@ impl PostgresPoolOptions {
 
 /// PostgreSQL database adapter with connection pooling.
 ///
+/// Whether zervice's writes are kept: [`Writes::Discard`] is a dry run, which does every write
+/// in its transaction and rolls it back, so the counts are real and nothing changes.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum Writes {
+    /// Commit each transaction.
+    #[default]
+    Keep,
+    /// Roll each transaction back.
+    Discard,
+}
+
 /// The primary entry point for database operations. Create one instance
 /// at application startup and clone it for each request handler.
 #[derive(Debug, Clone)]
@@ -133,6 +144,8 @@ pub struct Postgres {
     pub refresh_reuse: RefreshReuse,
     /// How long one card search statement may run before Postgres cancels it.
     pub search_timeout: std::time::Duration,
+    /// Whether zervice's writes are kept or rolled back (a dry run).
+    pub writes: Writes,
 }
 
 impl Postgres {
@@ -143,6 +156,29 @@ impl Postgres {
             pool,
             refresh_reuse: RefreshReuse::default(),
             search_timeout: SEARCH_STATEMENT_TIMEOUT,
+            writes: Writes::Keep,
+        }
+    }
+
+    /// The same adapter keeping or discarding zervice's writes.
+    #[must_use]
+    pub fn with_writes(mut self, writes: Writes) -> Self {
+        self.writes = writes;
+        self
+    }
+
+    /// Ends `tx` as the adapter's [`Writes`] say: committed, or rolled back on a dry run.
+    ///
+    /// # Errors
+    ///
+    /// The commit or rollback failing.
+    pub async fn finish(
+        &self,
+        tx: sqlx::Transaction<'_, sqlx::Postgres>,
+    ) -> Result<(), sqlx::Error> {
+        match self.writes {
+            Writes::Keep => tx.commit().await,
+            Writes::Discard => tx.rollback().await,
         }
     }
 

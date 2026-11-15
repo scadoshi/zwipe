@@ -13,6 +13,7 @@ use zwipe_core::domain::card::search_card::card_filter::CardQuery;
 use crate::domain::card::models::printing_removal::{self, RemovalMode, RemovalReport};
 use crate::domain::card::models::search_card::error::SearchCardsError;
 use crate::domain::card::models::zervice_metrics::{self, SyncedCards, ZerviceMetrics};
+use crate::domain::card::models::zervice_step::StepRecord;
 use crate::domain::card::ports::{CardRepository, CardService};
 use crate::domain::card::requests::create_card::CreateCardError;
 use crate::domain::card::requests::get_artists::GetArtistsError;
@@ -111,6 +112,10 @@ impl<R: CardRepository> CardService for Service<R> {
         })
     }
 
+    async fn record_zervice_step(&self, record: &StepRecord) -> anyhow::Result<()> {
+        self.repo.record_zervice_step(record).await
+    }
+
     async fn remove_deleted_printings(
         &self,
         bulk: &HashSet<Uuid>,
@@ -204,7 +209,7 @@ impl<R: CardRepository> CardService for Service<R> {
         Ok(counts)
     }
 
-    async fn refresh_card_oracle_tags(&self) -> anyhow::Result<()> {
+    async fn refresh_card_oracle_tags(&self) -> anyhow::Result<u64> {
         self.repo.refresh_card_oracle_tags().await
     }
 

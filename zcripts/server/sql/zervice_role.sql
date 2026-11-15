@@ -88,6 +88,9 @@ GRANT SELECT (commander_id, partner_commander_id, background_id, signature_spell
       UPDATE (commander_id, partner_commander_id, background_id, signature_spell_id)
       ON decks TO zervice;
 
+-- Every step: one zervice_steps row per step per run.
+GRANT SELECT, INSERT ON zervice_steps TO zervice;
+
 COMMIT;
 
 -- Everything else (users, the rest of decks and deck_cards, signal writes,

@@ -6,17 +6,21 @@
 --   sudo -u postgres psql zwipe -f zcripts/metrics/zervice.sql
 --
 -- zervice (zerver/src/bin/zervice.rs) runs five steps in order, each non-fatal:
---   1. card sync: Scryfall default_cards into scryfall_data, card_profiles and oou_sets
+--   1. card sync: Scryfall default_cards into scryfall_data, card_profiles and oou_sets,
+--      then (1b) the removal of the printings Scryfall deleted, which only previews until
+--      PRINTING_REMOVAL=on
 --   2. oracle tags: oracle_tags and card_oracle_tags, then the tag projection and grouping
 --   3. derive categories: card_profiles roles from oracle tags, with straggler merges
 --   4. refresh materialized views: latest_cards, card_signal_rollup, otag_context_signal_rollup
 --   5. upkeep prunes: client_errors and crash_reports past 90 days, refresh_tokens expired
 --      or replaced more than 7 days ago, expired email_change_requests
 --
--- Only step 1 records itself, one zervice_metrics row per run (when, how long, status,
--- rows received, upserted, skipped, failed, and each failed card). Steps 2 to 5 log to
--- zervice's log files and record nothing in the database, so their sections below read
--- the tables they leave behind instead. Section 10 lists the gaps.
+-- Every step records a zervice_steps row per run (step, start, duration, status, its main
+-- count and its named counts, the error when it failed, and whether the run was a dry
+-- run): sections 4b to 4e read them. The card sync also keeps its zervice_metrics row
+-- (rows received, upserted, skipped, failed, and each failed card), which a dry run does
+-- not write. Before zervice_steps existed, steps 2 to 5 recorded nothing, so sections 5
+-- to 9 still read the tables they leave behind. Section 10 lists the gaps.
 --
 -- Read-only: no writes, no locks.
 
@@ -113,6 +117,99 @@ SELECT
 FROM (SELECT * FROM zervice_metrics ORDER BY started_at DESC LIMIT 14) m,
      jsonb_array_elements(m.errors) e
 ORDER BY m.started_at DESC
+LIMIT 25;
+
+
+-- ───────────────────────────────────────────────────────────────────
+\echo
+\echo ── 4b. LAST NIGHT, step by step (zervice_steps) ──
+-- The latest run in run order. status: ok, failed or skipped; rows: the step's main count
+-- (printings received, rows written, rows pruned); dry: a preview whose writes rolled back.
+WITH last_run AS (
+    SELECT run_id FROM zervice_steps ORDER BY started_at DESC LIMIT 1
+)
+SELECT
+    to_char(s.started_at, 'YYYY-MM-DD HH24:MI:SS')   AS started,
+    s.step,
+    s.status,
+    round(s.duration_ms / 1000.0, 1)                 AS secs,
+    s.rows,
+    s.counts,
+    s.dry_run                                        AS dry,
+    left(s.error, 100)                               AS error
+FROM zervice_steps s
+JOIN last_run USING (run_id)
+ORDER BY s.started_at;
+
+
+-- ───────────────────────────────────────────────────────────────────
+\echo
+\echo ── 4c. EACH STEP over the last 14 real nights ──
+-- Real runs only (dry runs left out). A step whose ok count trails the others, or whose
+-- duration climbs, is the one to chase.
+SELECT
+    step,
+    count(*)                                             AS runs,
+    count(*) FILTER (WHERE status = 'ok')                AS ok,
+    count(*) FILTER (WHERE status = 'failed')            AS failed,
+    count(*) FILTER (WHERE status = 'skipped')           AS skipped,
+    round(avg(duration_ms) / 1000.0, 1)                  AS avg_secs,
+    round(max(duration_ms) / 1000.0, 1)                  AS max_secs,
+    round(avg(rows))                                     AS avg_rows,
+    max(started_at)::date                                AS last_run
+FROM zervice_steps
+WHERE NOT dry_run AND started_at > now() - interval '14 days'
+GROUP BY step
+ORDER BY min(started_at::time), step;
+
+
+-- ───────────────────────────────────────────────────────────────────
+\echo
+\echo ── 4d. FAILED OR SKIPPED steps in the last 14 days ──
+-- Empty is good. A skipped printing_removal means the card sync did not complete; skipped
+-- refreshes mean a dry run.
+SELECT
+    to_char(started_at, 'YYYY-MM-DD HH24:MI')    AS started,
+    step,
+    status,
+    dry_run                                      AS dry,
+    coalesce(left(error, 120), counts->>'skipped') AS why
+FROM zervice_steps
+WHERE status <> 'ok' AND started_at > now() - interval '14 days'
+ORDER BY started_at DESC
+LIMIT 30;
+
+
+-- ───────────────────────────────────────────────────────────────────
+\echo
+\echo ── 4e. PRINTING REMOVAL: what each night found and did ──
+-- to_remove and kept are the plan; removed and the moves are what an applied run did
+-- (applied = 1). Until PRINTING_REMOVAL=on, every row is a preview with removed 0.
+SELECT
+    to_char(started_at, 'YYYY-MM-DD')            AS night,
+    status,
+    dry_run                                      AS dry,
+    (counts->>'applied')::int                    AS applied,
+    (counts->>'to_remove')::int                  AS to_remove,
+    (counts->>'kept')::int                       AS kept,
+    (counts->>'removed')::int                    AS removed,
+    (counts->>'moved_deck_cards')::int           AS moved_cards,
+    (counts->>'moved_slots')::int                AS moved_slots
+FROM zervice_steps
+WHERE step = 'printing_removal'
+ORDER BY started_at DESC
+LIMIT 14;
+
+-- Every printing removed so far, newest first, with where its references went.
+SELECT
+    to_char(rp.removed_at, 'YYYY-MM-DD')         AS removed,
+    rp.id                                        AS printing,
+    rp.replacement_id                            AS replaced_by,
+    sd.name                                      AS replacement_name,
+    sd.set                                       AS replacement_set
+FROM removed_printings rp
+LEFT JOIN scryfall_data sd ON sd.id = rp.replacement_id
+ORDER BY rp.removed_at DESC
 LIMIT 25;
 
 
@@ -237,12 +334,11 @@ FROM (SELECT deck_id, count(*) OVER (PARTITION BY deck_id) AS per_deck
 -- ───────────────────────────────────────────────────────────────────
 \echo
 \echo ── 10. GAPS — what zervice does that leaves no record ──
-\echo   Step 1 records no count of printings that actually changed (zervice_metrics has
-\echo   upserted, not changed, and scryfall_data has no updated_at), and no per-table split
-\echo   between scryfall_data, card_profiles and oou_sets.
-\echo   Steps 2 to 5 record nothing in the database: tag and correlation counts, category
-\echo   rows and merges, each matview refresh and its duration, and the rows each prune
-\echo   deleted exist only in the zervice log files on the server.
-\echo   A per-step table (step, started_at, duration, rows, ok) written by zervice would close
-\echo   all of these at once.
+\echo   Every step now records a zervice_steps row (sections 4b to 4e), so the counts steps 2
+\echo   to 5 used to keep only in the log files are in the database from the first night after
+\echo   the deploy; nights before that have no step rows.
+\echo   Still open: step 1 records no count of printings that actually changed (zervice_metrics
+\echo   has upserted, not changed, and scryfall_data has no updated_at), and no per-table split
+\echo   between scryfall_data, card_profiles and oou_sets. A view refresh records its duration
+\echo   but no row count, since Postgres reports none.
 \echo

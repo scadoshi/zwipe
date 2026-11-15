@@ -16,7 +16,7 @@
 //! under the same role the card display does.
 
 use anyhow::Context;
-use sqlx::PgPool;
+use sqlx::PgConnection;
 use zwipe_core::domain::card::card_role::role_tags;
 use zwipe_core::domain::card::oracle_tag::NOISE_ORACLE_TAG_SLUGS;
 
@@ -121,7 +121,7 @@ pub fn role_membership_ctes(first: u16) -> String {
 /// # Errors
 ///
 /// Returns an error if the update statement fails.
-pub async fn refresh_oracle_tag_groups(pool: &PgPool) -> anyhow::Result<u64> {
+pub async fn refresh_oracle_tag_groups(conn: &mut PgConnection) -> anyhow::Result<u64> {
     let binds = RoleMembershipBinds::new();
     let noise: Vec<String> = NOISE_ORACLE_TAG_SLUGS
         .iter()
@@ -164,7 +164,7 @@ pub async fn refresh_oracle_tag_groups(pool: &PgPool) -> anyhow::Result<u64> {
     let result = binds
         .bind(sqlx::query(sqlx::AssertSqlSafe(sql)))
         .bind(&noise)
-        .execute(pool)
+        .execute(&mut *conn)
         .await
         .context("failed to refresh oracle_tags_by_role / other_oracle_tags")?;
     Ok(result.rows_affected())

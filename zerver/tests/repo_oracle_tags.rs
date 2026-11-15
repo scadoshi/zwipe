@@ -239,7 +239,9 @@ async fn derive_maps_otag_subtree_to_category(pool: sqlx::PgPool) {
     .await
     .unwrap();
 
-    derive_categories(&pool).await.unwrap();
+    derive_categories(&mut pool.acquire().await.unwrap())
+        .await
+        .unwrap();
 
     let cats: serde_json::Value = sqlx::query_scalar(
         "SELECT cp.card_roles FROM card_profiles cp \
@@ -267,7 +269,9 @@ async fn derive_tokens_from_all_parts(pool: sqlx::PgPool) {
     .await
     .unwrap();
 
-    derive_categories(&pool).await.unwrap();
+    derive_categories(&mut pool.acquire().await.unwrap())
+        .await
+        .unwrap();
 
     let cats: serde_json::Value = sqlx::query_scalar(
         "SELECT cp.card_roles FROM card_profiles cp \

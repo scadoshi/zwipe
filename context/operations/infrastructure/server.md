@@ -308,7 +308,7 @@ Each process gets its own file in `/etc/zwipe`, owned by root and readable only 
 | File | Owner:group, mode | Read by | Holds |
 |------|-------------------|---------|-------|
 | `zerver.env` | `root:zerver 640` | zerver | everything below |
-| `zervice.env` | `root:zervice 640` | zervice | `DATABASE_URL` (as the `zervice` role), `RUST_LOG`, `LOG_DIR`, `HEALTHCHECK_PING_URL` |
+| `zervice.env` | `root:zervice 640` | zervice | `DATABASE_URL` (as the `zervice` role), `RUST_LOG`, `LOG_DIR`, `HEALTHCHECK_PING_URL`, and optionally `PRINTING_REMOVAL=on` (lets step 1b remove the printings Scryfall deleted; unset, it only logs its plan) and `ZERVICE_DRY_RUN=true` (a whole run previews its changes and keeps none) |
 | `alert.env` | `root:zervice-alert 640` | zervice-alert | `RESEND_API_KEY`, `RESEND_EMAIL_FROM`, `SUPPORT_EMAIL_ADDRESS` |
 | `migrate.env` | `root:runner 640` | the deploy runner | `DATABASE_URL` only |
 
@@ -515,7 +515,7 @@ Unit files are versioned at `zcripts/server/systemd/` (`zervice.service`, `zervi
 
 **Least privilege (2026-07-29):**
 
-- `zervice.service` reads `/etc/zwipe/zervice.env`: exactly `DATABASE_URL`, `RUST_LOG`, `LOG_DIR`, plus optional `HEALTHCHECK_PING_URL`. The bin's `ZerviceConfig` accepts nothing more, and it holds no JWT/Resend secrets.
+- `zervice.service` reads `/etc/zwipe/zervice.env`: exactly `DATABASE_URL`, `RUST_LOG`, `LOG_DIR`, plus optional `HEALTHCHECK_PING_URL`, `PRINTING_REMOVAL` and `ZERVICE_DRY_RUN`. The bin's `ZerviceConfig` accepts nothing more, and it holds no JWT/Resend secrets. Every step records a `zervice_steps` row; a dry run (`ZERVICE_DRY_RUN=true`, or `zervice --dry-run` by hand) rolls every write back, skips the view refreshes, records its step rows with `dry_run` set and pings no healthcheck.
 - The alert unit runs as the `zervice-alert` user (a member of `systemd-journal`, which is all a journal read needs) under the same sandbox block as zervice. It reads only `/etc/zwipe/alert.env`, the three Resend values.
 - Creating that user is a hand step on the box, once: `sudo useradd --system --no-create-home --shell /usr/sbin/nologin zervice-alert && sudo chown root:zervice-alert /etc/zwipe/alert.env && sudo chmod 640 /etc/zwipe/alert.env`, then reinstall the unit and `sudo systemctl daemon-reload`.
 - Test with `sudo systemctl start zervice-alert.service` and expect the email.

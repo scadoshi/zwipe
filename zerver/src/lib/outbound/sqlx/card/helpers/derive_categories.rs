@@ -19,7 +19,7 @@
 //! through. `Finisher` is dropped.
 
 use anyhow::Context;
-use sqlx::PgPool;
+use sqlx::PgConnection;
 pub use zwipe_core::domain::card::card_role::role_tags::{
     CATEGORY_ROOTS, ROLE_TAG_EXCLUSIONS, ROLE_TAG_OVERRIDES, exclusion_pairs, override_pairs,
     root_pairs,
@@ -28,7 +28,7 @@ pub use zwipe_core::domain::card::card_role::role_tags::{
 /// Non-fatal typo guard: log any slug the `oracle_tags` catalog doesn't carry, so
 /// a bad `ROLE_TAG_OVERRIDES` / `ROLE_TAG_EXCLUSIONS` entry surfaces in the zervice
 /// log instead of silently matching nothing. `source` names the const for the log.
-async fn warn_unknown_slugs(pool: &PgPool, slugs: &[String], source: &str) {
+async fn warn_unknown_slugs(conn: &mut PgConnection, slugs: &[String], source: &str) {
     if slugs.is_empty() {
         return;
     }
@@ -37,7 +37,7 @@ async fn warn_unknown_slugs(pool: &PgPool, slugs: &[String], source: &str) {
          WHERE NOT EXISTS (SELECT 1 FROM oracle_tags WHERE slug = s)",
     )
     .bind(slugs)
-    .fetch_all(pool)
+    .fetch_all(&mut *conn)
     .await
     .unwrap_or_default();
     if !unknown.is_empty() {
@@ -57,12 +57,12 @@ async fn warn_unknown_slugs(pool: &PgPool, slugs: &[String], source: &str) {
 /// # Errors
 ///
 /// Returns an error when the `UPDATE` fails.
-pub async fn derive_categories(pool: &PgPool) -> anyhow::Result<u64> {
+pub async fn derive_categories(conn: &mut PgConnection) -> anyhow::Result<u64> {
     let (categories, root_slugs) = root_pairs();
     let (ov_categories, ov_slugs) = override_pairs();
     let (ex_categories, ex_slugs) = exclusion_pairs();
-    warn_unknown_slugs(pool, &ov_slugs, "ROLE_TAG_OVERRIDES").await;
-    warn_unknown_slugs(pool, &ex_slugs, "ROLE_TAG_EXCLUSIONS").await;
+    warn_unknown_slugs(&mut *conn, &ov_slugs, "ROLE_TAG_OVERRIDES").await;
+    warn_unknown_slugs(&mut *conn, &ex_slugs, "ROLE_TAG_EXCLUSIONS").await;
 
     let result = sqlx::query(
         "WITH RECURSIVE roots(category, root_slug) AS (
@@ -106,7 +106,7 @@ pub async fn derive_categories(pool: &PgPool) -> anyhow::Result<u64> {
     .bind(&ov_slugs)
     .bind(&ex_categories)
     .bind(&ex_slugs)
-    .execute(pool)
+    .execute(&mut *conn)
     .await
     .context("failed to derive card_roles from oracle tags")?;
     Ok(result.rows_affected())

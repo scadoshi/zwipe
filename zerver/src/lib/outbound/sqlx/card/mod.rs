@@ -33,6 +33,7 @@ use crate::domain::card::models::printing_removal::{
 };
 use crate::domain::card::models::search_card::error::SearchCardsError;
 use crate::domain::card::models::zervice_metrics::ZerviceMetrics;
+use crate::domain::card::models::zervice_step::{StepOutcome, StepRecord};
 use crate::domain::card::ports::{CardRepository, DeckServeContext};
 use crate::domain::card::requests::create_card::CreateCardError;
 use crate::domain::card::requests::get_artists::GetArtistsError;
@@ -382,7 +383,7 @@ impl CardRepository for MyPostgres {
         let cards = multiple_scryfall_data
             .batch_delta_upsert_with_tx(&mut tx, batch_size, zervice_metrics)
             .await?;
-        tx.commit().await?;
+        self.finish(tx).await?;
         Ok(cards)
     }
 
@@ -408,8 +409,38 @@ impl CardRepository for MyPostgres {
             .fetch_one(&mut *tx)
             .await?;
         let zervice_metrics: ZerviceMetrics = database_zervice_metrics.try_into()?;
-        tx.commit().await?;
+        // A dry run records no sync row, so a preview never reads as a real night.
+        self.finish(tx).await?;
         Ok(zervice_metrics)
+    }
+
+    async fn record_zervice_step(&self, record: &StepRecord) -> anyhow::Result<()> {
+        let (rows, error) = match &record.outcome {
+            StepOutcome::Ok { rows, .. } => {
+                (rows.map(|n| i64::try_from(n).unwrap_or(i64::MAX)), None)
+            }
+            StepOutcome::Failed(error) => (None, Some(error.as_str())),
+            StepOutcome::Skipped(_) => (None, None),
+        };
+        // Straight on the pool, never through `finish`: a dry run keeps its step rows.
+        sqlx::query(
+            "INSERT INTO zervice_steps \
+             (run_id, step, started_at, duration_ms, status, rows, counts, error, dry_run) \
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+        )
+        .bind(record.run_id)
+        .bind(record.step.as_str())
+        .bind(record.started_at)
+        .bind(i64::try_from(record.duration_ms).unwrap_or(i64::MAX))
+        .bind(record.outcome.status())
+        .bind(rows)
+        .bind(record.counts_json())
+        .bind(error)
+        .bind(record.dry_run)
+        .execute(&self.pool)
+        .await
+        .with_context(|| format!("recording zervice step {}", record.step.as_str()))?;
+        Ok(())
     }
 
     async fn fetch_stored_printings(&self) -> anyhow::Result<Vec<Printing>> {
@@ -469,7 +500,7 @@ impl CardRepository for MyPostgres {
         .execute(&mut *tx)
         .await
         .context("failed to fill oou_sets")?;
-        tx.commit()
+        self.finish(tx)
             .await
             .context("failed to commit oou_sets overlay")?;
         tracing::info!("oou sets overlay: {} wholly-UB set codes", codes.len());
@@ -504,13 +535,19 @@ impl CardRepository for MyPostgres {
         &self,
         tags: &[crate::inbound::external::scryfall::oracle_tag::OracleTag],
     ) -> anyhow::Result<(usize, usize)> {
-        crate::outbound::sqlx::card::helpers::oracle_tags::sync_oracle_tags(&self.pool, tags).await
+        let mut tx = self.pool.begin().await?;
+        let counts =
+            crate::outbound::sqlx::card::helpers::oracle_tags::sync_oracle_tags(&mut tx, tags)
+                .await?;
+        self.finish(tx).await?;
+        Ok(counts)
     }
 
-    async fn refresh_card_oracle_tags(&self) -> anyhow::Result<()> {
+    async fn refresh_card_oracle_tags(&self) -> anyhow::Result<u64> {
         // Aggregate oracle tags per oracle_id once, then fan out to every printing's
         // card_profile. LEFT JOIN so cards that lost all tags reset to '[]'.
-        sqlx::query(
+        let mut tx = self.pool.begin().await?;
+        let result = sqlx::query(
             "WITH oracle_agg AS (
                  SELECT oracle_id, jsonb_agg(oracle_tag ORDER BY oracle_tag) AS tags
                  FROM card_oracle_tags
@@ -522,10 +559,11 @@ impl CardRepository for MyPostgres {
              LEFT JOIN oracle_agg oa ON oa.oracle_id = sd.oracle_id
              WHERE cp.scryfall_data_id = sd.id",
         )
-        .execute(&self.pool)
+        .execute(&mut *tx)
         .await
         .context("failed to refresh card_profiles.oracle_tags projection")?;
-        Ok(())
+        self.finish(tx).await?;
+        Ok(result.rows_affected())
     }
 
     // == get ==
@@ -2467,16 +2505,24 @@ impl CardRepository for MyPostgres {
             .await?;
         }
 
-        tx.commit().await?;
+        self.finish(tx).await?;
         Ok(())
     }
 
     async fn derive_oracle_tag_categories(&self) -> anyhow::Result<u64> {
-        crate::outbound::sqlx::card::helpers::derive_categories::derive_categories(&self.pool).await
+        let mut tx = self.pool.begin().await?;
+        let rows =
+            crate::outbound::sqlx::card::helpers::derive_categories::derive_categories(&mut tx)
+                .await?;
+        self.finish(tx).await?;
+        Ok(rows)
     }
 
     async fn refresh_oracle_tag_groups(&self) -> anyhow::Result<u64> {
-        oracle_tag_groups::refresh_oracle_tag_groups(&self.pool).await
+        let mut tx = self.pool.begin().await?;
+        let rows = oracle_tag_groups::refresh_oracle_tag_groups(&mut tx).await?;
+        self.finish(tx).await?;
+        Ok(rows)
     }
 
     async fn fetch_card_ids_with_oracle_text(&self) -> Result<Vec<uuid::Uuid>, anyhow::Error> {
