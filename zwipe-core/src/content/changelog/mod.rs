@@ -62,22 +62,10 @@ pub const RELEASES: &[Release] = &[
         date: NaiveDate::from_ymd_opt(2026, 11, 14),
         entries: &[
             "On the web's swipe screen, v and Flip turn the card's image and details together, and v switches a split, aftermath or adventure card's details to its other half",
-        ],
-    },
-    Release {
-        version: Version::new(1, 21, 6),
-        date: NaiveDate::from_ymd_opt(2026, 11, 14),
-        entries: &[
             "Printings opens on the face its card shows, and a Flip or Meld button, or v on the web, turns every printing at once, on the web and in the app",
             "On the web's Playstyle, h, l and the left and right arrows move the keyboard cursor between Suggested commanders and Staples",
             "Flipping or melding a card eases its details to the other face instead of cutting, on the web and in the app",
             "On the web's Home, the Colors bars grow to fill the panel beside Decks on a wide screen",
-        ],
-    },
-    Release {
-        version: Version::new(1, 21, 5),
-        date: NaiveDate::from_ymd_opt(2026, 11, 14),
-        entries: &[
             "On the web's deck page, gg and Shift+G let go of the card the keyboard cursor had raised",
             "Printings shows a printing's set, number, place, artist and prices as one row of chips, on the web and in the app",
             "On the web, moving the keyboard cursor while a card is open no longer leaves a half-faded card image behind",
