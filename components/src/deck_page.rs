@@ -258,7 +258,8 @@ pub fn DeckHead(
 /// `on_select` with the card's id, for the host to open its details as the same card in the list
 /// does, else `on_open` with the card and the face shown; `on_load` fires once the image has its
 /// bytes, or at once when the card has no image. The image carries the card's `data-row`, so the
-/// deck page's hover keys act on it as on a stack card.
+/// deck page's hover keys act on it as on a stack card, and is a stop of the keyboard cursor,
+/// Enter opening it as a click does.
 #[component]
 pub fn FeaturedCard(
     card: Card,
@@ -279,6 +280,7 @@ pub fn FeaturedCard(
     // The face the flip control shows, so a click opens that one.
     let mut face = use_signal(|| 0usize);
     let sd_open = sd.clone();
+    let sd_key = sd.clone();
     let role_class = if role == "MVP" {
         "stat-chip deck-head-card-role-mvp"
     } else {
@@ -291,6 +293,21 @@ pub fn FeaturedCard(
                 div {
                     class: "deck-head-card-image floatable float-on-hover",
                     "data-row": "{id}",
+                    // A stop of the keyboard cursor, the row above the cards; Enter opens it as a
+                    // click does.
+                    tabindex: "0",
+                    role: "button",
+                    "aria-label": "{name}",
+                    onkeydown: move |event: KeyboardEvent| {
+                        if event.key() == Key::Enter {
+                            event.prevent_default();
+                            if let Some(select) = on_select {
+                                select.call(id);
+                            } else if let Some(open) = on_open {
+                                open.call((sd_key.clone(), face()));
+                            }
+                        }
+                    },
                     // The click stops at the card, so a page's tap-off never closes what it opens.
                     onclick: move |event: MouseEvent| {
                         event.stop_propagation();
@@ -511,6 +528,29 @@ mod tests {
         card.scryfall_data.id = Uuid::new_v4();
         card.scryfall_data.name = name.to_owned();
         card
+    }
+
+    #[test]
+    fn a_featured_card_is_a_stop_the_keyboard_cursor_can_focus() {
+        fn app() -> Element {
+            rsx! {
+                FeaturedCard { card: card("Atraxa"), role: "Commander".to_owned() }
+            }
+        }
+        let mut dom = VirtualDom::new(app);
+        dom.rebuild_in_place();
+        let html = dioxus_ssr::render(&dom);
+        let (_, image) = html
+            .split_once(r#"class="deck-head-card-image"#)
+            .expect("the featured image");
+        let (image, _) = image.split_once('>').expect("its tag");
+        assert!(image.contains(r#"tabindex="0""#), "{image}");
+        assert!(image.contains(r#"role="button""#), "{image}");
+        assert!(image.contains(r#"aria-label="Atraxa""#), "{image}");
+        assert!(
+            crate::deck_cursor::HEAD_SELECTOR.contains(".deck-head-card-image[data-row]"),
+            "the cursor stops on it"
+        );
     }
 
     #[test]

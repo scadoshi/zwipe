@@ -292,7 +292,11 @@ pub fn card_rows_rows(layout: ListLayout) -> Vec<SheetRow> {
         .collect()
 }
 
-/// The deck cards page's groups: the cursor's moves and Enter under Navigation; the keys that
+/// The deck page's way up from a column's top card into the featured cards in its head, and back
+/// down into the cards ([`deck_cards::cursor::step_with_head`](crate::deck_cards::cursor::step_with_head)).
+pub const FEATURED_ROW: SheetRow = (&["↑", "k"], "Up into the featured cards");
+
+/// The deck cards page's groups: the cursor's moves, the way up into the featured cards, and Enter under Navigation; the keys that
 /// read a card, then (owner's page) the ones that change it, under Card; Undo, the filter and
 /// Quick add (owner's page) under Page. The cursor keeps `j` and `k`.
 #[must_use]
@@ -302,7 +306,10 @@ pub fn deck_cards_groups(editable: Editable) -> Vec<SheetGroup> {
     let pick =
         |keys: &[&str]| -> Vec<SheetRow> { keys.iter().filter_map(|key| find(key)).collect() };
     sheet_groups(ScreenKeys {
-        moves: pick(&["↑", "h", "Home"]),
+        moves: pick(&["↑", "h", "Home"])
+            .into_iter()
+            .chain([FEATURED_ROW])
+            .collect(),
         open: find("Enter"),
         card: pick(&["p", "i", "v", "d", "m", "s", "Shift+S", "-", "+"]),
         page: pick(&["u", "f", QUICK_ADD_KEY]),
@@ -474,7 +481,7 @@ mod tests {
             vec![
                 (
                     "Navigation",
-                    vec!["↑", "h", "Home", "gg", "Shift+G", "Enter"]
+                    vec!["↑", "h", "Home", "↑", "gg", "Shift+G", "Enter"]
                 ),
                 (
                     "Card",
@@ -494,7 +501,7 @@ mod tests {
             vec![
                 (
                     "Navigation",
-                    vec!["↑", "h", "Home", "gg", "Shift+G", "Enter"]
+                    vec!["↑", "h", "Home", "↑", "gg", "Shift+G", "Enter"]
                 ),
                 ("Card", vec!["p", "i", "v", "d"]),
                 ("Page", vec!["f", "t", "?", "Shift+H", "Esc"]),
@@ -671,6 +678,22 @@ mod tests {
         }
         assert_eq!(flow_key("ArrowLeft"), Some(FlowKey::Back));
         assert_eq!(flow_key("Enter"), Some(FlowKey::Select));
+    }
+
+    #[test]
+    fn the_deck_page_lists_the_way_up_into_its_featured_cards() {
+        for editable in [Editable::Yes, Editable::No] {
+            let groups = deck_cards_groups(editable);
+            let navigation = groups
+                .iter()
+                .find(|group| group.title == page_keys::NAVIGATION)
+                .map_or_else(Vec::new, |group| group.rows.clone());
+            assert!(navigation.contains(&FEATURED_ROW), "{navigation:?}");
+        }
+        assert!(
+            !rows_of(&card_rows_groups(ListLayout::SideBySide)).contains(&FEATURED_ROW),
+            "screens of card rows have no featured cards"
+        );
     }
 
     #[test]

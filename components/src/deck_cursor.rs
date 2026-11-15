@@ -22,10 +22,15 @@ use zwipe_ui::deck_cards::cursor::{self, MOVE_KEYS, Move, Snapshot, Stop, Walk, 
 use crate::deck_cards_view::StackDetails;
 use crate::keys::{PRESSED_KEY, STACK_DETAILS_CLASS, cursor_guard_js};
 
-/// The cards the cursor stops on: the deck page's List rows and stack cards, and the card rows of
-/// the screens that list cards without editing them ([`use_card_list_cursor`]). A deck row's own
-/// card row inside it is not a second stop, and a featured card in the deck head is not one.
-pub const STOP_SELECTOR: &str = ".web-deck-row[data-row], .card-stack-slot[data-row], .web-card-row[data-row]:not(.web-deck-row > *)";
+/// The featured cards in the deck head, the wide head's images and the phone strip's cards, which
+/// the cursor stops on as one row above the cards ([`cursor::step_with_head`]). Each is also a
+/// card in the List or Stacks, so its stop is named apart, as `head:` and its id.
+pub const HEAD_SELECTOR: &str = ".deck-head-card-image[data-row], .deck-featured-card[data-row]";
+
+/// The cards the cursor stops on: the deck page's List rows and stack cards, its featured cards
+/// ([`HEAD_SELECTOR`]), and the card rows of the screens that list cards without editing them
+/// ([`use_card_list_cursor`]). A deck row's own card row inside it is not a second stop.
+pub const STOP_SELECTOR: &str = ".web-deck-row[data-row], .card-stack-slot[data-row], .web-card-row[data-row]:not(.web-deck-row > *), .deck-head-card-image[data-row], .deck-featured-card[data-row]";
 
 /// Installs, once a tab, the page-wide trackers the cursor reads: the last input (`key` or
 /// `mouse`), the card in focus, `__zwipeDeckFocus`, which focuses a card by id and keeps it in
@@ -38,13 +43,16 @@ if (!window.__zwipeDeckTrack) {
     window.__zwipeDeckTrack = true;
     window.__zwipeDeckInput = 'mouse';
     const stops = '__STOPS__';
+    const head = '__HEAD__';
+    // A featured card's stop is named apart from the same card's row or stack card.
+    const spot = (s) => (s.matches(head) ? 'head:' : '') + s.getAttribute('data-row');
     let previewed = null;
     const unpreview = () => { if (previewed) { const line = previewed; previewed = null; line.dispatchEvent(new MouseEvent('mouseleave')); } };
     document.addEventListener('mousemove', (e) => { if (e.movementX || e.movementY) { window.__zwipeDeckInput = 'mouse'; unpreview(); } }, true);
     document.addEventListener('pointerdown', () => { window.__zwipeDeckInput = 'mouse'; }, true);
     document.addEventListener('focusin', (e) => {
         const stop = e.target.closest && e.target.closest(stops);
-        if (stop) window.__zwipeDeckCursor = stop.getAttribute('data-row');
+        if (stop) window.__zwipeDeckCursor = spot(stop);
         const line = e.target.closest && e.target.closest('.web-card-row .card-row-compact');
         if (line && line !== previewed && window.__zwipeCursorPreview && window.__zwipeDeckInput === 'key' && !document.querySelector('.web-card-row .card-row.expanded')) {
             unpreview();
@@ -68,7 +76,7 @@ if (!window.__zwipeDeckTrack) {
         const at = document.activeElement;
         if (at && at.closest && at.closest(stops)) { window.__zwipeDeckInput = 'mouse'; at.blur(); }
     }, true);
-    const find = (id) => [...document.querySelectorAll(stops)].find((s) => s.getAttribute('data-row') === id);
+    const find = (id) => [...document.querySelectorAll(stops)].find((s) => spot(s) === id);
     const box = (s) => (s && getComputedStyle(s).display === 'contents' && s.firstElementChild) || s;
     const live = (el) => el && box(el).offsetParent !== null && !el.closest('[inert]') ? el : null;
     window.__zwipeDeckFocus = (id, held) => {
@@ -112,13 +120,14 @@ if (!window.__zwipeDeckTrack) {
 /// sends `[key, from, columns]`, `from` the
 /// card the move starts at (the hovered card when the mouse moved last, else the card in focus,
 /// else the last cursor), each column `[[id, center_y, in_view], ...]`, `open`: `drawer`
-/// while the details drawer shows, `row` while a List row is open, else empty, and whether the
-/// key repeats. Home and End only
+/// while the details drawer shows, `row` while a List row is open, else empty, whether the
+/// key repeats, the featured cards `[[spot, center_x], ...]` and each column's horizontal center. Home and End only
 /// answer while a card has focus from a key.
 const NAV_JS: &str = r"
 window.__zwipeDeckNav = window.__zwipeDeckNav || [];
 window.__zwipeDeckNav.push('__ID__');
 const stops = '__STOPS__';
+const headStops = '__HEAD__';
 const onKey = (e) => {
     const stack = window.__zwipeDeckNav;
     if (!stack.length || stack[stack.length - 1] !== '__ID__') return;
@@ -128,12 +137,14 @@ const onKey = (e) => {
     const box = (s) => (s && getComputedStyle(s).display === 'contents' && s.firstElementChild) || s;
     const all = [...document.querySelectorAll(stops)].filter((s) => box(s).offsetParent !== null && !s.closest('[inert]'));
     if (!all.length) return;
+    const spot = (s) => (s.matches(headStops) ? 'head:' : '') + s.getAttribute('data-row');
+    const cards = all.filter((s) => !s.matches(headStops));
     const focused = document.activeElement && document.activeElement.closest && document.activeElement.closest(stops);
     const shows = window.__zwipeDeckInput === 'key' && focused;
     if ((key === 'Home' || key === 'End') && !shows) return;
     const hovered = all.filter((s) => s.matches(':hover')).pop();
     const fromEl = window.__zwipeDeckInput === 'mouse' && hovered ? hovered : focused;
-    const from = fromEl ? fromEl.getAttribute('data-row') : (window.__zwipeDeckCursor || null);
+    const from = fromEl ? spot(fromEl) : (window.__zwipeDeckCursor || null);
     e.preventDefault();
     window.__zwipeDeckInput = 'key';
     window.__zwipeDeckHeld = e.repeat;
@@ -144,10 +155,13 @@ const onKey = (e) => {
     const holders = stacked.length ? stacked : paired ? [...listed.querySelectorAll(':scope > .deck-list-column')] : lists.length > 1 ? lists : [];
     const height = window.innerHeight;
     const as = (s) => { const r = box(s).getBoundingClientRect(); return [s.getAttribute('data-row'), r.top + r.height / 2, r.bottom > 0 && r.top < height]; };
-    const columns = holders.length ? holders.map((h) => all.filter((s) => h.contains(s)).map(as)) : [all.map(as)];
+    const columns = holders.length ? holders.map((h) => cards.filter((s) => h.contains(s)).map(as)) : [cards.map(as)];
+    const centerX = (el) => { const r = box(el).getBoundingClientRect(); return r.left + r.width / 2; };
+    const columnX = holders.length ? holders.map(centerX) : [cards.length ? centerX(cards[0]) : 0];
+    const head = all.filter((s) => s.matches(headStops)).map((s) => [spot(s), centerX(s)]);
     window.__zwipeDeckOrder = columns.flat().map((s) => s[0]);
     const open = document.querySelector('.bottom-sheet.show.__DRAWER__') ? 'drawer' : document.querySelector('.web-deck-row.selected, .web-card-row .card-row.expanded') ? 'row' : '';
-    dioxus.send([key, from, columns, open, e.repeat]);
+    dioxus.send([key, from, columns, open, e.repeat, head, columnX]);
 };
 window['__zwipeDeckNav__ID__'] = onKey;
 document.addEventListener('keydown', onKey);
@@ -246,6 +260,7 @@ const OPEN_ROW_JS: &str = "const row = document.querySelector('.web-deck-row[dat
 fn track_js() -> String {
     TRACK_JS
         .replace("__STOPS__", STOP_SELECTOR)
+        .replace("__HEAD__", HEAD_SELECTOR)
         .replace("__KEY__", PRESSED_KEY)
         .replace("__GG__", &GG_WINDOW_MS.to_string())
 }
@@ -277,11 +292,54 @@ pub fn use_card_list_cursor() {
 /// One card as the browser sends it: its id, vertical center and whether it is in view.
 type SentStop = (String, f64, bool);
 
+/// One featured card as the browser sends it: its stop's name ([`Spot`]) and horizontal center.
+type SentHead = (String, f64);
+
+/// A stop the cursor lands on: a card in the List or Stacks, or a featured card in the deck head,
+/// named apart since a featured card is also one of the cards. The browser writes a featured
+/// card's stop as `head:` and its id.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Spot {
+    /// A card in the List or Stacks, by its Scryfall id.
+    Card(Uuid),
+    /// A featured card in the deck head, by its Scryfall id.
+    Head(Uuid),
+}
+
+impl Spot {
+    /// The card the stop shows.
+    fn card(self) -> Uuid {
+        match self {
+            Self::Card(id) | Self::Head(id) => id,
+        }
+    }
+}
+
+impl std::fmt::Display for Spot {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Card(id) => write!(f, "{id}"),
+            Self::Head(id) => write!(f, "head:{id}"),
+        }
+    }
+}
+
+impl std::str::FromStr for Spot {
+    type Err = uuid::Error;
+
+    fn from_str(name: &str) -> Result<Self, Self::Err> {
+        match name.strip_prefix("head:") {
+            Some(id) => Uuid::try_parse(id).map(Self::Head),
+            None => Uuid::try_parse(name).map(Self::Card),
+        }
+    }
+}
+
 /// Answers the deck page's cursor keys, as the module describes, moving as `walk` says. `details`
 /// is the page's Stacks reveal and drawer, which follows the cursor while it is open.
 pub(crate) fn use_deck_cursor(details: Option<StackDetails>, walk: Walk) {
     let id = use_hook(Uuid::new_v4);
-    let mut order = use_signal(Vec::<Uuid>::new);
+    let mut order = use_signal(Vec::<Spot>::new);
     // Each row move, so a settled opening that a later move overtook does nothing.
     let row_moves = use_signal(|| 0u32);
     use_hook(move || {
@@ -289,6 +347,7 @@ pub(crate) fn use_deck_cursor(details: Option<StackDetails>, walk: Walk) {
         let script = NAV_JS
             .replace("__ID__", &id.to_string())
             .replace("__STOPS__", STOP_SELECTOR)
+            .replace("__HEAD__", HEAD_SELECTOR)
             .replace("__LIST__", LIST_ATTR)
             .replace("__KEY__", PRESSED_KEY)
             .replace("__MOVES__", &format!("{MOVE_KEYS:?}"))
@@ -296,32 +355,48 @@ pub(crate) fn use_deck_cursor(details: Option<StackDetails>, walk: Walk) {
             .replace("__DRAWER__", STACK_DETAILS_CLASS);
         spawn(async move {
             let mut keys = document::eval(&script);
-            while let Ok((key, from, columns, open, held)) = keys
-                .recv::<(String, Option<String>, Vec<Vec<SentStop>>, String, bool)>()
+            while let Ok((key, from, columns, open, held, heads, column_x)) = keys
+                .recv::<(
+                    String,
+                    Option<String>,
+                    Vec<Vec<SentStop>>,
+                    String,
+                    bool,
+                    Vec<SentHead>,
+                    Vec<f64>,
+                )>()
                 .await
             {
                 let Some(step) = move_for(&key) else {
                     continue;
                 };
                 let snapshot = snapshot_of(&columns);
-                let from = from.and_then(|from| Uuid::try_parse(&from).ok());
-                let Some(target) = land(&snapshot, from, step, walk, &order.peek()) else {
+                let head = cursor::Head {
+                    column_x,
+                    ..head_of(&heads)
+                };
+                let from: Option<Spot> = from.and_then(|from| from.parse().ok());
+                let Some(target) = land(&snapshot, &head, from, step, walk, &order.peek()) else {
                     continue;
                 };
                 order.set(snapshot.order());
                 document::eval(&format!(
                     "window.__zwipeDeckFocus('{target}', window.__zwipeDeckHeld);"
                 ));
-                match Follow::of(&open) {
-                    Follow::Drawer => {
+                match (Follow::of(&open), target) {
+                    (Follow::Drawer, _) => {
+                        let card = target.card();
                         if let Some(details) = details
-                            && details.reveal.peek().open() != Some(target)
+                            && details.reveal.peek().open() != Some(card)
                         {
-                            details.click(target);
+                            details.click(card);
                         }
                     }
-                    Follow::Row => open_row(row_moves, target, RowOpen::of(held)),
-                    Follow::Nothing => {}
+                    (Follow::Row, Spot::Card(card)) => {
+                        open_row(row_moves, card, RowOpen::of(held));
+                    }
+                    // A featured card has no row to open.
+                    (Follow::Row, Spot::Head(_)) | (Follow::Nothing, _) => {}
                 }
             }
         });
@@ -356,7 +431,7 @@ fn open_row(mut moves: Signal<u32>, target: Uuid, when: RowOpen) {
 }
 
 /// The browser's columns as a [`Snapshot`], dropping any card whose id doesn't parse.
-fn snapshot_of(columns: &[Vec<SentStop>]) -> Snapshot {
+fn snapshot_of(columns: &[Vec<SentStop>]) -> Snapshot<Spot> {
     Snapshot {
         columns: columns
             .iter()
@@ -365,7 +440,7 @@ fn snapshot_of(columns: &[Vec<SentStop>]) -> Snapshot {
                     .iter()
                     .filter_map(|(id, center_y, in_view)| {
                         Uuid::try_parse(id).ok().map(|id| Stop {
-                            id,
+                            id: Spot::Card(id),
                             center_y: *center_y,
                             in_view: *in_view,
                         })
@@ -376,22 +451,43 @@ fn snapshot_of(columns: &[Vec<SentStop>]) -> Snapshot {
     }
 }
 
+/// The browser's featured cards as the row above the columns, left to right as drawn, keeping
+/// only the stops named as featured ([`Spot::Head`]); the columns' centers come separately.
+fn head_of(stops: &[SentHead]) -> cursor::Head<Spot> {
+    cursor::Head {
+        stops: stops
+            .iter()
+            .filter_map(|(name, center_x)| match name.parse() {
+                Ok(id @ Spot::Head(_)) => Some(cursor::HeadStop {
+                    id,
+                    center_x: *center_x,
+                }),
+                Ok(Spot::Card(_)) | Err(_) => None,
+            })
+            .collect(),
+        column_x: Vec::new(),
+    }
+}
+
 /// Where `step` from `from` lands: from a card no longer drawn, the card after it in `order` (the
-/// last reading order) that still is, else the one before; else as [`cursor::step`] moves as
-/// `walk`.
+/// last reading order) that still is, else the one before; else as [`cursor::step_with_head`]
+/// moves as `walk`, the featured cards in `head` a row above the columns.
 fn land(
-    snapshot: &Snapshot,
-    from: Option<Uuid>,
+    snapshot: &Snapshot<Spot>,
+    head: &cursor::Head<Spot>,
+    from: Option<Spot>,
     step: Move,
     walk: Walk,
-    order: &[Uuid],
-) -> Option<Uuid> {
-    if let Some(gone) = from.filter(|id| !snapshot.order().contains(id))
+    order: &[Spot],
+) -> Option<Spot> {
+    let drawn =
+        |id: &Spot| snapshot.order().contains(id) || head.stops.iter().any(|stop| stop.id == *id);
+    if let Some(gone) = from.filter(|id| !drawn(id))
         && let Some(next) = snapshot.hand_on(gone, order)
     {
         return Some(next);
     }
-    cursor::step(snapshot, from, step, walk)
+    cursor::step_with_head(snapshot, head, from, step, walk)
 }
 
 #[cfg(test)]
@@ -402,14 +498,60 @@ mod tests {
         Uuid::from_u128(n)
     }
 
+    fn card(n: u128) -> Spot {
+        Spot::Card(id(n))
+    }
+
     fn sent(n: u128, y: f64) -> SentStop {
         (id(n).to_string(), y, true)
     }
 
     #[test]
+    fn the_featured_cards_are_stops_named_apart_from_their_list_rows() {
+        for featured in [
+            ".deck-head-card-image[data-row]",
+            ".deck-featured-card[data-row]",
+        ] {
+            assert!(HEAD_SELECTOR.contains(featured), "{featured}");
+            assert!(STOP_SELECTOR.contains(featured), "{featured}");
+        }
+        assert_eq!(
+            "head:00000000-0000-0000-0000-000000000007".parse::<Spot>(),
+            Ok(Spot::Head(id(7)))
+        );
+        assert_eq!(id(7).to_string().parse::<Spot>(), Ok(Spot::Card(id(7))));
+        assert_eq!(Spot::Head(id(7)).to_string(), format!("head:{}", id(7)));
+        assert!("head:nope".parse::<Spot>().is_err());
+        assert!(
+            TRACK_JS.contains("const spot = (s) =>"),
+            "the browser names a featured stop apart from the same card's row: {TRACK_JS}"
+        );
+    }
+
+    #[test]
+    fn the_keys_send_the_featured_cards_and_each_column_s_center() {
+        assert!(
+            NAV_JS.contains("dioxus.send([key, from, columns, open, e.repeat, head, columnX]);"),
+            "{NAV_JS}"
+        );
+        let head = head_of(&[
+            (format!("head:{}", id(9)), 120.0),
+            (id(3).to_string(), 50.0),
+        ]);
+        assert_eq!(
+            head.stops,
+            vec![cursor::HeadStop {
+                id: Spot::Head(id(9)),
+                center_x: 120.0
+            }],
+            "only head stops make the row"
+        );
+    }
+
+    #[test]
     fn a_held_key_opens_its_row_only_once_it_settles() {
         assert!(
-            NAV_JS.contains("dioxus.send([key, from, columns, open, e.repeat]);"),
+            NAV_JS.contains("dioxus.send([key, from, columns, open, e.repeat, head, columnX]);"),
             "the keys say whether they repeat: {NAV_JS}"
         );
         assert_eq!(
@@ -447,20 +589,34 @@ mod tests {
             vec![sent(2, 30.0)],
         ];
         let snapshot = snapshot_of(&columns);
-        assert_eq!(snapshot.order(), vec![id(1), id(2)]);
+        assert_eq!(snapshot.order(), vec![card(1), card(2)]);
     }
 
     #[test]
     fn a_move_from_a_card_that_left_lands_on_the_next_in_the_old_order() {
         let snapshot = snapshot_of(&[vec![sent(1, 10.0), sent(3, 50.0)]]);
-        let order = vec![id(1), id(2), id(3)];
+        let order = vec![card(1), card(2), card(3)];
         assert_eq!(
-            land(&snapshot, Some(id(2)), Move::Down, Walk::Columns, &order),
-            Some(id(3))
+            land(
+                &snapshot,
+                &cursor::Head::default(),
+                Some(card(2)),
+                Move::Down,
+                Walk::Columns,
+                &order
+            ),
+            Some(card(3))
         );
         assert_eq!(
-            land(&snapshot, Some(id(1)), Move::Down, Walk::Columns, &order),
-            Some(id(3)),
+            land(
+                &snapshot,
+                &cursor::Head::default(),
+                Some(card(1)),
+                Move::Down,
+                Walk::Columns,
+                &order
+            ),
+            Some(card(3)),
             "a card still drawn moves as usual"
         );
     }
@@ -480,13 +636,27 @@ mod tests {
             vec![sent(11, 30.0)],
         ]);
         assert_eq!(
-            land(&snapshot, Some(id(3)), Move::Right, Walk::Lists, &[]),
-            Some(id(11)),
+            land(
+                &snapshot,
+                &cursor::Head::default(),
+                Some(card(3)),
+                Move::Right,
+                Walk::Lists,
+                &[]
+            ),
+            Some(card(11)),
             "the third commander to the only staple"
         );
         assert_eq!(
-            land(&snapshot, Some(id(3)), Move::Down, Walk::Lists, &[]),
-            Some(id(11)),
+            land(
+                &snapshot,
+                &cursor::Head::default(),
+                Some(card(3)),
+                Move::Down,
+                Walk::Lists,
+                &[]
+            ),
+            Some(card(11)),
             "the last commander on to the first staple"
         );
     }

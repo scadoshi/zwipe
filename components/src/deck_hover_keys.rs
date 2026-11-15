@@ -25,7 +25,7 @@ use crate::meld::{MeldSource, MeldToggle};
 /// ([`crate::deck_cursor`]), else the deepest card under the mouse, as `stack:<id>` for a
 /// stack card or a featured card in the deck head or `row:<id>` for a list row, else the list
 /// row whose details are open, else an empty string.
-const KEY_CARD_JS: &str = "const drawer = document.querySelector('.bottom-sheet.show.__DRAWER__[data-card]'); const keyed = __KEYED__; const under = document.querySelectorAll('[data-row]:hover'); const row = document.querySelector('.web-deck-row.selected[data-row]'); const card = keyed || (under.length ? under[under.length - 1] : row); dioxus.send(drawer ? 'stack:' + drawer.getAttribute('data-card') : card ? (card.matches('.card-stack-slot, .deck-head-card-image') ? 'stack:' : 'row:') + card.getAttribute('data-row') : '');";
+const KEY_CARD_JS: &str = "const drawer = document.querySelector('.bottom-sheet.show.__DRAWER__[data-card]'); const keyed = __KEYED__; const under = document.querySelectorAll('[data-row]:hover'); const row = document.querySelector('.web-deck-row.selected[data-row]'); const card = keyed || (under.length ? under[under.length - 1] : row); dioxus.send(drawer ? 'stack:' + drawer.getAttribute('data-card') : card ? (card.matches('.card-stack-slot, .deck-head-card-image, .deck-featured-card') ? 'stack:' : 'row:') + card.getAttribute('data-row') : '');";
 
 /// Clicks list row `__ID__`'s line, which opens or closes its details as a click on it does.
 const ROW_TOGGLE_JS: &str = "const line = document.querySelector('.web-deck-row[data-row=\"__ID__\"] .card-row-compact'); if (line) line.click();";
@@ -179,8 +179,9 @@ mod tests {
     #[test]
     fn a_hovered_featured_card_takes_the_keys_as_a_stack_card() {
         assert!(
-            KEY_CARD_JS
-                .contains("card.matches('.card-stack-slot, .deck-head-card-image') ? 'stack:'"),
+            KEY_CARD_JS.contains(
+                "card.matches('.card-stack-slot, .deck-head-card-image, .deck-featured-card') ? 'stack:'"
+            ),
             "{KEY_CARD_JS}"
         );
     }

@@ -19,17 +19,30 @@ const DEAL_ANIMATION: &str = "deck-featured-deal";
 
 /// One labeled featured card: its image (when it has one) over its name and role chips.
 /// Tapping it fires `on_tap` with the card, and the tap stops at the card so the screen's tap-off
-/// doesn't see it. Nothing covers a featured card, so it never floats: the first tap acts.
+/// doesn't see it. Nothing covers a featured card, so it never floats: the first tap acts. It
+/// carries the card's `data-row` and is a stop of the keyboard cursor, Enter acting as a tap.
 #[component]
 fn StripCard(card: Card, role: String, on_tap: EventHandler<Card>) -> Element {
     let name = card.scryfall_data.name.clone();
     let sd = card.scryfall_data.clone();
     let has_image = sd.primary_image_url(ImageSize::Normal).is_some();
+    let id = sd.id;
+    let keyed = card.clone();
     rsx! {
         div {
             class: "deck-featured-card",
             // Named for the settle, so the strip's cards slide when a star adds or takes one.
             "data-settle-key": "featured-{card.scryfall_data.id}",
+            "data-row": "{id}",
+            tabindex: "0",
+            role: "button",
+            "aria-label": "{name}",
+            onkeydown: move |event: KeyboardEvent| {
+                if event.key() == Key::Enter {
+                    event.prevent_default();
+                    on_tap.call(keyed.clone());
+                }
+            },
             onclick: move |event: MouseEvent| {
                 event.stop_propagation();
                 on_tap.call(card.clone());
@@ -133,5 +146,31 @@ fn FeaturedGhost() -> Element {
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_strip_card_is_a_stop_the_keyboard_cursor_can_focus() {
+        fn app() -> Element {
+            let json = include_str!("../../zwipe-ui/src/test_support/card.json");
+            let card: Card = serde_json::from_str(json).expect("the fixture card parses");
+            rsx! {
+                StripCard { card, role: "MVP".to_owned(), on_tap: |_: Card| {} }
+            }
+        }
+        let mut dom = VirtualDom::new(app);
+        dom.rebuild_in_place();
+        let html = dioxus_ssr::render(&dom);
+        let (_, tag) = html
+            .split_once(r#"class="deck-featured-card""#)
+            .expect("the strip card");
+        let (tag, _) = tag.split_once('>').expect("its tag");
+        assert!(tag.contains("data-row="), "{tag}");
+        assert!(tag.contains(r#"tabindex="0""#), "{tag}");
+        assert!(tag.contains(r#"role="button""#), "{tag}");
     }
 }

@@ -73,6 +73,92 @@ pub fn step<I: Copy + PartialEq>(
     }
 }
 
+/// One card of the row above the columns (the deck page's featured cards), at its horizontal
+/// center.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct HeadStop<I = Uuid> {
+    /// The stop's name.
+    pub id: I,
+    /// Its horizontal center, in the page's pixels.
+    pub center_x: f64,
+}
+
+/// The cards drawn above the columns, left to right, with each column's horizontal center, so a
+/// move between the row and the columns lands on the nearest card across. A page with no such
+/// row has none ([`Head::default`]) and moves as [`step`] does.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Head<I = Uuid> {
+    /// The row's cards, left to right.
+    pub stops: Vec<HeadStop<I>>,
+    /// Each column's horizontal center, in the snapshot's column order.
+    pub column_x: Vec<f64>,
+}
+
+impl<I> Default for Head<I> {
+    fn default() -> Self {
+        Self {
+            stops: Vec::new(),
+            column_x: Vec::new(),
+        }
+    }
+}
+
+/// [`step`] on a page with a row of cards above its columns: up from a column's top card goes to
+/// the row's card nearest above it, left and right walk the row and stop at its ends, down from
+/// the row goes to the top card of the column nearest below, and nothing is above the row. Home
+/// and End go to the first and last card in the columns from anywhere.
+#[must_use]
+pub fn step_with_head<I: Copy + PartialEq>(
+    snapshot: &Snapshot<I>,
+    head: &Head<I>,
+    from: Option<I>,
+    step: Move,
+    walk: Walk,
+) -> Option<I> {
+    let in_head = from.and_then(|id| head.stops.iter().position(|stop| stop.id == id));
+    if let Some(at) = in_head {
+        return match step {
+            Move::Up => None,
+            Move::Left => at
+                .checked_sub(1)
+                .and_then(|left| head.stops.get(left))
+                .map(|stop| stop.id),
+            Move::Right => head.stops.get(at.checked_add(1)?).map(|stop| stop.id),
+            Move::Down => {
+                let center = head.stops.get(at)?.center_x;
+                snapshot
+                    .columns
+                    .iter()
+                    .zip(&head.column_x)
+                    .filter_map(|(stops, x)| stops.first().map(|top| (top.id, (x - center).abs())))
+                    .min_by(|a, b| a.1.total_cmp(&b.1))
+                    .map(|(id, _)| id)
+            }
+            Move::First => snapshot.order().first().copied(),
+            Move::Last => snapshot.order().last().copied(),
+        };
+    }
+    let landed = self::step(snapshot, from, step, walk);
+    if landed.is_some() || step != Move::Up {
+        return landed;
+    }
+    let column = from.and_then(|id| {
+        snapshot
+            .columns
+            .iter()
+            .position(|stops| stops.iter().any(|stop| stop.id == id))
+    })?;
+    let center = *head.column_x.get(column)?;
+    head.stops
+        .iter()
+        .min_by(|a, b| {
+            (a.center_x - center)
+                .abs()
+                .total_cmp(&(b.center_x - center).abs())
+        })
+        .map(|stop| stop.id)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -215,5 +301,127 @@ mod tests {
                 "{from:?} {move_to:?}"
             );
         }
+    }
+
+    /// Two deck columns, their centers at x 100 and 400, under featured cards 91 (x 80), 92
+    /// (x 250) and 93 (x 420).
+    fn headed() -> (Snapshot<u128>, Head<u128>) {
+        let page = Snapshot {
+            columns: vec![
+                vec![stop(1, 300.0), stop(2, 340.0)],
+                vec![stop(11, 300.0), stop(12, 360.0)],
+            ],
+        };
+        let head = Head {
+            stops: vec![
+                HeadStop {
+                    id: 91,
+                    center_x: 80.0,
+                },
+                HeadStop {
+                    id: 92,
+                    center_x: 250.0,
+                },
+                HeadStop {
+                    id: 93,
+                    center_x: 420.0,
+                },
+            ],
+            column_x: vec![100.0, 400.0],
+        };
+        (page, head)
+    }
+
+    #[test]
+    fn up_from_a_column_s_top_card_goes_to_the_featured_card_nearest_above() {
+        let (page, head) = headed();
+        assert_eq!(
+            step_with_head(&page, &head, Some(1), Move::Up, Walk::Columns),
+            Some(91)
+        );
+        assert_eq!(
+            step_with_head(&page, &head, Some(11), Move::Up, Walk::Columns),
+            Some(93)
+        );
+        assert_eq!(
+            step_with_head(&page, &head, Some(12), Move::Up, Walk::Columns),
+            Some(11),
+            "inside a column, up is still the card above"
+        );
+    }
+
+    #[test]
+    fn left_and_right_walk_the_featured_cards_and_stop_at_their_ends() {
+        let (page, head) = headed();
+        assert_eq!(
+            step_with_head(&page, &head, Some(91), Move::Right, Walk::Columns),
+            Some(92)
+        );
+        assert_eq!(
+            step_with_head(&page, &head, Some(93), Move::Left, Walk::Columns),
+            Some(92)
+        );
+        assert_eq!(
+            step_with_head(&page, &head, Some(91), Move::Left, Walk::Columns),
+            None
+        );
+        assert_eq!(
+            step_with_head(&page, &head, Some(93), Move::Right, Walk::Columns),
+            None
+        );
+        assert_eq!(
+            step_with_head(&page, &head, Some(92), Move::Up, Walk::Columns),
+            None,
+            "nothing above the featured cards"
+        );
+    }
+
+    #[test]
+    fn down_from_a_featured_card_goes_to_the_top_card_of_the_column_nearest_below() {
+        let (page, head) = headed();
+        assert_eq!(
+            step_with_head(&page, &head, Some(91), Move::Down, Walk::Columns),
+            Some(1)
+        );
+        assert_eq!(
+            step_with_head(&page, &head, Some(93), Move::Down, Walk::Columns),
+            Some(11)
+        );
+        let (mut empty_right, head) = headed();
+        if let Some(column) = empty_right.columns.get_mut(1) {
+            column.clear();
+        }
+        assert_eq!(
+            step_with_head(&empty_right, &head, Some(93), Move::Down, Walk::Columns),
+            Some(1),
+            "a column with no cards is passed over"
+        );
+    }
+
+    #[test]
+    fn home_and_end_from_a_featured_card_go_to_the_first_and_last_card() {
+        let (page, head) = headed();
+        assert_eq!(
+            step_with_head(&page, &head, Some(92), Move::First, Walk::Columns),
+            Some(1)
+        );
+        assert_eq!(
+            step_with_head(&page, &head, Some(92), Move::Last, Walk::Columns),
+            Some(12)
+        );
+    }
+
+    #[test]
+    fn with_no_featured_cards_a_column_s_top_stays_put() {
+        let (page, _) = headed();
+        let none = Head::default();
+        assert_eq!(
+            step_with_head(&page, &none, Some(1), Move::Up, Walk::Columns),
+            None
+        );
+        assert_eq!(
+            step_with_head(&page, &none, Some(2), Move::Up, Walk::Columns),
+            Some(1)
+        );
     }
 }
