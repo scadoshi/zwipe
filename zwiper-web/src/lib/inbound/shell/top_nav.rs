@@ -6,7 +6,7 @@
 //! menu dropping from it. The header follows the scroll there
 //! (`assets/header_hide.js`).
 
-use components::{BackArrow, InfoButton, NavBar, use_overlay_back};
+use components::{BackArrow, Decode, InfoButton, NavBar, use_overlay_back};
 use dioxus::prelude::*;
 use zwipe_core::domain::logo;
 
@@ -262,7 +262,23 @@ fn NavMark(open: Signal<bool>) -> Element {
             class: "nav-brand web-nav-mark web-nav-wide",
             "aria-label": "Home",
             onclick: move |_| open.set(false),
-            span { class: "nav-logo", "{logo::Z}" }
+            NavLogo {}
+        }
+    }
+}
+
+/// The Z mark's art, as zite draws it: it decodes when the nav mounts and
+/// shimmers while the pointer is over it.
+#[component]
+fn NavLogo() -> Element {
+    let mut hovering = use_signal(|| false);
+    rsx! {
+        span {
+            class: "nav-logo",
+            "aria-hidden": "true",
+            onmouseenter: move |_| hovering.set(true),
+            onmouseleave: move |_| hovering.set(false),
+            Decode { text: logo::Z, hover: hovering }
         }
     }
 }
@@ -317,6 +333,25 @@ fn BackButton(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_z_mark_decodes_like_zite_s_and_hides_from_screen_readers() {
+        let mut dom = VirtualDom::new(NavLogo);
+        dom.rebuild_in_place();
+        let html = dioxus_ssr::render(&dom);
+        assert!(
+            html.contains("class=\"nav-logo\"") && html.contains("aria-hidden=\"true\""),
+            "the art is hidden from screen readers, the link's label names it: {html}"
+        );
+        let art = html
+            .split_once('>')
+            .and_then(|(_, rest)| rest.split_once("</span>"))
+            .map(|(art, _)| art);
+        assert!(
+            art.is_some_and(|art| !art.is_empty() && art.chars().all(char::is_whitespace)),
+            "the art starts blank, its size kept, for the decode to draw it: {html}"
+        );
+    }
 
     #[test]
     fn the_signed_out_menu_is_log_in_and_create_account_only() {
