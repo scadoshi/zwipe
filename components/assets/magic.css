@@ -934,6 +934,12 @@ i.ms.ms-cost.ms-gp {
     fill: currentColor;
 }
 
+/* A collapsed row keeps its action bar mounted but closed: its buttons
+   change state without motion until the row opens. */
+.card-row-collapse:not(.open) .card-action-btn {
+    transition: none;
+}
+
 @media (hover: hover) {
     .card-action-btn:hover {
         border-color: var(--palette-2);

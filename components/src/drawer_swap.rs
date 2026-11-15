@@ -2,7 +2,8 @@
 //!
 //! A click on a stack card or on a Flip or Meld button, or a key, copies
 //! what the card details show as they show it: an open card details
-//! drawer's title bar and content, each open card row's art and detail, a
+//! drawer's title bar and content, each open card row's art and detail, the
+//! thumbnail of the collapsed row under the pointer or the keyboard, a
 //! details pane's head and body beside the card, and each printing an open
 //! Printings sheet shows. If one then shows another card (a drawer's title changes) or
 //! another face (a face marker, `data-face`, changes: a flip, or a meld
@@ -33,6 +34,16 @@ const SWAP_JS: &str = r"
   const DRAWER_PARTS = ':scope > .sheet-header, :scope > .sheet-content';
   const ROW_PARTS = ':scope > .card-row-compact > .card-row-art, :scope > .card-row-collapse > .card-row-collapse-inner';
   const openRows = () => [...document.querySelectorAll('.card-row.expanded')].filter((row) => row.getClientRects().length > 0);
+  // A collapsed row shows only its thumbnail turn: the row under the pointer or holding the
+  // keyboard's focus, the one a key or a tap acts on, which changes when its thumbnail does.
+  const COLLAPSED_PARTS = ':scope > .card-row-compact > .card-row-art';
+  const artOf = (row) => { const art = row.querySelector(COLLAPSED_PARTS); return art ? art.getAttribute('src') || '' : ''; };
+  const keyRows = () => {
+    const rows = new Set(document.querySelectorAll('.card-row:not(.expanded):hover'));
+    const focused = document.activeElement instanceof Element && document.activeElement.closest('.card-row:not(.expanded)');
+    if (focused) rows.add(focused);
+    return [...rows].filter((row) => row.getClientRects().length > 0);
+  };
   // Every printing an open Printings sheet shows, each turned in its cover flow, so its copy is
   // laid in the card's own layout box rather than its turned outline.
   const PRINTING_PARTS = ':scope > img';
@@ -110,6 +121,16 @@ const SWAP_JS: &str = r"
       surface.changed = () => row.isConnected && row.classList.contains('expanded') && faceOf(row) !== surface.face;
       surfaces.push(surface);
     }
+    for (const row of keyRows()) {
+      const surface = {
+        box: row,
+        art: artOf(row),
+        shots: shotsOf(row, COLLAPSED_PARTS).filter((shot) => shot.rect.width > 0 && shot.rect.height > 0),
+        fill: () => solidBehind(row),
+      };
+      surface.changed = () => row.isConnected && !row.classList.contains('expanded') && artOf(row) !== surface.art;
+      surfaces.push(surface);
+    }
     for (const panel of openPanes()) {
       const surface = {
         box: panel,
@@ -159,6 +180,10 @@ const SWAP_JS: &str = r"
     for (const row of openRows()) {
       row.style.position = '';
       for (const part of row.querySelectorAll(ROW_PARTS)) for (const run of part.getAnimations()) run.cancel();
+    }
+    for (const row of keyRows()) {
+      row.style.position = '';
+      for (const part of row.querySelectorAll(COLLAPSED_PARTS)) for (const run of part.getAnimations()) run.cancel();
     }
     for (const panel of openPanes()) {
       panel.style.position = '';
@@ -296,6 +321,22 @@ mod tests {
             ghost_layer()
         );
         assert!(rule.contains("pointer-events: none"), "{rule}");
+    }
+
+    #[test]
+    fn a_collapsed_row_crossfades_its_thumbnail() {
+        assert!(
+            SWAP_JS.contains("const keyRows = () =>"),
+            "the collapsed row under the pointer or the keyboard is a surface: {SWAP_JS}"
+        );
+        assert!(
+            SWAP_JS.contains("document.activeElement"),
+            "the keyboard cursor's row is the focused one: {SWAP_JS}"
+        );
+        assert!(
+            SWAP_JS.contains("const artOf = (row) =>"),
+            "a collapsed row changes when its thumbnail does: {SWAP_JS}"
+        );
     }
 
     #[test]
