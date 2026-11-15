@@ -56,7 +56,9 @@ use zwipe_ui::timing::{LOAD_MORE_AT, PILE_REVEAL_FALLBACK};
 use super::{OneLine, SwipeDetails};
 use crate::inbound::card_filter::CardFilterPanel;
 use crate::inbound::card_stores::CardStores;
-use crate::inbound::cards::card_info::CardDetailsSheet;
+use crate::inbound::cards::card_info::{
+    CardDetailsSheet, DETAILS_DRAWER_CLASS, THROUGH_DRAWER_KEYS,
+};
 use crate::inbound::cards::printing_sheet::PrintingSheet;
 use crate::inbound::cards::swipe_confirm::{SwipeScreenChips, Tone, use_swipe_confirm};
 use crate::inbound::chrome::authed::use_authed;
@@ -122,12 +124,6 @@ fn open_printings(
     let face = faces.peek().get(&id).copied().unwrap_or(0);
     hand_face_then(handed, face, EventHandler::new(move |()| open.set(true))).call(());
 }
-
-/// The class of the card details drawer, the one sheet `v` reaches the screen through.
-const DETAILS_DRAWER_CLASS: &str = "card-details-drawer";
-
-/// The keys that turn the card, from the screen or its details drawer.
-const FLIP_KEYS: [&str; 2] = ["v", "V"];
 
 /// The Add cards screen for `deck_id`.
 #[component]
@@ -992,7 +988,7 @@ pub fn AddDeckCard(deck_id: Uuid) -> Element {
     // the card from its open details drawer.
     use_page_keys_through(
         DETAILS_DRAWER_CLASS,
-        &FLIP_KEYS,
+        &THROUGH_DRAWER_KEYS,
         Callback::new(move |key: String| {
             match shortcuts::swipe_screen_shortcut(&key) {
                 Some(Shortcut::Printings) => {

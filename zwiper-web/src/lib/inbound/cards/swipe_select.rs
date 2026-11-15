@@ -33,7 +33,7 @@
 use std::collections::{HashMap, HashSet};
 
 use components::icons::{DockIcon, REFRESH};
-use components::keys::{use_page_keys, use_undo_key};
+use components::keys::{use_page_keys_through, use_undo_key};
 use components::swipe_stack::{
     Swipe, SwipeControl, SwipeDock, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
 };
@@ -66,7 +66,9 @@ use zwipe_ui::timing::{LOAD_MORE_AT, MAYBEBOARD_TOAST, PAGE_SIZE};
 
 use crate::domain::swipe_select::{card_key, redeal};
 use crate::inbound::card_filter::CardFilterPanel;
-use crate::inbound::cards::card_info::CardDetailsSheet;
+use crate::inbound::cards::card_info::{
+    CardDetailsSheet, DETAILS_DRAWER_CLASS, THROUGH_DRAWER_KEYS,
+};
 use crate::inbound::cards::otag::{OtagExamplesOpen, use_describe_tag};
 use crate::inbound::cards::printing_sheet::PrintingSheet;
 use crate::inbound::cards::swipe_confirm::{SwipeScreenChips, use_swipe_confirm};
@@ -78,6 +80,10 @@ use crate::inbound::screens::deck::cards::SwipeDetailsPanel;
 use crate::inbound::screens::playstyle::SuggestionReasons;
 use crate::inbound::shell::{WebFooter, use_overlay_nav};
 use crate::inbound::telemetry;
+
+/// The open sheet whose keys still reach the screen, and those keys: `v` through the details
+/// drawer turns the card, as on deck Add.
+const SWIPE_KEYS_THROUGH: (&str, &[&str; 2]) = (DETAILS_DRAWER_CLASS, &THROUGH_DRAWER_KEYS);
 
 /// Pages of commanders the search keeps pulling when the host's exclusions
 /// empty a page, before it waits for the next swipe.
@@ -644,32 +650,36 @@ fn SwipeSelectBody(
     // The swipe screen's letter keys, each the same action as its dock
     // button; the swipes come through the swipe keys above, and there is no
     // Synergy here.
-    use_page_keys(Callback::new(
-        move |key: String| match shortcuts::swipe_screen_shortcut(&key) {
-            Some(Shortcut::Printings) => {
-                if stack.peek().current().is_some() {
-                    printing_open.set(true);
+    use_page_keys_through(
+        SWIPE_KEYS_THROUGH.0,
+        SWIPE_KEYS_THROUGH.1,
+        Callback::new(
+            move |key: String| match shortcuts::swipe_screen_shortcut(&key) {
+                Some(Shortcut::Printings) => {
+                    if stack.peek().current().is_some() {
+                        printing_open.set(true);
+                    }
                 }
-            }
-            Some(Shortcut::Details) => {
-                if stack.peek().current().is_some() {
-                    eye.press();
+                Some(Shortcut::Details) => {
+                    if stack.peek().current().is_some() {
+                        eye.press();
+                    }
                 }
-            }
-            Some(Shortcut::Filter) => {
-                if *filter_offered.peek() {
-                    filter_open.set(true);
+                Some(Shortcut::Filter) => {
+                    if *filter_offered.peek() {
+                        filter_open.set(true);
+                    }
                 }
-            }
-            Some(Shortcut::Flip) => {
-                if let Some(card) = stack.peek().current() {
-                    turn_face(faces, card, melds);
+                Some(Shortcut::Flip) => {
+                    if let Some(card) = stack.peek().current() {
+                        turn_face(faces, card, melds);
+                    }
                 }
-            }
-            Some(Shortcut::Refresh) => refresh.call(()),
-            Some(Shortcut::Synergy | Shortcut::Swipe(_)) | None => {}
-        },
-    ));
+                Some(Shortcut::Refresh) => refresh.call(()),
+                Some(Shortcut::Synergy | Shortcut::Swipe(_)) | None => {}
+            },
+        ),
+    );
     // `?` opens this screen's hint, as its `?` button does.
     use_global_keys(Some(use_callback(move |()| hint_again.set(true))));
 
@@ -913,6 +923,29 @@ fn SwipeSelectBody(
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
+    #[test]
+    fn v_reaches_the_screen_through_its_open_details_drawer() {
+        use crate::inbound::cards::card_info::{DETAILS_DRAWER_CLASS, THROUGH_DRAWER_KEYS};
+        assert_eq!(
+            DETAILS_DRAWER_CLASS, "card-details-drawer",
+            "the drawer's own class"
+        );
+        for key in THROUGH_DRAWER_KEYS {
+            assert_eq!(
+                shortcuts::swipe_screen_shortcut(key),
+                Some(Shortcut::Flip),
+                "{key} turns the card from the drawer"
+            );
+        }
+        assert_eq!(
+            SWIPE_KEYS_THROUGH,
+            (DETAILS_DRAWER_CLASS, &THROUGH_DRAWER_KEYS),
+            "the commander swipe hears v through its drawer, as deck Add does"
+        );
+    }
+
     /// The web's own sheet.
     const WEB_CSS: &str = include_str!("../../../../assets/web.css");
 
