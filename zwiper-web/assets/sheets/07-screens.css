@@ -1638,8 +1638,10 @@ body .toast-container [role="alertdialog"] {
     padding-bottom: 1rem;
 }
 
-.home-hero .panel-card:hover {
-    border-color: var(--border-secondary);
+@media (hover: hover) {
+    .home-hero .panel-card:hover {
+        border-color: var(--border-secondary);
+    }
 }
 
 /* The Activity screen's counters: Home's hero strip at the Activity

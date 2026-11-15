@@ -3238,9 +3238,11 @@ footer.site-footer .site-footer-note {
    promotes the slots to layers: a stack at a fractional x would be drawn a
    pixel narrower and shifted while the pointer is on it. The browser
    promotes a slot on its own while its transform runs. */
-.card-stack:hover {
-    z-index: 2;
-    transition-delay: 0s;
+@media (hover: hover) {
+    .card-stack:hover {
+        z-index: 2;
+        transition-delay: 0s;
+    }
 }
 
 /* Every moving card shares one duration and curve. */

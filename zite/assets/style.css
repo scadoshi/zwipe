@@ -184,11 +184,13 @@ a:not([class]) {
 }
 
 @media (prefers-reduced-motion: reduce) {
-    body .panel-card:hover,
-    .hero-card:hover,
-    .chip:hover,
-    a:hover .ext {
-        transform: none;
+    @media (hover: hover) {
+        body .panel-card:hover,
+        .hero-card:hover,
+        .chip:hover,
+        a:hover .ext {
+            transform: none;
+        }
     }
 }
 
@@ -295,8 +297,10 @@ body .arch-figure .diagram {
     color: inherit;
 }
 
-a.tag:hover {
-    filter: brightness(1.2);
+@media (hover: hover) {
+    a.tag:hover {
+        filter: brightness(1.2);
+    }
 }
 
 h1 {
@@ -519,9 +523,11 @@ code {
         color 0.2s;
 }
 
-.store-btn:hover {
-    color: var(--ink-accent-primary, var(--accent-primary));
-    border-color: var(--accent-primary);
+@media (hover: hover) {
+    .store-btn:hover {
+        color: var(--ink-accent-primary, var(--accent-primary));
+        border-color: var(--accent-primary);
+    }
 }
 
 @media (max-width: 30rem) {
@@ -791,8 +797,10 @@ h2.panel-title {
     transform: translateY(-50%);
 }
 
-.info-button:hover {
-    color: var(--text-primary);
+@media (hover: hover) {
+    .info-button:hover {
+        color: var(--text-primary);
+    }
 }
 
 /* A hint shown as a centered panel over the backdrop. */
@@ -1051,8 +1059,10 @@ body[class$="-dark"] .chip-value {
 }
 
 /* Reading speed wins: hovering anywhere over the reviews holds the track. */
-.testimonials-viewport:hover .testimonials-track {
-    animation-play-state: paused;
+@media (hover: hover) {
+    .testimonials-viewport:hover .testimonials-track {
+        animation-play-state: paused;
+    }
 }
 
 .testimonials-set {

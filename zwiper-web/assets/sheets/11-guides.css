@@ -199,10 +199,12 @@
     z-index: 10;
 }
 
-.gallery-nav:hover {
-    opacity: 1;
-    border-color: var(--accent-primary);
-    color: var(--ink-accent-primary, var(--accent-primary));
+@media (hover: hover) {
+    .gallery-nav:hover {
+        opacity: 1;
+        border-color: var(--accent-primary);
+        color: var(--ink-accent-primary, var(--accent-primary));
+    }
 }
 
 .gallery-caption {
@@ -425,8 +427,10 @@
         color 0.15s;
 }
 
-.guide-related-link:hover {
-    border-color: var(--accent-primary);
+@media (hover: hover) {
+    .guide-related-link:hover {
+        border-color: var(--accent-primary);
+    }
 }
 
 .guide-title {
