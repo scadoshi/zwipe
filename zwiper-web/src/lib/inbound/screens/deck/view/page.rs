@@ -376,6 +376,7 @@ pub fn DeckWidePage(
                 if let Some((card, _)) = printing() {
                     PrintingSheet {
                         key: "{card.scryfall_data.id}",
+                        face: ed.faces.peek().get(&card.scryfall_data.id).copied().unwrap_or(0),
                         card,
                         open: printing_open,
                         on_save: move |picked: Card| save_printing.call(picked),

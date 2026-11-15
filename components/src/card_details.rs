@@ -282,7 +282,7 @@ pub fn CardDetails(
                         FlipButton { face_idx, current: cur, face_count, on_face_change }
                     }
                     if show_meld {
-                        MeldButton { meld }
+                        MeldButton { on: meld.on(), on_toggle: move |()| meld.toggle() }
                     }
                     if let (true, Some(handler)) = (show_image, on_image) {
                         ImageButton { on_click: handler }
@@ -417,7 +417,13 @@ pub fn CardDetailsPanel(
                                 FlipButton { face_idx, current: cur, face_count, on_face_change }
                             }
                             if show_meld {
-                                MeldButton { meld: meld.clone() }
+                                MeldButton {
+                                    on: meld.on(),
+                                    on_toggle: {
+                                        let meld = meld.clone();
+                                        move |()| meld.toggle()
+                                    },
+                                }
                             }
                             if let (true, Some(handler)) = (show_image, on_image) {
                                 ImageButton { on_click: handler }
@@ -476,7 +482,7 @@ const GHOST_ORACLE_WORDS: [u8; 26] = [
 /// The Flip button: shows the face after `current` of `face_count` and
 /// hands its index to `on_face_change`, keeping the tap off the row.
 #[component]
-fn FlipButton(
+pub(crate) fn FlipButton(
     mut face_idx: Signal<usize>,
     current: usize,
     face_count: usize,
@@ -498,16 +504,17 @@ fn FlipButton(
     }
 }
 
-/// A meld half's Meld toggle: on, the melded card shows in the half's place.
+/// A meld half's Meld toggle, pressed while `on` (the melded card shows in the half's place),
+/// calling `on_toggle` on a tap.
 #[component]
-fn MeldButton(meld: MeldToggle) -> Element {
+pub(crate) fn MeldButton(on: bool, on_toggle: EventHandler<()>) -> Element {
     rsx! {
         CardIconButton {
             label: "Meld",
             path: MELD,
             action: data_action::MELD,
-            pressed: Some(meld.on()),
-            on_click: move |()| meld.toggle(),
+            pressed: Some(on),
+            on_click: move |()| on_toggle.call(()),
         }
     }
 }

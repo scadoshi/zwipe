@@ -94,6 +94,7 @@ mod oracle_tag_examples;
 mod oracle_text;
 mod picker_search;
 mod pressable;
+mod printing_face;
 mod printing_sheet;
 mod role_tags;
 pub mod screen_return;
@@ -199,6 +200,7 @@ pub use orangui::{OpenUrlError, open_url, use_in_app_links};
 pub use orangui::{TOAST_CSS, ToastOptions, ToastStack, Toasts, use_toast};
 pub use picker_search::use_picker_search;
 pub use pressable::{Pressable, is_press};
+pub use printing_face::{FaceTurn, PrintingFace, PrintingFaceButton, use_printing_face};
 pub use printing_sheet::{
     ArtistChip, PrintingChips, PrintingChipsGhost, PrintingSheet, PrintingsFetch, PrintingsSource,
 };

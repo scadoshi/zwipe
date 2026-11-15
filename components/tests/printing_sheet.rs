@@ -3,16 +3,19 @@
 
 #![expect(
     clippy::unwrap_used,
+    clippy::indexing_slicing,
+    clippy::panic,
     reason = "test helpers: a failed read or render fails the test"
 )]
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
-use components::{PrintingSheet, PrintingsFetch, PrintingsSource};
+use components::{MeldFetch, MeldSource, PrintingSheet, PrintingsFetch, PrintingsSource};
 use dioxus::dioxus_core::NoOpMutations;
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
+use zwipe_core::domain::card::scryfall_data::ScryfallData;
 
 /// A real card as the API serves it, shared with zwipe-ui's tests.
 const CARD_JSON: &str = include_str!("../../zwipe-ui/src/test_support/card.json");
@@ -174,4 +177,191 @@ fn the_narrow_sheet_shows_its_printing_as_one_row_of_chips() {
         "set, number, place, artist, then prices: {row}"
     );
     assert!(!html.contains("printing-facts"), "no second line: {html}");
+}
+
+/// Each face's large image in [`two_faced`].
+const FRONT_LARGE: &str = "https://cards.example/front-large.jpg";
+const BACK_LARGE: &str = "https://cards.example/back-large.jpg";
+
+/// The shared card made a transform card, each face with its own images.
+fn two_faced() -> Card {
+    let mut card: serde_json::Value = serde_json::from_str(CARD_JSON).unwrap();
+    let sd = &mut card["scryfall_data"];
+    sd["layout"] = "transform".into();
+    sd["image_uris"] = serde_json::Value::Null;
+    sd["oracle_text"] = serde_json::Value::Null;
+    let face = |side: &str, name: &str| {
+        let uris: serde_json::Map<String, serde_json::Value> =
+            ["small", "normal", "large", "png", "art_crop", "border_crop"]
+                .iter()
+                .map(|size| {
+                    (
+                        (*size).to_owned(),
+                        format!("https://cards.example/{side}-{size}.jpg").into(),
+                    )
+                })
+                .collect();
+        serde_json::json!({
+            "object": "card_face", "name": name, "mana_cost": "", "type_line": "Creature",
+            "oracle_text": format!("{name} rules."), "image_uris": uris,
+        })
+    };
+    sd["card_faces"] = serde_json::json!([face("front", "Front Face"), face("back", "Back Face")]);
+    serde_json::from_value(card).unwrap()
+}
+
+/// The melded card's Scryfall id, for [`meld_half`]'s first printing.
+const RESULT_ID: &str = "00000000-0000-0000-0000-00000000beef";
+/// The melded card's Scryfall id for the other printing.
+const OTHER_RESULT_ID: &str = "00000000-0000-0000-0000-00000000cafe";
+/// The other printing's Scryfall id.
+const OTHER_PRINTING_ID: &str = "00000000-0000-0000-0000-0000000000a2";
+
+/// The shared card made a meld half under `id` whose result is `result`.
+fn meld_half_as(id: &str, result: &str) -> Card {
+    let mut card: serde_json::Value = serde_json::from_str(CARD_JSON).unwrap();
+    card["card_profile"]["scryfall_data_id"] = id.into();
+    let sd = &mut card["scryfall_data"];
+    sd["id"] = id.into();
+    sd["layout"] = "meld".into();
+    sd["all_parts"] = serde_json::json!([
+        { "object": "related_card", "id": id, "component": "meld_part",
+          "name": "This Half", "type_line": "Creature", "uri": "https://api.scryfall.com/cards/x" },
+        { "object": "related_card", "id": result, "component": "meld_result",
+          "name": "The Melded", "type_line": "Creature", "uri": "https://api.scryfall.com/cards/y" },
+    ]);
+    serde_json::from_value(card).unwrap()
+}
+
+/// The shared card made a meld half whose result is [`RESULT_ID`].
+fn meld_half() -> Card {
+    meld_half_as(&card().scryfall_data.id.to_string(), RESULT_ID)
+}
+
+/// The melded card under [`RESULT_ID`], with its own images.
+fn melded() -> ScryfallData {
+    let mut card: serde_json::Value = serde_json::from_str(CARD_JSON).unwrap();
+    let sd = &mut card["scryfall_data"];
+    sd["id"] = RESULT_ID.into();
+    sd["name"] = "The Melded".into();
+    for size in ["small", "normal", "large", "png", "art_crop", "border_crop"] {
+        sd["image_uris"][size] = format!("https://cards.example/melded-{size}.jpg").into();
+    }
+    serde_json::from_value(sd.clone()).unwrap()
+}
+
+/// The sheet's foot row, where Select (Save) sits.
+fn foot_row(html: &str) -> &str {
+    let (_, row) = html
+        .split_once(r#"class="web-printing-foot-row""#)
+        .unwrap_or_else(|| panic!("a foot row: {html}"));
+    row
+}
+
+#[test]
+fn a_two_faced_card_s_sheet_offers_flip_left_of_save() {
+    fn app() -> Element {
+        let asked = use_signal(Vec::new);
+        use_context_provider(|| source(PrintingsFetch::Ready(vec![two_faced()]), asked));
+        let open = use_signal(|| true);
+        rsx! {
+            PrintingSheet { card: two_faced(), open, on_save: |_: Card| {} }
+        }
+    }
+    let html = render(app);
+    let row = foot_row(&html);
+    let flip = row
+        .find(r#"data-action="flip""#)
+        .unwrap_or_else(|| panic!("Flip in the foot row: {row}"));
+    let save = row
+        .find(r#"aria-label="Save""#)
+        .unwrap_or_else(|| panic!("Save in the foot row: {row}"));
+    assert!(flip < save, "Flip left of Save: {row}");
+    assert!(
+        row.contains(components::icons::FLIP),
+        "the row's own Flip icon: {row}"
+    );
+}
+
+#[test]
+fn a_two_faced_card_s_sheet_opens_on_the_face_its_row_shows() {
+    fn app() -> Element {
+        let asked = use_signal(Vec::new);
+        use_context_provider(|| source(PrintingsFetch::Ready(vec![two_faced()]), asked));
+        let open = use_signal(|| true);
+        rsx! {
+            PrintingSheet { card: two_faced(), open, face: 1 }
+        }
+    }
+    let html = render(app);
+    assert!(html.contains(BACK_LARGE), "the back: {html}");
+    assert!(!html.contains(FRONT_LARGE), "not the front: {html}");
+}
+
+#[test]
+fn a_meld_half_s_sheet_offers_meld() {
+    fn app() -> Element {
+        let asked = use_signal(Vec::new);
+        use_context_provider(|| source(PrintingsFetch::Ready(vec![meld_half()]), asked));
+        use_context_provider(|| MeldSource {
+            results: Signal::new(HashMap::new()),
+            on: Signal::new(HashSet::new()),
+            request: Callback::new(|_: Uuid| {}),
+        });
+        let open = use_signal(|| true);
+        rsx! {
+            PrintingSheet { card: meld_half(), open }
+        }
+    }
+    let html = render(app);
+    let row = foot_row(&html);
+    assert!(row.contains(r#"data-action="meld""#), "{row}");
+    assert!(row.contains(r#"aria-pressed="false""#), "off: {row}");
+}
+
+#[test]
+fn a_melded_row_s_sheet_opens_melded_and_melds_every_printing() {
+    fn app() -> Element {
+        let half = meld_half();
+        let other = meld_half_as(OTHER_PRINTING_ID, OTHER_RESULT_ID);
+        let asked = use_signal(Vec::new);
+        let printings = vec![half.clone(), other];
+        use_context_provider(move || source(PrintingsFetch::Ready(printings.clone()), asked));
+        let result = Uuid::parse_str(RESULT_ID).unwrap();
+        let mut melds_asked: Signal<Vec<Uuid>> = use_signal(Vec::new);
+        let id = half.scryfall_data.id;
+        use_context_provider(move || MeldSource {
+            results: Signal::new(HashMap::from([(
+                result,
+                MeldFetch::Ready(Box::new(melded())),
+            )])),
+            on: Signal::new(HashSet::from([id])),
+            request: Callback::new(move |id: Uuid| melds_asked.write().push(id)),
+        });
+        let open = use_signal(|| true);
+        rsx! {
+            PrintingSheet { card: half, open }
+            p { class: "melds-asked", "{melds_asked.read().len()}:{melds_asked.read().first().copied().unwrap_or_default()}" }
+        }
+    }
+    let html = render(app);
+    assert!(
+        html.contains("https://cards.example/melded-large.jpg"),
+        "the melded card in the opened printing's place: {html}"
+    );
+    assert!(
+        html.contains(&format!(
+            r#"<p class="melds-asked">1:{OTHER_RESULT_ID}</p>"#
+        )),
+        "the other printing's melded card is asked for: {html}"
+    );
+    let row = foot_row(&html);
+    assert!(row.contains(r#"aria-pressed="true""#), "Meld on: {row}");
+}
+
+#[test]
+fn a_single_faced_card_s_sheet_offers_neither_flip_nor_meld() {
+    let html = render(|| open_sheet(true));
+    assert!(!html.contains(r#"data-action="flip""#), "{html}");
+    assert!(!html.contains(r#"data-action="meld""#), "{html}");
 }

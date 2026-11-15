@@ -590,7 +590,7 @@ pub(crate) fn DeckPageBody(
             actions,
             host: drawer_host,
         }
-        CardOverlaysHost { overlays }
+        CardOverlaysHost { overlays, faces }
         OtagExamplesHost { examples }
         {extra}
     }

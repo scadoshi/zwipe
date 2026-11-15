@@ -5,8 +5,8 @@
 //! index, and performs its effects.
 
 use components::{
-    BottomSheet, CoverFlow, DockAction, LoadFailed, PrintingChips, PrintingChipsGhost,
-    TOAST_NORMAL, ToastOptions, Toasts, icons, use_toast,
+    BottomSheet, CoverFlow, DockAction, FaceTurn, LoadFailed, PrintingChips, PrintingChipsGhost,
+    PrintingFaceButton, TOAST_NORMAL, ToastOptions, Toasts, icons, use_printing_face, use_toast,
 };
 use dioxus::prelude::*;
 use zwipe_client::ZwipeClient;
@@ -14,6 +14,7 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ImageSize;
 use zwipe_ui::screens::printing_sheet::{self as model, Action, Effect, Mode, State, Status};
 
+use super::card_row::PrintingsFace;
 use super::flippable_card_image::FlippableCardImage;
 use crate::inbound::components::telemetry::usage_buffer::UsageBuffer;
 use crate::inbound::components::telemetry::vocabulary::component;
@@ -110,6 +111,17 @@ pub(crate) fn PrintingSheet(
     #[props(default = model::SAVED)]
     saved_message: &'static str,
 ) -> Element {
+    // Every printing opens on the face `card`'s row shows ([`PrintingsFace`]);
+    // the row's Flip or Meld button, left of Save, turns them all together.
+    let row_face = try_use_context::<PrintingsFace>();
+    let face = row_face.map_or(0, |PrintingsFace(face)| face());
+    use_effect(move || {
+        if !open()
+            && let Some(PrintingsFace(mut face)) = row_face
+        {
+            face.set(0);
+        }
+    });
     let mode = if on_save.is_some() {
         Mode::Pick
     } else {
@@ -154,6 +166,10 @@ pub(crate) fn PrintingSheet(
         )
     };
     let printings_count = printings.len();
+    let printing_face = use_printing_face(&card, face, open, &printings);
+    let shown = printing_face.shown(&printings);
+    let shown_face = (printing_face.face)();
+    let several = status == Status::Several;
 
     rsx! {
         // `sheet-over` lifts the backdrop and sheet above a details sheet
@@ -173,7 +189,7 @@ pub(crate) fn PrintingSheet(
                     } else if matches!(status, Status::Loading | Status::Several) {
                         // The same flow is the ghost while the printings load
                         // and then takes them, so the fan stays in place.
-                        CoverFlow { printings, index, loading: status == Status::Loading }
+                        CoverFlow { printings: shown, index, loading: status == Status::Loading, face: shown_face }
 
                         // The printing in the middle as one row of chips.
                         if status == Status::Loading {
@@ -188,6 +204,7 @@ pub(crate) fn PrintingSheet(
                                 FlippableCardImage {
                                     sd: card.scryfall_data.clone(),
                                     size: ImageSize::Large,
+                                    initial_face: shown_face,
                                     class: "carousel-card-image".to_string(),
                                 }
                             }
@@ -200,8 +217,16 @@ pub(crate) fn PrintingSheet(
                 // Save floats at the sheet's bottom right whenever saving is
                 // possible at all, grayed until the carousel has moved off the
                 // printing it opened on.
+                if several && printing_face.turn != FaceTurn::None && !shows_save {
+                    div { class: "action-dock action-dock-right sheet-dock",
+                        PrintingFaceButton { printing_face }
+                    }
+                }
                 if shows_save {
                     div { class: "action-dock action-dock-right sheet-dock",
+                        if several {
+                            PrintingFaceButton { printing_face }
+                        }
                         DockAction {
                             label: model::SAVE,
                             icon: icons::CHECK,

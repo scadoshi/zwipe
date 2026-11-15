@@ -18,13 +18,15 @@ use crate::inbound::chrome::authed::use_authed;
 /// The printings of `card`, opening on the one shown, fetched for the signed-in session. With an
 /// `on_save`, the sheet picks: Select or Enter hands it the showing printing and toasts
 /// `saved_message`, and leaving with a different printing showing toasts `Printing unchanged`.
-/// Without one it only browses: no Select, Enter does nothing, and nothing toasts.
+/// Without one it only browses: no Select, Enter does nothing, and nothing toasts. The printings
+/// open on `face`, the face `card`'s row shows.
 #[component]
 pub fn PrintingSheet(
     card: Card,
     open: Signal<bool>,
     #[props(default)] on_save: Option<EventHandler<Card>>,
     #[props(default = "Printing saved")] saved_message: &'static str,
+    #[props(default)] face: usize,
 ) -> Element {
     use_printings_source();
     let toast = use_toast();
@@ -44,7 +46,7 @@ pub fn PrintingSheet(
         );
     });
     rsx! {
-        SharedPrintingSheet { card, open, on_save, on_unchanged }
+        SharedPrintingSheet { card, open, on_save, on_unchanged, face }
     }
 }
 

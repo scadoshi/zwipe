@@ -61,6 +61,8 @@ pub enum FlowKey {
     Forward,
     /// Picks the printing in the center.
     Select,
+    /// Flips or melds every printing together, as `v` does a card ([`CardKey::Flip`]).
+    Flip,
 }
 
 /// The cover-flow action `key` stands for.
@@ -70,9 +72,22 @@ pub fn flow_key(key: &str) -> Option<FlowKey> {
         "ArrowLeft" | "h" | "H" => Some(FlowKey::Back),
         "ArrowRight" | "l" | "L" => Some(FlowKey::Forward),
         "Enter" => Some(FlowKey::Select),
+        "v" | "V" => Some(FlowKey::Flip),
         _ => None,
     }
 }
+
+/// The heading over the Printings sheet's own keys.
+pub const IN_PRINTINGS: &str = "In Printings";
+
+/// The Printings sheet's own rows ([`flow_key`]), listed under [`IN_PRINTINGS`] on every screen
+/// with keys that act on a card.
+pub const PRINTINGS_SHEET_ROWS: [SheetRow; 4] = [
+    (&["←", "→"], "Previous or next printing"),
+    (&["h", "l"], "Previous or next printing"),
+    (&["v"], FLIP_ROW),
+    (&["Enter"], "Pick the printing"),
+];
 
 /// What a key does on any page.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -137,7 +152,8 @@ pub struct ScreenKeys {
 
 /// The sheet's groups for a screen's `keys`, with the keys every page has: Swipe (a swipe screen's
 /// directions lead), Navigation (its moves, the ends, the steps where on, then its open), Card, Page (its tools, then Themes, the
-/// hint, these shortcuts and Esc) and In Themes. A group with no rows is left out.
+/// hint, these shortcuts and Esc), In Printings where the screen has keys that act on a card, and
+/// In Themes. A group with no rows is left out.
 #[must_use]
 pub fn sheet_groups(keys: ScreenKeys) -> Vec<SheetGroup> {
     let steps: &[SheetRow] = if keys.steps { &STEP_ROWS } else { &[] };
@@ -147,6 +163,11 @@ pub fn sheet_groups(keys: ScreenKeys) -> Vec<SheetGroup> {
         .chain([page_keys::TOP_ROW, page_keys::BOTTOM_ROW])
         .chain(steps.iter().copied())
         .chain(keys.open);
+    let printings: &[SheetRow] = if keys.card.is_empty() {
+        &[]
+    } else {
+        &PRINTINGS_SHEET_ROWS
+    };
     let page = keys.page.into_iter().chain([
         page_keys::THEMES_ROW,
         HINT_ROW,
@@ -158,6 +179,7 @@ pub fn sheet_groups(keys: ScreenKeys) -> Vec<SheetGroup> {
         SheetGroup::new(page_keys::NAVIGATION, navigation),
         SheetGroup::new(page_keys::CARD, keys.card),
         SheetGroup::new(page_keys::PAGE, page),
+        SheetGroup::new(IN_PRINTINGS, printings.iter().copied()),
         SheetGroup::new(page_keys::IN_THEMES, THEME_SHEET_ROWS),
     ]
     .into_iter()
@@ -441,6 +463,7 @@ mod tests {
                     vec!["p", "i", "v", "d", "m", "s", "Shift+S", "-", "+"]
                 ),
                 ("Page", vec!["u", "f", "/", "t", "?", "Shift+H", "Esc"]),
+                ("In Printings", vec!["←", "h", "v", "Enter"]),
                 ("In Themes", vec!["↑", "h", "gg", "Enter"]),
             ]
         );
@@ -457,6 +480,7 @@ mod tests {
                 ),
                 ("Card", vec!["p", "i", "v", "d"]),
                 ("Page", vec!["f", "t", "?", "Shift+H", "Esc"]),
+                ("In Printings", vec!["←", "h", "v", "Enter"]),
                 ("In Themes", vec!["↑", "h", "gg", "Enter"]),
             ]
         );
@@ -563,6 +587,41 @@ mod tests {
                 "{key}"
             );
         }
+    }
+
+    #[test]
+    fn every_screen_with_card_keys_lists_the_printings_sheet_s_keys_and_v_among_them() {
+        let screens = [
+            deck_cards_groups(Editable::Yes),
+            deck_cards_groups(Editable::No),
+            card_rows_groups(),
+            examples_groups(),
+        ];
+        for groups in screens {
+            let printings = groups
+                .iter()
+                .find(|group| group.title == IN_PRINTINGS)
+                .map(|group| group.rows.clone());
+            assert_eq!(printings, Some(PRINTINGS_SHEET_ROWS.to_vec()), "{groups:?}");
+        }
+        assert!(
+            PRINTINGS_SHEET_ROWS.contains(&(&["v"][..], FLIP_ROW)),
+            "v flips or melds the printings"
+        );
+        assert!(
+            !everywhere_groups().iter().any(|g| g.title == IN_PRINTINGS),
+            "a screen with no cards has no Printings sheet"
+        );
+    }
+
+    #[test]
+    fn v_flips_or_melds_the_printings_as_it_does_a_card() {
+        for key in ["v", "V"] {
+            assert_eq!(flow_key(key), Some(FlowKey::Flip), "{key}");
+            assert_eq!(card_key(key), Some(CardKey::Flip), "{key}");
+        }
+        assert_eq!(flow_key("ArrowLeft"), Some(FlowKey::Back));
+        assert_eq!(flow_key("Enter"), Some(FlowKey::Select));
     }
 
     #[test]

@@ -2,6 +2,8 @@
 //! `Image` and `Printing` buttons open. The kit's row feeds the screen's
 //! [`HoverStack`](components::HoverStack) itself.
 
+use std::collections::HashMap;
+
 use components::CardRow as SharedCardRow;
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -42,17 +44,22 @@ pub fn use_card_overlays() -> CardOverlays {
 
 /// The image preview and printing sheet the screen's rows open. A picked
 /// printing goes to `on_printing_save`, which swaps it into the screen's
-/// list; without one the sheet only browses the printings.
+/// list; without one the sheet only browses the printings. The sheet opens
+/// on the face its card shows in `faces`, else in the screen's
+/// [`RowFaces`], else on the front.
 #[component]
 pub fn CardOverlaysHost(
     overlays: CardOverlays,
     #[props(default)] on_printing_save: Option<EventHandler<Card>>,
     #[props(default = "Printing saved")] saved_message: &'static str,
+    #[props(default)] faces: Option<Signal<HashMap<Uuid, usize>>>,
 ) -> Element {
     let CardOverlays {
         preview,
         mut printing,
     } = overlays;
+    let row_faces = try_use_context::<RowFaces>().map(|RowFaces(faces)| faces);
+    let faces = faces.or(row_faces);
     let mut open = use_signal(|| false);
     use_effect(move || open.set(printing().is_some()));
     use_effect(move || {
@@ -65,6 +72,7 @@ pub fn CardOverlaysHost(
         if let Some(card) = printing() {
             PrintingSheet {
                 key: "{card.scryfall_data.id}",
+                face: faces.and_then(|f| f.peek().get(&card.scryfall_data.id).copied()).unwrap_or(0),
                 card,
                 open,
                 on_save: on_printing_save,

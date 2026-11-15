@@ -25,6 +25,7 @@ use zwipe_ui::shortcuts::{self, FlowKey};
 use crate::icons::{CHECK, DockIcon};
 use crate::keys::use_sheet_focus_handing_back;
 use crate::media::{KIT_MODAL_PX, use_min_width};
+use crate::printing_face::{PrintingFace, PrintingFaceButton, use_printing_face};
 use crate::{
     BottomSheet, CoverFlow, IMAGE_ICON, LoadFailed, SheetFrame, SheetWide, use_overlay_back_action,
 };
@@ -85,12 +86,17 @@ enum Step {
 /// an `on_save`, the sheet picks: Select or Enter hands it the showing printing and closes, and
 /// leaving with a different printing showing calls `on_unchanged`. Without one it only browses: no
 /// Select or Save, and Enter does nothing.
+///
+/// Every printing shows `face`, the face `card`'s row is on, and its melded card where the row's
+/// half is melded. The row's Flip or Meld button, left of Select, and `v` turn them all together
+/// ([`PrintingFace`]); a pick is still the printing itself.
 #[component]
 pub fn PrintingSheet(
     card: Card,
     mut open: Signal<bool>,
     #[props(default)] on_save: Option<EventHandler<Card>>,
     #[props(default)] on_unchanged: Option<EventHandler<()>>,
+    #[props(default)] face: usize,
 ) -> Element {
     let read_only = on_save.is_none();
     let source = try_use_context::<PrintingsSource>();
@@ -154,6 +160,9 @@ pub fn PrintingSheet(
     let at = index();
     let changed = count > 0 && at != initial();
     let visible = all.get(at).cloned();
+    let printing_face = use_printing_face(&card, face, open, &all);
+    let shown = printing_face.shown(&all);
+    let shown_face = (printing_face.face)();
 
     let leave = use_callback(move |(): ()| {
         if !read_only
@@ -212,6 +221,8 @@ pub fn PrintingSheet(
                 name,
                 open,
                 printings: all,
+                shown,
+                printing_face,
                 index,
                 loading,
                 failed,
@@ -251,12 +262,16 @@ pub fn PrintingSheet(
                             e.prevent_default();
                             save.call(());
                         }
+                        Some(FlowKey::Flip) => {
+                            e.prevent_default();
+                            printing_face.turn();
+                        }
                         None => {}
                     },
                     if failed {
                         LoadFailed { message: model::LOAD_FAILED, on_retry: retry }
                     } else if loading || visible.is_some() {
-                        CoverFlow { printings: all, index, loading }
+                        CoverFlow { printings: shown, index, loading, face: shown_face }
                         // The printing's chips, then Save at the right, at
                         // the sheet's bottom. Save is grayed until a
                         // different printing shows.
@@ -267,6 +282,9 @@ pub fn PrintingSheet(
                                 PrintingChipsGhost {}
                             }
                             div { class: "web-printing-foot-row",
+                                if !loading {
+                                    PrintingFaceButton { printing_face }
+                                }
                                 if loading && !read_only {
                                     div { class: "action-dock web-printing-save",
                                         span { class: "skeleton-bar skeleton-chip web-printing-save-ghost" }
@@ -302,13 +320,17 @@ pub fn PrintingSheet(
 /// to its new place as the selection moves, and an arrow button at each
 /// side steps one printing. `on_select` picks the centered
 /// printing; it does nothing while it is the one the sheet opened on, as
-/// the `Select` button shows. `read_only` leaves out `Select`.
+/// the `Select` button shows. `read_only` leaves out `Select`. The flow
+/// draws `shown`, the printings as `printing_face` turns them, and its
+/// Flip or Meld button sits left of `Select`.
 #[component]
 fn CoverFlowSheet(
     // The card's name, the sheet's title.
     name: String,
     open: Signal<bool>,
     printings: Vec<Card>,
+    shown: Vec<Card>,
+    printing_face: PrintingFace,
     mut index: Signal<usize>,
     loading: bool,
     failed: bool,
@@ -374,15 +396,20 @@ fn CoverFlowSheet(
                                     on_select.call(());
                                 }
                             }
+                            Some(FlowKey::Flip) => {
+                                e.prevent_default();
+                                printing_face.turn();
+                            }
                             None => {}
                         },
                         if failed {
                             LoadFailed { message: model::LOAD_FAILED, on_retry: move |()| on_retry.call(()) }
                         } else {
                             CoverFlow {
-                                printings,
+                                printings: shown,
                                 index,
                                 loading,
+                                face: (printing_face.face)(),
                                 on_pick: (!read_only).then(|| EventHandler::new(move |()| on_select.call(()))),
                             }
                             if loading {
@@ -395,6 +422,7 @@ fn CoverFlowSheet(
                             } else if let Some(card) = selected {
                                 div { class: "web-flow-info",
                                     PrintingChips { card, at, count }
+                                    PrintingFaceButton { printing_face }
                                     if !read_only {
                                         button {
                                             r#type: "button",

@@ -201,16 +201,19 @@ fn tile(has_art: bool, arrival: Option<Arrival>) -> Tile {
     }
 }
 
-/// The printings in a cover flow, the one at `index` in the middle. A tap
+/// The printings in a cover flow, the one at `index` in the middle, each on
+/// its `face` (0 for the front; a card without that face shows its front). A tap
 /// on the middle card calls `on_pick`, when given (a host that only shows
 /// printings leaves it out). While `loading`, the flow is the printings'
-/// ghost and `printings` is not read.
+/// ghost and `printings` is not read. Each card keeps its place by its own
+/// printing's id, so a printing showing its melded card glides as itself.
 #[component]
 pub fn CoverFlow(
     printings: Vec<Card>,
     mut index: Signal<usize>,
     #[props(default)] on_pick: Option<EventHandler<()>>,
     #[props(default)] loading: bool,
+    #[props(default)] face: usize,
 ) -> Element {
     let mut wheel = use_signal(|| 0.0_f64);
     let mut drag_from: Signal<Option<f64>> = use_signal(|| None);
@@ -230,7 +233,7 @@ pub fn CoverFlow(
     let center_settled = !loading
         && printings.get(at).is_none_or(|card| {
             card.scryfall_data
-                .primary_image_url(ImageSize::Large)
+                .shown_face_image_url(face, ImageSize::Large)
                 .is_none_or(|u| arrived.read().get(u).is_some())
         });
     use_effect(use_reactive!(|center_settled| {
@@ -267,7 +270,10 @@ pub fn CoverFlow(
     }));
     let center_url = printings
         .get(at)
-        .and_then(|card| card.scryfall_data.primary_image_url(ImageSize::Large))
+        .and_then(|card| {
+            card.scryfall_data
+                .shown_face_image_url(face, ImageSize::Large)
+        })
         .map(str::to_owned);
     use_effect(use_reactive!(|center_url| {
         if let Some(url) = center_url
@@ -360,7 +366,7 @@ pub fn CoverFlow(
                 onpointerleave: move |_| drag_from.set(None),
                 for (i, offset, card) in cards {
                     div {
-                        key: "{card.scryfall_data.id}",
+                        key: "{card.card_profile.scryfall_data_id}",
                         class: if offset == 0 { "cover-flow-card selected" } else { "cover-flow-card" },
                         style: flow_slot(offset).style(),
                         onclick: move |_| {
@@ -376,7 +382,7 @@ pub fn CoverFlow(
                             }
                         },
                         {
-                            let url = card.scryfall_data.primary_image_url(ImageSize::Large).map(str::to_owned);
+                            let url = card.scryfall_data.shown_face_image_url(face, ImageSize::Large).map(str::to_owned);
                             let arrival = url.as_deref().and_then(|u| {
                                 arrived.read().get(u)
                             });

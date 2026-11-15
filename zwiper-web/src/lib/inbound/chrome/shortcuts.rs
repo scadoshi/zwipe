@@ -194,7 +194,7 @@ pub fn claims_steps(screen: &ShortcutsScreen) -> bool {
 #[cfg(test)]
 mod tests {
     use zwipe_ui::deck_cards::{cursor, keys as hover_keys};
-    use zwipe_ui::shortcuts::THEME_SHEET_ROWS;
+    use zwipe_ui::shortcuts::{PRINTINGS_SHEET_ROWS, THEME_SHEET_ROWS};
 
     use super::*;
 
@@ -400,6 +400,10 @@ mod tests {
                 "This page's hint",
                 "These shortcuts",
                 "Close the open sheet",
+                "Previous or next printing",
+                "Previous or next printing",
+                FLIP_ROW,
+                "Pick the printing",
                 "Move between themes",
                 "Move between themes",
                 "First or last theme",
@@ -424,7 +428,10 @@ mod tests {
             "Shift+H" => "H".to_owned(),
             other => other.to_owned(),
         };
-        for (keys, does) in rows.iter().filter(|row| !in_theme_sheet(row)) {
+        for (keys, does) in rows
+            .iter()
+            .filter(|row| !in_theme_sheet(row) && !in_printings_sheet(row))
+        {
             for label in *keys {
                 let key = typed(label);
                 let known = swipe_screen_shortcut(&key).is_some()
@@ -447,6 +454,26 @@ mod tests {
     /// the screen.
     fn in_theme_sheet(row: &SheetRow) -> bool {
         THEME_SHEET_ROWS.contains(row)
+    }
+
+    /// Whether `row` is one of the Printings sheet's own keys, which work in that sheet rather
+    /// than on the screen.
+    fn in_printings_sheet(row: &SheetRow) -> bool {
+        PRINTINGS_SHEET_ROWS.contains(row)
+    }
+
+    #[test]
+    fn every_printings_sheet_key_works_there() {
+        for (keys, does) in PRINTINGS_SHEET_ROWS {
+            for label in keys {
+                let key = match *label {
+                    "←" => "ArrowLeft",
+                    "→" => "ArrowRight",
+                    other => other,
+                };
+                assert!(flow_key(key).is_some(), "{label} for {does}");
+            }
+        }
     }
 
     #[test]
@@ -556,7 +583,10 @@ mod tests {
     #[test]
     fn every_key_the_examples_sheet_lists_works_there() {
         let rows = sheet_rows(&ShortcutsScreen::Examples);
-        for (keys, does) in rows.iter().filter(|row| !in_theme_sheet(row)) {
+        for (keys, does) in rows
+            .iter()
+            .filter(|row| !in_theme_sheet(row) && !in_printings_sheet(row))
+        {
             for label in *keys {
                 let key = match *label {
                     "←" => "ArrowLeft",
