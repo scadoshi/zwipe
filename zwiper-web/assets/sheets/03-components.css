@@ -1006,9 +1006,14 @@ a.nav-dropdown-item.active:visited {
 
 /* Soft: the bar's gap, padding and radius. */
 :where(.action-dock) {
+    /* The dock's corner and the buttons' inset from its top and bottom: a
+       button's corner is the dock's less the border and that inset, so the
+       gap around each end button stays even. */
+    --dock-radius: 0.9rem;
+    --dock-inset: 0.3rem;
     gap: 0.25rem;
     padding: 0 0.4rem;
-    border-radius: 0.9rem;
+    border-radius: var(--dock-radius);
 }
 
 .action-dock {
@@ -1041,8 +1046,8 @@ a.nav-dropdown-item.active:visited {
 :where(.action-dock-btn) {
     width: 2.4rem;
     height: 2.4rem;
-    margin: 0.3rem 0;
-    border-radius: 0.6rem;
+    margin: var(--dock-inset) 0;
+    border-radius: max(0.15rem, calc(var(--dock-radius) - 1px - var(--dock-inset)));
 }
 
 .action-dock-btn {
