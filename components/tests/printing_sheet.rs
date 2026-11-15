@@ -438,3 +438,50 @@ fn a_face_its_host_gives_wins_over_the_handed_one() {
     let html = render(app);
     assert!(html.contains(FRONT_LARGE), "the row's front: {html}");
 }
+
+#[test]
+fn each_printing_marks_the_face_it_shows_for_the_crossfade() {
+    fn app() -> Element {
+        let asked = use_signal(Vec::new);
+        use_context_provider(|| source(PrintingsFetch::Ready(vec![two_faced()]), asked));
+        let open = use_signal(|| true);
+        rsx! {
+            PrintingSheet { card: two_faced(), open, face: 1 }
+        }
+    }
+    let html = render(app);
+    let id = two_faced().scryfall_data.id;
+    assert!(
+        html.contains(&format!(r#"data-face="{id}:1""#)),
+        "the printing on its back: {html}"
+    );
+}
+
+#[test]
+fn a_melded_printing_marks_its_melded_card() {
+    fn app() -> Element {
+        let half = meld_half();
+        let asked = use_signal(Vec::new);
+        let printings = vec![half.clone()];
+        use_context_provider(move || source(PrintingsFetch::Ready(printings.clone()), asked));
+        let result = Uuid::parse_str(RESULT_ID).unwrap();
+        let id = half.scryfall_data.id;
+        use_context_provider(move || MeldSource {
+            results: Signal::new(HashMap::from([(
+                result,
+                MeldFetch::Ready(Box::new(melded())),
+            )])),
+            on: Signal::new(HashSet::from([id])),
+            request: Callback::new(|_: Uuid| {}),
+        });
+        let open = use_signal(|| true);
+        rsx! {
+            PrintingSheet { card: half, open }
+        }
+    }
+    let html = render(app);
+    assert!(
+        html.contains(&format!(r#"data-face="{RESULT_ID}:0""#)),
+        "the melded card: {html}"
+    );
+}

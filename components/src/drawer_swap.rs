@@ -2,8 +2,8 @@
 //!
 //! A click on a stack card or on a Flip or Meld button, or a key, copies
 //! what the card details show as they show it: an open card details
-//! drawer's title bar and content, and each open card row's art and
-//! detail. If one then shows another card (a drawer's title changes) or
+//! drawer's title bar and content, each open card row's art and detail, and
+//! each printing an open Printings sheet shows. If one then shows another card (a drawer's title changes) or
 //! another face (a face marker, `data-face`, changes: a flip, or a meld
 //! half melding), the copies are laid over it in the same task, before the
 //! browser paints the change, and fade out over `SWAP_MS` while the new
@@ -32,6 +32,10 @@ const SWAP_JS: &str = r"
   const DRAWER_PARTS = ':scope > .sheet-header, :scope > .sheet-content';
   const ROW_PARTS = ':scope > .card-row-compact > .card-row-art, :scope > .card-row-collapse > .card-row-collapse-inner';
   const openRows = () => [...document.querySelectorAll('.card-row.expanded')].filter((row) => row.getClientRects().length > 0);
+  // Every printing an open Printings sheet shows, each turned in its cover flow, so its copy is
+  // laid in the card's own layout box rather than its turned outline.
+  const PRINTING_PARTS = ':scope > img';
+  const openPrintings = () => [...document.querySelectorAll('.bottom-sheet.show .cover-flow-stage > .cover-flow-card')].filter((card) => card.getClientRects().length > 0);
   // A row's own color is often see-through, so its copies take the first solid one behind it.
   const solidBehind = (el) => {
     for (let at = el; at; at = at.parentElement) {
@@ -41,7 +45,10 @@ const SWAP_JS: &str = r"
     return getComputedStyle(document.body).backgroundColor;
   };
   let pending = null, observer = null, expire = null;
-  const shotsOf = (box, parts) => [...box.querySelectorAll(parts)].map((live) => ({ live, copy: live.cloneNode(true), rect: live.getBoundingClientRect(), scroll: live.scrollTop }));
+  const shotsOf = (box, parts, local) => [...box.querySelectorAll(parts)].map((live) => ({
+    live, copy: live.cloneNode(true), rect: live.getBoundingClientRect(), scroll: live.scrollTop,
+    at: local ? { left: live.offsetLeft, top: live.offsetTop, width: live.offsetWidth, height: live.offsetHeight } : null,
+  }));
   const play = () => {
     const was = pending;
     pending = null;
@@ -60,9 +67,10 @@ const SWAP_JS: &str = r"
         const ghost = shot.copy;
         ghost.setAttribute('data-drawer-ghost', '');
         ghost.setAttribute('aria-hidden', 'true');
+        const at = shot.at || { left: shot.rect.left - box.left, top: shot.rect.top - box.top, width: shot.rect.width, height: shot.rect.height };
         Object.assign(ghost.style, {
-          position: 'absolute', left: (shot.rect.left - box.left) + 'px', top: (shot.rect.top - box.top) + 'px',
-          width: shot.rect.width + 'px', height: shot.rect.height + 'px', margin: '0', boxSizing: 'border-box',
+          position: 'absolute', left: at.left + 'px', top: at.top + 'px',
+          width: at.width + 'px', height: at.height + 'px', margin: '0', boxSizing: 'border-box',
           overflow: 'hidden', pointerEvents: 'none', zIndex: '3', backgroundColor: fill,
         });
         surface.box.appendChild(ghost);
@@ -97,6 +105,16 @@ const SWAP_JS: &str = r"
       surface.changed = () => row.isConnected && row.classList.contains('expanded') && faceOf(row) !== surface.face;
       surfaces.push(surface);
     }
+    for (const card of openPrintings()) {
+      const surface = {
+        box: card,
+        face: faceOf(card),
+        shots: shotsOf(card, PRINTING_PARTS, true).filter((shot) => shot.at.width > 0 && shot.at.height > 0),
+        fill: () => 'transparent',
+      };
+      surface.changed = () => card.isConnected && faceOf(card) !== surface.face;
+      surfaces.push(surface);
+    }
     if (!surfaces.length) return;
     pending = { surfaces };
     if (observer) observer.disconnect();
@@ -127,6 +145,7 @@ const SWAP_JS: &str = r"
       row.style.position = '';
       for (const part of row.querySelectorAll(ROW_PARTS)) for (const run of part.getAnimations()) run.cancel();
     }
+    for (const card of openPrintings()) for (const part of card.querySelectorAll(PRINTING_PARTS)) for (const run of part.getAnimations()) run.cancel();
   };
   document.addEventListener('keydown', (e) => {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
@@ -200,6 +219,22 @@ mod tests {
                 "{action}: {SWAP_JS}"
             );
         }
+    }
+
+    #[test]
+    fn every_visible_printing_crossfades_together() {
+        assert!(
+            SWAP_JS.contains("const openPrintings = () =>"),
+            "the open Printings sheet's printings are surfaces: {SWAP_JS}"
+        );
+        assert!(
+            SWAP_JS.contains(".cover-flow-stage > .cover-flow-card"),
+            "each printing in the cover flow: {SWAP_JS}"
+        );
+        assert!(
+            SWAP_JS.contains("offsetLeft"),
+            "a turned card's copy is laid in its own layout box, not its turned outline: {SWAP_JS}"
+        );
     }
 
     #[test]

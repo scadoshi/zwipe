@@ -10,7 +10,7 @@ use zwipe_core::domain::card::Card;
 
 use crate::icons::{DockIcon, FLIP};
 use crate::meld::{MeldFetch, MeldSource, MeldToggle};
-use crate::{MELD, data_action};
+use crate::{MELD, data_action, drawer_swap};
 
 /// The face of the card whose Printings opened last. A row or a details drawer hands the face it
 /// shows here as its Printings opens ([`hand_face_then`]), and a Printings sheet whose host gives
@@ -180,6 +180,8 @@ pub fn use_printing_face(
     open: Signal<bool>,
     printings: &[Card],
 ) -> PrintingFace {
+    // A flip or meld crossfades every printing shown.
+    drawer_swap::use_drawer_swap();
     let source = try_use_context::<MeldSource>();
     let row_melded = MeldToggle::of(&card.scryfall_data, source).on();
     let turn = FaceTurn::of(card, source);

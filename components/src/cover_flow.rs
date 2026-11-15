@@ -407,6 +407,9 @@ pub fn CoverFlow(
                                             class: if shown.image_shown() { "shown" } else { "" },
                                             src: "{src}",
                                             alt: "{card.scryfall_data.name}, {card.scryfall_data.set_name}",
+                                            // The card and face shown, which the card details'
+                                            // crossfade reads (`drawer_swap`).
+                                            "data-face": "{card.scryfall_data.id}:{face}",
                                             // The middle loads at once, the sheet
                                             // sliding in from off screen; the rest
                                             // as they come near.
