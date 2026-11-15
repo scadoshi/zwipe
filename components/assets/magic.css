@@ -2730,6 +2730,19 @@ html.keyboard-up .web-dock-pair {
     box-shadow: var(--shadow-md);
 }
 
+/* The keyboard cursor's ring on a featured card rings its rounded image, as
+   a stack card's ring does: offset by the same 2px, so the ring's radius is
+   the card's plus the gap, all the way round. The square stop itself shows
+   no ring. */
+.deck-head-card-image:focus-visible {
+    outline: none;
+}
+
+.deck-head-card-image:focus-visible img {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+}
+
 /* The name chip, then the role chip, wrapping and centered under the image
    as Home's deck tiles set theirs. A long name ellipsizes inside its chip. */
 .deck-head-card-chips {

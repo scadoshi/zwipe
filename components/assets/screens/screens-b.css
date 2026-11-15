@@ -1030,6 +1030,19 @@
     box-shadow: var(--shadow-md);
 }
 
+/* The keyboard cursor's ring on a strip card rings its rounded image, as a
+   stack card's ring does: offset by the same 2px, so the ring's radius is
+   the card's plus the gap, all the way round. The card, image and chips
+   together, shows no ring of its own. */
+.deck-featured-card:focus-visible {
+    outline: none;
+}
+
+.deck-featured-card:focus-visible .deck-featured-image {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+}
+
 /* The name chip, then the role chip on its own line, centered under the
    image. A long name ellipsizes inside its chip. */
 .deck-featured-chips {
