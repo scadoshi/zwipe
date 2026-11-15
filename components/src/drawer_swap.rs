@@ -1,13 +1,16 @@
-//! The card details drawer crossfading when it swaps to another card.
+//! The card details crossfading when they show another card or another face.
 //!
-//! A click on a stack card, or a key, while a card details drawer is open
-//! copies the drawer's title bar and content as they show. If the drawer
-//! then changes to another card, the copies are laid over the drawer in the
-//! same task, before the browser paints the change, and fade out over
-//! `SWAP_MS` while the new card's title bar and content fade in. Nothing
-//! runs under `prefers-reduced-motion`, and a drawer that kept its card
-//! drops the copies unseen. A held key's repeats swap the card at once,
-//! dropping any fade still running.
+//! A click on a stack card or on a Flip or Meld button, or a key, copies
+//! what the card details show as they show it: an open card details
+//! drawer's title bar and content, and each open card row's art and
+//! detail. If one then shows another card (a drawer's title changes) or
+//! another face (a face marker, `data-face`, changes: a flip, or a meld
+//! half melding), the copies are laid over it in the same task, before the
+//! browser paints the change, and fade out over `SWAP_MS` while the new
+//! face fades in. Nothing runs under `prefers-reduced-motion`, and details
+//! that kept their card and face drop the copies unseen. A held key's
+//! repeats swap at once, dropping any fade still running. Stack card images
+//! have no copies, so they swap at once.
 
 use dioxus::prelude::*;
 
@@ -24,52 +27,92 @@ const SWAP_JS: &str = r"
   const reduce = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const openDrawer = () => document.querySelector('.bottom-sheet.show.card-details-drawer');
   const titleOf = (sheet) => (sheet.querySelector('.sheet-title') || { textContent: '' }).textContent;
+  // The face shown: every face marker inside, in order.
+  const faceOf = (el) => [...el.querySelectorAll('[data-face]')].map((m) => m.getAttribute('data-face')).join(' ');
+  const DRAWER_PARTS = ':scope > .sheet-header, :scope > .sheet-content';
+  const ROW_PARTS = ':scope > .card-row-compact > .card-row-art, :scope > .card-row-collapse > .card-row-collapse-inner';
+  const openRows = () => [...document.querySelectorAll('.card-row.expanded')].filter((row) => row.getClientRects().length > 0);
+  // A row's own color is often see-through, so its copies take the first solid one behind it.
+  const solidBehind = (el) => {
+    for (let at = el; at; at = at.parentElement) {
+      const fill = getComputedStyle(at).backgroundColor;
+      if (fill && fill !== 'transparent' && !/^rgba\(.*,\s*0\)$/.test(fill)) return fill;
+    }
+    return getComputedStyle(document.body).backgroundColor;
+  };
   let pending = null, observer = null, expire = null;
+  const shotsOf = (box, parts) => [...box.querySelectorAll(parts)].map((live) => ({ live, copy: live.cloneNode(true), rect: live.getBoundingClientRect(), scroll: live.scrollTop }));
   const play = () => {
     const was = pending;
     pending = null;
-    if (!was || !was.sheet.classList.contains('show') || titleOf(was.sheet) === was.title) return;
+    if (!was) return;
     const timing = { duration: MS, easing: 'ease' };
-    const box = was.sheet.getBoundingClientRect();
-    const fill = getComputedStyle(was.sheet).backgroundColor;
-    for (const shot of was.shots) {
-      const ghost = shot.copy;
-      ghost.setAttribute('data-drawer-ghost', '');
-      ghost.setAttribute('aria-hidden', 'true');
-      Object.assign(ghost.style, {
-        position: 'absolute', left: (shot.rect.left - box.left) + 'px', top: (shot.rect.top - box.top) + 'px',
-        width: shot.rect.width + 'px', height: shot.rect.height + 'px', margin: '0', boxSizing: 'border-box',
-        overflow: 'hidden', pointerEvents: 'none', zIndex: '3', backgroundColor: fill,
-      });
-      was.sheet.appendChild(ghost);
-      ghost.scrollTop = shot.scroll;
-      ghost.animate([{ opacity: 1 }, { opacity: 0 }], timing).finished.then(() => ghost.remove(), () => ghost.remove());
-      shot.live.animate([{ opacity: 0 }, { opacity: 1 }], timing);
+    for (const surface of was.surfaces) {
+      if (!surface.changed()) continue;
+      const box = surface.box.getBoundingClientRect();
+      const fill = surface.fill();
+      // A row lays its copies over itself, so it holds them while they fade.
+      const hold = getComputedStyle(surface.box).position === 'static';
+      if (hold) surface.box.style.position = 'relative';
+      let left = surface.shots.length;
+      const done = () => { left -= 1; if (left === 0 && hold) surface.box.style.position = ''; };
+      for (const shot of surface.shots) {
+        const ghost = shot.copy;
+        ghost.setAttribute('data-drawer-ghost', '');
+        ghost.setAttribute('aria-hidden', 'true');
+        Object.assign(ghost.style, {
+          position: 'absolute', left: (shot.rect.left - box.left) + 'px', top: (shot.rect.top - box.top) + 'px',
+          width: shot.rect.width + 'px', height: shot.rect.height + 'px', margin: '0', boxSizing: 'border-box',
+          overflow: 'hidden', pointerEvents: 'none', zIndex: '3', backgroundColor: fill,
+        });
+        surface.box.appendChild(ghost);
+        ghost.scrollTop = shot.scroll;
+        ghost.animate([{ opacity: 1 }, { opacity: 0 }], timing).finished.then(() => { ghost.remove(); done(); }, () => { ghost.remove(); done(); });
+        shot.live.animate([{ opacity: 0 }, { opacity: 1 }], timing);
+      }
     }
   };
   const capture = () => {
+    if (reduce()) return;
+    const surfaces = [];
     const sheet = openDrawer();
-    if (!sheet || reduce()) return;
-    const parts = sheet.querySelectorAll(':scope > .sheet-header, :scope > .sheet-content');
-    pending = {
-      sheet,
-      title: titleOf(sheet),
-      shots: [...parts].map((live) => ({ live, copy: live.cloneNode(true), rect: live.getBoundingClientRect(), scroll: live.scrollTop })),
-    };
+    if (sheet) {
+      const surface = {
+        box: sheet,
+        title: titleOf(sheet),
+        face: faceOf(sheet),
+        shots: shotsOf(sheet, DRAWER_PARTS),
+        fill: () => getComputedStyle(sheet).backgroundColor,
+      };
+      surface.changed = () => sheet.classList.contains('show') && (titleOf(surface.box) !== surface.title || faceOf(surface.box) !== surface.face);
+      surfaces.push(surface);
+    }
+    for (const row of openRows()) {
+      const surface = {
+        box: row,
+        face: faceOf(row),
+        shots: shotsOf(row, ROW_PARTS).filter((shot) => shot.rect.width > 0 && shot.rect.height > 0),
+        fill: () => solidBehind(row),
+      };
+      surface.changed = () => row.isConnected && row.classList.contains('expanded') && faceOf(row) !== surface.face;
+      surfaces.push(surface);
+    }
+    if (!surfaces.length) return;
+    pending = { surfaces };
     if (observer) observer.disconnect();
     clearTimeout(expire);
-    // The callback runs in the task that changed the drawer, before it paints.
+    // The callback runs in the task that changed the details, before it paints.
     observer = new MutationObserver(() => {
       observer.disconnect();
       observer = null;
       clearTimeout(expire);
       play();
     });
-    observer.observe(sheet, { childList: true, subtree: true, characterData: true });
+    for (const surface of surfaces) observer.observe(surface.box, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['data-face', 'src'] });
     expire = setTimeout(() => { if (observer) observer.disconnect(); observer = null; pending = null; }, 600);
   };
   document.addEventListener('click', (e) => {
-    if (e.target instanceof Element && e.target.closest('.card-stack-card')) capture();
+    if (e.target instanceof Element && e.target.closest('.card-stack-card, [data-action=flip], [data-action=meld]')) capture();
   }, true);
   // A held key swaps the card at once: its repeats capture nothing and drop what still fades.
   const drop = () => {
@@ -79,7 +122,11 @@ const SWAP_JS: &str = r"
     clearTimeout(expire);
     for (const ghost of document.querySelectorAll('[data-drawer-ghost]')) ghost.remove();
     const sheet = openDrawer();
-    if (sheet) for (const part of sheet.querySelectorAll(':scope > .sheet-header, :scope > .sheet-content')) for (const run of part.getAnimations()) run.cancel();
+    if (sheet) for (const part of sheet.querySelectorAll(DRAWER_PARTS)) for (const run of part.getAnimations()) run.cancel();
+    for (const row of openRows()) {
+      row.style.position = '';
+      for (const part of row.querySelectorAll(ROW_PARTS)) for (const run of part.getAnimations()) run.cancel();
+    }
   };
   document.addEventListener('keydown', (e) => {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
@@ -91,9 +138,12 @@ const SWAP_JS: &str = r"
 
 /// Installs the crossfade on the page, once.
 pub(crate) fn use_drawer_swap() {
-    use_hook(|| {
-        document::eval(&SWAP_JS.replace("__MS__", &SWAP_MS.to_string()));
-    });
+    use_hook(install);
+}
+
+/// Installs the crossfade on the page; a page that has it already keeps it.
+pub(crate) fn install() {
+    document::eval(&SWAP_JS.replace("__MS__", &SWAP_MS.to_string()));
 }
 
 #[cfg(test)]
@@ -114,6 +164,42 @@ mod tests {
             SWAP_JS.contains("for (const ghost of document.querySelectorAll('[data-drawer-ghost]')) ghost.remove();"),
             "{SWAP_JS}"
         );
+    }
+
+    #[test]
+    fn a_face_change_plays_as_a_card_swap_does() {
+        assert!(
+            SWAP_JS.contains("const faceOf = (el) =>"),
+            "a surface's face is read from its face markers: {SWAP_JS}"
+        );
+        assert!(
+            SWAP_JS.contains(
+                "titleOf(surface.box) !== surface.title || faceOf(surface.box) !== surface.face"
+            ),
+            "the drawer plays on a new card or a new face: {SWAP_JS}"
+        );
+    }
+
+    #[test]
+    fn an_open_card_row_crossfades_its_art_and_detail() {
+        assert!(
+            SWAP_JS.contains("document.querySelectorAll('.card-row.expanded')"),
+            "{SWAP_JS}"
+        );
+        assert!(
+            SWAP_JS.contains(":scope > .card-row-compact > .card-row-art, :scope > .card-row-collapse > .card-row-collapse-inner"),
+            "{SWAP_JS}"
+        );
+    }
+
+    #[test]
+    fn a_flip_or_meld_tap_captures_as_a_key_does() {
+        for action in crate::data_action::FLIP_OR_MELD {
+            assert!(
+                SWAP_JS.contains(&format!("[data-action={action}]")),
+                "{action}: {SWAP_JS}"
+            );
+        }
     }
 
     #[test]

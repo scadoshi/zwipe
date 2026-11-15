@@ -21,7 +21,7 @@ use zwipe_core::domain::deck::{Board, deck_metrics};
 use crate::card_actions::{CardBoardMoves, CardEditButtons};
 use crate::hover_stack::{HeldEntry, HoverStack};
 use crate::meld::use_meld;
-use crate::{CardDetails, CardProxy};
+use crate::{CardDetails, CardProxy, drawer_swap};
 
 /// Opens the row's detail, letting go of its hover preview, or shuts it
 /// when it is open.
@@ -121,6 +121,14 @@ pub fn CardRow(
     // A memo, so the other rows sharing `expanded_card` render again only
     // when their own open state flips.
     let is_expanded = use_memo(use_reactive!(|card_id| expanded_card() == Some(card_id)))();
+    // The card details' crossfade, installed the first time the row opens, so its flip or meld
+    // eases on every screen that shows rows.
+    let swap_installed: Rc<Cell<bool>> = use_hook(|| Rc::new(Cell::new(false)));
+    use_effect(use_reactive!(|is_expanded| {
+        if is_expanded && !swap_installed.replace(true) {
+            drawer_swap::install();
+        }
+    }));
     // The screen's hover preview: a collapsed row shows the face it shows
     // while the cursor is on it, and lets go on leave, expand or unmount.
     let hover_stack = try_use_context::<HoverStack>();

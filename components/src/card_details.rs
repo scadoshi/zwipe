@@ -110,15 +110,17 @@ pub fn card_face_count(card: &Card) -> usize {
 }
 
 /// A face's kind as a chip row: its mana cost's pips when `cost` is given,
-/// then its type line and the card's rarity.
+/// then its type line and the card's rarity. `face` names the face shown as
+/// its `data-face`, which the card details' crossfade reads (`drawer_swap`).
 #[component]
 pub(crate) fn KindChips(
     type_line: String,
     rarity: String,
     #[props(default)] cost: Option<String>,
+    #[props(default)] face: Option<String>,
 ) -> Element {
     rsx! {
-        div { class: "card-details-keys",
+        div { class: "card-details-keys", "data-face": face,
             if let Some(cost) = cost.filter(|c| !c.is_empty()) {
                 OracleText { text: cost, class: "card-details-cost".to_string() }
             }
@@ -127,6 +129,16 @@ pub(crate) fn KindChips(
             }
             span { class: "detail-chip detail-chip-rarity", "{rarity}" }
         }
+    }
+}
+
+/// The `data-face` of the face shown: its index, then `m` while a meld half shows its melded
+/// card.
+fn face_mark(face: usize, melded: bool) -> String {
+    if melded {
+        format!("{face}m")
+    } else {
+        face.to_string()
     }
 }
 
@@ -238,6 +250,7 @@ pub fn CardDetails(
     // A meld half shows its melded card in its place while Meld is on.
     let meld = use_meld(&card.scryfall_data);
     let show_meld = meld.available();
+    let melded = meld.shown().is_some();
     let card = meld.apply(&card);
     let sd = &card.scryfall_data;
     let rarity = sd.rarity.to_long_name();
@@ -263,7 +276,12 @@ pub fn CardDetails(
     rsx! {
         div { class: "card-row-detail card-details-row",
             if let Some(face) = current_face {
-                KindChips { type_line: face.type_line, rarity, cost: Some(face.mana_cost) }
+                KindChips {
+                    type_line: face.type_line,
+                    rarity,
+                    cost: Some(face.mana_cost),
+                    face: face_mark(cur, melded),
+                }
                 if !face.oracle.is_empty() {
                     OracleText { text: face.oracle, class: "card-detail-oracle card-details-oracle".to_string() }
                 }
@@ -438,6 +456,7 @@ pub fn CardDetailsPanel(
             KindChips {
                 type_line: current_face.as_ref().map_or_default(|f| f.type_line.clone()),
                 rarity,
+                face: face_mark(cur, melded.is_some()),
             }
             if let Some(line) = meld_line {
                 p { class: "card-details-meld", "{line}" }
@@ -602,5 +621,76 @@ pub fn CardDetailsPanelSkeleton() -> Element {
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use dioxus::dioxus_core::NoOpMutations;
+    use serde_json::{Value, json};
+
+    use super::*;
+
+    /// A real card, as the API serves it.
+    const CARD_JSON: &str = include_str!("../../zwipe-ui/src/test_support/card.json");
+
+    /// A transform card: the fixture with Delver of Secrets' two faces in place of its rules.
+    fn delver() -> Card {
+        let mut card: Value = serde_json::from_str(CARD_JSON).unwrap();
+        let sd = card.get_mut("scryfall_data").unwrap();
+        sd["oracle_text"] = Value::Null;
+        sd["card_faces"] = json!([
+            {
+                "object": "card_face",
+                "name": "Delver of Secrets",
+                "mana_cost": "{U}",
+                "type_line": "Creature — Human Wizard",
+                "oracle_text": "At the beginning of your upkeep, look at the top card of your library.",
+                "power": "1",
+                "toughness": "1"
+            },
+            {
+                "object": "card_face",
+                "name": "Insectile Aberration",
+                "mana_cost": "",
+                "type_line": "Creature — Human Insect",
+                "oracle_text": "Flying",
+                "power": "3",
+                "toughness": "2"
+            }
+        ]);
+        serde_json::from_value(card).unwrap()
+    }
+
+    fn render(app: fn() -> Element) -> String {
+        let mut dom = VirtualDom::new(app);
+        dom.rebuild_in_place();
+        dom.render_immediate(&mut NoOpMutations);
+        dioxus_ssr::render(&dom)
+    }
+
+    #[test]
+    fn the_details_mark_the_face_they_show() {
+        fn front() -> Element {
+            rsx! { CardDetails { card: delver(), face: Some(0) } }
+        }
+        fn back() -> Element {
+            rsx! { CardDetails { card: delver(), face: Some(1) } }
+        }
+        let front = render(front);
+        let back = render(back);
+        assert!(front.contains(r#"data-face="0""#), "{front}");
+        assert!(back.contains(r#"data-face="1""#), "{back}");
+        assert!(back.contains("Creature — Human Insect"), "{back}");
+    }
+
+    #[test]
+    fn the_panel_marks_the_face_it_shows() {
+        fn back() -> Element {
+            let face = use_signal(|| 1);
+            rsx! { CardDetailsPanel { card: delver(), face: Some(face) } }
+        }
+        let back = render(back);
+        assert!(back.contains(r#"data-face="1""#), "{back}");
     }
 }

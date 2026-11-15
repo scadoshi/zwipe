@@ -17,7 +17,7 @@ use crate::{
 /// where the host shows them. `class` names the drawer, and a host that adds its
 /// own class keeps `card-details-drawer` in it. The shown face follows `face` when the host
 /// passes one. The drawer carries the card's id as its `data-card`, so the keys that act on a
-/// card find the one it shows. `edge` is the edge it runs along, the right unless given. Swapping to another card while it is open crossfades (`use_drawer_swap`).
+/// card find the one it shows. `edge` is the edge it runs along, the right unless given. Swapping to another card or face while it is open crossfades (`use_drawer_swap`).
 #[component]
 pub fn CardDetailsSheet(
     open: Signal<bool>,

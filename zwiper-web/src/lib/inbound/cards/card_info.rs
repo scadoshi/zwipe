@@ -16,7 +16,7 @@ use crate::inbound::cards::otag::use_describe_tag;
 /// the shown face) and the card has art, and a `Printings` pill when the
 /// host passes `on_printings`, as the wide pane does. `class` names the drawer, and a
 /// host that adds its own class keeps `card-details-drawer` in it. Swapping
-/// to another card while open crossfades. Mount it at
+/// to another card or face while open crossfades. Mount it at
 /// the screen root beside the printing sheet.
 #[component]
 pub fn CardDetailsSheet(
