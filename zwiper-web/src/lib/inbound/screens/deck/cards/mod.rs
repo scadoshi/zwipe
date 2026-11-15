@@ -109,6 +109,7 @@ fn SwipeDetails(
     #[props(default)] on_printings: Option<EventHandler<()>>,
     #[props(default)] faces: Option<Signal<HashMap<Uuid, usize>>>,
 ) -> Element {
+    let describe_tag = use_describe_tag();
     rsx! {
         div { class: "web-swipe-details",
             if let Some(card) = card {
@@ -117,6 +118,7 @@ fn SwipeDetails(
                     card,
                     on_printings,
                     faces,
+                    describe_tag: Some(describe_tag),
                 }
             } else if loading {
                 CardDetailsPanelSkeleton {}
@@ -125,23 +127,78 @@ fn SwipeDetails(
     }
 }
 
-/// One card's pane in [`SwipeDetails`], keyed by the card so its face is that card's.
+/// One card's details as a swipe screen's pane, keyed by the card so its face is that card's:
+/// the face the screen shares in `faces`, which the pane's Flip turns, with `describe_tag`'s Oracle
+/// tag descriptions and `body_end` (a commander suggestion's reasons) under the details.
 #[component]
-fn SwipeDetailsPanel(
+pub(crate) fn SwipeDetailsPanel(
     card: Card,
     on_printings: Option<EventHandler<()>>,
     faces: Option<Signal<HashMap<Uuid, usize>>>,
+    describe_tag: Option<Callback<String, Option<String>>>,
+    #[props(default)] body_end: Option<Element>,
 ) -> Element {
-    let describe_tag = use_describe_tag();
     let id = card.scryfall_data.id;
     let face = use_shared_face(faces, id);
     rsx! {
         CardDetailsPanel {
             card,
-            describe_tag: Some(describe_tag),
+            describe_tag,
             on_printings,
             face,
             on_face_change: share_face(faces, id),
+            body_end,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+
+    use dioxus::dioxus_core::NoOpMutations;
+    use serde_json::{Value, json};
+
+    use super::*;
+
+    /// A transform card: the fixture with Delver of Secrets' two faces.
+    fn delver() -> Card {
+        let json = include_str!("../../../../../../../zwipe-ui/src/test_support/card.json");
+        let mut card: Value = serde_json::from_str(json).expect("the fixture parses");
+        let sd = card.get_mut("scryfall_data").expect("its data");
+        sd["oracle_text"] = Value::Null;
+        sd["card_faces"] = json!([
+            { "object": "card_face", "name": "Delver of Secrets", "mana_cost": "{U}",
+              "type_line": "Creature — Human Wizard", "oracle_text": "Upkeep." },
+            { "object": "card_face", "name": "Insectile Aberration", "mana_cost": "",
+              "type_line": "Creature — Human Insect", "oracle_text": "Flying" }
+        ]);
+        serde_json::from_value(card).expect("the two-faced card parses")
+    }
+
+    #[test]
+    fn a_swipe_screen_s_pane_shows_the_face_the_screen_shares_with_its_reasons_under_it() {
+        fn app() -> Element {
+            let card = delver();
+            let faces = use_signal(|| HashMap::from([(card.scryfall_data.id, 1_usize)]));
+            rsx! {
+                SwipeDetailsPanel {
+                    card,
+                    on_printings: None,
+                    faces: Some(faces),
+                    describe_tag: None,
+                    body_end: rsx! { p { class: "reasons", "Why this commander" } },
+                }
+            }
+        }
+        let mut dom = VirtualDom::new(app);
+        dom.rebuild_in_place();
+        dom.render_immediate(&mut NoOpMutations);
+        let html = dioxus_ssr::render(&dom);
+        assert!(
+            html.contains("Creature — Human Insect"),
+            "the shared back: {html}"
+        );
+        assert!(html.contains("Why this commander"), "the reasons: {html}");
     }
 }

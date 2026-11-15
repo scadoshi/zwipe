@@ -1,4 +1,6 @@
-use components::{CardRow as SharedCardRow, PrintingsFace};
+use std::collections::HashMap;
+
+use components::{CardRow as SharedCardRow, PrintingsFace, share_face, use_shared_face};
 use dioxus::prelude::*;
 use uuid::Uuid;
 use zwipe_core::domain::card::Card;
@@ -22,6 +24,12 @@ pub(crate) struct OtagExamplesOpen(pub(crate) Callback<String>);
 /// hosts keep art-free rows.
 #[derive(Clone, Copy)]
 pub(crate) struct ShowRowArt(pub(crate) Signal<bool>);
+
+/// Context: every card's shown face on the deck page, so a row, its stack card, its details
+/// drawer and its featured card turn together. Provided by the deck cards view; absent
+/// elsewhere, so other hosts' rows keep their own face.
+#[derive(Clone, Copy)]
+pub(crate) struct DeckFaces(pub(crate) Signal<HashMap<Uuid, usize>>);
 
 /// Thin wrapper over the shared [`SharedCardRow`]: wires the app's fullscreen
 /// [`ImagePreview`] signals into the shared row's `on_image` action so call
@@ -58,6 +66,10 @@ pub(crate) fn CardRow(
     // preview opens on the side the user was viewing. Kept in sync via the shared
     // detail's `on_face_change`.
     let mut current_face = use_signal(|| 0usize);
+    // The deck page's shared face for the card, where it keeps them.
+    let deck_faces = try_use_context::<DeckFaces>().map(|DeckFaces(faces)| faces);
+    let shared_face = use_shared_face(deck_faces, scryfall_data_for_preview.id);
+    let share = share_face(deck_faces, scryfall_data_for_preview.id);
     // Deck's price-target currency, shared by the parent view via context so
     // every row prices in the same currency without threading a prop through
     // each call site. Falls back to USD outside that provider.
@@ -87,10 +99,17 @@ pub(crate) fn CardRow(
             expanded_card,
             show_art,
             on_image: move |()| {
-                preview_card.set(Some((scryfall_data_for_preview.clone(), current_face())));
+                let face = shared_face.unwrap_or(current_face)();
+                preview_card.set(Some((scryfall_data_for_preview.clone(), face)));
                 preview_dismissing.set(false);
             },
-            on_face_change: move |face: usize| current_face.set(face),
+            on_face_change: move |face: usize| {
+                current_face.set(face);
+                if let Some(share) = share {
+                    share.call(face);
+                }
+            },
+            face: shared_face.map(|face| face()),
             on_qty_change,
             on_move_to,
             current_board,
@@ -105,5 +124,60 @@ pub(crate) fn CardRow(
             describe_tag,
             on_examples,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::{Value, json};
+
+    use super::*;
+
+    /// A transform card: the fixture with Delver of Secrets' two faces.
+    fn delver() -> Card {
+        let json = include_str!("../../../../../../../../zwipe-ui/src/test_support/card.json");
+        let mut card: Value = serde_json::from_str(json).expect("the fixture parses");
+        let sd = card.get_mut("scryfall_data").expect("its data");
+        sd["oracle_text"] = Value::Null;
+        sd["card_faces"] = json!([
+            { "object": "card_face", "name": "Delver of Secrets", "mana_cost": "{U}",
+              "type_line": "Creature — Human Wizard", "oracle_text": "Upkeep." },
+            { "object": "card_face", "name": "Insectile Aberration", "mana_cost": "",
+              "type_line": "Creature — Human Insect", "oracle_text": "Flying" }
+        ]);
+        serde_json::from_value(card).expect("the two-faced card parses")
+    }
+
+    #[test]
+    fn an_open_row_shows_the_face_its_deck_page_shares() {
+        fn app() -> Element {
+            let card = delver();
+            let id = card.scryfall_data.id;
+            let faces = use_signal(|| HashMap::from([(id, 1_usize)]));
+            use_context_provider(|| DeckFaces(faces));
+            let expanded_card = use_signal(|| Some(id));
+            rsx! {
+                CardRow {
+                    card,
+                    qty: 1,
+                    expanded_card,
+                    preview_card: use_signal(|| None),
+                    preview_dismissing: use_signal(|| false),
+                    on_qty_change: None,
+                    on_move_to: None,
+                    current_board: None,
+                    on_printing: None,
+                    mvp: None,
+                    on_toggle_mvp: None,
+                }
+            }
+        }
+        let mut dom = VirtualDom::new(app);
+        dom.rebuild_in_place();
+        let html = dioxus_ssr::render(&dom);
+        assert!(
+            html.contains("Creature — Human Insect"),
+            "the shared back: {html}"
+        );
     }
 }

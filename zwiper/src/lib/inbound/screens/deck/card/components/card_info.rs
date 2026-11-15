@@ -1,7 +1,11 @@
+use std::collections::HashMap;
+
 use components::{
-    CardDetailsCost, CardDetailsPanel, DrawerSheet, OpenFocus, use_meld, use_overlay_back,
+    CardDetailsCost, CardDetailsPanel, DrawerSheet, OpenFocus, share_face, use_meld,
+    use_overlay_back, use_shared_face,
 };
 use dioxus::prelude::*;
+use uuid::Uuid;
 use zwipe_client::ZwipeClient;
 use zwipe_core::domain::card::Card;
 
@@ -49,11 +53,18 @@ pub(crate) fn CardDetailsSheet(
     /// Host content shown in the panel's foot.
     #[props(default)]
     footer: Option<Element>,
+    /// Every card's shown face where the screen keeps them, so the drawer's Flip turns the
+    /// card's image too, and the image's flip turns the drawer.
+    #[props(default)]
+    faces: Option<Signal<HashMap<Uuid, usize>>>,
 ) -> Element {
     let describe_tag = use_describe_tag();
     let layer = use_overlay_back(open);
-    // The shown face, shared by the title bar's cost and the panel's Flip.
-    let face = use_signal(|| 0_usize);
+    // The shown face, shared by the title bar's cost and the panel's Flip: the screen's for the
+    // card where it keeps them.
+    let id = card.scryfall_data.id;
+    let own_face = use_signal(|| 0_usize);
+    let face = use_shared_face(faces, id).unwrap_or(own_face);
     // The meld toggle, shared by the title bar and the panel, so the title
     // shows the melded card's name and cost (none) while it is on.
     let meld = use_meld(&card.scryfall_data);
@@ -80,6 +91,7 @@ pub(crate) fn CardDetailsSheet(
                 describe_tag: Some(describe_tag),
                 on_printings,
                 footer,
+                on_face_change: share_face(faces, id),
             }
         }
     }
@@ -130,5 +142,55 @@ pub(crate) fn StackGhost() -> Element {
                 GhostCard {}
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::{Value, json};
+
+    use super::*;
+    use crate::inbound::components::catalog_cache::use_catalog_cache;
+
+    /// A transform card: the fixture with Delver of Secrets' two faces.
+    fn delver() -> Card {
+        let json = include_str!("../../../../../../../../zwipe-ui/src/test_support/card.json");
+        let mut card: Value = serde_json::from_str(json).expect("the fixture parses");
+        let sd = card.get_mut("scryfall_data").expect("its data");
+        sd["oracle_text"] = Value::Null;
+        sd["card_faces"] = json!([
+            { "object": "card_face", "name": "Delver of Secrets", "mana_cost": "{U}",
+              "type_line": "Creature — Human Wizard", "oracle_text": "Upkeep." },
+            { "object": "card_face", "name": "Insectile Aberration", "mana_cost": "",
+              "type_line": "Creature — Human Insect", "oracle_text": "Flying" }
+        ]);
+        serde_json::from_value(card).expect("the two-faced card parses")
+    }
+
+    #[test]
+    fn the_drawer_shows_the_face_its_screen_shares() {
+        fn app() -> Element {
+            let cache = use_catalog_cache();
+            use_context_provider(|| cache);
+            use_context_provider(|| {
+                Signal::new(ZwipeClient::new(
+                    "http://localhost".parse().expect("a base url"),
+                ))
+            });
+            let card = delver();
+            let faces: Signal<HashMap<Uuid, usize>> =
+                use_signal(|| HashMap::from([(card.scryfall_data.id, 1)]));
+            let open = use_signal(|| true);
+            rsx! {
+                CardDetailsSheet { open, card, faces }
+            }
+        }
+        let mut dom = VirtualDom::new(app);
+        dom.rebuild_in_place();
+        let html = dioxus_ssr::render(&dom);
+        assert!(
+            html.contains("Creature — Human Insect"),
+            "the shared back: {html}"
+        );
     }
 }

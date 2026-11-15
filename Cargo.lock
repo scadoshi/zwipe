@@ -9347,6 +9347,7 @@ dependencies = [
  "components",
  "dioxus",
  "dioxus-primitives",
+ "dioxus-ssr",
  "dotenvy",
  "email_address",
  "jni 0.21.1",

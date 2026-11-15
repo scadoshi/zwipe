@@ -4,6 +4,8 @@
 //! file draws its state, performs its effects and keeps the gestures, the
 //! card's entrance, image easing and the sheets.
 
+use std::collections::HashMap;
+
 use components::icons::{self, BoltIcon, EyeIcon};
 use components::{
     Chip, DockAction, DockFilter, LoadFailed, ToastOptions, Toasts, use_back_online, use_toast,
@@ -569,6 +571,9 @@ pub fn Add(deck_id: Uuid) -> Element {
     let mut stack_cache: AddStackCache = use_context();
 
     let mut show_details = use_signal(|| false);
+    // The face each card shows, the front where it has none: its stack image and its details
+    // drawer show it, and either's flip turns it, so the image and the details turn together.
+    let faces: Signal<HashMap<Uuid, usize>> = use_signal(HashMap::new);
     let mut printing_open = use_signal(|| false);
     let mut filters_overlay_open = use_signal(|| false);
     // Gesture start point for the end-of-stack skeleton, which accepts a
@@ -727,6 +732,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                             // the top card's image is in and painted.
                             div { class: if revealing.is_some() { "swipe-reveal revealing" } else { "swipe-reveal" },
                                 SwipeStack {
+                                    faces: Some(faces),
                                     cards: window,
                                     config: swipe_config,
                                     entering,
@@ -788,6 +794,7 @@ pub fn Add(deck_id: Uuid) -> Element {
                         // Maybeboard mode
                         if pile == Pile::Cards {
                             SwipeStack {
+                                faces: Some(faces),
                                 cards: window,
                                 config: swipe_config,
                                 entering,
@@ -863,10 +870,11 @@ pub fn Add(deck_id: Uuid) -> Element {
             // maybeboard pile shows details without Printings.
             if source == Source::Maybeboard {
                 if let Some(card) = current {
-                    CardDetailsSheet { open: show_details, card }
+                    CardDetailsSheet { open: show_details, card, faces: Some(faces) }
                 }
             } else if let Some(card) = current {
                 CardDetailsSheet {
+                    faces: Some(faces),
                     open: show_details,
                     card,
                     on_printings: move |()| printing_open.set(true),

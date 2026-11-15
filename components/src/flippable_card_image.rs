@@ -11,6 +11,7 @@ use std::collections::HashSet;
 use std::sync::{Mutex, OnceLock};
 
 use dioxus::prelude::*;
+use uuid::Uuid;
 use zwipe_core::domain::card::card_profile::CardProfile;
 use zwipe_core::domain::card::scryfall_data::{ImageSize, ScryfallData};
 
@@ -83,6 +84,21 @@ fn sizer(size: ImageSize) -> &'static str {
     }
 }
 
+/// The image of face `face` of `view` at `size`, or `None` for its text proxy: a card with no
+/// art, or a printing whose image already failed to load here (`failed`), whose other faces'
+/// images are gone too, so a flip draws the text at once instead of trying the next face's image.
+fn face_image(
+    view: &ScryfallData,
+    face: usize,
+    size: ImageSize,
+    failed: Option<Uuid>,
+) -> Option<String> {
+    if failed == Some(view.id) {
+        return None;
+    }
+    view.face_image_url(face, size).map(str::to_owned)
+}
+
 /// Renders a card image with a flip-icon overlay for cards that have multiple faces.
 ///
 /// Owns the `face_idx` state internally (seeded from `initial_face`), unless
@@ -147,9 +163,10 @@ pub fn FlippableCardImage(
     };
     // The image URL this element has loaded and decoded itself.
     let loaded_here: Signal<Option<String>> = use_signal(|| None);
-    // The image URL that failed to load here, which then draws the text proxy:
-    // a failed image would otherwise leave the card see-through.
-    let failed_here: Signal<Option<String>> = use_signal(|| None);
+    // The printing whose image failed to load here, which then draws the text proxy on every
+    // face: a failed image would otherwise leave the card see-through, and a printing whose
+    // image is gone has lost every face's.
+    let failed_here: Signal<Option<Uuid>> = use_signal(|| None);
     // A meld half can show its melded card in its place.
     let meld = use_meld(&sd.read());
     let sd_now = sd.read();
@@ -162,11 +179,11 @@ pub fn FlippableCardImage(
         .as_ref()
         .and_then(|f| f.get(cur))
         .map_or_else(|| view.name.clone(), |f| f.name.clone());
-    let image_url: Option<String> = view
-        .face_image_url(cur, size)
-        .map(str::to_owned)
-        .filter(|url| failed_here.read().as_deref() != Some(url.as_str()));
+    let image_url = face_image(view, cur, size, *failed_here.read());
     let is_no_image = image_url.is_none();
+    // The card and face shown, which the card details' crossfade reads (`drawer_swap`).
+    let face_mark = format!("{}:{cur}", view.id);
+    let printing = view.id;
 
     // The no-art proxy's card, the shown face of what shows (a melded card
     // while Meld is on).
@@ -203,10 +220,10 @@ pub fn FlippableCardImage(
                         alt: "{alt}",
                         draggable,
                         class: if already_loaded { "img-loaded" } else { "" },
+                        "data-face": "{face_mark}",
                         // Shown only once decoded, so it never paints half
                         // drawn or a frame late.
                         onload: {
-                            let url = url.clone();
                             move |_| {
                                 let url = url.clone();
                                 let mut loaded_here = loaded_here;
@@ -222,7 +239,7 @@ pub fn FlippableCardImage(
                         onerror: {
                             move |_| {
                                 let mut failed_here = failed_here;
-                                failed_here.set(Some(url.clone()));
+                                failed_here.set(Some(printing));
                                 announce();
                             }
                         },
@@ -234,7 +251,7 @@ pub fn FlippableCardImage(
                     // so every host's image rules size the proxy's box exactly as
                     // they would size the image.
                     if let Some(sd) = proxy_sd {
-                        div { class: "card-proxy-slot",
+                        div { class: "card-proxy-slot", "data-face": "{face_mark}",
                         img { class: "card-proxy-sizer", src: "{sizer(size)}", alt: "", draggable: false }
                         CardProxy {
                             sd,
@@ -303,5 +320,63 @@ pub fn FlippableCardImage(
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use dioxus::dioxus_core::NoOpMutations;
+    use zwipe_core::domain::card::Card;
+
+    use super::*;
+
+    /// A transform card with an image per face, as Delver of Secrets is served.
+    fn two_faced() -> Card {
+        let json = include_str!("../../zwipe-ui/src/test_support/card.json");
+        let mut card: serde_json::Value =
+            serde_json::from_str(json).expect("the fixture card parses");
+        let sd = card.get_mut("scryfall_data").expect("its data");
+        let front = sd["image_uris"].clone();
+        sd["image_uris"] = serde_json::Value::Null;
+        sd["oracle_text"] = serde_json::Value::Null;
+        sd["card_faces"] = serde_json::json!([
+            { "object": "card_face", "name": "Delver of Secrets", "mana_cost": "{U}",
+              "type_line": "Creature — Human Wizard", "oracle_text": "Upkeep.", "image_uris": front },
+            { "object": "card_face", "name": "Insectile Aberration", "mana_cost": "",
+              "type_line": "Creature — Human Insect", "oracle_text": "Flying", "image_uris": front }
+        ]);
+        serde_json::from_value(card).expect("the two-faced card parses")
+    }
+
+    #[test]
+    fn a_printing_whose_image_failed_shows_its_text_on_every_face() {
+        let card = two_faced();
+        let sd = &card.scryfall_data;
+        assert!(
+            face_image(sd, 1, ImageSize::Large, None).is_some(),
+            "an image to try"
+        );
+        assert_eq!(
+            face_image(sd, 1, ImageSize::Large, Some(sd.id)),
+            None,
+            "once one face's image failed, every face draws its text at once"
+        );
+    }
+
+    #[test]
+    fn the_image_marks_the_card_and_face_it_shows_for_the_crossfade() {
+        fn app() -> Element {
+            let card = two_faced();
+            let face = use_signal(|| 1);
+            rsx! {
+                FlippableCardImage { sd: card.scryfall_data, size: ImageSize::Large, face }
+            }
+        }
+        let mut dom = VirtualDom::new(app);
+        dom.rebuild_in_place();
+        dom.render_immediate(&mut NoOpMutations);
+        let html = dioxus_ssr::render(&dom);
+        let id = two_faced().scryfall_data.id;
+        assert!(html.contains(&format!(r#"data-face="{id}:1""#)), "{html}");
     }
 }

@@ -7,12 +7,16 @@
 //! in from the faded edge. The strip holds that height from its first frame, each image box
 //! ghosted until its art fades in, so nothing under it moves while the deck and its images land.
 
+use std::collections::HashMap;
+
 use dioxus::prelude::*;
+use uuid::Uuid;
 use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ImageSize;
 
 use crate::flippable_card_image::FlippableCardImage;
 use crate::screen_return::ScreenReturns;
+use crate::{share_face, use_shared_face};
 
 /// The deal's keyframes, as the stylesheet names them (`.deck-featured.dealing`).
 const DEAL_ANIMATION: &str = "deck-featured-deal";
@@ -22,12 +26,18 @@ const DEAL_ANIMATION: &str = "deck-featured-deal";
 /// doesn't see it. Nothing covers a featured card, so it never floats: the first tap acts. It
 /// carries the card's `data-row` and is a stop of the keyboard cursor, Enter acting as a tap.
 #[component]
-fn StripCard(card: Card, role: String, on_tap: EventHandler<Card>) -> Element {
+fn StripCard(
+    card: Card,
+    role: String,
+    on_tap: EventHandler<Card>,
+    #[props(default)] faces: Option<Signal<HashMap<Uuid, usize>>>,
+) -> Element {
     let name = card.scryfall_data.name.clone();
     let sd = card.scryfall_data.clone();
     let has_image = sd.primary_image_url(ImageSize::Normal).is_some();
     let id = sd.id;
     let keyed = card.clone();
+    let shared = use_shared_face(faces, id);
     rsx! {
         div {
             class: "deck-featured-card",
@@ -53,6 +63,8 @@ fn StripCard(card: Card, role: String, on_tap: EventHandler<Card>) -> Element {
                     size: ImageSize::Normal,
                     class: "deck-featured-image".to_string(),
                     draggable: false,
+                    face: shared,
+                    on_face_change: share_face(faces, id),
                 }
             }
             div { class: "deck-featured-chips",
@@ -89,6 +101,10 @@ pub fn FeaturedStrip(
     deal_key: u32,
     /// Fired with the tapped card: the host opens its details or its image.
     on_tap: EventHandler<Card>,
+    /// Every card's shown face where the screen keeps them, so a strip card's flip turns its
+    /// details and rows too, and theirs turn it.
+    #[props(default)]
+    faces: Option<Signal<HashMap<Uuid, usize>>>,
 ) -> Element {
     let mut dealing = use_signal(|| true);
     let mut landed = use_signal(|| 0usize);
@@ -123,7 +139,7 @@ pub fn FeaturedStrip(
             },
             div { class: "deck-featured-row scroll-fade-x", "data-settle-scope": "",
                 for (card, role) in cards {
-                    StripCard { key: "{card.scryfall_data.id}", card, role, on_tap }
+                    StripCard { key: "{card.scryfall_data.id}", card, role, on_tap, faces }
                 }
             }
         }
@@ -151,7 +167,43 @@ fn FeaturedGhost() -> Element {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+
     use super::*;
+
+    /// A transform card with an image per face, as Delver of Secrets is served.
+    fn two_faced() -> Card {
+        let json = include_str!("../../zwipe-ui/src/test_support/card.json");
+        let mut card: serde_json::Value =
+            serde_json::from_str(json).expect("the fixture card parses");
+        let sd = card.get_mut("scryfall_data").expect("its data");
+        let front = sd["image_uris"].clone();
+        sd["image_uris"] = serde_json::Value::Null;
+        sd["oracle_text"] = serde_json::Value::Null;
+        sd["card_faces"] = serde_json::json!([
+            { "object": "card_face", "name": "Delver of Secrets", "mana_cost": "{U}",
+              "type_line": "Creature — Human Wizard", "oracle_text": "Upkeep.", "image_uris": front },
+            { "object": "card_face", "name": "Insectile Aberration", "mana_cost": "",
+              "type_line": "Creature — Human Insect", "oracle_text": "Flying", "image_uris": front }
+        ]);
+        serde_json::from_value(card).expect("the two-faced card parses")
+    }
+
+    #[test]
+    fn a_strip_card_shows_the_face_its_screen_shares() {
+        fn app() -> Element {
+            let card = two_faced();
+            let faces = use_signal(|| HashMap::from([(card.scryfall_data.id, 1_usize)]));
+            rsx! {
+                StripCard { card, role: "MVP".to_owned(), on_tap: |_: Card| {}, faces }
+            }
+        }
+        let mut dom = VirtualDom::new(app);
+        dom.rebuild_in_place();
+        dom.render_immediate(&mut dioxus::dioxus_core::NoOpMutations);
+        let html = dioxus_ssr::render(&dom);
+        assert!(html.contains(r#"alt="Insectile Aberration""#), "{html}");
+    }
 
     #[test]
     fn a_strip_card_is_a_stop_the_keyboard_cursor_can_focus() {

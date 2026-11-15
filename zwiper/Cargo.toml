@@ -53,6 +53,10 @@ apple-native-keyring-store = { version = "1.0", features = ["protected"] }
 [build-dependencies]
 dotenvy = { workspace = true }
 
+[dev-dependencies]
+# Renders a component to HTML in its test.
+dioxus-ssr = "0.7"
+
 [features]
 default = ["mobile"]
 web = ["dioxus/web"]

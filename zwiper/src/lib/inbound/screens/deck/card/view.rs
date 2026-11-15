@@ -34,7 +34,7 @@ use zwipe_ui::generation::Ticket;
 use zwipe_ui::screens::deck_cards::{self, Action, Destination, Effect, Op, StackGroup, State};
 use zwipe_ui::stores::undo::UndoAction as SharedUndo;
 
-use super::components::card_row::{CardRow, OtagDescribe, OtagExamplesOpen, ShowRowArt};
+use super::components::card_row::{CardRow, DeckFaces, OtagDescribe, OtagExamplesOpen, ShowRowArt};
 use super::components::filter_store::{FilterScope, FilterStore};
 use super::components::image_preview::ImagePreview;
 use super::components::printing_sheet::PrintingSheet;
@@ -807,7 +807,10 @@ pub fn View(deck_id: Uuid) -> Element {
     // folds as the model holds them, which the stack headers read.
     let details_open = use_signal(|| false);
     let stack_details = use_stack_details(reveal, details_open);
+    // Every card's shown face, shared by its row, its stack card, its details drawer and its
+    // featured card, so a flip on any of them turns them all.
     let stack_faces: Signal<HashMap<Uuid, usize>> = use_signal(HashMap::new);
+    use_context_provider(|| DeckFaces(stack_faces));
     let mut folds: Signal<HashSet<String>> = use_signal(HashSet::new);
     use_effect(move || {
         let model = driver.model.read();
@@ -1090,6 +1093,7 @@ pub fn View(deck_id: Uuid) -> Element {
                     FeaturedStrip {
                         cards: featured_cards,
                         loaded,
+                        faces: Some(stack_faces),
                         ghost: featured_ghost,
                         // The first tap opens the card's details, as a click does on the web:
                         // nothing covers a featured card, so there is nothing to float clear

@@ -4,6 +4,8 @@
 //! file draws its state, performs its effects and keeps the gestures, the
 //! card's entrance and the sheets.
 
+use std::collections::HashMap;
+
 use chrono::{DateTime, Utc};
 use components::icons::{self, EyeIcon};
 use components::{Chip, DockAction, DockFilter, ToastOptions, Toasts, use_toast};
@@ -499,6 +501,9 @@ pub fn Remove(deck_id: Uuid) -> Element {
     let mut filters_overlay_open = use_signal(|| false);
 
     let show_details = use_signal(|| false);
+    // The face each card shows, the front where it has none: its stack image and its details
+    // drawer show it, and either's flip turns it, so the image and the details turn together.
+    let faces: Signal<HashMap<Uuid, usize>> = use_signal(HashMap::new);
     let mut printing_open = use_signal(|| false);
 
     // Incrementing this re-runs the filter. Readers only see that it moved,
@@ -588,6 +593,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
                 div { class: "form-container",
                     if !stack_empty {
                         SwipeStack {
+                            faces: Some(faces),
                             cards: window,
                             config: swipe_config,
                             entering,
@@ -688,6 +694,7 @@ pub fn Remove(deck_id: Uuid) -> Element {
             // exact scryfall_data_id).
             if let Some(card) = current {
                 CardDetailsSheet {
+                    faces: Some(faces),
                     open: show_details,
                     card: card.clone(),
                     on_printings: move |()| printing_open.set(true),

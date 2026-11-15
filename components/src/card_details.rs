@@ -23,7 +23,7 @@ use zwipe_core::domain::card::Card;
 use zwipe_core::domain::card::scryfall_data::ImageSize;
 
 use crate::icons::FLIP;
-use crate::meld::{MeldToggle, use_meld};
+use crate::meld::{MeldSource, MeldToggle, use_meld};
 use crate::printing_face::{PrintingsFace, hand_face_then};
 use crate::{
     CardIconButton, CardRoleChips, ImageButton, KeywordChips, MELD, OracleText, Panel, data_action,
@@ -120,6 +120,24 @@ pub fn card_face_count(card: &Card) -> usize {
 pub fn next_card_face(card: &Card, face: usize) -> Option<usize> {
     let count = card_face_count(card);
     (count > 1).then(|| face.saturating_add(1).checked_rem(count).unwrap_or(0))
+}
+
+/// Turns `card` to its next face in `faces`, as `v` does on a screen whose surfaces share one
+/// face per card, so its image and its details turn together; a meld half, which has one face,
+/// turns its Meld from `melds` instead.
+pub fn turn_face<S: BuildHasher + 'static>(
+    mut faces: Signal<HashMap<Uuid, usize, S>>,
+    card: &Card,
+    melds: Option<MeldSource>,
+) {
+    let id = card.scryfall_data.id;
+    let face = faces.peek().get(&id).copied().unwrap_or(0);
+    match next_card_face(card, face) {
+        Some(next) => {
+            faces.write().insert(id, next);
+        }
+        None => MeldToggle::of(&card.scryfall_data, melds).toggle(),
+    }
 }
 
 /// The face card `id` shows when its host keeps every card's face in `faces`, as a signal for
@@ -792,5 +810,20 @@ mod tests {
         assert!(html.contains("Sorcery"), "{html}");
         assert!(html.contains("first strike and vigilance"), "{html}");
         assert!(!html.contains("5 damage"), "{html}");
+    }
+
+    #[test]
+    fn v_turns_a_card_to_its_next_face_in_the_screen_s_shared_faces() {
+        fn app() -> Element {
+            let card = delver();
+            let id = card.scryfall_data.id;
+            let faces = use_signal(HashMap::<Uuid, usize>::new);
+            use_hook(move || {
+                turn_face(faces, &card, None);
+            });
+            rsx! { p { "{faces.read().get(&id).copied().unwrap_or(9)}" } }
+        }
+        let html = render(app);
+        assert!(html.contains("<p>1</p>"), "the back: {html}");
     }
 }

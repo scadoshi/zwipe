@@ -20,7 +20,9 @@ use zwipe_ui::deck::command_zone::Slot;
 use zwipe_ui::deck_cards::Display;
 
 use crate::icons::{DockIcon, FOLD, UNFOLD};
-use crate::{Button, ButtonVariant, Chip, FlippableCardImage, IdentityPips};
+use crate::{
+    Button, ButtonVariant, Chip, FlippableCardImage, IdentityPips, share_face, use_shared_face,
+};
 
 /// The line under an empty card list.
 pub const NO_CARDS: &str = "No cards found";
@@ -267,6 +269,7 @@ pub fn FeaturedCard(
     #[props(default)] on_open: Option<Callback<(ScryfallData, usize)>>,
     #[props(default)] on_select: Option<Callback<Uuid>>,
     #[props(default)] on_load: Option<Callback<()>>,
+    #[props(default)] faces: Option<Signal<HashMap<Uuid, usize>>>,
 ) -> Element {
     let name = card.scryfall_data.name.clone();
     let sd = card.scryfall_data;
@@ -277,8 +280,11 @@ pub fn FeaturedCard(
             on_load.call(());
         }
     }));
-    // The face the flip control shows, so a click opens that one.
-    let mut face = use_signal(|| 0usize);
+    // The face the flip control shows, so a click opens that one: the page's shared face for
+    // the card where the page keeps `faces`, so its flip turns the drawer and the row too and
+    // theirs turn it.
+    let own_face = use_signal(|| 0usize);
+    let face = use_shared_face(faces, id).unwrap_or(own_face);
     let sd_open = sd.clone();
     let sd_key = sd.clone();
     let role_class = if role == "MVP" {
@@ -321,7 +327,8 @@ pub fn FeaturedCard(
                         sd,
                         size: ImageSize::Normal,
                         draggable: false,
-                        on_face_change: move |shown: usize| face.set(shown),
+                        face: Some(face),
+                        on_face_change: share_face(faces, id),
                         on_load: move |()| {
                             if let Some(on_load) = on_load {
                                 on_load.call(());
@@ -528,6 +535,40 @@ mod tests {
         card.scryfall_data.id = Uuid::new_v4();
         card.scryfall_data.name = name.to_owned();
         card
+    }
+
+    /// A transform card with an image per face, as Delver of Secrets is served.
+    fn two_faced() -> Card {
+        let json = include_str!("../../zwipe-ui/src/test_support/card.json");
+        let mut card: serde_json::Value =
+            serde_json::from_str(json).expect("the fixture card parses");
+        let sd = card.get_mut("scryfall_data").expect("its data");
+        let front = sd["image_uris"].clone();
+        sd["image_uris"] = serde_json::Value::Null;
+        sd["oracle_text"] = serde_json::Value::Null;
+        sd["card_faces"] = serde_json::json!([
+            { "object": "card_face", "name": "Delver of Secrets", "mana_cost": "{U}",
+              "type_line": "Creature — Human Wizard", "oracle_text": "Upkeep.", "image_uris": front },
+            { "object": "card_face", "name": "Insectile Aberration", "mana_cost": "",
+              "type_line": "Creature — Human Insect", "oracle_text": "Flying", "image_uris": front }
+        ]);
+        serde_json::from_value(card).expect("the two-faced card parses")
+    }
+
+    #[test]
+    fn a_featured_card_shows_the_face_its_screen_shares() {
+        fn app() -> Element {
+            let card = two_faced();
+            let faces = use_signal(|| HashMap::from([(card.scryfall_data.id, 1_usize)]));
+            rsx! {
+                FeaturedCard { card, role: "MVP".to_owned(), faces }
+            }
+        }
+        let mut dom = VirtualDom::new(app);
+        dom.rebuild_in_place();
+        dom.render_immediate(&mut dioxus::dioxus_core::NoOpMutations);
+        let html = dioxus_ssr::render(&dom);
+        assert!(html.contains(r#"alt="Insectile Aberration""#), "{html}");
     }
 
     #[test]

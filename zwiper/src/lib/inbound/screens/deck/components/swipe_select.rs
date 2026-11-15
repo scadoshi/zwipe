@@ -20,7 +20,7 @@
 //! What the overlay knows and does is `zwipe_ui::screens::swipe_select`; this
 //! file draws its state and performs its effects.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use components::hint::ContentHintDialog;
 use components::icons::{self, EyeIcon};
@@ -303,6 +303,9 @@ pub(crate) fn SwipeSelect(
     // The suggested mode's Filter sheet, holding the host's chips.
     let mut suggested_filter_open = use_signal(|| false);
     let mut show_details = use_signal(|| false);
+    // The face each card shows, the front where it has none: its stack image and its details
+    // drawer show it, and either's flip turns it, so the image and the details turn together.
+    let faces: Signal<HashMap<Uuid, usize>> = use_signal(HashMap::new);
     let mut printing_open = use_signal(|| false);
 
     // Each open hands the model the mode, the filter, the host's pile and
@@ -433,6 +436,7 @@ pub(crate) fn SwipeSelect(
                     SwipeConfirmChip { said: driver.said, at_end: status == Status::Empty }
                     if has_cards {
                         SwipeStack {
+                            faces: Some(faces),
                             cards: window,
                             config: swipe_config,
                             entering,
@@ -511,6 +515,7 @@ pub(crate) fn SwipeSelect(
                 // so it draws over it.
                 if let Some(card) = current_card {
                     CardDetailsSheet {
+                        faces: Some(faces),
                         open: show_details,
                         card,
                         on_printings: move |()| printing_open.set(true),

@@ -1437,6 +1437,27 @@ i.ms.ms-cost.ms-gp {
     font-size: 1em;
 }
 
+/* A stock card's text is fitted to its box by stepping its scale down, so
+   its chips and buttons take each step at once instead of animating size,
+   padding and color through it. */
+.card-proxy * {
+    transition: none;
+}
+
+/* A stock card's Flip takes a finger-sized tap: its icon shrinks with the
+   card's text, so its tap area reaches past it, in rem so the card's scale
+   never shrinks the area, and over the name and cost beside it. */
+.card-proxy .card-action-btn[data-action] {
+    position: relative;
+    z-index: 1;
+}
+
+.card-proxy .card-action-btn[data-action]::after {
+    content: "";
+    position: absolute;
+    inset: -0.75rem;
+}
+
 .card-proxy-text {
     margin: 0;
     white-space: pre-line;

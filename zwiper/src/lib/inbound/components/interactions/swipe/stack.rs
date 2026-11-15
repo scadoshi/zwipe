@@ -19,8 +19,9 @@
 //! restored top card plays a keyframe animation entering from `dir`, then the
 //! stack clears the signal on `animationend`.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
+use components::{share_face, use_shared_face};
 use dioxus::html::geometry::euclid::{Point2D, UnknownUnit};
 use dioxus::prelude::*;
 use uuid::Uuid;
@@ -191,6 +192,10 @@ pub fn SwipeStack(
     /// Keeps the ghost up regardless, for a pile the host has yet to show.
     #[props(default)]
     hold: bool,
+    /// Every card's shown face where the screen keeps them: the top card's flip writes it, and
+    /// a flip the screen writes elsewhere (its details drawer) turns the image.
+    #[props(default)]
+    faces: Option<Signal<HashMap<Uuid, usize>>>,
 ) -> Element {
     // The cards whose image has loaded and decoded, failed, or has no art,
     // and the top whose image came in while it was the top, while it paints.
@@ -376,16 +381,12 @@ pub fn SwipeStack(
                         }
                     },
 
-                    FlippableCardImage {
+                    StackCardImage {
                         sd: layer.sd,
-                        profile: Some(layer.profile),
-                        size: ImageSize::Large,
-                        class: "card-image".to_string(),
-                        draggable: false,
-                        flippable: layer.is_top,
-                        // Shows at once if this stack already had it in, else
-                        // only from its own load.
-                        trust_seen: layer.loaded,
+                        profile: layer.profile,
+                        is_top: layer.is_top,
+                        loaded: layer.loaded,
+                        faces,
                         on_load: move |()| {
                             if layer.is_top && !shown_cards.peek().contains(&layer.id) {
                                 painting.set(Some(layer.id));
@@ -438,11 +439,42 @@ pub fn SwipeStack(
                                 class: "card-image".to_string(),
                                 draggable: false,
                                 flippable: false,
+                                // On the face it showed as it went.
+                                initial_face: faces.map_or(0, |faces| faces.peek().get(&id).copied().unwrap_or(0)),
                             }
                         }
                     }
                 }
             }
+        }
+    }
+}
+
+/// One stack card's image, the top one flippable, on its face in `faces` when the screen shares
+/// them. It shows at once if this stack already had it in (`loaded`), else only from its own load.
+#[component]
+fn StackCardImage(
+    sd: ScryfallData,
+    profile: CardProfile,
+    is_top: bool,
+    loaded: bool,
+    faces: Option<Signal<HashMap<Uuid, usize>>>,
+    on_load: EventHandler<()>,
+) -> Element {
+    let id = sd.id;
+    let face = use_shared_face(faces, id);
+    rsx! {
+        FlippableCardImage {
+            sd,
+            profile: Some(profile),
+            size: ImageSize::Large,
+            class: "card-image".to_string(),
+            draggable: false,
+            flippable: is_top,
+            trust_seen: loaded,
+            face,
+            on_face_change: share_face(faces, id),
+            on_load,
         }
     }
 }

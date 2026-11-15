@@ -30,17 +30,17 @@
 //! signature spell), down undoes. The card drags,
 //! the arrow keys swipe, and four buttons under the card do the same.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use components::icons::{DockIcon, REFRESH};
 use components::keys::{use_page_keys, use_undo_key};
 use components::swipe_stack::{
-    self, Swipe, SwipeControl, SwipeDock, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
+    Swipe, SwipeControl, SwipeDock, SwipeStack, use_swipe_control, use_swipe_keys_or_undo,
 };
 use components::{
-    BackArrow, BottomSheet, CardDetailsPanel, CardDetailsPanelSkeleton, CardSkeleton, DockEye,
-    DockFilter, PageHeader, SheetFrame, SheetWide, Surface, TOAST_QUICK, use_details_eye,
-    use_overlay_back,
+    BackArrow, BottomSheet, CardDetailsPanelSkeleton, CardSkeleton, DockEye, DockFilter,
+    MeldSource, PageHeader, SheetFrame, SheetWide, Surface, TOAST_QUICK, turn_face,
+    use_details_eye, use_overlay_back,
 };
 use dioxus::prelude::*;
 use dioxus_primitives::toast::{ToastOptions, use_toast};
@@ -74,6 +74,7 @@ use crate::inbound::chrome::authed::use_authed;
 use crate::inbound::chrome::one_time_hint::{OneTimeHint, SwipeSelectHint, open_and_record_hint};
 use crate::inbound::chrome::shortcuts::{self, SELECT_LABELS, Shortcut, ShortcutsScreen};
 use crate::inbound::chrome::shortcuts_sheet::{use_global_keys, use_offer_shortcuts};
+use crate::inbound::screens::deck::cards::SwipeDetailsPanel;
 use crate::inbound::screens::playstyle::SuggestionReasons;
 use crate::inbound::shell::{WebFooter, use_overlay_nav};
 use crate::inbound::telemetry;
@@ -530,6 +531,10 @@ fn SwipeSelectBody(
     let show_details = use_signal(|| false);
     let eye = use_details_eye(show_details, Surface::Window);
     let mut printing_open = use_signal(|| false);
+    // The face each card shows, the front where it has none: its stack image, its pane and its
+    // drawer show it, and their flips and `v` turn it, so the image and the details turn together.
+    let faces: Signal<HashMap<Uuid, usize>> = use_signal(HashMap::new);
+    let melds = try_use_context::<MeldSource>();
     let mut filter_open = use_signal(|| false);
     let suggested = mode == SwipeMode::Suggested;
     let allowed = if mode.saves_up() {
@@ -656,7 +661,11 @@ fn SwipeSelectBody(
                     filter_open.set(true);
                 }
             }
-            Some(Shortcut::Flip) => swipe_stack::flip_top_card(),
+            Some(Shortcut::Flip) => {
+                if let Some(card) = stack.peek().current() {
+                    turn_face(faces, card, melds);
+                }
+            }
             Some(Shortcut::Refresh) => refresh.call(()),
             Some(Shortcut::Synergy | Shortcut::Swipe(_)) | None => {}
         },
@@ -786,6 +795,7 @@ fn SwipeSelectBody(
                         entering,
                         on_entered: move |()| stack.write().cancel_entering(),
                         on_swipe,
+                        faces,
                     }
                 } else if loading() || loading_more() {
                     CardSkeleton {}
@@ -799,11 +809,12 @@ fn SwipeSelectBody(
             }
             if let Some(card) = current.clone() {
                 div { class: "web-examples-details web-swipe-select-details",
-                    CardDetailsPanel {
+                    SwipeDetailsPanel {
                         key: "{card.scryfall_data.id}",
                         card,
                         describe_tag: Some(describe_tag),
                         on_printings: move |()| printing_open.set(true),
+                        faces: Some(faces),
                         body_end: reasons.clone().map(|reasons| rsx! {
                             SuggestionReasons {
                                 reasons,
@@ -857,6 +868,14 @@ fn SwipeSelectBody(
                 open: show_details,
                 card: card.clone(),
                 on_printings: move |()| printing_open.set(true),
+                face: faces.read().get(&card.scryfall_data.id).copied().unwrap_or(0),
+                on_face_change: {
+                    let id = card.scryfall_data.id;
+                    let mut faces = faces;
+                    move |next: usize| {
+                        faces.write().insert(id, next);
+                    }
+                },
                 body_end: reasons.map(|reasons| rsx! {
                     SuggestionReasons { reasons, deck_count: deck_count(), describe_tag, on_examples }
                 }),

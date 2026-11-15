@@ -4,15 +4,17 @@
 //! what the card details show as they show it: an open card details
 //! drawer's title bar and content, each open card row's art and detail, the
 //! thumbnail of the collapsed row under the pointer or the keyboard, a
-//! details pane's head and body beside the card, and each printing an open
-//! Printings sheet shows. If one then shows another card (a drawer's title changes) or
+//! details pane's head and body beside the card, each printing an open
+//! Printings sheet shows, and each card image in view (a swipe card, a
+//! featured card, a stock card's text), whose copy holds until the new face's
+//! image has loaded so the card never dips to empty. If one then shows another card (a drawer's title changes) or
 //! another face (a face marker, `data-face`, changes: a flip, or a meld
 //! half melding), the copies are laid over it in the same task, before the
 //! browser paints the change, and fade out over `SWAP_MS` while the new
 //! face fades in. Nothing runs under `prefers-reduced-motion`, and details
 //! that kept their card and face drop the copies unseen. A held key's
-//! repeats swap at once, dropping any fade still running. Stack card images
-//! have no copies, so they swap at once.
+//! repeats swap at once, dropping any fade still running. The deck page's
+//! stack card images have no copies, so they swap at once.
 
 use dioxus::prelude::*;
 
@@ -52,6 +54,14 @@ const SWAP_JS: &str = r"
   // drawer's panel crossfades with its drawer instead.
   const PANE_PARTS = ':scope > .panel-head, :scope > .panel-body';
   const openPanes = () => [...document.querySelectorAll('.card-details-panel')].filter((panel) => !panel.closest('.bottom-sheet') && panel.getClientRects().length > 0);
+  // Every card image in view (a swipe card, a featured card, a stock card's text), its face
+  // marked on its image or its stock card; its copy is laid in the image's own box, which may
+  // float or turn. The copy holds until the new face's image has loaded or its stock card shows,
+  // so the card never dips to empty.
+  const IMAGE_PARTS = ':scope > img:not(.card-proxy-sizer), :scope > .card-proxy-slot';
+  const inView = (el) => { const r = el.getBoundingClientRect(); return r.width > 0 && r.bottom > 0 && r.top < window.innerHeight && r.right > 0 && r.left < window.innerWidth; };
+  const openImages = () => [...document.querySelectorAll('.flippable-card-wrapper > .flip-face')].filter((face) => !face.closest('[data-drawer-ghost]') && inView(face));
+  const settled = (box) => !!box.querySelector(':scope > img.img-loaded:not([data-drawer-ghost]), :scope > .card-proxy-slot:not([data-drawer-ghost])');
   // A row's own color is often see-through, so its copies take the first solid one behind it.
   const solidBehind = (el) => {
     for (let at = el; at; at = at.parentElement) {
@@ -91,8 +101,19 @@ const SWAP_JS: &str = r"
         });
         surface.box.appendChild(ghost);
         ghost.scrollTop = shot.scroll;
-        ghost.animate([{ opacity: 1 }, { opacity: 0 }], timing).finished.then(() => { ghost.remove(); done(); }, () => { ghost.remove(); done(); });
-        shot.live.animate([{ opacity: 0 }, { opacity: 1 }], timing);
+        const fade = () => ghost.animate([{ opacity: 1 }, { opacity: 0 }], timing).finished.then(() => { ghost.remove(); done(); }, () => { ghost.remove(); done(); });
+        if (surface.ready) {
+          // An image fades in on its own once it has loaded: its copy waits for that.
+          const until = Date.now() + 3000;
+          const wait = () => {
+            if (!ghost.isConnected) { done(); return; }
+            if (surface.ready() || Date.now() > until) fade(); else requestAnimationFrame(wait);
+          };
+          wait();
+        } else {
+          fade();
+          shot.live.animate([{ opacity: 0 }, { opacity: 1 }], timing);
+        }
       }
     }
   };
@@ -149,6 +170,17 @@ const SWAP_JS: &str = r"
         fill: () => 'transparent',
       };
       surface.changed = () => card.isConnected && faceOf(card) !== surface.face;
+      surfaces.push(surface);
+    }
+    for (const box of openImages()) {
+      const surface = {
+        box,
+        face: faceOf(box),
+        shots: shotsOf(box, IMAGE_PARTS, true).filter((shot) => shot.at.width > 0 && shot.at.height > 0),
+        fill: () => 'transparent',
+      };
+      surface.changed = () => box.isConnected && faceOf(box) !== surface.face;
+      surface.ready = () => settled(box);
       surfaces.push(surface);
     }
     if (!surfaces.length) return;
@@ -336,6 +368,19 @@ mod tests {
         assert!(
             SWAP_JS.contains("const artOf = (row) =>"),
             "a collapsed row changes when its thumbnail does: {SWAP_JS}"
+        );
+    }
+
+    #[test]
+    fn a_card_image_crossfades_and_holds_the_old_face_until_the_new_one_is_in() {
+        assert!(SWAP_JS.contains("const openImages = () =>"), "{SWAP_JS}");
+        assert!(
+            SWAP_JS.contains(".flippable-card-wrapper > .flip-face"),
+            "every card image, the swipe card, a featured card, a stock card: {SWAP_JS}"
+        );
+        assert!(
+            SWAP_JS.contains("surface.ready"),
+            "the old face holds until the new face's image or text is in, so it never dips: {SWAP_JS}"
         );
     }
 

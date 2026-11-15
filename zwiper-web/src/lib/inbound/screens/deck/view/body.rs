@@ -312,6 +312,7 @@ pub(crate) fn DeckPageBody(
                     loaded,
                     deal_key: stack_entries,
                     on_tap: move |card: Card| open_featured.call(card.scryfall_data.id),
+                    faces,
                 }
             } else {
                 DeckHead {
@@ -327,6 +328,7 @@ pub(crate) fn DeckPageBody(
                             role: role.to_string(),
                             on_select: open_featured,
                             on_load: on_featured_load,
+                            faces,
                         }
                     }
                 }
